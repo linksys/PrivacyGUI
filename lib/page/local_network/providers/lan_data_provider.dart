@@ -42,7 +42,7 @@ class LanDataNotifier extends AsyncNotifier<LanData> {
     final svc = ref.read(uspLanDataServiceProvider);
     final model = await svc.fetch();
 
-    logger.d('[USP][LanData] Fetched — ip=${model.ipAddress}, '
+    logger.d('[USP][LanData]: Fetched — ip=${model.ipAddress}, '
         'dhcp=${model.dhcpEnabled}, ipv6=${model.ipv6Enabled}');
     return LanData(model: model);
   }

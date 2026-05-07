@@ -74,7 +74,7 @@ class UspAppsService {
   AppInfoUIModel _toModel(Map<String, dynamic> json, AppCategory category) {
     final rawLink = json['link'] as String? ?? '';
     final normalized = _normalizeLink(rawLink);
-    logger.d('[USP][Apps] _toModel: name=${json['name']}, '
+    logger.d('[USP][Apps]: _toModel: name=${json['name']}, '
         'rawLink="$rawLink", normalized="$normalized", baseUrl=$_baseUrl');
     return AppInfoUIModel(
       name: json['name'] as String? ?? 'Unknown',
@@ -142,12 +142,12 @@ class UspAppsService {
       final uri = Uri.parse(withScheme);
       final path = uri.path.isEmpty ? '/' : uri.path;
       final result = '$_baseUrl$path';
-      logger.d('[USP][Apps] _normalizeLink: '
+      logger.d('[USP][Apps]: _normalizeLink: '
           'raw="$link" → withScheme="$withScheme" → '
           'uri.host="${uri.host}", uri.path="${uri.path}" → result="$result"');
       return result;
     } catch (e) {
-      logger.w('[USP][Apps] _normalizeLink parse error: $e, link="$link"');
+      logger.w('[USP][Apps]: _normalizeLink parse error: $e, link="$link"');
       return '$_baseUrl/$link';
     }
   }

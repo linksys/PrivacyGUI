@@ -65,7 +65,7 @@ class UspStaticRoutingNotifier
     try {
       final routes = await _svc.fetch();
 
-      logger.d('[USP][Network][Routing] Fetched — '
+      logger.d('[USP][Network][Routing]: Fetched — '
           'static: ${routes.length}');
 
       return (
@@ -73,7 +73,7 @@ class UspStaticRoutingNotifier
         const StaticRoutingStatus(),
       );
     } on ServiceError catch (e) {
-      logger.e('[USP][Network][Routing] Fetch failed', error: e);
+      logger.e('[USP][Network][Routing]: Fetch failed', error: e);
       return (
         null,
         StaticRoutingStatus(errorMessage: '$e'),
@@ -101,12 +101,12 @@ class UspStaticRoutingNotifier
           current: current,
         );
 
-        logger.d('[USP][Network][Routing] Batch save — '
+        logger.d('[USP][Network][Routing]: Batch save — '
             'added: ${result.added}, updated: ${result.updated}, '
             'deleted: ${result.deleted}');
       });
     } on ServiceError catch (e) {
-      logger.e('[USP][Network][Routing] Save failed', error: e);
+      logger.e('[USP][Network][Routing]: Save failed', error: e);
       rethrow;
     } finally {
       state = state.copyWith(

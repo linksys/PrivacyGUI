@@ -284,7 +284,7 @@ typedef UspOperateResult = UspOperationResult<Map<String, dynamic>>;
 
 /// 從 WASM 回傳的 Map 解析 USP 操作結果
 class UspResultParser {
-  static const _tag = '[USP:Parser]';
+  static const _tag = '[USP][Parser]:';
 
   /// 解析 SET 操作結果
   static UspSetResult parseSetResult(Map<String, dynamic> map) {

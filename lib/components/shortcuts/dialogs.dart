@@ -34,7 +34,7 @@ Future<T?> doSomethingWithSpinner<T>(
         );
       }
     } catch (e) {
-      logger.w('Could not show spinner dialog: $e');
+      logger.w('[Dialog]: Could not show spinner dialog: $e');
     }
     completer.complete();
   });
@@ -50,7 +50,7 @@ Future<T?> doSomethingWithSpinner<T>(
       navigator?.pop();
     } catch (e) {
       logger.w(
-          'doSomethingWithSpinner failed to pop. This might be intentional if the caller pops a page. Error: $e');
+          '[Dialog]: doSomethingWithSpinner failed to pop. This might be intentional if the caller pops a page. Error: $e');
     }
   });
 }
@@ -141,7 +141,7 @@ Future<T?> showSubmitAppDialog<T>(
               context.pop(value);
             }
           }).onError((error, stackTrace) {
-            logger.e('submit app error: $error', stackTrace: stackTrace);
+            logger.e('[Dialog]: submit app error: $error', stackTrace: stackTrace);
             setState(() {
               isLoading = false;
             });
@@ -343,7 +343,7 @@ Future<bool?> showUnsavedAlert(BuildContext context,
 
 Future<T?> showRouterNotFoundAlert<T>(BuildContext context, WidgetRef ref,
     {FutureOr<T?> Function()? onComplete}) {
-  logger.d('[RouterNotFound] show Router not found alert');
+  logger.d('[Dialog]: show Router not found alert');
   return showSimpleAppDialog<T>(context,
       dismissible: false,
       title: loc(context).routerNotFound,
@@ -368,14 +368,14 @@ Future<T?> showRouterNotFoundAlert<T>(BuildContext context, WidgetRef ref,
                 .read(sessionProvider.notifier)
                 .checkRouterIsBack()
                 .then((_) {
-              logger.d('[RouterNotFound] Found!');
+              logger.d('[Dialog]: Router found!');
               return onComplete?.call();
             }).then((value) {
               if (context.mounted) {
                 context.pop(value);
               }
             }).onError((_, __) {
-              logger.d('[RouterNotFound] Try again failed');
+              logger.d('[Dialog]: Router not found — try again failed');
             });
           },
         ),
@@ -384,7 +384,7 @@ Future<T?> showRouterNotFoundAlert<T>(BuildContext context, WidgetRef ref,
 
 Future<T?> showRedirectNewIpAlert<T>(
     BuildContext context, WidgetRef ref, String ip) {
-  logger.d('[RedirectNewIpAlert] show Redirect new IP alert');
+  logger.d('[Dialog]: show Redirect new IP alert');
   return showSimpleAppDialog<T>(context,
       dismissible: false,
       title: loc(context).redirect,

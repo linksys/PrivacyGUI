@@ -58,14 +58,14 @@ class UspIpv6PortServiceNotifier
     try {
       final rules = await _svc.fetch();
 
-      logger.d('[USP][Firewall][IPv6Port] Fetched — ipv6: ${rules.length}');
+      logger.d('[USP][Firewall][IPv6Port]: Fetched — ipv6: ${rules.length}');
 
       return (
         Ipv6PortServiceRuleList(rules: rules),
         const Ipv6PortServiceStatus(),
       );
     } on ServiceError catch (e) {
-      logger.e('[USP][Firewall][IPv6Port] Fetch failed', error: e);
+      logger.e('[USP][Firewall][IPv6Port]: Fetch failed', error: e);
       return (
         null,
         Ipv6PortServiceStatus(errorMessage: '$e'),
@@ -93,12 +93,12 @@ class UspIpv6PortServiceNotifier
           current: current,
         );
 
-        logger.d('[USP][Firewall][IPv6Port] Batch save — '
+        logger.d('[USP][Firewall][IPv6Port]: Batch save — '
             'added: ${result.added}, updated: ${result.updated}, '
             'deleted: ${result.deleted}');
       });
     } on ServiceError catch (e) {
-      logger.e('[USP][Firewall][IPv6Port] Save failed', error: e);
+      logger.e('[USP][Firewall][IPv6Port]: Save failed', error: e);
       rethrow;
     } finally {
       state = state.copyWith(

@@ -53,7 +53,7 @@ class UspWifiSettingsService {
       radioByPath[_ensureTrailingDot(r.instancePath)] = r;
     }
 
-    logger.d('[USP][WiFi]Building networks: '
+    logger.d('[USP][WiFi]: Building networks: '
         '${ssids.items.length} SSIDs, '
         '${accessPoints.items.length} APs, '
         '${radios.items.length} radios');
@@ -91,7 +91,7 @@ class UspWifiSettingsService {
       final radioPath = _ensureTrailingDot(ssid.lowerLayers);
       final radio = radioByPath[radioPath];
 
-      logger.d('[USP][WiFi]SSID ${ssid.ssid}: '
+      logger.d('[USP][WiFi]: SSID ${ssid.ssid}: '
           'AP=${ap?.instancePath ?? "none"}, '
           'radio=${radio?.operatingFrequencyBand ?? "none"}');
 
@@ -650,7 +650,7 @@ String _normalizeBand(String rawBand) {
 int _ssidInstanceIndex(String instancePath) {
   final match = RegExp(r'Device\.WiFi\.SSID\.(\d+)').firstMatch(instancePath);
   if (match == null) {
-    logger.w('[USP][WiFi] Unexpected SSID path format: $instancePath — '
+    logger.w('[USP][WiFi]: Unexpected SSID path format: $instancePath — '
         'defaulting to index 0 (Main)');
     return 0;
   }

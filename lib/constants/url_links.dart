@@ -78,6 +78,6 @@ void gotoOfficialWebUrl(String url, {Locale? locale}) {
   } else {
     websiteUrl = url;
   }
-  logger.i('open web url: $websiteUrl');
+  logger.i('[App]: open web url: $websiteUrl');
   openUrl(websiteUrl);
 }

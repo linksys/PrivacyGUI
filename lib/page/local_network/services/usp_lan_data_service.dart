@@ -76,7 +76,7 @@ class UspLanDataService {
           .where((ip) => ip.isNotEmpty)
           .toList();
     } catch (e) {
-      logger.w('[USP][LanData] IPv6 addresses fetch failed: $e');
+      logger.w('[USP][LanData]: IPv6 addresses fetch failed: $e');
       return const <String>[];
     }
   }

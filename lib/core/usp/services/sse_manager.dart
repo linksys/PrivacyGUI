@@ -65,7 +65,7 @@ class SseManager {
       final authCheck = onHeartbeatAuth;
       if (authCheck != null) {
         authCheck().catchError((e) {
-          logger.w('[USP][SSE]Heartbeat auth check error: $e');
+          logger.w('[USP][SSE]: Heartbeat auth check error: $e');
         });
       }
     };
@@ -74,13 +74,13 @@ class SseManager {
     // First connect: registers core subscriptions set via setCoreSubscriptions().
     // Reconnect: re-registers existing subscriptions on the bridge.
     connection.onConnected = () {
-      logger.d('[USP][SSE]Connected — registering/re-registering '
+      logger.d('[USP][SSE]: Connected — registering/re-registering '
           'subscriptions on bridge');
       _registerOrResubscribe();
     };
 
     connection.onDisconnected = () {
-      logger.d('[USP][SSE]Disconnected');
+      logger.d('[USP][SSE]: Disconnected');
     };
 
     // Inject SSE delegate so codegen subscribe() routes through SSE
@@ -89,7 +89,7 @@ class SseManager {
     // Force SSE reconnect after full re-login to ensure the new session's
     // subscription routing is active (prevents silent notification failure).
     _usp.onTokenRefreshed = () {
-      logger.d('[USP][SSE]Token refreshed (full re-login) '
+      logger.d('[USP][SSE]: Token refreshed (full re-login) '
           '— forcing SSE reconnect');
       connection.disconnect().then((_) => connection.connect());
     };
@@ -98,7 +98,7 @@ class SseManager {
     // abortSse() is synchronous — critical because `beforeunload` does NOT
     // wait for async operations. disconnect() is best-effort async cleanup.
     _unloadHandler.onUnload = () {
-      logger.d('[USP][SSE]Page unload — aborting SSE');
+      logger.d('[USP][SSE]: Page unload — aborting SSE');
       _bridge.abortSse();
       connection.disconnect();
     };
@@ -242,10 +242,10 @@ class SseManager {
         // Small breathing room for embedded router between requests
         await Future.delayed(const Duration(milliseconds: 50));
       } catch (e) {
-        logger.w('[USP][SSE]Failed to register core sub $id: $e');
+        logger.w('[USP][SSE]: Failed to register core sub $id: $e');
       }
     }
-    logger.d('[USP][SSE]Registered ${registry.activeIds.length} '
+    logger.d('[USP][SSE]: Registered ${registry.activeIds.length} '
         'core subscriptions (deferred)');
   }
 

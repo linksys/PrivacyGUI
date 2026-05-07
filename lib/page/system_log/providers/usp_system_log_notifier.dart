@@ -17,7 +17,7 @@ class UspSystemLogNotifier
       final svc = ref.read(uspSystemLogServiceProvider);
       return await svc.fetch();
     } on ServiceError catch (e) {
-      logger.e('[USP][SystemLog] Fetch failed', error: e);
+      logger.e('[USP][SystemLog]: Fetch failed', error: e);
       rethrow;
     }
   }

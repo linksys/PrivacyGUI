@@ -79,7 +79,7 @@ class UspClient {
   }
 
   static int _reqId = 0;
-  static const _tag = '[USPClient]';
+  static const _tag = '[USPClient]:';
   bool _lastCallRetried = false;
 
   String _idLabel(int id) => '#$id${_lastCallRetried ? '.retry' : ''}';

@@ -84,7 +84,7 @@ class UspPdfService {
         onLayout: (PdfPageFormat format) => doc.save(),
       );
     } catch (e) {
-      logger.e('[USP][Dashboard][PDF]Print error', error: e);
+      logger.e('[USP][Dashboard][PDF]: Print error', error: e);
     }
   }
 

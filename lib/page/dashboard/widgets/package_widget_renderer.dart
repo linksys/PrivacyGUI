@@ -86,7 +86,7 @@ class _PackageWidgetRendererState extends ConsumerState<PackageWidgetRenderer> {
           .read(packageWidgetDataProvider(widget.template.widgetId).notifier)
           .setAll(data);
     } catch (e) {
-      logger.w('[USP][PkgWidget] Initial GET failed for '
+      logger.w('[USP][PkgWidget]: Initial GET failed for '
           '${widget.template.widgetId}: $e');
     }
 
@@ -110,7 +110,7 @@ class _PackageWidgetRendererState extends ConsumerState<PackageWidgetRenderer> {
         onNotification: _handleNotification,
       );
     } catch (e) {
-      logger.w('[USP][PkgWidget] SSE subscribe failed for '
+      logger.w('[USP][PkgWidget]: SSE subscribe failed for '
           '${widget.template.widgetId}: $e');
     }
   }
@@ -145,7 +145,7 @@ class _PackageWidgetRendererState extends ConsumerState<PackageWidgetRenderer> {
       // Security: only allow local CGI paths
       final uri = Uri.parse(ds.url);
       if (uri.hasAuthority || !ds.url.startsWith('/cgi-bin/')) {
-        logger.w('[HTTP][PkgWidget] Blocked non-local URL: ${ds.url}');
+        logger.w('[HTTP][PkgWidget]: Blocked non-local URL: ${ds.url}');
         return;
       }
 
@@ -183,10 +183,10 @@ class _PackageWidgetRendererState extends ConsumerState<PackageWidgetRenderer> {
             .read(packageWidgetDataProvider(widget.template.widgetId).notifier)
             .setAll(mapped);
       } else {
-        logger.w('[HTTP][PkgWidget] ${ds.url} returned ${response.statusCode}');
+        logger.w('[HTTP][PkgWidget]: ${ds.url} returned ${response.statusCode}');
       }
     } catch (e) {
-      logger.w('[HTTP][PkgWidget] Fetch error for '
+      logger.w('[HTTP][PkgWidget]: Fetch error for '
           '${widget.template.widgetId}: $e');
     }
   }
@@ -201,7 +201,7 @@ class _PackageWidgetRendererState extends ConsumerState<PackageWidgetRenderer> {
         (actionData[r'$action'] ?? actionData['action']) as String?;
     if (actionType == null) return;
 
-    logger.d('[PkgWidget] ${widget.template.widgetId} action: $actionType');
+    logger.d('[PkgWidget]: ${widget.template.widgetId} action: $actionType');
 
     switch (actionType) {
       case 'refresh_data':
@@ -211,17 +211,17 @@ class _PackageWidgetRendererState extends ConsumerState<PackageWidgetRenderer> {
       case 'cgi_call':
         _handleCgiCallAction(actionData);
       default:
-        logger.d('[PkgWidget] Unhandled action: $actionData');
+        logger.d('[PkgWidget]: Unhandled action: $actionData');
     }
   }
 
   Future<void> _handleNavigationAction(String? destination) async {
     if (destination == null || destination.isEmpty) return;
     if (!mounted) return;
-    logger.d('[PkgWidget] Open app page: $destination');
+    logger.d('[PkgWidget]: Open app page: $destination');
     try {
       final url = Uri.parse('${Uri.base.origin}/$destination/');
-      logger.d('[PkgWidget] Full URL: $url');
+      logger.d('[PkgWidget]: Full URL: $url');
 
       final canLaunch = await canLaunchUrl(url);
       if (canLaunch) {
@@ -230,13 +230,13 @@ class _PackageWidgetRendererState extends ConsumerState<PackageWidgetRenderer> {
           showSuccessSnackBar(context, 'Opened app page');
         }
       } else {
-        logger.w('[PkgWidget] Cannot launch URL: $url');
+        logger.w('[PkgWidget]: Cannot launch URL: $url');
         if (mounted) {
           showFailedSnackBar(context, 'Cannot open page');
         }
       }
     } catch (e) {
-      logger.w('[PkgWidget] Open page failed: $e');
+      logger.w('[PkgWidget]: Open page failed: $e');
       if (mounted) {
         showFailedSnackBar(context, 'Failed to open page');
       }
@@ -262,7 +262,7 @@ class _PackageWidgetRendererState extends ConsumerState<PackageWidgetRenderer> {
     // Security: same whitelist as _fetchHttpData
     final uri = Uri.parse(url);
     if (uri.hasAuthority || !url.startsWith('/cgi-bin/')) {
-      logger.w('[CGI][PkgWidget] Blocked non-local URL: $url');
+      logger.w('[CGI][PkgWidget]: Blocked non-local URL: $url');
       return;
     }
 
@@ -299,11 +299,11 @@ class _PackageWidgetRendererState extends ConsumerState<PackageWidgetRenderer> {
         showSuccessSnackBar(context, 'Action completed');
         _handleRefreshDataAction();
       } else {
-        logger.w('[CGI][PkgWidget] $url returned ${response.statusCode}');
+        logger.w('[CGI][PkgWidget]: $url returned ${response.statusCode}');
         showFailedSnackBar(context, 'Action failed (${response.statusCode})');
       }
     } catch (e) {
-      logger.w('[CGI][PkgWidget] Call error for '
+      logger.w('[CGI][PkgWidget]: Call error for '
           '${widget.template.widgetId}: $e');
       if (mounted) {
         showFailedSnackBar(context, 'Action failed');
@@ -321,7 +321,7 @@ class _PackageWidgetRendererState extends ConsumerState<PackageWidgetRenderer> {
 
     try {
       logger
-          .d('[PkgWidget] Refreshing USP data for ${widget.template.widgetId}');
+          .d('[PkgWidget]: Refreshing USP data for ${widget.template.widgetId}');
       final data = await usp.get(subscription.paths);
       if (!mounted) return;
       ref
@@ -329,7 +329,7 @@ class _PackageWidgetRendererState extends ConsumerState<PackageWidgetRenderer> {
           .setAll(data);
     } catch (e) {
       logger.w(
-          '[PkgWidget] USP refresh failed for ${widget.template.widgetId}: $e');
+          '[PkgWidget]: USP refresh failed for ${widget.template.widgetId}: $e');
     }
   }
 
@@ -381,7 +381,7 @@ class _PackageWidgetRendererState extends ConsumerState<PackageWidgetRenderer> {
             : renderedWidget;
       }
     } catch (e) {
-      logger.w('[USP][PkgWidget] Render error '
+      logger.w('[USP][PkgWidget]: Render error '
           '${widget.template.widgetId}: $e');
       return AppCard(
         child: Center(
@@ -436,7 +436,7 @@ class _PackageWidgetRendererState extends ConsumerState<PackageWidgetRenderer> {
             : renderedWidget;
       }
     } catch (e) {
-      logger.w('[USP][PkgWidget] Render error '
+      logger.w('[USP][PkgWidget]: Render error '
           '${widget.template.widgetId}: $e');
       return Center(
         child: AppText.bodySmall(
