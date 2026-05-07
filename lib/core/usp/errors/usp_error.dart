@@ -1,4 +1,5 @@
 import 'package:privacy_gui/core/errors/service_error.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 
 /// Error categories from the Rust WASM client's UspError hierarchy.
 enum UspErrorCategory {
@@ -136,16 +137,20 @@ UspError? parseUspError(Object error) {
 ServiceError mapUspErrorToServiceError(Object error) {
   final parsed = parseUspError(error);
   if (parsed == null) {
-    return UnexpectedError(originalError: error);
+    final result = UnexpectedError(originalError: error);
+    logger.w('[USP:ServiceError] "$error" → ${result.runtimeType}');
+    return result;
   }
 
-  return switch (parsed.category) {
+  final result = switch (parsed.category) {
     UspErrorCategory.auth => _mapAuthError(parsed),
     UspErrorCategory.transport => _mapTransportError(parsed),
     UspErrorCategory.protocol => _mapProtocolError(parsed),
     UspErrorCategory.operation => _mapOperationError(parsed),
     UspErrorCategory.validation => InvalidInputError(message: parsed.message),
   };
+  logger.w('[USP:ServiceError] "$error" → ${result.runtimeType}');
+  return result;
 }
 
 ServiceError _mapAuthError(UspError e) {

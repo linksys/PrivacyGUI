@@ -79,6 +79,10 @@ class UspClient {
   }
 
   static int _reqId = 0;
+  static const _tag = '[USPClient]';
+  bool _lastCallRetried = false;
+
+  String _idLabel(int id) => '#$id${_lastCallRetried ? '.retry' : ''}';
 
   String get baseUrl => _baseUrl;
 
@@ -156,24 +160,24 @@ class UspClient {
       // Stage 1: quick token refresh (no password needed)
       try {
         await refreshToken();
-        logger.d('[USP][Service]Token refreshed successfully');
+        logger.d('$_tag Token refreshed successfully');
         try {
           onRefreshTokenSuccess?.call();
         } catch (cbError) {
           logger.w(
-              '[USP][Service]onRefreshTokenSuccess callback error: $cbError');
+              '$_tag onRefreshTokenSuccess callback error: $cbError');
         }
         _reauthInProgress!.complete();
         return;
       } catch (e) {
-        logger.w('[USP][Service]Token refresh failed: $e');
+        logger.w('$_tag Token refresh failed: $e');
       }
       // Stage 2: full re-login via stored password
       final reauth = onReauthRequired;
       if (reauth != null) {
         await reauth();
         didFullRelogin = true;
-        logger.d('[USP][Service]Full re-login succeeded');
+        logger.d('$_tag Full re-login succeeded');
       }
       _reauthInProgress!.complete();
     } catch (e) {
@@ -184,11 +188,11 @@ class UspClient {
       // Both Stage 1 (refreshToken) and Stage 2 (restoreSession) failed,
       // so the session is unrecoverable regardless of Stage 2 failure reason
       // (auth error, network error, or no stored password).
-      logger.w('[USP][Service]All reauth stages failed — forcing logout');
+      logger.w('$_tag All reauth stages failed — forcing logout');
       try {
         onForceLogout?.call();
       } catch (cbError) {
-        logger.w('[USP][Service]onForceLogout callback error: $cbError');
+        logger.w('$_tag onForceLogout callback error: $cbError');
       }
       rethrow;
     } finally {
@@ -208,8 +212,9 @@ class UspClient {
       return await action();
     } catch (e) {
       if (!_isAuthError(e)) rethrow;
-      logger.w('[USP][Service]401 detected, attempting reauth...');
+      logger.w('$_tag 401 detected, attempting reauth...');
       await reauth();
+      _lastCallRetried = true;
       return await action();
     }
   }
@@ -239,38 +244,48 @@ class UspClient {
 
   Future<Map<String, dynamic>> _rawGet(List<String> paths) async {
     final id = ++_reqId;
+    _lastCallRetried = false;
     final sw = Stopwatch()..start();
-    final rawMap = await _withAuthRetry(() => _client.get(paths));
-    sw.stop();
 
-    logger.d('[USP][Service]#$id GET ${_pathSummary(paths)} '
-        '${paths.length} paths → ${rawMap.length} keys (${sw.elapsedMilliseconds}ms)');
-    if (rawMap.isEmpty) {
-      logger.w('[USP][Service]#$id GET response EMPTY for paths: $paths');
-    } else {
-      logger.d('[USP][Service]#$id ← ${_mapSummary(rawMap)}');
-    }
+    logger.d('$_tag#$id GET →\n${_prettyList(paths)}');
 
-    final Map<String, dynamic> result = {};
+    try {
+      final rawMap = await _withAuthRetry(() => _client.get(paths));
+      sw.stop();
 
-    // Include all returned paths (may include extra child paths)
-    for (final entry in rawMap.entries) {
-      result[entry.key] = _coerceValue(entry.key, entry.value);
-    }
+      final label = _idLabel(id);
+      logger.d('$_tag$label GET ← (${sw.elapsedMilliseconds}ms)\n'
+          '${_prettyMap(rawMap)}');
 
-    // Ensure all requested non-wildcard paths exist in the result to prevent
-    // Null Cast errors in codegen. Wildcard search paths (containing '*') are
-    // expanded by the router into concrete instance paths, so the original
-    // wildcard path won't appear in the response — skip those.
-    for (final path in paths) {
-      if (path.contains('*')) continue;
-      if (!result.containsKey(path)) {
-        logger.w('[USP][Service]GET missing path in response: "$path"');
+      if (rawMap.isEmpty) {
+        logger.w('$_tag$label GET response EMPTY for paths: $paths');
       }
-      result.putIfAbsent(path, () => null);
-    }
 
-    return result;
+      final Map<String, dynamic> result = {};
+
+      for (final entry in rawMap.entries) {
+        result[entry.key] = _coerceValue(entry.key, entry.value);
+      }
+
+      // Ensure all requested non-wildcard paths exist in the result to prevent
+      // Null Cast errors in codegen. Wildcard search paths (containing '*') are
+      // expanded by the router into concrete instance paths, so the original
+      // wildcard path won't appear in the response — skip those.
+      for (final path in paths) {
+        if (path.contains('*')) continue;
+        if (!result.containsKey(path)) {
+          logger.w('$_tag$label GET missing path in response: "$path"');
+        }
+        result.putIfAbsent(path, () => null);
+      }
+
+      return result;
+    } catch (e) {
+      sw.stop();
+      final label = _idLabel(id);
+      logger.e('$_tag$label GET ✗ (${sw.elapsedMilliseconds}ms)\n  $e');
+      rethrow;
+    }
   }
 
   /// Coerce a raw string value from USP into the appropriate Dart type.
@@ -320,50 +335,52 @@ class UspClient {
 
   Future<Map<String, dynamic>> _singleSet(String path, String value) async {
     final id = ++_reqId;
+    _lastCallRetried = false;
     final sw = Stopwatch()..start();
-    final result = await _withAuthRetry(() => _client.set({path: value}));
-    sw.stop();
-    final shortPath = path.startsWith('Device.') ? path.substring(7) : path;
-    logger.d(
-        '[USP][Service]#$id SET $shortPath=$value (${sw.elapsedMilliseconds}ms)');
-    return result;
+    final params = {path: value};
+
+    logger.d('$_tag#$id SET →\n${_prettyMap(params)}');
+
+    try {
+      final result = await _withAuthRetry(() => _client.set({path: value}));
+      sw.stop();
+      final label = _idLabel(id);
+      logger.d('$_tag$label SET ← (${sw.elapsedMilliseconds}ms)\n'
+          '${_prettyMap(result)}');
+      return result;
+    } catch (e) {
+      sw.stop();
+      final label = _idLabel(id);
+      logger.e('$_tag$label SET ✗ (${sw.elapsedMilliseconds}ms)\n  $e');
+      rethrow;
+    }
   }
 
   Future<Map<String, dynamic>> _batchSet(Map<String, dynamic> parameters,
       {bool allowPartial = false}) async {
     final id = ++_reqId;
+    _lastCallRetried = false;
     final sw = Stopwatch()..start();
     final Map<String, String> stringParams =
         parameters.map((key, value) => MapEntry(key, value.toString()));
-    final result = await _withAuthRetry(
-        () => _client.set(stringParams, allowPartial: allowPartial));
-    sw.stop();
-    logger.d('[USP][Service]#$id SET ${_paramSummary(parameters)} '
-        '${parameters.length} params'
-        '${allowPartial ? ' (allowPartial)' : ''} (${sw.elapsedMilliseconds}ms)');
 
-    // Log result summary for WASM v0.11.0 format
-    final success = result['success'] as bool? ?? false;
-    final resultData =
-        result['result'] as Map<String, dynamic>? ?? <String, dynamic>{};
-    final data =
-        resultData['data'] as Map<String, dynamic>? ?? <String, dynamic>{};
-    final error = resultData['error'] as Map<String, dynamic>?;
-    final hasErrors = error != null;
-    logger.d(
-        '[USP][Service]#$id SET result: success=$success, errors=$hasErrors, dataKeys=${data.keys.length}');
+    logger.d('$_tag#$id SET${allowPartial ? ' (allowPartial)' : ''} →\n'
+        '${_prettyMap(parameters)}');
 
-    // Log detailed results in debug mode
-    if (kDebugMode) {
-      if (data.isNotEmpty) {
-        logger.d('[USP][Service]#$id SET data: ${data.keys.join(', ')}');
-      }
-      if (error != null) {
-        logger.d('[USP][Service]#$id SET errors: ${error.keys.join(', ')}');
-      }
+    try {
+      final result = await _withAuthRetry(
+          () => _client.set(stringParams, allowPartial: allowPartial));
+      sw.stop();
+      final label = _idLabel(id);
+      logger.d('$_tag$label SET ← (${sw.elapsedMilliseconds}ms)\n'
+          '${_prettyMap(result)}');
+      return result;
+    } catch (e) {
+      sw.stop();
+      final label = _idLabel(id);
+      logger.e('$_tag$label SET ✗ (${sw.elapsedMilliseconds}ms)\n  $e');
+      rethrow;
     }
-
-    return result;
   }
 
   // ===========================================================================
@@ -382,26 +399,28 @@ class UspClient {
       List<List<Map<String, String>>> parameterGroups,
       {bool allowPartial = false}) async {
     final id = ++_reqId;
+    _lastCallRetried = false;
     final sw = Stopwatch()..start();
-    final result = await _withAuthRetry(
-        () => _client.setOrdered(parameterGroups, allowPartial: allowPartial));
-    sw.stop();
 
-    final allParams = parameterGroups.expand((g) => g).toList();
-    final paths = allParams.map((p) => p['path'] ?? '').toList();
-    logger.d('[USP][Service]#$id SET_ORDERED ${_pathSummary(paths)} '
-        '${allParams.length} params (${parameterGroups.length} groups)'
-        '${allowPartial ? ' (allowPartial)' : ''} (${sw.elapsedMilliseconds}ms)');
-
-    final success = result['success'] as bool? ?? false;
-    final resultData =
-        result['result'] as Map<String, dynamic>? ?? <String, dynamic>{};
-    final error = resultData['error'] as Map<String, dynamic>?;
-    final hasErrors = error != null;
     logger.d(
-        '[USP][Service]#$id SET_ORDERED result: success=$success, errors=$hasErrors');
+        '$_tag#$id SET_ORDERED${allowPartial ? ' (allowPartial)' : ''} →\n'
+        '${_prettyJson(parameterGroups)}');
 
-    return result;
+    try {
+      final result = await _withAuthRetry(
+          () => _client.setOrdered(parameterGroups, allowPartial: allowPartial));
+      sw.stop();
+      final label = _idLabel(id);
+      logger.d('$_tag$label SET_ORDERED ← (${sw.elapsedMilliseconds}ms)\n'
+          '${_prettyMap(result)}');
+      return result;
+    } catch (e) {
+      sw.stop();
+      final label = _idLabel(id);
+      logger.e(
+          '$_tag$label SET_ORDERED ✗ (${sw.elapsedMilliseconds}ms)\n  $e');
+      rethrow;
+    }
   }
 
   // ===========================================================================
@@ -428,48 +447,53 @@ class UspClient {
   Future<Map<String, dynamic>> _singleAdd(
       String objectPath, Map<String, dynamic> parameters) async {
     final id = ++_reqId;
+    _lastCallRetried = false;
     final sw = Stopwatch()..start();
     final stringParams = parameters.map((k, v) => MapEntry(k, v.toString()));
-    final result = await _withAuthRetry(() => _client.add([
-          {'path': objectPath, 'params': stringParams}
-        ]));
-    sw.stop();
-    final shortPath =
-        objectPath.startsWith('Device.') ? objectPath.substring(7) : objectPath;
+    final payload = {'path': objectPath, 'params': stringParams};
 
-    // Extract created instance path for logging
-    final success = result['success'] as bool? ?? false;
-    final resultData =
-        result['result'] as Map<String, dynamic>? ?? <String, dynamic>{};
-    final data =
-        resultData['data'] as Map<String, dynamic>? ?? <String, dynamic>{};
-    String createdPath = 'unknown';
+    logger.d('$_tag#$id ADD →\n${_prettyMap(payload)}');
 
-    if (success && data.containsKey('instances')) {
-      final instances = data['instances'] as List? ?? [];
-      if (instances.isNotEmpty) {
-        createdPath = instances.first as String? ?? 'unknown';
-      }
+    try {
+      final result = await _withAuthRetry(() => _client.add([
+            {'path': objectPath, 'params': stringParams}
+          ]));
+      sw.stop();
+      final label = _idLabel(id);
+      logger.d('$_tag$label ADD ← (${sw.elapsedMilliseconds}ms)\n'
+          '${_prettyMap(result)}');
+      return result;
+    } catch (e) {
+      sw.stop();
+      final label = _idLabel(id);
+      logger.e('$_tag$label ADD ✗ (${sw.elapsedMilliseconds}ms)\n  $e');
+      rethrow;
     }
-
-    logger.d('[USP][Service]#$id ADD $shortPath — '
-        '${parameters.length} params → $createdPath (${sw.elapsedMilliseconds}ms)');
-
-    return result;
   }
 
   Future<Map<String, dynamic>> _batchAdd(List<Map<String, dynamic>> objects,
       {bool allowPartial = false}) async {
     final id = ++_reqId;
+    _lastCallRetried = false;
     final sw = Stopwatch()..start();
-    final result = await _withAuthRetry(
-        () => _client.add(objects, allowPartial: allowPartial));
-    sw.stop();
 
-    logger.d('[USP][Service]#$id ADD ${objects.length} objects'
-        '${allowPartial ? ' (allowPartial)' : ''} (${sw.elapsedMilliseconds}ms)');
+    logger.d('$_tag#$id ADD${allowPartial ? ' (allowPartial)' : ''} →\n'
+        '${_prettyJson(objects)}');
 
-    return result;
+    try {
+      final result = await _withAuthRetry(
+          () => _client.add(objects, allowPartial: allowPartial));
+      sw.stop();
+      final label = _idLabel(id);
+      logger.d('$_tag$label ADD ← (${sw.elapsedMilliseconds}ms)\n'
+          '${_prettyMap(result)}');
+      return result;
+    } catch (e) {
+      sw.stop();
+      final label = _idLabel(id);
+      logger.e('$_tag$label ADD ✗ (${sw.elapsedMilliseconds}ms)\n  $e');
+      rethrow;
+    }
   }
 
   // ===========================================================================
@@ -490,26 +514,49 @@ class UspClient {
 
   Future<Map<String, dynamic>> _singleDelete(String path) async {
     final id = ++_reqId;
+    _lastCallRetried = false;
     final sw = Stopwatch()..start();
-    final result = await _withAuthRetry(() => _client.delete([path]));
-    sw.stop();
-    final shortPath = path.startsWith('Device.') ? path.substring(7) : path;
-    logger.d(
-        '[USP][Service]#$id DELETE $shortPath (${sw.elapsedMilliseconds}ms)');
-    return result;
+
+    logger.d('$_tag#$id DELETE →\n${_prettyList([path])}');
+
+    try {
+      final result = await _withAuthRetry(() => _client.delete([path]));
+      sw.stop();
+      final label = _idLabel(id);
+      logger.d('$_tag$label DELETE ← (${sw.elapsedMilliseconds}ms)\n'
+          '${_prettyMap(result)}');
+      return result;
+    } catch (e) {
+      sw.stop();
+      final label = _idLabel(id);
+      logger.e('$_tag$label DELETE ✗ (${sw.elapsedMilliseconds}ms)\n  $e');
+      rethrow;
+    }
   }
 
   Future<Map<String, dynamic>> _batchDelete(List<String> paths,
       {bool allowPartial = false}) async {
     final id = ++_reqId;
+    _lastCallRetried = false;
     final sw = Stopwatch()..start();
-    final result = await _withAuthRetry(
-        () => _client.delete(paths, allowPartial: allowPartial));
-    sw.stop();
-    logger.d('[USP][Service]#$id DELETE ${_pathSummary(paths)} '
-        '${paths.length} paths'
-        '${allowPartial ? ' (allowPartial)' : ''} (${sw.elapsedMilliseconds}ms)');
-    return result;
+
+    logger.d('$_tag#$id DELETE${allowPartial ? ' (allowPartial)' : ''} →\n'
+        '${_prettyList(paths)}');
+
+    try {
+      final result = await _withAuthRetry(
+          () => _client.delete(paths, allowPartial: allowPartial));
+      sw.stop();
+      final label = _idLabel(id);
+      logger.d('$_tag$label DELETE ← (${sw.elapsedMilliseconds}ms)\n'
+          '${_prettyMap(result)}');
+      return result;
+    } catch (e) {
+      sw.stop();
+      final label = _idLabel(id);
+      logger.e('$_tag$label DELETE ✗ (${sw.elapsedMilliseconds}ms)\n  $e');
+      rethrow;
+    }
   }
 
   // ===========================================================================
@@ -526,23 +573,30 @@ class UspClient {
   Future<Map<String, dynamic>> operate(String command,
       {Map<String, String> args = const {}}) async {
     final id = ++_reqId;
+    _lastCallRetried = false;
     final sw = Stopwatch()..start();
-    final rawResponse =
-        await _withAuthRetry(() => _client.operate(command, args: args));
-    sw.stop();
 
-    // Extract commandKey and outputArgs from WASM v0.11.0 unified format:
-    // { success, result: { data: { commandKey, outputArgs }, error? } }
-    final response = _extractOperateResult(rawResponse);
+    final payload = <String, dynamic>{'command': command, if (args.isNotEmpty) 'args': args};
+    logger.d('$_tag#$id OPERATE →\n${_prettyMap(payload)}');
 
-    logger.d('[USP][Service]#$id OPERATE $command'
-        '${args.isNotEmpty ? ' — ${args.length} args' : ''}'
-        ' → key=${response['commandKey']}, ${response.length} output keys'
-        ' (${sw.elapsedMilliseconds}ms)');
-    if (response.isNotEmpty) {
-      logger.d('[USP][Service]#$id ← ${_mapSummary(response)}');
+    try {
+      final rawResponse =
+          await _withAuthRetry(() => _client.operate(command, args: args));
+      sw.stop();
+
+      // Extract commandKey and outputArgs from WASM v0.11.0 unified format:
+      // { success, result: { data: { commandKey, outputArgs }, error? } }
+      final response = _extractOperateResult(rawResponse);
+      final label = _idLabel(id);
+      logger.d('$_tag$label OPERATE ← (${sw.elapsedMilliseconds}ms)\n'
+          '${_prettyMap(response)}');
+      return response;
+    } catch (e) {
+      sw.stop();
+      final label = _idLabel(id);
+      logger.e('$_tag$label OPERATE ✗ (${sw.elapsedMilliseconds}ms)\n  $e');
+      rethrow;
     }
-    return response;
   }
 
   /// Extracts commandKey and outputArgs from WASM v0.11.0 unified format.
@@ -667,7 +721,7 @@ class UspClient {
 
     sw.stop();
     final recipient = verify['${instancePath}Recipient'] ?? '';
-    logger.d('[USP][Service]#$id CREATE_SUBSCRIPTION $instancePath '
+    logger.d('$_tag#$id CREATE_SUBSCRIPTION $instancePath '
         'type=$notifType ref=$referenceList → Recipient=$recipient '
         '(${sw.elapsedMilliseconds}ms)');
 
@@ -686,7 +740,7 @@ class UspClient {
     final shortPath = instancePath.startsWith('Device.')
         ? instancePath.substring(7)
         : instancePath;
-    logger.d('[USP][Service]#$id DELETE_SUBSCRIPTION $shortPath '
+    logger.d('$_tag#$id DELETE_SUBSCRIPTION $shortPath '
         '(${sw.elapsedMilliseconds}ms)');
   }
 
@@ -699,7 +753,7 @@ class UspClient {
     final sw = Stopwatch()..start();
     final subs = await _withAuthRetry(() => _client.listSubscriptions());
     sw.stop();
-    logger.d('[USP][Service]#$id LIST_SUBSCRIPTIONS → ${subs.length} entries '
+    logger.d('$_tag#$id LIST_SUBSCRIPTIONS → ${subs.length} entries '
         '(${sw.elapsedMilliseconds}ms)');
     return subs;
   }
@@ -736,7 +790,7 @@ class UspClient {
 
     if (instanceIds.isEmpty) {
       sw.stop();
-      logger.d('[USP][Service]#$id PURGE_SUBSCRIPTIONS → 0 (none found, '
+      logger.d('$_tag#$id PURGE_SUBSCRIPTIONS → 0 (none found, '
           '${sw.elapsedMilliseconds}ms)');
       return 0;
     }
@@ -746,7 +800,7 @@ class UspClient {
       final prefix = '$objectPath$instId.';
       final notifType = allParams['${prefix}NotifType'] ?? '?';
       final refList = allParams['${prefix}ReferenceList'] ?? '?';
-      logger.d('[USP][Service]#$id PURGE: $prefix '
+      logger.d('$_tag#$id PURGE: $prefix '
           '(type=$notifType, ref=$refList)');
     }
 
@@ -757,13 +811,13 @@ class UspClient {
         await _withAuthRetry(() => _client.delete([instancePath]));
         deleted++;
       } catch (e) {
-        logger.w('[USP][Service]#$id PURGE failed to delete '
+        logger.w('$_tag#$id PURGE failed to delete '
             '$instancePath: $e');
       }
     }
 
     sw.stop();
-    logger.d('[USP][Service]#$id PURGE_SUBSCRIPTIONS → deleted $deleted/'
+    logger.d('$_tag#$id PURGE_SUBSCRIPTIONS → deleted $deleted/'
         '${instanceIds.length} (${sw.elapsedMilliseconds}ms)');
     return deleted;
   }
@@ -823,7 +877,7 @@ class UspClient {
             }
           } catch (e) {
             logger
-                .w('[USP][Service]SSE subscribe re-fetch error for "$id": $e');
+                .w('$_tag SSE subscribe re-fetch error for "$id": $e');
           }
         });
       },
@@ -837,7 +891,7 @@ class UspClient {
         controller.add(parsed);
       }
     } catch (e) {
-      logger.w('[USP][Service]SSE subscribe initial fetch error for "$id": $e');
+      logger.w('$_tag SSE subscribe initial fetch error for "$id": $e');
     }
 
     return Subscription<T>(
@@ -874,7 +928,7 @@ class UspClient {
               controller.add(parsed);
             }
           } catch (e) {
-            logger.w('[USP][Service]Subscribe poll error for "$id": $e');
+            logger.w('$_tag Subscribe poll error for "$id": $e');
           }
         });
       },
@@ -916,51 +970,18 @@ class UspClient {
   // Log helpers
   // ===========================================================================
 
-  /// Abbreviates a list of paths for concise logging.
-  ///
-  /// Shows up to [max] paths with the `Device.` prefix stripped, followed by
-  /// `+N more` if there are additional paths.
-  static String _pathSummary(List<String> paths, {int max = 2}) {
-    if (paths.isEmpty) return '[]';
-    final shown = paths
-        .take(max)
-        .map((p) => p.startsWith('Device.') ? p.substring(7) : p)
-        .toList();
-    final remaining = paths.length - shown.length;
-    final suffix = remaining > 0 ? ', +$remaining more' : '';
-    return '[${shown.join(', ')}$suffix]';
+  static const _jsonEncoder = JsonEncoder.withIndent('  ');
+
+  static String _prettyList(List<String> list) {
+    return '  ${_jsonEncoder.convert(list).replaceAll('\n', '\n  ')}';
   }
 
-  /// Abbreviates a map of param keys for concise logging.
-  static String _paramSummary(Map<String, dynamic> params, {int max = 2}) {
-    if (params.isEmpty) return '[]';
-    final shown = params.keys
-        .take(max)
-        .map((p) => p.startsWith('Device.') ? p.substring(7) : p)
-        .toList();
-    final remaining = params.length - shown.length;
-    final suffix = remaining > 0 ? ', +$remaining more' : '';
-    return '[${shown.join(', ')}$suffix]';
+  static String _prettyMap(Map<String, dynamic> map) {
+    return '  ${_jsonEncoder.convert(map).replaceAll('\n', '\n  ')}';
   }
 
-  /// Converts a flat dot-path map into a nested JSON tree for logging.
-  ///
-  /// e.g. `{"Device.IP.Stats.BytesSent": "123"}` →
-  /// ```json
-  /// {"Device":{"IP":{"Stats":{"BytesSent":"123"}}}}
-  /// ```
-  static String _mapSummary(Map<String, dynamic> map) {
-    final nested = <String, dynamic>{};
-    for (final entry in map.entries) {
-      final segments = entry.key.split('.');
-      Map<String, dynamic> current = nested;
-      for (var i = 0; i < segments.length - 1; i++) {
-        current = current.putIfAbsent(segments[i], () => <String, dynamic>{})
-            as Map<String, dynamic>;
-      }
-      current[segments.last] = entry.value;
-    }
-    return const JsonEncoder.withIndent('  ').convert(nested);
+  static String _prettyJson(Object value) {
+    return '  ${_jsonEncoder.convert(value).replaceAll('\n', '\n  ')}';
   }
 
   void dispose() {

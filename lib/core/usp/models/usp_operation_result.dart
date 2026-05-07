@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 
 /// USP 操作結果的 sealed class hierarchy
 ///
@@ -284,20 +284,12 @@ typedef UspOperateResult = UspOperationResult<Map<String, dynamic>>;
 
 /// 從 WASM 回傳的 Map 解析 USP 操作結果
 class UspResultParser {
+  static const _tag = '[USP:Parser]';
+
   /// 解析 SET 操作結果
   static UspSetResult parseSetResult(Map<String, dynamic> map) {
     final result = _parseGenericResult<void>(map);
-
-    // Debug logging to track parsing results
-    if (kDebugMode) {
-      final success = map['success'] as bool? ?? false;
-      print(
-          '[UspResultParser] SET parseResult: success=$success, result=${result.runtimeType}');
-      if (result is UspFailure) {
-        print('[UspResultParser] SET failure: ${result.errorSummary}');
-      }
-    }
-
+    _logResult('SET', result);
     return result;
   }
 
@@ -306,6 +298,12 @@ class UspResultParser {
   /// WASM v0.11.0 ADD 格式: {success, result: {data: {instances: [...]}}}
   /// 其中 instances 是創建的實例路徑字串陣列，需轉換為 [UspCreatedInstance]
   static UspAddResult parseAddResult(Map<String, dynamic> map) {
+    final result = _parseAddResultInternal(map);
+    _logResult('ADD', result);
+    return result;
+  }
+
+  static UspAddResult _parseAddResultInternal(Map<String, dynamic> map) {
     final success = map['success'] as bool? ?? false;
     final resultMap = map['result'] as Map<String, dynamic>? ?? {};
     final data = resultMap['data'] as Map<String, dynamic>? ?? {};
@@ -369,17 +367,23 @@ class UspResultParser {
 
   /// 解析 DELETE 操作結果
   static UspDeleteResult parseDeleteResult(Map<String, dynamic> map) {
-    return _parseGenericResult<void>(map);
+    final result = _parseGenericResult<void>(map);
+    _logResult('DELETE', result);
+    return result;
   }
 
   /// 解析 GET 操作結果
   static UspGetResult parseGetResult(Map<String, dynamic> map) {
-    return _parseGenericResult<Map<String, dynamic>>(map);
+    final result = _parseGenericResult<Map<String, dynamic>>(map);
+    _logResult('GET', result);
+    return result;
   }
 
   /// 解析 OPERATE 操作結果
   static UspOperateResult parseOperateResult(Map<String, dynamic> map) {
-    return _parseGenericResult<Map<String, dynamic>>(map);
+    final result = _parseGenericResult<Map<String, dynamic>>(map);
+    _logResult('OPERATE', result);
+    return result;
   }
 
   /// 解析 WASM v0.11.0 格式：{success, result: {data, error?}}
@@ -463,5 +467,23 @@ class UspResultParser {
         errorMessage: exception.toString(),
       )
     ]);
+  }
+
+  static void _logResult<T>(String op, UspOperationResult<T> result) {
+    switch (result) {
+      case UspSuccess(details: final details):
+        logger.d('$_tag $op → UspSuccess (${details.length} details)');
+      case UspPartialSuccess(
+          successes: final successes,
+          failures: final failures
+        ):
+        logger.w('$_tag $op → UspPartialSuccess '
+            '(${successes.length} successes, ${failures.length} failures: '
+            '${failures.map((f) => '${f.requestedPath}=${f.errorCode}').join(', ')})');
+      case UspFailure(errors: final errors):
+        logger.w('$_tag $op → UspFailure '
+            '(${errors.length} errors: '
+            '${errors.map((e) => '${e.requestedPath}=${e.errorCode}').join(', ')})');
+    }
   }
 }
