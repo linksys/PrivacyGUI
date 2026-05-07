@@ -47,7 +47,7 @@ class UspAppsNotifier extends AutoDisposeAsyncNotifier<UspAppsState> {
       _pollForChanges();
     });
 
-    logger.d('[USP][Apps] Loaded ${apps.length} apps, '
+    logger.d('[USP][Apps]: Loaded ${apps.length} apps, '
         'known=${_knownAppNames.length}, recent=${_recentNames.length}');
 
     return UspAppsState(
@@ -70,7 +70,7 @@ class UspAppsNotifier extends AutoDisposeAsyncNotifier<UspAppsState> {
 
       if (added.isEmpty && removed.isEmpty) return;
 
-      logger.d('[USP][Apps] Change detected — '
+      logger.d('[USP][Apps]: Change detected — '
           'added=$added, removed=$removed');
 
       // Mark added apps as "NEW"
@@ -101,7 +101,7 @@ class UspAppsNotifier extends AutoDisposeAsyncNotifier<UspAppsState> {
       ));
     } catch (e) {
       // Polling failure is non-fatal — just log and continue
-      logger.w('[USP][Apps] Poll error: $e');
+      logger.w('[USP][Apps]: Poll error: $e');
     }
   }
 }

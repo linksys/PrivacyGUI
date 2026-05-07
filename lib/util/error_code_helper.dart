@@ -23,7 +23,7 @@ import 'package:privacy_gui/core/utils/logger.dart';
 String? errorCodeHelper(BuildContext context, String? code,
     [String? generalErrorMessage]) {
   String unknownHandle(String code) {
-    logger.d('Unknown error: $code');
+    logger.d('[Util]: Unknown error: $code');
     return generalErrorMessage ?? loc(context).unknownErrorCode(code);
   }
 

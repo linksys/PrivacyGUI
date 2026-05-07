@@ -35,7 +35,7 @@ class WanDataNotifier extends AsyncNotifier<WanData> {
     final svc = ref.read(uspWanDataServiceProvider);
     final model = await svc.fetch();
 
-    logger.d('[USP][WanData] Fetched — ip=${model.ipAddress}, '
+    logger.d('[USP][WanData]: Fetched — ip=${model.ipAddress}, '
         'isUp=${model.isUp}, gateway=${model.gateway}');
     return WanData(model: model);
   }

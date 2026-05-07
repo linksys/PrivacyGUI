@@ -105,13 +105,10 @@ checkFirstLaunch() {
 initErrorHandler() {
   // Pass all uncaught errors from the framework to Crashlytics.
   FlutterError.onError = (FlutterErrorDetails details) {
-    logger.e('Uncaught Flutter Error:\n', error: details);
-    logger.e('Uncaught Flutter Error:\n', error: details.exception);
-    logger.e('Uncaught Flutter Error:\n', error: details.exceptionAsString());
+    logger.e('[App]: Uncaught Flutter Error', error: details.exception, stackTrace: details.stack);
   };
   PlatformDispatcher.instance.onError = (error, stack) {
-    logger.e('Uncaught Error:\n', error: error, stackTrace: stack);
-    logger.e(stack.toString());
+    logger.e('[App]: Uncaught Error', error: error, stackTrace: stack);
     return true;
   };
 }

@@ -47,7 +47,7 @@ class Utils {
         String.fromCharCodes(Uint8List.fromList(utf8.encode(value)));
     final b64 = base64Encode(utf8Encoded.codeUnits);
     final uriFull = Uri.encodeQueryComponent(b64);
-    logger.d('u: $utf8Encoded, b: $b64, i: $uriFull');
+    logger.d('[Util]: u: $utf8Encoded, b: $b64, i: $uriFull');
     return uriFull;
   }
 
@@ -55,7 +55,7 @@ class Utils {
     final uriBack = Uri.decodeComponent(encoded);
     final b64Back = String.fromCharCodes(base64Decode(uriBack));
     final utf8Back = utf8.decode(b64Back.codeUnits);
-    logger.d('i: $uriBack, b: $b64Back, u: $utf8Back');
+    logger.d('[Util]: i: $uriBack, b: $b64Back, u: $utf8Back');
     return utf8Back;
   }
 

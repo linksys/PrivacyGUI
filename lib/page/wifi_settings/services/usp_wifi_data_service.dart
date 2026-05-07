@@ -203,7 +203,7 @@ class UspWifiDataService {
   /// limitation), falls back to a broader parent-path fetch and manual parse.
   Future<Map<String, WifiClient>> _fetchWifiClients() async {
     final result = await WifiClients.fetch(_usp);
-    logger.d('[USP][Dashboard]WifiClients raw: ${result.items.length} items');
+    logger.d('[USP][Dashboard]: WifiClients raw: ${result.items.length} items');
 
     if (result.items.isNotEmpty) {
       return {
@@ -222,7 +222,7 @@ class UspWifiDataService {
       }
       return fallback;
     } catch (e) {
-      logger.d('[USP][Dashboard]WifiClients fallback failed: $e');
+      logger.d('[USP][Dashboard]: WifiClients fallback failed: $e');
       return {};
     }
   }
@@ -316,7 +316,7 @@ class UspWifiDataService {
             _normalizeBand(r.operatingFrequencyBand),
     };
 
-    logger.d('[USP][Dashboard]Connection detail: '
+    logger.d('[USP][Dashboard]: Connection detail: '
         '${apByPath.length} APs, ${ssidByPath.length} SSIDs, ${bandByRadioPath.length} radios');
 
     final result = <String, ClientConnectionDetail>{};

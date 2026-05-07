@@ -55,7 +55,7 @@ class EthernetDataNotifier extends AsyncNotifier<EthernetData> {
 
     final result = await svc.fetch(deviceModels: deviceModels);
 
-    logger.d('[USP][Ethernet]Fetch complete — '
+    logger.d('[USP][Ethernet]: Fetch complete — '
         '${result.portModels.length} port models');
 
     return EthernetData(ethernetPortModels: result.portModels);

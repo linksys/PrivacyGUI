@@ -74,7 +74,7 @@ class UspPortForwardingPageNotifier
       final forwardingRules = results[0] as List<PortForwardingRuleUIModel>;
       final triggeringRules = results[1] as List<PortTriggeringRuleUIModel>;
 
-      logger.d('[USP][Firewall][PortForwarding] Fetched — '
+      logger.d('[USP][Firewall][PortForwarding]: Fetched — '
           'forwarding: ${forwardingRules.length}, '
           'triggering: ${triggeringRules.length}');
 
@@ -86,7 +86,7 @@ class UspPortForwardingPageNotifier
         const PortForwardingPageStatus(),
       );
     } on ServiceError catch (e) {
-      logger.e('[USP][Firewall][PortForwarding] Fetch failed', error: e);
+      logger.e('[USP][Firewall][PortForwarding]: Fetch failed', error: e);
       return (
         null,
         PortForwardingPageStatus(errorMessage: '$e'),
@@ -121,7 +121,7 @@ class UspPortForwardingPageNotifier
           current: currentPt,
         );
 
-        logger.d('[USP][Firewall][PortForwarding] Batch save — '
+        logger.d('[USP][Firewall][PortForwarding]: Batch save — '
             'PF added: ${pfResult.added}, updated: ${pfResult.updated}, '
             'deleted: ${pfResult.deleted} | '
             'PT added: ${ptResult.added}, updated: ${ptResult.updated}, '
@@ -132,7 +132,7 @@ class UspPortForwardingPageNotifier
       ref.invalidate(portForwardingDataProvider);
       ref.invalidate(portTriggeringDataProvider);
     } on ServiceError catch (e) {
-      logger.e('[USP][Firewall][PortForwarding] Save failed', error: e);
+      logger.e('[USP][Firewall][PortForwarding]: Save failed', error: e);
       rethrow;
     } finally {
       state = state.copyWith(
@@ -241,7 +241,7 @@ class UspPortForwardingPageNotifier
         await _svc.immediateToggleForwarding(instancePath, enabled);
       });
     } on ServiceError catch (e) {
-      logger.e('[USP][PortFwd] Immediate toggle forwarding failed', error: e);
+      logger.e('[USP][PortFwd]: Immediate toggle forwarding failed', error: e);
       rethrow;
     }
     ref.invalidate(portForwardingDataProvider);
@@ -270,7 +270,7 @@ class UspPortForwardingPageNotifier
         );
       });
     } on ServiceError catch (e) {
-      logger.e('[USP][PortFwd] Immediate add forwarding failed', error: e);
+      logger.e('[USP][PortFwd]: Immediate add forwarding failed', error: e);
       rethrow;
     }
     ref.invalidate(portForwardingDataProvider);
@@ -284,7 +284,7 @@ class UspPortForwardingPageNotifier
         await _svc.immediateToggleTriggering(instancePath, enabled);
       });
     } on ServiceError catch (e) {
-      logger.e('[USP][PortFwd] Immediate toggle triggering failed', error: e);
+      logger.e('[USP][PortFwd]: Immediate toggle triggering failed', error: e);
       rethrow;
     }
     ref.invalidate(portTriggeringDataProvider);

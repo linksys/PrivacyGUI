@@ -39,7 +39,7 @@ class PackageWidgetLoader
     // the session — this await is essentially free on subsequent reads.
     final supported = await ref.watch(appsCapabilityProvider.future);
     if (!supported) {
-      logger.d('[USP][PkgWidgets] Router does not support apps — skipping');
+      logger.d('[USP][PkgWidgets]: Router does not support apps — skipping');
       return const {};
     }
 
@@ -74,12 +74,12 @@ class PackageWidgetLoader
         }
       }
     } catch (e) {
-      logger.w('[USP][PkgWidgets] Failed to load templates: $e');
+      logger.w('[USP][PkgWidgets]: Failed to load templates: $e');
       _lastFetchSuccess = false;
       return {};
     }
 
-    logger.d('[USP][PkgWidgets] Loaded ${templates.length} templates');
+    logger.d('[USP][PkgWidgets]: Loaded ${templates.length} templates');
     return templates;
   }
 
@@ -91,7 +91,7 @@ class PackageWidgetLoader
     try {
       final response = await http.get(Uri.parse('$baseUrl/api/apps.json'));
       if (response.statusCode != 200) {
-        logger.w('[USP][PkgWidgets] apps.json HTTP ${response.statusCode}');
+        logger.w('[USP][PkgWidgets]: apps.json HTTP ${response.statusCode}');
         _lastFetchSuccess = false;
         return null;
       }
@@ -115,7 +115,7 @@ class PackageWidgetLoader
       _lastFetchSuccess = true;
       return entries;
     } catch (e) {
-      logger.w('[USP][PkgWidgets] Failed to fetch apps.json: $e');
+      logger.w('[USP][PkgWidgets]: Failed to fetch apps.json: $e');
       _lastFetchSuccess = false;
       return null;
     }
@@ -129,18 +129,18 @@ class PackageWidgetLoader
           templateUrl.startsWith('http') ? templateUrl : '$baseUrl$templateUrl';
       final response = await http.get(Uri.parse(fullUrl));
       if (response.statusCode != 200) {
-        logger.w('[USP][PkgWidgets] Template HTTP '
+        logger.w('[USP][PkgWidgets]: Template HTTP '
             '${response.statusCode} for $templateUrl');
         return null;
       }
 
       final json = jsonDecode(response.body) as Map<String, dynamic>;
       final template = PackageWidgetTemplate.fromJson(json);
-      logger.d('[USP][PkgWidgets] Loaded: ${template.widgetId} '
+      logger.d('[USP][PkgWidgets]: Loaded: ${template.widgetId} '
           '(${template.displayName})');
       return template;
     } catch (e) {
-      logger.w('[USP][PkgWidgets] Failed to load template $templateUrl: $e');
+      logger.w('[USP][PkgWidgets]: Failed to load template $templateUrl: $e');
       return null;
     }
   }
@@ -164,7 +164,7 @@ class PackageWidgetLoader
 
       // Skip diff when fetch failed — cannot tell removed from unavailable.
       if (freshEntries == null || !_lastFetchSuccess) {
-        logger.d('[USP][PkgWidgets] Poll skipped (fetch failed)');
+        logger.d('[USP][PkgWidgets]: Poll skipped (fetch failed)');
         return;
       }
 
@@ -179,7 +179,7 @@ class PackageWidgetLoader
 
       // Fetch templates only for newly added widgets
       if (added.isNotEmpty) {
-        logger.d('[USP][PkgWidgets] New widgets detected: $added');
+        logger.d('[USP][PkgWidgets]: New widgets detected: $added');
         final baseUrl = Uri.base.origin;
         for (final id in added) {
           final templateUrl = freshEntries[id];
@@ -193,7 +193,7 @@ class PackageWidgetLoader
 
       // Clean up removed widgets from dashboard
       if (removed.isNotEmpty) {
-        logger.d('[USP][PkgWidgets] Removed widgets: $removed');
+        logger.d('[USP][PkgWidgets]: Removed widgets: $removed');
         for (final id in removed) {
           current.remove(id);
           ref
@@ -205,7 +205,7 @@ class PackageWidgetLoader
 
       state = AsyncData(current);
     } catch (e) {
-      logger.w('[USP][PkgWidgets] Poll error: $e');
+      logger.w('[USP][PkgWidgets]: Poll error: $e');
     }
   }
 

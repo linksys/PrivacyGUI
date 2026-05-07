@@ -74,7 +74,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
         // Store password for session restore
         await const FlutterSecureStorage()
             .write(key: pLocalPassword, value: password);
-        logger.d('[Auth]localLogin: USP login succeeded');
+        logger.d('[Auth]: localLogin: USP login succeeded');
         return previousState.copyWith(
           localPassword: password,
           loginType: LoginType.local,
@@ -82,7 +82,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       }
       throw Exception('USP login failed');
     }, (error) => guardError);
-    logger.d('[Auth]localLogin: done, state=$state');
+    logger.d('[Auth]: localLogin: done, state=$state');
   }
 
   /// Retrieves password hint from the router.
@@ -102,7 +102,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
 
   /// Performs logout, clearing credentials and resetting state.
   Future logout() async {
-    logger.d('[Auth]logout: starting');
+    logger.d('[Auth]: logout: starting');
     state = const AsyncValue.loading();
 
     state = await AsyncValue.guard(() async {
@@ -111,17 +111,17 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       // must still be valid.
       final sseManager = ref.read(sseManagerProvider);
       if (sseManager != null) {
-        logger.d('[Auth]logout: disconnecting SSE');
+        logger.d('[Auth]: logout: disconnecting SSE');
         await sseManager.disconnect();
         await sseManager.registry.unregisterAll();
       }
 
       // Now safe to logout USP
-      logger.d('[Auth]logout: syncing USP logout');
+      logger.d('[Auth]: logout: syncing USP logout');
       await ref.read(uspAuthCoordinatorProvider).syncAfterLogout();
 
       // Clear credentials
-      logger.d('[Auth]logout: clearing credentials');
+      logger.d('[Auth]: logout: clearing credentials');
       await _authService.clearAllCredentials();
 
       // Clear RA-related prefs (legacy cleanup)
@@ -131,7 +131,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
 
       // Reset provider states
       ref.read(sessionProvider.notifier).clear();
-      logger.d('[Auth]logout: complete');
+      logger.d('[Auth]: logout: complete');
       return AuthState.empty();
     });
     ref.read(selectedNetworkIdProvider.notifier).state = null;

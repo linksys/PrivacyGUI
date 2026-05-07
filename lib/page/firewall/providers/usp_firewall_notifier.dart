@@ -66,7 +66,7 @@ class UspFirewallNotifier extends AutoDisposeNotifier<FirewallFeatureState>
       final uiModel = data.firewallModel;
       final ruleContext = data.ruleContext;
 
-      logger.d('[USP][Firewall] Fetched — '
+      logger.d('[USP][Firewall]: Fetched — '
           'spiV4: ${uiModel.isIPv4FirewallEnabled}, '
           'spiV6: ${uiModel.isIPv6FirewallEnabled}');
 
@@ -75,7 +75,7 @@ class UspFirewallNotifier extends AutoDisposeNotifier<FirewallFeatureState>
         const FirewallStatus(isLoading: false),
       );
     } on ServiceError catch (e) {
-      logger.e('[USP][Firewall] Fetch failed', error: e);
+      logger.e('[USP][Firewall]: Fetch failed', error: e);
       return (
         null,
         FirewallStatus(isLoading: false, errorMessage: '$e'),
@@ -103,13 +103,13 @@ class UspFirewallNotifier extends AutoDisposeNotifier<FirewallFeatureState>
           context: settings.ruleContext,
         );
 
-        logger.d('[USP][Firewall] Saved — $count rules updated');
+        logger.d('[USP][Firewall]: Saved — $count rules updated');
       });
 
       // Force data provider to re-fetch so dashboard card updates too.
       ref.invalidate(firewallDataProvider);
     } on ServiceError catch (e) {
-      logger.e('[USP][Firewall] Save failed', error: e);
+      logger.e('[USP][Firewall]: Save failed', error: e);
       rethrow;
     } finally {
       state = state.copyWith(

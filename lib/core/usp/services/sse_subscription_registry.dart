@@ -41,12 +41,12 @@ class SseSubscriptionRegistry {
     // Check for duplicate
     if (_subscriptions.containsKey(subscriptionId)) {
       logger
-          .d('[USP][SSE][Registry]Subscription $subscriptionId already exists, '
+          .d('[USP][SSE][Registry]: Subscription $subscriptionId already exists, '
               'skipping duplicate registration');
       return _subscriptions[subscriptionId]!;
     }
 
-    logger.d('[USP][SSE][Registry]Registering $subscriptionId '
+    logger.d('[USP][SSE][Registry]: Registering $subscriptionId '
         '(type=$notifType, ref=$referenceList)');
 
     await _bridge.subscribe(
@@ -63,7 +63,7 @@ class SseSubscriptionRegistry {
     );
     _subscriptions[subscriptionId] = record;
 
-    logger.d('[USP][SSE][Registry]Registered $subscriptionId');
+    logger.d('[USP][SSE][Registry]: Registered $subscriptionId');
     return record;
   }
 
@@ -74,16 +74,16 @@ class SseSubscriptionRegistry {
     final record = _subscriptions.remove(subscriptionId);
     if (record == null) {
       logger.d(
-          '[USP][SSE][Registry]Unregister $subscriptionId: not found, skipping');
+          '[USP][SSE][Registry]: Unregister $subscriptionId: not found, skipping');
       return;
     }
 
-    logger.d('[USP][SSE][Registry]Unregistering $subscriptionId');
+    logger.d('[USP][SSE][Registry]: Unregistering $subscriptionId');
 
     try {
       await _bridge.unsubscribe(subscriptionId: subscriptionId);
     } catch (e) {
-      logger.w('[USP][SSE][Registry]Bridge unsubscribe failed for '
+      logger.w('[USP][SSE][Registry]: Bridge unsubscribe failed for '
           '$subscriptionId: $e');
     }
   }
@@ -96,11 +96,11 @@ class SseSubscriptionRegistry {
   Future<void> resubscribeAll() async {
     if (_subscriptions.isEmpty) {
       logger.d(
-          '[USP][SSE][Registry]resubscribeAll: no subscriptions to re-register');
+          '[USP][SSE][Registry]: resubscribeAll: no subscriptions to re-register');
       return;
     }
 
-    logger.d('[USP][SSE][Registry]Re-registering ${_subscriptions.length} '
+    logger.d('[USP][SSE][Registry]: Re-registering ${_subscriptions.length} '
         'subscriptions on bridge');
 
     for (final record in _subscriptions.values) {
@@ -110,9 +110,9 @@ class SseSubscriptionRegistry {
           path: record.referenceList,
           notifType: _notifTypeToInt(record.notifType),
         );
-        logger.d('[USP][SSE][Registry]Re-registered ${record.subscriptionId}');
+        logger.d('[USP][SSE][Registry]: Re-registered ${record.subscriptionId}');
       } catch (e) {
-        logger.w('[USP][SSE][Registry]Failed to re-register '
+        logger.w('[USP][SSE][Registry]: Failed to re-register '
             '${record.subscriptionId}: $e');
       }
     }

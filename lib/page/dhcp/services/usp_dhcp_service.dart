@@ -173,7 +173,7 @@ class UspDhcpService {
             break;
           case UspPartialSuccess(:final successes, :final failures):
             logger.w(
-                '[DHCP] Batch delete partial: ${successes.length} ok, ${failures.length} failed');
+                '[DHCP]: Batch delete partial: ${successes.length} ok, ${failures.length} failed');
             break;
           case UspFailure(:final errorSummary, :final errors):
             throw UspCompleteFailureError(
@@ -198,7 +198,7 @@ class UspDhcpService {
             break;
           case UspPartialSuccess(:final successes, :final failures):
             logger.w(
-                '[DHCP] Batch add partial: ${successes.length} ok, ${failures.length} failed');
+                '[DHCP]: Batch add partial: ${successes.length} ok, ${failures.length} failed');
             break;
           case UspFailure(:final errorSummary, :final errors):
             throw UspCompleteFailureError(
@@ -237,7 +237,7 @@ class UspDhcpService {
             break;
           case UspPartialSuccess(:final successes, :final failures):
             logger.w(
-                '[DHCP] Batch update partial: ${successes.length} ok, ${failures.length} failed');
+                '[DHCP]: Batch update partial: ${successes.length} ok, ${failures.length} failed');
             break;
           case UspFailure(:final errorSummary, :final errors):
             throw UspCompleteFailureError(

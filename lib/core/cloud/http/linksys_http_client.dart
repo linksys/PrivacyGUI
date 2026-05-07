@@ -240,7 +240,7 @@ class LinksysHttpClient extends http.BaseClient {
       _logResponse(response, ignoreResponse: true);
       Storage.saveByteFile(savedPathUri, response.bodyBytes);
     } catch (e) {
-      logger.e('Download data failed!', error: e);
+      logger.e('[Cloud]: Download data failed!', error: e);
       return false;
     }
     return true;
@@ -316,7 +316,7 @@ class LinksysHttpClient extends http.BaseClient {
   Response _handleResponse(Response response) {
     // TODO Revisit - needs to considering about 500 internal server error, 502/503 bad requests
     if (response.statusCode >= 400 && response.body.isJsonFormat()) {
-      logger.i('Cloud Error: ${response.statusCode}, ${response.body}');
+      logger.i('[Cloud]: Error: ${response.statusCode}, ${response.body}');
       final error = ErrorResponse.fromJson(
           response.statusCode, json.decode(response.body));
       onError?.call(error);

@@ -26,7 +26,7 @@ class UspAdminNotifier extends AutoDisposeAsyncNotifier<UspAdminState> {
         timeFetchedAt: timeData.fetchedAt,
       );
     } on ServiceError catch (e) {
-      logger.e('[USP][Admin] Fetch failed', error: e);
+      logger.e('[USP][Admin]: Fetch failed', error: e);
       rethrow;
     }
   }
@@ -44,7 +44,7 @@ class UspAdminNotifier extends AutoDisposeAsyncNotifier<UspAdminState> {
         );
       });
     } on ServiceError catch (e) {
-      logger.e('[USP][Admin] Password update failed', error: e);
+      logger.e('[USP][Admin]: Password update failed', error: e);
       rethrow;
     }
   }
@@ -69,7 +69,7 @@ class UspAdminNotifier extends AutoDisposeAsyncNotifier<UspAdminState> {
         );
       });
     } on ServiceError catch (e) {
-      logger.e('[USP][Admin] Time settings update failed', error: e);
+      logger.e('[USP][Admin]: Time settings update failed', error: e);
       rethrow;
     }
     ref.invalidate(timeDataProvider);
@@ -88,7 +88,7 @@ class UspAdminNotifier extends AutoDisposeAsyncNotifier<UspAdminState> {
         );
       });
     } on ServiceError catch (e) {
-      logger.e('[USP][Admin] Timezone update failed', error: e);
+      logger.e('[USP][Admin]: Timezone update failed', error: e);
       rethrow;
     }
     ref.invalidate(timeDataProvider);
@@ -104,7 +104,7 @@ class UspAdminNotifier extends AutoDisposeAsyncNotifier<UspAdminState> {
         await _svc.reboot();
       });
     } on ServiceError catch (e) {
-      logger.e('[USP][Admin] Reboot failed', error: e);
+      logger.e('[USP][Admin]: Reboot failed', error: e);
       rethrow;
     }
   }
@@ -115,7 +115,7 @@ class UspAdminNotifier extends AutoDisposeAsyncNotifier<UspAdminState> {
         await _svc.factoryReset();
       });
     } on ServiceError catch (e) {
-      logger.e('[USP][Admin] Factory reset failed', error: e);
+      logger.e('[USP][Admin]: Factory reset failed', error: e);
       rethrow;
     }
   }

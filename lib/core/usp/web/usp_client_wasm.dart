@@ -39,7 +39,7 @@ JSAny? _buildOptions({bool allowPartial = false}) {
   return {'allowPartial': allowPartial}.jsify();
 }
 
-const _tag = '[USPClient:WASM]';
+const _tag = '[USPClient][WASM]:';
 
 // Bind to the UspClient class exported in usp_client.js (unified API)
 @JS('UspClient')

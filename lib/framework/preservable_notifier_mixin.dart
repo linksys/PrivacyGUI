@@ -95,7 +95,7 @@ class _PreservableDelegate<
   void onSseInvalidation() {
     if (!isDirty()) {
       unawaited(fetch(forceRemote: true).catchError((Object e, StackTrace st) {
-        logger.e('SSE invalidation fetch failed', error: e);
+        logger.e('[USP][SSE]: invalidation fetch failed', error: e);
         return _getState();
       }));
     }

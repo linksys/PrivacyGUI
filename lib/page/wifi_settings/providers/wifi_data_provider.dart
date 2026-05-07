@@ -86,7 +86,7 @@ class WifiDataNotifier extends AsyncNotifier<WifiData> {
     final svc = ref.read(uspWifiDataServiceProvider);
     final result = await svc.fetch();
 
-    logger.d('[USP][WifiData] Fetched — '
+    logger.d('[USP][WifiData]: Fetched — '
         'clients: ${result.wifiClientMap.length}, '
         'radios: ${result.radioModels.length}');
 

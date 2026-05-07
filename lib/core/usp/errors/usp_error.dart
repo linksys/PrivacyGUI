@@ -138,7 +138,7 @@ ServiceError mapUspErrorToServiceError(Object error) {
   final parsed = parseUspError(error);
   if (parsed == null) {
     final result = UnexpectedError(originalError: error);
-    logger.w('[USP:ServiceError] "$error" → ${result.runtimeType}');
+    logger.w('[USP][ServiceError]: "$error" → ${result.runtimeType}');
     return result;
   }
 
@@ -149,7 +149,7 @@ ServiceError mapUspErrorToServiceError(Object error) {
     UspErrorCategory.operation => _mapOperationError(parsed),
     UspErrorCategory.validation => InvalidInputError(message: parsed.message),
   };
-  logger.w('[USP:ServiceError] "$error" → ${result.runtimeType}');
+  logger.w('[USP][ServiceError]: "$error" → ${result.runtimeType}');
   return result;
 }
 

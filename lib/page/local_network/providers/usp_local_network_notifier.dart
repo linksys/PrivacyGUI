@@ -75,7 +75,7 @@ class UspLocalNetworkNotifier
         dnsServer3: dnsParts.length > 2 ? dnsParts[2] : '',
       );
 
-      logger.d('[USP][Network][LAN] Fetched — '
+      logger.d('[USP][Network][LAN]: Fetched — '
           'ip: ${uiModel.ipAddress}, '
           'dhcp: ${uiModel.dhcpEnabled}, '
           'pool: ${uiModel.minAddress}-${uiModel.maxAddress}');
@@ -85,7 +85,7 @@ class UspLocalNetworkNotifier
         const LocalNetworkStatus(isLoading: false),
       );
     } on ServiceError catch (e) {
-      logger.e('[USP][Network][LAN] Fetch failed', error: e);
+      logger.e('[USP][Network][LAN]: Fetch failed', error: e);
       return (
         null,
         LocalNetworkStatus(isLoading: false, errorMessage: '$e'),
@@ -109,13 +109,13 @@ class UspLocalNetworkNotifier
 
       await ref.read(uspMutationLockProvider).withLock(() async {
         await _svc.save(original: o, pending: p);
-        logger.d('[USP][Network][LAN] Saved');
+        logger.d('[USP][Network][LAN]: Saved');
       });
 
       // Force data provider to re-fetch so dashboard card updates too.
       ref.invalidate(lanDataProvider);
     } on ServiceError catch (e) {
-      logger.e('[USP][Network][LAN] Save failed', error: e);
+      logger.e('[USP][Network][LAN]: Save failed', error: e);
       rethrow;
     } finally {
       state = state.copyWith(
