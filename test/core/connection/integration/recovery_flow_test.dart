@@ -78,8 +78,8 @@ void main() {
           AppConnectionState.waitingForRecovery,
         );
 
-        // Second probe at ~5s: recovered
-        await Future.delayed(const Duration(seconds: 6));
+        // Second probe at ~10s: recovered
+        await Future.delayed(const Duration(seconds: 11));
         expect(probeCount, greaterThanOrEqualTo(2));
         expect(
           container.read(appConnectionStateProvider),
@@ -87,7 +87,7 @@ void main() {
         );
         verify(() => mockSse.connect()).called(1);
       },
-      timeout: Timeout(Duration(seconds: 15)),
+      timeout: Timeout(Duration(seconds: 20)),
     );
 
     test('operational trigger → serial mismatch → loggedOut', () async {
