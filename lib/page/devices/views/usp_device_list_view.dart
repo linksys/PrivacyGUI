@@ -52,6 +52,8 @@ class _UspDeviceListViewState extends ConsumerState<UspDeviceListView> {
             return AppResponsiveLayout(
               mobile: (_) =>
                   _buildMobileLayout(context, devices, filter, totalCount),
+              tablet: (_) =>
+                  _buildMobileLayout(context, devices, filter, totalCount),
               desktop: (_) =>
                   _buildDesktopLayout(context, devices, filter, totalCount),
             );
@@ -71,15 +73,16 @@ class _UspDeviceListViewState extends ConsumerState<UspDeviceListView> {
               icon: const Icon(Icons.clear, size: 18),
               onPressed: () {
                 _searchController.clear();
-                ref.read(deviceFilterConfigProvider.notifier).state = ref
-                    .read(deviceFilterConfigProvider)
-                    .copyWith(searchQuery: '');
+                ref
+                    .read(deviceFilterConfigProvider.notifier)
+                    .setSearchQuery('');
               },
             )
           : null,
       onChanged: (value) {
-        ref.read(deviceFilterConfigProvider.notifier).state =
-            ref.read(deviceFilterConfigProvider).copyWith(searchQuery: value);
+        ref
+            .read(deviceFilterConfigProvider.notifier)
+            .setSearchQuery(value);
       },
     );
   }
@@ -132,7 +135,16 @@ class _UspDeviceListViewState extends ConsumerState<UspDeviceListView> {
             Expanded(
               child: Column(
                 children: [
-                  _buildSearchBar(),
+                  Row(
+                    children: [
+                      Expanded(child: _buildSearchBar()),
+                      AppGap.md(),
+                      const SizedBox(
+                        width: 240,
+                        child: UspDeviceStatusSegmented(),
+                      ),
+                    ],
+                  ),
                   AppGap.sm(),
                   _buildCountRow(devices, totalCount),
                   AppGap.lg(),
@@ -152,10 +164,12 @@ class _UspDeviceListViewState extends ConsumerState<UspDeviceListView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildSearchBar(),
-        AppGap.sm(),
-        _buildCountRow(devices, totalCount),
+        AppGap.md(),
+        const UspDeviceStatusSegmented(),
         AppGap.md(),
         const UspDeviceFilterChipBar(),
+        AppGap.sm(),
+        _buildCountRow(devices, totalCount),
         AppGap.lg(),
         _buildDeviceList(devices),
       ],

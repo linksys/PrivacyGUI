@@ -11,7 +11,7 @@ void main() {
   // Shared test data
   // ---------------------------------------------------------------------------
 
-  const wifiOnline = DeviceUIModel(
+  const wifiOnlineExcellent = DeviceUIModel(
     mac: 'AA:AA:AA:AA:AA:01',
     ip: '192.168.1.101',
     hostName: 'iPhone',
@@ -19,15 +19,18 @@ void main() {
     isWifi: true,
     band: '5GHz',
     ssidName: 'Home',
+    signalStrength: -40, // excellent (>= -65)
     parentNodeId: 'NODE-01',
   );
 
-  const wifiOffline = DeviceUIModel(
+  const wifiOfflineHome = DeviceUIModel(
     mac: 'AA:AA:AA:AA:AA:02',
     ip: '192.168.1.102',
     hostName: 'iPad',
     isActive: false,
     isWifi: true,
+    // Offline devices in practice have null WiFi/node fields; keep a few set
+    // to prove filters pass them through even when leftover values linger.
     band: '2.4GHz',
     ssidName: 'Home',
     parentNodeId: 'NODE-01',
@@ -42,7 +45,7 @@ void main() {
     parentNodeId: 'NODE-01',
   );
 
-  const wifiGuest = DeviceUIModel(
+  const wifiGuestGood = DeviceUIModel(
     mac: 'AA:AA:AA:AA:AA:04',
     ip: '192.168.1.104',
     hostName: 'GuestPhone',
@@ -50,10 +53,29 @@ void main() {
     isWifi: true,
     band: '5GHz',
     ssidName: 'Guest',
+    signalStrength: -68, // good (-65..-71)
     parentNodeId: 'NODE-02',
   );
 
-  const allDevices = [wifiOnline, wifiOffline, ethernetOnline, wifiGuest];
+  const wifiOnlineNullRssi = DeviceUIModel(
+    mac: 'AA:AA:AA:AA:AA:05',
+    ip: '192.168.1.105',
+    hostName: 'NewPhone',
+    isActive: true,
+    isWifi: true,
+    band: '5GHz',
+    ssidName: 'Home',
+    // signalStrength intentionally null — firmware state where RSSI is absent.
+    parentNodeId: 'NODE-01',
+  );
+
+  const allDevices = [
+    wifiOnlineExcellent,
+    wifiOfflineHome,
+    ethernetOnline,
+    wifiGuestGood,
+    wifiOnlineNullRssi,
+  ];
 
   const devicesData = DevicesData(
     deviceModels: allDevices,
@@ -68,210 +90,413 @@ void main() {
     ),
   );
 
-  ProviderContainer createContainer({
-    DeviceFilterConfig filter = const DeviceFilterConfig(),
-  }) {
+  ProviderContainer createContainer({DevicesData? data}) {
     return ProviderContainer(
       overrides: [
         devicesDataProvider
-            .overrideWith(() => _FakeDevicesNotifier(devicesData)),
-        deviceFilterConfigProvider.overrideWith((ref) => filter),
+            .overrideWith(() => _FakeDevicesNotifier(data ?? devicesData)),
       ],
     );
   }
 
+  Future<ProviderContainer> createReadyContainer({DevicesData? data}) async {
+    final container = createContainer(data: data);
+    await container.read(devicesDataProvider.future);
+    return container;
+  }
+
   // ---------------------------------------------------------------------------
-  // filteredDeviceListProvider
+  // filteredDeviceListProvider — filter dimensions
   // ---------------------------------------------------------------------------
 
   group('filteredDeviceListProvider', () {
     test('returns all devices with default filter', () async {
-      final container = createContainer();
-      await container.read(devicesDataProvider.future);
-
-      final filtered = container.read(filteredDeviceListProvider);
-
-      expect(filtered, hasLength(4));
+      final container = await createReadyContainer();
+      expect(container.read(filteredDeviceListProvider), hasLength(5));
       container.dispose();
     });
 
-    // -----------------------------------------------------------------------
-    // Status filter
-    // -----------------------------------------------------------------------
+    group('Status', () {
+      test('online filter excludes offline devices', () async {
+        final container = await createReadyContainer();
+        container
+            .read(deviceFilterConfigProvider.notifier)
+            .setStatus(DeviceStatusFilter.online);
 
-    test('online filter excludes offline devices', () async {
-      final container = createContainer(
-        filter: const DeviceFilterConfig(status: DeviceStatusFilter.online),
-      );
-      await container.read(devicesDataProvider.future);
+        final filtered = container.read(filteredDeviceListProvider);
 
-      final filtered = container.read(filteredDeviceListProvider);
+        expect(filtered, hasLength(4));
+        expect(filtered.every((d) => d.isActive), isTrue);
+        container.dispose();
+      });
 
-      expect(filtered, hasLength(3));
-      expect(filtered.every((d) => d.isActive), isTrue);
+      test('offline filter shows only offline devices', () async {
+        final container = await createReadyContainer();
+        container
+            .read(deviceFilterConfigProvider.notifier)
+            .setStatus(DeviceStatusFilter.offline);
+
+        final filtered = container.read(filteredDeviceListProvider);
+
+        expect(filtered, hasLength(1));
+        expect(filtered.first.mac, wifiOfflineHome.mac);
+        container.dispose();
+      });
+    });
+
+    group('Connection', () {
+      test('WiFi filter excludes ethernet devices', () async {
+        final container = await createReadyContainer();
+        container
+            .read(deviceFilterConfigProvider.notifier)
+            .setConnection(DeviceConnectionFilter.wifi);
+
+        final filtered = container.read(filteredDeviceListProvider);
+
+        expect(filtered.every((d) => d.isWifi), isTrue);
+        expect(filtered.any((d) => d.mac == ethernetOnline.mac), isFalse);
+        container.dispose();
+      });
+
+      test('Ethernet filter excludes WiFi devices', () async {
+        final container = await createReadyContainer();
+        container
+            .read(deviceFilterConfigProvider.notifier)
+            .setConnection(DeviceConnectionFilter.ethernet);
+
+        final filtered = container.read(filteredDeviceListProvider);
+
+        expect(filtered, hasLength(1));
+        expect(filtered.first.mac, ethernetOnline.mac);
+        container.dispose();
+      });
+    });
+
+    group('Signal', () {
+      test('excellent bucket matches RSSI >= -65', () async {
+        final container = await createReadyContainer();
+        container
+            .read(deviceFilterConfigProvider.notifier)
+            .setSignal(DeviceSignalFilter.excellent);
+
+        final filtered = container.read(filteredDeviceListProvider);
+
+        // wifiOnlineExcellent (-40 excellent), ethernet passes through,
+        // wifiOnlineNullRssi passes through (null RSSI WiFi),
+        // wifiOfflineHome passes through (null RSSI WiFi).
+        // wifiGuestGood (-68 good) is excluded.
+        expect(filtered.any((d) => d.mac == wifiOnlineExcellent.mac), isTrue);
+        expect(filtered.any((d) => d.mac == wifiGuestGood.mac), isFalse);
+        expect(filtered.any((d) => d.mac == ethernetOnline.mac), isTrue);
+        expect(filtered.any((d) => d.mac == wifiOnlineNullRssi.mac), isTrue);
+        container.dispose();
+      });
+
+      test('unknown bucket matches only WiFi devices with null RSSI', () async {
+        final container = await createReadyContainer();
+        container
+            .read(deviceFilterConfigProvider.notifier)
+            .setSignal(DeviceSignalFilter.unknown);
+
+        final filtered = container.read(filteredDeviceListProvider);
+
+        // wifiOnlineNullRssi and wifiOfflineHome are WiFi with null RSSI.
+        expect(filtered, hasLength(2));
+        expect(filtered.map((d) => d.mac),
+            containsAll([wifiOnlineNullRssi.mac, wifiOfflineHome.mac]));
+        container.dispose();
+      });
+    });
+
+    group('Node', () {
+      test('node filter excludes devices on other nodes', () async {
+        final container = await createReadyContainer();
+        container
+            .read(deviceFilterConfigProvider.notifier)
+            .setNodeId('NODE-02');
+
+        final filtered = container.read(filteredDeviceListProvider);
+
+        // wifiGuestGood is on NODE-02.
+        // wifiOfflineHome is offline → passes through despite being on NODE-01.
+        expect(filtered.map((d) => d.mac),
+            containsAll([wifiGuestGood.mac, wifiOfflineHome.mac]));
+        expect(filtered.any((d) => d.mac == wifiOnlineExcellent.mac), isFalse);
+        container.dispose();
+      });
+
+      test(
+          'regression: Status=All + Node=X must not drop offline devices '
+          '(they have null parentNodeId in reality)', () async {
+        // Replace wifiOfflineHome with one that has a null parentNodeId — the
+        // realistic offline state. Filter by NODE-01 must still include it.
+        const offlineWithNullNode = DeviceUIModel(
+          mac: 'AA:AA:AA:AA:AA:02',
+          ip: '192.168.1.102',
+          hostName: 'iPad',
+          isActive: false,
+          isWifi: true,
+          // parentNodeId: null — realistic offline state.
+        );
+
+        final container = await createReadyContainer(
+          data: const DevicesData(
+            deviceModels: [wifiOnlineExcellent, offlineWithNullNode],
+            meshTopology: MeshTopologyInfo(
+              nodes: [
+                MeshNodeInfo(
+                    instancePath: 'Device.1.',
+                    deviceId: 'NODE-01',
+                    model: 'MR7500'),
+                MeshNodeInfo(
+                    instancePath: 'Device.2.',
+                    deviceId: 'NODE-02',
+                    model: 'MX5500'),
+              ],
+              clientToNodeMap: {},
+            ),
+          ),
+        );
+        container
+            .read(deviceFilterConfigProvider.notifier)
+            .setNodeId('NODE-01');
+
+        final filtered = container.read(filteredDeviceListProvider);
+
+        // wifiOnlineExcellent on NODE-01, offline passes through.
+        expect(filtered, hasLength(2));
+        container.dispose();
+      });
+    });
+
+    group('SSID / Band', () {
+      test('SSID filter shows matching WiFi devices and all ethernet devices',
+          () async {
+        final container = await createReadyContainer();
+        container
+            .read(deviceFilterConfigProvider.notifier)
+            .setSsidName('Guest');
+
+        final filtered = container.read(filteredDeviceListProvider);
+
+        expect(filtered.any((d) => d.mac == wifiGuestGood.mac), isTrue);
+        expect(filtered.any((d) => d.mac == ethernetOnline.mac), isTrue);
+        expect(filtered.any((d) => d.mac == wifiOnlineExcellent.mac), isFalse);
+        container.dispose();
+      });
+
+      test('band filter shows matching WiFi devices and all ethernet devices',
+          () async {
+        final container = await createReadyContainer();
+        container
+            .read(deviceFilterConfigProvider.notifier)
+            .setBand('2.4GHz');
+
+        final filtered = container.read(filteredDeviceListProvider);
+
+        expect(filtered.any((d) => d.mac == wifiOfflineHome.mac), isTrue);
+        expect(filtered.any((d) => d.mac == ethernetOnline.mac), isTrue);
+        container.dispose();
+      });
+    });
+
+    group('Search', () {
+      test('hostName match is case-insensitive', () async {
+        final container = await createReadyContainer();
+        container
+            .read(deviceFilterConfigProvider.notifier)
+            .setSearchQuery('iphone');
+
+        final filtered = container.read(filteredDeviceListProvider);
+
+        expect(filtered, hasLength(1));
+        expect(filtered.first.mac, wifiOnlineExcellent.mac);
+        container.dispose();
+      });
+
+      test('MAC match', () async {
+        final container = await createReadyContainer();
+        container
+            .read(deviceFilterConfigProvider.notifier)
+            .setSearchQuery('aa:03');
+
+        final filtered = container.read(filteredDeviceListProvider);
+
+        expect(filtered, hasLength(1));
+        expect(filtered.first.mac, ethernetOnline.mac);
+        container.dispose();
+      });
+
+      test('no match returns empty list', () async {
+        final container = await createReadyContainer();
+        container
+            .read(deviceFilterConfigProvider.notifier)
+            .setSearchQuery('nonexistent');
+
+        expect(container.read(filteredDeviceListProvider), isEmpty);
+        container.dispose();
+      });
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Dependency rules (auto-reset on status/connection change)
+  // ---------------------------------------------------------------------------
+
+  group('DeviceFilterNotifier dependency resets', () {
+    test('selecting Offline clears every other dimension', () async {
+      final container = await createReadyContainer();
+      final notifier = container.read(deviceFilterConfigProvider.notifier);
+
+      notifier.setConnection(DeviceConnectionFilter.wifi);
+      notifier.setSignal(DeviceSignalFilter.good);
+      notifier.setSsidName('Home');
+      notifier.setBand('5GHz');
+      notifier.setNodeId('NODE-01');
+      notifier.setStatus(DeviceStatusFilter.offline);
+
+      final state = container.read(deviceFilterConfigProvider);
+      expect(state.status, DeviceStatusFilter.offline);
+      expect(state.connection, DeviceConnectionFilter.all);
+      expect(state.signal, DeviceSignalFilter.all);
+      expect(state.ssidName, isNull);
+      expect(state.band, isNull);
+      expect(state.nodeId, isNull);
       container.dispose();
     });
 
-    test('offline filter shows only offline devices', () async {
-      final container = createContainer(
-        filter: const DeviceFilterConfig(status: DeviceStatusFilter.offline),
-      );
-      await container.read(devicesDataProvider.future);
-
-      final filtered = container.read(filteredDeviceListProvider);
-
-      expect(filtered, hasLength(1));
-      expect(filtered.first.mac, wifiOffline.mac);
-      container.dispose();
-    });
-
-    // -----------------------------------------------------------------------
-    // Node filter
-    // -----------------------------------------------------------------------
-
-    test('node filter shows only devices on specified node', () async {
-      final container = createContainer(
-        filter: const DeviceFilterConfig(nodeId: 'NODE-02'),
-      );
-      await container.read(devicesDataProvider.future);
-
-      final filtered = container.read(filteredDeviceListProvider);
-
-      expect(filtered, hasLength(1));
-      expect(filtered.first.mac, wifiGuest.mac);
-      container.dispose();
-    });
-
-    // -----------------------------------------------------------------------
-    // SSID filter
-    // -----------------------------------------------------------------------
-
-    test('SSID filter shows matching WiFi devices and all ethernet devices',
+    test('selecting Ethernet clears WiFi-only dimensions but keeps Node',
         () async {
-      final container = createContainer(
-        filter: const DeviceFilterConfig(ssidName: 'Guest'),
-      );
-      await container.read(devicesDataProvider.future);
+      final container = await createReadyContainer();
+      final notifier = container.read(deviceFilterConfigProvider.notifier);
 
-      final filtered = container.read(filteredDeviceListProvider);
+      notifier.setSignal(DeviceSignalFilter.good);
+      notifier.setSsidName('Home');
+      notifier.setBand('5GHz');
+      notifier.setNodeId('NODE-01');
+      notifier.setConnection(DeviceConnectionFilter.ethernet);
 
-      // wifiGuest (Guest) + ethernetOnline (ethernet passes through)
-      expect(filtered, hasLength(2));
-      expect(filtered.any((d) => d.mac == wifiGuest.mac), isTrue);
-      expect(filtered.any((d) => d.mac == ethernetOnline.mac), isTrue);
+      final state = container.read(deviceFilterConfigProvider);
+      expect(state.connection, DeviceConnectionFilter.ethernet);
+      expect(state.signal, DeviceSignalFilter.all);
+      expect(state.ssidName, isNull);
+      expect(state.band, isNull);
+      expect(state.nodeId, 'NODE-01');
       container.dispose();
     });
 
-    // -----------------------------------------------------------------------
-    // Band filter
-    // -----------------------------------------------------------------------
-
-    test('band filter shows matching WiFi devices and all ethernet devices',
+    test('switching back from Ethernet to All does not restore WiFi filters',
         () async {
-      final container = createContainer(
-        filter: const DeviceFilterConfig(band: '2.4GHz'),
-      );
-      await container.read(devicesDataProvider.future);
+      final container = await createReadyContainer();
+      final notifier = container.read(deviceFilterConfigProvider.notifier);
 
-      final filtered = container.read(filteredDeviceListProvider);
+      notifier.setSsidName('Home');
+      notifier.setConnection(DeviceConnectionFilter.ethernet);
+      notifier.setConnection(DeviceConnectionFilter.all);
 
-      // wifiOffline (2.4GHz) + ethernetOnline (ethernet passes through)
-      expect(filtered, hasLength(2));
-      expect(filtered.any((d) => d.mac == wifiOffline.mac), isTrue);
-      expect(filtered.any((d) => d.mac == ethernetOnline.mac), isTrue);
+      expect(container.read(deviceFilterConfigProvider).ssidName, isNull);
       container.dispose();
     });
 
-    // -----------------------------------------------------------------------
-    // Search query
-    // -----------------------------------------------------------------------
+    test('clearAll resets every dimension and search', () async {
+      final container = await createReadyContainer();
+      final notifier = container.read(deviceFilterConfigProvider.notifier);
 
-    test('search matches hostName case-insensitively', () async {
-      final container = createContainer(
-        filter: const DeviceFilterConfig(searchQuery: 'iphone'),
-      );
-      await container.read(devicesDataProvider.future);
+      notifier.setStatus(DeviceStatusFilter.online);
+      notifier.setSearchQuery('iphone');
+      notifier.setSsidName('Home');
+      notifier.clearAll();
 
-      final filtered = container.read(filteredDeviceListProvider);
-
-      expect(filtered, hasLength(1));
-      expect(filtered.first.mac, wifiOnline.mac);
+      final state = container.read(deviceFilterConfigProvider);
+      expect(state.isActive, isFalse);
+      expect(state.searchQuery, '');
       container.dispose();
     });
+  });
 
-    test('search matches MAC address', () async {
-      final container = createContainer(
-        filter: const DeviceFilterConfig(searchQuery: 'aa:03'),
-      );
-      await container.read(devicesDataProvider.future);
+  // ---------------------------------------------------------------------------
+  // Orphan reconciliation (SSE refresh invalidates selected option)
+  // ---------------------------------------------------------------------------
 
-      final filtered = container.read(filteredDeviceListProvider);
+  group('DeviceFilterNotifier orphan reconciliation', () {
+    test('nulls SSID when it disappears from options after data refresh',
+        () async {
+      final container = await createReadyContainer();
+      container
+          .read(deviceFilterConfigProvider.notifier)
+          .setSsidName('Guest');
 
-      expect(filtered, hasLength(1));
-      expect(filtered.first.mac, ethernetOnline.mac);
-      container.dispose();
-    });
-
-    test('search matches IP address', () async {
-      final container = createContainer(
-        filter: const DeviceFilterConfig(searchQuery: '1.104'),
-      );
-      await container.read(devicesDataProvider.future);
-
-      final filtered = container.read(filteredDeviceListProvider);
-
-      expect(filtered, hasLength(1));
-      expect(filtered.first.mac, wifiGuest.mac);
-      container.dispose();
-    });
-
-    test('search with no match returns empty list', () async {
-      final container = createContainer(
-        filter: const DeviceFilterConfig(searchQuery: 'nonexistent'),
-      );
-      await container.read(devicesDataProvider.future);
-
-      final filtered = container.read(filteredDeviceListProvider);
-
-      expect(filtered, isEmpty);
-      container.dispose();
-    });
-
-    // -----------------------------------------------------------------------
-    // Combined filters
-    // -----------------------------------------------------------------------
-
-    test('combined status + SSID filter narrows results', () async {
-      final container = createContainer(
-        filter: const DeviceFilterConfig(
-          status: DeviceStatusFilter.online,
-          ssidName: 'Home',
+      // Push a new dataset without any Guest device.
+      final notifier =
+          container.read(devicesDataProvider.notifier) as _FakeDevicesNotifier;
+      notifier.emit(const DevicesData(
+        deviceModels: [wifiOnlineExcellent],
+        meshTopology: MeshTopologyInfo(
+          nodes: [
+            MeshNodeInfo(
+                instancePath: 'Device.1.',
+                deviceId: 'NODE-01',
+                model: 'MR7500'),
+          ],
+          clientToNodeMap: {},
         ),
-      );
-      await container.read(devicesDataProvider.future);
+      ));
+      await Future<void>.value();
 
-      final filtered = container.read(filteredDeviceListProvider);
-
-      // wifiOnline (Home, active) + ethernetOnline (ethernet passes SSID filter)
-      expect(filtered, hasLength(2));
-      expect(filtered.any((d) => d.mac == wifiOnline.mac), isTrue);
-      expect(filtered.any((d) => d.mac == ethernetOnline.mac), isTrue);
+      expect(container.read(deviceFilterConfigProvider).ssidName, isNull);
       container.dispose();
     });
 
-    test('combined node + search narrows results', () async {
-      final container = createContainer(
-        filter: const DeviceFilterConfig(
-          nodeId: 'NODE-01',
-          searchQuery: 'desktop',
+    test('nulls nodeId when selected node disappears', () async {
+      final container = await createReadyContainer();
+      container
+          .read(deviceFilterConfigProvider.notifier)
+          .setNodeId('NODE-02');
+
+      final notifier =
+          container.read(devicesDataProvider.notifier) as _FakeDevicesNotifier;
+      notifier.emit(const DevicesData(
+        deviceModels: [wifiOnlineExcellent],
+        meshTopology: MeshTopologyInfo(
+          nodes: [
+            MeshNodeInfo(
+                instancePath: 'Device.1.',
+                deviceId: 'NODE-01',
+                model: 'MR7500'),
+          ],
+          clientToNodeMap: {},
         ),
-      );
-      await container.read(devicesDataProvider.future);
+      ));
+      await Future<void>.value();
 
-      final filtered = container.read(filteredDeviceListProvider);
+      expect(container.read(deviceFilterConfigProvider).nodeId, isNull);
+      container.dispose();
+    });
 
-      expect(filtered, hasLength(1));
-      expect(filtered.first.mac, ethernetOnline.mac);
+    test('resets Signal=unknown when no null-RSSI devices remain', () async {
+      final container = await createReadyContainer();
+      container
+          .read(deviceFilterConfigProvider.notifier)
+          .setSignal(DeviceSignalFilter.unknown);
+
+      final notifier =
+          container.read(devicesDataProvider.notifier) as _FakeDevicesNotifier;
+      notifier.emit(const DevicesData(
+        deviceModels: [wifiOnlineExcellent, ethernetOnline],
+        meshTopology: MeshTopologyInfo(
+          nodes: [
+            MeshNodeInfo(
+                instancePath: 'Device.1.',
+                deviceId: 'NODE-01',
+                model: 'MR7500'),
+          ],
+          clientToNodeMap: {},
+        ),
+      ));
+      await Future<void>.value();
+
+      expect(container.read(deviceFilterConfigProvider).signal,
+          DeviceSignalFilter.all);
       container.dispose();
     });
   });
@@ -281,15 +506,32 @@ void main() {
   // ---------------------------------------------------------------------------
 
   group('deviceFilterOptionsProvider', () {
-    test('derives available SSIDs and bands from device data', () async {
-      final container = createContainer();
-      await container.read(devicesDataProvider.future);
+    test('derives nodes / SSIDs / bands / hasUnknownSignalDevices', () async {
+      final container = await createReadyContainer();
 
       final options = container.read(deviceFilterOptionsProvider);
 
       expect(options.nodes, hasLength(2));
       expect(options.ssids, containsAll(['Guest', 'Home']));
       expect(options.bands, containsAll(['2.4GHz', '5GHz']));
+      // wifiOnlineNullRssi + wifiOfflineHome both have null RSSI.
+      expect(options.hasUnknownSignalDevices, isTrue);
+      container.dispose();
+    });
+
+    test('hasUnknownSignalDevices false when every WiFi device has RSSI',
+        () async {
+      final container = await createReadyContainer(
+        data: const DevicesData(
+          deviceModels: [wifiOnlineExcellent, wifiGuestGood, ethernetOnline],
+          meshTopology: MeshTopologyInfo(nodes: [], clientToNodeMap: {}),
+        ),
+      );
+
+      expect(
+        container.read(deviceFilterOptionsProvider).hasUnknownSignalDevices,
+        isFalse,
+      );
       container.dispose();
     });
 
@@ -305,7 +547,25 @@ void main() {
       expect(options.nodes, isEmpty);
       expect(options.ssids, isEmpty);
       expect(options.bands, isEmpty);
+      expect(options.hasUnknownSignalDevices, isFalse);
       container.dispose();
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // signalBucketOf
+  // ---------------------------------------------------------------------------
+
+  group('signalBucketOf', () {
+    test('matches project-wide RSSI thresholds (-65 / -71 / -78)', () {
+      expect(signalBucketOf(null), DeviceSignalFilter.unknown);
+      expect(signalBucketOf(-30), DeviceSignalFilter.excellent);
+      expect(signalBucketOf(-65), DeviceSignalFilter.excellent);
+      expect(signalBucketOf(-66), DeviceSignalFilter.good);
+      expect(signalBucketOf(-71), DeviceSignalFilter.good);
+      expect(signalBucketOf(-72), DeviceSignalFilter.fair);
+      expect(signalBucketOf(-78), DeviceSignalFilter.fair);
+      expect(signalBucketOf(-79), DeviceSignalFilter.poor);
     });
   });
 }
@@ -316,11 +576,19 @@ void main() {
 
 class _FakeDevicesNotifier extends AsyncNotifier<DevicesData>
     implements DevicesDataNotifier {
-  final DevicesData? _data;
   _FakeDevicesNotifier(this._data);
+
+  DevicesData? _data;
 
   @override
   Future<DevicesData> build() async => _data ?? const DevicesData();
+
+  /// Push a new dataset so that `ref.listen(deviceFilterOptionsProvider)`
+  /// in the notifier fires reconciliation.
+  void emit(DevicesData next) {
+    _data = next;
+    state = AsyncData(next);
+  }
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
