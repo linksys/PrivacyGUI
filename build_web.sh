@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Detect fvm: use fvm flutter if available, otherwise use flutter directly
-if command -v fvm &> /dev/null && [ -f ".fvmrc" ]; then
+if command -v fvm > /dev/null 2>&1 && [ -f ".fvmrc" ]; then
   FLUTTER="fvm flutter"
   echo "Using fvm flutter"
 else

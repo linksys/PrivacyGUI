@@ -2,7 +2,7 @@
 # This script runs functional (non-UI) unit tests.
 
 # Detect fvm: use fvm flutter if available, otherwise use flutter directly
-if command -v fvm &> /dev/null && [ -f ".fvmrc" ]; then
+if command -v fvm > /dev/null 2>&1 && [ -f ".fvmrc" ]; then
   FLUTTER="fvm flutter"
   DART="fvm dart"
   echo "Using fvm flutter"
