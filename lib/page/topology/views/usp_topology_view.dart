@@ -89,7 +89,7 @@ class _UspTopologyViewState extends ConsumerState<UspTopologyView> {
               color: colorScheme.onSurfaceVariant,
             ),
             AppGap.sm(),
-            Switch(
+            AppSwitch(
               value: _showDevices,
               onChanged: (value) => setState(() => _showDevices = value),
             ),
@@ -167,14 +167,14 @@ class _UspTopologyViewState extends ConsumerState<UspTopologyView> {
             padding: const EdgeInsets.only(top: AppSpacing.md),
             child: Align(
               alignment: Alignment.centerRight,
-              child: TextButton(
-                onPressed: deviceId.isNotEmpty
+              child: AppButton.text(
+                label: 'Details',
+                onTap: deviceId.isNotEmpty
                     ? () => router.pushNamed(
                           RouteNamed.uspNodeDetail,
                           queryParameters: {'deviceId': deviceId},
                         )
                     : null,
-                child: Text('Details'),
               ),
             ),
           ),
