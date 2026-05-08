@@ -110,12 +110,8 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
           !next.hasError) {
         final loginType = next.value?.loginType;
         if (loginType != null && loginType != LoginType.none) {
-          // Must store router fingerprint before navigating — the recovery
-          // probe uses it to verify we reconnected to the same router.
-          session.fetchDeviceInfoAndInitializeServices().whenComplete(() {
-            if (!context.mounted) return;
-            context.goNamed(RouteNamed.uspDashboard);
-          });
+          if (!context.mounted) return;
+          context.goNamed(RouteNamed.uspDashboard);
         }
       }
     });

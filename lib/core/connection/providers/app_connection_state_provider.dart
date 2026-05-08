@@ -39,6 +39,17 @@ class AppConnectionStateNotifier extends Notifier<AppConnectionState> {
       _sseSuspended = sseState == SseConnectionState.suspended;
     });
 
+    ref.listen(authProvider, (_, next) {
+      final loginType = next.value?.loginType;
+      if (loginType == null || loginType == LoginType.none) {
+        _probeTimer?.cancel();
+        _probeTimer = null;
+        _cooldownTimer?.cancel();
+        _cooldownTimer = null;
+        state = AppConnectionState.loggedOut;
+      }
+    });
+
     ref.onDispose(() {
       _probeTimer?.cancel();
       _cooldownTimer?.cancel();
@@ -90,7 +101,7 @@ class AppConnectionStateNotifier extends Notifier<AppConnectionState> {
     _probeTimer?.cancel();
     _runProbe();
     _probeTimer =
-        Timer.periodic(const Duration(seconds: 5), (_) => _runProbe());
+        Timer.periodic(const Duration(seconds: 10), (_) => _runProbe());
   }
 
   Future<void> _runProbe() async {

@@ -76,6 +76,13 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
         await const FlutterSecureStorage()
             .write(key: pLocalPassword, value: password);
         logger.d('[Auth]localLogin: USP login succeeded');
+
+        // Fetch device info and store fingerprint before completing login —
+        // keeps auth state in loading so the login spinner stays visible.
+        await ref
+            .read(sessionProvider.notifier)
+            .fetchDeviceInfoAndInitializeServices();
+
         return previousState.copyWith(
           localPassword: password,
           loginType: LoginType.local,
@@ -104,40 +111,46 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   /// Performs logout, clearing credentials and resetting state.
   Future logout() async {
     logger.d('[Auth]logout: starting');
-    state = const AsyncValue.loading();
 
-    state = await AsyncValue.guard(() async {
-      // Disconnect SSE and unregister subscriptions BEFORE USP logout —
-      // subscription cleanup uses authenticated requests, so the token
-      // must still be valid.
-      final sseManager = ref.read(sseManagerProvider);
-      if (sseManager != null) {
-        logger.d('[Auth]logout: disconnecting SSE');
-        await sseManager.disconnect();
-        await sseManager.registry.unregisterAll();
-      }
+    // Capture refs before state change invalidates them.
+    final sseManager = ref.read(sseManagerProvider);
+    final uspCoordinator = ref.read(uspAuthCoordinatorProvider);
+    final fingerprintService = ref.read(routerFingerprintServiceProvider);
+    final session = ref.read(sessionProvider.notifier);
 
-      // Now safe to logout USP
-      logger.d('[Auth]logout: syncing USP logout');
-      await ref.read(uspAuthCoordinatorProvider).syncAfterLogout();
+    // Disconnect SSE first (fast) — stops reconnect attempts and prevents
+    // dashboard orchestrator from calling connect() after state change.
+    if (sseManager != null) {
+      logger.d('[Auth]logout: disconnecting SSE');
+      await sseManager.disconnect();
+    }
 
-      // Clear router fingerprint
-      await ref.read(routerFingerprintServiceProvider).clear();
+    // Clear credentials BEFORE setting state — otherwise GoRouter redirect
+    // calls init() which reads the password back and re-authenticates.
+    logger.d('[Auth]logout: clearing credentials');
+    await _authService.clearAllCredentials();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(pSelectedNetworkId);
+    await prefs.remove(pCurrentSN);
 
-      // Clear credentials
-      logger.d('[Auth]logout: clearing credentials');
-      await _authService.clearAllCredentials();
-
-      // Clear RA-related prefs (legacy cleanup)
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove(pSelectedNetworkId);
-      await prefs.remove(pCurrentSN);
-
-      // Reset provider states
-      ref.read(sessionProvider.notifier).clear();
-      logger.d('[Auth]logout: complete');
-      return AuthState.empty();
-    });
+    // Now safe to set state — init() will find no stored password.
+    state = AsyncValue.data(AuthState.empty());
     ref.read(selectedNetworkIdProvider.notifier).state = null;
+    session.clear();
+
+    // Remaining cleanup in background — slow but non-fatal if it fails.
+    () async {
+      try {
+        if (sseManager != null) {
+          await sseManager.registry.unregisterAll();
+        }
+        logger.d('[Auth]logout: syncing USP logout');
+        await uspCoordinator.syncAfterLogout();
+        await fingerprintService.clear();
+        logger.d('[Auth]logout: complete');
+      } catch (e) {
+        logger.w('[Auth]logout: cleanup error (non-fatal): $e');
+      }
+    }();
   }
 }

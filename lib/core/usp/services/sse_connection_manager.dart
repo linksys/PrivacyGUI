@@ -98,6 +98,7 @@ class SseConnectionManager {
   /// is already in progress, subsequent calls await the existing attempt.
   Future<void> connect() async {
     if (_disposed) return;
+    if (_intentionalDisconnect) return;
 
     // Lock: if connect is already in progress, await it and return.
     if (_connectInProgress != null) {
