@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:privacy_gui/core/utils/device_classifier.dart';
 import 'package:privacy_gui/core/utils/device_image_helper.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
 import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
@@ -41,7 +42,14 @@ class UspTopologyBuilder {
       image: DeviceImageHelper.getRouterImage(gatewayIconName),
       extra: info.manufacturer,
       level: 1.0,
-      metadata: {'deviceId': gatewayDeviceId},
+      metadata: {
+        'deviceId': gatewayDeviceId,
+        'model': info.modelName,
+        'manufacturer': info.manufacturer,
+        'serialNumber': info.serialNumber,
+        'softwareVersion': info.softwareVersion,
+        'isMaster': true,
+      },
       coverageRings: coverageColor != null
           ? _buildCoverageRings(
               MeshNodeType.gateway, coverageColor, coverageRingScale)
@@ -70,7 +78,14 @@ class UspTopologyBuilder {
           parentId: gatewayId,
           image: DeviceImageHelper.getRouterImage(extenderIconName),
           level: 0.8,
-          metadata: {'deviceId': meshNode.deviceId},
+          metadata: {
+            'deviceId': meshNode.deviceId,
+            'model': meshNode.model,
+            'manufacturer': meshNode.manufacturer,
+            'serialNumber': meshNode.serialNumber,
+            'softwareVersion': meshNode.softwareVersion,
+            'isMaster': false,
+          },
           coverageRings: coverageColor != null
               ? _buildCoverageRings(
                   MeshNodeType.extender, coverageColor, coverageRingScale)
@@ -98,6 +113,12 @@ class UspTopologyBuilder {
         }
       }
 
+      // Classify device for icon
+      final category = DeviceClassifier.classify(
+        hostname: device.displayName,
+        mac: device.mac,
+      );
+
       nodes.add(MeshNode(
         id: clientId,
         name: device.displayName,
@@ -105,7 +126,7 @@ class UspTopologyBuilder {
         status:
             device.isActive ? MeshNodeStatus.online : MeshNodeStatus.offline,
         parentId: parentId,
-        iconData: isEthernet ? Icons.settings_ethernet : Icons.wifi,
+        iconData: category.icon,
         extra: device.ip,
         signalQuality: _resolveSignalQuality(device),
         level: _rssiToLevel(device),
@@ -167,9 +188,11 @@ class UspTopologyBuilder {
     Color color,
     double scale,
   ) {
+    // Ring radii: inner gradient ring + outer dashed ring
+    // Tuned to not clip while providing clear visual separation
     final (innerR, outerR, innerOp, outerOp) = switch (type) {
-      MeshNodeType.gateway => (100.0 * scale, 180.0 * scale, 0.18, 0.12),
-      MeshNodeType.extender => (80.0 * scale, 140.0 * scale, 0.15, 0.10),
+      MeshNodeType.gateway => (90.0 * scale, 160.0 * scale, 0.16, 0.10),
+      MeshNodeType.extender => (70.0 * scale, 120.0 * scale, 0.14, 0.09),
       _ => (0.0, 0.0, 0.0, 0.0),
     };
     if (innerR == 0) return [];

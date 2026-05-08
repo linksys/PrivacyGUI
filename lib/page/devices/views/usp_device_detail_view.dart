@@ -137,7 +137,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
                   borderRadius: BorderRadius.circular(AppSpacing.sm),
                 ),
                 child: Icon(
-                  _getCategoryIcon(classification.category),
+                  classification.category.icon,
                   size: 28,
                   color: colorScheme.onPrimaryContainer,
                 ),
@@ -532,24 +532,6 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
   // ===========================================================================
   // Helpers
   // ===========================================================================
-
-  IconData _getCategoryIcon(DeviceCategory category) {
-    return switch (category) {
-      DeviceCategory.phone => Icons.smartphone,
-      DeviceCategory.tablet => Icons.tablet,
-      DeviceCategory.computer => Icons.computer,
-      DeviceCategory.tv => Icons.tv,
-      DeviceCategory.gameConsole => Icons.sports_esports,
-      DeviceCategory.mediaPlayer => Icons.cast,
-      DeviceCategory.smartSpeaker => Icons.speaker,
-      DeviceCategory.camera => Icons.videocam,
-      DeviceCategory.printer => Icons.print,
-      DeviceCategory.networkDevice => Icons.router,
-      DeviceCategory.iot => Icons.lightbulb,
-      DeviceCategory.wearable => Icons.watch,
-      DeviceCategory.unknown => Icons.devices_other,
-    };
-  }
 
   String _getSignalQualityText(int level) {
     return switch (level) {

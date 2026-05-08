@@ -14,11 +14,18 @@ import 'package:ui_kit_library/ui_kit.dart';
 /// Displays the network topology using [AppTopology] in interactive mode.
 /// Tapping a router/extender node navigates to Node Detail; tapping a client
 /// navigates to Device Detail.
-class UspTopologyView extends ConsumerWidget {
+class UspTopologyView extends ConsumerStatefulWidget {
   const UspTopologyView({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<UspTopologyView> createState() => _UspTopologyViewState();
+}
+
+class _UspTopologyViewState extends ConsumerState<UspTopologyView> {
+  bool _showDevices = true;
+
+  @override
+  Widget build(BuildContext context) {
     final asyncDevices = ref.watch(devicesDataProvider);
 
     return UiKitPageView.withSliver(
@@ -57,71 +64,103 @@ class UspTopologyView extends ConsumerWidget {
               coverageColor: Theme.of(context).colorScheme.primary,
             );
 
-            return _buildTopologyCard(context, topology);
+            return _buildTopologyCard(context, topology, data.deviceModels.length);
           },
         );
       },
     );
   }
 
-  Widget _buildTopologyCard(BuildContext context, MeshTopology topology) {
-    // Capture GoRouter from the outer context — the panel's context inside
-    // the graph view's Stack may not reliably resolve GoRouter.
+  Widget _buildTopologyCard(
+      BuildContext context, MeshTopology topology, int deviceCount) {
     final router = GoRouter.of(context);
+    final colorScheme = Theme.of(context).colorScheme;
 
-    return AppCard(
-      child: SizedBox(
-        height: MediaQuery.of(context).size.height * 0.7,
-        child: _withTopologyAnimation(
-          context,
-          AppTopology(
-            topology: topology,
-            viewMode: TopologyViewMode.auto,
-            layoutMode: LayoutRecommendation.auto,
-            clientVisibility: ClientVisibility.clustered,
-            nodeRendererRegistry: NodeRendererRegistry.differentiated,
-            enableAnimation: true,
-            interactive: true,
-            // Tree view (mobile): navigate directly on tap.
-            onNodeTap: (nodeId) => _navigateByNodeId(router, nodeId, topology),
-            treeConfig: TopologyTreeConfiguration(
-              titleBuilder: (node) => node.name,
-              subtitleBuilder: (node) => node.extra ?? '',
-              preferAnimationNode: true,
-              showStatusIndicator: true,
-              showStatusText: true,
-              expanded: true,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Header with toggle
+        Row(
+          children: [
+            Expanded(child: const SizedBox.shrink()),
+            AppText.labelMedium(
+              'Show Devices',
+              color: colorScheme.onSurfaceVariant,
             ),
-            // Graph view (desktop): floating panel on router/extender tap.
-            // Client nodes are not tappable in graph view (ui_kit design).
-            nodeDetailConfig: NodeDetailConfig(
-              trigger: NodeDetailTrigger.tap,
-              mode: NodeDetailMode.floatingPanel,
-              detailBuilder: (ctx, node, metadata) =>
-                  _buildDetailPanel(ctx, node, metadata, router),
+            AppGap.sm(),
+            Switch(
+              value: _showDevices,
+              onChanged: (value) => setState(() => _showDevices = value),
+            ),
+          ],
+        ),
+        AppGap.sm(),
+        // Topology view
+        SizedBox(
+          height: MediaQuery.of(context).size.height * 0.7,
+          child: _withTopologyAnimation(
+            context,
+            AppTopology(
+              topology: topology,
+              viewMode: TopologyViewMode.auto,
+              layoutMode: LayoutRecommendation.auto,
+              clientVisibility: _showDevices
+                  ? ClientVisibility.always
+                  : ClientVisibility.onHover,
+              nodeRendererRegistry: NodeRendererRegistry.unified,
+              enableAnimation: true,
+              interactive: false,
+              onNodeTap: (nodeId) =>
+                  _navigateByNodeId(router, nodeId, topology),
+              treeConfig: TopologyTreeConfiguration(
+                titleBuilder: (node) => node.name,
+                subtitleBuilder: (node) => node.extra ?? '',
+                preferAnimationNode: true,
+                showStatusIndicator: true,
+                showStatusText: true,
+                expanded: true,
+              ),
+              nodeDetailConfig: NodeDetailConfig(
+                trigger: NodeDetailTrigger.tap,
+                mode: NodeDetailMode.floatingPanel,
+                detailBuilder: (ctx, node, metadata) =>
+                    _buildDetailPanel(ctx, node, metadata, router),
+              ),
             ),
           ),
         ),
-      ),
+      ],
     );
   }
 
   /// Detail panel content shown on router/extender tap (graph view).
   Widget _buildDetailPanel(BuildContext context, MeshNode node,
       Map<String, dynamic>? metadata, GoRouter router) {
-    final ipAddress = metadata?['ip'] as String? ?? '';
     final deviceId = metadata?['deviceId'] as String? ?? '';
+    final model = metadata?['model'] as String? ?? '';
+    final manufacturer = metadata?['manufacturer'] as String? ?? '';
+    final serialNumber = metadata?['serialNumber'] as String? ?? '';
+    final softwareVersion = metadata?['softwareVersion'] as String? ?? '';
+    final isMaster = metadata?['isMaster'] as bool? ?? false;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        _detailRow('Type', node.isGateway ? 'Gateway' : 'Extender'),
-        _detailRow(
-          'Status',
-          node.status == MeshNodeStatus.online ? 'Online' : 'Offline',
-        ),
-        if (ipAddress.isNotEmpty) _detailRow('IP', ipAddress),
+        // Role badge
+        _detailRow('Role', isMaster ? 'Master' : 'Slave'),
+        // MAC Address (skip synthetic 'gateway')
+        if (deviceId.isNotEmpty && deviceId.toUpperCase() != 'GATEWAY')
+          _detailRow('MAC', deviceId),
+        // Model
+        if (model.isNotEmpty) _detailRow('Model', model),
+        // Manufacturer
+        if (manufacturer.isNotEmpty) _detailRow('Manufacturer', manufacturer),
+        // Serial Number
+        if (serialNumber.isNotEmpty) _detailRow('S/N', serialNumber),
+        // Firmware
+        if (softwareVersion.isNotEmpty) _detailRow('Firmware', softwareVersion),
+        // Details button
         if (node.status == MeshNodeStatus.online)
           Padding(
             padding: const EdgeInsets.only(top: AppSpacing.md),
@@ -201,6 +240,11 @@ class UspTopologyView extends ConsumerWidget {
           appTheme.copyWith(
             visualEffects:
                 appTheme.visualEffects | AppThemeConfig.effectTopologyAnimation,
+            // Increase spacing to prevent client nodes overlapping with gateway
+            topologySpec: appTheme.topologySpec.copyWith(
+              nodeSpacing: appTheme.topologySpec.nodeSpacing * 2.2,
+              orbitRadius: appTheme.topologySpec.orbitRadius * 2.2,
+            ),
           ),
         ],
       ),

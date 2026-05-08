@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:privacy_gui/core/utils/oui_lookup.dart';
 
 /// Device category for UI display and filtering.
@@ -419,4 +420,23 @@ enum ClassificationConfidence {
   medium,
   low,
   none,
+}
+
+/// Extension to get [IconData] for [DeviceCategory].
+extension DeviceCategoryIcon on DeviceCategory {
+  IconData get icon => switch (this) {
+        DeviceCategory.phone => Icons.smartphone,
+        DeviceCategory.tablet => Icons.tablet,
+        DeviceCategory.computer => Icons.computer,
+        DeviceCategory.tv => Icons.tv,
+        DeviceCategory.gameConsole => Icons.sports_esports,
+        DeviceCategory.mediaPlayer => Icons.cast,
+        DeviceCategory.smartSpeaker => Icons.speaker,
+        DeviceCategory.camera => Icons.videocam,
+        DeviceCategory.printer => Icons.print,
+        DeviceCategory.networkDevice => Icons.router,
+        DeviceCategory.iot => Icons.lightbulb,
+        DeviceCategory.wearable => Icons.watch,
+        DeviceCategory.unknown => Icons.devices_other,
+      };
 }
