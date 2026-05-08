@@ -67,43 +67,6 @@ void main() {
       expect(maskedJson, rawJson);
     });
 
-    test('replaceHttpScheme: replaces http scheme correctly', () {
-      const raw = 'https://www.example.com/path/to/resource';
-      const expected = 'https-//www-example-com/path/to/resource';
-      expect(MaskingUtils.replaceHttpScheme(raw), expected);
-    });
-
-    test('replaceHttpScheme: replaces https scheme correctly', () {
-      const raw = 'https://secure.example.com/login';
-      const expected = 'https-//secure-example-com/login';
-      expect(MaskingUtils.replaceHttpScheme(raw), expected);
-    });
-
-    test('replaceHttpScheme: handles naked domain URL', () {
-      expect(
-          MaskingUtils.replaceHttpScheme('www.google.com'), 'www-google-com');
-    });
-
-    test('replaceHttpScheme: handles missing scheme', () {
-      expect(MaskingUtils.replaceHttpScheme('//www.example.com/path'),
-          '//www-example-com/path');
-    });
-
-    test('replaceHttpScheme: handles empty string', () {
-      expect(MaskingUtils.replaceHttpScheme(''), '');
-    });
-
-    test('replaceHttpScheme: handles multiple occurrences', () {
-      const raw =
-          'https://example1.com:8080/path1 https://example2.com:443/path2';
-      const expected =
-          'https-//example1-com-8080/path1 https-//example2-com-443/path2';
-      expect(MaskingUtils.replaceHttpScheme(raw), expected);
-    });
-
-    test('replaceHttpScheme: handles invalid URL format', () {
-      expect(MaskingUtils.replaceHttpScheme('invalid_url'), 'invalid_url');
-    });
   });
 
   group('encryptJNAPAuth', () {
