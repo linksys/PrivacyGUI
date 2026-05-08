@@ -68,6 +68,95 @@ void main() {
     });
   });
 
+  group('maskSerialNumber', () {
+    test('masks JSON format with double quotes', () {
+      const raw = '{"serialNumber": "ABC123456XYZ"}';
+      const expected = '{"serialNumber": "****6XYZ"}';
+      expect(MaskingUtils.maskSerialNumber(raw), expected);
+    });
+
+    test('masks JSON format without value quotes', () {
+      const raw = '"serialNumber": ABC123456XYZ';
+      const expected = '"serialNumber": ****6XYZ';
+      expect(MaskingUtils.maskSerialNumber(raw), expected);
+    });
+
+    test('masks format without any quotes', () {
+      const raw = 'serialNumber: ABC123456XYZ';
+      const expected = 'serialNumber: ****6XYZ';
+      expect(MaskingUtils.maskSerialNumber(raw), expected);
+    });
+
+    test('masks short serial number (<=4 chars) completely', () {
+      const raw = '{"serialNumber": "AB12"}';
+      const expected = '{"serialNumber": "****"}';
+      expect(MaskingUtils.maskSerialNumber(raw), expected);
+    });
+
+    test('masks multiple serial numbers', () {
+      const raw =
+          '{"serialNumber": "SERIAL001"}, {"serialNumber": "SERIAL002"}';
+      const expected =
+          '{"serialNumber": "****L001"}, {"serialNumber": "****L002"}';
+      expect(MaskingUtils.maskSerialNumber(raw), expected);
+    });
+
+    test('is case insensitive for key', () {
+      const raw = '{"SERIALNUMBER": "ABC123456XYZ"}';
+      const expected = '{"SERIALNUMBER": "****6XYZ"}';
+      expect(MaskingUtils.maskSerialNumber(raw), expected);
+    });
+
+    test('returns unchanged if no serial number found', () {
+      const raw = '{"deviceName": "MyRouter"}';
+      expect(MaskingUtils.maskSerialNumber(raw), raw);
+    });
+
+    test('handles empty string', () {
+      expect(MaskingUtils.maskSerialNumber(''), '');
+    });
+  });
+
+  group('maskMacAddress', () {
+    test('masks MAC with colon separator', () {
+      const raw = 'MAC: AA:BB:CC:DD:EE:FF';
+      const expected = 'MAC: XX:XX:XX:XX:EE:FF';
+      expect(MaskingUtils.maskMacAddress(raw), expected);
+    });
+
+    test('masks MAC with hyphen separator', () {
+      const raw = 'MAC: AA-BB-CC-DD-EE-FF';
+      const expected = 'MAC: XX-XX-XX-XX-EE-FF';
+      expect(MaskingUtils.maskMacAddress(raw), expected);
+    });
+
+    test('masks multiple MAC addresses', () {
+      const raw = 'src=AA:BB:CC:DD:EE:FF dst=11:22:33:44:55:66';
+      const expected = 'src=XX:XX:XX:XX:EE:FF dst=XX:XX:XX:XX:55:66';
+      expect(MaskingUtils.maskMacAddress(raw), expected);
+    });
+
+    test('handles mixed case', () {
+      const raw = 'aA:bB:cC:dD:eE:fF';
+      const expected = 'XX:XX:XX:XX:eE:fF';
+      expect(MaskingUtils.maskMacAddress(raw), expected);
+    });
+
+    test('returns unchanged if no MAC address found', () {
+      const raw = 'No MAC here, just IP 192.168.1.1';
+      expect(MaskingUtils.maskMacAddress(raw), raw);
+    });
+
+    test('handles empty string', () {
+      expect(MaskingUtils.maskMacAddress(''), '');
+    });
+
+    test('does not match invalid MAC formats', () {
+      const raw = 'Invalid: GG:HH:II:JJ:KK:LL';
+      expect(MaskingUtils.maskMacAddress(raw), raw);
+    });
+  });
+
   group('encryptJNAPAuth', () {
     setUp(() {
       FernetManager().resetForTest();
