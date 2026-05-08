@@ -123,8 +123,8 @@ class SseOperationAwaiter {
         ),
       );
 
-      logger
-          .d('[USP][SSE][Operate]: Completed $operateCommand: ${result.status}');
+      logger.d(
+          '[USP][SSE][Operate]: Completed $operateCommand: ${result.status}');
       return result;
     } finally {
       // Always cleanup: wildcard handler + subscription
@@ -133,7 +133,8 @@ class SseOperationAwaiter {
         try {
           await cleanupSubscription();
         } catch (e) {
-          logger.w('[USP][SSE][Operate]: Cleanup failed for $subscriptionId: $e');
+          logger
+              .w('[USP][SSE][Operate]: Cleanup failed for $subscriptionId: $e');
         }
       }
     }

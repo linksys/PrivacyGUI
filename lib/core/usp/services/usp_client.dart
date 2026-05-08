@@ -164,8 +164,7 @@ class UspClient {
         try {
           onRefreshTokenSuccess?.call();
         } catch (cbError) {
-          logger.w(
-              '$_tag onRefreshTokenSuccess callback error: $cbError');
+          logger.w('$_tag onRefreshTokenSuccess callback error: $cbError');
         }
         _reauthInProgress!.complete();
         return;
@@ -402,13 +401,12 @@ class UspClient {
     _lastCallRetried = false;
     final sw = Stopwatch()..start();
 
-    logger.d(
-        '$_tag#$id SET_ORDERED${allowPartial ? ' (allowPartial)' : ''} →\n'
+    logger.d('$_tag#$id SET_ORDERED${allowPartial ? ' (allowPartial)' : ''} →\n'
         '${_prettyJson(parameterGroups)}');
 
     try {
-      final result = await _withAuthRetry(
-          () => _client.setOrdered(parameterGroups, allowPartial: allowPartial));
+      final result = await _withAuthRetry(() =>
+          _client.setOrdered(parameterGroups, allowPartial: allowPartial));
       sw.stop();
       final label = _idLabel(id);
       logger.d('$_tag$label SET_ORDERED ← (${sw.elapsedMilliseconds}ms)\n'
@@ -417,8 +415,7 @@ class UspClient {
     } catch (e) {
       sw.stop();
       final label = _idLabel(id);
-      logger.e(
-          '$_tag$label SET_ORDERED ✗ (${sw.elapsedMilliseconds}ms)\n  $e');
+      logger.e('$_tag$label SET_ORDERED ✗ (${sw.elapsedMilliseconds}ms)\n  $e');
       rethrow;
     }
   }
@@ -576,7 +573,10 @@ class UspClient {
     _lastCallRetried = false;
     final sw = Stopwatch()..start();
 
-    final payload = <String, dynamic>{'command': command, if (args.isNotEmpty) 'args': args};
+    final payload = <String, dynamic>{
+      'command': command,
+      if (args.isNotEmpty) 'args': args
+    };
     logger.d('$_tag#$id OPERATE →\n${_prettyMap(payload)}');
 
     try {
@@ -876,8 +876,7 @@ class UspClient {
               controller.add(parsed);
             }
           } catch (e) {
-            logger
-                .w('$_tag SSE subscribe re-fetch error for "$id": $e');
+            logger.w('$_tag SSE subscribe re-fetch error for "$id": $e');
           }
         });
       },

@@ -33,7 +33,8 @@ class BenchMarkLogger {
   void start() {
     _start = DateTime.now();
     if (kDebugMode && !recordOnly) {
-      logger.d('[Benchmark]: ${describeIdentity(this)} - $name: start at <$_start>');
+      logger.d(
+          '[Benchmark]: ${describeIdentity(this)} - $name: start at <$_start>');
     }
   }
 

@@ -64,8 +64,7 @@ class MaskingUtils {
   }
 
   static String maskSerialNumber(String raw) {
-    final pattern = RegExp(
-        r'("?serialNumber"?\s*:\s*"?)([A-Za-z0-9]{4,})("?)',
+    final pattern = RegExp(r'("?serialNumber"?\s*:\s*"?)([A-Za-z0-9]{4,})("?)',
         caseSensitive: false);
     return raw.replaceAllMapped(pattern, (match) {
       final prefix = match.group(1)!;
@@ -77,8 +76,7 @@ class MaskingUtils {
   }
 
   static String maskMacAddress(String raw) {
-    final pattern = RegExp(
-        r'([0-9A-Fa-f]{2}[:\-]){5}[0-9A-Fa-f]{2}');
+    final pattern = RegExp(r'([0-9A-Fa-f]{2}[:\-]){5}[0-9A-Fa-f]{2}');
     return raw.replaceAllMapped(pattern, (match) {
       final mac = match.group(0)!;
       final separator = mac.contains(':') ? ':' : '-';
@@ -86,5 +84,4 @@ class MaskingUtils {
       return 'XX${separator}XX${separator}XX${separator}XX$separator${lastTwo[4]}$separator${lastTwo[5]}';
     });
   }
-
 }

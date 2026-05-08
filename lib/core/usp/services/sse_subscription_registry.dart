@@ -40,9 +40,9 @@ class SseSubscriptionRegistry {
   }) async {
     // Check for duplicate
     if (_subscriptions.containsKey(subscriptionId)) {
-      logger
-          .d('[USP][SSE][Registry]: Subscription $subscriptionId already exists, '
-              'skipping duplicate registration');
+      logger.d(
+          '[USP][SSE][Registry]: Subscription $subscriptionId already exists, '
+          'skipping duplicate registration');
       return _subscriptions[subscriptionId]!;
     }
 
@@ -110,7 +110,8 @@ class SseSubscriptionRegistry {
           path: record.referenceList,
           notifType: _notifTypeToInt(record.notifType),
         );
-        logger.d('[USP][SSE][Registry]: Re-registered ${record.subscriptionId}');
+        logger
+            .d('[USP][SSE][Registry]: Re-registered ${record.subscriptionId}');
       } catch (e) {
         logger.w('[USP][SSE][Registry]: Failed to re-register '
             '${record.subscriptionId}: $e');

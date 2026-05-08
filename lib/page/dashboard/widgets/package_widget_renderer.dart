@@ -183,7 +183,8 @@ class _PackageWidgetRendererState extends ConsumerState<PackageWidgetRenderer> {
             .read(packageWidgetDataProvider(widget.template.widgetId).notifier)
             .setAll(mapped);
       } else {
-        logger.w('[HTTP][PkgWidget]: ${ds.url} returned ${response.statusCode}');
+        logger
+            .w('[HTTP][PkgWidget]: ${ds.url} returned ${response.statusCode}');
       }
     } catch (e) {
       logger.w('[HTTP][PkgWidget]: Fetch error for '
@@ -320,8 +321,8 @@ class _PackageWidgetRendererState extends ConsumerState<PackageWidgetRenderer> {
     if (usp == null) return;
 
     try {
-      logger
-          .d('[PkgWidget]: Refreshing USP data for ${widget.template.widgetId}');
+      logger.d(
+          '[PkgWidget]: Refreshing USP data for ${widget.template.widgetId}');
       final data = await usp.get(subscription.paths);
       if (!mounted) return;
       ref

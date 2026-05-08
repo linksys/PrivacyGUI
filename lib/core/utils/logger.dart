@@ -46,9 +46,8 @@ class CustomOutput extends LogOutput {
     }
     if (!kIsWeb && output.isNotEmpty && _file.existsSync()) {
       final processedOutput = MaskingUtils.encryptJNAPAuth(
-          MaskingUtils.maskSensitiveJsonValues(
-              MaskingUtils.maskSerialNumber(
-                  MaskingUtils.maskMacAddress(output.toString()))));
+          MaskingUtils.maskSensitiveJsonValues(MaskingUtils.maskSerialNumber(
+              MaskingUtils.maskMacAddress(output.toString()))));
       await _file.writeAsBytes("$processedOutput\n".codeUnits,
           mode: FileMode.writeOnlyAppend);
     } else if (kIsWeb && output.isNotEmpty) {
@@ -179,15 +178,13 @@ void _addLogWithTag(
 /// separated by newlines.
 String _getWebLogByTag({String tag = appLogTag, bool showLevel = true}) {
   final logList = _webLogCache[tag] ?? [];
-  return logList
-      .sorted((a, b) => a.$1.compareTo(b.$1))
-      .map((e) {
-        final timestamp = DateTime.fromMillisecondsSinceEpoch(e.$1).toIso8601String();
-        return showLevel
-            ? '$timestamp ${_levelPrefix(e.$3)}${e.$2}'
-            : '$timestamp ${e.$2}';
-      })
-      .join('\n');
+  return logList.sorted((a, b) => a.$1.compareTo(b.$1)).map((e) {
+    final timestamp =
+        DateTime.fromMillisecondsSinceEpoch(e.$1).toIso8601String();
+    return showLevel
+        ? '$timestamp ${_levelPrefix(e.$3)}${e.$2}'
+        : '$timestamp ${e.$2}';
+  }).join('\n');
 }
 
 String _levelPrefix(Level level) {

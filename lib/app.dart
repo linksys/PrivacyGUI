@@ -239,8 +239,8 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
     if (sseManager == null) return;
     final sseState = sseManager.connection.connectionState.value;
     if (sseState == SseConnectionState.suspended) {
-      logger
-          .d('[App]: Lifecycle resume: attempting SSE reconnect from suspended');
+      logger.d(
+          '[App]: Lifecycle resume: attempting SSE reconnect from suspended');
       sseManager.tryReconnect();
     }
   }

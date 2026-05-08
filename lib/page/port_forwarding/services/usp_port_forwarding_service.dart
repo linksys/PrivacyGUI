@@ -207,7 +207,8 @@ class UspPortForwardingService {
                 .w('[PortForwarding] Delete partial: ${f.first.errorMessage}');
           case UspFailure(errors: final e):
             failedOps++;
-            logger.w('[PortForwarding]: Delete failed: ${e.first.errorMessage}');
+            logger
+                .w('[PortForwarding]: Delete failed: ${e.first.errorMessage}');
         }
       }
 
@@ -276,7 +277,8 @@ class UspPortForwardingService {
                 .w('[PortForwarding] Update partial: ${f.first.errorMessage}');
           case UspFailure(errors: final e):
             failedOps++;
-            logger.w('[PortForwarding]: Update failed: ${e.first.errorMessage}');
+            logger
+                .w('[PortForwarding]: Update failed: ${e.first.errorMessage}');
         }
       }
 
@@ -336,7 +338,8 @@ class UspPortForwardingService {
                 .w('[PortTriggering]: Delete partial: ${f.first.errorMessage}');
           case UspFailure(errors: final e):
             failedOps++;
-            logger.w('[PortTriggering]: Delete failed: ${e.first.errorMessage}');
+            logger
+                .w('[PortTriggering]: Delete failed: ${e.first.errorMessage}');
         }
       }
 
@@ -428,7 +431,8 @@ class UspPortForwardingService {
                 .w('[PortTriggering]: Update partial: ${f.first.errorMessage}');
           case UspFailure(errors: final e):
             failedOps++;
-            logger.w('[PortTriggering]: Update failed: ${e.first.errorMessage}');
+            logger
+                .w('[PortTriggering]: Update failed: ${e.first.errorMessage}');
         }
       }
 
