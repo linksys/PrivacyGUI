@@ -87,21 +87,4 @@ class MaskingUtils {
     });
   }
 
-  static String replaceHttpScheme(String raw) {
-    const pattern =
-        r'(https?:\/\/)?((www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b)([-a-zA-Z0-9()@:%_\+.~#?&\/\/=]*)';
-    RegExp regex = RegExp(pattern, multiLine: true);
-    String result = raw;
-    int idx = 0;
-    regex.allMatches(result).forEach((element) {
-      element.groups([1, 2, 4]).nonNulls.forEach((group) {
-            int start = raw.indexOf(group, idx);
-            int end = start + group.length;
-            final replaced = group.replaceAll(':', '-').replaceAll('.', '-');
-            result = result.replaceRange(start, end, replaced);
-            idx = end;
-          });
-    });
-    return result;
-  }
 }
