@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:privacy_gui/core/utils/device_classifier.dart';
 import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
 import 'package:privacy_gui/page/_shared/components/usp_status_dot.dart';
 import 'package:privacy_gui/page/devices/views/components/usp_signal_strength_indicator.dart';
@@ -19,13 +20,12 @@ enum DeviceListTileVariant {
 /// A tappable tile showing device summary info for the device list.
 ///
 /// Layout (Direction A — two-row hierarchy):
-///   [•] [type-icon]  Name                            IP      >
-///                    band · SSID · via Node    ▇▇▇ -38 dBm
+///   [•] [device-icon]  Name                            IP      >
+///                      band · SSID · via Node    ▇▇▇ -38 dBm
 ///
 /// Design notes:
-/// - The type icon only encodes connection type (WiFi vs. Ethernet). Signal
-///   strength lives exclusively in the right-hand bars+dBm cluster to avoid
-///   the duplication we had when the icon also varied with RSSI.
+/// - The device icon is derived from [DeviceClassifier] based on hostname and
+///   MAC OUI to show the device type (phone, computer, TV, etc.).
 /// - MAC is intentionally omitted — it belongs on the detail page.
 /// - Offline devices dim the entire tile via Opacity so "offline" reads as a
 ///   single visual cue instead of threading through colors.
@@ -50,11 +50,20 @@ class UspDeviceListTile extends StatelessWidget {
     final hasSignal =
         device.isActive && device.isWifi && device.signalStrength != null;
 
+    final deviceCategory = DeviceClassifier.classify(
+      hostname: device.hostName,
+      mac: device.mac,
+    );
+
     final content = Row(
       children: [
         UspStatusDot(isActive: device.isActive),
         AppGap.sm(),
-        _ConnectionTypeIcon(isWifi: device.isWifi),
+        Icon(
+          deviceCategory.icon,
+          size: 20,
+          color: scheme.onSurface,
+        ),
         AppGap.sm(),
         Expanded(
           child: Column(
@@ -153,20 +162,5 @@ class UspDeviceListTile extends StatelessWidget {
       parts.add('via ${device.parentNodeName}');
     }
     return parts.join(' · ');
-  }
-}
-
-class _ConnectionTypeIcon extends StatelessWidget {
-  const _ConnectionTypeIcon({required this.isWifi});
-
-  final bool isWifi;
-
-  @override
-  Widget build(BuildContext context) {
-    return Icon(
-      isWifi ? Icons.wifi : Icons.settings_ethernet,
-      size: 18,
-      color: Theme.of(context).colorScheme.onSurface,
-    );
   }
 }

@@ -4,6 +4,7 @@ import 'package:privacy_gui/route/navigation_extensions.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/core/utils/device_classifier.dart';
 import 'package:privacy_gui/core/utils/oui_lookup.dart';
+import 'package:privacy_gui/core/utils/wifi.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
 import 'package:privacy_gui/page/_shared/components/usp_mutation_helper.dart';
@@ -12,6 +13,7 @@ import 'package:privacy_gui/page/dhcp/providers/usp_dhcp_reservations_notifier.d
 import 'package:privacy_gui/page/devices/providers/device_detail_provider.dart';
 import 'package:privacy_gui/page/devices/views/components/usp_signal_strength_indicator.dart';
 import 'package:privacy_gui/page/shell/usp_top_bar.dart';
+import 'package:privacy_gui/util/wifi_signal_utils.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 class UspDeviceDetailView extends ConsumerStatefulWidget {
@@ -296,7 +298,8 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
               children: [
                 AppText.titleMedium('${device.signalStrength} dBm'),
                 AppText.labelSmall(
-                  _getSignalQualityText(device.signalLevel),
+                  getWifiSignalLevel(device.signalStrength)
+                      .resolveLabel(context),
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ],
@@ -527,19 +530,6 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
         ),
       ],
     );
-  }
-
-  // ===========================================================================
-  // Helpers
-  // ===========================================================================
-
-  String _getSignalQualityText(int level) {
-    return switch (level) {
-      3 => 'Excellent',
-      2 => 'Good',
-      1 => 'Fair',
-      _ => 'Poor',
-    };
   }
 
   // ===========================================================================
