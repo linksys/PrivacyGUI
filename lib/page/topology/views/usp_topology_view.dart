@@ -64,7 +64,8 @@ class _UspTopologyViewState extends ConsumerState<UspTopologyView> {
               coverageColor: Theme.of(context).colorScheme.primary,
             );
 
-            return _buildTopologyCard(context, topology, data.deviceModels.length);
+            return _buildTopologyCard(
+                context, topology, data.deviceModels.length);
           },
         );
       },

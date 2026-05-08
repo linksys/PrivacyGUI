@@ -108,6 +108,5 @@ class DeviceFilterOptions extends Equatable {
   });
 
   @override
-  List<Object?> get props =>
-      [nodes, ssids, bands, hasUnknownSignalDevices];
+  List<Object?> get props => [nodes, ssids, bands, hasUnknownSignalDevices];
 }

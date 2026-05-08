@@ -80,9 +80,7 @@ class _UspDeviceListViewState extends ConsumerState<UspDeviceListView> {
             )
           : null,
       onChanged: (value) {
-        ref
-            .read(deviceFilterConfigProvider.notifier)
-            .setSearchQuery(value);
+        ref.read(deviceFilterConfigProvider.notifier).setSearchQuery(value);
       },
     );
   }

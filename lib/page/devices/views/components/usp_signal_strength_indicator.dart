@@ -44,8 +44,8 @@ class UspSignalStrengthIndicator extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final level = getWifiSignalLevel(rssi);
-    final color = level.resolveColor(context) ??
-        Theme.of(context).colorScheme.onSurface;
+    final color =
+        level.resolveColor(context) ?? Theme.of(context).colorScheme.onSurface;
     final inactiveColor =
         Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.4);
     final activeLevel = _level;

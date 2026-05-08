@@ -65,7 +65,10 @@ class DeviceClassifier {
     // 1. Hostname pattern (high confidence)
     final fromHostname = _matchHostnamePattern(hostname);
     if (fromHostname != null) {
-      return (category: fromHostname, confidence: ClassificationConfidence.high);
+      return (
+        category: fromHostname,
+        confidence: ClassificationConfidence.high
+      );
     }
 
     // 2. Definitive vendor (high confidence)
@@ -73,7 +76,10 @@ class DeviceClassifier {
     if (vendor != null) {
       final definitive = _definitiveVendorCategory(vendor);
       if (definitive != null) {
-        return (category: definitive, confidence: ClassificationConfidence.high);
+        return (
+          category: definitive,
+          confidence: ClassificationConfidence.high
+        );
       }
 
       // 3. Probable vendor (medium confidence)
@@ -340,8 +346,7 @@ class DeviceClassifier {
 
   static DeviceCategory? _inferFromVendor(String vendor) {
     // Try definitive first, then probable
-    return _definitiveVendorCategory(vendor) ??
-        _probableVendorCategory(vendor);
+    return _definitiveVendorCategory(vendor) ?? _probableVendorCategory(vendor);
   }
 
   /// Vendors that ONLY make one type of device.

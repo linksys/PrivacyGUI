@@ -72,9 +72,7 @@ class DetailStatusBadge extends StatelessWidget {
           UspStatusDot(isActive: isActive, size: 8),
           AppGap.xs(),
           AppText.labelMedium(
-            isActive
-                ? (activeLabel ?? 'Online')
-                : (inactiveLabel ?? 'Offline'),
+            isActive ? (activeLabel ?? 'Online') : (inactiveLabel ?? 'Offline'),
             color: isActive
                 ? colorScheme.onPrimaryContainer
                 : colorScheme.onSurfaceVariant,

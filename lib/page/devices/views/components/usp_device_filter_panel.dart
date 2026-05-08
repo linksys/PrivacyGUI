@@ -219,9 +219,8 @@ class UspDeviceFilterPanel extends ConsumerWidget {
                 ],
                 labelOf: (id) {
                   if (id == _kAllSentinel) return _kAllLabel;
-                  final node = options.nodes
-                      .where((n) => n.deviceId == id)
-                      .firstOrNull;
+                  final node =
+                      options.nodes.where((n) => n.deviceId == id).firstOrNull;
                   return node?.model ?? id;
                 },
                 onChanged: (v) => ref
