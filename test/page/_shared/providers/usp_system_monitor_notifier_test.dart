@@ -1,12 +1,19 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:privacy_gui/core/connection/models/app_connection_state.dart';
+import 'package:privacy_gui/core/connection/providers/app_connection_state_provider.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/_shared/models/system_monitor_state.dart';
 import 'package:privacy_gui/page/_shared/providers/usp_system_monitor_notifier.dart';
 
 class MockUspClient extends Mock implements UspClient {}
+
+class _AlwaysAuthenticatedNotifier extends AppConnectionStateNotifier {
+  @override
+  AppConnectionState build() => AppConnectionState.authenticated;
+}
 
 void main() {
   late MockUspClient mockUsp;
@@ -36,6 +43,9 @@ void main() {
     return ProviderContainer(
       overrides: [
         uspClientProvider.overrideWithValue(mockUsp),
+        appConnectionStateProvider.overrideWith(() {
+          return _AlwaysAuthenticatedNotifier();
+        }),
       ],
     );
   }
@@ -117,6 +127,9 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           uspClientProvider.overrideWithValue(null),
+          appConnectionStateProvider.overrideWith(() {
+            return _AlwaysAuthenticatedNotifier();
+          }),
         ],
       );
       // Trigger build + wait for microtask.
