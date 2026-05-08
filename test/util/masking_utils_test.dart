@@ -66,7 +66,6 @@ void main() {
       final maskedJson = MaskingUtils.maskSensitiveJsonValues(rawJson);
       expect(maskedJson, rawJson);
     });
-
   });
 
   group('encryptJNAPAuth', () {

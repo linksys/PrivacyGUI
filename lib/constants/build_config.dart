@@ -111,7 +111,8 @@ class BuildConfig {
         forceCommandType = ForceCommand.local;
       }
       // Otherwise, keep ForceCommand.none (default)
-      logger.d('[Config]: Non-Web platforms: Force command type: $forceCommandType');
+      logger.d(
+          '[Config]: Non-Web platforms: Force command type: $forceCommandType');
     }
   }
 

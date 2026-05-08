@@ -145,8 +145,8 @@ class UspDevicesDataService {
       }
       return _buildTopologyInfo(network);
     } catch (e) {
-      logger
-          .d('[USP][Dashboard]: DataElements not supported or fetch failed: $e');
+      logger.d(
+          '[USP][Dashboard]: DataElements not supported or fetch failed: $e');
       return MeshTopologyInfo.empty;
     }
   }

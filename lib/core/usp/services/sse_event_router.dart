@@ -88,9 +88,9 @@ class SseEventRouter {
     final type = json['type'] as String?;
 
     if (subscriptionId == null || type == null) {
-      logger
-          .w('[USP][SSE][Router]: Notification missing subscription_id or type: '
-              '${event.data}');
+      logger.w(
+          '[USP][SSE][Router]: Notification missing subscription_id or type: '
+          '${event.data}');
       return;
     }
 

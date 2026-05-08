@@ -249,8 +249,9 @@ class SseConnectionManager {
   void _resetHeartbeatWatchdog() {
     _heartbeatWatchdog?.cancel();
     _heartbeatWatchdog = Timer(_heartbeatTimeout, () {
-      logger.w('[USP][SSE]: Heartbeat timeout (${_heartbeatTimeout.inSeconds}s) '
-          '— connection may be stale');
+      logger
+          .w('[USP][SSE]: Heartbeat timeout (${_heartbeatTimeout.inSeconds}s) '
+              '— connection may be stale');
       _sseSubscription?.cancel();
       _handleStreamEnd();
     });

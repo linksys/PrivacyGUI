@@ -113,8 +113,8 @@ final sseBootstrapProvider = FutureProvider<void>((ref) async {
     await bridge.health().timeout(const Duration(seconds: 5));
     logger.d('[USP][SSE][Bootstrap]: Bridge health check passed');
   } catch (e) {
-    logger
-        .w('[USP][SSE][Bootstrap]: Bridge health check failed: $e — continuing');
+    logger.w(
+        '[USP][SSE][Bootstrap]: Bridge health check failed: $e — continuing');
   }
 
   // Connect SSE only — core subscriptions are registered by the dashboard

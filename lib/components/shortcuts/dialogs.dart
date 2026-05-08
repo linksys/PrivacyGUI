@@ -141,7 +141,8 @@ Future<T?> showSubmitAppDialog<T>(
               context.pop(value);
             }
           }).onError((error, stackTrace) {
-            logger.e('[Dialog]: submit app error: $error', stackTrace: stackTrace);
+            logger.e('[Dialog]: submit app error: $error',
+                stackTrace: stackTrace);
             setState(() {
               isLoading = false;
             });
