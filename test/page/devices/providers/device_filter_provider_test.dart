@@ -288,9 +288,7 @@ void main() {
       test('band filter shows matching WiFi devices and all ethernet devices',
           () async {
         final container = await createReadyContainer();
-        container
-            .read(deviceFilterConfigProvider.notifier)
-            .setBand('2.4GHz');
+        container.read(deviceFilterConfigProvider.notifier).setBand('2.4GHz');
 
         final filtered = container.read(filteredDeviceListProvider);
 
@@ -422,9 +420,7 @@ void main() {
     test('nulls SSID when it disappears from options after data refresh',
         () async {
       final container = await createReadyContainer();
-      container
-          .read(deviceFilterConfigProvider.notifier)
-          .setSsidName('Guest');
+      container.read(deviceFilterConfigProvider.notifier).setSsidName('Guest');
 
       // Push a new dataset without any Guest device.
       final notifier =
@@ -449,9 +445,7 @@ void main() {
 
     test('nulls nodeId when selected node disappears', () async {
       final container = await createReadyContainer();
-      container
-          .read(deviceFilterConfigProvider.notifier)
-          .setNodeId('NODE-02');
+      container.read(deviceFilterConfigProvider.notifier).setNodeId('NODE-02');
 
       final notifier =
           container.read(devicesDataProvider.notifier) as _FakeDevicesNotifier;

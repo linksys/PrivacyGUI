@@ -261,7 +261,8 @@ void main() {
         DeviceCategory.iot,
       );
       expect(
-        DeviceClassifier.classify(hostname: 'Shelly1', mac: '00:00:00:00:00:00'),
+        DeviceClassifier.classify(
+            hostname: 'Shelly1', mac: '00:00:00:00:00:00'),
         DeviceCategory.iot,
       );
       expect(
@@ -387,7 +388,8 @@ void main() {
     test('Hostname takes priority over OUI', () {
       // Nintendo OUI but hostname says "MacBook"
       expect(
-        DeviceClassifier.classify(hostname: 'MacBook-Pro', mac: '00:17:AB:12:34:56'),
+        DeviceClassifier.classify(
+            hostname: 'MacBook-Pro', mac: '00:17:AB:12:34:56'),
         DeviceCategory.computer,
       );
     });
@@ -395,7 +397,8 @@ void main() {
     test('Hostname takes priority over randomized MAC', () {
       // Randomized MAC but hostname says "iPad"
       expect(
-        DeviceClassifier.classify(hostname: 'My-iPad', mac: 'BA:16:44:9F:EB:8B'),
+        DeviceClassifier.classify(
+            hostname: 'My-iPad', mac: 'BA:16:44:9F:EB:8B'),
         DeviceCategory.tablet,
       );
     });
