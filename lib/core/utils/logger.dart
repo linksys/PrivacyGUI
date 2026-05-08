@@ -156,7 +156,7 @@ void _addLogWithTag(
 ///
 /// Returns a tuple `(message, tag)` if successful, otherwise `null`.
 (String, String)? _splitTagAndMessage(String log) {
-  final match = RegExp(_logTagRegex).firstMatch(log);
+  final match = RegExp(_logTagRegex, dotAll: true).firstMatch(log);
   if (match == null) {
     return null;
   }
