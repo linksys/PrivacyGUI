@@ -148,7 +148,7 @@ class BridgeRequestThrottler {
   void _dispatch(_PendingRequest<dynamic> pending) {
     _active++;
     _inFlight[pending.cacheKey] = pending;
-    logger.d('[Throttler] Dispatch (active=$_active, queue=${_queue.length}): '
+    logger.d('[Throttler]: Dispatch (active=$_active, queue=${_queue.length}): '
         '${pending.cacheKey}');
 
     Future<void>(() async {
@@ -167,7 +167,7 @@ class BridgeRequestThrottler {
           expiresAt: DateTime.now().add(pending.cacheTtl),
         );
       } on TimeoutException {
-        logger.w('[Throttler] Request timeout (${requestTimeout.inSeconds}s): '
+        logger.w('[Throttler]: Request timeout (${requestTimeout.inSeconds}s): '
             '${pending.cacheKey}');
         if (!pending.completer.isCompleted) {
           pending.completer.completeError(

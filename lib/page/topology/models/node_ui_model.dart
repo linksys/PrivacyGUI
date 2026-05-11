@@ -28,7 +28,7 @@ class NodeUIModel extends Equatable {
   String get displayName => model.isNotEmpty ? model : deviceId;
 
   /// Role label for UI display.
-  String get roleLabel => isMaster ? 'Gateway' : 'Extender';
+  String get roleLabel => isMaster ? 'Master' : 'Slave';
 
   @override
   List<Object?> get props => [

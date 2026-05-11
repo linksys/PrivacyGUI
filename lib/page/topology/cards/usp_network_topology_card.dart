@@ -41,10 +41,10 @@ class UspNetworkTopologyCard extends ConsumerWidget {
       meshNodes: meshNodes,
       coverageColor: Theme.of(context).colorScheme.primary,
       // Shrink coverage rings for dashboard card context — ui_kit's
-      // calculateBounds() ignores ring radii, so full-size rings (180px)
+      // calculateBounds() ignores ring radii, so full-size rings
       // overflow the fitScale viewport. Revisit if calculateBounds is
       // updated to include ring extents.
-      coverageRingScale: 0.7,
+      coverageRingScale: 0.85,
     );
     final clientCount = devices.length;
     final useRing = clientCount >= 8;
@@ -87,24 +87,52 @@ class UspNetworkTopologyCard extends ConsumerWidget {
                   ),
                   nodeDetailConfig: NodeDetailConfig(
                     trigger: NodeDetailTrigger.tap,
-                    detailBuilder: (ctx, node, metadata) => Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        AppText.labelLarge(node.name),
-                        if (node.extra != null) AppText.bodySmall(node.extra!),
-                        AppText.bodySmall(
-                          node.status == MeshNodeStatus.online
-                              ? 'Online'
-                              : 'Offline',
-                        ),
-                      ],
-                    ),
+                    detailBuilder: (ctx, node, metadata) =>
+                        _buildNodeDetailPopup(ctx, node, metadata),
                   ),
                 ),
               ),
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNodeDetailPopup(
+      BuildContext context, MeshNode node, Map<String, dynamic>? metadata) {
+    final deviceId = metadata?['deviceId'] as String? ?? '';
+    final model = metadata?['model'] as String? ?? '';
+    final manufacturer = metadata?['manufacturer'] as String? ?? '';
+    final serialNumber = metadata?['serialNumber'] as String? ?? '';
+    final softwareVersion = metadata?['softwareVersion'] as String? ?? '';
+    final isMaster = metadata?['isMaster'] as bool? ?? false;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        AppText.labelLarge(node.name),
+        AppGap.xs(),
+        _popupRow('Role', isMaster ? 'Master' : 'Slave'),
+        if (deviceId.isNotEmpty && deviceId.toUpperCase() != 'GATEWAY')
+          _popupRow('MAC', deviceId),
+        if (model.isNotEmpty) _popupRow('Model', model),
+        if (manufacturer.isNotEmpty) _popupRow('Manufacturer', manufacturer),
+        if (serialNumber.isNotEmpty) _popupRow('S/N', serialNumber),
+        if (softwareVersion.isNotEmpty) _popupRow('Firmware', softwareVersion),
+      ],
+    );
+  }
+
+  Widget _popupRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(top: AppSpacing.xxs),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AppText.bodySmall('$label: ', color: Colors.grey),
+          Flexible(child: AppText.bodySmall(value)),
         ],
       ),
     );
@@ -123,8 +151,8 @@ class UspNetworkTopologyCard extends ConsumerWidget {
             visualEffects:
                 appTheme.visualEffects | AppThemeConfig.effectTopologyAnimation,
             topologySpec: appTheme.topologySpec.copyWith(
-              nodeSpacing: appTheme.topologySpec.nodeSpacing * 1.4,
-              orbitRadius: appTheme.topologySpec.orbitRadius * 1.4,
+              nodeSpacing: appTheme.topologySpec.nodeSpacing * 2.0,
+              orbitRadius: appTheme.topologySpec.orbitRadius * 2.0,
             ),
           ),
         ],

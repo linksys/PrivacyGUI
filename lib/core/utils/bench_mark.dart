@@ -33,7 +33,8 @@ class BenchMarkLogger {
   void start() {
     _start = DateTime.now();
     if (kDebugMode && !recordOnly) {
-      logger.d('${describeIdentity(this)} - $name: start at <$_start>');
+      logger.d(
+          '[Benchmark]: ${describeIdentity(this)} - $name: start at <$_start>');
     }
   }
 
@@ -49,7 +50,7 @@ class BenchMarkLogger {
     int delta = _calcuteDeltaTime();
     if (kDebugMode && !recordOnly) {
       logger.d(
-          '${describeIdentity(this)} - $name: end at <$_end>, delta time is <$delta>');
+          '[Benchmark]: ${describeIdentity(this)} - $name: end at <$_end>, delta time is <$delta>');
     }
     return delta;
   }

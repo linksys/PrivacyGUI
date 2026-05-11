@@ -46,28 +46,39 @@ class CustomOutput extends LogOutput {
     }
     if (!kIsWeb && output.isNotEmpty && _file.existsSync()) {
       final processedOutput = MaskingUtils.encryptJNAPAuth(
-          MaskingUtils.maskSensitiveJsonValues(
-              MaskingUtils.replaceHttpScheme(output.toString())));
+          MaskingUtils.maskSensitiveJsonValues(MaskingUtils.maskSerialNumber(
+              MaskingUtils.maskMacAddress(output.toString()))));
       await _file.writeAsBytes("$processedOutput\n".codeUnits,
           mode: FileMode.writeOnlyAppend);
     } else if (kIsWeb && output.isNotEmpty) {
+      final stripped = _stripPrinterPrefix(output);
       _recordLog(
         MaskingUtils.encryptJNAPAuth(
           MaskingUtils.maskUsernamePasswordBodyValue(
             MaskingUtils.maskSensitiveJsonValues(
-              MaskingUtils.replaceHttpScheme(output.toString()),
+              MaskingUtils.maskSerialNumber(
+                MaskingUtils.maskMacAddress(stripped),
+              ),
             ),
           ),
         ),
+        event.level,
       );
     }
   }
 }
 
+/// Strips the SimplePrinter prefix (e.g., `[D] TIME: 2026-05-07T... `) from
+/// log output, leaving only the raw message for cache storage.
+final _printerPrefixRegex = RegExp(r'^\[\w+\]\s*TIME:\s*\S+\s*');
+String _stripPrinterPrefix(String output) {
+  return output.replaceFirst(_printerPrefixRegex, '');
+}
+
 /// A cache to store log messages in memory, primarily for the web platform.
 /// The key is the log tag, and the value is a list of tuples containing the
-/// timestamp and the log message.
-Map<String, List<(int, String)>> _webLogCache = {};
+/// timestamp, the log message, and the log level.
+Map<String, List<(int, String, Level)>> _webLogCache = {};
 
 /// A cache specifically for storing the latest state of different state management providers.
 /// The key is the provider's name, and the value is its string representation.
@@ -95,13 +106,14 @@ const routeLogTag = 'RouteChanged';
 /// custom tag list if a tag is present in the log message.
 ///
 /// [log] The log message string to record.
-void _recordLog(String log) async {
+/// [level] The severity level of this log entry.
+void _recordLog(String log, Level level) async {
   // Add every log message to the 'app' log list
-  _addLogWithTag(message: log);
+  _addLogWithTag(message: log, level: level);
   // If a custom tag is specified, add to its log list
   final record = _splitTagAndMessage(log);
   if (record != null) {
-    _addLogWithTag(message: record.$1, tag: record.$2);
+    _addLogWithTag(message: record.$1, tag: record.$2, level: level);
   }
 }
 
@@ -113,7 +125,11 @@ void _recordLog(String log) async {
 ///
 /// [message] The log message to add.
 /// [tag] The tag under which to store the message. Defaults to [appLogTag].
-void _addLogWithTag({required String message, String tag = appLogTag}) {
+/// [level] The severity level of this log entry. Defaults to [Level.debug].
+void _addLogWithTag(
+    {required String message,
+    String tag = appLogTag,
+    Level level = Level.debug}) {
   final logList = _webLogCache[tag] ?? [];
   final maxSize =
       tag == routeLogTag ? _maxLogSizeOfRouteTag : _maxLogSizeOfGeneralTag;
@@ -127,7 +143,7 @@ void _addLogWithTag({required String message, String tag = appLogTag}) {
     if (logList.length + 1 > maxSize) {
       logList.removeAt(0);
     }
-    logList.add((DateTime.now().millisecondsSinceEpoch, message));
+    logList.add((DateTime.now().millisecondsSinceEpoch, message, level));
     _webLogCache[tag] = logList;
   }
 }
@@ -140,7 +156,7 @@ void _addLogWithTag({required String message, String tag = appLogTag}) {
 ///
 /// Returns a tuple `(message, tag)` if successful, otherwise `null`.
 (String, String)? _splitTagAndMessage(String log) {
-  final match = RegExp(_logTagRegex).firstMatch(log);
+  final match = RegExp(_logTagRegex, dotAll: true).firstMatch(log);
   if (match == null) {
     return null;
   }
@@ -160,15 +176,26 @@ void _addLogWithTag({required String message, String tag = appLogTag}) {
 ///
 /// Returns a single string containing all the log messages for the given tag,
 /// separated by newlines.
-String _getWebLogByTag({String tag = appLogTag}) {
+String _getWebLogByTag({String tag = appLogTag, bool showLevel = true}) {
   final logList = _webLogCache[tag] ?? [];
-  // Sort log list by timestamp in ascending order
-  // And return the log list as a string with date time prefix
-  return logList
-      .sorted((a, b) => a.$1.compareTo(b.$1))
-      .map((e) =>
-          '${DateTime.fromMillisecondsSinceEpoch(e.$1).toIso8601String()}: ${e.$2}')
-      .join('\n');
+  return logList.sorted((a, b) => a.$1.compareTo(b.$1)).map((e) {
+    final timestamp =
+        DateTime.fromMillisecondsSinceEpoch(e.$1).toIso8601String();
+    return showLevel
+        ? '$timestamp ${_levelPrefix(e.$3)}${e.$2}'
+        : '$timestamp ${e.$2}';
+  }).join('\n');
+}
+
+String _levelPrefix(Level level) {
+  return switch (level) {
+    Level.debug => '[D]',
+    Level.info => '[I]',
+    Level.warning => '[W]',
+    Level.error => '[E]',
+    Level.fatal => '[F]',
+    _ => '[?]',
+  };
 }
 
 /// Public accessor for retrieving cached logs by tag.
@@ -196,7 +223,7 @@ Future<String> outputFullWebLog(BuildContext context) async {
 ${await getPackageInfo()}
 $screenInfo
 ================================ View History ==================================
-${_getWebLogByTag(tag: routeLogTag)}
+${_getWebLogByTag(tag: routeLogTag, showLevel: false)}
 ============================== Custom Tag Summary ==============================
 ${keys.map((e) => '[$e]\n${_getWebLogByTag(tag: e)}').join('\n\n')}
 ============================== State Management ==============================

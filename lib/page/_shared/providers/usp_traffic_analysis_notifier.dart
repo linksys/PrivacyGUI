@@ -123,7 +123,7 @@ class UspTrafficAnalysisNotifier extends Notifier<TrafficAnalysisState> {
       }
       state = state.copyWith(isFetching: false);
     } catch (e) {
-      logger.w('[USP][Monitor][Traffic]Fetch failed: $e');
+      logger.w('[USP][Monitor][Traffic]: Fetch failed: $e');
       state = state.copyWith(isFetching: false);
     }
   }

@@ -89,7 +89,7 @@ class SseOperationAwaiter {
       final operateResponse = await _usp.operate(operateCommand, args: args);
       final expectedKey = operateResponse['commandKey'] as String?;
 
-      logger.d('[USP][SSE][Operate]Starting $operateCommand '
+      logger.d('[USP][SSE][Operate]: Starting $operateCommand '
           '(sub=$subscriptionId, commandKey=$expectedKey)');
 
       // Step 3: Wildcard handler matches by commandKey (primary) or
@@ -106,7 +106,7 @@ class SseOperationAwaiter {
 
           if (matched) {
             logger.d(
-                '[USP][SSE][Operate]Matched OperationComplete for $expectedCmd '
+                '[USP][SSE][Operate]: Matched OperationComplete for $expectedCmd '
                 '(commandKey=${result.commandKey}, '
                 'sub=${notification.subscriptionId})');
             completer.complete(result);
@@ -123,8 +123,8 @@ class SseOperationAwaiter {
         ),
       );
 
-      logger
-          .d('[USP][SSE][Operate]Completed $operateCommand: ${result.status}');
+      logger.d(
+          '[USP][SSE][Operate]: Completed $operateCommand: ${result.status}');
       return result;
     } finally {
       // Always cleanup: wildcard handler + subscription
@@ -133,7 +133,8 @@ class SseOperationAwaiter {
         try {
           await cleanupSubscription();
         } catch (e) {
-          logger.w('[USP][SSE][Operate]Cleanup failed for $subscriptionId: $e');
+          logger
+              .w('[USP][SSE][Operate]: Cleanup failed for $subscriptionId: $e');
         }
       }
     }
@@ -156,7 +157,7 @@ class SseOperationAwaiter {
     Map<String, String> args,
     Duration timeout,
   ) async {
-    logger.d('[USP][SSE][Operate]SSE disconnected, using polling fallback '
+    logger.d('[USP][SSE][Operate]: SSE disconnected, using polling fallback '
         'for $operateCommand');
 
     // Fire the operate command
@@ -200,7 +201,7 @@ class SseOperationAwaiter {
           }
         }
       } catch (e) {
-        logger.w('[USP][SSE][Operate]Poll error: $e');
+        logger.w('[USP][SSE][Operate]: Poll error: $e');
       }
     }
 

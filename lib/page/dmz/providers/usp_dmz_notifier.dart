@@ -64,13 +64,13 @@ class UspDmzNotifier extends AutoDisposeNotifier<DmzFeatureState>
     try {
       final (settings, status) = await _svc.fetch();
 
-      logger.d('[USP][Firewall][DMZ] Fetched — '
+      logger.d('[USP][Firewall][DMZ]: Fetched — '
           'enabled: ${settings.model.isEnabled}, '
           'instancePath: ${settings.instancePath}');
 
       return (settings, status);
     } on ServiceError catch (e) {
-      logger.e('[USP][Firewall][DMZ] Fetch failed', error: e);
+      logger.e('[USP][Firewall][DMZ]: Fetch failed', error: e);
       return (
         null,
         DmzStatus(isLoading: false, errorMessage: '$e'),
@@ -96,18 +96,18 @@ class UspDmzNotifier extends AutoDisposeNotifier<DmzFeatureState>
         if (settings.isNewEntry && pending.isEnabled) {
           await _svc.add(model: pending);
           logger.d(
-              '[USP][Firewall][DMZ] Entry added — destIp: ${pending.destIp}');
+              '[USP][Firewall][DMZ]: Entry added — destIp: ${pending.destIp}');
         } else if (!settings.isNewEntry) {
           await _svc.update(
             instancePath: settings.instancePath!,
             model: pending,
           );
-          logger.d('[USP][Firewall][DMZ] Entry updated — '
+          logger.d('[USP][Firewall][DMZ]: Entry updated — '
               'enabled: ${pending.isEnabled}, destIp: ${pending.destIp}');
         }
       });
     } on ServiceError catch (e) {
-      logger.e('[USP][Firewall][DMZ] Save failed', error: e);
+      logger.e('[USP][Firewall][DMZ]: Save failed', error: e);
       rethrow;
     } finally {
       state = state.copyWith(

@@ -25,10 +25,10 @@ class BrandUtils {
     try {
       final manifestContent = await rootBundle.loadString('AssetManifest.json');
       final Map<String, dynamic> manifestMap = json.decode(manifestContent);
-      logger.d('Loaded AssetManifest.json: ${manifestMap.keys}');
+      logger.d('[Util]: Loaded AssetManifest.json: ${manifestMap.keys}');
       _manifestAssets = manifestMap.keys.toSet();
     } catch (e) {
-      logger.e('Failed to load AssetManifest.json', error: e);
+      logger.e('[Util]: Failed to load AssetManifest.json', error: e);
       _manifestAssets = {};
     }
   }

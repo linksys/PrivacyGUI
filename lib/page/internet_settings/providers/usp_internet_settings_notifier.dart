@@ -97,7 +97,7 @@ class UspInternetSettingsNotifier
       final service = ref.read(uspInternetSettingsServiceProvider);
       final result = await service.fetchSettings();
 
-      logger.d('[USP][Network][WAN] Fetched — '
+      logger.d('[USP][Network][WAN]: Fetched — '
           'raw addressingType: "${result.debugAddressingType}", '
           'bridgeEnabled: ${result.debugBridgeEnabled}, '
           'detected type: ${result.form.connectionType.name}, '
@@ -110,7 +110,7 @@ class UspInternetSettingsNotifier
       _preservedConnectionType = null;
       var form = result.form;
       if (savedType != null && form.connectionType != savedType) {
-        logger.w('[USP][Network][WAN] Transient type mismatch — '
+        logger.w('[USP][Network][WAN]: Transient type mismatch — '
             'fetched: ${form.connectionType.name}, '
             'preserving: ${savedType.name}');
         form = form.copyWith(connectionType: savedType);
@@ -126,7 +126,7 @@ class UspInternetSettingsNotifier
         ),
       );
     } on ServiceError catch (e) {
-      logger.e('[USP][Network][WAN] Fetch failed', error: e);
+      logger.e('[USP][Network][WAN]: Fetch failed', error: e);
       return (
         null,
         InternetSettingsStatus(isLoading: false, errorMessage: '$e'),
@@ -161,7 +161,7 @@ class UspInternetSettingsNotifier
           pppInstancePath: state.status.pppInstancePath,
           vlanInstancePath: state.status.vlanInstancePath,
         );
-        logger.d('[USP][Network][WAN] Save complete');
+        logger.d('[USP][Network][WAN]: Save complete');
       });
 
       // After save, exit edit mode (status will be updated by re-fetch)
@@ -172,7 +172,7 @@ class UspInternetSettingsNotifier
         ),
       );
     } on ServiceError catch (e) {
-      logger.e('[USP][Network][WAN] Save failed', error: e);
+      logger.e('[USP][Network][WAN]: Save failed', error: e);
       rethrow;
     } finally {
       state = state.copyWith(
@@ -254,12 +254,12 @@ class UspInternetSettingsNotifier
       );
       try {
         final service = ref.read(uspInternetSettingsServiceProvider);
-        logger.d('[USP][Network][WAN] Renewing DHCPv4 lease...');
+        logger.d('[USP][Network][WAN]: Renewing DHCPv4 lease...');
         await service.renewDhcpLease();
         // Wait for lease renewal to take effect before refreshing WAN status
         await Future.delayed(const Duration(seconds: 2));
       } on ServiceError catch (e) {
-        logger.e('[USP][Network][WAN] DHCP renew failed', error: e);
+        logger.e('[USP][Network][WAN]: DHCP renew failed', error: e);
         rethrow;
       } finally {
         state = state.copyWith(
@@ -277,10 +277,10 @@ class UspInternetSettingsNotifier
       );
       try {
         final service = ref.read(uspInternetSettingsServiceProvider);
-        logger.d('[USP][Network][WAN] Renewing DHCPv6 lease...');
+        logger.d('[USP][Network][WAN]: Renewing DHCPv6 lease...');
         await service.renewDhcpv6Lease();
       } on ServiceError catch (e) {
-        logger.e('[USP][Network][WAN] DHCPv6 renew failed', error: e);
+        logger.e('[USP][Network][WAN]: DHCPv6 renew failed', error: e);
         rethrow;
       } finally {
         state = state.copyWith(

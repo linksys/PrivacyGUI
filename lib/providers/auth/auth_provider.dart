@@ -75,7 +75,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
         // Store password for session restore
         await const FlutterSecureStorage()
             .write(key: pLocalPassword, value: password);
-        logger.d('[Auth]localLogin: USP login succeeded');
+        logger.d('[Auth]: localLogin: USP login succeeded');
 
         // Fetch device info and store fingerprint before completing login —
         // keeps auth state in loading so the login spinner stays visible.
@@ -90,7 +90,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       }
       throw Exception('USP login failed');
     }, (error) => guardError);
-    logger.d('[Auth]localLogin: done, state=$state');
+    logger.d('[Auth]: localLogin: done, state=$state');
   }
 
   /// Retrieves password hint from the router.
@@ -110,7 +110,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
 
   /// Performs logout, clearing credentials and resetting state.
   Future logout() async {
-    logger.d('[Auth]logout: starting');
+    logger.d('[Auth]: logout: starting');
 
     // Capture refs before state change invalidates them.
     final sseManager = ref.read(sseManagerProvider);
@@ -121,13 +121,13 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     // Disconnect SSE first (fast) — stops reconnect attempts and prevents
     // dashboard orchestrator from calling connect() after state change.
     if (sseManager != null) {
-      logger.d('[Auth]logout: disconnecting SSE');
+      logger.d('[Auth]: logout: disconnecting SSE');
       await sseManager.disconnect();
     }
 
     // Clear credentials BEFORE setting state — otherwise GoRouter redirect
     // calls init() which reads the password back and re-authenticates.
-    logger.d('[Auth]logout: clearing credentials');
+    logger.d('[Auth]: logout: clearing credentials');
     await _authService.clearAllCredentials();
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(pSelectedNetworkId);
@@ -144,12 +144,12 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
         if (sseManager != null) {
           await sseManager.registry.unregisterAll();
         }
-        logger.d('[Auth]logout: syncing USP logout');
+        logger.d('[Auth]: logout: syncing USP logout');
         await uspCoordinator.syncAfterLogout();
         await fingerprintService.clear();
-        logger.d('[Auth]logout: complete');
+        logger.d('[Auth]: logout: complete');
       } catch (e) {
-        logger.w('[Auth]logout: cleanup error (non-fatal): $e');
+        logger.w('[Auth]: logout: cleanup error (non-fatal): $e');
       }
     }();
   }

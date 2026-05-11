@@ -57,11 +57,11 @@ class UspAuthCoordinator {
     try {
       await _usp.login(password);
       _lastTokenRefresh = DateTime.now();
-      logger.d('[USP][Auth]USP login synced successfully');
+      logger.d('[USP][Auth]: USP login synced successfully');
     } catch (e) {
       // USP login failure does not affect JNAP — ProtocolResolver
       // will fall back to JNAP when isAuthenticated=false
-      logger.w('[USP][Auth]USP login failed after JNAP login: $e');
+      logger.w('[USP][Auth]: USP login failed after JNAP login: $e');
     }
   }
 
@@ -71,9 +71,9 @@ class UspAuthCoordinator {
     if (_usp == null || !_usp.isAuthenticated) return;
     try {
       await _usp.logout();
-      logger.d('[USP][Auth]USP logout synced successfully');
+      logger.d('[USP][Auth]: USP logout synced successfully');
     } catch (e) {
-      logger.w('[USP][Auth]USP logout failed: $e');
+      logger.w('[USP][Auth]: USP logout failed: $e');
     }
   }
 
@@ -83,11 +83,11 @@ class UspAuthCoordinator {
   /// stored password from FlutterSecureStorage and re-authenticates USP.
   Future<void> restoreSession() async {
     if (_usp == null) {
-      logger.w('[USP][Auth]restoreSession skipped: UspClient is null');
+      logger.w('[USP][Auth]: restoreSession skipped: UspClient is null');
       return;
     }
     if (_usp.isAuthenticated) {
-      logger.d('[USP][Auth]restoreSession skipped: already authenticated');
+      logger.d('[USP][Auth]: restoreSession skipped: already authenticated');
       return;
     }
     await _loginWithStoredPassword();
@@ -101,7 +101,7 @@ class UspAuthCoordinator {
   /// re-login unconditionally.
   Future<void> _forceRestoreSession() async {
     if (_usp == null) {
-      logger.w('[USP][Auth]forceRestoreSession skipped: UspClient is null');
+      logger.w('[USP][Auth]: forceRestoreSession skipped: UspClient is null');
       return;
     }
     await _loginWithStoredPassword();
@@ -112,17 +112,17 @@ class UspAuthCoordinator {
   Future<bool> _loginWithStoredPassword() async {
     final password = await _storage.read(key: pLocalPassword);
     if (password == null || password.isEmpty) {
-      logger.w('[USP][Auth]restoreSession skipped: no stored password');
+      logger.w('[USP][Auth]: restoreSession skipped: no stored password');
       return false;
     }
     try {
       await _usp!.login(password);
       _lastTokenRefresh = DateTime.now();
       logger.d(
-          '[USP][Auth]restoreSession login done, isAuthenticated=${_usp.isAuthenticated}');
+          '[USP][Auth]: restoreSession login done, isAuthenticated=${_usp.isAuthenticated}');
       return true;
     } catch (e) {
-      logger.w('[USP][Auth]restoreSession login failed: $e');
+      logger.w('[USP][Auth]: restoreSession login failed: $e');
       return false;
     }
   }
@@ -133,7 +133,7 @@ class UspAuthCoordinator {
   /// Returns true if USP login succeeds and is authenticated.
   Future<bool> tryUspLogin(String password) async {
     if (_usp == null) {
-      logger.w('[USP][Auth]tryUspLogin skipped: UspClient is null');
+      logger.w('[USP][Auth]: tryUspLogin skipped: UspClient is null');
       return false;
     }
     try {
@@ -141,11 +141,11 @@ class UspAuthCoordinator {
       final authenticated = _usp.isAuthenticated;
       if (authenticated) {
         _lastTokenRefresh = DateTime.now();
-        logger.d('[USP][Auth]USP standalone login succeeded');
+        logger.d('[USP][Auth]: USP standalone login succeeded');
       }
       return authenticated;
     } catch (e) {
-      logger.w('[USP][Auth]USP standalone login failed: $e');
+      logger.w('[USP][Auth]: USP standalone login failed: $e');
       return false;
     }
   }
@@ -190,15 +190,15 @@ class UspAuthCoordinator {
     try {
       await _usp.refreshToken();
       _lastTokenRefresh = DateTime.now();
-      logger.d('[USP][Auth]Proactive token refresh succeeded');
+      logger.d('[USP][Auth]: Proactive token refresh succeeded');
     } catch (e) {
       if (_isAuthError(e)) {
         _lastTokenRefresh = null; // Allow immediate retry if logout is delayed
-        logger.w('[USP][Auth]Proactive refresh got 401 — forcing logout: $e');
+        logger.w('[USP][Auth]: Proactive refresh got 401 — forcing logout: $e');
         onForceLogout?.call();
       } else {
         logger.w(
-            '[USP][Auth]Proactive refresh failed (non-auth, will retry): $e');
+            '[USP][Auth]: Proactive refresh failed (non-auth, will retry): $e');
       }
     } finally {
       _refreshInProgress = null;

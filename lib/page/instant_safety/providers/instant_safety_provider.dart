@@ -65,14 +65,14 @@ class UspInstantSafetyNotifier extends AsyncNotifier<UspInstantSafetyState> {
       final svc = ref.read(uspInstantSafetyServiceProvider);
       final uiModel = await svc.fetch();
 
-      logger.d('[USP][Safety]Instant Safety fetched — type: ${uiModel.type}');
+      logger.d('[USP][Safety]: Instant Safety fetched — type: ${uiModel.type}');
 
       return UspInstantSafetyState(
         uiModel: uiModel,
         pendingType: uiModel.type,
       );
     } on ServiceError catch (e) {
-      logger.e('[USP][Safety] Fetch failed', error: e);
+      logger.e('[USP][Safety]: Fetch failed', error: e);
       rethrow;
     }
   }
@@ -96,12 +96,12 @@ class UspInstantSafetyNotifier extends AsyncNotifier<UspInstantSafetyState> {
         final svc = ref.read(uspInstantSafetyServiceProvider);
         await svc.save(s.pendingType);
       });
-      logger.d('[USP][Safety]Instant Safety saved — type: ${s.pendingType}');
+      logger.d('[USP][Safety]: Instant Safety saved — type: ${s.pendingType}');
 
       // Re-fetch to confirm the change took effect.
       ref.invalidateSelf();
     } on ServiceError catch (e) {
-      logger.e('[USP][Safety] Save failed', error: e);
+      logger.e('[USP][Safety]: Save failed', error: e);
       state = AsyncData(s.copyWith(isSaving: false));
       rethrow;
     }

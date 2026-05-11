@@ -98,7 +98,7 @@ class UspWanDataService {
 
       return (gateway: gateway, ipv6Addresses: ipv6Addresses);
     } catch (e) {
-      logger.w('[USP][WanData] Gateway/IPv6 fetch failed: $e');
+      logger.w('[USP][WanData]: Gateway/IPv6 fetch failed: $e');
       return (gateway: '', ipv6Addresses: const <String>[]);
     }
   }

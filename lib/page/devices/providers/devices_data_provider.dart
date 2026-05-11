@@ -133,7 +133,7 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
           .timeout(const Duration(seconds: 5));
     } catch (e) {
       logger.w(
-          '[USP][DevicesData] WiFi data unavailable, proceeding without: $e');
+          '[USP][DevicesData]: WiFi data unavailable, proceeding without: $e');
       wifiData = const WifiData.empty();
     }
 
@@ -148,7 +148,7 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
       systemInfo: sysData?.model,
     );
 
-    logger.d('[USP][DevicesData] Fetched — '
+    logger.d('[USP][DevicesData]: Fetched — '
         'deviceModels: ${result.deviceModels.length}, '
         'nodeModels: ${result.nodeModels.length}');
 
@@ -187,7 +187,7 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
       systemInfo: sysData?.model,
     );
 
-    logger.d('[USP][DevicesData] Mesh update — '
+    logger.d('[USP][DevicesData]: Mesh update — '
         'meshNodes: ${meshTopology.nodes.length}, '
         'nodeModels: ${rebuilt.nodeModels.length}');
 

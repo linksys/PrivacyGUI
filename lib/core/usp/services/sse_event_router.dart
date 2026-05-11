@@ -67,10 +67,10 @@ class SseEventRouter {
         break;
       case 'turbo_channel':
         // Future: route to turbo channel coordinator
-        logger.d('[USP][SSE][Router]turbo_channel event: ${event.data}');
+        logger.d('[USP][SSE][Router]: turbo_channel event: ${event.data}');
         break;
       default:
-        logger.d('[USP][SSE][Router]Unknown event type: ${event.event}');
+        logger.d('[USP][SSE][Router]: Unknown event type: ${event.event}');
         break;
     }
   }
@@ -80,7 +80,7 @@ class SseEventRouter {
     try {
       json = jsonDecode(event.data) as Map<String, dynamic>;
     } catch (e) {
-      logger.w('[USP][SSE][Router]Failed to parse notification JSON: $e');
+      logger.w('[USP][SSE][Router]: Failed to parse notification JSON: $e');
       return;
     }
 
@@ -88,9 +88,9 @@ class SseEventRouter {
     final type = json['type'] as String?;
 
     if (subscriptionId == null || type == null) {
-      logger
-          .w('[USP][SSE][Router]Notification missing subscription_id or type: '
-              '${event.data}');
+      logger.w(
+          '[USP][SSE][Router]: Notification missing subscription_id or type: '
+          '${event.data}');
       return;
     }
 
@@ -100,7 +100,7 @@ class SseEventRouter {
       payload: json,
     );
 
-    logger.d('[USP][SSE][Router]Routing: $notification');
+    logger.d('[USP][SSE][Router]: Routing: $notification');
 
     // Route to subscription-specific handlers
     final handlers = _handlers[subscriptionId];
@@ -109,7 +109,7 @@ class SseEventRouter {
         try {
           handler(notification);
         } catch (e) {
-          logger.w('[USP][SSE][Router]Handler error for $subscriptionId: $e');
+          logger.w('[USP][SSE][Router]: Handler error for $subscriptionId: $e');
         }
       }
     }
@@ -119,7 +119,7 @@ class SseEventRouter {
       try {
         handler(notification);
       } catch (e) {
-        logger.w('[USP][SSE][Router]Wildcard handler error: $e');
+        logger.w('[USP][SSE][Router]: Wildcard handler error: $e');
       }
     }
   }

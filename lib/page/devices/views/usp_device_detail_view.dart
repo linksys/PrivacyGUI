@@ -2,24 +2,36 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/route/navigation_extensions.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
+import 'package:privacy_gui/core/utils/device_classifier.dart';
+import 'package:privacy_gui/core/utils/oui_lookup.dart';
+import 'package:privacy_gui/core/utils/wifi.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
 import 'package:privacy_gui/page/_shared/components/usp_mutation_helper.dart';
+import 'package:privacy_gui/page/_shared/components/detail_widgets.dart';
 import 'package:privacy_gui/page/dhcp/providers/usp_dhcp_reservations_notifier.dart';
-import 'package:privacy_gui/page/_shared/components/usp_status_dot.dart';
 import 'package:privacy_gui/page/devices/providers/device_detail_provider.dart';
 import 'package:privacy_gui/page/devices/views/components/usp_signal_strength_indicator.dart';
 import 'package:privacy_gui/page/shell/usp_top_bar.dart';
+import 'package:privacy_gui/util/wifi_signal_utils.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
-class UspDeviceDetailView extends ConsumerWidget {
+class UspDeviceDetailView extends ConsumerStatefulWidget {
   final String mac;
 
   const UspDeviceDetailView({super.key, required this.mac});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final detail = ref.watch(uspDeviceDetailProvider(mac));
+  ConsumerState<UspDeviceDetailView> createState() =>
+      _UspDeviceDetailViewState();
+}
+
+class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
+  bool _ipv6Expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final detail = ref.watch(uspDeviceDetailProvider(widget.mac));
     final isLoading = ref.watch(uspMutationLoadingProvider) == 'dhcp';
 
     return UiKitPageView.withSliver(
@@ -52,150 +64,360 @@ class UspDeviceDetailView extends ConsumerWidget {
         final device = detail.device!;
         return AppResponsiveLayout(
           mobile: (_) =>
-              _buildSingleColumn(context, ref, device, detail, isLoading),
+              _buildMobileLayout(context, ref, device, detail, isLoading),
+          tablet: (_) =>
+              _buildMobileLayout(context, ref, device, detail, isLoading),
           desktop: (_) =>
-              _buildTwoColumn(context, ref, device, detail, isLoading),
+              _buildDesktopLayout(context, ref, device, detail, isLoading),
         );
       },
     );
   }
 
-  Widget _buildSingleColumn(BuildContext context, WidgetRef ref,
+  // ===========================================================================
+  // Layouts
+  // ===========================================================================
+
+  Widget _buildMobileLayout(BuildContext context, WidgetRef ref,
       DeviceUIModel device, DeviceDetailState detail, bool isLoading) {
     return Column(
       children: [
-        _buildDeviceInfoCard(context, device),
-        AppGap.xl(),
-        _buildConnectionCard(context, device),
-        AppGap.xl(),
+        _buildDeviceIdentityCard(context, device),
+        AppGap.lg(),
+        _buildConnectionStatusCard(context, device),
+        AppGap.lg(),
+        if (device.isWifi) ...[
+          _buildWifiDetailsCard(context, device),
+          AppGap.lg(),
+        ],
         _buildDhcpCard(context, ref, device, detail, isLoading),
       ],
     );
   }
 
-  Widget _buildTwoColumn(BuildContext context, WidgetRef ref,
+  Widget _buildDesktopLayout(BuildContext context, WidgetRef ref,
       DeviceUIModel device, DeviceDetailState detail, bool isLoading) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Column(
       children: [
-        SizedBox(
-          width: context.colWidth(6),
-          child: Column(
-            children: [
-              _buildDeviceInfoCard(context, device),
-              AppGap.xl(),
-              _buildConnectionCard(context, device),
-            ],
-          ),
+        DetailGridRow(
+          left: _buildDeviceIdentityCard(context, device),
+          right: _buildConnectionStatusCard(context, device),
         ),
         AppGap.gutter(),
-        SizedBox(
-          width: context.colWidth(6),
-          child: _buildDhcpCard(context, ref, device, detail, isLoading),
+        DetailGridRow(
+          left: device.isWifi
+              ? _buildWifiDetailsCard(context, device)
+              : _buildNetworkAddressesCard(context, device),
+          right: _buildDhcpCard(context, ref, device, detail, isLoading),
         ),
       ],
     );
   }
 
-  // ---------------------------------------------------------------------------
-  // Device Info Card
-  // ---------------------------------------------------------------------------
+  // ===========================================================================
+  // Device Identity Card
+  // ===========================================================================
 
-  Widget _buildDeviceInfoCard(BuildContext context, DeviceUIModel device) {
+  Widget _buildDeviceIdentityCard(BuildContext context, DeviceUIModel device) {
+    final classification = DeviceClassifier.classifyWithConfidence(
+      hostname: device.hostName,
+      mac: device.mac,
+    );
+    final vendor = OuiLookup.getVendorOrPrivate(device.mac);
+    final colorScheme = Theme.of(context).colorScheme;
+
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(
-                device.isWifi ? Icons.wifi : Icons.settings_ethernet,
-                size: 32,
-                color: Theme.of(context).colorScheme.primary,
+              Container(
+                padding: const EdgeInsets.all(AppSpacing.sm),
+                decoration: BoxDecoration(
+                  color: colorScheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(AppSpacing.sm),
+                ),
+                child: Icon(
+                  classification.category.icon,
+                  size: 28,
+                  color: colorScheme.onPrimaryContainer,
+                ),
               ),
               AppGap.md(),
               Expanded(
-                child: AppText.titleLarge(device.displayName),
-              ),
-              UspStatusDot(isActive: device.isActive, size: 12),
-              AppGap.sm(),
-              AppText.labelLarge(device.isActive ? 'Online' : 'Offline'),
-            ],
-          ),
-          AppGap.xl(),
-          _infoRow(context, 'MAC Address', device.mac),
-          _infoRow(context, 'IP Address', device.ip),
-          if (device.hostName.isNotEmpty &&
-              device.hostName != device.displayName)
-            _infoRow(context, 'Hostname', device.hostName),
-        ],
-      ),
-    );
-  }
-
-  // ---------------------------------------------------------------------------
-  // Connection Card
-  // ---------------------------------------------------------------------------
-
-  Widget _buildConnectionCard(BuildContext context, DeviceUIModel device) {
-    return AppCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          AppText.titleMedium('Connection'),
-          AppGap.xl(),
-          _infoRow(context, 'Type', device.isWifi ? 'WiFi' : 'Ethernet'),
-          if (device.isWifi) ...[
-            if (device.band != null) _infoRow(context, 'Band', device.band!),
-            if (device.ssidName != null)
-              _infoRow(context, 'SSID', device.ssidName!),
-            if (device.signalStrength != null) ...[
-              Padding(
-                padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                child: Row(
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    SizedBox(
-                      width: context.colWidth(2),
-                      child: AppText.labelLarge('Signal'),
-                    ),
-                    UspSignalStrengthIndicator(
-                      rssi: device.signalStrength!,
-                      maxBarHeight: 18,
+                    AppText.titleLarge(device.displayName),
+                    AppGap.xxs(),
+                    AppText.labelMedium(
+                      classification.category.displayName,
+                      color: colorScheme.onSurfaceVariant,
                     ),
                   ],
                 ),
               ),
+              DetailStatusBadge(isActive: device.isActive),
             ],
-            if (device.downlinkRate != null)
-              _infoRow(context, 'Downlink',
-                  '${(device.downlinkRate! / 1000000).toStringAsFixed(0)} Mbps'),
-            if (device.uplinkRate != null)
-              _infoRow(context, 'Uplink',
-                  '${(device.uplinkRate! / 1000000).toStringAsFixed(0)} Mbps'),
+          ),
+          AppGap.xl(),
+          if (vendor != null) ...[
+            DetailInfoTile(
+              icon: Icons.business,
+              label: 'Manufacturer',
+              value: vendor,
+            ),
+            AppGap.md(),
           ],
-          if (device.parentNodeName != null)
-            _infoRow(context, 'Connected to', device.parentNodeName!),
+          DetailCopyableTile(
+            icon: Icons.memory,
+            label: 'MAC Address',
+            value: device.mac,
+          ),
+          AppGap.md(),
+          if (device.hostName.isNotEmpty &&
+              device.hostName != device.displayName) ...[
+            DetailInfoTile(
+              icon: Icons.dns,
+              label: 'Hostname',
+              value: device.hostName,
+            ),
+          ],
         ],
       ),
     );
   }
 
-  // ---------------------------------------------------------------------------
-  // DHCP Reservation Card
-  // ---------------------------------------------------------------------------
+  // ===========================================================================
+  // Connection Status Card
+  // ===========================================================================
 
-  Widget _buildDhcpCard(BuildContext context, WidgetRef ref,
-      DeviceUIModel device, DeviceDetailState detail, bool isLoading) {
+  Widget _buildConnectionStatusCard(
+      BuildContext context, DeviceUIModel device) {
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AppText.titleMedium('DHCP Reservation'),
+          DetailCardHeader(
+            icon: device.isWifi ? Icons.wifi : Icons.settings_ethernet,
+            title: device.isWifi ? 'WiFi Connection' : 'Wired Connection',
+          ),
+          AppGap.xl(),
+          DetailCopyableTile(
+            icon: Icons.language,
+            label: 'IP Address',
+            value: device.ip,
+          ),
+          if (device.ipv6Addresses.isNotEmpty) ...[
+            AppGap.md(),
+            _buildIpv6Section(context, device.ipv6Addresses),
+          ],
+          if (device.parentNodeName != null) ...[
+            AppGap.md(),
+            DetailInfoTile(
+              icon: Icons.router,
+              label: 'Connected to',
+              value: device.parentNodeName!,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  // ===========================================================================
+  // WiFi Details Card
+  // ===========================================================================
+
+  Widget _buildWifiDetailsCard(BuildContext context, DeviceUIModel device) {
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const DetailCardHeader(
+            icon: Icons.signal_wifi_4_bar,
+            title: 'Signal & Speed',
+          ),
+          AppGap.xl(),
+          if (device.signalStrength != null) ...[
+            _buildSignalSection(context, device),
+            AppGap.lg(),
+          ],
+          if (device.downlinkRate != null || device.uplinkRate != null)
+            _buildSpeedCards(context, device),
+          if (device.band != null || device.ssidName != null) ...[
+            AppGap.lg(),
+            Row(
+              children: [
+                if (device.band != null)
+                  Expanded(
+                    child: DetailCompactInfoTile(
+                      icon: Icons.wifi_channel,
+                      label: 'Band',
+                      value: device.band!,
+                    ),
+                  ),
+                if (device.band != null && device.ssidName != null) AppGap.md(),
+                if (device.ssidName != null)
+                  Expanded(
+                    child: DetailCompactInfoTile(
+                      icon: Icons.wifi,
+                      label: 'Network',
+                      value: device.ssidName!,
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSignalSection(BuildContext context, DeviceUIModel device) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(AppSpacing.sm),
+      ),
+      child: Row(
+        children: [
+          UspSignalStrengthIndicator(
+            rssi: device.signalStrength!,
+            maxBarHeight: 24,
+            barWidth: 6,
+            barSpacing: 3,
+            showLabel: false,
+          ),
+          AppGap.lg(),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AppText.titleMedium('${device.signalStrength} dBm'),
+                AppText.labelSmall(
+                  getWifiSignalLevel(device.signalStrength)
+                      .resolveLabel(context),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSpeedCards(BuildContext context, DeviceUIModel device) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Row(
+      children: [
+        if (device.downlinkRate != null)
+          Expanded(
+            child: DetailSpeedCard(
+              icon: Icons.arrow_downward,
+              label: 'Download',
+              speedBps: device.downlinkRate!,
+              color: colorScheme.primary,
+            ),
+          ),
+        if (device.downlinkRate != null && device.uplinkRate != null)
+          AppGap.md(),
+        if (device.uplinkRate != null)
+          Expanded(
+            child: DetailSpeedCard(
+              icon: Icons.arrow_upward,
+              label: 'Upload',
+              speedBps: device.uplinkRate!,
+              color: colorScheme.secondary,
+            ),
+          ),
+      ],
+    );
+  }
+
+  // ===========================================================================
+  // Network Addresses Card (for Ethernet devices on desktop)
+  // ===========================================================================
+
+  Widget _buildNetworkAddressesCard(
+      BuildContext context, DeviceUIModel device) {
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const DetailCardHeader(
+            icon: Icons.cable,
+            title: 'Network Details',
+          ),
+          AppGap.xl(),
+          const DetailInfoTile(
+            icon: Icons.settings_ethernet,
+            label: 'Connection Type',
+            value: 'Ethernet (Wired)',
+          ),
+          if (device.parentNodeName != null) ...[
+            AppGap.md(),
+            DetailInfoTile(
+              icon: Icons.router,
+              label: 'Connected to',
+              value: device.parentNodeName!,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  // ===========================================================================
+  // DHCP Reservation Card
+  // ===========================================================================
+
+  Widget _buildDhcpCard(BuildContext context, WidgetRef ref,
+      DeviceUIModel device, DeviceDetailState detail, bool isLoading) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const DetailCardHeader(
+            icon: Icons.bookmark,
+            title: 'DHCP Reservation',
+          ),
           AppGap.xl(),
           if (detail.hasReservation) ...[
-            _infoRow(context, 'Status', 'Reserved'),
-            _infoRow(context, 'Reserved IP', detail.reservation!.ip),
+            Container(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              decoration: BoxDecoration(
+                color: colorScheme.primaryContainer.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(AppSpacing.sm),
+                border: Border.all(
+                  color: colorScheme.primary.withValues(alpha: 0.3),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.check_circle,
+                    color: colorScheme.primary,
+                    size: 20,
+                  ),
+                  AppGap.sm(),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        AppText.labelMedium('Reserved'),
+                        AppText.bodyMedium(detail.reservation!.ip),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
             AppGap.lg(),
             AppButton.primaryOutline(
               label: 'Release Reservation',
@@ -205,7 +427,29 @@ class UspDeviceDetailView extends ConsumerWidget {
                   : () => _releaseReservation(context, ref, detail),
             ),
           ] else ...[
-            _infoRow(context, 'Status', 'Not Reserved'),
+            Container(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              decoration: BoxDecoration(
+                color: colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(AppSpacing.sm),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.info_outline,
+                    color: colorScheme.onSurfaceVariant,
+                    size: 20,
+                  ),
+                  AppGap.sm(),
+                  Expanded(
+                    child: AppText.bodyMedium(
+                      'No reservation. IP may change on reconnect.',
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
             AppGap.lg(),
             AppButton.primary(
               label: 'Reserve IP Address',
@@ -218,9 +462,79 @@ class UspDeviceDetailView extends ConsumerWidget {
     );
   }
 
-  // ---------------------------------------------------------------------------
+  // ===========================================================================
+  // IPv6 Section
+  // ===========================================================================
+
+  Widget _buildIpv6Section(BuildContext context, List<String> addresses) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final displayCount = _ipv6Expanded ? addresses.length : 1;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(Icons.language, size: 16, color: colorScheme.onSurfaceVariant),
+        AppGap.sm(),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  AppText.labelSmall(
+                    'IPv6 Address${addresses.length > 1 ? 'es' : ''}',
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                  if (addresses.length > 1) ...[
+                    const Spacer(),
+                    InkWell(
+                      onTap: () =>
+                          setState(() => _ipv6Expanded = !_ipv6Expanded),
+                      borderRadius: BorderRadius.circular(AppSpacing.xs),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.xs,
+                          vertical: AppSpacing.xxs,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            AppText.labelSmall(
+                              _ipv6Expanded
+                                  ? 'Show less'
+                                  : '+${addresses.length - 1} more',
+                              color: colorScheme.primary,
+                            ),
+                            Icon(
+                              _ipv6Expanded
+                                  ? Icons.expand_less
+                                  : Icons.expand_more,
+                              size: 16,
+                              color: colorScheme.primary,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              ...addresses.take(displayCount).map(
+                    (addr) => Padding(
+                      padding: const EdgeInsets.only(top: AppSpacing.xxs),
+                      child: DetailCopyableText(text: addr),
+                    ),
+                  ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ===========================================================================
   // DHCP Actions
-  // ---------------------------------------------------------------------------
+  // ===========================================================================
 
   Future<void> _reserveIp(
       BuildContext context, WidgetRef ref, DeviceUIModel device) async {
@@ -245,28 +559,6 @@ class UspDeviceDetailView extends ConsumerWidget {
           .read(uspDhcpReservationsProvider.notifier)
           .immediateDelete(detail.reservation!.instancePath!),
       successMessage: 'Reservation released',
-    );
-  }
-
-  // ---------------------------------------------------------------------------
-  // Helpers
-  // ---------------------------------------------------------------------------
-
-  Widget _infoRow(BuildContext context, String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: context.colWidth(2),
-            child: AppText.labelLarge(label),
-          ),
-          Expanded(
-            child: AppText.bodyMedium(value),
-          ),
-        ],
-      ),
     );
   }
 }

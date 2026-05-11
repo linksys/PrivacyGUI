@@ -60,14 +60,14 @@ class UspWifiAdvancedNotifier
     try {
       final ieee80211h = await _svc.fetchIeee80211h();
 
-      logger.d('[USP][WiFi][Advanced] Fetched — radios=${ieee80211h.length}');
+      logger.d('[USP][WiFi][Advanced]: Fetched — radios=${ieee80211h.length}');
 
       return (
         WifiAdvancedSettings(ieee80211hByRadio: ieee80211h),
         const WifiAdvancedStatus(),
       );
     } on ServiceError catch (e) {
-      logger.e('[USP][WiFi][Advanced] Fetch failed', error: e);
+      logger.e('[USP][WiFi][Advanced]: Fetch failed', error: e);
       return (
         null,
         WifiAdvancedStatus(errorMessage: '$e'),
@@ -87,7 +87,7 @@ class UspWifiAdvancedNotifier
     try {
       return await super.save();
     } on ServiceError catch (e) {
-      logger.e('[USP][WiFi][Advanced] Save failed', error: e);
+      logger.e('[USP][WiFi][Advanced]: Save failed', error: e);
       rethrow;
     } finally {
       state = state.copyWith(
@@ -113,7 +113,7 @@ class UspWifiAdvancedNotifier
       );
     });
 
-    logger.d('[USP][WiFi][Advanced] Save succeeded — '
+    logger.d('[USP][WiFi][Advanced]: Save succeeded — '
         'radios=${radioPaths.length}, enabled=$enabled');
     // Refresh Layer 1 cache so post-save fetch() reads fresh data.
     // Using refresh() instead of invalidate() because the latter only marks

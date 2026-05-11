@@ -40,7 +40,7 @@ class TimeDataNotifier extends AsyncNotifier<TimeData> {
     final svc = ref.read(uspTimeDataServiceProvider);
     final model = await svc.fetch();
 
-    logger.d('[USP][TimeData] Fetched — '
+    logger.d('[USP][TimeData]: Fetched — '
         'enable: ${model.enable}, status: ${model.status}');
 
     return TimeData(model: model);

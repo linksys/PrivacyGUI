@@ -96,7 +96,7 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
   ///   and a responsive layout container.
   @override
   Widget build(BuildContext context) {
-    logger.d('App:: build: $_currentRoute');
+    logger.d('[App]: build: $_currentRoute');
 
     final appSettings = ref.watch(appSettingsProvider);
     final systemLocaleStr = Intl.getCurrentLocale();
@@ -226,7 +226,7 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
   /// resumed, and stopping polling when it is paused.
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    logger.i('didChangeAppLifecycleState: ${state.name}');
+    logger.i('[App]: didChangeAppLifecycleState: ${state.name}');
     if (state == AppLifecycleState.resumed) {
       _tryResumeSse();
     }
@@ -239,8 +239,8 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
     if (sseManager == null) return;
     final sseState = sseManager.connection.connectionState.value;
     if (sseState == SseConnectionState.suspended) {
-      logger
-          .d('[App] Lifecycle resume: attempting SSE reconnect from suspended');
+      logger.d(
+          '[App]: Lifecycle resume: attempting SSE reconnect from suspended');
       sseManager.tryReconnect();
     }
   }
@@ -252,7 +252,7 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
   /// native splash screen, revealing the app's UI.
   _initAuth() {
     ref.read(authProvider.notifier).init().then((_) {
-      logger.d('init auth finish');
+      logger.d('[App]: init auth finish');
       FlutterNativeSplash.remove();
     });
   }

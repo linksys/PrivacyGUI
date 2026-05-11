@@ -51,7 +51,8 @@ class UspDeviceAnalyticsNotifier extends Notifier<DeviceAnalyticsState> {
         );
       }
     } catch (e) {
-      logger.w('[USP][Monitor][Analytics]Failed to load persisted history: $e');
+      logger
+          .w('[USP][Monitor][Analytics]: Failed to load persisted history: $e');
     }
   }
 
@@ -166,7 +167,7 @@ class UspDeviceAnalyticsNotifier extends Notifier<DeviceAnalyticsState> {
     try {
       await saveDeviceAnalytics(state);
     } catch (e) {
-      logger.w('[USP][Monitor][Analytics]Failed to persist: $e');
+      logger.w('[USP][Monitor][Analytics]: Failed to persist: $e');
     }
   }
 }

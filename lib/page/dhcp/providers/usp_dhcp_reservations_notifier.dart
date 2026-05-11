@@ -64,7 +64,7 @@ class UspDhcpReservationsNotifier
     try {
       final reservations = await _svc.fetchReservations();
 
-      logger.d('[USP][DHCP][Reservations] Fetched — '
+      logger.d('[USP][DHCP][Reservations]: Fetched — '
           'total: ${reservations.length}');
 
       return (
@@ -72,7 +72,7 @@ class UspDhcpReservationsNotifier
         const DhcpReservationsStatus(),
       );
     } on ServiceError catch (e) {
-      logger.e('[USP][DHCP][Reservations] Fetch failed', error: e);
+      logger.e('[USP][DHCP][Reservations]: Fetch failed', error: e);
       return (
         null,
         DhcpReservationsStatus(errorMessage: '$e'),
@@ -100,7 +100,7 @@ class UspDhcpReservationsNotifier
           current: current,
         );
 
-        logger.d('[USP][DHCP][Reservations] Batch save — '
+        logger.d('[USP][DHCP][Reservations]: Batch save — '
             'added: ${result.added}, updated: ${result.updated}, '
             'deleted: ${result.deleted}');
       });
@@ -108,7 +108,7 @@ class UspDhcpReservationsNotifier
       // Invalidate Layer 1 provider to refresh dashboard card
       ref.invalidate(dhcpDataProvider);
     } on ServiceError catch (e) {
-      logger.e('[USP][DHCP][Reservations] Save failed', error: e);
+      logger.e('[USP][DHCP][Reservations]: Save failed', error: e);
       rethrow;
     } finally {
       state = state.copyWith(
@@ -128,7 +128,7 @@ class UspDhcpReservationsNotifier
         await _svc.immediateToggle(instancePath, enable);
       });
     } on ServiceError catch (e) {
-      logger.e('[USP][DHCP] Immediate toggle failed', error: e);
+      logger.e('[USP][DHCP]: Immediate toggle failed', error: e);
       rethrow;
     }
     ref.invalidate(dhcpDataProvider);
@@ -145,7 +145,7 @@ class UspDhcpReservationsNotifier
         await _svc.immediateAdd(mac: mac, ip: ip, enable: enable);
       });
     } on ServiceError catch (e) {
-      logger.e('[USP][DHCP] Immediate add failed', error: e);
+      logger.e('[USP][DHCP]: Immediate add failed', error: e);
       rethrow;
     }
     ref.invalidate(dhcpDataProvider);
@@ -158,7 +158,7 @@ class UspDhcpReservationsNotifier
         await _svc.immediateDelete(instancePath);
       });
     } on ServiceError catch (e) {
-      logger.e('[USP][DHCP] Immediate delete failed', error: e);
+      logger.e('[USP][DHCP]: Immediate delete failed', error: e);
       rethrow;
     }
     ref.invalidate(dhcpDataProvider);
