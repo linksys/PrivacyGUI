@@ -111,12 +111,23 @@ class UspConnectedDevicesCard extends ConsumerWidget {
           // Device type icon (larger)
           Icon(category.icon, size: 28, color: scheme.onSurface),
           AppGap.md(),
-          // Device name
+          // Name + parent node subtitle
           Expanded(
-            child: AppText.bodyMedium(
-              device.displayName,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AppText.bodyMedium(
+                  device.displayName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (device.parentNodeName != null)
+                  AppText.bodySmall(
+                    'via ${device.parentNodeName}',
+                    color: scheme.onSurfaceVariant,
+                  ),
+              ],
             ),
           ),
           AppGap.sm(),
