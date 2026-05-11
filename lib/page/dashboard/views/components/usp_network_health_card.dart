@@ -49,10 +49,7 @@ class _UspNetworkHealthCardState extends ConsumerState<UspNetworkHealthCard> {
                 SizedBox(
                   width: 14,
                   height: 14,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
+                  child: AppLoader(strokeWidth: 2),
                 ),
               ],
             ],
