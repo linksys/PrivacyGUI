@@ -13,6 +13,7 @@ import 'package:privacy_gui/page/dhcp/providers/usp_dhcp_reservations_notifier.d
 import 'package:privacy_gui/page/devices/providers/device_detail_provider.dart';
 import 'package:privacy_gui/page/devices/views/components/usp_signal_strength_indicator.dart';
 import 'package:privacy_gui/page/shell/usp_top_bar.dart';
+import 'package:privacy_gui/util/network_utils.dart';
 import 'package:privacy_gui/util/wifi_signal_utils.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -341,24 +342,25 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
   }
 
   // ===========================================================================
-  // Network Addresses Card (for Ethernet devices on desktop)
+  // Network Addresses Card (for non-active or wired devices on desktop)
   // ===========================================================================
 
   Widget _buildNetworkAddressesCard(
       BuildContext context, DeviceUIModel device) {
+    final isWifi = device.isWifi;
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const DetailCardHeader(
-            icon: Icons.cable,
+          DetailCardHeader(
+            icon: isWifi ? Icons.wifi_off : Icons.cable,
             title: 'Network Details',
           ),
           AppGap.xl(),
-          const DetailInfoTile(
-            icon: Icons.settings_ethernet,
+          DetailInfoTile(
+            icon: isWifi ? Icons.wifi : Icons.settings_ethernet,
             label: 'Connection Type',
-            value: 'Ethernet (Wired)',
+            value: isWifi ? 'WiFi (Wireless)' : 'Ethernet (Wired)',
           ),
           if (device.parentNodeName != null) ...[
             AppGap.md(),
@@ -380,7 +382,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
   Widget _buildDhcpCard(BuildContext context, WidgetRef ref,
       DeviceUIModel device, DeviceDetailState detail, bool isLoading) {
     final colorScheme = Theme.of(context).colorScheme;
-    final hasValidIpv4 = _hasValidIpv4(device.ip);
+    final hasValidIpv4 = NetworkUtils.isValidIpAddress(device.ip);
 
     return AppCard(
       child: Column(
@@ -467,16 +469,6 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
         ],
       ),
     );
-  }
-
-  bool _hasValidIpv4(String ip) {
-    if (ip.isEmpty) return false;
-    final parts = ip.split('.');
-    if (parts.length != 4) return false;
-    return parts.every((part) {
-      final value = int.tryParse(part);
-      return value != null && value >= 0 && value <= 255;
-    });
   }
 
   // ===========================================================================

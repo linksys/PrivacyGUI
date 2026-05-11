@@ -87,40 +87,83 @@ class UspConnectedDevicesCard extends ConsumerWidget {
     );
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      padding: const EdgeInsets.only(bottom: AppSpacing.md),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          UspStatusDot(isActive: device.isActive),
-          AppGap.sm(),
-          Icon(
-            deviceCategory.icon,
-            size: 28,
-            color: scheme.onSurface,
+          // Device icon (larger)
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.sm),
+            decoration: BoxDecoration(
+              color: scheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(AppSpacing.sm),
+            ),
+            child: Icon(
+              deviceCategory.icon,
+              size: 32,
+              color: scheme.onSurface,
+            ),
           ),
-          AppGap.sm(),
-          // Name + parent node subtitle
+          AppGap.md(),
+          // Name + IP (subtitle)
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                AppText.bodyMedium(device.displayName),
-                if (device.parentNodeName != null)
-                  AppText.bodySmall(
-                    device.parentNodeName!,
-                    color: scheme.onSurfaceVariant,
-                  ),
+                AppText.bodyLarge(
+                  device.displayName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                AppGap.xxs(),
+                AppText.bodySmall(
+                  device.ip,
+                  color: scheme.onSurfaceVariant,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ],
             ),
           ),
-          // Signal strength or Wired label
-          if (device.isWifi && device.signalStrength != null)
-            UspSignalStrengthIndicator(rssi: device.signalStrength!)
-          else if (!device.isWifi)
-            AppText.bodySmall(
-              'Wired',
-              color: scheme.onSurfaceVariant,
-            ),
+          AppGap.sm(),
+          // Parent node badge + Signal/Wired (stacked)
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              if (device.parentNodeName != null)
+                _buildParentNodeBadge(context, device.parentNodeName!),
+              AppGap.xxs(),
+              if (device.isWifi && device.signalStrength != null)
+                UspSignalStrengthIndicator(rssi: device.signalStrength!)
+              else
+                AppText.bodySmall(
+                  'Wired',
+                  color: scheme.onSurfaceVariant,
+                ),
+            ],
+          ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildParentNodeBadge(BuildContext context, String nodeName) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      constraints: const BoxConstraints(maxWidth: 120),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: 2,
+      ),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(AppSpacing.xs),
+      ),
+      child: AppText.labelSmall(
+        nodeName,
+        color: scheme.onSurfaceVariant,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
       ),
     );
   }
