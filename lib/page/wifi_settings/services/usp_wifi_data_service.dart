@@ -200,10 +200,9 @@ class UspWifiDataService {
       final apModels = radioAps.map((a) {
         final isGuest =
             guestSsidPaths.contains(_ensureTrailingDot(a.ssid.instancePath));
-        logger.d(
-            '[USP][WiFi] AP: ${a.ssid.ssid}, enable=${a.ap.enable}, isGuest=$isGuest');
+        // Use SSID.enable as the canonical enabled state (matches toggle mutation)
         return WifiAccessPointUIModel(
-          enable: a.ap.enable,
+          enable: a.ssid.enable,
           ssidName: a.ssid.ssid.isNotEmpty ? a.ssid.ssid : a.ap.ssidReference,
           securityMode: a.ap.securityModeEnabled,
           encryptionMode: a.ap.encryptionMode,

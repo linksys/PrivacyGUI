@@ -326,8 +326,8 @@ class UspWifiNetworksCard extends ConsumerWidget {
         if (ssid.isEmpty) continue;
 
         final existing = ssidMap[ssid];
-        // Network is enabled if ANY of its APs (across bands) is enabled
-        final isEnabled = ap.enable && radio.enable;
+        // Network is enabled based on SSID.enable (matches toggle mutation)
+        final isEnabled = ap.enable;
 
         if (existing != null) {
           // Add band to existing entry (keep isGuest from first occurrence)
