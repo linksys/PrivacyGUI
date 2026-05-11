@@ -24,6 +24,7 @@ import 'package:privacy_gui/core/usp/providers/bridge_request_throttler_provider
 import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
 import 'package:privacy_gui/core/usp/providers/usp_auth_coordinator.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
+import 'package:privacy_gui/providers/auth/auth_provider.dart';
 
 // ---------------------------------------------------------------------------
 // State
@@ -89,6 +90,15 @@ class DashboardOrchestrator extends AsyncNotifier<DashboardOrchestratorState> {
   @override
   Future<DashboardOrchestratorState> build() async {
     ref.onDispose(() => _retryTimer?.cancel());
+
+    ref.listen(authProvider, (prev, next) {
+      if (next.isLoading) return;
+      final loginType = next.value?.loginType;
+      final prevLoginType = prev?.value?.loginType;
+      if (prevLoginType != LoginType.local && loginType == LoginType.local) {
+        ref.invalidateSelf();
+      }
+    });
 
     try {
       return await _buildImpl();

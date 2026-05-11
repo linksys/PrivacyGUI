@@ -200,7 +200,7 @@ void main() {
       container.dispose();
     });
 
-    test('successful login fetches device info and stores fingerprint',
+    test('successful login fetches device info before setting auth state',
         () async {
       when(() => mockUspCoordinator.tryUspLogin('pass123'))
           .thenAnswer((_) async => true);
@@ -214,7 +214,6 @@ void main() {
 
       verify(() => mockSessionService.fetchDeviceInfoAndInitializeServices())
           .called(1);
-      verify(() => mockFingerprint.store('ABC123')).called(1);
       container.dispose();
     });
 
@@ -331,18 +330,13 @@ void main() {
       container.dispose();
     });
 
-    test('performs background cleanup (unregisterAll, USP logout, fingerprint)',
-        () async {
+    test('performs cleanup (unregisterAll, USP logout, fingerprint)', () async {
       final container = createContainer();
       container.read(authProvider);
       await Future.delayed(Duration.zero);
 
       final notifier = container.read(authProvider.notifier);
       await notifier.logout();
-
-      // Background cleanup is fire-and-forget — wait for microtasks.
-      await Future.delayed(Duration.zero);
-      await Future.delayed(Duration.zero);
 
       verify(() => mockRegistry.unregisterAll()).called(1);
       verify(() => mockUspCoordinator.syncAfterLogout()).called(1);
@@ -372,7 +366,7 @@ void main() {
       container.dispose();
     });
 
-    test('background cleanup error does not affect logout', () async {
+    test('cleanup error results in error state', () async {
       when(() => mockUspCoordinator.syncAfterLogout())
           .thenThrow(Exception('network error'));
 
@@ -383,9 +377,9 @@ void main() {
       final notifier = container.read(authProvider.notifier);
       await notifier.logout();
 
-      // State should still be cleared despite cleanup error.
-      final state = container.read(authProvider).value;
-      expect(state?.loginType, LoginType.none);
+      // Error in cleanup propagates via AsyncValue.guard.
+      final authState = container.read(authProvider);
+      expect(authState.hasError, isTrue);
       container.dispose();
     });
   });

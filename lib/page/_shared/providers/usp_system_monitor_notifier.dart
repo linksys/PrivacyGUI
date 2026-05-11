@@ -8,6 +8,7 @@ import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/_shared/models/system_monitor_state.dart';
 import 'package:privacy_gui/page/_shared/services/usp_system_monitor_service.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_domain_ready_provider.dart';
+import 'package:privacy_gui/providers/auth/auth_provider.dart';
 
 /// System monitor provider — tracks CPU/Memory history with optional
 /// auto-refresh timer. NOT autoDispose so history persists across tab switches.
@@ -32,6 +33,17 @@ class UspSystemMonitorNotifier extends Notifier<SystemMonitorState> {
       if (next != AppConnectionState.authenticated) {
         _timer?.cancel();
         _timer = null;
+      } else if (_timer == null && state.refreshInterval != null) {
+        setRefreshInterval(state.refreshInterval);
+      }
+    });
+
+    ref.listen(authProvider, (prev, next) {
+      if (next.isLoading) return;
+      final loginType = next.value?.loginType;
+      final prevLoginType = prev?.value?.loginType;
+      if (prevLoginType != LoginType.local && loginType == LoginType.local) {
+        ref.invalidateSelf();
       }
     });
 
