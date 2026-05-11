@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:privacy_gui/page/models/menu_badge.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 class AppMenuCard extends StatelessWidget {
@@ -8,8 +9,7 @@ class AppMenuCard extends StatelessWidget {
     this.title,
     this.description,
     this.onTap,
-    this.status,
-    this.isBeta = false,
+    this.badges = const [],
     this.semanticLabel,
   });
 
@@ -17,12 +17,14 @@ class AppMenuCard extends StatelessWidget {
   final String? title;
   final String? description;
   final VoidCallback? onTap;
-  final bool? status;
-  final bool isBeta;
+  final List<MenuBadge> badges;
   final String? semanticLabel;
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final appColors = Theme.of(context).extension<AppColorScheme>();
+
     final card = AppCard(
       onTap: onTap,
       child: Column(
@@ -41,40 +43,30 @@ class AppMenuCard extends StatelessWidget {
                       )
                     : null,
               ),
-              if (status != null)
-                AppBadge(
-                  label: status! ? 'Off' : 'On',
-                  color: status!
-                      ? Theme.of(context).colorScheme.outline
-                      : Theme.of(context)
-                              .extension<AppColorScheme>()
-                              ?.semanticSuccess ??
-                          Colors.green,
-                )
+              if (badges.isNotEmpty)
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    for (int i = 0; i < badges.length; i++) ...[
+                      if (i > 0) AppGap.xs(),
+                      AppBadge(
+                        label: badges[i].label,
+                        color: badges[i].color ??
+                            _defaultColorForLabel(
+                                badges[i].label, colorScheme, appColors),
+                        textColor: badges[i].textColor,
+                      ),
+                    ],
+                  ],
+                ),
             ],
           ),
           if (title != null)
             Padding(
               padding: EdgeInsets.only(top: AppSpacing.xs),
-              child: Row(
-                children: [
-                  Flexible(
-                    child: AppText.titleSmall(
-                      title ?? '',
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  if (isBeta) ...[
-                    AppGap.sm(),
-                    AppBadge(
-                      label: 'BETA',
-                      color: Theme.of(context)
-                              .extension<AppColorScheme>()
-                              ?.semanticWarning ??
-                          Colors.orange,
-                    ),
-                  ],
-                ],
+              child: AppText.titleSmall(
+                title ?? '',
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           if (description != null)
@@ -84,10 +76,7 @@ class AppMenuCard extends StatelessWidget {
                 description ?? '',
                 overflow: TextOverflow.ellipsis,
                 maxLines: !context.isMobileLayout ? 3 : 1,
-                color: Theme.of(context)
-                    .colorScheme
-                    .onSurface
-                    .withValues(alpha: 0.5),
+                color: colorScheme.onSurface.withValues(alpha: 0.5),
               ),
             ),
         ],
@@ -101,5 +90,22 @@ class AppMenuCard extends StatelessWidget {
       );
     }
     return card;
+  }
+
+  Color _defaultColorForLabel(
+    String label,
+    ColorScheme colorScheme,
+    AppColorScheme? appColors,
+  ) {
+    switch (label.toUpperCase()) {
+      case 'ON':
+        return appColors?.semanticSuccess ?? Colors.green;
+      case 'OFF':
+        return colorScheme.outline;
+      case 'BETA':
+        return appColors?.semanticWarning ?? Colors.orange;
+      default:
+        return colorScheme.secondary;
+    }
   }
 }

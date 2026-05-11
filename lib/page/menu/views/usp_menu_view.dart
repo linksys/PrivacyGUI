@@ -1,10 +1,14 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/components/styled/menus/widgets/app_menu_card.dart';
+import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_notifier.dart';
+import 'package:privacy_gui/page/instant_safety/providers/instant_safety_provider.dart';
 import 'package:privacy_gui/page/models/app_section_item_data.dart';
+import 'package:privacy_gui/page/models/menu_badge.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/shell/usp_top_bar.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -13,11 +17,11 @@ import 'package:ui_kit_library/ui_kit.dart';
 ///
 /// Only features with USP support are shown. More items will be added
 /// as USP protocol coverage expands.
-class UspMenuView extends StatelessWidget {
+class UspMenuView extends ConsumerWidget {
   const UspMenuView({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return UiKitPageView.withSliver(
       scrollable: true,
       appBarStyle: UiKitAppBarStyle.none,
@@ -27,7 +31,7 @@ class UspMenuView extends StatelessWidget {
       ),
       backState: UiKitBackState.none,
       child: (childContext, constraints) {
-        final items = _buildMenuItems(context);
+        final items = _buildMenuItems(context, ref);
         return Padding(
           padding: const EdgeInsets.all(AppSpacing.xl),
           child: Column(
@@ -43,7 +47,10 @@ class UspMenuView extends StatelessWidget {
     );
   }
 
-  List<AppSectionItemData> _buildMenuItems(BuildContext context) {
+  List<AppSectionItemData> _buildMenuItems(BuildContext context, WidgetRef ref) {
+    final safetyState = ref.watch(uspInstantSafetyProvider).valueOrNull;
+    final privacyState = ref.watch(uspInstantPrivacyProvider).valueOrNull;
+
     return [
       AppSectionItemData(
         semanticLabel: 'menu-wifi-settings',
@@ -71,6 +78,9 @@ class UspMenuView extends StatelessWidget {
         title: 'Instant Safety',
         description: 'Safe browsing with OpenDNS',
         iconData: Icons.shield_outlined,
+        badges: safetyState != null
+            ? [safetyState.isEnabled ? MenuBadge.on : MenuBadge.off]
+            : [],
         onTap: () => context.goNamed(RouteNamed.uspInstantSafety),
       ),
       AppSectionItemData(
@@ -78,6 +88,9 @@ class UspMenuView extends StatelessWidget {
         title: 'Instant Privacy',
         description: 'Lock network to currently connected devices',
         iconData: Icons.lock_outlined,
+        badges: privacyState != null
+            ? [privacyState.isEnabled ? MenuBadge.on : MenuBadge.off]
+            : [],
         onTap: () => context.goNamed(RouteNamed.uspInstantPrivacy),
       ),
       AppSectionItemData(
@@ -143,6 +156,7 @@ class UspMenuView extends StatelessWidget {
             title: item.title,
             description: item.description,
             onTap: item.onTap,
+            badges: item.badges,
             semanticLabel: item.semanticLabel,
           );
         },
