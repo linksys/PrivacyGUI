@@ -91,7 +91,7 @@ TextField / TextFormField                      → AppTextFormField
 Checkbox(                                      → AppCheckbox
 Switch(                                        → AppSwitch
 AlertDialog / SimpleDialog                     → showSimpleAppDialog
-CircularProgressIndicator                      → AppSpinnerDialog
+CircularProgressIndicator                      → AppLoader (inline) or AppSpinnerDialog (modal)
 Card(                                          → AppCard
 SizedBox(height: / SizedBox(width:            → AppGap / AppSpacing
 ```
@@ -111,9 +111,123 @@ If not found:
 - Severity: **INFO**
 - Suggestion: "Add `import 'package:ui_kit_library/ui_kit.dart';`"
 
-### Phase 3: Test Coverage
+### Phase 3: Constitution Compliance
 
-**Step 3.1: Check Test File Existence**
+Checks implementation against architecture rules defined in `constitution.md`.
+
+**Step 3.1: Test Framework Compliance (Article I §1.6.1)**
+
+For each **new** test file in the branch (files that don't exist in base branch):
+
+```bash
+# Check for mockito usage in new test files
+grep -l "import 'package:mockito" <new_test_files>
+grep -l "@GenerateMocks" <new_test_files>
+```
+
+- If mockito imports or `@GenerateMocks` found in NEW test files:
+- Severity: **WARNING**
+- Suggestion: "New tests should use `mocktail` instead of `mockito` (constitution Article I §1.6.1). Mockito is only allowed in existing legacy tests."
+
+**Step 3.2: Architecture Compliance — No Codegen in Providers/Views (Article V §5.4.3)**
+
+For each changed provider file (`lib/page/*/providers/*.dart`) and view file (`lib/page/*/views/*.dart`):
+
+```bash
+# Check for direct generated/ imports (prohibited)
+grep -E "import.*'package:privacy_gui/generated/" <provider_and_view_files>
+```
+
+- If `generated/` imports found:
+- Severity: **ERROR**
+- Suggestion: "Direct imports from `lib/generated/` are prohibited in providers and views (constitution Article V §5.4.3). Move codegen calls to the Service layer."
+
+**Step 3.3: Service Layer Pattern (Article VI)**
+
+For each changed provider file, check if it calls codegen methods directly:
+
+```bash
+# Check for direct .fetch(), .save(), .add(), .delete() calls on generated classes
+grep -E "\.(fetch|save|add|delete)\(.*UspClient" <provider_files>
+```
+
+- If direct codegen method calls found in providers:
+- Severity: **WARNING**
+- Suggestion: "USP operations should go through the Service layer, not called directly from providers (constitution Article VI)."
+
+**Step 3.4: Error Handling Compliance (Article XIII)**
+
+For each changed service file (`lib/page/*/services/*.dart`):
+
+```bash
+# Check for raw USP exceptions not mapped to ServiceError
+grep -E "throw UspException|rethrow" <service_files>
+```
+
+- If raw USP exceptions are thrown without mapping:
+- Severity: **INFO**
+- Suggestion: "USP errors should be mapped to `ServiceError` using `mapUspErrorToServiceError()` (constitution Article XIII)."
+
+**Step 3.5: Naming Conventions (Article III)**
+
+For each **new** file in the branch:
+
+```bash
+# Check provider file naming
+# Files in lib/page/*/providers/ should end with _provider.dart or _notifier.dart
+find lib/page/*/providers/ -name "*.dart" | grep -v -E "(_provider|_notifier)\.dart$"
+
+# Check service file naming
+# Files in lib/page/*/services/ should end with _service.dart
+find lib/page/*/services/ -name "*.dart" | grep -v -E "_service\.dart$"
+```
+
+- If provider files don't follow `*_provider.dart` or `*_notifier.dart` naming:
+- Severity: **WARNING**
+- Suggestion: "Provider files should be named `*_provider.dart` or `*_notifier.dart` (constitution Article III)."
+
+- If service files don't follow `*_service.dart` naming:
+- Severity: **WARNING**
+- Suggestion: "Service files should be named `*_service.dart` (constitution Article III)."
+
+**Step 3.6: Provider Architecture — AutoDispose (Article IV)**
+
+For each changed provider file (`lib/page/*/providers/*.dart`):
+
+```bash
+# Check if file contains L1 indicators (session cache) with autoDispose (prohibited)
+# L1 indicators: "DataProvider", "CacheProvider", comments mentioning "L1" or "session cache"
+grep -l "autoDispose" <provider_files> | xargs grep -l -E "(DataProvider|CacheProvider|// ?L1|session.?cache)"
+
+# Check if file contains L2 indicators (working copy) without autoDispose (should have it)
+# L2 indicators: "NotifierProvider", "StateProvider", comments mentioning "L2" or "working copy"
+grep -L "autoDispose" <provider_files> | xargs grep -l -E "(NotifierProvider|// ?L2|working.?copy)"
+```
+
+- If L1 (session cache) provider has `autoDispose`:
+- Severity: **WARNING**
+- Suggestion: "L1 session-cache providers should NOT use `autoDispose` — they persist across page navigation (constitution Article IV)."
+
+- If L2 (working copy) provider lacks `autoDispose`:
+- Severity: **INFO**
+- Suggestion: "L2 working-copy providers should typically use `autoDispose` to clean up on page exit (constitution Article IV)."
+
+**Step 3.7: Test Data Location (Article I §1.6.2)**
+
+For each **new** test file, check if it defines test data inline:
+
+```bash
+# Check for inline test data factories (should be in test/mocks/test_data/)
+grep -l -E "class.*TestData|Factory\(\)|\.fromJson\(\{" <new_test_files>
+```
+
+- If new test files define substantial test data inline (more than simple literals):
+- Severity: **INFO**
+- Suggestion: "Consider moving reusable test data to `test/mocks/test_data/[feature]_test_data.dart` (constitution Article I §1.6.2)."
+
+### Phase 4: Test Coverage
+
+**Step 4.1: Check Test File Existence**
 
 For each changed source file in `lib/`, check if a corresponding test file exists:
 
@@ -129,13 +243,13 @@ For each missing test file:
 - Severity: **WARNING**
 - Suggestion: "No test file found at `<expected_path>`. Consider adding unit tests."
 
-**Step 3.2: Check Test Files Were Updated**
+**Step 4.2: Check Test Files Were Updated**
 
 If a source file was changed but its existing test file was NOT changed in this branch:
 - Severity: **INFO**
 - Suggestion: "Source `<name>.dart` was modified but its test was not updated. Verify tests still cover the changes."
 
-### Phase 4: Report
+### Phase 5: Report
 
 ```
 ## Pre-PR Readiness Report
@@ -151,6 +265,15 @@ Changed Dart files: <count>
 
 ### UI Kit Usage
 - [PASS/WARN/SKIP] Compliance: <summary>
+
+### Constitution Compliance
+- [PASS/WARN] Test framework (mocktail): <summary>
+- [PASS/ERROR] Architecture (no codegen in providers/views): <summary>
+- [PASS/WARN] Service layer pattern: <summary>
+- [PASS/INFO] Error handling: <summary>
+- [PASS/WARN] Naming conventions: <summary>
+- [PASS/WARN/INFO] Provider autoDispose: <summary>
+- [PASS/INFO] Test data location: <summary>
 
 ### Test Coverage
 - [PASS/WARN] Test files: <summary>
@@ -175,7 +298,7 @@ Changed Dart files: <count>
 | **WARNING** | Missing tests, non-UI-Kit widgets | Strongly recommend fixing |
 | **INFO** | Test freshness, minor suggestions | Optional, nice to have |
 
-### Phase 5: Gate Stamp
+### Phase 6: Gate Stamp
 
 After presenting the report to the user, if there are **no ERROR-level issues** and the user confirms they want to proceed:
 
