@@ -156,7 +156,8 @@ class UspWifiNetworksCard extends ConsumerWidget {
                   Row(
                     children: [
                       ...network.bands.map((band) => Padding(
-                            padding: const EdgeInsets.only(right: AppSpacing.xs),
+                            padding:
+                                const EdgeInsets.only(right: AppSpacing.xs),
                             child: _buildBandBadge(context, band),
                           )),
                       AppGap.sm(),
@@ -186,7 +187,8 @@ class UspWifiNetworksCard extends ConsumerWidget {
             value: network.isEnabled,
             onChanged: isLoading
                 ? null
-                : (value) => _confirmToggleNetwork(context, ref, network, value),
+                : (value) =>
+                    _confirmToggleNetwork(context, ref, network, value),
           ),
         ],
       ),
@@ -198,7 +200,10 @@ class UspWifiNetworksCard extends ConsumerWidget {
 
     final (color, label) = switch (band.toLowerCase()) {
       String b when b.contains('2.4') => (const Color(0xFF4A9EFF), '2.4G'),
-      String b when b.contains('5') && !b.contains('6') => (const Color(0xFF4ADE80), '5G'),
+      String b when b.contains('5') && !b.contains('6') => (
+          const Color(0xFF4ADE80),
+          '5G'
+        ),
       String b when b.contains('6') => (const Color(0xFFA78BFA), '6G'),
       _ => (scheme.outline, band),
     };

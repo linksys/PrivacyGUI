@@ -177,7 +177,8 @@ class UspWifiDataService {
             '${group.map((s) => "${s.ssid}(${s.instancePath})").join(", ")}');
         for (final ssid in group.skip(1)) {
           guestSsidPaths.add(_ensureTrailingDot(ssid.instancePath));
-          logger.d('[USP][WiFi] Marked as guest: ${ssid.ssid} (${ssid.instancePath})');
+          logger.d(
+              '[USP][WiFi] Marked as guest: ${ssid.ssid} (${ssid.instancePath})');
         }
       }
     }
@@ -196,21 +197,19 @@ class UspWifiDataService {
     return radios.items.map((radio) {
       final radioAps =
           apsByRadioPath[_ensureTrailingDot(radio.instancePath)] ?? [];
-      final apModels = radioAps
-          .map((a) {
-            final isGuest = guestSsidPaths
-                .contains(_ensureTrailingDot(a.ssid.instancePath));
-            logger.d('[USP][WiFi] AP: ${a.ssid.ssid}, enable=${a.ap.enable}, isGuest=$isGuest');
-            return WifiAccessPointUIModel(
-              enable: a.ap.enable,
-              ssidName:
-                  a.ssid.ssid.isNotEmpty ? a.ssid.ssid : a.ap.ssidReference,
-              securityMode: a.ap.securityModeEnabled,
-              encryptionMode: a.ap.encryptionMode,
-              isGuest: isGuest,
-            );
-          })
-          .toList();
+      final apModels = radioAps.map((a) {
+        final isGuest =
+            guestSsidPaths.contains(_ensureTrailingDot(a.ssid.instancePath));
+        logger.d(
+            '[USP][WiFi] AP: ${a.ssid.ssid}, enable=${a.ap.enable}, isGuest=$isGuest');
+        return WifiAccessPointUIModel(
+          enable: a.ap.enable,
+          ssidName: a.ssid.ssid.isNotEmpty ? a.ssid.ssid : a.ap.ssidReference,
+          securityMode: a.ap.securityModeEnabled,
+          encryptionMode: a.ap.encryptionMode,
+          isGuest: isGuest,
+        );
+      }).toList();
       return WifiRadioUIModel(
         instancePath: radio.instancePath,
         band: radio.operatingFrequencyBand,

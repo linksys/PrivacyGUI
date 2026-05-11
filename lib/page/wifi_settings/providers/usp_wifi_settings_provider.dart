@@ -373,7 +373,8 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
         logger.w('[USP][WiFi]: No SSIDs found with name "$ssidName"');
         return;
       }
-      logger.d('[USP][WiFi]: Toggled $count SSIDs with name "$ssidName" to $enable');
+      logger.d(
+          '[USP][WiFi]: Toggled $count SSIDs with name "$ssidName" to $enable');
     } on ServiceError catch (e) {
       logger.e('[USP][WiFi]: Toggle SSIDs by name failed', error: e);
       rethrow;
