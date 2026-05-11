@@ -40,7 +40,7 @@ class _UspTopologyViewState extends ConsumerState<UspTopologyView> {
       padding: const EdgeInsets.only(bottom: AppSpacing.md),
       child: (childContext, constraints) {
         return asyncDevices.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
+          loading: () => const Center(child: AppLoader()),
           error: (error, _) => Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,

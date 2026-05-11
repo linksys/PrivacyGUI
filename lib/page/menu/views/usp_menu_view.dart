@@ -47,7 +47,8 @@ class UspMenuView extends ConsumerWidget {
     );
   }
 
-  List<AppSectionItemData> _buildMenuItems(BuildContext context, WidgetRef ref) {
+  List<AppSectionItemData> _buildMenuItems(
+      BuildContext context, WidgetRef ref) {
     final safetyState = ref.watch(uspInstantSafetyProvider).valueOrNull;
     final privacyState = ref.watch(uspInstantPrivacyProvider).valueOrNull;
 
