@@ -105,18 +105,29 @@ class UspConnectedDevicesCard extends ConsumerWidget {
     );
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      padding: const EdgeInsets.only(bottom: AppSpacing.md),
       child: Row(
         children: [
-          // Device type icon
-          Icon(category.icon, size: 18, color: scheme.onSurface),
-          AppGap.sm(),
-          // Device name
+          // Device type icon (larger)
+          Icon(category.icon, size: 28, color: scheme.onSurface),
+          AppGap.md(),
+          // Name + parent node subtitle
           Expanded(
-            child: AppText.bodyMedium(
-              device.displayName,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AppText.bodyMedium(
+                  device.displayName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (device.parentNodeName != null)
+                  AppText.bodySmall(
+                    'via ${device.parentNodeName}',
+                    color: scheme.onSurfaceVariant,
+                  ),
+              ],
             ),
           ),
           AppGap.sm(),
@@ -125,9 +136,6 @@ class UspConnectedDevicesCard extends ConsumerWidget {
             UspSignalStrengthIndicator(rssi: device.signalStrength!)
           else
             AppText.labelSmall('Wired', color: scheme.onSurfaceVariant),
-          AppGap.md(),
-          // IP address
-          AppText.bodySmall(device.ip, color: scheme.onSurfaceVariant),
         ],
       ),
     );
