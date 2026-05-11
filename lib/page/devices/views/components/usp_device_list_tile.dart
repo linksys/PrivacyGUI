@@ -27,8 +27,8 @@ enum DeviceListTileVariant {
 /// - The device icon is derived from [DeviceClassifier] based on hostname and
 ///   MAC OUI to show the device type (phone, computer, TV, etc.).
 /// - MAC is intentionally omitted — it belongs on the detail page.
-/// - Offline devices dim the entire tile via Opacity so "offline" reads as a
-///   single visual cue instead of threading through colors.
+/// - Offline devices are not tappable (no detail to show) and are dimmed via
+///   Opacity so "offline" reads as a single visual cue.
 /// - Set [variant] to [DeviceListTileVariant.flat] for embedded lists (e.g.
 ///   inside a card) to avoid double card borders.
 class UspDeviceListTile extends StatelessWidget {
@@ -113,20 +113,25 @@ class UspDeviceListTile extends StatelessWidget {
           ),
         ),
         AppGap.sm(),
-        AppIcon.font(
-          Icons.chevron_right,
-          size: 18,
-          color: scheme.onSurfaceVariant,
-        ),
+        // Only show chevron for online devices (offline devices are not tappable)
+        if (device.isActive)
+          AppIcon.font(
+            Icons.chevron_right,
+            size: 18,
+            color: scheme.onSurfaceVariant,
+          ),
       ],
     );
 
+    // Offline devices are not tappable
+    final effectiveOnTap = device.isActive ? onTap : null;
+
     final Widget tile;
     if (variant == DeviceListTileVariant.card) {
-      tile = AppCard(onTap: onTap, child: content);
+      tile = AppCard(onTap: effectiveOnTap, child: content);
     } else {
       final flatContent = InkWell(
-        onTap: onTap,
+        onTap: effectiveOnTap,
         borderRadius: BorderRadius.circular(AppSpacing.xs),
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
