@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:privacy_gui/core/utils/device_classifier.dart';
 import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/mesh_topology_info.dart';
@@ -420,6 +421,183 @@ void main() {
       expect(topo.nodes, hasLength(2));
       // 1 gateway→extender link
       expect(topo.links, hasLength(1));
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Gateway metadata (enriched in topology enhancements)
+  // ---------------------------------------------------------------------------
+
+  group('UspTopologyBuilder - gateway metadata', () {
+    test('gateway metadata includes all system info fields', () {
+      final topo = UspTopologyBuilder.build(
+        info: sysInfo,
+        devices: [],
+        meshNodes: [meshGateway],
+      );
+
+      final gateway =
+          topo.nodes.firstWhere((n) => n.type == MeshNodeType.gateway);
+      expect(gateway.metadata?['model'], 'MR7500');
+      expect(gateway.metadata?['manufacturer'], 'Linksys');
+      expect(gateway.metadata?['serialNumber'], 'SN123');
+      expect(gateway.metadata?['softwareVersion'], '2.0.0');
+      expect(gateway.metadata?['isMaster'], isTrue);
+    });
+
+    test('gateway metadata deviceId uses mesh node deviceId when available',
+        () {
+      final topo = UspTopologyBuilder.build(
+        info: sysInfo,
+        devices: [],
+        meshNodes: [meshGateway],
+      );
+
+      final gateway =
+          topo.nodes.firstWhere((n) => n.type == MeshNodeType.gateway);
+      expect(gateway.metadata?['deviceId'], 'AA:BB:CC:DD:EE:01');
+    });
+
+    test('gateway metadata deviceId is "gateway" when no mesh nodes', () {
+      final topo = UspTopologyBuilder.build(
+        info: sysInfo,
+        devices: [],
+        meshNodes: [],
+      );
+
+      final gateway =
+          topo.nodes.firstWhere((n) => n.type == MeshNodeType.gateway);
+      expect(gateway.metadata?['deviceId'], 'gateway');
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Extender metadata
+  // ---------------------------------------------------------------------------
+
+  group('UspTopologyBuilder - extender metadata', () {
+    const extenderWithFullInfo = MeshNodeInfo(
+      instancePath: 'Device.2.',
+      deviceId: 'AA:BB:CC:DD:EE:02',
+      model: 'MX5500',
+      manufacturer: 'Linksys',
+      serialNumber: 'SN456',
+      softwareVersion: '1.5.0',
+    );
+
+    test('extender metadata includes all mesh node fields', () {
+      final topo = UspTopologyBuilder.build(
+        info: sysInfo,
+        devices: [],
+        meshNodes: [meshGateway, extenderWithFullInfo],
+      );
+
+      final extender =
+          topo.nodes.firstWhere((n) => n.type == MeshNodeType.extender);
+      expect(extender.metadata?['deviceId'], 'AA:BB:CC:DD:EE:02');
+      expect(extender.metadata?['model'], 'MX5500');
+      expect(extender.metadata?['manufacturer'], 'Linksys');
+      expect(extender.metadata?['serialNumber'], 'SN456');
+      expect(extender.metadata?['softwareVersion'], '1.5.0');
+      expect(extender.metadata?['isMaster'], isFalse);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Client node icons (DeviceClassifier integration)
+  // ---------------------------------------------------------------------------
+
+  group('UspTopologyBuilder - client icons', () {
+    test('iPhone hostname gets phone icon', () {
+      const device = DeviceUIModel(
+        mac: '11:22:33:44:55:01',
+        ip: '192.168.1.100',
+        hostName: 'iPhone',
+        isActive: true,
+        isWifi: true,
+      );
+
+      final topo = UspTopologyBuilder.build(
+        info: sysInfo,
+        devices: [device],
+        meshNodes: [],
+      );
+
+      final client =
+          topo.nodes.firstWhere((n) => n.type == MeshNodeType.client);
+      expect(client.iconData, DeviceCategory.phone.icon);
+    });
+
+    test('MacBook hostname gets computer icon', () {
+      const device = DeviceUIModel(
+        mac: '11:22:33:44:55:02',
+        ip: '192.168.1.101',
+        hostName: 'MacBook-Pro',
+        isActive: true,
+        isWifi: true,
+      );
+
+      final topo = UspTopologyBuilder.build(
+        info: sysInfo,
+        devices: [device],
+        meshNodes: [],
+      );
+
+      final client =
+          topo.nodes.firstWhere((n) => n.type == MeshNodeType.client);
+      expect(client.iconData, DeviceCategory.computer.icon);
+    });
+
+    test('PlayStation hostname gets game console icon', () {
+      const device = DeviceUIModel(
+        mac: '11:22:33:44:55:03',
+        ip: '192.168.1.102',
+        hostName: 'PlayStation5',
+        isActive: true,
+        isWifi: false,
+      );
+
+      final topo = UspTopologyBuilder.build(
+        info: sysInfo,
+        devices: [device],
+        meshNodes: [],
+      );
+
+      final client =
+          topo.nodes.firstWhere((n) => n.type == MeshNodeType.client);
+      expect(client.iconData, DeviceCategory.gameConsole.icon);
+    });
+
+    test('unknown hostname with unknown OUI gets unknown icon', () {
+      const device = DeviceUIModel(
+        mac: 'FF:FF:FF:44:55:04',
+        ip: '192.168.1.103',
+        hostName: 'device-12345',
+        isActive: true,
+        isWifi: true,
+      );
+
+      final topo = UspTopologyBuilder.build(
+        info: sysInfo,
+        devices: [device],
+        meshNodes: [],
+      );
+
+      final client =
+          topo.nodes.firstWhere((n) => n.type == MeshNodeType.client);
+      expect(client.iconData, DeviceCategory.unknown.icon);
+    });
+
+    test('client metadata includes mac address', () {
+      final topo = UspTopologyBuilder.build(
+        info: sysInfo,
+        devices: [wifiDevice],
+        meshNodes: [],
+      );
+
+      final client =
+          topo.nodes.firstWhere((n) => n.type == MeshNodeType.client);
+      expect(client.metadata?['mac'], '11:22:33:44:55:01');
     });
   });
 }
