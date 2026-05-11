@@ -359,6 +359,28 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
     ref.invalidate(wifiDataProvider);
   }
 
+  /// Toggles all SSIDs with a given name on/off across all bands.
+  /// Called from Dashboard WiFi Networks card.
+  Future<void> toggleSsidsByName(String ssidName, bool enable) async {
+    final wifiData = await ref.read(wifiDataProvider.future);
+    final ssids = wifiData.codegenContext.raw.ssids;
+
+    try {
+      final count = await ref.read(uspMutationLockProvider).withLock(() async {
+        return _svc.toggleSsidsByName(ssids, ssidName, enable);
+      });
+      if (count == 0) {
+        logger.w('[USP][WiFi]: No SSIDs found with name "$ssidName"');
+        return;
+      }
+      logger.d('[USP][WiFi]: Toggled $count SSIDs with name "$ssidName" to $enable');
+    } on ServiceError catch (e) {
+      logger.e('[USP][WiFi]: Toggle SSIDs by name failed', error: e);
+      rethrow;
+    }
+    ref.invalidate(wifiDataProvider);
+  }
+
   // ---------------------------------------------------------------------------
   // Helpers
   // ---------------------------------------------------------------------------

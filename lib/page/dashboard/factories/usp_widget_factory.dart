@@ -14,6 +14,7 @@ import 'package:privacy_gui/page/local_network/cards/usp_lan_info_card.dart';
 import 'package:privacy_gui/page/port_forwarding/cards/usp_port_forwarding_card.dart';
 import 'package:privacy_gui/page/topology/cards/usp_network_topology_card.dart';
 import 'package:privacy_gui/page/wifi_settings/cards/usp_wifi_performance_card.dart';
+import 'package:privacy_gui/page/wifi_settings/cards/usp_wifi_networks_card.dart';
 import 'package:privacy_gui/page/wifi_settings/cards/usp_wifi_status_card.dart';
 
 import '../views/components/_components.dart';
@@ -35,6 +36,7 @@ class UspWidgetFactory {
       'system_status' => UspSystemStatusCard(),
       'connected_devices' => UspConnectedDevicesCard(),
       'wifi_status' => UspWifiStatusCard(),
+      'wifi_networks' => UspWifiNetworksCard(),
       'time_settings' => UspTimeSettingsCard(),
       'dhcp_reservations' => UspDhcpReservationsCard(),
       'port_forwarding' => UspPortForwardingCard(),
