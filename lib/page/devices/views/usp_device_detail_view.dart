@@ -80,18 +80,16 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
 
   Widget _buildMobileLayout(BuildContext context, WidgetRef ref,
       DeviceUIModel device, DeviceDetailState detail, bool isLoading) {
-    final showWifiCard = device.isActive && device.isWifi;
-
     return Column(
       children: [
         _buildDeviceIdentityCard(context, device),
         AppGap.lg(),
         _buildConnectionStatusCard(context, device),
-        if (showWifiCard) ...[
-          AppGap.lg(),
-          _buildWifiDetailsCard(context, device),
-        ],
         AppGap.lg(),
+        if (device.isWifi) ...[
+          _buildWifiDetailsCard(context, device),
+          AppGap.lg(),
+        ],
         _buildDhcpCard(context, ref, device, detail, isLoading),
       ],
     );
@@ -99,8 +97,6 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
 
   Widget _buildDesktopLayout(BuildContext context, WidgetRef ref,
       DeviceUIModel device, DeviceDetailState detail, bool isLoading) {
-    final showWifiCard = device.isActive && device.isWifi;
-
     return Column(
       children: [
         DetailGridRow(
@@ -109,7 +105,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
         ),
         AppGap.gutter(),
         DetailGridRow(
-          left: showWifiCard
+          left: device.isWifi
               ? _buildWifiDetailsCard(context, device)
               : _buildNetworkAddressesCard(context, device),
           right: _buildDhcpCard(context, ref, device, detail, isLoading),
@@ -382,7 +378,6 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
   Widget _buildDhcpCard(BuildContext context, WidgetRef ref,
       DeviceUIModel device, DeviceDetailState detail, bool isLoading) {
     final colorScheme = Theme.of(context).colorScheme;
-    final hasValidIpv4 = _hasValidIpv4(device.ip);
 
     return AppCard(
       child: Column(
@@ -431,31 +426,6 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
                   ? null
                   : () => _releaseReservation(context, ref, detail),
             ),
-          ] else if (!hasValidIpv4) ...[
-            // No valid IPv4 address — cannot create reservation
-            Container(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              decoration: BoxDecoration(
-                color: colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(AppSpacing.sm),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.info_outline,
-                    color: colorScheme.onSurfaceVariant,
-                    size: 20,
-                  ),
-                  AppGap.sm(),
-                  Expanded(
-                    child: AppText.bodyMedium(
-                      'No IPv4 address available for reservation.',
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-              ),
-            ),
           ] else ...[
             Container(
               padding: const EdgeInsets.all(AppSpacing.md),
@@ -490,20 +460,6 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
         ],
       ),
     );
-  }
-
-  /// Check if the IP is a valid IPv4 address (not IPv6 or empty).
-  bool _hasValidIpv4(String ip) {
-    if (ip.isEmpty) return false;
-    // IPv6 addresses contain colons
-    if (ip.contains(':')) return false;
-    // Basic IPv4 check: contains dots and has 4 octets
-    final parts = ip.split('.');
-    if (parts.length != 4) return false;
-    return parts.every((p) {
-      final n = int.tryParse(p);
-      return n != null && n >= 0 && n <= 255;
-    });
   }
 
   // ===========================================================================
