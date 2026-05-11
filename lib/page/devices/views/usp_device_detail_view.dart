@@ -86,7 +86,8 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
         AppGap.lg(),
         _buildConnectionStatusCard(context, device),
         AppGap.lg(),
-        if (device.isWifi) ...[
+        // Only show WiFi details for active WiFi devices
+        if (device.isWifi && device.isActive) ...[
           _buildWifiDetailsCard(context, device),
           AppGap.lg(),
         ],
@@ -105,7 +106,8 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
         ),
         AppGap.gutter(),
         DetailGridRow(
-          left: device.isWifi
+          // Only show WiFi details for active WiFi devices
+          left: device.isWifi && device.isActive
               ? _buildWifiDetailsCard(context, device)
               : _buildNetworkAddressesCard(context, device),
           right: _buildDhcpCard(context, ref, device, detail, isLoading),
@@ -378,6 +380,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
   Widget _buildDhcpCard(BuildContext context, WidgetRef ref,
       DeviceUIModel device, DeviceDetailState detail, bool isLoading) {
     final colorScheme = Theme.of(context).colorScheme;
+    final hasValidIpv4 = _hasValidIpv4(device.ip);
 
     return AppCard(
       child: Column(
@@ -436,14 +439,16 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
               child: Row(
                 children: [
                   Icon(
-                    Icons.info_outline,
+                    hasValidIpv4 ? Icons.info_outline : Icons.warning_amber,
                     color: colorScheme.onSurfaceVariant,
                     size: 20,
                   ),
                   AppGap.sm(),
                   Expanded(
                     child: AppText.bodyMedium(
-                      'No reservation. IP may change on reconnect.',
+                      hasValidIpv4
+                          ? 'No reservation. IP may change on reconnect.'
+                          : 'No IPv4 address. Cannot create reservation.',
                       color: colorScheme.onSurfaceVariant,
                     ),
                   ),
@@ -454,12 +459,24 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
             AppButton.primary(
               label: 'Reserve IP Address',
               isLoading: isLoading,
-              onTap: isLoading ? null : () => _reserveIp(context, ref, device),
+              onTap: isLoading || !hasValidIpv4
+                  ? null
+                  : () => _reserveIp(context, ref, device),
             ),
           ],
         ],
       ),
     );
+  }
+
+  bool _hasValidIpv4(String ip) {
+    if (ip.isEmpty) return false;
+    final parts = ip.split('.');
+    if (parts.length != 4) return false;
+    return parts.every((part) {
+      final value = int.tryParse(part);
+      return value != null && value >= 0 && value <= 255;
+    });
   }
 
   // ===========================================================================

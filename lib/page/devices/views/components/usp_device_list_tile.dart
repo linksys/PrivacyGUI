@@ -55,6 +55,9 @@ class UspDeviceListTile extends StatelessWidget {
       mac: device.mac,
     );
 
+    // Offline devices are not tappable
+    final effectiveOnTap = device.isActive ? onTap : null;
+
     final content = Row(
       children: [
         UspStatusDot(isActive: device.isActive),
@@ -87,46 +90,47 @@ class UspDeviceListTile extends StatelessWidget {
                   ),
                 ],
               ),
-              if (subtitle.isNotEmpty || hasSignal) ...[
-                AppGap.xs(),
-                // Secondary row: subtitle ↔ signal
-                Row(
-                  children: [
-                    Expanded(
-                      child: AppText.bodySmall(
-                        subtitle,
-                        color: scheme.onSurfaceVariant,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
+              AppGap.xs(),
+              // Secondary row: subtitle ↔ signal (always render for consistent height)
+              Row(
+                children: [
+                  Expanded(
+                    child: AppText.bodySmall(
+                      subtitle.isNotEmpty ? subtitle : ' ',
+                      color: scheme.onSurfaceVariant,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    if (hasSignal) ...[
-                      AppGap.sm(),
-                      UspSignalStrengthIndicator(
-                        rssi: device.signalStrength!,
-                      ),
-                    ],
+                  ),
+                  if (hasSignal) ...[
+                    AppGap.sm(),
+                    UspSignalStrengthIndicator(
+                      rssi: device.signalStrength!,
+                    ),
                   ],
-                ),
-              ],
+                ],
+              ),
             ],
           ),
         ),
-        AppGap.sm(),
-        AppIcon.font(
-          Icons.chevron_right,
-          size: 18,
-          color: scheme.onSurfaceVariant,
-        ),
+        // Only show chevron for online (tappable) devices
+        if (device.isActive) ...[
+          AppGap.sm(),
+          AppIcon.font(
+            Icons.chevron_right,
+            size: 18,
+            color: scheme.onSurfaceVariant,
+          ),
+        ],
       ],
     );
 
     final Widget tile;
     if (variant == DeviceListTileVariant.card) {
-      tile = AppCard(onTap: onTap, child: content);
+      tile = AppCard(onTap: effectiveOnTap, child: content);
     } else {
       final flatContent = InkWell(
-        onTap: onTap,
+        onTap: effectiveOnTap,
         borderRadius: BorderRadius.circular(AppSpacing.xs),
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
