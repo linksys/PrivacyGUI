@@ -148,6 +148,9 @@ class UspWifiDataService {
   ///
   /// Cross-references three TR-181 collections:
   ///   Radio → (via SSID.lowerLayers) ← SSID ← (via AP.ssidReference) ← AP
+  ///
+  /// Guest detection: Per-radio instance ordering. Within each radio group,
+  /// the lowest-index SSID is Main; all subsequent are Guest.
   List<WifiRadioUIModel> _buildWifiRadioUIModels({
     required WiFiRadios radios,
     required WiFiSsids ssids,
@@ -156,6 +159,30 @@ class UspWifiDataService {
     final ssidByPath = {
       for (final s in ssids.items) _ensureTrailingDot(s.instancePath): s,
     };
+
+    // Determine guest SSIDs: per-radio, lowest instance index is Main
+    final guestSsidPaths = <String>{};
+    {
+      final ssidsByRadio = <String, List<WiFiSsid>>{};
+      for (final ssid in ssids.items) {
+        final radioKey = _ensureTrailingDot(ssid.lowerLayers);
+        (ssidsByRadio[radioKey] ??= []).add(ssid);
+      }
+      logger.d('[USP][WiFi] ssidsByRadio groups: ${ssidsByRadio.length}');
+      for (final entry in ssidsByRadio.entries) {
+        final group = entry.value;
+        group.sort((a, b) => _ssidInstanceIndex(a.instancePath)
+            .compareTo(_ssidInstanceIndex(b.instancePath)));
+        logger.d('[USP][WiFi] Radio ${entry.key}: '
+            '${group.map((s) => "${s.ssid}(${s.instancePath})").join(", ")}');
+        for (final ssid in group.skip(1)) {
+          guestSsidPaths.add(_ensureTrailingDot(ssid.instancePath));
+          logger.d(
+              '[USP][WiFi] Marked as guest: ${ssid.ssid} (${ssid.instancePath})');
+        }
+      }
+    }
+    logger.d('[USP][WiFi] Total guest SSID paths: ${guestSsidPaths.length}');
 
     // Group APs by radio: AP.ssidReference → SSID.lowerLayers → Radio
     final apsByRadioPath =
@@ -170,6 +197,18 @@ class UspWifiDataService {
     return radios.items.map((radio) {
       final radioAps =
           apsByRadioPath[_ensureTrailingDot(radio.instancePath)] ?? [];
+      final apModels = radioAps.map((a) {
+        final isGuest =
+            guestSsidPaths.contains(_ensureTrailingDot(a.ssid.instancePath));
+        // Use SSID.enable as the canonical enabled state (matches toggle mutation)
+        return WifiAccessPointUIModel(
+          enable: a.ssid.enable,
+          ssidName: a.ssid.ssid.isNotEmpty ? a.ssid.ssid : a.ap.ssidReference,
+          securityMode: a.ap.securityModeEnabled,
+          encryptionMode: a.ap.encryptionMode,
+          isGuest: isGuest,
+        );
+      }).toList();
       return WifiRadioUIModel(
         instancePath: radio.instancePath,
         band: radio.operatingFrequencyBand,
@@ -180,17 +219,15 @@ class UspWifiDataService {
         autoChannelEnable: radio.autoChannelEnable,
         channelBandwidth: radio.operatingChannelBandwidth,
         supportedStandards: radio.supportedStandards,
-        accessPoints: radioAps
-            .map((a) => WifiAccessPointUIModel(
-                  enable: a.ap.enable,
-                  ssidName:
-                      a.ssid.ssid.isNotEmpty ? a.ssid.ssid : a.ap.ssidReference,
-                  securityMode: a.ap.securityModeEnabled,
-                  encryptionMode: a.ap.encryptionMode,
-                ))
-            .toList(),
+        accessPoints: apModels,
       );
     }).toList();
+  }
+
+  /// Extracts the numeric instance index from a TR-181 SSID path.
+  int _ssidInstanceIndex(String instancePath) {
+    final match = RegExp(r'Device\.WiFi\.SSID\.(\d+)').firstMatch(instancePath);
+    return match != null ? int.parse(match.group(1)!) : 0;
   }
 
   // ---------------------------------------------------------------------------

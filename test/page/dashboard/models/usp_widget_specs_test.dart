@@ -4,18 +4,18 @@ import 'package:privacy_gui/page/dashboard/models/usp_widget_specs.dart';
 
 void main() {
   group('Registry', () {
-    test('all has 17 specs', () {
-      expect(UspWidgetSpecs.all.length, 17);
+    test('all has 18 specs', () {
+      expect(UspWidgetSpecs.all.length, 18);
     });
 
     test('all IDs are unique', () {
       final ids = UspWidgetSpecs.all.map((s) => s.id).toSet();
-      expect(ids.length, 17);
+      expect(ids.length, 18);
     });
 
     test('all displayNames are unique', () {
       final names = UspWidgetSpecs.all.map((s) => s.displayName).toSet();
-      expect(names.length, 17);
+      expect(names.length, 18);
     });
 
     test('all specs have DisplayMode.normal constraints', () {
@@ -211,9 +211,9 @@ void main() {
   });
 
   group('createDefaultLayout', () {
-    test('returns 17 items', () {
+    test('returns 18 items', () {
       final layout = UspWidgetSpecs.createDefaultLayout();
-      expect(layout.length, 17);
+      expect(layout.length, 18);
     });
 
     test('stats_panel is first and full-width', () {
@@ -348,7 +348,7 @@ void main() {
       expect(layout.length, 3);
     });
 
-    test('all 17 cards layout matches createDefaultLayout', () {
+    test('all 18 cards layout matches createDefaultLayout', () {
       final allIds = UspWidgetSpecs.all.map((s) => s.id).toList();
       final fromCards = UspWidgetSpecs.createLayoutForCards(allIds);
       final defaultLayout = UspWidgetSpecs.createDefaultLayout();

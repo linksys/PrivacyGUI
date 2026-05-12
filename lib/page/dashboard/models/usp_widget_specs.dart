@@ -154,6 +154,21 @@ abstract class UspWidgetSpecs {
     },
   );
 
+  static const wifiNetworks = WidgetSpec(
+    id: 'wifi_networks',
+    displayName: 'WiFi Networks',
+    constraints: {
+      DisplayMode.normal: WidgetGridConstraints(
+        minColumns: 4,
+        maxColumns: 8,
+        preferredColumns: 6,
+        heightStrategy: HeightStrategy.intrinsic(),
+        minHeightRows: 3,
+        maxHeightRows: 10,
+      ),
+    },
+  );
+
   static const timeSettings = WidgetSpec(
     id: 'time_settings',
     displayName: 'Time Settings',
@@ -288,6 +303,7 @@ abstract class UspWidgetSpecs {
     systemStatus,
     connectedDevices,
     wifiStatus,
+    wifiNetworks,
     timeSettings,
     dhcpReservations,
     portForwarding,

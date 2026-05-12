@@ -61,7 +61,7 @@ extension UspDashboardPresetX on UspDashboardPreset {
             'ethernet_ports',
             'system_status',
             'connected_devices',
-            'wifi_status',
+            'wifi_networks',
             'time_settings',
             'traffic_analysis',
             'firewall_overview',
@@ -142,7 +142,7 @@ List<LayoutItem> _essentialLayout() => [
 /// y=4:  Topology (12×5)
 /// y=9:  LanInfo (6×3)             | EthernetPorts (6×3)
 /// y=12: SystemStatus (6×5)        | TrafficAnalysis (6×5)
-/// y=17: ConnectedDevices (6×4)    | WiFiStatus (6×6)
+/// y=17: ConnectedDevices (6×4)    | WiFiNetworks (6×6)
 /// y=23: TimeSettings (6×3)        | FirewallOverview (6×4)
 /// ```
 List<LayoutItem> _standardLayout() => [
@@ -155,7 +155,7 @@ List<LayoutItem> _standardLayout() => [
       _item('system_status', x: 0, y: 12, w: 6, h: 5),
       _item('traffic_analysis', x: 6, y: 12, w: 6, h: 5),
       _item('connected_devices', x: 0, y: 17, w: 6, h: 4),
-      _item('wifi_status', x: 6, y: 17, w: 6, h: 6),
+      _item('wifi_networks', x: 6, y: 17, w: 6, h: 4),
       _item('time_settings', x: 0, y: 23, w: 6, h: 2),
       _item('firewall_overview', x: 6, y: 23, w: 6, h: 4),
     ];
