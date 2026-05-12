@@ -37,11 +37,11 @@ git diff --name-only <base>...HEAD -- '*.dart'
 **Step 0.2: Filter and Categorize Files**
 
 - If NO `.dart` files changed, report "No Dart files changed — skipping review" and **STOP**
-- Categorize changed files:
-  - `lib/page/*/views/*.dart` → View files
-  - `lib/page/*/providers/*.dart` → Provider files
-  - `lib/page/*/services/*.dart` → Service files
-  - `lib/page/*/models/*.dart` → Model files
+- Categorize changed files (use recursive `**` globs to match nested features):
+  - `lib/page/**/views/**/*.dart` → View files
+  - `lib/page/**/providers/**/*.dart` → Provider files
+  - `lib/page/**/services/**/*.dart` → Service files
+  - `lib/page/**/models/**/*.dart` → Model files
   - `test/**/*.dart` → Test files
   - Other `lib/**/*.dart` → Other source files
 
@@ -131,7 +131,7 @@ grep -l "@GenerateMocks" <new_test_files>
 
 **Step 3.2: Architecture Compliance — No Codegen in Providers/Views (Article V §5.4.3)**
 
-For each changed provider file (`lib/page/*/providers/*.dart`) and view file (`lib/page/*/views/*.dart`):
+For each changed provider file (`lib/page/**/providers/**/*.dart`) and view file (`lib/page/**/views/**/*.dart`):
 
 ```bash
 # Check for direct generated/ imports (prohibited)
@@ -157,7 +157,7 @@ grep -E "\.(fetch|save|add|delete)\(.*UspClient" <provider_files>
 
 **Step 3.4: Error Handling Compliance (Article XIII)**
 
-For each changed service file (`lib/page/*/services/*.dart`):
+For each changed service file (`lib/page/**/services/**/*.dart`):
 
 ```bash
 # Check for raw USP exceptions not mapped to ServiceError
@@ -173,13 +173,13 @@ grep -E "throw UspException|rethrow" <service_files>
 For each **new** file in the branch:
 
 ```bash
-# Check provider file naming
-# Files in lib/page/*/providers/ should end with _provider.dart or _notifier.dart
-find lib/page/*/providers/ -name "*.dart" | grep -v -E "(_provider|_notifier)\.dart$"
+# Check provider file naming (recursive to match nested features)
+# Files in lib/page/**/providers/ should end with _provider.dart or _notifier.dart
+find lib/page -path '*/providers/*.dart' | grep -v -E "(_provider|_notifier)\.dart$"
 
-# Check service file naming
-# Files in lib/page/*/services/ should end with _service.dart
-find lib/page/*/services/ -name "*.dart" | grep -v -E "_service\.dart$"
+# Check service file naming (recursive to match nested features)
+# Files in lib/page/**/services/ should end with _service.dart
+find lib/page -path '*/services/*.dart' | grep -v -E "_service\.dart$"
 ```
 
 - If provider files don't follow `*_provider.dart` or `*_notifier.dart` naming:
@@ -197,11 +197,11 @@ For each changed provider file (`lib/page/*/providers/*.dart`):
 ```bash
 # Check if file contains L1 indicators (session cache) with autoDispose (prohibited)
 # L1 indicators: "DataProvider", "CacheProvider", comments mentioning "L1" or "session cache"
-grep -l "autoDispose" <provider_files> | xargs grep -l -E "(DataProvider|CacheProvider|// ?L1|session.?cache)"
+grep -l "autoDispose" <provider_files> | xargs --no-run-if-empty grep -l -E "(DataProvider|CacheProvider|// ?L1|session.?cache)"
 
 # Check if file contains L2 indicators (working copy) without autoDispose (should have it)
 # L2 indicators: "NotifierProvider", "StateProvider", comments mentioning "L2" or "working copy"
-grep -L "autoDispose" <provider_files> | xargs grep -l -E "(NotifierProvider|// ?L2|working.?copy)"
+grep -L "autoDispose" <provider_files> | xargs --no-run-if-empty grep -l -E "(NotifierProvider|// ?L2|working.?copy)"
 ```
 
 - If L1 (session cache) provider has `autoDispose`:
