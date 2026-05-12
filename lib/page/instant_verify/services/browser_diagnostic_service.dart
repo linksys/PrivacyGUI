@@ -105,8 +105,10 @@ class BrowserDiagnosticService {
     if (kIsWeb) return 'http://${Uri.base.host}';
     return 'http://192.168.1.1';
   }
-  static const _dnsTestUrl = 'https://1.1.1.1/cdn-cgi/trace';
-  static const _dnsTestFallback = 'https://www.google.com/generate_204';
+  // CORS-safe connectivity endpoints (Access-Control-Allow-Origin: *)
+  static const _connectivityUrl = 'https://speed.cloudflare.com/__down?bytes=1';
+  static const _dohUrl =
+      'https://cloudflare-dns.com/dns-query?name=connectivitycheck.gstatic.com&type=A';
   static const _timeout = Duration(seconds: 5);
 
   // Cloudflare speed test endpoints (support CORS from any origin)
@@ -135,47 +137,35 @@ class BrowserDiagnosticService {
     }
   }
 
-  /// Test internet-layer connectivity by reaching a known public IP address
-  /// without relying on DNS. Uses Cloudflare (1.1.1.1) and Google (8.8.8.8).
-  /// A successful response proves the WAN/internet layer is functional.
+  /// Test internet-layer connectivity via CORS-safe Cloudflare endpoints.
   Future<GatewayPingResult> pingPublicIp() async {
-    for (final url in ['https://1.1.1.1/cdn-cgi/trace', 'https://8.8.8.8']) {
+    for (final url in [_connectivityUrl, '$_cfDownUrl?bytes=1']) {
       final stopwatch = Stopwatch()..start();
       try {
-        await http.head(Uri.parse(url)).timeout(_timeout);
+        final response = await http.get(Uri.parse(url)).timeout(_timeout);
         stopwatch.stop();
-        return GatewayPingResult(reachable: true, latencyMs: stopwatch.elapsedMilliseconds);
-      } catch (e) {
-        stopwatch.stop();
-        // TLS/cert errors still indicate TCP connectivity — counts as reachable
-        if (stopwatch.elapsedMilliseconds < _timeout.inMilliseconds - 500) {
+        if (response.statusCode == 200) {
           return GatewayPingResult(reachable: true, latencyMs: stopwatch.elapsedMilliseconds);
         }
+      } catch (_) {
+        stopwatch.stop();
       }
     }
     return const GatewayPingResult(reachable: false);
   }
 
-  /// Test DNS resolution via Google's public DNS-over-HTTPS server at 8.8.8.8.
+  /// Test DNS resolution via Cloudflare's DoH endpoint (CORS-safe).
   ///
-  /// Queries by IP address directly — bypasses the ISP DNS resolver entirely,
-  /// so this works even when the system/ISP DNS is broken. Used internally to
-  /// distinguish "ISP DNS is down" from "internet is completely unreachable".
-  ///
-  /// Not surfaced to customers — only used to sharpen the verdict message.
+  /// Bypasses the ISP DNS resolver entirely — used internally to distinguish
+  /// "ISP DNS is down" from "internet is completely unreachable".
   Future<DnsCheckResult> checkPublicDns() async {
-    // Google's DoH endpoint — cert SANs include the literal IP 8.8.8.8
-    // so TLS handshake succeeds without needing DNS to resolve the hostname.
-    const dohUrl =
-        'https://8.8.8.8/resolve?name=connectivitycheck.gstatic.com&type=A';
     final stopwatch = Stopwatch()..start();
     try {
       final response = await http.get(
-        Uri.parse(dohUrl),
+        Uri.parse(_dohUrl),
         headers: {'Accept': 'application/dns-json'},
       ).timeout(_timeout);
       stopwatch.stop();
-      // DoH JSON response: {"Status":0,...,"Answer":[...]} means NOERROR
       if (response.statusCode == 200) {
         final body = response.body;
         final ok = body.contains('"Status":0') ||
@@ -192,17 +182,32 @@ class BrowserDiagnosticService {
     return const DnsCheckResult(resolved: false);
   }
 
-  /// Verify DNS resolution and internet connectivity via known endpoints.
+  /// Verify DNS resolution and internet connectivity via CORS-safe endpoints.
   Future<DnsCheckResult> checkDns() async {
-    for (final url in [_dnsTestUrl, _dnsTestFallback]) {
-      final stopwatch = Stopwatch()..start();
-      try {
-        await http.get(Uri.parse(url)).timeout(_timeout);
-        stopwatch.stop();
+    // Primary: Cloudflare speed endpoint (no DNS needed, proves raw connectivity)
+    final stopwatch = Stopwatch()..start();
+    try {
+      final response = await http.get(Uri.parse(_connectivityUrl)).timeout(_timeout);
+      stopwatch.stop();
+      if (response.statusCode == 200) {
         return DnsCheckResult(resolved: true, latencyMs: stopwatch.elapsedMilliseconds);
-      } catch (_) {
-        stopwatch.stop();
       }
+    } catch (_) {
+      stopwatch.stop();
+    }
+    // Fallback: Cloudflare DoH (proves DNS + connectivity)
+    final sw2 = Stopwatch()..start();
+    try {
+      final response = await http.get(
+        Uri.parse(_dohUrl),
+        headers: {'Accept': 'application/dns-json'},
+      ).timeout(_timeout);
+      sw2.stop();
+      if (response.statusCode == 200) {
+        return DnsCheckResult(resolved: true, latencyMs: sw2.elapsedMilliseconds);
+      }
+    } catch (_) {
+      sw2.stop();
     }
     return const DnsCheckResult(resolved: false);
   }
@@ -216,7 +221,7 @@ class BrowserDiagnosticService {
   }) async {
     // 1. Latency — multiple pings to Cloudflare, take median
     onStep?.call('latency');
-    final latencies = await _measureLatencies(_dnsTestUrl, samples: 5);
+    final latencies = await _measureLatencies(_connectivityUrl, samples: 5);
     final latencyMs = latencies.isNotEmpty ? _median(latencies) : 0;
     final jitterMs = latencies.length >= 2 ? _computeJitter(latencies) : 0;
 
@@ -265,7 +270,7 @@ class BrowserDiagnosticService {
         final smallPayload = 'x' * 1000000; // 1MB
         final sw = Stopwatch()..start();
         await http.post(
-          Uri.parse(_dnsTestUrl),
+          Uri.parse('$_cfUpUrl?measId=${DateTime.now().millisecondsSinceEpoch}_fb'),
           body: smallPayload,
         ).timeout(const Duration(seconds: 15));
         sw.stop();
@@ -284,18 +289,16 @@ class BrowserDiagnosticService {
     );
   }
 
-  /// Fallback download test using multiple Cloudflare trace requests in parallel.
+  /// Fallback download test using smaller Cloudflare payload.
   Future<double> _fallbackDownloadTest() async {
-    const parallel = 10;
     final sw = Stopwatch()..start();
-    final futures = List.generate(parallel, (_) =>
-      http.get(Uri.parse(_dnsTestUrl)).timeout(const Duration(seconds: 10)),
-    );
-    final responses = await Future.wait(futures);
+    final response = await http.get(
+      Uri.parse('$_cfDownUrl?bytes=1000000'),
+    ).timeout(const Duration(seconds: 15));
     sw.stop();
-    final totalBytes = responses.fold<int>(0, (sum, r) => sum + r.bodyBytes.length);
-    if (totalBytes == 0 || sw.elapsedMilliseconds == 0) return 0;
-    return (totalBytes * 8) / (sw.elapsedMilliseconds / 1000) / 1000000;
+    final bytes = response.bodyBytes.length;
+    if (bytes == 0 || sw.elapsedMilliseconds == 0) return 0;
+    return (bytes * 8) / (sw.elapsedMilliseconds / 1000) / 1000000;
   }
 
   // ── Router-to-Client Speed Test ──────────────────────────────────────
