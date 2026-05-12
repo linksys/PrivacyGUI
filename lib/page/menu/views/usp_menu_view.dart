@@ -6,7 +6,8 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/components/styled/menus/widgets/app_menu_card.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_notifier.dart';
-import 'package:privacy_gui/page/instant_safety/providers/instant_safety_provider.dart';
+import 'package:privacy_gui/page/instant_safety/services/instant_safety_service.dart';
+import 'package:privacy_gui/page/local_network/providers/lan_data_provider.dart';
 import 'package:privacy_gui/page/models/app_section_item_data.dart';
 import 'package:privacy_gui/page/models/menu_badge.dart';
 import 'package:privacy_gui/route/constants.dart';
@@ -49,8 +50,13 @@ class UspMenuView extends ConsumerWidget {
 
   List<AppSectionItemData> _buildMenuItems(
       BuildContext context, WidgetRef ref) {
-    final safetyState = ref.watch(uspInstantSafetyProvider).valueOrNull;
+    // Read from L1 providers for applied state (not page-level pending state)
+    final lanData = ref.watch(lanDataProvider).valueOrNull;
     final privacyState = ref.watch(uspInstantPrivacyProvider).valueOrNull;
+
+    // Instant Safety is enabled when DNS is set to OpenDNS
+    final isSafetyEnabled = lanData != null &&
+        UspInstantSafetyService.isOpenDns(lanData.model.dnsServers);
 
     return [
       AppSectionItemData(
@@ -79,8 +85,8 @@ class UspMenuView extends ConsumerWidget {
         title: 'Instant Safety',
         description: 'Safe browsing with OpenDNS',
         iconData: Icons.shield_outlined,
-        badges: safetyState != null
-            ? [safetyState.isEnabled ? MenuBadge.on : MenuBadge.off]
+        badges: lanData != null
+            ? [isSafetyEnabled ? MenuBadge.on : MenuBadge.off]
             : [],
         onTap: () => context.goNamed(RouteNamed.uspInstantSafety),
       ),

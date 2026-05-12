@@ -24,6 +24,12 @@ class UspInstantSafetyService {
   static const _openDnsDns2 = '208.67.220.220';
   static const _openDnsValue = '$_openDnsDns1,$_openDnsDns2';
 
+  /// Returns true if the DNS servers string indicates OpenDNS is active.
+  static bool isOpenDns(String dnsServers) {
+    final first = dnsServers.split(',').firstOrNull?.trim() ?? '';
+    return first == _openDnsDns1;
+  }
+
   // ─── CRUD ──────────────────────────────────────────────────
 
   /// Fetch LAN network info and transform to safe browsing UI model.
@@ -80,8 +86,7 @@ class UspInstantSafetyService {
 
   /// Detect safe browsing type from the raw DNS servers string.
   SafeBrowsingType _detectType(String dnsServers) {
-    final first = dnsServers.split(',').firstOrNull?.trim() ?? '';
-    return first == _openDnsDns1
+    return isOpenDns(dnsServers)
         ? SafeBrowsingType.openDNS
         : SafeBrowsingType.off;
   }

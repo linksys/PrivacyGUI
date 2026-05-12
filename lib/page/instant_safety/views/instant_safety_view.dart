@@ -4,6 +4,7 @@ import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/page/instant_safety/models/instant_safety_feature_state.dart';
 import 'package:privacy_gui/page/instant_safety/providers/instant_safety_provider.dart';
 import 'package:privacy_gui/page/shell/usp_top_bar.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -14,7 +15,7 @@ class UspInstantSafetyView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final asyncState = ref.watch(uspInstantSafetyProvider);
+    final state = ref.watch(uspInstantSafetyProvider);
 
     return UiKitPageView.withSliver(
       scrollable: true,
@@ -24,18 +25,45 @@ class UspInstantSafetyView extends ConsumerWidget {
         child: UspTopBar(),
       ),
       backFallback: RouteNamed.uspMenu,
+      onRefresh: () =>
+          ref.read(uspInstantSafetyProvider.notifier).fetch(forceRemote: true),
+      bottomBar: _buildBottomBar(context, ref, state),
       padding: const EdgeInsets.only(bottom: AppSpacing.md),
       child: (childContext, constraints) {
-        return asyncState.when(
-          loading: () => const Center(child: AppLoader()),
-          error: (error, _) => _buildError(context, ref, error),
-          data: (state) => _buildContent(context, ref, state),
-        );
+        if (state.status.isLoading) {
+          return const Center(child: AppLoader());
+        }
+        if (state.status.errorMessage != null) {
+          return _buildError(context, ref, state.status.errorMessage!);
+        }
+        return _buildContent(context, ref, state);
       },
     );
   }
 
-  Widget _buildError(BuildContext context, WidgetRef ref, Object error) {
+  // ---------------------------------------------------------------------------
+  // Bottom Bar
+  // ---------------------------------------------------------------------------
+
+  UiKitBottomBarConfig? _buildBottomBar(
+    BuildContext context,
+    WidgetRef ref,
+    InstantSafetyFeatureState state,
+  ) {
+    if (!state.isDirty) return null;
+    return UiKitBottomBarConfig(
+      positiveLabel: 'Save',
+      isPositiveEnabled: !state.status.isSaving,
+      onPositiveTap: () => _onSave(context, ref),
+      onNegativeTap: () => ref.read(uspInstantSafetyProvider.notifier).revert(),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Error
+  // ---------------------------------------------------------------------------
+
+  Widget _buildError(BuildContext context, WidgetRef ref, String error) {
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -45,7 +73,7 @@ class UspInstantSafetyView extends ConsumerWidget {
           AppGap.xl(),
           AppText.titleMedium('Unable to load safe browsing settings'),
           AppGap.md(),
-          AppText.bodyMedium(error.toString()),
+          AppText.bodyMedium(error),
           AppGap.xxl(),
           AppButton(
             label: 'Retry',
@@ -56,12 +84,18 @@ class UspInstantSafetyView extends ConsumerWidget {
     );
   }
 
+  // ---------------------------------------------------------------------------
+  // Content
+  // ---------------------------------------------------------------------------
+
   Widget _buildContent(
     BuildContext context,
     WidgetRef ref,
-    UspInstantSafetyState state,
+    InstantSafetyFeatureState state,
   ) {
     final notifier = ref.read(uspInstantSafetyProvider.notifier);
+    final isEnabled = state.settings.current.isEnabled;
+    final isSaving = state.status.isSaving;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -72,24 +106,15 @@ class UspInstantSafetyView extends ConsumerWidget {
           'devices on your network.',
         ),
         AppGap.xl(),
-        _buildSafeBrowsingCard(context, state, notifier),
-        if (state.isDirty) ...[
-          AppGap.xl(),
-          SizedBox(
-            width: double.infinity,
-            child: AppButton.primary(
-              label: 'Save',
-              onTap: state.isSaving ? null : () => _onSave(context, ref),
-            ),
-          ),
-        ],
+        _buildSafeBrowsingCard(context, isEnabled, isSaving, notifier),
       ],
     );
   }
 
   Widget _buildSafeBrowsingCard(
     BuildContext context,
-    UspInstantSafetyState state,
+    bool isEnabled,
+    bool isSaving,
     UspInstantSafetyNotifier notifier,
   ) {
     return AppCard(
@@ -103,14 +128,13 @@ class UspInstantSafetyView extends ConsumerWidget {
                 child: AppText.labelLarge('Safe Browsing (OpenDNS)'),
               ),
               AppSwitch(
-                value: state.isEnabled,
-                onChanged: state.isSaving
-                    ? null
-                    : (value) => notifier.setEnabled(value),
+                value: isEnabled,
+                onChanged:
+                    isSaving ? null : (value) => notifier.setEnabled(value),
               ),
             ],
           ),
-          if (state.isEnabled) ...[
+          if (isEnabled) ...[
             AppGap.lg(),
             const Divider(height: 1),
             AppGap.lg(),
@@ -129,6 +153,10 @@ class UspInstantSafetyView extends ConsumerWidget {
       ),
     );
   }
+
+  // ---------------------------------------------------------------------------
+  // Save
+  // ---------------------------------------------------------------------------
 
   Future<void> _onSave(BuildContext context, WidgetRef ref) async {
     try {
