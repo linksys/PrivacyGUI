@@ -31,7 +31,7 @@ class InstantPrivacyView extends ConsumerWidget {
       padding: const EdgeInsets.only(bottom: AppSpacing.md),
       child: (childContext, constraints) {
         return asyncState.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
+          loading: () => const Center(child: AppLoader()),
           error: (error, _) => _buildError(context, ref, error),
           data: (state) => _buildContent(context, ref, state),
         );

@@ -1,109 +1,112 @@
-import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
+import 'package:privacy_gui/framework/preservable_contract.dart';
+import 'package:privacy_gui/framework/preservable_notifier_mixin.dart';
+import 'package:privacy_gui/page/instant_safety/models/instant_safety_feature_state.dart';
+import 'package:privacy_gui/page/instant_safety/models/instant_safety_settings.dart';
+import 'package:privacy_gui/page/instant_safety/models/instant_safety_status.dart';
 import 'package:privacy_gui/page/instant_safety/models/safe_browsing_ui_model.dart';
 import 'package:privacy_gui/page/instant_safety/services/instant_safety_service.dart';
+import 'package:privacy_gui/page/local_network/providers/lan_data_provider.dart';
 
 // ---------------------------------------------------------------------------
-// State
+// Providers
 // ---------------------------------------------------------------------------
 
-class UspInstantSafetyState extends Equatable {
-  /// Presentation Layer UI Model (for views).
-  final SafeBrowsingUIModel uiModel;
-
-  /// User's pending selection — may differ from [uiModel.type] before save.
-  final SafeBrowsingType pendingType;
-
-  /// Whether a save operation is in progress.
-  final bool isSaving;
-
-  const UspInstantSafetyState({
-    required this.uiModel,
-    required this.pendingType,
-    this.isSaving = false,
-  });
-
-  bool get isDirty => pendingType != uiModel.type;
-  bool get isEnabled => pendingType != SafeBrowsingType.off;
-
-  UspInstantSafetyState copyWith({
-    SafeBrowsingUIModel? uiModel,
-    SafeBrowsingType? pendingType,
-    bool? isSaving,
-  }) {
-    return UspInstantSafetyState(
-      uiModel: uiModel ?? this.uiModel,
-      pendingType: pendingType ?? this.pendingType,
-      isSaving: isSaving ?? this.isSaving,
-    );
-  }
-
-  @override
-  List<Object?> get props => [uiModel, pendingType, isSaving];
-}
-
-// ---------------------------------------------------------------------------
-// Provider
-// ---------------------------------------------------------------------------
-
-final uspInstantSafetyProvider =
-    AsyncNotifierProvider<UspInstantSafetyNotifier, UspInstantSafetyState>(
+final uspInstantSafetyProvider = AutoDisposeNotifierProvider<
+    UspInstantSafetyNotifier, InstantSafetyFeatureState>(
   UspInstantSafetyNotifier.new,
+);
+
+/// Exposes the notifier as a [PreservableContract] for [LinksysRoute]
+/// dirty-check integration.
+final preservableUspInstantSafetyProvider = AutoDisposeProvider<
+    PreservableContract<InstantSafetySettings, InstantSafetyStatus>>(
+  (ref) => ref.watch(uspInstantSafetyProvider.notifier),
 );
 
 // ---------------------------------------------------------------------------
 // Notifier
 // ---------------------------------------------------------------------------
 
-class UspInstantSafetyNotifier extends AsyncNotifier<UspInstantSafetyState> {
+class UspInstantSafetyNotifier
+    extends AutoDisposeNotifier<InstantSafetyFeatureState>
+    with
+        PreservableAutoDisposeNotifierMixin<InstantSafetySettings,
+            InstantSafetyStatus, InstantSafetyFeatureState> {
+  UspInstantSafetyService get _svc => ref.read(uspInstantSafetyServiceProvider);
+
   @override
-  Future<UspInstantSafetyState> build() async {
+  InstantSafetyFeatureState build() {
+    Future.microtask(() => fetch());
+    return InstantSafetyFeatureState.initial();
+  }
+
+  // ---------------------------------------------------------------------------
+  // performFetch — required by PreservableAutoDisposeNotifierMixin
+  // ---------------------------------------------------------------------------
+
+  @override
+  Future<(InstantSafetySettings?, InstantSafetyStatus?)> performFetch({
+    bool forceRemote = false,
+    bool updateStatusOnly = false,
+  }) async {
+    final uiModel = await _svc.fetch();
+
+    logger.d('[USP][Safety]: Fetched — type: ${uiModel.type}');
+
+    final newSettings = InstantSafetySettings(type: uiModel.type);
+    const newStatus = InstantSafetyStatus(isLoading: false);
+
+    return (newSettings, newStatus);
+  }
+
+  // ---------------------------------------------------------------------------
+  // save — override to manage isSaving flag and invalidate L1
+  // ---------------------------------------------------------------------------
+
+  @override
+  Future<InstantSafetyFeatureState> save() async {
+    if (!isDirty()) return state;
+
+    state = state.copyWith(
+      status: state.status.copyWith(isSaving: true),
+    );
     try {
-      final svc = ref.read(uspInstantSafetyServiceProvider);
-      final uiModel = await svc.fetch();
-
-      logger.d('[USP][Safety]: Instant Safety fetched — type: ${uiModel.type}');
-
-      return UspInstantSafetyState(
-        uiModel: uiModel,
-        pendingType: uiModel.type,
+      final result = await super.save();
+      // Invalidate L1 LAN data to refresh applied state for menu badge.
+      ref.invalidate(lanDataProvider);
+      return result;
+    } finally {
+      state = state.copyWith(
+        status: state.status.copyWith(isSaving: false),
       );
-    } on ServiceError catch (e) {
-      logger.e('[USP][Safety]: Fetch failed', error: e);
-      rethrow;
     }
   }
+
+  // ---------------------------------------------------------------------------
+  // performSave — required by PreservableAutoDisposeNotifierMixin
+  // ---------------------------------------------------------------------------
+
+  @override
+  Future<void> performSave() async {
+    await ref.read(uspMutationLockProvider).withLock(() async {
+      await _svc.save(state.settings.current.type);
+    });
+    logger.d('[USP][Safety]: Saved — type: ${state.settings.current.type}');
+  }
+
+  // ---------------------------------------------------------------------------
+  // UI setter methods
+  // ---------------------------------------------------------------------------
 
   /// Toggle safe browsing on/off.
   void setEnabled(bool enabled) {
-    final s = state.valueOrNull;
-    if (s == null) return;
     final newType = enabled ? SafeBrowsingType.openDNS : SafeBrowsingType.off;
-    state = AsyncData(s.copyWith(pendingType: newType));
-  }
-
-  /// Save the pending selection to the router.
-  Future<void> save() async {
-    final s = state.requireValue;
-    if (!s.isDirty) return;
-
-    state = AsyncData(s.copyWith(isSaving: true));
-    try {
-      await ref.read(uspMutationLockProvider).withLock(() async {
-        final svc = ref.read(uspInstantSafetyServiceProvider);
-        await svc.save(s.pendingType);
-      });
-      logger.d('[USP][Safety]: Instant Safety saved — type: ${s.pendingType}');
-
-      // Re-fetch to confirm the change took effect.
-      ref.invalidateSelf();
-    } on ServiceError catch (e) {
-      logger.e('[USP][Safety]: Save failed', error: e);
-      state = AsyncData(s.copyWith(isSaving: false));
-      rethrow;
-    }
+    final current = state.settings.current;
+    state = state.copyWith(
+      settings: state.settings.update(current.copyWith(type: newType)),
+    );
   }
 }

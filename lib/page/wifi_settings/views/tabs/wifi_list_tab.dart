@@ -27,7 +27,7 @@ class UspWifiListTab extends ConsumerWidget {
       return const Center(
         child: Padding(
           padding: EdgeInsets.all(AppSpacing.xxxl),
-          child: CircularProgressIndicator(),
+          child: AppLoader(),
         ),
       );
     }

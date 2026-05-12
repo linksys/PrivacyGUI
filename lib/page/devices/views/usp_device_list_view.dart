@@ -46,7 +46,7 @@ class _UspDeviceListViewState extends ConsumerState<UspDeviceListView> {
       padding: const EdgeInsets.only(bottom: AppSpacing.md),
       child: (childContext, constraints) {
         return asyncDevices.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
+          loading: () => const Center(child: AppLoader()),
           error: (e, _) => Center(child: AppText.bodyMedium('Error: $e')),
           data: (state) {
             return AppResponsiveLayout(

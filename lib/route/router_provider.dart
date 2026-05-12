@@ -30,6 +30,7 @@ import 'package:privacy_gui/page/devices/views/usp_device_detail_view.dart';
 import 'package:privacy_gui/page/topology/views/usp_topology_view.dart';
 import 'package:privacy_gui/page/topology/views/usp_node_detail_view.dart';
 import 'package:privacy_gui/page/instant_safety/views/instant_safety_view.dart';
+import 'package:privacy_gui/page/instant_safety/providers/instant_safety_provider.dart';
 import 'package:privacy_gui/page/instant_privacy/views/instant_privacy_view.dart'
     as usp_instant_privacy;
 import 'package:privacy_gui/page/admin/views/usp_admin_view.dart';

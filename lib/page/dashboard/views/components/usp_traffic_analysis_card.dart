@@ -46,7 +46,6 @@ class _UspTrafficAnalysisCardState
   Widget build(BuildContext context) {
     final analysisState = ref.watch(uspTrafficAnalysisProvider);
     final selectedTab = ref.watch(cardTabIndexProvider(_cardId));
-    final colorScheme = Theme.of(context).colorScheme;
 
     return AppCard(
       child: Column(
@@ -61,10 +60,7 @@ class _UspTrafficAnalysisCardState
                 SizedBox(
                   width: 14,
                   height: 14,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: colorScheme.primary,
-                  ),
+                  child: AppLoader(strokeWidth: 2),
                 ),
               ],
               const Spacer(),

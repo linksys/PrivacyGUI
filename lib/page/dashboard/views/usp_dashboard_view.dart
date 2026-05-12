@@ -57,7 +57,7 @@ class UspDashboardView extends ConsumerWidget {
               Expanded(
                 child: asyncState.when(
                   loading: () => const Center(
-                    child: CircularProgressIndicator(),
+                    child: AppLoader(),
                   ),
                   error: (error, stack) => _buildError(context, ref, error),
                   data: (_) => const UspSliverDashboardView(),
