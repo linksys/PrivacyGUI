@@ -13,6 +13,7 @@ import 'package:privacy_gui/page/dhcp/providers/usp_dhcp_reservations_notifier.d
 import 'package:privacy_gui/page/devices/providers/device_detail_provider.dart';
 import 'package:privacy_gui/page/devices/views/components/usp_signal_strength_indicator.dart';
 import 'package:privacy_gui/page/shell/usp_top_bar.dart';
+import 'package:privacy_gui/util/network_utils.dart';
 import 'package:privacy_gui/util/wifi_signal_utils.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -86,7 +87,8 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
         AppGap.lg(),
         _buildConnectionStatusCard(context, device),
         AppGap.lg(),
-        if (device.isWifi) ...[
+        // Only show WiFi details for active WiFi devices
+        if (device.isWifi && device.isActive) ...[
           _buildWifiDetailsCard(context, device),
           AppGap.lg(),
         ],
@@ -105,7 +107,8 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
         ),
         AppGap.gutter(),
         DetailGridRow(
-          left: device.isWifi
+          // Only show WiFi details for active WiFi devices
+          left: device.isWifi && device.isActive
               ? _buildWifiDetailsCard(context, device)
               : _buildNetworkAddressesCard(context, device),
           right: _buildDhcpCard(context, ref, device, detail, isLoading),
@@ -339,24 +342,25 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
   }
 
   // ===========================================================================
-  // Network Addresses Card (for Ethernet devices on desktop)
+  // Network Addresses Card (for non-active or wired devices on desktop)
   // ===========================================================================
 
   Widget _buildNetworkAddressesCard(
       BuildContext context, DeviceUIModel device) {
+    final isWifi = device.isWifi;
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const DetailCardHeader(
-            icon: Icons.cable,
+          DetailCardHeader(
+            icon: isWifi ? Icons.wifi_off : Icons.cable,
             title: 'Network Details',
           ),
           AppGap.xl(),
-          const DetailInfoTile(
-            icon: Icons.settings_ethernet,
+          DetailInfoTile(
+            icon: isWifi ? Icons.wifi : Icons.settings_ethernet,
             label: 'Connection Type',
-            value: 'Ethernet (Wired)',
+            value: isWifi ? 'WiFi (Wireless)' : 'Ethernet (Wired)',
           ),
           if (device.parentNodeName != null) ...[
             AppGap.md(),
@@ -378,6 +382,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
   Widget _buildDhcpCard(BuildContext context, WidgetRef ref,
       DeviceUIModel device, DeviceDetailState detail, bool isLoading) {
     final colorScheme = Theme.of(context).colorScheme;
+    final hasValidIpv4 = NetworkUtils.isValidIpAddress(device.ip);
 
     return AppCard(
       child: Column(
@@ -436,14 +441,16 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
               child: Row(
                 children: [
                   Icon(
-                    Icons.info_outline,
+                    hasValidIpv4 ? Icons.info_outline : Icons.warning_amber,
                     color: colorScheme.onSurfaceVariant,
                     size: 20,
                   ),
                   AppGap.sm(),
                   Expanded(
                     child: AppText.bodyMedium(
-                      'No reservation. IP may change on reconnect.',
+                      hasValidIpv4
+                          ? 'No reservation. IP may change on reconnect.'
+                          : 'No IPv4 address. Cannot create reservation.',
                       color: colorScheme.onSurfaceVariant,
                     ),
                   ),
@@ -454,7 +461,9 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
             AppButton.primary(
               label: 'Reserve IP Address',
               isLoading: isLoading,
-              onTap: isLoading ? null : () => _reserveIp(context, ref, device),
+              onTap: isLoading || !hasValidIpv4
+                  ? null
+                  : () => _reserveIp(context, ref, device),
             ),
           ],
         ],

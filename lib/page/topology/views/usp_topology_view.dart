@@ -40,7 +40,7 @@ class _UspTopologyViewState extends ConsumerState<UspTopologyView> {
       padding: const EdgeInsets.only(bottom: AppSpacing.md),
       child: (childContext, constraints) {
         return asyncDevices.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
+          loading: () => const Center(child: AppLoader()),
           error: (error, _) => Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -187,6 +187,9 @@ class _UspTopologyViewState extends ConsumerState<UspTopologyView> {
       GoRouter router, String nodeId, MeshTopology topology) {
     final node = topology.nodes.where((n) => n.id == nodeId).firstOrNull;
     if (node == null) return;
+
+    // Offline nodes are not navigable
+    if (node.status == MeshNodeStatus.offline) return;
 
     if (node.type == MeshNodeType.gateway ||
         node.type == MeshNodeType.extender) {
