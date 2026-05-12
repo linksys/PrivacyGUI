@@ -8,6 +8,13 @@
             "type": "command",
             "command": "python3 .claude/hooks/pr_gate.py",
             "timeout": 10
+          },
+          {
+            "type": "command",
+            "if": "Bash(git commit *)",
+            "command": "staged=$(git diff --cached --name-only --diff-filter=ACM -- '*.dart'); if [ -n \"$staged\" ]; then if command -v fvm >/dev/null 2>&1; then echo \"$staged\" | xargs fvm dart format 2>/dev/null; else echo \"$staged\" | xargs dart format 2>/dev/null; fi; echo \"$staged\" | xargs git add; fi",
+            "timeout": 30,
+            "statusMessage": "Running dart format on staged files..."
           }
         ]
       }
