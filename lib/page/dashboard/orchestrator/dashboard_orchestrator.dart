@@ -134,6 +134,13 @@ class DashboardOrchestrator extends AsyncNotifier<DashboardOrchestratorState> {
       }
     }
 
+    // Invalidate domain providers and domain-ready signal so downstream
+    // listeners (polling notifiers) re-trigger on re-login.
+    for (final (_, provider) in _allDomainProviders) {
+      ref.invalidate(provider);
+    }
+    ref.invalidate(dashboardDomainReadyProvider);
+
     // Trigger all domain providers (fire-and-forget — each card shows its
     // own skeleton until its provider resolves).
     logger.d('[USP][Orchestrator]: Triggering domain providers');

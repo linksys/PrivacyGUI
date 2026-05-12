@@ -8,7 +8,6 @@ import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/_shared/models/traffic_analysis_state.dart';
 import 'package:privacy_gui/page/_shared/services/usp_traffic_analysis_service.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_domain_ready_provider.dart';
-import 'package:privacy_gui/providers/auth/auth_provider.dart';
 
 /// Multi-interface traffic analysis provider — compares WAN vs LAN traffic
 /// with timer-based polling. NOT autoDispose so history persists across tab
@@ -36,15 +35,6 @@ class UspTrafficAnalysisNotifier extends Notifier<TrafficAnalysisState> {
         _timer = null;
       } else if (_timer == null && state.refreshInterval != null) {
         setRefreshInterval(state.refreshInterval);
-      }
-    });
-
-    ref.listen(authProvider, (prev, next) {
-      if (next.isLoading) return;
-      final loginType = next.value?.loginType;
-      final prevLoginType = prev?.value?.loginType;
-      if (prevLoginType != LoginType.local && loginType == LoginType.local) {
-        ref.invalidateSelf();
       }
     });
 
