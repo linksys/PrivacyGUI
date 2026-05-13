@@ -9,7 +9,8 @@ import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/dmz/models/dmz_ui_model.dart';
 import 'package:privacy_gui/page/firewall/models/firewall_ui_model.dart';
 import 'package:privacy_gui/page/firewall/providers/firewall_data_provider.dart';
-import 'package:privacy_gui/page/instant_safety/providers/instant_safety_provider.dart';
+import 'package:privacy_gui/page/instant_safety/models/safe_browsing_ui_model.dart';
+import 'package:privacy_gui/page/instant_safety/services/instant_safety_service.dart';
 import 'package:privacy_gui/page/internet_settings/providers/wan_data_provider.dart';
 import 'package:privacy_gui/page/ipv6_port_service/providers/usp_ipv6_port_service_notifier.dart';
 import 'package:privacy_gui/page/local_network/providers/dhcp_data_provider.dart';
@@ -26,6 +27,18 @@ import 'package:privacy_gui/page/wifi_settings/providers/wifi_data_provider.dart
 /// essential orchestrator-driven providers are not yet ready.
 final pdfReportDataProvider = Provider<PdfReportData?>((ref) {
   final fwData = ref.read(firewallDataProvider).valueOrNull;
+  final lanData = ref.read(lanDataProvider).valueOrNull;
+
+  // Build SafeBrowsingUIModel from L1 LAN data (DNS servers)
+  SafeBrowsingUIModel? safeBrowsingModel;
+  if (lanData != null) {
+    final dnsServers = lanData.model.dnsServers;
+    final isOpenDns = UspInstantSafetyService.isOpenDns(dnsServers);
+    safeBrowsingModel = SafeBrowsingUIModel(
+      type: isOpenDns ? SafeBrowsingType.openDNS : SafeBrowsingType.off,
+      currentDnsServers: dnsServers,
+    );
+  }
 
   return PdfReportData(
     ethernetPortModels:
@@ -37,8 +50,8 @@ final pdfReportDataProvider = Provider<PdfReportData?>((ref) {
     dmzSettings: fwData?.dmzModel ?? const DmzUIModel.disabled(),
     staticRoutes: ref.read(uspStaticRoutingProvider).settings.current.routes,
     ipv6PortRules: ref.read(uspIpv6PortServiceProvider).settings.current.rules,
-    safeBrowsing: ref.read(uspInstantSafetyProvider).valueOrNull?.uiModel,
-    lanInfo: ref.read(lanDataProvider).valueOrNull?.model,
+    safeBrowsing: safeBrowsingModel,
+    lanInfo: lanData?.model,
     timeSettings: ref.read(timeDataProvider).valueOrNull?.model,
     dhcpClients: ref.read(dhcpDataProvider).valueOrNull?.clientModels,
     dhcpReservations: ref.read(dhcpDataProvider).valueOrNull?.reservationModels,

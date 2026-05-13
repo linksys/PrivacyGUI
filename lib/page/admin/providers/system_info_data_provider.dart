@@ -37,7 +37,7 @@ class SystemInfoDataNotifier extends AsyncNotifier<SystemInfoData> {
     final svc = ref.read(uspSystemInfoDataServiceProvider);
     final model = await svc.fetch();
 
-    logger.d('[USP][SystemInfoData] Fetched — '
+    logger.d('[USP][SystemInfoData]: Fetched — '
         'model=${model.modelName}, '
         'fw=${model.softwareVersion}');
 

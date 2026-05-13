@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:privacy_gui/page/models/menu_badge.dart';
 
 /// Data model for menu section items.
 ///
@@ -8,8 +9,7 @@ class AppSectionItemData {
   final IconData? iconData;
   final String title;
   final String? description;
-  final bool? status;
-  final bool isBeta;
+  final List<MenuBadge> badges;
   final bool disabledOnBridge;
   final VoidCallback? onTap;
   final String? semanticLabel;
@@ -19,8 +19,7 @@ class AppSectionItemData {
     required this.title,
     this.description,
     this.onTap,
-    this.status,
-    this.isBeta = false,
+    this.badges = const [],
     this.disabledOnBridge = false,
     this.semanticLabel,
   });

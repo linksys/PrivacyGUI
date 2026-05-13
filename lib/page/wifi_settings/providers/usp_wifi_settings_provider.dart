@@ -83,7 +83,7 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
       }
     }
 
-    logger.d('[USP][WiFi]Fetching WiFi data...');
+    logger.d('[USP][WiFi]: Fetching WiFi data...');
 
     // Read from WiFi Data Provider (Layer 1) to avoid duplicate fetch.
     // wifiDataProvider may throw (e.g. TimeoutException when the bridge is
@@ -93,7 +93,7 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
     try {
       wifiData = await ref.read(wifiDataProvider.future);
     } on ServiceError catch (e) {
-      logger.w('[USP][WiFi] WiFi data fetch failed: $e');
+      logger.w('[USP][WiFi]: WiFi data fetch failed: $e');
       return (
         null,
         WifiSettingsStatus(errorMessage: '$e'),
@@ -109,7 +109,7 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
 
     final quickSetup = _svc.buildQuickSetupNetworks(networks);
 
-    logger.d('[USP][WiFi]Loaded ${networks.length} networks, '
+    logger.d('[USP][WiFi]: Loaded ${networks.length} networks, '
         'isQuickSetup=${quickSetup.isQuickSetup}');
 
     // Preserve the current quickSetupEnabled flag across re-fetches so the
@@ -160,7 +160,7 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
       // super.save() calls performSave() → markAsSaved() → fetch().
       // fetch() rebuilds status with a fresh WifiSettingsStatus (isSaving = false).
     } on ServiceError catch (e) {
-      logger.e('[USP][WiFi] Save failed', error: e);
+      logger.e('[USP][WiFi]: Save failed', error: e);
       rethrow;
     } finally {
       state = state.copyWith(
@@ -332,7 +332,7 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
         await _svc.toggleRadio(instancePath, enable);
       });
     } on ServiceError catch (e) {
-      logger.e('[USP][WiFi] Toggle radio failed', error: e);
+      logger.e('[USP][WiFi]: Toggle radio failed', error: e);
       rethrow;
     }
     ref.invalidate(wifiDataProvider);
@@ -353,7 +353,30 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
         );
       });
     } on ServiceError catch (e) {
-      logger.e('[USP][WiFi] Update radio channel failed', error: e);
+      logger.e('[USP][WiFi]: Update radio channel failed', error: e);
+      rethrow;
+    }
+    ref.invalidate(wifiDataProvider);
+  }
+
+  /// Toggles all SSIDs with a given name on/off across all bands.
+  /// Called from Dashboard WiFi Networks card.
+  Future<void> toggleSsidsByName(String ssidName, bool enable) async {
+    final wifiData = await ref.read(wifiDataProvider.future);
+    final ssids = wifiData.codegenContext.raw.ssids;
+
+    try {
+      final count = await ref.read(uspMutationLockProvider).withLock(() async {
+        return _svc.toggleSsidsByName(ssids, ssidName, enable);
+      });
+      if (count == 0) {
+        logger.w('[USP][WiFi]: No SSIDs found matching the requested name');
+        throw const InvalidInputError(
+            message: 'No matching WiFi networks found');
+      }
+      logger.d('[USP][WiFi]: Toggled $count SSIDs to $enable');
+    } on ServiceError catch (e) {
+      logger.e('[USP][WiFi]: Toggle SSIDs by name failed', error: e);
       rethrow;
     }
     ref.invalidate(wifiDataProvider);

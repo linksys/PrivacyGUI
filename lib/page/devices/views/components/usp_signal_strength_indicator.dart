@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:privacy_gui/core/utils/wifi.dart';
+import 'package:privacy_gui/util/wifi_signal_utils.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Visual signal strength indicator using 4 vertical bars.
 ///
-/// Maps RSSI dBm to signal level (0-3) and renders colored bars.
-/// Used in device list tiles and the device detail connection card.
+/// Uses [getWifiSignalLevel] + [NodeSignalLevelExt.resolveColor] so thresholds
+/// and colors match the node/topology surfaces and respect `AppColorScheme`
+/// in both light and dark themes.
 class UspSignalStrengthIndicator extends StatelessWidget {
   final int rssi;
   final double barWidth;
@@ -21,44 +24,42 @@ class UspSignalStrengthIndicator extends StatelessWidget {
     this.showLabel = true,
   });
 
-  /// Signal level: 0 (poor) to 3 (excellent).
+  /// Render level: 0 (poor) to 3 (excellent). Maps the project-wide
+  /// [NodeSignalLevel] onto the four bars.
   int get _level {
-    if (rssi >= -50) return 3;
-    if (rssi >= -65) return 2;
-    if (rssi >= -80) return 1;
-    return 0;
-  }
-
-  Color _barColor(BuildContext context) {
-    switch (_level) {
-      case 3:
-        return Colors.green;
-      case 2:
-        return Colors.lightGreen;
-      case 1:
-        return Colors.orange;
-      default:
-        return Theme.of(context).colorScheme.error;
+    switch (getWifiSignalLevel(rssi)) {
+      case NodeSignalLevel.excellent:
+        return 3;
+      case NodeSignalLevel.good:
+        return 2;
+      case NodeSignalLevel.fair:
+        return 1;
+      case NodeSignalLevel.poor:
+      case NodeSignalLevel.none:
+      case NodeSignalLevel.wired:
+        return 0;
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final color = _barColor(context);
+    final level = getWifiSignalLevel(rssi);
+    final color =
+        level.resolveColor(context) ?? Theme.of(context).colorScheme.onSurface;
     final inactiveColor =
         Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.4);
+    final activeLevel = _level;
 
     return Row(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        // 4 bars with increasing height
         for (int i = 0; i < 4; i++) ...[
           Container(
             width: barWidth,
             height: maxBarHeight * (0.25 + 0.25 * i),
             decoration: BoxDecoration(
-              color: i <= _level ? color : inactiveColor,
+              color: i <= activeLevel ? color : inactiveColor,
               borderRadius: BorderRadius.circular(1),
             ),
           ),

@@ -56,6 +56,8 @@ final uspDashboardRoute = ShellRoute(
       name: RouteNamed.uspInstantSafety,
       path: RoutePath.uspInstantSafety,
       builder: (context, state) => const UspInstantSafetyView(),
+      enableDirtyCheck: true,
+      preservableProvider: preservableUspInstantSafetyProvider,
     ),
     LinksysRoute(
       name: RouteNamed.uspInstantPrivacy,

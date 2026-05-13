@@ -68,14 +68,17 @@ class WifiAccessPointUIModel extends Equatable {
   final String ssidName; // Resolved from SSID reference
   final String securityMode;
   final String encryptionMode;
+  final bool isGuest;
 
   const WifiAccessPointUIModel({
     required this.enable,
     required this.ssidName,
     required this.securityMode,
     required this.encryptionMode,
+    this.isGuest = false,
   });
 
   @override
-  List<Object?> get props => [enable, ssidName, securityMode, encryptionMode];
+  List<Object?> get props =>
+      [enable, ssidName, securityMode, encryptionMode, isGuest];
 }

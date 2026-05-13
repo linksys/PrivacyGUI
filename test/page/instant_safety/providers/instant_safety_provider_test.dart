@@ -3,6 +3,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
+import 'package:privacy_gui/framework/preservable.dart';
+import 'package:privacy_gui/page/instant_safety/models/instant_safety_feature_state.dart';
+import 'package:privacy_gui/page/instant_safety/models/instant_safety_settings.dart';
+import 'package:privacy_gui/page/instant_safety/models/instant_safety_status.dart';
 import 'package:privacy_gui/page/instant_safety/models/safe_browsing_ui_model.dart';
 import 'package:privacy_gui/page/instant_safety/providers/instant_safety_provider.dart';
 import 'package:privacy_gui/page/instant_safety/services/instant_safety_service.dart';
@@ -33,55 +37,58 @@ void main() {
   }
 
   // ---------------------------------------------------------------------------
-  // UspInstantSafetyState
+  // InstantSafetySettings
   // ---------------------------------------------------------------------------
 
-  group('UspInstantSafetyState', () {
-    test('isDirty false when pendingType matches uiModel type', () {
-      const state = UspInstantSafetyState(
-        uiModel: SafeBrowsingUIModel(type: SafeBrowsingType.off),
-        pendingType: SafeBrowsingType.off,
+  group('InstantSafetySettings', () {
+    test('isEnabled true when type is openDNS', () {
+      const settings = InstantSafetySettings(type: SafeBrowsingType.openDNS);
+      expect(settings.isEnabled, isTrue);
+    });
+
+    test('isEnabled false when type is off', () {
+      const settings = InstantSafetySettings(type: SafeBrowsingType.off);
+      expect(settings.isEnabled, isFalse);
+    });
+
+    test('copyWith updates type', () {
+      const settings = InstantSafetySettings(type: SafeBrowsingType.off);
+      final updated = settings.copyWith(type: SafeBrowsingType.openDNS);
+      expect(updated.type, SafeBrowsingType.openDNS);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // InstantSafetyFeatureState
+  // ---------------------------------------------------------------------------
+
+  group('InstantSafetyFeatureState', () {
+    test('isDirty false when current matches original', () {
+      final state = InstantSafetyFeatureState(
+        settings: Preservable(
+          original: const InstantSafetySettings(type: SafeBrowsingType.off),
+          current: const InstantSafetySettings(type: SafeBrowsingType.off),
+        ),
+        status: const InstantSafetyStatus(isLoading: false),
       );
       expect(state.isDirty, isFalse);
     });
 
-    test('isDirty true when pendingType differs from uiModel type', () {
-      const state = UspInstantSafetyState(
-        uiModel: SafeBrowsingUIModel(type: SafeBrowsingType.off),
-        pendingType: SafeBrowsingType.openDNS,
+    test('isDirty true when current differs from original', () {
+      final state = InstantSafetyFeatureState(
+        settings: Preservable(
+          original: const InstantSafetySettings(type: SafeBrowsingType.off),
+          current: const InstantSafetySettings(type: SafeBrowsingType.openDNS),
+        ),
+        status: const InstantSafetyStatus(isLoading: false),
       );
       expect(state.isDirty, isTrue);
     });
 
-    test('isEnabled true when pendingType is openDNS', () {
-      const state = UspInstantSafetyState(
-        uiModel: SafeBrowsingUIModel(type: SafeBrowsingType.off),
-        pendingType: SafeBrowsingType.openDNS,
-      );
-      expect(state.isEnabled, isTrue);
-    });
-
-    test('isEnabled false when pendingType is off', () {
-      const state = UspInstantSafetyState(
-        uiModel: SafeBrowsingUIModel(type: SafeBrowsingType.openDNS),
-        pendingType: SafeBrowsingType.off,
-      );
-      expect(state.isEnabled, isFalse);
-    });
-
-    test('copyWith updates specified fields only', () {
-      const state = UspInstantSafetyState(
-        uiModel: SafeBrowsingUIModel(type: SafeBrowsingType.off),
-        pendingType: SafeBrowsingType.off,
-      );
-      final updated = state.copyWith(
-        pendingType: SafeBrowsingType.openDNS,
-        isSaving: true,
-      );
-
-      expect(updated.pendingType, SafeBrowsingType.openDNS);
-      expect(updated.isSaving, isTrue);
-      expect(updated.uiModel.type, SafeBrowsingType.off);
+    test('initial factory creates loading state', () {
+      final state = InstantSafetyFeatureState.initial();
+      expect(state.status.isLoading, isTrue);
+      expect(state.isDirty, isFalse);
     });
   });
 
@@ -94,8 +101,7 @@ void main() {
     // build
     // -----------------------------------------------------------------------
 
-    test('build fetches and initializes state with matching pendingType',
-        () async {
+    test('build fetches and initializes state', () async {
       when(() => mockService.fetch()).thenAnswer((_) async =>
           const SafeBrowsingUIModel(
               type: SafeBrowsingType.openDNS,
@@ -105,23 +111,9 @@ void main() {
       await Future.delayed(Duration.zero);
 
       final state = container.read(uspInstantSafetyProvider);
-      expect(state.hasValue, isTrue);
-      expect(state.requireValue.uiModel.type, SafeBrowsingType.openDNS);
-      expect(state.requireValue.pendingType, SafeBrowsingType.openDNS);
-      expect(state.requireValue.isDirty, isFalse);
-      container.dispose();
-    });
-
-    test('build sets error state when service throws ServiceError', () async {
-      when(() => mockService.fetch())
-          .thenThrow(const NetworkError(message: 'timeout'));
-
-      final container = createContainer();
-      await Future.delayed(Duration.zero);
-
-      final state = container.read(uspInstantSafetyProvider);
-      expect(state.hasError, isTrue);
-      expect(state.error, isA<NetworkError>());
+      expect(state.status.isLoading, isFalse);
+      expect(state.settings.current.type, SafeBrowsingType.openDNS);
+      expect(state.isDirty, isFalse);
       container.dispose();
     });
 
@@ -129,7 +121,7 @@ void main() {
     // setEnabled
     // -----------------------------------------------------------------------
 
-    test('setEnabled(true) sets pendingType to openDNS', () async {
+    test('setEnabled(true) sets current type to openDNS', () async {
       when(() => mockService.fetch()).thenAnswer(
           (_) async => const SafeBrowsingUIModel(type: SafeBrowsingType.off));
 
@@ -138,13 +130,13 @@ void main() {
 
       container.read(uspInstantSafetyProvider.notifier).setEnabled(true);
 
-      final state = container.read(uspInstantSafetyProvider).requireValue;
-      expect(state.pendingType, SafeBrowsingType.openDNS);
+      final state = container.read(uspInstantSafetyProvider);
+      expect(state.settings.current.type, SafeBrowsingType.openDNS);
       expect(state.isDirty, isTrue);
       container.dispose();
     });
 
-    test('setEnabled(false) sets pendingType to off', () async {
+    test('setEnabled(false) sets current type to off', () async {
       when(() => mockService.fetch()).thenAnswer((_) async =>
           const SafeBrowsingUIModel(type: SafeBrowsingType.openDNS));
 
@@ -153,25 +145,9 @@ void main() {
 
       container.read(uspInstantSafetyProvider.notifier).setEnabled(false);
 
-      final state = container.read(uspInstantSafetyProvider).requireValue;
-      expect(state.pendingType, SafeBrowsingType.off);
-      expect(state.isDirty, isTrue);
-      container.dispose();
-    });
-
-    test('setEnabled does nothing when state is loading', () async {
-      when(() => mockService.fetch()).thenAnswer((_) async => Future.delayed(
-            const Duration(seconds: 10),
-            () => const SafeBrowsingUIModel(type: SafeBrowsingType.off),
-          ));
-
-      final container = createContainer();
-      // Don't await — state is still loading
-      container.read(uspInstantSafetyProvider.notifier).setEnabled(true);
-
-      // Should not crash or change state
       final state = container.read(uspInstantSafetyProvider);
-      expect(state.hasValue, isFalse);
+      expect(state.settings.current.type, SafeBrowsingType.off);
+      expect(state.isDirty, isTrue);
       container.dispose();
     });
 
@@ -179,7 +155,7 @@ void main() {
     // save
     // -----------------------------------------------------------------------
 
-    test('save calls service with pendingType', () async {
+    test('save calls service with current type', () async {
       when(() => mockService.fetch()).thenAnswer(
           (_) async => const SafeBrowsingUIModel(type: SafeBrowsingType.off));
       when(() => mockService.save(any())).thenAnswer((_) async {});
@@ -226,8 +202,8 @@ void main() {
       );
 
       await Future.delayed(Duration.zero);
-      final state = container.read(uspInstantSafetyProvider).requireValue;
-      expect(state.isSaving, isFalse);
+      final state = container.read(uspInstantSafetyProvider);
+      expect(state.status.isSaving, isFalse);
       container.dispose();
     });
   });

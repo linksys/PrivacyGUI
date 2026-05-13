@@ -80,7 +80,7 @@ class UspSystemInfoDataService {
       return await FirmwareImages.fetch(_usp)
           .timeout(const Duration(seconds: 20));
     } catch (e) {
-      logger.w('[USP][SystemInfoData] Firmware images fetch failed: $e');
+      logger.w('[USP][SystemInfoData]: Firmware images fetch failed: $e');
       return FirmwareImages(items: []);
     }
   }

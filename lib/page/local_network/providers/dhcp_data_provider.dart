@@ -59,7 +59,7 @@ class DhcpDataNotifier extends AsyncNotifier<DhcpData> {
 
     final result = await svc.fetch(hostNameByMac: hostNameByMac);
 
-    logger.d('[USP][DhcpData] Fetched — '
+    logger.d('[USP][DhcpData]: Fetched — '
         'clients: ${result.clientModels.length}, '
         'reservations: ${result.reservationModels.length}');
 

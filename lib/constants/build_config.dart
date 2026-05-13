@@ -23,7 +23,7 @@ enum ForceCommand {
   none;
 
   static ForceCommand reslove(String type) {
-    logger.d('Force - $type');
+    logger.d('[Config]: Force - $type');
     if (type == 'local') {
       return ForceCommand.local;
     } else {
@@ -90,11 +90,11 @@ class BuildConfig {
 
   @pragma('vm:entry-point')
   static Future<void> load() async {
-    logger.d('load build configuration');
+    logger.d('[Config]: load build configuration');
     final prefs = await SharedPreferences.getInstance();
     final envStr = prefs.getString(pCloudEnv);
     cloudEnvTarget = CloudEnvironment.get(envStr ?? '') ?? cloudEnvTarget;
-    logger.d('Cloud Env: $cloudEnvTarget');
+    logger.d('[Config]: Cloud Env: $cloudEnvTarget');
 
     // For non-Web platforms (iOS/Android): determine force mode from bundle ID
     // Web uses String.fromEnvironment('force') set at compile time
@@ -116,7 +116,8 @@ class BuildConfig {
         forceCommandType = ForceCommand.local;
       }
       // Otherwise, keep ForceCommand.none (default)
-      logger.d('Non-Web platforms: Force command type: $forceCommandType');
+      logger.d(
+          '[Config]: Non-Web platforms: Force command type: $forceCommandType');
     }
   }
 

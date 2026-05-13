@@ -48,9 +48,9 @@ void dependencySetup() {
       getIt.registerSingleton<UspClient>(UspClient(
         Uri.base.origin,
       ));
-      logger.d('[DI] UspClient registered (Web)');
+      logger.d('[DI]: UspClient registered (Web)');
     } catch (e) {
-      logger.w('[DI] UspClient registration failed: $e');
+      logger.w('[DI]: UspClient registration failed: $e');
     }
   }
 }

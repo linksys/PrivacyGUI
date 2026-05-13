@@ -196,7 +196,7 @@ class UspInternetSettingsService {
     final isPppoe = edited.connectionType == UspWanConnectionType.pppoe;
 
     if (isPppoe && currentInstancePath == null) {
-      logger.d('[USP][WAN] Adding PPP.Interface instance for PPPoE');
+      logger.d('[USP][WAN]: Adding PPP.Interface instance for PPPoE');
       final result = await PppInterface.add(_usp, [{}]);
       final parsedResult = UspResultParser.parseAddResult(result);
       if (parsedResult is UspSuccess<List<String>>) {
@@ -227,7 +227,7 @@ class UspInternetSettingsService {
 
     if (!wasEnabled && isEnabled && currentInstancePath == null) {
       // Enabling VLAN and no instance exists — Add
-      logger.d('[USP][WAN] Adding VLANTermination instance');
+      logger.d('[USP][WAN]: Adding VLANTermination instance');
       final result = await VlanTermination.add(_usp, [{}]);
       // Extract instance path from structured response
       final parsedResult = UspResultParser.parseAddResult(result);
@@ -241,7 +241,7 @@ class UspInternetSettingsService {
     } else if (wasEnabled && !isEnabled && currentInstancePath != null) {
       // Disabling VLAN — Delete
       logger.d(
-          '[USP][WAN] Deleting VLANTermination instance $currentInstancePath');
+          '[USP][WAN]: Deleting VLANTermination instance $currentInstancePath');
       final deleteResult =
           await VlanTermination.delete(_usp, [currentInstancePath]);
       _handleDeleteResult(deleteResult);

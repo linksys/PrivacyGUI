@@ -39,7 +39,7 @@ final sseManagerProvider = Provider<SseManager?>((ref) {
   void forceLogout() {
     if (logoutTriggered) return;
     logoutTriggered = true;
-    logger.w('[USP][Auth]Force logout triggered — navigating to login');
+    logger.w('[USP][Auth]: Force logout triggered — navigating to login');
     ref.read(authProvider.notifier).logout();
   }
 
@@ -111,10 +111,10 @@ final sseBootstrapProvider = FutureProvider<void>((ref) async {
   // because SseConnectionManager has its own retry/backoff logic.
   try {
     await bridge.health().timeout(const Duration(seconds: 5));
-    logger.d('[USP][SSE][Bootstrap]Bridge health check passed');
+    logger.d('[USP][SSE][Bootstrap]: Bridge health check passed');
   } catch (e) {
-    logger
-        .w('[USP][SSE][Bootstrap]Bridge health check failed: $e — continuing');
+    logger.w(
+        '[USP][SSE][Bootstrap]: Bridge health check failed: $e — continuing');
   }
 
   // Connect SSE only — core subscriptions are registered by the dashboard
@@ -123,6 +123,6 @@ final sseBootstrapProvider = FutureProvider<void>((ref) async {
   // which causes 503 errors due to the single-threaded OBUSPA backend.
   await manager.connect();
 
-  logger.d('[USP][SSE][Bootstrap]Complete — SSE connected, '
+  logger.d('[USP][SSE][Bootstrap]: Complete — SSE connected, '
       'core subscriptions deferred to orchestrator after domain ready');
 });

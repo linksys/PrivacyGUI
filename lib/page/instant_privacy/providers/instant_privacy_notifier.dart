@@ -19,7 +19,7 @@ class UspInstantPrivacyNotifier extends AsyncNotifier<UspInstantPrivacyState> {
     try {
       final result = await _svc.fetchAll();
 
-      logger.d('[USP][Privacy] Fetched — '
+      logger.d('[USP][Privacy]: Fetched — '
           'activeDevices: ${result.connectedDevices.length}, '
           'isEnabled: ${result.isEnabled}');
 
@@ -30,7 +30,7 @@ class UspInstantPrivacyNotifier extends AsyncNotifier<UspInstantPrivacyState> {
         macFilterContext: result.macFilterContext,
       );
     } on ServiceError catch (e) {
-      logger.e('[USP][Privacy] Fetch failed', error: e);
+      logger.e('[USP][Privacy]: Fetch failed', error: e);
       rethrow;
     }
   }
@@ -47,10 +47,10 @@ class UspInstantPrivacyNotifier extends AsyncNotifier<UspInstantPrivacyState> {
       await ref.read(uspMutationLockProvider).withLock(() async {
         await _svc.enable(macs, s.macFilterContext);
       });
-      logger.d('[USP][Privacy] Enabled — ${macs.length} MACs');
+      logger.d('[USP][Privacy]: Enabled — ${macs.length} MACs');
       ref.invalidateSelf();
     } on ServiceError catch (e) {
-      logger.e('[USP][Privacy] Enable failed', error: e);
+      logger.e('[USP][Privacy]: Enable failed', error: e);
       state = AsyncData(s.copyWith(isToggleLocked: false));
       rethrow;
     }
@@ -66,10 +66,10 @@ class UspInstantPrivacyNotifier extends AsyncNotifier<UspInstantPrivacyState> {
       await ref.read(uspMutationLockProvider).withLock(() async {
         await _svc.disable(s.macFilterContext);
       });
-      logger.d('[USP][Privacy] Disabled');
+      logger.d('[USP][Privacy]: Disabled');
       ref.invalidateSelf();
     } on ServiceError catch (e) {
-      logger.e('[USP][Privacy] Disable failed', error: e);
+      logger.e('[USP][Privacy]: Disable failed', error: e);
       state = AsyncData(s.copyWith(isToggleLocked: false));
       rethrow;
     }
@@ -89,10 +89,10 @@ class UspInstantPrivacyNotifier extends AsyncNotifier<UspInstantPrivacyState> {
         state = AsyncData(s.copyWith(isToggleLocked: false));
         return;
       }
-      logger.d('[USP][Privacy] addMac — $mac');
+      logger.d('[USP][Privacy]: addMac — $mac');
       ref.invalidateSelf();
     } on ServiceError catch (e) {
-      logger.e('[USP][Privacy] addMac failed', error: e);
+      logger.e('[USP][Privacy]: addMac failed', error: e);
       state = AsyncData(s.copyWith(isToggleLocked: false));
       rethrow;
     }

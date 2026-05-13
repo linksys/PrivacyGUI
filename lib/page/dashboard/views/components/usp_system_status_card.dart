@@ -49,7 +49,6 @@ class _UspSystemStatusCardState extends ConsumerState<UspSystemStatusCard> {
     if (info == null) return const CardSkeleton.chart();
     final monitorState = ref.watch(uspSystemMonitorProvider);
     final selectedTab = ref.watch(cardTabIndexProvider(_cardId));
-    final colorScheme = Theme.of(context).colorScheme;
 
     return AppCard(
       child: Column(
@@ -64,10 +63,7 @@ class _UspSystemStatusCardState extends ConsumerState<UspSystemStatusCard> {
                 SizedBox(
                   width: 14,
                   height: 14,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: colorScheme.primary,
-                  ),
+                  child: AppLoader(strokeWidth: 2),
                 ),
               ],
               const Spacer(),

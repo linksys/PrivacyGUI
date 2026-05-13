@@ -13,7 +13,7 @@ class RouterLogger extends NavigatorObserver {
   /// route, is `previousRoute`.
   @override
   void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
-    logger.d('did push the page - ${route.settings.name}');
+    logger.d('[Route]: did push the page - ${route.settings.name}');
   }
 
   /// The [Navigator] popped `route`.
@@ -22,7 +22,7 @@ class RouterLogger extends NavigatorObserver {
   /// route, is `previousRoute`.
   @override
   void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) {
-    logger.d('did pop the page - $route');
+    logger.d('[Route]: did pop the page - $route');
   }
 
   /// The [Navigator] removed `route`.
@@ -36,12 +36,12 @@ class RouterLogger extends NavigatorObserver {
   /// to the bottommost route.
   @override
   void didRemove(Route<dynamic> route, Route<dynamic>? previousRoute) {
-    logger.d('did remove the page - $route');
+    logger.d('[Route]: did remove the page - $route');
   }
 
   /// The [Navigator] replaced `oldRoute` with `newRoute`.
   @override
   void didReplace({Route<dynamic>? newRoute, Route<dynamic>? oldRoute}) {
-    logger.d('did replace the page - $newRoute');
+    logger.d('[Route]: did replace the page - $newRoute');
   }
 }

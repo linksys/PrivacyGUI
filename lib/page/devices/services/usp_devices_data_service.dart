@@ -140,13 +140,13 @@ class UspDevicesDataService {
       final network = await DataElementsNetwork.fetch(_usp);
       if (network.items.isEmpty) {
         logger.d(
-            '[USP][Dashboard]DataElements empty — not a mesh or unsupported');
+            '[USP][Dashboard]: DataElements empty — not a mesh or unsupported');
         return MeshTopologyInfo.empty;
       }
       return _buildTopologyInfo(network);
     } catch (e) {
-      logger
-          .d('[USP][Dashboard]DataElements not supported or fetch failed: $e');
+      logger.d(
+          '[USP][Dashboard]: DataElements not supported or fetch failed: $e');
       return MeshTopologyInfo.empty;
     }
   }
@@ -180,7 +180,7 @@ class UspDevicesDataService {
       ));
     }
 
-    logger.d('[USP][Dashboard]Mesh nodes: ${nodes.length}, '
+    logger.d('[USP][Dashboard]: Mesh nodes: ${nodes.length}, '
         'client→node mappings: ${clientToNodeMap.length}');
     return MeshTopologyInfo(nodes: nodes, clientToNodeMap: clientToNodeMap);
   }

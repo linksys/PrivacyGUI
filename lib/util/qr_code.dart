@@ -148,6 +148,6 @@ Future<void> printWiFiQRCode(BuildContext context, Uint8List imageBytes,
       onLayout: (PdfPageFormat format) => doc.save(),
     );
   } catch (e) {
-    logger.e('Print page error', error: e);
+    logger.e('[Util]: Print page error', error: e);
   }
 }

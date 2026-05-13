@@ -13,10 +13,10 @@ final appsCapabilityProvider = FutureProvider<bool>((ref) async {
   try {
     final svc = ref.read(uspAppsServiceProvider);
     await svc.fetchApps().timeout(const Duration(seconds: 5));
-    logger.d('[Apps] capability check: supported');
+    logger.d('[Apps]: capability check: supported');
     return true;
   } catch (e) {
-    logger.d('[Apps] capability check failed: $e');
+    logger.d('[Apps]: capability check failed: $e');
     return false;
   }
 });

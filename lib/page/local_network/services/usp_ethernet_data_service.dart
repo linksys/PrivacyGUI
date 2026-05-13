@@ -102,7 +102,7 @@ class UspEthernetDataService {
       }
       return map;
     } catch (e) {
-      logger.w('[USP][Ethernet]Bridge port map fetch failed: $e');
+      logger.w('[USP][Ethernet]: Bridge port map fetch failed: $e');
       return {};
     }
   }

@@ -110,7 +110,7 @@ class FirewallDataNotifier extends AsyncNotifier<FirewallData> {
     final svc = ref.read(uspFirewallDataServiceProvider);
     final result = await svc.fetch();
 
-    logger.d('[USP][FirewallData] Fetched — '
+    logger.d('[USP][FirewallData]: Fetched — '
         'rules: ${result.ruleSummaries.length}, '
         'dmz: ${result.dmzSummaries.length}');
 

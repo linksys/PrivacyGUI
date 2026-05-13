@@ -93,7 +93,7 @@ class DashboardOrchestrator extends AsyncNotifier<DashboardOrchestratorState> {
     try {
       return await _buildImpl();
     } catch (e, st) {
-      logger.e('[USP][Orchestrator] build() failed: $e\n$st');
+      logger.e('[USP][Orchestrator]: build() failed: $e\n$st');
       rethrow;
     }
   }
@@ -126,7 +126,7 @@ class DashboardOrchestrator extends AsyncNotifier<DashboardOrchestratorState> {
 
     // Trigger all domain providers (fire-and-forget — each card shows its
     // own skeleton until its provider resolves).
-    logger.d('[USP][Orchestrator] Triggering domain providers');
+    logger.d('[USP][Orchestrator]: Triggering domain providers');
     ref.read(systemInfoDataProvider);
     ref.read(devicesDataProvider);
     ref.read(ethernetDataProvider);
@@ -155,7 +155,7 @@ class DashboardOrchestrator extends AsyncNotifier<DashboardOrchestratorState> {
               ),
             );
       }).catchError((e) {
-        logger.w('[USP][Orchestrator] System monitor snapshot failed: $e');
+        logger.w('[USP][Orchestrator]: System monitor snapshot failed: $e');
       }),
     );
 
@@ -192,7 +192,7 @@ class DashboardOrchestrator extends AsyncNotifier<DashboardOrchestratorState> {
     manager.setCoreSubscriptions(coreSubscriptions);
     await manager.registerDeferredSubscriptions(force: true);
     logger.d(
-        '[USP][Orchestrator]SSE subscriptions registered after domain ready');
+        '[USP][Orchestrator]: SSE subscriptions registered after domain ready');
   }
 
   /// Checks domain providers after a delay and invalidates any that are in
@@ -222,7 +222,7 @@ class DashboardOrchestrator extends AsyncNotifier<DashboardOrchestratorState> {
         }
       }
       if (failed.isNotEmpty) {
-        logger.d('[USP][Orchestrator] Retrying failed providers (attempt '
+        logger.d('[USP][Orchestrator]: Retrying failed providers (attempt '
             '${attempt + 1}/$maxRetryAttempts): ${failed.join(', ')}');
       }
       // Always schedule next retry — providers may still be loading at this

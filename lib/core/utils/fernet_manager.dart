@@ -29,16 +29,16 @@ class FernetManager {
       Uint8List rawBytes = Uint8List.fromList(utf8.encode(rawKeyString));
       if (rawBytes.length != 32) {
         logger.e(
-            'Fernet Key must be 32 bytes long! Current length: ${rawBytes.length}');
+            '[Crypto]: Fernet Key must be 32 bytes long! Current length: ${rawBytes.length}');
         _encrypter = null;
         return;
       }
       String base64Key = base64Url.encode(rawBytes);
       final key = Key.fromBase64(base64Key);
       _encrypter = Encrypter(Fernet(key));
-      logger.d('FernetManager key updated successfully.');
+      logger.d('[Crypto]: FernetManager key updated successfully.');
     } catch (e) {
-      logger.e('Error updating FernetManager key: $e');
+      logger.e('[Crypto]: Error updating FernetManager key: $e');
       _encrypter = null;
     }
   }
@@ -53,27 +53,27 @@ class FernetManager {
 
   String? encrypt(String plainText) {
     if (_encrypter == null) {
-      logger.w('Fernet encrypter not initialized, cannot encrypt.');
+      logger.w('[Crypto]: Fernet encrypter not initialized, cannot encrypt.');
       return null;
     }
     try {
       return _encrypter!.encrypt(plainText).base64;
     } catch (e) {
-      logger.e('Fernet encryption failed: $e');
+      logger.e('[Crypto]: Fernet encryption failed: $e');
       return null;
     }
   }
 
   String? decrypt(String cipherTextBase64) {
     if (_encrypter == null) {
-      logger.w('Fernet encrypter not initialized, cannot decrypt.');
+      logger.w('[Crypto]: Fernet encrypter not initialized, cannot decrypt.');
       return null;
     }
     try {
       final encrypted = Encrypted.fromBase64(cipherTextBase64);
       return _encrypter!.decrypt(encrypted);
     } catch (e) {
-      logger.e('Fernet decryption failed: $e');
+      logger.e('[Crypto]: Fernet decryption failed: $e');
       return 'Decryption Error (Invalid Token or Key)';
     }
   }

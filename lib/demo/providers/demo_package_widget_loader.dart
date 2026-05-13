@@ -21,7 +21,7 @@ class DemoPackageWidgetLoader extends PackageWidgetLoader {
     // Just load demo templates directly from assets
     final templates = await _loadDemoTemplates();
 
-    logger.d('[Demo][PkgWidgets] Loaded ${templates.length} demo templates');
+    logger.d('[Demo][PkgWidgets]: Loaded ${templates.length} demo templates');
     return templates;
   }
 
@@ -44,11 +44,11 @@ class DemoPackageWidgetLoader extends PackageWidgetLoader {
         final template = await _loadTemplateFromAsset(assetPath);
         if (template != null) {
           templates[template.widgetId] = template;
-          logger.d('[Demo][PkgWidgets] Loaded: ${template.widgetId} '
+          logger.d('[Demo][PkgWidgets]: Loaded: ${template.widgetId} '
               '(${template.displayName})');
         }
       } catch (e) {
-        logger.w('[Demo][PkgWidgets] Failed to load $assetPath: $e');
+        logger.w('[Demo][PkgWidgets]: Failed to load $assetPath: $e');
       }
     }
 
@@ -63,7 +63,7 @@ class DemoPackageWidgetLoader extends PackageWidgetLoader {
       final json = jsonDecode(jsonString) as Map<String, dynamic>;
       return PackageWidgetTemplate.fromJson(json);
     } catch (e) {
-      logger.w('[Demo][PkgWidgets] Failed to parse template $assetPath: $e');
+      logger.w('[Demo][PkgWidgets]: Failed to parse template $assetPath: $e');
       return null;
     }
   }

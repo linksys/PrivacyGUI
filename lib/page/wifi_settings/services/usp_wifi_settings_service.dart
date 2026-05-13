@@ -53,7 +53,7 @@ class UspWifiSettingsService {
       radioByPath[_ensureTrailingDot(r.instancePath)] = r;
     }
 
-    logger.d('[USP][WiFi]Building networks: '
+    logger.d('[USP][WiFi]: Building networks: '
         '${ssids.items.length} SSIDs, '
         '${accessPoints.items.length} APs, '
         '${radios.items.length} radios');
@@ -91,7 +91,7 @@ class UspWifiSettingsService {
       final radioPath = _ensureTrailingDot(ssid.lowerLayers);
       final radio = radioByPath[radioPath];
 
-      logger.d('[USP][WiFi]SSID ${ssid.ssid}: '
+      logger.d('[USP][WiFi]: SSID ${ssid.ssid}: '
           'AP=${ap?.instancePath ?? "none"}, '
           'radio=${radio?.operatingFrequencyBand ?? "none"}');
 
@@ -565,6 +565,49 @@ class UspWifiSettingsService {
     }
   }
 
+  /// Toggles all SSIDs with a given name on or off across all bands.
+  ///
+  /// Finds all SSID instances matching [ssidName] from [ssids] and toggles them.
+  /// Returns the number of SSIDs toggled.
+  Future<int> toggleSsidsByName(
+    WiFiSsids ssids,
+    String ssidName,
+    bool enable,
+  ) async {
+    final instancePaths = ssids.items
+        .where((s) => s.ssid == ssidName)
+        .map((s) => s.instancePath)
+        .toList();
+
+    if (instancePaths.isEmpty) return 0;
+
+    try {
+      final updates = instancePaths
+          .map((p) => WiFiSsidUpdate(instancePath: p, enable: enable))
+          .toList();
+      final result = await WiFiSsids.update(_usp, updates);
+      final parsed = UspResultParser.parseSetResult(result);
+      switch (parsed) {
+        case UspSuccess():
+          return instancePaths.length;
+        case UspPartialSuccess(failures: final f):
+          throw UspPartialFailureError(
+            summary: 'Toggle SSIDs partial failure: ${f.first.errorMessage}',
+            successPaths: [],
+            failedPaths: f.map((e) => e.requestedPath).toList(),
+          );
+        case UspFailure(errors: final e):
+          throw UspCompleteFailureError(
+            summary: 'Toggle SSIDs failed: ${e.first.errorMessage}',
+            failedPaths: e.map((e) => e.requestedPath).toList(),
+          );
+      }
+    } catch (e) {
+      if (e is ServiceError) rethrow;
+      throw mapUspErrorToServiceError(e);
+    }
+  }
+
   /// Returns the effective security mode to apply to a given band.
   ///
   /// 6 GHz (Wi-Fi 6E) mandates WPA3:
@@ -650,7 +693,7 @@ String _normalizeBand(String rawBand) {
 int _ssidInstanceIndex(String instancePath) {
   final match = RegExp(r'Device\.WiFi\.SSID\.(\d+)').firstMatch(instancePath);
   if (match == null) {
-    logger.w('[USP][WiFi] Unexpected SSID path format: $instancePath — '
+    logger.w('[USP][WiFi]: Unexpected SSID path format: $instancePath — '
         'defaulting to index 0 (Main)');
     return 0;
   }
