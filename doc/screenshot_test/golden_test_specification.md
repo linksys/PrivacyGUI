@@ -83,9 +83,19 @@ class Interaction {
 }
 ```
 
-### Usage Example (Firewall)
+### Complete Example (Firewall)
+
+#### Test file: `test/usp_test/page/firewall/localizations/usp_firewall_view_test.dart`
 
 ```dart
+import 'package:privacy_gui/page/firewall/models/firewall_feature_state.dart';
+import 'package:privacy_gui/page/firewall/views/usp_firewall_view.dart';
+
+import '../../../golden_framework/golden_runner.dart';
+import '../../../golden_framework/golden_test_config.dart';
+import '../../../golden_framework/mocks/mock_firewall.dart';
+import '../fixtures/firewall_test_data.dart';
+
 void main() {
   runViewGoldenTests(
     GoldenTestConfig(
@@ -100,21 +110,139 @@ void main() {
           firewallOverrides(errorState),
         ),
         'data': (overrides) => overrides.addAll(
-          firewallOverrides(testFirewallState),
+          firewallOverrides(dataState(allOnModel)),
         ),
         'data_all_off': (overrides) => overrides.addAll(
-          firewallOverrides(allOffState),
+          firewallOverrides(dataState(allOffModel)),
         ),
         'edit_dirty': (overrides) => overrides.addAll(
-          firewallOverrides(dirtyState),
+          firewallOverrides(dirtyState()),
         ),
         'saving': (overrides) => overrides.addAll(
-          firewallOverrides(savingState),
+          firewallOverrides(dirtyState(isSaving: true)),
         ),
       },
     ),
   );
 }
+```
+
+#### Fixtures: `test/usp_test/page/firewall/fixtures/firewall_test_data.dart`
+
+```dart
+import 'package:privacy_gui/framework/preservable.dart';
+import 'package:privacy_gui/page/firewall/models/firewall_feature_state.dart';
+import 'package:privacy_gui/page/firewall/models/firewall_settings.dart';
+import 'package:privacy_gui/page/firewall/models/firewall_status.dart';
+import 'package:privacy_gui/page/firewall/models/firewall_ui_model.dart';
+import 'package:privacy_gui/page/firewall/services/usp_firewall_service.dart';
+
+const allOnModel = FirewallUIModel(
+  isIPv4FirewallEnabled: true,
+  isIPv6FirewallEnabled: true,
+  blockIPSec: false,
+  blockPPTP: false,
+  blockL2TP: false,
+  blockAnonymousRequests: true,
+  blockMulticast: true,
+  blockIDENT: false,
+);
+
+const allOffModel = FirewallUIModel(
+  isIPv4FirewallEnabled: false,
+  isIPv6FirewallEnabled: false,
+  blockIPSec: true,
+  blockPPTP: true,
+  blockL2TP: true,
+  blockAnonymousRequests: false,
+  blockMulticast: false,
+  blockIDENT: false,
+);
+
+const dirtyCurrentModel = FirewallUIModel(
+  isIPv4FirewallEnabled: true,
+  isIPv6FirewallEnabled: false,
+  blockIPSec: false,
+  blockPPTP: false,
+  blockL2TP: false,
+  blockAnonymousRequests: true,
+  blockMulticast: true,
+  blockIDENT: false,
+);
+
+FirewallFeatureState dataState(FirewallUIModel model) {
+  final settings = FirewallSettings(
+    model: model,
+    ruleContext: FirewallRuleContext.empty,
+  );
+  return FirewallFeatureState(
+    settings: Preservable(original: settings, current: settings),
+    status: const FirewallStatus(isLoading: false),
+  );
+}
+
+FirewallFeatureState dirtyState({bool isSaving = false}) {
+  final original = FirewallSettings(
+    model: allOnModel,
+    ruleContext: FirewallRuleContext.empty,
+  );
+  final current = FirewallSettings(
+    model: dirtyCurrentModel,
+    ruleContext: FirewallRuleContext.empty,
+  );
+  return FirewallFeatureState(
+    settings: Preservable(original: original, current: current),
+    status: FirewallStatus(isLoading: false, isSaving: isSaving),
+  );
+}
+
+FirewallFeatureState get errorState => FirewallFeatureState(
+  settings: Preservable(
+    original: FirewallSettings.empty(),
+    current: FirewallSettings.empty(),
+  ),
+  status: const FirewallStatus(
+    isLoading: false,
+    errorMessage: 'Connection failed',
+  ),
+);
+```
+
+#### Mock: `test/usp_test/golden_framework/mocks/mock_firewall.dart`
+
+```dart
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/page/firewall/models/firewall_feature_state.dart';
+import 'package:privacy_gui/page/firewall/models/firewall_settings.dart';
+import 'package:privacy_gui/page/firewall/models/firewall_status.dart';
+import 'package:privacy_gui/page/firewall/models/firewall_ui_model.dart';
+import 'package:privacy_gui/page/firewall/providers/usp_firewall_notifier.dart';
+
+class FixedFirewallNotifier extends UspFirewallNotifier {
+  final FirewallFeatureState _fixedState;
+
+  FixedFirewallNotifier(this._fixedState);
+
+  @override
+  FirewallFeatureState build() => _fixedState;
+
+  @override
+  Future<(FirewallSettings?, FirewallStatus?)> performFetch({
+    bool forceRemote = false,
+    bool updateStatusOnly = false,
+  }) async => (null, null);
+
+  @override
+  Future<void> performSave() async {}
+
+  @override
+  void updateSetting(FirewallUIModel Function(FirewallUIModel) updater) {}
+}
+
+/// Returns provider overrides for firewall golden tests.
+List<Override> firewallOverrides(FirewallFeatureState state) => [
+  uspFirewallProvider.overrideWith(() => FixedFirewallNotifier(state)),
+];
 ```
 
 ### Tab Page Example (Wi-Fi Settings)
@@ -187,34 +315,7 @@ test/usp_test/golden_framework/
 
 ### Per-Feature Mock Example
 
-```dart
-// test/usp_test/golden_framework/mocks/mock_firewall.dart
-
-class FixedFirewallNotifier extends UspFirewallNotifier {
-  final FirewallFeatureState _fixedState;
-  FixedFirewallNotifier(this._fixedState);
-
-  @override
-  FirewallFeatureState build() => _fixedState;
-
-  @override
-  Future<(FirewallSettings?, FirewallStatus?)> performFetch({
-    bool forceRemote = false,
-    bool updateStatusOnly = false,
-  }) async => (null, null);
-
-  @override
-  Future<void> performSave() async {}
-
-  @override
-  void updateSetting(FirewallUIModel Function(FirewallUIModel) updater) {}
-}
-
-/// Returns provider overrides for firewall golden tests.
-List<Override> firewallOverrides(FirewallFeatureState state) => [
-  uspFirewallProvider.overrideWith(() => FixedFirewallNotifier(state)),
-];
-```
+See the complete Firewall example above for `mock_firewall.dart` implementation.
 
 ### Common Overrides
 
