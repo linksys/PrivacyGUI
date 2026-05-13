@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'mock_registry.dart';
 
 /// Shell wrapper type for pumping the view.
 enum ShellType {
@@ -21,26 +21,18 @@ class GoldenDevice {
 
   const GoldenDevice(this.name, this.size);
 
-  /// Phone: 480 x 800
-  static const phone480 = GoldenDevice('Device480w', Size(480, 800));
-
-  /// Desktop: 1280 x 800
-  static const desktop1280 = GoldenDevice('Device1280w', Size(1280, 800));
-
-  /// Default test devices.
+  static const phone480 = GoldenDevice('phone480', Size(480, 800));
+  static const desktop1280 = GoldenDevice('desktop1280', Size(1280, 800));
   static const defaults = [phone480, desktop1280];
 }
 
-/// Callback to configure provider mocks for a given state.
-typedef MockSetup = void Function(MockRegistry mock);
+/// Callback to configure provider overrides for a given state.
+typedef MockSetup = void Function(List<Override> overrides);
 
 /// An interaction-driven test: set up state, then execute tester steps before
-/// taking the screenshot.
+/// taking the screenshot. Only for UI overlays that don't change provider state.
 class Interaction {
-  /// Provider mock setup (same as a state entry).
   final MockSetup setup;
-
-  /// Steps to execute after pumping the widget (tap, scroll, etc.).
   final Future<void> Function(WidgetTester tester) steps;
 
   const Interaction({required this.setup, required this.steps});
@@ -49,10 +41,10 @@ class Interaction {
 /// Declarative configuration for one view's golden tests.
 ///
 /// The runner will iterate every entry in [states] and [interactions],
-/// crossed with every device and locale, producing one golden per combination.
+/// crossed with every device, locale, and theme, producing one golden per combination.
 class GoldenTestConfig {
-  /// View identifier — 3-5 uppercase letters (e.g. 'FWALL').
-  final String viewId;
+  /// Unique view identifier — snake_case, readable name (e.g. 'firewall').
+  final String viewName;
 
   /// Builder that returns the widget under test.
   final Widget Function() view;
@@ -60,17 +52,29 @@ class GoldenTestConfig {
   /// Shell wrapper type.
   final ShellType shell;
 
-  /// State-driven tests: key = state name (snake_case), value = mock setup.
+  /// State-driven tests: key = state name (snake_case), value = provider overrides setup.
   final Map<String, MockSetup> states;
 
   /// Interaction-driven tests: key = interaction name, value = setup + steps.
   final Map<String, Interaction>? interactions;
 
+  /// Locales to test.
+  final List<Locale> locales;
+
+  /// Screen sizes to test.
+  final List<GoldenDevice> devices;
+
+  /// Theme brightness modes to test.
+  final List<Brightness> themes;
+
   const GoldenTestConfig({
-    required this.viewId,
+    required this.viewName,
     required this.view,
     required this.shell,
     required this.states,
     this.interactions,
+    this.locales = const [Locale('en')],
+    this.devices = GoldenDevice.defaults,
+    this.themes = const [Brightness.light],
   });
 }

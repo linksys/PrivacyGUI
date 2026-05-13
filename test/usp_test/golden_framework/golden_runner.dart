@@ -9,115 +9,41 @@ import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacy_gui/theme/theme_json_config.dart';
 import 'golden_test_config.dart';
-import 'mock_registry.dart';
+import 'mocks/mock_common.dart';
 
 /// Auto-generates golden tests for a view using declarative configuration.
-///
-/// Usage:
-/// ```dart
-/// void main() {
-///   runViewGoldenTests(GoldenTestConfig(
-///     viewId: 'FWALL',
-///     view: () => const FirewallView(),
-///     shell: ShellType.pageView,
-///     states: {
-///       'loading': (mock) => mock.firewall(FirewallFeatureState.loading()),
-///       'error': (mock) => mock.firewall(FirewallFeatureState.error('...')),
-///       'data': (mock) => mock.firewall(FirewallFeatureState.data(...)),
-///     },
-///     interactions: {
-///       'toggle_ipv6': Interaction(
-///         setup: (mock) => mock.firewall(FirewallFeatureState.data(...)),
-///         steps: (tester) async {
-///           await tester.tap(find.text('IPv6'));
-///           await tester.pump();
-///         },
-///       ),
-///     },
-///   ));
-/// }
-/// ```
 void runViewGoldenTests(GoldenTestConfig config) {
-  // Validation section
   _validateConfig(config);
 
-  // Test generation
-  group('${config.viewId} Golden Tests', () {
-    // State-driven tests: for each state × device × locale
+  group('${config.viewName} golden tests', () {
     for (final stateEntry in config.states.entries) {
-      final stateName = stateEntry.key;
-      final setup = stateEntry.value;
+      for (final device in config.devices) {
+        for (final locale in config.locales) {
+          for (final theme in config.themes) {
+            final name = _goldenFileName(
+              config.viewName, stateEntry.key, device, locale, theme,
+            );
 
-      for (final device in GoldenDevice.defaults) {
-        for (final locale in [const Locale('en')]) {
-          testGoldens(
-            '${config.viewId} - $stateName - ${device.name} - ${locale.languageCode}',
-            (tester) async {
-              // Setup mocks
-              final mockRegistry = MockRegistry();
-              mockRegistry.common();
-              setup(mockRegistry);
-
-              // Pump widget in shell
-              await _pumpWidgetInShell(
-                tester,
-                config.view(),
-                config.shell,
-                mockRegistry.build(),
-                device.size,
-                locale,
-              );
-
-              // Capture screenshot — use pump() instead of pumpAndSettle
-              // because AppLoader and other widgets run infinite animations
-              // that cause pumpAndSettle to time out.
-              await screenMatchesGolden(
-                tester,
-                '${config.viewId}-$stateName-${device.name}-${locale.languageCode}',
-                customPump: (tester) async {
-                  await tester.pump(const Duration(milliseconds: 100));
-                },
-              );
-            },
-          );
-        }
-      }
-    }
-
-    // Interaction-driven tests: for each interaction × device × locale
-    if (config.interactions != null) {
-      for (final interactionEntry in config.interactions!.entries) {
-        final interactionName = interactionEntry.key;
-        final interaction = interactionEntry.value;
-
-        for (final device in GoldenDevice.defaults) {
-          for (final locale in [const Locale('en')]) {
             testGoldens(
-              '${config.viewId} - $interactionName - ${device.name} - ${locale.languageCode}',
+              '${config.viewName} - ${stateEntry.key} - ${device.name} - ${locale.languageCode}${theme == Brightness.dark ? ' - dark' : ''}',
               (tester) async {
-                // Setup mocks
-                final mockRegistry = MockRegistry();
-                mockRegistry.common();
-                interaction.setup(mockRegistry);
+                final overrides = <Override>[];
+                overrides.addAll(commonOverrides());
+                stateEntry.value(overrides);
 
-                // Pump widget in shell
                 await _pumpWidgetInShell(
                   tester,
                   config.view(),
                   config.shell,
-                  mockRegistry.build(),
+                  overrides,
                   device.size,
                   locale,
+                  theme,
                 );
 
-                // Execute interaction steps
-                await interaction.steps(tester);
-
-                // Capture screenshot after interaction — use pump() to avoid
-                // pumpAndSettle timeout from infinite animations.
                 await screenMatchesGolden(
                   tester,
-                  '${config.viewId}-$interactionName-${device.name}-${locale.languageCode}',
+                  name,
                   customPump: (tester) async {
                     await tester.pump(const Duration(milliseconds: 100));
                   },
@@ -128,20 +54,79 @@ void runViewGoldenTests(GoldenTestConfig config) {
         }
       }
     }
+
+    if (config.interactions != null) {
+      for (final interactionEntry in config.interactions!.entries) {
+        for (final device in config.devices) {
+          for (final locale in config.locales) {
+            for (final theme in config.themes) {
+              final name = _goldenFileName(
+                config.viewName, interactionEntry.key, device, locale, theme,
+              );
+
+              testGoldens(
+                '${config.viewName} - ${interactionEntry.key} - ${device.name} - ${locale.languageCode}${theme == Brightness.dark ? ' - dark' : ''}',
+                (tester) async {
+                  final overrides = <Override>[];
+                  overrides.addAll(commonOverrides());
+                  interactionEntry.value.setup(overrides);
+
+                  await _pumpWidgetInShell(
+                    tester,
+                    config.view(),
+                    config.shell,
+                    overrides,
+                    device.size,
+                    locale,
+                    theme,
+                  );
+
+                  await interactionEntry.value.steps(tester);
+
+                  await screenMatchesGolden(
+                    tester,
+                    name,
+                    customPump: (tester) async {
+                      await tester.pump(const Duration(milliseconds: 100));
+                    },
+                  );
+                },
+              );
+            }
+          }
+        }
+      }
+    }
   });
 }
 
-/// Validates the configuration and throws helpful error messages.
+/// Generates the golden file name.
+///
+/// Format: {viewName}-{stateKey}-{device}-{locale}.png
+/// Dark mode appends '-dark' suffix.
+String _goldenFileName(
+  String viewName,
+  String stateKey,
+  GoldenDevice device,
+  Locale locale,
+  Brightness theme,
+) {
+  final base = '$viewName-$stateKey-${device.name}-${locale.languageCode}';
+  if (theme == Brightness.dark) {
+    return '$base-dark';
+  }
+  return base;
+}
+
 void _validateConfig(GoldenTestConfig config) {
-  // viewId must match ^[A-Z]{3,5}$
-  final viewIdPattern = RegExp(r'^[A-Z]{3,5}$');
-  if (!viewIdPattern.hasMatch(config.viewId)) {
+  final snakeCasePattern = RegExp(r'^[a-z][a-z0-9_]*$');
+
+  if (!snakeCasePattern.hasMatch(config.viewName)) {
     throw ArgumentError(
-      'viewId must be 3-5 uppercase letters (e.g., "FWALL"). Got: "${config.viewId}"',
+      'viewName must be snake_case (e.g., "firewall"). Got: "${config.viewName}"',
     );
   }
 
-  // Must have required states: loading, error, data
   const requiredStates = ['loading', 'error', 'data'];
   for (final requiredState in requiredStates) {
     if (!config.states.containsKey(requiredState)) {
@@ -151,8 +136,6 @@ void _validateConfig(GoldenTestConfig config) {
     }
   }
 
-  // All state keys must be snake_case: ^[a-z][a-z0-9_]*$
-  final snakeCasePattern = RegExp(r'^[a-z][a-z0-9_]*$');
   for (final stateKey in config.states.keys) {
     if (!snakeCasePattern.hasMatch(stateKey)) {
       throw ArgumentError(
@@ -161,7 +144,6 @@ void _validateConfig(GoldenTestConfig config) {
     }
   }
 
-  // All interaction keys must be snake_case
   if (config.interactions != null) {
     for (final interactionKey in config.interactions!.keys) {
       if (!snakeCasePattern.hasMatch(interactionKey)) {
@@ -173,14 +155,6 @@ void _validateConfig(GoldenTestConfig config) {
   }
 }
 
-/// Pumps the widget wrapped in the appropriate shell and MaterialApp.
-///
-/// Internal helper that:
-/// 1. Wraps the child widget based on ShellType
-/// 2. Wraps in ProviderScope with overrides
-/// 3. Wraps in MaterialApp.router with GoRouter (provides InheritedGoRouter
-///    so that widgets using context.goNamed / GoRouter.of work correctly)
-/// 4. Pumps using golden_toolkit's pumpWidgetBuilder
 Future<void> _pumpWidgetInShell(
   WidgetTester tester,
   Widget child,
@@ -188,8 +162,8 @@ Future<void> _pumpWidgetInShell(
   List<Override> overrides,
   Size screenSize,
   Locale locale,
+  Brightness brightness,
 ) async {
-  // Step 0: Mock platform channels used by plugins (e.g. package_info_plus)
   TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
       .setMockMethodCallHandler(
     const MethodChannel('dev.fluttercommunity.plus/package_info'),
@@ -206,7 +180,6 @@ Future<void> _pumpWidgetInShell(
     },
   );
 
-  // Step 1: Wrap child based on ShellType
   Widget wrappedChild;
   switch (shell) {
     case ShellType.pageView:
@@ -223,9 +196,6 @@ Future<void> _pumpWidgetInShell(
       break;
   }
 
-  // Step 2: Build a GoRouter that renders the wrapped child at '/'
-  // Uses LinksysRoute (not GoRoute) because MenuHolder casts the last route
-  // to LinksysRoute? — a plain GoRoute causes a type cast failure.
   final router = GoRouter(
     initialLocation: '/',
     routes: [
@@ -237,7 +207,6 @@ Future<void> _pumpWidgetInShell(
     ],
   );
 
-  // Step 3: Wrap in MaterialApp.router with locale, localization, and UI Kit theme
   final themeConfig = ThemeJsonConfig.defaultConfig();
   Widget app = MaterialApp.router(
     locale: locale,
@@ -245,18 +214,15 @@ Future<void> _pumpWidgetInShell(
     supportedLocales: AppLocalizations.supportedLocales,
     theme: themeConfig.createLightTheme(),
     darkTheme: themeConfig.createDarkTheme(),
+    themeMode: brightness == Brightness.dark ? ThemeMode.dark : ThemeMode.light,
     routerConfig: router,
   );
 
-  // Step 4: Wrap in ProviderScope (outermost — providers must be above MaterialApp)
   app = ProviderScope(
     overrides: overrides,
     child: app,
   );
 
-  // Step 5: Pump using golden_toolkit
-  // Pass identity wrapper to prevent golden_toolkit from adding its own
-  // MaterialApp wrapper — we already provide ProviderScope > MaterialApp.router.
   await tester.pumpWidgetBuilder(
     app,
     wrapper: (child) => child,
