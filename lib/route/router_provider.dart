@@ -1,8 +1,6 @@
 import 'dart:async';
-import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -61,6 +59,7 @@ import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_settings_provi
 import 'package:privacy_gui/page/wifi_settings/views/usp_wifi_settings_view.dart';
 import 'package:privacy_gui/page/apps/views/usp_apps_view.dart';
 import 'package:privacy_gui/page/dashboard/views/dashboard_troubleshooting_view.dart';
+import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
 
 // PnP (Plug and Play) imports
 import 'package:privacy_gui/page/instant_setup/views/pnp_admin_view.dart';
@@ -180,7 +179,8 @@ class RouterNotifier extends ChangeNotifier {
           logger.d('[Route]: API indicates PnP already acknowledged, skipping');
         } catch (e) {
           // API failed and no local record → assume PnP needed
-          logger.w('[Route]: API check failed: $e, no local record → routing to /pnp');
+          logger.w(
+              '[Route]: API check failed: $e, no local record → routing to /pnp');
           return RoutePath.pnp;
         }
       }
@@ -194,17 +194,14 @@ class RouterNotifier extends ChangeNotifier {
   /// Checks PnP status via the public API endpoint.
   /// Returns true if PnP is needed (user has NOT acknowledged).
   Future<bool> _checkPnpStatusViaApi() async {
-    final response = await http.get(
-      Uri.parse('/api/v1/setup/status'),
-      headers: {'Content-Type': 'application/json'},
-    ).timeout(const Duration(seconds: 5));
-
-    if (response.statusCode != 200) {
-      throw Exception('API returned ${response.statusCode}');
+    final bridge = _ref.read(uspBridgeClientProvider);
+    if (bridge == null) {
+      throw Exception('Bridge client not available');
     }
-
-    final json = jsonDecode(response.body) as Map<String, dynamic>;
-    return !(json['user_acknowledged_auto_configuration'] as bool? ?? false);
+    final status = await bridge.getSetupStatus();
+    logger.d(
+        '[Route]: Setup status: acknowledged=${status.userAcknowledgedAutoConfiguration}');
+    return !status.userAcknowledgedAutoConfiguration;
   }
 
   /// Fallback: Checks PnP status via SharedPreferences.
