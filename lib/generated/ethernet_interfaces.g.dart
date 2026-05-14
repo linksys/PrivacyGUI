@@ -89,4 +89,14 @@ class EthernetInterfaces {
     }
     return EthernetInterfaces(items: items);
   }
+
+  static Future<Subscription<EthernetInterfaces>> subscribe(
+      UspClient client) async {
+    return client.subscribe<EthernetInterfaces>(
+      id: 'ethernet-valuechange',
+      notifType: NotifType.valueChange,
+      paths: ['Device.Ethernet.Interface.'],
+      parser: EthernetInterfaces._fromResponse,
+    );
+  }
 }

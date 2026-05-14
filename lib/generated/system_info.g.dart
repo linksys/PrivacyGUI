@@ -15,9 +15,6 @@ class SystemInfo {
   final int totalMemory;
   final int freeMemory;
   final int cpuUsage;
-  final String firstUseDate;
-  final String description;
-  final String productClass;
   final String activeFirmwareImage;
   final String bootFirmwareImage;
 
@@ -31,9 +28,6 @@ class SystemInfo {
     required this.totalMemory,
     required this.freeMemory,
     required this.cpuUsage,
-    required this.firstUseDate,
-    required this.description,
-    required this.productClass,
     required this.activeFirmwareImage,
     required this.bootFirmwareImage,
   });
@@ -48,9 +42,6 @@ class SystemInfo {
     'Device.DeviceInfo.MemoryStatus.Total',
     'Device.DeviceInfo.MemoryStatus.Free',
     'Device.DeviceInfo.ProcessStatus.CPUUsage',
-    'Device.DeviceInfo.FirstUseDate',
-    'Device.DeviceInfo.Description',
-    'Device.DeviceInfo.ProductClass',
     'Device.DeviceInfo.ActiveFirmwareImage',
     'Device.DeviceInfo.BootFirmwareImage',
   ];
@@ -81,12 +72,6 @@ class SystemInfo {
       missing.add('Device.DeviceInfo.MemoryStatus.Free');
     if (!response.containsKey('Device.DeviceInfo.ProcessStatus.CPUUsage'))
       missing.add('Device.DeviceInfo.ProcessStatus.CPUUsage');
-    if (!response.containsKey('Device.DeviceInfo.FirstUseDate'))
-      missing.add('Device.DeviceInfo.FirstUseDate');
-    if (!response.containsKey('Device.DeviceInfo.Description'))
-      missing.add('Device.DeviceInfo.Description');
-    if (!response.containsKey('Device.DeviceInfo.ProductClass'))
-      missing.add('Device.DeviceInfo.ProductClass');
     if (!response.containsKey('Device.DeviceInfo.ActiveFirmwareImage'))
       missing.add('Device.DeviceInfo.ActiveFirmwareImage');
     if (!response.containsKey('Device.DeviceInfo.BootFirmwareImage'))
@@ -120,11 +105,6 @@ class SystemInfo {
                       ?.toString() ??
                   '') ??
           0,
-      firstUseDate:
-          (response['Device.DeviceInfo.FirstUseDate'] ?? '') as String,
-      description: (response['Device.DeviceInfo.Description'] ?? '') as String,
-      productClass:
-          (response['Device.DeviceInfo.ProductClass'] ?? '') as String,
       activeFirmwareImage:
           (response['Device.DeviceInfo.ActiveFirmwareImage'] ?? '') as String,
       bootFirmwareImage:
@@ -144,9 +124,6 @@ class SystemInfo {
         'totalMemory: $totalMemory, '
         'freeMemory: $freeMemory, '
         'cpuUsage: $cpuUsage, '
-        'firstUseDate: $firstUseDate, '
-        'description: $description, '
-        'productClass: $productClass, '
         'activeFirmwareImage: $activeFirmwareImage, '
         'bootFirmwareImage: $bootFirmwareImage'
         ')';

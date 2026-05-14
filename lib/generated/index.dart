@@ -9,7 +9,6 @@ export 'data_elements_network.g.dart';
 export 'mac_filter_access_points.g.dart';
 export 'system_info.g.dart';
 export 'vendor_log_files.g.dart';
-export 'device_operations.g.dart';
 export 'firmware_images.g.dart';
 export 'time_settings.g.dart';
 export 'static_routing.g.dart';
