@@ -222,19 +222,23 @@ class PnpNotifier extends Notifier<PnpState> {
       // the connection will drop and we need credentials stored for
       // automatic session restore when reconnected.
       final passwordToUse = state.adminPassword ?? PnpService.defaultPassword;
-      await ref.read(authProvider.notifier).persistLocalCredentials(passwordToUse);
+      await ref
+          .read(authProvider.notifier)
+          .persistLocalCredentials(passwordToUse);
 
       await ref.read(uspMutationLockProvider).withLock(() async {
         await _svc.saveWifi(phase.wifiConfig);
       });
 
       // Save serial number for future recognition
-      logger.d('[PnP] Saving setup completion, serialNumber=${state.serialNumber}');
+      logger.d(
+          '[PnP] Saving setup completion, serialNumber=${state.serialNumber}');
       if (state.serialNumber != null) {
         // Step 1: Acknowledge via API (router-authoritative)
         try {
           final bridge = ref.read(uspBridgeClientProvider);
-          logger.d('[PnP] Bridge client: ${bridge != null ? "available" : "null"}');
+          logger.d(
+              '[PnP] Bridge client: ${bridge != null ? "available" : "null"}');
           if (bridge != null) {
             await bridge.acknowledgeSetup();
             logger.i('[PnP] Setup acknowledged via API');
@@ -318,7 +322,8 @@ class PnpNotifier extends Notifier<PnpState> {
         // Strict check: serial number must match if we have one
         if (expectedSn != null && expectedSn.isNotEmpty) {
           if (sn != expectedSn) {
-            logger.w('[PnP] Serial number mismatch: expected=$expectedSn, got=$sn');
+            logger.w(
+                '[PnP] Serial number mismatch: expected=$expectedSn, got=$sn');
             continue; // Try next attempt
           }
         }

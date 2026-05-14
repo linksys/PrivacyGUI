@@ -33,7 +33,8 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
   int _currentStep = 0;
 
   /// Password validation rules for display
-  List<AppPasswordRule> _buildPasswordRules(TextEditingController controller) => [
+  List<AppPasswordRule> _buildPasswordRules(TextEditingController controller) =>
+      [
         AppPasswordRule(
           label: loc(context).wifiPasswordLimit, // "8 - 64 characters"
           validate: (text) => LengthRule(min: 8, max: 64).validate(text),
@@ -91,7 +92,6 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
         TextEditingController(text: phase.wifiConfig.guestPassword);
     _initialized = true;
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -251,8 +251,8 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
 
   Widget _buildGuestWifiStep(BuildContext context, WizardConfiguring phase) {
     final hasMeshStep = phase.meshNodes.length > 1;
-    final guestPasswordValid = !phase.wifiConfig.guestEnabled ||
-        _allGuestPasswordRulesPass();
+    final guestPasswordValid =
+        !phase.wifiConfig.guestEnabled || _allGuestPasswordRulesPass();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
