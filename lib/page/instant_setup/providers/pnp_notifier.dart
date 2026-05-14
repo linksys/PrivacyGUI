@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
+import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
 import 'package:privacy_gui/core/usp/providers/usp_auth_coordinator.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/core/session/providers/session_provider.dart';
@@ -43,6 +44,7 @@ class PnpNotifier extends Notifier<PnpState> {
         state = state.copyWith(
           serialNumber: result.serialNumber,
           modelName: result.modelName,
+          adminPassword: PnpService.defaultPassword,
         );
 
         if (result.isFactoryDefault) {
@@ -83,6 +85,7 @@ class PnpNotifier extends Notifier<PnpState> {
       state = state.copyWith(
         serialNumber: result.serialNumber,
         modelName: result.modelName,
+        adminPassword: password,
         flowMode: result.isFactoryDefault
             ? PnpFlowMode.unconfigured
             : PnpFlowMode.configured,
@@ -215,20 +218,38 @@ class PnpNotifier extends Notifier<PnpState> {
     state = state.copyWith(phase: const WizardSaving());
 
     try {
+      // Persist credentials BEFORE saving WiFi — if WiFi SSID changes,
+      // the connection will drop and we need credentials stored for
+      // automatic session restore when reconnected.
+      final passwordToUse = state.adminPassword ?? PnpService.defaultPassword;
+      await ref.read(authProvider.notifier).persistLocalCredentials(passwordToUse);
+
       await ref.read(uspMutationLockProvider).withLock(() async {
         await _svc.saveWifi(phase.wifiConfig);
       });
 
-      // Persist credentials via AuthNotifier (use default password for now;
-      // admin password change deferred until FW provides factory password API).
-      await ref
-          .read(authProvider.notifier)
-          .localLogin(PnpService.defaultPassword);
-
       // Save serial number for future recognition
+      logger.d('[PnP] Saving setup completion, serialNumber=${state.serialNumber}');
       if (state.serialNumber != null) {
+        // Step 1: Acknowledge via API (router-authoritative)
+        try {
+          final bridge = ref.read(uspBridgeClientProvider);
+          logger.d('[PnP] Bridge client: ${bridge != null ? "available" : "null"}');
+          if (bridge != null) {
+            await bridge.acknowledgeSetup();
+            logger.i('[PnP] Setup acknowledged via API');
+          } else {
+            logger.w('[PnP] Bridge client is null, skipping API acknowledge');
+          }
+        } catch (e) {
+          logger.w('[PnP] API acknowledge failed (non-fatal): $e');
+        }
+
+        // Step 2: SharedPreferences fallback
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString(pPnpConfiguredSN, state.serialNumber!);
+
+        // Step 3: Save selected network
         await ref
             .read(sessionProvider.notifier)
             .saveSelectedNetwork(state.serialNumber!, '');
@@ -292,11 +313,20 @@ class PnpNotifier extends Notifier<PnpState> {
         await ref.read(uspAuthCoordinatorProvider).restoreSession();
 
         final sn = await _svc.checkRouterIsBack();
-        if (sn == state.serialNumber || state.serialNumber == null) {
-          state = state.copyWith(phase: const WizardSaved());
-          await _checkFirmware(ssid: savedSsid, password: savedPassword);
-          return;
+        final expectedSn = state.serialNumber;
+
+        // Strict check: serial number must match if we have one
+        if (expectedSn != null && expectedSn.isNotEmpty) {
+          if (sn != expectedSn) {
+            logger.w('[PnP] Serial number mismatch: expected=$expectedSn, got=$sn');
+            continue; // Try next attempt
+          }
         }
+
+        logger.i('[PnP] Router reconnected, SN=$sn');
+        state = state.copyWith(phase: const WizardSaved());
+        await _checkFirmware(ssid: savedSsid, password: savedPassword);
+        return;
       } catch (e) {
         logger.d('[PnP] Reconnect attempt $attempt/$maxAttempts failed: $e');
       }

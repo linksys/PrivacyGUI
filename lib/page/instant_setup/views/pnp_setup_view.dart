@@ -12,6 +12,7 @@ import 'package:privacy_gui/page/instant_setup/providers/pnp_providers.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/util/qr_code.dart';
 import 'package:privacy_gui/util/wifi_credential.dart';
+import 'package:privacy_gui/validator_rules/rules.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -30,6 +31,45 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
   late final TextEditingController _guestPasswordController;
   bool _initialized = false;
   int _currentStep = 0;
+
+  /// Password validation rules for display
+  List<AppPasswordRule> _buildPasswordRules(TextEditingController controller) => [
+        AppPasswordRule(
+          label: loc(context).wifiPasswordLimit, // "8 - 64 characters"
+          validate: (text) => LengthRule(min: 8, max: 64).validate(text),
+        ),
+        AppPasswordRule(
+          label: loc(context).routerPasswordRuleStartEndWithSpace,
+          validate: (text) =>
+              text.isEmpty || NoSurroundWhitespaceRule().validate(text),
+        ),
+        AppPasswordRule(
+          label: loc(context).routerPasswordRuleUnsupportSpecialChar,
+          validate: (text) => text.isEmpty || AsciiRule().validate(text),
+        ),
+        // Only show hex rule when password is 64 characters (PSK)
+        if (controller.text.length == 64)
+          AppPasswordRule(
+            label: loc(context).wifiPasswordRuleHex,
+            validate: (text) => WiFiPSKRule().validate(text),
+          ),
+      ];
+
+  /// Check if all password rules pass for main WiFi
+  bool _allMainPasswordRulesPass() {
+    final text = _wifiPasswordController.text;
+    if (text.isEmpty) return false;
+    return _buildPasswordRules(_wifiPasswordController)
+        .every((r) => r.validate(text));
+  }
+
+  /// Check if all password rules pass for guest WiFi
+  bool _allGuestPasswordRulesPass() {
+    final text = _guestPasswordController.text;
+    if (text.isEmpty) return false;
+    return _buildPasswordRules(_guestPasswordController)
+        .every((r) => r.validate(text));
+  }
 
   @override
   void dispose() {
@@ -52,14 +92,14 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
     _initialized = true;
   }
 
+
   @override
   Widget build(BuildContext context) {
     final pnpState = ref.watch(pnpProvider);
     final phase = pnpState.phase;
 
     return UiKitPageView(
-      appBarStyle: UiKitAppBarStyle.back,
-      title: loc(context).pnpPersonalizeWiFiTitle,
+      appBarStyle: UiKitAppBarStyle.none,
       scrollable: true,
       onBackTap: () {
         if (phase is WizardConfiguring && _currentStep > 0) {
@@ -180,8 +220,11 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
           label: loc(context).wifiPassword,
           hintText: loc(context).wifiPassword,
           controller: _wifiPasswordController,
-          onChanged: (v) =>
-              ref.read(pnpProvider.notifier).updateWifiPassword(v),
+          rules: _buildPasswordRules(_wifiPasswordController),
+          onChanged: (v) {
+            ref.read(pnpProvider.notifier).updateWifiPassword(v);
+            setState(() {}); // Rebuild to update rule indicators
+          },
         ),
         AppGap.xxxl(),
         Align(
@@ -189,11 +232,15 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
           child: hasNextStep
               ? AppButton(
                   label: loc(context).next,
-                  onTap: () => setState(() => _currentStep = 1),
+                  onTap: _allMainPasswordRulesPass()
+                      ? () => setState(() => _currentStep = 1)
+                      : null,
                 )
               : AppButton(
                   label: loc(context).save,
-                  onTap: () => ref.read(pnpProvider.notifier).saveChanges(),
+                  onTap: _allMainPasswordRulesPass()
+                      ? () => ref.read(pnpProvider.notifier).saveChanges()
+                      : null,
                 ),
         ),
       ],
@@ -204,6 +251,8 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
 
   Widget _buildGuestWifiStep(BuildContext context, WizardConfiguring phase) {
     final hasMeshStep = phase.meshNodes.length > 1;
+    final guestPasswordValid = !phase.wifiConfig.guestEnabled ||
+        _allGuestPasswordRulesPass();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -215,8 +264,10 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
             ),
             AppSwitch(
               value: phase.wifiConfig.guestEnabled,
-              onChanged: (v) =>
-                  ref.read(pnpProvider.notifier).updateGuestEnabled(v),
+              onChanged: (v) {
+                ref.read(pnpProvider.notifier).updateGuestEnabled(v);
+                setState(() {});
+              },
             ),
           ],
         ),
@@ -234,8 +285,11 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
             label: loc(context).wifiPassword,
             hintText: loc(context).wifiPassword,
             controller: _guestPasswordController,
-            onChanged: (v) =>
-                ref.read(pnpProvider.notifier).updateGuestPassword(v),
+            rules: _buildPasswordRules(_guestPasswordController),
+            onChanged: (v) {
+              ref.read(pnpProvider.notifier).updateGuestPassword(v);
+              setState(() {}); // Rebuild to update rule indicators
+            },
           ),
         ],
         AppGap.xxxl(),
@@ -249,12 +303,15 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
             hasMeshStep
                 ? AppButton(
                     label: loc(context).next,
-                    onTap: () =>
-                        setState(() => _currentStep = _currentStep + 1),
+                    onTap: guestPasswordValid
+                        ? () => setState(() => _currentStep = _currentStep + 1)
+                        : null,
                   )
                 : AppButton(
                     label: loc(context).save,
-                    onTap: () => ref.read(pnpProvider.notifier).saveChanges(),
+                    onTap: guestPasswordValid
+                        ? () => ref.read(pnpProvider.notifier).saveChanges()
+                        : null,
                   ),
           ],
         ),

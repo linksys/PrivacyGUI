@@ -33,8 +33,7 @@ class PnpWaitingModemView extends ConsumerWidget {
     });
 
     return UiKitPageView(
-      appBarStyle: UiKitAppBarStyle.back,
-      title: loc(context).pnpWaitingModemTitle,
+      appBarStyle: UiKitAppBarStyle.none,
       scrollable: true,
       onBackTap: () => context.go(RoutePath.pnpNoInternetConnection),
       child: (context, constraints) => Padding(

@@ -12,6 +12,7 @@ class PnpState extends Equatable {
   final String? serialNumber;
   final String? modelName;
   final String? errorMessage;
+  final String? adminPassword;
 
   const PnpState({
     required this.phase,
@@ -19,6 +20,7 @@ class PnpState extends Equatable {
     this.serialNumber,
     this.modelName,
     this.errorMessage,
+    this.adminPassword,
   });
 
   factory PnpState.initial() => const PnpState(phase: AdminInitializing());
@@ -29,6 +31,7 @@ class PnpState extends Equatable {
     String? serialNumber,
     String? modelName,
     String? errorMessage,
+    String? adminPassword,
     bool clearError = false,
   }) {
     return PnpState(
@@ -37,12 +40,13 @@ class PnpState extends Equatable {
       serialNumber: serialNumber ?? this.serialNumber,
       modelName: modelName ?? this.modelName,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
+      adminPassword: adminPassword ?? this.adminPassword,
     );
   }
 
   @override
   List<Object?> get props =>
-      [phase, flowMode, serialNumber, modelName, errorMessage];
+      [phase, flowMode, serialNumber, modelName, errorMessage, adminPassword];
 }
 
 // ═══════════════════════════════════════════════════════════════

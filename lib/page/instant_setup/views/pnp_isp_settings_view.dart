@@ -37,10 +37,8 @@ class PnpIspSettingsView extends ConsumerWidget {
     }
 
     return UiKitPageView(
-      appBarStyle: UiKitAppBarStyle.back,
-      title: loc(context).pnpIspTypeSelectionTitle,
+      appBarStyle: UiKitAppBarStyle.none,
       scrollable: true,
-      onBackTap: () => context.pop(),
       child: (context, constraints) => Padding(
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.lg,

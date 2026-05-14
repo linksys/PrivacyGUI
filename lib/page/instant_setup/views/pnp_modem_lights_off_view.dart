@@ -12,8 +12,7 @@ class PnpModemLightsOffView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return UiKitPageView(
-      appBarStyle: UiKitAppBarStyle.back,
-      title: loc(context).pnpModemLightsOffTitle,
+      appBarStyle: UiKitAppBarStyle.none,
       scrollable: true,
       onBackTap: () => context.pop(),
       bottomBar: UiKitBottomBarConfig(

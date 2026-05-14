@@ -86,15 +86,19 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
         padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             AppText.headlineSmall(loc(context).welcome),
             AppGap.xl(),
             AppText.bodyMedium(loc(context).pnpRouterLoginDesc),
             AppGap.xxxl(),
-            AppButton(
-              label: loc(context).next,
-              onTap: () =>
-                  ref.read(pnpProvider.notifier).continueFromUnconfigured(),
+            Align(
+              alignment: Alignment.centerRight,
+              child: AppButton(
+                label: loc(context).next,
+                onTap: () =>
+                    ref.read(pnpProvider.notifier).continueFromUnconfigured(),
+              ),
             ),
           ],
         ),
@@ -108,21 +112,25 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
         padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             AppText.headlineSmall(loc(context).routerPassword),
             AppGap.xl(),
             AppText.bodyMedium(loc(context).pnpRouterLoginDesc),
             AppGap.lg(),
             AppPasswordInput(
+              label: loc(context).routerPassword,
               controller: _passwordController,
-              hintText: loc(context).routerPassword,
               errorText: error,
               onSubmitted: (_) => _submit(),
             ),
             AppGap.xxxl(),
-            AppButton(
-              label: loc(context).login,
-              onTap: _submit,
+            Align(
+              alignment: Alignment.centerRight,
+              child: AppButton(
+                label: loc(context).login,
+                onTap: _submit,
+              ),
             ),
           ],
         ),
@@ -139,13 +147,16 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
   Widget _buildCheckingInternet(BuildContext context) {
     return AppCard(
       child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.lg),
+        padding: const EdgeInsets.all(AppSpacing.xl),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             const AppLoader(),
-            AppGap.lg(),
-            AppText.bodyMedium(loc(context).pnpWaitingModemCheckingInternet),
+            AppGap.xxxl(),
+            AppText.bodyMedium(
+              loc(context).pnpWaitingModemCheckingInternet,
+              textAlign: TextAlign.center,
+            ),
           ],
         ),
       ),

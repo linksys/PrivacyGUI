@@ -14,10 +14,6 @@ class PnpNoInternetView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(pnpProvider);
-    final ssid =
-        (state.phase is NoInternet) ? (state.phase as NoInternet).ssid : null;
-
     // Listen for internet recovery → auto-navigate back to wizard.
     ref.listen(pnpProvider, (prev, next) {
       if (next.phase is WizardConfiguring || next.phase is WizardInitializing) {
@@ -26,8 +22,7 @@ class PnpNoInternetView extends ConsumerWidget {
     });
 
     return UiKitPageView(
-      appBarStyle: UiKitAppBarStyle.back,
-      title: ssid ?? loc(context).pnpUnplugModemTitle,
+      appBarStyle: UiKitAppBarStyle.none,
       scrollable: true,
       onBackTap: () => context.go(RoutePath.pnp),
       child: (context, constraints) => Padding(

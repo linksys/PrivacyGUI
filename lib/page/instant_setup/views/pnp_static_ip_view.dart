@@ -45,8 +45,7 @@ class _PnpStaticIpViewState extends ConsumerState<PnpStaticIpView> {
     });
 
     return UiKitPageView(
-      appBarStyle: UiKitAppBarStyle.back,
-      title: loc(context).ipAddress,
+      appBarStyle: UiKitAppBarStyle.none,
       scrollable: true,
       onBackTap: () => context.pop(),
       bottomBar: UiKitBottomBarConfig(

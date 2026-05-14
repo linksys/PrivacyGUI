@@ -43,8 +43,7 @@ class _PnpPppoeViewState extends ConsumerState<PnpPppoeView> {
     });
 
     return UiKitPageView(
-      appBarStyle: UiKitAppBarStyle.back,
-      title: loc(context).pnpPppoeTitle,
+      appBarStyle: UiKitAppBarStyle.none,
       scrollable: true,
       onBackTap: () => context.pop(),
       bottomBar: UiKitBottomBarConfig(

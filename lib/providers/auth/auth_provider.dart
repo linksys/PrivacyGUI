@@ -85,6 +85,26 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     logger.d('[Auth]: localLogin: done, state=$state');
   }
 
+  /// Persists local credentials without attempting USP login.
+  ///
+  /// Use this when the USP session is already established (e.g., PnP flow)
+  /// and you only need to save credentials for future session restore.
+  Future<void> persistLocalCredentials(String password) async {
+    final previousState = state.value ?? AuthState.empty();
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(() async {
+      // Store password for session restore
+      await const FlutterSecureStorage()
+          .write(key: pLocalPassword, value: password);
+      logger.d('[Auth]: persistLocalCredentials: credentials saved');
+      return previousState.copyWith(
+        localPassword: password,
+        loginType: LoginType.local,
+      );
+    });
+    logger.d('[Auth]: persistLocalCredentials: done, state=$state');
+  }
+
   /// Retrieves password hint from the router.
   ///
   /// TODO: Re-implement using USP when available.

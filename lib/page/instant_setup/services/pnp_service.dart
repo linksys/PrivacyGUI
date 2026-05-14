@@ -25,13 +25,11 @@ class FactoryDefaultCheckResult {
   final bool isFactoryDefault;
   final String serialNumber;
   final String modelName;
-  final String firstUseDate;
 
   const FactoryDefaultCheckResult({
     required this.isFactoryDefault,
     required this.serialNumber,
     required this.modelName,
-    required this.firstUseDate,
   });
 }
 
@@ -72,19 +70,18 @@ class PnpService {
 
   // ─── Factory Default Detection ───────────────────────────
 
-  /// Check if router is factory default.
+  /// Fetch device info for PnP flow.
   /// Must be called AFTER successful login.
   ///
-  /// Logic: FirstUseDate is "0001-01-01T00:00:00Z" or empty → unconfigured.
+  /// Note: Factory default detection is now handled by the
+  /// `/api/v1/setup/status` API endpoint. This method only
+  /// fetches device metadata (serialNumber, modelName).
   Future<FactoryDefaultCheckResult> checkFactoryDefault() async {
     final info = await SystemInfo.fetch(_usp);
-    final isDefault =
-        info.firstUseDate.isEmpty || info.firstUseDate.startsWith('0001-01-01');
     return FactoryDefaultCheckResult(
-      isFactoryDefault: isDefault,
+      isFactoryDefault: false,
       serialNumber: info.serialNumber,
       modelName: info.modelName,
-      firstUseDate: info.firstUseDate,
     );
   }
 

@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:web/web.dart' as web;
 
+import 'package:privacy_gui/core/usp/models/setup_status.dart';
 import 'usp_client.dart';
 
 /// Global JS property to persist SSE AbortController across hot restarts.
@@ -76,6 +77,42 @@ class UspBridgeClient {
       () =>
           http.get(Uri.parse('$_baseUrl/api/v1/health'), headers: _authHeaders),
       (r) => jsonDecode(r.body) as Map<String, dynamic>,
+    );
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // Setup Status (PnP trigger)
+  // ══════════════════════════════════════════════════════════════════════════
+
+  /// Checks if PnP setup has been acknowledged on the router.
+  ///
+  /// This is a PUBLIC endpoint — does NOT require authentication.
+  /// Called BEFORE login to determine if PnP flow is needed.
+  Future<SetupStatus> getSetupStatus() async {
+    final response = await http.get(
+      Uri.parse('$_baseUrl/api/v1/setup/status'),
+      headers: {'Content-Type': 'application/json'},
+    );
+    if (response.statusCode != 200) {
+      throw Exception('Setup status check failed: ${response.statusCode}');
+    }
+    return SetupStatus.fromJson(jsonDecode(response.body));
+  }
+
+  /// Marks PnP setup as acknowledged on the router.
+  ///
+  /// Called AFTER PnP completes successfully. Requires authentication.
+  Future<void> acknowledgeSetup() async {
+    await _withAuthRetry(
+      () => http.post(
+        Uri.parse('$_baseUrl/api/v1/setup/acknowledge'),
+        headers: _authHeaders,
+      ),
+      (r) {
+        if (r.statusCode != 200 && r.statusCode != 204) {
+          throw Exception('Setup acknowledge failed: ${r.statusCode}');
+        }
+      },
     );
   }
 
