@@ -47,16 +47,13 @@ class UspDeviceListTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final subtitle = _buildSubtitle();
-    final hasSignal =
-        device.isActive && device.isWifi && device.signalStrength != null;
 
     final deviceCategory = DeviceClassifier.classify(
       hostname: device.hostName,
       mac: device.mac,
     );
 
-    // Offline devices are not tappable
-    final effectiveOnTap = device.isActive ? onTap : null;
+    final effectiveOnTap = device.isInteractive ? onTap : null;
 
     final content = Row(
       children: [
@@ -102,7 +99,7 @@ class UspDeviceListTile extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  if (hasSignal) ...[
+                  if (device.hasSignalDisplay) ...[
                     AppGap.sm(),
                     UspSignalStrengthIndicator(
                       rssi: device.signalStrength!,
@@ -113,8 +110,8 @@ class UspDeviceListTile extends StatelessWidget {
             ],
           ),
         ),
-        // Only show chevron for online (tappable) devices
-        if (device.isActive) ...[
+        // Only show chevron for interactive (online) devices
+        if (device.isInteractive) ...[
           AppGap.sm(),
           AppIcon.font(
             Icons.chevron_right,
@@ -147,7 +144,7 @@ class UspDeviceListTile extends StatelessWidget {
             );
     }
 
-    return device.isActive ? tile : Opacity(opacity: 0.5, child: tile);
+    return Opacity(opacity: device.displayOpacity, child: tile);
   }
 
   String _buildSubtitle() {

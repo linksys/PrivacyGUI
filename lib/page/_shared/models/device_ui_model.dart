@@ -1,4 +1,20 @@
 import 'package:equatable/equatable.dart';
+import 'package:flutter/material.dart';
+
+// ---------------------------------------------------------------------------
+// Connection Type Enum
+// ---------------------------------------------------------------------------
+
+/// Connection type for UI display decisions.
+enum DeviceConnectionType { wifi, wired }
+
+extension DeviceConnectionTypeExt on DeviceConnectionType {
+  /// Icon for connection type (does not require i18n).
+  IconData get icon => switch (this) {
+        DeviceConnectionType.wifi => Icons.wifi,
+        DeviceConnectionType.wired => Icons.settings_ethernet,
+      };
+}
 
 /// Presentation Layer Model — aggregates codegen + enricher per-device info.
 ///
@@ -89,6 +105,43 @@ class DeviceUIModel extends Equatable {
 
   /// Total throughput in bits/sec.
   int get totalThroughput => (downlinkRate ?? 0) + (uplinkRate ?? 0);
+
+  // ─── Display computed getters ───
+
+  /// Connection type enum (UI layer uses this for i18n lookup).
+  DeviceConnectionType get connectionType =>
+      isWifi ? DeviceConnectionType.wifi : DeviceConnectionType.wired;
+
+  /// Whether to display signal strength indicator.
+  /// True only for active WiFi devices with RSSI data.
+  bool get hasSignalDisplay => isActive && isWifi && signalStrength != null;
+
+  /// Whether WiFi details card should be visible.
+  /// True only for active WiFi devices.
+  bool get shouldShowWifiDetails => isWifi && isActive;
+
+  /// Whether any WiFi detail data is available (signal, speed, or band/SSID).
+  bool get hasWifiData =>
+      signalStrength != null ||
+      downlinkRate != null ||
+      uplinkRate != null ||
+      band != null ||
+      ssidName != null;
+
+  /// Whether the device tile should be interactive (tappable).
+  /// Offline devices are not interactive.
+  bool get isInteractive => isActive;
+
+  /// Display opacity: 1.0 for active, 0.5 for offline devices.
+  double get displayOpacity => isActive ? 1.0 : 0.5;
+
+  /// Whether this is a client device (not a mesh node master/slave).
+  bool get isClientDevice => deviceRole != 'master' && deviceRole != 'slave';
+
+  /// Signal strength display text (technical value, no i18n needed).
+  /// Returns null if no signal data available.
+  String? get signalDisplayText =>
+      signalStrength != null ? '$signalStrength dBm' : null;
 
   @override
   List<Object?> get props => [

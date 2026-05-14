@@ -133,16 +133,11 @@ class UspConnectedDevicesCard extends ConsumerWidget {
               if (device.parentNodeName != null)
                 _buildParentNodeBadge(context, device.parentNodeName!),
               AppGap.xxs(),
-              if (device.isWifi)
-                device.signalStrength != null
-                    ? UspSignalStrengthIndicator(rssi: device.signalStrength!)
-                    : AppText.bodySmall(
-                        'WiFi',
-                        color: scheme.onSurfaceVariant,
-                      )
+              if (device.hasSignalDisplay)
+                UspSignalStrengthIndicator(rssi: device.signalStrength!)
               else
                 AppText.bodySmall(
-                  'Wired',
+                  device.isWifi ? 'WiFi' : 'Wired',
                   color: scheme.onSurfaceVariant,
                 ),
             ],

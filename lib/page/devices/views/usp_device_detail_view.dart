@@ -87,8 +87,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
         AppGap.lg(),
         _buildConnectionStatusCard(context, device),
         AppGap.lg(),
-        // Only show WiFi details for active WiFi devices
-        if (device.isWifi && device.isActive) ...[
+        if (device.shouldShowWifiDetails) ...[
           _buildWifiDetailsCard(context, device),
           AppGap.lg(),
         ],
@@ -107,8 +106,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
         ),
         AppGap.gutter(),
         DetailGridRow(
-          // Only show WiFi details for active WiFi devices
-          left: device.isWifi && device.isActive
+          left: device.shouldShowWifiDetails
               ? _buildWifiDetailsCard(context, device)
               : _buildNetworkAddressesCard(context, device),
           right: _buildDhcpCard(context, ref, device, detail, isLoading),
@@ -203,7 +201,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           DetailCardHeader(
-            icon: device.isWifi ? Icons.wifi : Icons.settings_ethernet,
+            icon: device.connectionType.icon,
             title: device.isWifi ? 'WiFi Connection' : 'Wired Connection',
           ),
           AppGap.xl(),
@@ -234,11 +232,11 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
   // ===========================================================================
 
   Widget _buildWifiDetailsCard(BuildContext context, DeviceUIModel device) {
+    // Fine-grained rendering decisions (not card-level visibility)
     final hasSignalData = device.signalStrength != null;
     final hasSpeedData =
         device.downlinkRate != null || device.uplinkRate != null;
     final hasBandSsid = device.band != null || device.ssidName != null;
-    final hasAnyData = hasSignalData || hasSpeedData || hasBandSsid;
 
     return AppCard(
       child: Column(
@@ -249,7 +247,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
             title: 'Signal & Speed',
           ),
           AppGap.xl(),
-          if (!hasAnyData)
+          if (!device.hasWifiData)
             Container(
               padding: const EdgeInsets.all(AppSpacing.md),
               decoration: BoxDecoration(
