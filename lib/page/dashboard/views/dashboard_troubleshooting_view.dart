@@ -31,7 +31,8 @@ class DashboardTroubleshootingView extends ConsumerWidget {
 
     return switch (state.step) {
       TroubleshootingStep.idle => _buildLoading(context),
-      TroubleshootingStep.noInternet => _buildNoInternetHub(context, ref, state),
+      TroubleshootingStep.noInternet =>
+        _buildNoInternetHub(context, ref, state),
       TroubleshootingStep.modemCountdown =>
         _buildModemCountdown(context, ref, state),
       TroubleshootingStep.checkingInternet =>

@@ -90,7 +90,8 @@ class DashboardTroubleshootingNotifier
         logger.d('[Troubleshoot] Check attempt $i failed: $e');
       }
     }
-    logger.w('[Troubleshoot] Internet still unavailable after $maxAttempts attempts');
+    logger.w(
+        '[Troubleshoot] Internet still unavailable after $maxAttempts attempts');
     state = state.copyWith(step: TroubleshootingStep.noInternet);
   }
 
