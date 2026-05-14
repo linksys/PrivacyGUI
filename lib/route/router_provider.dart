@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -58,6 +60,7 @@ import 'package:privacy_gui/page/dhcp/providers/usp_dhcp_reservations_notifier.d
 import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_settings_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/views/usp_wifi_settings_view.dart';
 import 'package:privacy_gui/page/apps/views/usp_apps_view.dart';
+import 'package:privacy_gui/page/dashboard/views/dashboard_troubleshooting_view.dart';
 
 // PnP (Plug and Play) imports
 import 'package:privacy_gui/page/instant_setup/views/pnp_admin_view.dart';
@@ -161,16 +164,55 @@ class RouterNotifier extends ChangeNotifier {
 
     // If no stored credentials, check if PnP has been completed before.
     if (loginType == LoginType.none && !BuildConfig.skipPnp) {
-      final prefs = await SharedPreferences.getInstance();
-      final pnpConfiguredSN = prefs.getString(pPnpConfiguredSN);
-      if (pnpConfiguredSN == null || pnpConfiguredSN.isEmpty) {
-        // No PnP record → send user through PnP setup flow.
-        logger.i('[Route]: No PnP configured SN found, routing to /pnp');
-        return RoutePath.pnp;
+      // Step 1: Check SharedPreferences first (local cache)
+      final hasLocalRecord = !await _checkPnpStatusViaPrefs();
+      if (hasLocalRecord) {
+        logger.d('[Route]: SharedPreferences has PnP record, skipping');
+      } else {
+        // Step 2: No local record → check API (router-authoritative)
+        try {
+          logger.d('[Route]: No local PnP record, checking API...');
+          final needsPnp = await _checkPnpStatusViaApi();
+          if (needsPnp) {
+            logger.i('[Route]: API indicates PnP needed, routing to /pnp');
+            return RoutePath.pnp;
+          }
+          logger.d('[Route]: API indicates PnP already acknowledged, skipping');
+        } catch (e) {
+          // API failed and no local record → assume PnP needed
+          logger.w('[Route]: API check failed: $e, no local record → routing to /pnp');
+          return RoutePath.pnp;
+        }
       }
+    } else if (BuildConfig.skipPnp) {
+      logger.d('[Route]: BuildConfig.skipPnp=true, skipping PnP check');
     }
 
     return authCheck(state);
+  }
+
+  /// Checks PnP status via the public API endpoint.
+  /// Returns true if PnP is needed (user has NOT acknowledged).
+  Future<bool> _checkPnpStatusViaApi() async {
+    final response = await http.get(
+      Uri.parse('/api/v1/setup/status'),
+      headers: {'Content-Type': 'application/json'},
+    ).timeout(const Duration(seconds: 5));
+
+    if (response.statusCode != 200) {
+      throw Exception('API returned ${response.statusCode}');
+    }
+
+    final json = jsonDecode(response.body) as Map<String, dynamic>;
+    return !(json['user_acknowledged_auto_configuration'] as bool? ?? false);
+  }
+
+  /// Fallback: Checks PnP status via SharedPreferences.
+  /// Returns true if PnP is needed (no configured serial number).
+  Future<bool> _checkPnpStatusViaPrefs() async {
+    final prefs = await SharedPreferences.getInstance();
+    final sn = prefs.getString(pPnpConfiguredSN);
+    return sn == null || sn.isEmpty;
   }
 
   Future<String?> redirectLogic(GoRouterState state) async {
