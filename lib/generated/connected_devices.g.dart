@@ -5,6 +5,17 @@
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 
 /// Nested instance from parent multi-instance table
+class ConnectedDeviceIpv4 {
+  final String instancePath;
+  final String address;
+
+  const ConnectedDeviceIpv4({
+    required this.instancePath,
+    required this.address,
+  });
+}
+
+/// Nested instance from parent multi-instance table
 class ConnectedDeviceIpv6 {
   final String instancePath;
   final String address;
@@ -22,8 +33,24 @@ class ConnectedDevice {
   final String ipAddress;
   final String hostName;
   final bool isActive;
+  final String? activeLastChange;
   final String interface_;
+  final String? layer3Interface;
+  final String? interfaceType;
   final String? addressSource;
+  final String? dhcpClient;
+  final String? associatedDevice;
+  final String? deviceId;
+  final String? deviceRole;
+  final String? friendlyName;
+  final String? manufacturer;
+  final String? modelName;
+  final String? operatingSystem;
+  final String? parentNodeId;
+  final int? signalStrength;
+  final int? lastDataDownlinkRate;
+  final int? lastDataUplinkRate;
+  final List<ConnectedDeviceIpv4> ipv4Addresses;
   final List<ConnectedDeviceIpv6> ipv6Addresses;
 
   const ConnectedDevice({
@@ -32,8 +59,24 @@ class ConnectedDevice {
     required this.ipAddress,
     required this.hostName,
     required this.isActive,
+    this.activeLastChange,
     required this.interface_,
+    this.layer3Interface,
+    this.interfaceType,
     this.addressSource,
+    this.dhcpClient,
+    this.associatedDevice,
+    this.deviceId,
+    this.deviceRole,
+    this.friendlyName,
+    this.manufacturer,
+    this.modelName,
+    this.operatingSystem,
+    this.parentNodeId,
+    this.signalStrength,
+    this.lastDataDownlinkRate,
+    this.lastDataUplinkRate,
+    required this.ipv4Addresses,
     required this.ipv6Addresses,
   });
 }
@@ -49,8 +92,24 @@ class ConnectedDevices {
     'Device.Hosts.Host.*.IPAddress',
     'Device.Hosts.Host.*.HostName',
     'Device.Hosts.Host.*.Active',
+    'Device.Hosts.Host.*.ActiveLastChange',
     'Device.Hosts.Host.*.Layer1Interface',
+    'Device.Hosts.Host.*.Layer3Interface',
+    'Device.Hosts.Host.*.InterfaceType',
     'Device.Hosts.Host.*.AddressSource',
+    'Device.Hosts.Host.*.DHCPClient',
+    'Device.Hosts.Host.*.AssociatedDevice',
+    'Device.Hosts.Host.*.DeviceID',
+    'Device.Hosts.Host.*.DeviceRole',
+    'Device.Hosts.Host.*.FriendlyName',
+    'Device.Hosts.Host.*.Manufacturer',
+    'Device.Hosts.Host.*.ModelName',
+    'Device.Hosts.Host.*.OperatingSystem',
+    'Device.Hosts.Host.*.ParentNodeID',
+    'Device.Hosts.Host.*.SignalStrength',
+    'Device.Hosts.Host.*.LastDataDownlinkRate',
+    'Device.Hosts.Host.*.LastDataUplinkRate',
+    'Device.Hosts.Host.*.IPv4Address.*.IPAddress',
     'Device.Hosts.Host.*.IPv6Address.*.IPAddress',
   ];
 
@@ -80,8 +139,23 @@ class ConnectedDevices {
         response['${p}IPAddress'],
         response['${p}HostName'],
         response['${p}Active'],
+        response['${p}ActiveLastChange'],
         response['${p}Layer1Interface'],
-        response['${p}AddressSource']
+        response['${p}Layer3Interface'],
+        response['${p}InterfaceType'],
+        response['${p}AddressSource'],
+        response['${p}DHCPClient'],
+        response['${p}AssociatedDevice'],
+        response['${p}DeviceID'],
+        response['${p}DeviceRole'],
+        response['${p}FriendlyName'],
+        response['${p}Manufacturer'],
+        response['${p}ModelName'],
+        response['${p}OperatingSystem'],
+        response['${p}ParentNodeID'],
+        response['${p}SignalStrength'],
+        response['${p}LastDataDownlinkRate'],
+        response['${p}LastDataUplinkRate']
       ].every((v) =>
           v == null ||
           v == '' ||
@@ -89,7 +163,7 @@ class ConnectedDevices {
           v == 0 ||
           v == false ||
           v == 'false')) continue;
-      final childBase_0 = '${p}IPv6Address.';
+      final childBase_0 = '${p}IPv4Address.';
       final childIds_0 = <String>{};
       for (final key in response.keys) {
         if (key.startsWith(childBase_0)) {
@@ -101,12 +175,32 @@ class ConnectedDevices {
       final childSorted_0 = childIds_0.toList()
         ..sort(
             (a, b) => (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
-      final ipv6Addresses = <ConnectedDeviceIpv6>[];
+      final ipv4Addresses = <ConnectedDeviceIpv4>[];
       for (final cid_0 in childSorted_0) {
         final cp_0 = '${childBase_0}${cid_0}.';
-        ipv6Addresses.add(ConnectedDeviceIpv6(
+        ipv4Addresses.add(ConnectedDeviceIpv4(
           instancePath: cp_0,
           address: (response['${cp_0}IPAddress'] ?? '') as String,
+        ));
+      }
+      final childBase_1 = '${p}IPv6Address.';
+      final childIds_1 = <String>{};
+      for (final key in response.keys) {
+        if (key.startsWith(childBase_1)) {
+          final rest = key.substring(childBase_1.length);
+          final dot = rest.indexOf('.');
+          if (dot > 0) childIds_1.add(rest.substring(0, dot));
+        }
+      }
+      final childSorted_1 = childIds_1.toList()
+        ..sort(
+            (a, b) => (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
+      final ipv6Addresses = <ConnectedDeviceIpv6>[];
+      for (final cid_1 in childSorted_1) {
+        final cp_1 = '${childBase_1}${cid_1}.';
+        ipv6Addresses.add(ConnectedDeviceIpv6(
+          instancePath: cp_1,
+          address: (response['${cp_1}IPAddress'] ?? '') as String,
         ));
       }
       final missing = <String>[];
@@ -128,10 +222,57 @@ class ConnectedDevices {
         isActive: response['${p}Active'] == true ||
             response['${p}Active'] == 'true' ||
             response['${p}Active'] == '1',
+        activeLastChange: response.containsKey('${p}ActiveLastChange')
+            ? response['${p}ActiveLastChange'] as String
+            : null,
         interface_: (response['${p}Layer1Interface'] ?? '') as String,
+        layer3Interface: response.containsKey('${p}Layer3Interface')
+            ? response['${p}Layer3Interface'] as String
+            : null,
+        interfaceType: response.containsKey('${p}InterfaceType')
+            ? response['${p}InterfaceType'] as String
+            : null,
         addressSource: response.containsKey('${p}AddressSource')
             ? response['${p}AddressSource'] as String
             : null,
+        dhcpClient: response.containsKey('${p}DHCPClient')
+            ? response['${p}DHCPClient'] as String
+            : null,
+        associatedDevice: response.containsKey('${p}AssociatedDevice')
+            ? response['${p}AssociatedDevice'] as String
+            : null,
+        deviceId: response.containsKey('${p}DeviceID')
+            ? response['${p}DeviceID'] as String
+            : null,
+        deviceRole: response.containsKey('${p}DeviceRole')
+            ? response['${p}DeviceRole'] as String
+            : null,
+        friendlyName: response.containsKey('${p}FriendlyName')
+            ? response['${p}FriendlyName'] as String
+            : null,
+        manufacturer: response.containsKey('${p}Manufacturer')
+            ? response['${p}Manufacturer'] as String
+            : null,
+        modelName: response.containsKey('${p}ModelName')
+            ? response['${p}ModelName'] as String
+            : null,
+        operatingSystem: response.containsKey('${p}OperatingSystem')
+            ? response['${p}OperatingSystem'] as String
+            : null,
+        parentNodeId: response.containsKey('${p}ParentNodeID')
+            ? response['${p}ParentNodeID'] as String
+            : null,
+        signalStrength: response.containsKey('${p}SignalStrength')
+            ? int.tryParse(response['${p}SignalStrength']?.toString() ?? '')
+            : null,
+        lastDataDownlinkRate: response.containsKey('${p}LastDataDownlinkRate')
+            ? int.tryParse(
+                response['${p}LastDataDownlinkRate']?.toString() ?? '')
+            : null,
+        lastDataUplinkRate: response.containsKey('${p}LastDataUplinkRate')
+            ? int.tryParse(response['${p}LastDataUplinkRate']?.toString() ?? '')
+            : null,
+        ipv4Addresses: ipv4Addresses,
         ipv6Addresses: ipv6Addresses,
       ));
     }

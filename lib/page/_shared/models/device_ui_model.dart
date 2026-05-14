@@ -31,6 +31,14 @@ class DeviceUIModel extends Equatable {
   final String? parentNodeId; // Connected mesh node device ID
   final String? parentNodeName; // Mesh node model name (display)
 
+  // ─── Device classification (from Hosts) ───
+  final String? deviceRole; // "master" / "slave" / "client"
+  final String? interfaceType; // "WiFi" / "Ethernet" / etc.
+  final String? friendlyName; // User-friendly device name
+  final String? manufacturer; // Device manufacturer
+  final String? modelName; // Device model name
+  final String? operatingSystem; // Device OS
+
   const DeviceUIModel({
     required this.mac,
     required this.ip,
@@ -46,12 +54,22 @@ class DeviceUIModel extends Equatable {
     this.ipv6Addresses = const [],
     this.parentNodeId,
     this.parentNodeName,
+    this.deviceRole,
+    this.interfaceType,
+    this.friendlyName,
+    this.manufacturer,
+    this.modelName,
+    this.operatingSystem,
   });
 
   // ─── Computed getters ───
 
-  /// Display name: hostName if available, otherwise MAC.
-  String get displayName => hostName.isNotEmpty ? hostName : mac;
+  /// Display name: friendlyName > hostName > MAC.
+  String get displayName {
+    if (friendlyName != null && friendlyName!.isNotEmpty) return friendlyName!;
+    if (hostName.isNotEmpty) return hostName;
+    return mac;
+  }
 
   /// Signal quality: 0.0–1.0, mapped from RSSI.
   /// -30 dBm (excellent) → 1.0, -90 dBm (poor) → 0.0
@@ -88,5 +106,11 @@ class DeviceUIModel extends Equatable {
         ssidName,
         parentNodeId,
         parentNodeName,
+        deviceRole,
+        interfaceType,
+        friendlyName,
+        manufacturer,
+        modelName,
+        operatingSystem,
       ];
 }

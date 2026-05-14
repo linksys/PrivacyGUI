@@ -22,8 +22,8 @@ class UspConnectedDevicesCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final devices = this.devices ??
-        ref.watch(devicesDataProvider).valueOrNull?.deviceModels;
+    final devicesData = ref.watch(devicesDataProvider).valueOrNull;
+    final devices = this.devices ?? devicesData?.clientDevices;
     if (devices == null) return const CardSkeleton.list(rows: 3);
     final activeDevices = devices.where((d) => d.isActive).toList();
     final inactiveDevices = devices.where((d) => !d.isActive).toList();
@@ -133,8 +133,13 @@ class UspConnectedDevicesCard extends ConsumerWidget {
               if (device.parentNodeName != null)
                 _buildParentNodeBadge(context, device.parentNodeName!),
               AppGap.xxs(),
-              if (device.isWifi && device.signalStrength != null)
-                UspSignalStrengthIndicator(rssi: device.signalStrength!)
+              if (device.isWifi)
+                device.signalStrength != null
+                    ? UspSignalStrengthIndicator(rssi: device.signalStrength!)
+                    : AppText.bodySmall(
+                        'WiFi',
+                        color: scheme.onSurfaceVariant,
+                      )
               else
                 AppText.bodySmall(
                   'Wired',

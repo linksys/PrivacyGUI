@@ -177,6 +177,10 @@ class UspDevicesDataService {
         manufacturer: node.manufacturer.trim(),
         serialNumber: node.serialNumber.trim(),
         softwareVersion: node.softwareVersion.trim(),
+        backhaulAlId: node.backhaulAlId.trim(),
+        backhaulMacAddress: node.backhaulMacAddress.trim(),
+        backhaulMediaType: node.backhaulMediaType.trim(),
+        backhaulPhyRate: node.backhaulPhyRate,
       ));
     }
 
@@ -260,7 +264,7 @@ class UspDevicesDataService {
     required String gatewayName,
   }) {
     return connectedDevices.items
-        .where((d) => d.interface_.isNotEmpty)
+        .where((d) => d.interface_.isNotEmpty || d.isActive)
         .map((d) => _toDeviceUIModel(
             d, wifiClientMap, connectionDetailMap, meshTopology, gatewayName))
         .toList();
@@ -271,7 +275,19 @@ class UspDevicesDataService {
     required List<DeviceUIModel> deviceModels,
     required SystemInfoUIModel systemInfo,
   }) {
-    if (meshTopology.isEmpty) {
+    // Extract mesh nodes from Hosts (deviceRole = master/slave).
+    // This is available immediately without waiting for DataElements fetch.
+    final meshDevices = deviceModels
+        .where((d) => d.deviceRole == 'master' || d.deviceRole == 'slave')
+        .toList();
+
+    // Client devices only (excluding mesh nodes).
+    final clientDevices = deviceModels
+        .where((d) => d.deviceRole != 'master' && d.deviceRole != 'slave')
+        .toList();
+
+    // If no mesh devices found in Hosts, create gateway-only node.
+    if (meshDevices.isEmpty) {
       return [
         NodeUIModel(
           deviceId: 'gateway',
@@ -280,33 +296,75 @@ class UspDevicesDataService {
           serialNumber: systemInfo.serialNumber,
           softwareVersion: systemInfo.softwareVersion,
           isMaster: true,
-          connectedDeviceCount: deviceModels.where((d) => d.isActive).length,
+          connectedDeviceCount: clientDevices.where((d) => d.isActive).length,
         ),
       ];
     }
 
-    return meshTopology.nodes.asMap().entries.map((entry) {
-      final index = entry.key;
-      final node = entry.value;
-      final isMaster = index == 0;
+    // Build nodes from Hosts deviceRole, enrich with DataElements if available.
+    final nodes = <NodeUIModel>[];
 
-      final connectedCount = deviceModels
+    // Find master first.
+    final master = meshDevices.firstWhere(
+      (d) => d.deviceRole == 'master',
+      orElse: () => meshDevices.first,
+    );
+
+    // Master node — use systemInfo for details (Hosts doesn't have model/firmware).
+    final masterMeshInfo = meshTopology.nodes.isNotEmpty
+        ? meshTopology.nodes.first
+        : null;
+    final masterConnectedCount = clientDevices
+        .where((d) =>
+            d.isActive &&
+            (d.parentNodeId == null ||
+                d.parentNodeId!.toUpperCase() == master.mac.toUpperCase() ||
+                (masterMeshInfo != null &&
+                    d.parentNodeId!.toUpperCase() ==
+                        masterMeshInfo.deviceId.toUpperCase())))
+        .length;
+
+    nodes.add(NodeUIModel(
+      deviceId: master.mac,
+      model: masterMeshInfo?.model ?? systemInfo.modelName,
+      manufacturer: masterMeshInfo?.manufacturer ?? systemInfo.manufacturer,
+      serialNumber: masterMeshInfo?.serialNumber ?? systemInfo.serialNumber,
+      softwareVersion:
+          masterMeshInfo?.softwareVersion ?? systemInfo.softwareVersion,
+      isMaster: true,
+      connectedDeviceCount: masterConnectedCount,
+    ));
+
+    // Slave nodes.
+    for (final slave in meshDevices.where((d) => d.deviceRole == 'slave')) {
+      final slaveMeshInfo = meshTopology.nodes
+          .where((n) => n.deviceId.toUpperCase() == slave.mac.toUpperCase())
+          .firstOrNull;
+
+      final slaveConnectedCount = clientDevices
           .where((d) =>
               d.isActive &&
               d.parentNodeId != null &&
-              d.parentNodeId!.toUpperCase() == node.deviceId.toUpperCase())
+              (d.parentNodeId!.toUpperCase() == slave.mac.toUpperCase() ||
+                  (slaveMeshInfo != null &&
+                      d.parentNodeId!.toUpperCase() ==
+                          slaveMeshInfo.deviceId.toUpperCase())))
           .length;
 
-      return NodeUIModel(
-        deviceId: node.deviceId,
-        model: node.model,
-        manufacturer: node.manufacturer,
-        serialNumber: node.serialNumber,
-        softwareVersion: node.softwareVersion,
-        isMaster: isMaster,
-        connectedDeviceCount: connectedCount,
-      );
-    }).toList();
+      nodes.add(NodeUIModel(
+        deviceId: slave.mac,
+        model: slaveMeshInfo?.model ?? slave.modelName ?? '',
+        manufacturer: slaveMeshInfo?.manufacturer ?? slave.manufacturer ?? '',
+        serialNumber: slaveMeshInfo?.serialNumber ?? '',
+        softwareVersion: slaveMeshInfo?.softwareVersion ?? '',
+        isMaster: false,
+        connectedDeviceCount: slaveConnectedCount,
+        backhaulMediaType: slaveMeshInfo?.backhaulMediaType ?? '',
+        backhaulPhyRate: slaveMeshInfo?.backhaulPhyRate ?? 0,
+      ));
+    }
+
+    return nodes;
   }
 
   DeviceUIModel _toDeviceUIModel(
@@ -317,7 +375,11 @@ class UspDevicesDataService {
     String gatewayName,
   ) {
     final mac = device.macAddress.trim().toUpperCase();
-    final isWifi = device.interface_.toLowerCase().contains('wifi');
+    // Determine WiFi via Layer1Interface or InterfaceType (fallback for empty Layer1Interface).
+    final interfaceType = device.interfaceType?.toLowerCase() ?? '';
+    final isWifi = device.interface_.toLowerCase().contains('wifi') ||
+        interfaceType.contains('wi-fi') ||
+        interfaceType.contains('wifi');
     final wifiClient = wifiClientMap[mac];
     final detail = connectionDetailMap[mac];
 
@@ -356,13 +418,25 @@ class UspDevicesDataService {
           .map((e) => e.address)
           .where((a) => a.isNotEmpty)
           .toList(),
-      signalStrength: isWifi ? wifiClient?.signalStrength : null,
-      downlinkRate: isWifi ? wifiClient?.lastDataDownlinkRate : null,
-      uplinkRate: isWifi ? wifiClient?.lastDataUplinkRate : null,
+      // Prefer Hosts data, fallback to WiFi STA table data.
+      signalStrength:
+          isWifi ? (device.signalStrength ?? wifiClient?.signalStrength) : null,
+      downlinkRate: isWifi
+          ? (device.lastDataDownlinkRate ?? wifiClient?.lastDataDownlinkRate)
+          : null,
+      uplinkRate: isWifi
+          ? (device.lastDataUplinkRate ?? wifiClient?.lastDataUplinkRate)
+          : null,
       band: detail?.band,
       ssidName: detail?.ssidName,
       parentNodeId: parentNodeId,
       parentNodeName: parentNodeName,
+      deviceRole: device.deviceRole,
+      interfaceType: device.interfaceType,
+      friendlyName: device.friendlyName,
+      manufacturer: device.manufacturer,
+      modelName: device.modelName,
+      operatingSystem: device.operatingSystem,
     );
   }
 }

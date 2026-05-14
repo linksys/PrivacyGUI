@@ -32,7 +32,7 @@ class _UspDeviceListViewState extends ConsumerState<UspDeviceListView> {
     final asyncDevices = ref.watch(devicesDataProvider);
     final devices = ref.watch(filteredDeviceListProvider);
     final filter = ref.watch(deviceFilterConfigProvider);
-    final totalCount = asyncDevices.valueOrNull?.deviceModels.length ?? 0;
+    final totalCount = asyncDevices.valueOrNull?.totalClientCount ?? 0;
 
     return UiKitPageView.withSliver(
       scrollable: true,

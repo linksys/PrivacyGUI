@@ -100,8 +100,14 @@ class UspTopologyBuilder {
       }
     }
 
-    // Client nodes from DeviceUIModel
+    // Client nodes from DeviceUIModel (excluding mesh nodes)
     for (final device in devices) {
+      // Skip devices that are mesh nodes (master/slave) — already rendered
+      // as gateway or extenders. Only show "client" role devices.
+      if (device.deviceRole == 'master' || device.deviceRole == 'slave') {
+        continue;
+      }
+
       final clientId = 'client-${device.mac}';
       final isEthernet = !device.isWifi;
 

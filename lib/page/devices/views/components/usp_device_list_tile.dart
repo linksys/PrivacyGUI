@@ -158,7 +158,8 @@ class UspDeviceListTile extends StatelessWidget {
         if (device.ssidName != null && device.ssidName!.isNotEmpty)
           device.ssidName!,
       ].join(' · ');
-      if (bandSsid.isNotEmpty) parts.add(bandSsid);
+      // Show "WiFi" fallback when no band/SSID data available.
+      parts.add(bandSsid.isNotEmpty ? bandSsid : 'WiFi');
     } else {
       parts.add('Ethernet');
     }

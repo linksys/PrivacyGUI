@@ -46,8 +46,10 @@ class UspNetworkTopologyCard extends ConsumerWidget {
       // updated to include ring extents.
       coverageRingScale: 0.85,
     );
-    final clientCount = devices.length;
-    final useRing = clientCount >= 8;
+    final onlineCount = devicesData?.onlineClientCount ??
+        devices.where((d) => d.isActive).length;
+    final totalCount = devicesData?.totalClientCount ?? devices.length;
+    final useRing = totalCount >= 8;
 
     return AppCard(
       child: Column(
@@ -58,7 +60,7 @@ class UspNetworkTopologyCard extends ConsumerWidget {
             children: [
               AppText.titleMedium('Network Topology'),
               AppText.labelLarge(
-                '${devices.where((d) => d.isActive).length} / ${devices.length} online',
+                '$onlineCount / $totalCount online',
               ),
             ],
           ),

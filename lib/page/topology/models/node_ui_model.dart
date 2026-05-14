@@ -14,6 +14,10 @@ class NodeUIModel extends Equatable {
   final bool isMaster; // First node in DataElements = gateway
   final int connectedDeviceCount; // Devices connected to this node
 
+  // ─── Backhaul info (for child nodes) ───
+  final String backhaulMediaType; // "IEEE 802.11ax" / "Ethernet"
+  final int backhaulPhyRate; // PHY rate in Mbps
+
   const NodeUIModel({
     required this.deviceId,
     required this.model,
@@ -22,6 +26,8 @@ class NodeUIModel extends Equatable {
     this.softwareVersion = '',
     this.isMaster = false,
     this.connectedDeviceCount = 0,
+    this.backhaulMediaType = '',
+    this.backhaulPhyRate = 0,
   });
 
   /// Display name: model if available, otherwise deviceId.
@@ -29,6 +35,9 @@ class NodeUIModel extends Equatable {
 
   /// Role label for UI display.
   String get roleLabel => isMaster ? 'Master' : 'Slave';
+
+  /// Whether this node has backhaul info (i.e., it's a child node).
+  bool get hasBackhaul => backhaulMediaType.isNotEmpty;
 
   @override
   List<Object?> get props => [
@@ -39,5 +48,7 @@ class NodeUIModel extends Equatable {
         softwareVersion,
         isMaster,
         connectedDeviceCount,
+        backhaulMediaType,
+        backhaulPhyRate,
       ];
 }

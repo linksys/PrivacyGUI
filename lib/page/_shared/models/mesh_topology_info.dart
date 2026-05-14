@@ -10,6 +10,12 @@ class MeshNodeInfo {
   final String serialNumber; // SerialNumber
   final String softwareVersion; // SoftwareVersion
 
+  // Backhaul info (for child nodes)
+  final String backhaulAlId; // Parent node's AL ID (MAC)
+  final String backhaulMacAddress; // Backhaul interface MAC
+  final String backhaulMediaType; // e.g. "IEEE 802.11ax"
+  final int backhaulPhyRate; // PHY rate in Mbps
+
   const MeshNodeInfo({
     required this.instancePath,
     required this.deviceId,
@@ -17,7 +23,14 @@ class MeshNodeInfo {
     this.manufacturer = '',
     this.serialNumber = '',
     this.softwareVersion = '',
+    this.backhaulAlId = '',
+    this.backhaulMacAddress = '',
+    this.backhaulMediaType = '',
+    this.backhaulPhyRate = 0,
   });
+
+  /// Whether this node has backhaul info (i.e., it's a child node).
+  bool get hasBackhaul => backhaulAlId.isNotEmpty;
 }
 
 /// Result of mesh node enrichment.

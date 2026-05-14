@@ -234,6 +234,12 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
   // ===========================================================================
 
   Widget _buildWifiDetailsCard(BuildContext context, DeviceUIModel device) {
+    final hasSignalData = device.signalStrength != null;
+    final hasSpeedData =
+        device.downlinkRate != null || device.uplinkRate != null;
+    final hasBandSsid = device.band != null || device.ssidName != null;
+    final hasAnyData = hasSignalData || hasSpeedData || hasBandSsid;
+
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -243,13 +249,36 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
             title: 'Signal & Speed',
           ),
           AppGap.xl(),
-          if (device.signalStrength != null) ...[
+          if (!hasAnyData)
+            Container(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(AppSpacing.sm),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.info_outline,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    size: 20,
+                  ),
+                  AppGap.sm(),
+                  Expanded(
+                    child: AppText.bodyMedium(
+                      'Signal data not available for this device.',
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          if (hasSignalData) ...[
             _buildSignalSection(context, device),
             AppGap.lg(),
           ],
-          if (device.downlinkRate != null || device.uplinkRate != null)
-            _buildSpeedCards(context, device),
-          if (device.band != null || device.ssidName != null) ...[
+          if (hasSpeedData) _buildSpeedCards(context, device),
+          if (hasBandSsid) ...[
             AppGap.lg(),
             Row(
               children: [

@@ -51,6 +51,10 @@ class MeshNode {
   final String manufacturer;
   final String serialNumber;
   final String softwareVersion;
+  final String backhaulAlId;
+  final String backhaulMacAddress;
+  final String backhaulMediaType;
+  final int backhaulPhyRate;
   final List<MeshRadio> radios;
 
   const MeshNode({
@@ -60,6 +64,10 @@ class MeshNode {
     required this.manufacturer,
     required this.serialNumber,
     required this.softwareVersion,
+    required this.backhaulAlId,
+    required this.backhaulMacAddress,
+    required this.backhaulMediaType,
+    required this.backhaulPhyRate,
     required this.radios,
   });
 }
@@ -76,6 +84,10 @@ class DataElementsNetwork {
     'Device.WiFi.DataElements.Network.Device.*.Manufacturer',
     'Device.WiFi.DataElements.Network.Device.*.SerialNumber',
     'Device.WiFi.DataElements.Network.Device.*.SoftwareVersion',
+    'Device.WiFi.DataElements.Network.Device.*.BackhaulALID',
+    'Device.WiFi.DataElements.Network.Device.*.BackhaulMACAddress',
+    'Device.WiFi.DataElements.Network.Device.*.BackhaulMediaType',
+    'Device.WiFi.DataElements.Network.Device.*.BackhaulPHYRate',
     'Device.WiFi.DataElements.Network.Device.*.Radio.*.BSS.*.BSSID',
     'Device.WiFi.DataElements.Network.Device.*.Radio.*.BSS.*.SSID',
     'Device.WiFi.DataElements.Network.Device.*.Radio.*.BSS.*.STA.*.MACAddress',
@@ -108,7 +120,11 @@ class DataElementsNetwork {
         response['${p}ManufacturerModel'],
         response['${p}Manufacturer'],
         response['${p}SerialNumber'],
-        response['${p}SoftwareVersion']
+        response['${p}SoftwareVersion'],
+        response['${p}BackhaulALID'],
+        response['${p}BackhaulMACAddress'],
+        response['${p}BackhaulMediaType'],
+        response['${p}BackhaulPHYRate']
       ].every((v) =>
           v == null ||
           v == '' ||
@@ -191,6 +207,14 @@ class DataElementsNetwork {
         missing.add('${p}SerialNumber');
       if (!response.containsKey('${p}SoftwareVersion'))
         missing.add('${p}SoftwareVersion');
+      if (!response.containsKey('${p}BackhaulALID'))
+        missing.add('${p}BackhaulALID');
+      if (!response.containsKey('${p}BackhaulMACAddress'))
+        missing.add('${p}BackhaulMACAddress');
+      if (!response.containsKey('${p}BackhaulMediaType'))
+        missing.add('${p}BackhaulMediaType');
+      if (!response.containsKey('${p}BackhaulPHYRate'))
+        missing.add('${p}BackhaulPHYRate');
       if (missing.isNotEmpty) {
         throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
       }
@@ -201,6 +225,13 @@ class DataElementsNetwork {
         manufacturer: (response['${p}Manufacturer'] ?? '') as String,
         serialNumber: (response['${p}SerialNumber'] ?? '') as String,
         softwareVersion: (response['${p}SoftwareVersion'] ?? '') as String,
+        backhaulAlId: (response['${p}BackhaulALID'] ?? '') as String,
+        backhaulMacAddress:
+            (response['${p}BackhaulMACAddress'] ?? '') as String,
+        backhaulMediaType: (response['${p}BackhaulMediaType'] ?? '') as String,
+        backhaulPhyRate:
+            int.tryParse(response['${p}BackhaulPHYRate']?.toString() ?? '') ??
+                0,
         radios: radios,
       ));
     }
