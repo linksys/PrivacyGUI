@@ -499,10 +499,8 @@ void _validateConfig(GoldenTestConfig config) {
   // viewName: snake_case, non-empty
   assert(RegExp(r'^[a-z][a-z0-9_]*$').hasMatch(config.viewName));
 
-  // Required states: every view must define loading, error, data
-  const requiredStates = {'loading', 'error', 'data'};
-  final missing = requiredStates.difference(config.states.keys.toSet());
-  assert(missing.isEmpty, '${config.viewName}: missing required states: $missing');
+  // At least one state must be defined
+  assert(config.states.isNotEmpty, 'states must contain at least one entry (e.g., "data").');
 
   // All state/interaction keys: snake_case
   final allKeys = {...config.states.keys, ...?config.interactions?.keys};
@@ -533,7 +531,7 @@ done
 
 | Layer | When | Catches |
 |-------|------|---------|
-| Config validation | Test execution | Wrong viewName format, missing loading/error/data, bad key naming |
+| Config validation | Test execution | Wrong viewName format, empty states map, bad key naming |
 | CI script | PR merge gate | Missing golden test files for USP views |
 
 ---
@@ -598,17 +596,17 @@ ci/
 
 Any FeatureState value that causes the view to render differently — whether through conditional branches, visibility toggles, or data variations — must be represented as a separate entry in the `states` map.
 
-### Required States (minimum)
+### Minimum Requirement
 
-Every view config MUST include at minimum:
+Every view config MUST include at least one state entry (typically `data`).
 
-1. **`loading`** — FeatureState with `status.isLoading == true`
-2. **`error`** — FeatureState with `status.errorMessage != null`
-3. **`data`** — FeatureState with valid data, default/clean state
+### Recommended States for Stateful Views
+
+Views that have provider-driven async state (loading, error, data) SHOULD include all three. However, static pages (e.g., navigation menus) that render identically regardless of state only need `data`. Loading and error UI is shared across all pages — a single shared golden test covers those components.
 
 ### Additional States
 
-Beyond the required three, enumerate every state that produces a distinct visual output:
+Beyond the basics, enumerate every state that produces a distinct visual output:
 
 - **Saving state** (`status.isSaving == true`) if the view has save functionality
 - **Edit dirty** (`settings.isDirty == true`) if the view has edit mode

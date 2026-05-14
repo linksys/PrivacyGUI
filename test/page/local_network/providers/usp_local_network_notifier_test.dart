@@ -116,7 +116,9 @@ void main() {
       final notifier = container.read(uspLocalNetworkProvider.notifier);
       notifier.updateSetting((m) => m.copyWith(ipAddress: '192.168.2.1'));
 
-      verify(() => mockService.lockedOctetCount('255.255.255.0')).called(1);
+      // lockedOctetCount called: once in performFetch, once in auto-sync,
+      // once to update status.lockedOctetCount.
+      verify(() => mockService.lockedOctetCount('255.255.255.0')).called(3);
       // syncPrefix called for both min and max addresses.
       verify(() => mockService.syncPrefix(any(), '192.168.2.1', 3)).called(2);
       container.dispose();

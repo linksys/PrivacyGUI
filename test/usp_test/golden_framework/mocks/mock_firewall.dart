@@ -17,7 +17,8 @@ class FixedFirewallNotifier extends UspFirewallNotifier {
   Future<(FirewallSettings?, FirewallStatus?)> performFetch({
     bool forceRemote = false,
     bool updateStatusOnly = false,
-  }) async => (null, null);
+  }) async =>
+      (null, null);
 
   @override
   Future<void> performSave() async {}
@@ -28,5 +29,5 @@ class FixedFirewallNotifier extends UspFirewallNotifier {
 
 /// Returns provider overrides for firewall golden tests.
 List<Override> firewallOverrides(FirewallFeatureState state) => [
-  uspFirewallProvider.overrideWith(() => FixedFirewallNotifier(state)),
-];
+      uspFirewallProvider.overrideWith(() => FixedFirewallNotifier(state)),
+    ];

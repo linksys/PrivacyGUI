@@ -40,6 +40,8 @@ void main() {
 
   setUp(() {
     mockService = MockUspStaticRoutingService();
+    when(() => mockService.mapDisplayToInterface(any()))
+        .thenAnswer((inv) => inv.positionalArguments[0] as String);
   });
 
   ProviderContainer createContainer() {

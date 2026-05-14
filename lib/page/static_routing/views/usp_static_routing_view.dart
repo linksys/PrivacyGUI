@@ -7,7 +7,6 @@ import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/static_routing/models/static_routing_feature_state.dart';
 import 'package:privacy_gui/page/static_routing/models/static_routing_ui_model.dart';
 import 'package:privacy_gui/page/static_routing/providers/usp_static_routing_notifier.dart';
-import 'package:privacy_gui/page/static_routing/services/usp_static_routing_service.dart';
 import 'package:privacy_gui/page/static_routing/views/dialogs/static_route_dialog.dart';
 import 'package:privacy_gui/page/shell/usp_top_bar.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -201,7 +200,6 @@ class UspStaticRoutingView extends ConsumerWidget {
       builder: (_) => const StaticRouteDialog(),
     );
     if (result == null || !context.mounted) return;
-    final svc = ref.read(uspStaticRoutingServiceProvider);
     ref.read(uspStaticRoutingProvider.notifier).addRoute(
           StaticRouteUIModel(
             enabled: result.enabled,
@@ -210,7 +208,7 @@ class UspStaticRoutingView extends ConsumerWidget {
             destSubnetMask: result.destSubnetMask,
             gatewayIpAddress: result.gatewayIpAddress,
             interfaceName: result.interfaceName,
-            interfacePath: svc.mapDisplayToInterface(result.interfaceName),
+            interfacePath: '',
           ),
         );
   }
@@ -222,7 +220,6 @@ class UspStaticRoutingView extends ConsumerWidget {
       builder: (_) => StaticRouteDialog(route: route),
     );
     if (result == null || !context.mounted) return;
-    final svc = ref.read(uspStaticRoutingServiceProvider);
     ref.read(uspStaticRoutingProvider.notifier).editRoute(
           index,
           route.copyWith(
@@ -232,7 +229,6 @@ class UspStaticRoutingView extends ConsumerWidget {
             destSubnetMask: result.destSubnetMask,
             gatewayIpAddress: result.gatewayIpAddress,
             interfaceName: result.interfaceName,
-            interfacePath: svc.mapDisplayToInterface(result.interfaceName),
           ),
         );
   }

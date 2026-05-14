@@ -82,7 +82,10 @@ class UspLocalNetworkNotifier
 
       return (
         LocalNetworkSettings(model: uiModel),
-        const LocalNetworkStatus(isLoading: false),
+        LocalNetworkStatus(
+          isLoading: false,
+          lockedOctetCount: _svc.lockedOctetCount(uiModel.subnetMask),
+        ),
       );
     } on ServiceError catch (e) {
       logger.e('[USP][Network][LAN]: Fetch failed', error: e);
@@ -174,7 +177,10 @@ class UspLocalNetworkNotifier
       settings: state.settings.update(
         current.copyWith(model: newModel),
       ),
-      status: state.status.copyWith(validationErrors: errors),
+      status: state.status.copyWith(
+        validationErrors: errors,
+        lockedOctetCount: _svc.lockedOctetCount(newModel.subnetMask),
+      ),
     );
   }
 }

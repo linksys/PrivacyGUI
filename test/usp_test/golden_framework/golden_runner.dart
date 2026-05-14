@@ -21,7 +21,11 @@ void runViewGoldenTests(GoldenTestConfig config) {
         for (final locale in config.locales) {
           for (final theme in config.themes) {
             final name = _goldenFileName(
-              config.viewName, stateEntry.key, device, locale, theme,
+              config.viewName,
+              stateEntry.key,
+              device,
+              locale,
+              theme,
             );
 
             testGoldens(
@@ -61,7 +65,11 @@ void runViewGoldenTests(GoldenTestConfig config) {
           for (final locale in config.locales) {
             for (final theme in config.themes) {
               final name = _goldenFileName(
-                config.viewName, interactionEntry.key, device, locale, theme,
+                config.viewName,
+                interactionEntry.key,
+                device,
+                locale,
+                theme,
               );
 
               testGoldens(
@@ -127,13 +135,10 @@ void _validateConfig(GoldenTestConfig config) {
     );
   }
 
-  const requiredStates = ['loading', 'error', 'data'];
-  for (final requiredState in requiredStates) {
-    if (!config.states.containsKey(requiredState)) {
-      throw ArgumentError(
-        'Missing required state: "$requiredState". All views must define loading, error, and data states.',
-      );
-    }
+  if (config.states.isEmpty) {
+    throw ArgumentError(
+      'states must contain at least one entry (e.g., "data").',
+    );
   }
 
   for (final stateKey in config.states.keys) {

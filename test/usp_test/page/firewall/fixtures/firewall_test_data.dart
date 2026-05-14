@@ -65,12 +65,12 @@ FirewallFeatureState dirtyState({bool isSaving = false}) {
 }
 
 FirewallFeatureState get errorState => FirewallFeatureState(
-  settings: Preservable(
-    original: FirewallSettings.empty(),
-    current: FirewallSettings.empty(),
-  ),
-  status: const FirewallStatus(
-    isLoading: false,
-    errorMessage: 'Connection failed',
-  ),
-);
+      settings: Preservable(
+        original: FirewallSettings.empty(),
+        current: FirewallSettings.empty(),
+      ),
+      status: const FirewallStatus(
+        isLoading: false,
+        errorMessage: 'Connection failed',
+      ),
+    );
