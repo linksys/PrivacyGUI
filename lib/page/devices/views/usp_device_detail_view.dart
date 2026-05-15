@@ -218,9 +218,8 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           DetailCardHeader(
-            icon: hasMultipleInterfaces
-                ? Icons.hub
-                : device.connectionType.icon,
+            icon:
+                hasMultipleInterfaces ? Icons.hub : device.connectionType.icon,
             title: hasMultipleInterfaces
                 ? 'Network Connections (${device.interfaceCount})'
                 : (device.isWifi ? 'WiFi Connection' : 'Wired Connection'),

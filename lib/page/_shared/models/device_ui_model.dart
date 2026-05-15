@@ -97,7 +97,8 @@ class DeviceUIModel extends Equatable {
   final String? manufacturer; // Device manufacturer
   final String? modelName; // Device model name
   final String? operatingSystem; // Device OS
-  final String? hostsDeviceId; // Hosts DeviceID (UUID, last 12 chars = MAC for DataElements match)
+  final String?
+      hostsDeviceId; // Hosts DeviceID (UUID, last 12 chars = MAC for DataElements match)
 
   // ─── Multi-interface grouping (hostname-based) ───
   /// Additional interfaces for this device (when connected via multiple interfaces).

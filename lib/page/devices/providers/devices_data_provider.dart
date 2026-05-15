@@ -165,7 +165,8 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
 
     // Preserve existing mesh topology during refetch to avoid UI flicker.
     // Fire-and-forget will update it shortly after.
-    final existingMesh = state.valueOrNull?.meshTopology ?? MeshTopologyInfo.empty;
+    final existingMesh =
+        state.valueOrNull?.meshTopology ?? MeshTopologyInfo.empty;
 
     // Fire-and-forget: fetch mesh topology in background, then update state.
     _fetchMeshAndUpdate(svc, wifiData, gatewayName, sysData, result);

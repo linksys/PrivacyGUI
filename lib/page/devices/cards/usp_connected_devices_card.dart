@@ -169,5 +169,4 @@ class UspConnectedDevicesCard extends ConsumerWidget {
       ),
     );
   }
-
 }
