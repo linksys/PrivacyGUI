@@ -4,7 +4,7 @@ import 'package:privacy_gui/core/utils/device_image_helper.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
 import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
-import 'package:privacy_gui/page/_shared/models/mesh_topology_info.dart';
+import 'package:privacy_gui/page/topology/models/node_ui_model.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Builds a [MeshTopology] from USP dashboard state for [AppTopology] widget.
@@ -16,19 +16,20 @@ class UspTopologyBuilder {
   static MeshTopology build({
     required SystemInfoUIModel info,
     required List<DeviceUIModel> devices,
-    required List<MeshNodeInfo> meshNodes,
+    required List<NodeUIModel> nodeModels,
     Color? coverageColor,
     double coverageRingScale = 1.0,
   }) {
     final nodes = <MeshNode>[];
     final links = <MeshLink>[];
 
+    // Find master node from nodeModels
+    final masterNode = nodeModels.where((n) => n.isMaster).firstOrNull;
+
     // Gateway node (the router)
     const gatewayId = 'gateway';
-    // For non-mesh (DataElements empty/unsupported), use 'gateway' as a
-    // synthetic identifier so the Detail button can still navigate.
-    final gatewayDeviceId =
-        meshNodes.isNotEmpty ? meshNodes.first.deviceId : 'gateway';
+    // Use master node's deviceId (MAC) for navigation, fallback to 'gateway'
+    final gatewayDeviceId = masterNode?.deviceId ?? 'gateway';
 
     final gatewayIconName = routerIconTestByModel(
       modelNumber: info.modelName,
@@ -36,7 +37,7 @@ class UspTopologyBuilder {
     );
     nodes.add(MeshNode(
       id: gatewayId,
-      name: info.gatewayName,
+      name: masterNode?.displayName ?? info.gatewayName,
       type: MeshNodeType.gateway,
       status: MeshNodeStatus.online,
       image: DeviceImageHelper.getRouterImage(gatewayIconName),
@@ -44,10 +45,10 @@ class UspTopologyBuilder {
       level: 1.0,
       metadata: {
         'deviceId': gatewayDeviceId,
-        'model': info.modelName,
-        'manufacturer': info.manufacturer,
-        'serialNumber': info.serialNumber,
-        'softwareVersion': info.softwareVersion,
+        'model': masterNode?.model ?? info.modelName,
+        'manufacturer': masterNode?.manufacturer ?? info.manufacturer,
+        'serialNumber': masterNode?.serialNumber ?? info.serialNumber,
+        'softwareVersion': masterNode?.softwareVersion ?? info.softwareVersion,
         'isMaster': true,
       },
       coverageRings: coverageColor != null
@@ -56,48 +57,44 @@ class UspTopologyBuilder {
           : null,
     ));
 
-    // Mesh extender nodes (if > 1 node, first is gateway)
-    final hasMesh = meshNodes.length > 1;
+    // Mesh extender nodes (slave nodes)
+    final slaveNodes = nodeModels.where((n) => !n.isMaster).toList();
+    final hasMesh = slaveNodes.isNotEmpty;
     final extenderNodeIds = <String>{};
-    if (hasMesh) {
-      for (var i = 1; i < meshNodes.length; i++) {
-        final meshNode = meshNodes[i];
-        final extenderId = 'extender-${meshNode.deviceId}';
-        extenderNodeIds.add(meshNode.deviceId);
+    for (final slaveNode in slaveNodes) {
+      final extenderId = 'extender-${slaveNode.deviceId}';
+      extenderNodeIds.add(slaveNode.deviceId);
 
-        final extenderIconName = routerIconTestByModel(
-          modelNumber: meshNode.model,
-        );
-        nodes.add(MeshNode(
-          id: extenderId,
-          name: meshNode.model.isNotEmpty
-              ? meshNode.model
-              : 'Extender ${meshNode.deviceId}',
-          type: MeshNodeType.extender,
-          status: MeshNodeStatus.online,
-          parentId: gatewayId,
-          image: DeviceImageHelper.getRouterImage(extenderIconName),
-          level: 0.8,
-          metadata: {
-            'deviceId': meshNode.deviceId,
-            'model': meshNode.model,
-            'manufacturer': meshNode.manufacturer,
-            'serialNumber': meshNode.serialNumber,
-            'softwareVersion': meshNode.softwareVersion,
-            'isMaster': false,
-          },
-          coverageRings: coverageColor != null
-              ? _buildCoverageRings(
-                  MeshNodeType.extender, coverageColor, coverageRingScale)
-              : null,
-        ));
+      final extenderIconName = routerIconTestByModel(
+        modelNumber: slaveNode.model,
+      );
+      nodes.add(MeshNode(
+        id: extenderId,
+        name: slaveNode.displayName,
+        type: MeshNodeType.extender,
+        status: MeshNodeStatus.online,
+        parentId: gatewayId,
+        image: DeviceImageHelper.getRouterImage(extenderIconName),
+        level: 0.8,
+        metadata: {
+          'deviceId': slaveNode.deviceId,
+          'model': slaveNode.model,
+          'manufacturer': slaveNode.manufacturer,
+          'serialNumber': slaveNode.serialNumber,
+          'softwareVersion': slaveNode.softwareVersion,
+          'isMaster': false,
+        },
+        coverageRings: coverageColor != null
+            ? _buildCoverageRings(
+                MeshNodeType.extender, coverageColor, coverageRingScale)
+            : null,
+      ));
 
-        links.add(MeshLink(
-          sourceId: gatewayId,
-          targetId: extenderId,
-          connectionType: ConnectionType.wifi,
-        ));
-      }
+      links.add(MeshLink(
+        sourceId: gatewayId,
+        targetId: extenderId,
+        connectionType: ConnectionType.wifi,
+      ));
     }
 
     // Client nodes from DeviceUIModel (excluding mesh nodes)
@@ -136,7 +133,12 @@ class UspTopologyBuilder {
         extra: device.ip,
         signalQuality: _resolveSignalQuality(device),
         level: _rssiToLevel(device),
-        metadata: {'mac': device.mac},
+        metadata: {
+          'mac': device.mac,
+          'hasMultipleInterfaces': device.hasMultipleInterfaces,
+          'interfaceCount': device.interfaceCount,
+          'allMacAddresses': device.allMacAddresses,
+        },
       ));
 
       links.add(MeshLink(

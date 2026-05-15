@@ -69,6 +69,10 @@ class UspNodeDetailView extends ConsumerWidget {
     return Column(
       children: [
         _buildNodeInfoCard(context, node),
+        if (!node.isMaster && node.hasBackhaul) ...[
+          AppGap.lg(),
+          _buildBackhaulCard(context, node),
+        ],
         AppGap.lg(),
         _buildConnectedDevicesCard(context, detail),
       ],
@@ -82,7 +86,15 @@ class UspNodeDetailView extends ConsumerWidget {
       children: [
         SizedBox(
           width: context.colWidth(4),
-          child: _buildNodeInfoCard(context, node),
+          child: Column(
+            children: [
+              _buildNodeInfoCard(context, node),
+              if (!node.isMaster && node.hasBackhaul) ...[
+                AppGap.lg(),
+                _buildBackhaulCard(context, node),
+              ],
+            ],
+          ),
         ),
         AppGap.gutter(),
         SizedBox(
@@ -148,11 +160,12 @@ class UspNodeDetailView extends ConsumerWidget {
             AppGap.md(),
           ],
           // Model
-          DetailInfoTile(
-            icon: Icons.router,
-            label: 'Model',
-            value: node.model,
-          ),
+          if (node.model.isNotEmpty)
+            DetailInfoTile(
+              icon: Icons.router,
+              label: 'Model',
+              value: node.model,
+            ),
           // Manufacturer
           if (node.manufacturer.isNotEmpty) ...[
             AppGap.md(),
@@ -178,6 +191,38 @@ class UspNodeDetailView extends ConsumerWidget {
               icon: Icons.system_update,
               label: 'Firmware',
               value: node.softwareVersion,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  // ===========================================================================
+  // Backhaul Connection Card (Slave nodes only)
+  // ===========================================================================
+
+  Widget _buildBackhaulCard(BuildContext context, NodeUIModel node) {
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          DetailCardHeader(
+            icon: Icons.sync_alt,
+            title: 'Backhaul Connection',
+          ),
+          AppGap.xl(),
+          DetailInfoTile(
+            icon: Icons.settings_ethernet,
+            label: 'Media Type',
+            value: node.backhaulMediaType,
+          ),
+          if (node.backhaulPhyRate > 0) ...[
+            AppGap.md(),
+            DetailInfoTile(
+              icon: Icons.speed,
+              label: 'PHY Rate',
+              value: '${node.backhaulPhyRate} Mbps',
             ),
           ],
         ],

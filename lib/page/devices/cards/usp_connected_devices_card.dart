@@ -4,6 +4,7 @@ import 'package:privacy_gui/core/utils/device_classifier.dart';
 import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/_shared/components/card_skeleton.dart';
+import 'package:privacy_gui/page/devices/views/components/device_icon_with_badge.dart';
 import 'package:privacy_gui/page/devices/views/components/usp_signal_strength_indicator.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 import 'package:privacy_gui/page/_shared/components/usp_status_dot.dart';
@@ -91,17 +92,18 @@ class UspConnectedDevicesCard extends ConsumerWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Device icon (larger)
+          // Device icon (larger) with multi-interface badge
           Container(
             padding: const EdgeInsets.all(AppSpacing.sm),
             decoration: BoxDecoration(
               color: scheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(AppSpacing.sm),
             ),
-            child: Icon(
-              deviceCategory.icon,
+            child: DeviceIconWithBadge.multiInterface(
+              icon: deviceCategory.icon,
               size: 32,
-              color: scheme.onSurface,
+              iconColor: scheme.onSurface,
+              hasMultipleInterfaces: device.hasMultipleInterfaces,
             ),
           ),
           AppGap.md(),
@@ -167,4 +169,5 @@ class UspConnectedDevicesCard extends ConsumerWidget {
       ),
     );
   }
+
 }

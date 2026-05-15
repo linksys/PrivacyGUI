@@ -98,6 +98,7 @@ class UspDevicesDataService {
       throw mapUspErrorToServiceError(e);
     }
 
+
     final context = DevicesCodegenContext(connectedDevices);
 
     final hostNameByMac = _buildHostNameMap(connectedDevices);
@@ -263,11 +264,80 @@ class UspDevicesDataService {
     required MeshTopologyInfo meshTopology,
     required String gatewayName,
   }) {
-    return connectedDevices.items
+    // Step 1: Build all DeviceUIModels (ungrouped)
+    final allDevices = connectedDevices.items
         .where((d) => d.interface_.isNotEmpty || d.isActive)
         .map((d) => _toDeviceUIModel(
             d, wifiClientMap, connectionDetailMap, meshTopology, gatewayName))
         .toList();
+
+    // Step 2: Group by hostname (empty hostname devices stay ungrouped)
+    // Also exclude mesh nodes (master/slave) from grouping
+    final grouped = <String, List<DeviceUIModel>>{};
+    final ungrouped = <DeviceUIModel>[];
+
+    for (final device in allDevices) {
+      // Mesh nodes should not be grouped
+      if (device.deviceRole == 'master' || device.deviceRole == 'slave') {
+        ungrouped.add(device);
+        continue;
+      }
+
+      final hostname = device.hostName.trim().toLowerCase();
+      if (hostname.isEmpty) {
+        ungrouped.add(device);
+      } else {
+        grouped.putIfAbsent(hostname, () => []).add(device);
+      }
+    }
+
+    // Step 3: Merge devices with same hostname
+    final result = <DeviceUIModel>[];
+
+    for (final devices in grouped.values) {
+      if (devices.length == 1) {
+        result.add(devices.first);
+      } else {
+        result.add(_mergeDevicesByHostname(devices));
+      }
+    }
+
+    result.addAll(ungrouped);
+    return result;
+  }
+
+  /// Merges multiple DeviceUIModels with the same hostname into one.
+  ///
+  /// Primary interface selection priority: active > WiFi > Ethernet.
+  /// Additional interfaces are stored in [DeviceUIModel.additionalInterfaces].
+  DeviceUIModel _mergeDevicesByHostname(List<DeviceUIModel> devices) {
+    // Sort to select primary interface: active first, then WiFi over Ethernet
+    final sorted = List<DeviceUIModel>.from(devices)
+      ..sort((a, b) {
+        // Active interfaces first
+        if (a.isActive != b.isActive) return a.isActive ? -1 : 1;
+        // WiFi preferred (typically has more enrichment data like signal)
+        if (a.isWifi != b.isWifi) return a.isWifi ? -1 : 1;
+        return 0;
+      });
+
+    final primary = sorted.first;
+    final additional = sorted.skip(1).map((d) => DeviceInterfaceInfo(
+          mac: d.mac,
+          ip: d.ip,
+          isWifi: d.isWifi,
+          isActive: d.isActive,
+          layer1Interface: d.layer1Interface,
+          band: d.band,
+          ssidName: d.ssidName,
+          signalStrength: d.signalStrength,
+        )).toList();
+
+    logger.d('[USP][Devices]: Merged ${devices.length} interfaces for '
+        'hostname="${primary.hostName}" — primary=${primary.mac} (${primary.isWifi ? "WiFi" : "Ethernet"}), '
+        'additional=${additional.map((i) => "${i.mac} (${i.isWifi ? "WiFi" : "Ethernet"})").join(", ")}');
+
+    return primary.copyWith(additionalInterfaces: additional);
   }
 
   List<NodeUIModel> _buildNodeUIModels({
@@ -326,6 +396,8 @@ class UspDevicesDataService {
 
     nodes.add(NodeUIModel(
       deviceId: master.mac,
+      friendlyName: master.friendlyName,
+      hostName: master.hostName,
       model: masterMeshInfo?.model ?? systemInfo.modelName,
       manufacturer: masterMeshInfo?.manufacturer ?? systemInfo.manufacturer,
       serialNumber: masterMeshInfo?.serialNumber ?? systemInfo.serialNumber,
@@ -337,9 +409,7 @@ class UspDevicesDataService {
 
     // Slave nodes.
     for (final slave in meshDevices.where((d) => d.deviceRole == 'slave')) {
-      final slaveMeshInfo = meshTopology.nodes
-          .where((n) => n.deviceId.toUpperCase() == slave.mac.toUpperCase())
-          .firstOrNull;
+      final slaveMeshInfo = _findMatchingMeshNode(slave, meshTopology.nodes);
 
       final slaveConnectedCount = clientDevices
           .where((d) =>
@@ -353,6 +423,8 @@ class UspDevicesDataService {
 
       nodes.add(NodeUIModel(
         deviceId: slave.mac,
+        friendlyName: slave.friendlyName,
+        hostName: slave.hostName,
         model: slaveMeshInfo?.model ?? slave.modelName ?? '',
         manufacturer: slaveMeshInfo?.manufacturer ?? slave.manufacturer ?? '',
         serialNumber: slaveMeshInfo?.serialNumber ?? '',
@@ -435,8 +507,40 @@ class UspDevicesDataService {
       interfaceType: device.interfaceType,
       friendlyName: device.friendlyName,
       manufacturer: device.manufacturer,
+      hostsDeviceId: device.deviceId,
       modelName: device.modelName,
       operatingSystem: device.operatingSystem,
     );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Mesh Node Matching
+  // ---------------------------------------------------------------------------
+
+  /// Finds a matching [MeshNodeInfo] for a slave device from Hosts.
+  ///
+  /// Strategy: Extract embedded MAC from Hosts DeviceID (UUID format) and match
+  /// against DataElements node ID.
+  ///
+  /// Hosts DeviceID format: "0217B8A4-1082-4532-8345-80691ABB4694"
+  /// Last 12 chars (no hyphens) = MAC: "80691ABB4694" → matches "80:69:1A:BB:46:94"
+  ///
+  /// Future alternatives if this approach proves unreliable:
+  /// - Match via BSSID: DataElements Radio.*.BSS.*.BSSID = Hosts PhysAddress
+  /// - Match via hostName suffix: "Linksys03027" → SerialNumber ending "03027"
+  MeshNodeInfo? _findMatchingMeshNode(
+    DeviceUIModel slave,
+    List<MeshNodeInfo> meshNodes,
+  ) {
+    final hostsDeviceId =
+        slave.hostsDeviceId?.toUpperCase().replaceAll('-', '') ?? '';
+    if (hostsDeviceId.length < 12) return null;
+
+    final embeddedMac = hostsDeviceId.substring(hostsDeviceId.length - 12);
+
+    return meshNodes.where((n) {
+      final nodeIdNormalized = n.deviceId.toUpperCase().replaceAll(':', '');
+      return nodeIdNormalized == embeddedMac;
+    }).firstOrNull;
   }
 }

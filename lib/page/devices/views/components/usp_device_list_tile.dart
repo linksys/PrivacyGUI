@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:privacy_gui/core/utils/device_classifier.dart';
 import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
 import 'package:privacy_gui/page/_shared/components/usp_status_dot.dart';
+import 'package:privacy_gui/page/devices/views/components/device_icon_with_badge.dart';
 import 'package:privacy_gui/page/devices/views/components/usp_signal_strength_indicator.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -59,10 +60,11 @@ class UspDeviceListTile extends StatelessWidget {
       children: [
         UspStatusDot(isActive: device.isActive),
         AppGap.sm(),
-        Icon(
-          deviceCategory.icon,
+        DeviceIconWithBadge.multiInterface(
+          icon: deviceCategory.icon,
           size: 20,
-          color: scheme.onSurface,
+          iconColor: scheme.onSurface,
+          hasMultipleInterfaces: device.hasMultipleInterfaces,
         ),
         AppGap.sm(),
         Expanded(
@@ -149,7 +151,21 @@ class UspDeviceListTile extends StatelessWidget {
 
   String _buildSubtitle() {
     final parts = <String>[];
-    if (device.isWifi) {
+
+    // Connection type - for multi-interface show both types
+    if (device.hasMultipleInterfaces) {
+      final hasWifi =
+          device.isWifi || device.additionalInterfaces.any((i) => i.isWifi);
+      final hasEthernet =
+          !device.isWifi || device.additionalInterfaces.any((i) => !i.isWifi);
+      if (hasWifi && hasEthernet) {
+        parts.add('WiFi + Ethernet');
+      } else if (hasWifi) {
+        parts.add('WiFi');
+      } else {
+        parts.add('Ethernet');
+      }
+    } else if (device.isWifi) {
       final bandSsid = [
         if (device.band != null && device.band!.isNotEmpty) device.band!,
         if (device.ssidName != null && device.ssidName!.isNotEmpty)

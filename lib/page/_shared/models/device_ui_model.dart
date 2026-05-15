@@ -2,6 +2,49 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 
 // ---------------------------------------------------------------------------
+// Additional Interface Info (for multi-interface devices)
+// ---------------------------------------------------------------------------
+
+/// Information about an additional network interface for a device.
+///
+/// When a device connects via multiple interfaces (e.g., WiFi + Ethernet),
+/// the primary interface is stored in [DeviceUIModel] and additional
+/// interfaces are stored in [DeviceUIModel.additionalInterfaces].
+class DeviceInterfaceInfo extends Equatable {
+  final String mac;
+  final String ip;
+  final bool isWifi;
+  final bool isActive;
+  final String layer1Interface;
+  final String? band;
+  final String? ssidName;
+  final int? signalStrength;
+
+  const DeviceInterfaceInfo({
+    required this.mac,
+    required this.ip,
+    required this.isWifi,
+    required this.isActive,
+    required this.layer1Interface,
+    this.band,
+    this.ssidName,
+    this.signalStrength,
+  });
+
+  @override
+  List<Object?> get props => [
+        mac,
+        ip,
+        isWifi,
+        isActive,
+        layer1Interface,
+        band,
+        ssidName,
+        signalStrength,
+      ];
+}
+
+// ---------------------------------------------------------------------------
 // Connection Type Enum
 // ---------------------------------------------------------------------------
 
@@ -54,6 +97,13 @@ class DeviceUIModel extends Equatable {
   final String? manufacturer; // Device manufacturer
   final String? modelName; // Device model name
   final String? operatingSystem; // Device OS
+  final String? hostsDeviceId; // Hosts DeviceID (UUID, last 12 chars = MAC for DataElements match)
+
+  // ─── Multi-interface grouping (hostname-based) ───
+  /// Additional interfaces for this device (when connected via multiple interfaces).
+  /// Primary interface data is stored in this model's fields; this list contains
+  /// secondary interfaces (e.g., if primary is WiFi, this may contain Ethernet).
+  final List<DeviceInterfaceInfo> additionalInterfaces;
 
   const DeviceUIModel({
     required this.mac,
@@ -76,6 +126,8 @@ class DeviceUIModel extends Equatable {
     this.manufacturer,
     this.modelName,
     this.operatingSystem,
+    this.hostsDeviceId,
+    this.additionalInterfaces = const [],
   });
 
   // ─── Computed getters ───
@@ -138,10 +190,77 @@ class DeviceUIModel extends Equatable {
   /// Whether this is a client device (not a mesh node master/slave).
   bool get isClientDevice => deviceRole != 'master' && deviceRole != 'slave';
 
+  // ─── Multi-interface getters ───
+
+  /// Whether this device has multiple network interfaces.
+  bool get hasMultipleInterfaces => additionalInterfaces.isNotEmpty;
+
+  /// All MAC addresses for this device (primary + additional interfaces).
+  List<String> get allMacAddresses =>
+      [mac, ...additionalInterfaces.map((i) => i.mac)];
+
+  /// Total number of interfaces for this device.
+  int get interfaceCount => 1 + additionalInterfaces.length;
+
+  /// Whether any interface is active (primary or additional).
+  bool get hasAnyActiveInterface =>
+      isActive || additionalInterfaces.any((i) => i.isActive);
+
   /// Signal strength display text (technical value, no i18n needed).
   /// Returns null if no signal data available.
   String? get signalDisplayText =>
       signalStrength != null ? '$signalStrength dBm' : null;
+
+  /// Creates a copy with optional field overrides.
+  DeviceUIModel copyWith({
+    String? mac,
+    String? ip,
+    String? hostName,
+    bool? isActive,
+    bool? isWifi,
+    String? layer1Interface,
+    int? signalStrength,
+    int? downlinkRate,
+    int? uplinkRate,
+    String? band,
+    String? ssidName,
+    List<String>? ipv6Addresses,
+    String? parentNodeId,
+    String? parentNodeName,
+    String? deviceRole,
+    String? interfaceType,
+    String? friendlyName,
+    String? manufacturer,
+    String? modelName,
+    String? operatingSystem,
+    String? hostsDeviceId,
+    List<DeviceInterfaceInfo>? additionalInterfaces,
+  }) {
+    return DeviceUIModel(
+      mac: mac ?? this.mac,
+      ip: ip ?? this.ip,
+      hostName: hostName ?? this.hostName,
+      isActive: isActive ?? this.isActive,
+      isWifi: isWifi ?? this.isWifi,
+      layer1Interface: layer1Interface ?? this.layer1Interface,
+      signalStrength: signalStrength ?? this.signalStrength,
+      downlinkRate: downlinkRate ?? this.downlinkRate,
+      uplinkRate: uplinkRate ?? this.uplinkRate,
+      band: band ?? this.band,
+      ssidName: ssidName ?? this.ssidName,
+      ipv6Addresses: ipv6Addresses ?? this.ipv6Addresses,
+      parentNodeId: parentNodeId ?? this.parentNodeId,
+      parentNodeName: parentNodeName ?? this.parentNodeName,
+      deviceRole: deviceRole ?? this.deviceRole,
+      interfaceType: interfaceType ?? this.interfaceType,
+      friendlyName: friendlyName ?? this.friendlyName,
+      manufacturer: manufacturer ?? this.manufacturer,
+      modelName: modelName ?? this.modelName,
+      operatingSystem: operatingSystem ?? this.operatingSystem,
+      hostsDeviceId: hostsDeviceId ?? this.hostsDeviceId,
+      additionalInterfaces: additionalInterfaces ?? this.additionalInterfaces,
+    );
+  }
 
   @override
   List<Object?> get props => [
@@ -165,5 +284,7 @@ class DeviceUIModel extends Equatable {
         manufacturer,
         modelName,
         operatingSystem,
+        hostsDeviceId,
+        additionalInterfaces,
       ];
 }

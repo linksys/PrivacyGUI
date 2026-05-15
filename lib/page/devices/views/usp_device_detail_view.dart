@@ -114,7 +114,6 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
       ],
     );
   }
-
   // ===========================================================================
   // Device Identity Card
   // ===========================================================================
@@ -176,13 +175,29 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
             label: 'MAC Address',
             value: device.mac,
           ),
-          AppGap.md(),
           if (device.hostName.isNotEmpty &&
               device.hostName != device.displayName) ...[
+            AppGap.md(),
             DetailInfoTile(
               icon: Icons.dns,
               label: 'Hostname',
               value: device.hostName,
+            ),
+          ],
+          if (device.modelName?.isNotEmpty == true) ...[
+            AppGap.md(),
+            DetailInfoTile(
+              icon: Icons.devices,
+              label: 'Model',
+              value: device.modelName!,
+            ),
+          ],
+          if (device.operatingSystem?.isNotEmpty == true) ...[
+            AppGap.md(),
+            DetailInfoTile(
+              icon: Icons.computer,
+              label: 'Operating System',
+              value: device.operatingSystem!,
             ),
           ],
         ],
@@ -196,32 +211,208 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
 
   Widget _buildConnectionStatusCard(
       BuildContext context, DeviceUIModel device) {
+    final hasMultipleInterfaces = device.hasMultipleInterfaces;
+
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           DetailCardHeader(
-            icon: device.connectionType.icon,
-            title: device.isWifi ? 'WiFi Connection' : 'Wired Connection',
+            icon: hasMultipleInterfaces
+                ? Icons.hub
+                : device.connectionType.icon,
+            title: hasMultipleInterfaces
+                ? 'Network Connections (${device.interfaceCount})'
+                : (device.isWifi ? 'WiFi Connection' : 'Wired Connection'),
           ),
           AppGap.xl(),
-          DetailCopyableTile(
-            icon: Icons.language,
-            label: 'IP Address',
-            value: device.ip,
-          ),
-          if (device.ipv6Addresses.isNotEmpty) ...[
-            AppGap.md(),
-            _buildIpv6Section(context, device.ipv6Addresses),
-          ],
-          if (device.parentNodeName != null) ...[
-            AppGap.md(),
-            DetailInfoTile(
-              icon: Icons.router,
-              label: 'Connected to',
-              value: device.parentNodeName!,
+          if (hasMultipleInterfaces) ...[
+            _buildMultiInterfaceSection(context, device),
+          ] else ...[
+            DetailCopyableTile(
+              icon: Icons.language,
+              label: 'IP Address',
+              value: device.ip,
             ),
+            if (device.ipv6Addresses.isNotEmpty) ...[
+              AppGap.md(),
+              _buildIpv6Section(context, device.ipv6Addresses),
+            ],
+            if (device.parentNodeName != null) ...[
+              AppGap.md(),
+              DetailInfoTile(
+                icon: Icons.router,
+                label: 'Connected to',
+                value: device.parentNodeName!,
+              ),
+            ],
           ],
+        ],
+      ),
+    );
+  }
+
+  // ===========================================================================
+  // Multi-Interface Section
+  // ===========================================================================
+
+  Widget _buildMultiInterfaceSection(
+      BuildContext context, DeviceUIModel device) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Primary interface
+        _buildInterfaceCard(
+          context,
+          isPrimary: true,
+          isActive: device.isActive,
+          isWifi: device.isWifi,
+          mac: device.mac,
+          ip: device.ip,
+          band: device.band,
+          ssidName: device.ssidName,
+          signalStrength: device.signalStrength,
+        ),
+        // Additional interfaces
+        for (final iface in device.additionalInterfaces) ...[
+          AppGap.md(),
+          _buildInterfaceCard(
+            context,
+            isPrimary: false,
+            isActive: iface.isActive,
+            isWifi: iface.isWifi,
+            mac: iface.mac,
+            ip: iface.ip,
+            band: iface.band,
+            ssidName: iface.ssidName,
+            signalStrength: iface.signalStrength,
+          ),
+        ],
+        // Parent node (shared across interfaces)
+        if (device.parentNodeName != null) ...[
+          AppGap.lg(),
+          DetailInfoTile(
+            icon: Icons.router,
+            label: 'Connected to',
+            value: device.parentNodeName!,
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildInterfaceCard(
+    BuildContext context, {
+    required bool isPrimary,
+    required bool isActive,
+    required bool isWifi,
+    required String mac,
+    required String ip,
+    String? band,
+    String? ssidName,
+    int? signalStrength,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: isPrimary
+            ? colorScheme.primaryContainer.withValues(alpha: 0.3)
+            : colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(AppSpacing.sm),
+        border: isPrimary
+            ? Border.all(color: colorScheme.primary.withValues(alpha: 0.3))
+            : null,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                isWifi ? Icons.wifi : Icons.settings_ethernet,
+                size: 18,
+                color: isActive
+                    ? colorScheme.primary
+                    : colorScheme.onSurfaceVariant,
+              ),
+              AppGap.sm(),
+              AppText.labelMedium(
+                isWifi ? 'WiFi' : 'Ethernet',
+                color: isActive
+                    ? colorScheme.onSurface
+                    : colorScheme.onSurfaceVariant,
+              ),
+              if (isPrimary) ...[
+                AppGap.sm(),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.xs,
+                    vertical: AppSpacing.xxs,
+                  ),
+                  decoration: BoxDecoration(
+                    color: colorScheme.primary,
+                    borderRadius: BorderRadius.circular(AppSpacing.xxs),
+                  ),
+                  child: AppText.labelSmall(
+                    'Primary',
+                    color: colorScheme.onPrimary,
+                  ),
+                ),
+              ],
+              const Spacer(),
+              Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: isActive ? Colors.green : Colors.grey,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              AppGap.xs(),
+              AppText.labelSmall(
+                isActive ? 'Online' : 'Offline',
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ],
+          ),
+          AppGap.sm(),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    AppText.bodySmall(
+                      'IP: $ip',
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                    AppText.bodySmall(
+                      'MAC: $mac',
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ],
+                ),
+              ),
+              if (isWifi && (band != null || ssidName != null))
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    if (band != null)
+                      AppText.bodySmall(
+                        band,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    if (ssidName != null)
+                      AppText.bodySmall(
+                        ssidName,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                  ],
+                ),
+            ],
+          ),
         ],
       ),
     );
@@ -276,10 +467,21 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
             AppGap.lg(),
           ],
           if (hasSpeedData) _buildSpeedCards(context, device),
-          if (hasBandSsid) ...[
+          if (hasBandSsid || device.interfaceType?.isNotEmpty == true) ...[
             AppGap.lg(),
             Row(
               children: [
+                if (device.interfaceType?.isNotEmpty == true)
+                  Expanded(
+                    child: DetailCompactInfoTile(
+                      icon: Icons.settings_input_antenna,
+                      label: 'Interface',
+                      value: device.interfaceType!,
+                    ),
+                  ),
+                if (device.interfaceType?.isNotEmpty == true &&
+                    (device.band != null || device.ssidName != null))
+                  AppGap.md(),
                 if (device.band != null)
                   Expanded(
                     child: DetailCompactInfoTile(

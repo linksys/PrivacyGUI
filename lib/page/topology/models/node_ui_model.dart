@@ -7,6 +7,11 @@ import 'package:equatable/equatable.dart';
 /// Implements [Equatable] per Article XI.
 class NodeUIModel extends Equatable {
   final String deviceId; // MAC of the mesh node
+
+  // ─── Name fields (from Hosts) ───
+  final String? friendlyName; // User-friendly name from Hosts
+  final String? hostName; // Hostname from Hosts
+
   final String model; // ManufacturerModel (e.g., MR7500)
   final String manufacturer;
   final String serialNumber;
@@ -20,6 +25,8 @@ class NodeUIModel extends Equatable {
 
   const NodeUIModel({
     required this.deviceId,
+    this.friendlyName,
+    this.hostName,
     required this.model,
     this.manufacturer = '',
     this.serialNumber = '',
@@ -30,8 +37,13 @@ class NodeUIModel extends Equatable {
     this.backhaulPhyRate = 0,
   });
 
-  /// Display name: model if available, otherwise deviceId.
-  String get displayName => model.isNotEmpty ? model : deviceId;
+  /// Display name priority: friendlyName > hostName > model > deviceId.
+  String get displayName {
+    if (friendlyName != null && friendlyName!.isNotEmpty) return friendlyName!;
+    if (hostName != null && hostName!.isNotEmpty) return hostName!;
+    if (model.isNotEmpty) return model;
+    return deviceId;
+  }
 
   /// Role label for UI display.
   String get roleLabel => isMaster ? 'Master' : 'Slave';
@@ -42,6 +54,8 @@ class NodeUIModel extends Equatable {
   @override
   List<Object?> get props => [
         deviceId,
+        friendlyName,
+        hostName,
         model,
         manufacturer,
         serialNumber,

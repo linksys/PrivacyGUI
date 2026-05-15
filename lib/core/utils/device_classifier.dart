@@ -112,7 +112,12 @@ class DeviceClassifier {
 
   static DeviceCategory? _matchHostnamePattern(String hostname) {
     if (hostname.isEmpty) return null;
-    final lower = hostname.toLowerCase();
+    // Strip mDNS suffixes (e.g., "._device-info._tcp.local", "._tcp.local")
+    var lower = hostname.toLowerCase();
+    final mdnsSuffixIndex = lower.indexOf('._');
+    if (mdnsSuffixIndex > 0) {
+      lower = lower.substring(0, mdnsSuffixIndex);
+    }
 
     // ── Phones ────────────────────────────────────────────────────────────────
     if (_matchesAny(lower, _phonePatterns)) return DeviceCategory.phone;

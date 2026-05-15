@@ -6,6 +6,7 @@ import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/shell/usp_top_bar.dart';
+import 'package:privacy_gui/page/topology/helpers/topology_node_content_builder.dart';
 import 'package:privacy_gui/page/topology/helpers/usp_topology_builder.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -60,7 +61,7 @@ class _UspTopologyViewState extends ConsumerState<UspTopologyView> {
             final topology = UspTopologyBuilder.build(
               info: sysInfo,
               devices: data.deviceModels,
-              meshNodes: data.meshTopology.nodes,
+              nodeModels: data.nodeModels,
               coverageColor: Theme.of(context).colorScheme.primary,
             );
 
@@ -113,6 +114,7 @@ class _UspTopologyViewState extends ConsumerState<UspTopologyView> {
               interactive: false,
               onNodeTap: (nodeId) =>
                   _navigateByNodeId(router, nodeId, topology),
+              nodeContentBuilder: TopologyNodeContentBuilder.build,
               treeConfig: TopologyTreeConfiguration(
                 titleBuilder: (node) => node.name,
                 subtitleBuilder: (node) => node.extra ?? '',
@@ -213,16 +215,14 @@ class _UspTopologyViewState extends ConsumerState<UspTopologyView> {
 
   Widget _detailRow(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+      padding: const EdgeInsets.only(bottom: AppSpacing.xxs),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Expanded(
-            flex: 2,
+          SizedBox(
+            width: 100,
             child: AppText.bodySmall(label, color: Colors.grey),
           ),
           Expanded(
-            flex: 3,
             child: AppText.bodySmall(
               value,
               maxLines: 1,
