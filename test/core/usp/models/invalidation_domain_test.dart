@@ -3,13 +3,13 @@ import 'package:privacy_gui/core/usp/models/invalidation_domain.dart';
 
 void main() {
   group('InvalidationDomain', () {
-    test('enum has 11 values', () {
-      expect(InvalidationDomain.values.length, 11);
+    test('enum has 13 values', () {
+      expect(InvalidationDomain.values.length, 13);
     });
 
     test('all values have unique names', () {
       final names = InvalidationDomain.values.map((v) => v.name).toSet();
-      expect(names.length, 11);
+      expect(names.length, 13);
     });
 
     test('specific values exist', () {
@@ -25,6 +25,8 @@ void main() {
       expect(values, contains(InvalidationDomain.dhcpClients));
       expect(values, contains(InvalidationDomain.dhcpReservations));
       expect(values, contains(InvalidationDomain.staticRouting));
+      expect(values, contains(InvalidationDomain.ethernetInterfaces));
+      expect(values, contains(InvalidationDomain.wanStatus));
     });
   });
 }
