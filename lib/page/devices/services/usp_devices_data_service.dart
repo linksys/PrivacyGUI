@@ -98,7 +98,6 @@ class UspDevicesDataService {
       throw mapUspErrorToServiceError(e);
     }
 
-
     final context = DevicesCodegenContext(connectedDevices);
 
     final hostNameByMac = _buildHostNameMap(connectedDevices);
@@ -257,6 +256,28 @@ class UspDevicesDataService {
     return map;
   }
 
+  /// Normalizes hostname for grouping: lowercase + strip mDNS suffix.
+  ///
+  /// mDNS suffixes (e.g., "._tcp.local", "._device-info._tcp.local") are
+  /// stripped to ensure devices advertising via mDNS group correctly with
+  /// those using plain hostnames.
+  ///
+  /// Examples:
+  /// - "MacBook-Pro" → "macbook-pro"
+  /// - "MacBook._tcp.local" → "macbook"
+  /// - "iPhone._device-info._tcp.local" → "iphone"
+  String _normalizeHostname(String hostname) {
+    var normalized = hostname.trim().toLowerCase();
+    if (normalized.isEmpty) return '';
+
+    // Strip mDNS suffix (matches device_classifier.dart behavior)
+    final mdnsSuffixIndex = normalized.indexOf('._');
+    if (mdnsSuffixIndex > 0) {
+      normalized = normalized.substring(0, mdnsSuffixIndex);
+    }
+    return normalized;
+  }
+
   List<DeviceUIModel> _buildDeviceUIModels({
     required ConnectedDevices connectedDevices,
     required Map<String, WifiClientUIModel> wifiClientMap,
@@ -283,7 +304,7 @@ class UspDevicesDataService {
         continue;
       }
 
-      final hostname = device.hostName.trim().toLowerCase();
+      final hostname = _normalizeHostname(device.hostName);
       if (hostname.isEmpty) {
         ungrouped.add(device);
       } else {
@@ -322,16 +343,19 @@ class UspDevicesDataService {
       });
 
     final primary = sorted.first;
-    final additional = sorted.skip(1).map((d) => DeviceInterfaceInfo(
-          mac: d.mac,
-          ip: d.ip,
-          isWifi: d.isWifi,
-          isActive: d.isActive,
-          layer1Interface: d.layer1Interface,
-          band: d.band,
-          ssidName: d.ssidName,
-          signalStrength: d.signalStrength,
-        )).toList();
+    final additional = sorted
+        .skip(1)
+        .map((d) => DeviceInterfaceInfo(
+              mac: d.mac,
+              ip: d.ip,
+              isWifi: d.isWifi,
+              isActive: d.isActive,
+              layer1Interface: d.layer1Interface,
+              band: d.band,
+              ssidName: d.ssidName,
+              signalStrength: d.signalStrength,
+            ))
+        .toList();
 
     logger.d('[USP][Devices]: Merged ${devices.length} interfaces for '
         'hostname="${primary.hostName}" — primary=${primary.mac} (${primary.isWifi ? "WiFi" : "Ethernet"}), '
@@ -381,9 +405,8 @@ class UspDevicesDataService {
     );
 
     // Master node — use systemInfo for details (Hosts doesn't have model/firmware).
-    final masterMeshInfo = meshTopology.nodes.isNotEmpty
-        ? meshTopology.nodes.first
-        : null;
+    final masterMeshInfo =
+        meshTopology.nodes.isNotEmpty ? meshTopology.nodes.first : null;
     final masterConnectedCount = clientDevices
         .where((d) =>
             d.isActive &&

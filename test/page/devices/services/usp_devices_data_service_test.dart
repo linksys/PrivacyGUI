@@ -400,5 +400,102 @@ void main() {
       expect(secondary.ip, '192.168.1.102');
       expect(secondary.isWifi, isFalse);
     });
+
+    test('hostname matching is case-insensitive', () async {
+      // Setup: "MacBook-Pro" (WiFi) vs "macbook-pro" (Ethernet) — different case
+      when(() => mockUsp.get(any(), priority: any(named: 'priority')))
+          .thenAnswer((_) async => {
+                'Device.Hosts.Host.1.PhysAddress': 'AA:BB:CC:DD:EE:01',
+                'Device.Hosts.Host.1.IPAddress': '192.168.1.101',
+                'Device.Hosts.Host.1.HostName': 'MacBook-Pro',
+                'Device.Hosts.Host.1.Active': true,
+                'Device.Hosts.Host.1.Layer1Interface': 'Device.WiFi.SSID.1.',
+                'Device.Hosts.Host.2.PhysAddress': 'AA:BB:CC:DD:EE:02',
+                'Device.Hosts.Host.2.IPAddress': '192.168.1.102',
+                'Device.Hosts.Host.2.HostName': 'macbook-pro',
+                'Device.Hosts.Host.2.Active': true,
+                'Device.Hosts.Host.2.Layer1Interface':
+                    'Device.Ethernet.Interface.1.',
+              });
+
+      final result = await svc.fetch(
+        wifiClientMap: {},
+        connectionDetailMap: {},
+        gatewayName: 'Router',
+        systemInfo: _sysInfo,
+      );
+
+      // Should merge into 1 device despite different case
+      expect(result.deviceModels, hasLength(1));
+      expect(result.deviceModels.first.hasMultipleInterfaces, isTrue);
+      expect(result.deviceModels.first.interfaceCount, 2);
+    });
+
+    test('devices with mDNS suffix hostname merge correctly', () async {
+      // Setup: "MacBook._tcp.local" (WiFi) + "MacBook" (Ethernet)
+      when(() => mockUsp.get(any(), priority: any(named: 'priority')))
+          .thenAnswer((_) async => {
+                'Device.Hosts.Host.1.PhysAddress': 'AA:BB:CC:DD:EE:01',
+                'Device.Hosts.Host.1.IPAddress': '192.168.1.101',
+                'Device.Hosts.Host.1.HostName': 'MacBook._tcp.local',
+                'Device.Hosts.Host.1.Active': true,
+                'Device.Hosts.Host.1.Layer1Interface': 'Device.WiFi.SSID.1.',
+                'Device.Hosts.Host.2.PhysAddress': 'AA:BB:CC:DD:EE:02',
+                'Device.Hosts.Host.2.IPAddress': '192.168.1.102',
+                'Device.Hosts.Host.2.HostName': 'MacBook',
+                'Device.Hosts.Host.2.Active': true,
+                'Device.Hosts.Host.2.Layer1Interface':
+                    'Device.Ethernet.Interface.1.',
+              });
+
+      final result = await svc.fetch(
+        wifiClientMap: {},
+        connectionDetailMap: {},
+        gatewayName: 'Router',
+        systemInfo: _sysInfo,
+      );
+
+      // Should merge: "MacBook._tcp.local" → "macbook", "MacBook" → "macbook"
+      expect(result.deviceModels, hasLength(1));
+      expect(result.deviceModels.first.hasMultipleInterfaces, isTrue);
+      expect(result.deviceModels.first.interfaceCount, 2);
+    });
+
+    test('inactive WiFi + active Ethernet selects Ethernet as primary',
+        () async {
+      // Setup: WiFi inactive, Ethernet active — Ethernet should be primary
+      when(() => mockUsp.get(any(), priority: any(named: 'priority')))
+          .thenAnswer((_) async => {
+                'Device.Hosts.Host.1.PhysAddress': 'AA:BB:CC:DD:EE:01',
+                'Device.Hosts.Host.1.IPAddress': '192.168.1.101',
+                'Device.Hosts.Host.1.HostName': 'MacBook',
+                'Device.Hosts.Host.1.Active': false, // WiFi is inactive
+                'Device.Hosts.Host.1.Layer1Interface': 'Device.WiFi.SSID.1.',
+                'Device.Hosts.Host.2.PhysAddress': 'AA:BB:CC:DD:EE:02',
+                'Device.Hosts.Host.2.IPAddress': '192.168.1.102',
+                'Device.Hosts.Host.2.HostName': 'MacBook',
+                'Device.Hosts.Host.2.Active': true, // Ethernet is active
+                'Device.Hosts.Host.2.Layer1Interface':
+                    'Device.Ethernet.Interface.1.',
+              });
+
+      final result = await svc.fetch(
+        wifiClientMap: {},
+        connectionDetailMap: {},
+        gatewayName: 'Router',
+        systemInfo: _sysInfo,
+      );
+
+      final device = result.deviceModels.first;
+      // Ethernet should be primary because it's active (active > WiFi preference)
+      expect(device.isWifi, isFalse);
+      expect(device.mac, 'AA:BB:CC:DD:EE:02'); // Ethernet MAC
+      expect(device.isActive, isTrue);
+
+      // WiFi should be in additional interfaces
+      expect(device.additionalInterfaces, hasLength(1));
+      expect(device.additionalInterfaces.first.isWifi, isTrue);
+      expect(device.additionalInterfaces.first.isActive, isFalse);
+    });
   });
 }
