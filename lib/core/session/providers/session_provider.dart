@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/constants/_constants.dart';
+import 'package:privacy_gui/core/connection/services/router_fingerprint_service.dart';
 import 'package:privacy_gui/core/models/device_info.dart';
 import 'package:privacy_gui/core/session/services/session_service.dart';
 import 'package:privacy_gui/core/utils/bench_mark.dart';
@@ -167,6 +168,7 @@ class SessionNotifier extends Notifier<SessionState> {
     state = state.copyWith(deviceInfo: nodeDeviceInfo);
     logger.d(
         '[Session]: fetchDeviceInfoAndInitializeServices - modelNumber: ${nodeDeviceInfo.modelNumber}');
+    await _storeRouterFingerprint(nodeDeviceInfo.serialNumber);
     benchMark.end();
     return nodeDeviceInfo;
   }
@@ -177,6 +179,11 @@ class SessionNotifier extends Notifier<SessionState> {
   void clear() {
     state = const SessionState();
     logger.d('[Session]: Session state cleared');
+  }
+
+  Future<void> _storeRouterFingerprint(String serialNumber) async {
+    if (serialNumber.isEmpty) return;
+    await ref.read(routerFingerprintServiceProvider).store(serialNumber);
   }
 }
 

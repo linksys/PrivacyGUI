@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
+import 'package:privacy_gui/core/connection/helpers/recovery_dialog_helper.dart';
+import 'package:privacy_gui/core/connection/models/app_connection_state.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/shell/usp_top_bar.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_advanced_provider.dart';
@@ -170,11 +173,20 @@ class _UspWifiSettingsViewState extends ConsumerState<UspWifiSettingsView>
         1 => ref.read(uspWifiAdvancedProvider.notifier).save(),
         _ => Future.value(),
       };
+      logger.d('[WiFi][Save] Starting save...');
       await doSomethingWithSpinner(context, task);
-      if (context.mounted) {
-        showSuccessSnackBar(context, 'WiFi settings saved');
-      }
+      logger.d('[WiFi][Save] Save completed, save spinner dismissed');
+
+      if (!context.mounted) return;
+
+      await showRecoveryDialog(
+        context,
+        ref,
+        trigger: RecoveryTrigger.operationalWifiChange,
+        successMessage: 'WiFi settings saved',
+      );
     } catch (e) {
+      logger.d('[WiFi][Save] Error: $e');
       if (context.mounted) {
         showFailedSnackBar(context, 'Failed to save: $e');
       }

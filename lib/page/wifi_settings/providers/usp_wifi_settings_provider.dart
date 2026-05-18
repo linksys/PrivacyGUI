@@ -156,9 +156,8 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
       status: state.status.copyWith(isSaving: true),
     );
     try {
-      return await super.save();
-      // super.save() calls performSave() → markAsSaved() → fetch().
-      // fetch() rebuilds status with a fresh WifiSettingsStatus (isSaving = false).
+      final result = await super.save();
+      return result;
     } on ServiceError catch (e) {
       logger.e('[USP][WiFi]: Save failed', error: e);
       rethrow;

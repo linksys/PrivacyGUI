@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
+import 'package:privacy_gui/core/connection/services/router_fingerprint_service.dart';
 import 'package:privacy_gui/core/session/providers/session_provider.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/providers/auth/auth_service.dart';
@@ -67,21 +68,32 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   }) async {
     final previousState = state.value ?? AuthState.empty();
     state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() async {
+    try {
       final uspCoordinator = ref.read(uspAuthCoordinatorProvider);
       final uspSuccess = await uspCoordinator.tryUspLogin(password);
-      if (uspSuccess) {
-        // Store password for session restore
-        await const FlutterSecureStorage()
-            .write(key: pLocalPassword, value: password);
-        logger.d('[Auth]: localLogin: USP login succeeded');
-        return previousState.copyWith(
-          localPassword: password,
-          loginType: LoginType.local,
-        );
+      if (!uspSuccess) throw Exception('USP login failed');
+
+      await const FlutterSecureStorage()
+          .write(key: pLocalPassword, value: password);
+      logger.d('[Auth]: localLogin: USP login succeeded');
+
+      // Fetch device info and store fingerprint while auth stays in loading —
+      // prevents GoRouter from navigating before fingerprint is ready.
+      await ref
+          .read(sessionProvider.notifier)
+          .fetchDeviceInfoAndInitializeServices();
+
+      state = AsyncValue.data(previousState.copyWith(
+        localPassword: password,
+        loginType: LoginType.local,
+      ));
+    } catch (e, st) {
+      if (guardError) {
+        state = AsyncValue.error(e, st);
+      } else {
+        rethrow;
       }
-      throw Exception('USP login failed');
-    }, (error) => guardError);
+    }
     logger.d('[Auth]: localLogin: done, state=$state');
   }
 
@@ -119,6 +131,9 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       // Now safe to logout USP
       logger.d('[Auth]: logout: syncing USP logout');
       await ref.read(uspAuthCoordinatorProvider).syncAfterLogout();
+
+      // Clear router fingerprint
+      await ref.read(routerFingerprintServiceProvider).clear();
 
       // Clear credentials
       logger.d('[Auth]: logout: clearing credentials');

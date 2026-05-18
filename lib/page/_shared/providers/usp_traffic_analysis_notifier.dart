@@ -1,6 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/connection/models/app_connection_state.dart';
+import 'package:privacy_gui/core/connection/providers/app_connection_state_provider.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/_shared/models/traffic_analysis_state.dart';
 import 'package:privacy_gui/page/_shared/services/usp_traffic_analysis_service.dart';
@@ -16,12 +19,23 @@ final uspTrafficAnalysisProvider =
 
 class UspTrafficAnalysisNotifier extends Notifier<TrafficAnalysisState> {
   Timer? _timer;
+  int _consecutiveErrors = 0;
+  static const _errorThreshold = 3;
 
   @override
   TrafficAnalysisState build() {
     ref.onDispose(() {
       _timer?.cancel();
       _timer = null;
+    });
+
+    ref.listen(appConnectionStateProvider, (_, next) {
+      if (next != AppConnectionState.authenticated) {
+        _timer?.cancel();
+        _timer = null;
+      } else if (_timer == null && state.refreshInterval != null) {
+        setRefreshInterval(state.refreshInterval);
+      }
     });
 
     const defaultInterval = Duration(seconds: 5);
@@ -55,12 +69,16 @@ class UspTrafficAnalysisNotifier extends Notifier<TrafficAnalysisState> {
   Future<void> fetchNow() => _fetchAndAppend();
 
   Future<void> _fetchAndAppend() async {
+    final connectionState = ref.read(appConnectionStateProvider);
+    if (connectionState != AppConnectionState.authenticated) return;
+
     final svc = ref.read(uspTrafficAnalysisServiceProvider);
     if (svc == null || !svc.isAuthenticated) return;
 
     state = state.copyWith(isFetching: true);
     try {
       final currentBaselines = await svc.fetchBaselines();
+      _consecutiveErrors = 0;
       final now = DateTime.now();
 
       // First fetch: set baseline only, no rate to compute yet
@@ -98,6 +116,14 @@ class UspTrafficAnalysisNotifier extends Notifier<TrafficAnalysisState> {
         lastBaselines: () => currentBaselines,
         lastTimestamp: () => now,
       );
+    } on ConnectivityError {
+      _consecutiveErrors++;
+      if (_consecutiveErrors >= _errorThreshold) {
+        ref
+            .read(appConnectionStateProvider.notifier)
+            .reportConnectivityFailure();
+      }
+      state = state.copyWith(isFetching: false);
     } catch (e) {
       logger.w('[USP][Monitor][Traffic]: Fetch failed: $e');
       state = state.copyWith(isFetching: false);

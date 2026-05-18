@@ -110,6 +110,7 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
           !next.hasError) {
         final loginType = next.value?.loginType;
         if (loginType != null && loginType != LoginType.none) {
+          if (!context.mounted) return;
           context.goNamed(RouteNamed.uspDashboard);
         }
       }
