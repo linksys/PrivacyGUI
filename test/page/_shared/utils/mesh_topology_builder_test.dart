@@ -240,8 +240,8 @@ void main() {
       final network = DataElementsNetwork(items: [nodeWithEmptyId]);
       final result = MeshTopologyBuilder.build(network);
 
-      expect(
-          result.nodes[0].deviceId, 'Device.WiFi.DataElements.Network.Device.1.');
+      expect(result.nodes[0].deviceId,
+          'Device.WiFi.DataElements.Network.Device.1.');
     });
 
     test('returns empty result for empty network', () {

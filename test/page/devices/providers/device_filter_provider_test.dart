@@ -82,10 +82,8 @@ void main() {
     deviceModels: allDevices,
     meshTopology: MeshTopologyInfo(
       nodes: [
-        NodeUIModel(
-            deviceId: 'NODE-01', model: 'MR7500'),
-        NodeUIModel(
-            deviceId: 'NODE-02', model: 'MX5500'),
+        NodeUIModel(deviceId: 'NODE-01', model: 'MR7500'),
+        NodeUIModel(deviceId: 'NODE-02', model: 'MX5500'),
       ],
       clientToNodeMap: {},
     ),

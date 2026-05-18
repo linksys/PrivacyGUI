@@ -211,5 +211,4 @@ class UspTopologyBuilder {
     final clamped = rssi.clamp(-75, -45);
     return (clamped - (-45)).abs() / 30.0;
   }
-
 }

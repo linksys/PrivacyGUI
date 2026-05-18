@@ -290,7 +290,8 @@ class PnpService {
 
   MeshTopologyInfo _buildTopologyInfo(DataElementsNetwork network) {
     // PnP doesn't need backhaul stats — only node discovery for mesh setup
-    final result = MeshTopologyBuilder.build(network, includeBackhaulStats: false);
+    final result =
+        MeshTopologyBuilder.build(network, includeBackhaulStats: false);
     logger.d('[PnP] Mesh nodes: ${result.nodes.length}, '
         'client→node mappings: ${result.clientToNodeMap.length}');
     return result;
