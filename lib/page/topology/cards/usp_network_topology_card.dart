@@ -40,12 +40,6 @@ class UspNetworkTopologyCard extends ConsumerWidget {
       info: info,
       devices: devices,
       nodeModels: nodeModels,
-      coverageColor: Theme.of(context).colorScheme.primary,
-      // Shrink coverage rings for dashboard card context — ui_kit's
-      // calculateBounds() ignores ring radii, so full-size rings
-      // overflow the fitScale viewport. Revisit if calculateBounds is
-      // updated to include ring extents.
-      coverageRingScale: 0.85,
     );
     final onlineCount = devicesData?.onlineClientCount ??
         devices.where((d) => d.isActive).length;

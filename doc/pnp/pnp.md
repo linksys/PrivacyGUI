@@ -7,7 +7,12 @@
 - Removed: `PnpAdminView`, admin login phases (`AdminInitializing`, `AdminAwaitingPassword`, `AdminLoggingIn`, `AdminLoginFailed`)
 - Added: `PnpEntryView`, `PnpStatusService`
 - Changed: PnP check moved from pre-login to post-login in `router_provider.dart`
-- Reason: PR #19 rejected — setup status API endpoints will not be implemented
+- **Reason**: Firmware PR #19 rejected the following proposed endpoints:
+  - `GET /api/v1/setup/status` — check if setup is complete
+  - `POST /api/v1/setup/acknowledge` — mark setup as complete
+  
+  TR-181 does not currently have parameters for PnP status tracking (e.g., `Device.X_LINKSYS.Setup.*`).
+  Until firmware adds such parameters, we use `LocalPnpStatusService` with SharedPreferences as a fallback.
 
 ## 1. Overview
 This document describes the architecture and core flows of the "Instant Setup" (PnP) feature. This feature guides the user through the initial setup of a router, from checking internet connectivity to customizing Wi-Fi, guest networks, and other settings.
@@ -22,7 +27,9 @@ This feature adopts a State-Driven architecture, with responsibilities clearly d
 *   **Data Layer (State)**: `PnpState` stores all flow state using sealed class phases.
 *   **Service Layer**: 
     - `PnpService`: USP operations for WiFi, WAN, mesh topology
-    - `PnpStatusService`: PnP completion status (SharedPreferences now, TR-181 future)
+    - `PnpStatusService`: PnP completion status tracking
+      - Current: `LocalPnpStatusService` (SharedPreferences) — TR-181 has no PnP status parameters yet
+      - Future: `Tr181PnpStatusService` — when `Device.X_LINKSYS.Setup.*` becomes available
 
 ## 3. Core Flows
 

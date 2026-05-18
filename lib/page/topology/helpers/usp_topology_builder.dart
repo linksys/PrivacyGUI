@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:privacy_gui/core/utils/device_classifier.dart';
 import 'package:privacy_gui/core/utils/device_image_helper.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
@@ -18,8 +17,6 @@ class UspTopologyBuilder {
     required SystemInfoUIModel info,
     required List<DeviceUIModel> devices,
     required List<NodeUIModel> nodeModels,
-    Color? coverageColor,
-    double coverageRingScale = 1.0,
   }) {
     final nodes = <MeshNode>[];
     final links = <MeshLink>[];
@@ -52,10 +49,6 @@ class UspTopologyBuilder {
         'softwareVersion': masterNode?.softwareVersion ?? info.softwareVersion,
         'isMaster': true,
       },
-      coverageRings: coverageColor != null
-          ? _buildCoverageRings(
-              MeshNodeType.gateway, coverageColor, coverageRingScale)
-          : null,
     ));
 
     // Mesh extender nodes (slave nodes)
@@ -85,10 +78,6 @@ class UspTopologyBuilder {
           'softwareVersion': slaveNode.softwareVersion,
           'isMaster': false,
         },
-        coverageRings: coverageColor != null
-            ? _buildCoverageRings(
-                MeshNodeType.extender, coverageColor, coverageRingScale)
-            : null,
       ));
 
       links.add(MeshLink(
@@ -96,7 +85,7 @@ class UspTopologyBuilder {
         targetId: extenderId,
         connectionType: ConnectionType.wifi,
         rssi: slaveNode.backhaulSignalStrength,
-        signalQuality: _rssiToSignalQuality(slaveNode.backhaulSignalStrength),
+        linkQuality: _rssiToLinkQuality(slaveNode.backhaulSignalStrength),
         throughput: slaveNode.backhaulUplinkRate != null
             ? slaveNode.backhaulUplinkRate! / 1000.0
             : null,
@@ -137,7 +126,7 @@ class UspTopologyBuilder {
         parentId: parentId,
         iconData: category.icon,
         extra: device.ip,
-        signalQuality: _resolveSignalQuality(device),
+        linkQuality: _resolveLinkQuality(device),
         level: _rssiToLevel(device),
         metadata: {
           'mac': device.mac,
@@ -153,9 +142,9 @@ class UspTopologyBuilder {
         connectionType:
             isEthernet ? ConnectionType.ethernet : ConnectionType.wifi,
         rssi: device.signalStrength,
-        signalQuality: isEthernet
-            ? SignalQuality.wired
-            : _rssiToSignalQuality(device.signalStrength),
+        linkQuality: isEthernet
+            ? LinkQuality.stable
+            : _rssiToLinkQuality(device.signalStrength),
         throughput:
             device.totalThroughput > 0 ? device.totalThroughput / 1000.0 : null,
         distanceFactor: _rssiToDistanceFactor(device.signalStrength),
@@ -189,28 +178,28 @@ class UspTopologyBuilder {
     return 0.1;
   }
 
-  static SignalQuality _resolveSignalQuality(DeviceUIModel device) {
-    if (!device.isWifi) return SignalQuality.wired;
-    return _rssiToSignalQuality(device.signalStrength);
+  static LinkQuality _resolveLinkQuality(DeviceUIModel device) {
+    if (!device.isWifi) return LinkQuality.stable;
+    return _rssiToLinkQuality(device.signalStrength);
   }
 
-  /// Converts RSSI to SignalQuality using wifi.dart thresholds.
+  /// Converts RSSI to LinkQuality using wifi.dart thresholds.
   ///
   /// Thresholds from [signalThresholdRSSI]: [-65, -71, -78]
   /// - >= -65: excellent/strong
   /// - >= -71: good/medium
   /// - >= -78: fair/medium
   /// - < -78: poor/weak
-  static SignalQuality _rssiToSignalQuality(int? rssi) {
-    if (rssi == null) return SignalQuality.unknown;
+  static LinkQuality _rssiToLinkQuality(int? rssi) {
+    if (rssi == null) return LinkQuality.unknown;
     final level = getWifiSignalLevel(rssi);
     return switch (level) {
-      NodeSignalLevel.excellent => SignalQuality.strong,
-      NodeSignalLevel.good => SignalQuality.strong,
-      NodeSignalLevel.fair => SignalQuality.medium,
-      NodeSignalLevel.poor => SignalQuality.weak,
-      NodeSignalLevel.none => SignalQuality.unknown,
-      NodeSignalLevel.wired => SignalQuality.wired,
+      NodeSignalLevel.excellent => LinkQuality.excellent,
+      NodeSignalLevel.good => LinkQuality.excellent,
+      NodeSignalLevel.fair => LinkQuality.good,
+      NodeSignalLevel.poor => LinkQuality.fair,
+      NodeSignalLevel.none => LinkQuality.unknown,
+      NodeSignalLevel.wired => LinkQuality.stable,
     };
   }
 
@@ -223,36 +212,4 @@ class UspTopologyBuilder {
     return (clamped - (-45)).abs() / 30.0;
   }
 
-  /// Builds coverage rings for infrastructure nodes (gateway / extender).
-  ///
-  /// [scale] shrinks rings for compact contexts (e.g. dashboard card).
-  static List<NodeCoverageRing> _buildCoverageRings(
-    MeshNodeType type,
-    Color color,
-    double scale,
-  ) {
-    // Ring radii: inner gradient ring + outer dashed ring
-    // Tuned to not clip while providing clear visual separation
-    final (innerR, outerR, innerOp, outerOp) = switch (type) {
-      MeshNodeType.gateway => (90.0 * scale, 160.0 * scale, 0.16, 0.10),
-      MeshNodeType.extender => (70.0 * scale, 120.0 * scale, 0.14, 0.09),
-      _ => (0.0, 0.0, 0.0, 0.0),
-    };
-    if (innerR == 0) return [];
-    return [
-      NodeCoverageRing(
-        radius: innerR,
-        color: color,
-        opacity: innerOp,
-        style: CoverageRingStyle.gradient,
-      ),
-      NodeCoverageRing(
-        radius: outerR,
-        color: color,
-        opacity: outerOp,
-        style: CoverageRingStyle.dashed,
-        strokeWidth: 2.0,
-      ),
-    ];
-  }
 }

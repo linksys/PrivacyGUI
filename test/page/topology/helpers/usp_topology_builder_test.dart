@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/core/utils/device_classifier.dart';
 import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
@@ -277,12 +276,12 @@ void main() {
       final client =
           topo.nodes.firstWhere((n) => n.type == MeshNodeType.client);
       expect(client.level, 0.9);
-      expect(client.signalQuality, SignalQuality.strong);
+      expect(client.linkQuality, LinkQuality.excellent);
     });
 
     test('medium wifi signal maps to medium level', () {
       // wifi.dart thresholds: [-65, -71, -78]
-      // -75 is >= -78 (fair) → SignalQuality.medium
+      // -75 is >= -78 (fair) → LinkQuality.good
       const device = DeviceUIModel(
         mac: 'AA:AA:AA:AA:AA:AA',
         ip: '192.168.1.1',
@@ -302,12 +301,12 @@ void main() {
           topo.nodes.firstWhere((n) => n.type == MeshNodeType.client);
       // -75 maps to level 0.4 (>= -70 threshold in _rssiToLevel)
       expect(client.level, 0.1);
-      expect(client.signalQuality, SignalQuality.medium);
+      expect(client.linkQuality, LinkQuality.good);
     });
 
     test('weak wifi signal maps to low level', () {
       // wifi.dart thresholds: [-65, -71, -78]
-      // -80 is < -78 (poor) → SignalQuality.weak
+      // -80 is < -78 (poor) → LinkQuality.fair
       const device = DeviceUIModel(
         mac: 'AA:AA:AA:AA:AA:AA',
         ip: '192.168.1.1',
@@ -326,7 +325,7 @@ void main() {
       final client =
           topo.nodes.firstWhere((n) => n.type == MeshNodeType.client);
       expect(client.level, 0.1);
-      expect(client.signalQuality, SignalQuality.weak);
+      expect(client.linkQuality, LinkQuality.fair);
     });
 
     test('ethernet device maps to wired signal quality and level 1.0', () {
@@ -339,7 +338,7 @@ void main() {
       final client =
           topo.nodes.firstWhere((n) => n.type == MeshNodeType.client);
       expect(client.level, 1.0);
-      expect(client.signalQuality, SignalQuality.wired);
+      expect(client.linkQuality, LinkQuality.stable);
     });
 
     test('wifi device with null RSSI maps to unknown quality', () {
@@ -361,39 +360,7 @@ void main() {
       final client =
           topo.nodes.firstWhere((n) => n.type == MeshNodeType.client);
       expect(client.level, 0.0);
-      expect(client.signalQuality, SignalQuality.unknown);
-    });
-  });
-
-  // ---------------------------------------------------------------------------
-  // Coverage rings
-  // ---------------------------------------------------------------------------
-
-  group('UspTopologyBuilder - coverage rings', () {
-    test('gateway node has coverage rings when color provided', () {
-      final topo = UspTopologyBuilder.build(
-        info: sysInfo,
-        devices: [],
-        nodeModels: [meshGateway, meshExtender],
-        coverageColor: const Color(0xFF0000FF),
-      );
-
-      final gateway =
-          topo.nodes.firstWhere((n) => n.type == MeshNodeType.gateway);
-      expect(gateway.coverageRings, isNotNull);
-      expect(gateway.coverageRings, hasLength(2));
-    });
-
-    test('no coverage rings when color is null', () {
-      final topo = UspTopologyBuilder.build(
-        info: sysInfo,
-        devices: [],
-        nodeModels: [meshGateway],
-      );
-
-      final gateway =
-          topo.nodes.firstWhere((n) => n.type == MeshNodeType.gateway);
-      expect(gateway.coverageRings, isNull);
+      expect(client.linkQuality, LinkQuality.unknown);
     });
   });
 
