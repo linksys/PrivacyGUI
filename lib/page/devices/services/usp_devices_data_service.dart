@@ -11,6 +11,7 @@ import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/mesh_topology_info.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_client_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/client_connection_detail.dart';
+import 'package:privacy_gui/page/_shared/utils/mesh_topology_builder.dart';
 import 'package:privacy_gui/generated/data_elements_network.g.dart';
 import 'package:privacy_gui/page/topology/models/node_ui_model.dart';
 
@@ -152,54 +153,10 @@ class UspDevicesDataService {
   }
 
   MeshTopologyInfo _buildTopologyInfo(DataElementsNetwork network) {
-    final nodes = <MeshNodeInfo>[];
-    final clientToNodeMap = <String, String>{};
-
-    for (final node in network.items) {
-      final rawId = node.id.trim().toUpperCase();
-      final nodeDeviceId = rawId.isNotEmpty ? rawId : node.instancePath;
-
-      for (final radio in node.radios) {
-        for (final bss in radio.bssList) {
-          for (final sta in bss.stations) {
-            final mac = sta.macAddress.trim();
-            if (mac.isNotEmpty && nodeDeviceId.isNotEmpty) {
-              clientToNodeMap[mac.toUpperCase()] = nodeDeviceId;
-            }
-          }
-        }
-      }
-
-      // RCPI → RSSI conversion: RSSI (dBm) = (RCPI / 2) - 110
-      // backhaulStatsSignalStrength is now a direct field on MeshNode (single instance)
-      int? backhaulSignalStrength;
-      if (node.backhaulStatsSignalStrength > 0) {
-        backhaulSignalStrength = (node.backhaulStatsSignalStrength ~/ 2) - 110;
-        logger.d('[USP][Topology]: Node ${node.id} backhaul '
-            'RCPI=${node.backhaulStatsSignalStrength} → RSSI=$backhaulSignalStrength dBm');
-      }
-
-      nodes.add(MeshNodeInfo(
-        instancePath: node.instancePath,
-        deviceId: nodeDeviceId,
-        model: node.manufacturerModel.trim(),
-        manufacturer: node.manufacturer.trim(),
-        serialNumber: node.serialNumber.trim(),
-        softwareVersion: node.softwareVersion.trim(),
-        backhaulAlId: node.backhaulAlId.trim(),
-        backhaulMacAddress: node.backhaulMacAddress.trim(),
-        backhaulMediaType: node.backhaulMediaType.trim(),
-        backhaulPhyRate: node.backhaulPhyRate,
-        backhaulSignalStrength: backhaulSignalStrength,
-        backhaulUplinkRate: node.backhaulStatsLastDataUplinkRate > 0
-            ? node.backhaulStatsLastDataUplinkRate
-            : null,
-      ));
-    }
-
-    logger.d('[USP][Dashboard]: Mesh nodes: ${nodes.length}, '
-        'client→node mappings: ${clientToNodeMap.length}');
-    return MeshTopologyInfo(nodes: nodes, clientToNodeMap: clientToNodeMap);
+    final result = MeshTopologyBuilder.build(network);
+    logger.d('[USP][Dashboard]: Mesh nodes: ${result.nodes.length}, '
+        'client→node mappings: ${result.clientToNodeMap.length}');
+    return result;
   }
 
   /// Rebuilds device + node UI models with updated WiFi enrichment data.
@@ -312,7 +269,7 @@ class UspDevicesDataService {
 
     for (final device in allDevices) {
       // Mesh nodes should not be grouped
-      if (device.deviceRole == 'master' || device.deviceRole == 'slave') {
+      if (device.isMeshNode) {
         ungrouped.add(device);
         continue;
       }
@@ -384,14 +341,10 @@ class UspDevicesDataService {
   }) {
     // Extract mesh nodes from Hosts (deviceRole = master/slave).
     // This is available immediately without waiting for DataElements fetch.
-    final meshDevices = deviceModels
-        .where((d) => d.deviceRole == 'master' || d.deviceRole == 'slave')
-        .toList();
+    final meshDevices = deviceModels.meshNodes;
 
     // Client devices only (excluding mesh nodes).
-    final clientDevices = deviceModels
-        .where((d) => d.deviceRole != 'master' && d.deviceRole != 'slave')
-        .toList();
+    final clientDevices = deviceModels.clientDevices;
 
     // If no mesh devices found in Hosts, create gateway-only node.
     if (meshDevices.isEmpty) {
@@ -412,10 +365,7 @@ class UspDevicesDataService {
     final nodes = <NodeUIModel>[];
 
     // Find master first.
-    final master = meshDevices.firstWhere(
-      (d) => d.deviceRole == 'master',
-      orElse: () => meshDevices.first,
-    );
+    final master = meshDevices.masterNode ?? meshDevices.first;
 
     // Master node — use systemInfo for details (Hosts doesn't have model/firmware).
     final masterMeshInfo =
@@ -444,7 +394,7 @@ class UspDevicesDataService {
     ));
 
     // Slave nodes.
-    for (final slave in meshDevices.where((d) => d.deviceRole == 'slave')) {
+    for (final slave in meshDevices.slaveNodes) {
       final slaveMeshInfo = _findMatchingMeshNode(slave, meshTopology.nodes);
       logger.d('[USP][Topology]: Slave ${slave.mac} matched to meshInfo: '
           '${slaveMeshInfo != null ? "yes (signalStrength=${slaveMeshInfo.backhaulSignalStrength})" : "no"}, '
@@ -558,7 +508,7 @@ class UspDevicesDataService {
   // Mesh Node Matching
   // ---------------------------------------------------------------------------
 
-  /// Finds a matching [MeshNodeInfo] for a slave device from Hosts.
+  /// Finds a matching [NodeUIModel] for a slave device from Hosts.
   ///
   /// Strategy: Extract embedded MAC from Hosts DeviceID (UUID format) and match
   /// against DataElements node ID.
@@ -569,9 +519,9 @@ class UspDevicesDataService {
   /// Future alternatives if this approach proves unreliable:
   /// - Match via BSSID: DataElements Radio.*.BSS.*.BSSID = Hosts PhysAddress
   /// - Match via hostName suffix: "Linksys03027" → SerialNumber ending "03027"
-  MeshNodeInfo? _findMatchingMeshNode(
+  NodeUIModel? _findMatchingMeshNode(
     DeviceUIModel slave,
-    List<MeshNodeInfo> meshNodes,
+    List<NodeUIModel> meshNodes,
   ) {
     final hostsDeviceId =
         slave.hostsDeviceId?.toUpperCase().replaceAll('-', '') ?? '';

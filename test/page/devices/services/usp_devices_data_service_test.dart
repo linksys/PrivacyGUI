@@ -6,6 +6,7 @@ import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_client_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/mesh_topology_info.dart';
 import 'package:privacy_gui/page/devices/services/usp_devices_data_service.dart';
+import 'package:privacy_gui/page/topology/models/node_ui_model.dart';
 
 class MockUspClient extends Mock implements UspClient {}
 
@@ -181,9 +182,9 @@ void main() {
         systemInfo: _sysInfo,
       );
 
-      final mesh = MeshTopologyInfo(
+      const mesh = MeshTopologyInfo(
         nodes: [
-          MeshNodeInfo(instancePath: 'p.1.', deviceId: 'NODE-A', model: 'M60'),
+          NodeUIModel(deviceId: 'NODE-A', model: 'M60'),
         ],
         clientToNodeMap: {'AA:BB:CC:DD:EE:01': 'NODE-A'},
       );

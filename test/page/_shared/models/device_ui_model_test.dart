@@ -325,4 +325,130 @@ void main() {
       expect(device.isClientDevice, isFalse);
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // DeviceUIModelListExt — Extension Methods
+  // ---------------------------------------------------------------------------
+
+  group('DeviceUIModelListExt', () {
+    const clientWifi = DeviceUIModel(
+      mac: 'AA:BB:CC:DD:EE:01',
+      ip: '192.168.1.100',
+      hostName: 'iPhone',
+      isActive: true,
+      isWifi: true,
+      deviceRole: null,
+    );
+
+    const clientWired = DeviceUIModel(
+      mac: 'AA:BB:CC:DD:EE:02',
+      ip: '192.168.1.101',
+      hostName: 'Desktop',
+      isActive: true,
+      isWifi: false,
+      deviceRole: 'client',
+    );
+
+    const masterNode = DeviceUIModel(
+      mac: 'AA:BB:CC:DD:EE:10',
+      ip: '192.168.1.1',
+      hostName: 'MR7500',
+      isActive: true,
+      isWifi: false,
+      deviceRole: 'master',
+    );
+
+    const slaveNode1 = DeviceUIModel(
+      mac: 'AA:BB:CC:DD:EE:11',
+      ip: '192.168.1.2',
+      hostName: 'MX5500-1',
+      isActive: true,
+      isWifi: false,
+      deviceRole: 'slave',
+    );
+
+    const slaveNode2 = DeviceUIModel(
+      mac: 'AA:BB:CC:DD:EE:12',
+      ip: '192.168.1.3',
+      hostName: 'MX5500-2',
+      isActive: true,
+      isWifi: false,
+      deviceRole: 'slave',
+    );
+
+    final allDevices = [
+      clientWifi,
+      clientWired,
+      masterNode,
+      slaveNode1,
+      slaveNode2,
+    ];
+
+    test('clientDevices returns only non-mesh devices', () {
+      final clients = allDevices.clientDevices;
+
+      expect(clients, hasLength(2));
+      expect(clients, contains(clientWifi));
+      expect(clients, contains(clientWired));
+      expect(clients, isNot(contains(masterNode)));
+      expect(clients, isNot(contains(slaveNode1)));
+    });
+
+    test('meshNodes returns only master and slave devices', () {
+      final meshes = allDevices.meshNodes;
+
+      expect(meshes, hasLength(3));
+      expect(meshes, contains(masterNode));
+      expect(meshes, contains(slaveNode1));
+      expect(meshes, contains(slaveNode2));
+      expect(meshes, isNot(contains(clientWifi)));
+    });
+
+    test('masterNode returns the master device', () {
+      final master = allDevices.masterNode;
+
+      expect(master, isNotNull);
+      expect(master, equals(masterNode));
+    });
+
+    test('masterNode returns null when no master exists', () {
+      final devicesNoMaster = [clientWifi, clientWired, slaveNode1];
+      final master = devicesNoMaster.masterNode;
+
+      expect(master, isNull);
+    });
+
+    test('slaveNodes returns all slave devices', () {
+      final slaves = allDevices.slaveNodes;
+
+      expect(slaves, hasLength(2));
+      expect(slaves, contains(slaveNode1));
+      expect(slaves, contains(slaveNode2));
+      expect(slaves, isNot(contains(masterNode)));
+    });
+
+    test('slaveNodes returns empty list when no slaves', () {
+      final devicesNoSlaves = [clientWifi, masterNode];
+      final slaves = devicesNoSlaves.slaveNodes;
+
+      expect(slaves, isEmpty);
+    });
+
+    test('extensions work on empty list', () {
+      final List<DeviceUIModel> emptyList = [];
+
+      expect(emptyList.clientDevices, isEmpty);
+      expect(emptyList.meshNodes, isEmpty);
+      expect(emptyList.masterNode, isNull);
+      expect(emptyList.slaveNodes, isEmpty);
+    });
+
+    test('clientDevices returns all when no mesh nodes', () {
+      final clientsOnly = [clientWifi, clientWired];
+      final clients = clientsOnly.clientDevices;
+
+      expect(clients, hasLength(2));
+      expect(clients, equals(clientsOnly));
+    });
+  });
 }

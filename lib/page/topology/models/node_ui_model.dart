@@ -25,6 +25,11 @@ class NodeUIModel extends Equatable {
   final int? backhaulSignalStrength; // RSSI in dBm (converted from RCPI)
   final int? backhaulUplinkRate; // bps
 
+  // ─── DataElements enrichment (Service internal use) ───
+  final String? instancePath; // DataElements instance path
+  final String? backhaulAlId; // Parent node's AL ID (MAC)
+  final String? backhaulMacAddress; // Backhaul interface MAC
+
   const NodeUIModel({
     required this.deviceId,
     this.friendlyName,
@@ -39,6 +44,9 @@ class NodeUIModel extends Equatable {
     this.backhaulPhyRate = 0,
     this.backhaulSignalStrength,
     this.backhaulUplinkRate,
+    this.instancePath,
+    this.backhaulAlId,
+    this.backhaulMacAddress,
   });
 
   /// Display name priority: friendlyName > hostName > model > deviceId.
@@ -70,5 +78,20 @@ class NodeUIModel extends Equatable {
         backhaulPhyRate,
         backhaulSignalStrength,
         backhaulUplinkRate,
+        instancePath,
+        backhaulAlId,
+        backhaulMacAddress,
       ];
+}
+
+/// Extension methods for List<NodeUIModel> to simplify common filtering.
+extension NodeUIModelListExt on List<NodeUIModel> {
+  /// Returns the master (gateway) node, or null if not found.
+  NodeUIModel? get master => where((n) => n.isMaster).firstOrNull;
+
+  /// Returns all slave (extender) nodes.
+  List<NodeUIModel> get slaves => where((n) => !n.isMaster).toList();
+
+  /// Whether this topology has mesh extenders.
+  bool get hasMesh => slaves.isNotEmpty;
 }

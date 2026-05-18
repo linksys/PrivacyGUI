@@ -189,7 +189,7 @@ void main() {
         backhaulUplinkRate: 500000,
       );
 
-      expect(node.props, hasLength(13));
+      expect(node.props, hasLength(16));
       expect(node.props, contains('AA:BB:CC:DD:EE:01'));
       expect(node.props, contains('Router'));
       expect(node.props, contains('linksys'));
@@ -203,6 +203,8 @@ void main() {
       expect(node.props, contains(1000));
       expect(node.props, contains(-45));
       expect(node.props, contains(500000));
+      // New DataElements enrichment fields (default to null)
+      expect(node.props.where((p) => p == null).length, 3);
     });
   });
 
@@ -228,6 +230,67 @@ void main() {
       expect(node.backhaulPhyRate, 0);
       expect(node.backhaulSignalStrength, isNull);
       expect(node.backhaulUplinkRate, isNull);
+      // DataElements enrichment fields default to null
+      expect(node.instancePath, isNull);
+      expect(node.backhaulAlId, isNull);
+      expect(node.backhaulMacAddress, isNull);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // NodeUIModelListExt — extension methods
+  // ---------------------------------------------------------------------------
+
+  group('NodeUIModelListExt', () {
+    const masterNode = NodeUIModel(
+      deviceId: 'AA:BB:CC:DD:EE:01',
+      model: 'MR7500',
+      isMaster: true,
+    );
+    const slaveNode1 = NodeUIModel(
+      deviceId: 'AA:BB:CC:DD:EE:02',
+      model: 'MX5500',
+      isMaster: false,
+    );
+    const slaveNode2 = NodeUIModel(
+      deviceId: 'AA:BB:CC:DD:EE:03',
+      model: 'MX5500',
+      isMaster: false,
+    );
+
+    test('master returns the master node', () {
+      final nodes = [masterNode, slaveNode1, slaveNode2];
+      expect(nodes.master, equals(masterNode));
+    });
+
+    test('master returns null when no master exists', () {
+      final nodes = [slaveNode1, slaveNode2];
+      expect(nodes.master, isNull);
+    });
+
+    test('slaves returns all non-master nodes', () {
+      final nodes = [masterNode, slaveNode1, slaveNode2];
+      expect(nodes.slaves, equals([slaveNode1, slaveNode2]));
+    });
+
+    test('slaves returns empty list when all nodes are master', () {
+      final nodes = [masterNode];
+      expect(nodes.slaves, isEmpty);
+    });
+
+    test('hasMesh returns true when slaves exist', () {
+      final nodes = [masterNode, slaveNode1];
+      expect(nodes.hasMesh, isTrue);
+    });
+
+    test('hasMesh returns false when no slaves', () {
+      final nodes = [masterNode];
+      expect(nodes.hasMesh, isFalse);
+    });
+
+    test('hasMesh returns false for empty list', () {
+      final List<NodeUIModel> nodes = [];
+      expect(nodes.hasMesh, isFalse);
     });
   });
 }

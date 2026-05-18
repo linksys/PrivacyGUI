@@ -13,6 +13,7 @@ import 'package:privacy_gui/generated/wan_status.g.dart';
 import 'package:privacy_gui/generated/wi_fi_access_points.g.dart';
 import 'package:privacy_gui/generated/wi_fi_ssids.g.dart';
 import 'package:privacy_gui/page/_shared/models/mesh_topology_info.dart';
+import 'package:privacy_gui/page/_shared/utils/mesh_topology_builder.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_isp_config.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_wifi_config.dart';
 
@@ -288,37 +289,11 @@ class PnpService {
   }
 
   MeshTopologyInfo _buildTopologyInfo(DataElementsNetwork network) {
-    final nodes = <MeshNodeInfo>[];
-    final clientToNodeMap = <String, String>{};
-
-    for (final node in network.items) {
-      final rawId = node.id.trim().toUpperCase();
-      final nodeDeviceId = rawId.isNotEmpty ? rawId : node.instancePath;
-
-      for (final radio in node.radios) {
-        for (final bss in radio.bssList) {
-          for (final sta in bss.stations) {
-            final mac = sta.macAddress.trim();
-            if (mac.isNotEmpty && nodeDeviceId.isNotEmpty) {
-              clientToNodeMap[mac.toUpperCase()] = nodeDeviceId;
-            }
-          }
-        }
-      }
-
-      nodes.add(MeshNodeInfo(
-        instancePath: node.instancePath,
-        deviceId: nodeDeviceId,
-        model: node.manufacturerModel.trim(),
-        manufacturer: node.manufacturer.trim(),
-        serialNumber: node.serialNumber.trim(),
-        softwareVersion: node.softwareVersion.trim(),
-      ));
-    }
-
-    logger.d('[PnP] Mesh nodes: ${nodes.length}, '
-        'client→node mappings: ${clientToNodeMap.length}');
-    return MeshTopologyInfo(nodes: nodes, clientToNodeMap: clientToNodeMap);
+    // PnP doesn't need backhaul stats — only node discovery for mesh setup
+    final result = MeshTopologyBuilder.build(network, includeBackhaulStats: false);
+    logger.d('[PnP] Mesh nodes: ${result.nodes.length}, '
+        'client→node mappings: ${result.clientToNodeMap.length}');
+    return result;
   }
 
   // ─── Utility ────────────────────────────────────────────

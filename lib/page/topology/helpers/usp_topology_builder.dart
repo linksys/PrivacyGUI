@@ -25,7 +25,7 @@ class UspTopologyBuilder {
     final links = <MeshLink>[];
 
     // Find master node from nodeModels
-    final masterNode = nodeModels.where((n) => n.isMaster).firstOrNull;
+    final masterNode = nodeModels.master;
 
     // Gateway node (the router)
     const gatewayId = 'gateway';
@@ -59,8 +59,8 @@ class UspTopologyBuilder {
     ));
 
     // Mesh extender nodes (slave nodes)
-    final slaveNodes = nodeModels.where((n) => !n.isMaster).toList();
-    final hasMesh = slaveNodes.isNotEmpty;
+    final slaveNodes = nodeModels.slaves;
+    final hasMesh = nodeModels.hasMesh;
     final extenderNodeIds = <String>{};
     for (final slaveNode in slaveNodes) {
       final extenderId = 'extender-${slaveNode.deviceId}';
@@ -107,7 +107,7 @@ class UspTopologyBuilder {
     for (final device in devices) {
       // Skip devices that are mesh nodes (master/slave) — already rendered
       // as gateway or extenders. Only show "client" role devices.
-      if (device.deviceRole == 'master' || device.deviceRole == 'slave') {
+      if (device.isMeshNode) {
         continue;
       }
 

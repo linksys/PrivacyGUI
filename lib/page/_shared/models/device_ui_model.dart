@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
+import 'package:privacy_gui/core/utils/wifi.dart';
 
 // ---------------------------------------------------------------------------
 // Additional Interface Info (for multi-interface devices)
@@ -148,12 +149,16 @@ class DeviceUIModel extends Equatable {
   }
 
   /// Signal level: 0 (no signal) to 3 (excellent).
+  /// Uses thresholds from [getWifiSignalLevel] for consistency.
   int get signalLevel {
     if (signalStrength == null) return 0;
-    if (signalStrength! >= -50) return 3;
-    if (signalStrength! >= -65) return 2;
-    if (signalStrength! >= -80) return 1;
-    return 0;
+    return switch (getWifiSignalLevel(signalStrength)) {
+      NodeSignalLevel.excellent => 3,
+      NodeSignalLevel.good => 2,
+      NodeSignalLevel.fair => 1,
+      NodeSignalLevel.poor || NodeSignalLevel.none => 0,
+      NodeSignalLevel.wired => 0,
+    };
   }
 
   /// Total throughput in bits/sec.
@@ -190,6 +195,15 @@ class DeviceUIModel extends Equatable {
 
   /// Whether this is a client device (not a mesh node master/slave).
   bool get isClientDevice => deviceRole != 'master' && deviceRole != 'slave';
+
+  /// Whether this device is a mesh node (master or slave router).
+  bool get isMeshNode => deviceRole == 'master' || deviceRole == 'slave';
+
+  /// Whether this device is the master (gateway) mesh node.
+  bool get isMasterNode => deviceRole == 'master';
+
+  /// Whether this device is a slave (extender) mesh node.
+  bool get isSlaveNode => deviceRole == 'slave';
 
   // ─── Multi-interface getters ───
 
@@ -288,4 +302,20 @@ class DeviceUIModel extends Equatable {
         hostsDeviceId,
         additionalInterfaces,
       ];
+}
+
+/// Extension methods for List<DeviceUIModel> to simplify common filtering.
+extension DeviceUIModelListExt on List<DeviceUIModel> {
+  /// Returns only client devices (excludes mesh nodes).
+  List<DeviceUIModel> get clientDevices =>
+      where((d) => d.isClientDevice).toList();
+
+  /// Returns only mesh nodes (master and slave routers).
+  List<DeviceUIModel> get meshNodes => where((d) => d.isMeshNode).toList();
+
+  /// Returns the master (gateway) node, or null if not found.
+  DeviceUIModel? get masterNode => where((d) => d.isMasterNode).firstOrNull;
+
+  /// Returns all slave (extender) nodes.
+  List<DeviceUIModel> get slaveNodes => where((d) => d.isSlaveNode).toList();
 }

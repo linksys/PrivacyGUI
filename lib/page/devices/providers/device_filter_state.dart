@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import 'package:privacy_gui/page/_shared/models/mesh_topology_info.dart';
+import 'package:privacy_gui/page/topology/models/node_ui_model.dart';
 
 enum DeviceStatusFilter { all, online, offline }
 
@@ -92,7 +92,7 @@ class DeviceFilterConfig extends Equatable {
 
 /// Available filter options derived from current dashboard data.
 class DeviceFilterOptions extends Equatable {
-  final List<MeshNodeInfo> nodes;
+  final List<NodeUIModel> nodes;
   final List<String> ssids;
   final List<String> bands;
 
