@@ -44,29 +44,13 @@ class PnpWizardFetchResult {
 ///
 /// This is the only class that imports codegen generated files.
 /// The notifier and views interact exclusively through this service.
+///
+/// Note: Authentication is now handled by LoginLocalView before PnP starts.
+/// This service assumes the user is already authenticated.
 class PnpService {
   final UspClient _usp;
 
   PnpService(this._usp);
-
-  static const defaultPassword = 'admin';
-
-  // ─── Auth ────────────────────────────────────────────────
-
-  /// Attempt login with default password. Returns true if successful.
-  Future<bool> tryDefaultLogin() async {
-    try {
-      await _usp.login(defaultPassword);
-      return _usp.isAuthenticated;
-    } catch (_) {
-      return false;
-    }
-  }
-
-  /// Login with user-provided password. Throws on failure.
-  Future<void> login(String password) async {
-    await _usp.login(password);
-  }
 
   // ─── Factory Default Detection ───────────────────────────
 

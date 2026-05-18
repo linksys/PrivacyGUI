@@ -9,7 +9,7 @@ final pnpRoute = LinksysRoute(
   name: RouteNamed.pnp,
   path: RoutePath.pnp,
   config: _pnpRouteConfig,
-  builder: (context, state) => const PnpAdminView(),
+  builder: (context, state) => const PnpEntryView(),
   routes: [
     LinksysRoute(
       name: RouteNamed.pnpConfig,

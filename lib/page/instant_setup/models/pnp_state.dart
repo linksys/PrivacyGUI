@@ -12,7 +12,6 @@ class PnpState extends Equatable {
   final String? serialNumber;
   final String? modelName;
   final String? errorMessage;
-  final String? adminPassword;
 
   const PnpState({
     required this.phase,
@@ -20,10 +19,9 @@ class PnpState extends Equatable {
     this.serialNumber,
     this.modelName,
     this.errorMessage,
-    this.adminPassword,
   });
 
-  factory PnpState.initial() => const PnpState(phase: AdminInitializing());
+  factory PnpState.initial() => const PnpState(phase: AdminCheckingInternet());
 
   PnpState copyWith({
     PnpPhase? phase,
@@ -31,7 +29,6 @@ class PnpState extends Equatable {
     String? serialNumber,
     String? modelName,
     String? errorMessage,
-    String? adminPassword,
     bool clearError = false,
   }) {
     return PnpState(
@@ -40,13 +37,12 @@ class PnpState extends Equatable {
       serialNumber: serialNumber ?? this.serialNumber,
       modelName: modelName ?? this.modelName,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
-      adminPassword: adminPassword ?? this.adminPassword,
     );
   }
 
   @override
   List<Object?> get props =>
-      [phase, flowMode, serialNumber, modelName, errorMessage, adminPassword];
+      [phase, flowMode, serialNumber, modelName, errorMessage];
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -59,43 +55,8 @@ sealed class PnpPhase extends Equatable {
 
 // ─── Admin Phase ───────────────────────────────────────────
 
-/// Entry point — attempting default password login.
-class AdminInitializing extends PnpPhase {
-  const AdminInitializing();
-  @override
-  List<Object?> get props => [];
-}
-
-/// Router is in factory-default state (default password + FirstUseDate zero).
-class AdminUnconfigured extends PnpPhase {
-  const AdminUnconfigured();
-  @override
-  List<Object?> get props => [];
-}
-
-/// Default password failed — user must enter their password.
-class AdminAwaitingPassword extends PnpPhase {
-  const AdminAwaitingPassword();
-  @override
-  List<Object?> get props => [];
-}
-
-/// Authenticating with user-provided password.
-class AdminLoggingIn extends PnpPhase {
-  const AdminLoggingIn();
-  @override
-  List<Object?> get props => [];
-}
-
-/// Login failed — show error and let user retry.
-class AdminLoginFailed extends PnpPhase {
-  final String message;
-  const AdminLoginFailed({required this.message});
-  @override
-  List<Object?> get props => [message];
-}
-
-/// Checking WAN / internet connectivity.
+/// Entry point — checking WAN / internet connectivity.
+/// User is already authenticated at this point (login handled by LoginLocalView).
 class AdminCheckingInternet extends PnpPhase {
   const AdminCheckingInternet();
   @override

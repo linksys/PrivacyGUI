@@ -341,7 +341,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
                 routerIconTestByModel(modelNumber: node.model),
               ),
               title: node.model.isNotEmpty ? node.model : node.deviceId,
-              description: isMaster ? 'Gateway' : 'Extender',
+              description: isMaster ? 'Master' : 'Slave',
               trailing: AppIcon.font(
                 Icons.check_circle,
                 color: Theme.of(context).colorScheme.primary,
@@ -556,7 +556,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
           AppGap.xl(),
           AppButton.text(
             label: loc(context).tryAgain,
-            onTap: () => ref.read(pnpProvider.notifier).startFlow(),
+            onTap: () => ref.read(pnpProvider.notifier).startPostLoginFlow(),
           ),
         ],
       ),

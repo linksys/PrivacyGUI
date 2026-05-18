@@ -59,10 +59,10 @@ import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_settings_provi
 import 'package:privacy_gui/page/wifi_settings/views/usp_wifi_settings_view.dart';
 import 'package:privacy_gui/page/apps/views/usp_apps_view.dart';
 import 'package:privacy_gui/page/dashboard/views/dashboard_troubleshooting_view.dart';
-import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
+import 'package:privacy_gui/page/instant_setup/services/pnp_status_service.dart';
 
 // PnP (Plug and Play) imports
-import 'package:privacy_gui/page/instant_setup/views/pnp_admin_view.dart';
+import 'package:privacy_gui/page/instant_setup/views/pnp_entry_view.dart';
 import 'package:privacy_gui/page/instant_setup/views/pnp_setup_view.dart';
 import 'package:privacy_gui/page/instant_setup/views/pnp_no_internet_view.dart';
 import 'package:privacy_gui/page/instant_setup/views/pnp_isp_settings_view.dart';
@@ -161,55 +161,9 @@ class RouterNotifier extends ChangeNotifier {
 
     logger.i('[Route]: [AutoConfigurationLogic]: loginType=$loginType');
 
-    // If no stored credentials, check if PnP has been completed before.
-    if (loginType == LoginType.none && !BuildConfig.skipPnp) {
-      // Step 1: Check SharedPreferences first (local cache)
-      final hasLocalRecord = !await _checkPnpStatusViaPrefs();
-      if (hasLocalRecord) {
-        logger.d('[Route]: SharedPreferences has PnP record, skipping');
-      } else {
-        // Step 2: No local record → check API (router-authoritative)
-        try {
-          logger.d('[Route]: No local PnP record, checking API...');
-          final needsPnp = await _checkPnpStatusViaApi();
-          if (needsPnp) {
-            logger.i('[Route]: API indicates PnP needed, routing to /pnp');
-            return RoutePath.pnp;
-          }
-          logger.d('[Route]: API indicates PnP already acknowledged, skipping');
-        } catch (e) {
-          // API failed and no local record → assume PnP needed
-          logger.w(
-              '[Route]: API check failed: $e, no local record → routing to /pnp');
-          return RoutePath.pnp;
-        }
-      }
-    } else if (BuildConfig.skipPnp) {
-      logger.d('[Route]: BuildConfig.skipPnp=true, skipping PnP check');
-    }
-
+    // PnP check is now performed AFTER login in _prepare().
+    // User must authenticate first before we can check PnP status.
     return authCheck(state);
-  }
-
-  /// Checks PnP status via the public API endpoint.
-  /// Returns true if PnP is needed (user has NOT acknowledged).
-  Future<bool> _checkPnpStatusViaApi() async {
-    final bridge = _ref.read(uspBridgeClientProvider);
-    if (bridge == null) {
-      throw Exception('Bridge client not available');
-    }
-    final status = await bridge.getSetupStatus();
-    logger.d(
-        '[Route]: Setup status: acknowledged=${status.userAcknowledgedAutoConfiguration}');
-    return !status.userAcknowledgedAutoConfiguration;
-  }
-
-  /// Fallback: Checks PnP status via SharedPreferences.
-  /// Returns true if PnP is needed (no configured serial number).
-  Future<bool> _checkPnpStatusViaPrefs() async {
-    final prefs = await SharedPreferences.getInstance();
-    final sn = prefs.getString(pPnpConfiguredSN);
-    return sn == null || sn.isEmpty;
   }
 
   Future<String?> redirectLogic(GoRouterState state) async {
@@ -324,7 +278,19 @@ class RouterNotifier extends ChangeNotifier {
     }).onError((error, stackTrace) => null);
 
     if (nodeDeviceInfo != null) {
-      logger.d('[Prepare]: SN changed: ${nodeDeviceInfo.serialNumber}');
+      logger.d('[Prepare]: SN: ${nodeDeviceInfo.serialNumber}');
+
+      // Post-login PnP check — only for local login
+      if (loginType == LoginType.local && !BuildConfig.skipPnp) {
+        final pnpResult = await _ref
+            .read(pnpStatusServiceProvider)
+            .check(nodeDeviceInfo.serialNumber);
+        if (pnpResult.needsPnp) {
+          logger.i('[Prepare]: PnP needed, routing to /pnp');
+          return RoutePath.pnp;
+        }
+        logger.d('[Prepare]: PnP not needed, continuing to dashboard');
+      }
 
       final naviPath = goToPath ?? state.uri.toString();
       logger.d('[Prepare]: Prepare go to $naviPath');

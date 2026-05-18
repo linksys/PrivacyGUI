@@ -1,8 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/constants/pref_key.dart';
-import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
 import 'package:privacy_gui/core/usp/providers/usp_auth_coordinator.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/core/session/providers/session_provider.dart';
@@ -11,8 +9,7 @@ import 'package:privacy_gui/page/_shared/models/mesh_topology_info.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_isp_config.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_state.dart';
 import 'package:privacy_gui/page/instant_setup/services/pnp_service.dart';
-import 'package:privacy_gui/providers/auth/auth_provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:privacy_gui/page/instant_setup/services/pnp_status_service.dart';
 
 /// PnP state machine notifier.
 ///
@@ -28,83 +25,30 @@ class PnpNotifier extends Notifier<PnpState> {
   // Admin Phase
   // ══════════════════════════════════════════════════════════
 
-  /// Entry point — called once when PnpAdminView mounts.
+  /// Entry point — called once when PnpEntryView mounts.
   ///
-  /// 1. Try default password login
-  /// 2. If succeeds → check factory default + internet
-  /// 3. If fails → show password input
-  Future<void> startFlow() async {
-    state = state.copyWith(phase: const AdminInitializing());
+  /// User is already authenticated (login handled by LoginLocalView).
+  /// This method fetches device info and checks internet connectivity.
+  Future<void> startPostLoginFlow() async {
+    state = state.copyWith(phase: const AdminCheckingInternet());
 
     try {
-      final defaultLoginOk = await _svc.tryDefaultLogin();
-
-      if (defaultLoginOk) {
-        final result = await _svc.checkFactoryDefault();
-        state = state.copyWith(
-          serialNumber: result.serialNumber,
-          modelName: result.modelName,
-          adminPassword: PnpService.defaultPassword,
-        );
-
-        if (result.isFactoryDefault) {
-          state = state.copyWith(
-            flowMode: PnpFlowMode.unconfigured,
-            phase: const AdminCheckingInternet(),
-          );
-          await _checkInternet();
-        } else {
-          // Default password works but not factory default —
-          // user reset password back to default.
-          state = state.copyWith(
-            flowMode: PnpFlowMode.unconfigured,
-            phase: const AdminUnconfigured(),
-          );
-        }
-      } else {
-        state = state.copyWith(
-          phase: const AdminAwaitingPassword(),
-        );
-      }
-    } catch (e) {
-      logger.e('[PnP] startFlow error: $e');
-      state = state.copyWith(
-        phase: AdminError(message: '$e'),
-      );
-    }
-  }
-
-  /// User submits password from the password input form.
-  Future<void> submitPassword(String password) async {
-    state = state.copyWith(phase: const AdminLoggingIn());
-
-    try {
-      await _svc.login(password);
-
       final result = await _svc.checkFactoryDefault();
       state = state.copyWith(
         serialNumber: result.serialNumber,
         modelName: result.modelName,
-        adminPassword: password,
         flowMode: result.isFactoryDefault
             ? PnpFlowMode.unconfigured
             : PnpFlowMode.configured,
       );
 
-      state = state.copyWith(phase: const AdminCheckingInternet());
       await _checkInternet();
     } catch (e) {
-      logger.w('[PnP] Login failed: $e');
+      logger.e('[PnP] startPostLoginFlow error: $e');
       state = state.copyWith(
-        phase: AdminLoginFailed(message: '$e'),
+        phase: AdminError(message: '$e'),
       );
     }
-  }
-
-  /// Continue from AdminUnconfigured (user acknowledges factory default).
-  Future<void> continueFromUnconfigured() async {
-    state = state.copyWith(phase: const AdminCheckingInternet());
-    await _checkInternet();
   }
 
   Future<void> _checkInternet() async {
@@ -218,42 +162,20 @@ class PnpNotifier extends Notifier<PnpState> {
     state = state.copyWith(phase: const WizardSaving());
 
     try {
-      // Persist credentials BEFORE saving WiFi — if WiFi SSID changes,
-      // the connection will drop and we need credentials stored for
-      // automatic session restore when reconnected.
-      final passwordToUse = state.adminPassword ?? PnpService.defaultPassword;
-      await ref
-          .read(authProvider.notifier)
-          .persistLocalCredentials(passwordToUse);
-
       await ref.read(uspMutationLockProvider).withLock(() async {
         await _svc.saveWifi(phase.wifiConfig);
       });
 
-      // Save serial number for future recognition
+      // Acknowledge PnP completion and save serial number
       logger.d(
           '[PnP] Saving setup completion, serialNumber=${state.serialNumber}');
       if (state.serialNumber != null) {
-        // Step 1: Acknowledge via API (router-authoritative)
-        try {
-          final bridge = ref.read(uspBridgeClientProvider);
-          logger.d(
-              '[PnP] Bridge client: ${bridge != null ? "available" : "null"}');
-          if (bridge != null) {
-            await bridge.acknowledgeSetup();
-            logger.i('[PnP] Setup acknowledged via API');
-          } else {
-            logger.w('[PnP] Bridge client is null, skipping API acknowledge');
-          }
-        } catch (e) {
-          logger.w('[PnP] API acknowledge failed (non-fatal): $e');
-        }
+        // Acknowledge via PnpStatusService (SharedPreferences now, TR-181 future)
+        await ref
+            .read(pnpStatusServiceProvider)
+            .acknowledge(state.serialNumber!);
 
-        // Step 2: SharedPreferences fallback
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString(pPnpConfiguredSN, state.serialNumber!);
-
-        // Step 3: Save selected network
+        // Save selected network for session management
         await ref
             .read(sessionProvider.notifier)
             .saveSelectedNetwork(state.serialNumber!, '');

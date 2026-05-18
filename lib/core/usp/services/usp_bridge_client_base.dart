@@ -1,4 +1,3 @@
-import 'package:privacy_gui/core/usp/models/setup_status.dart';
 import 'usp_client.dart';
 
 /// Stub implementation of [UspBridgeClient] for non-Web platforms (Dart VM / tests).
@@ -40,16 +39,6 @@ class UspBridgeClient {
       throw UnsupportedError('UspBridgeClient is only available on Web');
 
   Future<Map<String, dynamic>> turboRelease() =>
-      throw UnsupportedError('UspBridgeClient is only available on Web');
-
-  // ══════════════════════════════════════════════════════════════════════════
-  // Setup Status (PnP trigger)
-  // ══════════════════════════════════════════════════════════════════════════
-
-  Future<SetupStatus> getSetupStatus() =>
-      throw UnsupportedError('UspBridgeClient is only available on Web');
-
-  Future<void> acknowledgeSetup() =>
       throw UnsupportedError('UspBridgeClient is only available on Web');
 
   /// Synchronously abort the active SSE stream. No-op on non-Web platforms.

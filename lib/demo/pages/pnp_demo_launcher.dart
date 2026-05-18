@@ -76,22 +76,10 @@ class PnpDemoLauncher extends ConsumerWidget {
       _DemoEntry(
         icon: Icons.play_arrow_rounded,
         title: 'Full Flow',
-        subtitle: 'Start from the beginning',
+        subtitle: 'Start from internet check (assumes logged in)',
         onTap: () {
           ref.invalidate(pnpProvider);
-          ref.read(pnpProvider.notifier).startFlow();
-          context.go(RoutePath.pnp);
-        },
-      ),
-      _DemoEntry(
-        icon: Icons.lock_outlined,
-        title: 'Admin Login',
-        subtitle: 'Password entry screen',
-        onTap: () {
-          ref.invalidate(pnpProvider);
-          ref.read(pnpProvider.notifier).setDemoPhase(
-                const AdminAwaitingPassword(),
-              );
+          ref.read(pnpProvider.notifier).startPostLoginFlow();
           context.go(RoutePath.pnp);
         },
       ),
