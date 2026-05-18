@@ -30,6 +30,23 @@ export class UspClient {
         wasm.__wbg_uspclient_free(ptr, 0);
     }
     /**
+     * Acknowledges the auto configuration setup
+     *
+     * Requires authentication. Sets `user_acknowledged_auto_configuration` to true.
+     *
+     * # Example (JavaScript)
+     * ```javascript
+     * const client = new UspClient("http://192.168.1.1");
+     * await client.login("password");
+     * await client.acknowledgeSetup();
+     * ```
+     * @returns {Promise<any>}
+     */
+    acknowledgeSetup() {
+        const ret = wasm.uspclient_acknowledgeSetup(this.__wbg_ptr);
+        return takeObject(ret);
+    }
+    /**
      * Performs an Add operation for single or multiple object instances (unified API)
      *
      * # Arguments
@@ -170,6 +187,35 @@ export class UspClient {
      */
     get(paths) {
         const ret = wasm.uspclient_get(this.__wbg_ptr, addHeapObject(paths));
+        return takeObject(ret);
+    }
+    /**
+     * Gets the setup status for PnP flow detection
+     *
+     * This endpoint does NOT require authentication.
+     *
+     * # Returns
+     * * Promise that resolves with setup status object:
+     *   ```javascript
+     *   {
+     *     auto_configuration_method: "None" | "PreConfigured" | "AutoParent",
+     *     user_acknowledged_auto_configuration: boolean
+     *   }
+     *   ```
+     *
+     * # Example (JavaScript)
+     * ```javascript
+     * const client = new UspClient("http://192.168.1.1");
+     * // No login required!
+     * const status = await client.getSetupStatus();
+     * if (!status.user_acknowledged_auto_configuration) {
+     *     console.log("Device needs PnP setup");
+     * }
+     * ```
+     * @returns {Promise<any>}
+     */
+    getSetupStatus() {
+        const ret = wasm.uspclient_getSetupStatus(this.__wbg_ptr);
         return takeObject(ret);
     }
     /**
@@ -685,7 +731,7 @@ function __wbg_get_imports() {
                     const a = state0.a;
                     state0.a = 0;
                     try {
-                        return __wasm_bindgen_func_elem_2218(a, state0.b, arg0, arg1);
+                        return __wasm_bindgen_func_elem_2269(a, state0.b, arg0, arg1);
                     } finally {
                         state0.a = a;
                     }
@@ -834,8 +880,8 @@ function __wbg_get_imports() {
             return addHeapObject(ret);
         },
         __wbindgen_cast_0000000000000001: function(arg0, arg1) {
-            // Cast intrinsic for `Closure(Closure { dtor_idx: 143, function: Function { arguments: [Externref], shim_idx: 144, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
-            const ret = makeMutClosure(arg0, arg1, wasm.__wasm_bindgen_func_elem_1354, __wasm_bindgen_func_elem_1369);
+            // Cast intrinsic for `Closure(Closure { dtor_idx: 156, function: Function { arguments: [Externref], shim_idx: 157, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
+            const ret = makeMutClosure(arg0, arg1, wasm.__wasm_bindgen_func_elem_1405, __wasm_bindgen_func_elem_1420);
             return addHeapObject(ret);
         },
         __wbindgen_cast_0000000000000002: function(arg0) {
@@ -866,12 +912,12 @@ function __wbg_get_imports() {
     };
 }
 
-function __wasm_bindgen_func_elem_1369(arg0, arg1, arg2) {
-    wasm.__wasm_bindgen_func_elem_1369(arg0, arg1, addHeapObject(arg2));
+function __wasm_bindgen_func_elem_1420(arg0, arg1, arg2) {
+    wasm.__wasm_bindgen_func_elem_1420(arg0, arg1, addHeapObject(arg2));
 }
 
-function __wasm_bindgen_func_elem_2218(arg0, arg1, arg2, arg3) {
-    wasm.__wasm_bindgen_func_elem_2218(arg0, arg1, addHeapObject(arg2), addHeapObject(arg3));
+function __wasm_bindgen_func_elem_2269(arg0, arg1, arg2, arg3) {
+    wasm.__wasm_bindgen_func_elem_2269(arg0, arg1, addHeapObject(arg2), addHeapObject(arg3));
 }
 
 

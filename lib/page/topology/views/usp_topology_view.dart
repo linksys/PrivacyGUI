@@ -6,6 +6,7 @@ import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/shell/usp_top_bar.dart';
+import 'package:privacy_gui/page/topology/helpers/topology_node_content_builder.dart';
 import 'package:privacy_gui/page/topology/helpers/usp_topology_builder.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -60,8 +61,7 @@ class _UspTopologyViewState extends ConsumerState<UspTopologyView> {
             final topology = UspTopologyBuilder.build(
               info: sysInfo,
               devices: data.deviceModels,
-              meshNodes: data.meshTopology.nodes,
-              coverageColor: Theme.of(context).colorScheme.primary,
+              nodeModels: data.nodeModels,
             );
 
             return _buildTopologyCard(
@@ -113,6 +113,7 @@ class _UspTopologyViewState extends ConsumerState<UspTopologyView> {
               interactive: false,
               onNodeTap: (nodeId) =>
                   _navigateByNodeId(router, nodeId, topology),
+              nodeContentBuilder: TopologyNodeContentBuilder.build,
               treeConfig: TopologyTreeConfiguration(
                 titleBuilder: (node) => node.name,
                 subtitleBuilder: (node) => node.extra ?? '',
@@ -127,6 +128,7 @@ class _UspTopologyViewState extends ConsumerState<UspTopologyView> {
                 detailBuilder: (ctx, node, metadata) =>
                     _buildDetailPanel(ctx, node, metadata, router),
               ),
+              nodeComparator: _nodeComparator,
             ),
           ),
         ),
@@ -213,16 +215,14 @@ class _UspTopologyViewState extends ConsumerState<UspTopologyView> {
 
   Widget _detailRow(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+      padding: const EdgeInsets.only(bottom: AppSpacing.xxs),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Expanded(
-            flex: 2,
+          SizedBox(
+            width: 100,
             child: AppText.bodySmall(label, color: Colors.grey),
           ),
           Expanded(
-            flex: 3,
             child: AppText.bodySmall(
               value,
               maxLines: 1,
@@ -233,6 +233,25 @@ class _UspTopologyViewState extends ConsumerState<UspTopologyView> {
       ),
     );
   }
+
+  /// Comparator for sorting nodes: online first, then infra nodes before clients, then alphabetical.
+  static int _nodeComparator(MeshNode a, MeshNode b) {
+    // 1. Online before offline
+    if (a.isOffline && !b.isOffline) return 1;
+    if (!a.isOffline && b.isOffline) return -1;
+    // 2. Node type priority: gateway > extender > client > internet
+    final typePriority = _nodeTypePriority(a.type) - _nodeTypePriority(b.type);
+    if (typePriority != 0) return typePriority;
+    // 3. Alphabetical by name
+    return a.name.compareTo(b.name);
+  }
+
+  static int _nodeTypePriority(MeshNodeType type) => switch (type) {
+        MeshNodeType.gateway => 0,
+        MeshNodeType.extender => 1,
+        MeshNodeType.client => 2,
+        MeshNodeType.internet => 3,
+      };
 
   Widget _withTopologyAnimation(BuildContext context, Widget child) {
     final appTheme = Theme.of(context).extension<AppDesignTheme>();

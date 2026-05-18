@@ -146,7 +146,7 @@ class DeviceFilterNotifier extends StateNotifier<DeviceFilterConfig> {
 final deviceFilterOptionsProvider = Provider<DeviceFilterOptions>((ref) {
   final data = ref.watch(devicesDataProvider).valueOrNull;
   if (data == null) return const DeviceFilterOptions();
-  final devices = data.deviceModels;
+  final devices = data.clientDevices;
   return DeviceFilterOptions(
     nodes: data.meshTopology.nodes,
     ssids: devices
@@ -173,7 +173,7 @@ final filteredDeviceListProvider = Provider<List<DeviceUIModel>>((ref) {
   final data = ref.watch(devicesDataProvider).valueOrNull;
   if (data == null) return [];
   final filter = ref.watch(deviceFilterConfigProvider);
-  return data.deviceModels.where((d) => _matches(d, filter)).toList();
+  return data.clientDevices.where((d) => _matches(d, filter)).toList();
 });
 
 bool _matches(DeviceUIModel device, DeviceFilterConfig filter) {

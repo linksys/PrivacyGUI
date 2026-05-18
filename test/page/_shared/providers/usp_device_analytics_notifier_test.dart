@@ -27,7 +27,7 @@ void main() {
     isActive: true,
     isWifi: true,
     band: '5GHz',
-    signalStrength: -55, // level 3
+    signalStrength: -55, // level 3 (excellent, >= -65)
   );
 
   const wifiDevice24g = DeviceUIModel(
@@ -37,7 +37,7 @@ void main() {
     isActive: true,
     isWifi: true,
     band: '2.4GHz',
-    signalStrength: -75, // level 1
+    signalStrength: -75, // level 1 (fair, -71..-78)
   );
 
   const wiredDevice = DeviceUIModel(
@@ -167,9 +167,10 @@ void main() {
       await waitForAnalytics(container);
 
       final dist = container.read(uspDeviceAnalyticsProvider).current!;
-      // wifiDevice5g: -55 dBm → level 2 (-55 >= -65)
-      // wifiDevice24g: -75 dBm → level 1 (-75 >= -80)
-      expect(dist.signalLevelDistribution[2], 1);
+      // Using wifi.dart thresholds (signalThresholdRSSI: [-65, -71, -78]):
+      // wifiDevice5g: -55 dBm → level 3 (excellent, >= -65)
+      // wifiDevice24g: -75 dBm → level 1 (fair, -71..-78)
+      expect(dist.signalLevelDistribution[3], 1);
       expect(dist.signalLevelDistribution[1], 1);
       container.dispose();
     });

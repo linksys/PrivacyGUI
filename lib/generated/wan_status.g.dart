@@ -73,6 +73,15 @@ class WanStatus {
     );
   }
 
+  static Future<Subscription<WanStatus>> subscribe(UspClient client) async {
+    return client.subscribe<WanStatus>(
+      id: 'wan-status-valuechange',
+      notifType: NotifType.valueChange,
+      paths: ['Device.IP.Interface.2.'],
+      parser: WanStatus._fromResponse,
+    );
+  }
+
   @override
   String toString() {
     return 'WanStatus('

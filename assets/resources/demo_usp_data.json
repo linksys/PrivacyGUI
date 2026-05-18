@@ -11,6 +11,9 @@
   "Device.DeviceInfo.MemoryStatus.Free": "262144",
   "Device.DeviceInfo.ProcessStatus.CPUUsage": "23",
   "Device.DeviceInfo.HostName": "LinksysRouter",
+  "Device.DeviceInfo.FirstUseDate": "0001-01-01T00:00:00Z",
+  "Device.DeviceInfo.Description": "Linksys M60TB Tri-Band Mesh Router",
+  "Device.DeviceInfo.ProductClass": "M60TB",
   "Device.DeviceInfo.ActiveFirmwareImage": "Device.DeviceInfo.FirmwareImage.1.",
   "Device.DeviceInfo.BootFirmwareImage": "Device.DeviceInfo.FirmwareImage.1.",
 

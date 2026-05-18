@@ -150,8 +150,10 @@ class UspEthernetDataService {
     }
 
     if (lanAggregate != null) {
-      final wiredDevices =
-          deviceModels.where((d) => d.isActive && !d.isWifi).toList();
+      // Filter wired client devices only (exclude mesh nodes: master/slave).
+      final wiredDevices = deviceModels
+          .where((d) => d.isActive && !d.isWifi && d.isClientDevice)
+          .toList();
       final lanBitRate = lanAggregate.currentBitRate;
       final lanIsUp = lanAggregate.status.toLowerCase() == 'up';
 

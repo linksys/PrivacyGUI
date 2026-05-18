@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
-import 'package:privacy_gui/page/_shared/models/mesh_topology_info.dart';
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/_shared/components/card_skeleton.dart';
+import 'package:privacy_gui/page/topology/helpers/topology_node_content_builder.dart';
 import 'package:privacy_gui/page/topology/helpers/usp_topology_builder.dart';
+import 'package:privacy_gui/page/topology/models/node_ui_model.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Displays a network topology visualization of the router and connected devices.
@@ -18,13 +19,13 @@ import 'package:ui_kit_library/ui_kit.dart';
 class UspNetworkTopologyCard extends ConsumerWidget {
   final SystemInfoUIModel? info;
   final List<DeviceUIModel>? devices;
-  final List<MeshNodeInfo>? meshNodes;
+  final List<NodeUIModel>? nodeModels;
 
   const UspNetworkTopologyCard({
     super.key,
     this.info,
     this.devices,
-    this.meshNodes,
+    this.nodeModels,
   });
 
   @override
@@ -34,20 +35,16 @@ class UspNetworkTopologyCard extends ConsumerWidget {
         this.info ?? ref.watch(systemInfoDataProvider).valueOrNull?.model;
     if (info == null) return const CardSkeleton.topology();
     final devices = this.devices ?? devicesData?.deviceModels ?? [];
-    final meshNodes = this.meshNodes ?? devicesData?.meshTopology.nodes ?? [];
+    final nodeModels = this.nodeModels ?? devicesData?.nodeModels ?? [];
     final topology = UspTopologyBuilder.build(
       info: info,
       devices: devices,
-      meshNodes: meshNodes,
-      coverageColor: Theme.of(context).colorScheme.primary,
-      // Shrink coverage rings for dashboard card context — ui_kit's
-      // calculateBounds() ignores ring radii, so full-size rings
-      // overflow the fitScale viewport. Revisit if calculateBounds is
-      // updated to include ring extents.
-      coverageRingScale: 0.85,
+      nodeModels: nodeModels,
     );
-    final clientCount = devices.length;
-    final useRing = clientCount >= 8;
+    final onlineCount = devicesData?.onlineClientCount ??
+        devices.where((d) => d.isActive).length;
+    final totalCount = devicesData?.totalClientCount ?? devices.length;
+    final useRing = totalCount >= 8;
 
     return AppCard(
       child: Column(
@@ -58,7 +55,7 @@ class UspNetworkTopologyCard extends ConsumerWidget {
             children: [
               AppText.titleMedium('Network Topology'),
               AppText.labelLarge(
-                '${devices.where((d) => d.isActive).length} / ${devices.length} online',
+                '$onlineCount / $totalCount online',
               ),
             ],
           ),
@@ -77,6 +74,7 @@ class UspNetworkTopologyCard extends ConsumerWidget {
                   nodeRendererRegistry: NodeRendererRegistry.unified,
                   enableAnimation: true,
                   interactive: false,
+                  nodeContentBuilder: TopologyNodeContentBuilder.build,
                   treeConfig: TopologyTreeConfiguration(
                     titleBuilder: (node) => node.name,
                     subtitleBuilder: (node) => node.extra ?? '',
@@ -112,8 +110,6 @@ class UspNetworkTopologyCard extends ConsumerWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        AppText.labelLarge(node.name),
-        AppGap.xs(),
         _popupRow('Role', isMaster ? 'Master' : 'Slave'),
         if (deviceId.isNotEmpty && deviceId.toUpperCase() != 'GATEWAY')
           _popupRow('MAC', deviceId),
@@ -127,12 +123,14 @@ class UspNetworkTopologyCard extends ConsumerWidget {
 
   Widget _popupRow(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.only(top: AppSpacing.xxs),
+      padding: const EdgeInsets.only(bottom: AppSpacing.xxs),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
         children: [
-          AppText.bodySmall('$label: ', color: Colors.grey),
-          Flexible(child: AppText.bodySmall(value)),
+          SizedBox(
+            width: 100,
+            child: AppText.bodySmall(label, color: Colors.grey),
+          ),
+          Expanded(child: AppText.bodySmall(value)),
         ],
       ),
     );

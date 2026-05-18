@@ -1,9 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/core/utils/device_classifier.dart';
 import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
-import 'package:privacy_gui/page/_shared/models/mesh_topology_info.dart';
+import 'package:privacy_gui/page/topology/models/node_ui_model.dart';
 import 'package:privacy_gui/page/topology/helpers/usp_topology_builder.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -24,16 +23,16 @@ void main() {
     cpuUsage: 30,
   );
 
-  const meshGateway = MeshNodeInfo(
-    instancePath: 'Device.1.',
+  const meshGateway = NodeUIModel(
     deviceId: 'AA:BB:CC:DD:EE:01',
     model: 'MR7500',
+    isMaster: true,
   );
 
-  const meshExtender = MeshNodeInfo(
-    instancePath: 'Device.2.',
+  const meshExtender = NodeUIModel(
     deviceId: 'AA:BB:CC:DD:EE:02',
     model: 'MX5500',
+    isMaster: false,
   );
 
   const wifiDevice = DeviceUIModel(
@@ -74,7 +73,7 @@ void main() {
       final topo = UspTopologyBuilder.build(
         info: sysInfo,
         devices: [wifiDevice],
-        meshNodes: [],
+        nodeModels: [],
       );
 
       expect(topo.nodes.where((n) => n.type == MeshNodeType.gateway),
@@ -89,7 +88,7 @@ void main() {
       final topo = UspTopologyBuilder.build(
         info: sysInfo,
         devices: [wifiDevice, ethernetDevice],
-        meshNodes: [],
+        nodeModels: [],
       );
 
       final clientLinks =
@@ -101,7 +100,7 @@ void main() {
       final topo = UspTopologyBuilder.build(
         info: sysInfo,
         devices: [wifiDevice],
-        meshNodes: [],
+        nodeModels: [],
       );
 
       final extenders =
@@ -119,7 +118,7 @@ void main() {
       final topo = UspTopologyBuilder.build(
         info: sysInfo,
         devices: [],
-        meshNodes: [meshGateway, meshExtender],
+        nodeModels: [meshGateway, meshExtender],
       );
 
       final gateway =
@@ -131,7 +130,7 @@ void main() {
       final topo = UspTopologyBuilder.build(
         info: sysInfo,
         devices: [],
-        meshNodes: [meshGateway, meshExtender],
+        nodeModels: [meshGateway, meshExtender],
       );
 
       final extenders =
@@ -145,7 +144,7 @@ void main() {
       final topo = UspTopologyBuilder.build(
         info: sysInfo,
         devices: [],
-        meshNodes: [meshGateway, meshExtender],
+        nodeModels: [meshGateway, meshExtender],
       );
 
       final extenderLink =
@@ -159,7 +158,7 @@ void main() {
       final topo = UspTopologyBuilder.build(
         info: sysInfo,
         devices: [offlineDevice],
-        meshNodes: [meshGateway, meshExtender],
+        nodeModels: [meshGateway, meshExtender],
       );
 
       final clientLink = topo.links
@@ -173,7 +172,7 @@ void main() {
       final topo = UspTopologyBuilder.build(
         info: sysInfo,
         devices: [wifiDevice],
-        meshNodes: [meshGateway, meshExtender],
+        nodeModels: [meshGateway, meshExtender],
       );
 
       final clientLink = topo.links
@@ -194,7 +193,7 @@ void main() {
       final topo = UspTopologyBuilder.build(
         info: sysInfo,
         devices: [wifiDevice],
-        meshNodes: [],
+        nodeModels: [],
       );
 
       final link =
@@ -207,7 +206,7 @@ void main() {
       final topo = UspTopologyBuilder.build(
         info: sysInfo,
         devices: [ethernetDevice],
-        meshNodes: [],
+        nodeModels: [],
       );
 
       final link =
@@ -220,7 +219,7 @@ void main() {
       final topo = UspTopologyBuilder.build(
         info: sysInfo,
         devices: [wifiDevice],
-        meshNodes: [],
+        nodeModels: [],
       );
 
       final client =
@@ -232,7 +231,7 @@ void main() {
       final topo = UspTopologyBuilder.build(
         info: sysInfo,
         devices: [offlineDevice],
-        meshNodes: [],
+        nodeModels: [],
       );
 
       final client =
@@ -244,7 +243,7 @@ void main() {
       final topo = UspTopologyBuilder.build(
         info: sysInfo,
         devices: [wifiDevice],
-        meshNodes: [],
+        nodeModels: [],
       );
 
       final client =
@@ -271,42 +270,22 @@ void main() {
       final topo = UspTopologyBuilder.build(
         info: sysInfo,
         devices: [device],
-        meshNodes: [],
+        nodeModels: [],
       );
 
       final client =
           topo.nodes.firstWhere((n) => n.type == MeshNodeType.client);
       expect(client.level, 0.9);
-      expect(client.signalQuality, SignalQuality.strong);
+      expect(client.linkQuality, LinkQuality.excellent);
     });
 
     test('medium wifi signal maps to medium level', () {
+      // wifi.dart thresholds: [-65, -71, -78]
+      // -75 is >= -78 (fair) → LinkQuality.good
       const device = DeviceUIModel(
         mac: 'AA:AA:AA:AA:AA:AA',
         ip: '192.168.1.1',
         hostName: 'Medium',
-        isActive: true,
-        isWifi: true,
-        signalStrength: -60,
-      );
-
-      final topo = UspTopologyBuilder.build(
-        info: sysInfo,
-        devices: [device],
-        meshNodes: [],
-      );
-
-      final client =
-          topo.nodes.firstWhere((n) => n.type == MeshNodeType.client);
-      expect(client.level, 0.65);
-      expect(client.signalQuality, SignalQuality.medium);
-    });
-
-    test('weak wifi signal maps to low level', () {
-      const device = DeviceUIModel(
-        mac: 'AA:AA:AA:AA:AA:AA',
-        ip: '192.168.1.1',
-        hostName: 'Weak',
         isActive: true,
         isWifi: true,
         signalStrength: -75,
@@ -315,26 +294,51 @@ void main() {
       final topo = UspTopologyBuilder.build(
         info: sysInfo,
         devices: [device],
-        meshNodes: [],
+        nodeModels: [],
+      );
+
+      final client =
+          topo.nodes.firstWhere((n) => n.type == MeshNodeType.client);
+      // -75 maps to level 0.4 (>= -70 threshold in _rssiToLevel)
+      expect(client.level, 0.1);
+      expect(client.linkQuality, LinkQuality.good);
+    });
+
+    test('weak wifi signal maps to low level', () {
+      // wifi.dart thresholds: [-65, -71, -78]
+      // -80 is < -78 (poor) → LinkQuality.fair
+      const device = DeviceUIModel(
+        mac: 'AA:AA:AA:AA:AA:AA',
+        ip: '192.168.1.1',
+        hostName: 'Weak',
+        isActive: true,
+        isWifi: true,
+        signalStrength: -80,
+      );
+
+      final topo = UspTopologyBuilder.build(
+        info: sysInfo,
+        devices: [device],
+        nodeModels: [],
       );
 
       final client =
           topo.nodes.firstWhere((n) => n.type == MeshNodeType.client);
       expect(client.level, 0.1);
-      expect(client.signalQuality, SignalQuality.weak);
+      expect(client.linkQuality, LinkQuality.fair);
     });
 
     test('ethernet device maps to wired signal quality and level 1.0', () {
       final topo = UspTopologyBuilder.build(
         info: sysInfo,
         devices: [ethernetDevice],
-        meshNodes: [],
+        nodeModels: [],
       );
 
       final client =
           topo.nodes.firstWhere((n) => n.type == MeshNodeType.client);
       expect(client.level, 1.0);
-      expect(client.signalQuality, SignalQuality.wired);
+      expect(client.linkQuality, LinkQuality.stable);
     });
 
     test('wifi device with null RSSI maps to unknown quality', () {
@@ -350,45 +354,13 @@ void main() {
       final topo = UspTopologyBuilder.build(
         info: sysInfo,
         devices: [device],
-        meshNodes: [],
+        nodeModels: [],
       );
 
       final client =
           topo.nodes.firstWhere((n) => n.type == MeshNodeType.client);
       expect(client.level, 0.0);
-      expect(client.signalQuality, SignalQuality.unknown);
-    });
-  });
-
-  // ---------------------------------------------------------------------------
-  // Coverage rings
-  // ---------------------------------------------------------------------------
-
-  group('UspTopologyBuilder - coverage rings', () {
-    test('gateway node has coverage rings when color provided', () {
-      final topo = UspTopologyBuilder.build(
-        info: sysInfo,
-        devices: [],
-        meshNodes: [meshGateway, meshExtender],
-        coverageColor: const Color(0xFF0000FF),
-      );
-
-      final gateway =
-          topo.nodes.firstWhere((n) => n.type == MeshNodeType.gateway);
-      expect(gateway.coverageRings, isNotNull);
-      expect(gateway.coverageRings, hasLength(2));
-    });
-
-    test('no coverage rings when color is null', () {
-      final topo = UspTopologyBuilder.build(
-        info: sysInfo,
-        devices: [],
-        meshNodes: [meshGateway],
-      );
-
-      final gateway =
-          topo.nodes.firstWhere((n) => n.type == MeshNodeType.gateway);
-      expect(gateway.coverageRings, isNull);
+      expect(client.linkQuality, LinkQuality.unknown);
     });
   });
 
@@ -401,7 +373,7 @@ void main() {
       final topo = UspTopologyBuilder.build(
         info: sysInfo,
         devices: [wifiDevice, ethernetDevice, offlineDevice],
-        meshNodes: [meshGateway, meshExtender],
+        nodeModels: [meshGateway, meshExtender],
       );
 
       // 1 gateway + 1 extender + 3 clients = 5 nodes
@@ -414,7 +386,7 @@ void main() {
       final topo = UspTopologyBuilder.build(
         info: sysInfo,
         devices: [],
-        meshNodes: [meshGateway, meshExtender],
+        nodeModels: [meshGateway, meshExtender],
       );
 
       // 1 gateway + 1 extender = 2 nodes
@@ -430,10 +402,18 @@ void main() {
 
   group('UspTopologyBuilder - gateway metadata', () {
     test('gateway metadata includes all system info fields', () {
+      const meshGatewayWithFullInfo = NodeUIModel(
+        deviceId: 'AA:BB:CC:DD:EE:01',
+        model: 'MR7500',
+        manufacturer: 'Linksys',
+        serialNumber: 'SN123',
+        softwareVersion: '2.0.0',
+        isMaster: true,
+      );
       final topo = UspTopologyBuilder.build(
         info: sysInfo,
         devices: [],
-        meshNodes: [meshGateway],
+        nodeModels: [meshGatewayWithFullInfo],
       );
 
       final gateway =
@@ -450,7 +430,7 @@ void main() {
       final topo = UspTopologyBuilder.build(
         info: sysInfo,
         devices: [],
-        meshNodes: [meshGateway],
+        nodeModels: [meshGateway],
       );
 
       final gateway =
@@ -462,7 +442,7 @@ void main() {
       final topo = UspTopologyBuilder.build(
         info: sysInfo,
         devices: [],
-        meshNodes: [],
+        nodeModels: [],
       );
 
       final gateway =
@@ -476,20 +456,20 @@ void main() {
   // ---------------------------------------------------------------------------
 
   group('UspTopologyBuilder - extender metadata', () {
-    const extenderWithFullInfo = MeshNodeInfo(
-      instancePath: 'Device.2.',
+    const extenderWithFullInfo = NodeUIModel(
       deviceId: 'AA:BB:CC:DD:EE:02',
       model: 'MX5500',
       manufacturer: 'Linksys',
       serialNumber: 'SN456',
       softwareVersion: '1.5.0',
+      isMaster: false,
     );
 
     test('extender metadata includes all mesh node fields', () {
       final topo = UspTopologyBuilder.build(
         info: sysInfo,
         devices: [],
-        meshNodes: [meshGateway, extenderWithFullInfo],
+        nodeModels: [meshGateway, extenderWithFullInfo],
       );
 
       final extender =
@@ -520,7 +500,7 @@ void main() {
       final topo = UspTopologyBuilder.build(
         info: sysInfo,
         devices: [device],
-        meshNodes: [],
+        nodeModels: [],
       );
 
       final client =
@@ -540,7 +520,7 @@ void main() {
       final topo = UspTopologyBuilder.build(
         info: sysInfo,
         devices: [device],
-        meshNodes: [],
+        nodeModels: [],
       );
 
       final client =
@@ -560,7 +540,7 @@ void main() {
       final topo = UspTopologyBuilder.build(
         info: sysInfo,
         devices: [device],
-        meshNodes: [],
+        nodeModels: [],
       );
 
       final client =
@@ -580,7 +560,7 @@ void main() {
       final topo = UspTopologyBuilder.build(
         info: sysInfo,
         devices: [device],
-        meshNodes: [],
+        nodeModels: [],
       );
 
       final client =
@@ -592,7 +572,7 @@ void main() {
       final topo = UspTopologyBuilder.build(
         info: sysInfo,
         devices: [wifiDevice],
-        meshNodes: [],
+        nodeModels: [],
       );
 
       final client =

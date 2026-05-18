@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:privacy_gui/core/utils/device_classifier.dart';
 import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
 import 'package:privacy_gui/page/_shared/components/usp_status_dot.dart';
+import 'package:privacy_gui/page/devices/views/components/device_icon_with_badge.dart';
 import 'package:privacy_gui/page/devices/views/components/usp_signal_strength_indicator.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -47,25 +48,23 @@ class UspDeviceListTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final subtitle = _buildSubtitle();
-    final hasSignal =
-        device.isActive && device.isWifi && device.signalStrength != null;
 
     final deviceCategory = DeviceClassifier.classify(
       hostname: device.hostName,
       mac: device.mac,
     );
 
-    // Offline devices are not tappable
-    final effectiveOnTap = device.isActive ? onTap : null;
+    final effectiveOnTap = device.isInteractive ? onTap : null;
 
     final content = Row(
       children: [
         UspStatusDot(isActive: device.isActive),
         AppGap.sm(),
-        Icon(
-          deviceCategory.icon,
+        DeviceIconWithBadge.multiInterface(
+          icon: deviceCategory.icon,
           size: 20,
-          color: scheme.onSurface,
+          iconColor: scheme.onSurface,
+          hasMultipleInterfaces: device.hasMultipleInterfaces,
         ),
         AppGap.sm(),
         Expanded(
@@ -102,7 +101,7 @@ class UspDeviceListTile extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  if (hasSignal) ...[
+                  if (device.hasSignalDisplay) ...[
                     AppGap.sm(),
                     UspSignalStrengthIndicator(
                       rssi: device.signalStrength!,
@@ -113,8 +112,8 @@ class UspDeviceListTile extends StatelessWidget {
             ],
           ),
         ),
-        // Only show chevron for online (tappable) devices
-        if (device.isActive) ...[
+        // Only show chevron for interactive (online) devices
+        if (device.isInteractive) ...[
           AppGap.sm(),
           AppIcon.font(
             Icons.chevron_right,
@@ -147,18 +146,33 @@ class UspDeviceListTile extends StatelessWidget {
             );
     }
 
-    return device.isActive ? tile : Opacity(opacity: 0.5, child: tile);
+    return Opacity(opacity: device.displayOpacity, child: tile);
   }
 
   String _buildSubtitle() {
     final parts = <String>[];
-    if (device.isWifi) {
+
+    // Connection type - for multi-interface show both types
+    if (device.hasMultipleInterfaces) {
+      final hasWifi =
+          device.isWifi || device.additionalInterfaces.any((i) => i.isWifi);
+      final hasEthernet =
+          !device.isWifi || device.additionalInterfaces.any((i) => !i.isWifi);
+      if (hasWifi && hasEthernet) {
+        parts.add('WiFi + Ethernet');
+      } else if (hasWifi) {
+        parts.add('WiFi');
+      } else {
+        parts.add('Ethernet');
+      }
+    } else if (device.isWifi) {
       final bandSsid = [
         if (device.band != null && device.band!.isNotEmpty) device.band!,
         if (device.ssidName != null && device.ssidName!.isNotEmpty)
           device.ssidName!,
       ].join(' · ');
-      if (bandSsid.isNotEmpty) parts.add(bandSsid);
+      // Show "WiFi" fallback when no band/SSID data available.
+      parts.add(bandSsid.isNotEmpty ? bandSsid : 'WiFi');
     } else {
       parts.add('Ethernet');
     }

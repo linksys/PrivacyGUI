@@ -69,6 +69,10 @@ class UspNodeDetailView extends ConsumerWidget {
     return Column(
       children: [
         _buildNodeInfoCard(context, node),
+        if (!node.isMaster && node.hasBackhaul) ...[
+          AppGap.lg(),
+          _buildBackhaulCard(context, node),
+        ],
         AppGap.lg(),
         _buildConnectedDevicesCard(context, detail),
       ],
@@ -82,7 +86,15 @@ class UspNodeDetailView extends ConsumerWidget {
       children: [
         SizedBox(
           width: context.colWidth(4),
-          child: _buildNodeInfoCard(context, node),
+          child: Column(
+            children: [
+              _buildNodeInfoCard(context, node),
+              if (!node.isMaster && node.hasBackhaul) ...[
+                AppGap.lg(),
+                _buildBackhaulCard(context, node),
+              ],
+            ],
+          ),
         ),
         AppGap.gutter(),
         SizedBox(
@@ -148,11 +160,12 @@ class UspNodeDetailView extends ConsumerWidget {
             AppGap.md(),
           ],
           // Model
-          DetailInfoTile(
-            icon: Icons.router,
-            label: 'Model',
-            value: node.model,
-          ),
+          if (node.model.isNotEmpty)
+            DetailInfoTile(
+              icon: Icons.router,
+              label: 'Model',
+              value: node.model,
+            ),
           // Manufacturer
           if (node.manufacturer.isNotEmpty) ...[
             AppGap.md(),
@@ -183,6 +196,64 @@ class UspNodeDetailView extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  // ===========================================================================
+  // Backhaul Connection Card (Slave nodes only)
+  // ===========================================================================
+
+  Widget _buildBackhaulCard(BuildContext context, NodeUIModel node) {
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          DetailCardHeader(
+            icon: Icons.sync_alt,
+            title: 'Backhaul Connection',
+          ),
+          AppGap.xl(),
+          DetailInfoTile(
+            icon: Icons.settings_ethernet,
+            label: 'Media Type',
+            value: node.backhaulMediaType,
+          ),
+          if (node.backhaulPhyRate > 0) ...[
+            AppGap.md(),
+            DetailInfoTile(
+              icon: Icons.speed,
+              label: 'PHY Rate',
+              value: '${node.backhaulPhyRate} Mbps',
+            ),
+          ],
+          if (node.backhaulSignalStrength != null) ...[
+            AppGap.md(),
+            DetailInfoTile(
+              icon: Icons.signal_cellular_alt,
+              label: 'Signal Strength',
+              value: '${node.backhaulSignalStrength} dBm',
+            ),
+          ],
+          if (node.backhaulUplinkRate != null &&
+              node.backhaulUplinkRate! > 0) ...[
+            AppGap.md(),
+            DetailInfoTile(
+              icon: Icons.upload,
+              label: 'Throughput',
+              value: _formatThroughput(node.backhaulUplinkRate!),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  String _formatThroughput(int bps) {
+    if (bps >= 1000000) {
+      return '${(bps / 1000000).toStringAsFixed(1)} Mbps';
+    } else if (bps >= 1000) {
+      return '${(bps / 1000).toStringAsFixed(0)} Kbps';
+    }
+    return '$bps bps';
   }
 
   // ===========================================================================

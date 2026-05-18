@@ -58,10 +58,24 @@ import 'package:privacy_gui/page/dhcp/providers/usp_dhcp_reservations_notifier.d
 import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_settings_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/views/usp_wifi_settings_view.dart';
 import 'package:privacy_gui/page/apps/views/usp_apps_view.dart';
+import 'package:privacy_gui/page/dashboard/views/dashboard_troubleshooting_view.dart';
+import 'package:privacy_gui/page/instant_setup/services/pnp_status_service.dart';
+
+// PnP (Plug and Play) imports
+import 'package:privacy_gui/page/instant_setup/views/pnp_entry_view.dart';
+import 'package:privacy_gui/page/instant_setup/views/pnp_setup_view.dart';
+import 'package:privacy_gui/page/instant_setup/views/pnp_no_internet_view.dart';
+import 'package:privacy_gui/page/instant_setup/views/pnp_isp_settings_view.dart';
+import 'package:privacy_gui/page/instant_setup/views/pnp_unplug_modem_view.dart';
+import 'package:privacy_gui/page/instant_setup/views/pnp_modem_lights_off_view.dart';
+import 'package:privacy_gui/page/instant_setup/views/pnp_waiting_modem_view.dart';
+import 'package:privacy_gui/page/instant_setup/views/pnp_pppoe_view.dart';
+import 'package:privacy_gui/page/instant_setup/views/pnp_static_ip_view.dart';
 
 part 'route_home.dart';
 part 'route_local_login.dart';
 part 'route_usp_dashboard.dart';
+part 'route_pnp.dart';
 
 // init path enum
 enum LocalWhereToGo {
@@ -75,6 +89,8 @@ final appRoutes = [
   autoParentFirstLoginRoute,
   homeRoute,
   uspDashboardRoute,
+  pnpRoute,
+  pnpNoInternetRoute,
 ];
 
 /// Navigator key for the old dashboard shell (kept for component compatibility).
@@ -99,6 +115,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         return router.redirectLogic(state);
       } else if (state.matchedLocation.startsWith('/autoParentFirstLogin')) {
         // bypass auto parent first login page
+        return state.uri.toString();
+      } else if (state.matchedLocation.startsWith('/pnp') ||
+          state.matchedLocation.startsWith('/pnpNoInternetConnection')) {
+        // PnP routes — no auth required, pass through.
         return state.uri.toString();
       } else if (state.matchedLocation.startsWith('/usp')) {
         // USP routes — check auth, redirect to login when logged out.
@@ -139,9 +159,10 @@ class RouterNotifier extends ChangeNotifier {
     final loginType = _ref.read(authProvider
         .select((value) => value.value?.loginType ?? LoginType.none));
 
-    // Without PnP (removed with JNAP), go straight to auth check.
-    // TODO: Re-implement PnP / auto-configuration using USP when available.
     logger.i('[Route]: [AutoConfigurationLogic]: loginType=$loginType');
+
+    // PnP check is now performed AFTER login in _prepare().
+    // User must authenticate first before we can check PnP status.
     return authCheck(state);
   }
 
@@ -257,7 +278,19 @@ class RouterNotifier extends ChangeNotifier {
     }).onError((error, stackTrace) => null);
 
     if (nodeDeviceInfo != null) {
-      logger.d('[Prepare]: SN changed: ${nodeDeviceInfo.serialNumber}');
+      logger.d('[Prepare]: SN: ${nodeDeviceInfo.serialNumber}');
+
+      // Post-login PnP check — only for local login
+      if (loginType == LoginType.local && !BuildConfig.skipPnp) {
+        final pnpResult = await _ref
+            .read(pnpStatusServiceProvider)
+            .check(nodeDeviceInfo.serialNumber);
+        if (pnpResult.needsPnp) {
+          logger.i('[Prepare]: PnP needed, routing to /pnp');
+          return RoutePath.pnp;
+        }
+        logger.d('[Prepare]: PnP not needed, continuing to dashboard');
+      }
 
       final naviPath = goToPath ?? state.uri.toString();
       logger.d('[Prepare]: Prepare go to $naviPath');

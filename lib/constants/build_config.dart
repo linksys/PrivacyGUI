@@ -51,6 +51,11 @@ class BuildConfig {
   static const bool enableTestConsole =
       bool.fromEnvironment('test_console', defaultValue: false);
 
+  /// Skip PnP auto-trigger.
+  /// Set `--dart-define=skip_pnp=true` to skip during development.
+  static const bool skipPnp =
+      bool.fromEnvironment('skip_pnp', defaultValue: false);
+
   static const int refreshTimeInterval =
       int.fromEnvironment('refresh_time', defaultValue: 60);
   static const copyRightYear = int.fromEnvironment('year', defaultValue: 2025);

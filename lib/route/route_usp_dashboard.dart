@@ -167,5 +167,10 @@ final uspDashboardRoute = ShellRoute(
       path: RoutePath.uspApps,
       builder: (context, state) => const UspAppsView(),
     ),
+    LinksysRoute(
+      name: RouteNamed.uspTroubleshooting,
+      path: RoutePath.uspTroubleshooting,
+      builder: (context, state) => const DashboardTroubleshootingView(),
+    ),
   ],
 );

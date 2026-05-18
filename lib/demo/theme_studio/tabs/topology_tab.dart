@@ -56,7 +56,7 @@ class TopologyTab extends ConsumerWidget {
       name: 'Gateway',
       type: MeshNodeType.gateway,
       status: MeshNodeStatus.online,
-      signalQuality: SignalQuality.strong,
+      linkQuality: LinkQuality.excellent,
     );
 
     // Extender with Ethernet Backhaul
@@ -66,7 +66,7 @@ class TopologyTab extends ConsumerWidget {
       name: 'Ex (Eth)',
       type: MeshNodeType.extender,
       status: MeshNodeStatus.online,
-      signalQuality: SignalQuality.wired,
+      linkQuality: LinkQuality.stable,
     );
 
     // Extender with WiFi Backhaul (Medium)
@@ -76,7 +76,7 @@ class TopologyTab extends ConsumerWidget {
       name: 'Ex (WiFi)',
       type: MeshNodeType.extender,
       status: MeshNodeStatus.online,
-      signalQuality: SignalQuality.medium,
+      linkQuality: LinkQuality.good,
     );
 
     // Client with Strong Signal
@@ -86,7 +86,7 @@ class TopologyTab extends ConsumerWidget {
       name: 'Strong',
       type: MeshNodeType.client,
       status: MeshNodeStatus.online,
-      signalQuality: SignalQuality.strong,
+      linkQuality: LinkQuality.excellent,
     );
 
     // Client with Weak Signal
@@ -96,7 +96,7 @@ class TopologyTab extends ConsumerWidget {
       name: 'Weak',
       type: MeshNodeType.client,
       status: MeshNodeStatus.online,
-      signalQuality: SignalQuality.weak,
+      linkQuality: LinkQuality.fair,
     );
 
     // Client with Medium Signal (Moved to Ex Eth to balance layout)
@@ -106,7 +106,7 @@ class TopologyTab extends ConsumerWidget {
       name: 'Medium',
       type: MeshNodeType.client,
       status: MeshNodeStatus.online,
-      signalQuality: SignalQuality.medium,
+      linkQuality: LinkQuality.good,
     );
 
     // Offline Client
@@ -116,7 +116,7 @@ class TopologyTab extends ConsumerWidget {
       name: 'Offline',
       type: MeshNodeType.client,
       status: MeshNodeStatus.offline,
-      signalQuality: SignalQuality.unknown,
+      linkQuality: LinkQuality.unknown,
     );
 
     final nodes = [gw, exEth, exWifi, clStrong, clWeak, clMed, clOff];

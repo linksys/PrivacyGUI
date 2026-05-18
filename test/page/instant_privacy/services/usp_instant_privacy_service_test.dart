@@ -24,6 +24,7 @@ ConnectedDevice _device({
       isActive: isActive,
       interface_: interface_,
       addressSource: addressSource,
+      ipv4Addresses: const [],
       ipv6Addresses: const [],
     );
 

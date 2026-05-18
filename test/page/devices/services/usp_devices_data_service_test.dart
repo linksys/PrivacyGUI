@@ -6,6 +6,7 @@ import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_client_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/mesh_topology_info.dart';
 import 'package:privacy_gui/page/devices/services/usp_devices_data_service.dart';
+import 'package:privacy_gui/page/topology/models/node_ui_model.dart';
 
 class MockUspClient extends Mock implements UspClient {}
 
@@ -181,9 +182,9 @@ void main() {
         systemInfo: _sysInfo,
       );
 
-      final mesh = MeshTopologyInfo(
+      const mesh = MeshTopologyInfo(
         nodes: [
-          MeshNodeInfo(instancePath: 'p.1.', deviceId: 'NODE-A', model: 'M60'),
+          NodeUIModel(deviceId: 'NODE-A', model: 'M60'),
         ],
         clientToNodeMap: {'AA:BB:CC:DD:EE:01': 'NODE-A'},
       );
@@ -204,6 +205,298 @@ void main() {
       // Node models should reflect mesh
       expect(rebuilt.nodeModels, hasLength(1));
       expect(rebuilt.nodeModels.first.isMaster, isTrue);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Hostname-based multi-interface grouping
+  // ---------------------------------------------------------------------------
+
+  group('UspDevicesDataService — hostname grouping', () {
+    test('merges devices with same hostname into single entry', () async {
+      // Setup: two devices with same hostname but different MACs/interfaces
+      when(() => mockUsp.get(any(), priority: any(named: 'priority')))
+          .thenAnswer((_) async => {
+                'Device.Hosts.Host.1.PhysAddress': 'AA:BB:CC:DD:EE:01',
+                'Device.Hosts.Host.1.IPAddress': '192.168.1.101',
+                'Device.Hosts.Host.1.HostName': 'MacBook-Pro',
+                'Device.Hosts.Host.1.Active': true,
+                'Device.Hosts.Host.1.Layer1Interface': 'Device.WiFi.SSID.1.',
+                'Device.Hosts.Host.2.PhysAddress': 'AA:BB:CC:DD:EE:02',
+                'Device.Hosts.Host.2.IPAddress': '192.168.1.102',
+                'Device.Hosts.Host.2.HostName': 'MacBook-Pro',
+                'Device.Hosts.Host.2.Active': true,
+                'Device.Hosts.Host.2.Layer1Interface':
+                    'Device.Ethernet.Interface.1.',
+              });
+
+      final result = await svc.fetch(
+        wifiClientMap: {},
+        connectionDetailMap: {},
+        gatewayName: 'Router',
+        systemInfo: _sysInfo,
+      );
+
+      // Should be merged into 1 device
+      expect(result.deviceModels, hasLength(1));
+      expect(result.deviceModels.first.hasMultipleInterfaces, isTrue);
+      expect(result.deviceModels.first.interfaceCount, 2);
+    });
+
+    test('merged device includes all MAC addresses', () async {
+      when(() => mockUsp.get(any(), priority: any(named: 'priority')))
+          .thenAnswer((_) async => {
+                'Device.Hosts.Host.1.PhysAddress': 'AA:BB:CC:DD:EE:01',
+                'Device.Hosts.Host.1.IPAddress': '192.168.1.101',
+                'Device.Hosts.Host.1.HostName': 'MacBook-Pro',
+                'Device.Hosts.Host.1.Active': true,
+                'Device.Hosts.Host.1.Layer1Interface': 'Device.WiFi.SSID.1.',
+                'Device.Hosts.Host.2.PhysAddress': 'AA:BB:CC:DD:EE:02',
+                'Device.Hosts.Host.2.IPAddress': '192.168.1.102',
+                'Device.Hosts.Host.2.HostName': 'MacBook-Pro',
+                'Device.Hosts.Host.2.Active': true,
+                'Device.Hosts.Host.2.Layer1Interface':
+                    'Device.Ethernet.Interface.1.',
+              });
+
+      final result = await svc.fetch(
+        wifiClientMap: {},
+        connectionDetailMap: {},
+        gatewayName: 'Router',
+        systemInfo: _sysInfo,
+      );
+
+      final device = result.deviceModels.first;
+      expect(device.allMacAddresses, hasLength(2));
+      expect(
+        device.allMacAddresses,
+        containsAll(['AA:BB:CC:DD:EE:01', 'AA:BB:CC:DD:EE:02']),
+      );
+    });
+
+    test('devices with empty hostname are not merged', () async {
+      when(() => mockUsp.get(any(), priority: any(named: 'priority')))
+          .thenAnswer((_) async => {
+                'Device.Hosts.Host.1.PhysAddress': 'AA:BB:CC:DD:EE:01',
+                'Device.Hosts.Host.1.IPAddress': '192.168.1.101',
+                'Device.Hosts.Host.1.HostName': '',
+                'Device.Hosts.Host.1.Active': true,
+                'Device.Hosts.Host.1.Layer1Interface': 'Device.WiFi.SSID.1.',
+                'Device.Hosts.Host.2.PhysAddress': 'AA:BB:CC:DD:EE:02',
+                'Device.Hosts.Host.2.IPAddress': '192.168.1.102',
+                'Device.Hosts.Host.2.HostName': '',
+                'Device.Hosts.Host.2.Active': true,
+                'Device.Hosts.Host.2.Layer1Interface':
+                    'Device.Ethernet.Interface.1.',
+              });
+
+      final result = await svc.fetch(
+        wifiClientMap: {},
+        connectionDetailMap: {},
+        gatewayName: 'Router',
+        systemInfo: _sysInfo,
+      );
+
+      // Should remain as 2 separate devices
+      expect(result.deviceModels, hasLength(2));
+      expect(result.deviceModels.first.hasMultipleInterfaces, isFalse);
+      expect(result.deviceModels.last.hasMultipleInterfaces, isFalse);
+    });
+
+    test('mesh nodes (master/slave) are not merged', () async {
+      when(() => mockUsp.get(any(), priority: any(named: 'priority')))
+          .thenAnswer((_) async => {
+                'Device.Hosts.Host.1.PhysAddress': 'AA:BB:CC:DD:EE:01',
+                'Device.Hosts.Host.1.IPAddress': '192.168.1.1',
+                'Device.Hosts.Host.1.HostName': 'LinksysRouter',
+                'Device.Hosts.Host.1.Active': true,
+                'Device.Hosts.Host.1.Layer1Interface':
+                    'Device.Ethernet.Interface.1.',
+                'Device.Hosts.Host.1.DeviceRole': 'master',
+                'Device.Hosts.Host.2.PhysAddress': 'AA:BB:CC:DD:EE:02',
+                'Device.Hosts.Host.2.IPAddress': '192.168.1.2',
+                'Device.Hosts.Host.2.HostName': 'LinksysRouter',
+                'Device.Hosts.Host.2.Active': true,
+                'Device.Hosts.Host.2.Layer1Interface': 'Device.WiFi.SSID.1.',
+                'Device.Hosts.Host.2.DeviceRole': 'slave',
+              });
+
+      final result = await svc.fetch(
+        wifiClientMap: {},
+        connectionDetailMap: {},
+        gatewayName: 'Router',
+        systemInfo: _sysInfo,
+      );
+
+      // Mesh nodes should not be merged even with same hostname
+      // They should be excluded from deviceModels (client-only) or remain separate
+      final clientDevices =
+          result.deviceModels.where((d) => d.isClientDevice).toList();
+      final meshDevices =
+          result.deviceModels.where((d) => !d.isClientDevice).toList();
+
+      // Mesh devices are not merged
+      expect(meshDevices, hasLength(2));
+      expect(clientDevices, isEmpty);
+    });
+
+    test('primary interface selection: active > WiFi > Ethernet', () async {
+      // WiFi is active, Ethernet is also active — WiFi should be primary
+      when(() => mockUsp.get(any(), priority: any(named: 'priority')))
+          .thenAnswer((_) async => {
+                'Device.Hosts.Host.1.PhysAddress': 'AA:BB:CC:DD:EE:02',
+                'Device.Hosts.Host.1.IPAddress': '192.168.1.102',
+                'Device.Hosts.Host.1.HostName': 'MacBook',
+                'Device.Hosts.Host.1.Active': true,
+                'Device.Hosts.Host.1.Layer1Interface':
+                    'Device.Ethernet.Interface.1.',
+                'Device.Hosts.Host.2.PhysAddress': 'AA:BB:CC:DD:EE:01',
+                'Device.Hosts.Host.2.IPAddress': '192.168.1.101',
+                'Device.Hosts.Host.2.HostName': 'MacBook',
+                'Device.Hosts.Host.2.Active': true,
+                'Device.Hosts.Host.2.Layer1Interface': 'Device.WiFi.SSID.1.',
+              });
+
+      final result = await svc.fetch(
+        wifiClientMap: {},
+        connectionDetailMap: {},
+        gatewayName: 'Router',
+        systemInfo: _sysInfo,
+      );
+
+      final device = result.deviceModels.first;
+      // WiFi interface should be primary (isWifi=true)
+      expect(device.isWifi, isTrue);
+      expect(device.mac, 'AA:BB:CC:DD:EE:01'); // WiFi MAC
+    });
+
+    test('additionalInterfaces contains secondary interface data', () async {
+      when(() => mockUsp.get(any(), priority: any(named: 'priority')))
+          .thenAnswer((_) async => {
+                'Device.Hosts.Host.1.PhysAddress': 'AA:BB:CC:DD:EE:01',
+                'Device.Hosts.Host.1.IPAddress': '192.168.1.101',
+                'Device.Hosts.Host.1.HostName': 'MacBook',
+                'Device.Hosts.Host.1.Active': true,
+                'Device.Hosts.Host.1.Layer1Interface': 'Device.WiFi.SSID.1.',
+                'Device.Hosts.Host.2.PhysAddress': 'AA:BB:CC:DD:EE:02',
+                'Device.Hosts.Host.2.IPAddress': '192.168.1.102',
+                'Device.Hosts.Host.2.HostName': 'MacBook',
+                'Device.Hosts.Host.2.Active': true,
+                'Device.Hosts.Host.2.Layer1Interface':
+                    'Device.Ethernet.Interface.1.',
+              });
+
+      final result = await svc.fetch(
+        wifiClientMap: {},
+        connectionDetailMap: {},
+        gatewayName: 'Router',
+        systemInfo: _sysInfo,
+      );
+
+      final device = result.deviceModels.first;
+      expect(device.additionalInterfaces, hasLength(1));
+
+      final secondary = device.additionalInterfaces.first;
+      expect(secondary.mac, 'AA:BB:CC:DD:EE:02');
+      expect(secondary.ip, '192.168.1.102');
+      expect(secondary.isWifi, isFalse);
+    });
+
+    test('hostname matching is case-insensitive', () async {
+      // Setup: "MacBook-Pro" (WiFi) vs "macbook-pro" (Ethernet) — different case
+      when(() => mockUsp.get(any(), priority: any(named: 'priority')))
+          .thenAnswer((_) async => {
+                'Device.Hosts.Host.1.PhysAddress': 'AA:BB:CC:DD:EE:01',
+                'Device.Hosts.Host.1.IPAddress': '192.168.1.101',
+                'Device.Hosts.Host.1.HostName': 'MacBook-Pro',
+                'Device.Hosts.Host.1.Active': true,
+                'Device.Hosts.Host.1.Layer1Interface': 'Device.WiFi.SSID.1.',
+                'Device.Hosts.Host.2.PhysAddress': 'AA:BB:CC:DD:EE:02',
+                'Device.Hosts.Host.2.IPAddress': '192.168.1.102',
+                'Device.Hosts.Host.2.HostName': 'macbook-pro',
+                'Device.Hosts.Host.2.Active': true,
+                'Device.Hosts.Host.2.Layer1Interface':
+                    'Device.Ethernet.Interface.1.',
+              });
+
+      final result = await svc.fetch(
+        wifiClientMap: {},
+        connectionDetailMap: {},
+        gatewayName: 'Router',
+        systemInfo: _sysInfo,
+      );
+
+      // Should merge into 1 device despite different case
+      expect(result.deviceModels, hasLength(1));
+      expect(result.deviceModels.first.hasMultipleInterfaces, isTrue);
+      expect(result.deviceModels.first.interfaceCount, 2);
+    });
+
+    test('devices with mDNS suffix hostname merge correctly', () async {
+      // Setup: "MacBook._tcp.local" (WiFi) + "MacBook" (Ethernet)
+      when(() => mockUsp.get(any(), priority: any(named: 'priority')))
+          .thenAnswer((_) async => {
+                'Device.Hosts.Host.1.PhysAddress': 'AA:BB:CC:DD:EE:01',
+                'Device.Hosts.Host.1.IPAddress': '192.168.1.101',
+                'Device.Hosts.Host.1.HostName': 'MacBook._tcp.local',
+                'Device.Hosts.Host.1.Active': true,
+                'Device.Hosts.Host.1.Layer1Interface': 'Device.WiFi.SSID.1.',
+                'Device.Hosts.Host.2.PhysAddress': 'AA:BB:CC:DD:EE:02',
+                'Device.Hosts.Host.2.IPAddress': '192.168.1.102',
+                'Device.Hosts.Host.2.HostName': 'MacBook',
+                'Device.Hosts.Host.2.Active': true,
+                'Device.Hosts.Host.2.Layer1Interface':
+                    'Device.Ethernet.Interface.1.',
+              });
+
+      final result = await svc.fetch(
+        wifiClientMap: {},
+        connectionDetailMap: {},
+        gatewayName: 'Router',
+        systemInfo: _sysInfo,
+      );
+
+      // Should merge: "MacBook._tcp.local" → "macbook", "MacBook" → "macbook"
+      expect(result.deviceModels, hasLength(1));
+      expect(result.deviceModels.first.hasMultipleInterfaces, isTrue);
+      expect(result.deviceModels.first.interfaceCount, 2);
+    });
+
+    test('inactive WiFi + active Ethernet selects Ethernet as primary',
+        () async {
+      // Setup: WiFi inactive, Ethernet active — Ethernet should be primary
+      when(() => mockUsp.get(any(), priority: any(named: 'priority')))
+          .thenAnswer((_) async => {
+                'Device.Hosts.Host.1.PhysAddress': 'AA:BB:CC:DD:EE:01',
+                'Device.Hosts.Host.1.IPAddress': '192.168.1.101',
+                'Device.Hosts.Host.1.HostName': 'MacBook',
+                'Device.Hosts.Host.1.Active': false, // WiFi is inactive
+                'Device.Hosts.Host.1.Layer1Interface': 'Device.WiFi.SSID.1.',
+                'Device.Hosts.Host.2.PhysAddress': 'AA:BB:CC:DD:EE:02',
+                'Device.Hosts.Host.2.IPAddress': '192.168.1.102',
+                'Device.Hosts.Host.2.HostName': 'MacBook',
+                'Device.Hosts.Host.2.Active': true, // Ethernet is active
+                'Device.Hosts.Host.2.Layer1Interface':
+                    'Device.Ethernet.Interface.1.',
+              });
+
+      final result = await svc.fetch(
+        wifiClientMap: {},
+        connectionDetailMap: {},
+        gatewayName: 'Router',
+        systemInfo: _sysInfo,
+      );
+
+      final device = result.deviceModels.first;
+      // Ethernet should be primary because it's active (active > WiFi preference)
+      expect(device.isWifi, isFalse);
+      expect(device.mac, 'AA:BB:CC:DD:EE:02'); // Ethernet MAC
+      expect(device.isActive, isTrue);
+
+      // WiFi should be in additional interfaces
+      expect(device.additionalInterfaces, hasLength(1));
+      expect(device.additionalInterfaces.first.isWifi, isTrue);
+      expect(device.additionalInterfaces.first.isActive, isFalse);
     });
   });
 }

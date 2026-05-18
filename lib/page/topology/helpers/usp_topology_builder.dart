@@ -1,10 +1,10 @@
-import 'package:flutter/material.dart';
 import 'package:privacy_gui/core/utils/device_classifier.dart';
 import 'package:privacy_gui/core/utils/device_image_helper.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
+import 'package:privacy_gui/core/utils/wifi.dart';
 import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
-import 'package:privacy_gui/page/_shared/models/mesh_topology_info.dart';
+import 'package:privacy_gui/page/topology/models/node_ui_model.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Builds a [MeshTopology] from USP dashboard state for [AppTopology] widget.
@@ -16,19 +16,18 @@ class UspTopologyBuilder {
   static MeshTopology build({
     required SystemInfoUIModel info,
     required List<DeviceUIModel> devices,
-    required List<MeshNodeInfo> meshNodes,
-    Color? coverageColor,
-    double coverageRingScale = 1.0,
+    required List<NodeUIModel> nodeModels,
   }) {
     final nodes = <MeshNode>[];
     final links = <MeshLink>[];
 
+    // Find master node from nodeModels
+    final masterNode = nodeModels.master;
+
     // Gateway node (the router)
     const gatewayId = 'gateway';
-    // For non-mesh (DataElements empty/unsupported), use 'gateway' as a
-    // synthetic identifier so the Detail button can still navigate.
-    final gatewayDeviceId =
-        meshNodes.isNotEmpty ? meshNodes.first.deviceId : 'gateway';
+    // Use master node's deviceId (MAC) for navigation, fallback to 'gateway'
+    final gatewayDeviceId = masterNode?.deviceId ?? 'gateway';
 
     final gatewayIconName = routerIconTestByModel(
       modelNumber: info.modelName,
@@ -36,7 +35,7 @@ class UspTopologyBuilder {
     );
     nodes.add(MeshNode(
       id: gatewayId,
-      name: info.gatewayName,
+      name: masterNode?.displayName ?? info.gatewayName,
       type: MeshNodeType.gateway,
       status: MeshNodeStatus.online,
       image: DeviceImageHelper.getRouterImage(gatewayIconName),
@@ -44,64 +43,63 @@ class UspTopologyBuilder {
       level: 1.0,
       metadata: {
         'deviceId': gatewayDeviceId,
-        'model': info.modelName,
-        'manufacturer': info.manufacturer,
-        'serialNumber': info.serialNumber,
-        'softwareVersion': info.softwareVersion,
+        'model': masterNode?.model ?? info.modelName,
+        'manufacturer': masterNode?.manufacturer ?? info.manufacturer,
+        'serialNumber': masterNode?.serialNumber ?? info.serialNumber,
+        'softwareVersion': masterNode?.softwareVersion ?? info.softwareVersion,
         'isMaster': true,
       },
-      coverageRings: coverageColor != null
-          ? _buildCoverageRings(
-              MeshNodeType.gateway, coverageColor, coverageRingScale)
-          : null,
     ));
 
-    // Mesh extender nodes (if > 1 node, first is gateway)
-    final hasMesh = meshNodes.length > 1;
+    // Mesh extender nodes (slave nodes)
+    final slaveNodes = nodeModels.slaves;
+    final hasMesh = nodeModels.hasMesh;
     final extenderNodeIds = <String>{};
-    if (hasMesh) {
-      for (var i = 1; i < meshNodes.length; i++) {
-        final meshNode = meshNodes[i];
-        final extenderId = 'extender-${meshNode.deviceId}';
-        extenderNodeIds.add(meshNode.deviceId);
+    for (final slaveNode in slaveNodes) {
+      final extenderId = 'extender-${slaveNode.deviceId}';
+      extenderNodeIds.add(slaveNode.deviceId);
 
-        final extenderIconName = routerIconTestByModel(
-          modelNumber: meshNode.model,
-        );
-        nodes.add(MeshNode(
-          id: extenderId,
-          name: meshNode.model.isNotEmpty
-              ? meshNode.model
-              : 'Extender ${meshNode.deviceId}',
-          type: MeshNodeType.extender,
-          status: MeshNodeStatus.online,
-          parentId: gatewayId,
-          image: DeviceImageHelper.getRouterImage(extenderIconName),
-          level: 0.8,
-          metadata: {
-            'deviceId': meshNode.deviceId,
-            'model': meshNode.model,
-            'manufacturer': meshNode.manufacturer,
-            'serialNumber': meshNode.serialNumber,
-            'softwareVersion': meshNode.softwareVersion,
-            'isMaster': false,
-          },
-          coverageRings: coverageColor != null
-              ? _buildCoverageRings(
-                  MeshNodeType.extender, coverageColor, coverageRingScale)
-              : null,
-        ));
+      final extenderIconName = routerIconTestByModel(
+        modelNumber: slaveNode.model,
+      );
+      nodes.add(MeshNode(
+        id: extenderId,
+        name: slaveNode.displayName,
+        type: MeshNodeType.extender,
+        status: MeshNodeStatus.online,
+        parentId: gatewayId,
+        image: DeviceImageHelper.getRouterImage(extenderIconName),
+        level: _backhaulRssiToLevel(slaveNode.backhaulSignalStrength),
+        metadata: {
+          'deviceId': slaveNode.deviceId,
+          'model': slaveNode.model,
+          'manufacturer': slaveNode.manufacturer,
+          'serialNumber': slaveNode.serialNumber,
+          'softwareVersion': slaveNode.softwareVersion,
+          'isMaster': false,
+        },
+      ));
 
-        links.add(MeshLink(
-          sourceId: gatewayId,
-          targetId: extenderId,
-          connectionType: ConnectionType.wifi,
-        ));
-      }
+      links.add(MeshLink(
+        sourceId: gatewayId,
+        targetId: extenderId,
+        connectionType: ConnectionType.wifi,
+        rssi: slaveNode.backhaulSignalStrength,
+        linkQuality: _rssiToLinkQuality(slaveNode.backhaulSignalStrength),
+        throughput: slaveNode.backhaulUplinkRate != null
+            ? slaveNode.backhaulUplinkRate! / 1000.0
+            : null,
+      ));
     }
 
-    // Client nodes from DeviceUIModel
+    // Client nodes from DeviceUIModel (excluding mesh nodes)
     for (final device in devices) {
+      // Skip devices that are mesh nodes (master/slave) — already rendered
+      // as gateway or extenders. Only show "client" role devices.
+      if (device.isMeshNode) {
+        continue;
+      }
+
       final clientId = 'client-${device.mac}';
       final isEthernet = !device.isWifi;
 
@@ -128,9 +126,14 @@ class UspTopologyBuilder {
         parentId: parentId,
         iconData: category.icon,
         extra: device.ip,
-        signalQuality: _resolveSignalQuality(device),
+        linkQuality: _resolveLinkQuality(device),
         level: _rssiToLevel(device),
-        metadata: {'mac': device.mac},
+        metadata: {
+          'mac': device.mac,
+          'hasMultipleInterfaces': device.hasMultipleInterfaces,
+          'interfaceCount': device.interfaceCount,
+          'allMacAddresses': device.allMacAddresses,
+        },
       ));
 
       links.add(MeshLink(
@@ -139,6 +142,9 @@ class UspTopologyBuilder {
         connectionType:
             isEthernet ? ConnectionType.ethernet : ConnectionType.wifi,
         rssi: device.signalStrength,
+        linkQuality: isEthernet
+            ? LinkQuality.stable
+            : _rssiToLinkQuality(device.signalStrength),
         throughput:
             device.totalThroughput > 0 ? device.totalThroughput / 1000.0 : null,
         distanceFactor: _rssiToDistanceFactor(device.signalStrength),
@@ -154,7 +160,17 @@ class UspTopologyBuilder {
 
   static double _rssiToLevel(DeviceUIModel device) {
     if (!device.isWifi) return 1.0;
-    final rssi = device.signalStrength;
+    return _rssiValueToLevel(device.signalStrength);
+  }
+
+  /// Converts backhaul RSSI to level for extender nodes.
+  static double _backhaulRssiToLevel(int? rssi) {
+    if (rssi == null) return 0.5; // Default when no data
+    return _rssiValueToLevel(rssi);
+  }
+
+  /// Common RSSI to level conversion.
+  static double _rssiValueToLevel(int? rssi) {
     if (rssi == null) return 0.0;
     if (rssi >= -50) return 0.9;
     if (rssi >= -60) return 0.65;
@@ -162,13 +178,29 @@ class UspTopologyBuilder {
     return 0.1;
   }
 
-  static SignalQuality _resolveSignalQuality(DeviceUIModel device) {
-    if (!device.isWifi) return SignalQuality.wired;
-    final rssi = device.signalStrength;
-    if (rssi == null) return SignalQuality.unknown;
-    if (rssi >= -50) return SignalQuality.strong;
-    if (rssi >= -65) return SignalQuality.medium;
-    return SignalQuality.weak;
+  static LinkQuality _resolveLinkQuality(DeviceUIModel device) {
+    if (!device.isWifi) return LinkQuality.stable;
+    return _rssiToLinkQuality(device.signalStrength);
+  }
+
+  /// Converts RSSI to LinkQuality using wifi.dart thresholds.
+  ///
+  /// Thresholds from [signalThresholdRSSI]: [-65, -71, -78]
+  /// - >= -65: excellent/strong
+  /// - >= -71: good/medium
+  /// - >= -78: fair/medium
+  /// - < -78: poor/weak
+  static LinkQuality _rssiToLinkQuality(int? rssi) {
+    if (rssi == null) return LinkQuality.unknown;
+    final level = getWifiSignalLevel(rssi);
+    return switch (level) {
+      NodeSignalLevel.excellent => LinkQuality.excellent,
+      NodeSignalLevel.good => LinkQuality.excellent,
+      NodeSignalLevel.fair => LinkQuality.good,
+      NodeSignalLevel.poor => LinkQuality.fair,
+      NodeSignalLevel.none => LinkQuality.unknown,
+      NodeSignalLevel.wired => LinkQuality.stable,
+    };
   }
 
   /// Maps RSSI (dBm) to normalized distance factor [0.0, 1.0].
@@ -178,38 +210,5 @@ class UspTopologyBuilder {
     if (rssi == null) return null;
     final clamped = rssi.clamp(-75, -45);
     return (clamped - (-45)).abs() / 30.0;
-  }
-
-  /// Builds coverage rings for infrastructure nodes (gateway / extender).
-  ///
-  /// [scale] shrinks rings for compact contexts (e.g. dashboard card).
-  static List<NodeCoverageRing> _buildCoverageRings(
-    MeshNodeType type,
-    Color color,
-    double scale,
-  ) {
-    // Ring radii: inner gradient ring + outer dashed ring
-    // Tuned to not clip while providing clear visual separation
-    final (innerR, outerR, innerOp, outerOp) = switch (type) {
-      MeshNodeType.gateway => (90.0 * scale, 160.0 * scale, 0.16, 0.10),
-      MeshNodeType.extender => (70.0 * scale, 120.0 * scale, 0.14, 0.09),
-      _ => (0.0, 0.0, 0.0, 0.0),
-    };
-    if (innerR == 0) return [];
-    return [
-      NodeCoverageRing(
-        radius: innerR,
-        color: color,
-        opacity: innerOp,
-        style: CoverageRingStyle.gradient,
-      ),
-      NodeCoverageRing(
-        radius: outerR,
-        color: color,
-        opacity: outerOp,
-        style: CoverageRingStyle.dashed,
-        strokeWidth: 2.0,
-      ),
-    ];
   }
 }

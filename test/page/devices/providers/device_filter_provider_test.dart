@@ -5,6 +5,7 @@ import 'package:privacy_gui/page/_shared/models/mesh_topology_info.dart';
 import 'package:privacy_gui/page/devices/providers/device_filter_provider.dart';
 import 'package:privacy_gui/page/devices/providers/device_filter_state.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
+import 'package:privacy_gui/page/topology/models/node_ui_model.dart';
 
 void main() {
   // ---------------------------------------------------------------------------
@@ -81,10 +82,8 @@ void main() {
     deviceModels: allDevices,
     meshTopology: MeshTopologyInfo(
       nodes: [
-        MeshNodeInfo(
-            instancePath: 'Device.1.', deviceId: 'NODE-01', model: 'MR7500'),
-        MeshNodeInfo(
-            instancePath: 'Device.2.', deviceId: 'NODE-02', model: 'MX5500'),
+        NodeUIModel(deviceId: 'NODE-01', model: 'MR7500'),
+        NodeUIModel(deviceId: 'NODE-02', model: 'MX5500'),
       ],
       clientToNodeMap: {},
     ),
@@ -244,14 +243,8 @@ void main() {
             deviceModels: [wifiOnlineExcellent, offlineWithNullNode],
             meshTopology: MeshTopologyInfo(
               nodes: [
-                MeshNodeInfo(
-                    instancePath: 'Device.1.',
-                    deviceId: 'NODE-01',
-                    model: 'MR7500'),
-                MeshNodeInfo(
-                    instancePath: 'Device.2.',
-                    deviceId: 'NODE-02',
-                    model: 'MX5500'),
+                NodeUIModel(deviceId: 'NODE-01', model: 'MR7500'),
+                NodeUIModel(deviceId: 'NODE-02', model: 'MX5500'),
               ],
               clientToNodeMap: {},
             ),
@@ -428,12 +421,7 @@ void main() {
       notifier.emit(const DevicesData(
         deviceModels: [wifiOnlineExcellent],
         meshTopology: MeshTopologyInfo(
-          nodes: [
-            MeshNodeInfo(
-                instancePath: 'Device.1.',
-                deviceId: 'NODE-01',
-                model: 'MR7500'),
-          ],
+          nodes: [NodeUIModel(deviceId: 'NODE-01', model: 'MR7500')],
           clientToNodeMap: {},
         ),
       ));
@@ -452,12 +440,7 @@ void main() {
       notifier.emit(const DevicesData(
         deviceModels: [wifiOnlineExcellent],
         meshTopology: MeshTopologyInfo(
-          nodes: [
-            MeshNodeInfo(
-                instancePath: 'Device.1.',
-                deviceId: 'NODE-01',
-                model: 'MR7500'),
-          ],
+          nodes: [NodeUIModel(deviceId: 'NODE-01', model: 'MR7500')],
           clientToNodeMap: {},
         ),
       ));
@@ -478,12 +461,7 @@ void main() {
       notifier.emit(const DevicesData(
         deviceModels: [wifiOnlineExcellent, ethernetOnline],
         meshTopology: MeshTopologyInfo(
-          nodes: [
-            MeshNodeInfo(
-                instancePath: 'Device.1.',
-                deviceId: 'NODE-01',
-                model: 'MR7500'),
-          ],
+          nodes: [NodeUIModel(deviceId: 'NODE-01', model: 'MR7500')],
           clientToNodeMap: {},
         ),
       ));

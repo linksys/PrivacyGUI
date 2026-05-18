@@ -1,144 +1,170 @@
 # PnP (Plug and Play) Flow State Machine Document
 
-This document aims to describe the changes in the PnP process before and after refactoring using State Diagrams. This helps in understanding the complexity of the existing process and demonstrates the advantages of the refactored architecture.
+This document describes the PnP process state machine. Updated for v3 Login-First Architecture (2026-05).
 
-## As-Is State Diagram (Before Refactor)
+## Change Log
 
-Before the refactor, the state logic of the PnP process was scattered across two separate `StatefulWidget`s, `PnpAdminView` and `PnpSetupView`. It relied on numerous local flags and `try-catch` exception handling to control the UI flow.
+### v3 (2026-05) — Login-First Architecture
+- Removed: `AdminInitializing`, `AdminUnconfigured`, `AdminAwaitingPassword`, `AdminLoggingIn`, `AdminLoginFailed`
+- Entry point changed: Login Page → `AdminCheckingInternet` (user already authenticated)
+- PnP trigger: `router_provider._prepare()` calls `PnpStatusService.check()` after login
 
-### 1. `PnpAdminView` Flow
+---
 
-This view acts as the "gatekeeper" for the PnP process. Its state transitions are highly dependent on various exceptions thrown by the `runInitialChecks` method, leading to a decentralized and hard-to-track flow.
+## Current State Diagram (v3)
 
-```plantuml
-@startuml
-title PnpAdminView State (Before Refactor)
-
-[*] --> Initializing
-Initializing: Enters _runInitialChecks()
-
-Initializing --> InternetConnected : runInitialChecks() OK
-Initializing --> AwaitingPassword : throws InvalidAdminPassword
-Initializing --> Unconfigured : throws RouterUnconfigured
-Initializing --> Error : throws FetchDeviceInfo / other
-Initializing --> NoInternetView <<end>> : throws NoInternetConnection
-Initializing --> OtherRoute <<end>> : throws InterruptAndExit
-
-InternetConnected --> PnpConfigView <<end>> : After 1s delay, navigates
-
-AwaitingPassword --> LoggingIn : User clicks Login
-LoggingIn --> CheckingInternet : checkAdminPassword() OK
-LoggingIn --> AwaitingPassword : shows "Incorrect Password" on fail
-
-CheckingInternet --> PnpConfigView <<end>> : Internet OK
-CheckingInternet --> NoInternetView <<end>> : No Internet
-
-Unconfigured --> CheckingInternetFromUnconfigured : User clicks Continue
-CheckingInternetFromUnconfigured --> PnpConfigView <<end>> : All checks OK
-CheckingInternetFromUnconfigured --> NoInternetView <<end>> : No Internet
-CheckingInternetFromUnconfigured --> AwaitingPassword : Other error
-
-Error --> HomeView <<end>> : User clicks Try Again
-
-@enduml
-```
-
-### 2. `PnpSetupView` Flow
-
-This view is the core setup wizard. Its state is determined by the `_PnpSetupStep` enum and multiple boolean flags (e.g., `_needToReconnect`, `_fetchError`). The state transition logic is mixed with user interactions, asynchronous callbacks, and external event listeners, making it very complex.
+The PnP flow is now a **post-login** state machine. User authentication is handled by `LoginLocalView` before entering PnP.
 
 ```plantuml
 @startuml
-title PnpSetupView State (Before Refactor)
+title PnP Flow State Machine (v3 - Login-First)
 
-[*] --> Init
-Init : Calls _initialize()
+' ═══════════════════════════════════════════════════════════════
+' Entry: User already logged in via LoginLocalView
+' router_provider._prepare() → PnpStatusService.check()
+' If needsPnp=true → navigate to /pnp (PnpEntryView)
+' ═══════════════════════════════════════════════════════════════
 
-Init --> Config : fetchData() OK
-Init --> FetchError : fetchData() fails
+[*] --> AdminCheckingInternet : PnpEntryView.initState()\ncalls startPostLoginFlow()
 
-Config : Displays PnpStepper
-Config --> Saving : User triggers saveChanges()
+state AdminPhase {
+    AdminCheckingInternet : Fetch device info\nCheck WAN status
+    AdminCheckingInternet --> AdminInternetConnected : Internet OK
+    AdminCheckingInternet --> NoInternet : No internet
+    AdminCheckingInternet --> AdminError : Critical error
 
-Saving --> NeedReconnect : pnp.save() throws NeedToReconnect
-Saving --> Config : pnp.save() throws SavingChanges (shows error)
-Saving --> Saved : pnp.save() OK (configured flow)
-Saving --> Config : pnp.save() OK (unconfigured flow, moves to next step)
+    AdminInternetConnected --> WizardInitializing : Auto transition
+    AdminError --> AdminCheckingInternet : User taps Retry
+}
 
-Saved --> FwCheck : After 3s delay
+NoInternet --> TroubleshooterRoute <<end>> : Navigate to\n/pnpNoInternetConnection
 
-FwCheck : Checks for firmware
-FwCheck --> WifiReady : No new firmware
-FwCheck --> WifiReady : Firmware update completes
+state WizardPhase {
+    WizardInitializing : Fetch WiFi config\nFetch mesh topology
+    WizardInitializing --> WizardConfiguring : Fetch OK
+    WizardInitializing --> WizardError : Fetch fail
 
-NeedReconnect --> TestingReconnect : User clicks Next
-TestingReconnect --> FwCheck : Reconnect OK (configured flow)
-TestingReconnect --> Config : Reconnect OK (unconfigured flow)
-TestingReconnect --> NeedReconnect : Reconnect fails
+    WizardConfiguring : User edits WiFi\nSSID, password, guest
+    WizardConfiguring --> WizardSaving : notifier.saveChanges()
 
-WifiReady --> DashboardView <<end>> : User clicks Done
-FetchError --> HomeView <<end>> : User clicks Try Again
+    WizardSaving : Save WiFi settings\nAcknowledge PnP completion
+    WizardSaving --> WizardNeedsReconnect : Main SSID changed\n(connection will drop)
+    WizardSaving --> WizardSaved : No SSID change
+    WizardSaving --> WizardConfiguring : Save error\n(show error, retry)
+
+    WizardSaved --> WizardCheckingFirmware : Auto transition
+
+    WizardNeedsReconnect : Show new SSID/password\nUser reconnects manually
+    WizardNeedsReconnect --> WizardTestingReconnect : notifier.testReconnect()
+
+    WizardTestingReconnect : Poll router\nExponential backoff\n(2s, 4s, 8s, 16s, 32s)
+    WizardTestingReconnect --> WizardSaved : Reconnect OK\nSN matches
+    WizardTestingReconnect --> WizardNeedsReconnect : All attempts failed
+
+    WizardCheckingFirmware : (Placeholder for FW update)
+    WizardCheckingFirmware --> WizardWifiReady : No FW update needed
+
+    WizardWifiReady : Show new credentials\nDisplay QR code
+    WizardError --> WizardInitializing : User taps Retry
+}
+
+WizardWifiReady --> DashboardRoute <<end>> : User taps Done\nNavigate to /usp/dashboard
 
 @enduml
 ```
 
 ---
 
-## To-Be State Diagram (After Refactor)
+## Phase Definitions
 
-The goal of the refactor is to centralize all state and transition logic into a `PnpNotifier`. A unified `PnpFlowStatus` enum will be used to explicitly define every state in the process. The UI layer will only be responsible for reacting to the state and rendering, without containing any flow control logic.
+### AdminPhase (PnpEntryView)
 
-This approach transforms the entire PnP process into a single, linear, and predictable state machine.
+| Phase | Description | Triggers |
+|-------|-------------|----------|
+| `AdminCheckingInternet` | Entry point. Fetch device info, check WAN status. | `startPostLoginFlow()` |
+| `AdminInternetConnected` | WAN up with valid IP. Ready for wizard. | Internet check success |
+| `AdminError` | Critical error during admin phase. | Exception in `startPostLoginFlow()` |
+| `NoInternet` | WAN down or no IP. Route to troubleshooter. | Internet check failed |
+
+### WizardPhase (PnpSetupView)
+
+| Phase | Description | Triggers |
+|-------|-------------|----------|
+| `WizardInitializing` | Fetching WiFi SSIDs, APs, mesh topology. | Enter from `AdminInternetConnected` |
+| `WizardConfiguring` | User editing form. Holds `PnpWifiConfig` + `meshNodes`. | Fetch success |
+| `WizardSaving` | Saving WiFi changes to router. | `saveChanges()` |
+| `WizardSaved` | Save complete, no SSID change. | Save success (no reconnect needed) |
+| `WizardNeedsReconnect` | Main WiFi SSID changed. Connection dropped. | Save success (SSID changed) |
+| `WizardTestingReconnect` | Polling router after reconnect. | `testReconnect()` |
+| `WizardCheckingFirmware` | Placeholder for firmware update check. | After save/reconnect complete |
+| `WizardWifiReady` | Setup complete. Show credentials + QR. | No FW update needed |
+| `WizardError` | Recoverable error during wizard. | Exception in wizard operations |
+
+### Troubleshooter Phases (ModemRestart / ISP)
+
+| Phase | Description |
+|-------|-------------|
+| `ModemRestartCountdown` | 150s countdown while modem reboots |
+| `ModemRestartCheckingInternet` | Polling internet after modem restart (30 attempts) |
+| `IspSaving` | Saving ISP settings with progress steps |
+
+---
+
+## Removed Phases (v3)
+
+The following phases were removed in v3 Login-First Architecture:
+
+| Phase | Reason |
+|-------|--------|
+| `AdminInitializing` | Login now handled by `LoginLocalView` |
+| `AdminUnconfigured` | Factory default detection removed (all routers have automaster) |
+| `AdminAwaitingPassword` | Password input moved to `LoginLocalView` |
+| `AdminLoggingIn` | Login logic moved to `authProvider` |
+| `AdminLoginFailed` | Login error handling moved to `LoginLocalView` |
+
+---
+
+## Sequence Diagram: First-Time Login → PnP
 
 ```plantuml
 @startuml
-title Unified PnP Flow State (After Refactor)
+title First-Time Login → PnP Flow
 
-[*] --> AdminInitializing
+actor User
+participant LoginLocalView
+participant authProvider
+participant router_provider
+participant PnpStatusService
+participant PnpEntryView
+participant PnpNotifier
 
-state AdminPhase {
-    AdminInitializing --> AdminUnconfigured: Router is unconfigured
-    AdminInitializing --> AdminAwaitingPassword: Password required
-    AdminInitializing --> AdminInternetConnected: Already logged in, has internet
-    AdminInitializing --> AdminError: Critical error
-    AdminInitializing --> NoInternetRoute <<end>> : No internet
+User -> LoginLocalView : Enter password
+LoginLocalView -> authProvider : localLogin(password)
+authProvider -> authProvider : Store credentials\nto SecureStorage
+authProvider --> LoginLocalView : Login success
 
-    AdminUnconfigured --> AdminCheckingInternet: notifier.continueFromUnconfigured()
-    AdminAwaitingPassword --> AdminLoggingIn: notifier.submitPassword()
-    AdminLoggingIn --> AdminCheckingInternet: Login success
-    AdminLoggingIn --> AdminLoginFailed: Login fail
-    AdminLoginFailed --> AdminLoggingIn: User retries
-}
+LoginLocalView -> router_provider : Navigate (triggers redirect)
+router_provider -> router_provider : _prepare()
+router_provider -> PnpStatusService : check(serialNumber)
+PnpStatusService -> PnpStatusService : Read SharedPreferences\npPnpConfiguredSN
+PnpStatusService --> router_provider : PnpTriggerResult(needsPnp=true)
 
-AdminInternetConnected --> WizardInitializing
-AdminCheckingInternet --> WizardInitializing: Internet check OK
-AdminCheckingInternet --> NoInternetRoute <<end>> : Internet check fail
-
-state WizardPhase {
-    WizardInitializing --> WizardConfiguring: Fetch data OK
-    WizardInitializing --> WizardInitFailed: Fetch data fail
-
-    WizardConfiguring --> WizardSaving: notifier.saveChanges()
-    WizardSaving --> WizardSaved: Save OK (configured flow)
-    WizardSaving --> WizardConfiguring: Save OK (unconfigured flow, to next step)
-    WizardSaving --> WizardNeedsReconnect: Connection lost during save
-    WizardSaving --> WizardSaveFailed: Save operation fails
-    WizardSaveFailed --> WizardConfiguring: User can retry
-
-    WizardSaved --> WizardCheckingFirmware: Auto transition
-    WizardCheckingFirmware --> WizardUpdatingFirmware: New FW found
-    WizardCheckingFirmware --> WizardWifiReady: No new FW
-    WizardUpdatingFirmware --> WizardWifiReady: Update complete
-
-    WizardNeedsReconnect --> WizardTestingReconnect: notifier.testReconnect()
-    WizardTestingReconnect --> WizardCheckingFirmware: Reconnect OK (configured flow)
-    WizardTestingReconnect --> WizardConfiguring: Reconnect OK (unconfigured flow)
-    WizardTestingReconnect --> WizardNeedsReconnect: Reconnect fail
-}
-
-WizardWifiReady --> DashboardRoute <<end>> : User clicks Done
-AdminError --> HomeRoute <<end>> : User clicks Try Again
-WizardInitFailed --> HomeRoute <<end>> : User clicks Try Again
+router_provider -> PnpEntryView : Navigate to /pnp
+PnpEntryView -> PnpNotifier : startPostLoginFlow()
+PnpNotifier -> PnpNotifier : checkFactoryDefault()\ncheckInternetConnected()
+PnpNotifier --> PnpEntryView : Phase = WizardConfiguring
+PnpEntryView -> PnpEntryView : Navigate to /pnp/config
 
 @enduml
 ```
+
+---
+
+## Legacy State Diagram (Pre-v3)
+
+For historical reference, the pre-v3 state diagrams are preserved in git history. Key differences:
+
+1. **Pre-v3**: `PnpAdminView` handled both login and internet check
+2. **v3**: Login separated to `LoginLocalView`, `PnpEntryView` only checks internet
+3. **Pre-v3**: Factory default detection via `checkRouterConfigured()`
+4. **v3**: All routers treated as configured (automaster), PnP trigger via `PnpStatusService`

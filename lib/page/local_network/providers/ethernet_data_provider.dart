@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
 import 'package:privacy_gui/page/_shared/models/ethernet_port_ui_model.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/local_network/services/usp_ethernet_data_service.dart';
@@ -37,6 +38,14 @@ class EthernetData extends Equatable {
 class EthernetDataNotifier extends AsyncNotifier<EthernetData> {
   @override
   Future<EthernetData> build() async {
+    // SSE listener: Ethernet interface status changes (link up/down)
+    ref.listen(sseInvalidationProvider, (_, next) {
+      if (next.value == InvalidationDomain.ethernetInterfaces) {
+        logger.d('[USP][Ethernet]: SSE invalidation received, refreshing');
+        ref.invalidateSelf();
+      }
+    });
+
     // Devices listener: device list changes affect which wired devices
     // show on LAN ports. Re-fetch to get fresh Ethernet data.
     ref.listen(devicesDataProvider, (_, next) {

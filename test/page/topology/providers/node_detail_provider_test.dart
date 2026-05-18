@@ -52,21 +52,13 @@ void main() {
     parentNodeId: 'AA:BB:CC:DD:EE:02',
   );
 
-  final meshData = DevicesData(
-    nodeModels: const [masterNode, extenderNode],
-    deviceModels: const [device1, device2, device3],
-    meshTopology: const MeshTopologyInfo(
+  const meshData = DevicesData(
+    nodeModels: [masterNode, extenderNode],
+    deviceModels: [device1, device2, device3],
+    meshTopology: MeshTopologyInfo(
       nodes: [
-        MeshNodeInfo(
-          instancePath: 'Device.1.',
-          deviceId: 'AA:BB:CC:DD:EE:01',
-          model: 'MR7500',
-        ),
-        MeshNodeInfo(
-          instancePath: 'Device.2.',
-          deviceId: 'AA:BB:CC:DD:EE:02',
-          model: 'MX5500',
-        ),
+        NodeUIModel(deviceId: 'AA:BB:CC:DD:EE:01', model: 'MR7500'),
+        NodeUIModel(deviceId: 'AA:BB:CC:DD:EE:02', model: 'MX5500'),
       ],
       clientToNodeMap: {},
     ),

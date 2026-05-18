@@ -4,9 +4,13 @@ import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/route/router_provider.dart';
 import 'package:privacy_gui/route/router_logger.dart';
 import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/demo/pages/pnp_demo_launcher.dart';
 import 'package:privacy_gui/demo/theme_studio/theme_studio_fab.dart';
 import 'package:privacy_gui/demo/theme_studio/theme_studio_panel.dart';
 import 'package:privacy_gui/demo/providers/demo_ui_provider.dart';
+
+/// Route path for the PnP demo launcher (demo-only).
+const _demoPnpLauncher = '/demoPnpLauncher';
 
 /// Overrides the main routerProvider for the Demo Application.
 ///
@@ -63,17 +67,30 @@ final demoRouterProvider = Provider<GoRouter>((ref) {
             ],
           );
         },
-        routes: appRoutes, // Reuse the standard app routes
+        routes: [
+          // Demo-only PnP launcher route
+          GoRoute(
+            path: _demoPnpLauncher,
+            builder: (context, state) => const PnpDemoLauncher(),
+          ),
+          ...appRoutes, // Reuse the standard app routes
+        ],
       ),
     ],
-    // Reuse the exact same redirect logic as the main app
     redirect: (context, state) {
       if (state.matchedLocation == '/') {
-        return router.autoConfigurationLogic(state);
+        // Demo mode: go to PnP launcher instead of auto-configuration.
+        return _demoPnpLauncher;
+      } else if (state.matchedLocation == _demoPnpLauncher) {
+        return state.uri.toString();
       } else if (state.matchedLocation == RoutePath.localLoginPassword) {
         router.autoConfigurationLogic(state);
         return router.redirectLogic(state);
       } else if (state.matchedLocation.startsWith('/autoParentFirstLogin')) {
+        return state.uri.toString();
+      } else if (state.matchedLocation.startsWith('/pnp') ||
+          state.matchedLocation.startsWith('/pnpNoInternetConnection')) {
+        // PnP routes — no auth required, pass through.
         return state.uri.toString();
       } else if (state.matchedLocation.startsWith('/usp')) {
         return state.uri.toString();

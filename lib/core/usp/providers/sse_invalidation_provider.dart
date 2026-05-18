@@ -95,6 +95,12 @@ InvalidationDomain? _mapToDomain(SseNotification notification) {
       path.contains('IPv4Forwarding')) {
     return InvalidationDomain.staticRouting;
   }
+  if (path.startsWith('Device.Ethernet.Interface.')) {
+    return InvalidationDomain.ethernetInterfaces;
+  }
+  if (path.startsWith('Device.IP.Interface.2.')) {
+    return InvalidationDomain.wanStatus;
+  }
 
   // OperationComplete and unrecognized paths don't map to invalidation
   // domains — they use the Direct Data Delivery pattern.

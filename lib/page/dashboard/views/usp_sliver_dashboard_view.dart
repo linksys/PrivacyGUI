@@ -20,9 +20,14 @@ import 'package:privacy_gui/page/dashboard/providers/pdf_report_data_provider.da
 import 'package:privacy_gui/page/dashboard/providers/usp_layout_preferences_provider.dart';
 import 'package:privacy_gui/page/dashboard/views/components/settings/usp_layout_settings_panel.dart';
 import 'package:privacy_gui/page/dashboard/views/dialogs/preset_selection_dialog.dart';
+import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sliver_dashboard/sliver_dashboard.dart';
 import 'package:ui_kit_library/ui_kit.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/dashboard/providers/dashboard_troubleshooting_notifier.dart';
+import 'package:privacy_gui/page/internet_settings/providers/wan_data_provider.dart';
+import 'package:privacy_gui/route/constants.dart';
 
 /// USP Dashboard view using SliverDashboard grid layout.
 ///
@@ -159,6 +164,9 @@ class _UspSliverDashboardViewState
     // after page refresh because itemBuilder uses ref.read.
     ref.watch(packageWidgetLoaderProvider);
 
+    final wanData = ref.watch(wanDataProvider);
+    final isOnline = wanData.valueOrNull?.model.isUp ?? true;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -170,6 +178,15 @@ class _UspSliverDashboardViewState
           ),
           child: _buildHeader(context),
         ),
+
+        // Offline banner (when WAN is down)
+        if (!isOnline)
+          Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: context.pageMargin,
+            ),
+            child: _buildOfflineBanner(context),
+          ),
 
         // SliverDashboard grid
         Expanded(
@@ -262,6 +279,48 @@ class _UspSliverDashboardViewState
           ],
         ),
       ],
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Offline Banner
+  // ---------------------------------------------------------------------------
+
+  Widget _buildOfflineBanner(BuildContext context) {
+    return AppCard(
+      child: InkWell(
+        onTap: () {
+          ref
+              .read(dashboardTroubleshootingProvider.notifier)
+              .startTroubleshooting();
+          context.goNamed(RouteNamed.uspTroubleshooting);
+        },
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          child: Row(
+            children: [
+              AppIcon.font(
+                Icons.wifi_off,
+                color: Theme.of(context).colorScheme.error,
+              ),
+              AppGap.md(),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    AppText.titleSmall(loc(context).pnpErrorForStaticIpAndDhcp),
+                    AppGap.xs(),
+                    AppText.bodySmall(
+                      loc(context).pnpNoInternetConnectionRestartModemDesc,
+                    ),
+                  ],
+                ),
+              ),
+              AppIcon.font(Icons.chevron_right),
+            ],
+          ),
+        ),
+      ),
     );
   }
 

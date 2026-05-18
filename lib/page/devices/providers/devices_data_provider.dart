@@ -38,6 +38,17 @@ class DevicesData extends Equatable {
     this.hostNameByMac = const {},
   });
 
+  /// Client devices only (excludes mesh nodes: master/slave).
+  List<DeviceUIModel> get clientDevices => deviceModels
+      .where((d) => d.deviceRole != 'master' && d.deviceRole != 'slave')
+      .toList();
+
+  /// Count of online client devices.
+  int get onlineClientCount => clientDevices.where((d) => d.isActive).length;
+
+  /// Total count of client devices.
+  int get totalClientCount => clientDevices.length;
+
   DevicesData copyWith({
     DevicesCodegenContext? codegenContext,
     MeshTopologyInfo? meshTopology,
@@ -152,12 +163,17 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
         'deviceModels: ${result.deviceModels.length}, '
         'nodeModels: ${result.nodeModels.length}');
 
+    // Preserve existing mesh topology during refetch to avoid UI flicker.
+    // Fire-and-forget will update it shortly after.
+    final existingMesh =
+        state.valueOrNull?.meshTopology ?? MeshTopologyInfo.empty;
+
     // Fire-and-forget: fetch mesh topology in background, then update state.
     _fetchMeshAndUpdate(svc, wifiData, gatewayName, sysData, result);
 
     return DevicesData(
       codegenContext: result.codegenContext,
-      meshTopology: MeshTopologyInfo.empty,
+      meshTopology: existingMesh,
       deviceModels: result.deviceModels,
       nodeModels: result.nodeModels,
       hostNameByMac: result.hostNameByMac,
@@ -165,7 +181,7 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
   }
 
   /// Background mesh topology fetch — updates state when complete.
-  Future<void> _fetchMeshAndUpdate(
+  void _fetchMeshAndUpdate(
     UspDevicesDataService svc,
     WifiData wifiData,
     String gatewayName,
@@ -189,7 +205,8 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
 
     logger.d('[USP][DevicesData]: Mesh update — '
         'meshNodes: ${meshTopology.nodes.length}, '
-        'nodeModels: ${rebuilt.nodeModels.length}');
+        'nodeModels: ${rebuilt.nodeModels.length}, '
+        'deviceModels: ${rebuilt.deviceModels.length}');
 
     state = AsyncData(cur.copyWith(
       meshTopology: meshTopology,
@@ -201,7 +218,71 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
   void _debouncedInvalidate() {
     _debounce?.cancel();
     _debounce = Timer(const Duration(milliseconds: 500), () {
-      ref.invalidateSelf();
+      _refetchPreservingMesh();
     });
+  }
+
+  /// Refetch device data while preserving the existing mesh topology.
+  /// This prevents the slave node from flickering during SSE-triggered refreshes.
+  Future<void> _refetchPreservingMesh() async {
+    final currentState = state.valueOrNull;
+    final existingMesh = currentState?.meshTopology ?? MeshTopologyInfo.empty;
+    logger.d('[USP][DevicesData]: _refetchPreservingMesh — '
+        'currentState: ${currentState != null}, '
+        'existingMesh nodes: ${existingMesh.nodes.length}');
+
+    final svc = ref.read(uspDevicesDataServiceProvider);
+
+    // Read WiFi enrichment data — soft dependency with timeout.
+    WifiData wifiData;
+    try {
+      wifiData = await ref
+          .read(wifiDataProvider.future)
+          .timeout(const Duration(seconds: 5));
+    } catch (e) {
+      logger.w(
+          '[USP][DevicesData]: WiFi data unavailable, proceeding without: $e');
+      wifiData = const WifiData.empty();
+    }
+
+    // Read system info for gateway name + node model building
+    final sysData = ref.read(systemInfoDataProvider).valueOrNull;
+    final gatewayName = sysData?.model.gatewayName ?? 'Router';
+
+    final result = await svc.fetch(
+      wifiClientMap: wifiData.wifiClientMap,
+      connectionDetailMap: wifiData.connectionDetailMap,
+      gatewayName: gatewayName,
+      systemInfo: sysData?.model,
+    );
+
+    // Rebuild with existing mesh to preserve slave node visibility.
+    final rebuilt = existingMesh.isEmpty
+        ? (deviceModels: result.deviceModels, nodeModels: result.nodeModels)
+        : svc.rebuildWithMesh(
+            context: result.codegenContext,
+            wifiClientMap: wifiData.wifiClientMap,
+            connectionDetailMap: wifiData.connectionDetailMap,
+            meshTopology: existingMesh,
+            gatewayName: gatewayName,
+            systemInfo: sysData?.model,
+          );
+
+    logger.d('[USP][DevicesData]: Refetch (preserve mesh) — '
+        'deviceModels: ${rebuilt.deviceModels.length}, '
+        'nodeModels: ${rebuilt.nodeModels.length}, '
+        'existingMesh: ${existingMesh.nodes.length}');
+
+    // Update state with new device data but preserve existing mesh topology.
+    state = AsyncData(DevicesData(
+      codegenContext: result.codegenContext,
+      meshTopology: existingMesh,
+      deviceModels: rebuilt.deviceModels,
+      nodeModels: rebuilt.nodeModels,
+      hostNameByMac: result.hostNameByMac,
+    ));
+
+    // Fire-and-forget: fetch mesh topology in background, then update state.
+    _fetchMeshAndUpdate(svc, wifiData, gatewayName, sysData, result);
   }
 }

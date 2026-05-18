@@ -36,4 +36,10 @@ enum InvalidationDomain {
 
   /// Device.WiFi.AccessPoint.*.AssociatedDevice. — WiFi device connect/disconnect
   wifiClients,
+
+  /// Device.Ethernet.Interface. — Ethernet port status changes
+  ethernetInterfaces,
+
+  /// Device.IP.Interface.2. — WAN status changes (Up/Down, IP address)
+  wanStatus,
 }

@@ -404,6 +404,50 @@ void main() {
     });
   });
 
+  group('DeviceClassifier mDNS suffix stripping', () {
+    test('strips ._device-info._tcp.local suffix', () {
+      expect(
+        DeviceClassifier.classify(
+            hostname: 'MacBook-Pro._device-info._tcp.local',
+            mac: '00:00:00:00:00:00'),
+        DeviceCategory.computer,
+      );
+    });
+
+    test('strips ._tcp.local suffix', () {
+      expect(
+        DeviceClassifier.classify(
+            hostname: 'iPhone._tcp.local', mac: '00:00:00:00:00:00'),
+        DeviceCategory.phone,
+      );
+    });
+
+    test('strips ._udp suffix', () {
+      expect(
+        DeviceClassifier.classify(
+            hostname: 'iPad._udp', mac: '00:00:00:00:00:00'),
+        DeviceCategory.tablet,
+      );
+    });
+
+    test('handles complex mDNS hostname', () {
+      expect(
+        DeviceClassifier.classify(
+            hostname: 'Austins-MacBook-Pro._device-info._tcp.local',
+            mac: '00:00:00:00:00:00'),
+        DeviceCategory.computer,
+      );
+    });
+
+    test('normal hostname without suffix still works', () {
+      expect(
+        DeviceClassifier.classify(
+            hostname: 'PlayStation5', mac: '00:00:00:00:00:00'),
+        DeviceCategory.gameConsole,
+      );
+    });
+  });
+
   group('DeviceClassifier classifyWithConfidence', () {
     test('Hostname match returns high confidence', () {
       final result = DeviceClassifier.classifyWithConfidence(

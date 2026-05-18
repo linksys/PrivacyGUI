@@ -1,31 +1,15 @@
-/// Info about a mesh node — lightweight view of codegen's MeshNode.
+import 'package:equatable/equatable.dart';
+import 'package:privacy_gui/page/topology/models/node_ui_model.dart';
+
+/// Result of mesh topology fetch from DataElements.
 ///
-/// Kept as separate type to avoid naming conflict with ui_kit's MeshNode
-/// used by [AppTopology] in the network topology card.
-class MeshNodeInfo {
-  final String instancePath;
-  final String deviceId; // Device.{i}.ID (typically MAC of the node)
-  final String model; // ManufacturerModel
-  final String manufacturer; // Manufacturer
-  final String serialNumber; // SerialNumber
-  final String softwareVersion; // SoftwareVersion
+/// Contains mesh nodes and client-to-node mapping for determining
+/// which mesh node each client device is connected to.
+class MeshTopologyInfo extends Equatable {
+  /// Mesh nodes discovered via DataElements.
+  final List<NodeUIModel> nodes;
 
-  const MeshNodeInfo({
-    required this.instancePath,
-    required this.deviceId,
-    required this.model,
-    this.manufacturer = '',
-    this.serialNumber = '',
-    this.softwareVersion = '',
-  });
-}
-
-/// Result of mesh node enrichment.
-class MeshTopologyInfo {
-  /// All mesh nodes discovered via DataElements.
-  final List<MeshNodeInfo> nodes;
-
-  /// Client MAC (uppercase) → node device ID that the client is connected to.
+  /// Client MAC (uppercase) → node device ID mapping.
   final Map<String, String> clientToNodeMap;
 
   const MeshTopologyInfo({
@@ -38,4 +22,7 @@ class MeshTopologyInfo {
 
   bool get isEmpty => nodes.isEmpty;
   bool get isNotEmpty => nodes.isNotEmpty;
+
+  @override
+  List<Object?> get props => [nodes, clientToNodeMap];
 }
