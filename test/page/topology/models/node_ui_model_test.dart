@@ -185,9 +185,11 @@ void main() {
         connectedDeviceCount: 5,
         backhaulMediaType: 'Ethernet',
         backhaulPhyRate: 1000,
+        backhaulSignalStrength: -45,
+        backhaulUplinkRate: 500000,
       );
 
-      expect(node.props, hasLength(11));
+      expect(node.props, hasLength(13));
       expect(node.props, contains('AA:BB:CC:DD:EE:01'));
       expect(node.props, contains('Router'));
       expect(node.props, contains('linksys'));
@@ -199,6 +201,8 @@ void main() {
       expect(node.props, contains(5));
       expect(node.props, contains('Ethernet'));
       expect(node.props, contains(1000));
+      expect(node.props, contains(-45));
+      expect(node.props, contains(500000));
     });
   });
 
@@ -222,6 +226,8 @@ void main() {
       expect(node.connectedDeviceCount, 0);
       expect(node.backhaulMediaType, '');
       expect(node.backhaulPhyRate, 0);
+      expect(node.backhaulSignalStrength, isNull);
+      expect(node.backhaulUplinkRate, isNull);
     });
   });
 }

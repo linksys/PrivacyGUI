@@ -22,6 +22,8 @@ class NodeUIModel extends Equatable {
   // ─── Backhaul info (for child nodes) ───
   final String backhaulMediaType; // "IEEE 802.11ax" / "Ethernet"
   final int backhaulPhyRate; // PHY rate in Mbps
+  final int? backhaulSignalStrength; // RSSI in dBm (converted from RCPI)
+  final int? backhaulUplinkRate; // bps
 
   const NodeUIModel({
     required this.deviceId,
@@ -35,6 +37,8 @@ class NodeUIModel extends Equatable {
     this.connectedDeviceCount = 0,
     this.backhaulMediaType = '',
     this.backhaulPhyRate = 0,
+    this.backhaulSignalStrength,
+    this.backhaulUplinkRate,
   });
 
   /// Display name priority: friendlyName > hostName > model > deviceId.
@@ -64,5 +68,7 @@ class NodeUIModel extends Equatable {
         connectedDeviceCount,
         backhaulMediaType,
         backhaulPhyRate,
+        backhaulSignalStrength,
+        backhaulUplinkRate,
       ];
 }

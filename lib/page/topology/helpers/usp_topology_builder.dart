@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:privacy_gui/core/utils/device_classifier.dart';
 import 'package:privacy_gui/core/utils/device_image_helper.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
+import 'package:privacy_gui/core/utils/wifi.dart';
 import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
 import 'package:privacy_gui/page/topology/models/node_ui_model.dart';
@@ -75,7 +76,7 @@ class UspTopologyBuilder {
         status: MeshNodeStatus.online,
         parentId: gatewayId,
         image: DeviceImageHelper.getRouterImage(extenderIconName),
-        level: 0.8,
+        level: _backhaulRssiToLevel(slaveNode.backhaulSignalStrength),
         metadata: {
           'deviceId': slaveNode.deviceId,
           'model': slaveNode.model,
@@ -94,6 +95,11 @@ class UspTopologyBuilder {
         sourceId: gatewayId,
         targetId: extenderId,
         connectionType: ConnectionType.wifi,
+        rssi: slaveNode.backhaulSignalStrength,
+        signalQuality: _rssiToSignalQuality(slaveNode.backhaulSignalStrength),
+        throughput: slaveNode.backhaulUplinkRate != null
+            ? slaveNode.backhaulUplinkRate! / 1000.0
+            : null,
       ));
     }
 
@@ -147,6 +153,9 @@ class UspTopologyBuilder {
         connectionType:
             isEthernet ? ConnectionType.ethernet : ConnectionType.wifi,
         rssi: device.signalStrength,
+        signalQuality: isEthernet
+            ? SignalQuality.wired
+            : _rssiToSignalQuality(device.signalStrength),
         throughput:
             device.totalThroughput > 0 ? device.totalThroughput / 1000.0 : null,
         distanceFactor: _rssiToDistanceFactor(device.signalStrength),
@@ -162,7 +171,17 @@ class UspTopologyBuilder {
 
   static double _rssiToLevel(DeviceUIModel device) {
     if (!device.isWifi) return 1.0;
-    final rssi = device.signalStrength;
+    return _rssiValueToLevel(device.signalStrength);
+  }
+
+  /// Converts backhaul RSSI to level for extender nodes.
+  static double _backhaulRssiToLevel(int? rssi) {
+    if (rssi == null) return 0.5; // Default when no data
+    return _rssiValueToLevel(rssi);
+  }
+
+  /// Common RSSI to level conversion.
+  static double _rssiValueToLevel(int? rssi) {
     if (rssi == null) return 0.0;
     if (rssi >= -50) return 0.9;
     if (rssi >= -60) return 0.65;
@@ -172,11 +191,27 @@ class UspTopologyBuilder {
 
   static SignalQuality _resolveSignalQuality(DeviceUIModel device) {
     if (!device.isWifi) return SignalQuality.wired;
-    final rssi = device.signalStrength;
+    return _rssiToSignalQuality(device.signalStrength);
+  }
+
+  /// Converts RSSI to SignalQuality using wifi.dart thresholds.
+  ///
+  /// Thresholds from [signalThresholdRSSI]: [-65, -71, -78]
+  /// - >= -65: excellent/strong
+  /// - >= -71: good/medium
+  /// - >= -78: fair/medium
+  /// - < -78: poor/weak
+  static SignalQuality _rssiToSignalQuality(int? rssi) {
     if (rssi == null) return SignalQuality.unknown;
-    if (rssi >= -50) return SignalQuality.strong;
-    if (rssi >= -65) return SignalQuality.medium;
-    return SignalQuality.weak;
+    final level = getWifiSignalLevel(rssi);
+    return switch (level) {
+      NodeSignalLevel.excellent => SignalQuality.strong,
+      NodeSignalLevel.good => SignalQuality.strong,
+      NodeSignalLevel.fair => SignalQuality.medium,
+      NodeSignalLevel.poor => SignalQuality.weak,
+      NodeSignalLevel.none => SignalQuality.unknown,
+      NodeSignalLevel.wired => SignalQuality.wired,
+    };
   }
 
   /// Maps RSSI (dBm) to normalized distance factor [0.0, 1.0].

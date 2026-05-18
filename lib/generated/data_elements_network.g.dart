@@ -55,6 +55,16 @@ class MeshNode {
   final String backhaulMacAddress;
   final String backhaulMediaType;
   final int backhaulPhyRate;
+  final String multiApLastContactTime;
+  final String multiApAssocIEEE1905DeviceRef;
+  final String multiApEasyMeshAgentOperationMode;
+  final int backhaulStatsPacketsSent;
+  final int backhaulStatsPacketsReceived;
+  final int backhaulStatsErrorsSent;
+  final int backhaulStatsErrorsReceived;
+  final String backhaulStatsTimeStamp;
+  final int backhaulStatsLastDataUplinkRate;
+  final int backhaulStatsSignalStrength;
   final List<MeshRadio> radios;
 
   const MeshNode({
@@ -68,6 +78,16 @@ class MeshNode {
     required this.backhaulMacAddress,
     required this.backhaulMediaType,
     required this.backhaulPhyRate,
+    required this.multiApLastContactTime,
+    required this.multiApAssocIEEE1905DeviceRef,
+    required this.multiApEasyMeshAgentOperationMode,
+    required this.backhaulStatsPacketsSent,
+    required this.backhaulStatsPacketsReceived,
+    required this.backhaulStatsErrorsSent,
+    required this.backhaulStatsErrorsReceived,
+    required this.backhaulStatsTimeStamp,
+    required this.backhaulStatsLastDataUplinkRate,
+    required this.backhaulStatsSignalStrength,
     required this.radios,
   });
 }
@@ -88,6 +108,16 @@ class DataElementsNetwork {
     'Device.WiFi.DataElements.Network.Device.*.BackhaulMACAddress',
     'Device.WiFi.DataElements.Network.Device.*.BackhaulMediaType',
     'Device.WiFi.DataElements.Network.Device.*.BackhaulPHYRate',
+    'Device.WiFi.DataElements.Network.Device.*.MultiAPDevice.LastContactTime',
+    'Device.WiFi.DataElements.Network.Device.*.MultiAPDevice.AssocIEEE1905DeviceRef',
+    'Device.WiFi.DataElements.Network.Device.*.MultiAPDevice.EasyMeshAgentOperationMode',
+    'Device.WiFi.DataElements.Network.Device.*.MultiAPDevice.Backhaul.Stats.PacketsSent',
+    'Device.WiFi.DataElements.Network.Device.*.MultiAPDevice.Backhaul.Stats.PacketsReceived',
+    'Device.WiFi.DataElements.Network.Device.*.MultiAPDevice.Backhaul.Stats.ErrorsSent',
+    'Device.WiFi.DataElements.Network.Device.*.MultiAPDevice.Backhaul.Stats.ErrorsReceived',
+    'Device.WiFi.DataElements.Network.Device.*.MultiAPDevice.Backhaul.Stats.TimeStamp',
+    'Device.WiFi.DataElements.Network.Device.*.MultiAPDevice.Backhaul.Stats.LastDataUplinkRate',
+    'Device.WiFi.DataElements.Network.Device.*.MultiAPDevice.Backhaul.Stats.SignalStrength',
     'Device.WiFi.DataElements.Network.Device.*.Radio.*.BSS.*.BSSID',
     'Device.WiFi.DataElements.Network.Device.*.Radio.*.BSS.*.SSID',
     'Device.WiFi.DataElements.Network.Device.*.Radio.*.BSS.*.STA.*.MACAddress',
@@ -124,7 +154,17 @@ class DataElementsNetwork {
         response['${p}BackhaulALID'],
         response['${p}BackhaulMACAddress'],
         response['${p}BackhaulMediaType'],
-        response['${p}BackhaulPHYRate']
+        response['${p}BackhaulPHYRate'],
+        response['${p}MultiAPDevice.LastContactTime'],
+        response['${p}MultiAPDevice.AssocIEEE1905DeviceRef'],
+        response['${p}MultiAPDevice.EasyMeshAgentOperationMode'],
+        response['${p}MultiAPDevice.Backhaul.Stats.PacketsSent'],
+        response['${p}MultiAPDevice.Backhaul.Stats.PacketsReceived'],
+        response['${p}MultiAPDevice.Backhaul.Stats.ErrorsSent'],
+        response['${p}MultiAPDevice.Backhaul.Stats.ErrorsReceived'],
+        response['${p}MultiAPDevice.Backhaul.Stats.TimeStamp'],
+        response['${p}MultiAPDevice.Backhaul.Stats.LastDataUplinkRate'],
+        response['${p}MultiAPDevice.Backhaul.Stats.SignalStrength']
       ].every((v) =>
           v == null ||
           v == '' ||
@@ -215,6 +255,30 @@ class DataElementsNetwork {
         missing.add('${p}BackhaulMediaType');
       if (!response.containsKey('${p}BackhaulPHYRate'))
         missing.add('${p}BackhaulPHYRate');
+      if (!response.containsKey('${p}MultiAPDevice.LastContactTime'))
+        missing.add('${p}MultiAPDevice.LastContactTime');
+      if (!response.containsKey('${p}MultiAPDevice.AssocIEEE1905DeviceRef'))
+        missing.add('${p}MultiAPDevice.AssocIEEE1905DeviceRef');
+      if (!response.containsKey('${p}MultiAPDevice.EasyMeshAgentOperationMode'))
+        missing.add('${p}MultiAPDevice.EasyMeshAgentOperationMode');
+      if (!response.containsKey('${p}MultiAPDevice.Backhaul.Stats.PacketsSent'))
+        missing.add('${p}MultiAPDevice.Backhaul.Stats.PacketsSent');
+      if (!response
+          .containsKey('${p}MultiAPDevice.Backhaul.Stats.PacketsReceived'))
+        missing.add('${p}MultiAPDevice.Backhaul.Stats.PacketsReceived');
+      if (!response.containsKey('${p}MultiAPDevice.Backhaul.Stats.ErrorsSent'))
+        missing.add('${p}MultiAPDevice.Backhaul.Stats.ErrorsSent');
+      if (!response
+          .containsKey('${p}MultiAPDevice.Backhaul.Stats.ErrorsReceived'))
+        missing.add('${p}MultiAPDevice.Backhaul.Stats.ErrorsReceived');
+      if (!response.containsKey('${p}MultiAPDevice.Backhaul.Stats.TimeStamp'))
+        missing.add('${p}MultiAPDevice.Backhaul.Stats.TimeStamp');
+      if (!response
+          .containsKey('${p}MultiAPDevice.Backhaul.Stats.LastDataUplinkRate'))
+        missing.add('${p}MultiAPDevice.Backhaul.Stats.LastDataUplinkRate');
+      if (!response
+          .containsKey('${p}MultiAPDevice.Backhaul.Stats.SignalStrength'))
+        missing.add('${p}MultiAPDevice.Backhaul.Stats.SignalStrength');
       if (missing.isNotEmpty) {
         throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
       }
@@ -232,6 +296,47 @@ class DataElementsNetwork {
         backhaulPhyRate:
             int.tryParse(response['${p}BackhaulPHYRate']?.toString() ?? '') ??
                 0,
+        multiApLastContactTime:
+            (response['${p}MultiAPDevice.LastContactTime'] ?? '') as String,
+        multiApAssocIEEE1905DeviceRef:
+            (response['${p}MultiAPDevice.AssocIEEE1905DeviceRef'] ?? '')
+                as String,
+        multiApEasyMeshAgentOperationMode:
+            (response['${p}MultiAPDevice.EasyMeshAgentOperationMode'] ?? '')
+                as String,
+        backhaulStatsPacketsSent: int.tryParse(
+                response['${p}MultiAPDevice.Backhaul.Stats.PacketsSent']
+                        ?.toString() ??
+                    '') ??
+            0,
+        backhaulStatsPacketsReceived: int.tryParse(
+                response['${p}MultiAPDevice.Backhaul.Stats.PacketsReceived']
+                        ?.toString() ??
+                    '') ??
+            0,
+        backhaulStatsErrorsSent: int.tryParse(
+                response['${p}MultiAPDevice.Backhaul.Stats.ErrorsSent']
+                        ?.toString() ??
+                    '') ??
+            0,
+        backhaulStatsErrorsReceived: int.tryParse(
+                response['${p}MultiAPDevice.Backhaul.Stats.ErrorsReceived']
+                        ?.toString() ??
+                    '') ??
+            0,
+        backhaulStatsTimeStamp:
+            (response['${p}MultiAPDevice.Backhaul.Stats.TimeStamp'] ?? '')
+                as String,
+        backhaulStatsLastDataUplinkRate: int.tryParse(
+                response['${p}MultiAPDevice.Backhaul.Stats.LastDataUplinkRate']
+                        ?.toString() ??
+                    '') ??
+            0,
+        backhaulStatsSignalStrength: int.tryParse(
+                response['${p}MultiAPDevice.Backhaul.Stats.SignalStrength']
+                        ?.toString() ??
+                    '') ??
+            0,
         radios: radios,
       ));
     }

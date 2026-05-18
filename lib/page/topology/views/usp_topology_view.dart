@@ -129,6 +129,7 @@ class _UspTopologyViewState extends ConsumerState<UspTopologyView> {
                 detailBuilder: (ctx, node, metadata) =>
                     _buildDetailPanel(ctx, node, metadata, router),
               ),
+              nodeComparator: _nodeComparator,
             ),
           ),
         ),
@@ -233,6 +234,25 @@ class _UspTopologyViewState extends ConsumerState<UspTopologyView> {
       ),
     );
   }
+
+  /// Comparator for sorting nodes: online first, then infra nodes before clients, then alphabetical.
+  static int _nodeComparator(MeshNode a, MeshNode b) {
+    // 1. Online before offline
+    if (a.isOffline && !b.isOffline) return 1;
+    if (!a.isOffline && b.isOffline) return -1;
+    // 2. Node type priority: gateway > extender > client > internet
+    final typePriority = _nodeTypePriority(a.type) - _nodeTypePriority(b.type);
+    if (typePriority != 0) return typePriority;
+    // 3. Alphabetical by name
+    return a.name.compareTo(b.name);
+  }
+
+  static int _nodeTypePriority(MeshNodeType type) => switch (type) {
+        MeshNodeType.gateway => 0,
+        MeshNodeType.extender => 1,
+        MeshNodeType.client => 2,
+        MeshNodeType.internet => 3,
+      };
 
   Widget _withTopologyAnimation(BuildContext context, Widget child) {
     final appTheme = Theme.of(context).extension<AppDesignTheme>();

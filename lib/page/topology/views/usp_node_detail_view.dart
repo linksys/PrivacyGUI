@@ -225,9 +225,35 @@ class UspNodeDetailView extends ConsumerWidget {
               value: '${node.backhaulPhyRate} Mbps',
             ),
           ],
+          if (node.backhaulSignalStrength != null) ...[
+            AppGap.md(),
+            DetailInfoTile(
+              icon: Icons.signal_cellular_alt,
+              label: 'Signal Strength',
+              value: '${node.backhaulSignalStrength} dBm',
+            ),
+          ],
+          if (node.backhaulUplinkRate != null &&
+              node.backhaulUplinkRate! > 0) ...[
+            AppGap.md(),
+            DetailInfoTile(
+              icon: Icons.upload,
+              label: 'Throughput',
+              value: _formatThroughput(node.backhaulUplinkRate!),
+            ),
+          ],
         ],
       ),
     );
+  }
+
+  String _formatThroughput(int bps) {
+    if (bps >= 1000000) {
+      return '${(bps / 1000000).toStringAsFixed(1)} Mbps';
+    } else if (bps >= 1000) {
+      return '${(bps / 1000).toStringAsFixed(0)} Kbps';
+    }
+    return '$bps bps';
   }
 
   // ===========================================================================

@@ -281,13 +281,15 @@ void main() {
     });
 
     test('medium wifi signal maps to medium level', () {
+      // wifi.dart thresholds: [-65, -71, -78]
+      // -75 is >= -78 (fair) → SignalQuality.medium
       const device = DeviceUIModel(
         mac: 'AA:AA:AA:AA:AA:AA',
         ip: '192.168.1.1',
         hostName: 'Medium',
         isActive: true,
         isWifi: true,
-        signalStrength: -60,
+        signalStrength: -75,
       );
 
       final topo = UspTopologyBuilder.build(
@@ -298,18 +300,21 @@ void main() {
 
       final client =
           topo.nodes.firstWhere((n) => n.type == MeshNodeType.client);
-      expect(client.level, 0.65);
+      // -75 maps to level 0.4 (>= -70 threshold in _rssiToLevel)
+      expect(client.level, 0.1);
       expect(client.signalQuality, SignalQuality.medium);
     });
 
     test('weak wifi signal maps to low level', () {
+      // wifi.dart thresholds: [-65, -71, -78]
+      // -80 is < -78 (poor) → SignalQuality.weak
       const device = DeviceUIModel(
         mac: 'AA:AA:AA:AA:AA:AA',
         ip: '192.168.1.1',
         hostName: 'Weak',
         isActive: true,
         isWifi: true,
-        signalStrength: -75,
+        signalStrength: -80,
       );
 
       final topo = UspTopologyBuilder.build(

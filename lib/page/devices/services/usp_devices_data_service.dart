@@ -170,6 +170,15 @@ class UspDevicesDataService {
         }
       }
 
+      // RCPI → RSSI conversion: RSSI (dBm) = (RCPI / 2) - 110
+      // backhaulStatsSignalStrength is now a direct field on MeshNode (single instance)
+      int? backhaulSignalStrength;
+      if (node.backhaulStatsSignalStrength > 0) {
+        backhaulSignalStrength = (node.backhaulStatsSignalStrength ~/ 2) - 110;
+        logger.d('[USP][Topology]: Node ${node.id} backhaul '
+            'RCPI=${node.backhaulStatsSignalStrength} → RSSI=$backhaulSignalStrength dBm');
+      }
+
       nodes.add(MeshNodeInfo(
         instancePath: node.instancePath,
         deviceId: nodeDeviceId,
@@ -181,6 +190,10 @@ class UspDevicesDataService {
         backhaulMacAddress: node.backhaulMacAddress.trim(),
         backhaulMediaType: node.backhaulMediaType.trim(),
         backhaulPhyRate: node.backhaulPhyRate,
+        backhaulSignalStrength: backhaulSignalStrength,
+        backhaulUplinkRate: node.backhaulStatsLastDataUplinkRate > 0
+            ? node.backhaulStatsLastDataUplinkRate
+            : null,
       ));
     }
 
@@ -433,6 +446,9 @@ class UspDevicesDataService {
     // Slave nodes.
     for (final slave in meshDevices.where((d) => d.deviceRole == 'slave')) {
       final slaveMeshInfo = _findMatchingMeshNode(slave, meshTopology.nodes);
+      logger.d('[USP][Topology]: Slave ${slave.mac} matched to meshInfo: '
+          '${slaveMeshInfo != null ? "yes (signalStrength=${slaveMeshInfo.backhaulSignalStrength})" : "no"}, '
+          'meshTopology.nodes.length=${meshTopology.nodes.length}');
 
       final slaveConnectedCount = clientDevices
           .where((d) =>
@@ -456,6 +472,8 @@ class UspDevicesDataService {
         connectedDeviceCount: slaveConnectedCount,
         backhaulMediaType: slaveMeshInfo?.backhaulMediaType ?? '',
         backhaulPhyRate: slaveMeshInfo?.backhaulPhyRate ?? 0,
+        backhaulSignalStrength: slaveMeshInfo?.backhaulSignalStrength,
+        backhaulUplinkRate: slaveMeshInfo?.backhaulUplinkRate,
       ));
     }
 

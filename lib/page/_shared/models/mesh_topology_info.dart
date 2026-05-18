@@ -15,6 +15,8 @@ class MeshNodeInfo {
   final String backhaulMacAddress; // Backhaul interface MAC
   final String backhaulMediaType; // e.g. "IEEE 802.11ax"
   final int backhaulPhyRate; // PHY rate in Mbps
+  final int? backhaulSignalStrength; // RSSI in dBm (converted from RCPI)
+  final int? backhaulUplinkRate; // bps
 
   const MeshNodeInfo({
     required this.instancePath,
@@ -27,6 +29,8 @@ class MeshNodeInfo {
     this.backhaulMacAddress = '',
     this.backhaulMediaType = '',
     this.backhaulPhyRate = 0,
+    this.backhaulSignalStrength,
+    this.backhaulUplinkRate,
   });
 
   /// Whether this node has backhaul info (i.e., it's a child node).
