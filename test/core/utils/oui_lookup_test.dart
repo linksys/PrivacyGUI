@@ -1,7 +1,58 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/core/utils/oui_lookup.dart';
 
 void main() {
+  // ---------------------------------------------------------------------------
+  // Test database setup
+  // ---------------------------------------------------------------------------
+
+  /// Sample OUI database for testing (subset of IEEE data)
+  const testDatabase = <String, String>{
+    '000393': 'Apple, Inc.',
+    '0007AB': 'Samsung Electronics Co.,Ltd',
+    '3C5AB4': 'Google, Inc.',
+    'A07D9C': 'Samsung Electronics Co.,Ltd',
+    '00000C': 'Cisco Systems, Inc',
+    '001977': 'Extreme Networks Headquarters',
+  };
+
+  setUp(() {
+    OuiLookup.reset();
+    OuiLookup.initializeForTesting(testDatabase);
+  });
+
+  tearDown(() {
+    OuiLookup.reset();
+  });
+
+  // ---------------------------------------------------------------------------
+  // Initialization
+  // ---------------------------------------------------------------------------
+
+  group('OuiLookup - initialization', () {
+    test('isInitialized returns true after initializeForTesting', () {
+      expect(OuiLookup.isInitialized, isTrue);
+    });
+
+    test('entryCount returns correct count', () {
+      expect(OuiLookup.entryCount, testDatabase.length);
+    });
+
+    test('reset clears database', () {
+      OuiLookup.reset();
+      expect(OuiLookup.isInitialized, isFalse);
+      expect(OuiLookup.entryCount, 0);
+    });
+
+    test('getVendor returns null when not initialized', () {
+      OuiLookup.reset();
+      expect(OuiLookup.getVendor('00:03:93:AA:BB:CC'), isNull);
+    });
+  });
+
   // ---------------------------------------------------------------------------
   // getVendor
   // ---------------------------------------------------------------------------
@@ -61,6 +112,11 @@ void main() {
 
     test('returns false for invalid MAC', () {
       expect(OuiLookup.hasVendor('invalid'), isFalse);
+    });
+
+    test('returns false when not initialized', () {
+      OuiLookup.reset();
+      expect(OuiLookup.hasVendor('00:03:93:AA:BB:CC'), isFalse);
     });
   });
 
@@ -149,6 +205,68 @@ void main() {
 
     test('handles MAC with only 6 hex chars (OUI only)', () {
       expect(OuiLookup.getVendor('000393'), 'Apple, Inc.');
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Load time testing (using dart:io to read JSON directly)
+  // ---------------------------------------------------------------------------
+
+  group('OuiLookup - load performance', () {
+    test('JSON file exists and is valid', () async {
+      final file = File('assets/resources/oui_database.json');
+      expect(file.existsSync(), isTrue);
+
+      final content = file.readAsStringSync();
+      final Map<String, dynamic> jsonMap = json.decode(content);
+
+      // Full IEEE database should have 39,000+ entries
+      expect(jsonMap.length, greaterThan(30000));
+
+      // Verify some known OUIs
+      expect(jsonMap['00000C'], 'Cisco Systems, Inc');
+      expect(jsonMap['A07D9C'], 'Samsung Electronics Co.,Ltd');
+    });
+
+    test('JSON parsing completes within acceptable time', () async {
+      final file = File('assets/resources/oui_database.json');
+      final content = file.readAsStringSync();
+
+      final stopwatch = Stopwatch()..start();
+      final Map<String, dynamic> jsonMap = json.decode(content);
+      final database = jsonMap.cast<String, String>();
+      stopwatch.stop();
+
+      // JSON parsing should complete within 500ms
+      expect(stopwatch.elapsedMilliseconds, lessThan(500));
+
+      // Verify parsing result
+      expect(database.length, greaterThan(30000));
+
+      // Log actual load time for reference
+      // ignore: avoid_print
+      print('OUI database load time: ${stopwatch.elapsedMilliseconds}ms');
+      // ignore: avoid_print
+      print('OUI database entries: ${database.length}');
+    });
+
+    test('lookup performance is fast after loading', () async {
+      final file = File('assets/resources/oui_database.json');
+      final content = file.readAsStringSync();
+      final Map<String, dynamic> jsonMap = json.decode(content);
+      final database = jsonMap.cast<String, String>();
+
+      // Perform 10000 lookups and measure time
+      final stopwatch = Stopwatch()..start();
+      for (var i = 0; i < 10000; i++) {
+        database['00000C']; // Cisco
+        database['A07D9C']; // Samsung
+        database['FFFFFF']; // Unknown
+      }
+      stopwatch.stop();
+
+      // 30000 lookups should complete within 100ms
+      expect(stopwatch.elapsedMilliseconds, lessThan(100));
     });
   });
 }

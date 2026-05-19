@@ -13,6 +13,7 @@ import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/providers/logger_observer.dart';
 
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/core/utils/oui_lookup.dart';
 import 'package:privacy_gui/core/utils/storage.dart';
 import 'package:privacy_gui/core/usp/services/usp_bridge_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -68,6 +69,7 @@ void main() async {
   initErrorHandler();
 
   await BuildConfig.load();
+  await OuiLookup.initialize();
   if (!kIsWeb) {
     HttpOverrides.global = MyHTTPOverrides();
   }
