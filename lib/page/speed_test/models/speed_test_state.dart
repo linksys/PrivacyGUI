@@ -22,35 +22,53 @@ class SpeedTestServer {
   });
 
   static const List<SpeedTestServer> all = [
+    // Asia Pacific
     SpeedTestServer(
       name: 'Singapore',
       host: 'speedtest.singapore.linode.com',
-      downloadUrl: 'http://speedtest.singapore.linode.com/100MB-singapore.bin',
+      downloadUrl: 'http://speedtest.singapore.linode.com/10MB-singapore.bin',
     ),
     SpeedTestServer(
       name: 'Tokyo',
       host: 'speedtest.tokyo2.linode.com',
-      downloadUrl: 'http://speedtest.tokyo2.linode.com/100MB-tokyo2.bin',
+      downloadUrl: 'http://speedtest.tokyo2.linode.com/10MB-tokyo2.bin',
     ),
+    SpeedTestServer(
+      name: 'Sydney',
+      host: 'speedtest.syd1.linode.com',
+      downloadUrl: 'http://speedtest.syd1.linode.com/10MB-syd1.bin',
+    ),
+    SpeedTestServer(
+      name: 'Mumbai',
+      host: 'speedtest.mumbai1.linode.com',
+      downloadUrl: 'http://speedtest.mumbai1.linode.com/10MB-mumbai1.bin',
+    ),
+    // Europe
     SpeedTestServer(
       name: 'London',
       host: 'speedtest.london.linode.com',
-      downloadUrl: 'http://speedtest.london.linode.com/100MB-london.bin',
+      downloadUrl: 'http://speedtest.london.linode.com/10MB-london.bin',
     ),
     SpeedTestServer(
       name: 'Frankfurt',
       host: 'speedtest.frankfurt.linode.com',
-      downloadUrl: 'http://speedtest.frankfurt.linode.com/100MB-frankfurt.bin',
+      downloadUrl: 'http://speedtest.frankfurt.linode.com/10MB-frankfurt.bin',
     ),
+    // Americas
     SpeedTestServer(
       name: 'US East (Newark)',
       host: 'speedtest.newark.linode.com',
-      downloadUrl: 'http://speedtest.newark.linode.com/100MB-newark.bin',
+      downloadUrl: 'http://speedtest.newark.linode.com/10MB-newark.bin',
     ),
     SpeedTestServer(
       name: 'US West (Fremont)',
       host: 'speedtest.fremont.linode.com',
-      downloadUrl: 'http://speedtest.fremont.linode.com/100MB-fremont.bin',
+      downloadUrl: 'http://speedtest.fremont.linode.com/10MB-fremont.bin',
+    ),
+    SpeedTestServer(
+      name: 'São Paulo',
+      host: 'speedtest.saopaulo1.linode.com',
+      downloadUrl: 'http://speedtest.saopaulo1.linode.com/10MB-saopaulo1.bin',
     ),
   ];
 }
