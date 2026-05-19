@@ -36,7 +36,7 @@ Every user interaction that changes state results in a new `FeatureState` value 
 GoldenTestConfig  -->  runViewGoldenTests()  -->  golden PNGs
        |                      |
        v                      v
-  ProviderOverrides      pumpWidgetInShell()
+  ProviderOverrides      _buildGoldenWidget()
   (per-feature mocks)   (shell wrapping + locale + screen size + theme)
 ```
 
@@ -71,6 +71,10 @@ class GoldenTestConfig {
 
   /// Theme brightness modes to test. Default: [Brightness.light]
   final List<Brightness> themes;
+
+  /// Optional fixed height override. When set, all devices use this height
+  /// instead of their default. Useful for views with tall scrollable content.
+  final double? height;
 }
 
 enum ShellType { pageView, scaffold, custom }
@@ -378,80 +382,144 @@ test/usp_test/page/firewall/
 
 ### runViewGoldenTests()
 
+Uses the `alchemist` package (`goldenTest` API) for golden rendering and comparison.
+
 ```dart
 void runViewGoldenTests(GoldenTestConfig config) {
   _validateConfig(config);
 
-  final devices = config.devices;
-  final locales = config.locales;
-  final themes = config.themes;
-
   group('${config.viewName} golden tests', () {
-    for (final state in config.states.entries) {
-      for (final device in devices) {
-        for (final locale in locales) {
-          for (final theme in themes) {
+    for (final stateEntry in config.states.entries) {
+      for (final device in config.devices) {
+        for (final locale in config.locales) {
+          for (final theme in config.themes) {
+            final effectiveHeight = config.height ?? device.size.height;
+            final effectiveSize = Size(device.size.width, effectiveHeight);
             final name = _goldenFileName(
-              config.viewName, state.key, device, locale, theme,
+              config.viewName, stateEntry.key, device, locale, theme,
             );
 
-            testGoldens(name, (tester) async {
-              final overrides = <Override>[];
-              overrides.addAll(commonOverrides());
-              state.value(overrides);
-
-              await pumpWidgetInShell(
-                tester,
+            goldenTest(
+              '${config.viewName} - ${stateEntry.key} - ${device.name} - ...',
+              fileName: name,
+              constraints: BoxConstraints.expand(
+                width: effectiveSize.width,
+                height: effectiveSize.height,
+              ),
+              pumpBeforeTest: (tester) async {
+                // Multiple pumps for async provider initialization
+                for (int i = 0; i < 5; i++) {
+                  await tester.pump(const Duration(milliseconds: 50));
+                }
+              },
+              pumpWidget: (tester, widget) async {
+                _suppressOverflowErrors();
+                await tester.binding.setSurfaceSize(effectiveSize);
+                tester.view.physicalSize = effectiveSize;
+                tester.view.devicePixelRatio = 1.0;
+                await tester.pumpWidget(widget);
+              },
+              builder: () => _buildGoldenWidget(
                 config.view(),
-                shell: config.shell,
-                overrides: overrides,
-                locale: locale,
-                screenSize: device.size,
-                brightness: theme,
-              );
-
-              await screenMatchesGolden(tester, name);
-            });
+                config.shell,
+                stateEntry.value,
+                effectiveSize,
+                locale,
+                theme,
+              ),
+            );
           }
         }
       }
     }
 
-    // Interactions follow the same loop pattern
+    // Interactions follow the same loop pattern with additional steps
     if (config.interactions != null) {
-      for (final interaction in config.interactions!.entries) {
-        for (final device in devices) {
-          for (final locale in locales) {
-            for (final theme in themes) {
-              final name = _goldenFileName(
-                config.viewName, interaction.key, device, locale, theme,
-              );
-
-              testGoldens(name, (tester) async {
-                final overrides = <Override>[];
-                overrides.addAll(commonOverrides());
-                interaction.value.setup(overrides);
-
-                await pumpWidgetInShell(
-                  tester,
-                  config.view(),
-                  shell: config.shell,
-                  overrides: overrides,
-                  locale: locale,
-                  screenSize: device.size,
-                  brightness: theme,
-                );
-
-                await interaction.value.steps(tester);
-                await screenMatchesGolden(tester, name);
-              });
+      for (final interactionEntry in config.interactions!.entries) {
+        // ... same device/locale/theme loops ...
+        goldenTest(
+          '...',
+          fileName: name,
+          constraints: BoxConstraints.expand(...),
+          pumpBeforeTest: (tester) async {
+            for (int i = 0; i < 5; i++) {
+              await tester.pump(const Duration(milliseconds: 50));
             }
-          }
-        }
+            await interactionEntry.value.steps(tester);
+            await tester.pump(const Duration(milliseconds: 100));
+          },
+          pumpWidget: (tester, widget) async {
+            _suppressOverflowErrors();
+            await tester.binding.setSurfaceSize(effectiveSize);
+            tester.view.physicalSize = effectiveSize;
+            tester.view.devicePixelRatio = 1.0;
+            await tester.pumpWidget(widget);
+          },
+          builder: () => _buildGoldenWidget(...),
+        );
       }
     }
   });
 }
+```
+
+### Key Implementation Details
+
+- **`physicalSize` + `devicePixelRatio`**: Both must be set for `MediaQuery.sizeOf` to report the correct viewport width. `setSurfaceSize` alone only controls the screenshot capture surface, not the logical size seen by widgets.
+- **Multiple pump cycles**: Async providers (especially those that read from SharedPreferences or perform post-frame callbacks) need multiple frames to initialize. 5×50ms pumps covers typical async initialization.
+- **Interaction post-pump**: After executing interaction steps, `pump(Duration(milliseconds: 100))` fires any pending delayed timers (e.g., animation callbacks).
+- **Overflow suppression**: `_suppressOverflowErrors()` prevents golden tests from failing due to cosmetic overflow — the overflow is visible in the golden image itself.
+
+---
+
+## Test Infrastructure
+
+### flutter_test_config.dart
+
+Located at `test/usp_test/flutter_test_config.dart`, this file is automatically loaded by the Flutter test runner for all tests under `test/usp_test/`. It configures:
+
+1. **Alchemist config** — Disables CI goldens, enables platform goldens with `diffThreshold: 0.025`
+2. **Font loading** — Loads real fonts so text renders readably (not Ahem blocks)
+
+### Alchemist Configuration
+
+```dart
+AlchemistConfig(
+  ciGoldensConfig: CiGoldensConfig(enabled: false),
+  platformGoldensConfig: PlatformGoldensConfig(
+    enabled: true,
+    renderShadows: false,
+    filePathResolver: (fileName, _) => 'goldens/$fileName.png',
+    diffThreshold: 0.025,
+  ),
+)
+```
+
+- **`diffThreshold: 0.025`** — Allows up to 2.5% pixel difference. Required for tests involving non-deterministic animations (e.g., `JiggleShake` uses `Random()` without a seed for delay/direction). Without this tolerance, edit-mode tests would produce flaky failures.
+- **`renderShadows: false`** — Shadows are platform-dependent; disabling them prevents cross-machine diffs.
+
+### Font Loading
+
+Flutter tests use the `Ahem` font by default, which renders all glyphs as black rectangles. To produce human-readable golden images:
+
+```dart
+// Load from ui_kit_library package (resolved via .dart_tool/package_config.json)
+final mainFont = FontLoader('packages/ui_kit_library/NeueHaasGrotTextRound');
+// Load .otf files from the resolved package path
+```
+
+The `packages/` prefix is required because the app references the font via the `ui_kit_library` package. `AppText` widgets inherit the theme's font correctly; raw `Text()` widgets do not unless explicitly styled.
+
+### Portal Wrapper
+
+`flutter_portal` (`Portal` widget) wraps the `MaterialApp.router` in `_buildGoldenWidget()`. This is required by UI Kit overlay components (tooltips, dropdowns) that use `PortalTarget`/`PortalFollower` instead of Flutter's built-in overlay.
+
+### Dependencies
+
+```yaml
+dev_dependencies:
+  alchemist: ^0.14.0        # Golden test framework (replaces golden_toolkit)
+  flutter_portal: ^1.1.4    # Required by UI Kit overlay widgets
 ```
 
 ---
@@ -542,14 +610,15 @@ done
 
 ```
 test/usp_test/
+  flutter_test_config.dart        # Alchemist config + font loading (auto-loaded by test runner)
   golden_framework/
     golden_test_config.dart       # GoldenTestConfig, Interaction, ShellType
-    golden_runner.dart            # runViewGoldenTests(), pumpWidgetInShell()
+    golden_runner.dart            # runViewGoldenTests(), _buildGoldenWidget()
     devices.dart                  # GoldenDevice definitions
     mocks/
       mock_common.dart            # commonOverrides()
       mock_firewall.dart          # FixedFirewallNotifier + firewallOverrides()
-      mock_wifi_settings.dart     # FixedWifiSettingsNotifier + wifiOverrides()
+      mock_dashboard.dart         # Dashboard-specific mocks + stub widget factory
       ...                         # one file per feature
 ```
 
@@ -701,4 +770,6 @@ flutter test --update-goldens test/usp_test/page/firewall/  # single feature
 
 ## Future Considerations
 
-- **Golden comparison tolerance**: As the number of views grows, pixel-perfect comparison across different CI environments may cause false failures. May need to configure `precisionTolerance` in golden_toolkit or standardize the CI runner platform (e.g., Linux Docker image with fixed font rendering).
+- **CI environment standardization**: Golden images are generated on macOS with specific font rendering. CI runners on Linux may produce different pixel results. Consider a Docker image with fixed font rendering if cross-platform diffs become an issue.
+- **Animation determinism**: `JiggleShake` uses unseeded `Random()`, requiring `diffThreshold` tolerance. If more animations are added, consider seeding random sources or disabling animations during golden capture.
+- **Shared golden baselines for loading/error**: Loading and error UI is shared across all views. A single shared golden test could cover those components, reducing per-feature state requirements.
