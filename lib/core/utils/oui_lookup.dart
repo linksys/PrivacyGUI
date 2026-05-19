@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/services.dart';
+import 'package:meta/meta.dart';
 
 /// OUI (Organizationally Unique Identifier) lookup for MAC address vendor identification.
 ///
@@ -95,6 +96,7 @@ class OuiLookup {
   }
 
   /// Reset the database (for testing purposes only).
+  @visibleForTesting
   static void reset() {
     _ouiDatabase = null;
     _isInitialized = false;
@@ -102,6 +104,7 @@ class OuiLookup {
   }
 
   /// Initialize with a pre-built map (for testing purposes only).
+  @visibleForTesting
   static void initializeForTesting(Map<String, String> database) {
     _ouiDatabase = database;
     _isInitialized = true;

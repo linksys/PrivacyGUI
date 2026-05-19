@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/core/utils/device_classifier.dart';
+import 'package:privacy_gui/core/utils/oui_lookup.dart';
 import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
 import 'package:privacy_gui/page/topology/models/node_ui_model.dart';
@@ -7,6 +8,19 @@ import 'package:privacy_gui/page/topology/helpers/usp_topology_builder.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 void main() {
+  // OUI database for testing (minimal set for topology tests)
+  const testOuiDatabase = <String, String>{
+    '112233': 'Test Vendor',
+  };
+
+  setUpAll(() {
+    OuiLookup.initializeForTesting(testOuiDatabase);
+  });
+
+  tearDownAll(() {
+    OuiLookup.reset();
+  });
+
   // ---------------------------------------------------------------------------
   // Shared test data
   // ---------------------------------------------------------------------------
@@ -549,8 +563,10 @@ void main() {
     });
 
     test('unknown hostname with unknown OUI gets unknown icon', () {
+      // Use universally administered MAC (bit 1 of first byte = 0)
+      // that's not in our test OUI database
       const device = DeviceUIModel(
-        mac: 'FF:FF:FF:44:55:04',
+        mac: '00:FF:FF:44:55:04',
         ip: '192.168.1.103',
         hostName: 'device-12345',
         isActive: true,
