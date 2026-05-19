@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/shell/usp_top_bar.dart';
@@ -404,17 +405,18 @@ class SpeedTestView extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     SpeedTestServer currentServer,
-  ) {
-    showDialog(
+  ) async {
+    final selected = await showListSelectionDialog<SpeedTestServer>(
       context: context,
-      builder: (dialogContext) => _ServerSelectionDialog(
-        currentServer: currentServer,
-        onSelected: (server) {
-          ref.read(speedTestProvider.notifier).selectServer(server);
-          Navigator.of(dialogContext).pop();
-        },
-      ),
+      title: 'Select Test Server',
+      items: SpeedTestServer.all,
+      itemLabel: (server) => server.name,
+      currentValue: currentServer,
+      itemIcon: Icons.dns,
     );
+    if (selected != null) {
+      ref.read(speedTestProvider.notifier).selectServer(selected);
+    }
   }
 }
 
@@ -637,62 +639,6 @@ class _ServerSelectionButton extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-/// Dialog for selecting speed test server
-class _ServerSelectionDialog extends StatelessWidget {
-  final SpeedTestServer currentServer;
-  final ValueChanged<SpeedTestServer> onSelected;
-
-  const _ServerSelectionDialog({
-    required this.currentServer,
-    required this.onSelected,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return AlertDialog(
-      title: const Text('Select Test Server'),
-      contentPadding: const EdgeInsets.only(top: 16, bottom: 8),
-      content: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 400),
-        child: ListView.builder(
-          shrinkWrap: true,
-          itemCount: SpeedTestServer.all.length,
-          itemBuilder: (context, index) {
-            final server = SpeedTestServer.all[index];
-            final isSelected = server.host == currentServer.host;
-
-            return ListTile(
-              leading: Icon(
-                Icons.dns,
-                color: isSelected ? colorScheme.primary : colorScheme.onSurfaceVariant,
-              ),
-              title: Text(
-                server.name,
-                style: TextStyle(
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                  color: isSelected ? colorScheme.primary : null,
-                ),
-              ),
-              trailing: isSelected
-                  ? Icon(Icons.check, color: colorScheme.primary)
-                  : null,
-              onTap: () => onSelected(server),
-            );
-          },
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
-        ),
-      ],
     );
   }
 }

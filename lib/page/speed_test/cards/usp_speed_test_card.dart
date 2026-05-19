@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/speed_test/models/speed_test_state.dart';
 import 'package:privacy_gui/page/speed_test/providers/speed_test_notifier.dart';
 import 'package:privacy_gui/route/constants.dart';
@@ -110,19 +111,11 @@ class UspSpeedTestCard extends ConsumerWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Server selector dropdown
-          SizedBox(
-            width: 200,
-            child: AppDropdown<SpeedTestServer>(
-              items: SpeedTestServer.all,
-              value: state.selectedServer,
-              itemAsString: (server) => server.name,
-              onChanged: (server) {
-                if (server != null) {
-                  ref.read(speedTestProvider.notifier).selectServer(server);
-                }
-              },
-            ),
+          // Server selector button
+          _ServerButton(
+            server: state.selectedServer,
+            colorScheme: colorScheme,
+            onTap: () => _showServerDialog(context, ref, state.selectedServer),
           ),
           AppGap.lg(),
           // Start button
@@ -237,18 +230,12 @@ class UspSpeedTestCard extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              SizedBox(
-                width: 180,
-                child: AppDropdown<SpeedTestServer>(
-                  items: SpeedTestServer.all,
-                  value: state.selectedServer,
-                  itemAsString: (server) => server.name,
-                  onChanged: (server) {
-                    if (server != null) {
-                      ref.read(speedTestProvider.notifier).selectServer(server);
-                    }
-                  },
-                ),
+              _ServerButton(
+                server: state.selectedServer,
+                colorScheme: colorScheme,
+                compact: true,
+                onTap: () =>
+                    _showServerDialog(context, ref, state.selectedServer),
               ),
               AppGap.md(),
               AppButton(
@@ -461,5 +448,70 @@ class _SpeedMetric extends StatelessWidget {
         ),
       ],
     );
+  }
+}
+
+// =============================================================================
+// Server Selection
+// =============================================================================
+
+class _ServerButton extends StatelessWidget {
+  final SpeedTestServer server;
+  final ColorScheme colorScheme;
+  final VoidCallback onTap;
+  final bool compact;
+
+  const _ServerButton({
+    required this.server,
+    required this.colorScheme,
+    required this.onTap,
+    this.compact = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: colorScheme.surfaceContainerHighest,
+      borderRadius: BorderRadius.circular(8),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: compact ? 12 : 16,
+            vertical: compact ? 8 : 12,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.dns, size: 16, color: colorScheme.onSurfaceVariant),
+              AppGap.sm(),
+              AppText.bodyMedium(server.name),
+              AppGap.xs(),
+              Icon(Icons.arrow_drop_down,
+                  size: 20, color: colorScheme.onSurfaceVariant),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+Future<void> _showServerDialog(
+  BuildContext context,
+  WidgetRef ref,
+  SpeedTestServer currentServer,
+) async {
+  final selected = await showListSelectionDialog<SpeedTestServer>(
+    context: context,
+    title: 'Select Test Server',
+    items: SpeedTestServer.all,
+    itemLabel: (server) => server.name,
+    currentValue: currentServer,
+    itemIcon: Icons.dns,
+  );
+  if (selected != null) {
+    ref.read(speedTestProvider.notifier).selectServer(selected);
   }
 }

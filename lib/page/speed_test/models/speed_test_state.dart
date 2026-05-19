@@ -144,7 +144,7 @@ class SpeedTestState extends Equatable {
   const SpeedTestState({
     this.step = SpeedTestStep.idle,
     this.selectedServer = const SpeedTestServer(
-      name: 'Singapore (Linode)',
+      name: 'Singapore',
       host: 'speedtest.singapore.linode.com',
       downloadUrl: 'http://speedtest.singapore.linode.com/100MB-singapore.bin',
     ),
