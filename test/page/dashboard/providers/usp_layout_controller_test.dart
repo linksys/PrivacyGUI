@@ -56,13 +56,13 @@ void main() {
   // Initialization
   // ---------------------------------------------------------------------------
   group('Initialization', () {
-    test('no saved layout → creates 18 default items', () async {
+    test('no saved layout → creates 19 default items', () async {
       final container = await createInitializedContainer();
       addTearDown(container.dispose);
 
       final controller = container.read(uspSliverDashboardControllerProvider);
       final layout = controller.exportLayout();
-      expect(layout.length, 18);
+      expect(layout.length, 19);
     });
 
     test('no saved layout → saves default to prefs', () async {
@@ -147,7 +147,7 @@ void main() {
 
       final controller = container.read(uspSliverDashboardControllerProvider);
       final layout = controller.exportLayout();
-      expect(layout.length, 18);
+      expect(layout.length, 19);
     });
 
     test('malformed JSON → saves default to prefs', () async {
@@ -160,7 +160,7 @@ void main() {
       final saved = prefs.getString(pUspSliverDashboardLayout);
       expect(saved, isNotNull);
       final decoded = jsonDecode(saved!) as List;
-      expect(decoded.length, 18);
+      expect(decoded.length, 19);
     });
 
     test('saved layout with fewer cards (preset) is valid', () async {
@@ -246,7 +246,7 @@ void main() {
   // resetLayout
   // ---------------------------------------------------------------------------
   group('resetLayout', () {
-    test('creates new default controller with 18 items', () async {
+    test('creates new default controller with 19 items', () async {
       final container = await createInitializedContainer();
       addTearDown(container.dispose);
 
@@ -268,7 +268,7 @@ void main() {
               .read(uspSliverDashboardControllerProvider)
               .exportLayout()
               .length,
-          18);
+          19);
     });
 
     test('removes prefs key', () async {
@@ -774,7 +774,7 @@ void main() {
               .read(uspSliverDashboardControllerProvider)
               .exportLayout()
               .length,
-          18);
+          19);
 
       await notifier.applyPreset(UspDashboardPreset.monitoring);
       expect(

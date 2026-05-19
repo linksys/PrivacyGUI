@@ -34,6 +34,26 @@ class FakeSseOperationAwaiter implements SseOperationAwaiter {
     required String operateCommand,
     Map<String, String> args = const {},
   }) async {}
+
+  @override
+  Future<void> startSharedSession({required String referencePath}) async {}
+
+  @override
+  Future<void> endSharedSession() async {}
+
+  @override
+  Future<OperateResult> executeInSession({
+    required String operateCommand,
+    Map<String, String> args = const {},
+    Duration timeout = const Duration(seconds: 60),
+  }) async {
+    return execute(
+      operateCommand: operateCommand,
+      referencePath: '',
+      args: args,
+      timeout: timeout,
+    );
+  }
 }
 
 void main() {
@@ -301,4 +321,24 @@ class _SlowSseOperationAwaiter implements SseOperationAwaiter {
     required String operateCommand,
     Map<String, String> args = const {},
   }) async {}
+
+  @override
+  Future<void> startSharedSession({required String referencePath}) async {}
+
+  @override
+  Future<void> endSharedSession() async {}
+
+  @override
+  Future<OperateResult> executeInSession({
+    required String operateCommand,
+    Map<String, String> args = const {},
+    Duration timeout = const Duration(seconds: 60),
+  }) async {
+    return execute(
+      operateCommand: operateCommand,
+      referencePath: '',
+      args: args,
+      timeout: timeout,
+    );
+  }
 }

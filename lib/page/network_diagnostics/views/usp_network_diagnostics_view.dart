@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
-import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/core/usp/services/sse_operation_awaiter.dart';
 import 'package:privacy_gui/page/network_diagnostics/models/network_diagnostics_ui_model.dart';
 import 'package:privacy_gui/page/network_diagnostics/providers/usp_network_diagnostics_notifier.dart';
 import 'package:privacy_gui/page/shell/usp_top_bar.dart';
+import 'package:privacy_gui/route/constants.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 class UspNetworkDiagnosticsView extends ConsumerStatefulWidget {
@@ -102,18 +102,9 @@ class _UspNetworkDiagnosticsViewState
         SizedBox(
           width: double.infinity,
           child: AppButton.primary(
-            label: state.activeTab == DiagnosticType.ping
-                ? 'Run Ping'
-                : 'Run Traceroute',
-            onTap: state.isRunning || state.host.isEmpty
-                ? null
-                : () {
-                    if (state.activeTab == DiagnosticType.ping) {
-                      notifier.runPing();
-                    } else {
-                      notifier.runTraceroute();
-                    }
-                  },
+            label: _getRunButtonLabel(state),
+            onTap:
+                _canRun(state) ? () => _runDiagnostic(state, notifier) : null,
           ),
         ),
         AppGap.lg(),
@@ -124,9 +115,7 @@ class _UspNetworkDiagnosticsViewState
           AppGap.sm(),
           Center(
             child: AppText.bodySmall(
-              state.activeTab == DiagnosticType.ping
-                  ? 'Pinging ${state.host}...'
-                  : 'Tracing route to ${state.host}...',
+              _getRunningLabel(state),
               color: colorScheme.onSurfaceVariant,
             ),
           ),
@@ -264,6 +253,41 @@ class _UspNetworkDiagnosticsViewState
         ],
       ),
     );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Helper methods for run button and labels
+  // ---------------------------------------------------------------------------
+
+  String _getRunButtonLabel(NetworkDiagnosticsState state) {
+    return switch (state.activeTab) {
+      DiagnosticType.ping => 'Run Ping',
+      DiagnosticType.traceroute => 'Run Traceroute',
+    };
+  }
+
+  bool _canRun(NetworkDiagnosticsState state) {
+    if (state.isRunning) return false;
+    return state.host.isNotEmpty;
+  }
+
+  void _runDiagnostic(
+    NetworkDiagnosticsState state,
+    UspNetworkDiagnosticsNotifier notifier,
+  ) {
+    switch (state.activeTab) {
+      case DiagnosticType.ping:
+        notifier.runPing();
+      case DiagnosticType.traceroute:
+        notifier.runTraceroute();
+    }
+  }
+
+  String _getRunningLabel(NetworkDiagnosticsState state) {
+    return switch (state.activeTab) {
+      DiagnosticType.ping => 'Pinging ${state.host}...',
+      DiagnosticType.traceroute => 'Tracing route to ${state.host}...',
+    };
   }
 
   // ---------------------------------------------------------------------------

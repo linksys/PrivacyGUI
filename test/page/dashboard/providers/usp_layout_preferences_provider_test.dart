@@ -149,10 +149,10 @@ void main() {
       final notifier = container.read(uspLayoutPreferencesProvider.notifier);
       await notifier.toggleCustomLayout(false);
 
-      // Controller should be reset to default 18 items
+      // Controller should be reset to default 19 items
       final layout =
           container.read(uspSliverDashboardControllerProvider).exportLayout();
-      expect(layout.length, 18);
+      expect(layout.length, 19);
     });
 
     test('toggling ON does NOT reset controller layout', () async {
@@ -462,7 +462,7 @@ void main() {
 
       final layout =
           container.read(uspSliverDashboardControllerProvider).exportLayout();
-      expect(layout.length, 18);
+      expect(layout.length, 19);
     });
   });
 

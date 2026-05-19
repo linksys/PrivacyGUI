@@ -59,6 +59,8 @@ import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_settings_provi
 import 'package:privacy_gui/page/wifi_settings/views/usp_wifi_settings_view.dart';
 import 'package:privacy_gui/page/apps/views/usp_apps_view.dart';
 import 'package:privacy_gui/page/dashboard/views/dashboard_troubleshooting_view.dart';
+import 'package:privacy_gui/page/unified_diagnostics/views/unified_diagnostics_view.dart';
+import 'package:privacy_gui/page/speed_test/views/speed_test_view.dart';
 import 'package:privacy_gui/page/instant_setup/services/pnp_status_service.dart';
 
 // PnP (Plug and Play) imports

@@ -172,5 +172,15 @@ final uspDashboardRoute = ShellRoute(
       path: RoutePath.uspTroubleshooting,
       builder: (context, state) => const DashboardTroubleshootingView(),
     ),
+    LinksysRoute(
+      name: RouteNamed.uspUnifiedDiagnostics,
+      path: RoutePath.uspUnifiedDiagnostics,
+      builder: (context, state) => const UnifiedDiagnosticsView(),
+    ),
+    LinksysRoute(
+      name: RouteNamed.uspSpeedTest,
+      path: RoutePath.uspSpeedTest,
+      builder: (context, state) => const SpeedTestView(),
+    ),
   ],
 );

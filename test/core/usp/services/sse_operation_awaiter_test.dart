@@ -396,4 +396,218 @@ void main() {
       expect(() => future, throwsA(isA<TimeoutException>()));
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // Shared Session
+  // ---------------------------------------------------------------------------
+  group('Shared Session', () {
+    test('startSharedSession creates subscription', () async {
+      await connectManager();
+
+      await awaiter.startSharedSession(referencePath: 'Device.IP.Diagnostics.');
+
+      verify(() => mockBridge.subscribe(
+            subscriptionId: any(named: 'subscriptionId'),
+            path: 'Device.IP.Diagnostics.',
+            notifType: 4, // OperationComplete
+          )).called(1);
+    });
+
+    test('endSharedSession unsubscribes', () async {
+      await connectManager();
+
+      await awaiter.startSharedSession(referencePath: 'Device.IP.Diagnostics.');
+      await awaiter.endSharedSession();
+
+      verify(() => mockBridge.unsubscribe(
+            subscriptionId: any(named: 'subscriptionId'),
+          )).called(1);
+    });
+
+    test('executeInSession uses shared subscription', () async {
+      await connectManager();
+
+      await awaiter.startSharedSession(referencePath: 'Device.IP.Diagnostics.');
+
+      // Reset verification for subscribe to check it's not called again
+      clearInteractions(mockBridge);
+
+      final future = awaiter.executeInSession(
+        operateCommand: 'Device.IP.Diagnostics.IPPing()',
+        args: {'Host': '8.8.8.8'},
+        timeout: const Duration(seconds: 5),
+      );
+
+      await Future.delayed(const Duration(milliseconds: 50));
+
+      // Verify operate was called
+      verify(() => mockUsp.operate(
+            'Device.IP.Diagnostics.IPPing()',
+            args: {'Host': '8.8.8.8'},
+          )).called(1);
+
+      // Verify NO new subscription was created (uses shared session)
+      verifyNever(() => mockBridge.subscribe(
+            subscriptionId: any(named: 'subscriptionId'),
+            path: any(named: 'path'),
+            notifType: any(named: 'notifType'),
+          ));
+
+      // Deliver result
+      streamController.add(notificationEvent(
+        subscriptionId: 'shared-session-id',
+        type: 'OperationComplete',
+        operComplete: {
+          'command_name': 'IPPing()',
+          'command_key': 'test-key-123',
+          'output_args': {'Status': 'Complete', 'SuccessCount': '3'},
+        },
+      ));
+
+      final result = await future;
+      expect(result.status, 'Complete');
+
+      await awaiter.endSharedSession();
+    });
+
+    test('executeInSession throws if no shared session active', () async {
+      await connectManager();
+
+      expect(
+        () => awaiter.executeInSession(
+          operateCommand: 'Device.IP.Diagnostics.IPPing()',
+        ),
+        throwsA(isA<StateError>()),
+      );
+    });
+
+    test('multiple executeInSession calls share same subscription', () async {
+      await connectManager();
+
+      await awaiter.startSharedSession(referencePath: 'Device.IP.Diagnostics.');
+
+      clearInteractions(mockBridge);
+
+      // First operation
+      final future1 = awaiter.executeInSession(
+        operateCommand: 'Device.IP.Diagnostics.IPPing()',
+        args: {'Host': '8.8.8.8'},
+        timeout: const Duration(seconds: 5),
+      );
+
+      await Future.delayed(const Duration(milliseconds: 50));
+
+      streamController.add(notificationEvent(
+        subscriptionId: 'shared',
+        type: 'OperationComplete',
+        operComplete: {
+          'command_name': 'IPPing()',
+          'command_key': 'test-key-123',
+          'output_args': {'Status': 'Complete'},
+        },
+      ));
+
+      await future1;
+
+      // Second operation — same session
+      when(() => mockUsp.operate(any(), args: any(named: 'args')))
+          .thenAnswer((_) async => {'commandKey': 'test-key-456'});
+
+      final future2 = awaiter.executeInSession(
+        operateCommand: 'Device.IP.Diagnostics.TraceRoute()',
+        args: {'Host': 'google.com'},
+        timeout: const Duration(seconds: 5),
+      );
+
+      await Future.delayed(const Duration(milliseconds: 50));
+
+      streamController.add(notificationEvent(
+        subscriptionId: 'shared',
+        type: 'OperationComplete',
+        operComplete: {
+          'command_name': 'TraceRoute()',
+          'command_key': 'test-key-456',
+          'output_args': {'Status': 'Complete'},
+        },
+      ));
+
+      await future2;
+
+      // NO new subscriptions should have been created
+      verifyNever(() => mockBridge.subscribe(
+            subscriptionId: any(named: 'subscriptionId'),
+            path: any(named: 'path'),
+            notifType: any(named: 'notifType'),
+          ));
+
+      await awaiter.endSharedSession();
+    });
+
+    test('execute() uses shared session if active', () async {
+      await connectManager();
+
+      await awaiter.startSharedSession(referencePath: 'Device.IP.Diagnostics.');
+
+      clearInteractions(mockBridge);
+
+      final future = awaiter.execute(
+        operateCommand: 'Device.IP.Diagnostics.IPPing()',
+        referencePath: 'Device.IP.Diagnostics.IPPing()',
+        timeout: const Duration(seconds: 5),
+      );
+
+      await Future.delayed(const Duration(milliseconds: 50));
+
+      // Should NOT create a new subscription since shared session is active
+      verifyNever(() => mockBridge.subscribe(
+            subscriptionId: any(named: 'subscriptionId'),
+            path: any(named: 'path'),
+            notifType: any(named: 'notifType'),
+          ));
+
+      streamController.add(notificationEvent(
+        subscriptionId: 'shared',
+        type: 'OperationComplete',
+        operComplete: {
+          'command_name': 'IPPing()',
+          'command_key': 'test-key-123',
+          'output_args': {'Status': 'Complete'},
+        },
+      ));
+
+      final result = await future;
+      expect(result.isComplete, isTrue);
+
+      await awaiter.endSharedSession();
+    });
+
+    test('startSharedSession is idempotent', () async {
+      await connectManager();
+
+      await awaiter.startSharedSession(referencePath: 'Device.IP.Diagnostics.');
+      await awaiter.startSharedSession(referencePath: 'Device.IP.Diagnostics.');
+
+      // Should only subscribe once
+      verify(() => mockBridge.subscribe(
+            subscriptionId: any(named: 'subscriptionId'),
+            path: any(named: 'path'),
+            notifType: any(named: 'notifType'),
+          )).called(1);
+
+      await awaiter.endSharedSession();
+    });
+
+    test('endSharedSession is idempotent', () async {
+      await connectManager();
+
+      await awaiter.startSharedSession(referencePath: 'Device.IP.Diagnostics.');
+      await awaiter.endSharedSession();
+      await awaiter.endSharedSession(); // Second call should be no-op
+
+      // Unsubscribe should only be called once
+      verify(() => mockBridge.unsubscribe(
+            subscriptionId: any(named: 'subscriptionId'),
+          )).called(1);
+    });
+  });
 }

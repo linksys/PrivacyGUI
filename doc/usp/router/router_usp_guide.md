@@ -447,13 +447,13 @@ ubus call bbfdm.timemngr set '{"path":"Device.Time.NTPServer5","value":"2.openwr
 | 層級 | 狀態 | 說明 |
 |------|------|------|
 | Router (OBUSPA) | ✅ 就緒 | 支援 ValueChange / ObjectCreation / ObjectDeletion / OperationComplete |
-| Router (usp-bridge) | ⚠️ 部分 | SSE heartbeat ✅（1.0.16 修復）；通知轉發 ❌（見 5.7） |
+| Router (usp-bridge) | ✅ 就緒 | SSE heartbeat ✅；OperationComplete 轉發 ✅（2026-05-19 驗證） |
 | WASM Client (JS) | ❌ 未實作 | `web/usp_client.js` 無 subscribe/SSE API |
 | Dart 綁定 | ✅ 就緒 | `UspBridgeClient`（HTTP/SSE helper）+ `UspService.sessionToken` getter |
 | Dart 測試頁面 | ✅ 就緒 | SSE / Subscribe / Turbo / Health UI sections 已實作 |
 | Codegen | ✅ 就緒 | 已產生 subscribe 方法（呼叫 `client.subscribe()`） |
 
-> **SSE heartbeat 已可運作（1.0.16）。** 但通知轉發受限於 usp-bridge 架構（見 5.7 節）。
+> **SSE 完整運作（2026-05-19 驗證）：** heartbeat + OperationComplete 通知轉發均正常。
 
 ### 5.7 通知機制深度分析（2026-03-09 驗證）
 
@@ -1346,8 +1346,8 @@ curl -s -X POST http://127.0.0.1:8083/api/v1/turbo/release -H "Authorization: Be
 | BUG-002 | 🟡 Low | `Device.Firewall.` 頂層 GET 回傳空 | 需個別查詢子路徑 | 1.0.16 未驗證 |
 | BUG-003 | ✅ Fixed | usp-bridge SSE 端點從未送出任何資料 | — | 1.0.16 修復（heartbeat 正常） |
 | BUG-004 | 🟢 Changed | Rust WASM client 非同步 OperateResp 處理 | 不再 crash，改回傳空結果 | 1.0.16 行為改變（見詳情） |
-| BUG-005 | 🔴 Critical | usp-bridge 不轉發 OBUSPA 的 USP Notify message 到 SSE | 所有 subscription 通知（ValueChange/ObjectCreation/OperationComplete）無法送達 client | 1.0.16 確認 |
-| BUG-006 | 🟠 Medium | 非同步 Operate 結果不寫入 TR-181 data model | 無法透過 GET 輪詢取得 Operate 結果 | 1.0.16 確認 |
+| BUG-005 | ✅ Fixed | usp-bridge 不轉發 OBUSPA 的 USP Notify message 到 SSE | — | 已修復（2026-05-19 驗證） |
+| BUG-006 | 🟢 Not a bug | 非同步 Operate 結果不寫入 TR-181 data model | 設計如此，結果透過 OperationComplete 送達 | — |
 
 **BUG-003（已修復）：**
 - 1.0.14：SSE 連線建立後從未送出任何資料（heartbeat + 通知均無），0 bytes received
@@ -1355,19 +1355,17 @@ curl -s -X POST http://127.0.0.1:8083/api/v1/turbo/release -H "Authorization: Be
 
 **BUG-004（行為改變）：**
 - 1.0.14：Rust client `decode.rs` 將空的 `oneof operate_resp` 視為失敗，回傳 "No operation result in response"
-- 1.0.16：不再報錯，改回傳 `OPERATE OK (no output)` — 非同步 Operate 的確認回應正確處理，但結果需透過 OperationComplete 通知取得（受 BUG-005 阻斷）
+- 1.0.16：不再報錯，改回傳 `OPERATE OK (no output)` — 非同步 Operate 的確認回應正確處理，結果透過 OperationComplete 通知取得
 
-**BUG-005 詳情（新發現 2026-03-09）：**
-- OBUSPA 正確送出 USP Notify message（含完整 Operate 結果）到 usp-bridge via UDS（prototrace 確認）
-- usp-bridge 收到 Notify 後**不解析、不轉發**到 SSE stream
-- 原因：bridge 的 SSE 推送僅處理自己 `/api/v1/subscription` API 層的通知，不處理來自 OBUSPA 的 USP Notify message
-- **影響範圍：** 所有類型的 subscription 通知（ValueChange、ObjectCreation、ObjectDeletion、OperationComplete）均無法從 OBUSPA 到達 client
-- 詳見第 5.7 節完整分析
+**BUG-005（已修復 2026-05-19）：**
+- 原問題：usp-bridge 收到 OBUSPA 的 USP Notify 後不轉發到 SSE stream
+- 已修復：SSE OperationComplete 通知現在可正常送達 client
+- 非同步 Operate（IPPing、TraceRoute、DownloadDiagnostics、UploadDiagnostics）端對端運作正常
 
-**BUG-006 詳情（新發現 2026-03-09）：**
-- bbfdm 的 Operate 實作為 fire-and-return：結果只存在 operate response 的 `output` 中
-- `Device.IP.Diagnostics.IPPing.` 在 Operate 後 GET 查詢，`DiagnosticsState` 仍為 `None`，所有結果欄位為 0
-- 這表示 GET 輪詢 workaround 不可行，必須依賴 OperationComplete 通知（受 BUG-005 阻斷）
+**BUG-006（非 Bug）：**
+- 非同步 Operate 結果設計上就不寫入 TR-181 data model
+- 結果透過 OperationComplete 通知送達，這是正確行為
+- 使用 `SseOperationAwaiter` 自動處理訂閱和結果接收
 
 ### 11.2 未實作的模組
 

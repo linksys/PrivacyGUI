@@ -60,6 +60,101 @@ class SseOperationAwaiter {
   }
 
   // ══════════════════════════════════════════════════════════════════════════
+  // Shared Subscription Session (for batch operations like diagnostics)
+  // ══════════════════════════════════════════════════════════════════════════
+
+  Future<void> Function()? _sharedSubscriptionCleanup;
+  bool _hasSharedSubscription = false;
+
+  /// Start a shared subscription session for batch Operate commands.
+  /// Call [endSharedSession] when done to cleanup.
+  Future<void> startSharedSession({
+    required String referencePath,
+  }) async {
+    if (_hasSharedSubscription) return;
+
+    final subscriptionId = 'operate-shared-${_uuid.v4().substring(0, 8)}';
+    logger.d('[USP][SSE][Operate]: Starting shared session $subscriptionId');
+
+    _sharedSubscriptionCleanup = await _manager.subscribe(
+      subscriptionId: subscriptionId,
+      notifType: 'OperationComplete',
+      referenceList: referencePath,
+      onNotification: (_) {},
+    );
+    _hasSharedSubscription = true;
+    logger.d('[USP][SSE][Operate]: Shared session started');
+  }
+
+  /// End the shared subscription session.
+  Future<void> endSharedSession() async {
+    if (!_hasSharedSubscription) return;
+
+    logger.d('[USP][SSE][Operate]: Ending shared session');
+    if (_sharedSubscriptionCleanup != null) {
+      try {
+        await _sharedSubscriptionCleanup!();
+      } catch (e) {
+        logger.w('[USP][SSE][Operate]: Shared session cleanup failed: $e');
+      }
+    }
+    _sharedSubscriptionCleanup = null;
+    _hasSharedSubscription = false;
+  }
+
+  /// Execute operate using shared subscription (no per-call subscription overhead).
+  Future<OperateResult> executeInSession({
+    required String operateCommand,
+    Map<String, String> args = const {},
+    Duration timeout = const Duration(seconds: 60),
+  }) async {
+    if (!_hasSharedSubscription) {
+      throw StateError(
+          'No shared session active. Call startSharedSession first.');
+    }
+
+    final expectedCmd = operateCommand.split('.').last;
+    final completer = Completer<OperateResult>();
+
+    // Fire the operate command and capture commandKey
+    final operateResponse = await _usp.operate(operateCommand, args: args);
+    final expectedKey = operateResponse['commandKey'] as String?;
+
+    logger.d('[USP][SSE][Operate]: Executing $operateCommand in session '
+        '(commandKey=$expectedKey)');
+
+    // Wildcard handler for this specific operation
+    VoidCallback? removeHandler;
+    removeHandler = _manager.addWildcardHandler((notification) {
+      if (notification.type == 'OperationComplete' && !completer.isCompleted) {
+        final result = _parseOperateResult(notification);
+        if (result == null) return;
+
+        final matched = (expectedKey != null && expectedKey.isNotEmpty)
+            ? result.commandKey == expectedKey
+            : result.commandName == expectedCmd;
+
+        if (matched) {
+          logger.d('[USP][SSE][Operate]: Session match for $expectedCmd');
+          completer.complete(result);
+        }
+      }
+    });
+
+    try {
+      final result = await completer.future.timeout(
+        timeout,
+        onTimeout: () => throw TimeoutException(
+          'OperationComplete not received within ${timeout.inSeconds}s',
+        ),
+      );
+      return result;
+    } finally {
+      removeHandler?.call();
+    }
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
   // SSE-Based Execution (preferred)
   // ══════════════════════════════════════════════════════════════════════════
 
@@ -69,6 +164,15 @@ class SseOperationAwaiter {
     Map<String, String> args,
     Duration timeout,
   ) async {
+    // If a shared session is active, use it instead
+    if (_hasSharedSubscription) {
+      return executeInSession(
+        operateCommand: operateCommand,
+        args: args,
+        timeout: timeout,
+      );
+    }
+
     final expectedCmd = operateCommand.split('.').last;
     final opId = _uuid.v4().substring(0, 8);
     final subscriptionId = _operateSubId(operateCommand, opId);
@@ -90,7 +194,7 @@ class SseOperationAwaiter {
       final expectedKey = operateResponse['commandKey'] as String?;
 
       logger.d('[USP][SSE][Operate]: Starting $operateCommand '
-          '(sub=$subscriptionId, commandKey=$expectedKey)');
+          '(commandKey=$expectedKey)');
 
       // Step 3: Wildcard handler matches by commandKey (primary) or
       // falls back to command_name if commandKey is unavailable.
@@ -105,10 +209,7 @@ class SseOperationAwaiter {
               : result.commandName == expectedCmd;
 
           if (matched) {
-            logger.d(
-                '[USP][SSE][Operate]: Matched OperationComplete for $expectedCmd '
-                '(commandKey=${result.commandKey}, '
-                'sub=${notification.subscriptionId})');
+            logger.d('[USP][SSE][Operate]: Matched $expectedCmd');
             completer.complete(result);
           }
         }
