@@ -2854,7 +2854,8 @@ class OuiLookup {
     '28:8E:EC': 'Apple, Inc.',
     '28:8F:F6': 'Apple, Inc.',
     '28:91:04': 'TP-Link Systems Inc.',
-    '28:91:D0': 'Stage Tec Entwicklungsgesellschaft für professionelle Audiotechnik mbH',
+    '28:91:D0':
+        'Stage Tec Entwicklungsgesellschaft für professionelle Audiotechnik mbH',
     '28:92:00': 'Intel Corporate',
     '28:92:4A': 'Hewlett Packard',
     '28:93:FE': 'Cisco Systems, Inc',
@@ -3657,7 +3658,8 @@ class OuiLookup {
     '3C:BF:60': 'Apple, Inc.',
     '3C:BF:D7': 'Apple, Inc.',
     '3C:C0:3E': 'HUAWEI TECHNOLOGIES CO.,LTD',
-    '3C:C0:79': 'Shenzhen One-Nine Intelligent Electronic Science and Technology Co., Ltd',
+    '3C:C0:79':
+        'Shenzhen One-Nine Intelligent Electronic Science and Technology Co., Ltd',
     '3C:C0:C6': 'd&b audiotechnik GmbH',
     '3C:C2:E1': 'XINHUA CONTROL ENGINEERING CO.,LTD',
     '3C:C5:C7': 'HUAWEI TECHNOLOGIES CO.,LTD',
@@ -4859,7 +4861,8 @@ class OuiLookup {
     '60:15:6F': 'TP-Link Systems Inc.',
     '60:18:3A': 'Huawei Device Co., Ltd.',
     '60:18:95': 'Dell Inc.',
-    '60:1A:4F': 'Beijing China Electronics Intelligent Acoustics Technology Co.,Ltd',
+    '60:1A:4F':
+        'Beijing China Electronics Intelligent Acoustics Technology Co.,Ltd',
     '60:1A:C7': 'Nintendo Co.,Ltd',
     '60:1D:91': 'Motorola Mobility LLC, a Lenovo Company',
     '60:21:01': 'GUANGDONG OPPO MOBILE TELECOMMUNICATIONS CORP.,LTD',
@@ -5748,7 +5751,8 @@ class OuiLookup {
     '74:EA:3A': 'TP-LINK TECHNOLOGIES CO.,LTD.',
     '74:EB:80': 'Samsung Electronics Co.,Ltd',
     '74:EC:B2': 'Amazon Technologies Inc.',
-    '74:EE:8D': 'Apollo Intelligent Connectivity (Beijing) Technology Co., Ltd.',
+    '74:EE:8D':
+        'Apollo Intelligent Connectivity (Beijing) Technology Co., Ltd.',
     '74:EF:4B': 'GUANGDONG OPPO MOBILE TELECOMMUNICATIONS CORP.,LTD',
     '74:F2:FA': 'Xiaomi Communications Co Ltd',
     '74:F4:41': 'Samsung Electronics Co.,Ltd',
@@ -6287,7 +6291,8 @@ class OuiLookup {
     '84:69:93': 'HP Inc.',
     '84:6F:CE': 'GUANGDONG OPPO MOBILE TELECOMMUNICATIONS CORP.,LTD',
     '84:71:6A': 'Huawei Device Co., Ltd.',
-    '84:73:03': 'Letv Mobile and Intelligent Information Technology (Beijing) Corporation Ltd.',
+    '84:73:03':
+        'Letv Mobile and Intelligent Information Technology (Beijing) Corporation Ltd.',
     '84:76:37': 'HUAWEI TECHNOLOGIES CO.,LTD',
     '84:78:48': 'Ubiquiti Inc',
     '84:78:8B': 'Apple, Inc.',
@@ -7120,7 +7125,8 @@ class OuiLookup {
     '9C:2A:83': 'Samsung Electronics Co.,Ltd',
     '9C:2E:7A': 'Samsung Electronics Co.,Ltd',
     '9C:2E:A1': 'Xiaomi Communications Co Ltd',
-    '9C:31:78': 'Foshan Huadian Intelligent Communications Teachnologies Co.,Ltd',
+    '9C:31:78':
+        'Foshan Huadian Intelligent Communications Teachnologies Co.,Ltd',
     '9C:35:EB': 'Apple, Inc.',
     '9C:37:08': 'Hewlett Packard Enterprise',
     '9C:37:CB': 'Sony Interactive Entertainment Inc.',
@@ -7184,7 +7190,8 @@ class OuiLookup {
     '9C:8E:9C': 'Huawei Device Co., Ltd.',
     '9C:92:4F': 'Apple, Inc.',
     '9C:95:67': 'Huawei Device Co., Ltd.',
-    '9C:96:13': 'Lenovo Future Communication Technology (Chongqing) Company Limited',
+    '9C:96:13':
+        'Lenovo Future Communication Technology (Chongqing) Company Limited',
     '9C:97:1B': 'Intel Corporate',
     '9C:97:74': 'HUAWEI TECHNOLOGIES CO.,LTD',
     '9C:97:93': 'HUAWEI TECHNOLOGIES CO.,LTD',
@@ -7342,7 +7349,8 @@ class OuiLookup {
     'A0:93:47': 'GUANGDONG OPPO MOBILE TELECOMMUNICATIONS CORP.,LTD',
     'A0:93:51': 'Cisco Systems, Inc',
     'A0:94:1A': 'GUANGDONG OPPO MOBILE TELECOMMUNICATIONS CORP.,LTD',
-    'A0:98:ED': 'Shandong Intelligent Optical Communication Development Co., Ltd.',
+    'A0:98:ED':
+        'Shandong Intelligent Optical Communication Development Co., Ltd.',
     'A0:99:9B': 'Apple, Inc.',
     'A0:9A:8E': 'Apple, Inc.',
     'A0:9D:22': 'Apple, Inc.',
@@ -7547,7 +7555,8 @@ class OuiLookup {
     'A4:DC:BE': 'HUAWEI TECHNOLOGIES CO.,LTD',
     'A4:DC:D5': 'Cisco Systems, Inc',
     'A4:DD:58': 'HUAWEI TECHNOLOGIES CO.,LTD',
-    'A4:DE:C9': 'QLove Mobile Intelligence Information Technology (W.H.) Co. Ltd.',
+    'A4:DE:C9':
+        'QLove Mobile Intelligence Information Technology (W.H.) Co. Ltd.',
     'A4:E2:87': 'Xiaomi Communications Co Ltd',
     'A4:E5:7C': 'Espressif Inc.',
     'A4:E9:75': 'Apple, Inc.',
@@ -7792,7 +7801,8 @@ class OuiLookup {
     'AC:82:47': 'Intel Corporate',
     'AC:82:F0': 'Apple, Inc.',
     'AC:84:C6': 'TP-LINK TECHNOLOGIES CO.,LTD.',
-    'AC:84:FA': 'Zhejiang Weilai Jingling Artificial Intelligence Technology Co., Ltd.',
+    'AC:84:FA':
+        'Zhejiang Weilai Jingling Artificial Intelligence Technology Co., Ltd.',
     'AC:85:3D': 'HUAWEI TECHNOLOGIES CO.,LTD',
     'AC:86:A3': 'Apple, Inc.',
     'AC:87:A3': 'Apple, Inc.',
@@ -8741,7 +8751,8 @@ class OuiLookup {
     'C4:BB:03': 'HUAWEI TECHNOLOGIES CO.,LTD',
     'C4:BD:E5': 'Intel Corporate',
     'C4:C1:7D': 'Apple, Inc.',
-    'C4:C1:9F': 'National Oilwell Varco Instrumentation, Monitoring, and Optimization (NOV IMO)',
+    'C4:C1:9F':
+        'National Oilwell Varco Instrumentation, Monitoring, and Optimization (NOV IMO)',
     'C4:C3:6B': 'Apple, Inc.',
     'C4:C6:03': 'Cisco Systems, Inc',
     'C4:CB:76': 'Microsoft Corporation',
@@ -8751,7 +8762,8 @@ class OuiLookup {
     'C4:D6:66': 'Cisco Meraki',
     'C4:D6:D3': 'Dell Inc.',
     'C4:D7:38': 'Huawei Device Co., Ltd.',
-    'C4:D7:DC': 'Zhejiang Weilai Jingling Artificial Intelligence Technology Co., Ltd.',
+    'C4:D7:DC':
+        'Zhejiang Weilai Jingling Artificial Intelligence Technology Co., Ltd.',
     'C4:D8:D4': 'HUAWEI TECHNOLOGIES CO.,LTD',
     'C4:D8:D5': 'Espressif Inc.',
     'C4:D9:87': 'Intel Corporate',
@@ -9618,7 +9630,8 @@ class OuiLookup {
     'DC:A9:04': 'Apple, Inc.',
     'DC:A9:56': 'GUANGDONG OPPO MOBILE TELECOMMUNICATIONS CORP.,LTD',
     'DC:A9:71': 'Intel Corporate',
-    'DC:B3:B4': 'Honeywell Environmental & Combustion Controls (Tianjin) Co., Ltd.',
+    'DC:B3:B4':
+        'Honeywell Environmental & Combustion Controls (Tianjin) Co., Ltd.',
     'DC:B4:AC': 'FLEXTRONICS MANUFACTURING(ZHUHAI)CO.,LTD.',
     'DC:B4:C4': 'Microsoft XCG',
     'DC:B4:CA': 'GUANGDONG OPPO MOBILE TELECOMMUNICATIONS CORP.,LTD',
@@ -9645,7 +9658,8 @@ class OuiLookup {
     'DC:DB:27': 'Huawei Device Co., Ltd.',
     'DC:DC:E2': 'Samsung Electronics Co.,Ltd',
     'DC:E5:5B': 'Google, Inc.',
-    'DC:E5:78': 'Experimental Factory of Scientific Engineering and Special Design Department',
+    'DC:E5:78':
+        'Experimental Factory of Scientific Engineering and Special Design Department',
     'DC:EA:E7': 'D-Link Corporation',
     'DC:EB:94': 'Cisco Systems, Inc',
     'DC:ED:83': 'Beijing Xiaomi Mobile Software Co., Ltd',
@@ -10523,7 +10537,8 @@ class OuiLookup {
     'F4:CE:46': 'Hewlett Packard',
     'F4:CF:A2': 'Espressif Inc.',
     'F4:CF:E2': 'Cisco Systems, Inc',
-    'F4:D0:A7': 'Zhejiang Weilai Jingling Artificial Intelligence Technology Co., Ltd.',
+    'F4:D0:A7':
+        'Zhejiang Weilai Jingling Artificial Intelligence Technology Co., Ltd.',
     'F4:D1:08': 'Intel Corporate',
     'F4:D4:88': 'Apple, Inc.',
     'F4:D6:20': 'GUANGDONG OPPO MOBILE TELECOMMUNICATIONS CORP.,LTD',

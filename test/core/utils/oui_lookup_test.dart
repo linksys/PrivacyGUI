@@ -32,8 +32,8 @@ void main() {
     });
 
     test('returns vendor for Samsung OUI', () {
-      expect(
-          OuiLookup.getVendor('00:07:AB:11:22:33'), 'Samsung Electronics Co.,Ltd');
+      expect(OuiLookup.getVendor('00:07:AB:11:22:33'),
+          'Samsung Electronics Co.,Ltd');
     });
 
     test('returns vendor for Google OUI', () {
@@ -41,8 +41,8 @@ void main() {
     });
 
     test('returns vendor for Samsung A0:7D:9C OUI', () {
-      expect(
-          OuiLookup.getVendor('A0:7D:9C:67:CD:4C'), 'Samsung Electronics Co.,Ltd');
+      expect(OuiLookup.getVendor('A0:7D:9C:67:CD:4C'),
+          'Samsung Electronics Co.,Ltd');
     });
   });
 
