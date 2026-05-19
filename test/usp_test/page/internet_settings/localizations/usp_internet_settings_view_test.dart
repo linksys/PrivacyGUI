@@ -11,6 +11,7 @@ void main() {
       viewName: 'internet_settings',
       view: () => const UspInternetSettingsView(),
       shell: ShellType.custom,
+      height: 1500,
       states: {
         'data': (overrides) => overrides.addAll(
               internetSettingsOverrides(

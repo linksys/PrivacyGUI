@@ -1,6 +1,7 @@
 import 'package:alchemist/alchemist.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_portal/flutter_portal.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -20,6 +21,8 @@ void runViewGoldenTests(GoldenTestConfig config) {
       for (final device in config.devices) {
         for (final locale in config.locales) {
           for (final theme in config.themes) {
+            final effectiveHeight = config.height ?? device.size.height;
+            final effectiveSize = Size(device.size.width, effectiveHeight);
             final name = _goldenFileName(
               config.viewName,
               stateEntry.key,
@@ -32,21 +35,26 @@ void runViewGoldenTests(GoldenTestConfig config) {
               '${config.viewName} - ${stateEntry.key} - ${device.name} - ${locale.languageCode}${theme == Brightness.dark ? ' - dark' : ''}',
               fileName: name,
               constraints: BoxConstraints.expand(
-                width: device.size.width,
-                height: device.size.height,
+                width: effectiveSize.width,
+                height: effectiveSize.height,
               ),
               pumpBeforeTest: (tester) async {
-                await tester.pump(const Duration(milliseconds: 100));
+                for (int i = 0; i < 5; i++) {
+                  await tester.pump(const Duration(milliseconds: 50));
+                }
               },
               pumpWidget: (tester, widget) async {
                 _suppressOverflowErrors();
+                await tester.binding.setSurfaceSize(effectiveSize);
+                tester.view.physicalSize = effectiveSize;
+                tester.view.devicePixelRatio = 1.0;
                 await tester.pumpWidget(widget);
               },
               builder: () => _buildGoldenWidget(
                 config.view(),
                 config.shell,
                 stateEntry.value,
-                device.size,
+                effectiveSize,
                 locale,
                 theme,
               ),
@@ -61,6 +69,8 @@ void runViewGoldenTests(GoldenTestConfig config) {
         for (final device in config.devices) {
           for (final locale in config.locales) {
             for (final theme in config.themes) {
+              final effectiveHeight = config.height ?? device.size.height;
+              final effectiveSize = Size(device.size.width, effectiveHeight);
               final name = _goldenFileName(
                 config.viewName,
                 interactionEntry.key,
@@ -73,24 +83,28 @@ void runViewGoldenTests(GoldenTestConfig config) {
                 '${config.viewName} - ${interactionEntry.key} - ${device.name} - ${locale.languageCode}${theme == Brightness.dark ? ' - dark' : ''}',
                 fileName: name,
                 constraints: BoxConstraints.expand(
-                width: device.size.width,
-                height: device.size.height,
-              ),
+                  width: effectiveSize.width,
+                  height: effectiveSize.height,
+                ),
                 pumpBeforeTest: (tester) async {
-                  await tester.pump(const Duration(milliseconds: 100));
+                  for (int i = 0; i < 5; i++) {
+                    await tester.pump(const Duration(milliseconds: 50));
+                  }
                   await interactionEntry.value.steps(tester);
                   await tester.pump(const Duration(milliseconds: 100));
                 },
                 pumpWidget: (tester, widget) async {
                   _suppressOverflowErrors();
-                  await tester.binding.setSurfaceSize(device.size);
+                  await tester.binding.setSurfaceSize(effectiveSize);
+                  tester.view.physicalSize = effectiveSize;
+                  tester.view.devicePixelRatio = 1.0;
                   await tester.pumpWidget(widget);
                 },
                 builder: () => _buildGoldenWidget(
                   config.view(),
                   config.shell,
                   interactionEntry.value.setup,
-                  device.size,
+                  effectiveSize,
                   locale,
                   theme,
                 ),
@@ -200,15 +214,17 @@ Widget _buildGoldenWidget(
     child: _PackageInfoStub(
       child: ProviderScope(
         overrides: overrides,
-        child: MaterialApp.router(
-          locale: locale,
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          theme: themeConfig.createLightTheme(),
-          darkTheme: themeConfig.createDarkTheme(),
-          themeMode:
-              brightness == Brightness.dark ? ThemeMode.dark : ThemeMode.light,
-          routerConfig: router,
+        child: Portal(
+          child: MaterialApp.router(
+            locale: locale,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            theme: themeConfig.createLightTheme(),
+            darkTheme: themeConfig.createDarkTheme(),
+            themeMode:
+                brightness == Brightness.dark ? ThemeMode.dark : ThemeMode.light,
+            routerConfig: router,
+          ),
         ),
       ),
     ),

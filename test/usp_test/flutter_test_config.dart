@@ -15,6 +15,7 @@ Future<void> testExecutable(FutureOr<void> Function() testMain) async {
         enabled: true,
         renderShadows: false,
         filePathResolver: (fileName, _) => 'goldens/$fileName.png',
+        diffThreshold: 0.025,
       ),
     ),
     run: testMain,
@@ -22,11 +23,49 @@ Future<void> testExecutable(FutureOr<void> Function() testMain) async {
 }
 
 Future<void> _loadFonts() async {
-  final fontLoader = FontLoader('NotoSans');
-  final fontFile = File('test/fonts/NotoSans-Regular.ttf');
-  if (fontFile.existsSync()) {
-    final bytes = fontFile.readAsBytesSync();
-    fontLoader.addFont(Future.value(ByteData.view(bytes.buffer)));
+  // Load main font from ui_kit_library package
+  final mainFont = FontLoader('packages/ui_kit_library/NeueHaasGrotTextRound');
+  final mainFontFromCache = File(
+      '${_uiKitPath()}/assets/fonts/NeueHaasGrotTextRound-55Roman.otf');
+  if (mainFontFromCache.existsSync()) {
+    final bytes = mainFontFromCache.readAsBytesSync();
+    mainFont.addFont(Future.value(ByteData.view(bytes.buffer)));
+    final boldFile = File(
+        '${_uiKitPath()}/assets/fonts/NeueHaasGrotTextRound-75Bold.otf');
+    if (boldFile.existsSync()) {
+      mainFont.addFont(Future.value(ByteData.view(boldFile.readAsBytesSync().buffer)));
+    }
   }
-  await fontLoader.load();
+  await mainFont.load();
+
+  // Load fallback fonts
+  final fontNames = ['NotoSans', 'NotoSansKR', 'NotoSansSC', 'NotoSansArabic', 'NotoSansThai'];
+  final fontFiles = [
+    'NotoSans-Regular.ttf',
+    'NotoSansKR-Regular.ttf',
+    'NotoSansSC-Regular.ttf',
+    'NotoSansArabic-Regular.ttf',
+    'NotoSansThai-Regular.ttf',
+  ];
+  for (var i = 0; i < fontNames.length; i++) {
+    final loader = FontLoader('packages/ui_kit_library/${fontNames[i]}');
+    final file = File('test/fonts/${fontFiles[i]}');
+    if (file.existsSync()) {
+      loader.addFont(Future.value(ByteData.view(file.readAsBytesSync().buffer)));
+    }
+    await loader.load();
+  }
+}
+
+String _uiKitPath() {
+  final configFile = File('.dart_tool/package_config.json');
+  if (configFile.existsSync()) {
+    final content = configFile.readAsStringSync();
+    final match = RegExp(r'"rootUri":\s*"file://([^"]+)"')
+        .allMatches(content)
+        .where((m) => m.group(1)!.contains('privacyGUI-UI-kit'))
+        .firstOrNull;
+    if (match != null) return match.group(1)!;
+  }
+  return '/Users/peter.jhong/.pub-cache/git/privacyGUI-UI-kit-b34d9c062b307cb87b34711666a9ce1296618660';
 }

@@ -11,6 +11,7 @@ void main() {
       viewName: 'local_network',
       view: () => const UspLocalNetworkView(),
       shell: ShellType.custom,
+      height: 1300,
       states: {
         'data': (overrides) => overrides.addAll(
               localNetworkOverrides(dataState(dhcpEnabledModel)),

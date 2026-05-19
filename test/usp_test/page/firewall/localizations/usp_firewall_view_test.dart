@@ -11,6 +11,7 @@ void main() {
       viewName: 'firewall',
       view: () => const UspFirewallView(),
       shell: ShellType.custom,
+      height: 1400,
       states: {
         'data': (overrides) => overrides.addAll(
               firewallOverrides(dataState(allOnModel)),

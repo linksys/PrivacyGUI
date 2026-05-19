@@ -67,6 +67,10 @@ class GoldenTestConfig {
   /// Theme brightness modes to test.
   final List<Brightness> themes;
 
+  /// Custom height override — replaces the device's default height.
+  /// Use for long pages that need full-content capture without scrolling.
+  final double? height;
+
   const GoldenTestConfig({
     required this.viewName,
     required this.view,
@@ -76,5 +80,6 @@ class GoldenTestConfig {
     this.locales = const [Locale('en')],
     this.devices = GoldenDevice.defaults,
     this.themes = const [Brightness.light],
+    this.height,
   });
 }

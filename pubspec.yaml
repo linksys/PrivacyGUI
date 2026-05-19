@@ -101,6 +101,7 @@ dev_dependencies:
   integration_test:
     sdk: flutter
   alchemist: ^0.14.0
+  flutter_portal: ^1.1.4
   flutter_svg_test: ^1.0.1
   fake_async: any
   xml: ^6.5.0
