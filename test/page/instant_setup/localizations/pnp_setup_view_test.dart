@@ -41,6 +41,7 @@ void main() async {
         deviceInfo:
             NodeDeviceInfo.fromJson(jsonDecode(testDeviceInfo)['output']),
         isUnconfigured: false,
+        isPrePaired: true,
         stepStateList: const {
           0: PnpStepState(status: StepViewStatus.data, data: {}),
           1: PnpStepState(status: StepViewStatus.data, data: {}),
@@ -412,6 +413,7 @@ void main() async {
     when(mockPnpNotifier.build()).thenReturn(PnpState(
       deviceInfo: NodeDeviceInfo.fromJson(jsonDecode(testDeviceInfo)['output']),
       isUnconfigured: false,
+      isPrePaired: true,
       stepStateList: const {
         0: PnpStepState(
           status: StepViewStatus.data,

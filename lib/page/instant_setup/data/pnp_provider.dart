@@ -106,24 +106,47 @@ abstract class BasePnpNotifier extends Notifier<PnpState> {
 }
 
 class MockPnpNotifier extends BasePnpNotifier {
+  // Simulate Auto Parent case:
+  // - Router is already Master (isUnconfigured = false)
+  // - Not pre-paired (isPrePaired = false)
+  // - Should show YourNetworkStep for adding nodes
+
   @override
   Future checkAdminPassword(String? password) {
     if (password == 'Linksys123!') {
       return Future.delayed(const Duration(seconds: 1));
     }
-    return Future.delayed(const Duration(seconds: 3))
+    return Future.delayed(const Duration(seconds: 1))
         .then((value) => throw ExceptionInvalidAdminPassword());
   }
 
   @override
   Future checkInternetConnection([int retries = 1]) {
-    return Future.delayed(const Duration(seconds: 1))
-        .then((value) => throw ExceptionNoInternetConnection());
+    // Auto Parent: internet connected
+    return Future.delayed(const Duration(seconds: 1));
   }
 
   @override
   Future fetchDeviceInfo([bool clearCurrentSN = true]) {
-    return Future.delayed(const Duration(seconds: 1));
+    // Set mock device info to allow navigation to pnpConfig
+    // Delay state modification to avoid "modify provider while building" error
+    return Future.delayed(const Duration(seconds: 1)).then((_) {
+      state = state.copyWith(
+        deviceInfo: const NodeDeviceInfo(
+          manufacturer: 'Linksys',
+          modelNumber: 'MBE70',
+          hardwareVersion: '1',
+          description: 'Linksys Velop',
+          serialNumber: 'Mock12345678',
+          firmwareVersion: '1.0.0',
+          firmwareDate: '2024-01-01T00:00:00Z',
+          services: [
+            'http://linksys.com/jnap/guestnetwork/GuestNetwork',
+            'http://linksys.com/jnap/routerleds/RouterLEDs4',
+          ],
+        ),
+      );
+    });
   }
 
   @override
@@ -132,7 +155,7 @@ class MockPnpNotifier extends BasePnpNotifier {
         .then((value) => AutoConfigurationSettings(
               isAutoConfigurationSupported: true,
               userAcknowledgedAutoConfiguration: false,
-              autoConfigurationMethod: AutoConfigurationMethod.preConfigured,
+              autoConfigurationMethod: AutoConfigurationMethod.autoParent,
             ));
   }
 
@@ -143,7 +166,11 @@ class MockPnpNotifier extends BasePnpNotifier {
 
   @override
   Future fetchData() {
-    return Future.delayed(const Duration(seconds: 1));
+    // Simulate AutoParent case (not pre-paired)
+    return Future.delayed(const Duration(seconds: 1)).then((_) {
+      state = state.copyWith(isPrePaired: false);
+      logger.d('[PnP Mock]: fetchData - isPrePaired=${state.isPrePaired}');
+    });
   }
 
   @override
@@ -167,15 +194,13 @@ class MockPnpNotifier extends BasePnpNotifier {
   @override
   Future save() {
     return Future.delayed(const Duration(seconds: 5));
-    // .then((value) => throw ErrorNeedToReconnect());
   }
 
   @override
   Future checkRouterConfigured() {
-    state = state.copyWith(isUnconfigured: true);
-
-    return Future.delayed(const Duration(seconds: 1))
-        .then((value) => throw ExceptionRouterUnconfigured());
+    // Auto Parent: already configured as Master
+    state = state.copyWith(isUnconfigured: false);
+    return Future.delayed(const Duration(seconds: 1));
   }
 
   @override
@@ -367,7 +392,19 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
         .read(routerRepositoryProvider)
         .transaction(transaction, fetchRemote: true, retries: 10)
         .then((response) {
-      state = state.copyWith(data: Map.fromEntries(response.data));
+      final dataMap = Map.fromEntries(response.data);
+      state = state.copyWith(data: dataMap);
+      // Check if the device is pre-paired
+      final autoConfigResult =
+          (dataMap[JNAPAction.getAutoConfigurationSettings] as JNAPSuccess?)
+              ?.output;
+      if (autoConfigResult != null) {
+        final autoConfig = AutoConfigurationSettings.fromMap(autoConfigResult);
+        final isPrePaired = autoConfig.autoConfigurationMethod ==
+            AutoConfigurationMethod.preConfigured;
+        state = state.copyWith(isPrePaired: isPrePaired);
+        logger.d('[PnP]: isPrePaired=$isPrePaired');
+      }
     });
   }
 
