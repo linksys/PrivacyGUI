@@ -96,7 +96,7 @@ class SpeedTestNotifier extends AsyncNotifier<SpeedTestState> {
       logger.d('[USP][SpeedTest]: Starting download test: $downloadUrl');
       final downloadResult = await _awaiter.execute(
         operateCommand: 'Device.IP.Diagnostics.DownloadDiagnostics()',
-        referencePath: 'Device.IP.Diagnostics.DownloadDiagnostics.',
+        referencePath: 'Device.IP.Diagnostics.',
         args: {'DownloadURL': downloadUrl},
         timeout: const Duration(seconds: 120),
       );
