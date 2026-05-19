@@ -150,6 +150,28 @@ Device.IP.Diagnostics.ServerSelectionDiagnostics()
 
 ---
 
+## Open Questions
+
+### Speed Test Server List 維護策略
+
+目前伺服器清單 hard-coded 在 `SpeedTestServer.all`（6 個 Linode 伺服器）。
+
+**問題**：
+- 單一供應商風險（Linode 變更 URL 或下線會全部失效）
+- 無法動態更新（需發版）
+- 區域覆蓋不足（缺少台灣、香港、韓國、南美、澳洲）
+
+**可能方案**：
+| 方案 | 說明 | 需要支援 |
+|------|------|----------|
+| A. Remote Config | Cloud API 提供 JSON 清單 | Cloud 團隊 |
+| B. 多供應商 Hard-code | 增加 Tele2/OVH/Hetzner 備援 | 無（但仍需發版） |
+| C. Router 端提供 | FW 提供 `Device.X_LINKSYS.SpeedTest.ServerList` | FW 團隊 |
+
+**目前狀態**：維持 hard-coded，待決定長期策略
+
+---
+
 ## 參考文件
 
 - **TR-143**: Enabling Network Throughput Performance Tests and Statistical Monitoring
