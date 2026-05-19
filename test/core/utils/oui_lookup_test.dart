@@ -8,19 +8,19 @@ void main() {
 
   group('OuiLookup - getVendor', () {
     test('returns vendor for known Apple OUI (colon format)', () {
-      expect(OuiLookup.getVendor('00:03:93:AA:BB:CC'), 'Apple Inc.');
+      expect(OuiLookup.getVendor('00:03:93:AA:BB:CC'), 'Apple, Inc.');
     });
 
     test('returns vendor for known Apple OUI (dash format)', () {
-      expect(OuiLookup.getVendor('00-03-93-AA-BB-CC'), 'Apple Inc.');
+      expect(OuiLookup.getVendor('00-03-93-AA-BB-CC'), 'Apple, Inc.');
     });
 
     test('returns vendor for known Apple OUI (no separator)', () {
-      expect(OuiLookup.getVendor('000393AABBCC'), 'Apple Inc.');
+      expect(OuiLookup.getVendor('000393AABBCC'), 'Apple, Inc.');
     });
 
     test('returns vendor case-insensitively', () {
-      expect(OuiLookup.getVendor('00:03:93:aa:bb:cc'), 'Apple Inc.');
+      expect(OuiLookup.getVendor('00:03:93:aa:bb:cc'), 'Apple, Inc.');
     });
 
     test('returns null for unknown OUI', () {
@@ -32,12 +32,17 @@ void main() {
     });
 
     test('returns vendor for Samsung OUI', () {
-      // Samsung has many OUIs; pick one from the database
-      expect(OuiLookup.getVendor('00:07:AB:11:22:33'), 'Samsung Electronics');
+      expect(
+          OuiLookup.getVendor('00:07:AB:11:22:33'), 'Samsung Electronics Co.,Ltd');
     });
 
     test('returns vendor for Google OUI', () {
-      expect(OuiLookup.getVendor('3C:5A:B4:11:22:33'), 'Google Inc.');
+      expect(OuiLookup.getVendor('3C:5A:B4:11:22:33'), 'Google, Inc.');
+    });
+
+    test('returns vendor for Samsung A0:7D:9C OUI', () {
+      expect(
+          OuiLookup.getVendor('A0:7D:9C:67:CD:4C'), 'Samsung Electronics Co.,Ltd');
     });
   });
 
@@ -105,15 +110,15 @@ void main() {
   // ---------------------------------------------------------------------------
 
   group('OuiLookup - getVendorOrPrivate', () {
-    test('returns "Private Address" for randomized MAC', () {
+    test('returns "Private/Random" for randomized MAC', () {
       expect(
-          OuiLookup.getVendorOrPrivate('02:AA:BB:CC:DD:EE'), 'Private Address');
+          OuiLookup.getVendorOrPrivate('02:AA:BB:CC:DD:EE'), 'Private/Random');
       expect(
-          OuiLookup.getVendorOrPrivate('DE:AD:BE:EF:12:34'), 'Private Address');
+          OuiLookup.getVendorOrPrivate('DE:AD:BE:EF:12:34'), 'Private/Random');
     });
 
     test('returns vendor for known non-randomized MAC', () {
-      expect(OuiLookup.getVendorOrPrivate('00:03:93:AA:BB:CC'), 'Apple Inc.');
+      expect(OuiLookup.getVendorOrPrivate('00:03:93:AA:BB:CC'), 'Apple, Inc.');
     });
 
     test('returns null for unknown non-randomized MAC', () {
@@ -127,23 +132,23 @@ void main() {
 
   group('OuiLookup - MAC format handling', () {
     test('normalizes colon-separated MAC', () {
-      expect(OuiLookup.getVendor('00:03:93:AA:BB:CC'), 'Apple Inc.');
+      expect(OuiLookup.getVendor('00:03:93:AA:BB:CC'), 'Apple, Inc.');
     });
 
     test('normalizes dash-separated MAC', () {
-      expect(OuiLookup.getVendor('00-03-93-AA-BB-CC'), 'Apple Inc.');
+      expect(OuiLookup.getVendor('00-03-93-AA-BB-CC'), 'Apple, Inc.');
     });
 
     test('normalizes contiguous MAC', () {
-      expect(OuiLookup.getVendor('000393AABBCC'), 'Apple Inc.');
+      expect(OuiLookup.getVendor('000393AABBCC'), 'Apple, Inc.');
     });
 
     test('normalizes mixed case MAC', () {
-      expect(OuiLookup.getVendor('00:03:93:aa:Bb:cC'), 'Apple Inc.');
+      expect(OuiLookup.getVendor('00:03:93:aa:Bb:cC'), 'Apple, Inc.');
     });
 
     test('handles MAC with only 6 hex chars (OUI only)', () {
-      expect(OuiLookup.getVendor('000393'), 'Apple Inc.');
+      expect(OuiLookup.getVendor('000393'), 'Apple, Inc.');
     });
   });
 }
