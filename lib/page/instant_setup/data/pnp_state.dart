@@ -15,6 +15,7 @@ class PnpState extends Equatable {
   final Map<JNAPAction, JNAPResult> data;
   final List<RawDevice> childNodes;
   final bool forceLogin;
+  final bool isPrePaired;
 
   const PnpState({
     required this.deviceInfo,
@@ -24,6 +25,7 @@ class PnpState extends Equatable {
     this.data = const {},
     this.childNodes = const [],
     this.forceLogin = false,
+    this.isPrePaired = false,
   });
 
   PnpState copyWith({
@@ -34,6 +36,7 @@ class PnpState extends Equatable {
     Map<JNAPAction, JNAPResult>? data,
     List<RawDevice>? childNodes,
     bool? forceLogin,
+    bool? isPrePaired,
   }) {
     return PnpState(
       deviceInfo: deviceInfo ?? this.deviceInfo,
@@ -43,6 +46,7 @@ class PnpState extends Equatable {
       data: data ?? this.data,
       childNodes: childNodes ?? this.childNodes,
       forceLogin: forceLogin ?? this.forceLogin,
+      isPrePaired: isPrePaired ?? this.isPrePaired,
     );
   }
 
@@ -55,6 +59,7 @@ class PnpState extends Equatable {
         data,
         childNodes,
         forceLogin,
+        isPrePaired,
       ];
 
   bool get isRouterUnConfigured => isUnconfigured ?? false;

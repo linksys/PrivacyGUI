@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' as service;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
+import 'package:privacy_gui/core/jnap/models/auto_configuration_settings.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -59,6 +61,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
   String _loadingMessage = '';
   String _loadingMessageSub = '';
   bool _isUnconfigured = false;
+  bool _isPrePaired = false;
   bool _needToReconnect = false;
   bool _hasNewFW = false;
   bool _forceLogin = false;
@@ -79,6 +82,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
       await ref.read(pnpProvider.notifier).fetchData();
     }).then((_) {
       _isUnconfigured = ref.read(pnpProvider).isRouterUnConfigured;
+      _isPrePaired = ref.read(pnpProvider).isPrePaired;
       _forceLogin = ref.read(pnpProvider).forceLogin;
       steps = buildSteps();
       logger.d(
@@ -162,9 +166,27 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
     final services = ref.read(pnpProvider).deviceInfo?.services;
     final isGuestWiFiSupport = serviceHelper.isSupportGuestNetwork(services);
     final isNightModeSupport = serviceHelper.isSupportLedMode(services);
+    // Show YourNetworkStep when unconfigured OR not pre-paired (AutoParent case)
+    final showYourNetwork = _isUnconfigured || !_isPrePaired;
+    // Determine if this is the last step before YourNetworkStep
+    final isLastBeforeYourNetwork =
+        !isGuestWiFiSupport && !isNightModeSupport && !showYourNetwork;
+    // Log PnP state for debugging
+    final autoConfigData = ref.read(pnpProvider.notifier).getData(JNAPAction.getAutoConfigurationSettings);
+    final autoConfigMethod = autoConfigData != null
+        ? AutoConfigurationSettings.fromMap(autoConfigData).autoConfigurationMethod?.name
+        : 'unknown';
+    logger.d('[PnP]: buildSteps state - '
+        'isUnconfigured=$_isUnconfigured, '
+        'isPrePaired=$_isPrePaired, '
+        'forceLogin=$_forceLogin, '
+        'showYourNetwork=$showYourNetwork, '
+        'autoConfigurationMethod=$autoConfigMethod, '
+        'isGuestWiFiSupport=$isGuestWiFiSupport, '
+        'isNightModeSupport=$isNightModeSupport');
     // Need a common way to figure out which step to save changes
-    return switch ((_forceLogin, _isUnconfigured)) {
-      (false, true) => [
+    return switch ((_forceLogin, _isUnconfigured, showYourNetwork)) {
+      (false, true, _) => [
           PersonalWiFiStep(
               saveChanges: !isGuestWiFiSupport && !isNightModeSupport
                   ? _saveChanges
@@ -175,17 +197,27 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
           if (isNightModeSupport) NightModeStep(saveChanges: _saveChanges),
           YourNetworkStep(saveChanges: _confirmAddedNodes),
         ],
-      (true, false) => [
+      (false, false, true) => [
+          PersonalWiFiStep(
+              saveChanges: !isGuestWiFiSupport && !isNightModeSupport
+                  ? null
+                  : null),
+          if (isGuestWiFiSupport)
+            GuestWiFiStep(saveChanges: !isNightModeSupport ? null : null),
+          if (isNightModeSupport) NightModeStep(saveChanges: null),
+          YourNetworkStep(saveChanges: _saveChanges),
+        ],
+      (true, false, _) => [
           PersonalWiFiStep(),
         ],
-      (true, true) => [
+      (true, true, _) => [
           PersonalWiFiStep(saveChanges: _saveChanges),
           YourNetworkStep(saveChanges: _confirmAddedNodes),
         ],
       _ => [
-          PersonalWiFiStep(),
-          if (isGuestWiFiSupport) GuestWiFiStep(),
-          if (isNightModeSupport) NightModeStep(),
+          PersonalWiFiStep(saveChanges: isLastBeforeYourNetwork ? _saveChanges : null),
+          if (isGuestWiFiSupport) GuestWiFiStep(saveChanges: !isNightModeSupport && !showYourNetwork ? _saveChanges : null),
+          if (isNightModeSupport) NightModeStep(saveChanges: !showYourNetwork ? _saveChanges : null),
         ],
     };
   }
