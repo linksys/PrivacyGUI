@@ -1,7 +1,26 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/core/utils/device_classifier.dart';
+import 'package:privacy_gui/core/utils/oui_lookup.dart';
 
 void main() {
+  // OUI database for testing (subset needed by DeviceClassifier tests)
+  const testOuiDatabase = <String, String>{
+    '0017AB': 'Nintendo Co., Ltd.',
+    '080581': 'Roku, Inc.',
+    '000E58': 'Sonos, Inc.',
+    '5CCF7F': 'Espressif Inc.',
+    '503EAA': 'TP-Link Technologies Co.,Ltd',
+    '001422': 'Dell Inc.',
+    '000393': 'Apple, Inc.',
+  };
+
+  setUpAll(() {
+    OuiLookup.initializeForTesting(testOuiDatabase);
+  });
+
+  tearDownAll(() {
+    OuiLookup.reset();
+  });
   group('DeviceClassifier hostname patterns', () {
     test('iPhone variations', () {
       expect(
