@@ -5,6 +5,7 @@ import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/command/base_command.dart';
 import 'package:privacy_gui/core/jnap/models/ping_status.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
+import 'package:privacy_gui/page/instant_verify/models/customer_journey.dart';
 import 'package:privacy_gui/page/instant_verify/models/diagnostic_client.dart';
 import 'package:privacy_gui/page/instant_verify/models/jnap_capability.dart';
 import 'package:privacy_gui/page/instant_verify/services/browser_diagnostic_service.dart';
@@ -72,6 +73,8 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
       phase: PivotLoadPhase.loading,
       // Preserve plan speed — user-entered, not from JNAP.
       planSpeedMbps: state.planSpeedMbps,
+      // Preserve journey actions — accumulated across session for V2.0 handoff.
+      journeyActions: state.journeyActions,
     );
 
     try {
@@ -385,6 +388,7 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
         if (speedResult.downloadMbps > 0) {
           _lastSpeedTestTime = DateTime.now();
           state = state.copyWith(speedTest: speedResult);
+          _recordAction('speed_test', result: '${speedResult.downloadMbps.toStringAsFixed(1)}_mbps');
         } else {
           dev.log('InstantVerifyPivot: speed test returned 0 — CDN unreachable, discarding result');
         }
@@ -573,10 +577,22 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
     state = state.copyWith(verdict: verdict, verdictIsPreliminary: preliminary);
   }
 
+  // ── Journey tracking ──────────────────────────────────────────────────
+
+  void _recordAction(String action, {String? result}) {
+    state = state.copyWith(
+      journeyActions: [
+        ...state.journeyActions,
+        JourneyAction(action: action, timestamp: DateTime.now(), result: result),
+      ],
+    );
+  }
+
   // ── Actions ───────────────────────────────────────────────────────────
 
   Future<void> restartRouter() async {
     state = state.copyWith(isRestarting: true);
+    _recordAction('restart_router');
     try {
       await _send(JNAPAction.reboot);
     } catch (e) {
@@ -587,6 +603,7 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
 
   Future<void> triggerFirmwareUpdate() async {
     state = state.copyWith(isUpdatingFirmware: true);
+    _recordAction('firmware_update');
     try {
       await _send(JNAPAction.updateFirmwareNow);
     } catch (e) {
@@ -599,6 +616,7 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
     if (state.macFilter == null) return;
     final payload = Map<String, dynamic>.from(state.macFilter!);
     payload['macFilterMode'] = 'Disabled';
+    _recordAction('disable_mac_filter');
     // QA-2: capture generation before async work to guard against concurrent fetch()
     final gen = _fetchGeneration;
     try {
@@ -615,6 +633,7 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
     if (state.guestNetwork == null) return;
     final payload = Map<String, dynamic>.from(state.guestNetwork!);
     payload['isGuestNetworkEnabled'] = enabled;
+    _recordAction('set_guest_network', result: enabled ? 'enabled' : 'disabled');
     final gen = _fetchGeneration;
     try {
       await _send(JNAPAction.setGuestNetworkSettings, data: payload);

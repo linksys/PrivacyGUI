@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:privacy_gui/page/instant_verify/models/customer_journey.dart';
 import 'package:privacy_gui/page/instant_verify/models/diagnostic_client.dart';
 import 'package:privacy_gui/page/instant_verify/models/jnap_capability.dart';
 import 'package:privacy_gui/page/instant_verify/services/browser_diagnostic_service.dart';
@@ -83,6 +84,11 @@ class InstantVerifyPivotState extends Equatable {
   /// rather than false all-clears.
   final Map<String, bool> jnapCapabilities;
 
+  // ── Customer journey tracking (V2.0 prep) ─────────────────────────────
+  /// Actions the customer has taken this session — restarts, speed tests,
+  /// flow navigation. Used for future Guardians support handoff payload.
+  final List<JourneyAction> journeyActions;
+
   // ── Action state ──────────────────────────────────────────────────────
   final bool isRestarting;
   final bool isUpdatingFirmware;
@@ -125,6 +131,7 @@ class InstantVerifyPivotState extends Equatable {
     this.deviceScores = const [],
     this.verdict,
     this.verdictIsPreliminary = true,
+    this.journeyActions = const [],
     this.isRestarting = false,
     this.isUpdatingFirmware = false,
     this.pingOutput,
@@ -166,6 +173,7 @@ class InstantVerifyPivotState extends Equatable {
     List<DeviceScore>? deviceScores,
     Verdict? verdict,
     bool? verdictIsPreliminary,
+    List<JourneyAction>? journeyActions,
     bool? isRestarting,
     bool? isUpdatingFirmware,
     String? pingOutput,
@@ -206,6 +214,7 @@ class InstantVerifyPivotState extends Equatable {
       deviceScores: deviceScores ?? this.deviceScores,
       verdict: verdict ?? this.verdict,
       verdictIsPreliminary: verdictIsPreliminary ?? this.verdictIsPreliminary,
+      journeyActions: journeyActions ?? this.journeyActions,
       isRestarting: isRestarting ?? this.isRestarting,
       isUpdatingFirmware: isUpdatingFirmware ?? this.isUpdatingFirmware,
       pingOutput: pingOutput ?? this.pingOutput,
@@ -374,6 +383,7 @@ class InstantVerifyPivotState extends Equatable {
         deviceScores,
         verdict,
         verdictIsPreliminary,
+        journeyActions,
         isRestarting,
         isUpdatingFirmware,
         pingOutput,
