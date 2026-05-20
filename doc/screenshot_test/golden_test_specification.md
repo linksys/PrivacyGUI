@@ -87,6 +87,27 @@ class Interaction {
 }
 ```
 
+### State Key Naming Rules
+
+State keys become part of the output filename (`{viewName}-{stateKey}-{device}-{locale}.png`), so they must be **descriptive and self-explanatory**.
+
+| Rule | Bad | Good | Why |
+|------|-----|------|-----|
+| No generic `data` prefix | `data`, `data_all_off` | `all_on`, `all_off` | `data` carries no semantic meaning in a filename |
+| Describe the visual state | `data_enabled` | `dhcp_enabled` | Reader should understand the screenshot content from the filename alone |
+| Use the distinguishing characteristic | `data_1`, `data_2` | `idle`, `running`, `ping_result` | Each key should identify what makes this state visually unique |
+
+#### Examples by Feature Type
+
+| Feature Type | State Keys |
+|--------------|-----------|
+| Toggle feature | `enabled`, `disabled` or `all_on`, `all_off` |
+| Connection mode | `dhcp`, `static_ip`, `pppoe`, `bridge` |
+| List-based | `rules_list`, `empty` |
+| Diagnostic tool | `idle`, `running`, `ping_result`, `traceroute_result` |
+| Form page | `dhcp_enabled`, `dhcp_disabled`, `edit_dirty`, `validation_error` |
+| Navigation menu | `menu` |
+
 ### Complete Example (Firewall)
 
 #### Test file: `test/usp_test/page/firewall/localizations/usp_firewall_view_test.dart`
@@ -107,23 +128,14 @@ void main() {
       view: () => const UspFirewallView(),
       shell: ShellType.custom,
       states: {
-        'loading': (overrides) => overrides.addAll(
-          firewallOverrides(FirewallFeatureState.initial()),
-        ),
-        'error': (overrides) => overrides.addAll(
-          firewallOverrides(errorState),
-        ),
-        'data': (overrides) => overrides.addAll(
+        'all_on': (overrides) => overrides.addAll(
           firewallOverrides(dataState(allOnModel)),
         ),
-        'data_all_off': (overrides) => overrides.addAll(
+        'all_off': (overrides) => overrides.addAll(
           firewallOverrides(dataState(allOffModel)),
         ),
         'edit_dirty': (overrides) => overrides.addAll(
           firewallOverrides(dirtyState()),
-        ),
-        'saving': (overrides) => overrides.addAll(
-          firewallOverrides(dirtyState(isSaving: true)),
         ),
       },
     ),
@@ -292,12 +304,40 @@ GoldenTestConfig(
 
 Interactions are **strictly** for UI-layer overlays that do not mutate provider state:
 
-- Opening a dialog or bottom sheet
+- Opening a dialog or bottom sheet (e.g., `saving_spinner` via `showAppSpinnerDialog`)
 - Switching tabs (tab bar visual state)
 - Expanding/collapsing a dropdown or accordion
 - Scrolling to reveal off-screen content
+- Tapping error icons to reveal validation tooltips (e.g., `validation_error_tooltip`)
 
 State changes caused by user actions (toggle, save, input) are represented as **separate entries in the `states` map**, because the view is a pure function of provider state.
+
+### Interaction Naming
+
+Interaction keys follow the same snake_case rule as state keys. Name them by what becomes visible:
+
+| Interaction Key | Purpose |
+|----------------|---------|
+| `validation_error_tooltip` | Tap all error icons to show tooltip messages simultaneously |
+| `saving_spinner` | Trigger the shared spinner dialog overlay |
+| `tab_guest` | Switch to the guest tab |
+| `dialog_add` | Open the "add item" dialog |
+
+### Shared Interactions
+
+UI components that are shared across multiple pages (e.g., the saving spinner dialog triggered by `doSomethingWithSpinner`) should be tested once in a shared test file (`test/usp_test/page/shared/shared_states_test.dart`) rather than duplicated in every feature test. Individual feature tests should NOT include a `saving` state — since the spinner is an imperative overlay (not provider-state-driven), it requires an interaction to capture, and testing it once is sufficient.
+
+---
+
+## Shell Type Selection
+
+| ShellType | When to use | Background |
+|-----------|-------------|------------|
+| `scaffold` | Most pages — ensures white background matching production app | Wraps widget in `Scaffold`, inheriting theme's `scaffoldBackgroundColor` |
+| `custom` | Pages that already have their own shell/scaffold structure (e.g., pages with custom app bars or nested scaffolds) | No additional wrapping — the widget must provide its own background |
+| `pageView` | Tab-based page views | Wraps in page view container |
+
+**Important**: Using `custom` on a page without its own `Scaffold` will expose the raw `Material 3` theme background (typically dark blue from the color seed), not the white background users see in production. When in doubt, use `scaffold`.
 
 ---
 
@@ -546,12 +586,17 @@ When dark mode is included:
 ### Examples
 
 ```
-firewall-loading-phone480-en.png
-firewall-data-desktop1280-en.png
-firewall-data_all_off-phone480-en.png
+firewall-all_on-phone480-en.png
+firewall-all_off-desktop1280-en.png
+firewall-edit_dirty-phone480-en.png
+local_network-dhcp_enabled-phone480-en.png
+local_network-validation_error-desktop1280-en.png
+local_network-validation_error_tooltip-phone480-en.png
+internet_settings-pppoe-phone480-en.png
+port_forwarding_detail-rules_list-desktop1280-en.png
+static_routing-empty-phone480-en.png
 wifi_settings-tab_guest-desktop1280-en.png
-port_forwarding_detail-dialog_add-phone480-en.png
-firewall-data-phone480-en-dark.png
+firewall-all_on-phone480-en-dark.png
 ```
 
 ---
@@ -661,27 +706,53 @@ ci/
 
 ### Guiding Principle
 
-> If a state produces a visually different screen, it needs a golden screenshot.
+> **If the user sees something different, it needs a golden screenshot.**
 
-Any FeatureState value that causes the view to render differently — whether through conditional branches, visibility toggles, or data variations — must be represented as a separate entry in the `states` map.
+This applies to ANY visual difference — even the same component rendered at a different Y position on screen counts as a distinct visual state. The goal is exhaustive visual documentation: every state a user could encounter must have a corresponding screenshot.
+
+Any FeatureState value that causes the view to render differently — whether through conditional branches, visibility toggles, data variations, or positional changes — must be represented as a separate entry in the `states` map.
 
 ### Minimum Requirement
 
-Every view config MUST include at least one state entry (typically `data`).
+Every view config MUST include at least one state entry with a descriptive name (NOT generic `data`).
 
 ### Recommended States for Stateful Views
 
-Views that have provider-driven async state (loading, error, data) SHOULD include all three. However, static pages (e.g., navigation menus) that render identically regardless of state only need `data`. Loading and error UI is shared across all pages — a single shared golden test covers those components.
+Views that have provider-driven async state (loading, error, data) SHOULD include all three. However, static pages (e.g., navigation menus) that render identically regardless of state only need their descriptive state (e.g., `menu`). Loading and error UI is shared across all pages — a single shared golden test covers those components.
 
 ### Additional States
 
 Beyond the basics, enumerate every state that produces a distinct visual output:
 
-- **Saving state** (`status.isSaving == true`) if the view has save functionality
 - **Edit dirty** (`settings.isDirty == true`) if the view has edit mode
-- **Field validation errors** (`status.fieldErrors` non-empty) if the view validates input
+- **Field validation errors** (`status.validationErrors` non-empty) if the view validates input — **ALL fields must show errors simultaneously**
 - **Data variants** (e.g., feature enabled vs disabled) for every conditional rendering branch
 - **Empty states** (e.g., empty list) for list-based views
+
+States that should NOT be in individual feature tests:
+- **Saving spinner** — this is a shared UI overlay (`doSomethingWithSpinner`), not provider-state-driven. Tested once in `shared_states_test.dart` via interaction.
+
+### Validation Error Coverage
+
+For views with field validation, the `validation_error` state must trigger errors on **ALL validatable fields simultaneously**, not just a subset. This ensures every error indicator is visible in the screenshot.
+
+If the view uses tooltip-style errors (e.g., `AppIpv4TextField` with error icons), add a corresponding `validation_error_tooltip` interaction that taps every error icon to show all tooltip messages at once:
+
+```dart
+'validation_error_tooltip': Interaction(
+  setup: (overrides) => overrides.addAll(
+    featureOverrides(validationErrorAllState()),
+  ),
+  steps: (tester) async {
+    final errorIcons = find.byIcon(Icons.error_outline);
+    for (int i = 0; i < errorIcons.evaluate().length; i++) {
+      await tester.tap(errorIcons.at(i));
+      await tester.pump();
+    }
+    await tester.pump(const Duration(milliseconds: 100));
+  },
+),
+```
 
 ### How to Identify States
 
