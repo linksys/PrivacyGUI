@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/page/local_network/views/usp_local_network_view.dart';
 
 import '../../../golden_framework/golden_runner.dart';
@@ -23,8 +25,23 @@ void main() {
               localNetworkOverrides(dirtyState()),
             ),
         'validation_error': (overrides) => overrides.addAll(
-              localNetworkOverrides(validationErrorState),
+              localNetworkOverrides(validationErrorAllState()),
             ),
+      },
+      interactions: {
+        'validation_error_tooltip': Interaction(
+          setup: (overrides) => overrides.addAll(
+            localNetworkOverrides(validationErrorAllState()),
+          ),
+          steps: (tester) async {
+            final errorIcons = find.byIcon(Icons.error_outline);
+            for (int i = 0; i < errorIcons.evaluate().length; i++) {
+              await tester.tap(errorIcons.at(i));
+              await tester.pump();
+            }
+            await tester.pump(const Duration(milliseconds: 100));
+          },
+        ),
       },
     ),
   );

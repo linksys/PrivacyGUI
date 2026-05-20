@@ -89,3 +89,37 @@ LocalNetworkFeatureState get validationErrorState {
     ),
   );
 }
+
+LocalNetworkFeatureState validationErrorAllState() {
+  const model = LocalNetworkUIModel(
+    hostName: '',
+    ipAddress: '999.999.999.999',
+    subnetMask: '0.0.0.0',
+    dhcpEnabled: true,
+    minAddress: '10.0.0.1',
+    maxAddress: '10.0.0.1',
+    leaseTimeMinutes: 0,
+    dnsServer1: '999.999.999.999',
+    dnsServer2: '999.999.999.999',
+    dnsServer3: '999.999.999.999',
+  );
+  const settings = LocalNetworkSettings(model: model);
+  return LocalNetworkFeatureState(
+    settings: Preservable(original: settings, current: settings),
+    status: const LocalNetworkStatus(
+      isLoading: false,
+      lockedOctetCount: 3,
+      validationErrors: {
+        'hostName': 'Hostname is required',
+        'ipAddress': 'Invalid IP address',
+        'subnetMask': 'Invalid subnet mask',
+        'minAddress': 'Not in same subnet as router',
+        'maxAddress': 'Must be after pool start',
+        'leaseTime': 'Must be 1–525600 minutes',
+        'dnsServer1': 'Invalid DNS address',
+        'dnsServer2': 'Invalid DNS address',
+        'dnsServer3': 'Invalid DNS address',
+      },
+    ),
+  );
+}
