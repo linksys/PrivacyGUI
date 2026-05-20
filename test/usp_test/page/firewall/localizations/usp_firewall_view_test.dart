@@ -13,10 +13,10 @@ void main() {
       shell: ShellType.custom,
       height: 1400,
       states: {
-        'data': (overrides) => overrides.addAll(
+        'all_on': (overrides) => overrides.addAll(
               firewallOverrides(dataState(allOnModel)),
             ),
-        'data_all_off': (overrides) => overrides.addAll(
+        'all_off': (overrides) => overrides.addAll(
               firewallOverrides(dataState(allOffModel)),
             ),
         'edit_dirty': (overrides) => overrides.addAll(

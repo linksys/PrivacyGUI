@@ -12,10 +12,10 @@ void main() {
       view: () => const UspStaticRoutingView(),
       shell: ShellType.custom,
       states: {
-        'data': (overrides) => overrides.addAll(
+        'routes_list': (overrides) => overrides.addAll(
               staticRoutingOverrides(dataState([route1, route2])),
             ),
-        'data_empty': (overrides) => overrides.addAll(
+        'empty': (overrides) => overrides.addAll(
               staticRoutingOverrides(emptyState()),
             ),
         'edit_dirty': (overrides) => overrides.addAll(

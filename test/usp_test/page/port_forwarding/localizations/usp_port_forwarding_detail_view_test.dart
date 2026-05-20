@@ -12,10 +12,10 @@ void main() {
       view: () => const UspPortForwardingDetailView(),
       shell: ShellType.custom,
       states: {
-        'data': (overrides) => overrides.addAll(
+        'rules_list': (overrides) => overrides.addAll(
               portForwardingOverrides(dataState()),
             ),
-        'data_empty': (overrides) => overrides.addAll(
+        'empty': (overrides) => overrides.addAll(
               portForwardingOverrides(emptyDataState),
             ),
         'edit_dirty': (overrides) => overrides.addAll(

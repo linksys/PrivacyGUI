@@ -12,19 +12,19 @@ void main() {
       view: () => const UspNetworkDiagnosticsView(),
       shell: ShellType.custom,
       states: {
-        'data': (overrides) => overrides.addAll(
+        'idle': (overrides) => overrides.addAll(
               networkDiagnosticsOverrides(idleState),
             ),
-        'data_running': (overrides) => overrides.addAll(
+        'running': (overrides) => overrides.addAll(
               networkDiagnosticsOverrides(runningPingState),
             ),
-        'data_ping_result': (overrides) => overrides.addAll(
+        'ping_result': (overrides) => overrides.addAll(
               networkDiagnosticsOverrides(pingCompletedState),
             ),
-        'data_traceroute_result': (overrides) => overrides.addAll(
+        'traceroute_result': (overrides) => overrides.addAll(
               networkDiagnosticsOverrides(tracerouteCompletedState),
             ),
-        'data_diagnostic_error': (overrides) => overrides.addAll(
+        'diagnostic_error': (overrides) => overrides.addAll(
               networkDiagnosticsOverrides(diagnosticErrorState),
             ),
       },

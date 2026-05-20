@@ -13,17 +13,17 @@ void main() {
       shell: ShellType.custom,
       height: 1500,
       states: {
-        'data': (overrides) => overrides.addAll(
+        'dhcp': (overrides) => overrides.addAll(
               internetSettingsOverrides(
                 dataState(dhcpForm, readOnlyInfo: defaultReadOnlyInfo),
               ),
             ),
-        'data_static_ip': (overrides) => overrides.addAll(
+        'static_ip': (overrides) => overrides.addAll(
               internetSettingsOverrides(
                 dataState(staticIpForm, readOnlyInfo: defaultReadOnlyInfo),
               ),
             ),
-        'data_pppoe': (overrides) => overrides.addAll(
+        'pppoe': (overrides) => overrides.addAll(
               internetSettingsOverrides(
                 dataState(
                   pppoeForm,
@@ -32,10 +32,10 @@ void main() {
                 ),
               ),
             ),
-        'data_bridge': (overrides) => overrides.addAll(
+        'bridge': (overrides) => overrides.addAll(
               internetSettingsOverrides(dataState(bridgeForm)),
             ),
-        'data_ipv6_enabled': (overrides) => overrides.addAll(
+        'ipv6_enabled': (overrides) => overrides.addAll(
               internetSettingsOverrides(
                 dataState(ipv6EnabledForm, readOnlyInfo: ipv6ReadOnlyInfo),
               ),

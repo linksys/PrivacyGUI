@@ -12,16 +12,16 @@ void main() {
       view: () => const UspDmzView(),
       shell: ShellType.custom,
       states: {
-        'data': (overrides) => overrides.addAll(
+        'disabled': (overrides) => overrides.addAll(
               dmzOverrides(dataState(disabledModel)),
             ),
-        'data_enabled': (overrides) => overrides.addAll(
+        'enabled': (overrides) => overrides.addAll(
               dmzOverrides(
                 dataState(enabledAnyModel,
                     instancePath: 'Device.Firewall.DMZ.1.'),
               ),
             ),
-        'data_enabled_cidr': (overrides) => overrides.addAll(
+        'enabled_cidr': (overrides) => overrides.addAll(
               dmzOverrides(
                 dataState(enabledCidrModel,
                     instancePath: 'Device.Firewall.DMZ.1.'),

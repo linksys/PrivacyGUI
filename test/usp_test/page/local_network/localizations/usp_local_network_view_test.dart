@@ -13,10 +13,10 @@ void main() {
       shell: ShellType.custom,
       height: 1300,
       states: {
-        'data': (overrides) => overrides.addAll(
+        'dhcp_enabled': (overrides) => overrides.addAll(
               localNetworkOverrides(dataState(dhcpEnabledModel)),
             ),
-        'data_dhcp_disabled': (overrides) => overrides.addAll(
+        'dhcp_disabled': (overrides) => overrides.addAll(
               localNetworkOverrides(dataState(dhcpDisabledModel)),
             ),
         'edit_dirty': (overrides) => overrides.addAll(

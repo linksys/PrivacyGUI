@@ -10,7 +10,7 @@ void main() {
       view: () => const UspAdvancedSettingsView(),
       shell: ShellType.custom,
       states: {
-        'data': (overrides) {},
+        'menu': (overrides) {},
       },
     ),
   );
