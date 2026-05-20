@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
+import '../../models/device_score.dart';
 import '../../models/diagnostic_result.dart';
 import '../../models/diagnostic_state.dart';
 
@@ -29,6 +30,7 @@ class StepResultTile extends StatelessWidget {
     };
 
     final details = _getResultDetails(result);
+    final scoredDevices = _getScoredDevicesForDisplay(result);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.md),
@@ -72,11 +74,31 @@ class StepResultTile extends StatelessWidget {
                   'No additional details available.',
                   color: colorScheme.onSurfaceVariant,
                 ),
+              if (scoredDevices.isNotEmpty) ...[
+                AppGap.md(),
+                AppText.labelMedium(
+                  'Affected Devices',
+                  color: colorScheme.onSurfaceVariant,
+                ),
+                AppGap.xs(),
+                ...scoredDevices.map(
+                  (device) => _DeviceScoreRow(device: device),
+                ),
+              ],
             ],
           ),
         ),
       ),
     );
+  }
+
+  List<DeviceScoreUIModel> _getScoredDevicesForDisplay(
+      DiagnosticStepUIModel result) {
+    if (result is! DeviceIssuesCheckUIModel) return const [];
+    final issues =
+        result.deviceScores.where((d) => d.hasIssue).toList(growable: false);
+    issues.sort((a, b) => a.overallScore.compareTo(b.overallScore));
+    return issues.take(5).toList(growable: false);
   }
 
   String _getSeverityText(DiagnosticSeverity severity) {
@@ -229,4 +251,63 @@ class _ResultDetail {
   final String label;
   final String value;
   const _ResultDetail(this.label, this.value);
+}
+
+class _DeviceScoreRow extends StatelessWidget {
+  final DeviceScoreUIModel device;
+
+  const _DeviceScoreRow({required this.device});
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final scoreColor = device.overallScore < 50
+        ? colorScheme.error
+        : device.overallScore < 70
+            ? colorScheme.tertiary
+            : colorScheme.primary;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: AppText.labelMedium(
+                  device.name.isEmpty ? device.macAddress : device.name,
+                ),
+              ),
+              AppText.labelMedium(
+                'Score ${device.overallScore}',
+                color: scoreColor,
+              ),
+            ],
+          ),
+          AppText.bodySmall(
+            _formatSubtitle(device),
+            color: colorScheme.onSurfaceVariant,
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatSubtitle(DeviceScoreUIModel d) {
+    final parts = <String>[];
+    if (!d.isWireless) {
+      parts.add('Wired');
+    } else if (d.rssiDbm != null) {
+      parts.add('${d.signalLabel} (${d.rssiDbm} dBm)');
+    } else {
+      parts.add(d.signalLabel);
+    }
+    if (d.downlinkKbps != null) {
+      final mbps = (d.downlinkKbps! / 1000).toStringAsFixed(1);
+      parts.add('$mbps Mbps');
+    }
+    return parts.join(' · ');
+  }
 }
