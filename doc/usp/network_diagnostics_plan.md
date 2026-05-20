@@ -47,6 +47,18 @@
 - **No Internet** — WAN 狀態檢查、Gateway/DNS/Internet Ping
 - **Slow Network** — Speed Test、WiFi 訊號、連線裝置分析
 
+### UI Redesign (Completed 2026-05-20)
+
+將診斷流程視覺化為一條**網路路徑鏈 (Network Path)**，讓使用者直覺地看到每一步檢查的是什麼、當前狀態以及問題卡在哪個節點。
+
+1.  **結構模組化**：將單一檔案拆分為獨立 Widget（`DiagnosticStartView`, `DiagnosticRunningView`, `DiagnosticResultsView` 等）。
+2.  **執行中畫面**：引入 **Vertical Stepper**，提供即時狀態回饋。
+3.  **結果頁面**：
+    - 頂部 **Summary Card** 顯示快速統計。
+    - **問題優先排序**：❌ 錯誤與 ⚠️ 警告置頂預設展開。
+    - **資訊密度優化**：✅ 通過的結果預設收合。
+4.  **報告匯出**：新增「Export Report」功能，格式化診斷結果供分享。
+
 ### Speed Test 流程
 
 1. **Latency 測試** — Ping 選定伺服器，取得平均延遲
