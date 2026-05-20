@@ -14,6 +14,14 @@
 | Upload 測速 | `Device.IP.Diagnostics.UploadDiagnostics()` | ⚠️ Firmware Bug |
 | 伺服器選擇 | `Device.IP.Diagnostics.ServerSelectionDiagnostics()` | ⚠️ Firmware Bug |
 
+## DNS 診斷功能 (Device.DNS.*)
+
+| 功能 | 路徑 | 狀態 |
+|------|------|------|
+| DNS Client 狀態 | `Device.DNS.Client.` | ✅ 可用 |
+| DNS Server 列表 | `Device.DNS.Client.Server.{i}.*` | ✅ 可用 |
+| DNS Lookup 診斷 | `Device.DNS.Diagnostics.NSLookupDiagnostics()` | ✅ 可用 |
+
 ---
 
 ## 已完成功能
@@ -25,7 +33,7 @@
 - `speedTestNotifier` — 協調 latency → download 測試
 - Speed Test 頁面 + Dashboard card
 - 6 個預設公開測速伺服器 (Linode 全球 CDN)
-- 手動伺服器選擇（自動選擇因 FW bug 延後）
+- 手動伺服器選擇（dialog UI）
 
 ### Network Diagnostics 頁面 (`lib/page/network_diagnostics/`)
 
@@ -55,7 +63,7 @@
 **Firmware 版本**: 1.0.18.26051322
 
 **現象**:
-- Subscribe `OperationComplete` on `Device.IP.Diagnostics.UploadDiagnostics.`
+- Subscribe `OperationComplete` on `Device.IP.Diagnostics.`
 - Operate `Device.IP.Diagnostics.UploadDiagnostics()` 
 - SSE **永遠收不到** OperationComplete 通知
 
@@ -71,14 +79,14 @@
 **Firmware 版本**: 1.0.18.26051322
 
 **現象**:
-- Subscribe `OperationComplete` on `Device.IP.Diagnostics.ServerSelectionDiagnostics.`
+- Subscribe `OperationComplete` on `Device.IP.Diagnostics.`
 - Operate `Device.IP.Diagnostics.ServerSelectionDiagnostics()` 
 - SSE **永遠收不到** OperationComplete 通知
 
 **對比**:
 - bbfdm 直接呼叫 ServerSelectionDiagnostics 可以同步返回結果 ✅
 
-**暫時解法**: 使用手動伺服器選擇（UI dropdown）
+**暫時解法**: 使用手動伺服器選擇（UI dialog）
 
 ### 總結
 
@@ -89,40 +97,101 @@
 | `DownloadDiagnostics()` | ✅ | ✅ |
 | `UploadDiagnostics()` | ✅ | ❌ |
 | `ServerSelectionDiagnostics()` | ✅ | ❌ |
+| `NSLookupDiagnostics()` | ✅ | ✅ |
 
 ---
 
-## 待實作功能（需等待 FW 修復）
+## 待實作功能
 
-### 1. 自動選擇最近伺服器 (ServerSelectionDiagnostics)
+### Phase 2: Auto-Diagnostic Overview
 
-利用 TR-143 的 `ServerSelectionDiagnostics` 自動選擇延遲最低的測速伺服器。
+- [ ] 更新 `diagnostic_state.dart` 新增 flow enum
+- [ ] Overview tab 自動執行所有檢查
+- [ ] DHCP pool 使用率計算
+- [ ] Device scoring (訊號強度 + 傳輸速率)
+- [ ] VerdictEngine 移植 (from Instant-Troubleshooting)
 
-**Operate Command**:
+### Phase 3: Guided Flows
+
+- [ ] Flow 1: No Internet (WAN → Gateway → DNS → Internet)
+- [ ] Flow 2: Slow Internet (Speed Test → Traceroute → Device analysis)
+- [ ] Flow 3: Device Issues (單一裝置診斷)
+- [ ] Flow 4: WiFi Coverage (訊號強度分析)
+- [ ] Flow 5: Intermittent (間歇性問題)
+
+### Phase 4: DNS 增強 (需等待 YAML)
+
+- [ ] DNS server 顯示 (`DnsClient`)
+- [ ] `NSLookupDiagnostics()` DNS 驗證
+- [ ] DNS 失敗時建議替代 DNS
+
+---
+
+## 待新增 YAML Definitions
+
+### 1. `dns_client.yaml` (新增)
+
+```yaml
+name: DnsClient
+description: DNS client configuration and server list
+category: network
+
+instance:
+  path: Device.DNS.Client.
+  params:
+    - path: Enable
+      field: enabled
+      type: boolean
+    - path: Status
+      field: status
+      type: string
+    - path: ServerNumberOfEntries
+      field: serverCount
+      type: int
+
+multiInstance:
+  path: Device.DNS.Client.Server.
+  name: DnsServer
+  params:
+    - path: DNSServer
+      field: address
+      type: string
+      required: true
+    - path: Type
+      field: type
+      type: string
+    - path: Enable
+      field: enabled
+      type: boolean
+    - path: Status
+      field: status
+      type: string
+    - path: Alias
+      field: alias
+      type: string
+    - path: Interface
+      field: interface
+      type: string
 ```
-Device.IP.Diagnostics.ServerSelectionDiagnostics()
+
+### 2. `network_diagnostics.yaml` (修改)
+
+新增 nsLookup operation:
+
+```yaml
+  - name: nsLookup
+    path: Device.DNS.Diagnostics.NSLookupDiagnostics()
+    description: Run DNS lookup diagnostic
+    inputs:
+      - path: HostName
+        field: hostName
+        type: string
+        required: true
+      - path: DNSServer
+        field: dnsServer
+        type: string
+        required: false
 ```
-
-**Input Args**:
-```json
-{
-  "HostList": "speedtest.tele2.net,speedtest.singapore.linode.com,proof.ovh.net",
-  "NumberOfRepetitions": "3"
-}
-```
-
-**Output Args**:
-| 參數 | 說明 |
-|------|------|
-| `Status` | Complete / Error |
-| `FastestHost` | 最快的伺服器 hostname |
-| `AverageResponseTime` | 平均回應時間 (μs) |
-| `MinimumResponseTime` | 最小回應時間 (μs) |
-| `MaximumResponseTime` | 最大回應時間 (μs) |
-
-### 2. Upload 測速
-
-修復 UploadDiagnostics 的 OperationComplete 後啟用。
 
 ---
 
@@ -168,12 +237,32 @@ Device.IP.Diagnostics.ServerSelectionDiagnostics()
 | B. 多供應商 Hard-code | 增加 Tele2/OVH/Hetzner 備援 | 無（但仍需發版） |
 | C. Router 端提供 | FW 提供 `Device.X_LINKSYS.SpeedTest.ServerList` | FW 團隊 |
 
-**目前狀態**：維持 hard-coded，待決定長期策略
+**目前狀態與行動方案**：
+- **短期防禦**：採取方案 B，擴充 hard-coded 節點清單（加入 Cloudflare 或 AWS 等多供應商），並實作自動 Fallback 機制，避免單一供應商（Linode）失效導致功能停擺。
+- **長期目標**：推動方案 A (Remote Config)，透過 Cloud API 根據使用者地理位置動態下發測速節點，從根本解決維護與準確度問題。
+
+---
+
+## 架構改善與技術債 (Architecture & Tech Debt)
+
+基於專案《憲章 (constitution.md)》與近期盤點，需在後續開發中補齊以下架構改善項目：
+
+### 1. 修正 UI Model 命名規範 (Article III)
+目前 `lib/page/unified_diagnostics/models/` 中的資料類別（如 `DiagnosticStepResult`, `WanStatusCheckResult`, `DhcpPoolUsageInfo`, `DeviceScore`）主要作為展示層的 UI Model。依據憲章 Sec 3.3.4，必須重構並加上 `UIModel` 後綴，例如改為 `DiagnosticStepUIModel`。
+
+### 2. 修正 Provider 生命週期 (Article IV)
+`unifiedDiagnosticsProvider` 負責協調單一頁面的狀態機（Flow 1~5），屬於 L2 Feature Page Provider，依據憲章 Sec 4.1 必須使用 `AutoDisposeNotifierProvider`。目前實作未使用 AutoDispose，離開頁面後狀態未被正確清理，需盡快修正。
+
+### 3. 補齊 Service 單元測試 (Article I)
+目前已實作的 `UnifiedDiagnosticsService` 缺乏對應的單元測試，`test/page/unified_diagnostics/services/` 目錄為空。在推進 Phase 2~4 之前，必須補上此 Service 的核心邏輯測試，確保涵蓋率達標。
+
+### 4. Firmware Bugs 同步回應調查
+針對 UploadDiagnostics 與 ServerSelectionDiagnostics 收不到 `OperationComplete` 事件的問題（BUG-1, BUG-2），後續將調查這兩個 `Operate` 指令是否已經在同步的 `OperateResponse` 中直接夾帶了結果。若有，將擴充 `SseOperationAwaiter` 的邏輯（若收到同步結果則直接返回，不強制等待 SSE），嘗試繞過 FW Bug 提早解鎖功能。
 
 ---
 
 ## 參考文件
 
 - **TR-143**: Enabling Network Throughput Performance Tests and Statistical Monitoring
-- **TR-181**: Device Data Model (Device.IP.Diagnostics.*)
+- **TR-181**: Device Data Model (Device.IP.Diagnostics.*, Device.DNS.*)
 - **GitHub Issue**: linksys/PrivacyGUI#857

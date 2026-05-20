@@ -139,18 +139,21 @@ echo "======================================="
 echo ""
 
 if [[ -n "$LOCAL_PATH" ]]; then
-    # Local mode
-    DEFINITIONS_DIR="$(cd "$LOCAL_PATH" && pwd)/definitions"
-
-    if [[ ! -d "$DEFINITIONS_DIR" ]]; then
-        # Maybe pointing directly to definitions directory
-        if [[ -d "$LOCAL_PATH" && -f "$LOCAL_PATH"/*.yaml ]]; then
-            DEFINITIONS_DIR="$(cd "$LOCAL_PATH" && pwd)"
-        else
-            echo "Error: definitions directory not found"
-            echo "  Tried: $DEFINITIONS_DIR"
-            exit 1
-        fi
+    # Local mode — try several layouts:
+    #   <path>/definitions/, <path>/usp-definitions/, or <path> itself
+    LOCAL_ABS="$(cd "$LOCAL_PATH" && pwd)"
+    if [[ -d "$LOCAL_ABS/definitions" ]]; then
+        DEFINITIONS_DIR="$LOCAL_ABS/definitions"
+    elif [[ -d "$LOCAL_ABS/usp-definitions" ]]; then
+        DEFINITIONS_DIR="$LOCAL_ABS/usp-definitions"
+    elif compgen -G "$LOCAL_ABS"/**/*.yaml > /dev/null 2>&1 || compgen -G "$LOCAL_ABS"/*.yaml > /dev/null 2>&1; then
+        DEFINITIONS_DIR="$LOCAL_ABS"
+    else
+        echo "Error: definitions directory not found"
+        echo "  Tried: $LOCAL_ABS/definitions"
+        echo "         $LOCAL_ABS/usp-definitions"
+        echo "         $LOCAL_ABS"
+        exit 1
     fi
 
     echo -e "${YELLOW}> Local mode${NC}"

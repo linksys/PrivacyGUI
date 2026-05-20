@@ -1,5 +1,7 @@
 import 'package:equatable/equatable.dart';
 
+import 'package:privacy_gui/page/unified_diagnostics/models/device_score.dart';
+import 'package:privacy_gui/page/unified_diagnostics/services/unified_diagnostics_service.dart';
 import 'diagnostic_state.dart';
 
 /// Severity level of a diagnostic result.
@@ -123,18 +125,24 @@ class PingCheckResult extends DiagnosticStepResult {
   bool get allSucceeded => failureCount == 0 && successCount > 0;
 }
 
-/// WiFi signal check result.
+/// WiFi signal check result with per-radio breakdown.
+///
+/// `rssi` is the weighted average RSSI across all active wireless clients
+/// (so a single number summarizes overall coverage). `radios` provides the
+/// per-radio detail used by the result UI.
 class WifiSignalCheckResult extends DiagnosticStepResult {
   final int rssi;
   final int channel;
   final String band;
   final int connectedDevices;
+  final List<RadioSignalStats> radios;
 
   WifiSignalCheckResult({
     required this.rssi,
     required this.channel,
     required this.band,
     required this.connectedDevices,
+    this.radios = const [],
     required super.severity,
     required super.titleKey,
     required super.descriptionKey,
@@ -146,12 +154,63 @@ class WifiSignalCheckResult extends DiagnosticStepResult {
             'channel': channel,
             'band': band,
             'connectedDevices': connectedDevices,
+            'radios': radios
+                .map((r) => {
+                      'instancePath': r.instancePath,
+                      'band': r.band,
+                      'channel': r.channel,
+                      'clientCount': r.clientCount,
+                      'averageRssi': r.averageRssi,
+                      'minRssi': r.minRssi,
+                    })
+                .toList(),
           },
         );
 
-  bool get isWeakSignal => rssi < -70;
+  bool get isWeakSignal => connectedDevices > 0 && rssi < -70;
   bool get isMediumSignal => rssi >= -70 && rssi < -50;
   bool get isStrongSignal => rssi >= -50;
+  bool get hasPerRadio => radios.isNotEmpty;
+}
+
+/// DHCP pool capacity / usage check result.
+class DhcpPoolCheckResult extends DiagnosticStepResult {
+  final bool dhcpEnabled;
+  final String minAddress;
+  final String maxAddress;
+  final int capacity;
+  final int usedLeases;
+  final int totalLeases;
+
+  DhcpPoolCheckResult({
+    required this.dhcpEnabled,
+    required this.minAddress,
+    required this.maxAddress,
+    required this.capacity,
+    required this.usedLeases,
+    required this.totalLeases,
+    required super.severity,
+    required super.titleKey,
+    required super.descriptionKey,
+    super.timestamp,
+  }) : super(
+          step: DiagnosticStep.checkingDhcpPool,
+          rawData: {
+            'dhcpEnabled': dhcpEnabled,
+            'minAddress': minAddress,
+            'maxAddress': maxAddress,
+            'capacity': capacity,
+            'usedLeases': usedLeases,
+            'totalLeases': totalLeases,
+          },
+        );
+
+  /// Fraction of pool used (0.0–1.0). Returns 0 when capacity is unknown.
+  double get usageRatio => capacity > 0 ? usedLeases / capacity : 0;
+
+  bool get isExhausted => capacity > 0 && usedLeases >= capacity;
+  bool get isNearCapacity => usageRatio >= 0.9;
+  bool get capacityUnknown => capacity == 0;
 }
 
 /// Connected devices check result.
@@ -222,4 +281,132 @@ class TracerouteHopInfo {
 
   bool get isSlow => avgRoundTrip > 200;
   bool get isUnreachable => hostAddress.isEmpty || avgRoundTrip == 0;
+}
+
+/// Device issues check result (Flow 2).
+class DeviceIssuesCheckResult extends DiagnosticStepResult {
+  final int totalDevices;
+  final int devicesWithIssues;
+  final List<String> weakSignalDevices;
+  final List<String> lowDataRateDevices;
+  final List<DeviceScore> deviceScores;
+
+  DeviceIssuesCheckResult({
+    required this.totalDevices,
+    required this.devicesWithIssues,
+    required this.weakSignalDevices,
+    required this.lowDataRateDevices,
+    required this.deviceScores,
+    required super.severity,
+    required super.titleKey,
+    required super.descriptionKey,
+    super.timestamp,
+  }) : super(
+          step: DiagnosticStep.checkingConnectedDevices,
+          rawData: {
+            'totalDevices': totalDevices,
+            'devicesWithIssues': devicesWithIssues,
+            'weakSignalDevices': weakSignalDevices,
+            'lowDataRateDevices': lowDataRateDevices,
+          },
+        );
+
+  bool get hasIssues => devicesWithIssues > 0;
+}
+
+/// WiFi coverage check result (Flow 3).
+class WifiCoverageCheckResult extends DiagnosticStepResult {
+  final int totalWirelessDevices;
+  final List<String> weakSignalDevices;
+  final int averageSignalStrength;
+  final List<WiFiRadioInfo> radios;
+
+  WifiCoverageCheckResult({
+    required this.totalWirelessDevices,
+    required this.weakSignalDevices,
+    required this.averageSignalStrength,
+    required this.radios,
+    required super.severity,
+    required super.titleKey,
+    required super.descriptionKey,
+    super.timestamp,
+  }) : super(
+          step: DiagnosticStep.checkingWifiSignal,
+          rawData: {
+            'totalWirelessDevices': totalWirelessDevices,
+            'weakSignalDevices': weakSignalDevices,
+            'averageSignalStrength': averageSignalStrength,
+          },
+        );
+
+  bool get hasWeakSignalDevices => weakSignalDevices.isNotEmpty;
+}
+
+/// DNS lookup check result.
+class DnsLookupCheckResult extends DiagnosticStepResult {
+  final String hostName;
+  final List<String> resolvedIps;
+  final String dnsServerUsed;
+  final int responseTimeMs;
+  final List<String> configuredDnsServers;
+
+  DnsLookupCheckResult({
+    required this.hostName,
+    required this.resolvedIps,
+    required this.dnsServerUsed,
+    required this.responseTimeMs,
+    required this.configuredDnsServers,
+    required super.severity,
+    required super.titleKey,
+    required super.descriptionKey,
+    super.timestamp,
+  }) : super(
+          step: DiagnosticStep.dnsLookup,
+          rawData: {
+            'hostName': hostName,
+            'resolvedIps': resolvedIps,
+            'dnsServerUsed': dnsServerUsed,
+            'responseTimeMs': responseTimeMs,
+            'configuredDnsServers': configuredDnsServers,
+          },
+        );
+
+  bool get hasResolved => resolvedIps.isNotEmpty;
+}
+
+/// Intermittent connection check result (Flow 4).
+class IntermittentCheckResult extends DiagnosticStepResult {
+  final int uptimeSeconds;
+  final String uptimeFormatted;
+  final double pingSuccessRate;
+  final int averageLatencyMs;
+  final int jitterMs;
+  final bool hasHighJitter;
+  final bool hasPacketLoss;
+  final bool recentReboot;
+
+  IntermittentCheckResult({
+    required this.uptimeSeconds,
+    required this.uptimeFormatted,
+    required this.pingSuccessRate,
+    required this.averageLatencyMs,
+    required this.jitterMs,
+    required this.hasHighJitter,
+    required this.hasPacketLoss,
+    required this.recentReboot,
+    required super.severity,
+    required super.titleKey,
+    required super.descriptionKey,
+    super.timestamp,
+  }) : super(
+          step: DiagnosticStep.pingInternet,
+          rawData: {
+            'uptimeSeconds': uptimeSeconds,
+            'pingSuccessRate': pingSuccessRate,
+            'averageLatencyMs': averageLatencyMs,
+            'jitterMs': jitterMs,
+          },
+        );
+
+  bool get hasIssues => hasHighJitter || hasPacketLoss || recentReboot;
 }

@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/usp/models/operate_result.dart';
+import 'package:privacy_gui/generated/dns_client.g.dart';
 import 'package:privacy_gui/page/speed_test/models/speed_test_state.dart';
 import 'package:privacy_gui/page/speed_test/providers/speed_test_notifier.dart';
 import 'package:privacy_gui/page/unified_diagnostics/models/diagnostic_result.dart';
@@ -21,6 +22,44 @@ void main() {
     // Default session stubs
     when(() => mockService.startSession()).thenAnswer((_) async {});
     when(() => mockService.endSession()).thenAnswer((_) async {});
+
+    // Default DNS stubs for flows that include DNS lookup
+    when(() => mockService.nsLookup(any())).thenAnswer(
+      (_) async => const NsLookupResult(
+        hostName: 'www.google.com',
+        status: 'Complete',
+        successCount: 1,
+        answers: [
+          NsLookupAnswer(
+            index: 1,
+            status: 'Success',
+            answerType: 'A',
+            hostNameReturned: 'www.google.com',
+            ipAddresses: ['142.250.80.46'],
+            dnsServerIp: '8.8.8.8',
+            responseTimeMs: 15,
+          ),
+        ],
+      ),
+    );
+    when(() => mockService.getDnsClient()).thenAnswer(
+      (_) async => const DnsClient(
+        enabled: true,
+        status: 'Enabled',
+        serverCount: 1,
+        servers: [
+          DnsServer(
+            instancePath: 'Device.DNS.Client.Server.1.',
+            address: '8.8.8.8',
+            type: 'DHCPv4',
+            enabled: true,
+            status: 'Enabled',
+            alias: '',
+            interface_: '',
+          ),
+        ],
+      ),
+    );
   });
 
   ProviderContainer createContainer() {
@@ -101,7 +140,7 @@ void main() {
 
         final state = container.read(unifiedDiagnosticsProvider);
         expect(state.step, DiagnosticStep.showingResults);
-        expect(state.results.length, 5); // WAN, DHCP, Gateway, DNS, Internet
+        expect(state.results.length, 6); // WAN, DHCP, Gateway, DNS Ping, DNS Lookup, Internet
         expect(state.results.every((r) => r.isOk), isTrue);
         container.dispose();
       });

@@ -31,4 +31,17 @@ class NetworkDiagnostics {
     return await client.operate('Device.IP.Diagnostics.TraceRoute()',
         args: inputs);
   }
+
+  /// Run DNS lookup diagnostic
+  static Future<Map<String, dynamic>> nsLookup(
+    UspClient client, {
+    required String hostName,
+    String? dnsServer,
+  }) async {
+    final inputs = <String, String>{};
+    inputs['HostName'] = hostName;
+    if (dnsServer != null) inputs['DNSServer'] = dnsServer;
+    return await client.operate('Device.DNS.Diagnostics.NSLookupDiagnostics()',
+        args: inputs);
+  }
 }

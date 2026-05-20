@@ -102,6 +102,7 @@ class SpeedTestNotifier extends AsyncNotifier<SpeedTestState> {
       );
 
       final downloadArgs = downloadResult.outputArgs;
+      logger.d('[USP][SpeedTest]: Download result args: $downloadArgs');
       final downloadStatus = downloadArgs['Status'] ?? 'Unknown';
 
       // Check for download errors

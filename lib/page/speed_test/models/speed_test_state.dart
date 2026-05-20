@@ -14,46 +14,49 @@ class SpeedTestServer {
   final String name;
   final String host;
   final String downloadUrl;
+  final int sizeMb;
 
   const SpeedTestServer({
     required this.name,
     required this.host,
     required this.downloadUrl,
+    this.sizeMb = 100,
   });
 
   static const List<SpeedTestServer> all = [
-    // Asia Pacific
+    // Tokyo Linode - Most reliable for East Asia
     SpeedTestServer(
-      name: 'Singapore',
-      host: 'speedtest.singapore.linode.com',
-      downloadUrl: 'http://speedtest.singapore.linode.com/100MB-singapore.bin',
-    ),
-    SpeedTestServer(
-      name: 'Tokyo',
+      name: 'Tokyo (Linode 100MB)',
       host: 'speedtest.tokyo2.linode.com',
       downloadUrl: 'http://speedtest.tokyo2.linode.com/100MB-tokyo2.bin',
+      sizeMb: 100,
     ),
-    // Europe
+    // Small file test (10MB .dat) - Use if network is very slow
     SpeedTestServer(
-      name: 'London',
-      host: 'speedtest.london.linode.com',
-      downloadUrl: 'http://speedtest.london.linode.com/100MB-london.bin',
+      name: 'Global (Online.net 10MB)',
+      host: 'ping.online.net',
+      downloadUrl: 'http://ping.online.net/10Mo.dat',
+      sizeMb: 10,
     ),
+    // Singapore nodes
     SpeedTestServer(
-      name: 'Frankfurt',
-      host: 'speedtest.frankfurt.linode.com',
-      downloadUrl: 'http://speedtest.frankfurt.linode.com/100MB-frankfurt.bin',
+      name: 'Singapore (Linode 100MB)',
+      host: 'speedtest.singapore.linode.com',
+      downloadUrl: 'http://speedtest.singapore.linode.com/100MB-singapore.bin',
+      sizeMb: 100,
     ),
-    // Americas
+    // US & EU
     SpeedTestServer(
-      name: 'US East (Newark)',
+      name: 'US East (Newark 100MB)',
       host: 'speedtest.newark.linode.com',
       downloadUrl: 'http://speedtest.newark.linode.com/100MB-newark.bin',
+      sizeMb: 100,
     ),
     SpeedTestServer(
-      name: 'US West (Fremont)',
-      host: 'speedtest.fremont.linode.com',
-      downloadUrl: 'http://speedtest.fremont.linode.com/100MB-fremont.bin',
+      name: 'Europe (London 100MB)',
+      host: 'speedtest.london.linode.com',
+      downloadUrl: 'http://speedtest.london.linode.com/100MB-london.bin',
+      sizeMb: 100,
     ),
   ];
 }
@@ -147,9 +150,10 @@ class SpeedTestState extends Equatable {
   const SpeedTestState({
     this.step = SpeedTestStep.idle,
     this.selectedServer = const SpeedTestServer(
-      name: 'Singapore',
-      host: 'speedtest.singapore.linode.com',
-      downloadUrl: 'http://speedtest.singapore.linode.com/100MB-singapore.bin',
+      name: 'Tokyo (Linode 100MB)',
+      host: 'speedtest.tokyo2.linode.com',
+      downloadUrl: 'http://speedtest.tokyo2.linode.com/100MB-tokyo2.bin',
+      sizeMb: 100,
     ),
     this.result,
     this.errorMessage,

@@ -4,6 +4,7 @@ import 'package:privacy_gui/page/speed_test/models/speed_test_state.dart';
 import 'diagnostic_result.dart';
 
 /// Problem type selected by user at the start of diagnostics.
+/// @deprecated Use [DiagnosticFlow] instead.
 enum ProblemType {
   /// No internet connection (WAN down, DHCP failure, etc.)
   noInternet,
@@ -12,12 +13,50 @@ enum ProblemType {
   slowNetwork,
 }
 
+/// Diagnostic flow type — extends ProblemType with more specific scenarios.
+enum DiagnosticFlow {
+  /// Internet diagnostics — connectivity + speed test.
+  /// Combines the old noInternet and slowNetwork flows.
+  internet,
+
+  /// Specific device has connection or performance issues.
+  deviceIssues,
+
+  /// WiFi coverage problems — weak signal in certain areas.
+  wifiCoverage,
+
+  /// Intermittent connection — on-and-off connectivity.
+  intermittent,
+}
+
+/// Pre-qualifier result — quick check before showing flow menu.
+enum PreQualifierResult {
+  /// Internet is working (WAN up + can ping external host).
+  internetOk,
+
+  /// WAN is down or has no IP address.
+  wanDownNoIp,
+
+  /// WAN is up but DNS resolution fails.
+  dnsFailure,
+
+  /// Internet works but latency is high (>500ms).
+  internetSlow,
+}
+
 /// Step in the diagnostic flow.
 enum DiagnosticStep {
   /// Initial state — no diagnostics in progress.
   idle,
 
+  /// Running pre-qualifier check (WAN status + ping).
+  preQualifying,
+
+  /// User selects diagnostic flow from menu.
+  selectFlow,
+
   /// User selects problem type (noInternet or slowNetwork).
+  /// @deprecated Use [selectFlow] instead.
   selectProblem,
 
   // ─── Scenario A: No Internet ───────────────────────────────
@@ -28,6 +67,9 @@ enum DiagnosticStep {
   /// Checking DHCP lease status.
   checkingDhcp,
 
+  /// Checking DHCP pool capacity / usage.
+  checkingDhcpPool,
+
   /// Pinging default gateway.
   pingGateway,
 
@@ -36,6 +78,9 @@ enum DiagnosticStep {
 
   /// Pinging external host to verify internet.
   pingInternet,
+
+  /// Running DNS lookup (NSLookupDiagnostics) to validate name resolution.
+  dnsLookup,
 
   // ─── Scenario B: Slow Network ──────────────────────────────
 
@@ -101,7 +146,14 @@ class UnifiedDiagnosticsState extends Equatable {
   final DiagnosticStep step;
 
   /// Problem type selected by user (null if not yet selected).
+  /// @deprecated Use [flow] instead.
   final ProblemType? problemType;
+
+  /// Selected diagnostic flow (null if not yet selected).
+  final DiagnosticFlow? flow;
+
+  /// Pre-qualifier result (null if not yet run).
+  final PreQualifierResult? preQualifierResult;
 
   /// Results collected from each diagnostic step.
   final List<DiagnosticStepResult> results;
@@ -121,6 +173,8 @@ class UnifiedDiagnosticsState extends Equatable {
   const UnifiedDiagnosticsState({
     this.step = DiagnosticStep.idle,
     this.problemType,
+    this.flow,
+    this.preQualifierResult,
     this.results = const [],
     this.speedTest,
     this.recommendations = const [],
@@ -132,18 +186,31 @@ class UnifiedDiagnosticsState extends Equatable {
   bool get isRunning =>
       step != DiagnosticStep.idle &&
       step != DiagnosticStep.selectProblem &&
+      step != DiagnosticStep.selectFlow &&
       step != DiagnosticStep.showingResults &&
       step != DiagnosticStep.completed;
 
-  /// Whether we're in the "no internet" diagnostic flow.
-  bool get isNoInternetFlow => problemType == ProblemType.noInternet;
+  /// Whether we're in the "no internet" diagnostic flow (legacy).
+  bool get isNoInternetFlow =>
+      flow == DiagnosticFlow.internet || problemType == ProblemType.noInternet;
 
-  /// Whether we're in the "slow network" diagnostic flow.
-  bool get isSlowNetworkFlow => problemType == ProblemType.slowNetwork;
+  /// Whether we're in the "slow network" diagnostic flow (legacy).
+  bool get isSlowNetworkFlow =>
+      flow == DiagnosticFlow.internet || problemType == ProblemType.slowNetwork;
+
+  /// Whether we're in the combined internet diagnostic flow.
+  bool get isInternetFlow => flow == DiagnosticFlow.internet;
+
+  /// Whether pre-qualifier detected a critical issue.
+  bool get preQualifierHasCriticalIssue =>
+      preQualifierResult == PreQualifierResult.wanDownNoIp ||
+      preQualifierResult == PreQualifierResult.dnsFailure;
 
   UnifiedDiagnosticsState copyWith({
     DiagnosticStep? step,
     ProblemType? problemType,
+    DiagnosticFlow? flow,
+    PreQualifierResult? preQualifierResult,
     List<DiagnosticStepResult>? results,
     SpeedTestResult? speedTest,
     List<Recommendation>? recommendations,
@@ -151,10 +218,16 @@ class UnifiedDiagnosticsState extends Equatable {
     double? progress,
     bool clearError = false,
     bool clearSpeedTest = false,
+    bool clearFlow = false,
+    bool clearPreQualifier = false,
   }) {
     return UnifiedDiagnosticsState(
       step: step ?? this.step,
       problemType: problemType ?? this.problemType,
+      flow: clearFlow ? null : (flow ?? this.flow),
+      preQualifierResult: clearPreQualifier
+          ? null
+          : (preQualifierResult ?? this.preQualifierResult),
       results: results ?? this.results,
       speedTest: clearSpeedTest ? null : (speedTest ?? this.speedTest),
       recommendations: recommendations ?? this.recommendations,
@@ -167,6 +240,8 @@ class UnifiedDiagnosticsState extends Equatable {
   List<Object?> get props => [
         step,
         problemType,
+        flow,
+        preQualifierResult,
         results,
         speedTest,
         recommendations,
