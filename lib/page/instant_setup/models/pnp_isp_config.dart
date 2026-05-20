@@ -1,4 +1,6 @@
 import 'package:equatable/equatable.dart';
+import 'package:privacy_gui/page/internet_settings/models/usp_internet_settings_form.dart';
+import 'package:privacy_gui/page/internet_settings/models/usp_wan_connection_type.dart';
 
 enum IspConnectionType { dhcp, pppoe, pppoeVlan, staticIp }
 
@@ -78,4 +80,29 @@ class PnpIspConfig extends Equatable {
         dnsServer1,
         dnsServer2,
       ];
+
+  UspWanConnectionType get uspConnectionType => switch (type) {
+        IspConnectionType.dhcp => UspWanConnectionType.dhcp,
+        IspConnectionType.pppoe => UspWanConnectionType.pppoe,
+        IspConnectionType.pppoeVlan => UspWanConnectionType.pppoe,
+        IspConnectionType.staticIp => UspWanConnectionType.staticIp,
+      };
+
+  UspInternetSettingsForm applyTo(UspInternetSettingsForm original) {
+    return original.copyWith(
+      connectionType: uspConnectionType,
+      staticIpAddress: staticIpAddress.isNotEmpty
+          ? staticIpAddress
+          : original.staticIpAddress,
+      subnetMask: subnetMask.isNotEmpty ? subnetMask : original.subnetMask,
+      defaultGateway:
+          defaultGateway.isNotEmpty ? defaultGateway : original.defaultGateway,
+      dnsServer1: dnsServer1.isNotEmpty ? dnsServer1 : original.dnsServer1,
+      dnsServer2: dnsServer2.isNotEmpty ? dnsServer2 : original.dnsServer2,
+      pppUsername: pppUsername.isNotEmpty ? pppUsername : original.pppUsername,
+      pppPassword: pppPassword.isNotEmpty ? pppPassword : original.pppPassword,
+      vlanEnabled: type == IspConnectionType.pppoeVlan,
+      vlanId: vlanId,
+    );
+  }
 }

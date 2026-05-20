@@ -20,7 +20,6 @@ class PnpPppoeView extends ConsumerStatefulWidget {
 class _PnpPppoeViewState extends ConsumerState<PnpPppoeView> {
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _serviceController = TextEditingController();
   final _vlanIdController = TextEditingController();
   bool _showVlan = false;
 
@@ -28,7 +27,6 @@ class _PnpPppoeViewState extends ConsumerState<PnpPppoeView> {
   void dispose() {
     _usernameController.dispose();
     _passwordController.dispose();
-    _serviceController.dispose();
     _vlanIdController.dispose();
     super.dispose();
   }
@@ -76,15 +74,6 @@ class _PnpPppoeViewState extends ConsumerState<PnpPppoeView> {
               hintText: loc(context).password,
               controller: _passwordController,
             ),
-            AppGap.lg(),
-
-            // Service name (optional)
-            AppText.labelMedium(loc(context).pnpPppoeTitle),
-            AppGap.xs(),
-            AppTextField(
-              hintText: loc(context).pnpPppoeTitle,
-              controller: _serviceController,
-            ),
             AppGap.xl(),
 
             // VLAN toggle
@@ -131,7 +120,6 @@ class _PnpPppoeViewState extends ConsumerState<PnpPppoeView> {
       type: _showVlan ? IspConnectionType.pppoeVlan : IspConnectionType.pppoe,
       pppUsername: _usernameController.text,
       pppPassword: _passwordController.text,
-      pppoeServiceName: _serviceController.text,
       vlanEnabled: _showVlan,
       vlanId: vlanId,
     );
