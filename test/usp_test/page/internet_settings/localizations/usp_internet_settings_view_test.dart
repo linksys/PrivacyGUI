@@ -52,9 +52,6 @@ void main() {
         'edit_dirty': (overrides) => overrides.addAll(
               internetSettingsOverrides(dirtyState()),
             ),
-        'saving': (overrides) => overrides.addAll(
-              internetSettingsOverrides(dirtyState(isSaving: true)),
-            ),
       },
     ),
   );

@@ -21,9 +21,6 @@ void main() {
         'edit_dirty': (overrides) => overrides.addAll(
               portForwardingOverrides(dirtyState()),
             ),
-        'saving': (overrides) => overrides.addAll(
-              portForwardingOverrides(dirtyState(isSaving: true)),
-            ),
       },
     ),
   );

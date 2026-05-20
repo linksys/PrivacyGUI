@@ -21,9 +21,6 @@ void main() {
         'edit_dirty': (overrides) => overrides.addAll(
               staticRoutingOverrides(dirtyState()),
             ),
-        'saving': (overrides) => overrides.addAll(
-              staticRoutingOverrides(dirtyState(isSaving: true)),
-            ),
       },
     ),
   );

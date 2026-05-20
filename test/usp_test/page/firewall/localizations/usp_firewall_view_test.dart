@@ -22,9 +22,6 @@ void main() {
         'edit_dirty': (overrides) => overrides.addAll(
               firewallOverrides(dirtyState()),
             ),
-        'saving': (overrides) => overrides.addAll(
-              firewallOverrides(dirtyState(isSaving: true)),
-            ),
       },
     ),
   );

@@ -30,9 +30,6 @@ void main() {
         'edit_dirty': (overrides) => overrides.addAll(
               dmzOverrides(dirtyState()),
             ),
-        'saving': (overrides) => overrides.addAll(
-              dmzOverrides(dirtyState(isSaving: true)),
-            ),
       },
     ),
   );

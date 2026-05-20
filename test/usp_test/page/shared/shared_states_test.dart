@@ -10,7 +10,8 @@ import '../../golden_framework/mocks/mock_firewall.dart';
 import '../firewall/fixtures/firewall_test_data.dart';
 
 /// Shared UI states — captured once to cover common components used
-/// by all USP views: AppLoader, error+retry layout, discard changes dialog.
+/// by all USP views: AppLoader, error+retry layout, discard changes dialog,
+/// saving spinner dialog.
 void main() {
   runViewGoldenTests(
     GoldenTestConfig(
@@ -33,6 +34,17 @@ void main() {
           steps: (tester) async {
             final context = tester.element(find.byType(Scaffold));
             showUnsavedAlert(context);
+            await tester.pump();
+            await tester.pump(const Duration(milliseconds: 300));
+          },
+        ),
+        'saving_spinner': Interaction(
+          setup: (overrides) => overrides.addAll(
+            firewallOverrides(dirtyState()),
+          ),
+          steps: (tester) async {
+            final context = tester.element(find.byType(Scaffold));
+            showAppSpinnerDialog(context);
             await tester.pump();
             await tester.pump(const Duration(milliseconds: 300));
           },

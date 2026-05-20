@@ -22,9 +22,6 @@ void main() {
         'edit_dirty': (overrides) => overrides.addAll(
               localNetworkOverrides(dirtyState()),
             ),
-        'saving': (overrides) => overrides.addAll(
-              localNetworkOverrides(dirtyState(isSaving: true)),
-            ),
         'validation_error': (overrides) => overrides.addAll(
               localNetworkOverrides(validationErrorState),
             ),
