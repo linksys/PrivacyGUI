@@ -14,7 +14,7 @@ void main() {
     GoldenTestConfig(
       viewName: 'dashboard',
       view: () => const UspDashboardView(),
-      shell: ShellType.custom,
+      shell: ShellType.scaffold,
       height: 1000,
       states: {
         'normal': (overrides) => overrides.addAll(dashboardOverrides()),
