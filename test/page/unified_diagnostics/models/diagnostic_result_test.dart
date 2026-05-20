@@ -13,9 +13,9 @@ void main() {
     });
   });
 
-  group('DiagnosticStepResult', () {
+  group('DiagnosticStepUIModel', () {
     test('creates with required fields', () {
-      final result = DiagnosticStepResult(
+      final result = DiagnosticStepUIModel(
         step: DiagnosticStep.checkingWanStatus,
         severity: DiagnosticSeverity.ok,
         titleKey: 'test_title',
@@ -31,28 +31,28 @@ void main() {
     });
 
     test('severity getters work correctly', () {
-      final okResult = DiagnosticStepResult(
+      final okResult = DiagnosticStepUIModel(
         step: DiagnosticStep.checkingWanStatus,
         severity: DiagnosticSeverity.ok,
         titleKey: 'title',
         descriptionKey: 'desc',
       );
 
-      final warningResult = DiagnosticStepResult(
+      final warningResult = DiagnosticStepUIModel(
         step: DiagnosticStep.checkingWanStatus,
         severity: DiagnosticSeverity.warning,
         titleKey: 'title',
         descriptionKey: 'desc',
       );
 
-      final errorResult = DiagnosticStepResult(
+      final errorResult = DiagnosticStepUIModel(
         step: DiagnosticStep.checkingWanStatus,
         severity: DiagnosticSeverity.error,
         titleKey: 'title',
         descriptionKey: 'desc',
       );
 
-      final skippedResult = DiagnosticStepResult(
+      final skippedResult = DiagnosticStepUIModel(
         step: DiagnosticStep.checkingWanStatus,
         severity: DiagnosticSeverity.skipped,
         titleKey: 'title',
@@ -70,9 +70,9 @@ void main() {
     });
   });
 
-  group('WanStatusCheckResult', () {
+  group('WanStatusCheckUIModel', () {
     test('creates with WAN data', () {
-      final result = WanStatusCheckResult(
+      final result = WanStatusCheckUIModel(
         status: 'Up',
         ipAddress: '192.168.1.100',
         addressingType: 'DHCP',
@@ -90,7 +90,7 @@ void main() {
     });
 
     test('isUp returns false for down status', () {
-      final result = WanStatusCheckResult(
+      final result = WanStatusCheckUIModel(
         status: 'Down',
         ipAddress: '',
         addressingType: 'DHCP',
@@ -104,9 +104,9 @@ void main() {
     });
   });
 
-  group('PingCheckResult', () {
+  group('PingCheckUIModel', () {
     test('creates with ping data', () {
-      final result = PingCheckResult(
+      final result = PingCheckUIModel(
         step: DiagnosticStep.pingGateway,
         host: '192.168.1.1',
         successCount: 3,
@@ -126,7 +126,7 @@ void main() {
     });
 
     test('calculates success rate correctly', () {
-      final partial = PingCheckResult(
+      final partial = PingCheckUIModel(
         step: DiagnosticStep.pingDns,
         host: '8.8.8.8',
         successCount: 2,
@@ -144,7 +144,7 @@ void main() {
     });
 
     test('allFailed returns true when no success', () {
-      final failed = PingCheckResult(
+      final failed = PingCheckUIModel(
         step: DiagnosticStep.pingInternet,
         host: '8.8.8.8',
         successCount: 0,
@@ -160,9 +160,9 @@ void main() {
     });
   });
 
-  group('WifiSignalCheckResult', () {
+  group('WifiSignalCheckUIModel', () {
     test('creates with WiFi data', () {
-      final result = WifiSignalCheckResult(
+      final result = WifiSignalCheckUIModel(
         rssi: -50,
         channel: 6,
         band: '2.4GHz',
@@ -182,7 +182,7 @@ void main() {
     });
 
     test('signal strength thresholds', () {
-      final weak = WifiSignalCheckResult(
+      final weak = WifiSignalCheckUIModel(
         rssi: -80,
         channel: 1,
         band: '2.4GHz',
@@ -192,7 +192,7 @@ void main() {
         descriptionKey: 'wifi_weak_desc',
       );
 
-      final medium = WifiSignalCheckResult(
+      final medium = WifiSignalCheckUIModel(
         rssi: -60,
         channel: 36,
         band: '5GHz',
@@ -212,9 +212,9 @@ void main() {
     });
   });
 
-  group('ConnectedDevicesCheckResult', () {
+  group('ConnectedDevicesCheckUIModel', () {
     test('creates with device data', () {
-      final result = ConnectedDevicesCheckResult(
+      final result = ConnectedDevicesCheckUIModel(
         totalDevices: 15,
         activeDevices: 10,
         highBandwidthDevices: const ['Device1', 'Device2'],
@@ -232,7 +232,7 @@ void main() {
     });
 
     test('hasManyDevices threshold at 20', () {
-      final many = ConnectedDevicesCheckResult(
+      final many = ConnectedDevicesCheckUIModel(
         totalDevices: 25,
         activeDevices: 20,
         highBandwidthDevices: const [],
@@ -241,7 +241,7 @@ void main() {
         descriptionKey: 'devices_many_desc',
       );
 
-      final few = ConnectedDevicesCheckResult(
+      final few = ConnectedDevicesCheckUIModel(
         totalDevices: 10,
         activeDevices: 8,
         highBandwidthDevices: const [],
@@ -255,9 +255,9 @@ void main() {
     });
   });
 
-  group('TracerouteHopInfo', () {
+  group('TracerouteHopUIModel', () {
     test('creates with hop data', () {
-      const hop = TracerouteHopInfo(
+      const hop = TracerouteHopUIModel(
         hopNumber: 1,
         host: 'gateway.local',
         hostAddress: '192.168.1.1',
@@ -273,14 +273,14 @@ void main() {
     });
 
     test('isSlow returns true for RTT > 200ms', () {
-      const slowHop = TracerouteHopInfo(
+      const slowHop = TracerouteHopUIModel(
         hopNumber: 5,
         host: 'slow-router.isp.net',
         hostAddress: '10.0.0.1',
         avgRoundTrip: 250,
       );
 
-      const normalHop = TracerouteHopInfo(
+      const normalHop = TracerouteHopUIModel(
         hopNumber: 3,
         host: 'fast-router.net',
         hostAddress: '10.0.0.2',
@@ -292,21 +292,21 @@ void main() {
     });
 
     test('isUnreachable returns true for empty address or zero RTT', () {
-      const unreachableNoAddress = TracerouteHopInfo(
+      const unreachableNoAddress = TracerouteHopUIModel(
         hopNumber: 2,
         host: '',
         hostAddress: '',
         avgRoundTrip: 0,
       );
 
-      const unreachableZeroRtt = TracerouteHopInfo(
+      const unreachableZeroRtt = TracerouteHopUIModel(
         hopNumber: 3,
         host: 'some.host',
         hostAddress: '10.0.0.1',
         avgRoundTrip: 0,
       );
 
-      const reachable = TracerouteHopInfo(
+      const reachable = TracerouteHopUIModel(
         hopNumber: 1,
         host: 'gateway',
         hostAddress: '192.168.1.1',
@@ -319,22 +319,22 @@ void main() {
     });
   });
 
-  group('TracerouteCheckResult', () {
+  group('TracerouteCheckUIModel', () {
     test('creates with traceroute data', () {
       final hops = [
-        const TracerouteHopInfo(
+        const TracerouteHopUIModel(
           hopNumber: 1,
           host: 'gateway.local',
           hostAddress: '192.168.1.1',
           avgRoundTrip: 1,
         ),
-        const TracerouteHopInfo(
+        const TracerouteHopUIModel(
           hopNumber: 2,
           host: 'isp.net',
           hostAddress: '10.0.0.1',
           avgRoundTrip: 15,
         ),
-        const TracerouteHopInfo(
+        const TracerouteHopUIModel(
           hopNumber: 3,
           host: 'target.com',
           hostAddress: '8.8.8.8',
@@ -342,7 +342,7 @@ void main() {
         ),
       ];
 
-      final result = TracerouteCheckResult(
+      final result = TracerouteCheckUIModel(
         hops: hops,
         targetHost: '8.8.8.8',
         severity: DiagnosticSeverity.ok,
@@ -360,25 +360,25 @@ void main() {
 
     test('slowHops returns hops with RTT > 200ms', () {
       final hops = [
-        const TracerouteHopInfo(
+        const TracerouteHopUIModel(
           hopNumber: 1,
           host: 'gateway',
           hostAddress: '192.168.1.1',
           avgRoundTrip: 5,
         ),
-        const TracerouteHopInfo(
+        const TracerouteHopUIModel(
           hopNumber: 2,
           host: 'slow-node',
           hostAddress: '10.0.0.1',
           avgRoundTrip: 300, // slow
         ),
-        const TracerouteHopInfo(
+        const TracerouteHopUIModel(
           hopNumber: 3,
           host: 'another-slow',
           hostAddress: '10.0.0.2',
           avgRoundTrip: 250, // slow
         ),
-        const TracerouteHopInfo(
+        const TracerouteHopUIModel(
           hopNumber: 4,
           host: 'fast-node',
           hostAddress: '10.0.0.3',
@@ -386,7 +386,7 @@ void main() {
         ),
       ];
 
-      final result = TracerouteCheckResult(
+      final result = TracerouteCheckUIModel(
         hops: hops,
         targetHost: '8.8.8.8',
         severity: DiagnosticSeverity.warning,
@@ -402,13 +402,13 @@ void main() {
 
     test('rawData contains hop and slow hop counts', () {
       final hops = [
-        const TracerouteHopInfo(
+        const TracerouteHopUIModel(
           hopNumber: 1,
           host: 'gateway',
           hostAddress: '192.168.1.1',
           avgRoundTrip: 5,
         ),
-        const TracerouteHopInfo(
+        const TracerouteHopUIModel(
           hopNumber: 2,
           host: 'slow',
           hostAddress: '10.0.0.1',
@@ -416,7 +416,7 @@ void main() {
         ),
       ];
 
-      final result = TracerouteCheckResult(
+      final result = TracerouteCheckUIModel(
         hops: hops,
         targetHost: 'google.com',
         severity: DiagnosticSeverity.warning,

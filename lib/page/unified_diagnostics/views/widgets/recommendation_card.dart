@@ -4,7 +4,7 @@ import 'package:ui_kit_library/ui_kit.dart';
 import '../../models/diagnostic_state.dart';
 
 class RecommendationCard extends StatelessWidget {
-  final Recommendation rec;
+  final RecommendationUIModel rec;
 
   const RecommendationCard({super.key, required this.rec});
 

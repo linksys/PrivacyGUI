@@ -55,7 +55,7 @@ class DiagnosticRunningView extends ConsumerWidget {
           final step = entry.value;
           final result = state.results.firstWhere(
             (r) => r.step == step,
-            orElse: () => DiagnosticStepResult(
+            orElse: () => DiagnosticStepUIModel(
               step: step,
               severity: DiagnosticSeverity.ok,
               titleKey: '',
@@ -191,22 +191,22 @@ class DiagnosticRunningView extends ConsumerWidget {
     };
   }
 
-  String? _getStepSummary(DiagnosticStepResult result) {
+  String? _getStepSummary(DiagnosticStepUIModel result) {
     if (result.severity == DiagnosticSeverity.skipped) return 'Skipped';
     if (result.severity == DiagnosticSeverity.error) return 'Issue detected';
 
     return switch (result) {
-      WanStatusCheckResult r => r.status,
-      PingCheckResult r => '${r.avgResponseTime}ms',
-      WifiSignalCheckResult r => '${r.rssi} dBm',
-      DhcpPoolCheckResult r => '${r.usedLeases}/${r.capacity} used',
-      ConnectedDevicesCheckResult r => '${r.totalDevices} devices',
-      DnsLookupCheckResult r => r.hasResolved ? 'OK' : 'Failed',
-      TracerouteCheckResult r => '${r.hops.length} hops',
-      _ when result.step == DiagnosticStep.runningSpeedTest =>
-        result.rawData.containsKey('downloadMbps')
-            ? '${(result.rawData['downloadMbps'] as double).toStringAsFixed(1)} Mbps'
-            : 'Completed',
+      WanStatusCheckUIModel r => r.status,
+      PingCheckUIModel r => '${r.avgResponseTime}ms',
+      WifiSignalCheckUIModel r => '${r.rssi} dBm',
+      DhcpPoolCheckUIModel r => '${r.usedLeases}/${r.capacity} used',
+      ConnectedDevicesCheckUIModel r => '${r.totalDevices} devices',
+      DnsLookupCheckUIModel r => r.hasResolved ? 'OK' : 'Failed',
+      TracerouteCheckUIModel r => '${r.hops.length} hops',
+      _ when result.step == DiagnosticStep.runningSpeedTest => result.rawData
+              .containsKey('downloadMbps')
+          ? '${(result.rawData['downloadMbps'] as double).toStringAsFixed(1)} Mbps'
+          : 'Completed',
       _ => 'Completed',
     };
   }
@@ -248,7 +248,9 @@ class _DiagnosticStepNode extends StatelessWidget {
                 width: 28,
                 height: 28,
                 decoration: BoxDecoration(
-                  color: isWaiting ? Colors.transparent : color.withValues(alpha: 0.1),
+                  color: isWaiting
+                      ? Colors.transparent
+                      : color.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                   border: Border.all(
                     color: isWaiting ? colorScheme.outlineVariant : color,
@@ -264,7 +266,10 @@ class _DiagnosticStepNode extends StatelessWidget {
                             strokeWidth: 2,
                           ),
                         )
-                      : Icon(icon, size: 16, color: isWaiting ? colorScheme.outlineVariant : color),
+                      : Icon(icon,
+                          size: 16,
+                          color:
+                              isWaiting ? colorScheme.outlineVariant : color),
                 ),
               ),
               if (!isLast)
@@ -285,14 +290,18 @@ class _DiagnosticStepNode extends StatelessWidget {
               children: [
                 AppText.labelLarge(
                   title,
-                  color: isWaiting ? colorScheme.onSurfaceVariant : colorScheme.onSurface,
+                  color: isWaiting
+                      ? colorScheme.onSurfaceVariant
+                      : colorScheme.onSurface,
                 ),
                 if (subtitle != null)
                   Padding(
                     padding: const EdgeInsets.only(bottom: AppSpacing.lg),
                     child: AppText.bodySmall(
                       subtitle!,
-                      color: isCurrent ? colorScheme.primary : colorScheme.onSurfaceVariant,
+                      color: isCurrent
+                          ? colorScheme.primary
+                          : colorScheme.onSurfaceVariant,
                     ),
                   )
                 else
@@ -318,4 +327,3 @@ class _DiagnosticStepNode extends StatelessWidget {
     };
   }
 }
-

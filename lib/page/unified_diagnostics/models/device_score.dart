@@ -1,7 +1,7 @@
 import 'package:equatable/equatable.dart';
 
 /// Device health score calculated from signal strength and data rate.
-class DeviceScore extends Equatable {
+class DeviceScoreUIModel extends Equatable {
   final String macAddress;
   final String name;
   final int? rssiDbm;
@@ -9,7 +9,7 @@ class DeviceScore extends Equatable {
   final int? uplinkKbps;
   final bool isWireless;
 
-  const DeviceScore({
+  const DeviceScoreUIModel({
     required this.macAddress,
     required this.name,
     this.rssiDbm,

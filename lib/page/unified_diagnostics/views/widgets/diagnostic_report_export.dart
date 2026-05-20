@@ -7,7 +7,7 @@ class DiagnosticReportExporter {
   static Future<void> shareReport(UnifiedDiagnosticsState state) async {
     final report = _generateTextReport(state);
     final dateStr = DateFormat('yyyyMMdd_HHmm').format(DateTime.now());
-    
+
     await Share.share(
       report,
       subject: 'Network_Diagnostics_Report_$dateStr',
@@ -33,7 +33,7 @@ class DiagnosticReportExporter {
     for (final result in state.results) {
       final severityIcon = _getSeverityIcon(result.severity);
       buffer.writeln('[$severityIcon] ${_getStepTitle(result.step)}');
-      
+
       final details = _getDetailsText(result);
       if (details.isNotEmpty) {
         buffer.writeln('    $details');
@@ -43,9 +43,11 @@ class DiagnosticReportExporter {
 
     if (state.speedTest != null) {
       buffer.writeln('--- Speed Test ---');
-      buffer.writeln('Download: ${state.speedTest!.downloadMbps.toStringAsFixed(1)} Mbps');
+      buffer.writeln(
+          'Download: ${state.speedTest!.downloadMbps.toStringAsFixed(1)} Mbps');
       if (state.speedTest!.hasUpload) {
-        buffer.writeln('Upload: ${state.speedTest!.uploadMbps.toStringAsFixed(1)} Mbps');
+        buffer.writeln(
+            'Upload: ${state.speedTest!.uploadMbps.toStringAsFixed(1)} Mbps');
       }
       if (state.speedTest!.hasLatency) {
         buffer.writeln('Latency: ${state.speedTest!.latencyMs} ms');
@@ -106,15 +108,23 @@ class DiagnosticReportExporter {
     };
   }
 
-  static String _getDetailsText(DiagnosticStepResult result) {
+  static String _getDetailsText(DiagnosticStepUIModel result) {
     return switch (result) {
-      WanStatusCheckResult r => 'Status: ${r.status}, IP: ${r.ipAddress}, Type: ${r.addressingType}',
-      PingCheckResult r => 'Host: ${r.host}, Latency: ${r.avgResponseTime}ms, Success: ${r.successCount}/${r.totalCount}',
-      WifiSignalCheckResult r => 'RSSI: ${r.rssi}dBm, Band: ${r.band}, Clients: ${r.connectedDevices}',
-      DhcpPoolCheckResult r => r.dhcpEnabled ? 'Used: ${r.usedLeases}/${r.capacity} (${(r.usageRatio * 100).toInt()}%)' : 'DHCP Disabled',
-      ConnectedDevicesCheckResult r => 'Total: ${r.totalDevices}, Active: ${r.activeDevices}',
-      DnsLookupCheckResult r => 'Host: ${r.hostName}, Resolved: ${r.resolvedIps.join(", ")}',
-      TracerouteCheckResult r => 'Target: ${r.targetHost}, Hops: ${r.hops.length}',
+      WanStatusCheckUIModel r =>
+        'Status: ${r.status}, IP: ${r.ipAddress}, Type: ${r.addressingType}',
+      PingCheckUIModel r =>
+        'Host: ${r.host}, Latency: ${r.avgResponseTime}ms, Success: ${r.successCount}/${r.totalCount}',
+      WifiSignalCheckUIModel r =>
+        'RSSI: ${r.rssi}dBm, Band: ${r.band}, Clients: ${r.connectedDevices}',
+      DhcpPoolCheckUIModel r => r.dhcpEnabled
+          ? 'Used: ${r.usedLeases}/${r.capacity} (${(r.usageRatio * 100).toInt()}%)'
+          : 'DHCP Disabled',
+      ConnectedDevicesCheckUIModel r =>
+        'Total: ${r.totalDevices}, Active: ${r.activeDevices}',
+      DnsLookupCheckUIModel r =>
+        'Host: ${r.hostName}, Resolved: ${r.resolvedIps.join(", ")}',
+      TracerouteCheckUIModel r =>
+        'Target: ${r.targetHost}, Hops: ${r.hops.length}',
       _ => '',
     };
   }
@@ -140,19 +150,32 @@ class DiagnosticReportExporter {
 
   static String _getRecDescription(String key) {
     return switch (key) {
-      'diagnostics_rec_wan_down_desc' => 'Check your modem connection and restart if needed.',
-      'diagnostics_rec_no_ip_desc' => 'Try renewing DHCP lease or configure static IP.',
-      'diagnostics_rec_dhcp_fail_desc' => 'Renew DHCP lease or check ISP settings.',
-      'diagnostics_rec_gateway_desc' => 'Check cable connections between router and modem.',
-      'diagnostics_rec_dns_fail_desc' => 'Try using alternate DNS servers like 8.8.8.8.',
-      'diagnostics_rec_dns_lookup_fail_desc' => 'DNS servers reachable but cannot resolve names. Try alternate DNS like 8.8.8.8 or 1.1.1.1.',
-      'diagnostics_rec_internet_desc' => 'Contact your ISP — the issue may be on their end.',
-      'diagnostics_rec_slow_download_desc' => 'Contact your ISP about download speed issues.',
-      'diagnostics_rec_slow_upload_desc' => 'Check for devices uploading large files.',
-      'diagnostics_rec_weak_wifi_desc' => 'Move closer to router or add a mesh node.',
-      'diagnostics_rec_many_devices_desc' => 'Consider enabling QoS or disconnecting unused devices.',
-      'diagnostics_rec_bandwidth_hog_desc' => 'Some devices are using a lot of bandwidth.',
-      'diagnostics_rec_bottleneck_desc' => 'Network latency detected at a specific hop.',
+      'diagnostics_rec_wan_down_desc' =>
+        'Check your modem connection and restart if needed.',
+      'diagnostics_rec_no_ip_desc' =>
+        'Try renewing DHCP lease or configure static IP.',
+      'diagnostics_rec_dhcp_fail_desc' =>
+        'Renew DHCP lease or check ISP settings.',
+      'diagnostics_rec_gateway_desc' =>
+        'Check cable connections between router and modem.',
+      'diagnostics_rec_dns_fail_desc' =>
+        'Try using alternate DNS servers like 8.8.8.8.',
+      'diagnostics_rec_dns_lookup_fail_desc' =>
+        'DNS servers reachable but cannot resolve names. Try alternate DNS like 8.8.8.8 or 1.1.1.1.',
+      'diagnostics_rec_internet_desc' =>
+        'Contact your ISP — the issue may be on their end.',
+      'diagnostics_rec_slow_download_desc' =>
+        'Contact your ISP about download speed issues.',
+      'diagnostics_rec_slow_upload_desc' =>
+        'Check for devices uploading large files.',
+      'diagnostics_rec_weak_wifi_desc' =>
+        'Move closer to router or add a mesh node.',
+      'diagnostics_rec_many_devices_desc' =>
+        'Consider enabling QoS or disconnecting unused devices.',
+      'diagnostics_rec_bandwidth_hog_desc' =>
+        'Some devices are using a lot of bandwidth.',
+      'diagnostics_rec_bottleneck_desc' =>
+        'Network latency detected at a specific hop.',
       _ => key,
     };
   }

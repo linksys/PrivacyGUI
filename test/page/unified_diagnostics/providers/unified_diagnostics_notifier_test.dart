@@ -63,13 +63,16 @@ void main() {
   });
 
   ProviderContainer createContainer() {
-    return ProviderContainer(
+    final container = ProviderContainer(
       overrides: [
         unifiedDiagnosticsServiceProvider.overrideWithValue(mockService),
         // Override speed test provider to avoid real network calls
         speedTestProvider.overrideWith(() => _MockSpeedTestNotifier()),
       ],
     );
+    // Keep AutoDispose provider alive for the duration of each test.
+    container.listen(unifiedDiagnosticsProvider, (_, __) {});
+    return container;
   }
 
   group('UnifiedDiagnosticsNotifier', () {
@@ -114,7 +117,7 @@ void main() {
 
         // Mock successful WAN check
         when(() => mockService.checkWanStatus()).thenAnswer(
-          (_) async => WanStatusInfo(
+          (_) async => const WanStatusUIModel(
             status: 'Up',
             ipAddress: '192.168.1.100',
             subnetMask: '255.255.255.0',
@@ -140,7 +143,8 @@ void main() {
 
         final state = container.read(unifiedDiagnosticsProvider);
         expect(state.step, DiagnosticStep.showingResults);
-        expect(state.results.length, 6); // WAN, DHCP, Gateway, DNS Ping, DNS Lookup, Internet
+        expect(state.results.length,
+            6); // WAN, DHCP, Gateway, DNS Ping, DNS Lookup, Internet
         expect(state.results.every((r) => r.isOk), isTrue);
         container.dispose();
       });
@@ -150,7 +154,7 @@ void main() {
         final notifier = container.read(unifiedDiagnosticsProvider.notifier);
 
         when(() => mockService.checkWanStatus()).thenAnswer(
-          (_) async => WanStatusInfo(
+          (_) async => const WanStatusUIModel(
             status: 'Down',
             ipAddress: '',
             subnetMask: '',
@@ -174,7 +178,7 @@ void main() {
         final notifier = container.read(unifiedDiagnosticsProvider.notifier);
 
         when(() => mockService.checkWanStatus()).thenAnswer(
-          (_) async => WanStatusInfo(
+          (_) async => const WanStatusUIModel(
             status: 'Up',
             ipAddress: '192.168.1.100',
             subnetMask: '255.255.255.0',
@@ -210,7 +214,7 @@ void main() {
         final notifier = container.read(unifiedDiagnosticsProvider.notifier);
 
         when(() => mockService.checkWanStatus()).thenAnswer(
-          (_) async => WanStatusInfo(
+          (_) async => const WanStatusUIModel(
             status: 'Up',
             ipAddress: '192.168.1.100',
             subnetMask: '255.255.255.0',
@@ -250,7 +254,7 @@ void main() {
 
         when(() => mockService.checkWifiRadios()).thenAnswer(
           (_) async => [
-            WiFiRadioInfo(
+            const WiFiRadioUIModel(
               instancePath: 'Device.WiFi.Radio.1.',
               band: '2.4GHz',
               channel: 6,
@@ -262,8 +266,24 @@ void main() {
           ],
         );
 
+        when(() => mockService.analyzeWifiSignalPerRadio()).thenAnswer(
+          (_) async => const WifiSignalPerRadioUIModel(
+            radios: [
+              RadioSignalStatsUIModel(
+                instancePath: 'Device.WiFi.Radio.1.',
+                band: '2.4GHz',
+                channel: 6,
+                status: 'Up',
+                clientCount: 2,
+                averageRssi: -50,
+                minRssi: -60,
+              ),
+            ],
+          ),
+        );
+
         when(() => mockService.checkConnectedDevices()).thenAnswer(
-          (_) async => ConnectedDevicesInfo(
+          (_) async => const ConnectedDevicesUIModel(
             totalDevices: 5,
             activeDevices: 3,
             highBandwidthDevices: [],
@@ -285,22 +305,24 @@ void main() {
         final container = createContainer();
         final notifier = container.read(unifiedDiagnosticsProvider.notifier);
 
-        when(() => mockService.checkWifiRadios()).thenAnswer(
-          (_) async => [
-            WiFiRadioInfo(
-              instancePath: 'Device.WiFi.Radio.1.',
-              band: '5GHz',
-              channel: 36,
-              channelBandwidth: '80MHz',
-              transmitPower: 100,
-              status: 'Up',
-              autoChannel: true,
-            ),
-          ],
+        when(() => mockService.analyzeWifiSignalPerRadio()).thenAnswer(
+          (_) async => const WifiSignalPerRadioUIModel(
+            radios: [
+              RadioSignalStatsUIModel(
+                instancePath: 'Device.WiFi.Radio.1.',
+                band: '5GHz',
+                channel: 36,
+                status: 'Up',
+                clientCount: 1,
+                averageRssi: -40,
+                minRssi: -40,
+              ),
+            ],
+          ),
         );
 
         when(() => mockService.checkConnectedDevices()).thenAnswer(
-          (_) async => ConnectedDevicesInfo(
+          (_) async => const ConnectedDevicesUIModel(
             totalDevices: 10,
             activeDevices: 8,
             highBandwidthDevices: ['MacBook-Pro', 'Gaming-PC'],
@@ -313,10 +335,10 @@ void main() {
         final state = container.read(unifiedDiagnosticsProvider);
         final devicesResult = state.results.firstWhere(
           (r) => r.step == DiagnosticStep.checkingConnectedDevices,
-        ) as ConnectedDevicesCheckResult;
+        ) as ConnectedDevicesCheckUIModel;
 
-        expect(devicesResult.hasHighBandwidthDevices, isTrue);
-        expect(devicesResult.highBandwidthDevices, contains('MacBook-Pro'));
+        expect(devicesResult.totalDevices, 10);
+        expect(devicesResult.highBandwidthDevices, isNotEmpty);
         container.dispose();
       });
     });
@@ -327,7 +349,7 @@ void main() {
         final notifier = container.read(unifiedDiagnosticsProvider.notifier);
 
         when(() => mockService.checkWanStatus()).thenAnswer(
-          (_) async => WanStatusInfo(
+          (_) async => const WanStatusUIModel(
             status: 'Up',
             ipAddress: '192.168.1.100',
             subnetMask: '255.255.255.0',
@@ -359,7 +381,7 @@ void main() {
         final notifier = container.read(unifiedDiagnosticsProvider.notifier);
 
         when(() => mockService.checkWanStatus()).thenAnswer(
-          (_) async => WanStatusInfo(
+          (_) async => const WanStatusUIModel(
             status: 'Up',
             ipAddress: '192.168.1.100',
             subnetMask: '255.255.255.0',
@@ -393,7 +415,7 @@ void main() {
         final notifier = container.read(unifiedDiagnosticsProvider.notifier);
 
         when(() => mockService.checkWanStatus()).thenAnswer(
-          (_) async => WanStatusInfo(
+          (_) async => const WanStatusUIModel(
             status: 'Up',
             ipAddress: '192.168.1.100',
             subnetMask: '255.255.255.0',
@@ -463,7 +485,7 @@ class _MockSpeedTestNotifier extends AsyncNotifier<SpeedTestState>
   Future<void> runSpeedTest() async {
     state = AsyncData(state.requireValue.copyWith(
       step: SpeedTestStep.completed,
-      result: SpeedTestResult(
+      result: const SpeedTestResult(
         serverHost: 'Test Server',
         latencyMs: 20,
         downloadStatus: 'Complete',

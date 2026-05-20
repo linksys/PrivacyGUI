@@ -19,8 +19,8 @@ enum DiagnosticSeverity {
   skipped,
 }
 
-/// Result of a single diagnostic step.
-class DiagnosticStepResult extends Equatable {
+/// Result of a single diagnostic step UI model.
+class DiagnosticStepUIModel extends Equatable {
   /// Which step this result is for.
   final DiagnosticStep step;
 
@@ -39,7 +39,7 @@ class DiagnosticStepResult extends Equatable {
   /// Timestamp when this result was recorded.
   final DateTime timestamp;
 
-  DiagnosticStepResult({
+  DiagnosticStepUIModel({
     required this.step,
     required this.severity,
     required this.titleKey,
@@ -64,13 +64,13 @@ class DiagnosticStepResult extends Equatable {
       ];
 }
 
-/// WAN status check result.
-class WanStatusCheckResult extends DiagnosticStepResult {
+/// WAN status check result UI model.
+class WanStatusCheckUIModel extends DiagnosticStepUIModel {
   final String status;
   final String ipAddress;
   final String addressingType;
 
-  WanStatusCheckResult({
+  WanStatusCheckUIModel({
     required this.status,
     required this.ipAddress,
     required this.addressingType,
@@ -91,14 +91,14 @@ class WanStatusCheckResult extends DiagnosticStepResult {
   bool get hasIp => ipAddress.isNotEmpty;
 }
 
-/// Ping check result.
-class PingCheckResult extends DiagnosticStepResult {
+/// Ping check result UI model.
+class PingCheckUIModel extends DiagnosticStepUIModel {
   final String host;
   final int successCount;
   final int failureCount;
   final int avgResponseTime;
 
-  PingCheckResult({
+  PingCheckUIModel({
     required DiagnosticStep step,
     required this.host,
     required this.successCount,
@@ -125,19 +125,19 @@ class PingCheckResult extends DiagnosticStepResult {
   bool get allSucceeded => failureCount == 0 && successCount > 0;
 }
 
-/// WiFi signal check result with per-radio breakdown.
+/// WiFi signal check result UI model with per-radio breakdown.
 ///
 /// `rssi` is the weighted average RSSI across all active wireless clients
 /// (so a single number summarizes overall coverage). `radios` provides the
 /// per-radio detail used by the result UI.
-class WifiSignalCheckResult extends DiagnosticStepResult {
+class WifiSignalCheckUIModel extends DiagnosticStepUIModel {
   final int rssi;
   final int channel;
   final String band;
   final int connectedDevices;
-  final List<RadioSignalStats> radios;
+  final List<RadioSignalStatsUIModel> radios;
 
-  WifiSignalCheckResult({
+  WifiSignalCheckUIModel({
     required this.rssi,
     required this.channel,
     required this.band,
@@ -173,8 +173,8 @@ class WifiSignalCheckResult extends DiagnosticStepResult {
   bool get hasPerRadio => radios.isNotEmpty;
 }
 
-/// DHCP pool capacity / usage check result.
-class DhcpPoolCheckResult extends DiagnosticStepResult {
+/// DHCP pool capacity / usage check result UI model.
+class DhcpPoolCheckUIModel extends DiagnosticStepUIModel {
   final bool dhcpEnabled;
   final String minAddress;
   final String maxAddress;
@@ -182,7 +182,7 @@ class DhcpPoolCheckResult extends DiagnosticStepResult {
   final int usedLeases;
   final int totalLeases;
 
-  DhcpPoolCheckResult({
+  DhcpPoolCheckUIModel({
     required this.dhcpEnabled,
     required this.minAddress,
     required this.maxAddress,
@@ -213,13 +213,13 @@ class DhcpPoolCheckResult extends DiagnosticStepResult {
   bool get capacityUnknown => capacity == 0;
 }
 
-/// Connected devices check result.
-class ConnectedDevicesCheckResult extends DiagnosticStepResult {
+/// Connected devices check result UI model.
+class ConnectedDevicesCheckUIModel extends DiagnosticStepUIModel {
   final int totalDevices;
   final int activeDevices;
   final List<String> highBandwidthDevices;
 
-  ConnectedDevicesCheckResult({
+  ConnectedDevicesCheckUIModel({
     required this.totalDevices,
     required this.activeDevices,
     required this.highBandwidthDevices,
@@ -240,12 +240,12 @@ class ConnectedDevicesCheckResult extends DiagnosticStepResult {
   bool get hasHighBandwidthDevices => highBandwidthDevices.isNotEmpty;
 }
 
-/// Traceroute check result with hop details.
-class TracerouteCheckResult extends DiagnosticStepResult {
-  final List<TracerouteHopInfo> hops;
+/// Traceroute check result UI model with hop details.
+class TracerouteCheckUIModel extends DiagnosticStepUIModel {
+  final List<TracerouteHopUIModel> hops;
   final String targetHost;
 
-  TracerouteCheckResult({
+  TracerouteCheckUIModel({
     required this.hops,
     required this.targetHost,
     required super.severity,
@@ -261,18 +261,18 @@ class TracerouteCheckResult extends DiagnosticStepResult {
           },
         );
 
-  List<TracerouteHopInfo> get slowHops =>
+  List<TracerouteHopUIModel> get slowHops =>
       hops.where((h) => h.avgRoundTrip > 200).toList();
 }
 
-/// Individual hop info for traceroute display.
-class TracerouteHopInfo {
+/// Individual hop info UI model for traceroute display.
+class TracerouteHopUIModel {
   final int hopNumber;
   final String host;
   final String hostAddress;
   final int avgRoundTrip;
 
-  const TracerouteHopInfo({
+  const TracerouteHopUIModel({
     required this.hopNumber,
     required this.host,
     required this.hostAddress,
@@ -283,15 +283,15 @@ class TracerouteHopInfo {
   bool get isUnreachable => hostAddress.isEmpty || avgRoundTrip == 0;
 }
 
-/// Device issues check result (Flow 2).
-class DeviceIssuesCheckResult extends DiagnosticStepResult {
+/// Device issues check result UI model (Flow 2).
+class DeviceIssuesCheckUIModel extends DiagnosticStepUIModel {
   final int totalDevices;
   final int devicesWithIssues;
   final List<String> weakSignalDevices;
   final List<String> lowDataRateDevices;
-  final List<DeviceScore> deviceScores;
+  final List<DeviceScoreUIModel> deviceScores;
 
-  DeviceIssuesCheckResult({
+  DeviceIssuesCheckUIModel({
     required this.totalDevices,
     required this.devicesWithIssues,
     required this.weakSignalDevices,
@@ -314,14 +314,14 @@ class DeviceIssuesCheckResult extends DiagnosticStepResult {
   bool get hasIssues => devicesWithIssues > 0;
 }
 
-/// WiFi coverage check result (Flow 3).
-class WifiCoverageCheckResult extends DiagnosticStepResult {
+/// WiFi coverage check result UI model (Flow 3).
+class WifiCoverageCheckUIModel extends DiagnosticStepUIModel {
   final int totalWirelessDevices;
   final List<String> weakSignalDevices;
   final int averageSignalStrength;
-  final List<WiFiRadioInfo> radios;
+  final List<WiFiRadioUIModel> radios;
 
-  WifiCoverageCheckResult({
+  WifiCoverageCheckUIModel({
     required this.totalWirelessDevices,
     required this.weakSignalDevices,
     required this.averageSignalStrength,
@@ -342,15 +342,15 @@ class WifiCoverageCheckResult extends DiagnosticStepResult {
   bool get hasWeakSignalDevices => weakSignalDevices.isNotEmpty;
 }
 
-/// DNS lookup check result.
-class DnsLookupCheckResult extends DiagnosticStepResult {
+/// DNS lookup check result UI model.
+class DnsLookupCheckUIModel extends DiagnosticStepUIModel {
   final String hostName;
   final List<String> resolvedIps;
   final String dnsServerUsed;
   final int responseTimeMs;
   final List<String> configuredDnsServers;
 
-  DnsLookupCheckResult({
+  DnsLookupCheckUIModel({
     required this.hostName,
     required this.resolvedIps,
     required this.dnsServerUsed,
@@ -374,8 +374,8 @@ class DnsLookupCheckResult extends DiagnosticStepResult {
   bool get hasResolved => resolvedIps.isNotEmpty;
 }
 
-/// Intermittent connection check result (Flow 4).
-class IntermittentCheckResult extends DiagnosticStepResult {
+/// Intermittent connection check result UI model (Flow 4).
+class IntermittentCheckUIModel extends DiagnosticStepUIModel {
   final int uptimeSeconds;
   final String uptimeFormatted;
   final double pingSuccessRate;
@@ -385,7 +385,7 @@ class IntermittentCheckResult extends DiagnosticStepResult {
   final bool hasPacketLoss;
   final bool recentReboot;
 
-  IntermittentCheckResult({
+  IntermittentCheckUIModel({
     required this.uptimeSeconds,
     required this.uptimeFormatted,
     required this.pingSuccessRate,

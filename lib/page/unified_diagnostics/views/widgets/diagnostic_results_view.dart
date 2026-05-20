@@ -21,11 +21,19 @@ class DiagnosticResultsView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     // Categorize results
-    final errors = state.results.where((r) => r.severity == DiagnosticSeverity.error).toList();
-    final warnings = state.results.where((r) => r.severity == DiagnosticSeverity.warning).toList();
-    final successful = state.results.where((r) => r.severity == DiagnosticSeverity.ok || r.severity == DiagnosticSeverity.skipped).toList();
+    final errors = state.results
+        .where((r) => r.severity == DiagnosticSeverity.error)
+        .toList();
+    final warnings = state.results
+        .where((r) => r.severity == DiagnosticSeverity.warning)
+        .toList();
+    final successful = state.results
+        .where((r) =>
+            r.severity == DiagnosticSeverity.ok ||
+            r.severity == DiagnosticSeverity.skipped)
+        .toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -36,7 +44,9 @@ class DiagnosticResultsView extends ConsumerWidget {
           hasWarnings: warnings.isNotEmpty,
           errorCount: errors.length,
           warningCount: warnings.length,
-          passedCount: successful.where((r) => r.severity == DiagnosticSeverity.ok).length,
+          passedCount: successful
+              .where((r) => r.severity == DiagnosticSeverity.ok)
+              .length,
         ),
         AppGap.xl(),
 
@@ -50,7 +60,8 @@ class DiagnosticResultsView extends ConsumerWidget {
         if (errors.isNotEmpty) ...[
           AppText.labelLarge('Critical Issues', color: colorScheme.error),
           AppGap.md(),
-          ...errors.map((r) => StepResultTile(result: r, initiallyExpanded: true)),
+          ...errors
+              .map((r) => StepResultTile(result: r, initiallyExpanded: true)),
           AppGap.lg(),
         ],
 
@@ -58,7 +69,8 @@ class DiagnosticResultsView extends ConsumerWidget {
         if (warnings.isNotEmpty) ...[
           AppText.labelLarge('Potential Issues', color: colorScheme.tertiary),
           AppGap.md(),
-          ...warnings.map((r) => StepResultTile(result: r, initiallyExpanded: true)),
+          ...warnings
+              .map((r) => StepResultTile(result: r, initiallyExpanded: true)),
           AppGap.lg(),
         ],
 
@@ -75,7 +87,8 @@ class DiagnosticResultsView extends ConsumerWidget {
           AppExpansionPanel.single(
             headerTitle: 'Successful Checks (${successful.length})',
             content: Column(
-              children: successful.map((r) => StepResultTile(result: r)).toList(),
+              children:
+                  successful.map((r) => StepResultTile(result: r)).toList(),
             ),
           ),
           AppGap.lg(),
@@ -83,7 +96,7 @@ class DiagnosticResultsView extends ConsumerWidget {
 
         // Traceroute details (if available)
         ...state.results
-            .whereType<TracerouteCheckResult>()
+            .whereType<TracerouteCheckUIModel>()
             .map((r) => TracerouteDetailCard(result: r)),
         AppGap.xxxl(),
 
@@ -162,9 +175,18 @@ class _SummaryCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _StatusCount(label: 'Failed', count: errorCount, color: colorScheme.error),
-                _StatusCount(label: 'Warning', count: warningCount, color: colorScheme.tertiary),
-                _StatusCount(label: 'Passed', count: passedCount, color: colorScheme.primary),
+                _StatusCount(
+                    label: 'Failed',
+                    count: errorCount,
+                    color: colorScheme.error),
+                _StatusCount(
+                    label: 'Warning',
+                    count: warningCount,
+                    color: colorScheme.tertiary),
+                _StatusCount(
+                    label: 'Passed',
+                    count: passedCount,
+                    color: colorScheme.primary),
               ],
             ),
           ],
@@ -190,9 +212,9 @@ class _StatusCount extends StatelessWidget {
     return Column(
       children: [
         AppText.titleLarge('$count', color: color),
-        AppText.labelSmall(label, color: Theme.of(context).colorScheme.onSurfaceVariant),
+        AppText.labelSmall(label,
+            color: Theme.of(context).colorScheme.onSurfaceVariant),
       ],
     );
   }
 }
-

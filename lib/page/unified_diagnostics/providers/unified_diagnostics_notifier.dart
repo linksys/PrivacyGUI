@@ -10,8 +10,8 @@ import '../models/diagnostic_result.dart';
 import '../models/diagnostic_state.dart';
 import '../services/unified_diagnostics_service.dart';
 
-final unifiedDiagnosticsProvider =
-    NotifierProvider<UnifiedDiagnosticsNotifier, UnifiedDiagnosticsState>(
+final unifiedDiagnosticsProvider = AutoDisposeNotifierProvider<
+    UnifiedDiagnosticsNotifier, UnifiedDiagnosticsState>(
   UnifiedDiagnosticsNotifier.new,
 );
 
@@ -20,7 +20,8 @@ final unifiedDiagnosticsProvider =
 /// Orchestrates diagnostic flows for:
 /// - Scenario A: No Internet (WAN → DHCP → Gateway → DNS → Internet ping)
 /// - Scenario B: Slow Network (Speed Test → WiFi → Devices → Traceroute)
-class UnifiedDiagnosticsNotifier extends Notifier<UnifiedDiagnosticsState> {
+class UnifiedDiagnosticsNotifier
+    extends AutoDisposeNotifier<UnifiedDiagnosticsState> {
   UnifiedDiagnosticsService? get _svc =>
       ref.read(unifiedDiagnosticsServiceProvider);
 
@@ -252,11 +253,11 @@ class UnifiedDiagnosticsNotifier extends Notifier<UnifiedDiagnosticsState> {
       return;
     }
 
-    final results = <DiagnosticStepResult>[];
+    final results = <DiagnosticStepUIModel>[];
 
     // Step 1: Check WAN status
     state = state.copyWith(step: DiagnosticStep.checkingWanStatus);
-    WanStatusCheckResult? wanResult;
+    WanStatusCheckUIModel? wanResult;
     try {
       final wan = await svc.checkWanStatus();
       wanResult = _evaluateWanStatus(wan);
@@ -399,7 +400,7 @@ class UnifiedDiagnosticsNotifier extends Notifier<UnifiedDiagnosticsState> {
       return;
     }
 
-    final results = <DiagnosticStepResult>[];
+    final results = <DiagnosticStepUIModel>[];
     bool connectivityOk = true;
 
     // Step 1: Check WAN status
@@ -534,7 +535,7 @@ class UnifiedDiagnosticsNotifier extends Notifier<UnifiedDiagnosticsState> {
     }
 
     logger.i('[Diagnostics] Running Device Issues flow');
-    final results = <DiagnosticStepResult>[];
+    final results = <DiagnosticStepUIModel>[];
 
     // Step 1: Get all device scores
     state = state.copyWith(step: DiagnosticStep.checkingConnectedDevices);
@@ -548,7 +549,7 @@ class UnifiedDiagnosticsNotifier extends Notifier<UnifiedDiagnosticsState> {
               ? DiagnosticSeverity.error
               : DiagnosticSeverity.warning;
 
-      results.add(DeviceIssuesCheckResult(
+      results.add(DeviceIssuesCheckUIModel(
         totalDevices: deviceScores.length,
         devicesWithIssues: devicesWithIssues.length,
         weakSignalDevices: deviceScores
@@ -585,7 +586,7 @@ class UnifiedDiagnosticsNotifier extends Notifier<UnifiedDiagnosticsState> {
     }
 
     logger.i('[Diagnostics] Running WiFi Coverage flow');
-    final results = <DiagnosticStepResult>[];
+    final results = <DiagnosticStepUIModel>[];
 
     // Step 1: Check WiFi radios
     state = state.copyWith(step: DiagnosticStep.checkingWifiSignal);
@@ -598,7 +599,7 @@ class UnifiedDiagnosticsNotifier extends Notifier<UnifiedDiagnosticsState> {
               ? DiagnosticSeverity.warning
               : DiagnosticSeverity.ok;
 
-      results.add(WifiCoverageCheckResult(
+      results.add(WifiCoverageCheckUIModel(
         totalWirelessDevices: coverage.totalWirelessDevices,
         weakSignalDevices: coverage.weakSignalDevices
             .map((d) => '${d.name} (${d.rssiDbm} dBm)')
@@ -630,7 +631,7 @@ class UnifiedDiagnosticsNotifier extends Notifier<UnifiedDiagnosticsState> {
     }
 
     logger.i('[Diagnostics] Running Intermittent flow');
-    final results = <DiagnosticStepResult>[];
+    final results = <DiagnosticStepUIModel>[];
 
     // Start shared session for multiple pings
     try {
@@ -651,7 +652,7 @@ class UnifiedDiagnosticsNotifier extends Notifier<UnifiedDiagnosticsState> {
                 ? DiagnosticSeverity.warning
                 : DiagnosticSeverity.ok;
 
-        results.add(IntermittentCheckResult(
+        results.add(IntermittentCheckUIModel(
           uptimeSeconds: intermittent.uptimeSeconds,
           uptimeFormatted: intermittent.uptimeFormatted,
           pingSuccessRate: intermittent.pingSuccessRate,
@@ -691,11 +692,11 @@ class UnifiedDiagnosticsNotifier extends Notifier<UnifiedDiagnosticsState> {
       return;
     }
 
-    final results = <DiagnosticStepResult>[];
+    final results = <DiagnosticStepUIModel>[];
 
     // Step 1: Check WAN status
     state = state.copyWith(step: DiagnosticStep.checkingWanStatus);
-    WanStatusCheckResult? wanResult;
+    WanStatusCheckUIModel? wanResult;
     try {
       final wan = await svc.checkWanStatus();
       wanResult = _evaluateWanStatus(wan);
@@ -725,7 +726,7 @@ class UnifiedDiagnosticsNotifier extends Notifier<UnifiedDiagnosticsState> {
         return;
       }
     } else {
-      results.add(DiagnosticStepResult(
+      results.add(DiagnosticStepUIModel(
         step: DiagnosticStep.checkingDhcp,
         severity: DiagnosticSeverity.skipped,
         titleKey: 'diagnostics_dhcp_skipped',
@@ -875,7 +876,7 @@ class UnifiedDiagnosticsNotifier extends Notifier<UnifiedDiagnosticsState> {
       return;
     }
 
-    final results = <DiagnosticStepResult>[];
+    final results = <DiagnosticStepUIModel>[];
 
     // Start shared session for speed test latency ping and traceroute
     try {
@@ -960,7 +961,7 @@ class UnifiedDiagnosticsNotifier extends Notifier<UnifiedDiagnosticsState> {
   // ══════════════════════════════════════════════════════════════════════════
 
   Future<void> _analyzeAndShowResults(
-      List<DiagnosticStepResult> results) async {
+      List<DiagnosticStepUIModel> results) async {
     state = state.copyWith(step: DiagnosticStep.analyzing);
 
     final recommendations = _generateRecommendations(results);
@@ -973,18 +974,18 @@ class UnifiedDiagnosticsNotifier extends Notifier<UnifiedDiagnosticsState> {
         '[Diagnostics] Complete — ${recommendations.length} recommendations');
   }
 
-  List<Recommendation> _generateRecommendations(
-      List<DiagnosticStepResult> results) {
-    final recommendations = <Recommendation>[];
+  List<RecommendationUIModel> _generateRecommendations(
+      List<DiagnosticStepUIModel> results) {
+    final recommendations = <RecommendationUIModel>[];
 
     for (final result in results) {
       if (result.isOk || result.isSkipped) continue;
 
       switch (result.step) {
         case DiagnosticStep.checkingWanStatus:
-          if (result is WanStatusCheckResult) {
+          if (result is WanStatusCheckUIModel) {
             if (!result.isUp) {
-              recommendations.add(Recommendation(
+              recommendations.add(RecommendationUIModel(
                 id: 'wan_down',
                 titleKey: 'diagnostics_rec_wan_down_title',
                 descriptionKey: 'diagnostics_rec_wan_down_desc',
@@ -992,7 +993,7 @@ class UnifiedDiagnosticsNotifier extends Notifier<UnifiedDiagnosticsState> {
                 actionId: 'restartModem',
               ));
             } else if (!result.hasIp) {
-              recommendations.add(Recommendation(
+              recommendations.add(RecommendationUIModel(
                 id: 'no_ip',
                 titleKey: 'diagnostics_rec_no_ip_title',
                 descriptionKey: 'diagnostics_rec_no_ip_desc',
@@ -1002,7 +1003,7 @@ class UnifiedDiagnosticsNotifier extends Notifier<UnifiedDiagnosticsState> {
             }
           }
         case DiagnosticStep.checkingDhcp:
-          recommendations.add(Recommendation(
+          recommendations.add(RecommendationUIModel(
             id: 'dhcp_fail',
             titleKey: 'diagnostics_rec_dhcp_fail_title',
             descriptionKey: 'diagnostics_rec_dhcp_fail_desc',
@@ -1010,9 +1011,9 @@ class UnifiedDiagnosticsNotifier extends Notifier<UnifiedDiagnosticsState> {
             actionId: 'renewDhcp',
           ));
         case DiagnosticStep.checkingDhcpPool:
-          if (result is DhcpPoolCheckResult) {
+          if (result is DhcpPoolCheckUIModel) {
             if (result.isExhausted) {
-              recommendations.add(Recommendation(
+              recommendations.add(RecommendationUIModel(
                 id: 'dhcp_pool_exhausted',
                 titleKey: 'diagnostics_rec_dhcp_pool_exhausted_title',
                 descriptionKey: 'diagnostics_rec_dhcp_pool_exhausted_desc',
@@ -1020,7 +1021,7 @@ class UnifiedDiagnosticsNotifier extends Notifier<UnifiedDiagnosticsState> {
                 actionId: 'expandDhcpPool',
               ));
             } else if (result.isNearCapacity) {
-              recommendations.add(Recommendation(
+              recommendations.add(RecommendationUIModel(
                 id: 'dhcp_pool_near',
                 titleKey: 'diagnostics_rec_dhcp_pool_near_title',
                 descriptionKey: 'diagnostics_rec_dhcp_pool_near_desc',
@@ -1030,7 +1031,7 @@ class UnifiedDiagnosticsNotifier extends Notifier<UnifiedDiagnosticsState> {
             }
           }
         case DiagnosticStep.pingGateway:
-          recommendations.add(Recommendation(
+          recommendations.add(RecommendationUIModel(
             id: 'gateway_unreachable',
             titleKey: 'diagnostics_rec_gateway_title',
             descriptionKey: 'diagnostics_rec_gateway_desc',
@@ -1038,7 +1039,7 @@ class UnifiedDiagnosticsNotifier extends Notifier<UnifiedDiagnosticsState> {
             actionId: 'checkCable',
           ));
         case DiagnosticStep.pingDns:
-          recommendations.add(Recommendation(
+          recommendations.add(RecommendationUIModel(
             id: 'dns_fail',
             titleKey: 'diagnostics_rec_dns_fail_title',
             descriptionKey: 'diagnostics_rec_dns_fail_desc',
@@ -1046,8 +1047,8 @@ class UnifiedDiagnosticsNotifier extends Notifier<UnifiedDiagnosticsState> {
             actionId: 'changeDns',
           ));
         case DiagnosticStep.dnsLookup:
-          if (result is DnsLookupCheckResult && !result.hasResolved) {
-            recommendations.add(Recommendation(
+          if (result is DnsLookupCheckUIModel && !result.hasResolved) {
+            recommendations.add(RecommendationUIModel(
               id: 'dns_lookup_fail',
               titleKey: 'diagnostics_rec_dns_lookup_fail_title',
               descriptionKey: 'diagnostics_rec_dns_lookup_fail_desc',
@@ -1056,7 +1057,7 @@ class UnifiedDiagnosticsNotifier extends Notifier<UnifiedDiagnosticsState> {
             ));
           }
         case DiagnosticStep.pingInternet:
-          recommendations.add(Recommendation(
+          recommendations.add(RecommendationUIModel(
             id: 'internet_unreachable',
             titleKey: 'diagnostics_rec_internet_title',
             descriptionKey: 'diagnostics_rec_internet_desc',
@@ -1067,7 +1068,7 @@ class UnifiedDiagnosticsNotifier extends Notifier<UnifiedDiagnosticsState> {
           final speedTest = state.speedTest;
           if (speedTest != null) {
             if (speedTest.isSlowDownload) {
-              recommendations.add(Recommendation(
+              recommendations.add(RecommendationUIModel(
                 id: 'slow_download',
                 titleKey: 'diagnostics_rec_slow_download_title',
                 descriptionKey: 'diagnostics_rec_slow_download_desc',
@@ -1075,7 +1076,7 @@ class UnifiedDiagnosticsNotifier extends Notifier<UnifiedDiagnosticsState> {
               ));
             }
             if (speedTest.isSlowUpload) {
-              recommendations.add(Recommendation(
+              recommendations.add(RecommendationUIModel(
                 id: 'slow_upload',
                 titleKey: 'diagnostics_rec_slow_upload_title',
                 descriptionKey: 'diagnostics_rec_slow_upload_desc',
@@ -1084,8 +1085,8 @@ class UnifiedDiagnosticsNotifier extends Notifier<UnifiedDiagnosticsState> {
             }
           }
         case DiagnosticStep.checkingWifiSignal:
-          if (result is WifiSignalCheckResult && result.isWeakSignal) {
-            recommendations.add(Recommendation(
+          if (result is WifiSignalCheckUIModel && result.isWeakSignal) {
+            recommendations.add(RecommendationUIModel(
               id: 'weak_wifi',
               titleKey: 'diagnostics_rec_weak_wifi_title',
               descriptionKey: 'diagnostics_rec_weak_wifi_desc',
@@ -1094,9 +1095,9 @@ class UnifiedDiagnosticsNotifier extends Notifier<UnifiedDiagnosticsState> {
             ));
           }
         case DiagnosticStep.checkingConnectedDevices:
-          if (result is ConnectedDevicesCheckResult) {
+          if (result is ConnectedDevicesCheckUIModel) {
             if (result.hasManyDevices) {
-              recommendations.add(Recommendation(
+              recommendations.add(RecommendationUIModel(
                 id: 'too_many_devices',
                 titleKey: 'diagnostics_rec_many_devices_title',
                 descriptionKey: 'diagnostics_rec_many_devices_desc',
@@ -1105,7 +1106,7 @@ class UnifiedDiagnosticsNotifier extends Notifier<UnifiedDiagnosticsState> {
               ));
             }
             if (result.hasHighBandwidthDevices) {
-              recommendations.add(Recommendation(
+              recommendations.add(RecommendationUIModel(
                 id: 'high_bandwidth_devices',
                 titleKey: 'diagnostics_rec_bandwidth_hog_title',
                 descriptionKey: 'diagnostics_rec_bandwidth_hog_desc',
@@ -1114,7 +1115,7 @@ class UnifiedDiagnosticsNotifier extends Notifier<UnifiedDiagnosticsState> {
             }
           }
         case DiagnosticStep.runningTraceroute:
-          recommendations.add(Recommendation(
+          recommendations.add(RecommendationUIModel(
             id: 'network_bottleneck',
             titleKey: 'diagnostics_rec_bottleneck_title',
             descriptionKey: 'diagnostics_rec_bottleneck_desc',
@@ -1136,7 +1137,7 @@ class UnifiedDiagnosticsNotifier extends Notifier<UnifiedDiagnosticsState> {
   /// Runs an NSLookup against a well-known host and merges configured DNS
   /// servers from `Device.DNS.Client.*` so the result tile shows both
   /// "DNS that the router uses" and "DNS resolution actually works".
-  Future<DnsLookupCheckResult> _runDnsLookup(
+  Future<DnsLookupCheckUIModel> _runDnsLookup(
     UnifiedDiagnosticsService svc, {
     String hostName = 'www.google.com',
   }) async {
@@ -1179,7 +1180,7 @@ class UnifiedDiagnosticsNotifier extends Notifier<UnifiedDiagnosticsState> {
       descriptionKey = 'diagnostics_dns_lookup_ok_desc';
     }
 
-    return DnsLookupCheckResult(
+    return DnsLookupCheckUIModel(
       hostName: hostName,
       resolvedIps: resolvedIps,
       dnsServerUsed: dnsServerUsed,
@@ -1191,7 +1192,7 @@ class UnifiedDiagnosticsNotifier extends Notifier<UnifiedDiagnosticsState> {
     );
   }
 
-  WanStatusCheckResult _evaluateWanStatus(WanStatusInfo wan) {
+  WanStatusCheckUIModel _evaluateWanStatus(WanStatusUIModel wan) {
     DiagnosticSeverity severity;
     String titleKey;
     String descriptionKey;
@@ -1210,7 +1211,7 @@ class UnifiedDiagnosticsNotifier extends Notifier<UnifiedDiagnosticsState> {
       descriptionKey = 'diagnostics_wan_ok_desc';
     }
 
-    return WanStatusCheckResult(
+    return WanStatusCheckUIModel(
       status: wan.status,
       ipAddress: wan.ipAddress,
       addressingType: wan.addressingType,
@@ -1220,16 +1221,16 @@ class UnifiedDiagnosticsNotifier extends Notifier<UnifiedDiagnosticsState> {
     );
   }
 
-  DiagnosticStepResult _evaluateDhcp(WanStatusCheckResult wanResult) {
+  DiagnosticStepUIModel _evaluateDhcp(WanStatusCheckUIModel wanResult) {
     if (wanResult.hasIp) {
-      return DiagnosticStepResult(
+      return DiagnosticStepUIModel(
         step: DiagnosticStep.checkingDhcp,
         severity: DiagnosticSeverity.ok,
         titleKey: 'diagnostics_dhcp_ok',
         descriptionKey: 'diagnostics_dhcp_ok_desc',
       );
     } else {
-      return DiagnosticStepResult(
+      return DiagnosticStepUIModel(
         step: DiagnosticStep.checkingDhcp,
         severity: DiagnosticSeverity.error,
         titleKey: 'diagnostics_dhcp_fail',
@@ -1238,7 +1239,7 @@ class UnifiedDiagnosticsNotifier extends Notifier<UnifiedDiagnosticsState> {
     }
   }
 
-  PingCheckResult _evaluatePing(DiagnosticStep step, dynamic pingResult) {
+  PingCheckUIModel _evaluatePing(DiagnosticStep step, dynamic pingResult) {
     final host = pingResult.host as String;
     final successCount = pingResult.successCount as int;
     final failureCount = pingResult.failureCount as int;
@@ -1266,7 +1267,7 @@ class UnifiedDiagnosticsNotifier extends Notifier<UnifiedDiagnosticsState> {
       descriptionKey = 'diagnostics_ping_ok_desc';
     }
 
-    return PingCheckResult(
+    return PingCheckUIModel(
       step: step,
       host: host,
       successCount: successCount,
@@ -1278,7 +1279,7 @@ class UnifiedDiagnosticsNotifier extends Notifier<UnifiedDiagnosticsState> {
     );
   }
 
-  DiagnosticStepResult _evaluateSpeedTest(SpeedTestResult speedTest) {
+  DiagnosticStepUIModel _evaluateSpeedTest(SpeedTestResult speedTest) {
     DiagnosticSeverity severity;
     String titleKey;
     String descriptionKey;
@@ -1297,7 +1298,7 @@ class UnifiedDiagnosticsNotifier extends Notifier<UnifiedDiagnosticsState> {
       descriptionKey = 'diagnostics_speed_ok_desc';
     }
 
-    return DiagnosticStepResult(
+    return DiagnosticStepUIModel(
       step: DiagnosticStep.runningSpeedTest,
       severity: severity,
       titleKey: titleKey,
@@ -1309,14 +1310,14 @@ class UnifiedDiagnosticsNotifier extends Notifier<UnifiedDiagnosticsState> {
     );
   }
 
-  WifiSignalCheckResult _evaluateWifiSignal(WifiSignalPerRadioInfo info) {
+  WifiSignalCheckUIModel _evaluateWifiSignal(WifiSignalPerRadioUIModel info) {
     final activeRadios = info.activeRadios;
 
     if (info.totalClients == 0) {
       // No wireless clients to sample — surface the radios but skip RSSI.
       final firstResolved =
           info.radios.where((r) => r.isResolved).toList().firstOrNull;
-      return WifiSignalCheckResult(
+      return WifiSignalCheckUIModel(
         rssi: 0,
         channel: firstResolved?.channel ?? 0,
         band: firstResolved?.band ?? 'Unknown',
@@ -1353,7 +1354,7 @@ class UnifiedDiagnosticsNotifier extends Notifier<UnifiedDiagnosticsState> {
             .first
         : null;
 
-    return WifiSignalCheckResult(
+    return WifiSignalCheckUIModel(
       rssi: weighted,
       channel: primary?.channel ?? 0,
       band: primary?.band ?? 'Unknown',
@@ -1365,7 +1366,7 @@ class UnifiedDiagnosticsNotifier extends Notifier<UnifiedDiagnosticsState> {
     );
   }
 
-  DhcpPoolCheckResult _evaluateDhcpPool(DhcpPoolUsageInfo info) {
+  DhcpPoolCheckUIModel _evaluateDhcpPool(DhcpPoolUsageUIModel info) {
     final DiagnosticSeverity severity;
     final String titleKey;
     final String descriptionKey;
@@ -1392,7 +1393,7 @@ class UnifiedDiagnosticsNotifier extends Notifier<UnifiedDiagnosticsState> {
       descriptionKey = 'diagnostics_dhcp_pool_ok_desc';
     }
 
-    return DhcpPoolCheckResult(
+    return DhcpPoolCheckUIModel(
       dhcpEnabled: info.enabled,
       minAddress: info.minAddress,
       maxAddress: info.maxAddress,
@@ -1405,8 +1406,8 @@ class UnifiedDiagnosticsNotifier extends Notifier<UnifiedDiagnosticsState> {
     );
   }
 
-  ConnectedDevicesCheckResult _evaluateConnectedDevices(
-      ConnectedDevicesInfo devices) {
+  ConnectedDevicesCheckUIModel _evaluateConnectedDevices(
+      ConnectedDevicesUIModel devices) {
     DiagnosticSeverity severity;
     String titleKey;
     String descriptionKey;
@@ -1425,7 +1426,7 @@ class UnifiedDiagnosticsNotifier extends Notifier<UnifiedDiagnosticsState> {
       descriptionKey = 'diagnostics_devices_ok_desc';
     }
 
-    return ConnectedDevicesCheckResult(
+    return ConnectedDevicesCheckUIModel(
       totalDevices: devices.totalDevices,
       activeDevices: devices.activeDevices,
       highBandwidthDevices: devices.highBandwidthDevices,
@@ -1435,9 +1436,9 @@ class UnifiedDiagnosticsNotifier extends Notifier<UnifiedDiagnosticsState> {
     );
   }
 
-  TracerouteCheckResult _evaluateTraceroute(TracerouteResult traceroute) {
+  TracerouteCheckUIModel _evaluateTraceroute(TracerouteResult traceroute) {
     final hopInfos = traceroute.hops
-        .map((h) => TracerouteHopInfo(
+        .map((h) => TracerouteHopUIModel(
               hopNumber: h.hopNumber,
               host: h.host,
               hostAddress: h.hostAddress,
@@ -1461,7 +1462,7 @@ class UnifiedDiagnosticsNotifier extends Notifier<UnifiedDiagnosticsState> {
       descriptionKey = 'diagnostics_traceroute_ok_desc';
     }
 
-    return TracerouteCheckResult(
+    return TracerouteCheckUIModel(
       hops: hopInfos,
       targetHost: traceroute.host,
       severity: severity,
@@ -1470,9 +1471,9 @@ class UnifiedDiagnosticsNotifier extends Notifier<UnifiedDiagnosticsState> {
     );
   }
 
-  DiagnosticStepResult _errorResult(DiagnosticStep step, Object error) {
+  DiagnosticStepUIModel _errorResult(DiagnosticStep step, Object error) {
     logger.e('[Diagnostics] Step $step failed: $error');
-    return DiagnosticStepResult(
+    return DiagnosticStepUIModel(
       step: step,
       severity: DiagnosticSeverity.error,
       titleKey: 'diagnostics_step_error',

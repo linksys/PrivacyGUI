@@ -22,9 +22,9 @@ void main() {
     });
   });
 
-  group('Recommendation', () {
+  group('RecommendationUIModel', () {
     test('creates with required fields', () {
-      final rec = Recommendation(
+      final rec = RecommendationUIModel(
         id: 'test_rec',
         titleKey: 'title',
         descriptionKey: 'desc',
@@ -38,7 +38,7 @@ void main() {
     });
 
     test('creates with all fields', () {
-      final rec = Recommendation(
+      final rec = RecommendationUIModel(
         id: 'test_rec',
         titleKey: 'title',
         descriptionKey: 'desc',
@@ -51,17 +51,17 @@ void main() {
     });
 
     test('equality works', () {
-      final rec1 = Recommendation(
+      final rec1 = RecommendationUIModel(
         id: 'test',
         titleKey: 'title',
         descriptionKey: 'desc',
       );
-      final rec2 = Recommendation(
+      final rec2 = RecommendationUIModel(
         id: 'test',
         titleKey: 'title',
         descriptionKey: 'desc',
       );
-      final rec3 = Recommendation(
+      final rec3 = RecommendationUIModel(
         id: 'other',
         titleKey: 'title',
         descriptionKey: 'desc',

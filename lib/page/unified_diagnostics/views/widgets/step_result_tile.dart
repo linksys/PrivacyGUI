@@ -5,7 +5,7 @@ import '../../models/diagnostic_result.dart';
 import '../../models/diagnostic_state.dart';
 
 class StepResultTile extends StatelessWidget {
-  final DiagnosticStepResult result;
+  final DiagnosticStepUIModel result;
   final bool initiallyExpanded;
 
   const StepResultTile({
@@ -36,7 +36,8 @@ class StepResultTile extends StatelessWidget {
         initiallyExpanded: initiallyExpanded,
         headerTitle: _getStepTitle(result.step),
         content: Padding(
-          padding: const EdgeInsets.only(left: AppSpacing.md, bottom: AppSpacing.sm),
+          padding:
+              const EdgeInsets.only(left: AppSpacing.md, bottom: AppSpacing.sm),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -53,7 +54,8 @@ class StepResultTile extends StatelessWidget {
               AppGap.sm(),
               if (details.isNotEmpty)
                 ...details.map((detail) => Padding(
-                      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+                      padding:
+                          const EdgeInsets.symmetric(vertical: AppSpacing.xs),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -103,28 +105,25 @@ class StepResultTile extends StatelessWidget {
     };
   }
 
-  List<_ResultDetail> _getResultDetails(DiagnosticStepResult result) {
+  List<_ResultDetail> _getResultDetails(DiagnosticStepUIModel result) {
     return switch (result) {
-      WanStatusCheckResult r => [
+      WanStatusCheckUIModel r => [
           _ResultDetail('Status', r.status),
           _ResultDetail(
               'IP Address', r.ipAddress.isNotEmpty ? r.ipAddress : 'None'),
           _ResultDetail('Type', r.addressingType),
         ],
-      PingCheckResult r => [
+      PingCheckUIModel r => [
           _ResultDetail('Host', r.host),
           _ResultDetail(
               'Latency', r.allFailed ? 'Failed' : '${r.avgResponseTime} ms'),
           _ResultDetail('Success Rate', '${r.successCount}/${r.totalCount}'),
         ],
-      WifiSignalCheckResult r => [
+      WifiSignalCheckUIModel r => [
           _ResultDetail('Band', r.band),
           _ResultDetail('Channel', '${r.channel}'),
-          _ResultDetail(
-              'Signal',
-              r.connectedDevices == 0
-                  ? 'No clients'
-                  : '${r.rssi} dBm (avg)'),
+          _ResultDetail('Signal',
+              r.connectedDevices == 0 ? 'No clients' : '${r.rssi} dBm (avg)'),
           if (r.connectedDevices > 0)
             _ResultDetail('Wireless Clients', '${r.connectedDevices}'),
           for (final radio in r.radios.where((rd) => rd.hasClients))
@@ -133,10 +132,10 @@ class StepResultTile extends StatelessWidget {
                   ? '${radio.band} Ch${radio.channel}'
                   : 'Unresolved',
               '${radio.averageRssi} dBm avg / min ${radio.minRssi} '
-                  '(${radio.clientCount} clients)',
+              '(${radio.clientCount} clients)',
             ),
         ],
-      DhcpPoolCheckResult r => [
+      DhcpPoolCheckUIModel r => [
           if (!r.dhcpEnabled)
             _ResultDetail('Status', 'DHCP disabled')
           else if (r.capacityUnknown)
@@ -148,13 +147,13 @@ class StepResultTile extends StatelessWidget {
                 'Used', '${r.usedLeases} (${(r.usageRatio * 100).toInt()}%)'),
           ],
         ],
-      ConnectedDevicesCheckResult r => [
+      ConnectedDevicesCheckUIModel r => [
           _ResultDetail('Total Devices', '${r.totalDevices}'),
           _ResultDetail('Active', '${r.activeDevices}'),
           if (r.highBandwidthDevices.isNotEmpty)
             _ResultDetail('High Bandwidth', r.highBandwidthDevices.join(', ')),
         ],
-      DeviceIssuesCheckResult r => [
+      DeviceIssuesCheckUIModel r => [
           _ResultDetail('Total Devices', '${r.totalDevices}'),
           _ResultDetail('With Issues', '${r.devicesWithIssues}'),
           if (r.weakSignalDevices.isNotEmpty)
@@ -164,14 +163,14 @@ class StepResultTile extends StatelessWidget {
             _ResultDetail(
                 'Low Data Rate', r.lowDataRateDevices.take(3).join(', ')),
         ],
-      WifiCoverageCheckResult r => [
+      WifiCoverageCheckUIModel r => [
           _ResultDetail('Wireless Devices', '${r.totalWirelessDevices}'),
           _ResultDetail('Avg Signal', '${r.averageSignalStrength} dBm'),
           _ResultDetail('Weak Signal Devices', '${r.weakSignalDevices.length}'),
           if (r.weakSignalDevices.isNotEmpty)
             _ResultDetail('Affected', r.weakSignalDevices.take(3).join(', ')),
         ],
-      DnsLookupCheckResult r => [
+      DnsLookupCheckUIModel r => [
           _ResultDetail('Host', r.hostName),
           _ResultDetail(
             'Resolved',
@@ -187,7 +186,7 @@ class StepResultTile extends StatelessWidget {
               r.configuredDnsServers.take(3).join(', '),
             ),
         ],
-      IntermittentCheckResult r => [
+      IntermittentCheckUIModel r => [
           _ResultDetail('Uptime', r.uptimeFormatted),
           _ResultDetail(
               'Ping Success', '${(r.pingSuccessRate * 100).toInt()}%'),
@@ -195,7 +194,7 @@ class StepResultTile extends StatelessWidget {
           _ResultDetail('Jitter', '${r.jitterMs} ms'),
           if (r.recentReboot) _ResultDetail('Note', 'Recent reboot detected'),
         ],
-      TracerouteCheckResult r => [
+      TracerouteCheckUIModel r => [
           _ResultDetail('Target', r.targetHost),
           _ResultDetail('Hops', '${r.hops.length}'),
           if (r.slowHops.isNotEmpty)
@@ -231,4 +230,3 @@ class _ResultDetail {
   final String value;
   const _ResultDetail(this.label, this.value);
 }
-

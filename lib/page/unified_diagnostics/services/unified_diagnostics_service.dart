@@ -43,10 +43,10 @@ class UnifiedDiagnosticsService {
   // ─── WAN Status ──────────────────────────────────────────
 
   /// Check WAN interface status using codegen WanStatus.
-  Future<WanStatusInfo> checkWanStatus() async {
+  Future<WanStatusUIModel> checkWanStatus() async {
     logger.d('[Diagnostics] Checking WAN status');
     final wan = await WanStatus.fetch(_usp);
-    return WanStatusInfo(
+    return WanStatusUIModel(
       status: wan.status,
       ipAddress: wan.ipAddress,
       subnetMask: wan.subnetMask,
@@ -186,11 +186,11 @@ class UnifiedDiagnosticsService {
   // ─── WiFi & Devices ──────────────────────────────────────
 
   /// Fetch WiFi radio status (channels, signal info).
-  Future<List<WiFiRadioInfo>> checkWifiRadios() async {
+  Future<List<WiFiRadioUIModel>> checkWifiRadios() async {
     logger.d('[Diagnostics] Checking WiFi radios');
     final radios = await WiFiRadios.fetch(_usp);
     return radios.items
-        .map((r) => WiFiRadioInfo(
+        .map((r) => WiFiRadioUIModel(
               instancePath: r.instancePath,
               band: r.operatingFrequencyBand,
               channel: r.channel,
@@ -203,7 +203,7 @@ class UnifiedDiagnosticsService {
   }
 
   /// Fetch connected devices for bandwidth analysis.
-  Future<ConnectedDevicesInfo> checkConnectedDevices() async {
+  Future<ConnectedDevicesUIModel> checkConnectedDevices() async {
     logger.d('[Diagnostics] Checking connected devices');
     final devices = await ConnectedDevices.fetch(_usp);
 
@@ -217,7 +217,7 @@ class UnifiedDiagnosticsService {
         .map((d) => d.hostName.isNotEmpty ? d.hostName : d.macAddress)
         .toList();
 
-    return ConnectedDevicesInfo(
+    return ConnectedDevicesUIModel(
       totalDevices: devices.items.length,
       activeDevices: activeDevices.length,
       highBandwidthDevices: highBandwidth,
@@ -227,13 +227,13 @@ class UnifiedDiagnosticsService {
   // ─── Device Scores ────────────────────────────────────────
 
   /// Get device scores for all connected devices.
-  Future<List<DeviceScore>> getDeviceScores() async {
+  Future<List<DeviceScoreUIModel>> getDeviceScores() async {
     logger.d('[Diagnostics] Getting device scores');
     final devices = await ConnectedDevices.fetch(_usp);
 
     return devices.items
         .where((d) => d.isActive)
-        .map((d) => DeviceScore(
+        .map((d) => DeviceScoreUIModel(
               macAddress: d.macAddress,
               name: d.hostName.isNotEmpty
                   ? d.hostName
@@ -248,7 +248,7 @@ class UnifiedDiagnosticsService {
   }
 
   /// Get device score for a specific device by MAC address.
-  Future<DeviceScore?> getDeviceScore(String macAddress) async {
+  Future<DeviceScoreUIModel?> getDeviceScore(String macAddress) async {
     final scores = await getDeviceScores();
     return scores.where((s) => s.macAddress == macAddress).firstOrNull;
   }
@@ -259,7 +259,7 @@ class UnifiedDiagnosticsService {
   ///
   /// Capacity = MaxAddress - MinAddress + 1.
   /// Used = number of active DHCP leases in `Device.DHCPv4.Server.Pool.1.Client.*`.
-  Future<DhcpPoolUsageInfo> checkDhcpPool() async {
+  Future<DhcpPoolUsageUIModel> checkDhcpPool() async {
     logger.d('[Diagnostics] Checking DHCP pool usage');
     final lan = await LanNetworkInfo.fetch(_usp);
     final clients = await DhcpClients.fetch(_usp);
@@ -267,7 +267,7 @@ class UnifiedDiagnosticsService {
     final capacity = _ipRangeSize(lan.minAddress, lan.maxAddress);
     final activeLeases = clients.items.where((c) => c.active).length;
 
-    return DhcpPoolUsageInfo(
+    return DhcpPoolUsageUIModel(
       enabled: lan.dhcpEnabled,
       minAddress: lan.minAddress,
       maxAddress: lan.maxAddress,
@@ -301,7 +301,7 @@ class UnifiedDiagnosticsService {
   // ─── WiFi Coverage ───────────────────────────────────────
 
   /// Analyze WiFi coverage based on device signal strengths.
-  Future<WifiCoverageInfo> analyzeWifiCoverage() async {
+  Future<WifiCoverageUIModel> analyzeWifiCoverage() async {
     logger.d('[Diagnostics] Analyzing WiFi coverage');
     final devices = await ConnectedDevices.fetch(_usp);
     final radios = await WiFiRadios.fetch(_usp);
@@ -312,7 +312,7 @@ class UnifiedDiagnosticsService {
 
     final weakSignalDevices = wirelessDevices
         .where((d) => d.signalStrength! < -70)
-        .map((d) => DeviceSignalInfo(
+        .map((d) => DeviceSignalUIModel(
               name: d.hostName.isNotEmpty ? d.hostName : d.macAddress,
               macAddress: d.macAddress,
               rssiDbm: d.signalStrength!,
@@ -326,12 +326,12 @@ class UnifiedDiagnosticsService {
             wirelessDevices.length
         : 0;
 
-    return WifiCoverageInfo(
+    return WifiCoverageUIModel(
       totalWirelessDevices: wirelessDevices.length,
       weakSignalDevices: weakSignalDevices,
       averageSignalStrength: avgSignal,
       radios: radios.items
-          .map((r) => WiFiRadioInfo(
+          .map((r) => WiFiRadioUIModel(
                 instancePath: r.instancePath,
                 band: r.operatingFrequencyBand,
                 channel: r.channel,
@@ -352,7 +352,7 @@ class UnifiedDiagnosticsService {
   ///
   /// Falls back gracefully when the join cannot be resolved for a given AP —
   /// affected clients are reported under the `unknown` radio bucket.
-  Future<WifiSignalPerRadioInfo> analyzeWifiSignalPerRadio() async {
+  Future<WifiSignalPerRadioUIModel> analyzeWifiSignalPerRadio() async {
     logger.d('[Diagnostics] Analyzing WiFi signal per radio');
     final radios = await WiFiRadios.fetch(_usp);
     final accessPoints = await WiFiAccessPoints.fetch(_usp);
@@ -397,7 +397,7 @@ class UnifiedDiagnosticsService {
     }
 
     final radioStats = perRadio.values
-        .map((b) => RadioSignalStats(
+        .map((b) => RadioSignalStatsUIModel(
               instancePath: b.instancePath,
               band: b.band,
               channel: b.channel,
@@ -410,7 +410,7 @@ class UnifiedDiagnosticsService {
       ..sort((a, b) => a.instancePath.compareTo(b.instancePath));
 
     if (unknownBucket.clientCount > 0) {
-      radioStats.add(RadioSignalStats(
+      radioStats.add(RadioSignalStatsUIModel(
         instancePath: '',
         band: 'Unknown',
         channel: 0,
@@ -421,7 +421,7 @@ class UnifiedDiagnosticsService {
       ));
     }
 
-    return WifiSignalPerRadioInfo(radios: radioStats);
+    return WifiSignalPerRadioUIModel(radios: radioStats);
   }
 
   /// Normalize a TR-181 reference path so it always ends with `.`.
@@ -442,7 +442,7 @@ class UnifiedDiagnosticsService {
   // ─── Intermittent Check ──────────────────────────────────
 
   /// Check for intermittent connection issues.
-  Future<IntermittentCheckInfo> checkIntermittent() async {
+  Future<IntermittentUIModel> checkIntermittent() async {
     logger.d('[Diagnostics] Checking intermittent issues');
     final systemInfo = await SystemInfo.fetch(_usp);
 
@@ -469,7 +469,7 @@ class UnifiedDiagnosticsService {
     final jitter =
         successfulPings.length >= 2 ? _calculateJitter(successfulPings) : 0;
 
-    return IntermittentCheckInfo(
+    return IntermittentUIModel(
       uptimeSeconds: systemInfo.uptime,
       pingSuccessRate: (pingResults.length - failedPings) / pingResults.length,
       averageLatencyMs: avgLatency,
@@ -513,13 +513,13 @@ class UnifiedDiagnosticsService {
 }
 
 /// WAN status information.
-class WanStatusInfo {
+class WanStatusUIModel {
   final String status;
   final String ipAddress;
   final String subnetMask;
   final String addressingType;
 
-  const WanStatusInfo({
+  const WanStatusUIModel({
     required this.status,
     required this.ipAddress,
     required this.subnetMask,
@@ -531,7 +531,7 @@ class WanStatusInfo {
 }
 
 /// DHCP pool usage information.
-class DhcpPoolUsageInfo {
+class DhcpPoolUsageUIModel {
   final bool enabled;
   final String minAddress;
   final String maxAddress;
@@ -539,7 +539,7 @@ class DhcpPoolUsageInfo {
   final int usedLeases;
   final int totalLeases;
 
-  const DhcpPoolUsageInfo({
+  const DhcpPoolUsageUIModel({
     required this.enabled,
     required this.minAddress,
     required this.maxAddress,
@@ -562,7 +562,7 @@ class DhcpPoolUsageInfo {
 }
 
 /// WiFi radio information.
-class WiFiRadioInfo {
+class WiFiRadioUIModel {
   final String instancePath;
   final String band;
   final int channel;
@@ -571,7 +571,7 @@ class WiFiRadioInfo {
   final String status;
   final bool autoChannel;
 
-  const WiFiRadioInfo({
+  const WiFiRadioUIModel({
     required this.instancePath,
     required this.band,
     required this.channel,
@@ -587,12 +587,12 @@ class WiFiRadioInfo {
 }
 
 /// Connected devices summary.
-class ConnectedDevicesInfo {
+class ConnectedDevicesUIModel {
   final int totalDevices;
   final int activeDevices;
   final List<String> highBandwidthDevices;
 
-  const ConnectedDevicesInfo({
+  const ConnectedDevicesUIModel({
     required this.totalDevices,
     required this.activeDevices,
     required this.highBandwidthDevices,
@@ -603,12 +603,12 @@ class ConnectedDevicesInfo {
 }
 
 /// Device signal information for WiFi coverage analysis.
-class DeviceSignalInfo {
+class DeviceSignalUIModel {
   final String name;
   final String macAddress;
   final int rssiDbm;
 
-  const DeviceSignalInfo({
+  const DeviceSignalUIModel({
     required this.name,
     required this.macAddress,
     required this.rssiDbm,
@@ -624,13 +624,13 @@ class DeviceSignalInfo {
 }
 
 /// WiFi coverage analysis result.
-class WifiCoverageInfo {
+class WifiCoverageUIModel {
   final int totalWirelessDevices;
-  final List<DeviceSignalInfo> weakSignalDevices;
+  final List<DeviceSignalUIModel> weakSignalDevices;
   final int averageSignalStrength;
-  final List<WiFiRadioInfo> radios;
+  final List<WiFiRadioUIModel> radios;
 
-  const WifiCoverageInfo({
+  const WifiCoverageUIModel({
     required this.totalWirelessDevices,
     required this.weakSignalDevices,
     required this.averageSignalStrength,
@@ -643,7 +643,7 @@ class WifiCoverageInfo {
 }
 
 /// Aggregated RSSI / client count for a single WiFi radio.
-class RadioSignalStats {
+class RadioSignalStatsUIModel {
   /// Empty when this bucket holds clients whose radio could not be resolved.
   final String instancePath;
   final String band;
@@ -657,7 +657,7 @@ class RadioSignalStats {
   /// Worst RSSI seen on this radio. 0 when no clients.
   final int minRssi;
 
-  const RadioSignalStats({
+  const RadioSignalStatsUIModel({
     required this.instancePath,
     required this.band,
     required this.channel,
@@ -673,13 +673,13 @@ class RadioSignalStats {
 }
 
 /// Per-radio WiFi signal analysis result.
-class WifiSignalPerRadioInfo {
-  final List<RadioSignalStats> radios;
+class WifiSignalPerRadioUIModel {
+  final List<RadioSignalStatsUIModel> radios;
 
-  const WifiSignalPerRadioInfo({required this.radios});
+  const WifiSignalPerRadioUIModel({required this.radios});
 
   /// Radios with at least one active client.
-  List<RadioSignalStats> get activeRadios =>
+  List<RadioSignalStatsUIModel> get activeRadios =>
       radios.where((r) => r.hasClients).toList();
 
   /// Total active wireless clients across all radios.
@@ -730,7 +730,7 @@ class _RadioBucket {
 }
 
 /// Intermittent connection check result.
-class IntermittentCheckInfo {
+class IntermittentUIModel {
   final int uptimeSeconds;
   final double pingSuccessRate;
   final int averageLatencyMs;
@@ -739,7 +739,7 @@ class IntermittentCheckInfo {
   final bool hasPacketLoss;
   final bool recentReboot;
 
-  const IntermittentCheckInfo({
+  const IntermittentUIModel({
     required this.uptimeSeconds,
     required this.pingSuccessRate,
     required this.averageLatencyMs,

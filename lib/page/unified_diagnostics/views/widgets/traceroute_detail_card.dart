@@ -4,7 +4,7 @@ import 'package:ui_kit_library/ui_kit.dart';
 import '../../models/diagnostic_result.dart';
 
 class TracerouteDetailCard extends StatelessWidget {
-  final TracerouteCheckResult result;
+  final TracerouteCheckUIModel result;
 
   const TracerouteDetailCard({super.key, required this.result});
 
@@ -62,7 +62,7 @@ class TracerouteDetailCard extends StatelessWidget {
     );
   }
 
-  Widget _buildHopRow(BuildContext context, TracerouteHopInfo hop) {
+  Widget _buildHopRow(BuildContext context, TracerouteHopUIModel hop) {
     final colorScheme = Theme.of(context).colorScheme;
     final isSlow = hop.isSlow;
     final isUnreachable = hop.isUnreachable;

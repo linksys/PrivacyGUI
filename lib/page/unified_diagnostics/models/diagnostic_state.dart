@@ -112,7 +112,7 @@ enum DiagnosticStep {
 }
 
 /// Recommendation action the user can take.
-class Recommendation extends Equatable {
+class RecommendationUIModel extends Equatable {
   /// Unique identifier for this recommendation.
   final String id;
 
@@ -128,7 +128,7 @@ class Recommendation extends Equatable {
   /// Optional action callback identifier (e.g., 'renewDhcp', 'restartModem').
   final String? actionId;
 
-  const Recommendation({
+  const RecommendationUIModel({
     required this.id,
     required this.titleKey,
     required this.descriptionKey,
@@ -156,13 +156,13 @@ class UnifiedDiagnosticsState extends Equatable {
   final PreQualifierResult? preQualifierResult;
 
   /// Results collected from each diagnostic step.
-  final List<DiagnosticStepResult> results;
+  final List<DiagnosticStepUIModel> results;
 
   /// Speed test results (for slowNetwork scenario).
   final SpeedTestResult? speedTest;
 
   /// Recommendations based on diagnostic results.
-  final List<Recommendation> recommendations;
+  final List<RecommendationUIModel> recommendations;
 
   /// Error message if a step failed.
   final String? errorMessage;
@@ -211,9 +211,9 @@ class UnifiedDiagnosticsState extends Equatable {
     ProblemType? problemType,
     DiagnosticFlow? flow,
     PreQualifierResult? preQualifierResult,
-    List<DiagnosticStepResult>? results,
+    List<DiagnosticStepUIModel>? results,
     SpeedTestResult? speedTest,
-    List<Recommendation>? recommendations,
+    List<RecommendationUIModel>? recommendations,
     String? errorMessage,
     double? progress,
     bool clearError = false,
