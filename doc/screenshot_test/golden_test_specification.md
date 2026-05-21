@@ -706,9 +706,18 @@ ci/
 
 ### Guiding Principle
 
-> **If the user sees something different, it needs a golden screenshot.**
+> **If the user sees something different, it needs a golden screenshot. NO EXCEPTIONS.**
 
-This applies to ANY visual difference — even the same component rendered at a different Y position on screen counts as a distinct visual state. The goal is exhaustive visual documentation: every state a user could encounter must have a corresponding screenshot.
+This is the **non-negotiable, absolute rule** of this framework. It applies to ANY visual difference:
+
+- Same component at a different Y position = different screenshot
+- Same dialog with different field values = different screenshot
+- Same page with a different tab selected = different screenshot
+- Same list with data vs empty = different screenshot per tab
+- A dialog open vs closed = different screenshot
+- Validation errors visible vs not = different screenshot
+
+Do NOT consolidate "similar" states. Do NOT skip a state because "it looks almost the same." If a human user would see a different screen, capture it. Every tab, every dialog, every error state, every empty state — individually.
 
 Any FeatureState value that causes the view to render differently — whether through conditional branches, visibility toggles, data variations, or positional changes — must be represented as a separate entry in the `states` map.
 

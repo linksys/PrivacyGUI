@@ -195,7 +195,7 @@ class UspStaticRoutingView extends ConsumerWidget {
   // ---------------------------------------------------------------------------
 
   Future<void> _showAddDialog(BuildContext context, WidgetRef ref) async {
-    final result = await showDialog<StaticRouteDialogResult>(
+    final result = await showAppDialog<StaticRouteDialogResult>(
       context: context,
       builder: (_) => const StaticRouteDialog(),
     );
@@ -215,7 +215,7 @@ class UspStaticRoutingView extends ConsumerWidget {
 
   Future<void> _showEditDialog(BuildContext context, WidgetRef ref, int index,
       StaticRouteUIModel route) async {
-    final result = await showDialog<StaticRouteDialogResult>(
+    final result = await showAppDialog<StaticRouteDialogResult>(
       context: context,
       builder: (_) => StaticRouteDialog(route: route),
     );
