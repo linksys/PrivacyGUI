@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import 'package:privacy_gui/page/speed_test/models/speed_test_state.dart';
+import 'package:privacy_gui/page/unified_diagnostics/models/speed_test_state.dart';
 
 import 'diagnostic_result.dart';
 
@@ -19,11 +19,14 @@ enum DiagnosticFlow {
   /// Combines the old noInternet and slowNetwork flows.
   internet,
 
-  /// Specific device has connection or performance issues.
-  deviceIssues,
-
   /// WiFi coverage problems — weak signal in certain areas.
   wifiCoverage,
+
+  /// Mesh backhaul health — node-to-node link quality.
+  meshBackhaul,
+
+  /// Specific device has connection or performance issues.
+  deviceIssues,
 
   /// Intermittent connection — on-and-off connectivity.
   intermittent,
@@ -95,6 +98,16 @@ enum DiagnosticStep {
 
   /// Running traceroute to identify bottleneck.
   runningTraceroute,
+
+  // ─── Scenario C: Mesh / Backhaul ───────────────────────────
+
+  /// Inspecting mesh node backhaul health (PHY rate, signal, media type).
+  checkingMeshBackhaul,
+
+  // ─── Manual Tools ──────────────────────────────────────────
+
+  /// User is using manual ping/traceroute tools.
+  manualTools,
 
   // ─── Shared ────────────────────────────────────────────────
 
@@ -187,6 +200,7 @@ class UnifiedDiagnosticsState extends Equatable {
       step != DiagnosticStep.idle &&
       step != DiagnosticStep.selectProblem &&
       step != DiagnosticStep.selectFlow &&
+      step != DiagnosticStep.manualTools &&
       step != DiagnosticStep.showingResults &&
       step != DiagnosticStep.completed;
 

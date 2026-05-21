@@ -2,26 +2,42 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/usp/models/operate_result.dart';
+import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
+import 'package:privacy_gui/core/usp/services/network_diagnostics_executor.dart';
 import 'package:privacy_gui/generated/dns_client.g.dart';
-import 'package:privacy_gui/page/speed_test/models/speed_test_state.dart';
-import 'package:privacy_gui/page/speed_test/providers/speed_test_notifier.dart';
+import 'package:privacy_gui/page/unified_diagnostics/models/speed_test_state.dart';
+import 'package:privacy_gui/page/unified_diagnostics/providers/speed_test_notifier.dart';
 import 'package:privacy_gui/page/unified_diagnostics/models/diagnostic_result.dart';
 import 'package:privacy_gui/page/unified_diagnostics/models/diagnostic_state.dart';
 import 'package:privacy_gui/page/unified_diagnostics/providers/unified_diagnostics_notifier.dart';
 import 'package:privacy_gui/page/unified_diagnostics/services/unified_diagnostics_service.dart';
 
-class MockUnifiedDiagnosticsService extends Mock
+class _MockUnifiedDiagnosticsService extends Mock
     implements UnifiedDiagnosticsService {}
 
+class _MockExecutor extends Mock implements NetworkDiagnosticsExecutor {}
+
+class _MockScope extends Mock implements DiagnosticScope {}
+
 void main() {
-  late MockUnifiedDiagnosticsService mockService;
+  late _MockUnifiedDiagnosticsService mockService;
+  late _MockExecutor mockExecutor;
+  late _MockScope mockScope;
 
   setUp(() {
-    mockService = MockUnifiedDiagnosticsService();
+    mockService = _MockUnifiedDiagnosticsService();
+    mockExecutor = _MockExecutor();
+    mockScope = _MockScope();
 
-    // Default session stubs
-    when(() => mockService.startSession()).thenAnswer((_) async {});
-    when(() => mockService.endSession()).thenAnswer((_) async {});
+    // Default scope lifecycle stubs
+    when(() => mockExecutor.acquireScope(
+          referencePaths: any(named: 'referencePaths'),
+        )).thenAnswer((_) async => mockScope);
+    when(() => mockScope.isReleased).thenReturn(false);
+    when(() => mockScope.release()).thenAnswer((_) async {});
+
+    // attachScope is invoked by the notifier whenever a scope is acquired
+    when(() => mockService.attachScope(any())).thenReturn(null);
 
     // Default DNS stubs for flows that include DNS lookup
     when(() => mockService.nsLookup(any())).thenAnswer(
@@ -62,10 +78,15 @@ void main() {
     );
   });
 
+  setUpAll(() {
+    registerFallbackValue(_FakeScope());
+  });
+
   ProviderContainer createContainer() {
     final container = ProviderContainer(
       overrides: [
         unifiedDiagnosticsServiceProvider.overrideWithValue(mockService),
+        networkDiagnosticsExecutorProvider.overrideWithValue(mockExecutor),
         // Override speed test provider to avoid real network calls
         speedTestProvider.overrideWith(() => _MockSpeedTestNotifier()),
       ],
@@ -97,7 +118,7 @@ void main() {
       container.dispose();
     });
 
-    test('cancel() resets state and cleans up session', () async {
+    test('cancel() resets state and releases scope if acquired', () async {
       final container = createContainer();
       final notifier = container.read(unifiedDiagnosticsProvider.notifier);
 
@@ -106,7 +127,8 @@ void main() {
 
       final state = container.read(unifiedDiagnosticsProvider);
       expect(state.step, DiagnosticStep.idle);
-      verify(() => mockService.endSession()).called(1);
+      // No scope was acquired in this flow, so release() must NOT be called.
+      verifyNever(() => mockScope.release());
       container.dispose();
     });
 
@@ -343,8 +365,9 @@ void main() {
       });
     });
 
-    group('Session Management', () {
-      test('starts session before ping operations', () async {
+    group('Scope Lifecycle', () {
+      test('acquires scope and attaches to service before ping operations',
+          () async {
         final container = createContainer();
         final notifier = container.read(unifiedDiagnosticsProvider.notifier);
 
@@ -371,12 +394,87 @@ void main() {
         await notifier.selectProblem(ProblemType.noInternet);
         await Future.delayed(Duration.zero);
 
-        verify(() => mockService.startSession()).called(1);
-        verify(() => mockService.endSession()).called(1);
+        // Scope acquired exactly once (lazy-cached) and attached to service.
+        verify(() => mockExecutor.acquireScope(
+              referencePaths: any(named: 'referencePaths'),
+            )).called(1);
+        verify(() => mockService.attachScope(mockScope)).called(1);
         container.dispose();
       });
 
-      test('ends session even on error', () async {
+      test('reuses scope across multiple flow runs (restart)', () async {
+        final container = createContainer();
+        final notifier = container.read(unifiedDiagnosticsProvider.notifier);
+
+        when(() => mockService.checkWanStatus()).thenAnswer(
+          (_) async => const WanStatusUIModel(
+            status: 'Up',
+            ipAddress: '192.168.1.100',
+            subnetMask: '255.255.255.0',
+            addressingType: 'DHCP',
+          ),
+        );
+        when(() =>
+                mockService.pingGateway(repeatCount: any(named: 'repeatCount')))
+            .thenAnswer((_) async => _createPingResult('192.168.1.1'));
+        when(() => mockService.pingDns(
+              host: any(named: 'host'),
+              repeatCount: any(named: 'repeatCount'),
+            )).thenAnswer((_) async => _createPingResult('8.8.8.8'));
+        when(() => mockService.pingInternet(
+              host: any(named: 'host'),
+              repeatCount: any(named: 'repeatCount'),
+            )).thenAnswer((_) async => _createPingResult('1.1.1.1'));
+
+        await notifier.selectProblem(ProblemType.noInternet);
+        await Future.delayed(Duration.zero);
+
+        await notifier.restart();
+        await Future.delayed(Duration.zero);
+
+        // Scope cached after first ensure — never re-acquired.
+        verify(() => mockExecutor.acquireScope(
+              referencePaths: any(named: 'referencePaths'),
+            )).called(1);
+        verify(() => mockService.checkWanStatus()).called(2);
+        container.dispose();
+      });
+
+      test('disposing container releases scope', () async {
+        final container = createContainer();
+        final notifier = container.read(unifiedDiagnosticsProvider.notifier);
+
+        when(() => mockService.checkWanStatus()).thenAnswer(
+          (_) async => const WanStatusUIModel(
+            status: 'Up',
+            ipAddress: '192.168.1.100',
+            subnetMask: '255.255.255.0',
+            addressingType: 'DHCP',
+          ),
+        );
+        when(() =>
+                mockService.pingGateway(repeatCount: any(named: 'repeatCount')))
+            .thenAnswer((_) async => _createPingResult('192.168.1.1'));
+        when(() => mockService.pingDns(
+              host: any(named: 'host'),
+              repeatCount: any(named: 'repeatCount'),
+            )).thenAnswer((_) async => _createPingResult('8.8.8.8'));
+        when(() => mockService.pingInternet(
+              host: any(named: 'host'),
+              repeatCount: any(named: 'repeatCount'),
+            )).thenAnswer((_) async => _createPingResult('1.1.1.1'));
+
+        await notifier.selectProblem(ProblemType.noInternet);
+        await Future.delayed(Duration.zero);
+
+        container.dispose();
+        // Drain microtasks so async ref.onDispose callback fires.
+        await Future<void>.delayed(Duration.zero);
+
+        verify(() => mockScope.release()).called(1);
+      });
+
+      test('release scope even when ping throws mid-flow', () async {
         final container = createContainer();
         final notifier = container.read(unifiedDiagnosticsProvider.notifier);
 
@@ -403,8 +501,156 @@ void main() {
         await notifier.selectProblem(ProblemType.noInternet);
         await Future.delayed(Duration.zero);
 
-        // Session should be cleaned up even though gateway ping threw
-        verify(() => mockService.endSession()).called(1);
+        container.dispose();
+        await Future<void>.delayed(Duration.zero);
+
+        // Even though gateway ping threw, the scope must still be released
+        // exactly once on dispose.
+        verify(() => mockScope.release()).called(1);
+      });
+    });
+
+    group('Mesh / Backhaul Flow', () {
+      test('marks step as skipped when no mesh nodes exist', () async {
+        final container = createContainer();
+        final notifier = container.read(unifiedDiagnosticsProvider.notifier);
+
+        when(() => mockService.checkMeshBackhaul())
+            .thenAnswer((_) async => const []);
+
+        await notifier.selectFlow(DiagnosticFlow.meshBackhaul);
+        await Future.delayed(Duration.zero);
+
+        final state = container.read(unifiedDiagnosticsProvider);
+        expect(state.step, DiagnosticStep.showingResults);
+        expect(state.results.length, 1);
+        expect(state.results.first, isA<MeshBackhaulCheckUIModel>());
+        expect(state.results.first.isSkipped, isTrue);
+        container.dispose();
+      });
+
+      test('reports ok severity when all nodes are healthy', () async {
+        final container = createContainer();
+        final notifier = container.read(unifiedDiagnosticsProvider.notifier);
+
+        when(() => mockService.checkMeshBackhaul()).thenAnswer((_) async => [
+              const MeshBackhaulNodeRecord(
+                nodeId: 'agent-A',
+                label: 'Linksys M60TB',
+                mediaType: 'IEEE_802_3ab_Ethernet',
+                phyRateMbps: 1000,
+                lastUplinkRateMbps: 1000,
+                signalStrengthDbm: 0,
+                isController: false,
+                severity: MeshBackhaulSeverityBucket.healthy,
+              ),
+            ]);
+
+        await notifier.selectFlow(DiagnosticFlow.meshBackhaul);
+        await Future.delayed(Duration.zero);
+
+        final state = container.read(unifiedDiagnosticsProvider);
+        expect(state.step, DiagnosticStep.showingResults);
+        final result = state.results.single as MeshBackhaulCheckUIModel;
+        expect(result.severity, DiagnosticSeverity.ok);
+        expect(result.nodes.single.severity, MeshBackhaulSeverity.healthy);
+        // Healthy backhaul → no recommendations.
+        expect(state.recommendations, isEmpty);
+        container.dispose();
+      });
+
+      test('emits warning + reposition recommendation when any node is weak',
+          () async {
+        final container = createContainer();
+        final notifier = container.read(unifiedDiagnosticsProvider.notifier);
+
+        when(() => mockService.checkMeshBackhaul()).thenAnswer((_) async => [
+              const MeshBackhaulNodeRecord(
+                nodeId: 'agent-A',
+                label: 'Linksys M60TB',
+                mediaType: 'IEEE_802_11ax',
+                phyRateMbps: 200,
+                lastUplinkRateMbps: 200,
+                signalStrengthDbm: -70,
+                isController: false,
+                severity: MeshBackhaulSeverityBucket.weak,
+              ),
+            ]);
+
+        await notifier.selectFlow(DiagnosticFlow.meshBackhaul);
+        await Future.delayed(Duration.zero);
+
+        final state = container.read(unifiedDiagnosticsProvider);
+        final result = state.results.single as MeshBackhaulCheckUIModel;
+        expect(result.severity, DiagnosticSeverity.warning);
+        expect(result.weakCount, 1);
+        expect(result.poorCount, 0);
+        expect(state.recommendations.any((r) => r.id == 'mesh_backhaul_weak'),
+            isTrue);
+        container.dispose();
+      });
+
+      test(
+          'emits error + ethernet-backhaul recommendation when any node is poor',
+          () async {
+        final container = createContainer();
+        final notifier = container.read(unifiedDiagnosticsProvider.notifier);
+
+        when(() => mockService.checkMeshBackhaul()).thenAnswer((_) async => [
+              const MeshBackhaulNodeRecord(
+                nodeId: 'agent-A',
+                label: 'Linksys M60TB',
+                mediaType: 'IEEE_802_11ax',
+                phyRateMbps: 50,
+                lastUplinkRateMbps: 50,
+                signalStrengthDbm: -80,
+                isController: false,
+                severity: MeshBackhaulSeverityBucket.poor,
+              ),
+              const MeshBackhaulNodeRecord(
+                nodeId: 'agent-B',
+                label: 'Linksys M60TB',
+                mediaType: 'IEEE_802_11ax',
+                phyRateMbps: 200,
+                lastUplinkRateMbps: 200,
+                signalStrengthDbm: -70,
+                isController: false,
+                severity: MeshBackhaulSeverityBucket.weak,
+              ),
+            ]);
+
+        await notifier.selectFlow(DiagnosticFlow.meshBackhaul);
+        await Future.delayed(Duration.zero);
+
+        final state = container.read(unifiedDiagnosticsProvider);
+        final result = state.results.single as MeshBackhaulCheckUIModel;
+        expect(result.severity, DiagnosticSeverity.error);
+        expect(result.poorCount, 1);
+        expect(result.weakCount, 1);
+        // When any node is poor, only the poor recommendation is added —
+        // weak is suppressed because the poor case dominates.
+        expect(state.recommendations.any((r) => r.id == 'mesh_backhaul_poor'),
+            isTrue);
+        expect(state.recommendations.any((r) => r.id == 'mesh_backhaul_weak'),
+            isFalse);
+        container.dispose();
+      });
+
+      test('captures error result when service.checkMeshBackhaul throws',
+          () async {
+        final container = createContainer();
+        final notifier = container.read(unifiedDiagnosticsProvider.notifier);
+
+        when(() => mockService.checkMeshBackhaul())
+            .thenThrow(Exception('USP failed'));
+
+        await notifier.selectFlow(DiagnosticFlow.meshBackhaul);
+        await Future.delayed(Duration.zero);
+
+        final state = container.read(unifiedDiagnosticsProvider);
+        expect(state.step, DiagnosticStep.showingResults);
+        expect(state.results.single.isError, isTrue);
+        expect(state.results.single.step, DiagnosticStep.checkingMeshBackhaul);
         container.dispose();
       });
     });
@@ -472,6 +718,8 @@ PingResult _createFailedPingResult(String host) {
     status: 'Complete',
   );
 }
+
+class _FakeScope extends Fake implements DiagnosticScope {}
 
 class _MockSpeedTestNotifier extends AsyncNotifier<SpeedTestState>
     implements SpeedTestNotifier {

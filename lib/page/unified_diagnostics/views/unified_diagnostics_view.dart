@@ -8,22 +8,51 @@ import 'package:ui_kit_library/ui_kit.dart';
 import '../models/diagnostic_state.dart';
 import '../providers/unified_diagnostics_notifier.dart';
 import 'widgets/diagnostic_flow_menu.dart';
+import 'widgets/diagnostic_manual_tools_view.dart';
 import 'widgets/diagnostic_problem_selector.dart';
 import 'widgets/diagnostic_results_view.dart';
 import 'widgets/diagnostic_running_view.dart';
 import 'widgets/diagnostic_start_view.dart';
 
-class UnifiedDiagnosticsView extends ConsumerWidget {
+class UnifiedDiagnosticsView extends ConsumerStatefulWidget {
   const UnifiedDiagnosticsView({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<UnifiedDiagnosticsView> createState() =>
+      _UnifiedDiagnosticsViewState();
+}
+
+class _UnifiedDiagnosticsViewState
+    extends ConsumerState<UnifiedDiagnosticsView> {
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Snap scroll to top whenever the step changes so newly rendered headers
+    // (tabs, problem cards, flow menu) aren't hidden under the previous
+    // step's offset.
+    ref.listen<UnifiedDiagnosticsState>(
+      unifiedDiagnosticsProvider,
+      (prev, next) {
+        if (prev?.step == next.step) return;
+        if (!_scrollController.hasClients) return;
+        _scrollController.jumpTo(0);
+      },
+    );
+
     final state = ref.watch(unifiedDiagnosticsProvider);
 
     return UiKitPageView(
       appBarStyle: UiKitAppBarStyle.back,
       title: 'Network Diagnostics',
       scrollable: true,
+      controller: _scrollController,
       onBackTap: () => _handleBack(context, ref, state),
       child: (context, constraints) => Padding(
         padding: const EdgeInsets.all(AppSpacing.lg),
@@ -42,6 +71,7 @@ class UnifiedDiagnosticsView extends ConsumerWidget {
       DiagnosticStep.preQualifying => _buildPreQualifying(context, ref),
       DiagnosticStep.selectFlow => DiagnosticFlowMenu(state: state),
       DiagnosticStep.selectProblem => const DiagnosticProblemSelector(),
+      DiagnosticStep.manualTools => const DiagnosticManualToolsView(),
       DiagnosticStep.showingResults => DiagnosticResultsView(state: state),
       DiagnosticStep.completed => _buildCompleted(context, ref),
       _ => DiagnosticRunningView(state: state),

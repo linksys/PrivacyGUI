@@ -84,17 +84,7 @@ class DiagnosticFlowMenu extends ConsumerWidget {
         ),
         AppGap.md(),
 
-        // Flow 2: Device Issues
-        FlowCard(
-          icon: Icons.devices,
-          title: 'Device Issues',
-          description: 'Specific device has connection problems',
-          color: colorScheme.secondary,
-          onTap: () => notifier.selectFlow(DiagnosticFlow.deviceIssues),
-        ),
-        AppGap.md(),
-
-        // Flow 3: WiFi Coverage
+        // Flow 2: WiFi Coverage
         FlowCard(
           icon: Icons.wifi,
           title: 'WiFi Coverage',
@@ -104,7 +94,27 @@ class DiagnosticFlowMenu extends ConsumerWidget {
         ),
         AppGap.md(),
 
-        // Flow 4: Intermittent
+        // Flow 3: Mesh / Backhaul
+        FlowCard(
+          icon: Icons.hub,
+          title: 'Mesh / Backhaul',
+          description: 'Check node-to-node link quality',
+          color: colorScheme.primary,
+          onTap: () => notifier.selectFlow(DiagnosticFlow.meshBackhaul),
+        ),
+        AppGap.md(),
+
+        // Flow 4: Device Issues
+        FlowCard(
+          icon: Icons.devices,
+          title: 'Device Issues',
+          description: 'Specific device has connection problems',
+          color: colorScheme.secondary,
+          onTap: () => notifier.selectFlow(DiagnosticFlow.deviceIssues),
+        ),
+        AppGap.md(),
+
+        // Flow 5: Intermittent
         FlowCard(
           icon: Icons.sync_problem,
           title: 'Intermittent Connection',

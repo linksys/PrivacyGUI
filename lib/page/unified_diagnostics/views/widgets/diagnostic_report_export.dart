@@ -73,6 +73,7 @@ class DiagnosticReportExporter {
       DiagnosticFlow.internet => 'Internet Diagnostics',
       DiagnosticFlow.deviceIssues => 'Device Issues',
       DiagnosticFlow.wifiCoverage => 'WiFi Coverage',
+      DiagnosticFlow.meshBackhaul => 'Mesh Backhaul',
       DiagnosticFlow.intermittent => 'Intermittent Connection',
       null => state.problemType == ProblemType.noInternet
           ? 'No Internet'

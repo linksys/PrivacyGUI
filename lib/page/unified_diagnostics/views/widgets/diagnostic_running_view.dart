@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ui_kit_library/ui_kit.dart';
-import 'package:privacy_gui/page/speed_test/providers/speed_test_notifier.dart';
+import 'package:privacy_gui/page/unified_diagnostics/providers/speed_test_notifier.dart';
 
 import '../../models/diagnostic_result.dart';
 import '../../models/diagnostic_state.dart';
@@ -114,6 +114,9 @@ class DiagnosticRunningView extends ConsumerWidget {
       DiagnosticFlow.wifiCoverage => [
           DiagnosticStep.checkingWifiSignal,
         ],
+      DiagnosticFlow.meshBackhaul => [
+          DiagnosticStep.checkingMeshBackhaul,
+        ],
       DiagnosticFlow.intermittent => [
           DiagnosticStep.pingInternet,
         ],
@@ -158,6 +161,11 @@ class DiagnosticRunningView extends ConsumerWidget {
       DiagnosticFlow.wifiCoverage => (
           Icons.wifi,
           'WiFi Coverage Diagnostics',
+          1,
+        ),
+      DiagnosticFlow.meshBackhaul => (
+          Icons.hub,
+          'Mesh Backhaul Diagnostics',
           1,
         ),
       DiagnosticFlow.intermittent => (

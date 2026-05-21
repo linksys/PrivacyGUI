@@ -120,6 +120,43 @@ class DiagnosticStartView extends ConsumerWidget {
             ),
           ),
         ),
+        AppGap.lg(),
+
+        AppCard(
+          child: InkWell(
+            onTap: () => notifier.openManualTools(),
+            borderRadius: BorderRadius.circular(12),
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(AppSpacing.md),
+                    decoration: BoxDecoration(
+                      color: colorScheme.tertiary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(Icons.terminal, color: colorScheme.tertiary),
+                  ),
+                  AppGap.lg(),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        AppText.titleMedium('Manual Tools'),
+                        AppText.bodySmall(
+                          'Run ping or traceroute against any host.',
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(Icons.chevron_right,
+                      color: colorScheme.onSurfaceVariant),
+                ],
+              ),
+            ),
+          ),
+        ),
         AppGap.xxxl(),
       ],
     );

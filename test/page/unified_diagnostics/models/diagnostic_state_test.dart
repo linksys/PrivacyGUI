@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:privacy_gui/page/speed_test/models/speed_test_state.dart';
+import 'package:privacy_gui/page/unified_diagnostics/models/speed_test_state.dart';
 import 'package:privacy_gui/page/unified_diagnostics/models/diagnostic_state.dart';
 
 void main() {

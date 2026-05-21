@@ -374,6 +374,106 @@ class DnsLookupCheckUIModel extends DiagnosticStepUIModel {
   bool get hasResolved => resolvedIps.isNotEmpty;
 }
 
+/// Severity bucket for a single mesh node's backhaul health.
+enum MeshBackhaulSeverity {
+  /// Wired backhaul, or wireless link with strong PHY rate + RSSI.
+  healthy,
+
+  /// Wireless link with marginal PHY rate or RSSI.
+  weak,
+
+  /// Wireless link with poor PHY rate or very low RSSI.
+  poor,
+}
+
+/// Per-node backhaul health record.
+class MeshNodeBackhaulUIModel extends Equatable {
+  /// Stable node identifier (DataElements `Device.{i}.ID`, typically MAC).
+  final String nodeId;
+
+  /// Human-friendly label (manufacturer model, falls back to nodeId).
+  final String label;
+
+  /// Backhaul media type (e.g. "Wi-Fi", "Ethernet", "MoCA", "G.hn").
+  final String mediaType;
+
+  /// Negotiated PHY rate in Mbps (-1 if unknown).
+  final int phyRateMbps;
+
+  /// Last data uplink rate observed in Mbps (-1 if unknown).
+  final int lastUplinkRateMbps;
+
+  /// Backhaul RSSI in dBm (0 if unknown — wired backhaul).
+  final int signalStrengthDbm;
+
+  /// Whether this node is the controller (no backhaul of its own).
+  final bool isController;
+
+  /// Severity bucket for this node.
+  final MeshBackhaulSeverity severity;
+
+  const MeshNodeBackhaulUIModel({
+    required this.nodeId,
+    required this.label,
+    required this.mediaType,
+    required this.phyRateMbps,
+    required this.lastUplinkRateMbps,
+    required this.signalStrengthDbm,
+    required this.isController,
+    required this.severity,
+  });
+
+  bool get isWired =>
+      mediaType.contains('Ethernet') ||
+      mediaType.contains('MoCA') ||
+      mediaType.contains('G.hn');
+
+  @override
+  List<Object?> get props => [
+        nodeId,
+        label,
+        mediaType,
+        phyRateMbps,
+        lastUplinkRateMbps,
+        signalStrengthDbm,
+        isController,
+        severity,
+      ];
+}
+
+/// Mesh backhaul check result UI model (Flow: meshBackhaul).
+///
+/// `nodes` excludes the controller. When `nodes` is empty the deployment is a
+/// single-router setup and the step is reported as [DiagnosticSeverity.skipped].
+class MeshBackhaulCheckUIModel extends DiagnosticStepUIModel {
+  final List<MeshNodeBackhaulUIModel> nodes;
+
+  MeshBackhaulCheckUIModel({
+    required this.nodes,
+    required super.severity,
+    required super.titleKey,
+    required super.descriptionKey,
+    super.timestamp,
+  }) : super(
+          step: DiagnosticStep.checkingMeshBackhaul,
+          rawData: {
+            'nodeCount': nodes.length,
+            'poorCount': nodes
+                .where((n) => n.severity == MeshBackhaulSeverity.poor)
+                .length,
+            'weakCount': nodes
+                .where((n) => n.severity == MeshBackhaulSeverity.weak)
+                .length,
+          },
+        );
+
+  int get poorCount =>
+      nodes.where((n) => n.severity == MeshBackhaulSeverity.poor).length;
+  int get weakCount =>
+      nodes.where((n) => n.severity == MeshBackhaulSeverity.weak).length;
+  bool get hasIssues => poorCount > 0 || weakCount > 0;
+}
+
 /// Intermittent connection check result UI model (Flow 4).
 class IntermittentCheckUIModel extends DiagnosticStepUIModel {
   final int uptimeSeconds;

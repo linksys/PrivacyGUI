@@ -1,88 +1,153 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:privacy_gui/core/usp/services/sse_operation_awaiter.dart';
+import 'package:privacy_gui/core/usp/models/operate_result.dart';
+import 'package:privacy_gui/core/usp/services/network_diagnostics_executor.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/unified_diagnostics/services/unified_diagnostics_service.dart';
 
 class MockUspClient extends Mock implements UspClient {}
 
-/// Fake [SseOperationAwaiter] — mocktail can't easily handle the internal
-/// state machine of the real class, so we record call arguments and return
-/// canned [OperateResult]s set per-test.
-class FakeSseOperationAwaiter implements SseOperationAwaiter {
-  // Configurable per test:
-  OperateResult? executeInSessionResult;
-  OperateResult? executeResult;
-  Object? executeInSessionError;
-  Object? executeError;
-  Map<String, OperateResult> executeInSessionResultsByCommand = {};
+class _MockExecutor extends Mock implements NetworkDiagnosticsExecutor {}
+
+/// Recording fake [DiagnosticScope] — mocktail can't easily express the
+/// inter-call ordering we want for sequential pings, so we wrap a real
+/// recording structure but keep the [DiagnosticScope] interface satisfied.
+class FakeDiagnosticScope implements DiagnosticScope {
+  // Per-test configuration:
+  OperateResult? pingResult;
+  OperateResult? traceRouteResult;
+  OperateResult? nsLookupResult;
+  Object? pingError;
+  Object? traceRouteError;
+  Object? nsLookupError;
+  Map<String, OperateResult> resultsByCommand = {};
 
   // Recorded calls:
-  int startSharedSessionCount = 0;
-  int endSharedSessionCount = 0;
-  String? lastReferencePath;
-  final List<({String command, Map<String, String> args})>
-      executeInSessionCalls = [];
-  final List<({String command, String referencePath, Map<String, String> args})>
-      executeCalls = [];
+  final List<({String command, Map<String, String> args})> calls = [];
+  bool released = false;
 
-  @override
-  Future<void> startSharedSession({required String referencePath}) async {
-    startSharedSessionCount++;
-    lastReferencePath = referencePath;
+  void _record(String command, Map<String, String> args) {
+    calls.add((command: command, args: args));
   }
 
   @override
-  Future<void> endSharedSession() async {
-    endSharedSessionCount++;
+  bool get isReleased => released;
+
+  @override
+  Future<void> release() async {
+    released = true;
   }
 
   @override
-  Future<OperateResult> executeInSession({
-    required String operateCommand,
-    Map<String, String> args = const {},
-    Duration timeout = const Duration(seconds: 60),
+  Future<OperateResult> ping({
+    required String host,
+    int? numberOfRepetitions,
+    Duration timeout = const Duration(seconds: 30),
   }) async {
-    executeInSessionCalls.add((command: operateCommand, args: args));
-    if (executeInSessionError != null) throw executeInSessionError!;
-    if (executeInSessionResultsByCommand.containsKey(operateCommand)) {
-      return executeInSessionResultsByCommand[operateCommand]!;
+    final args = <String, String>{'Host': host};
+    if (numberOfRepetitions != null) {
+      args['NumberOfRepetitions'] = numberOfRepetitions.toString();
     }
-    if (executeInSessionResult != null) return executeInSessionResult!;
-    throw StateError('No executeInSession result configured for '
-        '$operateCommand');
+    _record('Device.IP.Diagnostics.IPPing()', args);
+    if (pingError != null) throw pingError!;
+    if (resultsByCommand.containsKey('Device.IP.Diagnostics.IPPing()')) {
+      return resultsByCommand['Device.IP.Diagnostics.IPPing()']!;
+    }
+    if (pingResult != null) return pingResult!;
+    throw StateError('No ping result configured');
   }
 
   @override
-  Future<OperateResult> execute({
-    required String operateCommand,
-    required String referencePath,
-    Map<String, String> args = const {},
+  Future<OperateResult> traceRoute({
+    required String host,
+    int? maxHopCount,
+    Duration timeout = const Duration(seconds: 120),
+  }) async {
+    final args = <String, String>{'Host': host};
+    if (maxHopCount != null) args['MaxHopCount'] = maxHopCount.toString();
+    _record('Device.IP.Diagnostics.TraceRoute()', args);
+    if (traceRouteError != null) throw traceRouteError!;
+    if (traceRouteResult != null) return traceRouteResult!;
+    throw StateError('No traceRoute result configured');
+  }
+
+  @override
+  Future<OperateResult> nsLookup({
+    required String hostName,
+    String? dnsServer,
+    Duration timeout = const Duration(seconds: 20),
+  }) async {
+    final args = <String, String>{'HostName': hostName};
+    if (dnsServer != null) args['DNSServer'] = dnsServer;
+    _record('Device.DNS.Diagnostics.NSLookupDiagnostics()', args);
+    if (nsLookupError != null) throw nsLookupError!;
+    if (nsLookupResult != null) return nsLookupResult!;
+    throw StateError('No nsLookup result configured');
+  }
+
+  @override
+  Future<OperateResult> downloadDiagnostic({
+    required String downloadUrl,
+    String? ethernetPriority,
+    String? dscp,
+    int? numberOfConnections,
+    Duration timeout = const Duration(seconds: 120),
+  }) async {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<OperateResult> uploadDiagnostic({
+    required String uploadUrl,
+    int? testFileLength,
+    String? ethernetPriority,
+    String? dscp,
+    int? numberOfConnections,
+    Duration timeout = const Duration(seconds: 120),
+  }) async {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<OperateResult> udpEcho({
+    required String host,
+    required int port,
+    int? numberOfRepetitions,
+    int? echoTimeout,
+    int? dataBlockSize,
     Duration timeout = const Duration(seconds: 60),
   }) async {
-    executeCalls.add(
-        (command: operateCommand, referencePath: referencePath, args: args));
-    if (executeError != null) throw executeError!;
-    if (executeResult != null) return executeResult!;
-    throw StateError('No execute result configured for $operateCommand');
+    throw UnimplementedError();
   }
 
   @override
-  Future<void> executeNoWait({
-    required String operateCommand,
-    Map<String, String> args = const {},
-  }) async {}
+  Future<OperateResult> serverSelection({
+    required String hostList,
+    String? protocol,
+    int? port,
+    int? numberOfRepetitions,
+    int? selectionTimeout,
+    Duration timeout = const Duration(seconds: 60),
+  }) async {
+    throw UnimplementedError();
+  }
 }
 
 void main() {
   late MockUspClient mockUsp;
-  late FakeSseOperationAwaiter fakeAwaiter;
+  late _MockExecutor mockExecutor;
+  late FakeDiagnosticScope fakeScope;
   late UnifiedDiagnosticsService service;
 
   setUp(() {
     mockUsp = MockUspClient();
-    fakeAwaiter = FakeSseOperationAwaiter();
-    service = UnifiedDiagnosticsService(mockUsp, fakeAwaiter);
+    mockExecutor = _MockExecutor();
+    fakeScope = FakeDiagnosticScope();
+    when(() => mockExecutor.acquireScope(
+          referencePaths: any(named: 'referencePaths'),
+        )).thenAnswer((_) async => fakeScope);
+    service = UnifiedDiagnosticsService(mockUsp, mockExecutor);
+    service.attachScope(fakeScope);
   });
 
   // ────────────────────────────────────────────────────────────────────────
@@ -315,22 +380,21 @@ void main() {
     });
   });
 
-  group('Session lifecycle', () {
-    test('startSession delegates to awaiter with diagnostics path', () async {
-      await service.startSession();
-      expect(fakeAwaiter.startSharedSessionCount, 1);
-      expect(fakeAwaiter.lastReferencePath, 'Device.IP.Diagnostics.');
+  group('Scope contract', () {
+    test('throws when no scope is attached', () async {
+      final unsetService = UnifiedDiagnosticsService(mockUsp, mockExecutor);
+      expect(unsetService.ping('8.8.8.8'), throwsA(isA<StateError>()));
     });
 
-    test('endSession delegates to awaiter', () async {
-      await service.endSession();
-      expect(fakeAwaiter.endSharedSessionCount, 1);
+    test('throws when scope has been released', () async {
+      fakeScope.released = true;
+      expect(service.ping('8.8.8.8'), throwsA(isA<StateError>()));
     });
   });
 
   group('ping', () {
-    test('parses successful PingResult and forwards args', () async {
-      fakeAwaiter.executeInSessionResult = OperateResult(
+    test('parses successful PingResult and forwards args to scope', () async {
+      fakeScope.pingResult = OperateResult(
         commandName: 'IPPing()',
         commandKey: 'k1',
         status: 'Complete',
@@ -353,13 +417,13 @@ void main() {
       expect(result.maxResponseTime, 20);
       expect(result.status, 'Complete');
 
-      final call = fakeAwaiter.executeInSessionCalls.single;
+      final call = fakeScope.calls.single;
       expect(call.command, 'Device.IP.Diagnostics.IPPing()');
       expect(call.args, {'Host': '8.8.8.8', 'NumberOfRepetitions': '5'});
     });
 
-    test('rethrows when awaiter throws', () async {
-      fakeAwaiter.executeInSessionError = Exception('SSE timeout');
+    test('rethrows when scope throws', () async {
+      fakeScope.pingError = Exception('SSE timeout');
       expect(service.ping('8.8.8.8'), throwsException);
     });
   });
@@ -368,7 +432,7 @@ void main() {
     test('derives gateway from WAN IP/mask and pings it', () async {
       when(() => mockUsp.get(any())).thenAnswer((_) async =>
           wanStatusResponse(ip: '203.0.113.50', mask: '255.255.255.0'));
-      fakeAwaiter.executeInSessionResult = OperateResult(
+      fakeScope.pingResult = OperateResult(
         commandName: 'IPPing()',
         commandKey: 'k',
         status: 'Complete',
@@ -384,8 +448,7 @@ void main() {
       final result = await service.pingGateway();
 
       expect(result.host, '203.0.113.1'); // Derived gateway
-      expect(
-          fakeAwaiter.executeInSessionCalls.single.args['Host'], '203.0.113.1');
+      expect(fakeScope.calls.single.args['Host'], '203.0.113.1');
     });
 
     test('falls back to 192.168.1.1 when WAN IP/mask are malformed', () async {
@@ -393,7 +456,7 @@ void main() {
             ip: 'not-an-ip',
             mask: 'not-a-mask',
           ));
-      fakeAwaiter.executeInSessionResult = OperateResult(
+      fakeScope.pingResult = OperateResult(
         commandName: 'IPPing()',
         commandKey: 'k',
         status: 'Complete',
@@ -421,7 +484,7 @@ void main() {
 
   group('pingDns / pingInternet', () {
     test('pingDns defaults to 8.8.8.8', () async {
-      fakeAwaiter.executeInSessionResult = OperateResult(
+      fakeScope.pingResult = OperateResult(
         commandName: 'IPPing()',
         commandKey: 'k',
         status: 'Complete',
@@ -437,11 +500,11 @@ void main() {
       final result = await service.pingDns();
 
       expect(result.host, '8.8.8.8');
-      expect(fakeAwaiter.executeInSessionCalls.single.args['Host'], '8.8.8.8');
+      expect(fakeScope.calls.single.args['Host'], '8.8.8.8');
     });
 
     test('pingInternet defaults to 1.1.1.1', () async {
-      fakeAwaiter.executeInSessionResult = OperateResult(
+      fakeScope.pingResult = OperateResult(
         commandName: 'IPPing()',
         commandKey: 'k',
         status: 'Complete',
@@ -457,7 +520,7 @@ void main() {
       final result = await service.pingInternet();
 
       expect(result.host, '1.1.1.1');
-      expect(fakeAwaiter.executeInSessionCalls.single.args['Host'], '1.1.1.1');
+      expect(fakeScope.calls.single.args['Host'], '1.1.1.1');
     });
   });
 
@@ -479,7 +542,7 @@ void main() {
   group('nsLookup', () {
     test('parses NSLookup result and includes DNSServer arg when provided',
         () async {
-      fakeAwaiter.executeInSessionResult = OperateResult(
+      fakeScope.nsLookupResult = OperateResult(
         commandName: 'NSLookupDiagnostics()',
         commandKey: 'k',
         status: 'Complete',
@@ -502,13 +565,13 @@ void main() {
       expect(result.successCount, 1);
       expect(result.answers.single.ipAddresses, ['93.184.216.34']);
 
-      final args = fakeAwaiter.executeInSessionCalls.single.args;
+      final args = fakeScope.calls.single.args;
       expect(args['HostName'], 'example.com');
       expect(args['DNSServer'], '8.8.8.8');
     });
 
     test('omits DNSServer when not provided', () async {
-      fakeAwaiter.executeInSessionResult = OperateResult(
+      fakeScope.nsLookupResult = OperateResult(
         commandName: 'NSLookupDiagnostics()',
         commandKey: 'k',
         status: 'Complete',
@@ -517,14 +580,11 @@ void main() {
 
       await service.nsLookup('example.com');
 
-      expect(
-          fakeAwaiter.executeInSessionCalls.single.args
-              .containsKey('DNSServer'),
-          isFalse);
+      expect(fakeScope.calls.single.args.containsKey('DNSServer'), isFalse);
     });
 
     test('omits DNSServer when empty string passed', () async {
-      fakeAwaiter.executeInSessionResult = OperateResult(
+      fakeScope.nsLookupResult = OperateResult(
         commandName: 'NSLookupDiagnostics()',
         commandKey: 'k',
         status: 'Complete',
@@ -533,21 +593,18 @@ void main() {
 
       await service.nsLookup('example.com', dnsServer: '');
 
-      expect(
-          fakeAwaiter.executeInSessionCalls.single.args
-              .containsKey('DNSServer'),
-          isFalse);
+      expect(fakeScope.calls.single.args.containsKey('DNSServer'), isFalse);
     });
 
-    test('rethrows when awaiter throws', () async {
-      fakeAwaiter.executeInSessionError = Exception('boom');
+    test('rethrows when scope throws', () async {
+      fakeScope.nsLookupError = Exception('boom');
       expect(service.nsLookup('host'), throwsException);
     });
   });
 
   group('traceroute', () {
-    test('uses non-session execute and parses hops', () async {
-      fakeAwaiter.executeResult = OperateResult(
+    test('uses scope.traceRoute and parses hops', () async {
+      fakeScope.traceRouteResult = OperateResult(
         commandName: 'TraceRoute()',
         commandKey: 'k',
         status: 'Complete',
@@ -567,9 +624,8 @@ void main() {
       expect(result.hops.length, 2);
       expect(result.hops.first.hopNumber, 1);
 
-      final call = fakeAwaiter.executeCalls.single;
+      final call = fakeScope.calls.single;
       expect(call.command, 'Device.IP.Diagnostics.TraceRoute()');
-      expect(call.referencePath, 'Device.IP.Diagnostics.TraceRoute.');
       expect(call.args, {'Host': '8.8.8.8', 'MaxHopCount': '20'});
     });
   });
@@ -1004,12 +1060,212 @@ void main() {
     });
   });
 
+  // ────────────────────────────────────────────────────────────────────────
+  // Mesh / Backhaul fixtures
+  // ────────────────────────────────────────────────────────────────────────
+
+  Map<String, dynamic> meshNodeFields(
+    int idx, {
+    required String id,
+    required String mediaType,
+    required int phyRate,
+    required int signalStrength,
+    required String operationMode,
+    required String assocRef,
+    String manufacturerModel = 'Linksys M60TB',
+  }) {
+    final p = 'Device.WiFi.DataElements.Network.Device.$idx.';
+    // Controller has no upstream link — mirror firmware behavior where
+    // BackhaulALID/MAC are empty when MediaType is empty.
+    final hasBackhaul = mediaType.isNotEmpty || phyRate > 0;
+    return <String, dynamic>{
+      '${p}ID': id,
+      '${p}ManufacturerModel': manufacturerModel,
+      '${p}Manufacturer': 'Linksys',
+      '${p}SerialNumber': 'SN-$idx',
+      '${p}SoftwareVersion': '1.0.16',
+      '${p}BackhaulALID': hasBackhaul ? 'al-$idx' : '',
+      '${p}BackhaulMACAddress': hasBackhaul ? 'AA:BB:CC:DD:EE:0$idx' : '',
+      '${p}BackhaulMediaType': mediaType,
+      '${p}BackhaulPHYRate': phyRate.toString(),
+      '${p}MultiAPDevice.LastContactTime': '2026-05-21T00:00:00Z',
+      '${p}MultiAPDevice.AssocIEEE1905DeviceRef': assocRef,
+      '${p}MultiAPDevice.EasyMeshAgentOperationMode': operationMode,
+      '${p}MultiAPDevice.Backhaul.Stats.PacketsSent': '1000',
+      '${p}MultiAPDevice.Backhaul.Stats.PacketsReceived': '1100',
+      '${p}MultiAPDevice.Backhaul.Stats.ErrorsSent': '0',
+      '${p}MultiAPDevice.Backhaul.Stats.ErrorsReceived': '0',
+      '${p}MultiAPDevice.Backhaul.Stats.TimeStamp': '2026-05-21T00:00:00Z',
+      '${p}MultiAPDevice.Backhaul.Stats.LastDataUplinkRate': phyRate.toString(),
+      '${p}MultiAPDevice.Backhaul.Stats.SignalStrength':
+          signalStrength.toString(),
+    };
+  }
+
+  group('checkMeshBackhaul', () {
+    test('returns empty list for single-router (no mesh) deployment', () async {
+      // Single node — backhaul concept doesn't apply.
+      final response = <String, dynamic>{
+        ...meshNodeFields(1,
+            id: 'controller',
+            mediaType: '',
+            phyRate: 0,
+            signalStrength: 0,
+            operationMode: 'Controller',
+            assocRef: ''),
+      };
+      when(() => mockUsp.get(any())).thenAnswer((_) async => response);
+
+      final result = await service.checkMeshBackhaul();
+
+      expect(result, isEmpty);
+    });
+
+    test('returns empty list when no nodes report any data', () async {
+      // All zeros / empty trigger codegen "drop empty row" filter.
+      when(() => mockUsp.get(any())).thenAnswer((_) async => <String, dynamic>{
+            // No mesh keys at all.
+          });
+
+      final result = await service.checkMeshBackhaul();
+      expect(result, isEmpty);
+    });
+
+    test('classifies wired (Ethernet) backhaul as healthy regardless of RSSI',
+        () async {
+      final response = <String, dynamic>{
+        ...meshNodeFields(1,
+            id: 'controller',
+            mediaType: '',
+            phyRate: 0,
+            signalStrength: 0,
+            operationMode: 'Controller',
+            assocRef: ''),
+        ...meshNodeFields(2,
+            id: 'agent-A',
+            mediaType: 'IEEE_802_3ab_Ethernet',
+            phyRate: 1000,
+            signalStrength: 0, // wired — RSSI not meaningful
+            operationMode: 'Agent',
+            assocRef: 'controller'),
+      };
+      when(() => mockUsp.get(any())).thenAnswer((_) async => response);
+
+      final result = await service.checkMeshBackhaul();
+
+      expect(result, hasLength(1));
+      final node = result.single;
+      expect(node.nodeId, 'agent-A');
+      expect(node.severity, MeshBackhaulSeverityBucket.healthy);
+      expect(node.mediaType, contains('Ethernet'));
+    });
+
+    test('classifies low-PHY wireless backhaul as poor', () async {
+      final response = <String, dynamic>{
+        ...meshNodeFields(1,
+            id: 'controller',
+            mediaType: '',
+            phyRate: 0,
+            signalStrength: 0,
+            operationMode: 'Controller',
+            assocRef: ''),
+        ...meshNodeFields(2,
+            id: 'agent-A',
+            mediaType: 'IEEE_802_11ax',
+            phyRate: 50,
+            signalStrength: -80,
+            operationMode: 'Agent',
+            assocRef: 'controller'),
+      };
+      when(() => mockUsp.get(any())).thenAnswer((_) async => response);
+
+      final result = await service.checkMeshBackhaul();
+      expect(result.single.severity, MeshBackhaulSeverityBucket.poor);
+    });
+
+    test('classifies marginal wireless backhaul as weak', () async {
+      final response = <String, dynamic>{
+        ...meshNodeFields(1,
+            id: 'controller',
+            mediaType: '',
+            phyRate: 0,
+            signalStrength: 0,
+            operationMode: 'Controller',
+            assocRef: ''),
+        ...meshNodeFields(2,
+            id: 'agent-A',
+            mediaType: 'IEEE_802_11ax',
+            phyRate: 200,
+            signalStrength: -70,
+            operationMode: 'Agent',
+            assocRef: 'controller'),
+      };
+      when(() => mockUsp.get(any())).thenAnswer((_) async => response);
+
+      final result = await service.checkMeshBackhaul();
+      expect(result.single.severity, MeshBackhaulSeverityBucket.weak);
+    });
+
+    test('classifies strong wireless backhaul as healthy', () async {
+      final response = <String, dynamic>{
+        ...meshNodeFields(1,
+            id: 'controller',
+            mediaType: '',
+            phyRate: 0,
+            signalStrength: 0,
+            operationMode: 'Controller',
+            assocRef: ''),
+        ...meshNodeFields(2,
+            id: 'agent-A',
+            mediaType: 'IEEE_802_11ax',
+            phyRate: 900,
+            signalStrength: -55,
+            operationMode: 'Agent',
+            assocRef: 'controller'),
+      };
+      when(() => mockUsp.get(any())).thenAnswer((_) async => response);
+
+      final result = await service.checkMeshBackhaul();
+      expect(result.single.severity, MeshBackhaulSeverityBucket.healthy);
+    });
+
+    test('excludes the controller node from results', () async {
+      final response = <String, dynamic>{
+        ...meshNodeFields(1,
+            id: 'controller',
+            mediaType: '',
+            phyRate: 0,
+            signalStrength: 0,
+            operationMode: 'Controller',
+            assocRef: ''),
+        ...meshNodeFields(2,
+            id: 'agent-A',
+            mediaType: 'IEEE_802_11ax',
+            phyRate: 800,
+            signalStrength: -50,
+            operationMode: 'Agent',
+            assocRef: 'controller'),
+        ...meshNodeFields(3,
+            id: 'agent-B',
+            mediaType: 'IEEE_802_3ab_Ethernet',
+            phyRate: 1000,
+            signalStrength: 0,
+            operationMode: 'Agent',
+            assocRef: 'controller'),
+      };
+      when(() => mockUsp.get(any())).thenAnswer((_) async => response);
+
+      final result = await service.checkMeshBackhaul();
+      expect(result.map((n) => n.nodeId), ['agent-A', 'agent-B']);
+      expect(result.every((n) => !n.isController), isTrue);
+    });
+  });
+
   group('checkIntermittent', () {
     test('aggregates 5 ping samples into latency/jitter/loss metrics',
         () async {
       // Stable latencies: 10,12,14,16,18 → avg 14, jitter 2
-      final stubAwaiter = _SequentialPingAwaiter(const [10, 12, 14, 16, 18]);
-      service = UnifiedDiagnosticsService(mockUsp, stubAwaiter);
+      service.attachScope(_SequentialPingScope(const [10, 12, 14, 16, 18]));
 
       when(() => mockUsp.get(any()))
           .thenAnswer((_) async => systemInfoResponse(uptime: 86400));
@@ -1029,8 +1285,7 @@ void main() {
     });
 
     test('flags packet loss when pings return zero successes', () async {
-      final stubAwaiter = _SequentialPingAwaiter(const [], successRate: 0);
-      service = UnifiedDiagnosticsService(mockUsp, stubAwaiter);
+      service.attachScope(_SequentialPingScope(const [], successRate: 0));
       when(() => mockUsp.get(any()))
           .thenAnswer((_) async => systemInfoResponse(uptime: 100));
 
@@ -1041,9 +1296,8 @@ void main() {
       expect(result.recentReboot, isTrue); // uptime < 300
     });
 
-    test('handles awaiter exception per ping (counts as failure)', () async {
-      final stubAwaiter = _ThrowingPingAwaiter();
-      service = UnifiedDiagnosticsService(mockUsp, stubAwaiter);
+    test('handles scope exception per ping (counts as failure)', () async {
+      service.attachScope(_ThrowingPingScope());
       when(() => mockUsp.get(any()))
           .thenAnswer((_) async => systemInfoResponse(uptime: 86400));
 
@@ -1055,8 +1309,7 @@ void main() {
 
     test('reports high jitter when latency varies > 50ms', () async {
       // Wide swings: 10, 100, 10, 100, 10 → avg ≈ 46, jitter = 90
-      final stubAwaiter = _SequentialPingAwaiter(const [10, 100, 10, 100, 10]);
-      service = UnifiedDiagnosticsService(mockUsp, stubAwaiter);
+      service.attachScope(_SequentialPingScope(const [10, 100, 10, 100, 10]));
       when(() => mockUsp.get(any()))
           .thenAnswer((_) async => systemInfoResponse(uptime: 86400));
 
@@ -1069,19 +1322,25 @@ void main() {
   });
 }
 
-/// Awaiter that returns ping latencies from a fixed list, one per call.
+/// Scope that returns ping latencies from a fixed list, one per call.
 /// When the list is exhausted, returns the last value.
-class _SequentialPingAwaiter implements SseOperationAwaiter {
-  _SequentialPingAwaiter(this.latencies, {this.successRate = 1});
+class _SequentialPingScope implements DiagnosticScope {
+  _SequentialPingScope(this.latencies, {this.successRate = 1});
   final List<int> latencies;
   final int successRate;
   int _idx = 0;
 
   @override
-  Future<OperateResult> executeInSession({
-    required String operateCommand,
-    Map<String, String> args = const {},
-    Duration timeout = const Duration(seconds: 60),
+  bool get isReleased => false;
+
+  @override
+  Future<void> release() async {}
+
+  @override
+  Future<OperateResult> ping({
+    required String host,
+    int? numberOfRepetitions,
+    Duration timeout = const Duration(seconds: 30),
   }) async {
     final i = _idx++;
     final v =
@@ -1101,56 +1360,138 @@ class _SequentialPingAwaiter implements SseOperationAwaiter {
   }
 
   @override
-  Future<OperateResult> execute({
-    required String operateCommand,
-    required String referencePath,
-    Map<String, String> args = const {},
+  Future<OperateResult> traceRoute({
+    required String host,
+    int? maxHopCount,
+    Duration timeout = const Duration(seconds: 120),
+  }) async =>
+      throw UnimplementedError();
+
+  @override
+  Future<OperateResult> nsLookup({
+    required String hostName,
+    String? dnsServer,
+    Duration timeout = const Duration(seconds: 20),
+  }) async =>
+      throw UnimplementedError();
+
+  @override
+  Future<OperateResult> downloadDiagnostic({
+    required String downloadUrl,
+    String? ethernetPriority,
+    String? dscp,
+    int? numberOfConnections,
+    Duration timeout = const Duration(seconds: 120),
+  }) async =>
+      throw UnimplementedError();
+
+  @override
+  Future<OperateResult> uploadDiagnostic({
+    required String uploadUrl,
+    int? testFileLength,
+    String? ethernetPriority,
+    String? dscp,
+    int? numberOfConnections,
+    Duration timeout = const Duration(seconds: 120),
+  }) async =>
+      throw UnimplementedError();
+
+  @override
+  Future<OperateResult> udpEcho({
+    required String host,
+    required int port,
+    int? numberOfRepetitions,
+    int? echoTimeout,
+    int? dataBlockSize,
     Duration timeout = const Duration(seconds: 60),
   }) async =>
       throw UnimplementedError();
 
   @override
-  Future<void> executeNoWait({
-    required String operateCommand,
-    Map<String, String> args = const {},
-  }) async {}
-
-  @override
-  Future<void> startSharedSession({required String referencePath}) async {}
-
-  @override
-  Future<void> endSharedSession() async {}
+  Future<OperateResult> serverSelection({
+    required String hostList,
+    String? protocol,
+    int? port,
+    int? numberOfRepetitions,
+    int? selectionTimeout,
+    Duration timeout = const Duration(seconds: 60),
+  }) async =>
+      throw UnimplementedError();
 }
 
-/// Awaiter where every ping throws — exercises the catch-and-continue branch
+/// Scope where every ping throws — exercises the catch-and-continue branch
 /// in checkIntermittent.
-class _ThrowingPingAwaiter implements SseOperationAwaiter {
+class _ThrowingPingScope implements DiagnosticScope {
   @override
-  Future<OperateResult> executeInSession({
-    required String operateCommand,
-    Map<String, String> args = const {},
-    Duration timeout = const Duration(seconds: 60),
+  bool get isReleased => false;
+
+  @override
+  Future<void> release() async {}
+
+  @override
+  Future<OperateResult> ping({
+    required String host,
+    int? numberOfRepetitions,
+    Duration timeout = const Duration(seconds: 30),
   }) async =>
       throw Exception('SSE timeout');
 
   @override
-  Future<OperateResult> execute({
-    required String operateCommand,
-    required String referencePath,
-    Map<String, String> args = const {},
+  Future<OperateResult> traceRoute({
+    required String host,
+    int? maxHopCount,
+    Duration timeout = const Duration(seconds: 120),
+  }) async =>
+      throw UnimplementedError();
+
+  @override
+  Future<OperateResult> nsLookup({
+    required String hostName,
+    String? dnsServer,
+    Duration timeout = const Duration(seconds: 20),
+  }) async =>
+      throw UnimplementedError();
+
+  @override
+  Future<OperateResult> downloadDiagnostic({
+    required String downloadUrl,
+    String? ethernetPriority,
+    String? dscp,
+    int? numberOfConnections,
+    Duration timeout = const Duration(seconds: 120),
+  }) async =>
+      throw UnimplementedError();
+
+  @override
+  Future<OperateResult> uploadDiagnostic({
+    required String uploadUrl,
+    int? testFileLength,
+    String? ethernetPriority,
+    String? dscp,
+    int? numberOfConnections,
+    Duration timeout = const Duration(seconds: 120),
+  }) async =>
+      throw UnimplementedError();
+
+  @override
+  Future<OperateResult> udpEcho({
+    required String host,
+    required int port,
+    int? numberOfRepetitions,
+    int? echoTimeout,
+    int? dataBlockSize,
     Duration timeout = const Duration(seconds: 60),
   }) async =>
       throw UnimplementedError();
 
   @override
-  Future<void> executeNoWait({
-    required String operateCommand,
-    Map<String, String> args = const {},
-  }) async {}
-
-  @override
-  Future<void> startSharedSession({required String referencePath}) async {}
-
-  @override
-  Future<void> endSharedSession() async {}
+  Future<OperateResult> serverSelection({
+    required String hostList,
+    String? protocol,
+    int? port,
+    int? numberOfRepetitions,
+    int? selectionTimeout,
+    Duration timeout = const Duration(seconds: 60),
+  }) async =>
+      throw UnimplementedError();
 }

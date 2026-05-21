@@ -580,8 +580,9 @@ Future<T?> showListSelectionDialog<T>({
                   color: isSelected ? colorScheme.primary : null,
                 ),
               ),
-              trailing:
-                  isSelected ? Icon(Icons.check, color: colorScheme.primary) : null,
+              trailing: isSelected
+                  ? Icon(Icons.check, color: colorScheme.primary)
+                  : null,
               onTap: () {
                 // Defer pop to next frame to avoid mouse_tracker assertion
                 WidgetsBinding.instance.addPostFrameCallback((_) {

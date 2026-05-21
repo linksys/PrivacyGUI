@@ -31,6 +31,7 @@ class StepResultTile extends StatelessWidget {
 
     final details = _getResultDetails(result);
     final scoredDevices = _getScoredDevicesForDisplay(result);
+    final isSpeedTest = result.step == DiagnosticStep.runningSpeedTest;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.md),
@@ -54,22 +55,32 @@ class StepResultTile extends StatelessWidget {
                 ],
               ),
               AppGap.sm(),
+              if (isSpeedTest) ...[
+                _SpeedTestVisualization(rawData: result.rawData),
+                AppGap.md(),
+              ],
               if (details.isNotEmpty)
                 ...details.map((detail) => Padding(
                       padding:
                           const EdgeInsets.symmetric(vertical: AppSpacing.xs),
                       child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           AppText.bodySmall(
                             detail.label,
                             color: colorScheme.onSurfaceVariant,
                           ),
-                          AppText.labelMedium(detail.value),
+                          AppGap.md(),
+                          Expanded(
+                            child: AppText.labelMedium(
+                              detail.value,
+                              textAlign: TextAlign.end,
+                            ),
+                          ),
                         ],
                       ),
                     ))
-              else
+              else if (!isSpeedTest)
                 AppText.bodySmall(
                   'No additional details available.',
                   color: colorScheme.onSurfaceVariant,
@@ -123,6 +134,7 @@ class StepResultTile extends StatelessWidget {
       DiagnosticStep.checkingWifiSignal => 'WiFi Signal',
       DiagnosticStep.checkingConnectedDevices => 'Connected Devices',
       DiagnosticStep.runningTraceroute => 'Traceroute',
+      DiagnosticStep.checkingMeshBackhaul => 'Mesh Backhaul',
       _ => step.name,
     };
   }
@@ -222,13 +234,26 @@ class StepResultTile extends StatelessWidget {
           if (r.slowHops.isNotEmpty)
             _ResultDetail('Slow Hops', '${r.slowHops.length}'),
         ],
+      MeshBackhaulCheckUIModel r => r.nodes.isEmpty
+          ? const [
+              _ResultDetail('Mesh', 'Single-router setup — no backhaul'),
+            ]
+          : [
+              _ResultDetail('Nodes', '${r.nodes.length}'),
+              if (r.poorCount > 0)
+                _ResultDetail('Poor backhaul', '${r.poorCount}'),
+              if (r.weakCount > 0)
+                _ResultDetail('Weak backhaul', '${r.weakCount}'),
+              for (final n in r.nodes)
+                _ResultDetail(
+                  n.label,
+                  _formatMeshNodeSummary(n),
+                ),
+            ],
       _ when result.step == DiagnosticStep.runningSpeedTest => [
-          if (result.rawData.containsKey('downloadMbps'))
-            _ResultDetail('Download',
-                '${(result.rawData['downloadMbps'] as double).toStringAsFixed(1)} Mbps'),
-          if (result.rawData.containsKey('uploadMbps'))
-            _ResultDetail('Upload',
-                '${(result.rawData['uploadMbps'] as double).toStringAsFixed(1)} Mbps'),
+          if (result.rawData['serverHost'] is String &&
+              (result.rawData['serverHost'] as String).isNotEmpty)
+            _ResultDetail('Server', result.rawData['serverHost'] as String),
         ],
       _ when result.step == DiagnosticStep.checkingDhcp => [
           _ResultDetail(
@@ -245,12 +270,136 @@ class StepResultTile extends StatelessWidget {
         ],
     };
   }
+
+  String _formatMeshNodeSummary(MeshNodeBackhaulUIModel n) {
+    final parts = <String>[];
+    parts.add(n.mediaType);
+    if (n.phyRateMbps > 0) parts.add('${n.phyRateMbps} Mbps');
+    if (!n.isWired && n.signalStrengthDbm != 0) {
+      parts.add('${n.signalStrengthDbm} dBm');
+    }
+    parts.add(switch (n.severity) {
+      MeshBackhaulSeverity.healthy => 'Healthy',
+      MeshBackhaulSeverity.weak => 'Weak',
+      MeshBackhaulSeverity.poor => 'Poor',
+    });
+    return parts.join(' • ');
+  }
 }
 
 class _ResultDetail {
   final String label;
   final String value;
   const _ResultDetail(this.label, this.value);
+}
+
+/// Inline gauge + latency badge for the speed test step. Replaces the
+/// previous standalone SpeedTestResultCard so the result UI stays uniform.
+class _SpeedTestVisualization extends StatelessWidget {
+  final Map<String, dynamic> rawData;
+
+  const _SpeedTestVisualization({required this.rawData});
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final downloadMbps = (rawData['downloadMbps'] as num?)?.toDouble() ?? 0;
+    final uploadMbps = (rawData['uploadMbps'] as num?)?.toDouble() ?? 0;
+    final hasUpload = rawData['hasUpload'] as bool? ?? true;
+    final latencyMs = rawData['latencyMs'] as int?;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (latencyMs != null) ...[
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.network_ping,
+                  size: 14, color: colorScheme.onSurfaceVariant),
+              AppGap.xs(),
+              AppText.bodySmall(
+                '$latencyMs ms latency',
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ],
+          ),
+          AppGap.md(),
+        ],
+        Row(
+          children: [
+            Expanded(
+              child: SpeedGauge(
+                label: 'Download',
+                value: downloadMbps,
+                icon: Icons.download,
+                color: colorScheme.primary,
+              ),
+            ),
+            AppGap.lg(),
+            Expanded(
+              child: hasUpload
+                  ? SpeedGauge(
+                      label: 'Upload',
+                      value: uploadMbps,
+                      icon: Icons.upload,
+                      color: colorScheme.tertiary,
+                    )
+                  : Column(
+                      children: [
+                        Icon(Icons.upload,
+                            color: colorScheme.onSurfaceVariant, size: 32),
+                        AppGap.sm(),
+                        AppText.bodySmall(
+                          'N/A',
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                        AppGap.xs(),
+                        AppText.labelSmall('Upload'),
+                      ],
+                    ),
+            ),
+          ],
+        ),
+        if (!hasUpload) ...[
+          AppGap.sm(),
+          AppText.bodySmall(
+            'Upload test not supported on this firmware.',
+            color: colorScheme.onSurfaceVariant,
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class SpeedGauge extends StatelessWidget {
+  final String label;
+  final double value;
+  final IconData icon;
+  final Color color;
+
+  const SpeedGauge({
+    super.key,
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Icon(icon, color: color, size: 32),
+        AppGap.sm(),
+        AppText.headlineSmall(value.toStringAsFixed(1), color: color),
+        AppText.bodySmall('Mbps'),
+        AppGap.xs(),
+        AppText.labelSmall(label),
+      ],
+    );
+  }
 }
 
 class _DeviceScoreRow extends StatelessWidget {
