@@ -36,22 +36,34 @@ class DiagnosticStepUIModel extends Equatable {
   /// Raw data from the diagnostic (for debugging/display).
   final Map<String, dynamic> rawData;
 
-  /// Timestamp when this result was recorded.
-  final DateTime timestamp;
-
-  DiagnosticStepUIModel({
+  const DiagnosticStepUIModel({
     required this.step,
     required this.severity,
     required this.titleKey,
     required this.descriptionKey,
     this.rawData = const {},
-    DateTime? timestamp,
-  }) : timestamp = timestamp ?? DateTime.now();
+  });
 
   bool get isOk => severity == DiagnosticSeverity.ok;
   bool get isWarning => severity == DiagnosticSeverity.warning;
   bool get isError => severity == DiagnosticSeverity.error;
   bool get isSkipped => severity == DiagnosticSeverity.skipped;
+
+  DiagnosticStepUIModel copyWith({
+    DiagnosticStep? step,
+    DiagnosticSeverity? severity,
+    String? titleKey,
+    String? descriptionKey,
+    Map<String, dynamic>? rawData,
+  }) {
+    return DiagnosticStepUIModel(
+      step: step ?? this.step,
+      severity: severity ?? this.severity,
+      titleKey: titleKey ?? this.titleKey,
+      descriptionKey: descriptionKey ?? this.descriptionKey,
+      rawData: rawData ?? this.rawData,
+    );
+  }
 
   @override
   List<Object?> get props => [
@@ -60,7 +72,6 @@ class DiagnosticStepUIModel extends Equatable {
         titleKey,
         descriptionKey,
         rawData,
-        timestamp,
       ];
 }
 
@@ -77,7 +88,6 @@ class WanStatusCheckUIModel extends DiagnosticStepUIModel {
     required super.severity,
     required super.titleKey,
     required super.descriptionKey,
-    super.timestamp,
   }) : super(
           step: DiagnosticStep.checkingWanStatus,
           rawData: {
@@ -107,7 +117,6 @@ class PingCheckUIModel extends DiagnosticStepUIModel {
     required super.severity,
     required super.titleKey,
     required super.descriptionKey,
-    super.timestamp,
   }) : super(
           step: step,
           rawData: {
@@ -146,7 +155,6 @@ class WifiSignalCheckUIModel extends DiagnosticStepUIModel {
     required super.severity,
     required super.titleKey,
     required super.descriptionKey,
-    super.timestamp,
   }) : super(
           step: DiagnosticStep.checkingWifiSignal,
           rawData: {
@@ -192,7 +200,6 @@ class DhcpPoolCheckUIModel extends DiagnosticStepUIModel {
     required super.severity,
     required super.titleKey,
     required super.descriptionKey,
-    super.timestamp,
   }) : super(
           step: DiagnosticStep.checkingDhcpPool,
           rawData: {
@@ -226,7 +233,6 @@ class ConnectedDevicesCheckUIModel extends DiagnosticStepUIModel {
     required super.severity,
     required super.titleKey,
     required super.descriptionKey,
-    super.timestamp,
   }) : super(
           step: DiagnosticStep.checkingConnectedDevices,
           rawData: {
@@ -251,7 +257,6 @@ class TracerouteCheckUIModel extends DiagnosticStepUIModel {
     required super.severity,
     required super.titleKey,
     required super.descriptionKey,
-    super.timestamp,
   }) : super(
           step: DiagnosticStep.runningTraceroute,
           rawData: {
@@ -300,7 +305,6 @@ class DeviceIssuesCheckUIModel extends DiagnosticStepUIModel {
     required super.severity,
     required super.titleKey,
     required super.descriptionKey,
-    super.timestamp,
   }) : super(
           step: DiagnosticStep.checkingConnectedDevices,
           rawData: {
@@ -329,7 +333,6 @@ class WifiCoverageCheckUIModel extends DiagnosticStepUIModel {
     required super.severity,
     required super.titleKey,
     required super.descriptionKey,
-    super.timestamp,
   }) : super(
           step: DiagnosticStep.checkingWifiSignal,
           rawData: {
@@ -359,7 +362,6 @@ class DnsLookupCheckUIModel extends DiagnosticStepUIModel {
     required super.severity,
     required super.titleKey,
     required super.descriptionKey,
-    super.timestamp,
   }) : super(
           step: DiagnosticStep.dnsLookup,
           rawData: {
@@ -453,7 +455,6 @@ class MeshBackhaulCheckUIModel extends DiagnosticStepUIModel {
     required super.severity,
     required super.titleKey,
     required super.descriptionKey,
-    super.timestamp,
   }) : super(
           step: DiagnosticStep.checkingMeshBackhaul,
           rawData: {
@@ -497,7 +498,6 @@ class IntermittentCheckUIModel extends DiagnosticStepUIModel {
     required super.severity,
     required super.titleKey,
     required super.descriptionKey,
-    super.timestamp,
   }) : super(
           step: DiagnosticStep.pingInternet,
           rawData: {

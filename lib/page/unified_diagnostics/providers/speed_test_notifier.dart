@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
+import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
 import 'package:privacy_gui/core/usp/services/network_diagnostics_executor.dart';
@@ -12,7 +13,7 @@ import 'package:privacy_gui/page/unified_diagnostics/models/speed_test_state.dar
 // ---------------------------------------------------------------------------
 
 final speedTestProvider =
-    AsyncNotifierProvider<SpeedTestNotifier, SpeedTestState>(
+    AsyncNotifierProvider.autoDispose<SpeedTestNotifier, SpeedTestState>(
   SpeedTestNotifier.new,
 );
 
@@ -20,10 +21,45 @@ final speedTestProvider =
 // Notifier
 // ---------------------------------------------------------------------------
 
-class SpeedTestNotifier extends AsyncNotifier<SpeedTestState> {
+class SpeedTestNotifier extends AutoDisposeAsyncNotifier<SpeedTestState> {
+  bool _cancelled = false;
+  DiagnosticScope? _activeScope;
+
   @override
   Future<SpeedTestState> build() async {
+    ref.onDispose(_disposeRun);
     return const SpeedTestState();
+  }
+
+  Future<void> _disposeRun() async {
+    _cancelled = true;
+    final scope = _activeScope;
+    _activeScope = null;
+    if (scope != null && !scope.isReleased) {
+      try {
+        await scope.release();
+      } catch (e) {
+        logger.w('[USP][SpeedTest]: Failed to release scope on dispose: $e');
+      }
+    }
+  }
+
+  /// Cancels an in-flight speed test, releases the diagnostics scope, and
+  /// resets state to idle. Safe to call when no test is running.
+  Future<void> cancel() async {
+    final s = state.valueOrNull;
+    if (s != null && !s.isRunning) return;
+    _cancelled = true;
+    final scope = _activeScope;
+    _activeScope = null;
+    if (scope != null && !scope.isReleased) {
+      try {
+        await scope.release();
+      } catch (e) {
+        logger.w('[USP][SpeedTest]: Failed to release scope on cancel: $e');
+      }
+    }
+    state = const AsyncData(SpeedTestState());
   }
 
   NetworkDiagnosticsExecutor get _executor {
@@ -53,6 +89,7 @@ class SpeedTestNotifier extends AsyncNotifier<SpeedTestState> {
     final s = state.valueOrNull;
     if (s == null || s.isRunning) return;
 
+    _cancelled = false;
     final server = s.selectedServer;
     final downloadUrl = server.downloadUrl;
 
@@ -65,19 +102,28 @@ class SpeedTestNotifier extends AsyncNotifier<SpeedTestState> {
 
     int? latencyMs;
 
-    // Acquire shared scope for the duration of this run only — speedTestProvider
-    // is non-autoDispose so we must NOT keep the OperationComplete subscription
-    // alive between runs.
+    // Acquire scope for the duration of this run. With autoDispose the
+    // notifier (and thus the OperationComplete subscription) is torn down
+    // when the last listener leaves the page.
     final DiagnosticScope scope;
     try {
       scope = await _executor.acquireScope();
     } catch (e) {
       logger.w('[USP][SpeedTest]: Failed to acquire scope: $e');
+      final mapped = e is ServiceError ? e : mapUspErrorToServiceError(e);
       state = AsyncData(state.requireValue.copyWith(
         step: SpeedTestStep.error,
         clearProgress: true,
-        errorMessage: 'Speed test unavailable: $e',
+        errorMessage: _scopeErrorMessage(mapped),
       ));
+      return;
+    }
+    _activeScope = scope;
+    if (_cancelled) {
+      _activeScope = null;
+      try {
+        await scope.release();
+      } catch (_) {}
       return;
     }
 
@@ -169,16 +215,20 @@ class SpeedTestNotifier extends AsyncNotifier<SpeedTestState> {
       ));
     } catch (e) {
       logger.w('[USP][SpeedTest]: Failed: $e');
+      final mapped = e is ServiceError ? e : mapUspErrorToServiceError(e);
       state = AsyncData(state.requireValue.copyWith(
         step: SpeedTestStep.error,
         clearProgress: true,
-        errorMessage: 'Speed test failed: $e',
+        errorMessage: _runErrorMessage(mapped),
       ));
     } finally {
-      try {
-        await scope.release();
-      } catch (e) {
-        logger.w('[USP][SpeedTest]: Failed to release scope: $e');
+      if (identical(_activeScope, scope)) _activeScope = null;
+      if (!scope.isReleased) {
+        try {
+          await scope.release();
+        } catch (e) {
+          logger.w('[USP][SpeedTest]: Failed to release scope: $e');
+        }
       }
     }
   }
@@ -188,12 +238,38 @@ class SpeedTestNotifier extends AsyncNotifier<SpeedTestState> {
   // -------------------------------------------------------------------------
 
   void reset() {
+    final s = state.valueOrNull;
+    if (s != null && s.isRunning) {
+      // Fire-and-forget: cancel() will release the scope and reset state.
+      unawaited(cancel());
+      return;
+    }
     state = const AsyncData(SpeedTestState());
   }
 
   // -------------------------------------------------------------------------
   // Error messages
   // -------------------------------------------------------------------------
+
+  String _scopeErrorMessage(ServiceError e) {
+    return switch (e) {
+      ConnectivityError() =>
+        'Speed test unavailable — diagnostics scope not ready',
+      NetworkError() => 'Speed test unavailable — router lost connection',
+      _ => 'Speed test unavailable — please try again',
+    };
+  }
+
+  String _runErrorMessage(ServiceError e) {
+    return switch (e) {
+      NetworkError() => 'Speed test failed — router lost connection',
+      ConnectivityError() =>
+        'Speed test unavailable — diagnostics scope not ready',
+      InvalidInputError(:final message) =>
+        message ?? 'Speed test failed — invalid configuration',
+      _ => 'Speed test failed — please try again',
+    };
+  }
 
   String _getDownloadErrorMessage(String status, String url) {
     // Extract hostname from URL for display

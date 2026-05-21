@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -5,6 +7,7 @@ import 'package:privacy_gui/core/usp/models/operate_result.dart';
 import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
 import 'package:privacy_gui/core/usp/services/network_diagnostics_executor.dart';
 import 'package:privacy_gui/generated/dns_client.g.dart';
+import 'package:privacy_gui/page/unified_diagnostics/models/device_score.dart';
 import 'package:privacy_gui/page/unified_diagnostics/models/speed_test_state.dart';
 import 'package:privacy_gui/page/unified_diagnostics/providers/speed_test_notifier.dart';
 import 'package:privacy_gui/page/unified_diagnostics/models/diagnostic_result.dart';
@@ -76,6 +79,18 @@ void main() {
         ],
       ),
     );
+
+    // Default DHCP pool stub for internet flow
+    when(() => mockService.checkDhcpPool()).thenAnswer(
+      (_) async => const DhcpPoolUsageUIModel(
+        enabled: true,
+        minAddress: '192.168.1.100',
+        maxAddress: '192.168.1.149',
+        capacity: 50,
+        usedLeases: 5,
+        totalLeases: 5,
+      ),
+    );
   });
 
   setUpAll(() {
@@ -102,19 +117,8 @@ void main() {
       final state = container.read(unifiedDiagnosticsProvider);
 
       expect(state.step, DiagnosticStep.idle);
-      expect(state.problemType, isNull);
+      expect(state.flow, isNull);
       expect(state.results, isEmpty);
-      container.dispose();
-    });
-
-    test('start() transitions to selectProblem', () {
-      final container = createContainer();
-      final notifier = container.read(unifiedDiagnosticsProvider.notifier);
-
-      notifier.start();
-
-      final state = container.read(unifiedDiagnosticsProvider);
-      expect(state.step, DiagnosticStep.selectProblem);
       container.dispose();
     });
 
@@ -122,7 +126,6 @@ void main() {
       final container = createContainer();
       final notifier = container.read(unifiedDiagnosticsProvider.notifier);
 
-      notifier.start();
       await notifier.cancel();
 
       final state = container.read(unifiedDiagnosticsProvider);
@@ -160,18 +163,18 @@ void main() {
               repeatCount: any(named: 'repeatCount'),
             )).thenAnswer((_) async => _createPingResult('1.1.1.1'));
 
-        await notifier.selectProblem(ProblemType.noInternet);
+        await notifier.selectFlow(DiagnosticFlow.internet);
         await Future.delayed(Duration.zero);
 
         final state = container.read(unifiedDiagnosticsProvider);
         expect(state.step, DiagnosticStep.showingResults);
-        expect(state.results.length,
-            6); // WAN, DHCP, Gateway, DNS Ping, DNS Lookup, Internet
+        // WAN, DHCP Pool, Gateway, DNS Ping, DNS Lookup, Internet, SpeedTest
+        expect(state.results.length, 7);
         expect(state.results.every((r) => r.isOk), isTrue);
         container.dispose();
       });
 
-      test('stops early on WAN down', () async {
+      test('records WAN error result and continues flow', () async {
         final container = createContainer();
         final notifier = container.read(unifiedDiagnosticsProvider.notifier);
 
@@ -183,14 +186,29 @@ void main() {
             addressingType: 'DHCP',
           ),
         );
+        when(() =>
+                mockService.pingGateway(repeatCount: any(named: 'repeatCount')))
+            .thenAnswer((_) async => _createFailedPingResult('192.168.1.1'));
+        when(() => mockService.pingDns(
+              host: any(named: 'host'),
+              repeatCount: any(named: 'repeatCount'),
+            )).thenAnswer((_) async => _createFailedPingResult('8.8.8.8'));
+        when(() => mockService.pingInternet(
+              host: any(named: 'host'),
+              repeatCount: any(named: 'repeatCount'),
+            )).thenAnswer((_) async => _createFailedPingResult('1.1.1.1'));
 
-        await notifier.selectProblem(ProblemType.noInternet);
+        await notifier.selectFlow(DiagnosticFlow.internet);
         await Future.delayed(Duration.zero);
 
         final state = container.read(unifiedDiagnosticsProvider);
         expect(state.step, DiagnosticStep.showingResults);
-        expect(state.results.length, 1); // Only WAN
-        expect(state.results.first.isError, isTrue);
+        // Flow no longer early-stops; all checks run and the WAN-down result
+        // is preserved in the results list.
+        final wanResult = state.results.firstWhere(
+          (r) => r.step == DiagnosticStep.checkingWanStatus,
+        );
+        expect(wanResult.isError, isTrue);
         expect(state.recommendations, isNotEmpty);
         container.dispose();
       });
@@ -220,14 +238,20 @@ void main() {
               repeatCount: any(named: 'repeatCount'),
             )).thenAnswer((_) async => _createPingResult('1.1.1.1'));
 
-        await notifier.selectProblem(ProblemType.noInternet);
+        await notifier.selectFlow(DiagnosticFlow.internet);
         await Future.delayed(Duration.zero);
 
         final state = container.read(unifiedDiagnosticsProvider);
-        final dhcpResult = state.results.firstWhere(
-          (r) => r.step == DiagnosticStep.checkingDhcp,
+        // New flow no longer probes DHCP lease — only checks the LAN-side DHCP
+        // pool, which is independent of WAN addressing type.
+        expect(
+          state.results.any((r) => r.step == DiagnosticStep.checkingDhcp),
+          isFalse,
         );
-        expect(dhcpResult.isSkipped, isTrue);
+        expect(
+          state.results.any((r) => r.step == DiagnosticStep.checkingDhcpPool),
+          isTrue,
+        );
         container.dispose();
       });
 
@@ -257,7 +281,7 @@ void main() {
               repeatCount: any(named: 'repeatCount'),
             )).thenAnswer((_) async => _createPingResult('1.1.1.1'));
 
-        await notifier.selectProblem(ProblemType.noInternet);
+        await notifier.selectFlow(DiagnosticFlow.internet);
         await Future.delayed(Duration.zero);
 
         final state = container.read(unifiedDiagnosticsProvider);
@@ -265,102 +289,6 @@ void main() {
           state.recommendations.any((r) => r.id == 'gateway_unreachable'),
           isTrue,
         );
-        container.dispose();
-      });
-    });
-
-    group('Slow Network Flow', () {
-      test('runs SpeedTest → WiFi → Devices sequence', () async {
-        final container = createContainer();
-        final notifier = container.read(unifiedDiagnosticsProvider.notifier);
-
-        when(() => mockService.checkWifiRadios()).thenAnswer(
-          (_) async => [
-            const WiFiRadioUIModel(
-              instancePath: 'Device.WiFi.Radio.1.',
-              band: '2.4GHz',
-              channel: 6,
-              channelBandwidth: '20MHz',
-              transmitPower: 100,
-              status: 'Up',
-              autoChannel: true,
-            ),
-          ],
-        );
-
-        when(() => mockService.analyzeWifiSignalPerRadio()).thenAnswer(
-          (_) async => const WifiSignalPerRadioUIModel(
-            radios: [
-              RadioSignalStatsUIModel(
-                instancePath: 'Device.WiFi.Radio.1.',
-                band: '2.4GHz',
-                channel: 6,
-                status: 'Up',
-                clientCount: 2,
-                averageRssi: -50,
-                minRssi: -60,
-              ),
-            ],
-          ),
-        );
-
-        when(() => mockService.checkConnectedDevices()).thenAnswer(
-          (_) async => const ConnectedDevicesUIModel(
-            totalDevices: 5,
-            activeDevices: 3,
-            highBandwidthDevices: [],
-          ),
-        );
-
-        await notifier.selectProblem(ProblemType.slowNetwork);
-        // Wait for speed test mock to complete
-        await Future.delayed(const Duration(milliseconds: 100));
-
-        final state = container.read(unifiedDiagnosticsProvider);
-        expect(state.step, DiagnosticStep.showingResults);
-        // SpeedTest, WiFi, Devices (traceroute skipped if speed is OK)
-        expect(state.results.length, greaterThanOrEqualTo(3));
-        container.dispose();
-      });
-
-      test('detects high bandwidth devices', () async {
-        final container = createContainer();
-        final notifier = container.read(unifiedDiagnosticsProvider.notifier);
-
-        when(() => mockService.analyzeWifiSignalPerRadio()).thenAnswer(
-          (_) async => const WifiSignalPerRadioUIModel(
-            radios: [
-              RadioSignalStatsUIModel(
-                instancePath: 'Device.WiFi.Radio.1.',
-                band: '5GHz',
-                channel: 36,
-                status: 'Up',
-                clientCount: 1,
-                averageRssi: -40,
-                minRssi: -40,
-              ),
-            ],
-          ),
-        );
-
-        when(() => mockService.checkConnectedDevices()).thenAnswer(
-          (_) async => const ConnectedDevicesUIModel(
-            totalDevices: 10,
-            activeDevices: 8,
-            highBandwidthDevices: ['MacBook-Pro', 'Gaming-PC'],
-          ),
-        );
-
-        await notifier.selectProblem(ProblemType.slowNetwork);
-        await Future.delayed(const Duration(milliseconds: 100));
-
-        final state = container.read(unifiedDiagnosticsProvider);
-        final devicesResult = state.results.firstWhere(
-          (r) => r.step == DiagnosticStep.checkingConnectedDevices,
-        ) as ConnectedDevicesCheckUIModel;
-
-        expect(devicesResult.totalDevices, 10);
-        expect(devicesResult.highBandwidthDevices, isNotEmpty);
         container.dispose();
       });
     });
@@ -391,7 +319,7 @@ void main() {
               repeatCount: any(named: 'repeatCount'),
             )).thenAnswer((_) async => _createPingResult('1.1.1.1'));
 
-        await notifier.selectProblem(ProblemType.noInternet);
+        await notifier.selectFlow(DiagnosticFlow.internet);
         await Future.delayed(Duration.zero);
 
         // Scope acquired exactly once (lazy-cached) and attached to service.
@@ -426,7 +354,7 @@ void main() {
               repeatCount: any(named: 'repeatCount'),
             )).thenAnswer((_) async => _createPingResult('1.1.1.1'));
 
-        await notifier.selectProblem(ProblemType.noInternet);
+        await notifier.selectFlow(DiagnosticFlow.internet);
         await Future.delayed(Duration.zero);
 
         await notifier.restart();
@@ -464,7 +392,7 @@ void main() {
               repeatCount: any(named: 'repeatCount'),
             )).thenAnswer((_) async => _createPingResult('1.1.1.1'));
 
-        await notifier.selectProblem(ProblemType.noInternet);
+        await notifier.selectFlow(DiagnosticFlow.internet);
         await Future.delayed(Duration.zero);
 
         container.dispose();
@@ -498,7 +426,7 @@ void main() {
               repeatCount: any(named: 'repeatCount'),
             )).thenAnswer((_) async => _createPingResult('1.1.1.1'));
 
-        await notifier.selectProblem(ProblemType.noInternet);
+        await notifier.selectFlow(DiagnosticFlow.internet);
         await Future.delayed(Duration.zero);
 
         container.dispose();
@@ -655,6 +583,219 @@ void main() {
       });
     });
 
+    group('Device Issues Flow', () {
+      test('runs getDeviceScores and reports ok severity for healthy fleet',
+          () async {
+        final container = createContainer();
+        final notifier = container.read(unifiedDiagnosticsProvider.notifier);
+
+        when(() => mockService.getDeviceScores())
+            .thenAnswer((_) async => const [
+                  DeviceScoreUIModel(
+                    macAddress: 'AA:BB:CC:DD:EE:FF',
+                    name: 'iPhone',
+                    rssiDbm: -55,
+                    downlinkKbps: 100000,
+                    isWireless: true,
+                  ),
+                ]);
+
+        await notifier.selectFlow(DiagnosticFlow.deviceIssues);
+        await Future.delayed(Duration.zero);
+
+        final state = container.read(unifiedDiagnosticsProvider);
+        expect(state.step, DiagnosticStep.showingResults);
+        expect(state.results.single, isA<DeviceIssuesCheckUIModel>());
+        expect(state.results.single.severity, DiagnosticSeverity.ok);
+        container.dispose();
+      });
+
+      test('captures error result when getDeviceScores throws', () async {
+        final container = createContainer();
+        final notifier = container.read(unifiedDiagnosticsProvider.notifier);
+
+        when(() => mockService.getDeviceScores())
+            .thenThrow(Exception('USP failed'));
+
+        await notifier.selectFlow(DiagnosticFlow.deviceIssues);
+        await Future.delayed(Duration.zero);
+
+        final state = container.read(unifiedDiagnosticsProvider);
+        expect(state.step, DiagnosticStep.showingResults);
+        expect(state.results.single.isError, isTrue);
+        container.dispose();
+      });
+    });
+
+    group('WiFi Coverage Flow', () {
+      test('reports ok severity when coverage is healthy', () async {
+        final container = createContainer();
+        final notifier = container.read(unifiedDiagnosticsProvider.notifier);
+
+        when(() => mockService.analyzeWifiCoverage())
+            .thenAnswer((_) async => const WifiCoverageUIModel(
+                  totalWirelessDevices: 4,
+                  weakSignalDevices: [],
+                  averageSignalStrength: -55,
+                  radios: [],
+                ));
+
+        await notifier.selectFlow(DiagnosticFlow.wifiCoverage);
+        await Future.delayed(Duration.zero);
+
+        final state = container.read(unifiedDiagnosticsProvider);
+        expect(state.step, DiagnosticStep.showingResults);
+        expect(state.results.single, isA<WifiCoverageCheckUIModel>());
+        expect(state.results.single.severity, DiagnosticSeverity.ok);
+        container.dispose();
+      });
+    });
+
+    group('Intermittent Flow', () {
+      test('reports ok severity when no jitter / loss / reboot', () async {
+        final container = createContainer();
+        final notifier = container.read(unifiedDiagnosticsProvider.notifier);
+
+        when(() => mockService.checkIntermittent())
+            .thenAnswer((_) async => const IntermittentUIModel(
+                  uptimeSeconds: 86400,
+                  pingSuccessRate: 1.0,
+                  averageLatencyMs: 12,
+                  jitterMs: 2,
+                  hasHighJitter: false,
+                  hasPacketLoss: false,
+                  recentReboot: false,
+                ));
+
+        await notifier.selectFlow(DiagnosticFlow.intermittent);
+        await Future.delayed(Duration.zero);
+
+        final state = container.read(unifiedDiagnosticsProvider);
+        expect(state.step, DiagnosticStep.showingResults);
+        expect(state.results.single, isA<IntermittentCheckUIModel>());
+        expect(state.results.single.severity, DiagnosticSeverity.ok);
+        container.dispose();
+      });
+
+      test('reports error severity on packet loss', () async {
+        final container = createContainer();
+        final notifier = container.read(unifiedDiagnosticsProvider.notifier);
+
+        when(() => mockService.checkIntermittent())
+            .thenAnswer((_) async => const IntermittentUIModel(
+                  uptimeSeconds: 3600,
+                  pingSuccessRate: 0.5,
+                  averageLatencyMs: 12,
+                  jitterMs: 2,
+                  hasHighJitter: false,
+                  hasPacketLoss: true,
+                  recentReboot: false,
+                ));
+
+        await notifier.selectFlow(DiagnosticFlow.intermittent);
+        await Future.delayed(Duration.zero);
+
+        final state = container.read(unifiedDiagnosticsProvider);
+        expect(state.results.single.severity, DiagnosticSeverity.error);
+        container.dispose();
+      });
+    });
+
+    group('Full Diagnostic Flow', () {
+      test('runs all checks and shows results when everything succeeds',
+          () async {
+        final container = createContainer();
+        final notifier = container.read(unifiedDiagnosticsProvider.notifier);
+
+        when(() => mockService.checkWanStatus())
+            .thenAnswer((_) async => const WanStatusUIModel(
+                  status: 'Up',
+                  ipAddress: '192.168.1.100',
+                  subnetMask: '255.255.255.0',
+                  addressingType: 'DHCP',
+                ));
+        when(() =>
+                mockService.pingGateway(repeatCount: any(named: 'repeatCount')))
+            .thenAnswer((_) async => _createPingResult('192.168.1.1'));
+        when(() => mockService.pingDns(
+              host: any(named: 'host'),
+              repeatCount: any(named: 'repeatCount'),
+            )).thenAnswer((_) async => _createPingResult('8.8.8.8'));
+        when(() => mockService.pingInternet(
+              host: any(named: 'host'),
+              repeatCount: any(named: 'repeatCount'),
+            )).thenAnswer((_) async => _createPingResult('1.1.1.1'));
+        when(() => mockService.analyzeWifiSignalPerRadio()).thenAnswer(
+            (_) async => const WifiSignalPerRadioUIModel(radios: []));
+        when(() => mockService.checkConnectedDevices())
+            .thenAnswer((_) async => const ConnectedDevicesUIModel(
+                  totalDevices: 5,
+                  activeDevices: 5,
+                  highBandwidthDevices: [],
+                ));
+        when(() => mockService.checkMeshBackhaul())
+            .thenAnswer((_) async => const []);
+
+        await notifier.runFullDiagnostic();
+        await Future.delayed(Duration.zero);
+
+        final state = container.read(unifiedDiagnosticsProvider);
+        expect(state.step, DiagnosticStep.showingResults);
+        expect(state.results, isNotEmpty);
+        // Verify the major checks all ran.
+        verify(() => mockService.checkWanStatus()).called(1);
+        verify(() => mockService.pingGateway(
+              repeatCount: any(named: 'repeatCount'),
+            )).called(1);
+        verify(() => mockService.checkMeshBackhaul()).called(1);
+        verify(() => mockService.checkConnectedDevices()).called(1);
+        container.dispose();
+      });
+    });
+
+    group('Cancellation', () {
+      test('cancel awaits the in-flight run and releases scope', () async {
+        final container = createContainer();
+        final notifier = container.read(unifiedDiagnosticsProvider.notifier);
+
+        when(() => mockService.checkWanStatus())
+            .thenAnswer((_) async => const WanStatusUIModel(
+                  status: 'Up',
+                  ipAddress: '192.168.1.100',
+                  subnetMask: '255.255.255.0',
+                  addressingType: 'DHCP',
+                ));
+        // Hang the gateway ping so we can interleave a cancel().
+        final gatewayCompleter = Completer<PingResult>();
+        when(() =>
+                mockService.pingGateway(repeatCount: any(named: 'repeatCount')))
+            .thenAnswer((_) => gatewayCompleter.future);
+        when(() => mockService.pingDns(
+              host: any(named: 'host'),
+              repeatCount: any(named: 'repeatCount'),
+            )).thenAnswer((_) async => _createPingResult('8.8.8.8'));
+        when(() => mockService.pingInternet(
+              host: any(named: 'host'),
+              repeatCount: any(named: 'repeatCount'),
+            )).thenAnswer((_) async => _createPingResult('1.1.1.1'));
+
+        final runFuture = notifier.selectFlow(DiagnosticFlow.internet);
+        await Future.delayed(Duration.zero);
+
+        // Concurrently cancel; cancel must await in-flight before releasing.
+        final cancelFuture = notifier.cancel();
+        gatewayCompleter.complete(_createPingResult('192.168.1.1'));
+        await runFuture;
+        await cancelFuture;
+
+        final state = container.read(unifiedDiagnosticsProvider);
+        expect(state.step, DiagnosticStep.idle);
+        // Scope was acquired once during the run and released exactly once.
+        verify(() => mockScope.release()).called(1);
+        container.dispose();
+      });
+    });
+
     group('Restart', () {
       test('restart() re-runs same problem type', () async {
         final container = createContainer();
@@ -680,7 +821,7 @@ void main() {
               repeatCount: any(named: 'repeatCount'),
             )).thenAnswer((_) async => _createPingResult('1.1.1.1'));
 
-        await notifier.selectProblem(ProblemType.noInternet);
+        await notifier.selectFlow(DiagnosticFlow.internet);
         await Future.delayed(Duration.zero);
 
         // Restart
@@ -721,7 +862,7 @@ PingResult _createFailedPingResult(String host) {
 
 class _FakeScope extends Fake implements DiagnosticScope {}
 
-class _MockSpeedTestNotifier extends AsyncNotifier<SpeedTestState>
+class _MockSpeedTestNotifier extends AutoDisposeAsyncNotifier<SpeedTestState>
     implements SpeedTestNotifier {
   @override
   Future<SpeedTestState> build() async => const SpeedTestState();
@@ -747,6 +888,11 @@ class _MockSpeedTestNotifier extends AsyncNotifier<SpeedTestState>
 
   @override
   void reset() {
+    state = const AsyncData(SpeedTestState());
+  }
+
+  @override
+  Future<void> cancel() async {
     state = const AsyncData(SpeedTestState());
   }
 }

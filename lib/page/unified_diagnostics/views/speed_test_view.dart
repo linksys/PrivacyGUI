@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -9,6 +7,7 @@ import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/shell/usp_top_bar.dart';
 import 'package:privacy_gui/page/unified_diagnostics/models/speed_test_state.dart';
 import 'package:privacy_gui/page/unified_diagnostics/providers/speed_test_notifier.dart';
+import 'package:privacy_gui/page/unified_diagnostics/views/widgets/speed_gauge.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 class SpeedTestView extends ConsumerWidget {
@@ -139,13 +138,33 @@ class SpeedTestView extends ConsumerWidget {
         children: [
           // Show gauge during speed test, otherwise show progress circle
           if (isSpeedTest)
-            _SpeedTestGauge(
+            SpeedGauge(
               value: 0,
               isAnimating: true,
-              label: state.step == SpeedTestStep.testingDownload
-                  ? 'Download'
-                  : 'Upload',
-              colorScheme: colorScheme,
+              size: 220,
+              centerBuilder: (ctx, displayValue) => Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  AppText.headlineLarge(
+                    displayValue.toStringAsFixed(1),
+                    color: colorScheme.primary,
+                  ),
+                  AppText.bodyMedium('Mbps'),
+                  AppGap.sm(),
+                  AppText.bodySmall(
+                    'Testing...',
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ],
+              ),
+              bottomBuilder: (ctx, _) => Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: AppText.labelMedium(
+                  state.step == SpeedTestStep.testingDownload
+                      ? 'Download'
+                      : 'Upload',
+                ),
+              ),
             )
           else
             _buildProgressCircle(context, state),
@@ -187,10 +206,9 @@ class SpeedTestView extends ConsumerWidget {
           SizedBox(
             width: 150,
             height: 150,
-            child: CircularProgressIndicator(
+            child: AppLoader(
               value: progress,
               strokeWidth: 8,
-              backgroundColor: colorScheme.surfaceContainerHighest,
               color: colorScheme.primary,
             ),
           ),
@@ -265,7 +283,7 @@ class SpeedTestView extends ConsumerWidget {
                 result.isDownloadComplete ? Icons.check_circle : Icons.warning,
                 size: 64,
                 color: result.isDownloadComplete
-                    ? Colors.green
+                    ? colorScheme.primary
                     : colorScheme.tertiary,
               ),
               AppGap.md(),
@@ -473,13 +491,11 @@ class _LatencyCard extends StatelessWidget {
             : latencyMs < 100
                 ? 'Fair'
                 : 'Poor';
-    final qualityColor = latencyMs < 20
-        ? Colors.green
-        : latencyMs < 50
-            ? colorScheme.primary
-            : latencyMs < 100
-                ? Colors.orange
-                : colorScheme.error;
+    final qualityColor = latencyMs < 50
+        ? colorScheme.primary
+        : latencyMs < 100
+            ? colorScheme.tertiary
+            : colorScheme.error;
 
     return AppCard(
       child: Row(
@@ -489,7 +505,7 @@ class _LatencyCard extends StatelessWidget {
             height: 48,
             decoration: BoxDecoration(
               color: qualityColor.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(AppRadius.md),
             ),
             child: Icon(Icons.network_ping, color: qualityColor),
           ),
@@ -510,7 +526,7 @@ class _LatencyCard extends StatelessWidget {
                         const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
                       color: qualityColor.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(4),
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
                     ),
                     child: AppText.labelSmall(quality, color: qualityColor),
                   ),
@@ -608,10 +624,10 @@ class _ServerSelectionButton extends StatelessWidget {
 
     return Material(
       color: colorScheme.surfaceContainerHighest,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(AppRadius.lg),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         child: Container(
           width: 280,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -639,121 +655,6 @@ class _ServerSelectionButton extends StatelessWidget {
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-/// Animated gauge for speed test display with random fluctuation
-class _SpeedTestGauge extends StatefulWidget {
-  final double value;
-  final bool isAnimating;
-  final String label;
-  final ColorScheme colorScheme;
-
-  const _SpeedTestGauge({
-    required this.value,
-    required this.isAnimating,
-    required this.label,
-    required this.colorScheme,
-  });
-
-  @override
-  State<_SpeedTestGauge> createState() => _SpeedTestGaugeState();
-}
-
-class _SpeedTestGaugeState extends State<_SpeedTestGauge>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  final _random = Random();
-  double _currentValue = 0;
-  double _targetValue = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 300),
-      vsync: this,
-    )..addListener(_onTick);
-
-    if (widget.isAnimating) {
-      _startRandomAnimation();
-    }
-  }
-
-  void _startRandomAnimation() {
-    _generateNewTarget();
-    _controller.forward(from: 0);
-  }
-
-  void _generateNewTarget() {
-    // Random value between 20-200 Mbps with some clustering around 50-150
-    final base = 50 + _random.nextDouble() * 100;
-    final noise = (_random.nextDouble() - 0.5) * 60;
-    _targetValue = (base + noise).clamp(20, 250);
-  }
-
-  void _onTick() {
-    if (!mounted) return;
-
-    setState(() {
-      // Smooth interpolation towards target
-      _currentValue = _currentValue + (_targetValue - _currentValue) * 0.15;
-    });
-
-    // When animation completes, generate new target and restart
-    if (_controller.isCompleted && widget.isAnimating) {
-      _generateNewTarget();
-      _controller.forward(from: 0);
-    }
-  }
-
-  @override
-  void didUpdateWidget(_SpeedTestGauge oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.isAnimating && !oldWidget.isAnimating) {
-      _startRandomAnimation();
-    } else if (!widget.isAnimating && oldWidget.isAnimating) {
-      _controller.stop();
-    }
-  }
-
-  @override
-  void dispose() {
-    _controller.removeListener(_onTick);
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final displayValue = widget.isAnimating ? _currentValue : widget.value;
-
-    return AppGauge(
-      value: displayValue,
-      size: 220,
-      markers: const [0, 50, 100, 200, 300, 500],
-      centerBuilder: (context, value) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          AppText.headlineLarge(
-            displayValue.toStringAsFixed(1),
-            color: widget.colorScheme.primary,
-          ),
-          AppText.bodyMedium('Mbps'),
-          if (widget.isAnimating) ...[
-            AppGap.sm(),
-            AppText.bodySmall(
-              'Testing...',
-              color: widget.colorScheme.onSurfaceVariant,
-            ),
-          ],
-        ],
-      ),
-      bottomBuilder: (context, value) => Padding(
-        padding: const EdgeInsets.only(bottom: 8),
-        child: AppText.labelMedium(widget.label),
       ),
     );
   }

@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
+import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/models/operate_result.dart';
 import 'package:privacy_gui/core/usp/services/network_diagnostics_executor.dart';
@@ -21,9 +22,8 @@ import 'package:privacy_gui/page/unified_diagnostics/models/device_score.dart';
 final unifiedDiagnosticsServiceProvider =
     Provider<UnifiedDiagnosticsService?>((ref) {
   final usp = ref.watch(uspClientProvider);
-  final executor = ref.watch(networkDiagnosticsExecutorProvider);
-  if (usp == null || executor == null) return null;
-  return UnifiedDiagnosticsService(usp, executor);
+  if (usp == null) return null;
+  return UnifiedDiagnosticsService(usp);
 });
 
 /// Service encapsulating all USP operations for network diagnostics.
@@ -35,8 +35,6 @@ final unifiedDiagnosticsServiceProvider =
 ///   notifier — call [attachScope] before invoking any Operate-based method.
 class UnifiedDiagnosticsService {
   final UspClient _usp;
-  // ignore: unused_field
-  final NetworkDiagnosticsExecutor _executor;
   DiagnosticScope? _scope;
 
   static const _defaultInternetHost =
@@ -44,11 +42,15 @@ class UnifiedDiagnosticsService {
   static const _defaultDnsHost = '8.8.8.8'; // Google DNS — for DNS check
   static const _defaultTracerouteHost = '8.8.8.8';
 
-  UnifiedDiagnosticsService(this._usp, this._executor);
+  UnifiedDiagnosticsService(this._usp);
 
-  /// Inject the active [DiagnosticScope]. Must be called before any
-  /// Operate-based method (ping, nsLookup, traceroute). Owned by notifier.
+  /// Inject the active [DiagnosticScope]. Replaces any prior scope (the prior
+  /// scope's release lifecycle is owned by its caller; this method does not
+  /// release it). Must be called before any Operate-based method (ping,
+  /// nsLookup, traceroute). Owned by notifier.
   void attachScope(DiagnosticScope scope) {
+    assert(!scope.isReleased,
+        'attachScope received an already-released DiagnosticScope.');
     _scope = scope;
   }
 
@@ -67,7 +69,12 @@ class UnifiedDiagnosticsService {
   /// Check WAN interface status using codegen WanStatus.
   Future<WanStatusUIModel> checkWanStatus() async {
     logger.d('[Diagnostics] Checking WAN status');
-    final wan = await WanStatus.fetch(_usp);
+    final WanStatus wan;
+    try {
+      wan = await WanStatus.fetch(_usp);
+    } catch (e) {
+      throw mapUspErrorToServiceError(e);
+    }
     return WanStatusUIModel(
       status: wan.status,
       ipAddress: wan.ipAddress,
@@ -85,25 +92,32 @@ class UnifiedDiagnosticsService {
     Duration timeout = const Duration(seconds: 20),
   }) async {
     logger.d('[Diagnostics] Pinging $host (count=$repeatCount)');
+    final OperateResult result;
     try {
-      final result = await _requireScope().ping(
+      result = await _requireScope().ping(
         host: host,
         numberOfRepetitions: repeatCount,
         timeout: timeout,
       );
-      logger.d('[Diagnostics] Ping $host complete: ${result.status}');
-      return PingResult.fromOperateResult(result, host);
+    } on ServiceError {
+      rethrow;
+    } on StateError {
+      rethrow;
     } catch (e) {
       logger.e('[Diagnostics] Ping $host failed: $e');
-      rethrow;
+      throw mapUspErrorToServiceError(e);
     }
+    logger.d('[Diagnostics] Ping $host complete: ${result.status}');
+    return PingResult.fromOperateResult(result, host);
   }
 
   /// Ping the default gateway.
   Future<PingResult> pingGateway({int repeatCount = 3}) async {
     final wan = await checkWanStatus();
     if (wan.ipAddress.isEmpty) {
-      throw Exception('No WAN IP address — cannot determine gateway');
+      throw const InvalidInputError(
+          field: 'wanIp',
+          message: 'No WAN IP address — cannot determine gateway');
     }
     final gateway = _deriveGateway(wan.ipAddress, wan.subnetMask);
     return ping(gateway, repeatCount: repeatCount);
@@ -132,7 +146,11 @@ class UnifiedDiagnosticsService {
   /// Fetch DNS client configuration and configured server list.
   Future<DnsClient> getDnsClient() async {
     logger.d('[Diagnostics] Getting DNS client info');
-    return DnsClient.fetch(_usp);
+    try {
+      return await DnsClient.fetch(_usp);
+    } catch (e) {
+      throw mapUspErrorToServiceError(e);
+    }
   }
 
   /// Run NSLookup to validate that DNS resolution actually works
@@ -144,19 +162,24 @@ class UnifiedDiagnosticsService {
   }) async {
     logger.d('[Diagnostics] NSLookup $hostName'
         '${dnsServer != null ? ' via $dnsServer' : ''}');
+    final OperateResult result;
     try {
-      final result = await _requireScope().nsLookup(
+      result = await _requireScope().nsLookup(
         hostName: hostName,
         dnsServer:
             (dnsServer != null && dnsServer.isNotEmpty) ? dnsServer : null,
         timeout: timeout,
       );
-      logger.d('[Diagnostics] NSLookup $hostName complete: ${result.status}');
-      return NsLookupResult.fromOperateResult(result, hostName);
+    } on ServiceError {
+      rethrow;
+    } on StateError {
+      rethrow;
     } catch (e) {
       logger.e('[Diagnostics] NSLookup $hostName failed: $e');
-      rethrow;
+      throw mapUspErrorToServiceError(e);
     }
+    logger.d('[Diagnostics] NSLookup $hostName complete: ${result.status}');
+    return NsLookupResult.fromOperateResult(result, hostName);
   }
 
   // ─── Traceroute ──────────────────────────────────────────
@@ -168,11 +191,21 @@ class UnifiedDiagnosticsService {
     Duration timeout = const Duration(seconds: 120),
   }) async {
     logger.d('[Diagnostics] Running traceroute to $host');
-    final result = await _requireScope().traceRoute(
-      host: host,
-      maxHopCount: maxHops,
-      timeout: timeout,
-    );
+    final OperateResult result;
+    try {
+      result = await _requireScope().traceRoute(
+        host: host,
+        maxHopCount: maxHops,
+        timeout: timeout,
+      );
+    } on ServiceError {
+      rethrow;
+    } on StateError {
+      rethrow;
+    } catch (e) {
+      logger.e('[Diagnostics] Traceroute $host failed: $e');
+      throw mapUspErrorToServiceError(e);
+    }
     return TracerouteResult.fromOperateResult(result, host);
   }
 
@@ -181,7 +214,12 @@ class UnifiedDiagnosticsService {
   /// Fetch WiFi radio status (channels, signal info).
   Future<List<WiFiRadioUIModel>> checkWifiRadios() async {
     logger.d('[Diagnostics] Checking WiFi radios');
-    final radios = await WiFiRadios.fetch(_usp);
+    final WiFiRadios radios;
+    try {
+      radios = await WiFiRadios.fetch(_usp);
+    } catch (e) {
+      throw mapUspErrorToServiceError(e);
+    }
     return radios.items
         .map((r) => WiFiRadioUIModel(
               instancePath: r.instancePath,
@@ -198,7 +236,12 @@ class UnifiedDiagnosticsService {
   /// Fetch connected devices for bandwidth analysis.
   Future<ConnectedDevicesUIModel> checkConnectedDevices() async {
     logger.d('[Diagnostics] Checking connected devices');
-    final devices = await ConnectedDevices.fetch(_usp);
+    final ConnectedDevices devices;
+    try {
+      devices = await ConnectedDevices.fetch(_usp);
+    } catch (e) {
+      throw mapUspErrorToServiceError(e);
+    }
 
     final activeDevices = devices.items.where((d) => d.isActive).toList();
 
@@ -222,7 +265,12 @@ class UnifiedDiagnosticsService {
   /// Get device scores for all connected devices.
   Future<List<DeviceScoreUIModel>> getDeviceScores() async {
     logger.d('[Diagnostics] Getting device scores');
-    final devices = await ConnectedDevices.fetch(_usp);
+    final ConnectedDevices devices;
+    try {
+      devices = await ConnectedDevices.fetch(_usp);
+    } catch (e) {
+      throw mapUspErrorToServiceError(e);
+    }
 
     return devices.items
         .where((d) => d.isActive)
@@ -254,8 +302,17 @@ class UnifiedDiagnosticsService {
   /// Used = number of active DHCP leases in `Device.DHCPv4.Server.Pool.1.Client.*`.
   Future<DhcpPoolUsageUIModel> checkDhcpPool() async {
     logger.d('[Diagnostics] Checking DHCP pool usage');
-    final lan = await LanNetworkInfo.fetch(_usp);
-    final clients = await DhcpClients.fetch(_usp);
+    final List<Object> results;
+    try {
+      results = await Future.wait([
+        LanNetworkInfo.fetch(_usp),
+        DhcpClients.fetch(_usp),
+      ]);
+    } catch (e) {
+      throw mapUspErrorToServiceError(e);
+    }
+    final lan = results[0] as LanNetworkInfo;
+    final clients = results[1] as DhcpClients;
 
     final capacity = _ipRangeSize(lan.minAddress, lan.maxAddress);
     final activeLeases = clients.items.where((c) => c.active).length;
@@ -296,8 +353,17 @@ class UnifiedDiagnosticsService {
   /// Analyze WiFi coverage based on device signal strengths.
   Future<WifiCoverageUIModel> analyzeWifiCoverage() async {
     logger.d('[Diagnostics] Analyzing WiFi coverage');
-    final devices = await ConnectedDevices.fetch(_usp);
-    final radios = await WiFiRadios.fetch(_usp);
+    final List<Object> results;
+    try {
+      results = await Future.wait([
+        ConnectedDevices.fetch(_usp),
+        WiFiRadios.fetch(_usp),
+      ]);
+    } catch (e) {
+      throw mapUspErrorToServiceError(e);
+    }
+    final devices = results[0] as ConnectedDevices;
+    final radios = results[1] as WiFiRadios;
 
     final wirelessDevices = devices.items
         .where((d) => d.isActive && d.signalStrength != null)
@@ -347,10 +413,21 @@ class UnifiedDiagnosticsService {
   /// affected clients are reported under the `unknown` radio bucket.
   Future<WifiSignalPerRadioUIModel> analyzeWifiSignalPerRadio() async {
     logger.d('[Diagnostics] Analyzing WiFi signal per radio');
-    final radios = await WiFiRadios.fetch(_usp);
-    final accessPoints = await WiFiAccessPoints.fetch(_usp);
-    final ssids = await WiFiSsids.fetch(_usp);
-    final clients = await WifiClients.fetch(_usp);
+    final List<Object> results;
+    try {
+      results = await Future.wait([
+        WiFiRadios.fetch(_usp),
+        WiFiAccessPoints.fetch(_usp),
+        WiFiSsids.fetch(_usp),
+        WifiClients.fetch(_usp),
+      ]);
+    } catch (e) {
+      throw mapUspErrorToServiceError(e);
+    }
+    final radios = results[0] as WiFiRadios;
+    final accessPoints = results[1] as WiFiAccessPoints;
+    final ssids = results[2] as WiFiSsids;
+    final clients = results[3] as WifiClients;
 
     final ssidByPath = {for (final s in ssids.items) s.instancePath: s};
     final apToRadio = <String, String>{};
@@ -437,7 +514,12 @@ class UnifiedDiagnosticsService {
   /// Check for intermittent connection issues.
   Future<IntermittentUIModel> checkIntermittent() async {
     logger.d('[Diagnostics] Checking intermittent issues');
-    final systemInfo = await SystemInfo.fetch(_usp);
+    final SystemInfo systemInfo;
+    try {
+      systemInfo = await SystemInfo.fetch(_usp);
+    } catch (e) {
+      throw mapUspErrorToServiceError(e);
+    }
 
     // Run multiple pings to detect jitter
     final pingResults = <int>[];
@@ -494,7 +576,12 @@ class UnifiedDiagnosticsService {
   /// an empty list, signalling the caller to mark the step as skipped.
   Future<List<MeshBackhaulNodeRecord>> checkMeshBackhaul() async {
     logger.d('[Diagnostics] Inspecting mesh backhaul');
-    final network = await DataElementsNetwork.fetch(_usp);
+    final DataElementsNetwork network;
+    try {
+      network = await DataElementsNetwork.fetch(_usp);
+    } catch (e) {
+      throw mapUspErrorToServiceError(e);
+    }
     if (network.items.length < 2) {
       logger.d('[Diagnostics] Mesh backhaul: ${network.items.length} '
           'node(s) — skipping');

@@ -27,7 +27,6 @@ void main() {
       expect(result.titleKey, 'test_title');
       expect(result.descriptionKey, 'test_desc');
       expect(result.rawData, isEmpty);
-      expect(result.timestamp, isNotNull);
     });
 
     test('severity getters work correctly', () {

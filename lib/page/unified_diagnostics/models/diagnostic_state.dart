@@ -3,17 +3,7 @@ import 'package:privacy_gui/page/unified_diagnostics/models/speed_test_state.dar
 
 import 'diagnostic_result.dart';
 
-/// Problem type selected by user at the start of diagnostics.
-/// @deprecated Use [DiagnosticFlow] instead.
-enum ProblemType {
-  /// No internet connection (WAN down, DHCP failure, etc.)
-  noInternet,
-
-  /// Internet connected but slow performance.
-  slowNetwork,
-}
-
-/// Diagnostic flow type — extends ProblemType with more specific scenarios.
+/// Diagnostic flow type — covers all diagnostic scenarios.
 enum DiagnosticFlow {
   /// Internet diagnostics — connectivity + speed test.
   /// Combines the old noInternet and slowNetwork flows.
@@ -57,10 +47,6 @@ enum DiagnosticStep {
 
   /// User selects diagnostic flow from menu.
   selectFlow,
-
-  /// User selects problem type (noInternet or slowNetwork).
-  /// @deprecated Use [selectFlow] instead.
-  selectProblem,
 
   // ─── Scenario A: No Internet ───────────────────────────────
 
@@ -158,10 +144,6 @@ class UnifiedDiagnosticsState extends Equatable {
   /// Current step in the diagnostic flow.
   final DiagnosticStep step;
 
-  /// Problem type selected by user (null if not yet selected).
-  /// @deprecated Use [flow] instead.
-  final ProblemType? problemType;
-
   /// Selected diagnostic flow (null if not yet selected).
   final DiagnosticFlow? flow;
 
@@ -185,7 +167,6 @@ class UnifiedDiagnosticsState extends Equatable {
 
   const UnifiedDiagnosticsState({
     this.step = DiagnosticStep.idle,
-    this.problemType,
     this.flow,
     this.preQualifierResult,
     this.results = const [],
@@ -198,19 +179,10 @@ class UnifiedDiagnosticsState extends Equatable {
   /// Whether any diagnostic is in progress.
   bool get isRunning =>
       step != DiagnosticStep.idle &&
-      step != DiagnosticStep.selectProblem &&
       step != DiagnosticStep.selectFlow &&
       step != DiagnosticStep.manualTools &&
       step != DiagnosticStep.showingResults &&
       step != DiagnosticStep.completed;
-
-  /// Whether we're in the "no internet" diagnostic flow (legacy).
-  bool get isNoInternetFlow =>
-      flow == DiagnosticFlow.internet || problemType == ProblemType.noInternet;
-
-  /// Whether we're in the "slow network" diagnostic flow (legacy).
-  bool get isSlowNetworkFlow =>
-      flow == DiagnosticFlow.internet || problemType == ProblemType.slowNetwork;
 
   /// Whether we're in the combined internet diagnostic flow.
   bool get isInternetFlow => flow == DiagnosticFlow.internet;
@@ -222,7 +194,6 @@ class UnifiedDiagnosticsState extends Equatable {
 
   UnifiedDiagnosticsState copyWith({
     DiagnosticStep? step,
-    ProblemType? problemType,
     DiagnosticFlow? flow,
     PreQualifierResult? preQualifierResult,
     List<DiagnosticStepUIModel>? results,
@@ -234,26 +205,28 @@ class UnifiedDiagnosticsState extends Equatable {
     bool clearSpeedTest = false,
     bool clearFlow = false,
     bool clearPreQualifier = false,
+    bool clearProgress = false,
+    bool clearRecommendations = false,
   }) {
     return UnifiedDiagnosticsState(
       step: step ?? this.step,
-      problemType: problemType ?? this.problemType,
       flow: clearFlow ? null : (flow ?? this.flow),
       preQualifierResult: clearPreQualifier
           ? null
           : (preQualifierResult ?? this.preQualifierResult),
       results: results ?? this.results,
       speedTest: clearSpeedTest ? null : (speedTest ?? this.speedTest),
-      recommendations: recommendations ?? this.recommendations,
+      recommendations: clearRecommendations
+          ? const []
+          : (recommendations ?? this.recommendations),
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
-      progress: progress ?? this.progress,
+      progress: clearProgress ? null : (progress ?? this.progress),
     );
   }
 
   @override
   List<Object?> get props => [
         step,
-        problemType,
         flow,
         preQualifierResult,
         results,

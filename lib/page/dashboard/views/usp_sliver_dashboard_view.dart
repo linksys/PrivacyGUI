@@ -25,7 +25,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sliver_dashboard/sliver_dashboard.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/page/dashboard/providers/dashboard_troubleshooting_notifier.dart';
 import 'package:privacy_gui/page/internet_settings/providers/wan_data_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
 
@@ -290,10 +289,7 @@ class _UspSliverDashboardViewState
     return AppCard(
       child: InkWell(
         onTap: () {
-          ref
-              .read(dashboardTroubleshootingProvider.notifier)
-              .startTroubleshooting();
-          context.goNamed(RouteNamed.uspTroubleshooting);
+          context.goNamed(RouteNamed.uspUnifiedDiagnostics);
         },
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.lg),

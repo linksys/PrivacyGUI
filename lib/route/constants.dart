@@ -41,7 +41,6 @@ class RoutePath {
   static const uspInternetSettings = 'uspInternetSettings';
   static const uspWifiSettings = '/uspWifiSettings';
   static const uspApps = '/uspApps';
-  static const uspTroubleshooting = '/uspTroubleshooting';
   static const uspUnifiedDiagnostics = '/uspUnifiedDiagnostics';
   static const uspSpeedTest = '/uspSpeedTest';
 
@@ -198,7 +197,6 @@ class RouteNamed {
   static const uspInternetSettings = 'uspInternetSettings';
   static const uspWifiSettings = 'uspWifiSettings';
   static const uspApps = 'uspApps';
-  static const uspTroubleshooting = 'uspTroubleshooting';
   static const uspUnifiedDiagnostics = 'uspUnifiedDiagnostics';
   static const uspSpeedTest = 'uspSpeedTest';
 
@@ -290,10 +288,6 @@ class RouteNamed {
   static const pnpStaticIp = 'pnpStaticIp';
   static const pnpIspAuth = 'pnpIspAuth';
   static const pnpAddNodes = 'pnpAddNodes';
-
-  /// Troubleshooting
-  static const troubleshooting = 'troubleshooting';
-  static const troubleshootingPing = 'troubleshootingPing';
 
   /// Support
   static const faqList = 'faqList';

@@ -7,18 +7,10 @@ void main() {
     test('has correct enum values', () {
       expect(DiagnosticStep.values.length, greaterThan(10));
       expect(DiagnosticStep.idle, isNotNull);
-      expect(DiagnosticStep.selectProblem, isNotNull);
+      expect(DiagnosticStep.selectFlow, isNotNull);
       expect(DiagnosticStep.checkingWanStatus, isNotNull);
       expect(DiagnosticStep.runningSpeedTest, isNotNull);
       expect(DiagnosticStep.showingResults, isNotNull);
-    });
-  });
-
-  group('ProblemType', () {
-    test('has noInternet and slowNetwork', () {
-      expect(ProblemType.values.length, 2);
-      expect(ProblemType.noInternet, isNotNull);
-      expect(ProblemType.slowNetwork, isNotNull);
     });
   });
 
@@ -77,7 +69,7 @@ void main() {
       final state = UnifiedDiagnosticsState();
 
       expect(state.step, DiagnosticStep.idle);
-      expect(state.problemType, isNull);
+      expect(state.flow, isNull);
       expect(state.results, isEmpty);
       expect(state.speedTest, isNull);
       expect(state.recommendations, isEmpty);
@@ -91,7 +83,7 @@ void main() {
         false,
       );
       expect(
-        UnifiedDiagnosticsState(step: DiagnosticStep.selectProblem).isRunning,
+        UnifiedDiagnosticsState(step: DiagnosticStep.selectFlow).isRunning,
         false,
       );
       expect(
@@ -114,47 +106,17 @@ void main() {
       );
     });
 
-    test('isNoInternetFlow returns correct value', () {
-      expect(
-        UnifiedDiagnosticsState(problemType: ProblemType.noInternet)
-            .isNoInternetFlow,
-        true,
-      );
-      expect(
-        UnifiedDiagnosticsState(problemType: ProblemType.slowNetwork)
-            .isNoInternetFlow,
-        false,
-      );
-      expect(
-        UnifiedDiagnosticsState().isNoInternetFlow,
-        false,
-      );
-    });
-
-    test('isSlowNetworkFlow returns correct value', () {
-      expect(
-        UnifiedDiagnosticsState(problemType: ProblemType.slowNetwork)
-            .isSlowNetworkFlow,
-        true,
-      );
-      expect(
-        UnifiedDiagnosticsState(problemType: ProblemType.noInternet)
-            .isSlowNetworkFlow,
-        false,
-      );
-    });
-
     test('copyWith preserves values', () {
       final initial = UnifiedDiagnosticsState(
         step: DiagnosticStep.checkingWanStatus,
-        problemType: ProblemType.noInternet,
+        flow: DiagnosticFlow.internet,
         errorMessage: 'test error',
       );
 
       final copied = initial.copyWith(step: DiagnosticStep.pingGateway);
 
       expect(copied.step, DiagnosticStep.pingGateway);
-      expect(copied.problemType, ProblemType.noInternet);
+      expect(copied.flow, DiagnosticFlow.internet);
       expect(copied.errorMessage, 'test error');
     });
 
@@ -192,15 +154,15 @@ void main() {
     test('equality works', () {
       final state1 = UnifiedDiagnosticsState(
         step: DiagnosticStep.idle,
-        problemType: ProblemType.noInternet,
+        flow: DiagnosticFlow.internet,
       );
       final state2 = UnifiedDiagnosticsState(
         step: DiagnosticStep.idle,
-        problemType: ProblemType.noInternet,
+        flow: DiagnosticFlow.internet,
       );
       final state3 = UnifiedDiagnosticsState(
         step: DiagnosticStep.idle,
-        problemType: ProblemType.slowNetwork,
+        flow: DiagnosticFlow.deviceIssues,
       );
 
       expect(state1, equals(state2));

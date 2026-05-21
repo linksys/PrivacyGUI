@@ -18,6 +18,24 @@ class DeviceScoreUIModel extends Equatable {
     this.isWireless = true,
   });
 
+  DeviceScoreUIModel copyWith({
+    String? macAddress,
+    String? name,
+    int? rssiDbm,
+    int? downlinkKbps,
+    int? uplinkKbps,
+    bool? isWireless,
+  }) {
+    return DeviceScoreUIModel(
+      macAddress: macAddress ?? this.macAddress,
+      name: name ?? this.name,
+      rssiDbm: rssiDbm ?? this.rssiDbm,
+      downlinkKbps: downlinkKbps ?? this.downlinkKbps,
+      uplinkKbps: uplinkKbps ?? this.uplinkKbps,
+      isWireless: isWireless ?? this.isWireless,
+    );
+  }
+
   /// Signal strength score (0-100).
   /// Wired devices get 100 (no signal issues).
   int get signalScore =>

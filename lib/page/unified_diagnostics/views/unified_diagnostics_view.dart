@@ -9,7 +9,6 @@ import '../models/diagnostic_state.dart';
 import '../providers/unified_diagnostics_notifier.dart';
 import 'widgets/diagnostic_flow_menu.dart';
 import 'widgets/diagnostic_manual_tools_view.dart';
-import 'widgets/diagnostic_problem_selector.dart';
 import 'widgets/diagnostic_results_view.dart';
 import 'widgets/diagnostic_running_view.dart';
 import 'widgets/diagnostic_start_view.dart';
@@ -70,7 +69,6 @@ class _UnifiedDiagnosticsViewState
       DiagnosticStep.idle => const DiagnosticStartView(),
       DiagnosticStep.preQualifying => _buildPreQualifying(context, ref),
       DiagnosticStep.selectFlow => DiagnosticFlowMenu(state: state),
-      DiagnosticStep.selectProblem => const DiagnosticProblemSelector(),
       DiagnosticStep.manualTools => const DiagnosticManualToolsView(),
       DiagnosticStep.showingResults => DiagnosticResultsView(state: state),
       DiagnosticStep.completed => _buildCompleted(context, ref),

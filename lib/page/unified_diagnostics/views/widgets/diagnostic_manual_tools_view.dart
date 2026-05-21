@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/core/usp/services/sse_operation_awaiter.dart';
+import 'package:privacy_gui/core/usp/models/operate_result.dart';
 import 'package:privacy_gui/page/unified_diagnostics/models/manual_tools_state.dart';
 import 'package:privacy_gui/page/unified_diagnostics/providers/manual_tools_notifier.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -29,6 +29,19 @@ class _DiagnosticManualToolsViewState
 
   @override
   Widget build(BuildContext context) {
+    // Sync controllers when remote state changes (e.g. tab switch resets host).
+    ref.listen<AsyncValue<NetworkDiagnosticsState>>(manualToolsProvider,
+        (previous, next) {
+      final state = next.valueOrNull;
+      if (state == null) return;
+      if (_hostController.text != state.host) {
+        _hostController.text = state.host;
+      }
+      if (_dnsServerController.text != state.dnsServer) {
+        _dnsServerController.text = state.dnsServer;
+      }
+    });
+
     final asyncState = ref.watch(manualToolsProvider);
 
     return asyncState.when(
@@ -204,11 +217,6 @@ class _DiagnosticManualToolsViewState
     NetworkDiagnosticsState state,
     ManualToolsNotifier notifier,
   ) {
-    // Sync controller with state on first build
-    if (_hostController.text != state.host) {
-      _hostController.text = state.host;
-    }
-
     final (label, hint) = switch (state.activeTab) {
       DiagnosticType.ping || DiagnosticType.traceroute => (
           'Target Host',
@@ -244,27 +252,31 @@ class _DiagnosticManualToolsViewState
     ManualToolsNotifier notifier,
   ) {
     return AppCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          AppText.titleSmall('Packet Count'),
-          AppGap.lg(),
-          Row(
-            children: [3, 5, 10].map((count) {
-              final selected = state.pingCount == count;
-              return Padding(
-                padding: const EdgeInsets.only(right: AppSpacing.sm),
-                child: ChoiceChip(
-                  label: Text('$count'),
-                  selected: selected,
-                  onSelected: state.isRunning
-                      ? null
-                      : (_) => notifier.updatePingCount(count),
-                ),
-              );
-            }).toList(),
-          ),
-        ],
+      child: SizedBox(
+        width: double.infinity,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AppText.titleSmall('Packet Count'),
+            AppGap.lg(),
+            AppChipGroup(
+              chips: [
+                for (final count in const [3, 5, 10])
+                  ChipItem(label: '$count', enabled: !state.isRunning),
+              ],
+              selectedIndices: {
+                [3, 5, 10].indexOf(state.pingCount).clamp(0, 2),
+              },
+              selectionMode: ChipSelectionMode.single,
+              onSelectionChanged: state.isRunning
+                  ? null
+                  : (indices) {
+                      if (indices.isEmpty) return;
+                      notifier.updatePingCount([3, 5, 10][indices.first]);
+                    },
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -318,27 +330,31 @@ class _DiagnosticManualToolsViewState
     ManualToolsNotifier notifier,
   ) {
     return AppCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          AppText.titleSmall('Max Hops'),
-          AppGap.lg(),
-          Row(
-            children: [15, 30].map((hops) {
-              final selected = state.maxHops == hops;
-              return Padding(
-                padding: const EdgeInsets.only(right: AppSpacing.sm),
-                child: ChoiceChip(
-                  label: Text('$hops'),
-                  selected: selected,
-                  onSelected: state.isRunning
-                      ? null
-                      : (_) => notifier.updateMaxHops(hops),
-                ),
-              );
-            }).toList(),
-          ),
-        ],
+      child: SizedBox(
+        width: double.infinity,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AppText.titleSmall('Max Hops'),
+            AppGap.lg(),
+            AppChipGroup(
+              chips: [
+                for (final hops in const [15, 30])
+                  ChipItem(label: '$hops', enabled: !state.isRunning),
+              ],
+              selectedIndices: {
+                [15, 30].indexOf(state.maxHops).clamp(0, 1),
+              },
+              selectionMode: ChipSelectionMode.single,
+              onSelectionChanged: state.isRunning
+                  ? null
+                  : (indices) {
+                      if (indices.isEmpty) return;
+                      notifier.updateMaxHops([15, 30][indices.first]);
+                    },
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -350,7 +366,7 @@ class _DiagnosticManualToolsViewState
   Widget _buildPingResult(BuildContext context, PingResult result) {
     final colorScheme = Theme.of(context).colorScheme;
     final successColor =
-        result.successRate >= 100 ? Colors.green : Colors.orange;
+        result.successRate >= 100 ? colorScheme.primary : colorScheme.tertiary;
 
     return AppCard(
       child: Column(
@@ -361,7 +377,8 @@ class _DiagnosticManualToolsViewState
               AppIcon.font(
                 result.isComplete ? Icons.check_circle : Icons.error,
                 size: 20,
-                color: result.isComplete ? Colors.green : colorScheme.error,
+                color:
+                    result.isComplete ? colorScheme.primary : colorScheme.error,
               ),
               AppGap.sm(),
               AppText.titleSmall(
@@ -411,14 +428,11 @@ class _DiagnosticManualToolsViewState
             ],
           ),
           AppGap.sm(),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: result.successRate / 100,
-              backgroundColor: colorScheme.surfaceContainerHighest,
-              color: successColor,
-              minHeight: 6,
-            ),
+          AppLoader(
+            variant: LoaderVariant.linear,
+            value: result.successRate / 100,
+            color: successColor,
+            strokeWidth: 6,
           ),
         ],
       ),
@@ -441,7 +455,8 @@ class _DiagnosticManualToolsViewState
               AppIcon.font(
                 result.isComplete ? Icons.check_circle : Icons.error,
                 size: 20,
-                color: result.isComplete ? Colors.green : colorScheme.error,
+                color:
+                    result.isComplete ? colorScheme.primary : colorScheme.error,
               ),
               AppGap.sm(),
               AppText.titleSmall(
@@ -537,17 +552,12 @@ class _DiagnosticManualToolsViewState
         children: [
           AppText.titleSmall('DNS Server (optional)'),
           AppGap.lg(),
-          Builder(builder: (_) {
-            if (_dnsServerController.text != state.dnsServer) {
-              _dnsServerController.text = state.dnsServer;
-            }
-            return AppTextField(
-              controller: _dnsServerController,
-              hintText: 'e.g. 8.8.8.8 — leave blank to use the system resolver',
-              enabled: !state.isRunning,
-              onChanged: (value) => notifier.updateDnsServer(value),
-            );
-          }),
+          AppTextField(
+            controller: _dnsServerController,
+            hintText: 'e.g. 8.8.8.8 — leave blank to use the system resolver',
+            enabled: !state.isRunning,
+            onChanged: (value) => notifier.updateDnsServer(value),
+          ),
         ],
       ),
     );
@@ -570,7 +580,7 @@ class _DiagnosticManualToolsViewState
               AppIcon.font(
                 isOk ? Icons.check_circle : Icons.error,
                 size: 20,
-                color: isOk ? Colors.green : colorScheme.error,
+                color: isOk ? colorScheme.primary : colorScheme.error,
               ),
               AppGap.sm(),
               AppText.titleSmall('NS Lookup ${result.hostName}'),
@@ -690,10 +700,10 @@ class _TabButton extends StatelessWidget {
       color: isSelected
           ? colorScheme.primaryContainer
           : colorScheme.surfaceContainerHighest,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(AppRadius.md),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 12),
           child: Center(
@@ -728,7 +738,7 @@ class _StatBox extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
         decoration: BoxDecoration(
           color: colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(AppRadius.md),
         ),
         child: Column(
           children: [

@@ -48,6 +48,20 @@ void main() {
     },
   );
 
+  final nsLookupResult = OperateResult(
+    commandName: 'NSLookupDiagnostics()',
+    commandKey: 'test-key-3',
+    status: 'Complete',
+    outputArgs: {
+      'Result.1.Status': 'Success',
+      'Result.1.AnswerType': 'Authoritative',
+      'Result.1.HostNameReturned': 'example.com',
+      'Result.1.IPAddresses': '93.184.216.34',
+      'Result.1.DNSServerIP': '8.8.8.8',
+      'Result.1.ResponseTime': '15',
+    },
+  );
+
   setUp(() {
     executor = _MockExecutor();
     scope = _MockScope();
@@ -304,6 +318,78 @@ void main() {
 
       completer.complete(pingResult);
       await firstPing;
+      container.dispose();
+    });
+
+    test('runNsLookup parses answers and marks completed', () async {
+      when(() => scope.nsLookup(
+            hostName: any(named: 'hostName'),
+            dnsServer: any(named: 'dnsServer'),
+            timeout: any(named: 'timeout'),
+          )).thenAnswer((_) async => nsLookupResult);
+
+      final container = createContainer();
+      await container.read(manualToolsProvider.future);
+
+      container.read(manualToolsProvider.notifier).updateHost('example.com');
+      await container.read(manualToolsProvider.notifier).runNsLookup();
+
+      final state = container.read(manualToolsProvider).valueOrNull;
+      expect(state?.status, DiagnosticStatus.completed);
+      expect(state?.nsLookupResult, isNotNull);
+      expect(state?.nsLookupResult?.answers, hasLength(1));
+      expect(
+          state?.nsLookupResult?.answers.first.ipAddresses, ['93.184.216.34']);
+      verify(() => scope.nsLookup(
+            hostName: 'example.com',
+            dnsServer: any(named: 'dnsServer'),
+            timeout: any(named: 'timeout'),
+          )).called(1);
+      container.dispose();
+    });
+
+    test('runNsLookup timeout sets error state', () async {
+      when(() => scope.nsLookup(
+            hostName: any(named: 'hostName'),
+            dnsServer: any(named: 'dnsServer'),
+            timeout: any(named: 'timeout'),
+          )).thenThrow(TimeoutException('timeout'));
+
+      final container = createContainer();
+      await container.read(manualToolsProvider.future);
+
+      container.read(manualToolsProvider.notifier).updateHost('example.com');
+      await container.read(manualToolsProvider.notifier).runNsLookup();
+
+      final state = container.read(manualToolsProvider).valueOrNull;
+      expect(state?.status, DiagnosticStatus.error);
+      expect(state?.errorMessage, contains('NS Lookup timed out'));
+      container.dispose();
+    });
+
+    test('runNsLookup skips if already running', () async {
+      final completer = Completer<OperateResult>();
+      when(() => scope.nsLookup(
+            hostName: any(named: 'hostName'),
+            dnsServer: any(named: 'dnsServer'),
+            timeout: any(named: 'timeout'),
+          )).thenAnswer((_) => completer.future);
+
+      final container = createContainer();
+      await container.read(manualToolsProvider.future);
+
+      container.read(manualToolsProvider.notifier).updateHost('example.com');
+      final first = container.read(manualToolsProvider.notifier).runNsLookup();
+      await container.read(manualToolsProvider.notifier).runNsLookup();
+
+      verify(() => scope.nsLookup(
+            hostName: 'example.com',
+            dnsServer: any(named: 'dnsServer'),
+            timeout: any(named: 'timeout'),
+          )).called(1);
+
+      completer.complete(nsLookupResult);
+      await first;
       container.dispose();
     });
 

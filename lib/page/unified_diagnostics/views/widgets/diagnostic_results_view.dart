@@ -7,7 +7,7 @@ import 'package:privacy_gui/route/constants.dart';
 import '../../models/diagnostic_result.dart';
 import '../../models/diagnostic_state.dart';
 import '../../providers/unified_diagnostics_notifier.dart';
-import 'diagnostic_report_export.dart';
+import '../../services/diagnostic_report_service.dart';
 import 'recommendation_card.dart';
 import 'step_result_tile.dart';
 import 'traceroute_detail_card.dart';
@@ -276,7 +276,7 @@ class _ActionBar extends StatelessWidget {
     );
     final exportLink = AppButton.text(
       label: 'Export Diagnostics Report',
-      onTap: () => DiagnosticReportExporter.shareReport(state),
+      onTap: () => const DiagnosticReportService().share(state),
     );
     final stack = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,

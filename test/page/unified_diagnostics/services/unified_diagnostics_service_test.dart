@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/models/operate_result.dart';
 import 'package:privacy_gui/core/usp/services/network_diagnostics_executor.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
@@ -146,7 +147,7 @@ void main() {
     when(() => mockExecutor.acquireScope(
           referencePaths: any(named: 'referencePaths'),
         )).thenAnswer((_) async => fakeScope);
-    service = UnifiedDiagnosticsService(mockUsp, mockExecutor);
+    service = UnifiedDiagnosticsService(mockUsp);
     service.attachScope(fakeScope);
   });
 
@@ -373,16 +374,16 @@ void main() {
       expect(result.hasIp, isFalse);
     });
 
-    test('propagates underlying GET errors', () async {
+    test('maps underlying GET errors to ServiceError', () async {
       when(() => mockUsp.get(any())).thenThrow('Get failed: Transport error');
 
-      expect(service.checkWanStatus(), throwsA(isA<String>()));
+      expect(service.checkWanStatus(), throwsA(isA<ServiceError>()));
     });
   });
 
   group('Scope contract', () {
     test('throws when no scope is attached', () async {
-      final unsetService = UnifiedDiagnosticsService(mockUsp, mockExecutor);
+      final unsetService = UnifiedDiagnosticsService(mockUsp);
       expect(unsetService.ping('8.8.8.8'), throwsA(isA<StateError>()));
     });
 

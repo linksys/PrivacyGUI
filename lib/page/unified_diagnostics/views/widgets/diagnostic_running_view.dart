@@ -28,7 +28,7 @@ class DiagnosticRunningView extends ConsumerWidget {
               padding: const EdgeInsets.all(AppSpacing.sm),
               decoration: BoxDecoration(
                 color: colorScheme.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppRadius.md),
               ),
               child: Icon(flowIcon, color: colorScheme.primary, size: 24),
             ),
@@ -76,6 +76,7 @@ class DiagnosticRunningView extends ConsumerWidget {
           }
 
           return _DiagnosticStepNode(
+            key: ValueKey(step),
             step: step,
             title: _getStepLabel(step),
             subtitle: isCompleted ? _getStepSummary(result) : progressDetail,
@@ -120,33 +121,18 @@ class DiagnosticRunningView extends ConsumerWidget {
       DiagnosticFlow.intermittent => [
           DiagnosticStep.pingInternet,
         ],
-      null => state.problemType == ProblemType.noInternet
-          ? [
-              DiagnosticStep.checkingWanStatus,
-              DiagnosticStep.checkingDhcp,
-              DiagnosticStep.pingGateway,
-              DiagnosticStep.pingDns,
-              DiagnosticStep.dnsLookup,
-              DiagnosticStep.pingInternet,
-            ]
-          : state.problemType == ProblemType.slowNetwork
-              ? [
-                  DiagnosticStep.runningSpeedTest,
-                  DiagnosticStep.checkingWifiSignal,
-                  DiagnosticStep.checkingConnectedDevices,
-                  DiagnosticStep.runningTraceroute,
-                ]
-              : [
-                  DiagnosticStep.checkingWanStatus,
-                  DiagnosticStep.pingGateway,
-                  DiagnosticStep.pingDns,
-                  DiagnosticStep.dnsLookup,
-                  DiagnosticStep.pingInternet,
-                  DiagnosticStep.runningSpeedTest,
-                  DiagnosticStep.checkingWifiSignal,
-                  DiagnosticStep.checkingDhcpPool,
-                  DiagnosticStep.checkingConnectedDevices,
-                ],
+      // Full diagnostic (no flow selected) — runs all checks.
+      null => [
+          DiagnosticStep.checkingWanStatus,
+          DiagnosticStep.pingGateway,
+          DiagnosticStep.pingDns,
+          DiagnosticStep.dnsLookup,
+          DiagnosticStep.pingInternet,
+          DiagnosticStep.runningSpeedTest,
+          DiagnosticStep.checkingWifiSignal,
+          DiagnosticStep.checkingDhcpPool,
+          DiagnosticStep.checkingConnectedDevices,
+        ],
     };
   }
 
@@ -173,11 +159,7 @@ class DiagnosticRunningView extends ConsumerWidget {
           'Intermittent Connection Diagnostics',
           1,
         ),
-      null => state.problemType == ProblemType.noInternet
-          ? (Icons.wifi_off, 'No Internet Diagnostics', 6)
-          : state.problemType == ProblemType.slowNetwork
-              ? (Icons.speed, 'Slow Network Diagnostics', 4)
-              : (Icons.network_check, 'Full Diagnostic', 9),
+      null => (Icons.network_check, 'Full Diagnostic', 9),
     };
   }
 
@@ -230,6 +212,7 @@ class _DiagnosticStepNode extends StatelessWidget {
   final bool isLast;
 
   const _DiagnosticStepNode({
+    super.key,
     required this.step,
     required this.title,
     this.subtitle,
@@ -270,9 +253,7 @@ class _DiagnosticStepNode extends StatelessWidget {
                       ? const SizedBox(
                           width: 12,
                           height: 12,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                          ),
+                          child: AppLoader(strokeWidth: 2),
                         )
                       : Icon(icon,
                           size: 16,

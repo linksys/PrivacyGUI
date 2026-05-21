@@ -10,7 +10,7 @@ enum SpeedTestStep {
 }
 
 /// Available speed test servers
-class SpeedTestServer {
+class SpeedTestServer extends Equatable {
   final String name;
   final String host;
   final String downloadUrl;
@@ -22,6 +22,9 @@ class SpeedTestServer {
     required this.downloadUrl,
     this.sizeMb = 100,
   });
+
+  @override
+  List<Object?> get props => [name, host, downloadUrl, sizeMb];
 
   static const List<SpeedTestServer> all = [
     // Tokyo Linode - Most reliable for East Asia
@@ -171,6 +174,7 @@ class SpeedTestState extends Equatable {
     SpeedTestStep? step,
     SpeedTestServer? selectedServer,
     SpeedTestResult? result,
+    bool clearResult = false,
     String? errorMessage,
     bool clearError = false,
     String? progressMessage,
@@ -179,7 +183,7 @@ class SpeedTestState extends Equatable {
     return SpeedTestState(
       step: step ?? this.step,
       selectedServer: selectedServer ?? this.selectedServer,
-      result: result ?? this.result,
+      result: clearResult ? null : (result ?? this.result),
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
       progressMessage:
           clearProgress ? null : (progressMessage ?? this.progressMessage),
@@ -188,5 +192,5 @@ class SpeedTestState extends Equatable {
 
   @override
   List<Object?> get props =>
-      [step, selectedServer.host, result, errorMessage, progressMessage];
+      [step, selectedServer, result, errorMessage, progressMessage];
 }

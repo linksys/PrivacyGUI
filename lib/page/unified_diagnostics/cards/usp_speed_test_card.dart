@@ -1,11 +1,10 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/unified_diagnostics/models/speed_test_state.dart';
 import 'package:privacy_gui/page/unified_diagnostics/providers/speed_test_notifier.dart';
+import 'package:privacy_gui/page/unified_diagnostics/views/widgets/speed_gauge.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -68,6 +67,8 @@ class UspSpeedTestCard extends ConsumerWidget {
             AppIconButton(
               icon: AppIcon.font(Icons.open_in_new,
                   size: 16, color: colorScheme.onSurfaceVariant),
+              tooltip: 'Open Speed Test',
+              semanticLabel: 'Open Speed Test',
               onTap: () => context.goNamed(RouteNamed.uspSpeedTest),
             ),
           ],
@@ -87,7 +88,7 @@ class UspSpeedTestCard extends ConsumerWidget {
     ColorScheme colorScheme,
   ) {
     if (state.isRunning) {
-      return _CardSpeedGauge(state: state, colorScheme: colorScheme);
+      return _RunningView(state: state, colorScheme: colorScheme);
     }
 
     if (state.hasResult) {
@@ -252,94 +253,25 @@ class UspSpeedTestCard extends ConsumerWidget {
 }
 
 // =============================================================================
-// Speed Gauge for Card (compact version with random animation)
+// Running view (gauge for download/upload, spinner for latency)
 // =============================================================================
 
-class _CardSpeedGauge extends StatefulWidget {
+class _RunningView extends StatelessWidget {
   final SpeedTestState state;
   final ColorScheme colorScheme;
 
-  const _CardSpeedGauge({
+  const _RunningView({
     required this.state,
     required this.colorScheme,
   });
 
-  @override
-  State<_CardSpeedGauge> createState() => _CardSpeedGaugeState();
-}
-
-class _CardSpeedGaugeState extends State<_CardSpeedGauge>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  final _random = Random();
-  double _currentValue = 0;
-  double _targetValue = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 300),
-      vsync: this,
-    )..addListener(_onTick);
-
-    if (_isSpeedTest) {
-      _startRandomAnimation();
-    }
-  }
-
   bool get _isSpeedTest =>
-      widget.state.step == SpeedTestStep.testingDownload ||
-      widget.state.step == SpeedTestStep.testingUpload;
-
-  void _startRandomAnimation() {
-    _generateNewTarget();
-    _controller.forward(from: 0);
-  }
-
-  void _generateNewTarget() {
-    final base = 50 + _random.nextDouble() * 100;
-    final noise = (_random.nextDouble() - 0.5) * 60;
-    _targetValue = (base + noise).clamp(20, 250);
-  }
-
-  void _onTick() {
-    if (!mounted) return;
-
-    setState(() {
-      _currentValue = _currentValue + (_targetValue - _currentValue) * 0.15;
-    });
-
-    if (_controller.isCompleted && _isSpeedTest) {
-      _generateNewTarget();
-      _controller.forward(from: 0);
-    }
-  }
-
-  @override
-  void didUpdateWidget(_CardSpeedGauge oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    final wasSpeedTest =
-        oldWidget.state.step == SpeedTestStep.testingDownload ||
-            oldWidget.state.step == SpeedTestStep.testingUpload;
-
-    if (_isSpeedTest && !wasSpeedTest) {
-      _startRandomAnimation();
-    } else if (!_isSpeedTest && wasSpeedTest) {
-      _controller.stop();
-    }
-  }
-
-  @override
-  void dispose() {
-    _controller.removeListener(_onTick);
-    _controller.dispose();
-    super.dispose();
-  }
+      state.step == SpeedTestStep.testingDownload ||
+      state.step == SpeedTestStep.testingUpload;
 
   @override
   Widget build(BuildContext context) {
-    final stepLabel = switch (widget.state.step) {
+    final stepLabel = switch (state.step) {
       SpeedTestStep.testingLatency => 'Latency',
       SpeedTestStep.testingDownload => 'Download',
       SpeedTestStep.testingUpload => 'Upload',
@@ -351,16 +283,16 @@ class _CardSpeedGaugeState extends State<_CardSpeedGauge>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            AppGauge(
-              value: _currentValue,
+            SpeedGauge(
+              value: 0,
+              isAnimating: true,
               size: 200,
-              markers: const [0, 50, 100, 200, 300, 500],
-              centerBuilder: (context, value) => Column(
+              centerBuilder: (ctx, displayValue) => Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   AppText.headlineLarge(
-                    _currentValue.toStringAsFixed(0),
-                    color: widget.colorScheme.primary,
+                    displayValue.toStringAsFixed(0),
+                    color: colorScheme.primary,
                   ),
                   AppText.bodyMedium('Mbps'),
                 ],
@@ -369,7 +301,7 @@ class _CardSpeedGaugeState extends State<_CardSpeedGauge>
             AppGap.md(),
             AppText.titleSmall(
               'Testing $stepLabel...',
-              color: widget.colorScheme.onSurfaceVariant,
+              color: colorScheme.onSurfaceVariant,
             ),
           ],
         ),
@@ -384,18 +316,18 @@ class _CardSpeedGaugeState extends State<_CardSpeedGauge>
           SizedBox(
             width: 100,
             height: 100,
-            child: CircularProgressIndicator(
+            child: AppLoader(
               strokeWidth: 6,
-              color: widget.colorScheme.primary,
+              color: colorScheme.primary,
             ),
           ),
           AppGap.lg(),
           AppText.titleMedium('Testing $stepLabel...'),
-          if (widget.state.result?.latencyMs != null) ...[
+          if (state.result?.latencyMs != null) ...[
             AppGap.sm(),
             AppText.bodyMedium(
-              '${widget.state.result!.latencyMs} ms',
-              color: widget.colorScheme.onSurfaceVariant,
+              '${state.result!.latencyMs} ms',
+              color: colorScheme.onSurfaceVariant,
             ),
           ],
         ],
@@ -472,10 +404,10 @@ class _ServerButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: colorScheme.surfaceContainerHighest,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(AppRadius.md),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         child: Padding(
           padding: EdgeInsets.symmetric(
             horizontal: compact ? 12 : 16,

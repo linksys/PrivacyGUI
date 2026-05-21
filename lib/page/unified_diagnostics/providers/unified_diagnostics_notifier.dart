@@ -29,6 +29,8 @@ class UnifiedDiagnosticsNotifier
       ref.read(unifiedDiagnosticsServiceProvider);
 
   DiagnosticScope? _scope;
+  Future<void>? _runFuture;
+  bool _cancelled = false;
 
   @override
   UnifiedDiagnosticsState build() {
@@ -76,19 +78,19 @@ class UnifiedDiagnosticsNotifier
     }
   }
 
-  /// Start diagnostic flow — show problem selector (legacy).
-  /// @deprecated Use [startWithPreQualifier] instead.
-  void start() {
-    logger.i('[Diagnostics] Starting — show problem selector');
-    state = const UnifiedDiagnosticsState(step: DiagnosticStep.selectProblem);
-  }
-
   /// Run full diagnostic — auto-run all checks without user selection.
   Future<void> runFullDiagnostic() async {
     logger.i('[Diagnostics] Running full diagnostic (auto-run)');
+    _cancelled = false;
     state =
         const UnifiedDiagnosticsState(step: DiagnosticStep.checkingWanStatus);
-    await _runFullDiagnosticFlow();
+    final future = _runFullDiagnosticFlow();
+    _runFuture = future;
+    try {
+      await future;
+    } finally {
+      if (identical(_runFuture, future)) _runFuture = null;
+    }
   }
 
   /// Switch to the manual ping / traceroute tools view.
@@ -175,6 +177,7 @@ class UnifiedDiagnosticsNotifier
   /// User selects diagnostic flow from menu.
   Future<void> selectFlow(DiagnosticFlow flow) async {
     logger.i('[Diagnostics] Flow selected: $flow');
+    _cancelled = false;
     state = state.copyWith(
       flow: flow,
       results: [],
@@ -182,40 +185,32 @@ class UnifiedDiagnosticsNotifier
       clearError: true,
     );
 
-    switch (flow) {
-      case DiagnosticFlow.internet:
-        await _runInternetDiagnostics();
-      case DiagnosticFlow.deviceIssues:
-        await _runDeviceIssuesDiagnostics();
-      case DiagnosticFlow.wifiCoverage:
-        await _runWifiCoverageDiagnostics();
-      case DiagnosticFlow.meshBackhaul:
-        await _runMeshBackhaulDiagnostics();
-      case DiagnosticFlow.intermittent:
-        await _runIntermittentDiagnostics();
+    final future = switch (flow) {
+      DiagnosticFlow.internet => _runInternetDiagnostics(),
+      DiagnosticFlow.deviceIssues => _runDeviceIssuesDiagnostics(),
+      DiagnosticFlow.wifiCoverage => _runWifiCoverageDiagnostics(),
+      DiagnosticFlow.meshBackhaul => _runMeshBackhaulDiagnostics(),
+      DiagnosticFlow.intermittent => _runIntermittentDiagnostics(),
+    };
+    _runFuture = future;
+    try {
+      await future;
+    } finally {
+      if (identical(_runFuture, future)) _runFuture = null;
     }
   }
 
-  /// User selects problem type — run appropriate diagnostic flow (legacy).
-  /// @deprecated Use [selectFlow] instead.
-  Future<void> selectProblem(ProblemType type) async {
-    logger.i('[Diagnostics] Problem selected: $type');
-    // Full reset with new problem type
-    state = UnifiedDiagnosticsState(
-      step: DiagnosticStep.idle,
-      problemType: type,
-    );
-
-    if (type == ProblemType.noInternet) {
-      await _runNoInternetDiagnostics();
-    } else {
-      await _runSlowNetworkDiagnostics();
-    }
-  }
-
-  /// Cancel and reset to idle.
+  /// Cancel and reset to idle. Awaits any in-flight diagnostic future before
+  /// releasing the scope so we don't race with operations still completing.
   Future<void> cancel() async {
     logger.d('[Diagnostics] Cancelled');
+    _cancelled = true;
+    final inFlight = _runFuture;
+    if (inFlight != null) {
+      try {
+        await inFlight;
+      } catch (_) {}
+    }
     await _releaseScope();
     state = const UnifiedDiagnosticsState();
   }
@@ -223,17 +218,10 @@ class UnifiedDiagnosticsNotifier
   /// Restart diagnostics — re-run the same flow, or fall back to start screen.
   Future<void> restart() async {
     final flow = state.flow;
-    final problemType = state.problemType;
-    logger.i('[Diagnostics] Restart requested, flow=$flow, '
-        'problemType=$problemType');
+    logger.i('[Diagnostics] Restart requested, flow=$flow');
 
     if (flow != null) {
       await selectFlow(flow);
-      return;
-    }
-
-    if (problemType != null) {
-      await selectProblem(problemType);
       return;
     }
 
@@ -250,7 +238,6 @@ class UnifiedDiagnosticsNotifier
         return false;
       case DiagnosticStep.preQualifying:
       case DiagnosticStep.selectFlow:
-      case DiagnosticStep.selectProblem:
       case DiagnosticStep.manualTools:
         // Back to start screen
         state = const UnifiedDiagnosticsState();
@@ -272,8 +259,19 @@ class UnifiedDiagnosticsNotifier
         }
         return true;
       default:
-        // Running — release the active scope, then go back to flow menu/start.
-        unawaited(_releaseScope());
+        // Running — mark cancelled, await the in-flight future, then release
+        // the scope. Sequencing prevents the linger window from re-entering
+        // with a stale scope.
+        _cancelled = true;
+        unawaited(() async {
+          final inFlight = _runFuture;
+          if (inFlight != null) {
+            try {
+              await inFlight;
+            } catch (_) {}
+          }
+          await _releaseScope();
+        }());
         if (state.flow != null) {
           state = state.copyWith(
             step: DiagnosticStep.selectFlow,
@@ -295,6 +293,7 @@ class UnifiedDiagnosticsNotifier
   // ══════════════════════════════════════════════════════════════════════════
 
   Future<void> _runFullDiagnosticFlow() async {
+    if (_cancelled) return;
     final svc = _svc;
     if (svc == null) {
       _setError('Diagnostics service not available');
@@ -448,6 +447,7 @@ class UnifiedDiagnosticsNotifier
   // ══════════════════════════════════════════════════════════════════════════
 
   Future<void> _runInternetDiagnostics() async {
+    if (_cancelled) return;
     final svc = _svc;
     if (svc == null) {
       _setError('Diagnostics service not available');
@@ -573,6 +573,7 @@ class UnifiedDiagnosticsNotifier
   // ══════════════════════════════════════════════════════════════════════════
 
   Future<void> _runDeviceIssuesDiagnostics() async {
+    if (_cancelled) return;
     final svc = _svc;
     if (svc == null) {
       _setError('Diagnostics service not available');
@@ -624,6 +625,7 @@ class UnifiedDiagnosticsNotifier
   // ══════════════════════════════════════════════════════════════════════════
 
   Future<void> _runWifiCoverageDiagnostics() async {
+    if (_cancelled) return;
     final svc = _svc;
     if (svc == null) {
       _setError('Diagnostics service not available');
@@ -669,6 +671,7 @@ class UnifiedDiagnosticsNotifier
   // ══════════════════════════════════════════════════════════════════════════
 
   Future<void> _runMeshBackhaulDiagnostics() async {
+    if (_cancelled) return;
     final svc = _svc;
     if (svc == null) {
       _setError('Diagnostics service not available');
@@ -744,6 +747,7 @@ class UnifiedDiagnosticsNotifier
   // ══════════════════════════════════════════════════════════════════════════
 
   Future<void> _runIntermittentDiagnostics() async {
+    if (_cancelled) return;
     final svc = _svc;
     if (svc == null) {
       _setError('Diagnostics service not available');
@@ -783,116 +787,6 @@ class UnifiedDiagnosticsNotifier
         titleKey: 'diagnostics_intermittent',
         descriptionKey: 'diagnostics_intermittent_desc',
       ));
-      state = state.copyWith(results: List.from(results));
-    } catch (e) {
-      results.add(_errorResult(DiagnosticStep.pingInternet, e));
-      state = state.copyWith(results: List.from(results));
-    }
-
-    await _analyzeAndShowResults(results);
-  }
-
-  // ══════════════════════════════════════════════════════════════════════════
-  // Flow 1: No Internet
-  // ══════════════════════════════════════════════════════════════════════════
-
-  Future<void> _runNoInternetDiagnostics() async {
-    final svc = _svc;
-    if (svc == null) {
-      _setError('Diagnostics service not available');
-      return;
-    }
-
-    final results = <DiagnosticStepUIModel>[];
-
-    // Step 1: Check WAN status
-    state = state.copyWith(step: DiagnosticStep.checkingWanStatus);
-    WanStatusCheckUIModel? wanResult;
-    try {
-      final wan = await svc.checkWanStatus();
-      wanResult = _evaluateWanStatus(wan);
-      results.add(wanResult);
-      state = state.copyWith(results: List.from(results));
-
-      if (wanResult.isError) {
-        await _analyzeAndShowResults(results);
-        return;
-      }
-    } catch (e) {
-      results.add(_errorResult(DiagnosticStep.checkingWanStatus, e));
-      state = state.copyWith(results: List.from(results));
-      await _analyzeAndShowResults(results);
-      return;
-    }
-
-    // Step 2: Check DHCP (skip if static IP)
-    state = state.copyWith(step: DiagnosticStep.checkingDhcp);
-    if (wanResult.addressingType != 'Static') {
-      final dhcpResult = _evaluateDhcp(wanResult);
-      results.add(dhcpResult);
-      state = state.copyWith(results: List.from(results));
-
-      if (dhcpResult.isError) {
-        await _analyzeAndShowResults(results);
-        return;
-      }
-    } else {
-      results.add(DiagnosticStepUIModel(
-        step: DiagnosticStep.checkingDhcp,
-        severity: DiagnosticSeverity.skipped,
-        titleKey: 'diagnostics_dhcp_skipped',
-        descriptionKey: 'diagnostics_dhcp_static_ip',
-      ));
-      state = state.copyWith(results: List.from(results));
-    }
-
-    try {
-      await _ensureScope();
-    } catch (e) {
-      logger.e('[Diagnostics] Failed to acquire scope: $e');
-    }
-
-    // Step 3: Ping gateway
-    state = state.copyWith(step: DiagnosticStep.pingGateway);
-    try {
-      final ping = await svc.pingGateway();
-      final pingResult = _evaluatePing(DiagnosticStep.pingGateway, ping);
-      results.add(pingResult);
-      state = state.copyWith(results: List.from(results));
-    } catch (e) {
-      results.add(_errorResult(DiagnosticStep.pingGateway, e));
-      state = state.copyWith(results: List.from(results));
-    }
-
-    // Step 4: Ping DNS
-    state = state.copyWith(step: DiagnosticStep.pingDns);
-    try {
-      final ping = await svc.pingDns();
-      final pingResult = _evaluatePing(DiagnosticStep.pingDns, ping);
-      results.add(pingResult);
-      state = state.copyWith(results: List.from(results));
-    } catch (e) {
-      results.add(_errorResult(DiagnosticStep.pingDns, e));
-      state = state.copyWith(results: List.from(results));
-    }
-
-    // Step 4b: DNS lookup
-    state = state.copyWith(step: DiagnosticStep.dnsLookup);
-    try {
-      final dnsResult = await _runDnsLookup(svc);
-      results.add(dnsResult);
-      state = state.copyWith(results: List.from(results));
-    } catch (e) {
-      results.add(_errorResult(DiagnosticStep.dnsLookup, e));
-      state = state.copyWith(results: List.from(results));
-    }
-
-    // Step 5: Ping internet
-    state = state.copyWith(step: DiagnosticStep.pingInternet);
-    try {
-      final ping = await svc.pingInternet();
-      final pingResult = _evaluatePing(DiagnosticStep.pingInternet, ping);
-      results.add(pingResult);
       state = state.copyWith(results: List.from(results));
     } catch (e) {
       results.add(_errorResult(DiagnosticStep.pingInternet, e));
@@ -964,87 +858,6 @@ class UnifiedDiagnosticsNotifier
 
     sub.close();
     return result;
-  }
-
-  // ══════════════════════════════════════════════════════════════════════════
-  // Scenario B: Slow Network
-  // ══════════════════════════════════════════════════════════════════════════
-
-  Future<void> _runSlowNetworkDiagnostics() async {
-    final svc = _svc;
-    if (svc == null) {
-      _setError('Diagnostics service not available');
-      return;
-    }
-
-    final results = <DiagnosticStepUIModel>[];
-
-    try {
-      await _ensureScope();
-    } catch (e) {
-      logger.e('[Diagnostics] Failed to acquire scope: $e');
-    }
-
-    // Step 1: Speed test (using shared speedTestProvider)
-    state = state.copyWith(step: DiagnosticStep.runningSpeedTest);
-    try {
-      final speedTestResult = await _runSharedSpeedTest();
-      if (speedTestResult != null) {
-        state = state.copyWith(speedTest: speedTestResult);
-        final speedResult = _evaluateSpeedTest(speedTestResult);
-        results.add(speedResult);
-        state = state.copyWith(results: List.from(results));
-      } else {
-        results.add(
-            _errorResult(DiagnosticStep.runningSpeedTest, 'Speed test failed'));
-        state = state.copyWith(results: List.from(results));
-      }
-    } catch (e) {
-      results.add(_errorResult(DiagnosticStep.runningSpeedTest, e));
-      state = state.copyWith(results: List.from(results));
-    }
-
-    // Step 2: Check WiFi signal (per-radio RSSI)
-    state = state.copyWith(step: DiagnosticStep.checkingWifiSignal);
-    try {
-      final perRadio = await svc.analyzeWifiSignalPerRadio();
-      final wifiResult = _evaluateWifiSignal(perRadio);
-      results.add(wifiResult);
-      state = state.copyWith(results: List.from(results));
-    } catch (e) {
-      results.add(_errorResult(DiagnosticStep.checkingWifiSignal, e));
-      state = state.copyWith(results: List.from(results));
-    }
-
-    // Step 3: Check connected devices
-    state = state.copyWith(step: DiagnosticStep.checkingConnectedDevices);
-    try {
-      final devices = await svc.checkConnectedDevices();
-      final devicesResult = _evaluateConnectedDevices(devices);
-      results.add(devicesResult);
-      state = state.copyWith(results: List.from(results));
-    } catch (e) {
-      results.add(_errorResult(DiagnosticStep.checkingConnectedDevices, e));
-      state = state.copyWith(results: List.from(results));
-    }
-
-    // Step 4: Traceroute (if speed test showed issues)
-    final speedTest = state.speedTest;
-    if (speedTest != null &&
-        (speedTest.isSlowDownload || speedTest.isSlowUpload)) {
-      state = state.copyWith(step: DiagnosticStep.runningTraceroute);
-      try {
-        final traceroute = await svc.traceroute();
-        final tracerouteResult = _evaluateTraceroute(traceroute);
-        results.add(tracerouteResult);
-        state = state.copyWith(results: List.from(results));
-      } catch (e) {
-        results.add(_errorResult(DiagnosticStep.runningTraceroute, e));
-        state = state.copyWith(results: List.from(results));
-      }
-    }
-
-    await _analyzeAndShowResults(results);
   }
 
   // ══════════════════════════════════════════════════════════════════════════
@@ -1332,29 +1145,11 @@ class UnifiedDiagnosticsNotifier
     );
   }
 
-  DiagnosticStepUIModel _evaluateDhcp(WanStatusCheckUIModel wanResult) {
-    if (wanResult.hasIp) {
-      return DiagnosticStepUIModel(
-        step: DiagnosticStep.checkingDhcp,
-        severity: DiagnosticSeverity.ok,
-        titleKey: 'diagnostics_dhcp_ok',
-        descriptionKey: 'diagnostics_dhcp_ok_desc',
-      );
-    } else {
-      return DiagnosticStepUIModel(
-        step: DiagnosticStep.checkingDhcp,
-        severity: DiagnosticSeverity.error,
-        titleKey: 'diagnostics_dhcp_fail',
-        descriptionKey: 'diagnostics_dhcp_fail_desc',
-      );
-    }
-  }
-
-  PingCheckUIModel _evaluatePing(DiagnosticStep step, dynamic pingResult) {
-    final host = pingResult.host as String;
-    final successCount = pingResult.successCount as int;
-    final failureCount = pingResult.failureCount as int;
-    final avgResponseTime = pingResult.avgResponseTime as int;
+  PingCheckUIModel _evaluatePing(DiagnosticStep step, PingResult pingResult) {
+    final host = pingResult.host;
+    final successCount = pingResult.successCount;
+    final failureCount = pingResult.failureCount;
+    final avgResponseTime = pingResult.avgResponseTime;
 
     DiagnosticSeverity severity;
     String titleKey;
@@ -1544,41 +1339,6 @@ class UnifiedDiagnosticsNotifier
       totalDevices: devices.totalDevices,
       activeDevices: devices.activeDevices,
       highBandwidthDevices: devices.highBandwidthDevices,
-      severity: severity,
-      titleKey: titleKey,
-      descriptionKey: descriptionKey,
-    );
-  }
-
-  TracerouteCheckUIModel _evaluateTraceroute(TracerouteResult traceroute) {
-    final hopInfos = traceroute.hops
-        .map((h) => TracerouteHopUIModel(
-              hopNumber: h.hopNumber,
-              host: h.host,
-              hostAddress: h.hostAddress,
-              avgRoundTrip: h.avgRoundTrip,
-            ))
-        .toList();
-
-    final slowHops = hopInfos.where((h) => h.isSlow).toList();
-
-    DiagnosticSeverity severity;
-    String titleKey;
-    String descriptionKey;
-
-    if (slowHops.isNotEmpty) {
-      severity = DiagnosticSeverity.warning;
-      titleKey = 'diagnostics_traceroute_slow';
-      descriptionKey = 'diagnostics_traceroute_slow_desc';
-    } else {
-      severity = DiagnosticSeverity.ok;
-      titleKey = 'diagnostics_traceroute_ok';
-      descriptionKey = 'diagnostics_traceroute_ok_desc';
-    }
-
-    return TracerouteCheckUIModel(
-      hops: hopInfos,
-      targetHost: traceroute.host,
       severity: severity,
       titleKey: titleKey,
       descriptionKey: descriptionKey,

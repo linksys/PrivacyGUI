@@ -116,40 +116,33 @@ class _PrimaryAction extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    return Container(
-      decoration: BoxDecoration(
-        color: colorScheme.primaryContainer.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(12),
-      ),
+    return Semantics(
+      button: true,
+      label: 'Run Full Diagnostic',
       child: AppCard(
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(12),
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.xl),
-            child: Row(
-              children: [
-                Icon(Icons.rocket_launch, size: 40, color: colorScheme.primary),
-                AppGap.xl(),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      AppText.titleLarge('Run Full Diagnostic'),
-                      AppGap.xs(),
-                      AppText.bodySmall(
-                        'Automatically check every component of your network '
-                        'to find and fix issues.',
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ],
+        isSelected: true,
+        onTap: onTap,
+        child: Row(
+          children: [
+            Icon(Icons.rocket_launch, size: 40, color: colorScheme.primary),
+            AppGap.xl(),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  AppText.titleLarge('Run Full Diagnostic'),
+                  AppGap.xs(),
+                  AppText.bodySmall(
+                    'Automatically check every component of your network '
+                    'to find and fix issues.',
+                    color: colorScheme.onSurfaceVariant,
                   ),
-                ),
-                AppGap.lg(),
-                AppButton(label: 'Start Now', onTap: onTap),
-              ],
+                ],
+              ),
             ),
-          ),
+            AppGap.lg(),
+            AppButton(label: 'Start Now', onTap: onTap),
+          ],
         ),
       ),
     );
@@ -180,39 +173,37 @@ class _SecondaryAction extends StatelessWidget {
         ? colorScheme.secondary
         : colorScheme.tertiary;
 
-    return AppCard(
-      child: InkWell(
+    return Semantics(
+      button: true,
+      label: title,
+      child: AppCard(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(AppSpacing.md),
-                decoration: BoxDecoration(
-                  color: tint.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(icon, color: tint),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              decoration: BoxDecoration(
+                color: tint.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(AppRadius.md),
               ),
-              AppGap.lg(),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    AppText.titleMedium(title),
-                    AppGap.xs(),
-                    AppText.bodySmall(
-                      description,
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ],
-                ),
+              child: Icon(icon, color: tint),
+            ),
+            AppGap.lg(),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  AppText.titleMedium(title),
+                  AppGap.xs(),
+                  AppText.bodySmall(
+                    description,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ],
               ),
-              Icon(Icons.chevron_right, color: colorScheme.onSurfaceVariant),
-            ],
-          ),
+            ),
+            Icon(Icons.chevron_right, color: colorScheme.onSurfaceVariant),
+          ],
         ),
       ),
     );

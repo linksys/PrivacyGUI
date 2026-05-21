@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
+import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/core/usp/models/operate_result.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
@@ -131,11 +132,22 @@ class ManualToolsNotifier
       ));
     } catch (e) {
       logger.w('[USP][Diagnostics]: Ping failed: $e');
+      final mapped = e is ServiceError ? e : mapUspErrorToServiceError(e);
       state = AsyncData(state.requireValue.copyWith(
         status: DiagnosticStatus.error,
-        errorMessage: 'Ping failed: $e',
+        errorMessage: _pingErrorMessage(mapped, s.host),
       ));
     }
+  }
+
+  String _pingErrorMessage(ServiceError e, String host) {
+    return switch (e) {
+      InvalidInputError(:final message) =>
+        message ?? 'Cannot ping $host — invalid host',
+      NetworkError() => 'Ping failed — router lost connection',
+      ConnectivityError() => 'Ping unavailable — diagnostics scope not ready',
+      _ => 'Ping failed — please try again',
+    };
   }
 
   // -------------------------------------------------------------------------
@@ -177,11 +189,23 @@ class ManualToolsNotifier
       ));
     } catch (e) {
       logger.w('[USP][Diagnostics]: Traceroute failed: $e');
+      final mapped = e is ServiceError ? e : mapUspErrorToServiceError(e);
       state = AsyncData(state.requireValue.copyWith(
         status: DiagnosticStatus.error,
-        errorMessage: 'Traceroute failed: $e',
+        errorMessage: _tracerouteErrorMessage(mapped, s.host),
       ));
     }
+  }
+
+  String _tracerouteErrorMessage(ServiceError e, String host) {
+    return switch (e) {
+      InvalidInputError(:final message) =>
+        message ?? 'Cannot trace $host — invalid host',
+      NetworkError() => 'Traceroute failed — router lost connection',
+      ConnectivityError() =>
+        'Traceroute unavailable — diagnostics scope not ready',
+      _ => 'Traceroute failed — please try again',
+    };
   }
 
   // -------------------------------------------------------------------------
@@ -226,10 +250,22 @@ class ManualToolsNotifier
       ));
     } catch (e) {
       logger.w('[USP][Diagnostics]: NS Lookup failed: $e');
+      final mapped = e is ServiceError ? e : mapUspErrorToServiceError(e);
       state = AsyncData(state.requireValue.copyWith(
         status: DiagnosticStatus.error,
-        errorMessage: 'NS Lookup failed: $e',
+        errorMessage: _nsLookupErrorMessage(mapped, s.host),
       ));
     }
+  }
+
+  String _nsLookupErrorMessage(ServiceError e, String host) {
+    return switch (e) {
+      InvalidInputError(:final message) =>
+        message ?? 'Cannot resolve $host — invalid host',
+      NetworkError() => 'NS Lookup failed — router lost connection',
+      ConnectivityError() =>
+        'NS Lookup unavailable — diagnostics scope not ready',
+      _ => 'NS Lookup failed — please try again',
+    };
   }
 }

@@ -93,7 +93,10 @@ class StepResultTile extends StatelessWidget {
                 ),
                 AppGap.xs(),
                 ...scoredDevices.map(
-                  (device) => _DeviceScoreRow(device: device),
+                  (device) => _DeviceScoreRow(
+                    key: ValueKey(device.macAddress),
+                    device: device,
+                  ),
                 ),
               ],
             ],
@@ -405,7 +408,7 @@ class SpeedGauge extends StatelessWidget {
 class _DeviceScoreRow extends StatelessWidget {
   final DeviceScoreUIModel device;
 
-  const _DeviceScoreRow({required this.device});
+  const _DeviceScoreRow({super.key, required this.device});
 
   @override
   Widget build(BuildContext context) {
