@@ -88,7 +88,7 @@ class UspPortTriggeringTab extends ConsumerWidget {
   }
 
   Future<void> _showAddDialog(BuildContext context, WidgetRef ref) async {
-    final result = await showDialog<PortTriggeringDialogResult>(
+    final result = await showAppDialog<PortTriggeringDialogResult>(
       context: context,
       builder: (_) => const PortTriggeringDialog(),
     );
@@ -113,7 +113,7 @@ class UspPortTriggeringTab extends ConsumerWidget {
 
   Future<void> _showEditDialog(BuildContext context, WidgetRef ref,
       PortTriggeringRuleUIModel rule) async {
-    final result = await showDialog<PortTriggeringDialogResult>(
+    final result = await showAppDialog<PortTriggeringDialogResult>(
       context: context,
       builder: (_) => PortTriggeringDialog(rule: rule),
     );
