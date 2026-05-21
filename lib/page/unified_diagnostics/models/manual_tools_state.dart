@@ -2,7 +2,7 @@ import 'package:equatable/equatable.dart';
 import 'package:privacy_gui/core/usp/services/sse_operation_awaiter.dart';
 
 /// Which diagnostic tool is active.
-enum DiagnosticType { ping, traceroute }
+enum DiagnosticType { ping, traceroute, nsLookup }
 
 /// Lifecycle of a diagnostic run.
 enum DiagnosticStatus { idle, running, completed, error }
@@ -17,8 +17,10 @@ class NetworkDiagnosticsState extends Equatable {
   final String host;
   final int pingCount;
   final int maxHops;
+  final String dnsServer;
   final PingResult? pingResult;
   final TracerouteResult? tracerouteResult;
+  final NsLookupResult? nsLookupResult;
   final String? errorMessage;
 
   const NetworkDiagnosticsState({
@@ -27,8 +29,10 @@ class NetworkDiagnosticsState extends Equatable {
     this.host = '',
     this.pingCount = 3,
     this.maxHops = 30,
+    this.dnsServer = '',
     this.pingResult,
     this.tracerouteResult,
+    this.nsLookupResult,
     this.errorMessage,
   });
 
@@ -38,10 +42,13 @@ class NetworkDiagnosticsState extends Equatable {
     String? host,
     int? pingCount,
     int? maxHops,
+    String? dnsServer,
     PingResult? pingResult,
     bool clearPingResult = false,
     TracerouteResult? tracerouteResult,
     bool clearTracerouteResult = false,
+    NsLookupResult? nsLookupResult,
+    bool clearNsLookupResult = false,
     String? errorMessage,
     bool clearError = false,
   }) {
@@ -51,10 +58,13 @@ class NetworkDiagnosticsState extends Equatable {
       host: host ?? this.host,
       pingCount: pingCount ?? this.pingCount,
       maxHops: maxHops ?? this.maxHops,
+      dnsServer: dnsServer ?? this.dnsServer,
       pingResult: clearPingResult ? null : (pingResult ?? this.pingResult),
       tracerouteResult: clearTracerouteResult
           ? null
           : (tracerouteResult ?? this.tracerouteResult),
+      nsLookupResult:
+          clearNsLookupResult ? null : (nsLookupResult ?? this.nsLookupResult),
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
     );
   }
@@ -62,7 +72,9 @@ class NetworkDiagnosticsState extends Equatable {
   bool get isRunning => status == DiagnosticStatus.running;
   bool get hasResult =>
       status == DiagnosticStatus.completed &&
-      (pingResult != null || tracerouteResult != null);
+      (pingResult != null ||
+          tracerouteResult != null ||
+          nsLookupResult != null);
 
   @override
   List<Object?> get props => [
@@ -71,8 +83,10 @@ class NetworkDiagnosticsState extends Equatable {
         host,
         pingCount,
         maxHops,
+        dnsServer,
         pingResult,
         tracerouteResult,
+        nsLookupResult,
         errorMessage,
       ];
 }

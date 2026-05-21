@@ -18,10 +18,12 @@ class DiagnosticManualToolsView extends ConsumerStatefulWidget {
 class _DiagnosticManualToolsViewState
     extends ConsumerState<DiagnosticManualToolsView> {
   final _hostController = TextEditingController();
+  final _dnsServerController = TextEditingController();
 
   @override
   void dispose() {
     _hostController.dispose();
+    _dnsServerController.dispose();
     super.dispose();
   }
 
@@ -78,11 +80,14 @@ class _DiagnosticManualToolsViewState
         _buildHostInput(context, state, notifier),
         AppGap.md(),
 
-        // Config options (ping count / max hops)
-        if (state.activeTab == DiagnosticType.ping)
-          _buildPingConfig(context, state, notifier)
-        else
-          _buildTracerouteConfig(context, state, notifier),
+        // Config options (ping count / max hops / dns server)
+        switch (state.activeTab) {
+          DiagnosticType.ping => _buildPingConfig(context, state, notifier),
+          DiagnosticType.traceroute =>
+            _buildTracerouteConfig(context, state, notifier),
+          DiagnosticType.nsLookup =>
+            _buildNsLookupConfig(context, state, notifier),
+        },
         AppGap.lg(),
 
         // Run button
@@ -135,6 +140,9 @@ class _DiagnosticManualToolsViewState
         if (state.tracerouteResult != null &&
             state.activeTab == DiagnosticType.traceroute)
           _buildTracerouteResult(context, state.tracerouteResult!),
+        if (state.nsLookupResult != null &&
+            state.activeTab == DiagnosticType.nsLookup)
+          _buildNsLookupResult(context, state.nsLookupResult!),
       ],
     );
   }
@@ -172,6 +180,17 @@ class _DiagnosticManualToolsViewState
             colorScheme: colorScheme,
           ),
         ),
+        AppGap.sm(),
+        Expanded(
+          child: _TabButton(
+            label: 'NS Lookup',
+            isSelected: state.activeTab == DiagnosticType.nsLookup,
+            onTap: state.isRunning
+                ? null
+                : () => notifier.switchTab(DiagnosticType.nsLookup),
+            colorScheme: colorScheme,
+          ),
+        ),
       ],
     );
   }
@@ -190,15 +209,23 @@ class _DiagnosticManualToolsViewState
       _hostController.text = state.host;
     }
 
+    final (label, hint) = switch (state.activeTab) {
+      DiagnosticType.ping || DiagnosticType.traceroute => (
+          'Target Host',
+          'e.g. 8.8.8.8 or google.com'
+        ),
+      DiagnosticType.nsLookup => ('Host Name', 'e.g. google.com'),
+    };
+
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AppText.titleSmall('Target Host'),
+          AppText.titleSmall(label),
           AppGap.lg(),
           AppTextField(
             controller: _hostController,
-            hintText: 'e.g. 8.8.8.8 or google.com',
+            hintText: hint,
             enabled: !state.isRunning,
             onChanged: (value) => notifier.updateHost(value),
           ),
@@ -250,6 +277,7 @@ class _DiagnosticManualToolsViewState
     return switch (state.activeTab) {
       DiagnosticType.ping => 'Run Ping',
       DiagnosticType.traceroute => 'Run Traceroute',
+      DiagnosticType.nsLookup => 'Run NS Lookup',
     };
   }
 
@@ -267,6 +295,8 @@ class _DiagnosticManualToolsViewState
         notifier.runPing();
       case DiagnosticType.traceroute:
         notifier.runTraceroute();
+      case DiagnosticType.nsLookup:
+        notifier.runNsLookup();
     }
   }
 
@@ -274,6 +304,7 @@ class _DiagnosticManualToolsViewState
     return switch (state.activeTab) {
       DiagnosticType.ping => 'Pinging ${state.host}...',
       DiagnosticType.traceroute => 'Tracing route to ${state.host}...',
+      DiagnosticType.nsLookup => 'Resolving ${state.host}...',
     };
   }
 
@@ -486,6 +517,150 @@ class _DiagnosticManualToolsViewState
                   ],
                 ),
               )),
+        ],
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // NS Lookup config
+  // ---------------------------------------------------------------------------
+
+  Widget _buildNsLookupConfig(
+    BuildContext context,
+    NetworkDiagnosticsState state,
+    ManualToolsNotifier notifier,
+  ) {
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppText.titleSmall('DNS Server (optional)'),
+          AppGap.lg(),
+          Builder(builder: (_) {
+            if (_dnsServerController.text != state.dnsServer) {
+              _dnsServerController.text = state.dnsServer;
+            }
+            return AppTextField(
+              controller: _dnsServerController,
+              hintText: 'e.g. 8.8.8.8 — leave blank to use the system resolver',
+              enabled: !state.isRunning,
+              onChanged: (value) => notifier.updateDnsServer(value),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // NS Lookup result
+  // ---------------------------------------------------------------------------
+
+  Widget _buildNsLookupResult(BuildContext context, NsLookupResult result) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isOk = result.isComplete && result.hasAnswers;
+
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              AppIcon.font(
+                isOk ? Icons.check_circle : Icons.error,
+                size: 20,
+                color: isOk ? Colors.green : colorScheme.error,
+              ),
+              AppGap.sm(),
+              AppText.titleSmall('NS Lookup ${result.hostName}'),
+              const Spacer(),
+              AppText.bodySmall(
+                result.status,
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ],
+          ),
+          AppGap.lg(),
+          if (result.answers.isEmpty)
+            AppText.bodyMedium(
+              'No answers returned.',
+              color: colorScheme.onSurfaceVariant,
+            )
+          else ...[
+            // Header row
+            Row(
+              children: [
+                SizedBox(
+                  width: 40,
+                  child: AppText.labelSmall(
+                    '#',
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                Expanded(
+                  flex: 3,
+                  child: AppText.labelSmall(
+                    'IPs',
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                Expanded(
+                  flex: 2,
+                  child: AppText.labelSmall(
+                    'DNS Server',
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                SizedBox(
+                  width: 64,
+                  child: AppText.labelSmall(
+                    'RT',
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+            const Divider(height: 16),
+            ...result.answers.map(
+              (answer) => Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(
+                      width: 40,
+                      child: AppText.bodySmall('${answer.index}'),
+                    ),
+                    Expanded(
+                      flex: 3,
+                      child: AppText.bodySmall(
+                        answer.ipAddresses.isEmpty
+                            ? '*'
+                            : answer.ipAddresses.join(', '),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    Expanded(
+                      flex: 2,
+                      child: AppText.bodySmall(
+                        answer.dnsServerIp.isEmpty ? '*' : answer.dnsServerIp,
+                        overflow: TextOverflow.ellipsis,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    SizedBox(
+                      width: 64,
+                      child: AppText.bodySmall(
+                        '${answer.responseTimeMs}ms',
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );

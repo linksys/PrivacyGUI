@@ -79,6 +79,12 @@ class ManualToolsNotifier
     state = AsyncData(s.copyWith(maxHops: hops));
   }
 
+  void updateDnsServer(String server) {
+    final s = state.valueOrNull;
+    if (s == null) return;
+    state = AsyncData(s.copyWith(dnsServer: server, clearError: true));
+  }
+
   void switchTab(DiagnosticType tab) {
     final s = state.valueOrNull;
     if (s == null) return;
@@ -174,6 +180,55 @@ class ManualToolsNotifier
       state = AsyncData(state.requireValue.copyWith(
         status: DiagnosticStatus.error,
         errorMessage: 'Traceroute failed: $e',
+      ));
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // NS Lookup
+  // -------------------------------------------------------------------------
+
+  Future<void> runNsLookup() async {
+    final s = state.valueOrNull;
+    if (s == null || s.isRunning || s.host.isEmpty) return;
+
+    state = AsyncData(s.copyWith(
+      status: DiagnosticStatus.running,
+      clearNsLookupResult: true,
+      clearError: true,
+    ));
+
+    try {
+      final scope = await _ensureScope();
+      final dnsServer = s.dnsServer.trim();
+      final result = await scope.nsLookup(
+        hostName: s.host,
+        dnsServer: dnsServer.isEmpty ? null : dnsServer,
+        timeout: const Duration(seconds: 30),
+      );
+
+      final lookupResult = NsLookupResult.fromOperateResult(result, s.host);
+
+      logger.d('[USP][Diagnostics]: NS Lookup complete — '
+          'status=${lookupResult.status}, '
+          '${lookupResult.answers.length} answers');
+
+      state = AsyncData(state.requireValue.copyWith(
+        status: DiagnosticStatus.completed,
+        nsLookupResult: lookupResult,
+      ));
+    } on TimeoutException catch (e) {
+      logger.w('[USP][Diagnostics]: NS Lookup timeout: $e');
+      state = AsyncData(state.requireValue.copyWith(
+        status: DiagnosticStatus.error,
+        errorMessage:
+            'NS Lookup timed out — no response while resolving ${s.host}',
+      ));
+    } catch (e) {
+      logger.w('[USP][Diagnostics]: NS Lookup failed: $e');
+      state = AsyncData(state.requireValue.copyWith(
+        status: DiagnosticStatus.error,
+        errorMessage: 'NS Lookup failed: $e',
       ));
     }
   }

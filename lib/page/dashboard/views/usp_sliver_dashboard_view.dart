@@ -244,11 +244,6 @@ class _UspSliverDashboardViewState
               ),
             ] else ...[
               AppIconButton(
-                icon: AppIcon.font(Icons.network_check),
-                onTap: () => context.goNamed(RouteNamed.uspUnifiedDiagnostics),
-              ),
-              AppGap.sm(),
-              AppIconButton(
                 icon: AppIcon.font(Icons.print),
                 onTap: () async {
                   final orchState =
