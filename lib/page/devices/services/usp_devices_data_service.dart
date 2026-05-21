@@ -412,6 +412,7 @@ class UspDevicesDataService {
 
       nodes.add(NodeUIModel(
         deviceId: slave.mac,
+        dataElementsId: slaveMeshInfo?.deviceId,
         friendlyName: slave.friendlyName,
         hostName: slave.hostName,
         model: slaveMeshInfo?.model ?? slave.modelName ?? '',
