@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
-import 'package:privacy_gui/page/speed_test/models/speed_test_state.dart';
-import 'package:privacy_gui/page/speed_test/providers/speed_test_notifier.dart';
+import 'package:privacy_gui/page/unified_diagnostics/models/speed_test_state.dart';
+import 'package:privacy_gui/page/unified_diagnostics/providers/speed_test_notifier.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 

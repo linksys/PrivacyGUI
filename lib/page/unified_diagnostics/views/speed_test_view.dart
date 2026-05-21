@@ -7,8 +7,8 @@ import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/shell/usp_top_bar.dart';
-import 'package:privacy_gui/page/speed_test/models/speed_test_state.dart';
-import 'package:privacy_gui/page/speed_test/providers/speed_test_notifier.dart';
+import 'package:privacy_gui/page/unified_diagnostics/models/speed_test_state.dart';
+import 'package:privacy_gui/page/unified_diagnostics/providers/speed_test_notifier.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 class SpeedTestView extends ConsumerWidget {
@@ -106,7 +106,8 @@ class SpeedTestView extends ConsumerWidget {
           // Server selection button
           _ServerSelectionButton(
             selectedServer: selectedServer,
-            onTap: () => _showServerSelectionDialog(context, ref, selectedServer),
+            onTap: () =>
+                _showServerSelectionDialog(context, ref, selectedServer),
           ),
           AppGap.xxxl(),
           SizedBox(

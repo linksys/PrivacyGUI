@@ -1,23 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/core/usp/services/sse_operation_awaiter.dart';
-import 'package:privacy_gui/page/network_diagnostics/models/network_diagnostics_ui_model.dart';
-import 'package:privacy_gui/page/network_diagnostics/providers/usp_network_diagnostics_notifier.dart';
-import 'package:privacy_gui/page/shell/usp_top_bar.dart';
-import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/page/unified_diagnostics/models/manual_tools_state.dart';
+import 'package:privacy_gui/page/unified_diagnostics/providers/manual_tools_notifier.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
-class UspNetworkDiagnosticsView extends ConsumerStatefulWidget {
-  const UspNetworkDiagnosticsView({super.key});
+/// Embeddable manual ping / traceroute tools — rendered inside the unified
+/// diagnostics page when the user picks the "Manual Tools" entry.
+class DiagnosticManualToolsView extends ConsumerStatefulWidget {
+  const DiagnosticManualToolsView({super.key});
 
   @override
-  ConsumerState<UspNetworkDiagnosticsView> createState() =>
-      _UspNetworkDiagnosticsViewState();
+  ConsumerState<DiagnosticManualToolsView> createState() =>
+      _DiagnosticManualToolsViewState();
 }
 
-class _UspNetworkDiagnosticsViewState
-    extends ConsumerState<UspNetworkDiagnosticsView> {
+class _DiagnosticManualToolsViewState
+    extends ConsumerState<DiagnosticManualToolsView> {
   final _hostController = TextEditingController();
 
   @override
@@ -28,24 +27,12 @@ class _UspNetworkDiagnosticsViewState
 
   @override
   Widget build(BuildContext context) {
-    final asyncState = ref.watch(uspNetworkDiagnosticsProvider);
+    final asyncState = ref.watch(manualToolsProvider);
 
-    return UiKitPageView.withSliver(
-      scrollable: true,
-      title: 'Network Diagnostics',
-      topbar: const PreferredSize(
-        preferredSize: Size.fromHeight(64),
-        child: UspTopBar(),
-      ),
-      backFallback: RouteNamed.uspAdvancedSettings,
-      padding: const EdgeInsets.only(bottom: AppSpacing.md),
-      child: (childContext, constraints) {
-        return asyncState.when(
-          loading: () => const Center(child: AppLoader()),
-          error: (error, _) => _buildPageError(context, error),
-          data: (state) => _buildContent(context, state),
-        );
-      },
+    return asyncState.when(
+      loading: () => const Center(child: AppLoader()),
+      error: (error, _) => _buildPageError(context, error),
+      data: (state) => _buildContent(context, state),
     );
   }
 
@@ -63,7 +50,7 @@ class _UspNetworkDiagnosticsViewState
           AppGap.xxl(),
           AppButton(
             label: 'Retry',
-            onTap: () => ref.invalidate(uspNetworkDiagnosticsProvider),
+            onTap: () => ref.invalidate(manualToolsProvider),
           ),
         ],
       ),
@@ -71,7 +58,7 @@ class _UspNetworkDiagnosticsViewState
   }
 
   Widget _buildContent(BuildContext context, NetworkDiagnosticsState state) {
-    final notifier = ref.read(uspNetworkDiagnosticsProvider.notifier);
+    final notifier = ref.read(manualToolsProvider.notifier);
     final colorScheme = Theme.of(context).colorScheme;
 
     return Column(
@@ -159,7 +146,7 @@ class _UspNetworkDiagnosticsViewState
   Widget _buildTabSelector(
     BuildContext context,
     NetworkDiagnosticsState state,
-    UspNetworkDiagnosticsNotifier notifier,
+    ManualToolsNotifier notifier,
   ) {
     final colorScheme = Theme.of(context).colorScheme;
     return Row(
@@ -196,7 +183,7 @@ class _UspNetworkDiagnosticsViewState
   Widget _buildHostInput(
     BuildContext context,
     NetworkDiagnosticsState state,
-    UspNetworkDiagnosticsNotifier notifier,
+    ManualToolsNotifier notifier,
   ) {
     // Sync controller with state on first build
     if (_hostController.text != state.host) {
@@ -227,7 +214,7 @@ class _UspNetworkDiagnosticsViewState
   Widget _buildPingConfig(
     BuildContext context,
     NetworkDiagnosticsState state,
-    UspNetworkDiagnosticsNotifier notifier,
+    ManualToolsNotifier notifier,
   ) {
     return AppCard(
       child: Column(
@@ -273,7 +260,7 @@ class _UspNetworkDiagnosticsViewState
 
   void _runDiagnostic(
     NetworkDiagnosticsState state,
-    UspNetworkDiagnosticsNotifier notifier,
+    ManualToolsNotifier notifier,
   ) {
     switch (state.activeTab) {
       case DiagnosticType.ping:
@@ -297,7 +284,7 @@ class _UspNetworkDiagnosticsViewState
   Widget _buildTracerouteConfig(
     BuildContext context,
     NetworkDiagnosticsState state,
-    UspNetworkDiagnosticsNotifier notifier,
+    ManualToolsNotifier notifier,
   ) {
     return AppCard(
       child: Column(

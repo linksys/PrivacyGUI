@@ -142,11 +142,6 @@ final uspDashboardRoute = ShellRoute(
           enableDirtyCheck: true,
           preservableProvider: preservableUspIpv6PortServiceProvider,
         ),
-        LinksysRoute(
-          name: RouteNamed.uspNetworkDiagnostics,
-          path: RouteNamed.uspNetworkDiagnostics,
-          builder: (context, state) => const UspNetworkDiagnosticsView(),
-        ),
       ],
     ),
     if (kDebugMode || BuildConfig.enableTestConsole)

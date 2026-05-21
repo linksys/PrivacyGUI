@@ -1,10 +1,13 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/models/operate_result.dart';
+import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
+import 'package:privacy_gui/core/usp/services/network_diagnostics_executor.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
-import 'package:privacy_gui/page/speed_test/models/speed_test_state.dart';
-import 'package:privacy_gui/page/speed_test/providers/speed_test_notifier.dart';
+import 'package:privacy_gui/page/unified_diagnostics/models/speed_test_state.dart';
+import 'package:privacy_gui/page/unified_diagnostics/providers/speed_test_notifier.dart';
 
 import '../models/diagnostic_result.dart';
 import '../models/diagnostic_state.dart';
@@ -25,8 +28,53 @@ class UnifiedDiagnosticsNotifier
   UnifiedDiagnosticsService? get _svc =>
       ref.read(unifiedDiagnosticsServiceProvider);
 
+  DiagnosticScope? _scope;
+
   @override
-  UnifiedDiagnosticsState build() => const UnifiedDiagnosticsState();
+  UnifiedDiagnosticsState build() {
+    ref.onDispose(() async {
+      final scope = _scope;
+      _scope = null;
+      if (scope != null) {
+        try {
+          await scope.release();
+        } catch (e) {
+          logger.w('[Diagnostics] Failed to release scope on dispose: $e');
+        }
+      }
+    });
+    return const UnifiedDiagnosticsState();
+  }
+
+  /// Acquire (or reuse) the shared diagnostic scope. Lifecycle is bound to
+  /// this notifier — released automatically on dispose.
+  Future<DiagnosticScope> _ensureScope() async {
+    final existing = _scope;
+    if (existing != null && !existing.isReleased) return existing;
+
+    final executor = ref.read(networkDiagnosticsExecutorProvider);
+    if (executor == null) {
+      throw const ConnectivityError(
+          message: 'NetworkDiagnosticsExecutor not available');
+    }
+    final scope = await executor.acquireScope();
+    _scope = scope;
+    _svc?.attachScope(scope);
+    return scope;
+  }
+
+  /// Release the active scope (if any). Used by [cancel] and [goBack] when
+  /// the user leaves mid-flow without disposing the notifier.
+  Future<void> _releaseScope() async {
+    final scope = _scope;
+    _scope = null;
+    if (scope == null) return;
+    try {
+      await scope.release();
+    } catch (e) {
+      logger.w('[Diagnostics] Failed to release scope: $e');
+    }
+  }
 
   /// Start diagnostic flow — show problem selector (legacy).
   /// @deprecated Use [startWithPreQualifier] instead.
@@ -41,6 +89,12 @@ class UnifiedDiagnosticsNotifier
     state =
         const UnifiedDiagnosticsState(step: DiagnosticStep.checkingWanStatus);
     await _runFullDiagnosticFlow();
+  }
+
+  /// Switch to the manual ping / traceroute tools view.
+  void openManualTools() {
+    logger.i('[Diagnostics] Opening manual tools');
+    state = const UnifiedDiagnosticsState(step: DiagnosticStep.manualTools);
   }
 
   /// Start diagnostic flow with pre-qualifier check.
@@ -76,9 +130,8 @@ class UnifiedDiagnosticsNotifier
 
       // Step 2: Quick ping to check internet connectivity
       try {
-        await svc.startSession();
+        await _ensureScope();
         final pingResult = await svc.pingInternet(repeatCount: 1);
-        await svc.endSession();
 
         if (pingResult.successCount == 0) {
           // Ping failed — could be DNS or internet issue
@@ -105,7 +158,6 @@ class UnifiedDiagnosticsNotifier
         }
       } catch (e) {
         logger.w('[Diagnostics] Pre-qualifier ping failed: $e');
-        await svc.endSession().catchError((_) {});
         state = state.copyWith(
           step: DiagnosticStep.selectFlow,
           preQualifierResult: PreQualifierResult.dnsFailure,
@@ -137,6 +189,8 @@ class UnifiedDiagnosticsNotifier
         await _runDeviceIssuesDiagnostics();
       case DiagnosticFlow.wifiCoverage:
         await _runWifiCoverageDiagnostics();
+      case DiagnosticFlow.meshBackhaul:
+        await _runMeshBackhaulDiagnostics();
       case DiagnosticFlow.intermittent:
         await _runIntermittentDiagnostics();
     }
@@ -162,12 +216,7 @@ class UnifiedDiagnosticsNotifier
   /// Cancel and reset to idle.
   Future<void> cancel() async {
     logger.d('[Diagnostics] Cancelled');
-    // Cleanup any active session
-    try {
-      await _svc?.endSession();
-    } catch (e) {
-      logger.w('[Diagnostics] Failed to cleanup session on cancel: $e');
-    }
+    await _releaseScope();
     state = const UnifiedDiagnosticsState();
   }
 
@@ -202,6 +251,7 @@ class UnifiedDiagnosticsNotifier
       case DiagnosticStep.preQualifying:
       case DiagnosticStep.selectFlow:
       case DiagnosticStep.selectProblem:
+      case DiagnosticStep.manualTools:
         // Back to start screen
         state = const UnifiedDiagnosticsState();
         return true;
@@ -222,10 +272,8 @@ class UnifiedDiagnosticsNotifier
         }
         return true;
       default:
-        // Running — cleanup any active session, then go back to flow menu/start.
-        unawaited(_svc?.endSession().catchError((Object e) {
-          logger.w('[Diagnostics] Failed to cleanup session on back: $e');
-        }));
+        // Running — release the active scope, then go back to flow menu/start.
+        unawaited(_releaseScope());
         if (state.flow != null) {
           state = state.copyWith(
             step: DiagnosticStep.selectFlow,
@@ -268,122 +316,128 @@ class UnifiedDiagnosticsNotifier
       state = state.copyWith(results: List.from(results));
     }
 
-    // Start shared session for all ping and speed test operations
+    // Acquire shared scope for all ping and speed test operations.
+    // Released on notifier dispose / cancel / back navigation.
     try {
-      await svc.startSession();
+      await _ensureScope();
     } catch (e) {
-      logger.e('[Diagnostics] Failed to start session: $e');
+      logger.e('[Diagnostics] Failed to acquire scope: $e');
     }
 
+    // Step 2: Ping gateway
+    state = state.copyWith(step: DiagnosticStep.pingGateway);
     try {
-      // Step 2: Ping gateway
-      state = state.copyWith(step: DiagnosticStep.pingGateway);
-      try {
-        final ping = await svc.pingGateway();
-        final pingResult = _evaluatePing(DiagnosticStep.pingGateway, ping);
-        results.add(pingResult);
-        state = state.copyWith(results: List.from(results));
-      } catch (e) {
-        results.add(_errorResult(DiagnosticStep.pingGateway, e));
-        state = state.copyWith(results: List.from(results));
-      }
+      final ping = await svc.pingGateway();
+      final pingResult = _evaluatePing(DiagnosticStep.pingGateway, ping);
+      results.add(pingResult);
+      state = state.copyWith(results: List.from(results));
+    } catch (e) {
+      results.add(_errorResult(DiagnosticStep.pingGateway, e));
+      state = state.copyWith(results: List.from(results));
+    }
 
-      // Step 3: Ping DNS
-      state = state.copyWith(step: DiagnosticStep.pingDns);
-      try {
-        final ping = await svc.pingDns();
-        final pingResult = _evaluatePing(DiagnosticStep.pingDns, ping);
-        results.add(pingResult);
-        state = state.copyWith(results: List.from(results));
-      } catch (e) {
-        results.add(_errorResult(DiagnosticStep.pingDns, e));
-        state = state.copyWith(results: List.from(results));
-      }
+    // Step 3: Ping DNS
+    state = state.copyWith(step: DiagnosticStep.pingDns);
+    try {
+      final ping = await svc.pingDns();
+      final pingResult = _evaluatePing(DiagnosticStep.pingDns, ping);
+      results.add(pingResult);
+      state = state.copyWith(results: List.from(results));
+    } catch (e) {
+      results.add(_errorResult(DiagnosticStep.pingDns, e));
+      state = state.copyWith(results: List.from(results));
+    }
 
-      // Step 3b: DNS lookup
-      state = state.copyWith(step: DiagnosticStep.dnsLookup);
-      try {
-        final dnsResult = await _runDnsLookup(svc);
-        results.add(dnsResult);
-        state = state.copyWith(results: List.from(results));
-      } catch (e) {
-        results.add(_errorResult(DiagnosticStep.dnsLookup, e));
-        state = state.copyWith(results: List.from(results));
-      }
+    // Step 3b: DNS lookup
+    state = state.copyWith(step: DiagnosticStep.dnsLookup);
+    try {
+      final dnsResult = await _runDnsLookup(svc);
+      results.add(dnsResult);
+      state = state.copyWith(results: List.from(results));
+    } catch (e) {
+      results.add(_errorResult(DiagnosticStep.dnsLookup, e));
+      state = state.copyWith(results: List.from(results));
+    }
 
-      // Step 4: Ping internet
-      state = state.copyWith(step: DiagnosticStep.pingInternet);
-      try {
-        final ping = await svc.pingInternet();
-        final pingResult = _evaluatePing(DiagnosticStep.pingInternet, ping);
-        results.add(pingResult);
-        state = state.copyWith(results: List.from(results));
-      } catch (e) {
-        results.add(_errorResult(DiagnosticStep.pingInternet, e));
-        state = state.copyWith(results: List.from(results));
-      }
+    // Step 4: Ping internet
+    state = state.copyWith(step: DiagnosticStep.pingInternet);
+    try {
+      final ping = await svc.pingInternet();
+      final pingResult = _evaluatePing(DiagnosticStep.pingInternet, ping);
+      results.add(pingResult);
+      state = state.copyWith(results: List.from(results));
+    } catch (e) {
+      results.add(_errorResult(DiagnosticStep.pingInternet, e));
+      state = state.copyWith(results: List.from(results));
+    }
 
-      // Step 5: Speed test
-      state = state.copyWith(step: DiagnosticStep.runningSpeedTest);
-      try {
-        final speedTestResult = await _runSharedSpeedTest();
-        if (speedTestResult != null) {
-          state = state.copyWith(speedTest: speedTestResult);
-          final speedResult = _evaluateSpeedTest(speedTestResult);
-          results.add(speedResult);
-          state = state.copyWith(results: List.from(results));
-        } else {
-          results.add(_errorResult(
-              DiagnosticStep.runningSpeedTest, 'Speed test failed'));
-          state = state.copyWith(results: List.from(results));
-        }
-      } catch (e) {
-        results.add(_errorResult(DiagnosticStep.runningSpeedTest, e));
+    // Step 5: Speed test
+    state = state.copyWith(step: DiagnosticStep.runningSpeedTest);
+    try {
+      final speedTestResult = await _runSharedSpeedTest();
+      if (speedTestResult != null) {
+        state = state.copyWith(speedTest: speedTestResult);
+        final speedResult = _evaluateSpeedTest(speedTestResult);
+        results.add(speedResult);
+        state = state.copyWith(results: List.from(results));
+      } else {
+        results.add(
+            _errorResult(DiagnosticStep.runningSpeedTest, 'Speed test failed'));
         state = state.copyWith(results: List.from(results));
       }
+    } catch (e) {
+      results.add(_errorResult(DiagnosticStep.runningSpeedTest, e));
+      state = state.copyWith(results: List.from(results));
+    }
 
-      // Step 6: Check WiFi signal (per-radio RSSI)
-      state = state.copyWith(step: DiagnosticStep.checkingWifiSignal);
-      try {
-        final perRadio = await svc.analyzeWifiSignalPerRadio();
-        final wifiResult = _evaluateWifiSignal(perRadio);
-        results.add(wifiResult);
-        state = state.copyWith(results: List.from(results));
-      } catch (e) {
-        results.add(_errorResult(DiagnosticStep.checkingWifiSignal, e));
-        state = state.copyWith(results: List.from(results));
-      }
+    // Step 6: Check WiFi signal (per-radio RSSI)
+    state = state.copyWith(step: DiagnosticStep.checkingWifiSignal);
+    try {
+      final perRadio = await svc.analyzeWifiSignalPerRadio();
+      final wifiResult = _evaluateWifiSignal(perRadio);
+      results.add(wifiResult);
+      state = state.copyWith(results: List.from(results));
+    } catch (e) {
+      results.add(_errorResult(DiagnosticStep.checkingWifiSignal, e));
+      state = state.copyWith(results: List.from(results));
+    }
 
-      // Step 6b: Check DHCP pool usage
-      state = state.copyWith(step: DiagnosticStep.checkingDhcpPool);
-      try {
-        final pool = await svc.checkDhcpPool();
-        final poolResult = _evaluateDhcpPool(pool);
-        results.add(poolResult);
-        state = state.copyWith(results: List.from(results));
-      } catch (e) {
-        results.add(_errorResult(DiagnosticStep.checkingDhcpPool, e));
-        state = state.copyWith(results: List.from(results));
-      }
+    // Step 6b: Check DHCP pool usage
+    state = state.copyWith(step: DiagnosticStep.checkingDhcpPool);
+    try {
+      final pool = await svc.checkDhcpPool();
+      final poolResult = _evaluateDhcpPool(pool);
+      results.add(poolResult);
+      state = state.copyWith(results: List.from(results));
+    } catch (e) {
+      results.add(_errorResult(DiagnosticStep.checkingDhcpPool, e));
+      state = state.copyWith(results: List.from(results));
+    }
 
-      // Step 7: Check connected devices
-      state = state.copyWith(step: DiagnosticStep.checkingConnectedDevices);
-      try {
-        final devices = await svc.checkConnectedDevices();
-        final devicesResult = _evaluateConnectedDevices(devices);
-        results.add(devicesResult);
-        state = state.copyWith(results: List.from(results));
-      } catch (e) {
-        results.add(_errorResult(DiagnosticStep.checkingConnectedDevices, e));
-        state = state.copyWith(results: List.from(results));
-      }
-    } finally {
-      // Always cleanup session
-      try {
-        await svc.endSession();
-      } catch (e) {
-        logger.w('[Diagnostics] Failed to end session: $e');
-      }
+    // Step 6c: Mesh / Backhaul (LAN-only GET — runs even without internet).
+    // Skipped silently when only one node exists.
+    state = state.copyWith(step: DiagnosticStep.checkingMeshBackhaul);
+    try {
+      final meshResult = _buildMeshBackhaulResult(
+        await svc.checkMeshBackhaul(),
+      );
+      results.add(meshResult);
+      state = state.copyWith(results: List.from(results));
+    } catch (e) {
+      results.add(_errorResult(DiagnosticStep.checkingMeshBackhaul, e));
+      state = state.copyWith(results: List.from(results));
+    }
+
+    // Step 7: Check connected devices
+    state = state.copyWith(step: DiagnosticStep.checkingConnectedDevices);
+    try {
+      final devices = await svc.checkConnectedDevices();
+      final devicesResult = _evaluateConnectedDevices(devices);
+      results.add(devicesResult);
+      state = state.copyWith(results: List.from(results));
+    } catch (e) {
+      results.add(_errorResult(DiagnosticStep.checkingConnectedDevices, e));
+      state = state.copyWith(results: List.from(results));
     }
 
     await _analyzeAndShowResults(results);
@@ -429,94 +483,85 @@ class UnifiedDiagnosticsNotifier
       state = state.copyWith(results: List.from(results));
     }
 
-    // Start shared session for ping and speed test
     try {
-      await svc.startSession();
+      await _ensureScope();
     } catch (e) {
-      logger.e('[Diagnostics] Failed to start session: $e');
+      logger.e('[Diagnostics] Failed to acquire scope: $e');
     }
 
+    // Step 2: Ping gateway
+    state = state.copyWith(step: DiagnosticStep.pingGateway);
     try {
-      // Step 2: Ping gateway
-      state = state.copyWith(step: DiagnosticStep.pingGateway);
-      try {
-        final ping = await svc.pingGateway();
-        final pingResult = _evaluatePing(DiagnosticStep.pingGateway, ping);
-        results.add(pingResult);
-        state = state.copyWith(results: List.from(results));
-        if (pingResult.isError) connectivityOk = false;
-      } catch (e) {
-        results.add(_errorResult(DiagnosticStep.pingGateway, e));
-        state = state.copyWith(results: List.from(results));
-        connectivityOk = false;
-      }
+      final ping = await svc.pingGateway();
+      final pingResult = _evaluatePing(DiagnosticStep.pingGateway, ping);
+      results.add(pingResult);
+      state = state.copyWith(results: List.from(results));
+      if (pingResult.isError) connectivityOk = false;
+    } catch (e) {
+      results.add(_errorResult(DiagnosticStep.pingGateway, e));
+      state = state.copyWith(results: List.from(results));
+      connectivityOk = false;
+    }
 
-      // Step 3: Ping DNS
-      state = state.copyWith(step: DiagnosticStep.pingDns);
-      try {
-        final ping = await svc.pingDns();
-        final pingResult = _evaluatePing(DiagnosticStep.pingDns, ping);
-        results.add(pingResult);
-        state = state.copyWith(results: List.from(results));
-        if (pingResult.isError) connectivityOk = false;
-      } catch (e) {
-        results.add(_errorResult(DiagnosticStep.pingDns, e));
-        state = state.copyWith(results: List.from(results));
-        connectivityOk = false;
-      }
+    // Step 3: Ping DNS
+    state = state.copyWith(step: DiagnosticStep.pingDns);
+    try {
+      final ping = await svc.pingDns();
+      final pingResult = _evaluatePing(DiagnosticStep.pingDns, ping);
+      results.add(pingResult);
+      state = state.copyWith(results: List.from(results));
+      if (pingResult.isError) connectivityOk = false;
+    } catch (e) {
+      results.add(_errorResult(DiagnosticStep.pingDns, e));
+      state = state.copyWith(results: List.from(results));
+      connectivityOk = false;
+    }
 
-      // Step 3b: DNS lookup — verify name resolution actually works
-      state = state.copyWith(step: DiagnosticStep.dnsLookup);
-      try {
-        final dnsResult = await _runDnsLookup(svc);
-        results.add(dnsResult);
-        state = state.copyWith(results: List.from(results));
-        if (dnsResult.isError) connectivityOk = false;
-      } catch (e) {
-        results.add(_errorResult(DiagnosticStep.dnsLookup, e));
-        state = state.copyWith(results: List.from(results));
-        connectivityOk = false;
-      }
+    // Step 3b: DNS lookup — verify name resolution actually works
+    state = state.copyWith(step: DiagnosticStep.dnsLookup);
+    try {
+      final dnsResult = await _runDnsLookup(svc);
+      results.add(dnsResult);
+      state = state.copyWith(results: List.from(results));
+      if (dnsResult.isError) connectivityOk = false;
+    } catch (e) {
+      results.add(_errorResult(DiagnosticStep.dnsLookup, e));
+      state = state.copyWith(results: List.from(results));
+      connectivityOk = false;
+    }
 
-      // Step 4: Ping internet
-      state = state.copyWith(step: DiagnosticStep.pingInternet);
-      try {
-        final ping = await svc.pingInternet();
-        final pingResult = _evaluatePing(DiagnosticStep.pingInternet, ping);
-        results.add(pingResult);
-        state = state.copyWith(results: List.from(results));
-        if (pingResult.isError) connectivityOk = false;
-      } catch (e) {
-        results.add(_errorResult(DiagnosticStep.pingInternet, e));
-        state = state.copyWith(results: List.from(results));
-        connectivityOk = false;
-      }
+    // Step 4: Ping internet
+    state = state.copyWith(step: DiagnosticStep.pingInternet);
+    try {
+      final ping = await svc.pingInternet();
+      final pingResult = _evaluatePing(DiagnosticStep.pingInternet, ping);
+      results.add(pingResult);
+      state = state.copyWith(results: List.from(results));
+      if (pingResult.isError) connectivityOk = false;
+    } catch (e) {
+      results.add(_errorResult(DiagnosticStep.pingInternet, e));
+      state = state.copyWith(results: List.from(results));
+      connectivityOk = false;
+    }
 
-      // Step 5: Speed test (only if connectivity is OK)
-      if (connectivityOk) {
-        state = state.copyWith(step: DiagnosticStep.runningSpeedTest);
-        try {
-          final speedTestResult = await _runSharedSpeedTest();
-          if (speedTestResult != null) {
-            state = state.copyWith(speedTest: speedTestResult);
-            final speedResult = _evaluateSpeedTest(speedTestResult);
-            results.add(speedResult);
-            state = state.copyWith(results: List.from(results));
-          } else {
-            results.add(_errorResult(
-                DiagnosticStep.runningSpeedTest, 'Speed test failed'));
-            state = state.copyWith(results: List.from(results));
-          }
-        } catch (e) {
-          results.add(_errorResult(DiagnosticStep.runningSpeedTest, e));
+    // Step 5: Speed test (only if connectivity is OK)
+    if (connectivityOk) {
+      state = state.copyWith(step: DiagnosticStep.runningSpeedTest);
+      try {
+        final speedTestResult = await _runSharedSpeedTest();
+        if (speedTestResult != null) {
+          state = state.copyWith(speedTest: speedTestResult);
+          final speedResult = _evaluateSpeedTest(speedTestResult);
+          results.add(speedResult);
+          state = state.copyWith(results: List.from(results));
+        } else {
+          results.add(_errorResult(
+              DiagnosticStep.runningSpeedTest, 'Speed test failed'));
           state = state.copyWith(results: List.from(results));
         }
-      }
-    } finally {
-      try {
-        await svc.endSession();
       } catch (e) {
-        logger.w('[Diagnostics] Failed to end session: $e');
+        results.add(_errorResult(DiagnosticStep.runningSpeedTest, e));
+        state = state.copyWith(results: List.from(results));
       }
     }
 
@@ -620,6 +665,81 @@ class UnifiedDiagnosticsNotifier
   }
 
   // ══════════════════════════════════════════════════════════════════════════
+  // Flow: Mesh / Backhaul
+  // ══════════════════════════════════════════════════════════════════════════
+
+  Future<void> _runMeshBackhaulDiagnostics() async {
+    final svc = _svc;
+    if (svc == null) {
+      _setError('Diagnostics service not available');
+      return;
+    }
+
+    logger.i('[Diagnostics] Running Mesh / Backhaul flow');
+    final results = <DiagnosticStepUIModel>[];
+
+    state = state.copyWith(step: DiagnosticStep.checkingMeshBackhaul);
+    try {
+      final records = await svc.checkMeshBackhaul();
+      results.add(_buildMeshBackhaulResult(records));
+      state = state.copyWith(results: List.from(results));
+    } catch (e) {
+      results.add(_errorResult(DiagnosticStep.checkingMeshBackhaul, e));
+      state = state.copyWith(results: List.from(results));
+    }
+
+    await _analyzeAndShowResults(results);
+  }
+
+  /// Map raw [MeshBackhaulNodeRecord] list to a [MeshBackhaulCheckUIModel],
+  /// handling the single-node skip case. Shared by full diagnostic and the
+  /// dedicated Mesh / Backhaul flow.
+  MeshBackhaulCheckUIModel _buildMeshBackhaulResult(
+      List<MeshBackhaulNodeRecord> records) {
+    if (records.isEmpty) {
+      return MeshBackhaulCheckUIModel(
+        nodes: const [],
+        severity: DiagnosticSeverity.skipped,
+        titleKey: 'diagnostics_mesh_backhaul_single_node',
+        descriptionKey: 'diagnostics_mesh_backhaul_single_node_desc',
+      );
+    }
+
+    final nodes = records
+        .map((r) => MeshNodeBackhaulUIModel(
+              nodeId: r.nodeId,
+              label: r.label,
+              mediaType: r.mediaType,
+              phyRateMbps: r.phyRateMbps,
+              lastUplinkRateMbps: r.lastUplinkRateMbps,
+              signalStrengthDbm: r.signalStrengthDbm,
+              isController: r.isController,
+              severity: switch (r.severity) {
+                MeshBackhaulSeverityBucket.healthy =>
+                  MeshBackhaulSeverity.healthy,
+                MeshBackhaulSeverityBucket.weak => MeshBackhaulSeverity.weak,
+                MeshBackhaulSeverityBucket.poor => MeshBackhaulSeverity.poor,
+              },
+            ))
+        .toList();
+
+    final hasPoor = nodes.any((n) => n.severity == MeshBackhaulSeverity.poor);
+    final hasWeak = nodes.any((n) => n.severity == MeshBackhaulSeverity.weak);
+    final severity = hasPoor
+        ? DiagnosticSeverity.error
+        : hasWeak
+            ? DiagnosticSeverity.warning
+            : DiagnosticSeverity.ok;
+
+    return MeshBackhaulCheckUIModel(
+      nodes: nodes,
+      severity: severity,
+      titleKey: 'diagnostics_mesh_backhaul',
+      descriptionKey: 'diagnostics_mesh_backhaul_desc',
+    );
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
   // Flow 4: Intermittent
   // ══════════════════════════════════════════════════════════════════════════
 
@@ -633,49 +753,40 @@ class UnifiedDiagnosticsNotifier
     logger.i('[Diagnostics] Running Intermittent flow');
     final results = <DiagnosticStepUIModel>[];
 
-    // Start shared session for multiple pings
     try {
-      await svc.startSession();
+      await _ensureScope();
     } catch (e) {
-      logger.e('[Diagnostics] Failed to start session: $e');
+      logger.e('[Diagnostics] Failed to acquire scope: $e');
     }
 
+    // Step 1: Check intermittent issues (uptime + jitter)
+    state = state.copyWith(step: DiagnosticStep.pingInternet);
     try {
-      // Step 1: Check intermittent issues (uptime + jitter)
-      state = state.copyWith(step: DiagnosticStep.pingInternet);
-      try {
-        final intermittent = await svc.checkIntermittent();
+      final intermittent = await svc.checkIntermittent();
 
-        final severity = intermittent.hasPacketLoss
-            ? DiagnosticSeverity.error
-            : intermittent.hasHighJitter || intermittent.recentReboot
-                ? DiagnosticSeverity.warning
-                : DiagnosticSeverity.ok;
+      final severity = intermittent.hasPacketLoss
+          ? DiagnosticSeverity.error
+          : intermittent.hasHighJitter || intermittent.recentReboot
+              ? DiagnosticSeverity.warning
+              : DiagnosticSeverity.ok;
 
-        results.add(IntermittentCheckUIModel(
-          uptimeSeconds: intermittent.uptimeSeconds,
-          uptimeFormatted: intermittent.uptimeFormatted,
-          pingSuccessRate: intermittent.pingSuccessRate,
-          averageLatencyMs: intermittent.averageLatencyMs,
-          jitterMs: intermittent.jitterMs,
-          hasHighJitter: intermittent.hasHighJitter,
-          hasPacketLoss: intermittent.hasPacketLoss,
-          recentReboot: intermittent.recentReboot,
-          severity: severity,
-          titleKey: 'diagnostics_intermittent',
-          descriptionKey: 'diagnostics_intermittent_desc',
-        ));
-        state = state.copyWith(results: List.from(results));
-      } catch (e) {
-        results.add(_errorResult(DiagnosticStep.pingInternet, e));
-        state = state.copyWith(results: List.from(results));
-      }
-    } finally {
-      try {
-        await svc.endSession();
-      } catch (e) {
-        logger.w('[Diagnostics] Failed to end session: $e');
-      }
+      results.add(IntermittentCheckUIModel(
+        uptimeSeconds: intermittent.uptimeSeconds,
+        uptimeFormatted: intermittent.uptimeFormatted,
+        pingSuccessRate: intermittent.pingSuccessRate,
+        averageLatencyMs: intermittent.averageLatencyMs,
+        jitterMs: intermittent.jitterMs,
+        hasHighJitter: intermittent.hasHighJitter,
+        hasPacketLoss: intermittent.hasPacketLoss,
+        recentReboot: intermittent.recentReboot,
+        severity: severity,
+        titleKey: 'diagnostics_intermittent',
+        descriptionKey: 'diagnostics_intermittent_desc',
+      ));
+      state = state.copyWith(results: List.from(results));
+    } catch (e) {
+      results.add(_errorResult(DiagnosticStep.pingInternet, e));
+      state = state.copyWith(results: List.from(results));
     }
 
     await _analyzeAndShowResults(results);
@@ -735,67 +846,57 @@ class UnifiedDiagnosticsNotifier
       state = state.copyWith(results: List.from(results));
     }
 
-    // Start shared session for all ping operations
     try {
-      await svc.startSession();
+      await _ensureScope();
     } catch (e) {
-      logger.e('[Diagnostics] Failed to start session: $e');
+      logger.e('[Diagnostics] Failed to acquire scope: $e');
     }
 
+    // Step 3: Ping gateway
+    state = state.copyWith(step: DiagnosticStep.pingGateway);
     try {
-      // Step 3: Ping gateway
-      state = state.copyWith(step: DiagnosticStep.pingGateway);
-      try {
-        final ping = await svc.pingGateway();
-        final pingResult = _evaluatePing(DiagnosticStep.pingGateway, ping);
-        results.add(pingResult);
-        state = state.copyWith(results: List.from(results));
-      } catch (e) {
-        results.add(_errorResult(DiagnosticStep.pingGateway, e));
-        state = state.copyWith(results: List.from(results));
-      }
+      final ping = await svc.pingGateway();
+      final pingResult = _evaluatePing(DiagnosticStep.pingGateway, ping);
+      results.add(pingResult);
+      state = state.copyWith(results: List.from(results));
+    } catch (e) {
+      results.add(_errorResult(DiagnosticStep.pingGateway, e));
+      state = state.copyWith(results: List.from(results));
+    }
 
-      // Step 4: Ping DNS
-      state = state.copyWith(step: DiagnosticStep.pingDns);
-      try {
-        final ping = await svc.pingDns();
-        final pingResult = _evaluatePing(DiagnosticStep.pingDns, ping);
-        results.add(pingResult);
-        state = state.copyWith(results: List.from(results));
-      } catch (e) {
-        results.add(_errorResult(DiagnosticStep.pingDns, e));
-        state = state.copyWith(results: List.from(results));
-      }
+    // Step 4: Ping DNS
+    state = state.copyWith(step: DiagnosticStep.pingDns);
+    try {
+      final ping = await svc.pingDns();
+      final pingResult = _evaluatePing(DiagnosticStep.pingDns, ping);
+      results.add(pingResult);
+      state = state.copyWith(results: List.from(results));
+    } catch (e) {
+      results.add(_errorResult(DiagnosticStep.pingDns, e));
+      state = state.copyWith(results: List.from(results));
+    }
 
-      // Step 4b: DNS lookup
-      state = state.copyWith(step: DiagnosticStep.dnsLookup);
-      try {
-        final dnsResult = await _runDnsLookup(svc);
-        results.add(dnsResult);
-        state = state.copyWith(results: List.from(results));
-      } catch (e) {
-        results.add(_errorResult(DiagnosticStep.dnsLookup, e));
-        state = state.copyWith(results: List.from(results));
-      }
+    // Step 4b: DNS lookup
+    state = state.copyWith(step: DiagnosticStep.dnsLookup);
+    try {
+      final dnsResult = await _runDnsLookup(svc);
+      results.add(dnsResult);
+      state = state.copyWith(results: List.from(results));
+    } catch (e) {
+      results.add(_errorResult(DiagnosticStep.dnsLookup, e));
+      state = state.copyWith(results: List.from(results));
+    }
 
-      // Step 5: Ping internet
-      state = state.copyWith(step: DiagnosticStep.pingInternet);
-      try {
-        final ping = await svc.pingInternet();
-        final pingResult = _evaluatePing(DiagnosticStep.pingInternet, ping);
-        results.add(pingResult);
-        state = state.copyWith(results: List.from(results));
-      } catch (e) {
-        results.add(_errorResult(DiagnosticStep.pingInternet, e));
-        state = state.copyWith(results: List.from(results));
-      }
-    } finally {
-      // Always cleanup session
-      try {
-        await svc.endSession();
-      } catch (e) {
-        logger.w('[Diagnostics] Failed to end session: $e');
-      }
+    // Step 5: Ping internet
+    state = state.copyWith(step: DiagnosticStep.pingInternet);
+    try {
+      final ping = await svc.pingInternet();
+      final pingResult = _evaluatePing(DiagnosticStep.pingInternet, ping);
+      results.add(pingResult);
+      state = state.copyWith(results: List.from(results));
+    } catch (e) {
+      results.add(_errorResult(DiagnosticStep.pingInternet, e));
+      state = state.copyWith(results: List.from(results));
     }
 
     await _analyzeAndShowResults(results);
@@ -878,78 +979,68 @@ class UnifiedDiagnosticsNotifier
 
     final results = <DiagnosticStepUIModel>[];
 
-    // Start shared session for speed test latency ping and traceroute
     try {
-      await svc.startSession();
+      await _ensureScope();
     } catch (e) {
-      logger.e('[Diagnostics] Failed to start session: $e');
+      logger.e('[Diagnostics] Failed to acquire scope: $e');
     }
 
+    // Step 1: Speed test (using shared speedTestProvider)
+    state = state.copyWith(step: DiagnosticStep.runningSpeedTest);
     try {
-      // Step 1: Speed test (using shared speedTestProvider)
-      state = state.copyWith(step: DiagnosticStep.runningSpeedTest);
-      try {
-        final speedTestResult = await _runSharedSpeedTest();
-        if (speedTestResult != null) {
-          state = state.copyWith(speedTest: speedTestResult);
-          final speedResult = _evaluateSpeedTest(speedTestResult);
-          results.add(speedResult);
-          state = state.copyWith(results: List.from(results));
-        } else {
-          results.add(_errorResult(
-              DiagnosticStep.runningSpeedTest, 'Speed test failed'));
-          state = state.copyWith(results: List.from(results));
-        }
-      } catch (e) {
-        results.add(_errorResult(DiagnosticStep.runningSpeedTest, e));
+      final speedTestResult = await _runSharedSpeedTest();
+      if (speedTestResult != null) {
+        state = state.copyWith(speedTest: speedTestResult);
+        final speedResult = _evaluateSpeedTest(speedTestResult);
+        results.add(speedResult);
+        state = state.copyWith(results: List.from(results));
+      } else {
+        results.add(
+            _errorResult(DiagnosticStep.runningSpeedTest, 'Speed test failed'));
         state = state.copyWith(results: List.from(results));
       }
+    } catch (e) {
+      results.add(_errorResult(DiagnosticStep.runningSpeedTest, e));
+      state = state.copyWith(results: List.from(results));
+    }
 
-      // Step 2: Check WiFi signal (per-radio RSSI)
-      state = state.copyWith(step: DiagnosticStep.checkingWifiSignal);
-      try {
-        final perRadio = await svc.analyzeWifiSignalPerRadio();
-        final wifiResult = _evaluateWifiSignal(perRadio);
-        results.add(wifiResult);
-        state = state.copyWith(results: List.from(results));
-      } catch (e) {
-        results.add(_errorResult(DiagnosticStep.checkingWifiSignal, e));
-        state = state.copyWith(results: List.from(results));
-      }
+    // Step 2: Check WiFi signal (per-radio RSSI)
+    state = state.copyWith(step: DiagnosticStep.checkingWifiSignal);
+    try {
+      final perRadio = await svc.analyzeWifiSignalPerRadio();
+      final wifiResult = _evaluateWifiSignal(perRadio);
+      results.add(wifiResult);
+      state = state.copyWith(results: List.from(results));
+    } catch (e) {
+      results.add(_errorResult(DiagnosticStep.checkingWifiSignal, e));
+      state = state.copyWith(results: List.from(results));
+    }
 
-      // Step 3: Check connected devices
-      state = state.copyWith(step: DiagnosticStep.checkingConnectedDevices);
-      try {
-        final devices = await svc.checkConnectedDevices();
-        final devicesResult = _evaluateConnectedDevices(devices);
-        results.add(devicesResult);
-        state = state.copyWith(results: List.from(results));
-      } catch (e) {
-        results.add(_errorResult(DiagnosticStep.checkingConnectedDevices, e));
-        state = state.copyWith(results: List.from(results));
-      }
+    // Step 3: Check connected devices
+    state = state.copyWith(step: DiagnosticStep.checkingConnectedDevices);
+    try {
+      final devices = await svc.checkConnectedDevices();
+      final devicesResult = _evaluateConnectedDevices(devices);
+      results.add(devicesResult);
+      state = state.copyWith(results: List.from(results));
+    } catch (e) {
+      results.add(_errorResult(DiagnosticStep.checkingConnectedDevices, e));
+      state = state.copyWith(results: List.from(results));
+    }
 
-      // Step 4: Traceroute (if speed test showed issues)
-      final speedTest = state.speedTest;
-      if (speedTest != null &&
-          (speedTest.isSlowDownload || speedTest.isSlowUpload)) {
-        state = state.copyWith(step: DiagnosticStep.runningTraceroute);
-        try {
-          final traceroute = await svc.traceroute();
-          final tracerouteResult = _evaluateTraceroute(traceroute);
-          results.add(tracerouteResult);
-          state = state.copyWith(results: List.from(results));
-        } catch (e) {
-          results.add(_errorResult(DiagnosticStep.runningTraceroute, e));
-          state = state.copyWith(results: List.from(results));
-        }
-      }
-    } finally {
-      // Always cleanup session
+    // Step 4: Traceroute (if speed test showed issues)
+    final speedTest = state.speedTest;
+    if (speedTest != null &&
+        (speedTest.isSlowDownload || speedTest.isSlowUpload)) {
+      state = state.copyWith(step: DiagnosticStep.runningTraceroute);
       try {
-        await svc.endSession();
+        final traceroute = await svc.traceroute();
+        final tracerouteResult = _evaluateTraceroute(traceroute);
+        results.add(tracerouteResult);
+        state = state.copyWith(results: List.from(results));
       } catch (e) {
-        logger.w('[Diagnostics] Failed to end session: $e');
+        results.add(_errorResult(DiagnosticStep.runningTraceroute, e));
+        state = state.copyWith(results: List.from(results));
       }
     }
 
@@ -1121,6 +1212,26 @@ class UnifiedDiagnosticsNotifier
             descriptionKey: 'diagnostics_rec_bottleneck_desc',
             priority: 10,
           ));
+        case DiagnosticStep.checkingMeshBackhaul:
+          if (result is MeshBackhaulCheckUIModel) {
+            if (result.poorCount > 0) {
+              recommendations.add(RecommendationUIModel(
+                id: 'mesh_backhaul_poor',
+                titleKey: 'diagnostics_rec_mesh_backhaul_poor_title',
+                descriptionKey: 'diagnostics_rec_mesh_backhaul_poor_desc',
+                priority: 4,
+                actionId: 'meshUseEthernetBackhaul',
+              ));
+            } else if (result.weakCount > 0) {
+              recommendations.add(RecommendationUIModel(
+                id: 'mesh_backhaul_weak',
+                titleKey: 'diagnostics_rec_mesh_backhaul_weak_title',
+                descriptionKey: 'diagnostics_rec_mesh_backhaul_weak_desc',
+                priority: 7,
+                actionId: 'repositionMeshNode',
+              ));
+            }
+          }
         default:
           break;
       }
@@ -1306,6 +1417,9 @@ class UnifiedDiagnosticsNotifier
       rawData: {
         'downloadMbps': speedTest.downloadMbps,
         'uploadMbps': speedTest.uploadMbps,
+        'hasUpload': speedTest.hasUpload,
+        if (speedTest.hasLatency) 'latencyMs': speedTest.latencyMs!,
+        if (speedTest.serverHost != null) 'serverHost': speedTest.serverHost!,
       },
     );
   }

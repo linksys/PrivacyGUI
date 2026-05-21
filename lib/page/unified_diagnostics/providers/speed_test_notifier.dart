@@ -4,8 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
-import 'package:privacy_gui/core/usp/services/sse_operation_awaiter.dart';
-import 'package:privacy_gui/page/speed_test/models/speed_test_state.dart';
+import 'package:privacy_gui/core/usp/services/network_diagnostics_executor.dart';
+import 'package:privacy_gui/page/unified_diagnostics/models/speed_test_state.dart';
 
 // ---------------------------------------------------------------------------
 // Provider
@@ -26,13 +26,13 @@ class SpeedTestNotifier extends AsyncNotifier<SpeedTestState> {
     return const SpeedTestState();
   }
 
-  SseOperationAwaiter get _awaiter {
-    final awaiter = ref.read(sseOperationAwaiterProvider);
-    if (awaiter == null) {
+  NetworkDiagnosticsExecutor get _executor {
+    final executor = ref.read(networkDiagnosticsExecutorProvider);
+    if (executor == null) {
       throw const ConnectivityError(
-          message: 'SseOperationAwaiter not available');
+          message: 'NetworkDiagnosticsExecutor not available');
     }
-    return awaiter;
+    return executor;
   }
 
   // -------------------------------------------------------------------------
@@ -65,17 +65,29 @@ class SpeedTestNotifier extends AsyncNotifier<SpeedTestState> {
 
     int? latencyMs;
 
+    // Acquire shared scope for the duration of this run only — speedTestProvider
+    // is non-autoDispose so we must NOT keep the OperationComplete subscription
+    // alive between runs.
+    final DiagnosticScope scope;
+    try {
+      scope = await _executor.acquireScope();
+    } catch (e) {
+      logger.w('[USP][SpeedTest]: Failed to acquire scope: $e');
+      state = AsyncData(state.requireValue.copyWith(
+        step: SpeedTestStep.error,
+        clearProgress: true,
+        errorMessage: 'Speed test unavailable: $e',
+      ));
+      return;
+    }
+
     try {
       // Step 1: Latency test (ping the selected server)
       logger.d('[USP][SpeedTest]: Starting latency test to ${server.host}');
       try {
-        final pingResult = await _awaiter.execute(
-          operateCommand: 'Device.IP.Diagnostics.IPPing()',
-          referencePath: 'Device.IP.Diagnostics.',
-          args: {
-            'Host': server.host,
-            'NumberOfRepetitions': '3',
-          },
+        final pingResult = await scope.ping(
+          host: server.host,
+          numberOfRepetitions: 3,
           timeout: const Duration(seconds: 15),
         );
 
@@ -94,10 +106,8 @@ class SpeedTestNotifier extends AsyncNotifier<SpeedTestState> {
       ));
 
       logger.d('[USP][SpeedTest]: Starting download test: $downloadUrl');
-      final downloadResult = await _awaiter.execute(
-        operateCommand: 'Device.IP.Diagnostics.DownloadDiagnostics()',
-        referencePath: 'Device.IP.Diagnostics.',
-        args: {'DownloadURL': downloadUrl},
+      final downloadResult = await scope.downloadDiagnostic(
+        downloadUrl: downloadUrl,
         timeout: const Duration(seconds: 120),
       );
 
@@ -164,6 +174,12 @@ class SpeedTestNotifier extends AsyncNotifier<SpeedTestState> {
         clearProgress: true,
         errorMessage: 'Speed test failed: $e',
       ));
+    } finally {
+      try {
+        await scope.release();
+      } catch (e) {
+        logger.w('[USP][SpeedTest]: Failed to release scope: $e');
+      }
     }
   }
 

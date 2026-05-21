@@ -1,10 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
-import 'package:privacy_gui/core/usp/services/sse_operation_awaiter.dart';
+import 'package:privacy_gui/core/usp/models/operate_result.dart';
+import 'package:privacy_gui/core/usp/services/network_diagnostics_executor.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/generated/connected_devices.g.dart';
+import 'package:privacy_gui/generated/data_elements_network.g.dart';
 import 'package:privacy_gui/generated/dhcp_clients.g.dart';
 import 'package:privacy_gui/generated/dns_client.g.dart';
 import 'package:privacy_gui/generated/lan_network_info.g.dart';
@@ -19,26 +21,46 @@ import 'package:privacy_gui/page/unified_diagnostics/models/device_score.dart';
 final unifiedDiagnosticsServiceProvider =
     Provider<UnifiedDiagnosticsService?>((ref) {
   final usp = ref.watch(uspClientProvider);
-  final awaiter = ref.watch(sseOperationAwaiterProvider);
-  if (usp == null || awaiter == null) return null;
-  return UnifiedDiagnosticsService(usp, awaiter);
+  final executor = ref.watch(networkDiagnosticsExecutorProvider);
+  if (usp == null || executor == null) return null;
+  return UnifiedDiagnosticsService(usp, executor);
 });
 
 /// Service encapsulating all USP operations for network diagnostics.
 ///
 /// Uses:
 /// - Codegen classes for GET operations (WanStatus, WiFiRadios, ConnectedDevices)
-/// - SseOperationAwaiter for async Operate commands (Ping, Traceroute, SpeedTest)
+/// - [DiagnosticScope] (via [NetworkDiagnosticsExecutor]) for async Operate
+///   commands (Ping, Traceroute, NSLookup). Lifecycle is owned by the
+///   notifier — call [attachScope] before invoking any Operate-based method.
 class UnifiedDiagnosticsService {
   final UspClient _usp;
-  final SseOperationAwaiter _awaiter;
+  // ignore: unused_field
+  final NetworkDiagnosticsExecutor _executor;
+  DiagnosticScope? _scope;
 
   static const _defaultInternetHost =
       '1.1.1.1'; // Cloudflare — for internet check
   static const _defaultDnsHost = '8.8.8.8'; // Google DNS — for DNS check
   static const _defaultTracerouteHost = '8.8.8.8';
 
-  UnifiedDiagnosticsService(this._usp, this._awaiter);
+  UnifiedDiagnosticsService(this._usp, this._executor);
+
+  /// Inject the active [DiagnosticScope]. Must be called before any
+  /// Operate-based method (ping, nsLookup, traceroute). Owned by notifier.
+  void attachScope(DiagnosticScope scope) {
+    _scope = scope;
+  }
+
+  DiagnosticScope _requireScope() {
+    final scope = _scope;
+    if (scope == null || scope.isReleased) {
+      throw StateError(
+          'UnifiedDiagnosticsService has no active DiagnosticScope. '
+          'Notifier must call attachScope() before running diagnostics.');
+    }
+    return scope;
+  }
 
   // ─── WAN Status ──────────────────────────────────────────
 
@@ -56,26 +78,7 @@ class UnifiedDiagnosticsService {
 
   // ─── Ping Operations ─────────────────────────────────────
 
-  // ─── Shared Session ──────────────────────────────────────
-
-  /// Start a shared subscription session for batch diagnostics.
-  /// Call [endSession] when diagnostics complete.
-  Future<void> startSession() async {
-    logger.d('[Diagnostics] Starting shared session');
-    await _awaiter.startSharedSession(
-      referencePath: 'Device.IP.Diagnostics.',
-    );
-  }
-
-  /// End the shared subscription session.
-  Future<void> endSession() async {
-    logger.d('[Diagnostics] Ending shared session');
-    await _awaiter.endSharedSession();
-  }
-
-  // ─── Ping Operations ─────────────────────────────────────
-
-  /// Ping a host and return parsed result (uses shared session if active).
+  /// Ping a host and return parsed result (requires active scope).
   Future<PingResult> ping(
     String host, {
     int repeatCount = 3,
@@ -83,12 +86,9 @@ class UnifiedDiagnosticsService {
   }) async {
     logger.d('[Diagnostics] Pinging $host (count=$repeatCount)');
     try {
-      final result = await _awaiter.executeInSession(
-        operateCommand: 'Device.IP.Diagnostics.IPPing()',
-        args: {
-          'Host': host,
-          'NumberOfRepetitions': repeatCount.toString(),
-        },
+      final result = await _requireScope().ping(
+        host: host,
+        numberOfRepetitions: repeatCount,
         timeout: timeout,
       );
       logger.d('[Diagnostics] Ping $host complete: ${result.status}');
@@ -136,7 +136,7 @@ class UnifiedDiagnosticsService {
   }
 
   /// Run NSLookup to validate that DNS resolution actually works
-  /// (uses shared session if active).
+  /// (requires active scope).
   Future<NsLookupResult> nsLookup(
     String hostName, {
     String? dnsServer,
@@ -145,13 +145,10 @@ class UnifiedDiagnosticsService {
     logger.d('[Diagnostics] NSLookup $hostName'
         '${dnsServer != null ? ' via $dnsServer' : ''}');
     try {
-      final args = <String, String>{'HostName': hostName};
-      if (dnsServer != null && dnsServer.isNotEmpty) {
-        args['DNSServer'] = dnsServer;
-      }
-      final result = await _awaiter.executeInSession(
-        operateCommand: 'Device.DNS.Diagnostics.NSLookupDiagnostics()',
-        args: args,
+      final result = await _requireScope().nsLookup(
+        hostName: hostName,
+        dnsServer:
+            (dnsServer != null && dnsServer.isNotEmpty) ? dnsServer : null,
         timeout: timeout,
       );
       logger.d('[Diagnostics] NSLookup $hostName complete: ${result.status}');
@@ -171,13 +168,9 @@ class UnifiedDiagnosticsService {
     Duration timeout = const Duration(seconds: 120),
   }) async {
     logger.d('[Diagnostics] Running traceroute to $host');
-    final result = await _awaiter.execute(
-      operateCommand: 'Device.IP.Diagnostics.TraceRoute()',
-      referencePath: 'Device.IP.Diagnostics.TraceRoute.',
-      args: {
-        'Host': host,
-        'MaxHopCount': maxHops.toString(),
-      },
+    final result = await _requireScope().traceRoute(
+      host: host,
+      maxHopCount: maxHops,
       timeout: timeout,
     );
     return TracerouteResult.fromOperateResult(result, host);
@@ -489,6 +482,100 @@ class UnifiedDiagnosticsService {
     return totalDiff ~/ (latencies.length - 1);
   }
 
+  // ─── Mesh Backhaul Check ─────────────────────────────────
+
+  /// Inspect mesh node backhaul health using EasyMesh DataElements.
+  ///
+  /// Returns a record per non-controller node with media type, PHY rate,
+  /// signal strength, and a derived severity bucket. The controller (the
+  /// router itself) is excluded — it has no backhaul.
+  ///
+  /// When fewer than 2 nodes exist (single-router deployment) this returns
+  /// an empty list, signalling the caller to mark the step as skipped.
+  Future<List<MeshBackhaulNodeRecord>> checkMeshBackhaul() async {
+    logger.d('[Diagnostics] Inspecting mesh backhaul');
+    final network = await DataElementsNetwork.fetch(_usp);
+    if (network.items.length < 2) {
+      logger.d('[Diagnostics] Mesh backhaul: ${network.items.length} '
+          'node(s) — skipping');
+      return const [];
+    }
+
+    final results = <MeshBackhaulNodeRecord>[];
+    for (final node in network.items) {
+      // Controller is the node WITHOUT its own backhaul. Detect by absence of
+      // backhaul-link evidence — BackhaulMediaType / BackhaulALID /
+      // BackhaulPHYRate are all the controller's own uplink to its parent
+      // (agents only). MultiAPDevice.AssocIEEE1905DeviceRef and
+      // EasyMeshAgentOperationMode are unreliable: some firmware (verified on
+      // M60TB-EU 1.0.18) leaves both empty on connected agents.
+      final hasBackhaulLink = node.backhaulMediaType.isNotEmpty ||
+          node.backhaulAlId.isNotEmpty ||
+          node.backhaulPhyRate > 0;
+      final isController = !hasBackhaulLink;
+      if (isController) {
+        // Controller doesn't have its own backhaul — skip.
+        continue;
+      }
+
+      final wired = node.backhaulMediaType.contains('Ethernet') ||
+          node.backhaulMediaType.contains('MoCA') ||
+          node.backhaulMediaType.contains('G.hn');
+
+      final phyRateMbps = node.backhaulPhyRate > 0 ? node.backhaulPhyRate : -1;
+      final lastUplinkRateMbps = node.backhaulStatsLastDataUplinkRate > 0
+          ? node.backhaulStatsLastDataUplinkRate
+          : -1;
+      final signalDbm = node.backhaulStatsSignalStrength;
+
+      final severity = _gradeMeshBackhaul(
+        wired: wired,
+        phyRateMbps: phyRateMbps,
+        signalDbm: signalDbm,
+      );
+
+      final label = node.manufacturerModel.isNotEmpty
+          ? node.manufacturerModel
+          : (node.id.isNotEmpty ? node.id : node.instancePath);
+
+      results.add(MeshBackhaulNodeRecord(
+        nodeId: node.id,
+        label: label,
+        mediaType:
+            node.backhaulMediaType.isEmpty ? 'Unknown' : node.backhaulMediaType,
+        phyRateMbps: phyRateMbps,
+        lastUplinkRateMbps: lastUplinkRateMbps,
+        signalStrengthDbm: signalDbm,
+        isController: isController,
+        severity: severity,
+      ));
+    }
+
+    return results;
+  }
+
+  MeshBackhaulSeverityBucket _gradeMeshBackhaul({
+    required bool wired,
+    required int phyRateMbps,
+    required int signalDbm,
+  }) {
+    if (wired) return MeshBackhaulSeverityBucket.healthy;
+
+    // Wireless backhaul thresholds:
+    //   poor   — PHY < 100 Mbps OR RSSI < -75 dBm
+    //   weak   — PHY 100-400 Mbps OR RSSI -65 .. -75 dBm
+    //   healthy— PHY >= 400 Mbps AND RSSI >= -65 dBm
+    final lowPhy = phyRateMbps > 0 && phyRateMbps < 100;
+    final lowRssi = signalDbm != 0 && signalDbm < -75;
+    if (lowPhy || lowRssi) return MeshBackhaulSeverityBucket.poor;
+
+    final marginalPhy = phyRateMbps > 0 && phyRateMbps < 400;
+    final marginalRssi = signalDbm != 0 && signalDbm < -65;
+    if (marginalPhy || marginalRssi) return MeshBackhaulSeverityBucket.weak;
+
+    return MeshBackhaulSeverityBucket.healthy;
+  }
+
   // ─── Helpers ─────────────────────────────────────────────
 
   /// Derive default gateway from IP and subnet mask.
@@ -730,6 +817,34 @@ class _RadioBucket {
 }
 
 /// Intermittent connection check result.
+/// Severity bucket emitted by [UnifiedDiagnosticsService.checkMeshBackhaul].
+enum MeshBackhaulSeverityBucket { healthy, weak, poor }
+
+/// Per-node backhaul snapshot returned by
+/// [UnifiedDiagnosticsService.checkMeshBackhaul]. Notifier maps this into the
+/// presentation-layer `MeshBackhaulCheckUIModel` / `MeshNodeBackhaulUIModel`.
+class MeshBackhaulNodeRecord {
+  final String nodeId;
+  final String label;
+  final String mediaType;
+  final int phyRateMbps;
+  final int lastUplinkRateMbps;
+  final int signalStrengthDbm;
+  final bool isController;
+  final MeshBackhaulSeverityBucket severity;
+
+  const MeshBackhaulNodeRecord({
+    required this.nodeId,
+    required this.label,
+    required this.mediaType,
+    required this.phyRateMbps,
+    required this.lastUplinkRateMbps,
+    required this.signalStrengthDbm,
+    required this.isController,
+    required this.severity,
+  });
+}
+
 class IntermittentUIModel {
   final int uptimeSeconds;
   final double pingSuccessRate;

@@ -2,39 +2,59 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
+import 'package:privacy_gui/core/usp/models/operate_result.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
-import 'package:privacy_gui/core/usp/services/sse_operation_awaiter.dart';
-import 'package:privacy_gui/page/network_diagnostics/models/network_diagnostics_ui_model.dart';
+import 'package:privacy_gui/core/usp/services/network_diagnostics_executor.dart';
+import 'package:privacy_gui/page/unified_diagnostics/models/manual_tools_state.dart';
 
 // ---------------------------------------------------------------------------
 // Provider
 // ---------------------------------------------------------------------------
 
-final uspNetworkDiagnosticsProvider = AsyncNotifierProvider.autoDispose<
-    UspNetworkDiagnosticsNotifier, NetworkDiagnosticsState>(
-  UspNetworkDiagnosticsNotifier.new,
+final manualToolsProvider = AsyncNotifierProvider.autoDispose<
+    ManualToolsNotifier, NetworkDiagnosticsState>(
+  ManualToolsNotifier.new,
 );
 
 // ---------------------------------------------------------------------------
 // Notifier
 // ---------------------------------------------------------------------------
 
-class UspNetworkDiagnosticsNotifier
+class ManualToolsNotifier
     extends AutoDisposeAsyncNotifier<NetworkDiagnosticsState> {
+  DiagnosticScope? _scope;
+
   @override
   Future<NetworkDiagnosticsState> build() async {
+    ref.onDispose(() async {
+      final scope = _scope;
+      _scope = null;
+      if (scope != null) {
+        try {
+          await scope.release();
+        } catch (e) {
+          logger
+              .w('[USP][Diagnostics]: Failed to release scope on dispose: $e');
+        }
+      }
+    });
     // No initial fetch — user triggers diagnostics explicitly.
     return const NetworkDiagnosticsState();
   }
 
-  SseOperationAwaiter get _awaiter {
-    final awaiter = ref.read(sseOperationAwaiterProvider);
-    if (awaiter == null) {
+  Future<DiagnosticScope> _ensureScope() async {
+    final existing = _scope;
+    if (existing != null && !existing.isReleased) return existing;
+
+    final executor = ref.read(networkDiagnosticsExecutorProvider);
+    if (executor == null) {
       throw const ConnectivityError(
-          message: 'SseOperationAwaiter not available');
+          message: 'NetworkDiagnosticsExecutor not available');
     }
-    return awaiter;
+    final scope = await executor.acquireScope();
+    _scope = scope;
+    return scope;
   }
 
   // -------------------------------------------------------------------------
@@ -80,13 +100,10 @@ class UspNetworkDiagnosticsNotifier
     ));
 
     try {
-      final result = await _awaiter.execute(
-        operateCommand: 'Device.IP.Diagnostics.IPPing()',
-        referencePath: 'Device.IP.Diagnostics.IPPing()',
-        args: {
-          'Host': s.host,
-          'NumberOfRepetitions': s.pingCount.toString(),
-        },
+      final scope = await _ensureScope();
+      final result = await scope.ping(
+        host: s.host,
+        numberOfRepetitions: s.pingCount,
         timeout: const Duration(seconds: 30),
       );
 
@@ -130,13 +147,10 @@ class UspNetworkDiagnosticsNotifier
     ));
 
     try {
-      final result = await _awaiter.execute(
-        operateCommand: 'Device.IP.Diagnostics.TraceRoute()',
-        referencePath: 'Device.IP.Diagnostics.TraceRoute()',
-        args: {
-          'Host': s.host,
-          'MaxHopCount': s.maxHops.toString(),
-        },
+      final scope = await _ensureScope();
+      final result = await scope.traceRoute(
+        host: s.host,
+        maxHopCount: s.maxHops,
         timeout: const Duration(seconds: 120),
       );
 
