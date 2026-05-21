@@ -208,19 +208,18 @@ class UspTopologyBuilder {
     return _rssiValueToLevel(rssi);
   }
 
-  /// Common RSSI to level conversion.
-  ///
-  /// Aligned with [signalThresholdRSSI] from wifi.dart: [-65, -71, -78]
-  /// - >= -65: excellent → 0.9
-  /// - >= -71: good → 0.65
-  /// - >= -78: fair → 0.4
-  /// - < -78: poor → 0.1
+  /// Common RSSI to level conversion. Uses [getWifiSignalLevel] as the single
+  /// source of truth for RSSI thresholds.
   static double _rssiValueToLevel(int? rssi) {
     if (rssi == null) return 0.0;
-    if (rssi >= -65) return 0.9;
-    if (rssi >= -71) return 0.65;
-    if (rssi >= -78) return 0.4;
-    return 0.1;
+    return switch (getWifiSignalLevel(rssi)) {
+      NodeSignalLevel.excellent => 0.9,
+      NodeSignalLevel.good => 0.65,
+      NodeSignalLevel.fair => 0.4,
+      NodeSignalLevel.poor => 0.1,
+      NodeSignalLevel.none => 0.0,
+      NodeSignalLevel.wired => 1.0,
+    };
   }
 
   static LinkQuality _resolveLinkQuality(DeviceUIModel device) {

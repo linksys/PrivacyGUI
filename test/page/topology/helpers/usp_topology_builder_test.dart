@@ -196,6 +196,68 @@ void main() {
       // not in extenderNodeIds set, so falls back to gateway
       expect(clientLink.sourceId, 'gateway');
     });
+
+    test('client links to extender when parentNodeId matches dataElementsId',
+        () {
+      // Slave's Hosts MAC differs from its DataElements ID — clientToNodeMap
+      // uses the DataElements ID (no colons).
+      const slaveWithDifferentDeId = NodeUIModel(
+        deviceId: 'AA:BB:CC:DD:EE:02', // Hosts MAC
+        dataElementsId: '11:11:11:22:22:22', // DataElements node id
+        model: 'MX5500',
+        isMaster: false,
+      );
+      const clientWithDeParent = DeviceUIModel(
+        mac: '99:88:77:66:55:44',
+        ip: '192.168.1.150',
+        hostName: 'LivingRoomTV',
+        isActive: true,
+        isWifi: true,
+        signalStrength: -60,
+        // parentNodeId from clientToNodeMap is normalized (no colons, upper)
+        parentNodeId: '111111222222',
+      );
+
+      final topo = UspTopologyBuilder.build(
+        info: sysInfo,
+        devices: [clientWithDeParent],
+        nodeModels: [meshGateway, slaveWithDifferentDeId],
+      );
+
+      final clientLink = topo.links
+          .where((l) => l.targetId == 'client-${clientWithDeParent.mac}')
+          .first;
+      // Should attach to the extender (built from Hosts deviceId), not gateway
+      expect(clientLink.sourceId, 'extender-AA:BB:CC:DD:EE:02');
+    });
+
+    test(
+        'client links to extender when parentNodeId matches Hosts MAC '
+        '(normalized)', () {
+      // parentNodeId in normalized form (no colons) should still match
+      // against the slave's Hosts deviceId.
+      const clientWithNormalizedParent = DeviceUIModel(
+        mac: '99:88:77:66:55:55',
+        ip: '192.168.1.151',
+        hostName: 'Phone',
+        isActive: true,
+        isWifi: true,
+        signalStrength: -60,
+        parentNodeId: 'AABBCCDDEE02', // no colons
+      );
+
+      final topo = UspTopologyBuilder.build(
+        info: sysInfo,
+        devices: [clientWithNormalizedParent],
+        nodeModels: [meshGateway, meshExtender],
+      );
+
+      final clientLink = topo.links
+          .where(
+              (l) => l.targetId == 'client-${clientWithNormalizedParent.mac}')
+          .first;
+      expect(clientLink.sourceId, 'extender-AA:BB:CC:DD:EE:02');
+    });
   });
 
   // ---------------------------------------------------------------------------
@@ -295,7 +357,7 @@ void main() {
 
     test('medium wifi signal maps to medium level', () {
       // wifi.dart thresholds: [-65, -71, -78]
-      // -75 is >= -78 (fair) → LinkQuality.good
+      // -75 is >= -78 (fair) → level 0.4, LinkQuality.good
       const device = DeviceUIModel(
         mac: 'AA:AA:AA:AA:AA:AA',
         ip: '192.168.1.1',
@@ -313,9 +375,32 @@ void main() {
 
       final client =
           topo.nodes.firstWhere((n) => n.type == MeshNodeType.client);
-      // -75 maps to level 0.4 (>= -70 threshold in _rssiToLevel)
-      expect(client.level, 0.1);
+      expect(client.level, 0.4);
       expect(client.linkQuality, LinkQuality.good);
+    });
+
+    test('good wifi signal (-68) maps to level 0.65', () {
+      // wifi.dart thresholds: [-65, -71, -78]
+      // -68 is in (-71, -65] → good → level 0.65, LinkQuality.excellent
+      const device = DeviceUIModel(
+        mac: 'AA:AA:AA:AA:AA:AB',
+        ip: '192.168.1.1',
+        hostName: 'Good',
+        isActive: true,
+        isWifi: true,
+        signalStrength: -68,
+      );
+
+      final topo = UspTopologyBuilder.build(
+        info: sysInfo,
+        devices: [device],
+        nodeModels: [],
+      );
+
+      final client =
+          topo.nodes.firstWhere((n) => n.type == MeshNodeType.client);
+      expect(client.level, 0.65);
+      expect(client.linkQuality, LinkQuality.excellent);
     });
 
     test('weak wifi signal maps to low level', () {
