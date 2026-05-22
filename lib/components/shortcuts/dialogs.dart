@@ -65,7 +65,7 @@ Future<T?> showAppSpinnerDialog<T>(
   Duration? period,
   List<Widget>? actions = const [],
 }) {
-  return showDialog<T?>(
+  return showAppDialog<T?>(
     context: context,
     barrierDismissible: false,
     builder: (context) {
@@ -122,11 +122,16 @@ Future<T?> showSubmitAppDialog<T>(
   required Future<T> Function() event,
   void Function(Object? error, StackTrace stackTrace)? onError,
 }) {
+  // Capture localized labels from the caller's context (which is guaranteed to
+  // have AppLocalizations) so the dialog doesn't depend on the overlay context.
+  final effectiveNegativeLabel = negitiveLabel ?? loc(context).cancel;
+  final effectivePositiveLabel = positiveLabel ?? loc(context).save;
+
   bool isLoading = false;
-  return showDialog<T?>(
+  return showAppDialog<T?>(
     context: context,
-    useRootNavigator: useRootNavigator,
     barrierDismissible: false,
+    useRootNavigator: useRootNavigator,
     builder: (context) {
       return StatefulBuilder(builder: (context, setState) {
         void onSubmit() {
@@ -170,14 +175,14 @@ Future<T?> showSubmitAppDialog<T>(
               ? []
               : [
                   AppButton.text(
-                    label: negitiveLabel ?? loc(context).cancel,
+                    label: effectiveNegativeLabel,
                     key: const Key('alertNegativeButton'),
                     onTap: () {
                       context.pop();
                     },
                   ),
                   AppButton.text(
-                    label: positiveLabel ?? loc(context).save,
+                    label: effectivePositiveLabel,
                     key: const Key('alertPositiveButton'),
                     onTap: checkPositiveEnabled?.call() ?? true
                         ? () {
@@ -203,7 +208,7 @@ Future<T?> showSimpleAppDialog<T>(
   List<Widget>? actions,
   double? width,
 }) {
-  return showDialog<T?>(
+  return showAppDialog<T?>(
     context: context,
     barrierDismissible: dismissible,
     useRootNavigator: useRootNavigator,
