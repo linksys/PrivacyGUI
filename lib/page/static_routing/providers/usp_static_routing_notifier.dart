@@ -124,6 +124,7 @@ class UspStaticRoutingNotifier
   /// Resolves [StaticRouteUIModel.interfacePath] from [interfaceName] via the
   /// service layer so the view doesn't need to access the service directly.
   void addRoute(StaticRouteUIModel route) {
+    assert(route.interfaceName.isNotEmpty, 'interfaceName must not be empty');
     final resolved = route.copyWith(
       interfacePath: _svc.mapDisplayToInterface(route.interfaceName),
     );
@@ -140,6 +141,7 @@ class UspStaticRoutingNotifier
   /// Resolves [StaticRouteUIModel.interfacePath] from [interfaceName] via the
   /// service layer so the view doesn't need to access the service directly.
   void editRoute(int index, StaticRouteUIModel route) {
+    assert(route.interfaceName.isNotEmpty, 'interfaceName must not be empty');
     final resolved = route.copyWith(
       interfacePath: _svc.mapDisplayToInterface(route.interfaceName),
     );

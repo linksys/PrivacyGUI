@@ -365,7 +365,7 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
   }
 
   Future<bool?> _showNetworkChangeConfirmation(BuildContext context) {
-    return showDialog<bool>(
+    return showAppDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Change Network Settings?'),

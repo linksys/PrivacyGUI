@@ -148,7 +148,7 @@ class UspWifiStatusCard extends ConsumerWidget {
 
   Future<void> _showWifiChannelDialog(
       BuildContext context, WidgetRef ref, WifiRadioUIModel radio) async {
-    final result = await showDialog<({int channel, bool autoChannel})>(
+    final result = await showAppDialog<({int channel, bool autoChannel})>(
       context: context,
       builder: (_) => WifiChannelDialog(radio: radio),
     );

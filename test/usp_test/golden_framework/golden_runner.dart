@@ -236,12 +236,17 @@ Widget _buildGoldenWidget(
 ///
 /// Flutter test binding captures these as test failures, but overflow
 /// in golden tests is cosmetic (visible in the golden image itself).
+/// Idempotent — wraps the original handler only once to avoid closure chains.
+bool _overflowSuppressed = false;
+
 void _suppressOverflowErrors() {
-  final handler = FlutterError.onError;
+  if (_overflowSuppressed) return;
+  _overflowSuppressed = true;
+  final originalHandler = FlutterError.onError;
   FlutterError.onError = (details) {
     final isOverflow = details.exceptionAsString().contains('overflowed');
     if (isOverflow) return;
-    handler?.call(details);
+    originalHandler?.call(details);
   };
 }
 

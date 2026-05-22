@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'package:alchemist/alchemist.dart';
 import 'package:flutter/services.dart';
@@ -23,15 +24,17 @@ Future<void> testExecutable(FutureOr<void> Function() testMain) async {
 }
 
 Future<void> _loadFonts() async {
+  final uiKitRoot = _resolveUiKitPath();
+
   // Load main font from ui_kit_library package
   final mainFont = FontLoader('packages/ui_kit_library/NeueHaasGrotTextRound');
-  final mainFontFromCache =
-      File('${_uiKitPath()}/assets/fonts/NeueHaasGrotTextRound-55Roman.otf');
-  if (mainFontFromCache.existsSync()) {
-    final bytes = mainFontFromCache.readAsBytesSync();
-    mainFont.addFont(Future.value(ByteData.view(bytes.buffer)));
+  final mainFontFile =
+      File('$uiKitRoot/assets/fonts/NeueHaasGrotTextRound-55Roman.otf');
+  if (mainFontFile.existsSync()) {
+    mainFont.addFont(
+        Future.value(ByteData.view(mainFontFile.readAsBytesSync().buffer)));
     final boldFile =
-        File('${_uiKitPath()}/assets/fonts/NeueHaasGrotTextRound-75Bold.otf');
+        File('$uiKitRoot/assets/fonts/NeueHaasGrotTextRound-75Bold.otf');
     if (boldFile.existsSync()) {
       mainFont.addFont(
           Future.value(ByteData.view(boldFile.readAsBytesSync().buffer)));
@@ -65,15 +68,28 @@ Future<void> _loadFonts() async {
   }
 }
 
-String _uiKitPath() {
+/// Resolve the ui_kit_library package root from .dart_tool/package_config.json.
+///
+/// Parses the structured JSON (per Dart package config spec) rather than relying
+/// on regex or hardcoded paths, so it works on any machine and CI environment.
+String _resolveUiKitPath() {
   final configFile = File('.dart_tool/package_config.json');
   if (configFile.existsSync()) {
-    final content = configFile.readAsStringSync();
-    final match = RegExp(r'"rootUri":\s*"file://([^"]+)"')
-        .allMatches(content)
-        .where((m) => m.group(1)!.contains('privacyGUI-UI-kit'))
-        .firstOrNull;
-    if (match != null) return match.group(1)!;
+    final json = jsonDecode(configFile.readAsStringSync()) as Map;
+    final packages = json['packages'] as List? ?? [];
+    for (final pkg in packages) {
+      if (pkg['name'] == 'ui_kit_library') {
+        final rootUri = pkg['rootUri'] as String;
+        if (rootUri.startsWith('file://')) {
+          return Uri.parse(rootUri).toFilePath();
+        }
+        // Relative path (rare for git dependencies, but handle it)
+        return File('.dart_tool/$rootUri').path;
+      }
+    }
   }
-  return '/Users/peter.jhong/.pub-cache/git/privacyGUI-UI-kit-b34d9c062b307cb87b34711666a9ce1296618660';
+  throw StateError(
+    'Cannot resolve ui_kit_library path. '
+    'Run "flutter pub get" to generate .dart_tool/package_config.json.',
+  );
 }

@@ -25,7 +25,7 @@ for view_file in lib/page/*/views/usp_*_view.dart; do
 
   # Check golden test exists in usp_test directory
   test_pattern="test/usp_test/page/$feature/localizations/*_test.dart"
-  if ! ls $test_pattern &>/dev/null 2>&1; then
+  if ! compgen -G "$test_pattern" >/dev/null 2>&1; then
     echo "FAIL $view_file: no golden test found"
     FAIL=1
     continue
