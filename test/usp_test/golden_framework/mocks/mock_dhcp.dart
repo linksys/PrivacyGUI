@@ -21,7 +21,8 @@ class FixedDhcpReservationsNotifier extends UspDhcpReservationsNotifier {
   Future<(DhcpReservationList?, DhcpReservationsStatus?)> performFetch({
     bool forceRemote = false,
     bool updateStatusOnly = false,
-  }) async => (null, null);
+  }) async =>
+      (null, null);
 
   @override
   Future<void> performSave() async {}

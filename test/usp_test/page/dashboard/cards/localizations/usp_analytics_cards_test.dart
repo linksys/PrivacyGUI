@@ -93,8 +93,7 @@ void main() {
       devices: [GoldenDevice('500x400', Size(500, 400))],
       states: {
         'distribution_with_data': (overrides) => overrides.addAll(
-              cardOverrides(
-                  deviceAnalyticsState: testDeviceAnalyticsWithData),
+              cardOverrides(deviceAnalyticsState: testDeviceAnalyticsWithData),
             ),
         'empty': (overrides) => overrides.addAll(
               cardOverrides(deviceAnalyticsState: testDeviceAnalyticsEmpty),

@@ -25,21 +25,28 @@ Future<void> testExecutable(FutureOr<void> Function() testMain) async {
 Future<void> _loadFonts() async {
   // Load main font from ui_kit_library package
   final mainFont = FontLoader('packages/ui_kit_library/NeueHaasGrotTextRound');
-  final mainFontFromCache = File(
-      '${_uiKitPath()}/assets/fonts/NeueHaasGrotTextRound-55Roman.otf');
+  final mainFontFromCache =
+      File('${_uiKitPath()}/assets/fonts/NeueHaasGrotTextRound-55Roman.otf');
   if (mainFontFromCache.existsSync()) {
     final bytes = mainFontFromCache.readAsBytesSync();
     mainFont.addFont(Future.value(ByteData.view(bytes.buffer)));
-    final boldFile = File(
-        '${_uiKitPath()}/assets/fonts/NeueHaasGrotTextRound-75Bold.otf');
+    final boldFile =
+        File('${_uiKitPath()}/assets/fonts/NeueHaasGrotTextRound-75Bold.otf');
     if (boldFile.existsSync()) {
-      mainFont.addFont(Future.value(ByteData.view(boldFile.readAsBytesSync().buffer)));
+      mainFont.addFont(
+          Future.value(ByteData.view(boldFile.readAsBytesSync().buffer)));
     }
   }
   await mainFont.load();
 
   // Load fallback fonts
-  final fontNames = ['NotoSans', 'NotoSansKR', 'NotoSansSC', 'NotoSansArabic', 'NotoSansThai'];
+  final fontNames = [
+    'NotoSans',
+    'NotoSansKR',
+    'NotoSansSC',
+    'NotoSansArabic',
+    'NotoSansThai'
+  ];
   final fontFiles = [
     'NotoSans-Regular.ttf',
     'NotoSansKR-Regular.ttf',
@@ -51,7 +58,8 @@ Future<void> _loadFonts() async {
     final loader = FontLoader('packages/ui_kit_library/${fontNames[i]}');
     final file = File('test/fonts/${fontFiles[i]}');
     if (file.existsSync()) {
-      loader.addFont(Future.value(ByteData.view(file.readAsBytesSync().buffer)));
+      loader
+          .addFont(Future.value(ByteData.view(file.readAsBytesSync().buffer)));
     }
     await loader.load();
   }

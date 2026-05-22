@@ -18,7 +18,8 @@ class FixedIpv6PortServiceNotifier extends UspIpv6PortServiceNotifier {
   Future<(Ipv6PortServiceRuleList?, Ipv6PortServiceStatus?)> performFetch({
     bool forceRemote = false,
     bool updateStatusOnly = false,
-  }) async => (null, null);
+  }) async =>
+      (null, null);
 
   @override
   Future<void> performSave() async {}
@@ -41,9 +42,7 @@ class FixedDevicesDataNotifier extends DevicesDataNotifier {
   Future<DevicesData> build() async => const DevicesData();
 }
 
-List<Override> ipv6PortServiceOverrides(
-    Ipv6PortServiceFeatureState state) =>
-    [
+List<Override> ipv6PortServiceOverrides(Ipv6PortServiceFeatureState state) => [
       uspIpv6PortServiceProvider.overrideWith(
         () => FixedIpv6PortServiceNotifier(state),
       ),

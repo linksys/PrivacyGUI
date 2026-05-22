@@ -25,7 +25,6 @@ class FixedInstantPrivacyNotifier extends UspInstantPrivacyNotifier {
 
   @override
   Future<void> disable() async {}
-
 }
 
 List<Override> menuOverrides({

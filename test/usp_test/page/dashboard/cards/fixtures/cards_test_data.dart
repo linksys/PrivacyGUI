@@ -560,10 +560,8 @@ final testPortForwardingData =
     PortForwardingData(ruleModels: testPortForwardingRules);
 final testPortTriggeringData =
     PortTriggeringData(ruleModels: testPortTriggeringRules);
-final testPortForwardingEmptyData =
-    PortForwardingData(ruleModels: const []);
-final testPortTriggeringEmptyData =
-    PortTriggeringData(ruleModels: const []);
+final testPortForwardingEmptyData = PortForwardingData(ruleModels: const []);
+final testPortTriggeringEmptyData = PortTriggeringData(ruleModels: const []);
 
 // ---------------------------------------------------------------------------
 // Firewall Data

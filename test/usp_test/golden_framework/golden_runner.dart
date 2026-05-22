@@ -221,8 +221,9 @@ Widget _buildGoldenWidget(
             supportedLocales: AppLocalizations.supportedLocales,
             theme: themeConfig.createLightTheme(),
             darkTheme: themeConfig.createDarkTheme(),
-            themeMode:
-                brightness == Brightness.dark ? ThemeMode.dark : ThemeMode.light,
+            themeMode: brightness == Brightness.dark
+                ? ThemeMode.dark
+                : ThemeMode.light,
             routerConfig: router,
           ),
         ),

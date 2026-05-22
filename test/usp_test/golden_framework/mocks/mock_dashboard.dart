@@ -156,14 +156,12 @@ List<Override> dashboardOverrides() {
       (ref) => _FixedControllerNotifier(),
     ),
     uspWidgetFactoryProvider.overrideWithValue(_StubWidgetFactory()),
-    uspSystemMonitorProvider
-        .overrideWith(() => _FixedSystemMonitorNotifier()),
+    uspSystemMonitorProvider.overrideWith(() => _FixedSystemMonitorNotifier()),
     uspTrafficAnalysisProvider
         .overrideWith(() => _FixedTrafficAnalysisNotifier()),
     uspDeviceAnalyticsProvider
         .overrideWith(() => _FixedDeviceAnalyticsNotifier()),
-    packageWidgetLoaderProvider
-        .overrideWith(() => _FixedPackageWidgetLoader()),
+    packageWidgetLoaderProvider.overrideWith(() => _FixedPackageWidgetLoader()),
     uspLayoutPreferencesProvider
         .overrideWith(() => _FixedLayoutPrefsNotifier()),
   ];
