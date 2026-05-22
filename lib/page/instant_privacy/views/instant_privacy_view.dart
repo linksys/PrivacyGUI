@@ -218,7 +218,7 @@ class InstantPrivacyView extends ConsumerWidget {
   // ---------------------------------------------------------------------------
 
   Future<void> _onEnable(BuildContext context, WidgetRef ref) async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showAppDialog<bool>(
       context: context,
       builder: (ctx) => AppDialog(
         titleText: 'Enable Instant Privacy?',
@@ -250,7 +250,7 @@ class InstantPrivacyView extends ConsumerWidget {
   }
 
   Future<void> _onDisable(BuildContext context, WidgetRef ref) async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showAppDialog<bool>(
       context: context,
       builder: (ctx) => AppDialog(
         titleText: 'Disable Instant Privacy?',
@@ -290,7 +290,7 @@ class InstantPrivacyView extends ConsumerWidget {
     WidgetRef ref,
     UspInstantPrivacyState state,
   ) async {
-    await showDialog<void>(
+    await showAppDialog<void>(
       context: context,
       builder: (ctx) => _AddMacDialog(
         existingDevices: state.allowedDevices,
