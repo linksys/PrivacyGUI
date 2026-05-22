@@ -122,7 +122,8 @@ class UspDhcpReservationsDetailCard extends ConsumerWidget {
 
   Future<void> _showAddDialog(BuildContext context, WidgetRef ref) async {
     final options = _buildDeviceOptions(ref);
-    final result = await showDialog<({String mac, String ip, bool enable})>(
+    final result =
+        await showAppDialog<({String mac, String ip, bool enable})>(
       context: context,
       builder: (_) => DhcpReservationEditDialog(
         macDeviceOptions: options.mac,
@@ -145,7 +146,8 @@ class UspDhcpReservationsDetailCard extends ConsumerWidget {
     DhcpReservationUIModel reservation,
   ) async {
     final options = _buildDeviceOptions(ref);
-    final result = await showDialog<({String mac, String ip, bool enable})>(
+    final result =
+        await showAppDialog<({String mac, String ip, bool enable})>(
       context: context,
       builder: (_) => DhcpReservationEditDialog(
         reservation: reservation,
