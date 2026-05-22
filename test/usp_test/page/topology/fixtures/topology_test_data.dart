@@ -134,21 +134,25 @@ final meshNetworkDevicesData = DevicesData(
   ],
   meshTopology: const MeshTopologyInfo(
     nodes: [
-      MeshNodeInfo(
-        instancePath: 'Device.DeviceInfo.1.',
+      NodeUIModel(
         deviceId: '11:22:33:44:55:66',
         model: 'MR7500',
         manufacturer: 'Linksys',
         serialNumber: 'ABC123456',
         softwareVersion: '1.0.16.215118',
+        isMaster: true,
+        connectedDeviceCount: 2,
+        instancePath: 'Device.DeviceInfo.1.',
       ),
-      MeshNodeInfo(
-        instancePath: 'Device.DeviceInfo.2.',
+      NodeUIModel(
         deviceId: 'AA:BB:CC:DD:FF:01',
         model: 'MX2000',
         manufacturer: 'Linksys',
         serialNumber: 'DEF789012',
         softwareVersion: '1.0.10.200000',
+        isMaster: false,
+        connectedDeviceCount: 1,
+        instancePath: 'Device.DeviceInfo.2.',
       ),
     ],
     clientToNodeMap: {
