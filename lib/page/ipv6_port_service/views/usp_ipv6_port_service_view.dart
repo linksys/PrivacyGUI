@@ -215,7 +215,7 @@ class UspIpv6PortServiceView extends ConsumerWidget {
 
   Future<void> _showAddDialog(BuildContext context, WidgetRef ref) async {
     final deviceOptions = _buildIpv6DeviceOptions(ref);
-    final result = await showDialog<Ipv6PortServiceRuleDialogResult>(
+    final result = await showAppDialog<Ipv6PortServiceRuleDialogResult>(
       context: context,
       builder: (_) => Ipv6PortServiceRuleDialog(deviceOptions: deviceOptions),
     );
@@ -235,7 +235,7 @@ class UspIpv6PortServiceView extends ConsumerWidget {
   Future<void> _showEditDialog(BuildContext context, WidgetRef ref, int index,
       Ipv6PortServiceRuleUIModel rule) async {
     final deviceOptions = _buildIpv6DeviceOptions(ref);
-    final result = await showDialog<Ipv6PortServiceRuleDialogResult>(
+    final result = await showAppDialog<Ipv6PortServiceRuleDialogResult>(
       context: context,
       builder: (_) =>
           Ipv6PortServiceRuleDialog(rule: rule, deviceOptions: deviceOptions),
