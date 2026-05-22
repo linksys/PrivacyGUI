@@ -1,8 +1,24 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_trigger_result.dart';
 import 'package:privacy_gui/page/instant_setup/services/pnp_status_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+class _MockUspClient extends Mock implements UspClient {}
+
+Map<String, dynamic> _setupResponse({
+  required bool acknowledged,
+  String method = 'AutoParent',
+  bool configured = false,
+}) =>
+    {
+      'Device.DeviceInfo.X_LINKSYS_Setup.AutoConfigurationMethod': method,
+      'Device.DeviceInfo.X_LINKSYS_Setup.UserAcknowledgedAutoConfig':
+          acknowledged ? '1' : '0',
+      'Device.DeviceInfo.X_LINKSYS_Setup.Configured': configured ? '1' : '0',
+    };
 
 void main() {
   group('LocalPnpStatusService', () {
@@ -93,6 +109,87 @@ void main() {
 
         expect(result.needsPnp, isFalse);
       });
+    });
+  });
+
+  group('Tr181PnpStatusService', () {
+    late _MockUspClient mockUsp;
+    late Tr181PnpStatusService service;
+
+    setUp(() {
+      mockUsp = _MockUspClient();
+      service = Tr181PnpStatusService(mockUsp);
+    });
+
+    test('returns needsPnp=false when UserAcknowledgedAutoConfig=true',
+        () async {
+      when(() => mockUsp.get(any())).thenAnswer((_) async =>
+          _setupResponse(acknowledged: true, method: 'AutoParent'));
+
+      final result = await service.check('SN-IGNORED');
+
+      expect(result.needsPnp, isFalse);
+    });
+
+    test('returns needsPnp=true with autoParent method when not acknowledged',
+        () async {
+      when(() => mockUsp.get(any())).thenAnswer((_) async =>
+          _setupResponse(acknowledged: false, method: 'AutoParent'));
+
+      final result = await service.check('SN-IGNORED');
+
+      expect(result.needsPnp, isTrue);
+      expect(result.configurationMethod, AutoConfigurationMethod.autoParent);
+    });
+
+    test(
+        'returns needsPnp=true with preConfigured method when not acknowledged',
+        () async {
+      when(() => mockUsp.get(any())).thenAnswer((_) async =>
+          _setupResponse(acknowledged: false, method: 'PreConfigured'));
+
+      final result = await service.check(null);
+
+      expect(result.needsPnp, isTrue);
+      expect(result.configurationMethod, AutoConfigurationMethod.preConfigured);
+    });
+
+    test('maps unknown AutoConfigurationMethod string to none', () async {
+      when(() => mockUsp.get(any())).thenAnswer(
+          (_) async => _setupResponse(acknowledged: false, method: 'None'));
+
+      final result = await service.check(null);
+
+      expect(result.configurationMethod, AutoConfigurationMethod.none);
+    });
+
+    test('acknowledge invokes SetUserAcknowledgedAutoConfig() operate',
+        () async {
+      when(() => mockUsp.operate(any())).thenAnswer((_) async => {});
+
+      await service.acknowledge('SN-IGNORED');
+
+      verify(() => mockUsp.operate(
+              'Device.DeviceInfo.X_LINKSYS_Setup.SetUserAcknowledgedAutoConfig()'))
+          .called(1);
+    });
+
+    test('check returns notNeeded when fetch throws', () async {
+      when(() => mockUsp.get(any())).thenThrow(Exception('USP unreachable'));
+
+      final result = await service.check('SN-IGNORED');
+
+      expect(result.needsPnp, isFalse);
+      expect(result.configurationMethod, AutoConfigurationMethod.none);
+    });
+
+    test('acknowledge swallows operate failures', () async {
+      when(() => mockUsp.operate(any())).thenThrow(Exception('operate failed'));
+
+      // Must not throw — acknowledge is fire-and-forget.
+      await service.acknowledge('SN-IGNORED');
+
+      verify(() => mockUsp.operate(any())).called(1);
     });
   });
 
