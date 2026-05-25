@@ -207,6 +207,24 @@ handleTestRecord(String record, Map<String, dynamic> testResult) {
 
 extractInfo(Map<String, dynamic> test) {
   final name = test['name'];
+
+  // New golden framework format: " viewName - state - device - locale (variant: ...)"
+  final newRegex = RegExp(r'\s*(\w+)\s*-\s*(\w+)\s*-\s*(\w+)\s*-\s*(\w+)\s*\(variant:');
+  final newMatch = newRegex.firstMatch(name);
+  if (newMatch != null) {
+    final viewName = newMatch.group(1)!;
+    final state = newMatch.group(2)!;
+    final deviceType = newMatch.group(3)!;
+    final locale = newMatch.group(4)!;
+    final tsName = '$viewName-$state';
+    test['filePath'] = '$locale/$deviceType/$tsName-$deviceType-$locale.png';
+    test['locale'] = locale;
+    test['deviceType'] = deviceType;
+    test['tsName'] = tsName;
+    return;
+  }
+
+  // Legacy format: "name (variant: device-locale_region(...)"
   final regex = RegExp(r'(.*) \(variant: (.*)-(.*)_(.*)\(.*');
   final match = regex.firstMatch(name);
   final tsName = match?.group(1)?.trim();
@@ -215,11 +233,8 @@ extractInfo(Map<String, dynamic> test) {
   final locale = (match?.group(3) ?? '').isNotEmpty
       ? '${match?.group(3)}${region.isNotEmpty ? '_$region' : ''}'
       : null;
-  String? link;
   if (tsName != null && locale != null && deviceType != null) {
-    // Use relative path
-    link = '$locale/$deviceType/$tsName-$deviceType-$locale.png';
-    test['filePath'] = link;
+    test['filePath'] = '$locale/$deviceType/$tsName-$deviceType-$locale.png';
     test['locale'] = locale;
     test['deviceType'] = deviceType;
     test['tsName'] = tsName;
