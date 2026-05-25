@@ -26,6 +26,27 @@ class _PnpStaticIpViewState extends ConsumerState<PnpStaticIpView> {
   bool _showDns = false;
 
   @override
+  void initState() {
+    super.initState();
+    _prefillFromCurrentSettings();
+  }
+
+  void _prefillFromCurrentSettings() {
+    final phase = ref.read(pnpProvider).phase;
+    if (phase is NoInternet && phase.currentWanSettings != null) {
+      final wan = phase.currentWanSettings!;
+      _ipController.text = wan.staticIpAddress;
+      _subnetController.text = wan.subnetMask;
+      _gatewayController.text = wan.defaultGateway;
+      _dns1Controller.text = wan.dnsServer1;
+      _dns2Controller.text = wan.dnsServer2;
+      if (wan.dnsServer1.isNotEmpty || wan.dnsServer2.isNotEmpty) {
+        _showDns = true;
+      }
+    }
+  }
+
+  @override
   void dispose() {
     _ipController.dispose();
     _subnetController.dispose();

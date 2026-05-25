@@ -10,6 +10,8 @@ import 'package:privacy_gui/page/instant_setup/models/pnp_isp_config.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_state.dart';
 import 'package:privacy_gui/page/instant_setup/services/pnp_service.dart';
 import 'package:privacy_gui/page/instant_setup/services/pnp_status_service.dart';
+import 'package:privacy_gui/page/internet_settings/models/usp_internet_settings_form.dart';
+import 'package:privacy_gui/page/internet_settings/services/usp_internet_settings_service.dart';
 
 /// PnP state machine notifier.
 ///
@@ -58,12 +60,30 @@ class PnpNotifier extends Notifier<PnpState> {
         state = state.copyWith(phase: const AdminInternetConnected());
         await _initWizard();
       } else {
-        final ssid = await _svc.fetchCurrentSsid();
-        state = state.copyWith(phase: NoInternet(ssid: ssid));
+        final results = await Future.wait([
+          _svc.fetchCurrentSsid(),
+          _fetchCurrentWanSettings(),
+        ]);
+        final ssid = results[0] as String?;
+        final wanSettings = results[1] as UspInternetSettingsForm?;
+        state = state.copyWith(
+          phase: NoInternet(ssid: ssid, currentWanSettings: wanSettings),
+        );
       }
     } catch (e) {
       logger.e('[PnP] Internet check failed: $e');
       state = state.copyWith(phase: const NoInternet());
+    }
+  }
+
+  Future<UspInternetSettingsForm?> _fetchCurrentWanSettings() async {
+    try {
+      final service = UspInternetSettingsService(_svc.usp);
+      final result = await service.fetchSettings();
+      return result.form;
+    } catch (e) {
+      logger.w('[PnP] Failed to fetch WAN settings for prefill: $e');
+      return null;
     }
   }
 

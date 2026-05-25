@@ -9,7 +9,6 @@ class PnpIspConfig extends Equatable {
   // PPPoE
   final String pppUsername;
   final String pppPassword;
-  final String pppoeServiceName;
 
   // VLAN
   final bool vlanEnabled;
@@ -26,7 +25,6 @@ class PnpIspConfig extends Equatable {
     this.type = IspConnectionType.dhcp,
     this.pppUsername = '',
     this.pppPassword = '',
-    this.pppoeServiceName = '',
     this.vlanEnabled = false,
     this.vlanId = 0,
     this.staticIpAddress = '',
@@ -40,7 +38,6 @@ class PnpIspConfig extends Equatable {
     IspConnectionType? type,
     String? pppUsername,
     String? pppPassword,
-    String? pppoeServiceName,
     bool? vlanEnabled,
     int? vlanId,
     String? staticIpAddress,
@@ -53,7 +50,6 @@ class PnpIspConfig extends Equatable {
       type: type ?? this.type,
       pppUsername: pppUsername ?? this.pppUsername,
       pppPassword: pppPassword ?? this.pppPassword,
-      pppoeServiceName: pppoeServiceName ?? this.pppoeServiceName,
       vlanEnabled: vlanEnabled ?? this.vlanEnabled,
       vlanId: vlanId ?? this.vlanId,
       staticIpAddress: staticIpAddress ?? this.staticIpAddress,
@@ -69,7 +65,6 @@ class PnpIspConfig extends Equatable {
         type,
         pppUsername,
         pppPassword,
-        pppoeServiceName,
         vlanEnabled,
         vlanId,
         staticIpAddress,

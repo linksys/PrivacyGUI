@@ -7,8 +7,6 @@ import 'package:privacy_gui/generated/device_operations.g.dart';
 import 'package:privacy_gui/generated/network_diagnostics.g.dart';
 import 'package:privacy_gui/generated/system_info.g.dart';
 import 'package:privacy_gui/generated/wan_operations.g.dart';
-import 'package:privacy_gui/generated/wan_pppoe.g.dart';
-import 'package:privacy_gui/generated/wan_static_ip.g.dart';
 import 'package:privacy_gui/generated/wan_status.g.dart';
 import 'package:privacy_gui/generated/wi_fi_access_points.g.dart';
 import 'package:privacy_gui/generated/wi_fi_ssids.g.dart';
@@ -16,6 +14,9 @@ import 'package:privacy_gui/page/_shared/models/mesh_topology_info.dart';
 import 'package:privacy_gui/page/_shared/utils/mesh_topology_builder.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_isp_config.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_wifi_config.dart';
+import 'package:privacy_gui/page/internet_settings/models/usp_internet_settings_form.dart';
+import 'package:privacy_gui/page/internet_settings/models/usp_wan_connection_type.dart';
+import 'package:privacy_gui/page/internet_settings/services/usp_internet_settings_service.dart';
 
 final pnpServiceProvider = Provider<PnpService>(
   (ref) => PnpService(ref.read(uspClientProvider)!),
@@ -52,6 +53,9 @@ class PnpService {
   final UspClient _usp;
 
   PnpService(this._usp);
+
+  /// Expose UspClient for UspInternetSettingsService instantiation.
+  UspClient get usp => _usp;
 
   // ─── Factory Default Detection ───────────────────────────
 
@@ -229,46 +233,61 @@ class PnpService {
 
   // ─── ISP/WAN Save ───────────────────────────────────────
 
-  /// Save ISP settings (PPPoE, Static IP, DHCP renewal).
+  /// Save ISP settings by delegating to [UspInternetSettingsService].
   ///
-  /// Note: PPPoE and Static IP save are still limited by firmware support.
-  /// See issue #719 for backend/FW dependency status.
+  /// This ensures PNP uses the same save logic as Advanced Settings,
+  /// including PPP/VLAN instance lifecycle, result validation, and
+  /// allowPartial handling.
   Future<void> saveIspSettings(PnpIspConfig config) async {
-    switch (config.type) {
-      case IspConnectionType.dhcp:
-        await WanOperations.renewDhcpLease(_usp);
-      case IspConnectionType.pppoe:
-        await WanPppoe.update(
-          _usp,
-          pppUsername: config.pppUsername,
-          pppPassword: config.pppPassword,
-          // Note: pppoeServiceName not yet supported in codegen
-        );
-      case IspConnectionType.pppoeVlan:
-        await WanPppoe.update(
-          _usp,
-          pppUsername: config.pppUsername,
-          pppPassword: config.pppPassword,
-          // Note: VLAN settings not yet supported in codegen
-        );
-      case IspConnectionType.staticIp:
-        // Combine DNS servers into single string if both provided
-        String? dnsServers;
-        if (config.dnsServer1.isNotEmpty) {
-          dnsServers = config.dnsServer1;
-          if (config.dnsServer2.isNotEmpty) {
-            dnsServers = '${config.dnsServer1},${config.dnsServer2}';
-          }
-        }
-        await WanStaticIp.update(
-          _usp,
-          addressingType: 'Static',
-          staticIpAddress: config.staticIpAddress,
-          subnetMask: config.subnetMask,
-          defaultGateway: config.defaultGateway,
-          dnsServers: dnsServers,
-        );
+    if (config.type == IspConnectionType.dhcp) {
+      await WanOperations.renewDhcpLease(_usp);
+      return;
     }
+
+    final internetSettingsService = UspInternetSettingsService(_usp);
+    final fetchResult = await internetSettingsService.fetchSettings();
+
+    final original = fetchResult.form;
+    final edited = _applyIspConfigToForm(config, original);
+
+    await internetSettingsService.saveAll(
+      original,
+      edited,
+      pppInstancePath: fetchResult.pppInstancePath,
+      vlanInstancePath: fetchResult.vlanInstancePath,
+    );
+  }
+
+  /// Map [PnpIspConfig] to [UspInternetSettingsForm].
+  ///
+  /// UI pre-fills fields from router's current settings, so submitted values
+  /// represent the user's final intent — no need to preserve original on empty.
+  UspInternetSettingsForm _applyIspConfigToForm(
+    PnpIspConfig config,
+    UspInternetSettingsForm original,
+  ) {
+    // dnsServer3 intentionally omitted — PNP has no UI for it, preserve original
+    return original.copyWith(
+      connectionType: _mapConnectionType(config.type),
+      staticIpAddress: config.staticIpAddress,
+      subnetMask: config.subnetMask,
+      defaultGateway: config.defaultGateway,
+      dnsServer1: config.dnsServer1,
+      dnsServer2: config.dnsServer2,
+      pppUsername: config.pppUsername,
+      pppPassword: config.pppPassword,
+      vlanEnabled: config.type == IspConnectionType.pppoeVlan,
+      vlanId: config.vlanId,
+    );
+  }
+
+  UspWanConnectionType _mapConnectionType(IspConnectionType type) {
+    return switch (type) {
+      IspConnectionType.dhcp => UspWanConnectionType.dhcp,
+      IspConnectionType.pppoe => UspWanConnectionType.pppoe,
+      IspConnectionType.pppoeVlan => UspWanConnectionType.pppoe,
+      IspConnectionType.staticIp => UspWanConnectionType.staticIp,
+    };
   }
 
   // ─── Mesh ──────────────────────────────────────────────

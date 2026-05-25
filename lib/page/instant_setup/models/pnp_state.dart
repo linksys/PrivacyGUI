@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:privacy_gui/page/internet_settings/models/usp_internet_settings_form.dart';
 import 'package:privacy_gui/page/topology/models/node_ui_model.dart';
 import 'pnp_wifi_config.dart';
 
@@ -81,9 +82,10 @@ class AdminError extends PnpPhase {
 /// No internet detected — route to troubleshooter.
 class NoInternet extends PnpPhase {
   final String? ssid;
-  const NoInternet({this.ssid});
+  final UspInternetSettingsForm? currentWanSettings;
+  const NoInternet({this.ssid, this.currentWanSettings});
   @override
-  List<Object?> get props => [ssid];
+  List<Object?> get props => [ssid, currentWanSettings];
 }
 
 // ─── Modem Restart Phase ────────────────────────────────────

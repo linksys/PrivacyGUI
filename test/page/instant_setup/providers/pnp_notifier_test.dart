@@ -6,6 +6,7 @@ import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/core/session/providers/session_provider.dart';
 import 'package:privacy_gui/page/_shared/models/mesh_topology_info.dart';
+import 'package:privacy_gui/page/instant_setup/models/pnp_isp_config.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_state.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_wifi_config.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_providers.dart';
@@ -23,9 +24,12 @@ class MockSessionNotifier extends Mock implements SessionNotifier {}
 
 class FakePnpWifiConfig extends Fake implements PnpWifiConfig {}
 
+class FakePnpIspConfig extends Fake implements PnpIspConfig {}
+
 void main() {
   setUpAll(() {
     registerFallbackValue(FakePnpWifiConfig());
+    registerFallbackValue(FakePnpIspConfig());
   });
   late MockUspClient mockUsp;
   late MockPnpService mockPnpService;
@@ -214,6 +218,120 @@ void main() {
 
       final state = container.read(pnpProvider);
       expect(state.phase, isA<WizardConfiguring>());
+      container.dispose();
+    });
+  });
+
+  group('PnpNotifier — saveIspWithProgress', () {
+    test(
+        'successful ISP save transitions through IspSaving then checks internet',
+        () async {
+      when(() => mockPnpService.saveIspSettings(any()))
+          .thenAnswer((_) async {});
+      when(() => mockPnpService.checkInternetConnected())
+          .thenAnswer((_) async => true);
+      when(() => mockPnpService.fetchWizardData())
+          .thenAnswer((_) async => testWizardResult);
+      when(() => mockPnpService.fetchMeshTopology())
+          .thenAnswer((_) async => MeshTopologyInfo.empty);
+
+      final container = createContainer();
+      final notifier = container.read(pnpProvider.notifier);
+
+      notifier.setDemoPhase(const NoInternet(ssid: 'Test'));
+
+      const config = PnpIspConfig(
+        type: IspConnectionType.staticIp,
+        staticIpAddress: '192.168.1.50',
+        subnetMask: '255.255.255.0',
+        defaultGateway: '192.168.1.1',
+        dnsServer1: '8.8.8.8',
+        dnsServer2: '8.8.4.4',
+      );
+
+      await notifier.saveIspWithProgress(config);
+
+      verify(() => mockPnpService.saveIspSettings(any())).called(1);
+      final state = container.read(pnpProvider);
+      expect(state.phase, isA<WizardConfiguring>());
+      container.dispose();
+    });
+
+    test('ISP save failure transitions back to NoInternet with error',
+        () async {
+      when(() => mockPnpService.saveIspSettings(any()))
+          .thenThrow(Exception('WAN save failed'));
+
+      final container = createContainer();
+      final notifier = container.read(pnpProvider.notifier);
+
+      notifier.setDemoPhase(const NoInternet(ssid: 'Test'));
+
+      const config = PnpIspConfig(
+        type: IspConnectionType.pppoe,
+        pppUsername: 'user',
+        pppPassword: 'pass',
+      );
+
+      await notifier.saveIspWithProgress(config);
+
+      final state = container.read(pnpProvider);
+      expect(state.phase, isA<NoInternet>());
+      expect(state.errorMessage, contains('WAN save failed'));
+      container.dispose();
+    });
+
+    test('DHCP ISP save calls saveIspSettings with dhcp type', () async {
+      when(() => mockPnpService.saveIspSettings(any()))
+          .thenAnswer((_) async {});
+      when(() => mockPnpService.checkInternetConnected())
+          .thenAnswer((_) async => true);
+      when(() => mockPnpService.fetchWizardData())
+          .thenAnswer((_) async => testWizardResult);
+      when(() => mockPnpService.fetchMeshTopology())
+          .thenAnswer((_) async => MeshTopologyInfo.empty);
+
+      final container = createContainer();
+      final notifier = container.read(pnpProvider.notifier);
+
+      notifier.setDemoPhase(const NoInternet(ssid: 'Test'));
+
+      const config = PnpIspConfig(type: IspConnectionType.dhcp);
+
+      await notifier.saveIspWithProgress(config);
+
+      verify(() => mockPnpService.saveIspSettings(any())).called(1);
+      final state = container.read(pnpProvider);
+      expect(state.phase, isA<WizardConfiguring>());
+      container.dispose();
+    });
+
+    test('ISP save success but no internet transitions to NoInternet',
+        () async {
+      when(() => mockPnpService.saveIspSettings(any()))
+          .thenAnswer((_) async {});
+      when(() => mockPnpService.checkInternetConnected())
+          .thenAnswer((_) async => false);
+      when(() => mockPnpService.fetchCurrentSsid())
+          .thenAnswer((_) async => 'MyWiFi');
+
+      final container = createContainer();
+      final notifier = container.read(pnpProvider.notifier);
+
+      notifier.setDemoPhase(const NoInternet(ssid: 'Test'));
+
+      const config = PnpIspConfig(
+        type: IspConnectionType.staticIp,
+        staticIpAddress: '10.0.0.5',
+        subnetMask: '255.255.255.0',
+        defaultGateway: '10.0.0.1',
+      );
+
+      await notifier.saveIspWithProgress(config);
+
+      verify(() => mockPnpService.saveIspSettings(any())).called(1);
+      final state = container.read(pnpProvider);
+      expect(state.phase, isA<NoInternet>());
       container.dispose();
     });
   });
