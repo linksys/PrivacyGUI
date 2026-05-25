@@ -266,6 +266,7 @@ class PnpService {
     PnpIspConfig config,
     UspInternetSettingsForm original,
   ) {
+    // dnsServer3 intentionally omitted — PNP has no UI for it, preserve original
     return original.copyWith(
       connectionType: _mapConnectionType(config.type),
       staticIpAddress: config.staticIpAddress,
