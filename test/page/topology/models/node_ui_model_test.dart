@@ -189,7 +189,7 @@ void main() {
         backhaulUplinkRate: 500000,
       );
 
-      expect(node.props, hasLength(16));
+      expect(node.props, hasLength(17));
       expect(node.props, contains('AA:BB:CC:DD:EE:01'));
       expect(node.props, contains('Router'));
       expect(node.props, contains('linksys'));
@@ -203,8 +203,9 @@ void main() {
       expect(node.props, contains(1000));
       expect(node.props, contains(-45));
       expect(node.props, contains(500000));
-      // New DataElements enrichment fields (default to null)
-      expect(node.props.where((p) => p == null).length, 3);
+      // New DataElements enrichment fields (default to null):
+      // dataElementsId + 3 capability/role flags
+      expect(node.props.where((p) => p == null).length, 4);
     });
   });
 

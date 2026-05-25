@@ -1,6 +1,7 @@
 import 'package:privacy_gui/core/utils/device_classifier.dart';
 import 'package:privacy_gui/core/utils/device_image_helper.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/utils/wifi.dart';
 import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
@@ -54,10 +55,36 @@ class UspTopologyBuilder {
     // Mesh extender nodes (slave nodes)
     final slaveNodes = nodeModels.slaves;
     final hasMesh = nodeModels.hasMesh;
-    final extenderNodeIds = <String>{};
+    logger.d('[USP][TopologyBuilder]: hasMesh=$hasMesh, '
+        'slaveNodes=${slaveNodes.length}, '
+        'slaveDeviceIds=${slaveNodes.map((n) => '${n.deviceId}|DE:${n.dataElementsId}').toList()}');
+    // Normalized set (no colons, uppercase) for matching against parentNodeId
+    // which comes from DataElements clientToNodeMap (no colons).
+    // We add BOTH deviceId (from Hosts) and dataElementsId (from DataElements)
+    // since they may be different MAC addresses for the same node.
+    final extenderNodeIdsNormalized = <String>{};
+    // Map from normalized ID back to original deviceId for building 'extender-X' IDs.
+    final normalizedToOriginal = <String, String>{};
     for (final slaveNode in slaveNodes) {
       final extenderId = 'extender-${slaveNode.deviceId}';
-      extenderNodeIds.add(slaveNode.deviceId);
+      // Add Hosts MAC (deviceId)
+      final normalizedHostsMac =
+          slaveNode.deviceId.toUpperCase().replaceAll(':', '');
+      extenderNodeIdsNormalized.add(normalizedHostsMac);
+      normalizedToOriginal[normalizedHostsMac] = slaveNode.deviceId;
+      // Also add DataElements ID if different (may be a different interface MAC)
+      if (slaveNode.dataElementsId != null &&
+          slaveNode.dataElementsId!.isNotEmpty) {
+        final normalizedDeMac =
+            slaveNode.dataElementsId!.toUpperCase().replaceAll(':', '');
+        if (normalizedDeMac != normalizedHostsMac) {
+          extenderNodeIdsNormalized.add(normalizedDeMac);
+          normalizedToOriginal[normalizedDeMac] = slaveNode.deviceId;
+        }
+      }
+      logger.d('[USP][TopologyBuilder]: Slave ${slaveNode.deviceId} '
+          '→ hostsMac: $normalizedHostsMac, '
+          'dataElementsId: ${slaveNode.dataElementsId}');
 
       final extenderIconName = routerIconTestByModel(
         modelNumber: slaveNode.model,
@@ -103,12 +130,24 @@ class UspTopologyBuilder {
       final clientId = 'client-${device.mac}';
       final isEthernet = !device.isWifi;
 
-      // Determine parent: use parentNodeId from UI Model
+      // Determine parent: use parentNodeId from UI Model.
+      // parentNodeId comes from DataElements clientToNodeMap (no colons),
+      // so we normalize it before matching against extenderNodeIdsNormalized.
       String parentId = gatewayId;
       if (hasMesh && device.parentNodeId != null) {
-        if (extenderNodeIds.contains(device.parentNodeId)) {
-          parentId = 'extender-${device.parentNodeId}';
+        final parentNormalized =
+            device.parentNodeId!.toUpperCase().replaceAll(':', '');
+        logger.d('[USP][TopologyBuilder]: Device ${device.displayName} '
+            'parentNodeId=${device.parentNodeId}, '
+            'normalized=$parentNormalized, '
+            'inExtenders=${extenderNodeIdsNormalized.contains(parentNormalized)}');
+        if (extenderNodeIdsNormalized.contains(parentNormalized)) {
+          final originalDeviceId = normalizedToOriginal[parentNormalized]!;
+          parentId = 'extender-$originalDeviceId';
         }
+      } else {
+        logger.d('[USP][TopologyBuilder]: Device ${device.displayName} '
+            'hasMesh=$hasMesh, parentNodeId=${device.parentNodeId} → gateway');
       }
 
       // Classify device for icon
@@ -169,13 +208,18 @@ class UspTopologyBuilder {
     return _rssiValueToLevel(rssi);
   }
 
-  /// Common RSSI to level conversion.
+  /// Common RSSI to level conversion. Uses [getWifiSignalLevel] as the single
+  /// source of truth for RSSI thresholds.
   static double _rssiValueToLevel(int? rssi) {
     if (rssi == null) return 0.0;
-    if (rssi >= -50) return 0.9;
-    if (rssi >= -60) return 0.65;
-    if (rssi >= -70) return 0.4;
-    return 0.1;
+    return switch (getWifiSignalLevel(rssi)) {
+      NodeSignalLevel.excellent => 0.9,
+      NodeSignalLevel.good => 0.65,
+      NodeSignalLevel.fair => 0.4,
+      NodeSignalLevel.poor => 0.1,
+      NodeSignalLevel.none => 0.0,
+      NodeSignalLevel.wired => 1.0,
+    };
   }
 
   static LinkQuality _resolveLinkQuality(DeviceUIModel device) {
@@ -204,11 +248,17 @@ class UspTopologyBuilder {
   }
 
   /// Maps RSSI (dBm) to normalized distance factor [0.0, 1.0].
-  /// Strong signal (>= -45) → close (0.0), Weak signal (<= -75) → far (1.0).
+  ///
+  /// Aligned with [signalThresholdRSSI] from wifi.dart: [-65, -71, -78]
+  /// - >= -65 (excellent): close (0.0 - 0.25)
+  /// - >= -78 (fair): medium (0.25 - 0.75)
+  /// - < -78 (poor): far (0.75 - 1.0)
+  ///
   /// Ethernet (null RSSI) → null (use default spacing).
   static double? _rssiToDistanceFactor(int? rssi) {
     if (rssi == null) return null;
-    final clamped = rssi.clamp(-75, -45);
-    return (clamped - (-45)).abs() / 30.0;
+    // Range: -90 (far) to -50 (close)
+    final clamped = rssi.clamp(-90, -50);
+    return (clamped - (-50)).abs() / 40.0;
   }
 }

@@ -6,7 +6,11 @@ import 'package:equatable/equatable.dart';
 /// Naming follows constitution Section 3.3.4 (class name ends with `UIModel`).
 /// Implements [Equatable] per Article XI.
 class NodeUIModel extends Equatable {
-  final String deviceId; // MAC of the mesh node
+  final String deviceId; // MAC of the mesh node (from Hosts)
+
+  // ─── DataElements ID (may differ from deviceId) ───
+  final String?
+      dataElementsId; // node.id from DataElements (used in clientToNodeMap)
 
   // ─── Name fields (from Hosts) ───
   final String? friendlyName; // User-friendly name from Hosts
@@ -32,6 +36,7 @@ class NodeUIModel extends Equatable {
 
   const NodeUIModel({
     required this.deviceId,
+    this.dataElementsId,
     this.friendlyName,
     this.hostName,
     required this.model,
@@ -66,6 +71,7 @@ class NodeUIModel extends Equatable {
   @override
   List<Object?> get props => [
         deviceId,
+        dataElementsId,
         friendlyName,
         hostName,
         model,
