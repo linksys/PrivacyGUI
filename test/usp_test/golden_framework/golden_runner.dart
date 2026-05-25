@@ -12,14 +12,44 @@ import 'package:privacy_gui/theme/theme_json_config.dart';
 import 'golden_test_config.dart';
 import 'mocks/mock_common.dart';
 
+/// Reads --dart-define=locales and overrides the config's locale list.
+/// Returns config locales if no dart-define is provided.
+List<Locale> _resolveLocales(GoldenTestConfig config) {
+  const envLocales = String.fromEnvironment('locales');
+  if (envLocales.isEmpty) return config.locales;
+  return envLocales.split(',').map((s) {
+    final parts = s.trim().split('_');
+    return parts.length > 1 ? Locale(parts[0], parts[1]) : Locale(parts[0]);
+  }).toList();
+}
+
+/// Reads --dart-define=screens and overrides the config's device list.
+/// Returns config devices if no dart-define is provided.
+List<GoldenDevice> _resolveDevices(GoldenTestConfig config) {
+  const envScreens = String.fromEnvironment('screens');
+  if (envScreens.isEmpty) return config.devices;
+
+  const allDevices = GoldenDevice.defaults;
+  return envScreens.split(',').map((s) {
+    final width = int.parse(s.trim());
+    return allDevices.firstWhere(
+      (d) => d.size.width.toInt() == width,
+      orElse: () => GoldenDevice('screen$width', Size(width.toDouble(), 800)),
+    );
+  }).toList();
+}
+
 /// Auto-generates golden tests for a view using declarative configuration.
 void runViewGoldenTests(GoldenTestConfig config) {
   _validateConfig(config);
 
+  final locales = _resolveLocales(config);
+  final devices = _resolveDevices(config);
+
   group('${config.viewName} golden tests', () {
     for (final stateEntry in config.states.entries) {
-      for (final device in config.devices) {
-        for (final locale in config.locales) {
+      for (final device in devices) {
+        for (final locale in locales) {
           for (final theme in config.themes) {
             final effectiveHeight = config.height ?? device.size.height;
             final effectiveSize = Size(device.size.width, effectiveHeight);
@@ -66,8 +96,8 @@ void runViewGoldenTests(GoldenTestConfig config) {
 
     if (config.interactions != null) {
       for (final interactionEntry in config.interactions!.entries) {
-        for (final device in config.devices) {
-          for (final locale in config.locales) {
+        for (final device in devices) {
+          for (final locale in locales) {
             for (final theme in config.themes) {
               final effectiveHeight = config.height ?? device.size.height;
               final effectiveSize = Size(device.size.width, effectiveHeight);
