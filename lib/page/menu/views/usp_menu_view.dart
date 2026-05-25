@@ -128,6 +128,20 @@ class UspMenuView extends ConsumerWidget {
         iconData: Icons.bar_chart,
         onTap: () => context.goNamed(RouteNamed.uspStatistics),
       ),
+      AppSectionItemData(
+        semanticLabel: 'menu-speed-test',
+        title: 'Speed Test',
+        description: 'Test your internet connection speed',
+        iconData: Icons.speed,
+        onTap: () => context.goNamed(RouteNamed.uspSpeedTest),
+      ),
+      AppSectionItemData(
+        semanticLabel: 'menu-network-diagnostics',
+        title: 'Network Diagnostics',
+        description: 'Run guided checks and manual ping/traceroute tools',
+        iconData: Icons.network_check,
+        onTap: () => context.goNamed(RouteNamed.uspUnifiedDiagnostics),
+      ),
       if (kDebugMode)
         AppSectionItemData(
           title: 'USP Console',

@@ -70,6 +70,94 @@ class PingResult {
   }
 }
 
+/// Parsed NSLookup result from [OperateResult.outputArgs].
+///
+/// Output args typically include:
+/// - Status: "Success", "Error_DNSServerNotResolved", "Error_HostNameNotResolved", etc.
+/// - SuccessCount: number of successful results
+/// - Result.{i}.Status, Result.{i}.HostNameReturned, Result.{i}.IPAddresses,
+///   Result.{i}.DNSServerIP, Result.{i}.ResponseTime, Result.{i}.AnswerType
+class NsLookupResult {
+  final String hostName;
+  final String status;
+  final int successCount;
+  final List<NsLookupAnswer> answers;
+
+  const NsLookupResult({
+    required this.hostName,
+    required this.status,
+    required this.successCount,
+    required this.answers,
+  });
+
+  bool get isComplete => status == 'Complete' || status == 'Success';
+  bool get hasAnswers => answers.any((a) => a.ipAddresses.isNotEmpty);
+
+  factory NsLookupResult.fromOperateResult(
+      OperateResult result, String hostName) {
+    final args = result.outputArgs;
+
+    final answerMap = <int, Map<String, String>>{};
+    for (final entry in args.entries) {
+      final match = RegExp(r'Result\.(\d+)\.(\w+)').firstMatch(entry.key);
+      if (match != null) {
+        final idx = int.parse(match.group(1)!);
+        final field = match.group(2)!;
+        answerMap.putIfAbsent(idx, () => {});
+        answerMap[idx]![field] = entry.value;
+      }
+    }
+
+    final answers = answerMap.entries.map((e) {
+      final f = e.value;
+      return NsLookupAnswer(
+        index: e.key,
+        status: f['Status'] ?? '',
+        answerType: f['AnswerType'] ?? '',
+        hostNameReturned: f['HostNameReturned'] ?? '',
+        ipAddresses: (f['IPAddresses'] ?? '')
+            .split(',')
+            .map((s) => s.trim())
+            .where((s) => s.isNotEmpty)
+            .toList(),
+        dnsServerIp: f['DNSServerIP'] ?? '',
+        responseTimeMs: int.tryParse(f['ResponseTime'] ?? '') ?? 0,
+      );
+    }).toList()
+      ..sort((a, b) => a.index.compareTo(b.index));
+
+    return NsLookupResult(
+      hostName: hostName,
+      status: args['Status'] ?? result.status,
+      successCount: int.tryParse(args['SuccessCount'] ?? '') ?? 0,
+      answers: answers,
+    );
+  }
+}
+
+/// A single answer entry in an NSLookup result.
+class NsLookupAnswer {
+  final int index;
+  final String status;
+  final String answerType;
+  final String hostNameReturned;
+  final List<String> ipAddresses;
+  final String dnsServerIp;
+  final int responseTimeMs;
+
+  const NsLookupAnswer({
+    required this.index,
+    required this.status,
+    required this.answerType,
+    required this.hostNameReturned,
+    required this.ipAddresses,
+    required this.dnsServerIp,
+    required this.responseTimeMs,
+  });
+
+  bool get isOk => status == 'Success' && ipAddresses.isNotEmpty;
+}
+
 /// A single hop in a traceroute result.
 class TracerouteHop {
   final int hopNumber;

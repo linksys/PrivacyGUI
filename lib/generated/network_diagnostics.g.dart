@@ -4,7 +4,7 @@
 
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 
-/// Network diagnostic operations (Ping, Traceroute)
+/// Network diagnostic operations (Ping, Traceroute, NSLookup, Download, Upload, UDPEcho, ServerSelection)
 class NetworkDiagnostics {
   /// Run ICMP ping diagnostic
   static Future<Map<String, dynamic>> ping(
@@ -29,6 +29,98 @@ class NetworkDiagnostics {
     inputs['Host'] = host;
     if (maxHopCount != null) inputs['MaxHopCount'] = maxHopCount;
     return await client.operate('Device.IP.Diagnostics.TraceRoute()',
+        args: inputs);
+  }
+
+  /// Run DNS lookup diagnostic
+  static Future<Map<String, dynamic>> nsLookup(
+    UspClient client, {
+    required String hostName,
+    String? dnsServer,
+  }) async {
+    final inputs = <String, String>{};
+    inputs['HostName'] = hostName;
+    if (dnsServer != null) inputs['DNSServer'] = dnsServer;
+    return await client.operate('Device.DNS.Diagnostics.NSLookupDiagnostics()',
+        args: inputs);
+  }
+
+  /// Run HTTP/FTP download throughput diagnostic
+  static Future<Map<String, dynamic>> downloadDiagnostic(
+    UspClient client, {
+    required String downloadURL,
+    String? ethernetPriority,
+    String? dscp,
+    String? numberOfConnections,
+  }) async {
+    final inputs = <String, String>{};
+    inputs['DownloadURL'] = downloadURL;
+    if (ethernetPriority != null) inputs['EthernetPriority'] = ethernetPriority;
+    if (dscp != null) inputs['DSCP'] = dscp;
+    if (numberOfConnections != null)
+      inputs['NumberOfConnections'] = numberOfConnections;
+    return await client.operate('Device.IP.Diagnostics.DownloadDiagnostics()',
+        args: inputs);
+  }
+
+  /// Run HTTP/FTP upload throughput diagnostic
+  static Future<Map<String, dynamic>> uploadDiagnostic(
+    UspClient client, {
+    required String uploadURL,
+    String? testFileLength,
+    String? ethernetPriority,
+    String? dscp,
+    String? numberOfConnections,
+  }) async {
+    final inputs = <String, String>{};
+    inputs['UploadURL'] = uploadURL;
+    if (testFileLength != null) inputs['TestFileLength'] = testFileLength;
+    if (ethernetPriority != null) inputs['EthernetPriority'] = ethernetPriority;
+    if (dscp != null) inputs['DSCP'] = dscp;
+    if (numberOfConnections != null)
+      inputs['NumberOfConnections'] = numberOfConnections;
+    return await client.operate('Device.IP.Diagnostics.UploadDiagnostics()',
+        args: inputs);
+  }
+
+  /// Run UDP echo diagnostic (RFC 862)
+  static Future<Map<String, dynamic>> udpEchoDiagnostic(
+    UspClient client, {
+    required String host,
+    required String port,
+    String? numberOfRepetitions,
+    String? timeout,
+    String? dataBlockSize,
+  }) async {
+    final inputs = <String, String>{};
+    inputs['Host'] = host;
+    inputs['Port'] = port;
+    if (numberOfRepetitions != null)
+      inputs['NumberOfRepetitions'] = numberOfRepetitions;
+    if (timeout != null) inputs['Timeout'] = timeout;
+    if (dataBlockSize != null) inputs['DataBlockSize'] = dataBlockSize;
+    return await client.operate('Device.IP.Diagnostics.UDPEchoDiagnostics()',
+        args: inputs);
+  }
+
+  /// Select the best server from a list by latency (ping/UDP echo)
+  static Future<Map<String, dynamic>> serverSelectionDiagnostic(
+    UspClient client, {
+    required String hostList,
+    String? protocol,
+    String? port,
+    String? numberOfRepetitions,
+    String? timeout,
+  }) async {
+    final inputs = <String, String>{};
+    inputs['HostList'] = hostList;
+    if (protocol != null) inputs['Protocol'] = protocol;
+    if (port != null) inputs['Port'] = port;
+    if (numberOfRepetitions != null)
+      inputs['NumberOfRepetitions'] = numberOfRepetitions;
+    if (timeout != null) inputs['Timeout'] = timeout;
+    return await client.operate(
+        'Device.IP.Diagnostics.ServerSelectionDiagnostics()',
         args: inputs);
   }
 }

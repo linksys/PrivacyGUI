@@ -142,11 +142,6 @@ final uspDashboardRoute = ShellRoute(
           enableDirtyCheck: true,
           preservableProvider: preservableUspIpv6PortServiceProvider,
         ),
-        LinksysRoute(
-          name: RouteNamed.uspNetworkDiagnostics,
-          path: RouteNamed.uspNetworkDiagnostics,
-          builder: (context, state) => const UspNetworkDiagnosticsView(),
-        ),
       ],
     ),
     if (kDebugMode || BuildConfig.enableTestConsole)
@@ -168,9 +163,14 @@ final uspDashboardRoute = ShellRoute(
       builder: (context, state) => const UspAppsView(),
     ),
     LinksysRoute(
-      name: RouteNamed.uspTroubleshooting,
-      path: RoutePath.uspTroubleshooting,
-      builder: (context, state) => const DashboardTroubleshootingView(),
+      name: RouteNamed.uspUnifiedDiagnostics,
+      path: RoutePath.uspUnifiedDiagnostics,
+      builder: (context, state) => const UnifiedDiagnosticsView(),
+    ),
+    LinksysRoute(
+      name: RouteNamed.uspSpeedTest,
+      path: RoutePath.uspSpeedTest,
+      builder: (context, state) => const SpeedTestView(),
     ),
   ],
 );

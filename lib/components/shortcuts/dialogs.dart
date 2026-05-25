@@ -538,6 +538,73 @@ Future<bool?> showMacFilteringConfirmDialog(BuildContext context, bool enable) {
   );
 }
 
+/// Shows a dialog for selecting from a list of items.
+///
+/// Returns the selected item, or null if cancelled.
+Future<T?> showListSelectionDialog<T>({
+  required BuildContext context,
+  required String title,
+  required List<T> items,
+  required String Function(T item) itemLabel,
+  T? currentValue,
+  IconData? itemIcon,
+  double width = 320,
+}) {
+  final colorScheme = Theme.of(context).colorScheme;
+
+  return showDialog<T>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      title: Text(title),
+      contentPadding: const EdgeInsets.only(top: 16, bottom: 8),
+      content: SizedBox(
+        width: width,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: items.map((item) {
+            final isSelected = item == currentValue;
+
+            return ListTile(
+              leading: itemIcon != null
+                  ? Icon(
+                      itemIcon,
+                      color: isSelected
+                          ? colorScheme.primary
+                          : colorScheme.onSurfaceVariant,
+                    )
+                  : null,
+              title: Text(
+                itemLabel(item),
+                style: TextStyle(
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                  color: isSelected ? colorScheme.primary : null,
+                ),
+              ),
+              trailing: isSelected
+                  ? Icon(Icons.check, color: colorScheme.primary)
+                  : null,
+              onTap: () {
+                // Defer pop to next frame to avoid mouse_tracker assertion
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (dialogContext.mounted) {
+                    Navigator.of(dialogContext).pop(item);
+                  }
+                });
+              },
+            );
+          }).toList(),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(dialogContext).pop(),
+          child: Text(loc(context).cancel),
+        ),
+      ],
+    ),
+  );
+}
+
 // Private helper to mimic BulletList using Column/Row
 Widget _buildBulletList(List<String> items) {
   return Column(

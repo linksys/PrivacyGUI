@@ -2,8 +2,10 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/core/usp/providers/bridge_request_throttler_provider.dart';
 import 'package:privacy_gui/core/usp/providers/usp_auth_coordinator.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
+import 'package:privacy_gui/core/usp/services/network_diagnostics_executor.dart';
 import 'package:privacy_gui/core/usp/services/sse_connection_manager.dart';
 import 'package:privacy_gui/core/usp/services/sse_manager.dart';
 import 'package:privacy_gui/core/usp/services/sse_operation_awaiter.dart';
@@ -90,6 +92,18 @@ final sseOperationAwaiterProvider = Provider<SseOperationAwaiter?>((ref) {
   final usp = ref.watch(uspClientProvider);
   if (manager == null || usp == null) return null;
   return SseOperationAwaiter(manager, usp);
+});
+
+/// Provides [NetworkDiagnosticsExecutor] — typed wrapper for TR-181 network
+/// diagnostic Operate commands (Ping, TraceRoute, NSLookup, Download, Upload,
+/// UDPEcho, ServerSelection) with SSE OperationComplete waiting and
+/// ref-counted shared subscriptions via [DiagnosticScope].
+final networkDiagnosticsExecutorProvider =
+    Provider<NetworkDiagnosticsExecutor?>((ref) {
+  final awaiter = ref.watch(sseOperationAwaiterProvider);
+  if (awaiter == null) return null;
+  final throttler = ref.watch(bridgeRequestThrottlerProvider);
+  return NetworkDiagnosticsExecutor(awaiter, throttler);
 });
 
 /// Bootstrap provider — connects SSE and registers core subscriptions.

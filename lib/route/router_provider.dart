@@ -43,7 +43,6 @@ import 'package:privacy_gui/page/dmz/views/usp_dmz_view.dart';
 import 'package:privacy_gui/page/local_network/views/usp_local_network_view.dart';
 import 'package:privacy_gui/page/static_routing/views/usp_static_routing_view.dart';
 import 'package:privacy_gui/page/ipv6_port_service/views/usp_ipv6_port_service_view.dart';
-import 'package:privacy_gui/page/network_diagnostics/views/usp_network_diagnostics_view.dart';
 import 'package:privacy_gui/page/statistics/views/usp_statistics_view.dart';
 import 'package:privacy_gui/page/test_console/views/usp_test_console_view.dart';
 import 'package:privacy_gui/page/dmz/providers/usp_dmz_notifier.dart';
@@ -58,7 +57,8 @@ import 'package:privacy_gui/page/dhcp/providers/usp_dhcp_reservations_notifier.d
 import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_settings_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/views/usp_wifi_settings_view.dart';
 import 'package:privacy_gui/page/apps/views/usp_apps_view.dart';
-import 'package:privacy_gui/page/dashboard/views/dashboard_troubleshooting_view.dart';
+import 'package:privacy_gui/page/unified_diagnostics/views/unified_diagnostics_view.dart';
+import 'package:privacy_gui/page/unified_diagnostics/views/speed_test_view.dart';
 import 'package:privacy_gui/page/instant_setup/services/pnp_status_service.dart';
 
 // PnP (Plug and Play) imports

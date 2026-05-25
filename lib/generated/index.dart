@@ -26,6 +26,7 @@ export 'wan_traffic_stats.g.dart';
 export 'network_diagnostics.g.dart';
 export 'wan_pppoe.g.dart';
 export 'wan_bridge.g.dart';
+export 'dns_client.g.dart';
 export 'dhcp_reservations.g.dart';
 export 'wan_operations.g.dart';
 export 'multi_interface_traffic_stats.g.dart';

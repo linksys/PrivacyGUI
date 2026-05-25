@@ -289,6 +289,21 @@ abstract class UspWidgetSpecs {
     },
   );
 
+  static const speedTest = WidgetSpec(
+    id: 'speed_test',
+    displayName: 'Speed Test',
+    constraints: {
+      DisplayMode.normal: WidgetGridConstraints(
+        minColumns: 3,
+        maxColumns: 6,
+        preferredColumns: 5,
+        heightStrategy: HeightStrategy.strict(3),
+        minHeightRows: 2,
+        maxHeightRows: 5,
+      ),
+    },
+  );
+
   // ---------------------------------------------------------------------------
   // Registry
   // ---------------------------------------------------------------------------
@@ -312,6 +327,7 @@ abstract class UspWidgetSpecs {
     wifiPerformance,
     trafficAnalysis,
     deviceAnalytics,
+    speedTest,
   ];
 
   static WidgetSpec? getById(String id) {

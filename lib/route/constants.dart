@@ -40,9 +40,9 @@ class RoutePath {
   static const uspTestConsole = '/uspTestConsole';
   static const uspInternetSettings = 'uspInternetSettings';
   static const uspWifiSettings = '/uspWifiSettings';
-  static const uspNetworkDiagnostics = 'uspNetworkDiagnostics';
   static const uspApps = '/uspApps';
-  static const uspTroubleshooting = '/uspTroubleshooting';
+  static const uspUnifiedDiagnostics = '/uspUnifiedDiagnostics';
+  static const uspSpeedTest = '/uspSpeedTest';
 
   /// menu
   static const menuInstantVerify = 'menuInstantVerify';
@@ -196,9 +196,9 @@ class RouteNamed {
   static const uspTestConsole = 'uspTestConsole';
   static const uspInternetSettings = 'uspInternetSettings';
   static const uspWifiSettings = 'uspWifiSettings';
-  static const uspNetworkDiagnostics = 'uspNetworkDiagnostics';
   static const uspApps = 'uspApps';
-  static const uspTroubleshooting = 'uspTroubleshooting';
+  static const uspUnifiedDiagnostics = 'uspUnifiedDiagnostics';
+  static const uspSpeedTest = 'uspSpeedTest';
 
   static const menuInstantVerify = 'menuInstantVerify';
   static const menuInstantDevices = 'menuInstantDevices';
@@ -288,10 +288,6 @@ class RouteNamed {
   static const pnpStaticIp = 'pnpStaticIp';
   static const pnpIspAuth = 'pnpIspAuth';
   static const pnpAddNodes = 'pnpAddNodes';
-
-  /// Troubleshooting
-  static const troubleshooting = 'troubleshooting';
-  static const troubleshootingPing = 'troubleshootingPing';
 
   /// Support
   static const faqList = 'faqList';
