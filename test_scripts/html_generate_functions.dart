@@ -1,427 +1,383 @@
 part of 'combine_results.dart';
 
 String generateHTMLReport(Map<String, dynamic> result, String version) {
+  final timestamp = result['timestamp'] ?? DateTime.now().toIso8601String();
+  final embedImages = result['embedImages'] ?? false;
+
   return '''
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Linksys Now Screenshots Report $version</title>
-    <link rel="stylesheet" href="style.css">
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.js"></script>
-  </head>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Golden Test Report $version</title>
   <style>
-    .success {
-      color: green;
+    :root {
+      --color-pass: #22c55e;
+      --color-fail: #ef4444;
+      --color-bg: #ffffff;
+      --color-surface: #f8fafc;
+      --color-border: #e2e8f0;
+      --color-text: #1e293b;
+      --color-text-muted: #64748b;
+      --color-accent: #3b82f6;
     }
-    .failed {
-      color: red;
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --color-bg: #0f172a;
+        --color-surface: #1e293b;
+        --color-border: #334155;
+        --color-text: #f1f5f9;
+        --color-text-muted: #94a3b8;
+      }
     }
-    table, th, td {
-      border: 1px solid black;
-      border-collapse: collapse;
-      text-align: start;
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--color-bg);
+      color: var(--color-text);
+      padding: 2rem;
+      line-height: 1.6;
+    }
+    h1 { font-size: 1.5rem; margin-bottom: 0.25rem; }
+    .subtitle { color: var(--color-text-muted); font-size: 0.875rem; margin-bottom: 2rem; }
+    .panels { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem; }
+    .panel {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: 0.75rem;
+      padding: 1.5rem;
+    }
+    .panel h2 { font-size: 1rem; margin-bottom: 1rem; }
+    .stats { display: flex; gap: 2rem; align-items: center; }
+    .stat-item { text-align: center; }
+    .stat-value { font-size: 1.75rem; font-weight: 700; }
+    .stat-label { font-size: 0.75rem; color: var(--color-text-muted); text-transform: uppercase; }
+    .stat-pass .stat-value { color: var(--color-pass); }
+    .stat-fail .stat-value { color: var(--color-fail); }
+    .donut-container { width: 100px; height: 100px; }
+    .coverage-bar-container { margin: 0.75rem 0; }
+    .coverage-bar {
+      height: 8px;
+      background: var(--color-border);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .coverage-bar-fill {
+      height: 100%;
+      background: var(--color-accent);
+      border-radius: 4px;
+      transition: width 0.3s;
+    }
+    .coverage-text { font-size: 0.875rem; color: var(--color-text-muted); margin-top: 0.25rem; }
+    .missing-list {
+      margin-top: 0.75rem;
+      font-size: 0.8rem;
+      color: var(--color-fail);
+    }
+    .missing-list summary { cursor: pointer; font-weight: 500; }
+    .missing-list ul { margin-top: 0.5rem; padding-left: 1.5rem; }
+    .filters {
+      display: flex;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+      margin-bottom: 1.5rem;
       padding: 1rem;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: 0.75rem;
     }
-    .textCenter {
-      text-align: center !important;
+    .filter-group h3 { font-size: 0.75rem; text-transform: uppercase; color: var(--color-text-muted); margin-bottom: 0.5rem; }
+    .filter-group label { margin-right: 0.75rem; font-size: 0.875rem; cursor: pointer; }
+    .filter-group input { margin-right: 0.25rem; }
+    .results { margin-top: 1rem; }
+    .feature-group {
+      border: 1px solid var(--color-border);
+      border-radius: 0.5rem;
+      margin-bottom: 0.75rem;
+      overflow: hidden;
     }
-    .wrapword {
-      white-space: -moz-pre-wrap !important;  /* Mozilla, since 1999 */
-      white-space: -pre-wrap;      /* Opera 4-6 */
-      white-space: -o-pre-wrap;    /* Opera 7 */
-      white-space: pre-wrap;       /* css-3 */
-      word-wrap: break-word;       /* Internet Explorer 5.5+ */
-      white-space: -webkit-pre-wrap; /* Newer versions of Chrome/Safari*/
+    .feature-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.75rem 1rem;
+      background: var(--color-surface);
+      cursor: pointer;
+      user-select: none;
+      font-weight: 600;
+    }
+    .feature-header:hover { background: var(--color-border); }
+    .feature-badge {
+      font-size: 0.75rem;
+      padding: 0.125rem 0.5rem;
+      border-radius: 9999px;
+      font-weight: 500;
+    }
+    .badge-pass { background: #dcfce7; color: #166534; }
+    .badge-fail { background: #fef2f2; color: #991b1b; }
+    @media (prefers-color-scheme: dark) {
+      .badge-pass { background: #14532d; color: #86efac; }
+      .badge-fail { background: #450a0a; color: #fca5a5; }
+    }
+    .feature-body { display: none; }
+    .feature-body.open { display: block; }
+    .test-row {
+      display: flex;
+      align-items: center;
+      padding: 0.5rem 1rem;
+      border-top: 1px solid var(--color-border);
+      font-size: 0.875rem;
+    }
+    .test-row.fail { background: #fef2f2; }
+    @media (prefers-color-scheme: dark) { .test-row.fail { background: #1c1917; } }
+    .test-icon { margin-right: 0.5rem; font-size: 1rem; }
+    .test-icon.pass { color: var(--color-pass); }
+    .test-icon.fail { color: var(--color-fail); }
+    .test-name { flex: 1; }
+    .test-meta { font-size: 0.75rem; color: var(--color-text-muted); }
+    .failure-details {
+      padding: 1rem;
+      border-top: 1px solid var(--color-border);
+      background: var(--color-surface);
+    }
+    .image-comparison {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 0.75rem;
+      margin-bottom: 0.75rem;
+    }
+    .image-comparison figure { text-align: center; }
+    .image-comparison figcaption {
+      font-size: 0.75rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      text-transform: uppercase;
+      color: var(--color-text-muted);
+    }
+    .image-comparison img {
+      max-width: 100%;
+      height: auto;
+      border: 1px solid var(--color-border);
+      border-radius: 0.25rem;
+    }
+    .error-message {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 0.75rem;
+      background: var(--color-bg);
+      border: 1px solid var(--color-border);
+      border-radius: 0.25rem;
+      padding: 0.75rem;
+      white-space: pre-wrap;
       word-break: break-all;
-      white-space: normal;
-    }
-
-    .report-table {
-      width: 100%;
-    }
-
-    .group-name {
-      font-weight: bold;
-      font-size: .8em;
-      margin-top: 1em;
-      border-bottom: 1px solid #ccc;
-      padding-bottom: 0.5em;
-      background-color: #f2f2f2; /* Light gray background for group names */
-    }
-
-    .locale-header {  /* New style for locale headers */
-      font-weight: bold;
-      font-size: 1.5em;
-      margin-top: 0.5em;
-      margin-bottom: 0.5em;
-      background-color: #e6f2ff; /* Light blue background for locale headers */
-    }
-
-    .testcase-header {
-      font-style: italic;
-      margin-bottom: 0.5em;
-      background-color: #f9f9f9; /* Very light gray background for test cases */
+      max-height: 150px;
+      overflow-y: auto;
+      color: var(--color-fail);
     }
   </style>
-  <style>
-    .chart-container {
-        width: 200px;
-        height: 200px;
-        position: relative;
+</head>
+<body>
+  <h1>Golden Test Verification Report</h1>
+  <p class="subtitle">Version $version &mdash; Generated $timestamp</p>
+
+  <div class="panels">
+    <div class="panel">
+      <h2>Test Summary</h2>
+      <div class="stats">
+        <div class="stat-item"><div class="stat-value" id="totalCount">0</div><div class="stat-label">Total</div></div>
+        <div class="stat-item stat-pass"><div class="stat-value" id="passCount">0</div><div class="stat-label">Pass</div></div>
+        <div class="stat-item stat-fail"><div class="stat-value" id="failCount">0</div><div class="stat-label">Fail</div></div>
+        <div class="donut-container"><canvas id="donutChart" width="100" height="100"></canvas></div>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>Coverage</h2>
+      <div id="coveragePanel"></div>
+    </div>
+  </div>
+
+  <div class="filters" id="filterBar"></div>
+  <div class="results" id="resultsContainer"></div>
+
+  <script>
+    const DATA = ${jsonEncode(result)};
+
+    function init() {
+      renderSummary();
+      renderCoverage();
+      renderFilters();
+      renderResults();
     }
-    .legend {
-        margin-top: 20px;
+
+    function renderSummary() {
+      const c = DATA.counting;
+      document.getElementById('totalCount').textContent = c.total;
+      document.getElementById('passCount').textContent = c.success;
+      document.getElementById('failCount').textContent = c.fail;
+      drawDonut(c.success, c.fail);
     }
-    .legend-item {
-        display: flex;
-        align-items: center;
-        margin: 5px 0;
+
+    function drawDonut(pass, fail) {
+      const canvas = document.getElementById('donutChart');
+      const ctx = canvas.getContext('2d');
+      const total = pass + fail;
+      if (total === 0) return;
+      const cx = 50, cy = 50, r = 40, inner = 25;
+      const passAngle = (pass / total) * Math.PI * 2;
+      const startAngle = -Math.PI / 2;
+
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, startAngle, startAngle + passAngle);
+      ctx.arc(cx, cy, inner, startAngle + passAngle, startAngle, true);
+      ctx.closePath();
+      ctx.fillStyle = '#22c55e';
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, startAngle + passAngle, startAngle + Math.PI * 2);
+      ctx.arc(cx, cy, inner, startAngle + Math.PI * 2, startAngle + passAngle, true);
+      ctx.closePath();
+      ctx.fillStyle = '#ef4444';
+      ctx.fill();
+
+      ctx.fillStyle = getComputedStyle(document.body).color;
+      ctx.font = 'bold 14px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(Math.round((pass / total) * 100) + '%', cx, cy);
     }
-    .color-box {
-        width: 20px;
-        height: 20px;
-        margin-right: 10px;
-    }
-  </style>
-  <body onload="init()">
-    <script>
-      const resultJson = ${jsonEncode(result)};
-      
-      function init() {
-        // initalize filters, regarding locales and devices on resultJson
-        initFilters(resultJson);
-        // make default classify and render table
-        defaultClassify();
+
+    function renderCoverage() {
+      const cov = DATA.coverage;
+      if (!cov) { document.getElementById('coveragePanel').textContent = 'No coverage data'; return; }
+      const pct = cov.percentage;
+      let html = '<div class="coverage-bar-container">';
+      html += '<div class="coverage-bar"><div class="coverage-bar-fill" style="width:' + pct + '%"></div></div>';
+      html += '<div class="coverage-text">' + cov.covered + '/' + cov.total + ' USP views covered (' + pct + '%)</div>';
+      html += '</div>';
+      if (cov.missing && cov.missing.length > 0) {
+        html += '<details class="missing-list"><summary>' + cov.missing.length + ' views missing golden tests</summary><ul>';
+        cov.missing.forEach(function(v) { html += '<li>' + v + '</li>'; });
+        html += '</ul></details>';
       }
-      function initFilters(resultJson) {
-        // Extract unique locales and device types from resultJson
-        const locales = new Set();
-        const deviceTypes = new Set();
-        const results = new Set();
-
-        resultJson.tests.forEach(test => {
-          locales.add(test.locale);
-          deviceTypes.add(test.deviceType);
-          results.add(test.result);
-        });
-        locales.delete(undefined);
-        deviceTypes.delete(undefined);
-
-        // Create filter elements for locales
-        const localeFilters = document.createElement('div');
-        localeFilters.innerHTML = '<h3>Locale:</h3>';
-        locales.forEach(locale => {
-          const checkbox = document.createElement('input');
-          checkbox.type = 'checkbox';
-          checkbox.id = `locale-\${locale}`;
-          checkbox.name = 'locale';
-          checkbox.value = locale;
-          checkbox.checked = true; // Initially all locales are selected
-          checkbox.addEventListener('change', defaultClassify);
-
-          const label = document.createElement('label');
-          label.htmlFor = `locale-\${locale}`;
-          label.textContent = locale;
-
-          localeFilters.appendChild(checkbox);
-          localeFilters.appendChild(label);
-        });
-        document.querySelector('.filters').appendChild(localeFilters);
-
-
-        // Create filter elements for device types
-        const deviceTypeFilters = document.createElement('div');
-        deviceTypeFilters.innerHTML = '<h3>Device Type:</h3>';
-        deviceTypes.forEach(deviceType => {
-          const checkbox = document.createElement('input');
-          checkbox.type = 'checkbox';
-          checkbox.id = `deviceType-\${deviceType}`;
-          checkbox.name = 'deviceType';
-          checkbox.value = deviceType;
-          checkbox.checked = true; // Initially all device types are selected
-          checkbox.addEventListener('change', defaultClassify);
-
-          const label = document.createElement('label');
-          label.htmlFor = `deviceType-\${deviceType}`;
-          label.textContent = deviceType;
-
-          deviceTypeFilters.appendChild(checkbox);
-          deviceTypeFilters.appendChild(label);
-        });
-        document.querySelector('.filters').appendChild(deviceTypeFilters);
-
-        // Create filter elements for results
-        const resultFilters = document.createElement('div');
-        resultFilters.innerHTML = '<h3>Result:</h3>';
-        results.forEach(result => {
-          const checkbox = document.createElement('input');
-          checkbox.type = 'checkbox';
-          checkbox.id = `result-\${result}`;
-          checkbox.name = 'result';
-          checkbox.value = result;
-          checkbox.checked = true; // Initially all results are selected
-          checkbox.addEventListener('change', defaultClassify);
-
-          const label = document.createElement('label');
-          label.htmlFor = `result-\${result}`;
-          label.textContent = result;
-
-          resultFilters.appendChild(checkbox);
-          resultFilters.appendChild(label);
-        });
-        document.querySelector('.filters').appendChild(resultFilters);
-
-        document.querySelector('.filters').appendChild(document.createElement('br'));
-
-      }
-      
-      function defaultClassify() {
-        const selectedLocales = Array.from(document.querySelectorAll('input[name="locale"]:checked')).map(checkbox => checkbox.value);
-        
-        const selectedDeviceTypes = Array.from(document.querySelectorAll('input[name="deviceType"]:checked')).map(checkbox => checkbox.value);
-      
-        const selectedResults = Array.from(document.querySelectorAll('input[name="result"]:checked')).map(checkbox => checkbox.value);
-
-        const filteredTests = resultJson.tests.filter(test => selectedLocales.includes(test.locale) && selectedDeviceTypes.includes(test.deviceType) && selectedResults.includes(test.result));
-        
-        // counting success and fail test cases and put data into classified obj
-        const successCount = filteredTests.filter(test => test.result === 'success').length;
-        const failCount = filteredTests.filter(test => test.result === 'error').length;
-        var countingObj = {
-          'success': successCount,
-          'fail': failCount,
-          'total': successCount + failCount
-
-        }
-        
-        // classify by locale, then testCaseFilePath, then groupName
-        var classified = {};
-        for (var i = 0; i < filteredTests.length; i++) {
-          var result = filteredTests[i];
-          var locale = result.locale;
-          var testCaseFilePath = result.testCaseFilePath;
-          var groupName = result.groupName;
-          if (!classified[locale]) {
-            classified[locale] = {};
-          }
-          if (!classified[locale][testCaseFilePath]) {
-            classified[locale][testCaseFilePath] = {};
-          }
-          if (!classified[locale][testCaseFilePath][groupName]) {
-            classified[locale][testCaseFilePath][groupName] = [];
-          }
-          classified[locale][testCaseFilePath][groupName].push(result);
-        }
-        createTestReports(classified, countingObj);
-      }
-    
-      function createTestReports(classified, counting) {
-          generateChart(counting);
-
-          // Clear existing reports
-          const reportsDiv = document.querySelector('.reports');
-          reportsDiv.innerHTML = '';
-
-          for (const locale in classified) {
-              const table = document.createElement('table');
-              table.classList.add('report-table'); // Add a class to the table for styling
-      
-              // Locale header row
-              const localeHeaderRow = table.insertRow();
-              localeHeaderRow.classList.add('locale-header'); // Add class for styling
-              const localeHeaderCell = localeHeaderRow.insertCell();
-              localeHeaderCell.textContent = locale;
-              localeHeaderCell.colSpan = 2;
-      
-              for (const testCaseFilePath in classified[locale]) {
-                  // Test Case File Path header row 
-                  const testCaseHeaderRow = table.insertRow();
-                  testCaseHeaderRow.classList.add('testcase-header'); // Add class for styling
-                  const testCaseHeaderCell = testCaseHeaderRow.insertCell();
-                  testCaseHeaderCell.textContent = testCaseFilePath;
-                  testCaseHeaderCell.colSpan = 2;
-      
-                  for (const groupName in classified[locale][testCaseFilePath]) {
-                      const groupNameRow = table.insertRow();
-                      groupNameRow.classList.add('group-name'); // Add class for styling
-                      const groupNameCell = groupNameRow.insertCell();
-                      groupNameCell.textContent = groupName;
-                      groupNameCell.colSpan = 2;
-      
-                      // Result header row (moved inside the groupName loop)
-                      const headerRow = table.insertRow();
-                      headerRow.classList.add('result-header'); // Add a class to the header row
-                      const headers = ['name', 'result'];
-                      headers.forEach(headerText => {
-                          const th = document.createElement('th');
-                          th.textContent = headerText;
-                          headerRow.appendChild(th);
-                      });
-      
-                      for (const result of classified[locale][testCaseFilePath][groupName]) {
-                          const row = table.insertRow();
-                          row.classList.add(result.result); // Add result class directly to the row
-      
-      
-                          const nameTd = row.insertCell(); // Use insertCell on the row
-                          const link = document.createElement('a');
-                          link.href = result.filePath;
-                          link.textContent = result.name;
-                          nameTd.appendChild(link);
-      
-      
-                          const resultTd = row.insertCell();// Use insertCell on the row
-                          resultTd.textContent = result.result;
-      
-      
-                      }
-      
-                  }
-              }
-              reportsDiv.appendChild(table);
-              reportsDiv.appendChild(document.createElement('br'));
-          }
-
-          const localeHeaders = document.querySelectorAll('.locale-header');
-            localeHeaders.forEach(header => {
-              header.addEventListener('click', () => {
-                  var nextSibling = header.nextElementSibling;
-                  while (nextSibling && !nextSibling.classList.contains('locale-header')) {
-                      if (nextSibling.style.display === 'none') {
-                          nextSibling.style.display = '';
-                      } else {
-                          nextSibling.style.display = 'none';
-                      }
-                      nextSibling = nextSibling.nextElementSibling;
-                    
-                  }
-              });
-            });
-      }
-
-      function generateChart(data) {
-        const total = data.total;
-        const success = data.success;
-        const fail = data.fail;
-
-        // Calculate percentages
-        const successPercent = (success / total) * 100.0;
-        const failPercent = (fail / total) * 100.0;
-        const countingData = [
-          {label: 'Success', value: successPercent, color:'#1e7145'},
-          {label: 'Fail', value: failPercent, color:'#b91d47'}
-
-        ];
-
-        const totalCountDiv = document.querySelector('.totalCount');
-        totalCountDiv.innerHTML = total;
-        const totalPercentDiv = document.querySelector('.totalPercent');
-        totalPercentDiv.innerHTML = '100%';
-        const successCount = document.querySelector('.successCount');
-        successCount.innerHTML = success;
-        const successPercentDiv = document.querySelector('.successPercent');
-        successPercentDiv.innerHTML = successPercent.toFixed(2) + '%';
-        const failCount = document.querySelector('.failCount');
-        failCount.innerHTML = fail;
-        const failPercentDiv = document.querySelector('.failPercent');
-        failPercentDiv.innerHTML = failPercent.toFixed(2) + '%';
-
-        // Initialize the chart
-        const canvas = document.getElementById('donutChart');
-        drawDonutChart(countingData, canvas);
-
-        const legendContainer = document.getElementById('legend');
-        createLegend(countingData, legendContainer);
+      document.getElementById('coveragePanel').innerHTML = html;
     }
 
-    function drawDonutChart(data, canvas) {
-        const ctx = canvas.getContext('2d');
-        const centerX = canvas.width / 2;
-        const centerY = canvas.height / 2;
-        const radius = Math.min(centerX, centerY) * 0.8;
-        const innerRadius = radius * 0.6; // This creates the donut hole
+    function renderFilters() {
+      const bar = document.getElementById('filterBar');
+      const locales = [...new Set(DATA.tests.map(t => t.locale).filter(Boolean))];
+      const devices = [...new Set(DATA.tests.map(t => t.deviceType).filter(Boolean))];
+      let html = '';
 
-        // Calculate total for percentages
-        const total = data.reduce((sum, item) => sum + item.value, 0);
+      html += '<div class="filter-group"><h3>Locale</h3>';
+      locales.forEach(function(l) { html += '<label><input type="checkbox" name="locale" value="' + l + '" checked onchange="renderResults()">' + l + '</label>'; });
+      html += '</div>';
 
-        let currentAngle = -0.5 * Math.PI; // Start at top
+      html += '<div class="filter-group"><h3>Device</h3>';
+      devices.forEach(function(d) { html += '<label><input type="checkbox" name="device" value="' + d + '" checked onchange="renderResults()">' + d + '</label>'; });
+      html += '</div>';
 
-        // Draw the segments
-        data.forEach(item => {
-            const sliceAngle = (2 * Math.PI * item.value) / total;
+      html += '<div class="filter-group"><h3>Result</h3>';
+      html += '<label><input type="checkbox" name="result" value="success" checked onchange="renderResults()">Pass</label>';
+      html += '<label><input type="checkbox" name="result" value="error" checked onchange="renderResults()">Fail</label>';
+      html += '</div>';
 
-            ctx.beginPath();
-            ctx.arc(centerX, centerY, radius, currentAngle, currentAngle + sliceAngle);
-            ctx.arc(centerX, centerY, innerRadius, currentAngle + sliceAngle, currentAngle, true);
-            ctx.closePath();
-
-            ctx.fillStyle = item.color;
-            ctx.fill();
-
-            // Add white border
-            ctx.strokeStyle = 'white';
-            ctx.lineWidth = 2;
-            ctx.stroke();
-
-            currentAngle += sliceAngle;
-        });
+      bar.innerHTML = html;
     }
 
-    function createLegend(data, container) {
-        container.innerHTML = '';
-
-        const total = data.reduce((sum, item) => sum + item.value, 0);
-        
-        data.forEach(item => {
-            const percentage = ((item.value / total) * 100).toFixed(2);
-            const legendItem = document.createElement('div');
-            legendItem.className = 'legend-item';
-            
-            const colorBox = document.createElement('div');
-            colorBox.className = 'color-box';
-            colorBox.style.backgroundColor = item.color;
-            
-            const label = document.createElement('span');
-            label.textContent = `\${item.label} (\${percentage}%)`;
-            
-            legendItem.appendChild(colorBox);
-            legendItem.appendChild(label);
-            container.appendChild(legendItem);
-        });
+    function getFilters() {
+      const locales = [...document.querySelectorAll('input[name="locale"]:checked')].map(e => e.value);
+      const devices = [...document.querySelectorAll('input[name="device"]:checked')].map(e => e.value);
+      const results = [...document.querySelectorAll('input[name="result"]:checked')].map(e => e.value);
+      return { locales, devices, results };
     }
 
-    </script>
+    function renderResults() {
+      const filters = getFilters();
+      const tests = DATA.tests.filter(function(t) {
+        return filters.locales.includes(t.locale) &&
+               filters.devices.includes(t.deviceType) &&
+               filters.results.includes(t.result);
+      });
 
-    <h1>Linksys Now $version Screenshots Report</h1>
-    <table style="width:100%">
-      <tr>
-        <th>Total</th>
-        <td class="totalCount textCenter"></td>
-        <td class="totalPercent textCenter"></td>
-        <td rowSpan="3">
-          <canvas id="donutChart" width="400" height="400"></canvas>
-          <div id="legend" class="legend"></div>
-        </td>
-      </tr>
-      <tr>
-        <th>Success</th>
-        <td class="successCount textCenter"></td>
-        <td class="successPercent textCenter"></td>
-      </tr>
-      <tr>
-        <th>Fail</th>
-        <td class="failCount textCenter"></td>
-        <td class="failPercent textCenter"></td>
-      </tr>
-    </table>
-    <br/>
-    <div class="filters"></div>
-    <div class="reports"></div>
-  </body>
+      const groups = {};
+      tests.forEach(function(t) {
+        const path = t.testCaseFilePath || '';
+        const match = path.match(/page\\/([^/]+)/);
+        const feature = match ? match[1] : 'other';
+        if (!groups[feature]) groups[feature] = [];
+        groups[feature].push(t);
+      });
+
+      let html = '';
+      const sortedFeatures = Object.keys(groups).sort();
+      sortedFeatures.forEach(function(feature) {
+        const featureTests = groups[feature];
+        const failCount = featureTests.filter(t => t.result === 'error').length;
+        const badgeClass = failCount > 0 ? 'badge-fail' : 'badge-pass';
+        const badgeText = failCount > 0 ? failCount + ' failed' : 'all pass';
+
+        html += '<div class="feature-group">';
+        html += '<div class="feature-header" onclick="toggleFeature(this)">';
+        html += '<span>' + feature + ' (' + featureTests.length + ')</span>';
+        html += '<span class="feature-badge ' + badgeClass + '">' + badgeText + '</span>';
+        html += '</div>';
+        html += '<div class="feature-body' + (failCount > 0 ? ' open' : '') + '">';
+
+        featureTests.forEach(function(t) {
+          const isPass = t.result === 'success';
+          const icon = isPass ? '&#10003;' : '&#10007;';
+          const iconClass = isPass ? 'pass' : 'fail';
+          const rowClass = isPass ? '' : ' fail';
+          const name = t.tsName || t.name || 'unknown';
+
+          html += '<div class="test-row' + rowClass + '">';
+          html += '<span class="test-icon ' + iconClass + '">' + icon + '</span>';
+          html += '<span class="test-name">' + escapeHtml(name) + '</span>';
+          html += '<span class="test-meta">' + (t.deviceType || '') + ' / ' + (t.locale || '') + '</span>';
+          html += '</div>';
+
+          if (!isPass) {
+            html += '<div class="failure-details">';
+            if (t.failureImages) {
+              html += '<div class="image-comparison">';
+              html += renderImage('Expected', t.failureImages.expected);
+              html += renderImage('Actual', t.failureImages.actual);
+              html += renderImage('Diff', t.failureImages.diff);
+              html += '</div>';
+            }
+            if (t.messages && t.messages.length > 0) {
+              html += '<div class="error-message">' + escapeHtml(t.messages.join('\\n')) + '</div>';
+            }
+            html += '</div>';
+          }
+        });
+
+        html += '</div></div>';
+      });
+
+      document.getElementById('resultsContainer').innerHTML = html;
+    }
+
+    function renderImage(label, src) {
+      if (!src) return '<figure><figcaption>' + label + '</figcaption><div style="padding:2rem;color:var(--color-text-muted)">N/A</div></figure>';
+      return '<figure><figcaption>' + label + '</figcaption><img src="' + src + '" alt="' + label + '" loading="lazy"></figure>';
+    }
+
+    function toggleFeature(header) {
+      const body = header.nextElementSibling;
+      body.classList.toggle('open');
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
 </html>
 ''';
 }
