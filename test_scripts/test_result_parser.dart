@@ -76,18 +76,25 @@ void main(List<String> args) {
     // reportRawJsonFile.writeAsStringSync(encoder.convert(testResult));
 
     // Extract all test cases as flat list
-    final suitesJson = testResult['suites'] as List<Map<String, dynamic>>;
+    final suitesJson = testResult['suites'] as List<Map<String, dynamic>>? ?? [];
+    if (suitesJson.isEmpty) {
+      reportJsonFile.writeAsStringSync(encoder.convert([]));
+      print('No test suites found in results');
+      return;
+    }
     final groupsJson = suitesJson
+        .where((e) => e['groups'] != null)
         .map((e) => List.from(e['groups']))
-        .reduce((value, list) => value..addAll(list));
+        .fold<List>([], (value, list) => value..addAll(list));
     final testsJson = groupsJson
+        .where((e) => e['tests'] != null)
         .map((e) => List.from(e['tests']))
-        .reduce((value, list) => value..addAll(list));
+        .fold<List>([], (value, list) => value..addAll(list));
     reportJsonFile.writeAsStringSync(encoder.convert(testsJson));
 
     //
 
-    if (!testResult['result']['success']) {
+    if (testResult['result'] != null && !testResult['result']['success']) {
       exit(1);
     }
   }, onError: (e) {

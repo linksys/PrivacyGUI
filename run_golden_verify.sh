@@ -1,6 +1,15 @@
 #!/bin/bash
 set -e
 
+# Detect fvm: use fvm flutter if available, otherwise use flutter directly
+if command -v fvm > /dev/null 2>&1 && [ -f ".fvmrc" ]; then
+  FLUTTER="fvm flutter"
+  DART="fvm dart"
+else
+  FLUTTER="flutter"
+  DART="dart"
+fi
+
 EMBED_FLAG=""
 
 while getopts l:s:f:v:-: flag
@@ -40,26 +49,26 @@ if [ -z "$file" ]; then
   IFS=',' read -ra LOCS <<< "$locales"
   for locale in "${LOCS[@]}"; do
     echo "Verifying golden tests for locale: $locale, screens: $screens"
-    flutter test --file-reporter json:snapshots/tests.json --tags=loc \
+    $FLUTTER test test/usp_test/ --file-reporter json:snapshots/tests.json \
       --dart-define=locales="$locale" \
       --dart-define=screens="$screens" \
       --dart-define=visualEffects=0 || true
-    dart test_scripts/test_result_parser.dart snapshots/tests.json "$locale"
+    $DART test_scripts/test_result_parser.dart snapshots/tests.json "$locale"
     rm -f snapshots/tests.json
   done
 
-  dart test_scripts/combine_results.dart snapshots "$version" $EMBED_FLAG
+  $DART test_scripts/combine_results.dart snapshots "$version" $EMBED_FLAG
   echo ""
   echo "Report generated: snapshots/golden_verify_report.html"
 else
   echo "Target file: $file"
-  flutter test "$file" --file-reporter json:snapshots/tests.json --tags=loc \
+  $FLUTTER test "$file" --file-reporter json:snapshots/tests.json \
     --dart-define=locales="$locales" \
     --dart-define=screens="$screens" \
     --dart-define=visualEffects=0 || true
-  dart test_scripts/test_result_parser.dart snapshots/tests.json "$locales"
+  $DART test_scripts/test_result_parser.dart snapshots/tests.json "$locales"
   rm -f snapshots/tests.json
-  dart test_scripts/combine_results.dart snapshots "$version" $EMBED_FLAG
+  $DART test_scripts/combine_results.dart snapshots "$version" $EMBED_FLAG
   echo ""
   echo "Report generated: snapshots/golden_verify_report.html"
 fi
