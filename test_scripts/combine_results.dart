@@ -101,21 +101,22 @@ void main(List<String> args) {
   }
   final devices = deviceSet.toList();
 
-  // Embed failure images as base64 if --embed flag is set
-  if (embedImages) {
-    for (final test in jsonObjects) {
-      final failureImages = test['failureImages'] as Map<String, dynamic>?;
-      if (failureImages == null) continue;
-      for (final key in ['expected', 'actual', 'diff']) {
-        final path = failureImages[key] as String?;
-        if (path != null) {
-          final file = File(path);
-          if (file.existsSync()) {
-            final bytes = file.readAsBytesSync();
-            final b64 = base64Encode(bytes);
-            failureImages[key] = 'data:image/png;base64,$b64';
-          }
+  // Process failure image paths
+  for (final test in jsonObjects) {
+    final failureImages = test['failureImages'] as Map<String, dynamic>?;
+    if (failureImages == null) continue;
+    for (final key in ['expected', 'actual', 'diff']) {
+      final path = failureImages[key] as String?;
+      if (path == null) continue;
+      if (embedImages) {
+        final file = File(path);
+        if (file.existsSync()) {
+          final bytes = file.readAsBytesSync();
+          final b64 = base64Encode(bytes);
+          failureImages[key] = 'data:image/png;base64,$b64';
         }
+      } else {
+        failureImages[key] = '../$path';
       }
     }
   }
