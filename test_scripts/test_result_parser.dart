@@ -188,6 +188,9 @@ handleTestRecord(String record, Map<String, dynamic> testResult) {
     if (json['message'] != null) {
       for (var element in result) {
         addOrAppendData<String>(element, 'messages', json['message']);
+        if (json['result'] != null && json['result'] != 'success') {
+          extractFailureImages(element);
+        }
       }
     }
   } else if (json['success'] != null) {
@@ -213,6 +216,40 @@ extractInfo(Map<String, dynamic> test) {
     test['locale'] = locale;
     test['deviceType'] = deviceType;
     test['tsName'] = tsName;
+  }
+}
+
+extractFailureImages(Map<String, dynamic> test) {
+  final messages = test['messages'] as List<String>?;
+  if (messages == null || messages.isEmpty) return;
+
+  final fullMessage = messages.join('\n');
+  final failurePathRegex = RegExp(r'([\w/._-]+/failures/[\w._-]+\.png)');
+  final matches = failurePathRegex.allMatches(fullMessage);
+
+  if (matches.isEmpty) return;
+
+  String? diffPath;
+  String? actualPath;
+  String? expectedPath;
+
+  for (final match in matches) {
+    final path = match.group(1)!;
+    if (path.contains('isolatedDiff') || path.contains('maskedDiff')) {
+      diffPath = path;
+    } else if (path.contains('testImage')) {
+      actualPath = path;
+    } else if (path.contains('masterImage')) {
+      expectedPath = path;
+    }
+  }
+
+  if (diffPath != null || actualPath != null || expectedPath != null) {
+    test['failureImages'] = <String, String?>{
+      'expected': expectedPath,
+      'actual': actualPath,
+      'diff': diffPath,
+    };
   }
 }
 
