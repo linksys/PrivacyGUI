@@ -90,6 +90,14 @@ void main(List<String> args) {
         .where((e) => e['tests'] != null)
         .map((e) => List.from(e['tests']))
         .fold<List>([], (value, list) => value..addAll(list));
+
+    // Extract failure images for failed tests (after all metadata is populated)
+    for (final test in testsJson) {
+      if (test is Map<String, dynamic> && test['result'] == 'error') {
+        extractFailureImages(test);
+      }
+    }
+
     reportJsonFile.writeAsStringSync(encoder.convert(testsJson));
 
     //
@@ -195,9 +203,6 @@ handleTestRecord(String record, Map<String, dynamic> testResult) {
     if (json['message'] != null) {
       for (var element in result) {
         addOrAppendData<String>(element, 'messages', json['message']);
-        if (json['result'] != null && json['result'] != 'success') {
-          extractFailureImages(element);
-        }
       }
     }
   } else if (json['success'] != null) {
@@ -246,23 +251,46 @@ extractFailureImages(Map<String, dynamic> test) {
   if (messages == null || messages.isEmpty) return;
 
   final fullMessage = messages.join('\n');
+
+  // Strategy 1: Parse failure image paths from error message
   final failurePathRegex = RegExp(r'([\w/._-]+/failures/[\w._-]+\.png)');
   final matches = failurePathRegex.allMatches(fullMessage);
-
-  if (matches.isEmpty) return;
 
   String? diffPath;
   String? actualPath;
   String? expectedPath;
 
-  for (final match in matches) {
-    final path = match.group(1)!;
-    if (path.contains('isolatedDiff') || path.contains('maskedDiff')) {
-      diffPath = path;
-    } else if (path.contains('testImage')) {
-      actualPath = path;
-    } else if (path.contains('masterImage')) {
-      expectedPath = path;
+  if (matches.isNotEmpty) {
+    for (final match in matches) {
+      final path = match.group(1)!;
+      if (path.contains('isolatedDiff') || path.contains('maskedDiff')) {
+        diffPath = path;
+      } else if (path.contains('testImage')) {
+        actualPath = path;
+      } else if (path.contains('masterImage')) {
+        expectedPath = path;
+      }
+    }
+  }
+
+  // Strategy 2: Infer paths from test metadata (for Alchemist golden tests)
+  if (actualPath == null && expectedPath == null) {
+    final testCaseFilePath = test['testCaseFilePath'] as String?;
+    final tsName = test['tsName'] as String?;
+    final deviceType = test['deviceType'] as String?;
+    final locale = test['locale'] as String?;
+    if (testCaseFilePath != null && tsName != null && deviceType != null && locale != null) {
+      // testCaseFilePath starts with /test/... — strip leading slash for relative path
+      final relativePath = testCaseFilePath.startsWith('/') ? testCaseFilePath.substring(1) : testCaseFilePath;
+      final testDir = relativePath.replaceFirst(RegExp(r'/[^/]+$'), '');
+      final goldenName = '$tsName-$deviceType-$locale';
+      final failureDir = '$testDir/failures';
+      final testImagePath = '$failureDir/${goldenName}_testImage.png';
+      final masterImagePath = '$failureDir/${goldenName}_masterImage.png';
+      final isolatedDiffPath = '$failureDir/${goldenName}_isolatedDiff.png';
+      if (File(testImagePath).existsSync()) actualPath = testImagePath;
+      if (File(masterImagePath).existsSync()) expectedPath = masterImagePath;
+      if (File(isolatedDiffPath).existsSync()) diffPath = isolatedDiffPath;
     }
   }
 

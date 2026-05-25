@@ -53,7 +53,7 @@ if [ -z "$file" ]; then
       --dart-define=locales="$locale" \
       --dart-define=screens="$screens" \
       --dart-define=visualEffects=0 || true
-    $DART test_scripts/test_result_parser.dart snapshots/tests.json "$locale"
+    $DART test_scripts/test_result_parser.dart snapshots/tests.json "$locale" || true
     rm -f snapshots/tests.json
   done
 
@@ -66,7 +66,7 @@ else
     --dart-define=locales="$locales" \
     --dart-define=screens="$screens" \
     --dart-define=visualEffects=0 || true
-  $DART test_scripts/test_result_parser.dart snapshots/tests.json "$locales"
+  $DART test_scripts/test_result_parser.dart snapshots/tests.json "$locales" || true
   rm -f snapshots/tests.json
   $DART test_scripts/combine_results.dart snapshots "$version" $EMBED_FLAG
   echo ""
