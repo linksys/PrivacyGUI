@@ -38,13 +38,8 @@ if [ -z "$file" ]; then
       part=( "${LOCS[@]:i:g}" )
       locale=$(IFS=, ; echo "${part[*]}")
       echo "Start run screenshot testing with screen: $screens, locales: $locale"
-      flutter test --file-reporter json:snapshots/tests.json --tags=loc --update-goldens --dart-define=locales="$locale" --dart-define=screens="$screens" --dart-define=visualEffects=0
-      dart test_scripts/test_result_parser.dart snapshots/tests.json "$locale" "$screenStr"
-      rm snapshots/tests.json
+      flutter test --tags=loc --update-goldens --dart-define=locales="$locale" --dart-define=screens="$screens" --dart-define=visualEffects=0
     done
-  # done
-  
-  dart test_scripts/combine_results.dart snapshots "$version"
 else
   echo "Target file: $file"
   flutter test $file --tags=loc --update-goldens --dart-define=locales="$locales" --dart-define=screens="$screens" --dart-define=overlay="$overlay" --dart-define=visualEffects=0
