@@ -52,6 +52,9 @@ class PnpService {
 
   PnpService(this._usp);
 
+  /// Expose UspClient for UspInternetSettingsService instantiation.
+  UspClient get usp => _usp;
+
   // ─── Factory Default Detection ───────────────────────────
 
   /// Fetch device info for PnP flow.

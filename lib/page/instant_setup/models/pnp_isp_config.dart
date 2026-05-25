@@ -88,19 +88,20 @@ class PnpIspConfig extends Equatable {
         IspConnectionType.staticIp => UspWanConnectionType.staticIp,
       };
 
+  /// Merge PNP form values into Internet Settings form.
+  ///
+  /// UI pre-fills fields from router's current settings, so submitted values
+  /// represent the user's final intent — no need to preserve original on empty.
   UspInternetSettingsForm applyTo(UspInternetSettingsForm original) {
     return original.copyWith(
       connectionType: uspConnectionType,
-      staticIpAddress: staticIpAddress.isNotEmpty
-          ? staticIpAddress
-          : original.staticIpAddress,
-      subnetMask: subnetMask.isNotEmpty ? subnetMask : original.subnetMask,
-      defaultGateway:
-          defaultGateway.isNotEmpty ? defaultGateway : original.defaultGateway,
-      dnsServer1: dnsServer1.isNotEmpty ? dnsServer1 : original.dnsServer1,
-      dnsServer2: dnsServer2.isNotEmpty ? dnsServer2 : original.dnsServer2,
-      pppUsername: pppUsername.isNotEmpty ? pppUsername : original.pppUsername,
-      pppPassword: pppPassword.isNotEmpty ? pppPassword : original.pppPassword,
+      staticIpAddress: staticIpAddress,
+      subnetMask: subnetMask,
+      defaultGateway: defaultGateway,
+      dnsServer1: dnsServer1,
+      dnsServer2: dnsServer2,
+      pppUsername: pppUsername,
+      pppPassword: pppPassword,
       vlanEnabled: type == IspConnectionType.pppoeVlan,
       vlanId: vlanId,
     );

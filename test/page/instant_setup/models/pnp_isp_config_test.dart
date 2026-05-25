@@ -104,7 +104,8 @@ void main() {
       expect(result.vlanId, 100);
     });
 
-    test('empty fields preserve original values (do not overwrite with empty)',
+    test(
+        'empty fields overwrite original (UI pre-fills, user submits final values)',
         () {
       const config = PnpIspConfig(
         type: IspConnectionType.staticIp,
@@ -117,10 +118,10 @@ void main() {
 
       final result = config.applyTo(baseForm);
 
-      // Empty PNP fields preserve original values
-      expect(result.dnsServer1, '1.1.1.1');
-      expect(result.dnsServer2, '1.0.0.1');
-      // dnsServer3 always preserved from original
+      // Empty fields are written as-is (user cleared them intentionally)
+      expect(result.dnsServer1, '');
+      expect(result.dnsServer2, '');
+      // dnsServer3 always preserved from original (PNP has no dnsServer3 field)
       expect(result.dnsServer3, '8.8.8.8');
     });
 
@@ -138,7 +139,7 @@ void main() {
       expect(result.pppoeServiceName, baseForm.pppoeServiceName);
     });
 
-    test('PPPoE with empty fields preserves original IP/DNS values', () {
+    test('PPPoE with empty fields overwrites original IP/DNS values', () {
       const config = PnpIspConfig(
         type: IspConnectionType.pppoe,
         pppUsername: 'newuser',
@@ -150,11 +151,11 @@ void main() {
       // PPP fields overwritten
       expect(result.pppUsername, 'newuser');
       expect(result.pppPassword, 'newpass');
-      // Static IP fields preserved (empty PNP fields don't overwrite)
-      expect(result.staticIpAddress, '10.0.0.1');
-      expect(result.subnetMask, '255.255.0.0');
-      expect(result.defaultGateway, '10.0.0.254');
-      expect(result.dnsServer1, '1.1.1.1');
+      // Static IP fields overwritten with empty (UI pre-fills, user submits final values)
+      expect(result.staticIpAddress, '');
+      expect(result.subnetMask, '');
+      expect(result.defaultGateway, '');
+      expect(result.dnsServer1, '');
     });
   });
 }

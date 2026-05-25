@@ -24,6 +24,25 @@ class _PnpPppoeViewState extends ConsumerState<PnpPppoeView> {
   bool _showVlan = false;
 
   @override
+  void initState() {
+    super.initState();
+    _prefillFromCurrentSettings();
+  }
+
+  void _prefillFromCurrentSettings() {
+    final phase = ref.read(pnpProvider).phase;
+    if (phase is NoInternet && phase.currentWanSettings != null) {
+      final wan = phase.currentWanSettings!;
+      _usernameController.text = wan.pppUsername;
+      _passwordController.text = wan.pppPassword;
+      if (wan.vlanEnabled) {
+        _showVlan = true;
+        _vlanIdController.text = wan.vlanId.toString();
+      }
+    }
+  }
+
+  @override
   void dispose() {
     _usernameController.dispose();
     _passwordController.dispose();
