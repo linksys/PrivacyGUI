@@ -14,6 +14,8 @@ import 'package:privacy_gui/page/_shared/models/mesh_topology_info.dart';
 import 'package:privacy_gui/page/_shared/utils/mesh_topology_builder.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_isp_config.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_wifi_config.dart';
+import 'package:privacy_gui/page/internet_settings/models/usp_internet_settings_form.dart';
+import 'package:privacy_gui/page/internet_settings/models/usp_wan_connection_type.dart';
 import 'package:privacy_gui/page/internet_settings/services/usp_internet_settings_service.dart';
 
 final pnpServiceProvider = Provider<PnpService>(
@@ -246,7 +248,7 @@ class PnpService {
     final fetchResult = await internetSettingsService.fetchSettings();
 
     final original = fetchResult.form;
-    final edited = config.applyTo(original);
+    final edited = _applyIspConfigToForm(config, original);
 
     await internetSettingsService.saveAll(
       original,
@@ -254,6 +256,37 @@ class PnpService {
       pppInstancePath: fetchResult.pppInstancePath,
       vlanInstancePath: fetchResult.vlanInstancePath,
     );
+  }
+
+  /// Map [PnpIspConfig] to [UspInternetSettingsForm].
+  ///
+  /// UI pre-fills fields from router's current settings, so submitted values
+  /// represent the user's final intent — no need to preserve original on empty.
+  UspInternetSettingsForm _applyIspConfigToForm(
+    PnpIspConfig config,
+    UspInternetSettingsForm original,
+  ) {
+    return original.copyWith(
+      connectionType: _mapConnectionType(config.type),
+      staticIpAddress: config.staticIpAddress,
+      subnetMask: config.subnetMask,
+      defaultGateway: config.defaultGateway,
+      dnsServer1: config.dnsServer1,
+      dnsServer2: config.dnsServer2,
+      pppUsername: config.pppUsername,
+      pppPassword: config.pppPassword,
+      vlanEnabled: config.type == IspConnectionType.pppoeVlan,
+      vlanId: config.vlanId,
+    );
+  }
+
+  UspWanConnectionType _mapConnectionType(IspConnectionType type) {
+    return switch (type) {
+      IspConnectionType.dhcp => UspWanConnectionType.dhcp,
+      IspConnectionType.pppoe => UspWanConnectionType.pppoe,
+      IspConnectionType.pppoeVlan => UspWanConnectionType.pppoe,
+      IspConnectionType.staticIp => UspWanConnectionType.staticIp,
+    };
   }
 
   // ─── Mesh ──────────────────────────────────────────────

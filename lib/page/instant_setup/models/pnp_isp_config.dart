@@ -1,6 +1,4 @@
 import 'package:equatable/equatable.dart';
-import 'package:privacy_gui/page/internet_settings/models/usp_internet_settings_form.dart';
-import 'package:privacy_gui/page/internet_settings/models/usp_wan_connection_type.dart';
 
 enum IspConnectionType { dhcp, pppoe, pppoeVlan, staticIp }
 
@@ -80,30 +78,4 @@ class PnpIspConfig extends Equatable {
         dnsServer1,
         dnsServer2,
       ];
-
-  UspWanConnectionType get uspConnectionType => switch (type) {
-        IspConnectionType.dhcp => UspWanConnectionType.dhcp,
-        IspConnectionType.pppoe => UspWanConnectionType.pppoe,
-        IspConnectionType.pppoeVlan => UspWanConnectionType.pppoe,
-        IspConnectionType.staticIp => UspWanConnectionType.staticIp,
-      };
-
-  /// Merge PNP form values into Internet Settings form.
-  ///
-  /// UI pre-fills fields from router's current settings, so submitted values
-  /// represent the user's final intent — no need to preserve original on empty.
-  UspInternetSettingsForm applyTo(UspInternetSettingsForm original) {
-    return original.copyWith(
-      connectionType: uspConnectionType,
-      staticIpAddress: staticIpAddress,
-      subnetMask: subnetMask,
-      defaultGateway: defaultGateway,
-      dnsServer1: dnsServer1,
-      dnsServer2: dnsServer2,
-      pppUsername: pppUsername,
-      pppPassword: pppPassword,
-      vlanEnabled: type == IspConnectionType.pppoeVlan,
-      vlanId: vlanId,
-    );
-  }
 }
