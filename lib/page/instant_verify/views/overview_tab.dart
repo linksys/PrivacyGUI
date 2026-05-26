@@ -96,20 +96,22 @@ class _OverviewTabState extends ConsumerState<OverviewTab> {
                     },
             ),
           ),
-          const SizedBox(height: 8),
-          Center(
-            child: FilledButton.tonal(
-              onPressed: () => _showScenarioPicker(context),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.science_outlined, size: 16),
-                  SizedBox(width: 8),
-                  Text('Test scenarios'),
-                ],
+          if (kDebugMode) ...[
+            const SizedBox(height: 8),
+            Center(
+              child: FilledButton.tonal(
+                onPressed: () => _showScenarioPicker(context),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.science_outlined, size: 16),
+                    SizedBox(width: 8),
+                    Text('Test scenarios'),
+                  ],
+                ),
               ),
             ),
-          ),
+          ],
           const SizedBox(height: 24),
         ],
       ),
