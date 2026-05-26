@@ -228,22 +228,34 @@ void main() {
   });
 
   // ---------------------------------------------------------------------------
-  // _forceRestoreSession bypasses isAuthenticated guard
+  // restoreSession re-logs in unconditionally — covers reauth Stage 2 and the
+  // recovery probe after a router reboot, where the WASM client still reports
+  // isAuthenticated=true while carrying a stale token.
   // ---------------------------------------------------------------------------
-  group('forceRestoreSession (onReauthRequired)', () {
-    test('bypasses isAuthenticated guard', () async {
-      // WASM client still reports authenticated after 401
+  group('restoreSession (onReauthRequired / recovery probe)', () {
+    test('re-logs in even when isAuthenticated=true', () async {
+      // WASM client still reports authenticated (stale token in memory)
       when(() => mockUsp.isAuthenticated).thenReturn(true);
       when(() => mockStorage.read(key: any(named: 'key')))
           .thenAnswer((_) async => 'storedPassword');
       when(() => mockUsp.login(any())).thenAnswer((_) async {});
 
-      // Trigger onReauthRequired (which coordinator wired to _forceRestoreSession)
+      // UspClient wires onReauthRequired to coordinator.restoreSession
       final onReauth = mockUsp.onReauthRequired;
       expect(onReauth, isNotNull);
       await onReauth!();
 
-      // Should have called login despite isAuthenticated=true
+      verify(() => mockUsp.login('storedPassword')).called(1);
+    });
+
+    test('re-logs in when called directly (recovery probe path)', () async {
+      when(() => mockUsp.isAuthenticated).thenReturn(true);
+      when(() => mockStorage.read(key: any(named: 'key')))
+          .thenAnswer((_) async => 'storedPassword');
+      when(() => mockUsp.login(any())).thenAnswer((_) async {});
+
+      await coordinator.restoreSession();
+
       verify(() => mockUsp.login('storedPassword')).called(1);
     });
   });
@@ -345,13 +357,13 @@ void main() {
       await coordinator.restoreSession();
     });
 
-    test('forceRestoreSession does not throw when login fails', () async {
+    test('onReauthRequired does not throw when login fails', () async {
       when(() => mockStorage.read(key: any(named: 'key')))
           .thenAnswer((_) async => 'storedPassword');
       when(() => mockUsp.login(any()))
           .thenThrow(Exception('Connection refused'));
 
-      // Trigger _forceRestoreSession via onReauthRequired
+      // Trigger restoreSession via onReauthRequired wiring
       final onReauth = mockUsp.onReauthRequired;
       expect(onReauth, isNotNull);
 

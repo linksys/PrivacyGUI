@@ -43,6 +43,7 @@ class RoutePath {
   static const uspApps = '/uspApps';
   static const uspUnifiedDiagnostics = '/uspUnifiedDiagnostics';
   static const uspSpeedTest = '/uspSpeedTest';
+  static const uspFirmwareUpdate = '/uspFirmwareUpdate';
 
   /// menu
   static const menuInstantVerify = 'menuInstantVerify';
@@ -199,6 +200,7 @@ class RouteNamed {
   static const uspApps = 'uspApps';
   static const uspUnifiedDiagnostics = 'uspUnifiedDiagnostics';
   static const uspSpeedTest = 'uspSpeedTest';
+  static const uspFirmwareUpdate = 'uspFirmwareUpdate';
 
   static const menuInstantVerify = 'menuInstantVerify';
   static const menuInstantDevices = 'menuInstantDevices';

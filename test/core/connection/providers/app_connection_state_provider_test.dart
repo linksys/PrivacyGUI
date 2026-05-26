@@ -310,5 +310,160 @@ void main() {
       );
       verify(() => mockAuthNotifier.logout()).called(1);
     });
+
+    test('consecutiveFailures increments on each unreachable probe', () async {
+      when(() => mockSseManager.disconnect()).thenAnswer((_) async {});
+      when(() => mockProbe.probe())
+          .thenAnswer((_) async => ProbeResult.unreachable);
+
+      final container = createContainer();
+      addTearDown(container.dispose);
+
+      final notifier = container.read(appConnectionStateProvider.notifier);
+      expect(notifier.consecutiveFailures, 0);
+      expect(notifier.lastProbeResult, isNull);
+
+      notifier.enterWaiting(
+        context: RecoveryContext(
+          trigger: RecoveryTrigger.operationalFirmwareUpgrade,
+          cooldown: Duration.zero,
+        ),
+      );
+
+      // First probe fires immediately, then a periodic 10s timer kicks in.
+      // We only need to observe the first one for the counter test.
+      await Future.delayed(const Duration(milliseconds: 50));
+
+      expect(notifier.consecutiveFailures, greaterThanOrEqualTo(1));
+      expect(notifier.lastProbeResult, ProbeResult.unreachable);
+    });
+
+    test('consecutiveFailures resets to zero on recovered probe', () async {
+      when(() => mockSseManager.disconnect()).thenAnswer((_) async {});
+      when(() => mockSseManager.connect()).thenAnswer((_) async {});
+      var callCount = 0;
+      when(() => mockProbe.probe()).thenAnswer((_) async {
+        callCount++;
+        // First two probes fail, third recovers.
+        if (callCount <= 2) return ProbeResult.unreachable;
+        return ProbeResult.recovered;
+      });
+
+      final container = createContainer();
+      addTearDown(container.dispose);
+
+      final notifier = container.read(appConnectionStateProvider.notifier);
+      notifier.enterWaiting(
+        context: RecoveryContext(
+          trigger: RecoveryTrigger.operationalFirmwareUpgrade,
+          cooldown: Duration.zero,
+        ),
+      );
+
+      // First probe (unreachable) fires immediately on enterWaiting.
+      await Future.delayed(const Duration(milliseconds: 30));
+      expect(notifier.consecutiveFailures, 1);
+
+      // Drive two manual retries — second is unreachable, third is recovered.
+      await notifier.retryNow();
+      expect(notifier.consecutiveFailures, 2);
+
+      await notifier.retryNow();
+      // Recovery probe transitions state, but retryNow runs the probe even
+      // though state has already flipped to authenticated; the counter reset
+      // happened on the recovered branch.
+      expect(notifier.consecutiveFailures, 0);
+      expect(notifier.lastProbeResult, ProbeResult.recovered);
+    });
+
+    test('retryNow does nothing when not in waitingForRecovery', () async {
+      final container = createContainer();
+      addTearDown(container.dispose);
+
+      final notifier = container.read(appConnectionStateProvider.notifier);
+      // Notifier starts in `authenticated`; retryNow should be a no-op.
+      await notifier.retryNow();
+
+      verifyNever(() => mockProbe.probe());
+      expect(notifier.consecutiveFailures, 0);
+      expect(notifier.lastProbeResult, isNull);
+    });
+
+    test('retryNow forces an immediate probe while waiting', () async {
+      when(() => mockSseManager.disconnect()).thenAnswer((_) async {});
+      when(() => mockProbe.probe())
+          .thenAnswer((_) async => ProbeResult.unreachable);
+
+      final container = createContainer();
+      addTearDown(container.dispose);
+
+      final notifier = container.read(appConnectionStateProvider.notifier);
+      notifier.enterWaiting(
+        context: RecoveryContext(
+          trigger: RecoveryTrigger.operationalFirmwareUpgrade,
+          // Non-zero cooldown — first probe should NOT fire immediately, so
+          // retryNow's call must be the first one we observe.
+          cooldown: const Duration(minutes: 5),
+        ),
+      );
+
+      // No probes yet — cooldown timer is still pending.
+      verifyNever(() => mockProbe.probe());
+
+      await notifier.retryNow();
+
+      verify(() => mockProbe.probe()).called(1);
+      expect(notifier.lastProbeResult, ProbeResult.unreachable);
+      expect(notifier.consecutiveFailures, 1);
+    });
+
+    test('exitToLogout resets recovery counters', () async {
+      when(() => mockSseManager.disconnect()).thenAnswer((_) async {});
+      when(() => mockAuthNotifier.logout()).thenAnswer((_) async {});
+      when(() => mockProbe.probe())
+          .thenAnswer((_) async => ProbeResult.unreachable);
+
+      final container = createContainer();
+      addTearDown(container.dispose);
+
+      final notifier = container.read(appConnectionStateProvider.notifier);
+      notifier.enterWaiting(
+        context: RecoveryContext(
+          trigger: RecoveryTrigger.operationalFirmwareUpgrade,
+          cooldown: Duration.zero,
+        ),
+      );
+      await Future.delayed(const Duration(milliseconds: 30));
+      expect(notifier.consecutiveFailures, greaterThanOrEqualTo(1));
+
+      notifier.exitToLogout();
+
+      expect(notifier.consecutiveFailures, 0);
+      expect(notifier.lastProbeResult, isNull);
+    });
+
+    test(
+        'enterWaiting from a fresh authenticated state resets counters '
+        'before kicking off probe', () async {
+      when(() => mockSseManager.disconnect()).thenAnswer((_) async {});
+      when(() => mockProbe.probe())
+          .thenAnswer((_) async => ProbeResult.unreachable);
+
+      final container = createContainer();
+      addTearDown(container.dispose);
+
+      final notifier = container.read(appConnectionStateProvider.notifier);
+      // Use a non-zero cooldown so we can read the counters BEFORE the
+      // first probe fires.
+      notifier.enterWaiting(
+        context: RecoveryContext(
+          trigger: RecoveryTrigger.operationalFirmwareUpgrade,
+          cooldown: const Duration(minutes: 5),
+        ),
+      );
+
+      expect(notifier.consecutiveFailures, 0);
+      expect(notifier.lastProbeResult, isNull);
+    });
   });
 }

@@ -71,6 +71,11 @@ final uspDashboardRoute = ShellRoute(
       builder: (context, state) => const UspAdminView(),
     ),
     LinksysRoute(
+      name: RouteNamed.uspFirmwareUpdate,
+      path: RoutePath.uspFirmwareUpdate,
+      builder: (context, state) => const FirmwareUpdateView(),
+    ),
+    LinksysRoute(
       name: RouteNamed.uspDhcpDetail,
       path: RoutePath.uspDhcpDetail,
       builder: (context, state) => const UspDhcpDetailView(),

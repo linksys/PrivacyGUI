@@ -45,7 +45,7 @@ class UspAuthCoordinator {
   }
 
   UspAuthCoordinator(this._usp, this._storage) {
-    _usp?.onReauthRequired = () => _forceRestoreSession();
+    _usp?.onReauthRequired = restoreSession;
     _usp?.onRefreshTokenSuccess = () {
       _lastTokenRefresh = DateTime.now();
     };
@@ -77,31 +77,25 @@ class UspAuthCoordinator {
     }
   }
 
-  /// Called on page reload / app restart — restore USP session from stored password.
+  /// Re-authenticates USP using the stored local password.
   ///
-  /// On Web, WASM state is lost on reload. This method reads the locally
-  /// stored password from FlutterSecureStorage and re-authenticates USP.
+  /// Used in three scenarios:
+  /// - **Page reload (Web)**: WASM in-memory state is lost, `isAuthenticated`
+  ///   reads false, login restores the session.
+  /// - **401 reauth Stage 2** (`UspClient.onReauthRequired`): the WASM client
+  ///   still reports `isAuthenticated=true` because the token exists in
+  ///   memory, but it has been revoked server-side.
+  /// - **Recovery probe after router reboot/firmware flash**: the WASM client
+  ///   reports `isAuthenticated=true` carrying a token that the rebooted
+  ///   router signed with a previous key, so it now 401s.
+  ///
+  /// `login()` is idempotent — calling it on a still-valid session simply
+  /// mints a new token, so we do not gate on `isAuthenticated`. Gating here
+  /// previously caused recovery probes after firmware reboot to repeatedly
+  /// 401 because the stale-but-`true` flag short-circuited the re-login.
   Future<void> restoreSession() async {
     if (_usp == null) {
       logger.w('[USP][Auth]: restoreSession skipped: UspClient is null');
-      return;
-    }
-    if (_usp.isAuthenticated) {
-      logger.d('[USP][Auth]: restoreSession skipped: already authenticated');
-      return;
-    }
-    await _loginWithStoredPassword();
-  }
-
-  /// Force restore session — bypasses [isAuthenticated] guard.
-  ///
-  /// Used as [UspClient.onReauthRequired] callback. After a 401, the WASM
-  /// client may still report isAuthenticated=true (token exists in memory
-  /// but is expired/revoked). This method skips the guard and attempts
-  /// re-login unconditionally.
-  Future<void> _forceRestoreSession() async {
-    if (_usp == null) {
-      logger.w('[USP][Auth]: forceRestoreSession skipped: UspClient is null');
       return;
     }
     await _loginWithStoredPassword();
