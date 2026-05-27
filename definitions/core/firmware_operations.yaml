@@ -1,0 +1,91 @@
+name: FirmwareOperations
+description: Firmware image operations (chunked upload, URL download, activate)
+type: operate
+category: core
+
+operations:
+  - name: chunkedPush
+    path: Device.LocalAgent.X_LINKSYS_Download()
+    description: Method 1 (HTTP/UDS) chunked firmware upload — each call delivers one base64-encoded chunk; router reassembles into /tmp/obuspa/firmware.img
+    inputs:
+      - path: Content
+        field: content
+        type: string
+        required: true
+        description: Base64-encoded chunk payload
+      - path: Filename
+        field: filename
+        type: string
+        required: true
+        description: Target filename on the router (e.g. "firmware.img")
+      - path: TotalFragment
+        field: totalFragment
+        type: string
+        required: true
+        description: Total number of chunks for this upload
+      - path: SequenceNumber
+        field: sequenceNumber
+        type: string
+        required: true
+        description: 1-based index of the current chunk
+      - path: CommandKey
+        field: commandKey
+        type: string
+        required: true
+        description: Caller-generated key correlating all chunks of one upload
+      - path: Checksum
+        field: checksum
+        type: string
+        required: true
+        description: MD5 checksum of the fully-assembled file (hex)
+      - path: Filesize
+        field: filesize
+        type: string
+        required: true
+        description: Total file size in bytes
+
+  - name: download
+    path: Device.DeviceInfo.FirmwareImage.{i}.Download()
+    description: TR-181 firmware download/flash — targets a specific FirmwareImage row (typically Available bank); AutoActivate=true reboots into the new bank after flashing
+    inputs:
+      - path: URL
+        field: url
+        type: string
+        required: true
+        description: Source URL (http://, https://, or file:///tmp/obuspa/firmware.img)
+      - path: AutoActivate
+        field: autoActivate
+        type: string
+        required: false
+        default: "false"
+        description: "true to reboot and switch to this image after download"
+      - path: Username
+        field: username
+        type: string
+        required: false
+        description: Optional HTTP basic auth username for URL
+      - path: Password
+        field: password
+        type: string
+        required: false
+        description: Optional HTTP basic auth password for URL
+      - path: CheckSumAlgorithm
+        field: checksumAlgorithm
+        type: string
+        required: false
+        description: Checksum algorithm (e.g. SHA-256) used to verify the download
+      - path: CheckSum
+        field: checksum
+        type: string
+        required: false
+        description: Expected checksum value matching CheckSumAlgorithm
+
+  - name: activate
+    path: Device.DeviceInfo.FirmwareImage.{i}.Activate()
+    description: Activate a previously-downloaded firmware image — targets a specific FirmwareImage row; TimeWindow allows scheduled activation, omit for immediate
+    inputs:
+      - path: TimeWindow
+        field: timeWindow
+        type: string
+        required: false
+        description: Activation delay window in seconds (omit for immediate)

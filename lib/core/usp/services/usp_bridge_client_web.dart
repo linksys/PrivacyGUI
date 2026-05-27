@@ -377,8 +377,8 @@ class UspBridgeClient {
   }
 
   /// Sends a heartbeat to keep the turbo channel alive.
-  Future<Map<String, dynamic>> turboHeartbeat() async {
-    return _turboPost('heartbeat');
+  Future<Map<String, dynamic>> turboHeartbeat({String? sessionId}) async {
+    return _turboPost('heartbeat', sessionId: sessionId);
   }
 
   /// Gets the current turbo channel status.
@@ -391,14 +391,23 @@ class UspBridgeClient {
   }
 
   /// Releases the turbo channel.
-  Future<Map<String, dynamic>> turboRelease() async {
-    return _turboPost('release');
+  Future<Map<String, dynamic>> turboRelease({String? sessionId}) async {
+    return _turboPost('release', sessionId: sessionId);
   }
 
-  Future<Map<String, dynamic>> _turboPost(String action) async {
+  Future<Map<String, dynamic>> _turboPost(String action,
+      {String? sessionId}) async {
+    final body =
+        sessionId != null ? jsonEncode({'session_id': sessionId}) : null;
     return _withAuthRetry(
-      () => http.post(Uri.parse('$_baseUrl/api/v1/turbo/$action'),
-          headers: _authHeaders),
+      () => http.post(
+        Uri.parse('$_baseUrl/api/v1/turbo/$action'),
+        headers: {
+          ..._authHeaders,
+          'Content-Type': 'application/json',
+        },
+        body: body,
+      ),
       (r) => jsonDecode(r.body) as Map<String, dynamic>,
     );
   }

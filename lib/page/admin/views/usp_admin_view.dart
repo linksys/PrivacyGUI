@@ -13,6 +13,7 @@ import 'package:privacy_gui/page/admin/views/components/usp_timezone_card.dart';
 import 'package:privacy_gui/page/admin/views/dialogs/change_password_dialog.dart';
 import 'package:privacy_gui/page/admin/views/dialogs/confirm_action_dialog.dart';
 import 'package:privacy_gui/page/admin/views/dialogs/timezone_edit_dialog.dart';
+import 'package:privacy_gui/page/firmware_update/views/firmware_update_card.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/shell/usp_top_bar.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -98,6 +99,8 @@ class UspAdminView extends ConsumerWidget {
           onChangePassword: () => _changePassword(context, ref),
         ),
         AppGap.xl(),
+        const FirmwareUpdateCard(),
+        AppGap.xl(),
         UspSystemActionsCard(
           onReboot: () => _reboot(context, ref),
           onFactoryReset: () => _factoryReset(context, ref),
@@ -142,6 +145,8 @@ class UspAdminView extends ConsumerWidget {
                 adminUser: state.adminUser,
                 onChangePassword: () => _changePassword(context, ref),
               ),
+              AppGap.xl(),
+              const FirmwareUpdateCard(),
             ],
           ),
         ),

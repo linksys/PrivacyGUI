@@ -31,6 +31,18 @@ class AppConnectionStateNotifier extends Notifier<AppConnectionState> {
   Timer? _cooldownTimer;
   bool _sseSuspended = false;
   RecoveryContext? _recoveryContext;
+  ProbeResult? _lastProbeResult;
+  int _consecutiveFailures = 0;
+
+  /// Number of consecutive `unreachable` probe results in the current waiting
+  /// session. Resets when probe recovers or the notifier leaves the waiting
+  /// state. Surfaced for UIs that want to switch from "please wait" to
+  /// "please confirm WiFi" copy after sustained unreachability.
+  int get consecutiveFailures => _consecutiveFailures;
+
+  /// Most recent [ProbeResult] from the recovery probe loop, or `null` if
+  /// no probe has run since the last reset.
+  ProbeResult? get lastProbeResult => _lastProbeResult;
 
   @override
   AppConnectionState build() {
@@ -67,6 +79,8 @@ class AppConnectionStateNotifier extends Notifier<AppConnectionState> {
         'healthOnly: ${context.healthOnly})');
 
     _recoveryContext = context;
+    _consecutiveFailures = 0;
+    _lastProbeResult = null;
     state = AppConnectionState.waitingForRecovery;
 
     // Disconnect SSE immediately
@@ -93,9 +107,21 @@ class AppConnectionStateNotifier extends Notifier<AppConnectionState> {
     _probeTimer = null;
     _cooldownTimer?.cancel();
     _cooldownTimer = null;
+    _consecutiveFailures = 0;
+    _lastProbeResult = null;
     state = AppConnectionState.loggedOut;
     logger.i('[Connection] Manual exit to loggedOut');
     ref.read(authProvider.notifier).logout();
+  }
+
+  /// Force an immediate probe attempt regardless of the periodic timer.
+  /// Used by recovery dialogs that surface a manual "Retry now" affordance —
+  /// e.g. when the user's device may have switched to a different WiFi during
+  /// router reboot and they have just reconnected.
+  Future<void> retryNow() async {
+    if (state != AppConnectionState.waitingForRecovery) return;
+    logger.i('[Connection] retryNow() — manual probe trigger');
+    await _runProbe();
   }
 
   void _startProbeLoop() {
@@ -115,11 +141,14 @@ class AppConnectionStateNotifier extends Notifier<AppConnectionState> {
     final result = await probeService.probe(
       healthOnly: _recoveryContext?.healthOnly ?? false,
     );
+    _lastProbeResult = result;
 
     switch (result) {
       case ProbeResult.unreachable:
+        _consecutiveFailures++;
         break;
       case ProbeResult.recovered:
+        _consecutiveFailures = 0;
         _probeTimer?.cancel();
         _probeTimer = null;
         if (_recoveryContext?.trigger ==

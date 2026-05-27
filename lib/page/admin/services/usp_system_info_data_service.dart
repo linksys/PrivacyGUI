@@ -1,12 +1,14 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
-import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/usp/errors/usp_error.dart';
-import 'package:privacy_gui/generated/firmware_images.g.dart';
-import 'package:privacy_gui/generated/system_info.g.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/generated/firmware_images.g.dart';
+import 'package:privacy_gui/generated/system_info.g.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
+import 'package:privacy_gui/page/firmware_update/models/firmware_image_ui_model.dart'
+    as fw_model;
 
 // ---------------------------------------------------------------------------
 // Provider
@@ -35,27 +37,38 @@ class UspSystemInfoDataService {
 
   UspSystemInfoDataService(this._usp);
 
-  /// Fetches system info and firmware images in parallel, returns a
-  /// [SystemInfoUIModel] with firmware image data included.
-  Future<SystemInfoUIModel> fetch() async {
+  /// Fetches system info and firmware images, returns a [SystemInfoUIModel].
+  ///
+  /// [firmwareBanks] - If provided, firmware images are taken from this list
+  /// (Single Source of Truth from [firmwareBanksDataProvider]). If null,
+  /// falls back to fetching internally (backwards compatibility).
+  Future<SystemInfoUIModel> fetch({
+    List<fw_model.FirmwareImageUIModel>? firmwareBanks,
+  }) async {
     final List<Object> results;
     try {
       results = await Future.wait([
         SystemInfo.fetch(_usp),
-        _fetchFirmwareImages(),
+        if (firmwareBanks == null) _fetchFirmwareImages(),
       ]);
     } catch (e) {
       throw mapUspErrorToServiceError(e);
     }
 
     final systemInfo = results[0] as SystemInfo;
-    final fwImages = results[1] as FirmwareImages;
 
-    final fwModels = _buildFirmwareImageUIModels(
-      data: fwImages,
-      activeRef: systemInfo.activeFirmwareImage,
-      bootRef: systemInfo.bootFirmwareImage,
-    );
+    // Use externally provided banks or fallback to internal fetch
+    final List<FirmwareImageUIModel> fwModels;
+    if (firmwareBanks != null) {
+      fwModels = _convertFromFirmwareBanks(firmwareBanks, systemInfo);
+    } else {
+      final fwImages = results[1] as FirmwareImages;
+      fwModels = _buildFirmwareImageUIModels(
+        data: fwImages,
+        activeRef: systemInfo.activeFirmwareImage,
+        bootRef: systemInfo.bootFirmwareImage,
+      );
+    }
 
     return SystemInfoUIModel(
       manufacturer: systemInfo.manufacturer,
@@ -110,4 +123,28 @@ class UspSystemInfoDataService {
 
   static String _stripTrailingDot(String path) =>
       path.endsWith('.') ? path.substring(0, path.length - 1) : path;
+
+  /// Converts firmware_update's FirmwareImageUIModel to _shared's version.
+  List<FirmwareImageUIModel> _convertFromFirmwareBanks(
+    List<fw_model.FirmwareImageUIModel> banks,
+    SystemInfo systemInfo,
+  ) {
+    final normalizedActive = _stripTrailingDot(systemInfo.activeFirmwareImage);
+    final normalizedBoot = _stripTrailingDot(systemInfo.bootFirmwareImage);
+
+    return banks.map((b) {
+      final normalizedPath = _stripTrailingDot(b.instancePath);
+      return FirmwareImageUIModel(
+        instancePath: b.instancePath,
+        name: b.name,
+        version: b.version,
+        status: b.status,
+        available: b.available,
+        isActive:
+            normalizedActive.isNotEmpty && normalizedPath == normalizedActive,
+        isBootTarget:
+            normalizedBoot.isNotEmpty && normalizedPath == normalizedBoot,
+      );
+    }).toList();
+  }
 }
