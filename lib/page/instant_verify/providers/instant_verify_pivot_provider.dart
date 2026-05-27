@@ -273,11 +273,15 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
       );
       dev.log('InstantVerifyPivot: capabilities = $caps');
 
+      // Store first CPU sample for two-sample measurement (#24)
+      final cpuStart = routerHealthMap['cpuLoad'] as int?;
+
       state = state.copyWith(
         phase: PivotLoadPhase.jnapLoaded,
         wanStatus: wanData,
         deviceInfo: deviceInfoData,
         routerHealth: routerHealthMap,
+        cpuLoadPctStart: cpuStart,
         clients: clients,
         dhcpLeasesCount: dhcpLeases,
         dhcpPoolLimit: dhcpPoolLimit,
@@ -401,6 +405,16 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
       dev.log('InstantVerifyPivot: speed test skipped — result is < 3 min old');
     }
 
+    // Two-sample CPU measurement (#24): take second sample at end of run.
+    // Overlaps with tail-end work — no noticeable latency added.
+    if (_stale()) return;
+    final endStats = await _sendOptional(JNAPAction.getSystemStats);
+    if (_stale()) return;
+    final cpuEnd = _parsePct(endStats['CPULoad'] ?? endStats['cpuUsage']);
+    if (cpuEnd != null) {
+      state = state.copyWith(cpuLoadPctEnd: cpuEnd);
+    }
+
     if (_stale()) return;
     state = state.copyWith(
       browserTestStep: 'complete',
@@ -428,11 +442,17 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
          (s.parentalControls!['enabled'] as bool?) ?? false);
     // Gate CPU/memory on capability map — keys vary by firmware.
     // Only pass values if this device confirmed returning them.
+    // Two-sample CPU (#24): only use the END sample for the CPU verdict.
+    // The start sample is taken during our JNAP burst and may be a false spike.
+    // During preliminary verdict (before end sample exists), skip CPU check entirely.
     final int? cpuLoadPct;
+    final int? cpuLoadPctStart;
     if (s.jnapCapabilities[JnapCapability.cpuLoad] ?? false) {
-      cpuLoadPct = s.routerHealth?['cpuLoad'] as int?;
+      cpuLoadPct = s.cpuLoadPctEnd; // null until browser tests complete
+      cpuLoadPctStart = s.cpuLoadPctStart;
     } else {
       cpuLoadPct = null;
+      cpuLoadPctStart = null;
     }
     final int? memoryLoadPct;
     if (s.jnapCapabilities[JnapCapability.memoryLoad] ?? false) {
@@ -560,6 +580,7 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
       isInstantPrivacyOn: isInstantPrivacyOn,
       isInstantPauseActive: isInstantPauseActive,
       cpuLoadPct: cpuLoadPct,
+      cpuLoadPctStart: cpuLoadPctStart,
       memoryLoadPct: memoryLoadPct,
       wifiSnrDb: wifiSnrDb,
       isPmfRequired: isPmfRequired,

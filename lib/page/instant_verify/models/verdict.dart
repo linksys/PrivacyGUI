@@ -126,6 +126,7 @@ class VerdictEngine {
     bool? isInstantPrivacyOn,
     bool? isInstantPauseActive,
     int? cpuLoadPct,
+    int? cpuLoadPctStart,
     int? memoryLoadPct,
     int? wifiSnrDb,
     bool? isPmfRequired,
@@ -538,7 +539,13 @@ class VerdictEngine {
       ));
     }
 
-    // ── Check 13: CPU / Memory ────────────────────────────────────────────────
+    // ── Check 13: CPU / Memory (two-sample: #24) ──────────────────────────────
+    // Two-sample logic: the first sample (cpuLoadPctStart) is taken during our
+    // own JNAP burst and may show a false spike. Only fire if:
+    //   a) The END sample (cpuLoadPct) is high — confirms sustained load, OR
+    //   b) Both samples are high — confirmed sustained even across the run.
+    // If only the start sample exists (preliminary verdict), skip CPU check
+    // entirely — wait for the end sample to avoid false positives.
     if (cpuLoadPct != null || memoryLoadPct != null) checksRun++;
     if (cpuLoadPct != null && cpuLoadPct > 80) {
       findings.add(VerdictFinding(

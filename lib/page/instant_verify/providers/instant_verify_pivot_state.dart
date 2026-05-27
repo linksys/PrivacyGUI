@@ -44,6 +44,13 @@ class InstantVerifyPivotState extends Equatable {
   final int dhcpLeasesCount;
   final int dhcpPoolLimit;
 
+  // ── Two-sample CPU measurement (#24) ──────────────────────────────────
+  /// CPU load % sampled at the START of the diagnostic run (Phase 1a).
+  final int? cpuLoadPctStart;
+  /// CPU load % sampled at the END (after browser tests complete).
+  /// If only start is high but end is normal, the spike was transient (our own JNAP burst).
+  final int? cpuLoadPctEnd;
+
   // ── Browser test results (Phase 2 — arrive over 20-30s) ──────────────
   final GatewayPingResult? gatewayPing;
   final DnsCheckResult? dnsCheck;
@@ -117,6 +124,8 @@ class InstantVerifyPivotState extends Equatable {
     this.backhaulInfo,
     this.dhcpLeasesCount = 0,
     this.dhcpPoolLimit = 150,
+    this.cpuLoadPctStart,
+    this.cpuLoadPctEnd,
     this.jnapCapabilities = const {},
     this.gatewayPing,
     this.dnsCheck,
@@ -159,6 +168,8 @@ class InstantVerifyPivotState extends Equatable {
     Map<String, dynamic>? backhaulInfo,
     int? dhcpLeasesCount,
     int? dhcpPoolLimit,
+    int? cpuLoadPctStart,
+    int? cpuLoadPctEnd,
     Map<String, bool>? jnapCapabilities,
     GatewayPingResult? gatewayPing,
     DnsCheckResult? dnsCheck,
@@ -200,6 +211,8 @@ class InstantVerifyPivotState extends Equatable {
       backhaulInfo: backhaulInfo ?? this.backhaulInfo,
       dhcpLeasesCount: dhcpLeasesCount ?? this.dhcpLeasesCount,
       dhcpPoolLimit: dhcpPoolLimit ?? this.dhcpPoolLimit,
+      cpuLoadPctStart: cpuLoadPctStart ?? this.cpuLoadPctStart,
+      cpuLoadPctEnd: cpuLoadPctEnd ?? this.cpuLoadPctEnd,
       jnapCapabilities: jnapCapabilities ?? this.jnapCapabilities,
       gatewayPing: gatewayPing ?? this.gatewayPing,
       dnsCheck: dnsCheck ?? this.dnsCheck,
@@ -369,6 +382,8 @@ class InstantVerifyPivotState extends Equatable {
         backhaulInfo,
         dhcpLeasesCount,
         dhcpPoolLimit,
+        cpuLoadPctStart,
+        cpuLoadPctEnd,
         jnapCapabilities,
         gatewayPing,
         dnsCheck,

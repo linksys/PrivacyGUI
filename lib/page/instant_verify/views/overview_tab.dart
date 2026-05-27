@@ -1112,7 +1112,7 @@ class _MeshNodeRow extends StatelessWidget {
       }
     }
 
-    // ── Backhaul health label + detail for child nodes ─────────────────────
+    // ── Backhaul health label + detail for satellite nodes ──────────────────
     String? healthLabel;
     String? healthDetail;
     Color healthColor = scheme.onSurfaceVariant;

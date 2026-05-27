@@ -25,6 +25,7 @@ Verdict _compute({
   bool? isInstantPrivacyOn,
   bool? isInstantPauseActive,
   int? cpuLoadPct,
+  int? cpuLoadPctStart,
   int? memoryLoadPct,
   int? wifiSnrDb,
   bool? isPmfRequired,
@@ -52,6 +53,7 @@ Verdict _compute({
     isInstantPrivacyOn: isInstantPrivacyOn,
     isInstantPauseActive: isInstantPauseActive,
     cpuLoadPct: cpuLoadPct,
+    cpuLoadPctStart: cpuLoadPctStart,
     memoryLoadPct: memoryLoadPct,
     wifiSnrDb: wifiSnrDb,
     isPmfRequired: isPmfRequired,
@@ -848,6 +850,28 @@ void main() {
       expect(v.findings.where(
           (f) => f.headline.toLowerCase().contains('memory') ||
               f.headline.toLowerCase().contains('high load')), isEmpty);
+    });
+
+    // Two-sample CPU tests (#24)
+    test('end sample high (sustained) → fires warning regardless of start', () {
+      final v = _compute(cpuLoadPct: 91, cpuLoadPctStart: 88);
+      final finding = v.findings.firstWhere(
+          (f) => f.headline.toLowerCase().contains('high load'));
+      expect(finding.priority, VerdictPriority.warning);
+      expect(finding.headline, contains('91%'));
+    });
+
+    test('end sample null (preliminary) → no CPU finding even if start was high', () {
+      // During preliminary verdict, cpuLoadPct is null (end not yet taken)
+      final v = _compute(cpuLoadPct: null, cpuLoadPctStart: 91);
+      expect(v.findings.where(
+          (f) => f.headline.toLowerCase().contains('high load')), isEmpty);
+    });
+
+    test('end sample normal → no CPU finding even if start was high (transient)', () {
+      final v = _compute(cpuLoadPct: 45, cpuLoadPctStart: 91);
+      expect(v.findings.where(
+          (f) => f.headline.toLowerCase().contains('high load')), isEmpty);
     });
 
     // ── Check 14: SNR ────────────────────────────────────────────────────────
