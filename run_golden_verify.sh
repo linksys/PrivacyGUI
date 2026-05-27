@@ -37,40 +37,40 @@ if [ -z "$version" ]; then
   version="0.0.1.1"
 fi
 
+REPORT_DIR="test/golden_test"
+
 echo "*********************Golden Test Verification********************"
 echo "Locales: $locales"
 echo "Screens: $screens"
 echo "Version: $version"
 echo "Embed images: ${EMBED_FLAG:-no}"
 
-mkdir -p ./snapshots/
-
 if [ -z "$file" ]; then
   IFS=',' read -ra LOCS <<< "$locales"
   for locale in "${LOCS[@]}"; do
     echo "Verifying golden tests for locale: $locale, screens: $screens"
-    $FLUTTER test test/usp_test/ --file-reporter json:snapshots/tests.json \
+    $FLUTTER test test/golden_test/ --file-reporter json:$REPORT_DIR/tests.json \
       --dart-define=locales="$locale" \
       --dart-define=screens="$screens" \
       --dart-define=visualEffects=0 || true
-    $DART test_scripts/test_result_parser.dart snapshots/tests.json "$locale" || true
-    rm -f snapshots/tests.json
+    $DART run test_scripts/test_result_parser.dart $REPORT_DIR/tests.json "$locale" || true
+    rm -f $REPORT_DIR/tests.json
   done
 
-  $DART test_scripts/combine_results.dart snapshots "$version" $EMBED_FLAG
+  $DART run test_scripts/combine_results.dart $REPORT_DIR "$version" $EMBED_FLAG
   echo ""
-  echo "Report generated: snapshots/golden_verify_report.html"
+  echo "Report generated: $REPORT_DIR/golden_verify_report.html"
 else
   echo "Target file: $file"
-  $FLUTTER test "$file" --file-reporter json:snapshots/tests.json \
+  $FLUTTER test "$file" --file-reporter json:$REPORT_DIR/tests.json \
     --dart-define=locales="$locales" \
     --dart-define=screens="$screens" \
     --dart-define=visualEffects=0 || true
-  $DART test_scripts/test_result_parser.dart snapshots/tests.json "$locales" || true
-  rm -f snapshots/tests.json
-  $DART test_scripts/combine_results.dart snapshots "$version" $EMBED_FLAG
+  $DART run test_scripts/test_result_parser.dart $REPORT_DIR/tests.json "$locales" || true
+  rm -f $REPORT_DIR/tests.json
+  $DART run test_scripts/combine_results.dart $REPORT_DIR "$version" $EMBED_FLAG
   echo ""
-  echo "Report generated: snapshots/golden_verify_report.html"
+  echo "Report generated: $REPORT_DIR/golden_verify_report.html"
 fi
 
 echo "Golden Test Verification Finished!******************************************"

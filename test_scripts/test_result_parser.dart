@@ -60,8 +60,9 @@ void main(List<String> args) {
     //
     final encoder = JsonEncoder.withIndent('  ');
 
+    final outputDir = File(testResultJsonPath).parent.path;
     final reportJsonFile =
-        File('snapshots/localizations-test-reports$fileSuffix.json');
+        File('$outputDir/localizations-test-reports$fileSuffix.json');
     if (!reportJsonFile.existsSync()) {
       reportJsonFile.createSync(recursive: true);
     }
@@ -76,7 +77,8 @@ void main(List<String> args) {
     // reportRawJsonFile.writeAsStringSync(encoder.convert(testResult));
 
     // Extract all test cases as flat list
-    final suitesJson = testResult['suites'] as List<Map<String, dynamic>>? ?? [];
+    final suitesJson =
+        testResult['suites'] as List<Map<String, dynamic>>? ?? [];
     if (suitesJson.isEmpty) {
       reportJsonFile.writeAsStringSync(encoder.convert([]));
       print('No test suites found in results');
@@ -214,7 +216,8 @@ extractInfo(Map<String, dynamic> test) {
   final name = test['name'];
 
   // New golden framework format: " viewName - state - device - locale (variant: ...)"
-  final newRegex = RegExp(r'\s*(\w+)\s*-\s*(\w+)\s*-\s*(\w+)\s*-\s*(\w+)\s*\(variant:');
+  final newRegex =
+      RegExp(r'\s*(\w+)\s*-\s*(\w+)\s*-\s*(\w+)\s*-\s*(\w+)\s*\(variant:');
   final newMatch = newRegex.firstMatch(name);
   if (newMatch != null) {
     final viewName = newMatch.group(1)!;
@@ -279,9 +282,14 @@ extractFailureImages(Map<String, dynamic> test) {
     final tsName = test['tsName'] as String?;
     final deviceType = test['deviceType'] as String?;
     final locale = test['locale'] as String?;
-    if (testCaseFilePath != null && tsName != null && deviceType != null && locale != null) {
+    if (testCaseFilePath != null &&
+        tsName != null &&
+        deviceType != null &&
+        locale != null) {
       // testCaseFilePath starts with /test/... — strip leading slash for relative path
-      final relativePath = testCaseFilePath.startsWith('/') ? testCaseFilePath.substring(1) : testCaseFilePath;
+      final relativePath = testCaseFilePath.startsWith('/')
+          ? testCaseFilePath.substring(1)
+          : testCaseFilePath;
       final testDir = relativePath.replaceFirst(RegExp(r'/[^/]+$'), '');
       final goldenName = '$tsName-$deviceType-$locale';
       final failureDir = '$testDir/failures';

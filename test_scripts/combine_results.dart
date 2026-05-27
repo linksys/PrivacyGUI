@@ -7,16 +7,23 @@ part 'html_generate_functions.dart';
 
 Map<String, dynamic> scanCoverage() {
   final viewDir = Directory('lib/page');
-  final testDir = Directory('test/usp_test/page');
+  final testDir = Directory('test/golden_test/page');
 
   if (!viewDir.existsSync()) {
-    return {'total': 0, 'covered': 0, 'percentage': 0.0, 'missing': [], 'covered_list': []};
+    return {
+      'total': 0,
+      'covered': 0,
+      'percentage': 0.0,
+      'missing': [],
+      'covered_list': []
+    };
   }
 
   final viewFiles = viewDir
       .listSync(recursive: true)
       .whereType<File>()
-      .where((f) => f.path.contains('/views/usp_') && f.path.endsWith('_view.dart'))
+      .where((f) =>
+          f.path.contains('/views/usp_') && f.path.endsWith('_view.dart'))
       .toList();
 
   final List<String> coveredViews = [];
@@ -68,8 +75,10 @@ void main(List<String> args) {
   final version = args.length > 1 ? args[1] : '0.0.0';
   final embedImages = args.contains('--embed');
 
-  // find json files on target folder
-  final files = folder.listSync().where((e) => e.path.endsWith('.json'));
+  // find parsed test report json files on target folder
+  final files = folder.listSync().where((e) =>
+      e.path.endsWith('.json') &&
+      e.uri.pathSegments.last.startsWith('localizations-test-reports'));
   if (files.isEmpty) {
     print('No JSON files found in $folderStr');
     exit(1);
@@ -116,7 +125,12 @@ void main(List<String> args) {
           failureImages[key] = 'data:image/png;base64,$b64';
         }
       } else {
-        failureImages[key] = '../$path';
+        // Strip folder prefix so path is relative to the report location
+        if (path.startsWith('$folderStr/')) {
+          failureImages[key] = path.substring(folderStr.length + 1);
+        } else {
+          failureImages[key] = path;
+        }
       }
     }
   }
@@ -139,8 +153,7 @@ void main(List<String> args) {
   resultObj['embedImages'] = embedImages;
 
   final htmlReport = generateHTMLReport(resultObj, version);
-  final reportHTMLFile =
-      File('$folderStr/golden_verify_report.html');
+  final reportHTMLFile = File('$folderStr/golden_verify_report.html');
   if (!reportHTMLFile.existsSync()) {
     reportHTMLFile.createSync(recursive: true);
   }
