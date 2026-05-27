@@ -22,7 +22,7 @@ class StaticRouteUIModel extends Equatable {
     required this.destSubnetMask,
     required this.gatewayIpAddress,
     required this.interfaceName,
-    required this.interfacePath,
+    this.interfacePath = '',
   });
 
   StaticRouteUIModel copyWith({

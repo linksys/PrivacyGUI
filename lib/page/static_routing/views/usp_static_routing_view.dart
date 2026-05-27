@@ -208,7 +208,6 @@ class UspStaticRoutingView extends ConsumerWidget {
             destSubnetMask: result.destSubnetMask,
             gatewayIpAddress: result.gatewayIpAddress,
             interfaceName: result.interfaceName,
-            interfacePath: '',
           ),
         );
   }

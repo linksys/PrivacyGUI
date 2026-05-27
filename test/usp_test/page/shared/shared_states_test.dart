@@ -1,36 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
-import 'package:privacy_gui/page/firewall/models/firewall_feature_state.dart';
-import 'package:privacy_gui/page/firewall/views/usp_firewall_view.dart';
 
 import '../../golden_framework/golden_runner.dart';
 import '../../golden_framework/golden_test_config.dart';
-import '../../golden_framework/mocks/mock_firewall.dart';
-import '../firewall/fixtures/firewall_test_data.dart';
 
-/// Shared UI states — captured once to cover common components used
-/// by all USP views: AppLoader, error+retry layout, discard changes dialog,
-/// saving spinner dialog.
+/// Shared UI states — captured once to cover common overlay components used
+/// by all USP views: AppLoader, discard changes dialog, saving spinner dialog.
+/// Uses a minimal Scaffold host so the golden contains only the overlay itself.
 void main() {
   runViewGoldenTests(
     GoldenTestConfig(
       viewName: 'shared_states',
-      view: () => const UspFirewallView(),
+      view: () => const Scaffold(body: SizedBox.expand()),
       shell: ShellType.custom,
       states: {
-        'loading': (overrides) => overrides.addAll(
-              firewallOverrides(FirewallFeatureState.initial()),
-            ),
-        'error': (overrides) => overrides.addAll(
-              firewallOverrides(errorState),
-            ),
+        'loading': (overrides) {},
       },
       interactions: {
         'discard_changes_dialog': Interaction(
-          setup: (overrides) => overrides.addAll(
-            firewallOverrides(dirtyState()),
-          ),
+          setup: (overrides) {},
           steps: (tester) async {
             final context = tester.element(find.byType(Scaffold));
             showUnsavedAlert(context);
@@ -39,9 +28,7 @@ void main() {
           },
         ),
         'saving_spinner': Interaction(
-          setup: (overrides) => overrides.addAll(
-            firewallOverrides(dirtyState()),
-          ),
+          setup: (overrides) {},
           steps: (tester) async {
             final context = tester.element(find.byType(Scaffold));
             showAppSpinnerDialog(context);
