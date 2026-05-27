@@ -60,6 +60,14 @@ class _FakeBanksNotifier extends FirmwareBanksDataNotifier {
     state = _value;
     return _value.valueOrNull ?? const FirmwareBanksData(banks: []);
   }
+
+  @override
+  Future<FirmwareBanksData> refresh() async {
+    // Return the same data without actually fetching
+    final data = _value.valueOrNull ?? const FirmwareBanksData(banks: []);
+    state = AsyncData(data);
+    return data;
+  }
 }
 
 void main() {
@@ -434,14 +442,43 @@ void main() {
       );
     });
 
-    test('verify with mismatched version moves to failed', () async {
-      // After reboot, instance 2 is active but version doesn't match
+    test('verify with mismatched version still succeeds (bank flip is primary)',
+        () async {
+      // After reboot, instance 2 is active but version doesn't match.
+      // Per design: bank flip is the primary check, version mismatch only logs warning.
       final banksData = FirmwareBanksData(banks: [
         FirmwareUpdateTestData.bankWithStatus(instance: 1, status: 'Available'),
         FirmwareUpdateTestData.bankWithStatus(
           instance: 2,
           status: 'Active',
-          version: '1.0.16.0', // Wrong version
+          version: '1.0.16.0', // Different version, but bank flip succeeded
+        ),
+      ]);
+      final container = createContainer(
+        banksData: AsyncData(banksData),
+      );
+      addTearDown(container.dispose);
+      final notifier = container.read(firmwareUpdateNotifierProvider.notifier);
+
+      await notifier.verify(
+        expectedVersion: '1.0.17.0',
+        expectedActiveInstance: 2,
+      );
+
+      // Bank flip succeeded → done (version mismatch only logs warning)
+      final state = container.read(firmwareUpdateNotifierProvider);
+      expect(state.phase, FirmwareUpdatePhase.done);
+      expect(state.activeBank?.instance, 2);
+    });
+
+    test('verify fails when expected bank did not become active', () async {
+      // After reboot, instance 2 is still Available (not Active) — bank flip failed
+      final banksData = FirmwareBanksData(banks: [
+        FirmwareUpdateTestData.bankWithStatus(instance: 1, status: 'Active'),
+        FirmwareUpdateTestData.bankWithStatus(
+          instance: 2,
+          status: 'Available', // Expected to be Active but isn't
+          version: '1.0.17.0',
         ),
       ]);
       final container = createContainer(
@@ -457,7 +494,7 @@ void main() {
 
       final state = container.read(firmwareUpdateNotifierProvider);
       expect(state.phase, FirmwareUpdatePhase.failed);
-      expect(state.errorMessage, contains('Verification failed'));
+      expect(state.errorMessage, contains('did not boot the new image'));
     });
 
     test('cancel resets to initial state', () {
