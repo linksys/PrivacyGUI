@@ -6,6 +6,7 @@ import 'package:privacy_gui/core/usp/providers/turbo_session_provider.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
+import 'package:privacy_gui/core/utils/ip_getter/get_local_ip.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/firmware_update/services/firmware_chunker.dart';
 import 'package:privacy_gui/page/firmware_update/services/firmware_http_upload_strategy.dart';
@@ -21,6 +22,9 @@ final firmwareLocalUploadServiceProvider = Provider<FirmwareLocalUploadService>(
     final lock = ref.read(uspMutationLockProvider);
     final turboManager = ref.read(turboSessionManagerProvider);
 
+    // Get router host dynamically from window.location (web) or fallback
+    final routerHost = getLocalIp(ref.read);
+
     return createFirmwareUploadService(
       client: usp,
       lock: lock,
@@ -30,8 +34,7 @@ final firmwareLocalUploadServiceProvider = Provider<FirmwareLocalUploadService>(
               final endpointId = await _fetchEndpointId(usp);
               return createWsStrategy(
                 turboManager: turboManager,
-                // Direct connection to router, bypassing nginx proxy
-                wsUrl: 'wss://192.168.1.1/usp-ws',
+                wsUrl: 'wss://$routerHost/usp-ws',
                 toId: endpointId,
               );
             }

@@ -115,53 +115,6 @@ void main() {
       expect(manager.sessionId, isNull);
     });
 
-    test('heartbeat() calls bridge heartbeat', () async {
-      when(() => mockBridge.turboStart()).thenAnswer((_) async => {
-            'status': 'granted',
-            'session_id': 'hb-session',
-          });
-      when(() => mockBridge.turboHeartbeat(sessionId: any(named: 'sessionId')))
-          .thenAnswer((_) async => {
-                'status': 'ok',
-              });
-
-      await manager.start();
-      await manager.heartbeat();
-
-      verify(() => mockBridge.turboHeartbeat(sessionId: 'hb-session'))
-          .called(1);
-    });
-
-    test('heartbeat() does nothing when not active', () async {
-      await manager.heartbeat();
-
-      verifyNever(
-          () => mockBridge.turboHeartbeat(sessionId: any(named: 'sessionId')));
-    });
-
-    test('heartbeat timer runs automatically after start', () async {
-      when(() => mockBridge.turboStart()).thenAnswer((_) async => {
-            'status': 'granted',
-            'session_id': 'timer-session',
-          });
-      when(() => mockBridge.turboHeartbeat(sessionId: any(named: 'sessionId')))
-          .thenAnswer((_) async => {
-                'status': 'ok',
-              });
-      when(() => mockBridge.turboRelease(sessionId: any(named: 'sessionId')))
-          .thenAnswer((_) async => {
-                'status': 'released',
-              });
-
-      await manager.start();
-
-      // Wait slightly more than one heartbeat interval (12s is default, use fake)
-      // In real tests we'd use fake_async, but for now just verify the timer was set
-      expect(manager.isActive, isTrue);
-
-      await manager.release();
-    });
-
     test('getStatus() returns parsed TurboStatus', () async {
       when(() => mockBridge.turboStatus()).thenAnswer((_) async => {
             'state': 'IN_USE',

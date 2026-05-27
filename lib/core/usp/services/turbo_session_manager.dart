@@ -10,7 +10,7 @@ enum TurboSessionState {
   /// No active turbo session.
   idle,
 
-  /// Turbo session is active; heartbeat timer is running.
+  /// Turbo session is active.
   active,
 
   /// Session is being released.
@@ -22,7 +22,6 @@ enum TurboSessionState {
 /// The turbo channel provides a lock mechanism that:
 /// 1. Pauses SSE notifications while active
 /// 2. Grants exclusive access for high-throughput operations (firmware upload)
-/// 3. Requires periodic heartbeats to maintain the session
 ///
 /// ## Usage
 /// ```dart
@@ -39,7 +38,7 @@ enum TurboSessionState {
 ///
 /// ## Lifecycle
 /// ```
-/// idle -> start() -> active (heartbeat every 12s) -> release() -> idle
+/// idle -> start() -> active -> release() -> idle
 /// ```
 class TurboSessionManager {
   TurboSessionManager(this._bridgeClient);
@@ -48,10 +47,6 @@ class TurboSessionManager {
 
   TurboSessionState _state = TurboSessionState.idle;
   String? _sessionId;
-  Timer? _heartbeatTimer;
-
-  /// Heartbeat interval. Bridge requires heartbeat within 15s; we use 12s for safety buffer.
-  static const heartbeatInterval = Duration(seconds: 12);
 
   /// Current session state.
   TurboSessionState get state => _state;
@@ -89,10 +84,6 @@ class TurboSessionManager {
 
       _sessionId = response['session_id'] as String?;
       _state = TurboSessionState.active;
-      // Note: Heartbeat timer disabled — firmware upload completes within
-      // turbo max_duration (300s), and heartbeat 403 errors can interrupt upload.
-      // Uncomment if longer operations are needed:
-      // _startHeartbeatTimer();
 
       logger.i('$_tag Turbo session started (id: $_sessionId)');
       return _sessionId ?? '';
@@ -100,33 +91,6 @@ class TurboSessionManager {
       logger.e('$_tag Failed to start turbo session: $e');
       _state = TurboSessionState.idle;
       rethrow;
-    }
-  }
-
-  /// Send a heartbeat to keep the session alive.
-  ///
-  /// Called automatically by the internal timer. Can also be called manually
-  /// if needed (e.g., before a long operation).
-  Future<void> heartbeat() async {
-    if (_state != TurboSessionState.active) {
-      logger.w('$_tag heartbeat() called but session not active');
-      return;
-    }
-
-    try {
-      final response =
-          await _bridgeClient.turboHeartbeat(sessionId: _sessionId);
-      final status = response['status'] as String?;
-
-      if (status != 'ok') {
-        logger.w('$_tag Heartbeat returned unexpected status: $status');
-      } else {
-        logger.d('$_tag Heartbeat OK');
-      }
-    } catch (e) {
-      logger.e('$_tag Heartbeat failed: $e');
-      // Don't change state on heartbeat failure — let the caller decide
-      // whether to release or retry
     }
   }
 
@@ -146,7 +110,6 @@ class TurboSessionManager {
     }
 
     _state = TurboSessionState.releasing;
-    _stopHeartbeatTimer();
 
     logger.d('$_tag Releasing turbo session (id: $_sessionId)...');
     try {
@@ -173,24 +136,8 @@ class TurboSessionManager {
     return TurboStatus.fromJson(response);
   }
 
-  // ignore: unused_element
-  void _startHeartbeatTimer() {
-    _stopHeartbeatTimer();
-    _heartbeatTimer = Timer.periodic(heartbeatInterval, (_) {
-      heartbeat();
-    });
-    logger.d(
-        '$_tag Heartbeat timer started (interval: ${heartbeatInterval.inSeconds}s)');
-  }
-
-  void _stopHeartbeatTimer() {
-    _heartbeatTimer?.cancel();
-    _heartbeatTimer = null;
-  }
-
   /// Dispose the manager. Releases any active session.
   Future<void> dispose() async {
-    _stopHeartbeatTimer();
     if (_state == TurboSessionState.active) {
       await release();
     }
