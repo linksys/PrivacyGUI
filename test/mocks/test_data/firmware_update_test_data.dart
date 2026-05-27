@@ -88,6 +88,7 @@ class FirmwareUpdateTestData {
     required int instance,
     required String status,
     String? version,
+    bool available = true,
   }) =>
       FirmwareImageUIModel(
         instance: instance,
@@ -95,6 +96,6 @@ class FirmwareUpdateTestData {
         name: 'Bank$instance',
         version: version ?? '1.0.16.26013014',
         status: status,
-        available: true,
+        available: available,
       );
 }

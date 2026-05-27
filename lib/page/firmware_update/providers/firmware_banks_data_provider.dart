@@ -1,11 +1,8 @@
-import 'dart:async';
-
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
-import 'package:privacy_gui/generated/firmware_images.g.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_image_ui_model.dart';
+import 'package:privacy_gui/page/firmware_update/services/firmware_banks_data_service.dart';
 
 // ── Data Model ──
 
@@ -57,42 +54,10 @@ class FirmwareBanksDataNotifier extends AsyncNotifier<FirmwareBanksData> {
 
   Future<FirmwareBanksData> _fetch() async {
     logger.d('[FirmwareUpdate] banks: _fetch() starting...');
-    final usp = ref.read(uspClientProvider);
-    if (usp == null) {
-      logger.e('[FirmwareUpdate] banks: uspClientProvider is null!');
-      throw StateError('UspClient is null - session may not be restored');
-    }
-    logger.d('[FirmwareUpdate] banks: calling FirmwareImages.fetch()...');
-    final images = await FirmwareImages.fetch(usp).timeout(
-      const Duration(seconds: 30),
-      onTimeout: () {
-        logger.e(
-            '[FirmwareUpdate] banks: FirmwareImages.fetch() timeout after 30s');
-        throw TimeoutException('FirmwareImages.fetch timeout');
-      },
-    );
-    final banks = images.items.map(_toUIModel).toList();
-
+    final service = ref.read(firmwareBanksDataServiceProvider);
+    final banks = await service.fetch();
     logger.d('[FirmwareUpdate] banks: fetched ${banks.length} banks, '
         'active=${banks.where((b) => b.isActive).firstOrNull?.version}');
-
     return FirmwareBanksData(banks: banks);
-  }
-
-  FirmwareImageUIModel _toUIModel(FirmwareImage img) => FirmwareImageUIModel(
-        instance: _instanceFromPath(img.instancePath),
-        instancePath: img.instancePath,
-        name: img.name,
-        version: img.version,
-        status: img.status,
-        available: img.available,
-      );
-
-  int _instanceFromPath(String path) {
-    final trimmed =
-        path.endsWith('.') ? path.substring(0, path.length - 1) : path;
-    final lastDot = trimmed.lastIndexOf('.');
-    if (lastDot < 0) return 0;
-    return int.tryParse(trimmed.substring(lastDot + 1)) ?? 0;
   }
 }
