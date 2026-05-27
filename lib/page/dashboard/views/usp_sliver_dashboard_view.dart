@@ -517,7 +517,7 @@ class _UspSliverDashboardViewState
   }
 
   Future<void> _openLayoutSettings(BuildContext context) async {
-    final result = await showDialog<String>(
+    final result = await showAppDialog<String>(
       context: context,
       builder: (context) => AppDialog(
         title: AppText.titleMedium('Dashboard Settings'),

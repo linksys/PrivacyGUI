@@ -166,7 +166,7 @@ class UspDhcpReservationsCard extends ConsumerWidget {
   }
 
   Future<void> _showAddDhcpDialog(BuildContext context, WidgetRef ref) async {
-    final result = await showDialog<({String mac, String ip, bool enable})>(
+    final result = await showAppDialog<({String mac, String ip, bool enable})>(
       context: context,
       builder: (_) => const DhcpReservationDialog(),
     );

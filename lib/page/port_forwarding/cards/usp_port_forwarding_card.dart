@@ -166,7 +166,7 @@ class UspPortForwardingCard extends ConsumerWidget {
 
   Future<void> _showAddPortForwardingDialog(
       BuildContext context, WidgetRef ref) async {
-    final result = await showDialog<PortForwardingDialogResult>(
+    final result = await showAppDialog<PortForwardingDialogResult>(
       context: context,
       builder: (_) => const PortForwardingDialog(),
     );

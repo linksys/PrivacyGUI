@@ -92,7 +92,7 @@ class UspPortRangeTab extends ConsumerWidget {
   }
 
   Future<void> _showAddDialog(BuildContext context, WidgetRef ref) async {
-    final result = await showDialog<PortRangeForwardingDialogResult>(
+    final result = await showAppDialog<PortRangeForwardingDialogResult>(
       context: context,
       builder: (_) => const PortRangeForwardingDialog(),
     );
@@ -112,7 +112,7 @@ class UspPortRangeTab extends ConsumerWidget {
 
   Future<void> _showEditDialog(BuildContext context, WidgetRef ref,
       PortForwardingRuleUIModel rule) async {
-    final result = await showDialog<PortRangeForwardingDialogResult>(
+    final result = await showAppDialog<PortRangeForwardingDialogResult>(
       context: context,
       builder: (_) => PortRangeForwardingDialog(rule: rule),
     );

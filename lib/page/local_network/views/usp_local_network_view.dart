@@ -7,7 +7,6 @@ import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/local_network/models/local_network_feature_state.dart';
 import 'package:privacy_gui/page/local_network/providers/usp_local_network_notifier.dart';
-import 'package:privacy_gui/page/local_network/services/usp_local_network_service.dart';
 import 'package:privacy_gui/page/shell/usp_top_bar.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -235,13 +234,11 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
     bool disabled,
   ) {
     final notifier = ref.read(uspLocalNetworkProvider.notifier);
-    final svc = ref.read(uspLocalNetworkServiceProvider);
     final pending = state.settings.current.model;
     final errors = state.status.validationErrors;
 
-    // Lock prefix octets based on subnet mask (e.g. /24 → lock first 3)
-    final lockedOctets = svc.lockedOctetCount(pending.subnetMask);
-    final poolReadOnly = SegmentReadOnly.lockPrefix(lockedOctets);
+    final poolReadOnly =
+        SegmentReadOnly.lockPrefix(state.status.lockedOctetCount);
 
     return AppCard(
       child: Column(
@@ -368,7 +365,7 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
   }
 
   Future<bool?> _showNetworkChangeConfirmation(BuildContext context) {
-    return showDialog<bool>(
+    return showAppDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Change Network Settings?'),

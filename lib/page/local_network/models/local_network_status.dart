@@ -12,11 +12,16 @@ class LocalNetworkStatus extends Equatable {
   /// null value = no error for that field.
   final Map<String, String?> validationErrors;
 
+  /// Number of fully-locked octets derived from the current subnet mask.
+  /// Used by the view to lock IP pool field prefixes.
+  final int lockedOctetCount;
+
   const LocalNetworkStatus({
     this.isLoading = true,
     this.isSaving = false,
     this.errorMessage,
     this.validationErrors = const {},
+    this.lockedOctetCount = 0,
   });
 
   bool get hasValidationErrors => validationErrors.values.any((e) => e != null);
@@ -26,16 +31,18 @@ class LocalNetworkStatus extends Equatable {
     bool? isSaving,
     String? errorMessage,
     Map<String, String?>? validationErrors,
+    int? lockedOctetCount,
   }) {
     return LocalNetworkStatus(
       isLoading: isLoading ?? this.isLoading,
       isSaving: isSaving ?? this.isSaving,
       errorMessage: errorMessage,
       validationErrors: validationErrors ?? this.validationErrors,
+      lockedOctetCount: lockedOctetCount ?? this.lockedOctetCount,
     );
   }
 
   @override
   List<Object?> get props =>
-      [isLoading, isSaving, errorMessage, validationErrors];
+      [isLoading, isSaving, errorMessage, validationErrors, lockedOctetCount];
 }

@@ -108,7 +108,7 @@ class UspSinglePortTab extends ConsumerWidget {
 
   Future<void> _showAddDialog(BuildContext context, WidgetRef ref) async {
     final deviceOptions = _buildIpv4DeviceOptions(ref);
-    final result = await showDialog<PortForwardingDialogResult>(
+    final result = await showAppDialog<PortForwardingDialogResult>(
       context: context,
       builder: (_) => PortForwardingDialog(deviceOptions: deviceOptions),
     );
@@ -128,7 +128,7 @@ class UspSinglePortTab extends ConsumerWidget {
   Future<void> _showEditDialog(BuildContext context, WidgetRef ref,
       PortForwardingRuleUIModel rule) async {
     final deviceOptions = _buildIpv4DeviceOptions(ref);
-    final result = await showDialog<PortForwardingDialogResult>(
+    final result = await showAppDialog<PortForwardingDialogResult>(
       context: context,
       builder: (_) =>
           PortForwardingDialog(rule: rule, deviceOptions: deviceOptions),
