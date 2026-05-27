@@ -14,6 +14,7 @@ import 'package:privacy_gui/core/usp/services/sse_connection_manager.dart';
 import 'package:privacy_gui/core/usp/services/sse_manager.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_update_phase.dart';
+import 'package:privacy_gui/page/firmware_update/providers/firmware_banks_data_provider.dart';
 import 'package:privacy_gui/page/firmware_update/providers/firmware_update_notifier.dart';
 import 'package:privacy_gui/page/firmware_update/services/firmware_file_picker_service.dart';
 import 'package:privacy_gui/page/firmware_update/services/firmware_local_upload_service.dart';
@@ -50,6 +51,17 @@ class _StubPickerService extends FirmwareFilePickerService {
   Future<FirmwarePickedFile?> pickFirmwareImage() async => _result;
 }
 
+class _FakeBanksNotifier extends FirmwareBanksDataNotifier {
+  _FakeBanksNotifier(this._value);
+  final AsyncValue<FirmwareBanksData> _value;
+
+  @override
+  Future<FirmwareBanksData> build() async {
+    state = _value;
+    return _value.valueOrNull ?? const FirmwareBanksData(banks: []);
+  }
+}
+
 void main() {
   late MockUspClient mockUsp;
   late MockUspFirmwareUpdateService mockService;
@@ -70,6 +82,7 @@ void main() {
   ProviderContainer createContainer({
     FirmwareFilePickerService? picker,
     FirmwareLocalUploadService? uploader,
+    AsyncValue<FirmwareBanksData>? banksData,
   }) {
     final container = ProviderContainer(
       overrides: [
@@ -80,6 +93,10 @@ void main() {
             .overrideWithValue(uploader ?? mockUploader),
         if (picker != null)
           firmwareFilePickerServiceProvider.overrideWithValue(picker),
+        if (banksData != null)
+          firmwareBanksDataProvider.overrideWith(
+            () => _FakeBanksNotifier(banksData),
+          ),
       ],
     );
     // Keep the autoDispose notifier alive across `await` boundaries inside
@@ -110,12 +127,13 @@ void main() {
     });
 
     test('loadBanks populates active and target banks', () async {
-      when(() => mockService.fetchActiveBank())
-          .thenAnswer((_) async => FirmwareUpdateTestData.activeBank());
-      when(() => mockService.fetchAvailableBank())
-          .thenAnswer((_) async => FirmwareUpdateTestData.availableBank());
-
-      final container = createContainer();
+      final banksData = FirmwareBanksData(banks: [
+        FirmwareUpdateTestData.activeBank(),
+        FirmwareUpdateTestData.availableBank(),
+      ]);
+      final container = createContainer(
+        banksData: AsyncData(banksData),
+      );
       addTearDown(container.dispose);
 
       await container.read(firmwareUpdateNotifierProvider.notifier).loadBanks();
@@ -126,10 +144,10 @@ void main() {
     });
 
     test('loadBanks failure transitions to failed phase', () async {
-      when(() => mockService.fetchActiveBank())
-          .thenThrow(NetworkError(message: 'timeout'));
-
-      final container = createContainer();
+      final container = createContainer(
+        banksData: AsyncError(
+            const NetworkError(message: 'timeout'), StackTrace.current),
+      );
       addTearDown(container.dispose);
 
       await expectLater(
@@ -390,12 +408,18 @@ void main() {
     });
 
     test('verify returns done on version match', () async {
-      when(() => mockService.verifyAfterReboot(
-            expectedVersion: any(named: 'expectedVersion'),
-            expectedActiveInstance: any(named: 'expectedActiveInstance'),
-          )).thenAnswer((_) async => true);
-
-      final container = createContainer();
+      // After reboot, instance 2 should be active with expected version
+      final banksData = FirmwareBanksData(banks: [
+        FirmwareUpdateTestData.bankWithStatus(instance: 1, status: 'Available'),
+        FirmwareUpdateTestData.bankWithStatus(
+          instance: 2,
+          status: 'Active',
+          version: '1.0.17.0',
+        ),
+      ]);
+      final container = createContainer(
+        banksData: AsyncData(banksData),
+      );
       addTearDown(container.dispose);
       final notifier = container.read(firmwareUpdateNotifierProvider.notifier);
 
@@ -411,12 +435,18 @@ void main() {
     });
 
     test('verify with mismatched version moves to failed', () async {
-      when(() => mockService.verifyAfterReboot(
-            expectedVersion: any(named: 'expectedVersion'),
-            expectedActiveInstance: any(named: 'expectedActiveInstance'),
-          )).thenAnswer((_) async => false);
-
-      final container = createContainer();
+      // After reboot, instance 2 is active but version doesn't match
+      final banksData = FirmwareBanksData(banks: [
+        FirmwareUpdateTestData.bankWithStatus(instance: 1, status: 'Available'),
+        FirmwareUpdateTestData.bankWithStatus(
+          instance: 2,
+          status: 'Active',
+          version: '1.0.16.0', // Wrong version
+        ),
+      ]);
+      final container = createContainer(
+        banksData: AsyncData(banksData),
+      );
       addTearDown(container.dispose);
       final notifier = container.read(firmwareUpdateNotifierProvider.notifier);
 

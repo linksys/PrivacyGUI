@@ -82,4 +82,19 @@ class FirmwareUpdateTestData {
         status: 'Available',
         available: true,
       );
+
+  /// Flexible bank builder for verify tests.
+  static FirmwareImageUIModel bankWithStatus({
+    required int instance,
+    required String status,
+    String? version,
+  }) =>
+      FirmwareImageUIModel(
+        instance: instance,
+        instancePath: 'Device.DeviceInfo.FirmwareImage.$instance.',
+        name: 'Bank$instance',
+        version: version ?? '1.0.16.26013014',
+        status: status,
+        available: true,
+      );
 }

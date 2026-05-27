@@ -37,6 +37,12 @@ class FirmwareUpdateState extends Equatable {
   double get uploadProgress =>
       totalChunks == 0 ? 0.0 : uploadedChunks / totalChunks;
 
+  /// True if firmware update is in progress and navigation should be blocked.
+  bool get isUpdating =>
+      phase != FirmwareUpdatePhase.idle &&
+      phase != FirmwareUpdatePhase.done &&
+      phase != FirmwareUpdatePhase.failed;
+
   FirmwareUpdateState copyWith({
     FirmwareUpdatePhase? phase,
     FirmwareImageUIModel? activeBank,

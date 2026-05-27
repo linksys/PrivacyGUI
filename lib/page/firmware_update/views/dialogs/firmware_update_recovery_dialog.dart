@@ -37,7 +37,7 @@ Future<void> showFirmwareUpdateRecoveryDialog(
 
   final sub = ref.listenManual(appConnectionStateProvider, (prev, next) {
     if (next == AppConnectionState.authenticated) {
-      logger.d('[FirmwareRecovery] Recovered — popping dialog');
+      logger.d('[FirmwareUpdate] recovery: recovered, popping dialog');
       navigator.pop();
     }
     // loggedOut: route redirect tears down the page stack; do not pop.

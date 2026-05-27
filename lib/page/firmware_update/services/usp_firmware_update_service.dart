@@ -107,8 +107,8 @@ class UspFirmwareUpdateService {
     try {
       final images = await FirmwareImages.fetch(_usp);
       logger.d(
-          '[FirmwareVerify] Fetched banks: ${images.items.map((i) => '${i.instancePath}:${i.status}').join(', ')}'
-          '\n  expectedActiveInstance=$expectedActiveInstance, expectedVersion=$expectedVersion');
+          '[FirmwareUpdate] service.verifyAfterReboot: banks=${images.items.map((i) => '${i.instancePath}:${i.status}').join(', ')}'
+          ', expectedActiveInstance=$expectedActiveInstance, expectedVersion=$expectedVersion');
       final activeBanks =
           images.items.where((i) => i.status == 'Active').toList();
       if (activeBanks.length > 1) {

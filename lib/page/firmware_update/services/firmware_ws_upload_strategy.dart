@@ -10,7 +10,7 @@ import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/firmware_update/services/firmware_http_upload_strategy.dart';
 import 'package:privacy_gui/page/firmware_update/services/firmware_upload_strategy.dart';
 
-const _tag = '[FirmwareWsUpload]:';
+const _tag = '[FirmwareUpdate]';
 
 /// WebSocket-based firmware upload strategy (Method 2).
 ///

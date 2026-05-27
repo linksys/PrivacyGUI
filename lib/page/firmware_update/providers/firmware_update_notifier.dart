@@ -3,12 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/connection/models/app_connection_state.dart';
 import 'package:privacy_gui/core/connection/providers/app_connection_state_provider.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
-import 'package:privacy_gui/core/usp/providers/bridge_request_throttler_provider.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
+import 'package:privacy_gui/core/usp/providers/bridge_request_throttler_provider.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_image_ui_model.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_update_phase.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_update_state.dart';
+import 'package:privacy_gui/page/firmware_update/providers/firmware_banks_data_provider.dart';
 import 'package:privacy_gui/page/firmware_update/services/firmware_file_picker_service.dart';
 import 'package:privacy_gui/page/firmware_update/services/firmware_local_upload_service.dart';
 import 'package:privacy_gui/page/firmware_update/services/firmware_validation_service.dart';
@@ -53,13 +54,26 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
     return const FirmwareUpdateState();
   }
 
+  /// Sets state and logs the phase transition.
+  void _setState(FirmwareUpdateState newState) {
+    final oldPhase = state.phase;
+    final newPhase = newState.phase;
+    if (oldPhase != newPhase) {
+      logger.i('[FirmwareUpdate] phase: $oldPhase → $newPhase');
+    }
+    state = newState;
+  }
+
   Future<void> loadBanks() async {
     try {
-      final active = await _svc.fetchActiveBank();
-      final available = await _svc.fetchAvailableBank();
-      state = state.copyWith(activeBank: active, targetBank: available);
+      // Read from L1 provider (Single Source of Truth)
+      final banksData = await ref.read(firmwareBanksDataProvider.future);
+      _setState(state.copyWith(
+        activeBank: banksData.activeBank,
+        targetBank: banksData.availableBank,
+      ));
     } on ServiceError catch (e) {
-      logger.e('[USP][FirmwareUpdate]: loadBanks failed', error: e);
+      logger.e('[FirmwareUpdate] loadBanks failed', error: e);
       _fail(e.toString());
       rethrow;
     }
@@ -70,32 +84,32 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
   /// [FirmwareUpdatePhase.idle] on success (caller drives the next phase via
   /// [triggerInstall]). Returns false if the user cancelled the dialog.
   Future<bool> pickAndValidateFile() async {
-    state = state.copyWith(
+    _setState(state.copyWith(
       phase: FirmwareUpdatePhase.picking,
       errorMessage: null,
-    );
+    ));
     final picked = await _picker.pickFirmwareImage();
     if (picked == null) {
-      state = state.copyWith(phase: FirmwareUpdatePhase.idle);
+      _setState(state.copyWith(phase: FirmwareUpdatePhase.idle));
       return false;
     }
-    state = state.copyWith(phase: FirmwareUpdatePhase.validating);
+    _setState(state.copyWith(phase: FirmwareUpdatePhase.validating));
     try {
       final result = await _validator.validate(
         filename: picked.name,
         bytes: picked.bytes,
       );
       _pickedBytes = picked.bytes;
-      state = state.copyWith(
+      _setState(state.copyWith(
         phase: FirmwareUpdatePhase.idle,
         selectedFileName: result.filename,
         selectedFileSize: result.size,
         selectedFileMd5: result.md5,
         errorMessage: null,
-      );
+      ));
       return true;
     } on FirmwareValidationFailure catch (e) {
-      logger.w('[USP][FirmwareUpdate]: validation failed', error: e);
+      logger.w('[FirmwareUpdate] validation failed', error: e);
       _fail(e.message);
       return false;
     }
@@ -104,7 +118,7 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
   void cancel() {
     _cancelRequested = true;
     _pickedBytes = null;
-    state = const FirmwareUpdateState();
+    _setState(const FirmwareUpdateState());
   }
 
   /// Pushes the previously-picked firmware image to the router via Method 1
@@ -121,12 +135,12 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
     }
     _cancelRequested = false;
     final total = _uploader.totalFragmentsFor(bytes.length);
-    state = state.copyWith(
+    _setState(state.copyWith(
       phase: FirmwareUpdatePhase.uploading,
       uploadedChunks: 0,
       totalChunks: total,
       errorMessage: null,
-    );
+    ));
     try {
       await _uploader.uploadFile(
         bytes: bytes,
@@ -143,27 +157,27 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
         },
       );
       // Capture final upload method in state
-      state = state.copyWith(uploadMethod: _uploader.lastUsedMethod);
+      _setState(state.copyWith(uploadMethod: _uploader.lastUsedMethod));
     } on FirmwareUploadCancelledException {
-      logger.i('[USP][FirmwareUpdate]: upload cancelled by user');
+      logger.i('[FirmwareUpdate] upload cancelled by user');
       cancel();
       rethrow;
     } on ServiceError catch (e) {
-      logger.e('[USP][FirmwareUpdate]: upload failed', error: e);
+      logger.e('[FirmwareUpdate] upload failed', error: e);
       _fail(e.toString());
       rethrow;
     }
   }
 
   Future<void> triggerInstall({required int targetInstance}) async {
-    state = state.copyWith(phase: FirmwareUpdatePhase.triggering);
+    _setState(state.copyWith(phase: FirmwareUpdatePhase.triggering));
     try {
       await ref.read(uspMutationLockProvider).withLock(() async {
         await _svc.triggerLocalDownload(targetInstance: targetInstance);
       });
-      state = state.copyWith(phase: FirmwareUpdatePhase.installing);
+      _setState(state.copyWith(phase: FirmwareUpdatePhase.installing));
     } on ServiceError catch (e) {
-      logger.e('[USP][FirmwareUpdate]: triggerInstall failed', error: e);
+      logger.e('[FirmwareUpdate] triggerInstall failed', error: e);
       _fail(e.toString());
       rethrow;
     }
@@ -177,7 +191,7 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
   void enterRecoveryWaiting({
     Duration cooldown = const Duration(seconds: 60),
   }) {
-    state = state.copyWith(phase: FirmwareUpdatePhase.rebooting);
+    _setState(state.copyWith(phase: FirmwareUpdatePhase.rebooting));
     ref.read(appConnectionStateProvider.notifier).enterWaiting(
           context: RecoveryContext(
             trigger: RecoveryTrigger.operationalFirmwareUpgrade,
@@ -187,31 +201,98 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
   }
 
   void enterRebooting(Duration estimated) {
-    state = state.copyWith(
+    _setState(state.copyWith(
       phase: FirmwareUpdatePhase.rebooting,
       rebootRemaining: estimated,
-    );
+    ));
   }
 
   Future<void> verify({
     required String expectedVersion,
     required int expectedActiveInstance,
   }) async {
-    state = state.copyWith(phase: FirmwareUpdatePhase.verifying);
-    // Clear throttler cache to ensure fresh data after reboot
-    ref.read(bridgeRequestThrottlerProvider).clearCache();
+    _setState(state.copyWith(phase: FirmwareUpdatePhase.verifying));
+
     try {
-      final ok = await _svc.verifyAfterReboot(
-        expectedVersion: expectedVersion,
-        expectedActiveInstance: expectedActiveInstance,
-      );
-      if (ok) {
-        state = state.copyWith(phase: FirmwareUpdatePhase.done);
-      } else {
-        _fail('Verification failed: version mismatch after reboot');
+      // Post-reboot settle: SSE reconnects and dashboard providers refetch
+      logger.d('[FirmwareUpdate] verify: post-reboot settle (3s)...');
+      await Future<void>.delayed(const Duration(seconds: 3));
+
+      // Wait for throttler to be idle (SSE reconnect may trigger other requests)
+      logger.d('[FirmwareUpdate] verify: waiting for throttler idle...');
+      await ref.read(bridgeRequestThrottlerProvider).whenIdle();
+
+      // Fetch banks with retry (also retry if banks empty — TR-181 may not be ready)
+      FirmwareBanksData? banksData;
+      const maxAttempts = 3;
+      for (var attempt = 1; attempt <= maxAttempts; attempt++) {
+        try {
+          logger.d(
+              '[FirmwareUpdate] verify: calling notifier.refresh() (attempt $attempt/$maxAttempts)...');
+          banksData =
+              await ref.read(firmwareBanksDataProvider.notifier).refresh();
+          logger.d(
+              '[FirmwareUpdate] verify: got ${banksData.banks.length} banks');
+          if (banksData.banks.isNotEmpty) break;
+          // Empty banks — TR-181 not ready yet, retry
+          logger.w('[FirmwareUpdate] verify: empty banks, retrying...');
+          if (attempt == maxAttempts) {
+            _fail('Unable to read firmware banks after reboot');
+            return;
+          }
+          await Future<void>.delayed(const Duration(seconds: 3));
+        } catch (e) {
+          logger.w(
+              '[FirmwareUpdate] verify: refresh failed (attempt $attempt/$maxAttempts)',
+              error: e);
+          if (attempt == maxAttempts) rethrow;
+          await Future<void>.delayed(const Duration(seconds: 3));
+        }
       }
+      final banks = banksData!.banks;
+
+      logger.d(
+          '[FirmwareUpdate] verify: banks=${banks.map((b) => '${b.instancePath}:${b.status}').join(', ')}'
+          ', expectedActiveInstance=$expectedActiveInstance, expectedVersion=$expectedVersion');
+
+      // Verify: check for inconsistent multi-Active state
+      final activeBanks = banks.where((b) => b.isActive).toList();
+      if (activeBanks.length > 1) {
+        _fail(
+            'Inconsistent firmware state: ${activeBanks.length} banks reported Active');
+        return;
+      }
+
+      // Find the expected bank
+      final match =
+          banks.where((b) => b.instance == expectedActiveInstance).firstOrNull;
+      if (match == null) {
+        _fail(
+            'Expected firmware bank instance $expectedActiveInstance not present after reboot');
+        return;
+      }
+
+      // Verify bank flip: expected instance should now be Active
+      if (!match.isActive) {
+        _fail(
+            'Router restarted but did not boot the new image (instance $expectedActiveInstance status=${match.status})');
+        return;
+      }
+
+      // Version match check (secondary, optional for manual update)
+      // For manual uploads, expectedVersion may be empty (we don't parse the
+      // firmware file's embedded version). Bank flip is the primary check.
+      if (expectedVersion.isNotEmpty && match.version != expectedVersion) {
+        logger.w('[FirmwareUpdate] verify: version mismatch '
+            '(expected=$expectedVersion, got=${match.version}), but bank flip succeeded');
+      }
+      // Bank flip succeeded — mark as done
+      _setState(state.copyWith(
+        phase: FirmwareUpdatePhase.done,
+        activeBank: match,
+      ));
     } on ServiceError catch (e) {
-      logger.e('[USP][FirmwareUpdate]: verify failed', error: e);
+      logger.e('[FirmwareUpdate] verify failed', error: e);
       _fail(e.toString());
       rethrow;
     }
@@ -234,10 +315,10 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
   }
 
   void _fail(String message) {
-    state = state.copyWith(
+    _setState(state.copyWith(
       phase: FirmwareUpdatePhase.failed,
       errorMessage: message,
-    );
+    ));
   }
 
   /// Test-only seam: directly seed an active/target bank pair without hitting

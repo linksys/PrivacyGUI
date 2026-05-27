@@ -6,11 +6,14 @@ import 'package:privacy_gui/core/connection/models/app_connection_state.dart';
 import 'package:privacy_gui/core/connection/providers/app_connection_state_provider.dart';
 import 'package:privacy_gui/core/utils/device_image_helper.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
-import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
+import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart'
+    hide FirmwareImageUIModel;
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
 import 'package:privacy_gui/page/admin/views/dialogs/confirm_action_dialog.dart';
+import 'package:privacy_gui/page/firmware_update/models/firmware_image_ui_model.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_update_phase.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_update_state.dart';
+import 'package:privacy_gui/page/firmware_update/providers/firmware_banks_data_provider.dart';
 import 'package:privacy_gui/page/firmware_update/providers/firmware_update_notifier.dart';
 import 'package:privacy_gui/page/firmware_update/services/firmware_local_upload_service.dart';
 import 'package:privacy_gui/page/firmware_update/views/dialogs/firmware_update_recovery_dialog.dart';
@@ -62,97 +65,50 @@ class _FirmwareUpdateViewState extends ConsumerState<FirmwareUpdateView> {
   }
 
   Widget _buildBody(BuildContext context, FirmwareUpdateState state) {
-    switch (state.phase) {
-      case FirmwareUpdatePhase.idle:
-        return _buildIdle(context, state);
-      case FirmwareUpdatePhase.picking:
-      case FirmwareUpdatePhase.validating:
-        return _buildPickingOrValidating(context, state);
-      case FirmwareUpdatePhase.uploading:
-        return _buildUploading(context, state);
-      case FirmwareUpdatePhase.triggering:
-        return _buildTriggering(context);
-      case FirmwareUpdatePhase.installing:
-        return _buildInstalling(context);
-      case FirmwareUpdatePhase.rebooting:
-        return _buildRebooting(context, state);
-      case FirmwareUpdatePhase.verifying:
-        return _buildVerifying(context);
-      case FirmwareUpdatePhase.done:
-        return _buildDone(context, state);
-      case FirmwareUpdatePhase.failed:
-        return _buildFailed(context, state);
-    }
-  }
-
-  Widget _buildIdle(BuildContext context, FirmwareUpdateState state) {
     final asyncSystemInfo = ref.watch(systemInfoDataProvider);
     final systemInfo = asyncSystemInfo.valueOrNull?.model;
-    final banks = systemInfo?.firmwareImages ?? const [];
-    final isLoadingBanks = asyncSystemInfo.isLoading && banks.isEmpty;
+    final asyncBanks = ref.watch(firmwareBanksDataProvider);
+    final banks = asyncBanks.valueOrNull?.banks ?? const [];
+    final isLoadingBanks = asyncBanks.isLoading && banks.isEmpty;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _buildRouterInfo(context, systemInfo),
+        _RouterStatusCard(
+          systemInfo: systemInfo,
+          banks: banks,
+          isLoadingBanks: isLoadingBanks,
+        ),
         AppGap.xl(),
-        _buildBanksSection(context, banks, isLoadingBanks),
-        AppGap.xl(),
-        _buildSelectedImageCard(context, state),
+        _buildActionCard(context, state),
         AppGap.xl(),
         _buildWarningNote(context),
       ],
     );
   }
 
-  Widget _buildRouterInfo(BuildContext context, SystemInfoUIModel? systemInfo) {
-    final scheme = Theme.of(context).colorScheme;
-    if (systemInfo == null) {
-      return const SizedBox.shrink();
+  Widget _buildActionCard(BuildContext context, FirmwareUpdateState state) {
+    switch (state.phase) {
+      case FirmwareUpdatePhase.idle:
+        return _buildIdleCard(context, state);
+      case FirmwareUpdatePhase.picking:
+      case FirmwareUpdatePhase.validating:
+        return _buildPickingOrValidatingCard(context, state);
+      case FirmwareUpdatePhase.uploading:
+        return _buildUploadingCard(context, state);
+      case FirmwareUpdatePhase.triggering:
+        return _buildTriggeringCard(context);
+      case FirmwareUpdatePhase.installing:
+        return _buildInstallingCard(context);
+      case FirmwareUpdatePhase.rebooting:
+        return _buildRebootingCard(context, state);
+      case FirmwareUpdatePhase.verifying:
+        return _buildVerifyingCard(context);
+      case FirmwareUpdatePhase.done:
+        return _buildDoneCard(context, state);
+      case FirmwareUpdatePhase.failed:
+        return _buildFailedCard(context, state);
     }
-    final iconName = routerIconTestByModel(
-      modelNumber: systemInfo.modelName,
-      hardwareVersion: systemInfo.hardwareVersion,
-    );
-    return Row(
-      children: [
-        Image(
-          image: DeviceImageHelper.getRouterImage(iconName, xl: false),
-          width: 48,
-          height: 48,
-        ),
-        AppGap.md(),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              AppText.titleSmall(systemInfo.modelName),
-              AppGap.xs(),
-              AppText.bodySmall(
-                systemInfo.serialNumber,
-                color: scheme.onSurfaceVariant,
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildBanksSection(
-    BuildContext context,
-    List<FirmwareImageUIModel> banks,
-    bool isLoadingBanks,
-  ) {
-    if (isLoadingBanks) {
-      return Row(
-        children: [
-          const SizedBox(width: 16, height: 16, child: AppLoader()),
-          AppGap.md(),
-          AppText.bodyMedium('Loading firmware banks…'),
-        ],
-      );
-    }
-    return _BanksDetail(banks: banks);
   }
 
   Widget _buildWarningNote(BuildContext context) {
@@ -173,14 +129,13 @@ class _FirmwareUpdateViewState extends ConsumerState<FirmwareUpdateView> {
     );
   }
 
-  Widget _buildSelectedImageCard(
-      BuildContext context, FirmwareUpdateState state) {
+  Widget _buildIdleCard(BuildContext context, FirmwareUpdateState state) {
     final hasPickedFile = state.selectedFileName != null;
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AppText.titleMedium('Selected image'),
+          AppText.titleMedium('Firmware Image'),
           AppGap.md(),
           if (hasPickedFile)
             _buildSelectedFileDetails(context, state)
@@ -228,11 +183,11 @@ class _FirmwareUpdateViewState extends ConsumerState<FirmwareUpdateView> {
     );
   }
 
-  Widget _buildPickingOrValidating(
+  Widget _buildPickingOrValidatingCard(
       BuildContext context, FirmwareUpdateState state) {
     final title = state.phase == FirmwareUpdatePhase.picking
-        ? 'Selecting file'
-        : 'Validating image';
+        ? 'Selecting file…'
+        : 'Validating image…';
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -248,104 +203,134 @@ class _FirmwareUpdateViewState extends ConsumerState<FirmwareUpdateView> {
     );
   }
 
-  Widget _buildUploading(BuildContext context, FirmwareUpdateState state) {
+  Widget _buildUploadingCard(BuildContext context, FirmwareUpdateState state) {
     final progress = state.uploadProgress;
     final percent = (progress * 100).clamp(0, 100).toStringAsFixed(0);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        AppText.titleMedium('Uploading firmware'),
-        AppGap.md(),
-        AppText.bodyMedium('$percent%'),
-        AppGap.xl(),
-        LinearProgressIndicator(value: progress),
-        AppGap.xl(),
-        AppButton.primaryOutline(
-          label: 'Cancel',
-          onTap: () =>
-              ref.read(firmwareUpdateNotifierProvider.notifier).cancel(),
-        ),
-      ],
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppText.titleMedium('Uploading firmware'),
+          AppGap.md(),
+          AppText.bodyMedium('$percent% complete'),
+          AppGap.lg(),
+          LinearProgressIndicator(value: progress),
+          AppGap.xl(),
+          AppButton.primaryOutline(
+            label: 'Cancel',
+            onTap: () =>
+                ref.read(firmwareUpdateNotifierProvider.notifier).cancel(),
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _buildTriggering(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        AppText.titleMedium('Preparing to install'),
-        AppGap.md(),
-        AppText.bodyMedium('Verifying firmware image and preparing flash...'),
-        AppGap.xl(),
-        const AppLoader(),
-      ],
+  Widget _buildTriggeringCard(BuildContext context) {
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppText.titleMedium('Preparing to install'),
+          AppGap.md(),
+          AppText.bodyMedium('Verifying firmware image and preparing flash…'),
+          AppGap.xl(),
+          const AppLoader(variant: LoaderVariant.linear),
+        ],
+      ),
     );
   }
 
-  Widget _buildInstalling(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        AppText.titleMedium('Installing firmware'),
-        AppGap.md(),
-        AppText.bodyMedium(
-            'The router is writing the new image. Do not power off.'),
-        AppGap.xl(),
-        const AppLoader(),
-      ],
+  Widget _buildInstallingCard(BuildContext context) {
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppText.titleMedium('Installing firmware'),
+          AppGap.md(),
+          AppText.bodyMedium(
+              'The router is writing the new image. Do not power off.'),
+          AppGap.xl(),
+          const AppLoader(variant: LoaderVariant.linear),
+        ],
+      ),
     );
   }
 
-  Widget _buildRebooting(BuildContext context, FirmwareUpdateState state) {
-    // Recovery dialog is showing on top with its own loader; keep page content
-    // minimal to avoid visual clutter (two spinners).
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        AppText.titleMedium('Rebooting router'),
-        AppGap.md(),
-        AppText.bodyMedium('Waiting for the router to come back online.'),
-      ],
+  Widget _buildRebootingCard(BuildContext context, FirmwareUpdateState state) {
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppText.titleMedium('Rebooting router'),
+          AppGap.md(),
+          AppText.bodyMedium('Waiting for the router to come back online…'),
+          AppGap.xl(),
+          const AppLoader(variant: LoaderVariant.linear),
+        ],
+      ),
     );
   }
 
-  Widget _buildVerifying(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        AppText.titleMedium('Verifying firmware'),
-        AppGap.md(),
-        const AppLoader(),
-      ],
+  Widget _buildVerifyingCard(BuildContext context) {
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppText.titleMedium('Verifying firmware'),
+          AppGap.md(),
+          AppText.bodyMedium('Confirming the new firmware is running…'),
+          AppGap.xl(),
+          const AppLoader(variant: LoaderVariant.linear),
+        ],
+      ),
     );
   }
 
-  Widget _buildDone(BuildContext context, FirmwareUpdateState state) {
+  Widget _buildDoneCard(BuildContext context, FirmwareUpdateState state) {
+    final scheme = Theme.of(context).colorScheme;
     final newVersion = state.activeBank?.version ?? '—';
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        AppText.titleMedium('Firmware update complete'),
-        AppGap.md(),
-        AppText.bodyMedium('Now running $newVersion.'),
-      ],
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.check_circle, color: scheme.primary, size: 24),
+              AppGap.sm(),
+              AppText.titleMedium('Update complete'),
+            ],
+          ),
+          AppGap.md(),
+          AppText.bodyMedium('Now running firmware version $newVersion.'),
+        ],
+      ),
     );
   }
 
-  Widget _buildFailed(BuildContext context, FirmwareUpdateState state) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        AppText.titleMedium('Firmware update failed'),
-        AppGap.md(),
-        AppText.bodyMedium(state.errorMessage ?? 'Unknown error'),
-        AppGap.xxl(),
-        AppButton(
-          label: 'Retry',
-          onTap: () =>
-              ref.read(firmwareUpdateNotifierProvider.notifier).cancel(),
-        ),
-      ],
+  Widget _buildFailedCard(BuildContext context, FirmwareUpdateState state) {
+    final scheme = Theme.of(context).colorScheme;
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.error_outline, color: scheme.error, size: 24),
+              AppGap.sm(),
+              AppText.titleMedium('Update failed'),
+            ],
+          ),
+          AppGap.md(),
+          AppText.bodyMedium(state.errorMessage ?? 'Unknown error'),
+          AppGap.xl(),
+          AppButton(
+            label: 'Try again',
+            onTap: () =>
+                ref.read(firmwareUpdateNotifierProvider.notifier).cancel(),
+          ),
+        ],
+      ),
     );
   }
 
@@ -400,7 +385,7 @@ class _FirmwareUpdateViewState extends ConsumerState<FirmwareUpdateView> {
     // router; we have no status feedback (B2 blocker), so a fixed delay is
     // the best we can do.
     // Router typically takes ~60-90 seconds to write firmware before reboot.
-    await Future<void>.delayed(const Duration(seconds: 90));
+    await Future<void>.delayed(const Duration(seconds: 60));
     if (!context.mounted) return;
 
     // Hand off to the shared recovery framework. The dialog blocks until the
@@ -429,33 +414,99 @@ class _FirmwareUpdateViewState extends ConsumerState<FirmwareUpdateView> {
   }
 }
 
-class _BanksDetail extends StatelessWidget {
-  const _BanksDetail({required this.banks});
+/// Combined router info + firmware banks card.
+class _RouterStatusCard extends StatelessWidget {
+  const _RouterStatusCard({
+    required this.systemInfo,
+    required this.banks,
+    required this.isLoadingBanks,
+  });
 
+  final SystemInfoUIModel? systemInfo;
   final List<FirmwareImageUIModel> banks;
+  final bool isLoadingBanks;
 
   @override
   Widget build(BuildContext context) {
-    if (banks.isEmpty) {
-      return AppText.bodyMedium('No firmware banks reported by router');
+    final scheme = Theme.of(context).colorScheme;
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildRouterHeader(context),
+          Divider(height: AppSpacing.xl * 2, color: scheme.outlineVariant),
+          AppText.labelLarge('Firmware Banks'),
+          AppGap.md(),
+          if (isLoadingBanks)
+            _buildLoadingBanks()
+          else if (banks.isEmpty)
+            AppText.bodyMedium('No firmware banks reported by router')
+          else
+            _buildBanksList(context),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRouterHeader(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    if (systemInfo == null) {
+      return const SizedBox.shrink();
     }
+    final iconName = routerIconTestByModel(
+      modelNumber: systemInfo!.modelName,
+      hardwareVersion: systemInfo!.hardwareVersion,
+    );
+    return Row(
+      children: [
+        Image(
+          image: DeviceImageHelper.getRouterImage(iconName, xl: false),
+          width: 56,
+          height: 56,
+        ),
+        AppGap.md(),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              AppText.titleMedium(systemInfo!.modelName),
+              AppGap.xs(),
+              AppText.bodySmall(
+                systemInfo!.serialNumber,
+                color: scheme.onSurfaceVariant,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLoadingBanks() {
+    return Row(
+      children: [
+        const SizedBox(width: 16, height: 16, child: AppLoader()),
+        AppGap.md(),
+        AppText.bodyMedium('Loading…'),
+      ],
+    );
+  }
+
+  Widget _buildBanksList(BuildContext context) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         for (var i = 0; i < banks.length; i++) ...[
-          _BankSlotTile(bank: banks[i]),
-          if (i < banks.length - 1) AppGap.md(),
+          _BankRow(bank: banks[i]),
+          if (i < banks.length - 1) AppGap.sm(),
         ],
       ],
     );
   }
 }
 
-/// Hard-drive style "slot" visual: large number badge + status indicators on
-/// a bordered tile. Active bank highlights with primary border + tinted fill;
-/// available slots fall back to a muted neutral border.
-class _BankSlotTile extends StatelessWidget {
-  const _BankSlotTile({required this.bank});
+/// Single bank row with left accent bar indicating active status.
+class _BankRow extends StatelessWidget {
+  const _BankRow({required this.bank});
 
   final FirmwareImageUIModel bank;
 
@@ -472,66 +523,53 @@ class _BankSlotTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final isActive = bank.isActive;
-    final borderColor =
-        isActive ? scheme.primary : scheme.outline.withValues(alpha: 0.4);
-    final tileBg = isActive
-        ? scheme.primaryContainer.withValues(alpha: 0.25)
-        : Colors.transparent;
-    final version = bank.version.isEmpty ? '(empty slot)' : bank.version;
+    final accentColor = isActive ? scheme.primary : scheme.outlineVariant;
+    final bgColor = isActive
+        ? scheme.primaryContainer.withValues(alpha: 0.15)
+        : scheme.surfaceContainerLowest;
+    final version = bank.version.isEmpty ? '(empty)' : bank.version;
     final slot = _slotNumber;
 
     return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: tileBg,
+        color: bgColor,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: borderColor,
-          width: isActive ? 2 : 1,
-        ),
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          _SlotNumberBadge(number: slot, isActive: isActive),
-          AppGap.lg(),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+      clipBehavior: Clip.antiAlias,
+      child: IntrinsicHeight(
+        child: Row(
+          children: [
+            // Left accent bar
+            Container(width: 4, color: accentColor),
+            AppGap.md(),
+            // Slot badge
+            _SlotBadge(number: slot, isActive: isActive),
+            AppGap.md(),
+            // Version + status
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    _StatusChip(
-                      icon: isActive ? Icons.circle : Icons.circle_outlined,
-                      iconColor: isActive ? scheme.primary : scheme.outline,
-                      label: isActive ? 'Active' : 'Available',
-                    ),
-                    if (bank.isBootTarget) ...[
-                      AppGap.sm(),
-                      _StatusChip(
-                        icon: Icons.bolt,
-                        iconColor: scheme.tertiary,
-                        label: 'Boot',
-                      ),
-                    ],
+                    AppText.bodyMedium(version),
+                    AppGap.xs(),
+                    _StatusLabel(isActive: isActive),
                   ],
                 ),
-                AppGap.sm(),
-                AppText.bodyMedium(
-                  version,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
+              ),
             ),
-          ),
-        ],
+            AppGap.md(),
+          ],
+        ),
       ),
     );
   }
 }
 
-class _SlotNumberBadge extends StatelessWidget {
-  const _SlotNumberBadge({required this.number, required this.isActive});
+class _SlotBadge extends StatelessWidget {
+  const _SlotBadge({required this.number, required this.isActive});
 
   final int? number;
   final bool isActive;
@@ -540,16 +578,16 @@ class _SlotNumberBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final bg = isActive ? scheme.primary : scheme.surfaceContainerHighest;
-    final fg = isActive ? scheme.onPrimary : scheme.onSurface;
+    final fg = isActive ? scheme.onPrimary : scheme.onSurfaceVariant;
     return Container(
-      width: 48,
-      height: 48,
+      width: 32,
+      height: 32,
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(6),
       ),
       alignment: Alignment.center,
-      child: AppText.titleLarge(
+      child: AppText.labelLarge(
         number?.toString() ?? '?',
         color: fg,
       ),
@@ -557,25 +595,24 @@ class _SlotNumberBadge extends StatelessWidget {
   }
 }
 
-class _StatusChip extends StatelessWidget {
-  const _StatusChip({
-    required this.icon,
-    required this.iconColor,
-    required this.label,
-  });
+class _StatusLabel extends StatelessWidget {
+  const _StatusLabel({required this.isActive});
 
-  final IconData icon;
-  final Color iconColor;
-  final String label;
+  final bool isActive;
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final icon = isActive ? Icons.check_circle : Icons.circle_outlined;
+    final color = isActive ? scheme.primary : scheme.outline;
+    final label = isActive ? 'Active' : 'Standby';
+
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 14, color: iconColor),
+        Icon(icon, size: 14, color: color),
         const SizedBox(width: 4),
-        AppText.labelSmall(label),
+        AppText.labelSmall(label, color: color),
       ],
     );
   }

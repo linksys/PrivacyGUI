@@ -7,19 +7,21 @@ class FirmwareImageUIModel extends Equatable {
   final String version;
   final String status;
   final bool available;
+  final bool isBootTarget;
 
   const FirmwareImageUIModel({
-    required this.instance,
+    this.instance = 0,
     required this.instancePath,
     required this.name,
     required this.version,
     required this.status,
     required this.available,
+    this.isBootTarget = false,
   });
 
   bool get isActive => status == 'Active';
 
   @override
   List<Object?> get props =>
-      [instance, instancePath, name, version, status, available];
+      [instance, instancePath, name, version, status, available, isBootTarget];
 }

@@ -56,7 +56,7 @@ class FirmwareUploadCancelledException implements Exception {
   String toString() => 'Firmware upload cancelled by user';
 }
 
-const _tag = '[FirmwareUpload]:';
+const _tag = '[FirmwareUpdate]';
 
 /// Pushes a local firmware image to the router.
 ///
