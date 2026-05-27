@@ -32,13 +32,13 @@ class UspBridgeClient {
   Future<Map<String, dynamic>> turboStart() =>
       throw UnsupportedError('UspBridgeClient is only available on Web');
 
-  Future<Map<String, dynamic>> turboHeartbeat() =>
+  Future<Map<String, dynamic>> turboHeartbeat({String? sessionId}) =>
       throw UnsupportedError('UspBridgeClient is only available on Web');
 
   Future<Map<String, dynamic>> turboStatus() =>
       throw UnsupportedError('UspBridgeClient is only available on Web');
 
-  Future<Map<String, dynamic>> turboRelease() =>
+  Future<Map<String, dynamic>> turboRelease({String? sessionId}) =>
       throw UnsupportedError('UspBridgeClient is only available on Web');
 
   /// Synchronously abort the active SSE stream. No-op on non-Web platforms.

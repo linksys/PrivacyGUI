@@ -71,6 +71,7 @@ class _FirmwareUpdateViewState extends ConsumerState<FirmwareUpdateView> {
       case FirmwareUpdatePhase.uploading:
         return _buildUploading(context, state);
       case FirmwareUpdatePhase.triggering:
+        return _buildTriggering(context);
       case FirmwareUpdatePhase.installing:
         return _buildInstalling(context);
       case FirmwareUpdatePhase.rebooting:
@@ -268,6 +269,19 @@ class _FirmwareUpdateViewState extends ConsumerState<FirmwareUpdateView> {
     );
   }
 
+  Widget _buildTriggering(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        AppText.titleMedium('Preparing to install'),
+        AppGap.md(),
+        AppText.bodyMedium('Verifying firmware image and preparing flash...'),
+        AppGap.xl(),
+        const AppLoader(),
+      ],
+    );
+  }
+
   Widget _buildInstalling(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -385,7 +399,8 @@ class _FirmwareUpdateViewState extends ConsumerState<FirmwareUpdateView> {
     // reboot. The actual flash write is happening in the background on the
     // router; we have no status feedback (B2 blocker), so a fixed delay is
     // the best we can do.
-    await Future<void>.delayed(const Duration(seconds: 5));
+    // Router typically takes ~60-90 seconds to write firmware before reboot.
+    await Future<void>.delayed(const Duration(seconds: 90));
     if (!context.mounted) return;
 
     // Hand off to the shared recovery framework. The dialog blocks until the

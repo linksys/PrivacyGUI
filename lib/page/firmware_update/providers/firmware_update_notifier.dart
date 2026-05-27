@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/connection/models/app_connection_state.dart';
 import 'package:privacy_gui/core/connection/providers/app_connection_state_provider.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
+import 'package:privacy_gui/core/usp/providers/bridge_request_throttler_provider.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_image_ui_model.dart';
@@ -137,9 +138,12 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
             phase: FirmwareUpdatePhase.uploading,
             uploadedChunks: sent,
             totalChunks: t,
+            uploadMethod: _uploader.lastUsedMethod,
           );
         },
       );
+      // Capture final upload method in state
+      state = state.copyWith(uploadMethod: _uploader.lastUsedMethod);
     } on FirmwareUploadCancelledException {
       logger.i('[USP][FirmwareUpdate]: upload cancelled by user');
       cancel();
@@ -194,6 +198,8 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
     required int expectedActiveInstance,
   }) async {
     state = state.copyWith(phase: FirmwareUpdatePhase.verifying);
+    // Clear throttler cache to ensure fresh data after reboot
+    ref.read(bridgeRequestThrottlerProvider).clearCache();
     try {
       final ok = await _svc.verifyAfterReboot(
         expectedVersion: expectedVersion,

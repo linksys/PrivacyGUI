@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_image_ui_model.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_update_phase.dart';
+import 'package:privacy_gui/page/firmware_update/services/firmware_upload_strategy.dart';
 
 class FirmwareUpdateState extends Equatable {
   final FirmwareUpdatePhase phase;
@@ -15,6 +16,9 @@ class FirmwareUpdateState extends Equatable {
   final Duration? rebootRemaining;
   final String? errorMessage;
 
+  /// The upload method used for the current/last upload (null if not started).
+  final UploadMethod? uploadMethod;
+
   const FirmwareUpdateState({
     this.phase = FirmwareUpdatePhase.idle,
     this.activeBank,
@@ -27,6 +31,7 @@ class FirmwareUpdateState extends Equatable {
     this.targetStatus,
     this.rebootRemaining,
     this.errorMessage,
+    this.uploadMethod,
   });
 
   double get uploadProgress =>
@@ -44,6 +49,7 @@ class FirmwareUpdateState extends Equatable {
     String? targetStatus,
     Duration? rebootRemaining,
     String? errorMessage,
+    UploadMethod? uploadMethod,
   }) {
     return FirmwareUpdateState(
       phase: phase ?? this.phase,
@@ -57,6 +63,7 @@ class FirmwareUpdateState extends Equatable {
       targetStatus: targetStatus ?? this.targetStatus,
       rebootRemaining: rebootRemaining ?? this.rebootRemaining,
       errorMessage: errorMessage ?? this.errorMessage,
+      uploadMethod: uploadMethod ?? this.uploadMethod,
     );
   }
 
@@ -73,5 +80,6 @@ class FirmwareUpdateState extends Equatable {
         targetStatus,
         rebootRemaining,
         errorMessage,
+        uploadMethod,
       ];
 }

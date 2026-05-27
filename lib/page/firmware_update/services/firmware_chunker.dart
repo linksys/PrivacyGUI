@@ -8,6 +8,11 @@ class FirmwareChunker {
   /// transport upper bound — see `doc/usp/integration/firmware_chunk_size_validation.md`.
   static const int defaultChunkBytes = 65535;
 
+  /// Larger chunk size for WebSocket uploads (192 KB).
+  /// WebSocket bypasses HTTP bridge buffer limits, allowing larger chunks.
+  /// Per Architecture#96: 192KB raw → ~262KB base64 < 512KB MAX_USP_MSG_LEN.
+  static const int wsChunkBytes = 196608;
+
   final int chunkBytes;
 
   const FirmwareChunker({this.chunkBytes = defaultChunkBytes});
