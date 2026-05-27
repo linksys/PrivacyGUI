@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/core/connection/models/app_connection_state.dart';
 import 'package:privacy_gui/core/connection/providers/app_connection_state_provider.dart';
@@ -34,6 +35,10 @@ class FirmwareUpdateView extends ConsumerStatefulWidget {
 }
 
 class _FirmwareUpdateViewState extends ConsumerState<FirmwareUpdateView> {
+  /// Delay after triggering install before showing recovery dialog.
+  /// Router typically takes ~60-90 seconds to write firmware before reboot.
+  static const _installDelayBeforeReboot = Duration(seconds: 60);
+
   @override
   void initState() {
     super.initState();
@@ -369,13 +374,15 @@ class _FirmwareUpdateViewState extends ConsumerState<FirmwareUpdateView> {
       await notifier.runUpload(commandKey: commandKey);
     } on FirmwareUploadCancelledException {
       return;
-    } catch (_) {
+    } catch (e, st) {
+      logger.e('[FirmwareUpdate] runUpload error: $e', error: e, stackTrace: st);
       return;
     }
     if (!context.mounted) return;
     try {
       await notifier.triggerInstall(targetInstance: target.instance);
-    } catch (_) {
+    } catch (e, st) {
+      logger.e('[FirmwareUpdate] triggerInstall error: $e', error: e, stackTrace: st);
       return;
     }
     if (!context.mounted) return;
@@ -384,8 +391,7 @@ class _FirmwareUpdateViewState extends ConsumerState<FirmwareUpdateView> {
     // reboot. The actual flash write is happening in the background on the
     // router; we have no status feedback (B2 blocker), so a fixed delay is
     // the best we can do.
-    // Router typically takes ~60-90 seconds to write firmware before reboot.
-    await Future<void>.delayed(const Duration(seconds: 60));
+    await Future<void>.delayed(_installDelayBeforeReboot);
     if (!context.mounted) return;
 
     // Hand off to the shared recovery framework. The dialog blocks until the
@@ -510,15 +516,6 @@ class _BankRow extends StatelessWidget {
 
   final FirmwareImageUIModel bank;
 
-  int? get _slotNumber {
-    final path = bank.instancePath;
-    final trimmed =
-        path.endsWith('.') ? path.substring(0, path.length - 1) : path;
-    final lastDot = trimmed.lastIndexOf('.');
-    final tail = lastDot < 0 ? trimmed : trimmed.substring(lastDot + 1);
-    return int.tryParse(tail);
-  }
-
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
@@ -528,7 +525,7 @@ class _BankRow extends StatelessWidget {
         ? scheme.primaryContainer.withValues(alpha: 0.15)
         : scheme.surfaceContainerLowest;
     final version = bank.version.isEmpty ? '(empty)' : bank.version;
-    final slot = _slotNumber;
+    final slot = bank.instance;
 
     return Container(
       decoration: BoxDecoration(
@@ -571,7 +568,7 @@ class _BankRow extends StatelessWidget {
 class _SlotBadge extends StatelessWidget {
   const _SlotBadge({required this.number, required this.isActive});
 
-  final int? number;
+  final int number;
   final bool isActive;
 
   @override
@@ -588,7 +585,7 @@ class _SlotBadge extends StatelessWidget {
       ),
       alignment: Alignment.center,
       child: AppText.labelLarge(
-        number?.toString() ?? '?',
+        number.toString(),
         color: fg,
       ),
     );

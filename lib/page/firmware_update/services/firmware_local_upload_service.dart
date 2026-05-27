@@ -6,7 +6,7 @@ import 'package:privacy_gui/core/usp/providers/turbo_session_provider.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
-import 'package:privacy_gui/core/utils/ip_getter/get_local_ip.dart';
+import 'package:privacy_gui/core/utils/ip_getter/ip_getter.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/firmware_update/services/firmware_chunker.dart';
 import 'package:privacy_gui/page/firmware_update/services/firmware_http_upload_strategy.dart';
@@ -117,7 +117,7 @@ class FirmwareLocalUploadService {
       );
     }
 
-    final strategy = await _selectStrategy(chunkTimeout: chunkTimeout);
+    var strategy = await _selectStrategy(chunkTimeout: chunkTimeout);
     _lastUsedMethod = strategy is FirmwareHttpUploadStrategy
         ? UploadMethod.http
         : UploadMethod.websocket;
@@ -125,6 +125,25 @@ class FirmwareLocalUploadService {
 
     try {
       await strategy.prepare();
+    } catch (e) {
+      // WebSocket prepare failed — fallback to HTTP
+      if (strategy is! FirmwareHttpUploadStrategy) {
+        logger.w('$_tag ${strategy.name} prepare failed, falling back to HTTP: $e');
+        await strategy.finalize();
+        strategy = FirmwareHttpUploadStrategy(
+          client: _usp,
+          lock: _lock,
+          chunkTimeout: chunkTimeout,
+        );
+        _lastUsedMethod = UploadMethod.http;
+        logger.i('$_tag Fallback to ${strategy.name} strategy');
+        await strategy.prepare();
+      } else {
+        rethrow;
+      }
+    }
+
+    try {
       await _uploadWithStrategy(
         strategy: strategy,
         bytes: bytes,

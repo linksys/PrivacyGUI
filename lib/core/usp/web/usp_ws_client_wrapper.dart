@@ -129,21 +129,43 @@ class UspWsClientWrapper {
   static Future<UspWsClientWrapper> connect(
     String url, {
     String subprotocol = 'v1.usp',
+    Duration timeout = const Duration(seconds: 10),
   }) async {
     logger.d('$_tag Connecting to $url with subprotocol: $subprotocol');
     try {
       final jsClient = await UspWsClientJS.connect_(
         url.toJS,
         subprotocol.toJS,
-      ).toDart;
+      ).toDart.timeout(timeout, onTimeout: () {
+        logger.e('$_tag Connection timeout after ${timeout.inSeconds}s');
+        throw StateError('WebSocket connection timeout');
+      });
 
       if (jsClient == null) {
         throw StateError('WebSocket connect returned null');
       }
 
       final wrapper = UspWsClientWrapper._(jsClient as UspWsClientJS);
+      // _setupCallbacks is called in constructor, state callback now active
+
+      // Wait for state to settle — either 'open' from callback or 'closed' on error
+      // Most connections settle within 100-300ms; SSL errors close immediately
+      for (var i = 0; i < 10; i++) {
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+        if (wrapper._currentState == WsConnectionState.open) {
+          logger.i('$_tag Connected to $url');
+          return wrapper;
+        }
+        if (wrapper._currentState == WsConnectionState.closed) {
+          logger.e('$_tag WebSocket closed during connect');
+          wrapper.dispose();
+          throw StateError('WebSocket connection closed (SSL error or server reject)');
+        }
+      }
+
+      // Still connecting after 1s — assume success (some browsers don't fire open callback)
       wrapper._currentState = WsConnectionState.open;
-      logger.i('$_tag Connected to $url');
+      logger.i('$_tag Connected to $url (no open callback, assuming success)');
       return wrapper;
     } catch (e) {
       logger.e('$_tag Connection failed: $e');
