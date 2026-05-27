@@ -5,6 +5,8 @@ import 'dart:io';
 
 part 'html_generate_functions.dart';
 
+const _coverageIgnore = ['apps', 'system_log', 'test_console'];
+
 Map<String, dynamic> scanCoverage() {
   final viewDir = Directory('lib/page');
   final testDir = Directory('test/golden_test/page');
@@ -34,6 +36,8 @@ Map<String, dynamic> scanCoverage() {
     final pageIndex = pathParts.indexOf('page');
     if (pageIndex == -1 || pageIndex + 1 >= pathParts.length) continue;
     final feature = pathParts[pageIndex + 1];
+
+    if (_coverageIgnore.contains(feature)) continue;
 
     final testPattern = Directory('${testDir.path}/$feature/localizations');
     if (testPattern.existsSync()) {
