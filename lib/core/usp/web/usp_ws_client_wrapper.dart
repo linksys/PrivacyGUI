@@ -159,7 +159,8 @@ class UspWsClientWrapper {
         if (wrapper._currentState == WsConnectionState.closed) {
           logger.e('$_tag WebSocket closed during connect');
           wrapper.dispose();
-          throw StateError('WebSocket connection closed (SSL error or server reject)');
+          throw StateError(
+              'WebSocket connection closed (SSL error or server reject)');
         }
       }
 

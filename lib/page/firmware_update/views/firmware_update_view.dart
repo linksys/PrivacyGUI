@@ -375,14 +375,16 @@ class _FirmwareUpdateViewState extends ConsumerState<FirmwareUpdateView> {
     } on FirmwareUploadCancelledException {
       return;
     } catch (e, st) {
-      logger.e('[FirmwareUpdate] runUpload error: $e', error: e, stackTrace: st);
+      logger.e('[FirmwareUpdate] runUpload error: $e',
+          error: e, stackTrace: st);
       return;
     }
     if (!context.mounted) return;
     try {
       await notifier.triggerInstall(targetInstance: target.instance);
     } catch (e, st) {
-      logger.e('[FirmwareUpdate] triggerInstall error: $e', error: e, stackTrace: st);
+      logger.e('[FirmwareUpdate] triggerInstall error: $e',
+          error: e, stackTrace: st);
       return;
     }
     if (!context.mounted) return;

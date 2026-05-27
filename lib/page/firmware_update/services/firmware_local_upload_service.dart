@@ -128,7 +128,8 @@ class FirmwareLocalUploadService {
     } catch (e) {
       // WebSocket prepare failed — fallback to HTTP
       if (strategy is! FirmwareHttpUploadStrategy) {
-        logger.w('$_tag ${strategy.name} prepare failed, falling back to HTTP: $e');
+        logger.w(
+            '$_tag ${strategy.name} prepare failed, falling back to HTTP: $e');
         await strategy.finalize();
         strategy = FirmwareHttpUploadStrategy(
           client: _usp,
