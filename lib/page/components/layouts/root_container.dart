@@ -45,7 +45,7 @@ class _AppRootContainerState extends ConsumerState<AppRootContainer> {
 
     return LayoutBuilder(builder: ((context, constraints) {
       return IdleChecker(
-        idleTime: const Duration(minutes: 5),
+        idleTime: const Duration(minutes: 15),
         onIdle: () {
           // not for debug
           if (!kReleaseMode) {
