@@ -18,7 +18,9 @@
                 "--dart-define",
                 "force=local",
                 "--dart-define",
-                "custom_layout=true"
+                "custom_layout=true",
+                "--dart-define",
+                "theme_studio=true"
             ],
             "program": "lib/main.dart"
         },

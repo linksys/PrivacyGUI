@@ -22,13 +22,14 @@ flutter run                       # Run on connected device/emulator
 
 ### Building
 ```bash
-# Web build with parameters: buildNumber, force, href, cloud, picker, ca, themeSource, themeJson
-./build_web.sh <buildNumber> <force> <href> <cloud> <picker> <ca> [themeSource] [themeJson]
+# Web build with parameters: buildNumber, force, href, cloud, picker, ca, themeSource, themeJson, themeStudio
+./build_web.sh <buildNumber> <force> <href> <cloud> <picker> <ca> [themeSource] [themeJson] [themeStudio]
 
 # Examples:
 ./build_web.sh 100 false "/" prod false true                           # Default theme
 ./build_web.sh 100 false "/" prod false true cicd '{"style":"neo"}'    # Override theme with JSON
 ./build_web.sh 100 false "/" prod false true network "https://..."     # Load theme from network
+./build_web.sh 100 false "/" qa false true "" "" true                  # Enable theme studio
 ```
 
 ### Testing
