@@ -4,6 +4,7 @@ import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/generated/admin_users.g.dart';
+import 'package:privacy_gui/generated/device_operations.g.dart';
 import 'package:privacy_gui/generated/time_settings.g.dart';
 import 'package:privacy_gui/page/admin/models/admin_ui_models.dart';
 
@@ -158,7 +159,7 @@ class UspAdminService {
   /// Reboot the router.
   Future<void> reboot() async {
     try {
-      await _usp.operate('Device.Reboot()');
+      await DeviceOperations.reboot(_usp);
     } catch (e) {
       throw mapUspErrorToServiceError(e);
     }
@@ -167,7 +168,7 @@ class UspAdminService {
   /// Factory reset the router.
   Future<void> factoryReset() async {
     try {
-      await _usp.operate('Device.FactoryReset()');
+      await DeviceOperations.factoryReset(_usp);
     } catch (e) {
       throw mapUspErrorToServiceError(e);
     }
