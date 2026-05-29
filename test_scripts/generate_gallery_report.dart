@@ -169,6 +169,7 @@ String _generateHtml(List<_GoldenEntry> entries, String version) {
       --color-text: #1e293b;
       --color-text-muted: #64748b;
       --color-accent: #3b82f6;
+      --thumb-min: 200px;
     }
     @media (prefers-color-scheme: dark) {
       :root {
@@ -196,6 +197,24 @@ String _generateHtml(List<_GoldenEntry> entries, String version) {
     .summary-item { text-align: center; }
     .summary-value { font-size: 1.5rem; font-weight: 700; color: var(--color-accent); }
     .summary-label { font-size: 0.75rem; color: var(--color-text-muted); text-transform: uppercase; }
+    .toolbar {
+      display: flex; gap: 1.5rem; align-items: center; flex-wrap: wrap;
+      margin-bottom: 1.5rem; padding: 0.75rem 1rem;
+      background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 0.75rem;
+    }
+    .toolbar-group { display: flex; align-items: center; gap: 0.5rem; }
+    .toolbar-group label { font-size: 0.75rem; text-transform: uppercase; color: var(--color-text-muted); }
+    .btn-group { display: flex; gap: 0; }
+    .btn-group button {
+      padding: 0.375rem 0.75rem; font-size: 0.8rem; border: 1px solid var(--color-border);
+      background: var(--color-bg); color: var(--color-text); cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn-group button:first-child { border-radius: 0.375rem 0 0 0.375rem; }
+    .btn-group button:last-child { border-radius: 0 0.375rem 0.375rem 0; }
+    .btn-group button.active {
+      background: var(--color-accent); color: #fff; border-color: var(--color-accent);
+    }
     .filters {
       display: flex; gap: 1.5rem; flex-wrap: wrap; margin-bottom: 1.5rem; padding: 1rem;
       background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 0.75rem;
@@ -218,7 +237,7 @@ String _generateHtml(List<_GoldenEntry> entries, String version) {
     .feature-body.open { display: block; }
     .gallery-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(var(--thumb-min), 1fr));
       gap: 1rem;
     }
     .gallery-card {
@@ -228,6 +247,7 @@ String _generateHtml(List<_GoldenEntry> entries, String version) {
     .gallery-card img {
       width: 100%; height: auto; display: block;
       border-bottom: 1px solid var(--color-border);
+      cursor: pointer;
     }
     .gallery-card .card-meta {
       padding: 0.5rem 0.75rem; font-size: 0.75rem;
@@ -243,6 +263,58 @@ String _generateHtml(List<_GoldenEntry> entries, String version) {
       font-size: 0.65rem; padding: 0.125rem 0.375rem;
       border-radius: 3px; background: var(--color-border); color: var(--color-text-muted);
     }
+    /* Comparison view */
+    .compare-row {
+      margin-bottom: 1.5rem; border: 1px solid var(--color-border);
+      border-radius: 0.75rem; overflow: hidden;
+    }
+    .compare-row-header {
+      padding: 0.5rem 1rem; background: var(--color-surface);
+      font-weight: 600; font-size: 0.85rem; border-bottom: 1px solid var(--color-border);
+    }
+    .compare-row-body {
+      display: flex; gap: 0; overflow-x: auto; padding: 0.75rem;
+    }
+    .compare-cell {
+      flex: 0 0 auto; text-align: center; padding: 0 0.5rem;
+    }
+    .compare-cell img {
+      height: 200px; width: auto; max-width: 300px; object-fit: contain;
+      border: 1px solid var(--color-border); border-radius: 0.375rem;
+      cursor: pointer;
+    }
+    .compare-cell .cell-label {
+      font-size: 0.7rem; color: var(--color-text-muted); margin-top: 0.25rem;
+    }
+    body.size-s .compare-cell img { height: 140px; max-width: 200px; }
+    body.size-l .compare-cell img { height: 300px; max-width: 450px; }
+    #comparison-view { display: none; }
+    /* Lightbox */
+    .lightbox {
+      display: none; position: fixed; inset: 0; z-index: 1000;
+      background: rgba(0,0,0,0.9); align-items: center; justify-content: center;
+      flex-direction: column;
+    }
+    .lightbox.open { display: flex; }
+    .lightbox img {
+      max-width: 90vw; max-height: 80vh; object-fit: contain;
+      border-radius: 0.5rem; box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+    }
+    .lightbox .lb-caption {
+      color: #f1f5f9; margin-top: 1rem; font-size: 0.875rem; text-align: center;
+    }
+    .lightbox .lb-close {
+      position: absolute; top: 1rem; right: 1.5rem;
+      color: #f1f5f9; font-size: 2rem; cursor: pointer; line-height: 1;
+    }
+    .lightbox .lb-nav {
+      position: absolute; top: 50%; transform: translateY(-50%);
+      color: #f1f5f9; font-size: 2.5rem; cursor: pointer; padding: 0.5rem;
+      user-select: none; opacity: 0.7; transition: opacity 0.2s;
+    }
+    .lightbox .lb-nav:hover { opacity: 1; }
+    .lightbox .lb-prev { left: 1.5rem; }
+    .lightbox .lb-next { right: 1.5rem; }
   </style>
 </head>
 <body>
@@ -254,6 +326,24 @@ String _generateHtml(List<_GoldenEntry> entries, String version) {
     <div class="summary-item"><div class="summary-value">${sortedFeatures.length}</div><div class="summary-label">Features</div></div>
     <div class="summary-item"><div class="summary-value">${sortedLocales.length}</div><div class="summary-label">Locales</div></div>
     <div class="summary-item"><div class="summary-value">${sortedDevices.length}</div><div class="summary-label">Devices</div></div>
+  </div>
+
+  <div class="toolbar">
+    <div class="toolbar-group">
+      <label>View</label>
+      <div class="btn-group" id="view-toggle">
+        <button class="active" onclick="setView('feature')">Feature</button>
+        <button onclick="setView('compare')">Compare</button>
+      </div>
+    </div>
+    <div class="toolbar-group">
+      <label>Size</label>
+      <div class="btn-group" id="size-toggle">
+        <button onclick="setSize('s')">S</button>
+        <button class="active" onclick="setSize('m')">M</button>
+        <button onclick="setSize('l')">L</button>
+      </div>
+    </div>
   </div>
 
   <div class="filters">''');
@@ -280,7 +370,9 @@ String _generateHtml(List<_GoldenEntry> entries, String version) {
   buffer.writeln('    </div>');
 
   buffer.writeln('  </div>');
-  buffer.writeln('  <div id="gallery">');
+
+  // Feature view
+  buffer.writeln('  <div id="feature-view">');
 
   for (final feature in sortedFeatures) {
     final featureEntries = entries.where((e) => e.feature == feature).toList();
@@ -296,9 +388,9 @@ String _generateHtml(List<_GoldenEntry> entries, String version) {
 
     for (final entry in featureEntries) {
       buffer.writeln(
-          '        <div class="gallery-card" data-locale="${entry.locale}" data-device="${entry.device}">');
+          '        <div class="gallery-card" data-locale="${entry.locale}" data-device="${entry.device}" data-feature="${entry.feature}" data-state="${entry.state}">');
       buffer.writeln(
-          '          <img src="${entry.relativePath}" alt="${entry.viewName}-${entry.state}" loading="lazy">');
+          '          <img src="${entry.relativePath}" alt="${entry.viewName}-${entry.state}" loading="lazy" onclick="openLightbox(this)">');
       buffer.writeln('          <div class="card-meta">');
       buffer
           .writeln('            <div class="card-title">${entry.state}</div>');
@@ -320,22 +412,73 @@ String _generateHtml(List<_GoldenEntry> entries, String version) {
 
   buffer.writeln('  </div>');
 
+  // Comparison view (built by JS from embedded data)
+  buffer.writeln('  <div id="comparison-view"></div>');
+
+  // Embed entry data as JSON for comparison view
+  final jsonEntries = entries
+      .map((e) =>
+          '{"feature":"${e.feature}","state":"${e.state}","device":"${e.device}","locale":"${e.locale}","brightness":"${e.brightness}","path":"${e.relativePath}"}')
+      .join(',');
+
   buffer.writeln('''
+  <div class="lightbox" id="lightbox">
+    <span class="lb-close" onclick="closeLightbox()">&times;</span>
+    <span class="lb-nav lb-prev" onclick="navLightbox(-1)">&lsaquo;</span>
+    <span class="lb-nav lb-next" onclick="navLightbox(1)">&rsaquo;</span>
+    <img id="lb-img" src="" alt="">
+    <div class="lb-caption" id="lb-caption"></div>
+  </div>
+
   <script>
+    const allEntries = [$jsonEntries];
+    let currentView = 'feature';
+
+    function setView(view) {
+      currentView = view;
+      document.getElementById('feature-view').style.display = view === 'feature' ? 'block' : 'none';
+      document.getElementById('comparison-view').style.display = view === 'compare' ? 'block' : 'none';
+      document.querySelectorAll('#view-toggle button').forEach(b => b.classList.remove('active'));
+      document.querySelector('#view-toggle button:' + (view === 'feature' ? 'first-child' : 'last-child')).classList.add('active');
+      if (view === 'compare') buildComparisonView();
+    }
+
+    function setSize(size) {
+      document.body.classList.remove('size-s', 'size-m', 'size-l');
+      if (size === 's') {
+        document.body.classList.add('size-s');
+        document.documentElement.style.setProperty('--thumb-min', '150px');
+      } else if (size === 'l') {
+        document.body.classList.add('size-l');
+        document.documentElement.style.setProperty('--thumb-min', '380px');
+      } else {
+        document.documentElement.style.setProperty('--thumb-min', '200px');
+      }
+      document.querySelectorAll('#size-toggle button').forEach(b => b.classList.remove('active'));
+      const idx = size === 's' ? 0 : size === 'm' ? 1 : 2;
+      document.querySelectorAll('#size-toggle button')[idx].classList.add('active');
+    }
+
     function toggleFeature(header) {
       header.nextElementSibling.classList.toggle('open');
     }
 
-    function applyFilters() {
-      const features = [...document.querySelectorAll('input[name="feature"]:checked')].map(e => e.value);
-      const locales = [...document.querySelectorAll('input[name="locale"]:checked')].map(e => e.value);
-      const devices = [...document.querySelectorAll('input[name="device"]:checked')].map(e => e.value);
+    function getActiveFilters() {
+      return {
+        features: [...document.querySelectorAll('input[name="feature"]:checked')].map(e => e.value),
+        locales: [...document.querySelectorAll('input[name="locale"]:checked')].map(e => e.value),
+        devices: [...document.querySelectorAll('input[name="device"]:checked')].map(e => e.value),
+      };
+    }
 
-      document.querySelectorAll('.feature-section').forEach(section => {
+    function applyFilters() {
+      const {features, locales, devices} = getActiveFilters();
+
+      // Feature view filtering
+      document.querySelectorAll('#feature-view .feature-section').forEach(section => {
         const f = section.dataset.feature;
         if (!features.includes(f)) { section.style.display = 'none'; return; }
         section.style.display = '';
-
         let visibleCount = 0;
         section.querySelectorAll('.gallery-card').forEach(card => {
           const show = locales.includes(card.dataset.locale) && devices.includes(card.dataset.device);
@@ -344,7 +487,135 @@ String _generateHtml(List<_GoldenEntry> entries, String version) {
         });
         section.querySelector('.feature-count').textContent = visibleCount + ' images';
       });
+
+      // Rebuild comparison view if active
+      if (currentView === 'compare') buildComparisonView();
     }
+
+    function buildComparisonView() {
+      const container = document.getElementById('comparison-view');
+      const {features, locales, devices} = getActiveFilters();
+
+      const filtered = allEntries.filter(e =>
+        features.includes(e.feature) && locales.includes(e.locale) && devices.includes(e.device)
+      );
+
+      // Group by feature -> state+device
+      const groups = new Map();
+      for (const e of filtered) {
+        const key = e.feature + '|||' + e.state + '|||' + e.device;
+        if (!groups.has(key)) groups.set(key, []);
+        groups.get(key).push(e);
+      }
+
+      let html = '';
+      let lastFeature = '';
+      for (const [key, items] of groups) {
+        const [feature, state, device] = key.split('|||');
+        if (feature !== lastFeature) {
+          if (lastFeature) html += '</div>';
+          html += '<div class="feature-section" style="margin-bottom:1rem;border:1px solid var(--color-border);border-radius:0.75rem;overflow:hidden;">';
+          html += '<div class="feature-header" onclick="toggleFeature(this)"><span>' + feature + '</span><span class="feature-count"></span></div>';
+          html += '<div class="feature-body open">';
+          lastFeature = feature;
+        }
+        html += '<div class="compare-row"><div class="compare-row-header">' + state + ' <span class="tag">' + device + '</span></div>';
+        html += '<div class="compare-row-body">';
+        // Sort items by locale
+        items.sort((a, b) => a.locale.localeCompare(b.locale));
+        for (const item of items) {
+          html += '<div class="compare-cell">';
+          html += '<img src="' + item.path + '" alt="' + item.state + '-' + item.locale + '" loading="lazy" onclick="openLightbox(this)">';
+          html += '<div class="cell-label">' + item.locale + (item.brightness === 'dark' ? ' (dark)' : '') + '</div>';
+          html += '</div>';
+        }
+        html += '</div></div>';
+      }
+      if (lastFeature) html += '</div></div>';
+      container.innerHTML = html;
+    }
+
+    // Lightbox
+    let lbImages = [];
+    let lbIndex = 0;
+
+    function getVisibleImages() {
+      const activeView = currentView === 'feature' ? '#feature-view' : '#comparison-view';
+      return [...document.querySelectorAll(activeView + ' img[onclick]')].filter(img => {
+        let el = img.closest('.gallery-card') || img.closest('.compare-cell');
+        while (el) {
+          if (el.style && el.style.display === 'none') return false;
+          el = el.parentElement;
+        }
+        return true;
+      });
+    }
+
+    function openLightbox(img) {
+      lbImages = getVisibleImages();
+      lbIndex = lbImages.indexOf(img);
+      if (lbIndex === -1) lbIndex = 0;
+      showLightboxImage();
+      document.getElementById('lightbox').classList.add('open');
+    }
+
+    function closeLightbox() {
+      document.getElementById('lightbox').classList.remove('open');
+    }
+
+    function navLightbox(dir) {
+      lbIndex = (lbIndex + dir + lbImages.length) % lbImages.length;
+      showLightboxImage();
+    }
+
+    function showLightboxImage() {
+      const img = lbImages[lbIndex];
+      document.getElementById('lb-img').src = img.src;
+
+      let sectionLabel = '';
+      let posText = '';
+
+      if (currentView === 'feature') {
+        const card = img.closest('.gallery-card');
+        const section = card ? card.closest('.feature-section') : null;
+        const feature = section ? section.dataset.feature : '';
+        const title = card ? card.querySelector('.card-title')?.textContent || '' : '';
+        const tags = card ? [...card.querySelectorAll('.tag')].map(t => t.textContent).join(' / ') : '';
+        if (section) {
+          const sectionImgs = lbImages.filter(i => i.closest('.feature-section') === section);
+          const posInSection = sectionImgs.indexOf(img) + 1;
+          posText = feature + ' (' + posInSection + '/' + sectionImgs.length + ')';
+        }
+        sectionLabel = (posText ? posText + ' — ' : '') + title + (tags ? ' — ' + tags : '');
+      } else {
+        const row = img.closest('.compare-row');
+        const section = img.closest('.feature-section');
+        const cell = img.closest('.compare-cell');
+        const locale = cell ? cell.querySelector('.cell-label')?.textContent || '' : '';
+        const state = row ? row.querySelector('.compare-row-header')?.textContent || '' : '';
+        const feature = section ? section.querySelector('.feature-header span')?.textContent || '' : '';
+        if (section) {
+          const sectionImgs = lbImages.filter(i => i.closest('.feature-section') === section);
+          const posInSection = sectionImgs.indexOf(img) + 1;
+          posText = feature + ' (' + posInSection + '/' + sectionImgs.length + ')';
+        }
+        sectionLabel = (posText ? posText + ' — ' : '') + state.trim() + ' — ' + locale;
+      }
+
+      document.getElementById('lb-caption').textContent = sectionLabel;
+    }
+
+    document.addEventListener('keydown', (e) => {
+      const lb = document.getElementById('lightbox');
+      if (!lb.classList.contains('open')) return;
+      if (e.key === 'Escape') closeLightbox();
+      else if (e.key === 'ArrowLeft') navLightbox(-1);
+      else if (e.key === 'ArrowRight') navLightbox(1);
+    });
+
+    document.getElementById('lightbox').addEventListener('click', (e) => {
+      if (e.target === document.getElementById('lightbox')) closeLightbox();
+    });
 
     // Auto-open all sections on load
     document.querySelectorAll('.feature-body').forEach(b => b.classList.add('open'));
