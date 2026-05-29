@@ -69,9 +69,8 @@ void runViewGoldenTests(GoldenTestConfig config) {
                 height: effectiveSize.height,
               ),
               pumpBeforeTest: (tester) async {
-                for (int i = 0; i < 5; i++) {
-                  await tester.pump(const Duration(milliseconds: 50));
-                }
+                await _precacheIfNeeded(tester, config);
+                await _settleWithTimeout(tester);
               },
               pumpWidget: (tester, widget) async {
                 _suppressOverflowErrors();
@@ -117,11 +116,10 @@ void runViewGoldenTests(GoldenTestConfig config) {
                   height: effectiveSize.height,
                 ),
                 pumpBeforeTest: (tester) async {
-                  for (int i = 0; i < 5; i++) {
-                    await tester.pump(const Duration(milliseconds: 50));
-                  }
+                  await _precacheIfNeeded(tester, config);
+                  await _settleWithTimeout(tester);
                   await interactionEntry.value.steps(tester);
-                  await tester.pump(const Duration(milliseconds: 100));
+                  await _settleWithTimeout(tester);
                 },
                 pumpWidget: (tester, widget) async {
                   _suppressOverflowErrors();
@@ -143,6 +141,34 @@ void runViewGoldenTests(GoldenTestConfig config) {
           }
         }
       }
+    }
+  });
+}
+
+/// Pumps until no pending frames or timeout — whichever comes first.
+/// Unlike raw pumpAndSettle, this won't fail on infinite animations
+/// (e.g., spinners frozen by TickerMode or looping AnimationControllers).
+Future<void> _settleWithTimeout(WidgetTester tester) async {
+  try {
+    await tester.pumpAndSettle(
+      const Duration(milliseconds: 50),
+      EnginePhase.sendSemanticsUpdate,
+      const Duration(milliseconds: 500),
+    );
+  } on FlutterError {
+    // pumpAndSettle timed out — widget tree has infinite animations.
+    // The TickerMode freeze makes this safe; pump one last frame and move on.
+    await tester.pump();
+  }
+}
+
+/// Precaches images in a real async zone so asset resolution completes.
+Future<void> _precacheIfNeeded(WidgetTester tester, GoldenTestConfig config) async {
+  if (config.precacheImages == null) return;
+  await tester.runAsync(() async {
+    final element = tester.element(find.byType(MaterialApp));
+    for (final image in config.precacheImages!()) {
+      await precacheImage(image, element);
     }
   });
 }

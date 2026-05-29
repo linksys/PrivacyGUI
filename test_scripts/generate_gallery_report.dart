@@ -215,6 +215,12 @@ String _generateHtml(List<_GoldenEntry> entries, String version) {
     .btn-group button.active {
       background: var(--color-accent); color: #fff; border-color: var(--color-accent);
     }
+    .search-box {
+      padding: 0.375rem 0.75rem; font-size: 0.85rem;
+      border: 1px solid var(--color-border); border-radius: 0.375rem;
+      background: var(--color-bg); color: var(--color-text); width: 200px;
+    }
+    .search-box::placeholder { color: var(--color-text-muted); }
     .filters {
       display: flex; gap: 1.5rem; flex-wrap: wrap; margin-bottom: 1.5rem; padding: 1rem;
       background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 0.75rem;
@@ -344,6 +350,9 @@ String _generateHtml(List<_GoldenEntry> entries, String version) {
         <button onclick="setSize('l')">L</button>
       </div>
     </div>
+    <div class="toolbar-group">
+      <input type="text" class="search-box" id="searchBox" placeholder="Search state..." oninput="applyFilters()">
+    </div>
   </div>
 
   <div class="filters">''');
@@ -363,9 +372,19 @@ String _generateHtml(List<_GoldenEntry> entries, String version) {
   buffer.writeln('    </div>');
 
   buffer.writeln('    <div class="filter-group"><h3>Device</h3>');
-  for (final d in sortedDevices) {
+  final standardDevices = sortedDevices
+      .where((d) => d.startsWith('phone') || d.startsWith('desktop'))
+      .toList();
+  final componentDevices = sortedDevices
+      .where((d) => !d.startsWith('phone') && !d.startsWith('desktop'))
+      .toList();
+  for (final d in standardDevices) {
     buffer.writeln(
         '      <label><input type="checkbox" name="device" value="$d" checked onchange="applyFilters()">$d</label>');
+  }
+  if (componentDevices.isNotEmpty) {
+    buffer.writeln(
+        '      <label><input type="checkbox" name="device" value="_components" checked onchange="applyFilters()">Components (${componentDevices.length} sizes)</label>');
   }
   buffer.writeln('    </div>');
 
@@ -463,16 +482,31 @@ String _generateHtml(List<_GoldenEntry> entries, String version) {
       header.nextElementSibling.classList.toggle('open');
     }
 
+    function isStandardDevice(d) {
+      return d.startsWith('phone') || d.startsWith('desktop');
+    }
+
     function getActiveFilters() {
+      const rawDevices = [...document.querySelectorAll('input[name="device"]:checked')].map(e => e.value);
+      const includeComponents = rawDevices.includes('_components');
+      const standardDevices = rawDevices.filter(d => d !== '_components');
       return {
         features: [...document.querySelectorAll('input[name="feature"]:checked')].map(e => e.value),
         locales: [...document.querySelectorAll('input[name="locale"]:checked')].map(e => e.value),
-        devices: [...document.querySelectorAll('input[name="device"]:checked')].map(e => e.value),
+        standardDevices,
+        includeComponents,
+        search: (document.getElementById('searchBox')?.value || '').toLowerCase(),
       };
     }
 
+    function matchDevice(device, filters) {
+      if (isStandardDevice(device)) return filters.standardDevices.includes(device);
+      return filters.includeComponents;
+    }
+
     function applyFilters() {
-      const {features, locales, devices} = getActiveFilters();
+      const filters = getActiveFilters();
+      const {features, locales, search} = filters;
 
       // Feature view filtering
       document.querySelectorAll('#feature-view .feature-section').forEach(section => {
@@ -481,11 +515,14 @@ String _generateHtml(List<_GoldenEntry> entries, String version) {
         section.style.display = '';
         let visibleCount = 0;
         section.querySelectorAll('.gallery-card').forEach(card => {
-          const show = locales.includes(card.dataset.locale) && devices.includes(card.dataset.device);
+          const matchFilter = locales.includes(card.dataset.locale) && matchDevice(card.dataset.device, filters);
+          const matchSearch = !search || (card.dataset.state || '').toLowerCase().includes(search) || (card.dataset.feature || '').toLowerCase().includes(search);
+          const show = matchFilter && matchSearch;
           card.style.display = show ? '' : 'none';
           if (show) visibleCount++;
         });
         section.querySelector('.feature-count').textContent = visibleCount + ' images';
+        if (visibleCount === 0 && search) section.style.display = 'none';
       });
 
       // Rebuild comparison view if active
@@ -494,10 +531,12 @@ String _generateHtml(List<_GoldenEntry> entries, String version) {
 
     function buildComparisonView() {
       const container = document.getElementById('comparison-view');
-      const {features, locales, devices} = getActiveFilters();
+      const filters = getActiveFilters();
+      const {features, locales, search} = filters;
 
       const filtered = allEntries.filter(e =>
-        features.includes(e.feature) && locales.includes(e.locale) && devices.includes(e.device)
+        features.includes(e.feature) && locales.includes(e.locale) && matchDevice(e.device, filters) &&
+        (!search || e.state.toLowerCase().includes(search) || e.feature.toLowerCase().includes(search))
       );
 
       // Group by feature -> state+device

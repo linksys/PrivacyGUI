@@ -77,6 +77,31 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
     }
     .missing-list summary { cursor: pointer; font-weight: 500; }
     .missing-list ul { margin-top: 0.5rem; padding-left: 1.5rem; }
+    .toolbar {
+      display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;
+      margin-bottom: 1.5rem; padding: 0.75rem 1rem;
+      background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 0.75rem;
+    }
+    .toolbar-group { display: flex; align-items: center; gap: 0.5rem; }
+    .toolbar-group label { font-size: 0.75rem; text-transform: uppercase; color: var(--color-text-muted); }
+    .btn-group { display: flex; gap: 0; }
+    .btn-group button {
+      padding: 0.375rem 0.75rem; font-size: 0.8rem; border: 1px solid var(--color-border);
+      background: var(--color-bg); color: var(--color-text); cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn-group button:first-child { border-radius: 0.375rem 0 0 0.375rem; }
+    .btn-group button:last-child { border-radius: 0 0.375rem 0.375rem 0; }
+    .btn-group button.active {
+      background: var(--color-accent); color: #fff; border-color: var(--color-accent);
+    }
+    .search-box {
+      padding: 0.375rem 0.75rem; font-size: 0.85rem;
+      border: 1px solid var(--color-border); border-radius: 0.375rem;
+      background: var(--color-bg); color: var(--color-text);
+      width: 200px;
+    }
+    .search-box::placeholder { color: var(--color-text-muted); }
     .filters {
       display: flex;
       gap: 1.5rem;
@@ -160,6 +185,7 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
       height: auto;
       border: 1px solid var(--color-border);
       border-radius: 0.25rem;
+      cursor: pointer;
     }
     .error-message {
       font-family: 'SF Mono', 'Fira Code', monospace;
@@ -173,6 +199,69 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
       max-height: 150px;
       overflow-y: auto;
       color: var(--color-fail);
+    }
+    /* Lightbox */
+    .lightbox {
+      display: none; position: fixed; inset: 0; z-index: 1000;
+      background: rgba(0,0,0,0.92); align-items: center; justify-content: center;
+      flex-direction: column;
+    }
+    .lightbox.open { display: flex; }
+    .lightbox img {
+      max-width: 90vw; max-height: 75vh; object-fit: contain;
+      border-radius: 0.5rem; box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+    }
+    .lightbox .lb-caption {
+      color: #f1f5f9; margin-top: 0.75rem; font-size: 0.875rem; text-align: center;
+    }
+    .lightbox .lb-close {
+      position: absolute; top: 1rem; right: 1.5rem;
+      color: #f1f5f9; font-size: 2rem; cursor: pointer; line-height: 1;
+    }
+    .lightbox .lb-nav {
+      position: absolute; top: 50%; transform: translateY(-50%);
+      color: #f1f5f9; font-size: 2.5rem; cursor: pointer; padding: 0.5rem;
+      user-select: none; opacity: 0.7; transition: opacity 0.2s;
+    }
+    .lightbox .lb-nav:hover { opacity: 1; }
+    .lightbox .lb-prev { left: 1.5rem; }
+    .lightbox .lb-next { right: 1.5rem; }
+    /* Overlay slider */
+    .overlay-container {
+      position: relative; display: inline-block; margin: 0 auto;
+      max-width: 100%; overflow: hidden; border-radius: 0.25rem;
+      border: 1px solid var(--color-border);
+    }
+    .overlay-container img {
+      display: block; max-width: 100%; height: auto;
+    }
+    .overlay-actual {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      overflow: hidden;
+    }
+    .overlay-actual img {
+      position: absolute; top: 0; left: 0; width: var(--full-width); height: auto;
+    }
+    .overlay-slider {
+      position: absolute; top: 0; bottom: 0; width: 3px;
+      background: var(--color-accent); cursor: ew-resize; z-index: 2;
+    }
+    .overlay-slider::after {
+      content: ''; position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 20px; height: 20px; border-radius: 50%;
+      background: var(--color-accent); border: 2px solid #fff;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    }
+    .overlay-labels {
+      display: flex; justify-content: space-between; padding: 0.25rem 0.5rem;
+      font-size: 0.65rem; color: var(--color-text-muted); text-transform: uppercase;
+    }
+    /* Locale grouping in failures */
+    .locale-group-header {
+      padding: 0.5rem 1rem; font-size: 0.8rem; font-weight: 600;
+      background: var(--color-border); color: var(--color-text-muted);
+      text-transform: uppercase; letter-spacing: 0.05em;
     }
   </style>
 </head>
@@ -196,16 +285,69 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
     </div>
   </div>
 
+  <div class="toolbar">
+    <div class="toolbar-group">
+      <label>Quick Filter</label>
+      <div class="btn-group" id="quick-filter">
+        <button class="active" onclick="setQuickFilter('all')">All</button>
+        <button onclick="setQuickFilter('failures')">Failures Only</button>
+      </div>
+    </div>
+    <div class="toolbar-group">
+      <label>Group By</label>
+      <div class="btn-group" id="group-toggle">
+        <button class="active" onclick="setGroupBy('feature')">Feature</button>
+        <button onclick="setGroupBy('locale')">Locale</button>
+      </div>
+    </div>
+    <div class="toolbar-group">
+      <input type="text" class="search-box" id="searchBox" placeholder="Search tests..." oninput="renderResults()">
+    </div>
+  </div>
+
   <div class="filters" id="filterBar"></div>
   <div class="results" id="resultsContainer"></div>
 
+  <div class="lightbox" id="lightbox">
+    <span class="lb-close" onclick="closeLightbox()">&times;</span>
+    <span class="lb-nav lb-prev" onclick="navLightbox(-1)">&lsaquo;</span>
+    <span class="lb-nav lb-next" onclick="navLightbox(1)">&rsaquo;</span>
+    <img id="lb-img" src="" alt="">
+    <div class="lb-caption" id="lb-caption"></div>
+  </div>
+
   <script>
     const DATA = ${jsonEncode(result)};
+    let currentGroupBy = 'feature';
+    let quickFilter = 'all';
 
     function init() {
       renderSummary();
       renderCoverage();
       renderFilters();
+      renderResults();
+    }
+
+    function setQuickFilter(mode) {
+      quickFilter = mode;
+      document.querySelectorAll('#quick-filter button').forEach(b => b.classList.remove('active'));
+      const idx = mode === 'all' ? 0 : 1;
+      document.querySelectorAll('#quick-filter button')[idx].classList.add('active');
+      if (mode === 'failures') {
+        document.querySelectorAll('input[name="result"]').forEach(cb => {
+          cb.checked = cb.value === 'error';
+        });
+      } else {
+        document.querySelectorAll('input[name="result"]').forEach(cb => { cb.checked = true; });
+      }
+      renderResults();
+    }
+
+    function setGroupBy(mode) {
+      currentGroupBy = mode;
+      document.querySelectorAll('#group-toggle button').forEach(b => b.classList.remove('active'));
+      const idx = mode === 'feature' ? 0 : 1;
+      document.querySelectorAll('#group-toggle button')[idx].classList.add('active');
       renderResults();
     }
 
@@ -265,8 +407,8 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
 
     function renderFilters() {
       const bar = document.getElementById('filterBar');
-      const locales = [...new Set(DATA.tests.map(t => t.locale).filter(Boolean))];
-      const devices = [...new Set(DATA.tests.map(t => t.deviceType).filter(Boolean))];
+      const locales = [...new Set(DATA.tests.map(t => t.locale).filter(Boolean))].sort();
+      const devices = [...new Set(DATA.tests.map(t => t.deviceType).filter(Boolean))].sort();
       let html = '';
 
       html += '<div class="filter-group"><h3>Locale</h3>';
@@ -289,79 +431,127 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
       const locales = [...document.querySelectorAll('input[name="locale"]:checked')].map(e => e.value);
       const devices = [...document.querySelectorAll('input[name="device"]:checked')].map(e => e.value);
       const results = [...document.querySelectorAll('input[name="result"]:checked')].map(e => e.value);
-      return { locales, devices, results };
+      const search = (document.getElementById('searchBox')?.value || '').toLowerCase();
+      return { locales, devices, results, search };
     }
 
     function renderResults() {
       const filters = getFilters();
       const tests = DATA.tests.filter(function(t) {
-        return filters.locales.includes(t.locale) &&
-               filters.devices.includes(t.deviceType) &&
-               filters.results.includes(t.result);
+        if (!filters.locales.includes(t.locale)) return false;
+        if (!filters.devices.includes(t.deviceType)) return false;
+        if (!filters.results.includes(t.result)) return false;
+        if (filters.search) {
+          const name = (t.tsName || t.name || '').toLowerCase();
+          const feature = (t.testCaseFilePath || '').toLowerCase();
+          if (!name.includes(filters.search) && !feature.includes(filters.search)) return false;
+        }
+        return true;
       });
 
       const groups = {};
       tests.forEach(function(t) {
-        const path = t.testCaseFilePath || '';
-        const match = path.match(/page\\/([^/]+)/);
-        const feature = match ? match[1] : 'other';
-        if (!groups[feature]) groups[feature] = [];
-        groups[feature].push(t);
+        let groupKey;
+        if (currentGroupBy === 'locale') {
+          groupKey = t.locale || 'unknown';
+        } else {
+          const path = t.testCaseFilePath || '';
+          const match = path.match(/page\\/([^/]+)/);
+          groupKey = match ? match[1] : 'other';
+        }
+        if (!groups[groupKey]) groups[groupKey] = [];
+        groups[groupKey].push(t);
       });
 
       let html = '';
-      const sortedFeatures = Object.keys(groups).sort();
-      sortedFeatures.forEach(function(feature) {
-        const featureTests = groups[feature];
-        const failCount = featureTests.filter(t => t.result === 'error').length;
+      const sortedGroups = Object.keys(groups).sort();
+      sortedGroups.forEach(function(groupName) {
+        const groupTests = groups[groupName];
+        const failCount = groupTests.filter(t => t.result === 'error').length;
         const badgeClass = failCount > 0 ? 'badge-fail' : 'badge-pass';
         const badgeText = failCount > 0 ? failCount + ' failed' : 'all pass';
 
         html += '<div class="feature-group">';
         html += '<div class="feature-header" onclick="toggleFeature(this)">';
-        html += '<span>' + feature + ' (' + featureTests.length + ')</span>';
+        html += '<span>' + groupName + ' (' + groupTests.length + ')</span>';
         html += '<span class="feature-badge ' + badgeClass + '">' + badgeText + '</span>';
         html += '</div>';
         html += '<div class="feature-body' + (failCount > 0 ? ' open' : '') + '">';
 
-        featureTests.forEach(function(t) {
-          const isPass = t.result === 'success';
-          const icon = isPass ? '&#10003;' : '&#10007;';
-          const iconClass = isPass ? 'pass' : 'fail';
-          const rowClass = isPass ? '' : ' fail';
-          const name = t.tsName || t.name || 'unknown';
+        // Sub-group by locale when grouped by feature (for cross-locale failure view)
+        if (currentGroupBy === 'feature' && failCount > 0) {
+          const localeGroups = {};
+          groupTests.forEach(function(t) {
+            const loc = t.locale || 'unknown';
+            if (!localeGroups[loc]) localeGroups[loc] = [];
+            localeGroups[loc].push(t);
+          });
+          const sortedLocales = Object.keys(localeGroups).sort();
+          const hasMultipleLocales = sortedLocales.length > 1;
 
-          html += '<div class="test-row' + rowClass + '">';
-          html += '<span class="test-icon ' + iconClass + '">' + icon + '</span>';
-          html += '<span class="test-name">' + escapeHtml(name) + '</span>';
-          html += '<span class="test-meta">' + (t.deviceType || '') + ' / ' + (t.locale || '') + '</span>';
-          html += '</div>';
-
-          if (!isPass) {
-            html += '<div class="failure-details">';
-            if (t.failureImages) {
-              html += '<div class="image-comparison">';
-              html += renderImage('Expected', t.failureImages.expected);
-              html += renderImage('Actual', t.failureImages.actual);
-              html += renderImage('Diff', t.failureImages.diff);
-              html += '</div>';
+          sortedLocales.forEach(function(loc) {
+            if (hasMultipleLocales) {
+              const locFails = localeGroups[loc].filter(t => t.result === 'error').length;
+              html += '<div class="locale-group-header">' + loc + (locFails > 0 ? ' (' + locFails + ' failed)' : ' (all pass)') + '</div>';
             }
-            if (t.messages && t.messages.length > 0) {
-              html += '<div class="error-message">' + escapeHtml(t.messages.join('\\n')) + '</div>';
-            }
-            html += '</div>';
-          }
-        });
+            localeGroups[loc].forEach(function(t) { html += renderTestRow(t); });
+          });
+        } else {
+          groupTests.forEach(function(t) { html += renderTestRow(t); });
+        }
 
         html += '</div></div>';
       });
 
       document.getElementById('resultsContainer').innerHTML = html;
+      initOverlaySliders();
+    }
+
+    function renderTestRow(t) {
+      const isPass = t.result === 'success';
+      const icon = isPass ? '&#10003;' : '&#10007;';
+      const iconClass = isPass ? 'pass' : 'fail';
+      const rowClass = isPass ? '' : ' fail';
+      const name = t.tsName || t.name || 'unknown';
+
+      let html = '<div class="test-row' + rowClass + '">';
+      html += '<span class="test-icon ' + iconClass + '">' + icon + '</span>';
+      html += '<span class="test-name">' + escapeHtml(name) + '</span>';
+      html += '<span class="test-meta">' + (t.deviceType || '') + ' / ' + (t.locale || '') + '</span>';
+      html += '</div>';
+
+      if (!isPass) {
+        html += '<div class="failure-details">';
+        if (t.failureImages) {
+          // Standard 3-column comparison
+          html += '<div class="image-comparison">';
+          html += renderImage('Expected', t.failureImages.expected);
+          html += renderImage('Actual', t.failureImages.actual);
+          html += renderImage('Diff', t.failureImages.diff);
+          html += '</div>';
+          // Overlay slider (expected vs actual)
+          if (t.failureImages.expected && t.failureImages.actual) {
+            html += '<div style="margin-top:0.75rem;">';
+            html += '<div class="overlay-labels"><span>Expected</span><span>Actual</span></div>';
+            html += '<div class="overlay-container" data-overlay>';
+            html += '<img src="' + t.failureImages.expected + '" class="overlay-base" alt="Expected">';
+            html += '<div class="overlay-actual" style="width:50%"><img src="' + t.failureImages.actual + '" alt="Actual"></div>';
+            html += '<div class="overlay-slider" style="left:50%"></div>';
+            html += '</div>';
+            html += '</div>';
+          }
+        }
+        if (t.messages && t.messages.length > 0) {
+          html += '<div class="error-message">' + escapeHtml(t.messages.join('\\n')) + '</div>';
+        }
+        html += '</div>';
+      }
+      return html;
     }
 
     function renderImage(label, src) {
       if (!src) return '<figure><figcaption>' + label + '</figcaption><div style="padding:2rem;color:var(--color-text-muted)">N/A</div></figure>';
-      return '<figure><figcaption>' + label + '</figcaption><img src="' + src + '" alt="' + label + '" loading="lazy"></figure>';
+      return '<figure><figcaption>' + label + '</figcaption><img src="' + src + '" alt="' + label + '" loading="lazy" onclick="openLightbox(this)"></figure>';
     }
 
     function toggleFeature(header) {
@@ -373,6 +563,85 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
       const div = document.createElement('div');
       div.textContent = text;
       return div.innerHTML;
+    }
+
+    // Lightbox
+    let lbImages = [];
+    let lbIndex = 0;
+
+    function openLightbox(img) {
+      lbImages = [...document.querySelectorAll('.image-comparison img[onclick]')];
+      lbIndex = lbImages.indexOf(img);
+      if (lbIndex === -1) lbIndex = 0;
+      showLightboxImage();
+      document.getElementById('lightbox').classList.add('open');
+    }
+
+    function closeLightbox() {
+      document.getElementById('lightbox').classList.remove('open');
+    }
+
+    function navLightbox(dir) {
+      lbIndex = (lbIndex + dir + lbImages.length) % lbImages.length;
+      showLightboxImage();
+    }
+
+    function showLightboxImage() {
+      const img = lbImages[lbIndex];
+      document.getElementById('lb-img').src = img.src;
+      const figure = img.closest('figure');
+      const label = figure ? figure.querySelector('figcaption')?.textContent || '' : '';
+      const details = figure ? figure.closest('.failure-details') : null;
+      const row = details ? details.previousElementSibling : null;
+      const testName = row ? row.querySelector('.test-name')?.textContent || '' : '';
+      const pos = (lbIndex + 1) + '/' + lbImages.length;
+      document.getElementById('lb-caption').textContent = pos + ' — ' + testName + ' (' + label + ')';
+    }
+
+    document.addEventListener('keydown', (e) => {
+      const lb = document.getElementById('lightbox');
+      if (!lb.classList.contains('open')) return;
+      if (e.key === 'Escape') closeLightbox();
+      else if (e.key === 'ArrowLeft') navLightbox(-1);
+      else if (e.key === 'ArrowRight') navLightbox(1);
+    });
+
+    document.getElementById('lightbox').addEventListener('click', (e) => {
+      if (e.target === document.getElementById('lightbox')) closeLightbox();
+    });
+
+    // Overlay slider interaction
+    function initOverlaySliders() {
+      document.querySelectorAll('[data-overlay]').forEach(container => {
+        const slider = container.querySelector('.overlay-slider');
+        const actualLayer = container.querySelector('.overlay-actual');
+        if (!slider || !actualLayer) return;
+
+        let dragging = false;
+        const onMove = (e) => {
+          if (!dragging) return;
+          const rect = container.getBoundingClientRect();
+          let x = (e.clientX || e.touches[0].clientX) - rect.left;
+          x = Math.max(0, Math.min(x, rect.width));
+          const pct = (x / rect.width) * 100;
+          slider.style.left = pct + '%';
+          actualLayer.style.width = pct + '%';
+        };
+        slider.addEventListener('mousedown', () => { dragging = true; });
+        slider.addEventListener('touchstart', () => { dragging = true; });
+        document.addEventListener('mouseup', () => { dragging = false; });
+        document.addEventListener('touchend', () => { dragging = false; });
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('touchmove', onMove);
+
+        // Set actual image width to container full width
+        const baseImg = container.querySelector('.overlay-base');
+        baseImg.addEventListener('load', () => {
+          const actualImg = actualLayer.querySelector('img');
+          actualImg.style.width = baseImg.offsetWidth + 'px';
+          container.style.setProperty('--full-width', baseImg.offsetWidth + 'px');
+        });
+      });
     }
 
     document.addEventListener('DOMContentLoaded', init);

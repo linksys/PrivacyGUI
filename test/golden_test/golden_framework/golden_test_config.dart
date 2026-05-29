@@ -71,6 +71,11 @@ class GoldenTestConfig {
   /// Use for long pages that need full-content capture without scrolling.
   final double? height;
 
+  /// Images to precache before taking the screenshot.
+  /// Required for views that use Image widgets with AssetImage/package assets,
+  /// because image resolution is async and won't complete in a fake async zone.
+  final List<ImageProvider> Function()? precacheImages;
+
   const GoldenTestConfig({
     required this.viewName,
     required this.view,
@@ -81,5 +86,6 @@ class GoldenTestConfig {
     this.devices = GoldenDevice.defaults,
     this.themes = const [Brightness.light],
     this.height,
+    this.precacheImages,
   });
 }

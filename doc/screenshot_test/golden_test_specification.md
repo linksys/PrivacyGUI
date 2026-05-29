@@ -75,6 +75,10 @@ class GoldenTestConfig {
   /// Optional fixed height override. When set, all devices use this height
   /// instead of their default. Useful for views with tall scrollable content.
   final double? height;
+
+  /// Images to precache before taking the screenshot (optional).
+  /// Required for views that use Image widgets with package assets (e.g., DeviceImageHelper).
+  final List<ImageProvider> Function()? precacheImages;
 }
 
 enum ShellType { pageView, scaffold, custom }
@@ -447,10 +451,8 @@ void runViewGoldenTests(GoldenTestConfig config) {
                 height: effectiveSize.height,
               ),
               pumpBeforeTest: (tester) async {
-                // Multiple pumps for async provider initialization
-                for (int i = 0; i < 5; i++) {
-                  await tester.pump(const Duration(milliseconds: 50));
-                }
+                await _precacheIfNeeded(tester, config);
+                await _settleWithTimeout(tester);
               },
               pumpWidget: (tester, widget) async {
                 _suppressOverflowErrors();
@@ -482,11 +484,10 @@ void runViewGoldenTests(GoldenTestConfig config) {
           fileName: name,
           constraints: BoxConstraints.expand(...),
           pumpBeforeTest: (tester) async {
-            for (int i = 0; i < 5; i++) {
-              await tester.pump(const Duration(milliseconds: 50));
-            }
+            await _precacheIfNeeded(tester, config);
+            await _settleWithTimeout(tester);
             await interactionEntry.value.steps(tester);
-            await tester.pump(const Duration(milliseconds: 100));
+            await _settleWithTimeout(tester);
           },
           pumpWidget: (tester, widget) async {
             _suppressOverflowErrors();
@@ -501,14 +502,59 @@ void runViewGoldenTests(GoldenTestConfig config) {
     }
   });
 }
+
+/// Pumps until no pending frames or timeout — whichever comes first.
+/// Won't fail on infinite animations (spinners, looping controllers).
+Future<void> _settleWithTimeout(WidgetTester tester) async {
+  try {
+    await tester.pumpAndSettle(
+      const Duration(milliseconds: 50),
+      EnginePhase.sendSemanticsUpdate,
+      const Duration(milliseconds: 500),
+    );
+  } on FlutterError {
+    await tester.pump();
+  }
+}
+
+/// Precaches images in a real async zone so asset resolution completes.
+Future<void> _precacheIfNeeded(WidgetTester tester, GoldenTestConfig config) async {
+  if (config.precacheImages == null) return;
+  await tester.runAsync(() async {
+    final element = tester.element(find.byType(MaterialApp));
+    for (final image in config.precacheImages!()) {
+      await precacheImage(image, element);
+    }
+  });
+}
 ```
 
 ### Key Implementation Details
 
 - **`physicalSize` + `devicePixelRatio`**: Both must be set for `MediaQuery.sizeOf` to report the correct viewport width. `setSurfaceSize` alone only controls the screenshot capture surface, not the logical size seen by widgets.
-- **Multiple pump cycles**: Async providers (especially those that read from SharedPreferences or perform post-frame callbacks) need multiple frames to initialize. 5×50ms pumps covers typical async initialization.
-- **Interaction post-pump**: After executing interaction steps, `pump(Duration(milliseconds: 100))` fires any pending delayed timers (e.g., animation callbacks).
+- **`_settleWithTimeout`**: Uses `pumpAndSettle` with a 500ms timeout instead of the naive 5×pump loop. If `pumpAndSettle` times out (due to infinite animations like spinners), it catches the `FlutterError` and pumps one final frame. This is both correct (waits for async providers to initialize) and robust (doesn't fail on looping animations).
+- **`_precacheIfNeeded`**: For views that render `Image` widgets with package assets (e.g., `DeviceImageHelper.getRouterImage()`), image resolution is async and won't complete inside the test's fake async zone. `tester.runAsync()` escapes the fake zone to allow real I/O, ensuring images are fully resolved before the screenshot is taken.
+- **Interaction settle**: After executing interaction steps (tab switches, dialog opens), `_settleWithTimeout` is called again to let the UI reach a stable state before capture.
 - **Overflow suppression**: `_suppressOverflowErrors()` prevents golden tests from failing due to cosmetic overflow — the overflow is visible in the golden image itself.
+
+### Image Precaching
+
+Views that use `Image` widgets with asset providers (from `ui_kit_library` or elsewhere) must declare `precacheImages` in their config. Without this, images may render as empty boxes because the asset bundle resolution Future never completes in the test environment's fake async zone.
+
+```dart
+GoldenTestConfig(
+  viewName: 'topology',
+  view: () => const UspTopologyView(),
+  shell: ShellType.custom,
+  precacheImages: () => [
+    DeviceImageHelper.getRouterImage('routerMx6200'),
+    DeviceImageHelper.getRouterImage('routerLn12'),
+  ],
+  states: { /* ... */ },
+)
+```
+
+Views that only render text, icons, and standard Flutter widgets do NOT need this — only views with `Image(image: ...)` or `DecorationImage`.
 
 ---
 
@@ -851,5 +897,5 @@ flutter test --update-goldens test/usp_test/page/firewall/  # single feature
 ## Future Considerations
 
 - **CI environment standardization**: Golden images are generated on macOS with specific font rendering. CI runners on Linux may produce different pixel results. Consider a Docker image with fixed font rendering if cross-platform diffs become an issue.
-- **Animation determinism**: `JiggleShake` uses unseeded `Random()`, requiring `diffThreshold` tolerance. If more animations are added, consider seeding random sources or disabling animations during golden capture.
+- **Animation determinism**: `_settleWithTimeout` handles infinite animations gracefully (catches timeout and proceeds). `diffThreshold: 0.025` remains as a safety margin for non-deterministic animations like `JiggleShake` (uses unseeded `Random()`). If more such animations are added, consider seeding random sources.
 - **Shared golden baselines for loading/error**: Loading and error UI is shared across all views. A single shared golden test could cover those components, reducing per-feature state requirements.
