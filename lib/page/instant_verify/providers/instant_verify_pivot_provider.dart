@@ -1,6 +1,8 @@
 import 'dart:developer' as dev;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/page/instant_verify/providers/local_storage_stub.dart'
+    if (dart.library.html) 'package:privacy_gui/page/instant_verify/providers/local_storage_web.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/command/base_command.dart';
 import 'package:privacy_gui/core/jnap/models/ping_status.dart';
@@ -75,6 +77,10 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
       planSpeedMbps: state.planSpeedMbps,
       // Preserve journey actions — accumulated across session for V2.0 handoff.
       journeyActions: state.journeyActions,
+      // Preserve restart flag — session-scoped, not re-fetchable.
+      hasRestartedThisSession: state.hasRestartedThisSession,
+      // B-6: Check localStorage for recent prior restart on first load.
+      recentPriorRestart: state.recentPriorRestart || _checkRecentPriorRestart(),
     );
 
     try {
@@ -197,10 +203,14 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
       // firstClientIPAddress..lastClientIPAddress = pool range.
       // Falls back to 150 if GetLANSettings is unavailable. (Fix: Item 9)
       int dhcpPoolLimit = 150;
+      int? dhcpLeaseMinutes;
       final lanData = orNull(supplementary[10]);
       if (lanData != null) {
-        final firstIp = lanData['firstClientIPAddress'] as String?;
-        final lastIp = lanData['lastClientIPAddress'] as String?;
+        final dhcpSettings = lanData['dhcpSettings'] as Map<String, dynamic>?;
+        final firstIp = (dhcpSettings?['firstClientIPAddress'] as String?) ??
+            lanData['firstClientIPAddress'] as String?;
+        final lastIp = (dhcpSettings?['lastClientIPAddress'] as String?) ??
+            lanData['lastClientIPAddress'] as String?;
         if (firstIp != null && lastIp != null) {
           final firstOctet = int.tryParse(firstIp.split('.').last) ?? 0;
           final lastOctet = int.tryParse(lastIp.split('.').last) ?? 0;
@@ -208,6 +218,8 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
             dhcpPoolLimit = lastOctet - firstOctet + 1;
           }
         }
+        dhcpLeaseMinutes = (dhcpSettings?['leaseTime'] as int?) ??
+            (lanData['leaseTime'] as int?);
       }
 
       // Merge backhaul data into mesh nodes
@@ -285,6 +297,7 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
         clients: clients,
         dhcpLeasesCount: dhcpLeases,
         dhcpPoolLimit: dhcpPoolLimit,
+        dhcpLeaseMinutes: dhcpLeaseMinutes,
         radioInfo: orNull(supplementary[0]),
         guestNetwork: orNull(supplementary[1]),
         firmwareUpdate: firmwareData,
@@ -612,8 +625,9 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
   // ── Actions ───────────────────────────────────────────────────────────
 
   Future<void> restartRouter() async {
-    state = state.copyWith(isRestarting: true);
+    state = state.copyWith(isRestarting: true, hasRestartedThisSession: true);
     _recordAction('restart_router');
+    _persistRestartTimestamp();
     try {
       await _send(JNAPAction.reboot);
     } catch (e) {
@@ -1555,5 +1569,21 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
         backhaulRadioId: radioId,
       );
     }).toList();
+  }
+
+  // ── B-6: Recurrence detection (localStorage) ─────────────────────────
+
+  static const _restartKey = 'instant_test_last_restart';
+
+  void _persistRestartTimestamp() {
+    setStoredValue(_restartKey, DateTime.now().toUtc().toIso8601String());
+  }
+
+  bool _checkRecentPriorRestart() {
+    final stored = getStoredValue(_restartKey);
+    if (stored == null) return false;
+    final timestamp = DateTime.tryParse(stored);
+    if (timestamp == null) return false;
+    return DateTime.now().toUtc().difference(timestamp).inHours < 24;
   }
 }

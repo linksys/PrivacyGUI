@@ -97,6 +97,9 @@ class InstantVerifyPivotState extends Equatable {
   final List<JourneyAction> journeyActions;
 
   // ── Action state ──────────────────────────────────────────────────────
+  final bool hasRestartedThisSession;
+  final bool recentPriorRestart;
+  final int? dhcpLeaseMinutes;
   final bool isRestarting;
   final bool isUpdatingFirmware;
   final String? pingOutput;
@@ -141,6 +144,9 @@ class InstantVerifyPivotState extends Equatable {
     this.verdict,
     this.verdictIsPreliminary = true,
     this.journeyActions = const [],
+    this.hasRestartedThisSession = false,
+    this.recentPriorRestart = false,
+    this.dhcpLeaseMinutes,
     this.isRestarting = false,
     this.isUpdatingFirmware = false,
     this.pingOutput,
@@ -185,6 +191,9 @@ class InstantVerifyPivotState extends Equatable {
     Verdict? verdict,
     bool? verdictIsPreliminary,
     List<JourneyAction>? journeyActions,
+    bool? hasRestartedThisSession,
+    bool? recentPriorRestart,
+    int? dhcpLeaseMinutes,
     bool? isRestarting,
     bool? isUpdatingFirmware,
     String? pingOutput,
@@ -228,6 +237,9 @@ class InstantVerifyPivotState extends Equatable {
       verdict: verdict ?? this.verdict,
       verdictIsPreliminary: verdictIsPreliminary ?? this.verdictIsPreliminary,
       journeyActions: journeyActions ?? this.journeyActions,
+      hasRestartedThisSession: hasRestartedThisSession ?? this.hasRestartedThisSession,
+      recentPriorRestart: recentPriorRestart ?? this.recentPriorRestart,
+      dhcpLeaseMinutes: dhcpLeaseMinutes ?? this.dhcpLeaseMinutes,
       isRestarting: isRestarting ?? this.isRestarting,
       isUpdatingFirmware: isUpdatingFirmware ?? this.isUpdatingFirmware,
       pingOutput: pingOutput ?? this.pingOutput,
@@ -406,6 +418,9 @@ class InstantVerifyPivotState extends Equatable {
         verdict,
         verdictIsPreliminary,
         journeyActions,
+        hasRestartedThisSession,
+        recentPriorRestart,
+        dhcpLeaseMinutes,
         isRestarting,
         isUpdatingFirmware,
         pingOutput,

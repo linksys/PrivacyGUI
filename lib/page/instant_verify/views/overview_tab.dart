@@ -21,7 +21,6 @@ class _OverviewTabState extends ConsumerState<OverviewTab> {
   bool _findingsExpanded = false;
   bool _checksExpanded = false;
   int _restartCountdown = 0;
-  bool _hasRestarted = false;
 
   @override
   void initState() {
@@ -64,8 +63,35 @@ class _OverviewTabState extends ConsumerState<OverviewTab> {
             onAction: _handleAction,
             onViewClients: widget.onViewClients,
             onNavigateToFlow: widget.onNavigateToFlow,
-            hasRestarted: _hasRestarted,
+            hasRestarted: state.hasRestartedThisSession,
           ),
+          if (state.recentPriorRestart &&
+              state.verdict != null &&
+              state.verdict!.findings.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Card(
+              color: Theme.of(context).colorScheme.tertiaryContainer,
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.history, size: 18,
+                        color: Theme.of(context).colorScheme.onTertiaryContainer),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'You restarted your router recently but the problem came back. '
+                        'This usually means the issue isn\'t something a restart can fix.',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context).colorScheme.onTertiaryContainer),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
           if (state.issueDevices.isNotEmpty) ...[
             const SizedBox(height: 16),
             _DeviceIssuesCard(state: state),
@@ -83,7 +109,7 @@ class _OverviewTabState extends ConsumerState<OverviewTab> {
           Center(
             child: OutlinedButton.icon(
               icon: const Icon(Icons.refresh, size: 18),
-              label: Text(_hasRestarted ? 'Check Again' : 'Run Again'),
+              label: Text(state.hasRestartedThisSession ? 'Check Again' : 'Run Again'),
               onPressed: state.phase == PivotLoadPhase.loading ||
                       state.phase == PivotLoadPhase.jnapLoaded ||
                       _restartCountdown > 0
@@ -122,12 +148,11 @@ class _OverviewTabState extends ConsumerState<OverviewTab> {
   Future<void> _handleAction(String actionKey) async {
     final notifier = ref.read(instantVerifyPivotProvider.notifier);
     if (actionKey == VerdictEngine.actionRestartRouter) {
-      // Post-restart escalation (PRD v0.7 D-26): don't offer restart again
-      if (_hasRestarted) return;
+      final state = ref.read(instantVerifyPivotProvider);
+      if (state.hasRestartedThisSession) return;
       final confirmed = await _confirmRestart(context);
       if (confirmed == true) {
         await notifier.restartRouter();
-        setState(() => _hasRestarted = true);
         _startRestartCountdown();
       }
     } else if (actionKey == VerdictEngine.actionFirmwareUpdate) {

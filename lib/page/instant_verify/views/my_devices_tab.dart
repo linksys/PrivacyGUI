@@ -675,6 +675,14 @@ class _DeviceDetailSheetState extends ConsumerState<_DeviceDetailSheet> {
       rows.add(_metaRow(context, colors, 'IP', client.ipAddress!));
     }
     rows.add(_metaRow(context, colors, 'MAC', client.macAddress));
+    final leaseMin = widget.state.dhcpLeaseMinutes;
+    if (leaseMin != null && leaseMin > 0) {
+      final hours = (leaseMin / 60).ceil();
+      rows.add(_metaRow(context, colors, 'Connected',
+          'Within the last ${hours == 1 ? "hour" : "$hours hours"}'));
+    } else {
+      rows.add(_metaRow(context, colors, 'Status', 'Connected now'));
+    }
     if (rows.isEmpty) return const SizedBox.shrink();
     return Container(
       padding: const EdgeInsets.all(10),

@@ -454,6 +454,16 @@ Widget _linksysSupportTile(BuildContext context) => Card(
 
 /// Centralised restart confirmation. Shows a dialog, then calls restartRouter().
 Future<void> _confirmAndRestart(BuildContext context, WidgetRef ref) async {
+  final state = ref.read(instantVerifyPivotProvider);
+  if (state.hasRestartedThisSession) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('You\'ve already restarted this session. If the issue persists, contact Linksys Support.'),
+        behavior: SnackBarBehavior.floating,
+      ));
+    }
+    return;
+  }
   final confirmed = await showDialog<bool>(
     context: context,
     builder: (ctx) => AlertDialog(
@@ -477,6 +487,27 @@ Future<void> _confirmAndRestart(BuildContext context, WidgetRef ref) async {
   if (confirmed == true && context.mounted) {
     await ref.read(instantVerifyPivotProvider.notifier).restartRouter();
   }
+}
+
+Widget _restartOrEscalate(BuildContext context, WidgetRef ref, InstantVerifyPivotState state) {
+  if (state.hasRestartedThisSession) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'You\'ve already restarted your router this session. '
+          'If the issue persists, contact Linksys Support.',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant),
+        ),
+      ],
+    );
+  }
+  return OutlinedButton.icon(
+    onPressed: () => _confirmAndRestart(context, ref),
+    icon: const Icon(Icons.restart_alt),
+    label: const Text('Restart Router'),
+  );
 }
 
 class _LoadingButton extends StatelessWidget {

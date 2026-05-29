@@ -90,7 +90,7 @@ class _InternetConnectionCard extends StatelessWidget {
               _infoRow(context, 'Type', state.wanConnectionType!),
             if (connected && state.wanIpAddress != null)
               _infoRow(context, 'IP Address', state.wanIpAddress!),
-            if (!connected) ...[
+            if (!connected && !state.hasRestartedThisSession) ...[
               const SizedBox(height: 12),
               SizedBox(
                 width: double.infinity,
@@ -101,6 +101,14 @@ class _InternetConnectionCard extends StatelessWidget {
                   icon: const Icon(Icons.restart_alt),
                   label: const Text('Restart Router'),
                 ),
+              ),
+            ],
+            if (!connected && state.hasRestartedThisSession) ...[
+              const SizedBox(height: 12),
+              Text(
+                'You already restarted — if it\'s still disconnected, contact Linksys Support.',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant),
               ),
             ],
           ],
@@ -190,17 +198,19 @@ class _YourRouterCard extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(height: 8),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: () {
-                    ref.read(instantVerifyPivotProvider.notifier).restartRouter();
-                  },
-                  icon: const Icon(Icons.restart_alt),
-                  label: const Text('Restart Router'),
+              if (!state.hasRestartedThisSession) ...[
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      ref.read(instantVerifyPivotProvider.notifier).restartRouter();
+                    },
+                    icon: const Icon(Icons.restart_alt),
+                    label: const Text('Restart Router'),
+                  ),
                 ),
-              ),
+              ],
             ],
           ],
         ),
