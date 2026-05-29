@@ -499,7 +499,7 @@ class VerdictEngine {
       if (weakNodes.isNotEmpty) {
         final names = weakNodes.map((n) => n.name).join(', ');
         final count = weakNodes.length;
-        final nodeWord = count == 1 ? 'satellite node' : 'satellite nodes';
+        final nodeWord = count == 1 ? 'child node' : 'child nodes';
         findings.add(VerdictFinding(
           priority: VerdictPriority.warning,
           headline:
@@ -627,9 +627,9 @@ class VerdictEngine {
       if (hasZombieMeshNode) {
         findings.add(const VerdictFinding(
           priority: VerdictPriority.warning,
-          headline: 'A satellite node is connected but not working well',
+          headline: 'A child node is connected but not working well',
           explanation:
-              'One of your satellite nodes is connected to your router but '
+              'One of your child nodes is connected to your router but '
               'its speed is much lower than expected — devices in that area '
               'will be slow even though the node appears connected. '
               'Try restarting your router. If it keeps happening, '

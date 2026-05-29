@@ -237,7 +237,7 @@ class _MeshGroupedList extends StatelessWidget {
             ),
             label: allNodes[i].isController
                 ? 'Main Router'
-                : 'Satellite Node ${satellites.indexOf(allNodes[i]) + 1}',
+                : 'Child Node ${satellites.indexOf(allNodes[i]) + 1}',
             state: state,
             onNavigateToFlow: onNavigateToFlow,
           ),
@@ -556,7 +556,7 @@ class _DeviceDetailSheetState extends ConsumerState<_DeviceDetailSheet> {
         } else {
           final satellites = state.meshNodes.where((n) => !n.isController).toList();
           final idx = satellites.indexOf(node) + 1;
-          connectionLabel = 'Connected to Satellite Node $idx on ${client.band}';
+          connectionLabel = 'Connected to Child Node $idx on ${client.band}';
         }
       } else {
         connectionLabel = 'Connected on ${client.band}';

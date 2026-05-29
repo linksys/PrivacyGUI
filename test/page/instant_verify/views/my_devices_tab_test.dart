@@ -194,15 +194,15 @@ void main() {
       await tester.pumpWidget(_buildTab(_meshState()));
       await tester.pumpAndSettle();
       expect(find.text('Main Router'), findsOneWidget);
-      expect(find.text('Satellite Node 1'), findsOneWidget);
-      expect(find.text('Satellite Node 2'), findsOneWidget);
+      expect(find.text('Child Node 1'), findsOneWidget);
+      expect(find.text('Child Node 2'), findsOneWidget);
     });
 
     testWidgets('shows device count per node', (tester) async {
       await tester.pumpWidget(_buildTab(_meshState()));
       await tester.pumpAndSettle();
       expect(find.text('2 devices'), findsAtLeast(1)); // Main Router has 2
-      expect(find.text('1 device'), findsAtLeast(1)); // Satellite Node 1 has 1
+      expect(find.text('1 device'), findsAtLeast(1)); // Child Node 1 has 1
     });
 
     testWidgets('weak backhaul node shows warning icon', (tester) async {
@@ -334,7 +334,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('Nest Hub'));
       await tester.pumpAndSettle();
-      expect(find.textContaining('Satellite Node 1'), findsAtLeast(1));
+      expect(find.textContaining('Child Node 1'), findsAtLeast(1));
     });
   });
 

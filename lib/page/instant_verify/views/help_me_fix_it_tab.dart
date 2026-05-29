@@ -1081,9 +1081,9 @@ class _Flow2State extends ConsumerState<_Flow2> {
           ),
           const SizedBox(height: 8),
           SelectableText(
-            'Speed varies by time of day, distance from router, and how many '
-            'devices are active. This was measured from your current device — '
-            'other devices may get different speeds.',
+            'This measures your speed from this device through your browser to the internet. '
+            'Browser-based tests are typically slower than your router\'s built-in speed test — '
+            'that\'s normal. Results also vary by time of day and how many devices are active.',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
@@ -1288,7 +1288,7 @@ class _Flow2State extends ConsumerState<_Flow2> {
               'High latency causes lag even with fast internet.'),
           const SizedBox(height: 12),
           _checklistItem(context, 'Connect the device with an Ethernet cable if possible — wired is always better for gaming'),
-          _checklistItem(context, 'If on WiFi, move the device closer to your router or a satellite node'),
+          _checklistItem(context, 'If on WiFi, move the device closer to your router or a child node'),
           _checklistItem(context, 'Close bandwidth-heavy apps on other devices (streaming, downloads)'),
           if (state.speedTest != null && state.speedTest!.jitterMs > 20) ...[
             const SizedBox(height: 8),
@@ -1301,7 +1301,7 @@ class _Flow2State extends ConsumerState<_Flow2> {
           if (state.isMeshNetwork && state.weakBackhaulNodes.isNotEmpty) ...[
             const SizedBox(height: 8),
             _infoBox(context,
-                'One of your satellite nodes has a weak connection to your router. '
+                'One of your child nodes has a weak connection to your router. '
                 'Devices connected through that node will experience higher latency.',
                 icon: Icons.warning_amber, color: Colors.orange),
           ],
@@ -1415,7 +1415,7 @@ class _SpeedTierTable extends StatelessWidget {
 // ═══════════════════════════════════════════════════════════════════════════
 
 enum _DeviceType { phone, laptop, smartHome, gaming, other }
-enum _ConnectState { canConnect, cantConnect }
+enum _ConnectState { canConnect, cantConnect, wired }
 enum _ConnectIssue { keepsDropping, slowOnDevice, other }
 
 class _Flow3 extends ConsumerStatefulWidget {
@@ -1497,6 +1497,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
         if (_step == 2 && _connectIssue == _ConnectIssue.keepsDropping) ..._keepsDroppingFlow(context, state),
         if (_step == 2 && _connectIssue == _ConnectIssue.slowOnDevice) ..._slowDevicePath(context, state),
         if (_step == 1 && _connectState == _ConnectState.cantConnect) ..._step1CantConnect(context),
+        if (_step == 1 && _connectState == _ConnectState.wired) ..._step1Wired(context),
         if (_step == 3) ..._pathA(context, state),
         if (_step == 4) ..._pathB(context, state),
       ],
@@ -1543,8 +1544,72 @@ class _Flow3State extends ConsumerState<_Flow3> {
                 label: const Text('No — it won\'t connect at all'),
               ),
             ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  setState(() => _connectState = _ConnectState.wired);
+                  _pushStep(1);
+                },
+                icon: const Icon(Icons.settings_ethernet),
+                label: const Text('No — my device uses an Ethernet cable'),
+              ),
+            ),
           ],
         )),
+      ];
+
+  List<Widget> _step1Wired(BuildContext context) => [
+        _backButton(context),
+        _stepCard(context, Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Wired device troubleshooting',
+                style: Theme.of(context)
+                    .textTheme
+                    .titleSmall
+                    ?.copyWith(fontWeight: FontWeight.w600)),
+            const SizedBox(height: 8),
+            SelectableText(
+              'Check each item as you try it:',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+            ),
+            const SizedBox(height: 12),
+            _checklistItem(context, 'Check the Ethernet cable is firmly plugged in at both ends'),
+            _checklistItem(context, 'Try a different Ethernet port on the router'),
+            _checklistItem(context, 'Try a different cable if you have one'),
+            _checklistItem(context, 'Check if the port light on the router is on when plugged in'),
+            _checklistItem(context, 'Restart the device and try again'),
+          ],
+        )),
+        _stepCard(context, Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Still not working?',
+                style: Theme.of(context)
+                    .textTheme
+                    .titleSmall
+                    ?.copyWith(fontWeight: FontWeight.w600)),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => _confirmAndRestart(context, ref),
+                icon: const Icon(Icons.restart_alt),
+                label: const Text('Restart Router'),
+              ),
+            ),
+            const SizedBox(height: 8),
+            FilledButton(
+              onPressed: widget.onDone,
+              child: const Text('Problem solved'),
+            ),
+          ],
+        )),
+        _linksysSupportTile(context),
       ];
 
   List<Widget> _step1Connected(BuildContext context) => [
@@ -1617,6 +1682,8 @@ class _Flow3State extends ConsumerState<_Flow3> {
   Widget _devicePickerCard(BuildContext context, InstantVerifyPivotState state) {
     final colors = Theme.of(context).colorScheme;
     final clients = state.clients.where((c) => c.isWireless).toList();
+    final isLoading = state.phase == PivotLoadPhase.idle ||
+        state.phase == PivotLoadPhase.loading;
 
     return _stepCard(context, Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1627,7 +1694,12 @@ class _Flow3State extends ConsumerState<_Flow3> {
         Text('Select it to get specific advice based on its signal and connection.',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant)),
         const SizedBox(height: 12),
-        if (clients.isEmpty)
+        if (isLoading)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 16),
+            child: Center(child: CircularProgressIndicator()),
+          )
+        else if (clients.isEmpty)
           Text('No wireless devices detected. Run Instant-Test first.',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant))
         else
@@ -1851,6 +1923,15 @@ class _Flow3State extends ConsumerState<_Flow3> {
     final weakDevices = state.issueDevices;
     final hasChannelData = state.channelInfo != null;
 
+    // Detect unified SSID (same name on all bands → user can't manually switch)
+    final radios = state.radioInfo?['radios'] as List? ?? [];
+    final ssids = radios
+        .map((r) => ((r as Map<String, dynamic>)['settings']
+            as Map<String, dynamic>?)?['ssid'] as String?)
+        .where((s) => s != null && s.isNotEmpty)
+        .toSet();
+    final isUnifiedSsid = ssids.length <= 1;
+
     return [
       _backButton(context), // back to "what's happening?" step
       _stepCard(context, Column(
@@ -1868,9 +1949,10 @@ class _Flow3State extends ConsumerState<_Flow3> {
           const SizedBox(height: 10),
           // Tappable checkboxes — customer marks each step done
           const _ClickChecklistItem(
-              'Move the device closer to your router or a satellite node'),
-          const _ClickChecklistItem(
-              'Check if the device is on 2.4 GHz — try switching to 5 GHz'),
+              'Move the device closer to your router or a child node'),
+          _ClickChecklistItem(isUnifiedSsid
+              ? 'Your router handles band switching automatically — moving closer helps your device pick the faster band'
+              : 'Check if the device is on 2.4 GHz — try switching to 5 GHz (look for your 5 GHz network name in WiFi settings)'),
           const _ClickChecklistItem(
               'Forget this WiFi network on the device, then reconnect fresh'),
           const _ClickChecklistItem(
@@ -1950,6 +2032,16 @@ class _Flow3State extends ConsumerState<_Flow3> {
 
   /// Show a picker of wireless devices, then deauth the selected one.
   void _showDeauthPicker(BuildContext context, InstantVerifyPivotState state) {
+    if (state.phase == PivotLoadPhase.idle ||
+        state.phase == PivotLoadPhase.loading) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Still loading devices — please wait a moment and try again.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
     final wirelessClients = state.clients.where((c) => c.isWireless).toList();
     if (wirelessClients.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -2054,14 +2146,15 @@ class _Flow3State extends ConsumerState<_Flow3> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Which band is the device on?',
+            Text('Switch to a less congested channel',
                 style: Theme.of(ctx)
                     .textTheme
                     .titleSmall
                     ?.copyWith(fontWeight: FontWeight.w600)),
             const SizedBox(height: 4),
             Text(
-              'Switches to a less congested channel. All devices on that band will briefly disconnect.',
+              'Pick the radio to change. All devices on that band will briefly disconnect.\n'
+              'Not sure? Check your device\'s band in the Devices tab, or try both.',
               style: Theme.of(ctx).textTheme.bodySmall?.copyWith(
                     color: Theme.of(ctx).colorScheme.onSurfaceVariant),
             ),
@@ -2069,7 +2162,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
             for (final (radioId, bandLabel, ch) in options)
               ListTile(
                 leading: const Icon(Icons.wifi),
-                title: Text('$bandLabel — switch to channel $ch'),
+                title: Text('$bandLabel radio — channel $ch'),
                 contentPadding: EdgeInsets.zero,
                 onTap: () async {
                   Navigator.pop(ctx);
@@ -2704,7 +2797,7 @@ class _Flow4State extends State<_Flow4> {
                   ?.copyWith(fontWeight: FontWeight.w600)),
           const SizedBox(height: 8),
           SelectableText(
-            'Adding a Linksys satellite node in that room extends your WiFi coverage using the same network name and password — your devices connect automatically.',
+            'Adding a Linksys child node in that room extends your WiFi coverage using the same network name and password — your devices connect automatically.',
             style: Theme.of(context).textTheme.bodyMedium,
           ),
         ],

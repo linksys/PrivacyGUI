@@ -227,7 +227,7 @@ class _SatelliteNodesSection extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.only(left: 4, bottom: 8),
           child: Text(
-            'Your Satellite Nodes',
+            'Your Child Nodes',
             style: Theme.of(context)
                 .textTheme
                 .titleMedium
@@ -290,7 +290,7 @@ class _SatelliteNodeCard extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Satellite Node $index',
+                    'Child Node $index',
                     style: Theme.of(context)
                         .textTheme
                         .titleSmall

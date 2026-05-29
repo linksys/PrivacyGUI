@@ -582,9 +582,9 @@ void main() {
       ];
       final v = _compute(meshNodes: nodes);
       final finding = v.findings
-          .firstWhere((f) => f.headline.contains('satellite'));
+          .firstWhere((f) => f.headline.contains('child'));
       expect(finding.priority, VerdictPriority.warning);
-      expect(finding.headline, contains('1 satellite node'));
+      expect(finding.headline, contains('1 child node'));
       expect(finding.explanation, contains('Living Room'));
       expect(finding.explanation, contains('-75 dBm'));
     });
@@ -601,8 +601,8 @@ void main() {
       ];
       final v = _compute(meshNodes: nodes);
       final finding = v.findings
-          .firstWhere((f) => f.headline.contains('satellite'));
-      expect(finding.headline, contains('2 satellite nodes'));
+          .firstWhere((f) => f.headline.contains('child'));
+      expect(finding.headline, contains('2 child nodes'));
       expect(finding.headline, contains('have'));
     });
 
@@ -617,7 +617,7 @@ void main() {
       ];
       final v = _compute(meshNodes: nodes);
       expect(
-          v.findings.where((f) => f.headline.contains('satellite')),
+          v.findings.where((f) => f.headline.contains('child')),
           isEmpty);
     });
 
@@ -631,7 +631,7 @@ void main() {
       ];
       final v = _compute(meshNodes: nodes);
       expect(
-          v.findings.where((f) => f.headline.contains('satellite')),
+          v.findings.where((f) => f.headline.contains('child')),
           isEmpty);
     });
   });

@@ -232,16 +232,16 @@ void main() {
     testWidgets('not shown for single router', (tester) async {
       await tester.pumpWidget(_buildTab(_connectedState()));
       await tester.pumpAndSettle();
-      expect(find.text('Your Satellite Nodes'), findsNothing);
+      expect(find.text('Your Child Nodes'), findsNothing);
     });
 
     testWidgets('shows satellite nodes in mesh', (tester) async {
       await tester.pumpWidget(_buildTab(_meshState()));
       await tester.pumpAndSettle();
-      expect(find.text('Your Satellite Nodes'), findsOneWidget);
-      expect(find.text('Satellite Node 1'), findsOneWidget);
-      expect(find.text('Satellite Node 2'), findsOneWidget);
-      expect(find.text('Satellite Node 3'), findsOneWidget);
+      expect(find.text('Your Child Nodes'), findsOneWidget);
+      expect(find.text('Child Node 1'), findsOneWidget);
+      expect(find.text('Child Node 2'), findsOneWidget);
+      expect(find.text('Child Node 3'), findsOneWidget);
     });
 
     testWidgets('shows backhaul quality labels', (tester) async {

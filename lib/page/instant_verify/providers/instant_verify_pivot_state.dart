@@ -318,13 +318,20 @@ class InstantVerifyPivotState extends Equatable {
   double get dhcpUtilization =>
       dhcpPoolLimit > 0 ? dhcpLeasesCount / dhcpPoolLimit : 0;
 
-  /// SSID of the first radio from GetRadioInfo3.
+  /// SSID from GetRadioInfo3. Prefers a non-factory SSID if multiple radios exist.
   String? get wifiSsid {
     final radios = radioInfo?['radios'] as List?;
     if (radios == null || radios.isEmpty) return null;
-    final settings =
-        (radios.first as Map<String, dynamic>)['settings'] as Map<String, dynamic>?;
-    return settings?['ssid'] as String?;
+    String? firstSsid;
+    for (final radio in radios) {
+      final settings =
+          (radio as Map<String, dynamic>)['settings'] as Map<String, dynamic>?;
+      final ssid = settings?['ssid'] as String?;
+      if (ssid == null || ssid.isEmpty) continue;
+      firstSsid ??= ssid;
+      if (!ssid.startsWith('Linksys')) return ssid;
+    }
+    return firstSsid;
   }
 
   /// WPA passphrase of the first radio from GetRadioInfo3.

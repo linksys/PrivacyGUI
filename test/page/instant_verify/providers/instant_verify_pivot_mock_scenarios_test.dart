@@ -155,7 +155,7 @@ void main() {
     test('verdict contains ethernet or mesh finding', () {
       final findings = c.read(instantVerifyPivotProvider).verdict!.findings;
       final hasMeshOrEthernet = findings.any((f) =>
-          f.headline.toLowerCase().contains('satellite') ||
+          f.headline.toLowerCase().contains('child') ||
           f.headline.toLowerCase().contains('wired') ||
           f.headline.toLowerCase().contains('ethernet') ||
           f.headline.toLowerCase().contains('node'));
