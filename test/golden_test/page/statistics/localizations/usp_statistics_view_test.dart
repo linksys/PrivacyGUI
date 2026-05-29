@@ -13,7 +13,7 @@ void main() {
       viewName: 'statistics',
       view: () => const UspStatisticsView(),
       shell: ShellType.custom,
-      height: 2400,
+      height: 4200,
       states: {
         'network_tab': (overrides) => overrides.addAll(
               statisticsOverrides(

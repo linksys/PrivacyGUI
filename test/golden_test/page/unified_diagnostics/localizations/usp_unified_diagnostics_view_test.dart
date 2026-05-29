@@ -11,6 +11,7 @@ void main() {
       viewName: 'unified_diagnostics',
       view: () => const UnifiedDiagnosticsView(),
       shell: ShellType.custom,
+      height: 1600,
       states: {
         'idle': (overrides) => overrides.addAll(
               unifiedDiagnosticsOverrides(idleState),

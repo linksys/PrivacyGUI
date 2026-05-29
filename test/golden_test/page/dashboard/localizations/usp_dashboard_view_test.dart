@@ -15,7 +15,7 @@ void main() {
       viewName: 'dashboard',
       view: () => const UspDashboardView(),
       shell: ShellType.scaffold,
-      height: 1000,
+      height: 1800,
       states: {
         'normal': (overrides) => overrides.addAll(dashboardOverrides()),
       },

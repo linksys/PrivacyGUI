@@ -15,7 +15,7 @@ void main() {
       viewName: 'dhcp_detail',
       view: () => const UspDhcpDetailView(),
       shell: ShellType.custom,
-      height: 1200,
+      height: 1600,
       states: {
         'reservations_list': (overrides) => overrides.addAll(
               dhcpDetailOverrides(

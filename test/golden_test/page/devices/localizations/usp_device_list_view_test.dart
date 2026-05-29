@@ -11,6 +11,7 @@ void main() {
       viewName: 'device_list',
       view: () => const UspDeviceListView(),
       shell: ShellType.custom,
+      height: 1200,
       states: {
         'devices_list': (overrides) => overrides.addAll(
               devicesListOverrides(devices: allDevices),

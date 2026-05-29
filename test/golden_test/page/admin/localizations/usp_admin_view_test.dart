@@ -17,6 +17,7 @@ void main() {
       viewName: 'admin',
       view: () => const UspAdminView(),
       shell: ShellType.custom,
+      height: 1200,
       states: {
         'data': (overrides) => overrides.addAll(
               adminOverrides(testAdminState),

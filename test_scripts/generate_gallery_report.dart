@@ -144,7 +144,8 @@ _GoldenEntry? _parseGoldenFile(String fullPath) {
 
 /// Derives the golden file name from an entry (matches golden_runner.dart format).
 String _entryGoldenName(_GoldenEntry entry) {
-  final base = '${entry.viewName}-${entry.state}-${entry.device}-${entry.locale}';
+  final base =
+      '${entry.viewName}-${entry.state}-${entry.device}-${entry.locale}';
   if (entry.brightness == 'dark') return '$base-dark';
   return base;
 }
@@ -249,12 +250,29 @@ String _generateHtml(
     }
     .search-box::placeholder { color: var(--color-text-muted); }
     .filters {
-      display: flex; gap: 1.5rem; flex-wrap: wrap; margin-bottom: 1.5rem; padding: 1rem;
+      display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.5rem;
+      margin-bottom: 1.5rem; padding: 1rem;
       background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 0.75rem;
     }
+    @media (max-width: 768px) { .filters { grid-template-columns: 1fr; } }
     .filter-group h3 { font-size: 0.75rem; text-transform: uppercase; color: var(--color-text-muted); margin-bottom: 0.5rem; }
-    .filter-group label { margin-right: 0.75rem; font-size: 0.875rem; cursor: pointer; }
+    .filter-group .filter-actions { margin-bottom: 0.375rem; }
+    .filter-group .filter-actions a {
+      font-size: 0.7rem; color: var(--color-accent); cursor: pointer; margin-right: 0.75rem; text-decoration: none;
+    }
+    .filter-group .filter-actions a:hover { text-decoration: underline; }
+    .filter-group label { display: inline-block; margin-right: 0.75rem; font-size: 0.875rem; cursor: pointer; }
     .filter-group input { margin-right: 0.25rem; }
+    .back-to-top {
+      position: fixed; bottom: 2rem; right: 2rem; z-index: 900;
+      width: 44px; height: 44px; border-radius: 50%;
+      background: var(--color-accent); color: #fff; border: none;
+      font-size: 1.25rem; cursor: pointer; display: none;
+      align-items: center; justify-content: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      transition: opacity 0.2s;
+    }
+    .back-to-top.visible { display: flex; }
     .feature-section {
       border: 1px solid var(--color-border); border-radius: 0.75rem;
       margin-bottom: 1rem; overflow: hidden;
@@ -334,15 +352,27 @@ String _generateHtml(
     .lightbox {
       display: none; position: fixed; inset: 0; z-index: 1000;
       background: rgba(0,0,0,0.9); align-items: center; justify-content: center;
-      flex-direction: column;
+      flex-direction: column; overflow: hidden;
     }
     .lightbox.open { display: flex; }
-    .lightbox img {
-      max-width: 90vw; max-height: 80vh; object-fit: contain;
+    .lightbox .lb-img-container {
+      max-width: 90vw; max-height: 80vh; overflow: auto;
+      cursor: default; position: relative;
+    }
+    .lightbox .lb-img-container.zoomed { cursor: grab; }
+    .lightbox .lb-img-container.zoomed:active { cursor: grabbing; }
+    .lightbox .lb-img-container img {
+      display: block; max-width: 90vw; max-height: 80vh; object-fit: contain;
       border-radius: 0.5rem; box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+    }
+    .lightbox .lb-img-container.zoomed img {
+      max-width: none; max-height: none;
     }
     .lightbox .lb-caption {
       color: #f1f5f9; margin-top: 1rem; font-size: 0.875rem; text-align: center;
+    }
+    .lightbox .lb-zoom-hint {
+      color: #94a3b8; font-size: 0.7rem; margin-top: 0.25rem;
     }
     .lightbox .lb-close {
       position: absolute; top: 1rem; right: 1.5rem;
@@ -396,14 +426,16 @@ String _generateHtml(
 
   <div class="filters">''');
 
-  buffer.writeln('    <div class="filter-group"><h3>Feature</h3>');
+  buffer.writeln(
+      '    <div class="filter-group"><h3>Feature</h3><div class="filter-actions"><a onclick="toggleAll(\'feature\',true)">All</a><a onclick="toggleAll(\'feature\',false)">None</a></div>');
   for (final f in sortedFeatures) {
     buffer.writeln(
         '      <label><input type="checkbox" name="feature" value="$f" checked onchange="applyFilters()">$f</label>');
   }
   buffer.writeln('    </div>');
 
-  buffer.writeln('    <div class="filter-group"><h3>Locale</h3>');
+  buffer.writeln(
+      '    <div class="filter-group"><h3>Locale</h3><div class="filter-actions"><a onclick="toggleAll(\'locale\',true)">All</a><a onclick="toggleAll(\'locale\',false)">None</a></div>');
   for (final l in sortedLocales) {
     buffer.writeln(
         '      <label><input type="checkbox" name="locale" value="$l" checked onchange="applyFilters()">$l</label>');
@@ -487,12 +519,17 @@ String _generateHtml(
   }).join(',');
 
   buffer.writeln('''
+  <button class="back-to-top" id="backToTop" onclick="window.scrollTo({top:0,behavior:'smooth'})">&uarr;</button>
+
   <div class="lightbox" id="lightbox">
     <span class="lb-close" onclick="closeLightbox()">&times;</span>
     <span class="lb-nav lb-prev" onclick="navLightbox(-1)">&lsaquo;</span>
     <span class="lb-nav lb-next" onclick="navLightbox(1)">&rsaquo;</span>
-    <img id="lb-img" src="" alt="">
+    <div class="lb-img-container" id="lb-container">
+      <img id="lb-img" src="" alt="">
+    </div>
     <div class="lb-caption" id="lb-caption"></div>
+    <div class="lb-zoom-hint">Scroll to zoom &middot; Click image to reset</div>
   </div>
 
   <script>
@@ -656,7 +693,7 @@ String _generateHtml(
       showLightboxImage();
     }
 
-    function showLightboxImage() {
+    var showLightboxImage = function() {
       const img = lbImages[lbIndex];
       document.getElementById('lb-img').src = img.src;
 
@@ -691,7 +728,7 @@ String _generateHtml(
       }
 
       document.getElementById('lb-caption').textContent = sectionLabel;
-    }
+    };
 
     document.addEventListener('keydown', (e) => {
       const lb = document.getElementById('lightbox');
@@ -704,6 +741,105 @@ String _generateHtml(
     document.getElementById('lightbox').addEventListener('click', (e) => {
       if (e.target === document.getElementById('lightbox')) closeLightbox();
     });
+
+    function toggleAll(name, checked) {
+      document.querySelectorAll('input[name="' + name + '"]').forEach(cb => { cb.checked = checked; });
+      applyFilters();
+    }
+
+    // Back-to-top scroll listener
+    window.addEventListener('scroll', () => {
+      const btn = document.getElementById('backToTop');
+      if (window.scrollY > 400) btn.classList.add('visible');
+      else btn.classList.remove('visible');
+    });
+
+    // Lightbox zoom (uses actual width/height for real scrollable overflow)
+    (function() {
+      const container = document.getElementById('lb-container');
+      const lbImg = document.getElementById('lb-img');
+      let scale = 1;
+      let baseW = 0, baseH = 0;
+      let panning = false;
+      let didPan = false;
+      let startX = 0, startY = 0, scrollLeftStart = 0, scrollTopStart = 0;
+
+      function captureBase() {
+        baseW = lbImg.naturalWidth;
+        baseH = lbImg.naturalHeight;
+        const maxW = window.innerWidth * 0.9;
+        const maxH = window.innerHeight * 0.8;
+        const ratio = Math.min(maxW / baseW, maxH / baseH, 1);
+        baseW = baseW * ratio;
+        baseH = baseH * ratio;
+      }
+
+      function applyZoom() {
+        if (scale <= 1) {
+          lbImg.style.width = '';
+          lbImg.style.height = '';
+          container.classList.remove('zoomed');
+          container.scrollTo(0, 0);
+        } else {
+          lbImg.style.width = (baseW * scale) + 'px';
+          lbImg.style.height = (baseH * scale) + 'px';
+          container.classList.add('zoomed');
+        }
+      }
+
+      function resetZoom() {
+        scale = 1;
+        applyZoom();
+      }
+
+      container.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        if (!baseW) captureBase();
+        const rect = container.getBoundingClientRect();
+        const mx = e.clientX - rect.left + container.scrollLeft;
+        const my = e.clientY - rect.top + container.scrollTop;
+        const prevScale = scale;
+        const delta = e.deltaY > 0 ? -0.25 : 0.25;
+        scale = Math.max(1, Math.min(scale + delta, 6));
+        applyZoom();
+        if (scale > 1 && prevScale > 1) {
+          const factor = scale / prevScale;
+          container.scrollLeft = mx * factor - (e.clientX - rect.left);
+          container.scrollTop = my * factor - (e.clientY - rect.top);
+        }
+      }, { passive: false });
+
+      lbImg.addEventListener('click', (e) => {
+        if (didPan) { e.stopPropagation(); didPan = false; return; }
+        if (scale > 1) { e.stopPropagation(); resetZoom(); }
+      });
+
+      container.addEventListener('mousedown', (e) => {
+        if (scale <= 1) return;
+        panning = true;
+        didPan = false;
+        startX = e.clientX;
+        startY = e.clientY;
+        scrollLeftStart = container.scrollLeft;
+        scrollTopStart = container.scrollTop;
+        e.preventDefault();
+      });
+
+      document.addEventListener('mousemove', (e) => {
+        if (!panning) return;
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+        if (Math.abs(dx) > 3 || Math.abs(dy) > 3) didPan = true;
+        container.scrollLeft = scrollLeftStart - dx;
+        container.scrollTop = scrollTopStart - dy;
+      });
+
+      document.addEventListener('mouseup', () => { panning = false; });
+
+      // Reset zoom when navigating or opening new image
+      const origShow = showLightboxImage;
+      showLightboxImage = function() { resetZoom(); baseW = 0; origShow(); };
+    })();
 
     // Auto-open all sections on load
     document.querySelectorAll('.feature-body').forEach(b => b.classList.add('open'));

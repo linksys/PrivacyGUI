@@ -11,7 +11,7 @@ void main() {
       viewName: 'menu',
       view: () => const UspMenuView(),
       shell: ShellType.custom,
-      height: 1200,
+      height: 1600,
       states: {
         'badges_on': (overrides) => overrides.addAll(
               menuOverrides(
