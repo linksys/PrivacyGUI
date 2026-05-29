@@ -77,6 +77,8 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
       planSpeedMbps: state.planSpeedMbps,
       // Preserve journey actions — accumulated across session for V2.0 handoff.
       journeyActions: state.journeyActions,
+      flowEntered: state.flowEntered,
+      escalationReason: state.escalationReason,
       // Preserve restart flag — session-scoped, not re-fetchable.
       hasRestartedThisSession: state.hasRestartedThisSession,
       // B-6: Check localStorage for recent prior restart on first load.
@@ -620,6 +622,16 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
         JourneyAction(action: action, timestamp: DateTime.now(), result: result),
       ],
     );
+  }
+
+  void recordFlowEntered(String flowName) {
+    state = state.copyWith(flowEntered: flowName);
+    _recordAction('flow_entered', result: flowName);
+  }
+
+  void recordEscalation(String reason) {
+    state = state.copyWith(escalationReason: reason);
+    _recordAction('escalation', result: reason);
   }
 
   // ── Actions ───────────────────────────────────────────────────────────

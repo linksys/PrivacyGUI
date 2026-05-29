@@ -372,11 +372,20 @@ class _DeviceRow extends StatelessWidget {
             Icon(_deviceIcon(client), size: 20, color: colors.onSurfaceVariant),
             const SizedBox(width: 8),
             Expanded(
-              child: Text(
-                client.displayNameWithOui,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
+              child: client.hostname == null && client.manufacturer != null
+                  ? Tooltip(
+                      message: 'Name from device hardware ID — many smart home brands show unfamiliar names',
+                      child: Text(
+                        client.displayNameWithOui,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                    )
+                  : Text(
+                      client.displayNameWithOui,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
             ),
             const SizedBox(width: 4),
             if (client.isWireless)

@@ -67,7 +67,11 @@ class _HelpMeFixItTabState extends ConsumerState<HelpMeFixItTab> {
     }
   }
 
-  void _launchFlow(int flow) => setState(() => _activeFlow = flow);
+  void _launchFlow(int flow) {
+    const flowNames = {1: 'internet_not_working', 2: 'internet_slow', 3: 'device_connectivity', 4: 'wifi_coverage', 5: 'connection_drops', 6: 'bridge_mode'};
+    ref.read(instantVerifyPivotProvider.notifier).recordFlowEntered(flowNames[flow] ?? 'flow_$flow');
+    setState(() => _activeFlow = flow);
+  }
   void _exitFlow() => setState(() => _activeFlow = null);
 
   @override
@@ -1682,11 +1686,8 @@ class _Flow3State extends ConsumerState<_Flow3> {
               width: double.infinity,
               child: OutlinedButton.icon(
                 onPressed: () {
-                  setState(() {
-                    _connectIssue = _ConnectIssue.other;
-                    _connectState = _ConnectState.cantConnect;
-                  });
-                  _pushStep(1); // Show device type picker
+                  setState(() => _connectIssue = _ConnectIssue.other);
+                  _pushStep(3);
                 },
                 icon: const Icon(Icons.help_outline),
                 label: const Text('Something else'),

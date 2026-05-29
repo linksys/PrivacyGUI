@@ -95,6 +95,8 @@ class InstantVerifyPivotState extends Equatable {
   /// Actions the customer has taken this session — restarts, speed tests,
   /// flow navigation. Used for future Guardians support handoff payload.
   final List<JourneyAction> journeyActions;
+  final String? flowEntered;
+  final String? escalationReason;
 
   // ── Action state ──────────────────────────────────────────────────────
   final bool hasRestartedThisSession;
@@ -144,6 +146,8 @@ class InstantVerifyPivotState extends Equatable {
     this.verdict,
     this.verdictIsPreliminary = true,
     this.journeyActions = const [],
+    this.flowEntered,
+    this.escalationReason,
     this.hasRestartedThisSession = false,
     this.recentPriorRestart = false,
     this.dhcpLeaseMinutes,
@@ -191,6 +195,8 @@ class InstantVerifyPivotState extends Equatable {
     Verdict? verdict,
     bool? verdictIsPreliminary,
     List<JourneyAction>? journeyActions,
+    String? flowEntered,
+    String? escalationReason,
     bool? hasRestartedThisSession,
     bool? recentPriorRestart,
     int? dhcpLeaseMinutes,
@@ -237,6 +243,8 @@ class InstantVerifyPivotState extends Equatable {
       verdict: verdict ?? this.verdict,
       verdictIsPreliminary: verdictIsPreliminary ?? this.verdictIsPreliminary,
       journeyActions: journeyActions ?? this.journeyActions,
+      flowEntered: flowEntered ?? this.flowEntered,
+      escalationReason: escalationReason ?? this.escalationReason,
       hasRestartedThisSession: hasRestartedThisSession ?? this.hasRestartedThisSession,
       recentPriorRestart: recentPriorRestart ?? this.recentPriorRestart,
       dhcpLeaseMinutes: dhcpLeaseMinutes ?? this.dhcpLeaseMinutes,
@@ -418,6 +426,8 @@ class InstantVerifyPivotState extends Equatable {
         verdict,
         verdictIsPreliminary,
         journeyActions,
+        flowEntered,
+        escalationReason,
         hasRestartedThisSession,
         recentPriorRestart,
         dhcpLeaseMinutes,
