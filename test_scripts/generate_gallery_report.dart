@@ -1,5 +1,6 @@
 // ignore_for_file: avoid_print
 
+import 'dart:convert';
 import 'dart:io';
 
 /// Scans golden PNG files under test/golden_test/page/*/localizations/goldens/
@@ -39,7 +40,9 @@ void main(List<String> args) {
     return a.locale.compareTo(b.locale);
   });
 
-  final html = _generateHtml(entries, version);
+  final overflowGoldens = _loadOverflowWarnings();
+
+  final html = _generateHtml(entries, version, overflowGoldens);
   final outputFile = File('test/golden_test/golden_gallery_report.html');
   outputFile.writeAsStringSync(html);
   print(
@@ -139,7 +142,31 @@ _GoldenEntry? _parseGoldenFile(String fullPath) {
   );
 }
 
-String _generateHtml(List<_GoldenEntry> entries, String version) {
+/// Derives the golden file name from an entry (matches golden_runner.dart format).
+String _entryGoldenName(_GoldenEntry entry) {
+  final base = '${entry.viewName}-${entry.state}-${entry.device}-${entry.locale}';
+  if (entry.brightness == 'dark') return '$base-dark';
+  return base;
+}
+
+/// Loads overflow warnings from goldens/overflow_warnings.json.
+/// Returns a Set of golden names that had overflow errors.
+Set<String> _loadOverflowWarnings() {
+  final file = File('goldens/overflow_warnings.json');
+  if (!file.existsSync()) return {};
+  try {
+    final list = jsonDecode(file.readAsStringSync()) as List;
+    return list
+        .map((e) => (e as Map<String, dynamic>)['golden'] as String? ?? '')
+        .where((s) => s.isNotEmpty)
+        .toSet();
+  } catch (_) {
+    return {};
+  }
+}
+
+String _generateHtml(
+    List<_GoldenEntry> entries, String version, Set<String> overflowGoldens) {
   final features = <String>{};
   final locales = <String>{};
   final devices = <String>{};
@@ -269,6 +296,14 @@ String _generateHtml(List<_GoldenEntry> entries, String version) {
       font-size: 0.65rem; padding: 0.125rem 0.375rem;
       border-radius: 3px; background: var(--color-border); color: var(--color-text-muted);
     }
+    .tag-overflow {
+      font-size: 0.65rem; padding: 0.125rem 0.375rem;
+      border-radius: 3px; background: #fef3c7; color: #92400e;
+      font-weight: 600;
+    }
+    @media (prefers-color-scheme: dark) {
+      .tag-overflow { background: #78350f; color: #fde68a; }
+    }
     /* Comparison view */
     .compare-row {
       margin-bottom: 1.5rem; border: 1px solid var(--color-border);
@@ -332,6 +367,7 @@ String _generateHtml(List<_GoldenEntry> entries, String version) {
     <div class="summary-item"><div class="summary-value">${sortedFeatures.length}</div><div class="summary-label">Features</div></div>
     <div class="summary-item"><div class="summary-value">${sortedLocales.length}</div><div class="summary-label">Locales</div></div>
     <div class="summary-item"><div class="summary-value">${sortedDevices.length}</div><div class="summary-label">Devices</div></div>
+    <div class="summary-item"><div class="summary-value" style="color:#f59e0b">${overflowGoldens.length}</div><div class="summary-label">Overflow</div></div>
   </div>
 
   <div class="toolbar">
@@ -352,6 +388,9 @@ String _generateHtml(List<_GoldenEntry> entries, String version) {
     </div>
     <div class="toolbar-group">
       <input type="text" class="search-box" id="searchBox" placeholder="Search state..." oninput="applyFilters()">
+    </div>
+    <div class="toolbar-group">
+      <label><input type="checkbox" id="overflowOnly" onchange="applyFilters()"> Overflow Only</label>
     </div>
   </div>
 
@@ -406,8 +445,10 @@ String _generateHtml(List<_GoldenEntry> entries, String version) {
     buffer.writeln('      <div class="gallery-grid">');
 
     for (final entry in featureEntries) {
+      final goldenName = _entryGoldenName(entry);
+      final hasOverflow = overflowGoldens.contains(goldenName);
       buffer.writeln(
-          '        <div class="gallery-card" data-locale="${entry.locale}" data-device="${entry.device}" data-feature="${entry.feature}" data-state="${entry.state}">');
+          '        <div class="gallery-card" data-locale="${entry.locale}" data-device="${entry.device}" data-feature="${entry.feature}" data-state="${entry.state}" data-overflow="$hasOverflow">');
       buffer.writeln(
           '          <img src="${entry.relativePath}" alt="${entry.viewName}-${entry.state}" loading="lazy" onclick="openLightbox(this)">');
       buffer.writeln('          <div class="card-meta">');
@@ -418,6 +459,10 @@ String _generateHtml(List<_GoldenEntry> entries, String version) {
       buffer.writeln('              <span class="tag">${entry.device}</span>');
       if (entry.brightness == 'dark') {
         buffer.writeln('              <span class="tag">dark</span>');
+      }
+      if (hasOverflow) {
+        buffer.writeln(
+            '              <span class="tag-overflow">OVERFLOW</span>');
       }
       buffer.writeln('            </div>');
       buffer.writeln('          </div>');
@@ -435,10 +480,11 @@ String _generateHtml(List<_GoldenEntry> entries, String version) {
   buffer.writeln('  <div id="comparison-view"></div>');
 
   // Embed entry data as JSON for comparison view
-  final jsonEntries = entries
-      .map((e) =>
-          '{"feature":"${e.feature}","state":"${e.state}","device":"${e.device}","locale":"${e.locale}","brightness":"${e.brightness}","path":"${e.relativePath}"}')
-      .join(',');
+  final jsonEntries = entries.map((e) {
+    final gn = _entryGoldenName(e);
+    final ov = overflowGoldens.contains(gn) ? 'true' : 'false';
+    return '{"feature":"${e.feature}","state":"${e.state}","device":"${e.device}","locale":"${e.locale}","brightness":"${e.brightness}","path":"${e.relativePath}","overflow":$ov}';
+  }).join(',');
 
   buffer.writeln('''
   <div class="lightbox" id="lightbox">
@@ -496,6 +542,7 @@ String _generateHtml(List<_GoldenEntry> entries, String version) {
         standardDevices,
         includeComponents,
         search: (document.getElementById('searchBox')?.value || '').toLowerCase(),
+        overflowOnly: document.getElementById('overflowOnly')?.checked || false,
       };
     }
 
@@ -517,12 +564,13 @@ String _generateHtml(List<_GoldenEntry> entries, String version) {
         section.querySelectorAll('.gallery-card').forEach(card => {
           const matchFilter = locales.includes(card.dataset.locale) && matchDevice(card.dataset.device, filters);
           const matchSearch = !search || (card.dataset.state || '').toLowerCase().includes(search) || (card.dataset.feature || '').toLowerCase().includes(search);
-          const show = matchFilter && matchSearch;
+          const matchOverflow = !filters.overflowOnly || card.dataset.overflow === 'true';
+          const show = matchFilter && matchSearch && matchOverflow;
           card.style.display = show ? '' : 'none';
           if (show) visibleCount++;
         });
         section.querySelector('.feature-count').textContent = visibleCount + ' images';
-        if (visibleCount === 0 && search) section.style.display = 'none';
+        if (visibleCount === 0 && (search || filters.overflowOnly)) section.style.display = 'none';
       });
 
       // Rebuild comparison view if active
@@ -536,7 +584,8 @@ String _generateHtml(List<_GoldenEntry> entries, String version) {
 
       const filtered = allEntries.filter(e =>
         features.includes(e.feature) && locales.includes(e.locale) && matchDevice(e.device, filters) &&
-        (!search || e.state.toLowerCase().includes(search) || e.feature.toLowerCase().includes(search))
+        (!search || e.state.toLowerCase().includes(search) || e.feature.toLowerCase().includes(search)) &&
+        (!filters.overflowOnly || e.overflow)
       );
 
       // Group by feature -> state+device

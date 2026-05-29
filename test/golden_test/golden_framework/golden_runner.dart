@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:alchemist/alchemist.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -54,6 +57,8 @@ void runViewGoldenTests(GoldenTestConfig config) {
   final devices = _resolveDevices(config);
 
   group('${config.viewName} golden tests', () {
+    tearDownAll(() => _writeOverflowReport());
+
     for (final stateEntry in config.states.entries) {
       for (final device in devices) {
         for (final locale in locales) {
@@ -81,6 +86,7 @@ void runViewGoldenTests(GoldenTestConfig config) {
               },
               pumpWidget: (tester, widget) async {
                 _suppressOverflowErrors();
+                _currentGoldenName = name;
                 await tester.binding.setSurfaceSize(effectiveSize);
                 tester.view.physicalSize = effectiveSize;
                 tester.view.devicePixelRatio = 1.0;
@@ -130,6 +136,7 @@ void runViewGoldenTests(GoldenTestConfig config) {
                 },
                 pumpWidget: (tester, widget) async {
                   _suppressOverflowErrors();
+                  _currentGoldenName = name;
                   await tester.binding.setSurfaceSize(effectiveSize);
                   tester.view.physicalSize = effectiveSize;
                   tester.view.devicePixelRatio = 1.0;
@@ -295,22 +302,46 @@ Widget _buildGoldenWidget(
   );
 }
 
-/// Suppresses RenderFlex overflow errors during golden tests.
+/// Tracks which golden file is currently being rendered.
+String _currentGoldenName = '';
+
+/// Collected overflow warnings: golden filename → error message.
+final List<Map<String, String>> _overflowWarnings = [];
+
+/// Suppresses RenderFlex overflow errors during golden tests but records them.
 ///
 /// Flutter test binding captures these as test failures, but overflow
 /// in golden tests is cosmetic (visible in the golden image itself).
-/// Idempotent — wraps the original handler only once to avoid closure chains.
-bool _overflowSuppressed = false;
-
+/// Must be called per-test because the framework resets FlutterError.onError
+/// between tests.
 void _suppressOverflowErrors() {
-  if (_overflowSuppressed) return;
-  _overflowSuppressed = true;
   final originalHandler = FlutterError.onError;
   FlutterError.onError = (details) {
     final isOverflow = details.exceptionAsString().contains('overflowed');
-    if (isOverflow) return;
+    if (isOverflow) {
+      _overflowWarnings.add({
+        'golden': _currentGoldenName,
+        'message': details.exceptionAsString(),
+      });
+      return;
+    }
     originalHandler?.call(details);
   };
+}
+
+/// Writes collected overflow warnings to JSON for report consumption.
+void _writeOverflowReport() {
+  if (_overflowWarnings.isEmpty) return;
+  final dir = Directory('goldens');
+  if (!dir.existsSync()) dir.createSync(recursive: true);
+  final file = File('goldens/overflow_warnings.json');
+  final existing = file.existsSync()
+      ? List<Map<String, dynamic>>.from(
+          jsonDecode(file.readAsStringSync()) as List)
+      : <Map<String, dynamic>>[];
+  existing.addAll(_overflowWarnings);
+  file.writeAsStringSync(JsonEncoder.withIndent('  ').convert(existing));
+  _overflowWarnings.clear();
 }
 
 /// Stubs the package_info platform channel during widget build.

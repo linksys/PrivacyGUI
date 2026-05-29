@@ -7,6 +7,17 @@ part 'html_generate_functions.dart';
 
 const _coverageIgnore = ['apps', 'system_log', 'test_console'];
 
+List<Map<String, dynamic>> _loadOverflowWarnings() {
+  final file = File('goldens/overflow_warnings.json');
+  if (!file.existsSync()) return [];
+  try {
+    final list = jsonDecode(file.readAsStringSync()) as List;
+    return list.cast<Map<String, dynamic>>();
+  } catch (_) {
+    return [];
+  }
+}
+
 Map<String, dynamic> scanCoverage() {
   final viewDir = Directory('lib/page');
   final testDir = Directory('test/golden_test/page');
@@ -142,6 +153,20 @@ void main(List<String> args) {
   // Scan coverage
   final coverage = scanCoverage();
 
+  // Load overflow warnings
+  final overflowWarnings = _loadOverflowWarnings();
+  final overflowGoldenNames =
+      overflowWarnings.map((w) => w['golden'] as String? ?? '').toSet();
+
+  // Annotate tests with overflow info by reconstructing golden name
+  for (final test in jsonObjects) {
+    final tsName = test['tsName'] as String? ?? '';
+    final deviceType = test['deviceType'] as String? ?? '';
+    final locale = test['locale'] as String? ?? '';
+    final goldenName = '$tsName-$deviceType-$locale';
+    test['hasOverflow'] = overflowGoldenNames.contains(goldenName);
+  }
+
   final resultObj = <String, dynamic>{};
   resultObj['counting'] = {
     'success': jsonObjects.where((e) => e['result'] == 'success').length,
@@ -152,6 +177,7 @@ void main(List<String> args) {
   resultObj['locales'] = locales;
   resultObj['devices'] = devices;
   resultObj['coverage'] = coverage;
+  resultObj['overflowCount'] = overflowWarnings.length;
   resultObj['version'] = version;
   resultObj['timestamp'] = DateTime.now().toIso8601String();
   resultObj['embedImages'] = embedImages;

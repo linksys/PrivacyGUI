@@ -161,6 +161,14 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
     .test-icon.fail { color: var(--color-fail); }
     .test-name { flex: 1; }
     .test-meta { font-size: 0.75rem; color: var(--color-text-muted); }
+    .overflow-badge {
+      font-size: 0.65rem; padding: 0.125rem 0.375rem;
+      border-radius: 3px; background: #fef3c7; color: #92400e;
+      font-weight: 600; margin-left: 0.5rem;
+    }
+    @media (prefers-color-scheme: dark) {
+      .overflow-badge { background: #78350f; color: #fde68a; }
+    }
     .failure-details {
       padding: 1rem;
       border-top: 1px solid var(--color-border);
@@ -276,6 +284,7 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
         <div class="stat-item"><div class="stat-value" id="totalCount">0</div><div class="stat-label">Total</div></div>
         <div class="stat-item stat-pass"><div class="stat-value" id="passCount">0</div><div class="stat-label">Pass</div></div>
         <div class="stat-item stat-fail"><div class="stat-value" id="failCount">0</div><div class="stat-label">Fail</div></div>
+        <div class="stat-item"><div class="stat-value" id="overflowCount" style="color:#f59e0b">0</div><div class="stat-label">Overflow</div></div>
         <div class="donut-container"><canvas id="donutChart" width="100" height="100"></canvas></div>
       </div>
     </div>
@@ -291,6 +300,7 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
       <div class="btn-group" id="quick-filter">
         <button class="active" onclick="setQuickFilter('all')">All</button>
         <button onclick="setQuickFilter('failures')">Failures Only</button>
+        <button onclick="setQuickFilter('overflow')">Overflow Only</button>
       </div>
     </div>
     <div class="toolbar-group">
@@ -331,7 +341,7 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
     function setQuickFilter(mode) {
       quickFilter = mode;
       document.querySelectorAll('#quick-filter button').forEach(b => b.classList.remove('active'));
-      const idx = mode === 'all' ? 0 : 1;
+      const idx = mode === 'all' ? 0 : mode === 'failures' ? 1 : 2;
       document.querySelectorAll('#quick-filter button')[idx].classList.add('active');
       if (mode === 'failures') {
         document.querySelectorAll('input[name="result"]').forEach(cb => {
@@ -356,6 +366,7 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
       document.getElementById('totalCount').textContent = c.total;
       document.getElementById('passCount').textContent = c.success;
       document.getElementById('failCount').textContent = c.fail;
+      document.getElementById('overflowCount').textContent = DATA.overflowCount || 0;
       drawDonut(c.success, c.fail);
     }
 
@@ -441,6 +452,7 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
         if (!filters.locales.includes(t.locale)) return false;
         if (!filters.devices.includes(t.deviceType)) return false;
         if (!filters.results.includes(t.result)) return false;
+        if (quickFilter === 'overflow' && !t.hasOverflow) return false;
         if (filters.search) {
           const name = (t.tsName || t.name || '').toLowerCase();
           const feature = (t.testCaseFilePath || '').toLowerCase();
@@ -513,10 +525,11 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
       const iconClass = isPass ? 'pass' : 'fail';
       const rowClass = isPass ? '' : ' fail';
       const name = t.tsName || t.name || 'unknown';
+      const overflowTag = t.hasOverflow ? '<span class="overflow-badge">OVERFLOW</span>' : '';
 
-      let html = '<div class="test-row' + rowClass + '">';
+      let html = '<div class="test-row' + rowClass + '" data-overflow="' + (t.hasOverflow ? 'true' : 'false') + '">';
       html += '<span class="test-icon ' + iconClass + '">' + icon + '</span>';
-      html += '<span class="test-name">' + escapeHtml(name) + '</span>';
+      html += '<span class="test-name">' + escapeHtml(name) + overflowTag + '</span>';
       html += '<span class="test-meta">' + (t.deviceType || '') + ' / ' + (t.locale || '') + '</span>';
       html += '</div>';
 
