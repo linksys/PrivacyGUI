@@ -38,7 +38,7 @@ void main() {
             portForwardingOverrides(dataState()),
           ),
           steps: (tester) async {
-            await tester.tap(find.textContaining('Port Range'));
+            await tester.tap(find.byType(Tab).at(1));
             await tester.pump();
             await tester.pump(const Duration(milliseconds: 300));
           },
@@ -48,7 +48,7 @@ void main() {
             portForwardingOverrides(dataState()),
           ),
           steps: (tester) async {
-            await tester.tap(find.textContaining('Triggering'));
+            await tester.tap(find.byType(Tab).at(2));
             await tester.pump();
             await tester.pump(const Duration(milliseconds: 300));
           },
@@ -59,7 +59,7 @@ void main() {
             portForwardingOverrides(emptyDataState),
           ),
           steps: (tester) async {
-            await tester.tap(find.textContaining('Port Range'));
+            await tester.tap(find.byType(Tab).at(1));
             await tester.pump();
             await tester.pump(const Duration(milliseconds: 300));
           },
@@ -69,7 +69,7 @@ void main() {
             portForwardingOverrides(emptyDataState),
           ),
           steps: (tester) async {
-            await tester.tap(find.textContaining('Triggering'));
+            await tester.tap(find.byType(Tab).at(2));
             await tester.pump();
             await tester.pump(const Duration(milliseconds: 300));
           },
@@ -94,7 +94,7 @@ void main() {
             portForwardingOverrides(dataState()),
           ),
           steps: (tester) async {
-            await tester.tap(find.textContaining('Port Range'));
+            await tester.tap(find.byType(Tab).at(1));
             await tester.pump();
             for (int i = 0; i < 10; i++) {
               await tester.pump(const Duration(milliseconds: 50));
@@ -115,7 +115,7 @@ void main() {
             portForwardingOverrides(dataState()),
           ),
           steps: (tester) async {
-            await tester.tap(find.textContaining('Triggering'));
+            await tester.tap(find.byType(Tab).at(2));
             await tester.pump();
             for (int i = 0; i < 10; i++) {
               await tester.pump(const Duration(milliseconds: 50));
@@ -154,7 +154,7 @@ void main() {
             portForwardingOverrides(dataState()),
           ),
           steps: (tester) async {
-            await tester.tap(find.textContaining('Port Range'));
+            await tester.tap(find.byType(Tab).at(1));
             await tester.pump();
             for (int i = 0; i < 10; i++) {
               await tester.pump(const Duration(milliseconds: 50));
@@ -175,7 +175,7 @@ void main() {
             portForwardingOverrides(dataState()),
           ),
           steps: (tester) async {
-            await tester.tap(find.textContaining('Triggering'));
+            await tester.tap(find.byType(Tab).at(2));
             await tester.pump();
             for (int i = 0; i < 10; i++) {
               await tester.pump(const Duration(milliseconds: 50));
@@ -255,7 +255,7 @@ void main() {
             portForwardingOverrides(dataState()),
           ),
           steps: (tester) async {
-            await tester.tap(find.textContaining('Port Range'));
+            await tester.tap(find.byType(Tab).at(1));
             await tester.pump();
             for (int i = 0; i < 10; i++) {
               await tester.pump(const Duration(milliseconds: 50));

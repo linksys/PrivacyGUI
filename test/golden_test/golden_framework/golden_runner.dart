@@ -29,6 +29,13 @@ List<GoldenDevice> _resolveDevices(GoldenTestConfig config) {
   const envScreens = String.fromEnvironment('screens');
   if (envScreens.isEmpty) return config.devices;
 
+  // Don't override configs with custom (non-default) devices —
+  // they have specific sizes tailored to their content (e.g., cards).
+  final usesCustomDevices = config.devices.any(
+    (d) => !GoldenDevice.defaults.any((def) => def.name == d.name),
+  );
+  if (usesCustomDevices) return config.devices;
+
   const allDevices = GoldenDevice.defaults;
   return envScreens.split(',').map((s) {
     final width = int.parse(s.trim());

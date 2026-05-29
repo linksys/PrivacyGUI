@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/page/support/views/usp_support_view.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../golden_framework/golden_runner.dart';
 import '../../../golden_framework/golden_test_config.dart';
@@ -18,18 +19,10 @@ void main() {
         'all_expanded': Interaction(
           setup: (overrides) {},
           steps: (tester) async {
-            await tester.tap(find.text('Setup'));
-            await tester.pump();
-            await tester.tap(find.text('Connectivity'));
-            await tester.pump();
-            await tester.tap(find.text('Speed'));
-            await tester.pump();
-            await tester.tap(find.text('Password & Access'));
-            await tester.pump();
-            await tester.tap(find.text('Hardware'));
-            await tester.pump();
-            for (int i = 0; i < 10; i++) {
-              await tester.pump(const Duration(milliseconds: 50));
+            final panels = find.byType(AppExpansionPanel);
+            for (int i = 0; i < panels.evaluate().length; i++) {
+              await tester.tap(panels.at(i));
+              await tester.pump(const Duration(milliseconds: 100));
             }
           },
         ),

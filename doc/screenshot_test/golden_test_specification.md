@@ -327,6 +327,23 @@ Interaction keys follow the same snake_case rule as state keys. Name them by wha
 | `tab_guest` | Switch to the guest tab |
 | `dialog_add` | Open the "add item" dialog |
 
+### Finder Rules in Interaction Steps
+
+**NEVER use `find.text('...')` with hardcoded strings in interaction steps.** Golden tests run across multiple locales — English text won't exist in Japanese or other locale builds.
+
+| Forbidden | Use instead |
+|-----------|-------------|
+| `find.text('Setup')` | `find.byType(AppExpansionPanel)` |
+| `find.text('Save')` | `find.byType(AppButton)` with descendant matching |
+| `find.text('Guest')` | `find.byType(Tab).at(index)` |
+
+Allowed finders for interactions:
+- `find.byType(WidgetType)` — locale-independent
+- `find.byType(WidgetType).at(index)` — positional
+- `find.byIcon(Icons.xxx)` — locale-independent
+- `find.byKey(Key('...'))` — locale-independent
+- `find.descendant(of: ..., matching: find.byType(...))` — scoped
+
 ### Shared Interactions
 
 UI components that are shared across multiple pages (e.g., the saving spinner dialog triggered by `doSomethingWithSpinner`) should be tested once in a shared test file (`test/usp_test/page/shared/shared_states_test.dart`) rather than duplicated in every feature test. Individual feature tests should NOT include a `saving` state — since the spinner is an imperative overlay (not provider-state-driven), it requires an interaction to capture, and testing it once is sufficient.

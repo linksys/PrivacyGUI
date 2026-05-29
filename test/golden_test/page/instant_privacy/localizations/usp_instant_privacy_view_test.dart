@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/page/instant_privacy/views/instant_privacy_view.dart';
+import 'package:ui_kit_library/ui_kit.dart' show AppButton;
 
 import '../../../golden_framework/golden_runner.dart';
 import '../../../golden_framework/golden_test_config.dart';
@@ -30,7 +31,7 @@ void main() {
             instantPrivacyOverrides(enabledWithDevicesState),
           ),
           steps: (tester) async {
-            await tester.tap(find.text('Add device'));
+            await tester.tap(find.byType(AppButton).first);
             await tester.pump();
             for (int i = 0; i < 10; i++) {
               await tester.pump(const Duration(milliseconds: 50));

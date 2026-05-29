@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/page/statistics/views/usp_statistics_view.dart';
 
@@ -34,7 +35,7 @@ void main() {
             ),
           ),
           steps: (tester) async {
-            await tester.tap(find.text('Devices'));
+            await tester.tap(find.byType(Tab).at(1));
             await tester.pump();
             for (int i = 0; i < 10; i++) {
               await tester.pump(const Duration(milliseconds: 50));
@@ -50,7 +51,7 @@ void main() {
             ),
           ),
           steps: (tester) async {
-            await tester.tap(find.text('System'));
+            await tester.tap(find.byType(Tab).at(2));
             await tester.pump();
             for (int i = 0; i < 10; i++) {
               await tester.pump(const Duration(milliseconds: 50));

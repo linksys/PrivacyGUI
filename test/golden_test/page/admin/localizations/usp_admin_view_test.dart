@@ -35,8 +35,8 @@ void main() {
             await tester.tap(editBtn.first);
             await tester.pump();
             await tester.pump(const Duration(milliseconds: 300));
-            // Expand Advanced section
-            await tester.tap(find.text('Advanced'));
+            // Expand Advanced section (tap the expand_more icon in the dialog)
+            await tester.tap(find.byIcon(Icons.expand_more));
             await tester.pump();
             await tester.pump(const Duration(milliseconds: 100));
           },
@@ -62,7 +62,7 @@ void main() {
           steps: (tester) async {
             final rebootBtn = find.descendant(
               of: find.byType(UspSystemActionsCard),
-              matching: find.text('Reboot'),
+              matching: find.byType(AppButton),
             );
             await tester.tap(rebootBtn.first);
             await tester.pump();
@@ -106,9 +106,9 @@ void main() {
           steps: (tester) async {
             final resetBtn = find.descendant(
               of: find.byType(UspSystemActionsCard),
-              matching: find.text('Factory Reset'),
+              matching: find.byType(AppButton),
             );
-            await tester.tap(resetBtn.first);
+            await tester.tap(resetBtn.last);
             await tester.pump();
             await tester.pump(const Duration(milliseconds: 300));
           },
