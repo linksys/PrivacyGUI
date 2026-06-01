@@ -90,7 +90,9 @@ class WifiClients {
             v == '0' ||
             v == 0 ||
             v == false ||
-            v == 'false')) continue;
+            v == 'false')) {
+          continue;
+        }
         items.add(WifiClient(
           instancePath: cp,
           parentPath: parentPath,

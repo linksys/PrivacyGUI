@@ -68,10 +68,16 @@ class VlanTermination {
           v == '0' ||
           v == 0 ||
           v == false ||
-          v == 'false')) continue;
+          v == 'false')) {
+        continue;
+      }
       final missing = <String>[];
-      if (!response.containsKey('${p}Enable')) missing.add('${p}Enable');
-      if (!response.containsKey('${p}VLANID')) missing.add('${p}VLANID');
+      if (!response.containsKey('${p}Enable')) {
+        missing.add('${p}Enable');
+      }
+      if (!response.containsKey('${p}VLANID')) {
+        missing.add('${p}VLANID');
+      }
       if (missing.isNotEmpty) {
         throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
       }
@@ -92,10 +98,12 @@ class VlanTermination {
       {bool allowPartial = false}) async {
     final params = <String, dynamic>{};
     for (final update in updates) {
-      if (update.enable != null)
+      if (update.enable != null) {
         params['${update.instancePath}Enable'] = update.enable;
-      if (update.vlanId != null)
+      }
+      if (update.vlanId != null) {
         params['${update.instancePath}VLANID'] = update.vlanId;
+      }
     }
     if (params.isEmpty) {
       return {

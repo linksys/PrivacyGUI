@@ -21,19 +21,38 @@ class WanIpv6Addresses {
 
   const WanIpv6Addresses({required this.items});
 
-  static const _paths = [
-    'Device.IP.Interface.2.IPv6Address.*.IPAddress',
-  ];
+  /// Resolve the instance index by searching for Alias='cpe-wan'
+  static Future<String> _resolveInstance(UspClient client) async {
+    final response = await client.get(['Device.IP.Interface.*.Alias']);
+    for (final entry in response.entries) {
+      if (entry.value == 'cpe-wan') {
+        final match =
+            RegExp(r'Device\.IP\.Interface\.(\d+)\.').firstMatch(entry.key);
+        if (match != null) {
+          return 'Device.IP.Interface.${match.group(1)}.';
+        }
+      }
+    }
+    // Fallback to hardcoded instance 2
+    return 'Device.IP.Interface.2.';
+  }
+
+  /// Build parameter paths using resolved base path
+  static List<String> _buildPaths(String basePath) => [
+        '$basePath*.IPAddress',
+      ];
 
   /// Fetch all instances via USP Get message
   static Future<WanIpv6Addresses> fetch(UspClient client) async {
-    final response = await client.get(_paths);
-    return WanIpv6Addresses._fromResponse(response);
+    final instancePath = await _resolveInstance(client);
+    final basePath = '${instancePath}IPv6Address.';
+    final response = await client.get(_buildPaths(basePath));
+    return WanIpv6Addresses._fromResponse(response, basePath);
   }
 
-  factory WanIpv6Addresses._fromResponse(Map<String, dynamic> response) {
+  factory WanIpv6Addresses._fromResponse(
+      Map<String, dynamic> response, String basePath) {
     final items = <WanIpv6Address>[];
-    const basePath = 'Device.IP.Interface.2.IPv6Address.';
     final ids = <String>{};
     for (final key in response.keys) {
       if (key.startsWith(basePath)) {
@@ -52,9 +71,13 @@ class WanIpv6Addresses {
           v == '0' ||
           v == 0 ||
           v == false ||
-          v == 'false')) continue;
+          v == 'false')) {
+        continue;
+      }
       final missing = <String>[];
-      if (!response.containsKey('${p}IPAddress')) missing.add('${p}IPAddress');
+      if (!response.containsKey('${p}IPAddress')) {
+        missing.add('${p}IPAddress');
+      }
       if (missing.isNotEmpty) {
         throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
       }

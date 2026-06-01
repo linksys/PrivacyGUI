@@ -73,12 +73,19 @@ class FirewallChainRules {
           v == '0' ||
           v == 0 ||
           v == false ||
-          v == 'false')) continue;
+          v == 'false')) {
+        continue;
+      }
       final missing = <String>[];
-      if (!response.containsKey('${p}Enable')) missing.add('${p}Enable');
-      if (!response.containsKey('${p}Description'))
+      if (!response.containsKey('${p}Enable')) {
+        missing.add('${p}Enable');
+      }
+      if (!response.containsKey('${p}Description')) {
         missing.add('${p}Description');
-      if (!response.containsKey('${p}Target')) missing.add('${p}Target');
+      }
+      if (!response.containsKey('${p}Target')) {
+        missing.add('${p}Target');
+      }
       if (missing.isNotEmpty) {
         throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
       }
@@ -100,8 +107,9 @@ class FirewallChainRules {
       {bool allowPartial = false}) async {
     final params = <String, dynamic>{};
     for (final update in updates) {
-      if (update.enable != null)
+      if (update.enable != null) {
         params['${update.instancePath}Enable'] = update.enable;
+      }
     }
     if (params.isEmpty) {
       return {

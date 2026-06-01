@@ -20,54 +20,75 @@ class WanStaticIp {
     required this.dnsServers,
   });
 
-  static const _paths = [
-    'Device.IP.Interface.2.IPv4Address.1.AddressingType',
-    'Device.IP.Interface.2.IPv4Address.1.IPAddress',
-    'Device.IP.Interface.2.IPv4Address.1.SubnetMask',
-    'Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DefaultGateway',
-    'Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DNSServers',
-  ];
+  /// Resolve the instance index by searching for Alias='cpe-wan'
+  static Future<String> _resolveInstance(UspClient client) async {
+    final response = await client.get(['Device.IP.Interface.*.Alias']);
+    for (final entry in response.entries) {
+      if (entry.value == 'cpe-wan') {
+        final match =
+            RegExp(r'Device\.IP\.Interface\.(\d+)\.').firstMatch(entry.key);
+        if (match != null) {
+          return 'Device.IP.Interface.${match.group(1)}.';
+        }
+      }
+    }
+    // Fallback to hardcoded instance 2
+    return 'Device.IP.Interface.2.';
+  }
+
+  /// Build parameter paths using the resolved instance path
+  static List<String> _buildPaths(String instancePath) => [
+        '${instancePath}IPv4Address.1.AddressingType',
+        '${instancePath}IPv4Address.1.IPAddress',
+        '${instancePath}IPv4Address.1.SubnetMask',
+        '${instancePath}IPv4Address.1.X_LINKSYS_DefaultGateway',
+        '${instancePath}IPv4Address.1.X_LINKSYS_DNSServers',
+      ];
 
   /// Fetch all parameters via USP Get message
   static Future<WanStaticIp> fetch(UspClient client) async {
-    final response = await client.get(_paths);
-    return WanStaticIp._fromResponse(response);
+    final instancePath = await _resolveInstance(client);
+    final response = await client.get(_buildPaths(instancePath));
+    return WanStaticIp._fromResponse(response, instancePath);
   }
 
-  factory WanStaticIp._fromResponse(Map<String, dynamic> response) {
+  factory WanStaticIp._fromResponse(
+      Map<String, dynamic> response, String instancePath) {
     final missing = <String>[];
+    if (!response.containsKey('${instancePath}IPv4Address.1.AddressingType')) {
+      missing.add('${instancePath}IPv4Address.1.AddressingType');
+    }
+    if (!response.containsKey('${instancePath}IPv4Address.1.IPAddress')) {
+      missing.add('${instancePath}IPv4Address.1.IPAddress');
+    }
+    if (!response.containsKey('${instancePath}IPv4Address.1.SubnetMask')) {
+      missing.add('${instancePath}IPv4Address.1.SubnetMask');
+    }
     if (!response
-        .containsKey('Device.IP.Interface.2.IPv4Address.1.AddressingType'))
-      missing.add('Device.IP.Interface.2.IPv4Address.1.AddressingType');
-    if (!response.containsKey('Device.IP.Interface.2.IPv4Address.1.IPAddress'))
-      missing.add('Device.IP.Interface.2.IPv4Address.1.IPAddress');
-    if (!response.containsKey('Device.IP.Interface.2.IPv4Address.1.SubnetMask'))
-      missing.add('Device.IP.Interface.2.IPv4Address.1.SubnetMask');
-    if (!response.containsKey(
-        'Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DefaultGateway'))
-      missing
-          .add('Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DefaultGateway');
-    if (!response.containsKey(
-        'Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DNSServers'))
-      missing.add('Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DNSServers');
+        .containsKey('${instancePath}IPv4Address.1.X_LINKSYS_DefaultGateway')) {
+      missing.add('${instancePath}IPv4Address.1.X_LINKSYS_DefaultGateway');
+    }
+    if (!response
+        .containsKey('${instancePath}IPv4Address.1.X_LINKSYS_DNSServers')) {
+      missing.add('${instancePath}IPv4Address.1.X_LINKSYS_DNSServers');
+    }
     if (missing.isNotEmpty) {
       throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
     }
     return WanStaticIp(
       addressingType:
-          (response['Device.IP.Interface.2.IPv4Address.1.AddressingType'] ?? '')
+          (response['${instancePath}IPv4Address.1.AddressingType'] ?? '')
               as String,
       staticIpAddress:
-          (response['Device.IP.Interface.2.IPv4Address.1.IPAddress'] ?? '')
+          (response['${instancePath}IPv4Address.1.IPAddress'] ?? '') as String,
+      subnetMask:
+          (response['${instancePath}IPv4Address.1.SubnetMask'] ?? '') as String,
+      defaultGateway:
+          (response['${instancePath}IPv4Address.1.X_LINKSYS_DefaultGateway'] ??
+              '') as String,
+      dnsServers:
+          (response['${instancePath}IPv4Address.1.X_LINKSYS_DNSServers'] ?? '')
               as String,
-      subnetMask: (response['Device.IP.Interface.2.IPv4Address.1.SubnetMask'] ??
-          '') as String,
-      defaultGateway: (response[
-              'Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DefaultGateway'] ??
-          '') as String,
-      dnsServers: (response[
-              'Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DNSServers'] ??
-          '') as String,
     );
   }
 
@@ -82,19 +103,23 @@ class WanStaticIp {
     bool allowPartial = false,
   }) async {
     final params = <String, dynamic>{};
-    if (addressingType != null)
-      params['Device.IP.Interface.2.IPv4Address.1.AddressingType'] =
-          addressingType;
-    if (staticIpAddress != null)
-      params['Device.IP.Interface.2.IPv4Address.1.IPAddress'] = staticIpAddress;
-    if (subnetMask != null)
-      params['Device.IP.Interface.2.IPv4Address.1.SubnetMask'] = subnetMask;
-    if (defaultGateway != null)
-      params['Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DefaultGateway'] =
+    final instancePath = await _resolveInstance(client);
+    if (addressingType != null) {
+      params['${instancePath}IPv4Address.1.AddressingType'] = addressingType;
+    }
+    if (staticIpAddress != null) {
+      params['${instancePath}IPv4Address.1.IPAddress'] = staticIpAddress;
+    }
+    if (subnetMask != null) {
+      params['${instancePath}IPv4Address.1.SubnetMask'] = subnetMask;
+    }
+    if (defaultGateway != null) {
+      params['${instancePath}IPv4Address.1.X_LINKSYS_DefaultGateway'] =
           defaultGateway;
-    if (dnsServers != null)
-      params['Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DNSServers'] =
-          dnsServers;
+    }
+    if (dnsServers != null) {
+      params['${instancePath}IPv4Address.1.X_LINKSYS_DNSServers'] = dnsServers;
+    }
     if (params.isEmpty) {
       return {
         'success': true,
@@ -115,7 +140,7 @@ class WanStaticIp {
     // Priority 1: Parameters with priority 1
     final group1Params = <Map<String, String>>[];
     group1Params.add({
-      'path': 'Device.IP.Interface.2.IPv4Address.1.AddressingType',
+      'path': 'Device.IP.Interface..IPv4Address.1.AddressingType',
       'value': data.addressingType.toString()
     });
     if (group1Params.isNotEmpty) {
@@ -125,19 +150,19 @@ class WanStaticIp {
     // Priority 2: Parameters with priority 2
     final group2Params = <Map<String, String>>[];
     group2Params.add({
-      'path': 'Device.IP.Interface.2.IPv4Address.1.IPAddress',
+      'path': 'Device.IP.Interface..IPv4Address.1.IPAddress',
       'value': data.staticIpAddress.toString()
     });
     group2Params.add({
-      'path': 'Device.IP.Interface.2.IPv4Address.1.SubnetMask',
+      'path': 'Device.IP.Interface..IPv4Address.1.SubnetMask',
       'value': data.subnetMask.toString()
     });
     group2Params.add({
-      'path': 'Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DefaultGateway',
+      'path': 'Device.IP.Interface..IPv4Address.1.X_LINKSYS_DefaultGateway',
       'value': data.defaultGateway.toString()
     });
     group2Params.add({
-      'path': 'Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DNSServers',
+      'path': 'Device.IP.Interface..IPv4Address.1.X_LINKSYS_DNSServers',
       'value': data.dnsServers.toString()
     });
     if (group2Params.isNotEmpty) {

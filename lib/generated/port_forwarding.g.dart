@@ -101,20 +101,31 @@ class PortForwarding {
           v == '0' ||
           v == 0 ||
           v == false ||
-          v == 'false')) continue;
+          v == 'false')) {
+        continue;
+      }
       final missing = <String>[];
-      if (!response.containsKey('${p}Enable')) missing.add('${p}Enable');
-      if (!response.containsKey('${p}ExternalPort'))
+      if (!response.containsKey('${p}Enable')) {
+        missing.add('${p}Enable');
+      }
+      if (!response.containsKey('${p}ExternalPort')) {
         missing.add('${p}ExternalPort');
-      if (!response.containsKey('${p}ExternalPortEndRange'))
+      }
+      if (!response.containsKey('${p}ExternalPortEndRange')) {
         missing.add('${p}ExternalPortEndRange');
-      if (!response.containsKey('${p}InternalPort'))
+      }
+      if (!response.containsKey('${p}InternalPort')) {
         missing.add('${p}InternalPort');
-      if (!response.containsKey('${p}InternalClient'))
+      }
+      if (!response.containsKey('${p}InternalClient')) {
         missing.add('${p}InternalClient');
-      if (!response.containsKey('${p}Protocol')) missing.add('${p}Protocol');
-      if (!response.containsKey('${p}Description'))
+      }
+      if (!response.containsKey('${p}Protocol')) {
+        missing.add('${p}Protocol');
+      }
+      if (!response.containsKey('${p}Description')) {
         missing.add('${p}Description');
+      }
       if (missing.isNotEmpty) {
         throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
       }
@@ -144,21 +155,28 @@ class PortForwarding {
       {bool allowPartial = false}) async {
     final params = <String, dynamic>{};
     for (final update in updates) {
-      if (update.enabled != null)
+      if (update.enabled != null) {
         params['${update.instancePath}Enable'] = update.enabled;
-      if (update.externalPort != null)
+      }
+      if (update.externalPort != null) {
         params['${update.instancePath}ExternalPort'] = update.externalPort;
-      if (update.externalPortEndRange != null)
+      }
+      if (update.externalPortEndRange != null) {
         params['${update.instancePath}ExternalPortEndRange'] =
             update.externalPortEndRange;
-      if (update.internalPort != null)
+      }
+      if (update.internalPort != null) {
         params['${update.instancePath}InternalPort'] = update.internalPort;
-      if (update.internalClient != null)
+      }
+      if (update.internalClient != null) {
         params['${update.instancePath}InternalClient'] = update.internalClient;
-      if (update.protocol != null)
+      }
+      if (update.protocol != null) {
         params['${update.instancePath}Protocol'] = update.protocol;
-      if (update.description != null)
+      }
+      if (update.description != null) {
         params['${update.instancePath}Description'] = update.description;
+      }
     }
     if (params.isEmpty) {
       return {

@@ -42,12 +42,21 @@ class FirmwareOperations {
   }) async {
     final inputs = <String, String>{};
     inputs['URL'] = url;
-    if (autoActivate != null) inputs['AutoActivate'] = autoActivate;
-    if (username != null) inputs['Username'] = username;
-    if (password != null) inputs['Password'] = password;
-    if (checksumAlgorithm != null)
+    if (autoActivate != null) {
+      inputs['AutoActivate'] = autoActivate;
+    }
+    if (username != null) {
+      inputs['Username'] = username;
+    }
+    if (password != null) {
+      inputs['Password'] = password;
+    }
+    if (checksumAlgorithm != null) {
       inputs['CheckSumAlgorithm'] = checksumAlgorithm;
-    if (checksum != null) inputs['CheckSum'] = checksum;
+    }
+    if (checksum != null) {
+      inputs['CheckSum'] = checksum;
+    }
     return await client.operate(
         'Device.DeviceInfo.FirmwareImage.$instance.Download()',
         args: inputs);
@@ -60,7 +69,9 @@ class FirmwareOperations {
     String? timeWindow,
   }) async {
     final inputs = <String, String>{};
-    if (timeWindow != null) inputs['TimeWindow'] = timeWindow;
+    if (timeWindow != null) {
+      inputs['TimeWindow'] = timeWindow;
+    }
     return await client.operate(
         'Device.DeviceInfo.FirmwareImage.$instance.Activate()',
         args: inputs);

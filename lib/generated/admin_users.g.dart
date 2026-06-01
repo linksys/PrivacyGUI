@@ -73,11 +73,19 @@ class AdminUsers {
           v == '0' ||
           v == 0 ||
           v == false ||
-          v == 'false')) continue;
+          v == 'false')) {
+        continue;
+      }
       final missing = <String>[];
-      if (!response.containsKey('${p}Username')) missing.add('${p}Username');
-      if (!response.containsKey('${p}Password')) missing.add('${p}Password');
-      if (!response.containsKey('${p}Enable')) missing.add('${p}Enable');
+      if (!response.containsKey('${p}Username')) {
+        missing.add('${p}Username');
+      }
+      if (!response.containsKey('${p}Password')) {
+        missing.add('${p}Password');
+      }
+      if (!response.containsKey('${p}Enable')) {
+        missing.add('${p}Enable');
+      }
       if (missing.isNotEmpty) {
         throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
       }
@@ -99,8 +107,9 @@ class AdminUsers {
       {bool allowPartial = false}) async {
     final params = <String, dynamic>{};
     for (final update in updates) {
-      if (update.password != null)
+      if (update.password != null) {
         params['${update.instancePath}Password'] = update.password;
+      }
     }
     if (params.isEmpty) {
       return {

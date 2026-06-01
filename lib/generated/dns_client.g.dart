@@ -59,12 +59,15 @@ class DnsClient {
 
   factory DnsClient._fromResponse(Map<String, dynamic> response) {
     final missing = <String>[];
-    if (!response.containsKey('Device.DNS.Client.Enable'))
+    if (!response.containsKey('Device.DNS.Client.Enable')) {
       missing.add('Device.DNS.Client.Enable');
-    if (!response.containsKey('Device.DNS.Client.Status'))
+    }
+    if (!response.containsKey('Device.DNS.Client.Status')) {
       missing.add('Device.DNS.Client.Status');
-    if (!response.containsKey('Device.DNS.Client.ServerNumberOfEntries'))
+    }
+    if (!response.containsKey('Device.DNS.Client.ServerNumberOfEntries')) {
       missing.add('Device.DNS.Client.ServerNumberOfEntries');
+    }
     if (missing.isNotEmpty) {
       throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
     }
@@ -81,7 +84,7 @@ class DnsClient {
       ..sort((a, b) => (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
     final servers = <DnsServer>[];
     for (final cid_0 in childSorted_0) {
-      final cp_0 = '${childBase_0}${cid_0}.';
+      final cp_0 = '$childBase_0$cid_0.';
       servers.add(DnsServer(
         instancePath: cp_0,
         address: (response['${cp_0}DNSServer'] ?? '') as String,

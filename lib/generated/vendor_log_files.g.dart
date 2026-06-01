@@ -62,13 +62,19 @@ class VendorLogFiles {
           v == '0' ||
           v == 0 ||
           v == false ||
-          v == 'false')) continue;
+          v == 'false')) {
+        continue;
+      }
       final missing = <String>[];
-      if (!response.containsKey('${p}Name')) missing.add('${p}Name');
-      if (!response.containsKey('${p}MaximumSize'))
+      if (!response.containsKey('${p}Name')) {
+        missing.add('${p}Name');
+      }
+      if (!response.containsKey('${p}MaximumSize')) {
         missing.add('${p}MaximumSize');
-      if (!response.containsKey('${p}Persistent'))
+      }
+      if (!response.containsKey('${p}Persistent')) {
         missing.add('${p}Persistent');
+      }
       if (missing.isNotEmpty) {
         throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
       }
