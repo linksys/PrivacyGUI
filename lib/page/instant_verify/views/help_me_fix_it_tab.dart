@@ -42,6 +42,8 @@ class _HelpMeFixItTabState extends ConsumerState<HelpMeFixItTab> {
   /// Flows set this to their step-back function when they have history.
   /// Shell back arrow calls this if non-null; otherwise exits flow.
   final _flowStepBackNotifier = ValueNotifier<VoidCallback?>(null);
+  /// Flows update this as steps advance: "Step N of M" or null when not applicable.
+  final _stepIndicatorNotifier = ValueNotifier<String?>(null);
 
   @override
   void initState() {
@@ -56,6 +58,7 @@ class _HelpMeFixItTabState extends ConsumerState<HelpMeFixItTab> {
   void dispose() {
     widget.pendingFlowNotifier?.removeListener(_onPendingFlow);
     _flowStepBackNotifier.dispose();
+    _stepIndicatorNotifier.dispose();
     super.dispose();
   }
 
@@ -78,6 +81,7 @@ class _HelpMeFixItTabState extends ConsumerState<HelpMeFixItTab> {
   }
   void _exitFlow() {
     _flowStepBackNotifier.value = null;
+    _stepIndicatorNotifier.value = null;
     setState(() => _activeFlow = null);
   }
 
@@ -105,12 +109,14 @@ class _HelpMeFixItTabState extends ConsumerState<HelpMeFixItTab> {
           onDone: _exitFlow,
           onNavigateToFlow: _launchFlow,
           stepBackNotifier: _flowStepBackNotifier,
+          stepIndicatorNotifier: _stepIndicatorNotifier,
         );
       case 3:
         flowWidget = _Flow3(
           onDone: _exitFlow,
           onNavigateToMyDevices: widget.onNavigateToMyDevices,
           stepBackNotifier: _flowStepBackNotifier,
+          stepIndicatorNotifier: _stepIndicatorNotifier,
         );
       case 30: // Flow 3 launched from My Devices — device verified connected
         final device = widget.pendingFlowDeviceNotifier?.value;
@@ -121,6 +127,7 @@ class _HelpMeFixItTabState extends ConsumerState<HelpMeFixItTab> {
           initialConnected: true,
           initialDevice: device,
           stepBackNotifier: _flowStepBackNotifier,
+          stepIndicatorNotifier: _stepIndicatorNotifier,
         );
       case 31: // Flow 3 launched from Flow 2 "Just one specific device" — skip to slow-device path
         flowWidget = _Flow3(
@@ -129,6 +136,7 @@ class _HelpMeFixItTabState extends ConsumerState<HelpMeFixItTab> {
           initialConnected: true,
           initialSlowDevice: true,
           stepBackNotifier: _flowStepBackNotifier,
+          stepIndicatorNotifier: _stepIndicatorNotifier,
         );
       case 4:
         flowWidget = _Flow4(onDone: _exitFlow, stepBackNotifier: _flowStepBackNotifier);
@@ -137,9 +145,14 @@ class _HelpMeFixItTabState extends ConsumerState<HelpMeFixItTab> {
           onDone: _exitFlow,
           onNavigateToFlow: _launchFlow,
           stepBackNotifier: _flowStepBackNotifier,
+          stepIndicatorNotifier: _stepIndicatorNotifier,
         );
       case 6:
-        flowWidget = _Flow6BridgeMode(onDone: _exitFlow, stepBackNotifier: _flowStepBackNotifier);
+        flowWidget = _Flow6BridgeMode(
+          onDone: _exitFlow,
+          stepBackNotifier: _flowStepBackNotifier,
+          stepIndicatorNotifier: _stepIndicatorNotifier,
+        );
       default:
         flowWidget = const SizedBox.shrink();
     }
@@ -147,6 +160,7 @@ class _HelpMeFixItTabState extends ConsumerState<HelpMeFixItTab> {
     return _FlowShell(
       title: _flowTitle(_activeFlow!),
       onBack: _handleShellBack,
+      stepIndicatorNotifier: _stepIndicatorNotifier,
       child: flowWidget,
     );
   }
@@ -294,8 +308,12 @@ class _FlowShell extends StatelessWidget {
   final String title;
   final VoidCallback onBack;
   final Widget child;
+  final ValueNotifier<String?>? stepIndicatorNotifier;
   const _FlowShell(
-      {required this.title, required this.onBack, required this.child});
+      {required this.title,
+      required this.onBack,
+      required this.child,
+      this.stepIndicatorNotifier});
 
   @override
   Widget build(BuildContext context) {
@@ -311,6 +329,21 @@ class _FlowShell extends StatelessWidget {
             ),
             title: Text(title,
                 style: const TextStyle(fontWeight: FontWeight.w600)),
+            subtitle: stepIndicatorNotifier != null
+                ? ValueListenableBuilder<String?>(
+                    valueListenable: stepIndicatorNotifier!,
+                    builder: (_, indicator, __) => indicator != null
+                        ? Text(indicator,
+                            style: Theme.of(context)
+                                .textTheme
+                                .labelSmall
+                                ?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant))
+                        : const SizedBox.shrink(),
+                  )
+                : null,
           ),
         ),
         Expanded(
@@ -928,7 +961,8 @@ class _Flow2 extends ConsumerStatefulWidget {
   final VoidCallback onDone;
   final ValueChanged<int> onNavigateToFlow;
   final ValueNotifier<VoidCallback?>? stepBackNotifier;
-  const _Flow2({required this.onDone, required this.onNavigateToFlow, this.stepBackNotifier});
+  final ValueNotifier<String?>? stepIndicatorNotifier;
+  const _Flow2({required this.onDone, required this.onNavigateToFlow, this.stepBackNotifier, this.stepIndicatorNotifier});
 
   @override
   ConsumerState<_Flow2> createState() => _Flow2State();
@@ -962,17 +996,9 @@ class _Flow2State extends ConsumerState<_Flow2> {
 
   void _syncStepBackNotifier() {
     widget.stepBackNotifier?.value = _stepHistory.isNotEmpty ? _stepBack : null;
-  }
-
-  Widget _backButton(BuildContext context) {
-    if (_stepHistory.isEmpty) return const SizedBox.shrink();
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: OutlinedButton(
-        onPressed: _stepBack,
-        child: const Text('← Back'),
-      ),
-    );
+    final current = _stepHistory.length + 1;
+    widget.stepIndicatorNotifier?.value =
+        current > 1 ? 'Step $current of 4' : null;
   }
 
   double? get _mbps => _speedResult?.downloadMbps;
@@ -1036,16 +1062,20 @@ class _Flow2State extends ConsumerState<_Flow2> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(instantVerifyPivotProvider);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (_step == 0) ..._step0(context, state),
-        if (_step == 1 && _speedResult != null) ..._step1(context),
-        if (_step == 2) ..._step2(context),
-        if (_step == 3) ..._step3(context),
-        if (_step == 4) ..._step4(context),
-        if (_step == 5) ..._step5Gaming(context),
-      ],
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 250),
+      child: Column(
+        key: ValueKey(_step),
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (_step == 0) ..._step0(context, state),
+          if (_step == 1 && _speedResult != null) ..._step1(context),
+          if (_step == 2) ..._step2(context),
+          if (_step == 3) ..._step3(context),
+          if (_step == 4) ..._step4(context),
+          if (_step == 5) ..._step5Gaming(context),
+        ],
+      ),
     );
   }
 
@@ -1211,7 +1241,6 @@ class _Flow2State extends ConsumerState<_Flow2> {
       _stepCard(context, Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _backButton(context),
           Text('Let\'s figure out what\'s slow',
               style: Theme.of(context)
                   .textTheme
@@ -1283,7 +1312,6 @@ class _Flow2State extends ConsumerState<_Flow2> {
         _stepCard(context, Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _backButton(context),
             Text('Try restarting your router',
                 style: Theme.of(context)
                     .textTheme
@@ -1316,7 +1344,6 @@ class _Flow2State extends ConsumerState<_Flow2> {
         _stepCard(context, Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _backButton(context),
             Text('Contact your internet provider',
                 style: Theme.of(context)
                     .textTheme
@@ -1352,7 +1379,6 @@ class _Flow2State extends ConsumerState<_Flow2> {
       _stepCard(context, Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _backButton(context),
           Text('Latency / lag troubleshooting',
               style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
           const SizedBox(height: 8),
@@ -1505,7 +1531,8 @@ class _Flow3 extends ConsumerStatefulWidget {
   /// device-specific analysis in the slow device path.
   final DiagnosticClient? initialDevice;
   final ValueNotifier<VoidCallback?>? stepBackNotifier;
-  const _Flow3({required this.onDone, this.onNavigateToMyDevices, this.initialConnected = false, this.initialSlowDevice = false, this.initialDevice, this.stepBackNotifier});
+  final ValueNotifier<String?>? stepIndicatorNotifier;
+  const _Flow3({required this.onDone, this.onNavigateToMyDevices, this.initialConnected = false, this.initialSlowDevice = false, this.initialDevice, this.stepBackNotifier, this.stepIndicatorNotifier});
 
   @override
   ConsumerState<_Flow3> createState() => _Flow3State();
@@ -1560,35 +1587,31 @@ class _Flow3State extends ConsumerState<_Flow3> {
 
   void _syncStepBackNotifier() {
     widget.stepBackNotifier?.value = _stepHistory.isNotEmpty ? _stepBack : null;
-  }
-
-  Widget _backButton(BuildContext context) {
-    if (_stepHistory.isEmpty) return const SizedBox.shrink();
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: OutlinedButton(
-        onPressed: _stepBack,
-        child: const Text('← Back'),
-      ),
-    );
+    final current = _stepHistory.length + 1;
+    widget.stepIndicatorNotifier?.value =
+        current > 1 ? 'Step $current of 4' : null;
   }
 
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(instantVerifyPivotProvider);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (_step == 0) ..._step0(context),
-        if (_step == 1 && _connectState == _ConnectState.canConnect) ..._step1Connected(context),
-        if (_step == 2 && _connectIssue == _ConnectIssue.keepsDropping) ..._keepsDroppingFlow(context, state),
-        if (_step == 2 && _connectIssue == _ConnectIssue.slowOnDevice) ..._slowDevicePath(context, state),
-        if (_step == 1 && _connectState == _ConnectState.cantConnect) ..._step1CantConnect(context),
-        if (_step == 1 && _connectState == _ConnectState.wired) ..._step1Wired(context),
-        if (_step == 3 && _connectIssue == _ConnectIssue.other) ..._pathOther(context, state),
-        if (_step == 3 && _connectIssue != _ConnectIssue.other) ..._pathA(context, state),
-        if (_step == 4) ..._pathB(context, state),
-      ],
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 250),
+      child: Column(
+        key: ValueKey('${_step}_${_connectState?.index}_${_connectIssue?.index}'),
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (_step == 0) ..._step0(context),
+          if (_step == 1 && _connectState == _ConnectState.canConnect) ..._step1Connected(context),
+          if (_step == 2 && _connectIssue == _ConnectIssue.keepsDropping) ..._keepsDroppingFlow(context, state),
+          if (_step == 2 && _connectIssue == _ConnectIssue.slowOnDevice) ..._slowDevicePath(context, state),
+          if (_step == 1 && _connectState == _ConnectState.cantConnect) ..._step1CantConnect(context),
+          if (_step == 1 && _connectState == _ConnectState.wired) ..._step1Wired(context),
+          if (_step == 3 && _connectIssue == _ConnectIssue.other) ..._pathOther(context, state),
+          if (_step == 3 && _connectIssue != _ConnectIssue.other) ..._pathA(context, state),
+          if (_step == 4) ..._pathB(context, state),
+        ],
+      ),
     );
   }
 
@@ -1649,7 +1672,6 @@ class _Flow3State extends ConsumerState<_Flow3> {
       ];
 
   List<Widget> _step1Wired(BuildContext context) => [
-        _backButton(context),
         _stepCard(context, Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1704,7 +1726,6 @@ class _Flow3State extends ConsumerState<_Flow3> {
         _stepCard(context, Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _backButton(context),
             Text('What\'s happening?',
                 style: Theme.of(context)
                     .textTheme
@@ -1753,7 +1774,6 @@ class _Flow3State extends ConsumerState<_Flow3> {
   /// Device-specific slow internet path — checks signal, band, node backhaul.
   List<Widget> _slowDevicePath(BuildContext context, InstantVerifyPivotState state) {
     return [
-      _backButton(context),
       if (_selectedDevice == null)
         // ── No device selected — show inline picker ──────────────────────
         _devicePickerCard(context, state)
@@ -2025,7 +2045,6 @@ class _Flow3State extends ConsumerState<_Flow3> {
     final isUnifiedSsid = ssids.length <= 1;
 
     return [
-      _backButton(context), // back to "what's happening?" step
       _stepCard(context, Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -2604,7 +2623,6 @@ class _Flow3State extends ConsumerState<_Flow3> {
   /// Shows general troubleshooting steps + support escalation.
   List<Widget> _pathOther(BuildContext context, InstantVerifyPivotState state) {
     return [
-      _backButton(context),
       _stepCard(context, Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -2659,7 +2677,6 @@ class _Flow3State extends ConsumerState<_Flow3> {
       _stepCard(context, Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _backButton(context),
           Text('Check your WiFi details',
               style: Theme.of(context)
                   .textTheme
@@ -2764,7 +2781,6 @@ class _Flow3State extends ConsumerState<_Flow3> {
       _stepCard(context, Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _backButton(context),
           Text('Connect your smart home device',
               style: Theme.of(context)
                   .textTheme
@@ -3002,7 +3018,8 @@ class _Flow5 extends ConsumerStatefulWidget {
   final VoidCallback onDone;
   final ValueChanged<int> onNavigateToFlow;
   final ValueNotifier<VoidCallback?>? stepBackNotifier;
-  const _Flow5({required this.onDone, required this.onNavigateToFlow, this.stepBackNotifier});
+  final ValueNotifier<String?>? stepIndicatorNotifier;
+  const _Flow5({required this.onDone, required this.onNavigateToFlow, this.stepBackNotifier, this.stepIndicatorNotifier});
 
   @override
   ConsumerState<_Flow5> createState() => _Flow5State();
@@ -3041,17 +3058,9 @@ class _Flow5State extends ConsumerState<_Flow5> {
 
   void _syncStepBackNotifier() {
     widget.stepBackNotifier?.value = _stepHistory.isNotEmpty ? _stepBack : null;
-  }
-
-  Widget _backButton(BuildContext context) {
-    if (_stepHistory.isEmpty) return const SizedBox.shrink();
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: OutlinedButton(
-        onPressed: _stepBack,
-        child: const Text('← Back'),
-      ),
-    );
+    final current = _stepHistory.length + 1;
+    widget.stepIndicatorNotifier?.value =
+        current > 1 ? 'Step $current of 5' : null;
   }
 
   @override
@@ -3120,15 +3129,19 @@ class _Flow5State extends ConsumerState<_Flow5> {
   }
 
   @override
-  Widget build(BuildContext context) => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (_step == 0) ..._step0(context),
-          if (_step == 1) ..._step1Scope(context),
-          if (_step == 2) ..._step2Monitor(context),
-          if (_step == 3) ..._step3Result(context),
-          if (_step == 4) ..._step4PostRestart(context),
-        ],
+  Widget build(BuildContext context) => AnimatedSwitcher(
+        duration: const Duration(milliseconds: 250),
+        child: Column(
+          key: ValueKey(_step),
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (_step == 0) ..._step0(context),
+            if (_step == 1) ..._step1Scope(context),
+            if (_step == 2) ..._step2Monitor(context),
+            if (_step == 3) ..._step3Result(context),
+            if (_step == 4) ..._step4PostRestart(context),
+          ],
+        ),
       );
 
   List<Widget> _step0(BuildContext context) => [
@@ -3175,7 +3188,6 @@ class _Flow5State extends ConsumerState<_Flow5> {
         _stepCard(context, Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _backButton(context),
             Text('Is it everything or specific devices?',
                 style: Theme.of(context)
                     .textTheme
@@ -3232,7 +3244,6 @@ class _Flow5State extends ConsumerState<_Flow5> {
         _stepCard(context, Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _backButton(context),
             Text('Run a 2-minute connection test',
                 style: Theme.of(context)
                     .textTheme
@@ -3629,7 +3640,8 @@ enum _NatOption { bridgeMode, apMode, callIsp, leaveAsIs }
 class _Flow6BridgeMode extends ConsumerStatefulWidget {
   final VoidCallback onDone;
   final ValueNotifier<VoidCallback?>? stepBackNotifier;
-  const _Flow6BridgeMode({required this.onDone, this.stepBackNotifier});
+  final ValueNotifier<String?>? stepIndicatorNotifier;
+  const _Flow6BridgeMode({required this.onDone, this.stepBackNotifier, this.stepIndicatorNotifier});
 
   @override
   ConsumerState<_Flow6BridgeMode> createState() => _Flow6BridgeModeState();
@@ -3642,37 +3654,36 @@ class _Flow6BridgeModeState extends ConsumerState<_Flow6BridgeMode> {
 
   void _pushStep(int s) {
     setState(() { _stepHistory.add(_step); _step = s; });
-    widget.stepBackNotifier?.value = _stepHistory.isNotEmpty ? _stepBack : null;
+    _syncNotifiers();
   }
   void _stepBack() {
     if (_stepHistory.isNotEmpty) setState(() => _step = _stepHistory.removeLast());
-    widget.stepBackNotifier?.value = _stepHistory.isNotEmpty ? _stepBack : null;
+    _syncNotifiers();
   }
-
-  Widget _backBtn(BuildContext context) => _stepHistory.isNotEmpty
-      ? Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: OutlinedButton(
-            onPressed: _stepBack,
-            child: const Text('← Back'),
-          ),
-        )
-      : const SizedBox.shrink();
+  void _syncNotifiers() {
+    widget.stepBackNotifier?.value = _stepHistory.isNotEmpty ? _stepBack : null;
+    final current = _stepHistory.length + 1;
+    widget.stepIndicatorNotifier?.value = current > 1 ? 'Step $current of 2' : null;
+  }
 
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(instantVerifyPivotProvider);
     final isCgnat = _isCgnatIp(state.wanIpAddress);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (_step == 0) ..._step0(context, isCgnat),
-        if (_step == 1) ..._stepBridgeMode(context),
-        if (_step == 2) ..._stepApMode(context),
-        if (_step == 3) ..._stepCallIsp(context, isCgnat),
-        if (_step == 4) ..._stepLeaveAsIs(context),
-      ],
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 250),
+      child: Column(
+        key: ValueKey(_step),
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (_step == 0) ..._step0(context, isCgnat),
+          if (_step == 1) ..._stepBridgeMode(context),
+          if (_step == 2) ..._stepApMode(context),
+          if (_step == 3) ..._stepCallIsp(context, isCgnat),
+          if (_step == 4) ..._stepLeaveAsIs(context),
+        ],
+      ),
     );
   }
 
@@ -3762,7 +3773,6 @@ class _Flow6BridgeModeState extends ConsumerState<_Flow6BridgeMode> {
       ];
 
   List<Widget> _stepBridgeMode(BuildContext context) => [
-        _backBtn(context),
         _stepCard(context, Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -3811,7 +3821,6 @@ class _Flow6BridgeModeState extends ConsumerState<_Flow6BridgeMode> {
       ];
 
   List<Widget> _stepApMode(BuildContext context) => [
-        _backBtn(context),
         _stepCard(context, Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -3854,7 +3863,6 @@ class _Flow6BridgeModeState extends ConsumerState<_Flow6BridgeMode> {
       ];
 
   List<Widget> _stepCallIsp(BuildContext context, bool isCgnat) => [
-        _backBtn(context),
         _stepCard(context, Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -3889,7 +3897,6 @@ class _Flow6BridgeModeState extends ConsumerState<_Flow6BridgeMode> {
       ];
 
   List<Widget> _stepLeaveAsIs(BuildContext context) => [
-        _backBtn(context),
         _stepCard(context, Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
