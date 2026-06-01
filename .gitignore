@@ -122,6 +122,10 @@ lib/l10n/gen/app_localizations.dart
 # FVM Version Cache
 .fvm/
 
+# Personal Claude session context — machine-local, never commit
+.claude/CLAUDE.local.md
+.claude/settings.local.json
+
 # Coverage
 coverage/
 lcov.info
