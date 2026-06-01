@@ -561,7 +561,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
               icon: Icons.arrow_upward,
               label: 'Upload',
               speedKbps: device.uplinkRate!,
-              color: colorScheme.secondary,
+              color: colorScheme.tertiary,
             ),
           ),
       ],
