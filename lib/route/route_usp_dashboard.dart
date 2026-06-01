@@ -181,5 +181,10 @@ final uspDashboardRoute = ShellRoute(
       path: RoutePath.uspSpeedTest,
       builder: (context, state) => const SpeedTestView(),
     ),
+    LinksysRoute(
+      name: RouteNamed.uspInstantTest,
+      path: RoutePath.uspInstantTest,
+      builder: (context, state) => const InstantTestPage(),
+    ),
   ],
 );

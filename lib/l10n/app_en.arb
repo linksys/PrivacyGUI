@@ -1164,5 +1164,52 @@
   "failedToLoadSettings": "Failed to load settings",
   "retry": "Retry",
   "pppStatus": "PPP Status",
-  "dhcpv6": "DHCPv6"
+  "dhcpv6": "DHCPv6",
+  "instantTest": "Instant Test",
+  "instantTestDesc": "Automatic network health check and guided fixes",
+  "instantTestTabOverview": "Instant Test",
+  "instantTestTabDevices": "My Devices",
+  "instantTestTabNetwork": "My Network",
+  "instantTestTabHelpFix": "Help Me Fix It",
+  "instantTestRunButton": "Run Instant Test",
+  "instantTestAllChecksPassed": "All checks passed",
+  "instantTestPreliminaryBadge": "Preliminary — tests still running",
+  "instantTestChecksRun": "{count} checks run",
+  "@instantTestChecksRun": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "8"
+      }
+    }
+  },
+  "instantTestNoDevices": "No connected devices found",
+  "instantTestTroubleshootDevice": "Troubleshoot this device",
+  "instantTestScoreGood": "Good",
+  "instantTestScoreAtRisk": "At Risk",
+  "instantTestScoreIssue": "Issue",
+  "instantTestInternetSection": "Internet",
+  "instantTestMeshNodesSection": "Mesh Nodes",
+  "instantTestEthernetSection": "Ethernet Ports",
+  "instantTestNoIssues": "No issues found that need attention.",
+  "instantTestDeviceAccessSection": "Device Access",
+  "instantTestPrivacyOff": "Instant Privacy is off — all devices can connect.",
+  "instantTestPrivacyOn": "Instant Privacy is on. {count} device allowed.",
+  "@instantTestPrivacyOn": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "instantTestAllowAllDevices": "Allow All Devices",
+  "instantTestBackhaulHealthSection": "Backhaul Health",
+  "instantTestNodeConnectedWired": "Connected via Ethernet — excellent",
+  "instantTestNodeConnectedStrong": "Strong wireless connection",
+  "instantTestNodeConnectedWeak": "Weak wireless connection — consider moving closer",
+  "instantTestRouterSpeed": "Router Speed",
+  "instantTestRouterSpeedLeg": "Router → Internet",
+  "instantTestClientInternetLeg": "Your Device → Internet",
+  "instantTestClientRouterLeg": "Your Device → Router"
 }

@@ -181,3 +181,16 @@ lib/page/               # Feature-specific pages and screens
 
 ## Vendored USP Artifacts
 The `tools/usp-codegen` binary and `web/usp_client.{js,wasm}` are built from `linksys/usp_framework` and checked in. See `doc/usp/vendored-artifacts.md` for the version manifest and update procedure before bumping any of them.
+
+---
+
+## Instant-Test USP Rebase (Active Work)
+
+Active branch: `feature/instant-test-usp` (base `dev-2.4.0`)
+Rebase plan: `~/Projects/Instant_Help/Plans/rebase-to-usp240.md`
+PRD (customer flows): `~/Projects/Instant_Help/Plans/PRD.md`
+Algorithm PRD: `MEMORY/WORK/20260601-120000_instant-test-usp-phase1/PRD.md`
+
+**Hard Rule:** No JNAP imports in `lib/page/instant_test/`. No planning docs in this repo. No assumptions on USP field names — verify against providers.
+
+Phase 1 target: `lib/page/instant_test/` compiles with zero analyzer errors, route + menu card registered.

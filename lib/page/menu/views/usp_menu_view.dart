@@ -136,6 +136,13 @@ class UspMenuView extends ConsumerWidget {
         onTap: () => context.goNamed(RouteNamed.uspSpeedTest),
       ),
       AppSectionItemData(
+        semanticLabel: 'menu-instant-test',
+        title: 'Instant Test',
+        description: 'Automatic network health check and guided fixes',
+        iconData: Icons.health_and_safety,
+        onTap: () => context.goNamed(RouteNamed.uspInstantTest),
+      ),
+      AppSectionItemData(
         semanticLabel: 'menu-network-diagnostics',
         title: 'Network Diagnostics',
         description: 'Run guided checks and manual ping/traceroute tools',
