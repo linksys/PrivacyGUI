@@ -1,6 +1,7 @@
 import 'package:privacy_gui/generated/data_elements_network.g.dart';
 import 'package:privacy_gui/page/_shared/models/mesh_topology_info.dart';
 import 'package:privacy_gui/page/topology/models/node_ui_model.dart';
+import 'package:privacy_gui/page/_shared/components/wifi_ui.dart';
 
 /// Builds [MeshTopologyInfo] from DataElements network data.
 ///
@@ -39,14 +40,10 @@ class MeshTopologyBuilder {
         }
       }
 
-      // RCPI → RSSI conversion: RSSI (dBm) = (RCPI / 2) - 110
       int? backhaulSignalStrength;
       int? backhaulUplinkRate;
       if (includeBackhaulStats) {
-        if (node.backhaulStatsSignalStrength > 0) {
-          backhaulSignalStrength =
-              (node.backhaulStatsSignalStrength ~/ 2) - 110;
-        }
+        backhaulSignalStrength = rcpiToRssi(node.backhaulStatsSignalStrength);
         if (node.backhaulStatsLastDataUplinkRate > 0) {
           backhaulUplinkRate = node.backhaulStatsLastDataUplinkRate;
         }
@@ -54,6 +51,12 @@ class MeshTopologyBuilder {
 
       // Master node = no backhaul parent (backhaulAlId is empty)
       final isMaster = node.backhaulAlId.trim().isEmpty;
+
+      // Downlink rate (kbps)
+      int? backhaulDownlinkRate;
+      if (includeBackhaulStats && node.backhaulStatsLastDataDownlinkRate > 0) {
+        backhaulDownlinkRate = node.backhaulStatsLastDataDownlinkRate;
+      }
 
       nodes.add(NodeUIModel(
         deviceId: nodeDeviceId,
@@ -69,6 +72,19 @@ class MeshTopologyBuilder {
         instancePath: node.instancePath,
         backhaulAlId: node.backhaulAlId.trim(),
         backhaulMacAddress: node.backhaulMacAddress.trim(),
+        backhaulLinkType: node.backhaulLinkType.trim().isNotEmpty
+            ? node.backhaulLinkType.trim()
+            : null,
+        backhaulDownlinkRate: backhaulDownlinkRate,
+        backhaulParentDeviceId: node.backhaulBackhaulDeviceId.trim().isNotEmpty
+            ? node.backhaulBackhaulDeviceId.trim()
+            : null,
+        backhaulParentBssid: node.backhaulMacAddressMultiAp.trim().isNotEmpty
+            ? node.backhaulMacAddressMultiAp.trim()
+            : null,
+        lastContactTime: node.multiApLastContactTime.trim().isNotEmpty
+            ? node.multiApLastContactTime.trim()
+            : null,
       ));
     }
 

@@ -54,12 +54,22 @@ void main() {
     'Device.Ethernet.VLANTermination.1.VLANID': '100',
   };
 
+  // Alias resolution response for WanSettings and Ipv6Settings _resolveInstance()
+  const aliasResolutionResponse = <String, dynamic>{
+    'Device.IP.Interface.1.Alias': 'cpe-lan',
+    'Device.IP.Interface.2.Alias': 'cpe-wan',
+  };
+
   void setupFetchMocks({
     Map<String, dynamic> pppResponse = pppEmptyResponse,
     Map<String, dynamic> vlanResponse = vlanEmptyResponse,
   }) {
     when(() => mockUsp.get(any())).thenAnswer((invocation) async {
       final paths = invocation.positionalArguments[0] as List<String>;
+      // Handle _resolveInstance() calls for WanSettings/Ipv6Settings
+      if (paths.any((p) => p.contains('Interface.*.Alias'))) {
+        return aliasResolutionResponse;
+      }
       if (paths.any((p) => p.contains('AddressingType'))) {
         return wanResponse;
       }
@@ -172,8 +182,17 @@ void main() {
 
       await service.saveIspSettings(config);
 
-      // Verify fetchSettings was called (4 parallel fetches)
-      verify(() => mockUsp.get(any())).called(4);
+      // Verify fetchSettings + saveAll get calls:
+      // fetchSettings:
+      // - WanSettings._resolveInstance() + fetch() = 2 calls
+      // - Ipv6Settings._resolveInstance() + fetch() = 2 calls
+      // - PppInterface.fetch() = 1 call
+      // - VlanTermination.fetch() = 1 call
+      // saveAll:
+      // - WanStaticIp.updateOrdered() → _resolveInstance() = 1 call
+      // - Ipv6Settings.update() → _resolveInstance() = 1 call
+      // Total = 8 get calls
+      verify(() => mockUsp.get(any())).called(8);
 
       // Verify setOrdered was called for Static IP mode switch
       final capturedOrdered = verify(() => mockUsp.setOrdered(captureAny(),
@@ -209,8 +228,13 @@ void main() {
 
       await service.saveIspSettings(config);
 
-      // Verify fetchSettings was called
-      verify(() => mockUsp.get(any())).called(4);
+      // Verify fetchSettings + saveAll get calls:
+      // fetchSettings: 6 calls
+      // saveAll:
+      // - WanPppoe.update() → _resolveInstance() = 1 call
+      // - Ipv6Settings.update() → _resolveInstance() = 1 call
+      // Total = 8 get calls
+      verify(() => mockUsp.get(any())).called(8);
 
       // Verify PppInterface.add was called (new PPP instance created)
       final addCaptures = verify(() => mockUsp.add(captureAny())).captured;
@@ -274,7 +298,7 @@ void main() {
       await service.saveIspSettings(config);
 
       // Verify fetchSettings was called
-      verify(() => mockUsp.get(any())).called(4);
+      verify(() => mockUsp.get(any())).called(7);
 
       // Verify VlanTermination.delete was called
       final deleteCaptures =

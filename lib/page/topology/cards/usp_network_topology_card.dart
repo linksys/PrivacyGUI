@@ -8,6 +8,7 @@ import 'package:privacy_gui/page/_shared/components/card_skeleton.dart';
 import 'package:privacy_gui/page/topology/helpers/topology_node_content_builder.dart';
 import 'package:privacy_gui/page/topology/helpers/usp_topology_builder.dart';
 import 'package:privacy_gui/page/topology/models/node_ui_model.dart';
+import 'package:privacy_gui/page/topology/views/components/node_detail_popup.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Displays a network topology visualization of the router and connected devices.
@@ -86,51 +87,12 @@ class UspNetworkTopologyCard extends ConsumerWidget {
                   nodeDetailConfig: NodeDetailConfig(
                     trigger: NodeDetailTrigger.tap,
                     detailBuilder: (ctx, node, metadata) =>
-                        _buildNodeDetailPopup(ctx, node, metadata),
+                        NodeDetailPopup.builder(ctx, node, metadata),
                   ),
                 ),
               ),
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildNodeDetailPopup(
-      BuildContext context, MeshNode node, Map<String, dynamic>? metadata) {
-    final deviceId = metadata?['deviceId'] as String? ?? '';
-    final model = metadata?['model'] as String? ?? '';
-    final manufacturer = metadata?['manufacturer'] as String? ?? '';
-    final serialNumber = metadata?['serialNumber'] as String? ?? '';
-    final softwareVersion = metadata?['softwareVersion'] as String? ?? '';
-    final isMaster = metadata?['isMaster'] as bool? ?? false;
-
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _popupRow('Role', isMaster ? 'Master' : 'Slave'),
-        if (deviceId.isNotEmpty && deviceId.toUpperCase() != 'GATEWAY')
-          _popupRow('MAC', deviceId),
-        if (model.isNotEmpty) _popupRow('Model', model),
-        if (manufacturer.isNotEmpty) _popupRow('Manufacturer', manufacturer),
-        if (serialNumber.isNotEmpty) _popupRow('S/N', serialNumber),
-        if (softwareVersion.isNotEmpty) _popupRow('Firmware', softwareVersion),
-      ],
-    );
-  }
-
-  Widget _popupRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.xxs),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 100,
-            child: AppText.bodySmall(label, color: Colors.grey),
-          ),
-          Expanded(child: AppText.bodySmall(value)),
         ],
       ),
     );

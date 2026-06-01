@@ -187,9 +187,12 @@ void main() {
         backhaulPhyRate: 1000,
         backhaulSignalStrength: -45,
         backhaulUplinkRate: 500000,
+        backhaulLinkType: 'Wi-Fi',
+        backhaulDownlinkRate: 600000,
       );
 
-      expect(node.props, hasLength(17));
+      // 22 props total: base fields + DataElements enrichment fields
+      expect(node.props, hasLength(22));
       expect(node.props, contains('AA:BB:CC:DD:EE:01'));
       expect(node.props, contains('Router'));
       expect(node.props, contains('linksys'));
@@ -203,9 +206,16 @@ void main() {
       expect(node.props, contains(1000));
       expect(node.props, contains(-45));
       expect(node.props, contains(500000));
-      // New DataElements enrichment fields (default to null):
-      // dataElementsId + 3 capability/role flags
-      expect(node.props.where((p) => p == null).length, 4);
+      expect(node.props, contains('Wi-Fi'));
+      expect(node.props, contains(600000));
+      // Remaining DataElements enrichment fields default to null:
+      // dataElementsId, instancePath, backhaulAlId, backhaulMacAddress,
+      // backhaulParentDeviceId, backhaulParentBssid, lastContactTime = 7 nulls
+      // but backhaulLinkType and backhaulDownlinkRate are set, so 7 - 0 = 7
+      // Actually: dataElementsId(1) + instancePath(1) + backhaulAlId(1) +
+      // backhaulMacAddress(1) + backhaulParentDeviceId(1) + backhaulParentBssid(1) +
+      // lastContactTime(1) = 7 nulls
+      expect(node.props.where((p) => p == null).length, 7);
     });
   });
 

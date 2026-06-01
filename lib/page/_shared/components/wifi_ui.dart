@@ -3,6 +3,24 @@ import 'package:privacy_gui/core/utils/wifi.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
+// Re-export core wifi utilities for convenience
+export 'package:privacy_gui/core/utils/wifi.dart'
+    show
+        rcpiToRssi,
+        rssiToRcpi,
+        getWifiSignalLevel,
+        NodeSignalLevel,
+        signalThresholdRSSI,
+        rssiExcellent,
+        rssiGood,
+        rssiFair,
+        SignalTier,
+        getSignalTier,
+        computeSNR,
+        normalizeSNR,
+        formatSpeed;
+
+/// UI utilities for WiFi signal display.
 class WiFiUtils {
   static IconData getWifiSignalIconData(
       BuildContext context, int? signalStrength) {
@@ -23,6 +41,7 @@ class WiFiUtils {
   }
 }
 
+/// UI extensions for [NodeSignalLevel].
 extension NodeSignalLevelExt on NodeSignalLevel {
   String resolveLabel(BuildContext context) {
     return switch (this) {
@@ -48,3 +67,28 @@ extension NodeSignalLevelExt on NodeSignalLevel {
     };
   }
 }
+
+// ─── SignalTier UI helpers ──────────────────────────────────────────────────
+
+/// UI extensions for [SignalTier] (performance analytics).
+extension SignalTierExt on SignalTier {
+  /// Human-readable tier label.
+  String get label => switch (this) {
+        SignalTier.excellent => 'Excellent',
+        SignalTier.good => 'Good',
+        SignalTier.fair => 'Fair',
+        SignalTier.weak => 'Weak',
+      };
+
+  /// Tier-appropriate color from the current color scheme.
+  Color resolveColor(ColorScheme cs) => switch (this) {
+        SignalTier.excellent => cs.primary,
+        SignalTier.good => cs.tertiary,
+        SignalTier.fair => Colors.orange,
+        SignalTier.weak => cs.error,
+      };
+}
+
+/// Bar color based on RSSI value.
+Color rssiColor(int rssi, ColorScheme cs) =>
+    getSignalTier(rssi).resolveColor(cs);

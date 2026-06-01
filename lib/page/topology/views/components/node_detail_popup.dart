@@ -1,0 +1,124 @@
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/route/constants.dart';
+import 'package:ui_kit_library/ui_kit.dart';
+
+/// Shared popup content for mesh node details.
+///
+/// Used by both Dashboard topology card and Topology page.
+class NodeDetailPopup extends StatelessWidget {
+  final MeshNode node;
+  final Map<String, dynamic>? metadata;
+  final bool showDetailsButton;
+  final VoidCallback? onDetailsTap;
+
+  const NodeDetailPopup({
+    super.key,
+    required this.node,
+    this.metadata,
+    this.showDetailsButton = false,
+    this.onDetailsTap,
+  });
+
+  /// Factory for use with AppTopology's detailBuilder.
+  static Widget builder(
+    BuildContext context,
+    MeshNode node,
+    Map<String, dynamic>? metadata, {
+    bool showDetailsButton = false,
+  }) {
+    return NodeDetailPopup(
+      node: node,
+      metadata: metadata,
+      showDetailsButton: showDetailsButton,
+      onDetailsTap: showDetailsButton
+          ? () {
+              final deviceId = metadata?['deviceId'] as String? ?? '';
+              if (deviceId.isNotEmpty) {
+                GoRouter.of(context).pushNamed(
+                  RouteNamed.uspNodeDetail,
+                  queryParameters: {'deviceId': deviceId},
+                );
+              }
+            }
+          : null,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final deviceId = metadata?['deviceId'] as String? ?? '';
+    final model = metadata?['model'] as String? ?? '';
+    final manufacturer = metadata?['manufacturer'] as String? ?? '';
+    final serialNumber = metadata?['serialNumber'] as String? ?? '';
+    final softwareVersion = metadata?['softwareVersion'] as String? ?? '';
+    final isMaster = metadata?['isMaster'] as bool? ?? false;
+
+    // Backhaul info for Slave nodes
+    final backhaulLinkType = metadata?['backhaulLinkType'] as String?;
+    final backhaulSignalStrength = metadata?['backhaulSignalStrength'] as int?;
+    final backhaulUplinkRate = metadata?['backhaulUplinkRate'] as int?;
+    final backhaulDownlinkRate = metadata?['backhaulDownlinkRate'] as int?;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _row('Role', isMaster ? 'Master' : 'Slave'),
+        if (deviceId.isNotEmpty && deviceId.toUpperCase() != 'GATEWAY')
+          _row('MAC', deviceId),
+        if (model.isNotEmpty) _row('Model', model),
+        if (manufacturer.isNotEmpty) _row('Manufacturer', manufacturer),
+        if (serialNumber.isNotEmpty) _row('S/N', serialNumber),
+        if (softwareVersion.isNotEmpty) _row('Firmware', softwareVersion),
+        // Backhaul info for Slave nodes
+        if (!isMaster) ...[
+          if (backhaulLinkType != null && backhaulLinkType.isNotEmpty)
+            _row('Backhaul', backhaulLinkType),
+          if (backhaulSignalStrength != null && backhaulLinkType != 'Ethernet')
+            _row('Signal', '$backhaulSignalStrength dBm'),
+          if (backhaulUplinkRate != null || backhaulDownlinkRate != null)
+            _row(
+              'Speed',
+              'Up: ${_formatRate(backhaulUplinkRate)} / '
+                  'Down: ${_formatRate(backhaulDownlinkRate)}',
+            ),
+        ],
+        // Details button (optional)
+        if (showDetailsButton && node.status == MeshNodeStatus.online)
+          Padding(
+            padding: const EdgeInsets.only(top: AppSpacing.md),
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: AppButton.text(
+                label: 'Details',
+                onTap: onDetailsTap,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _row(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.xxs),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 100,
+            child: AppText.bodySmall(label, color: Colors.grey),
+          ),
+          Expanded(child: AppText.bodySmall(value)),
+        ],
+      ),
+    );
+  }
+
+  static String _formatRate(int? kbps) {
+    if (kbps == null || kbps <= 0) return '--';
+    if (kbps >= 1000000) return '${(kbps / 1000000).toStringAsFixed(1)} Gbps';
+    if (kbps >= 1000) return '${(kbps / 1000).toStringAsFixed(0)} Mbps';
+    return '$kbps Kbps';
+  }
+}

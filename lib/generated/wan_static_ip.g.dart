@@ -135,12 +135,13 @@ class WanStaticIp {
   /// sequence affects performance or correctness.
   static Future<Map<String, dynamic>> updateOrdered(
       UspClient client, WanStaticIp data) async {
+    final instancePath = await _resolveInstance(client);
     final orderedParams = <List<Map<String, String>>>[];
 
     // Priority 1: Parameters with priority 1
     final group1Params = <Map<String, String>>[];
     group1Params.add({
-      'path': 'Device.IP.Interface..IPv4Address.1.AddressingType',
+      'path': '${instancePath}IPv4Address.1.AddressingType',
       'value': data.addressingType.toString()
     });
     if (group1Params.isNotEmpty) {
@@ -150,19 +151,19 @@ class WanStaticIp {
     // Priority 2: Parameters with priority 2
     final group2Params = <Map<String, String>>[];
     group2Params.add({
-      'path': 'Device.IP.Interface..IPv4Address.1.IPAddress',
+      'path': '${instancePath}IPv4Address.1.IPAddress',
       'value': data.staticIpAddress.toString()
     });
     group2Params.add({
-      'path': 'Device.IP.Interface..IPv4Address.1.SubnetMask',
+      'path': '${instancePath}IPv4Address.1.SubnetMask',
       'value': data.subnetMask.toString()
     });
     group2Params.add({
-      'path': 'Device.IP.Interface..IPv4Address.1.X_LINKSYS_DefaultGateway',
+      'path': '${instancePath}IPv4Address.1.X_LINKSYS_DefaultGateway',
       'value': data.defaultGateway.toString()
     });
     group2Params.add({
-      'path': 'Device.IP.Interface..IPv4Address.1.X_LINKSYS_DNSServers',
+      'path': '${instancePath}IPv4Address.1.X_LINKSYS_DNSServers',
       'value': data.dnsServers.toString()
     });
     if (group2Params.isNotEmpty) {

@@ -34,6 +34,13 @@ class NodeUIModel extends Equatable {
   final String? backhaulAlId; // Parent node's AL ID (MAC)
   final String? backhaulMacAddress; // Backhaul interface MAC
 
+  // ─── Enhanced backhaul fields (from codegen) ───
+  final String? backhaulLinkType; // "Wi-Fi" or "Ethernet"
+  final int? backhaulDownlinkRate; // kbps
+  final String? backhaulParentDeviceId; // Parent node's Device ID
+  final String? backhaulParentBssid; // Connected BSSID
+  final String? lastContactTime; // ISO 8601 timestamp
+
   const NodeUIModel({
     required this.deviceId,
     this.dataElementsId,
@@ -52,6 +59,11 @@ class NodeUIModel extends Equatable {
     this.instancePath,
     this.backhaulAlId,
     this.backhaulMacAddress,
+    this.backhaulLinkType,
+    this.backhaulDownlinkRate,
+    this.backhaulParentDeviceId,
+    this.backhaulParentBssid,
+    this.lastContactTime,
   });
 
   /// Display name priority: friendlyName > hostName > model > deviceId.
@@ -67,6 +79,9 @@ class NodeUIModel extends Equatable {
 
   /// Whether this node has backhaul info (i.e., it's a child node).
   bool get hasBackhaul => backhaulMediaType.isNotEmpty;
+
+  /// Whether backhaul connection is Ethernet (wired).
+  bool get isEthernetBackhaul => backhaulLinkType == 'Ethernet';
 
   @override
   List<Object?> get props => [
@@ -87,6 +102,11 @@ class NodeUIModel extends Equatable {
         instancePath,
         backhaulAlId,
         backhaulMacAddress,
+        backhaulLinkType,
+        backhaulDownlinkRate,
+        backhaulParentDeviceId,
+        backhaulParentBssid,
+        lastContactTime,
       ];
 }
 

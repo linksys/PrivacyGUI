@@ -14,6 +14,21 @@ final uspNodeDetailProvider =
       .where((n) => n.deviceId.toUpperCase() == deviceId.toUpperCase())
       .firstOrNull;
 
+  if (node == null) return UspNodeDetailState.empty();
+
+  // Look up parent node using backhaulParentDeviceId (parent's Device ID)
+  NodeUIModel? parentNode;
+  if (node.backhaulParentDeviceId != null &&
+      node.backhaulParentDeviceId!.isNotEmpty) {
+    final parentId =
+        node.backhaulParentDeviceId!.toUpperCase().replaceAll(':', '');
+    parentNode = data.nodeModels.where((n) {
+      final nodeId = n.deviceId.toUpperCase().replaceAll(':', '');
+      final nodeDeId = n.dataElementsId?.toUpperCase().replaceAll(':', '');
+      return nodeId == parentId || nodeDeId == parentId;
+    }).firstOrNull;
+  }
+
   // For non-mesh routers the synthetic gateway uses deviceId 'gateway',
   // and devices have parentNodeId == null (no DataElements mapping).
   // Treat null parentNodeId as "connected to gateway".
@@ -27,16 +42,19 @@ final uspNodeDetailProvider =
 
   return UspNodeDetailState(
     node: node,
+    parentNode: parentNode,
     connectedDevices: connectedDevices,
   );
 });
 
 class UspNodeDetailState extends Equatable {
   final NodeUIModel? node;
+  final NodeUIModel? parentNode;
   final List<DeviceUIModel> connectedDevices;
 
   const UspNodeDetailState({
     this.node,
+    this.parentNode,
     this.connectedDevices = const [],
   });
 
@@ -45,5 +63,5 @@ class UspNodeDetailState extends Equatable {
   int get activeDeviceCount => connectedDevices.where((d) => d.isActive).length;
 
   @override
-  List<Object?> get props => [node, connectedDevices];
+  List<Object?> get props => [node, parentNode, connectedDevices];
 }

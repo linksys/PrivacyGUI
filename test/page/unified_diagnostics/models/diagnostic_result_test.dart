@@ -181,8 +181,12 @@ void main() {
     });
 
     test('signal strength thresholds', () {
+      // Thresholds: rssiExcellent=-65, rssiGood=-71, rssiFair=-78
+      // isWeakSignal: rssi < rssiGood (-71)
+      // isMediumSignal: rssi >= rssiGood && rssi < rssiExcellent
+      // isStrongSignal: rssi >= rssiExcellent
       final weak = WifiSignalCheckUIModel(
-        rssi: -80,
+        rssi: -80, // < -71 → weak
         channel: 1,
         band: '2.4GHz',
         connectedDevices: 5,
@@ -192,8 +196,18 @@ void main() {
       );
 
       final medium = WifiSignalCheckUIModel(
-        rssi: -60,
+        rssi: -68, // >= -71, < -65 → medium
         channel: 36,
+        band: '5GHz',
+        connectedDevices: 5,
+        severity: DiagnosticSeverity.ok,
+        titleKey: 'wifi_ok',
+        descriptionKey: 'wifi_ok_desc',
+      );
+
+      final strong = WifiSignalCheckUIModel(
+        rssi: -50, // >= -65 → strong
+        channel: 149,
         band: '5GHz',
         connectedDevices: 5,
         severity: DiagnosticSeverity.ok,
@@ -208,6 +222,10 @@ void main() {
       expect(medium.isWeakSignal, false);
       expect(medium.isMediumSignal, true);
       expect(medium.isStrongSignal, false);
+
+      expect(strong.isWeakSignal, false);
+      expect(strong.isMediumSignal, false);
+      expect(strong.isStrongSignal, true);
     });
   });
 

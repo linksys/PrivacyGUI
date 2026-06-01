@@ -5,6 +5,7 @@ import 'package:privacy_gui/core/usp/models/operate_result.dart';
 import 'package:privacy_gui/core/usp/services/network_diagnostics_executor.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/unified_diagnostics/services/unified_diagnostics_service.dart';
+import 'package:privacy_gui/page/_shared/components/wifi_ui.dart';
 
 class MockUspClient extends Mock implements UspClient {}
 
@@ -978,11 +979,15 @@ void main() {
     test('DeviceSignalUIModel.signalLabel covers all RSSI bands', () {
       DeviceSignalUIModel d(int rssi) =>
           DeviceSignalUIModel(name: 'd', macAddress: 'mac', rssiDbm: rssi);
-      expect(d(-40).signalLabel, 'Excellent');
-      expect(d(-55).signalLabel, 'Good');
-      expect(d(-65).signalLabel, 'Fair');
-      expect(d(-75).signalLabel, 'Weak');
-      expect(d(-90).signalLabel, 'Very Weak');
+      // Thresholds from wifi.dart: rssiExcellent=-65, rssiGood=-71, rssiFair=-78
+      expect(d(-40).signalLabel, 'Excellent'); // >= -65
+      expect(d(-65).signalLabel, 'Excellent'); // == -65 (boundary)
+      expect(d(-66).signalLabel, 'Good'); // >= -71
+      expect(d(-71).signalLabel, 'Good'); // == -71 (boundary)
+      expect(d(-72).signalLabel, 'Fair'); // >= -78
+      expect(d(-78).signalLabel, 'Fair'); // == -78 (boundary)
+      expect(d(-79).signalLabel, 'Weak'); // < -78
+      expect(d(-90).signalLabel, 'Weak');
     });
 
     test('WifiSignalPerRadioUIModel aggregates totals across active radios',
@@ -1074,11 +1079,16 @@ void main() {
     required String operationMode,
     required String assocRef,
     String manufacturerModel = 'Linksys M60TB',
+    String? linkType,
+    String? backhaulDeviceId,
   }) {
     final p = 'Device.WiFi.DataElements.Network.Device.$idx.';
     // Controller has no upstream link — mirror firmware behavior where
     // BackhaulALID/MAC are empty when MediaType is empty.
     final hasBackhaul = mediaType.isNotEmpty || phyRate > 0;
+    // Derive linkType from mediaType if not provided
+    final derivedLinkType =
+        linkType ?? (mediaType.contains('Ethernet') ? 'Ethernet' : 'Wi-Fi');
     return <String, dynamic>{
       '${p}ID': id,
       '${p}ManufacturerModel': manufacturerModel,
@@ -1089,17 +1099,31 @@ void main() {
       '${p}BackhaulMACAddress': hasBackhaul ? 'AA:BB:CC:DD:EE:0$idx' : '',
       '${p}BackhaulMediaType': mediaType,
       '${p}BackhaulPHYRate': phyRate.toString(),
-      '${p}MultiAPDevice.LastContactTime': '2026-05-21T00:00:00Z',
+      // Use a recent timestamp to avoid stale detection (within 5 minutes)
+      '${p}MultiAPDevice.LastContactTime':
+          DateTime.now().toUtc().toIso8601String(),
       '${p}MultiAPDevice.AssocIEEE1905DeviceRef': assocRef,
       '${p}MultiAPDevice.EasyMeshAgentOperationMode': operationMode,
+      '${p}MultiAPDevice.Backhaul.BackhaulDeviceID':
+          backhaulDeviceId ?? (hasBackhaul ? 'parent-$idx' : ''),
+      '${p}MultiAPDevice.Backhaul.BackhaulMACAddress':
+          hasBackhaul ? 'BB:CC:DD:EE:FF:0$idx' : '',
+      '${p}MultiAPDevice.Backhaul.LinkType': hasBackhaul ? derivedLinkType : '',
+      '${p}MultiAPDevice.Backhaul.MACAddress':
+          hasBackhaul ? 'CC:DD:EE:FF:00:0$idx' : '',
       '${p}MultiAPDevice.Backhaul.Stats.PacketsSent': '1000',
       '${p}MultiAPDevice.Backhaul.Stats.PacketsReceived': '1100',
       '${p}MultiAPDevice.Backhaul.Stats.ErrorsSent': '0',
       '${p}MultiAPDevice.Backhaul.Stats.ErrorsReceived': '0',
       '${p}MultiAPDevice.Backhaul.Stats.TimeStamp': '2026-05-21T00:00:00Z',
-      '${p}MultiAPDevice.Backhaul.Stats.LastDataUplinkRate': phyRate.toString(),
+      // phyRate is in Mbps, but LastDataUplinkRate/DownlinkRate are in kbps
+      '${p}MultiAPDevice.Backhaul.Stats.LastDataUplinkRate':
+          (phyRate * 1000).toString(),
+      '${p}MultiAPDevice.Backhaul.Stats.LastDataDownlinkRate':
+          (phyRate * 1000).toString(),
+      // signalStrength param is RSSI (dBm), convert to RCPI for firmware format
       '${p}MultiAPDevice.Backhaul.Stats.SignalStrength':
-          signalStrength.toString(),
+          rssiToRcpi(signalStrength).toString(),
     };
   }
 
@@ -1174,7 +1198,7 @@ void main() {
             id: 'agent-A',
             mediaType: 'IEEE_802_11ax',
             phyRate: 50,
-            signalStrength: -80,
+            signalStrength: -80, // poor RSSI
             operationMode: 'Agent',
             assocRef: 'controller'),
       };
@@ -1197,7 +1221,7 @@ void main() {
             id: 'agent-A',
             mediaType: 'IEEE_802_11ax',
             phyRate: 200,
-            signalStrength: -70,
+            signalStrength: -70, // marginal RSSI
             operationMode: 'Agent',
             assocRef: 'controller'),
       };
@@ -1220,7 +1244,7 @@ void main() {
             id: 'agent-A',
             mediaType: 'IEEE_802_11ax',
             phyRate: 900,
-            signalStrength: -55,
+            signalStrength: -55, // good RSSI
             operationMode: 'Agent',
             assocRef: 'controller'),
       };
@@ -1243,7 +1267,7 @@ void main() {
             id: 'agent-A',
             mediaType: 'IEEE_802_11ax',
             phyRate: 800,
-            signalStrength: -50,
+            signalStrength: -50, // excellent RSSI
             operationMode: 'Agent',
             assocRef: 'controller'),
         ...meshNodeFields(3,

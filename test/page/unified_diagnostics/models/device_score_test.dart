@@ -23,17 +23,20 @@ void main() {
       });
 
       test('rssi buckets map to correct scores', () {
+        // Thresholds from wifi.dart: rssiExcellent=-65, rssiGood=-71, rssiFair=-78
         DeviceScoreUIModel makeAt(int rssi) => DeviceScoreUIModel(
               macAddress: 'AA',
               name: 'D',
               rssiDbm: rssi,
             );
-        expect(makeAt(-40).signalScore, 100);
-        expect(makeAt(-50).signalScore, 100);
-        expect(makeAt(-55).signalScore, 80);
-        expect(makeAt(-65).signalScore, 60);
-        expect(makeAt(-75).signalScore, 40);
-        expect(makeAt(-90).signalScore, 20);
+        expect(makeAt(-40).signalScore, 100); // >= -65 → Excellent
+        expect(makeAt(-65).signalScore, 100); // == -65 → Excellent (boundary)
+        expect(makeAt(-66).signalScore, 80); // >= -71 → Good
+        expect(makeAt(-71).signalScore, 80); // == -71 → Good (boundary)
+        expect(makeAt(-72).signalScore, 60); // >= -78 → Fair
+        expect(makeAt(-78).signalScore, 60); // == -78 → Fair (boundary)
+        expect(makeAt(-79).signalScore, 40); // < -78 → Weak
+        expect(makeAt(-90).signalScore, 40);
       });
     });
 
@@ -59,13 +62,14 @@ void main() {
     });
 
     test('overallScore averages signal and data rate', () {
+      // rssiGood=-71, so -72 is Fair (score=60), 60 Mbps = Good (score=80)
       final device = DeviceScoreUIModel(
         macAddress: 'A',
         name: 'B',
-        rssiDbm: -75, // signal=40
+        rssiDbm: -72, // signal=60 (Fair)
         downlinkKbps: 60000, // data=80
       );
-      expect(device.overallScore, 60);
+      expect(device.overallScore, 70); // (60+80)/2
     });
 
     test('hasIssue requires wireless and overall < 50', () {
@@ -95,11 +99,16 @@ void main() {
       expect(wirelessOk.hasIssue, isFalse);
     });
 
-    test('hasWeakSignal flags wireless rssi < -70 only', () {
+    test('hasWeakSignal flags wireless rssi < rssiGood (-71) only', () {
+      // rssiGood=-71, so -72 is weak, -71 is not weak
       expect(
-          DeviceScoreUIModel(macAddress: 'A', name: 'B', rssiDbm: -75)
+          DeviceScoreUIModel(macAddress: 'A', name: 'B', rssiDbm: -72)
               .hasWeakSignal,
           isTrue);
+      expect(
+          DeviceScoreUIModel(macAddress: 'A', name: 'B', rssiDbm: -71)
+              .hasWeakSignal,
+          isFalse);
       expect(
           DeviceScoreUIModel(macAddress: 'A', name: 'B', rssiDbm: -50)
               .hasWeakSignal,
@@ -145,13 +154,17 @@ void main() {
       });
 
       test('returns bucketed labels by rssi', () {
+        // Thresholds: rssiExcellent=-65, rssiGood=-71, rssiFair=-78
         DeviceScoreUIModel makeAt(int rssi) =>
             DeviceScoreUIModel(macAddress: 'A', name: 'B', rssiDbm: rssi);
-        expect(makeAt(-45).signalLabel, 'Excellent');
-        expect(makeAt(-55).signalLabel, 'Good');
-        expect(makeAt(-65).signalLabel, 'Fair');
-        expect(makeAt(-75).signalLabel, 'Weak');
-        expect(makeAt(-90).signalLabel, 'Very Weak');
+        expect(makeAt(-45).signalLabel, 'Excellent'); // >= -65
+        expect(makeAt(-65).signalLabel, 'Excellent'); // == -65 (boundary)
+        expect(makeAt(-66).signalLabel, 'Good'); // >= -71
+        expect(makeAt(-71).signalLabel, 'Good'); // == -71 (boundary)
+        expect(makeAt(-72).signalLabel, 'Fair'); // >= -78
+        expect(makeAt(-78).signalLabel, 'Fair'); // == -78 (boundary)
+        expect(makeAt(-79).signalLabel, 'Weak'); // < -78
+        expect(makeAt(-90).signalLabel, 'Weak');
       });
     });
 

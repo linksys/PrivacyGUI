@@ -122,6 +122,57 @@ class DetailInfoTile extends StatelessWidget {
   }
 }
 
+/// Info tile with optional tap action and trailing widget.
+class DetailNavigableTile extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  final Widget? trailing;
+  final VoidCallback? onTap;
+
+  const DetailNavigableTile({
+    super.key,
+    required this.icon,
+    required this.label,
+    required this.value,
+    this.trailing,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final content = Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 16, color: colorScheme.onSurfaceVariant),
+        AppGap.sm(),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              AppText.labelSmall(label, color: colorScheme.onSurfaceVariant),
+              AppText.bodyMedium(value),
+            ],
+          ),
+        ),
+        if (trailing != null) trailing!,
+      ],
+    );
+
+    if (onTap == null) return content;
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppSpacing.xs),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxs),
+        child: content,
+      ),
+    );
+  }
+}
+
 /// Info tile with copyable value.
 class DetailCopyableTile extends StatelessWidget {
   final IconData icon;
@@ -258,7 +309,10 @@ class DetailSpeedCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final (:value, :unit) = NetworkUtils.formatBitsWithUnit(speedBps);
+    final hasData = speedBps > 0;
+    final (:value, :unit) = hasData
+        ? NetworkUtils.formatBitsWithUnit(speedBps)
+        : (value: '--', unit: '');
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
@@ -292,7 +346,7 @@ class DetailSpeedCard extends StatelessWidget {
 // Grid Layout Helpers
 // =============================================================================
 
-/// A row of two equal-width cards (6+6 columns) with height alignment.
+/// A row of two equal-width cards with height alignment.
 class DetailGridRow extends StatelessWidget {
   final Widget left;
   final Widget right;
@@ -309,9 +363,9 @@ class DetailGridRow extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          SizedBox(width: context.colWidth(6), child: left),
+          Expanded(child: left),
           AppGap.gutter(),
-          SizedBox(width: context.colWidth(6), child: right),
+          Expanded(child: right),
         ],
       ),
     );

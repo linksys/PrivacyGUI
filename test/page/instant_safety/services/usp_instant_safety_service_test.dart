@@ -112,7 +112,15 @@ void main() {
   });
 
   group('UspInstantSafetyService — save', () {
+    // Mock for _resolveInstance() in LanNetworkInfo.update()
+    // UspClient.get() returns flat Map<String, dynamic>, not WASM format
+    final aliasResponse = <String, dynamic>{
+      'Device.IP.Interface.1.Alias': 'cpe-lan',
+      'Device.IP.Interface.2.Alias': 'cpe-wan',
+    };
+
     test('save(openDNS) writes OpenDNS values', () async {
+      when(() => mockUsp.get(any())).thenAnswer((_) async => aliasResponse);
       when(() => mockUsp.set(any())).thenAnswer((_) async => {
             'success': true,
             'result': {'data': <String, dynamic>{}},
@@ -130,6 +138,7 @@ void main() {
     });
 
     test('save(off) writes empty string', () async {
+      when(() => mockUsp.get(any())).thenAnswer((_) async => aliasResponse);
       when(() => mockUsp.set(any())).thenAnswer((_) async => {
             'success': true,
             'result': {'data': <String, dynamic>{}},
@@ -144,6 +153,13 @@ void main() {
   });
 
   group('UspInstantSafetyService — error handling', () {
+    // Mock for _resolveInstance() in LanNetworkInfo.update()
+    // UspClient.get() returns flat Map<String, dynamic>, not WASM format
+    final aliasResponse = <String, dynamic>{
+      'Device.IP.Interface.1.Alias': 'cpe-lan',
+      'Device.IP.Interface.2.Alias': 'cpe-wan',
+    };
+
     test('fetch maps USP error to ServiceError', () {
       when(() => mockUsp.get(any()))
           .thenThrow('Get failed: Transport error: Request timeout');
@@ -152,6 +168,7 @@ void main() {
     });
 
     test('save maps USP error to ServiceError', () {
+      when(() => mockUsp.get(any())).thenAnswer((_) async => aliasResponse);
       when(() => mockUsp.set(any()))
           .thenThrow('Set failed: Authentication error: Session expired');
 

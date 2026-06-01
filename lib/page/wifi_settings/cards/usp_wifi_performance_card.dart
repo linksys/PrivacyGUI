@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/page/_shared/components/card_skeleton.dart';
+import 'package:privacy_gui/page/_shared/components/wifi_ui.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_client_ui_model.dart';
-import 'package:privacy_gui/page/_shared/models/wifi_performance_helpers.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_radio_ui_model.dart';
 import 'package:privacy_gui/page/_shared/providers/card_tab_state_provider.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
-import 'package:privacy_gui/page/_shared/components/card_skeleton.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_data_provider.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -141,8 +141,8 @@ class _SignalTab extends StatelessWidget {
             itemBuilder: (context, index) {
               final c = clients[index];
               final rssi = c.client.signalStrength;
-              final tier = WifiPerformanceHelpers.signalTier(rssi);
-              final color = WifiPerformanceHelpers.tierColor(tier, colorScheme);
+              final tier = getSignalTier(rssi);
+              final color = tier.resolveColor(colorScheme);
               // Normalize: -100 dBm → 0.0, -30 dBm → 1.0
               final norm = ((rssi + 100) / 70).clamp(0.0, 1.0);
 
@@ -183,8 +183,7 @@ class _SignalTab extends StatelessWidget {
                 width: 8,
                 height: 8,
                 decoration: BoxDecoration(
-                  color:
-                      WifiPerformanceHelpers.tierColor(entry.$1, colorScheme),
+                  color: entry.$1.resolveColor(colorScheme),
                   shape: BoxShape.circle,
                 ),
               ),
@@ -355,8 +354,7 @@ class _ChannelsTab extends StatelessWidget {
       final radioIdx = bandToRadioIdx[c.band];
       if (radioIdx == null) continue;
       clientsPerRadio[radioIdx] = (clientsPerRadio[radioIdx] ?? 0) + 1;
-      final snr = WifiPerformanceHelpers.computeSNR(
-          c.client.signalStrength, c.client.noise);
+      final snr = computeSNR(c.client.signalStrength, c.client.noise);
       snrSumPerRadio[radioIdx] = (snrSumPerRadio[radioIdx] ?? 0) + snr;
       snrCountPerRadio[radioIdx] = (snrCountPerRadio[radioIdx] ?? 0) + 1;
     }
@@ -374,7 +372,7 @@ class _ChannelsTab extends StatelessWidget {
           final radio = radios[i];
           final clientCount = clientsPerRadio[i] ?? 0;
           final snr = avgSnrPerRadio[i] ?? 0;
-          final snrNorm = WifiPerformanceHelpers.normalizeSNR(snr.toInt());
+          final snrNorm = normalizeSNR(snr.toInt());
 
           return Padding(
             padding: const EdgeInsets.only(bottom: AppSpacing.md),

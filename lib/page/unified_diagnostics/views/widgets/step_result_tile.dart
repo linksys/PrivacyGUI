@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:privacy_gui/core/utils/wifi.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../models/device_score.dart';
@@ -247,11 +248,7 @@ class StepResultTile extends StatelessWidget {
                 _ResultDetail('Poor backhaul', '${r.poorCount}'),
               if (r.weakCount > 0)
                 _ResultDetail('Weak backhaul', '${r.weakCount}'),
-              for (final n in r.nodes)
-                _ResultDetail(
-                  n.label,
-                  _formatMeshNodeSummary(n),
-                ),
+              ..._buildMeshNodeDetails(r.nodes),
             ],
       _ when result.step == DiagnosticStep.runningSpeedTest => [
           if (result.rawData['serverHost'] is String &&
@@ -274,19 +271,39 @@ class StepResultTile extends StatelessWidget {
     };
   }
 
-  String _formatMeshNodeSummary(MeshNodeBackhaulUIModel n) {
-    final parts = <String>[];
-    parts.add(n.mediaType);
-    if (n.phyRateMbps > 0) parts.add('${n.phyRateMbps} Mbps');
-    if (!n.isWired && n.signalStrengthDbm != 0) {
-      parts.add('${n.signalStrengthDbm} dBm');
+  List<_ResultDetail> _buildMeshNodeDetails(
+      List<MeshNodeBackhaulUIModel> nodes) {
+    final details = <_ResultDetail>[];
+    for (final n in nodes) {
+      final severityText = switch (n.severity) {
+        MeshBackhaulSeverity.healthy => 'Healthy',
+        MeshBackhaulSeverity.weak => 'Weak',
+        MeshBackhaulSeverity.poor => 'Poor',
+      };
+      final staleMarker = n.isStale ? ' ⚠️ Stale' : '';
+      details.add(_ResultDetail(
+        n.label,
+        '${n.linkType} • $severityText$staleMarker',
+      ));
+      if (n.parentLabel != null && n.parentLabel!.isNotEmpty) {
+        details.add(_ResultDetail('  Connected to', n.parentLabel!));
+      }
+      if (!n.isWired && n.signalStrengthDbm != 0) {
+        final signalLevel = getWifiSignalLevel(n.signalStrengthDbm);
+        details.add(_ResultDetail('  Signal',
+            '${n.signalStrengthDbm} dBm (${signalLevel.displayTitle})'));
+      }
+      if (n.lastUplinkRateKbps > 0 || n.lastDownlinkRateKbps > 0) {
+        final up = n.lastUplinkRateKbps > 0
+            ? '↑${formatSpeed(n.lastUplinkRateKbps)}'
+            : '--';
+        final down = n.lastDownlinkRateKbps > 0
+            ? '↓${formatSpeed(n.lastDownlinkRateKbps)}'
+            : '--';
+        details.add(_ResultDetail('  Speed', '$down / $up'));
+      }
     }
-    parts.add(switch (n.severity) {
-      MeshBackhaulSeverity.healthy => 'Healthy',
-      MeshBackhaulSeverity.weak => 'Weak',
-      MeshBackhaulSeverity.poor => 'Poor',
-    });
-    return parts.join(' • ');
+    return details;
   }
 }
 

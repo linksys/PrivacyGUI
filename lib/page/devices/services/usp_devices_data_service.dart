@@ -425,6 +425,11 @@ class UspDevicesDataService {
         backhaulPhyRate: slaveMeshInfo?.backhaulPhyRate ?? 0,
         backhaulSignalStrength: slaveMeshInfo?.backhaulSignalStrength,
         backhaulUplinkRate: slaveMeshInfo?.backhaulUplinkRate,
+        backhaulLinkType: slaveMeshInfo?.backhaulLinkType,
+        backhaulDownlinkRate: slaveMeshInfo?.backhaulDownlinkRate,
+        backhaulParentDeviceId: slaveMeshInfo?.backhaulParentDeviceId,
+        backhaulParentBssid: slaveMeshInfo?.backhaulParentBssid,
+        lastContactTime: slaveMeshInfo?.lastContactTime,
       ));
     }
 
