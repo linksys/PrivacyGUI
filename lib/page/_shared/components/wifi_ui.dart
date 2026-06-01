@@ -4,6 +4,7 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 // Re-export core wifi utilities for convenience
+// Note: formatSpeed is in NetworkUtils, not here
 export 'package:privacy_gui/core/utils/wifi.dart'
     show
         rcpiToRssi,
@@ -17,8 +18,7 @@ export 'package:privacy_gui/core/utils/wifi.dart'
         SignalTier,
         getSignalTier,
         computeSNR,
-        normalizeSNR,
-        formatSpeed;
+        normalizeSNR;
 
 /// UI utilities for WiFi signal display.
 class WiFiUtils {

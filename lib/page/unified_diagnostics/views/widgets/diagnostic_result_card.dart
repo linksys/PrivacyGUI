@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:privacy_gui/core/utils/wifi.dart';
+import 'package:privacy_gui/util/network_utils.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../models/diagnostic_result.dart';
@@ -425,12 +426,12 @@ class _MeshNodeRow extends StatelessWidget {
                     ),
                   if (node.lastDownlinkRateKbps > 0)
                     _buildChip(
-                      '↓${formatSpeed(node.lastDownlinkRateKbps)}',
+                      '↓${NetworkUtils.formatSpeed(node.lastDownlinkRateKbps)}',
                       colorScheme,
                     ),
                   if (node.lastUplinkRateKbps > 0)
                     _buildChip(
-                      '↑${formatSpeed(node.lastUplinkRateKbps)}',
+                      '↑${NetworkUtils.formatSpeed(node.lastUplinkRateKbps)}',
                       colorScheme,
                     ),
                   if (node.isStale)

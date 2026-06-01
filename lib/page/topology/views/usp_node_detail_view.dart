@@ -13,6 +13,7 @@ import 'package:privacy_gui/page/topology/models/node_ui_model.dart';
 import 'package:privacy_gui/page/topology/providers/node_detail_provider.dart';
 import 'package:privacy_gui/page/topology/views/components/backhaul_signal_indicator.dart';
 import 'package:privacy_gui/util/date_format_utils.dart';
+import 'package:privacy_gui/util/network_utils.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Node detail page — displays mesh node info and connected devices.
@@ -207,6 +208,7 @@ class UspNodeDetailView extends ConsumerWidget {
   Widget _buildBackhaulCard(
       BuildContext context, NodeUIModel node, NodeUIModel? parentNode) {
     final colorScheme = Theme.of(context).colorScheme;
+    final isWifiBackhaul = !node.isEthernetBackhaul;
 
     return AppCard(
       child: Column(
@@ -218,26 +220,7 @@ class UspNodeDetailView extends ConsumerWidget {
           ),
           AppGap.xl(),
 
-          // Connection Type (Wi-Fi/Ethernet)
-          if (node.backhaulLinkType != null) ...[
-            DetailInfoTile(
-              icon: node.isEthernetBackhaul
-                  ? Icons.settings_ethernet
-                  : Icons.wifi,
-              label: 'Connection Type',
-              value: node.backhaulLinkType!,
-            ),
-            AppGap.md(),
-          ] else ...[
-            DetailInfoTile(
-              icon: Icons.settings_ethernet,
-              label: 'Media Type',
-              value: node.backhaulMediaType,
-            ),
-            AppGap.md(),
-          ],
-
-          // Connected To (parent node with navigation)
+          // Connected To (parent node with navigation) - prominent position
           if (parentNode != null) ...[
             DetailNavigableTile(
               icon: Icons.link,
@@ -250,73 +233,74 @@ class UspNodeDetailView extends ConsumerWidget {
                 queryParameters: {'deviceId': parentNode.deviceId},
               ),
             ),
-            AppGap.md(),
+            AppGap.lg(),
           ],
 
-          // PHY Rate
-          if (node.backhaulPhyRate > 0) ...[
-            DetailInfoTile(
-              icon: Icons.speed,
-              label: 'PHY Rate',
-              value: '${node.backhaulPhyRate} Mbps',
-            ),
-            AppGap.md(),
-          ],
-
-          // Signal Strength with visual indicator (Wi-Fi only)
-          if (node.backhaulSignalStrength != null &&
-              !node.isEthernetBackhaul) ...[
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(Icons.signal_cellular_alt,
-                    size: 16, color: colorScheme.onSurfaceVariant),
-                AppGap.sm(),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      AppText.labelSmall('Signal Strength',
-                          color: colorScheme.onSurfaceVariant),
-                      AppGap.xs(),
-                      BackhaulSignalIndicator(
-                          rssi: node.backhaulSignalStrength!),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            AppGap.md(),
+          // Signal Strength with visual bar (Wi-Fi only) - like Device Detail
+          if (node.backhaulSignalStrength != null && isWifiBackhaul) ...[
+            BackhaulSignalIndicator(rssi: node.backhaulSignalStrength!),
+            AppGap.lg(),
           ],
 
           // Throughput (Up/Down)
           if (node.backhaulUplinkRate != null ||
               node.backhaulDownlinkRate != null) ...[
-            DetailGridRow(
-              left: DetailSpeedCard(
-                icon: Icons.upload,
-                label: 'Upload',
-                speedBps: node.backhaulUplinkRate ?? 0,
-                color: colorScheme.primary,
-              ),
-              right: DetailSpeedCard(
-                icon: Icons.download,
-                label: 'Download',
-                speedBps: node.backhaulDownlinkRate ?? 0,
-                color: colorScheme.tertiary,
-              ),
+            Row(
+              children: [
+                if (node.backhaulUplinkRate != null)
+                  Expanded(
+                    child: DetailSpeedCard(
+                      icon: Icons.upload,
+                      label: 'Upload',
+                      speedKbps: node.backhaulUplinkRate!,
+                      color: colorScheme.tertiary,
+                    ),
+                  ),
+                if (node.backhaulUplinkRate != null &&
+                    node.backhaulDownlinkRate != null)
+                  AppGap.md(),
+                if (node.backhaulDownlinkRate != null)
+                  Expanded(
+                    child: DetailSpeedCard(
+                      icon: Icons.download,
+                      label: 'Download',
+                      speedKbps: node.backhaulDownlinkRate!,
+                      color: colorScheme.primary,
+                    ),
+                  ),
+              ],
             ),
-            AppGap.md(),
+            AppGap.lg(),
           ],
 
-          // Last Contact Time
-          if (node.lastContactTime != null) ...[
-            DetailInfoTile(
-              icon: Icons.access_time,
-              label: 'Last Contact',
-              value: DateFormatUtils.formatRelativeTime(node.lastContactTime),
-            ),
-          ],
+          // Bottom info row - compact labels like Device Detail
+          Wrap(
+            spacing: AppSpacing.md,
+            runSpacing: AppSpacing.sm,
+            children: [
+              // Connection Type
+              DetailCompactInfoTile(
+                icon: isWifiBackhaul ? Icons.wifi : Icons.settings_ethernet,
+                label: 'Interface',
+                value: node.backhaulLinkType ?? node.backhaulMediaType,
+              ),
+              // PHY Rate (Mbps → kbps for unified formatting)
+              if (node.backhaulPhyRate > 0)
+                DetailCompactInfoTile(
+                  icon: Icons.speed,
+                  label: 'PHY Rate',
+                  value: NetworkUtils.formatSpeed(node.backhaulPhyRate * 1000),
+                ),
+              // Last Contact
+              if (node.lastContactTime != null)
+                DetailCompactInfoTile(
+                  icon: Icons.access_time,
+                  label: 'Last Contact',
+                  value:
+                      DateFormatUtils.formatRelativeTime(node.lastContactTime),
+                ),
+            ],
+          ),
         ],
       ),
     );

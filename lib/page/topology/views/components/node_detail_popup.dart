@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/util/network_utils.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Shared popup content for mesh node details.
@@ -80,8 +81,8 @@ class NodeDetailPopup extends StatelessWidget {
           if (backhaulUplinkRate != null || backhaulDownlinkRate != null)
             _row(
               'Speed',
-              'Up: ${_formatRate(backhaulUplinkRate)} / '
-                  'Down: ${_formatRate(backhaulDownlinkRate)}',
+              'Up: ${NetworkUtils.formatSpeed(backhaulUplinkRate ?? 0)} / '
+                  'Down: ${NetworkUtils.formatSpeed(backhaulDownlinkRate ?? 0)}',
             ),
         ],
         // Details button (optional)
@@ -113,12 +114,5 @@ class NodeDetailPopup extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  static String _formatRate(int? kbps) {
-    if (kbps == null || kbps <= 0) return '--';
-    if (kbps >= 1000000) return '${(kbps / 1000000).toStringAsFixed(1)} Gbps';
-    if (kbps >= 1000) return '${(kbps / 1000).toStringAsFixed(0)} Mbps';
-    return '$kbps Kbps';
   }
 }

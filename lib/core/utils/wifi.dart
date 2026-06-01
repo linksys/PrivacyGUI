@@ -98,10 +98,3 @@ int computeSNR(int signal, int noise) => noise == 0 ? 0 : signal - noise;
 /// Normalize SNR to 0.0–1.0 for progress bar display.
 /// Typical WiFi SNR range: 0–50 dB.
 double normalizeSNR(int snr) => (snr / 50).clamp(0.0, 1.0);
-
-/// Format kbps to human-readable speed string.
-String formatSpeed(int kbps) {
-  if (kbps >= 1000000) return '${(kbps / 1000000).toStringAsFixed(1)} Gbps';
-  if (kbps >= 1000) return '${(kbps / 1000).toStringAsFixed(0)} Mbps';
-  return '$kbps kbps';
-}

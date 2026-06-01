@@ -4,7 +4,6 @@ import 'package:privacy_gui/route/navigation_extensions.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/core/utils/device_classifier.dart';
 import 'package:privacy_gui/core/utils/oui_lookup.dart';
-import 'package:privacy_gui/core/utils/wifi.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
 import 'package:privacy_gui/page/_shared/components/usp_mutation_helper.dart';
@@ -550,7 +549,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
             child: DetailSpeedCard(
               icon: Icons.arrow_downward,
               label: 'Download',
-              speedBps: device.downlinkRate!,
+              speedKbps: device.downlinkRate!,
               color: colorScheme.primary,
             ),
           ),
@@ -561,7 +560,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
             child: DetailSpeedCard(
               icon: Icons.arrow_upward,
               label: 'Upload',
-              speedBps: device.uplinkRate!,
+              speedKbps: device.uplinkRate!,
               color: colorScheme.secondary,
             ),
           ),

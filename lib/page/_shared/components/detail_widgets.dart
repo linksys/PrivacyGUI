@@ -296,23 +296,20 @@ class DetailCopyableText extends StatelessWidget {
 class DetailSpeedCard extends StatelessWidget {
   final IconData icon;
   final String label;
-  final int speedBps;
+  final int speedKbps; // TR-181 rates are in kbps
   final Color color;
 
   const DetailSpeedCard({
     super.key,
     required this.icon,
     required this.label,
-    required this.speedBps,
+    required this.speedKbps,
     required this.color,
   });
 
   @override
   Widget build(BuildContext context) {
-    final hasData = speedBps > 0;
-    final (:value, :unit) = hasData
-        ? NetworkUtils.formatBitsWithUnit(speedBps)
-        : (value: '--', unit: '');
+    final (:value, :unit) = NetworkUtils.formatSpeedWithUnit(speedKbps);
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(

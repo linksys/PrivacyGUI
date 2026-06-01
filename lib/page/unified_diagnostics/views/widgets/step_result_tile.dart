@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:privacy_gui/core/utils/wifi.dart';
+import 'package:privacy_gui/util/network_utils.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../models/device_score.dart';
@@ -295,10 +296,10 @@ class StepResultTile extends StatelessWidget {
       }
       if (n.lastUplinkRateKbps > 0 || n.lastDownlinkRateKbps > 0) {
         final up = n.lastUplinkRateKbps > 0
-            ? '↑${formatSpeed(n.lastUplinkRateKbps)}'
+            ? '↑${NetworkUtils.formatSpeed(n.lastUplinkRateKbps)}'
             : '--';
         final down = n.lastDownlinkRateKbps > 0
-            ? '↓${formatSpeed(n.lastDownlinkRateKbps)}'
+            ? '↓${NetworkUtils.formatSpeed(n.lastDownlinkRateKbps)}'
             : '--';
         details.add(_ResultDetail('  Speed', '$down / $up'));
       }

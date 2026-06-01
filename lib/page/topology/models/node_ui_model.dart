@@ -27,7 +27,7 @@ class NodeUIModel extends Equatable {
   final String backhaulMediaType; // "IEEE 802.11ax" / "Ethernet"
   final int backhaulPhyRate; // PHY rate in Mbps
   final int? backhaulSignalStrength; // RSSI in dBm (converted from RCPI)
-  final int? backhaulUplinkRate; // bps
+  final int? backhaulUplinkRate; // kbps (from TR-181 LastDataUplinkRate)
 
   // ─── DataElements enrichment (Service internal use) ───
   final String? instancePath; // DataElements instance path
@@ -36,7 +36,7 @@ class NodeUIModel extends Equatable {
 
   // ─── Enhanced backhaul fields (from codegen) ───
   final String? backhaulLinkType; // "Wi-Fi" or "Ethernet"
-  final int? backhaulDownlinkRate; // kbps
+  final int? backhaulDownlinkRate; // kbps (from TR-181 LastDataDownlinkRate)
   final String? backhaulParentDeviceId; // Parent node's Device ID
   final String? backhaulParentBssid; // Connected BSSID
   final String? lastContactTime; // ISO 8601 timestamp

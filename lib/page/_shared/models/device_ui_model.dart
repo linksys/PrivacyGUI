@@ -75,8 +75,10 @@ class DeviceUIModel extends Equatable {
 
   // ─── WiFi enrichment (null if ethernet) ───
   final int? signalStrength; // RSSI dBm (from WifiClient)
-  final int? downlinkRate; // bits/sec (from WifiClient)
-  final int? uplinkRate; // bits/sec (from WifiClient)
+  final int?
+      downlinkRate; // kbps (from TR-181 LastDataDownlinkRate/LastDataUplinkRate)
+  final int?
+      uplinkRate; // kbps (from TR-181 LastDataDownlinkRate/LastDataUplinkRate)
   final String?
       band; // "2.4GHz" / "5GHz" / "6GHz" (from ClientConnectionDetail)
   final String? ssidName; // SSID name (from ClientConnectionDetail)
