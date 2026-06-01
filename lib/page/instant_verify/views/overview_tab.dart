@@ -1554,25 +1554,62 @@ class _SummaryRowWidget extends StatelessWidget {
 
 enum _CheckStatus { pending, running, pass, fail }
 
-class _ChecklistProgress extends StatelessWidget {
+class _ChecklistProgress extends StatefulWidget {
   final InstantVerifyPivotState state;
   const _ChecklistProgress({required this.state});
 
   @override
+  State<_ChecklistProgress> createState() => _ChecklistProgressState();
+}
+
+class _ChecklistProgressState extends State<_ChecklistProgress> {
+  /// D-41: Staggered reveal — suppress instant-green by tracking how many
+  /// JNAP checks are visually "released" to show their real status.
+  int _revealedJnapChecks = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    // Stagger the reveal of JNAP-sourced checks (Router, Internet, Devices)
+    // so user sees sequential progression instead of all-at-once green.
+    _staggerReveal();
+  }
+
+  void _staggerReveal() async {
+    // Brief "Starting diagnostics..." pause before first check reveals
+    await Future.delayed(const Duration(milliseconds: 800));
+    if (!mounted) return;
+    setState(() => _revealedJnapChecks = 1); // Router
+    await Future.delayed(const Duration(milliseconds: 600));
+    if (!mounted) return;
+    setState(() => _revealedJnapChecks = 2); // Internet
+    await Future.delayed(const Duration(milliseconds: 500));
+    if (!mounted) return;
+    setState(() => _revealedJnapChecks = 3); // Devices
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final state = widget.state;
     final step = state.browserTestStep;
 
-    final routerStatus = state.phase == PivotLoadPhase.idle ||
-            state.phase == PivotLoadPhase.loading
-        ? _CheckStatus.running
-        : _CheckStatus.pass;
-
-    final internetStatus = state.phase == PivotLoadPhase.loading ||
-            state.phase == PivotLoadPhase.idle
+    // D-41: Stagger reveal — show "pending" until this check's slot is reached,
+    // then show real status from provider.
+    final routerStatus = _revealedJnapChecks < 1
         ? _CheckStatus.pending
-        : state.wanConnected
-            ? _CheckStatus.pass
-            : _CheckStatus.fail;
+        : (state.phase == PivotLoadPhase.idle ||
+                state.phase == PivotLoadPhase.loading)
+            ? _CheckStatus.running
+            : _CheckStatus.pass;
+
+    final internetStatus = _revealedJnapChecks < 2
+        ? _CheckStatus.pending
+        : (state.phase == PivotLoadPhase.loading ||
+                state.phase == PivotLoadPhase.idle)
+            ? _CheckStatus.pending
+            : state.wanConnected
+                ? _CheckStatus.pass
+                : _CheckStatus.fail;
 
     _CheckStatus gatewayStatus;
     String gatewayDetail = '';
@@ -1643,10 +1680,12 @@ class _ChecklistProgress extends StatelessWidget {
       speedStatus = _CheckStatus.pending;
     }
 
-    final deviceStatus = state.phase == PivotLoadPhase.loading ||
-            state.phase == PivotLoadPhase.idle
+    final deviceStatus = _revealedJnapChecks < 3
         ? _CheckStatus.pending
-        : _CheckStatus.pass;
+        : (state.phase == PivotLoadPhase.loading ||
+                state.phase == PivotLoadPhase.idle)
+            ? _CheckStatus.pending
+            : _CheckStatus.pass;
     final deviceDetail = state.clients.isEmpty
         ? ''
         : '${state.clients.length} device${state.clients.length == 1 ? '' : 's'} found';
@@ -1654,13 +1693,13 @@ class _ChecklistProgress extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Checking your connection',
-          style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+        Text(
+          _revealedJnapChecks == 0 ? 'Starting diagnostics…' : 'Checking your connection',
+          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
         ),
         const SizedBox(height: 16),
         _CheckRow(label: 'Router', status: routerStatus,
-            detail: state.routerModel ?? ''),
+            detail: _revealedJnapChecks >= 1 ? (state.routerModel ?? '') : ''),
         _CheckRow(
             label: 'Internet',
             status: internetStatus,

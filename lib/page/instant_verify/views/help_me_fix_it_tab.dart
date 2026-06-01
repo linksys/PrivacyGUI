@@ -39,6 +39,9 @@ class HelpMeFixItTab extends ConsumerStatefulWidget {
 
 class _HelpMeFixItTabState extends ConsumerState<HelpMeFixItTab> {
   int? _activeFlow;
+  /// Flows set this to their step-back function when they have history.
+  /// Shell back arrow calls this if non-null; otherwise exits flow.
+  final _flowStepBackNotifier = ValueNotifier<VoidCallback?>(null);
 
   @override
   void initState() {
@@ -52,6 +55,7 @@ class _HelpMeFixItTabState extends ConsumerState<HelpMeFixItTab> {
   @override
   void dispose() {
     widget.pendingFlowNotifier?.removeListener(_onPendingFlow);
+    _flowStepBackNotifier.dispose();
     super.dispose();
   }
 
@@ -72,7 +76,19 @@ class _HelpMeFixItTabState extends ConsumerState<HelpMeFixItTab> {
     ref.read(instantVerifyPivotProvider.notifier).recordFlowEntered(flowNames[flow] ?? 'flow_$flow');
     setState(() => _activeFlow = flow);
   }
-  void _exitFlow() => setState(() => _activeFlow = null);
+  void _exitFlow() {
+    _flowStepBackNotifier.value = null;
+    setState(() => _activeFlow = null);
+  }
+
+  void _handleShellBack() {
+    final stepBack = _flowStepBackNotifier.value;
+    if (stepBack != null) {
+      stepBack();
+    } else {
+      _exitFlow();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -83,16 +99,18 @@ class _HelpMeFixItTabState extends ConsumerState<HelpMeFixItTab> {
     Widget flowWidget;
     switch (_activeFlow!) {
       case 1:
-        flowWidget = _Flow1(onDone: _exitFlow, onNavigateToFlow: _launchFlow);
+        flowWidget = _Flow1(onDone: _exitFlow, onNavigateToFlow: _launchFlow, stepBackNotifier: _flowStepBackNotifier);
       case 2:
         flowWidget = _Flow2(
           onDone: _exitFlow,
           onNavigateToFlow: _launchFlow,
+          stepBackNotifier: _flowStepBackNotifier,
         );
       case 3:
         flowWidget = _Flow3(
           onDone: _exitFlow,
           onNavigateToMyDevices: widget.onNavigateToMyDevices,
+          stepBackNotifier: _flowStepBackNotifier,
         );
       case 30: // Flow 3 launched from My Devices — device verified connected
         final device = widget.pendingFlowDeviceNotifier?.value;
@@ -102,23 +120,33 @@ class _HelpMeFixItTabState extends ConsumerState<HelpMeFixItTab> {
           onNavigateToMyDevices: widget.onNavigateToMyDevices,
           initialConnected: true,
           initialDevice: device,
+          stepBackNotifier: _flowStepBackNotifier,
+        );
+      case 31: // Flow 3 launched from Flow 2 "Just one specific device" — skip to slow-device path
+        flowWidget = _Flow3(
+          onDone: _exitFlow,
+          onNavigateToMyDevices: widget.onNavigateToMyDevices,
+          initialConnected: true,
+          initialSlowDevice: true,
+          stepBackNotifier: _flowStepBackNotifier,
         );
       case 4:
-        flowWidget = _Flow4(onDone: _exitFlow);
+        flowWidget = _Flow4(onDone: _exitFlow, stepBackNotifier: _flowStepBackNotifier);
       case 5:
         flowWidget = _Flow5(
           onDone: _exitFlow,
           onNavigateToFlow: _launchFlow,
+          stepBackNotifier: _flowStepBackNotifier,
         );
       case 6:
-        flowWidget = _Flow6BridgeMode(onDone: _exitFlow);
+        flowWidget = _Flow6BridgeMode(onDone: _exitFlow, stepBackNotifier: _flowStepBackNotifier);
       default:
         flowWidget = const SizedBox.shrink();
     }
 
     return _FlowShell(
       title: _flowTitle(_activeFlow!),
-      onBack: _exitFlow,
+      onBack: _handleShellBack,
       child: flowWidget,
     );
   }
@@ -545,7 +573,8 @@ enum _Flow1Phase { running, gatewayFail, internetFail, dnsFail, allOk }
 class _Flow1 extends ConsumerStatefulWidget {
   final VoidCallback onDone;
   final ValueChanged<int>? onNavigateToFlow;
-  const _Flow1({required this.onDone, this.onNavigateToFlow});
+  final ValueNotifier<VoidCallback?>? stepBackNotifier;
+  const _Flow1({required this.onDone, this.onNavigateToFlow, this.stepBackNotifier});
 
   @override
   ConsumerState<_Flow1> createState() => _Flow1State();
@@ -898,7 +927,8 @@ class _Flow1State extends ConsumerState<_Flow1> {
 class _Flow2 extends ConsumerStatefulWidget {
   final VoidCallback onDone;
   final ValueChanged<int> onNavigateToFlow;
-  const _Flow2({required this.onDone, required this.onNavigateToFlow});
+  final ValueNotifier<VoidCallback?>? stepBackNotifier;
+  const _Flow2({required this.onDone, required this.onNavigateToFlow, this.stepBackNotifier});
 
   @override
   ConsumerState<_Flow2> createState() => _Flow2State();
@@ -920,12 +950,18 @@ class _Flow2State extends ConsumerState<_Flow2> {
       _stepHistory.add(_step);
       _step = newStep;
     });
+    _syncStepBackNotifier();
   }
 
   void _stepBack() {
     if (_stepHistory.isNotEmpty) {
       setState(() => _step = _stepHistory.removeLast());
+      _syncStepBackNotifier();
     }
+  }
+
+  void _syncStepBackNotifier() {
+    widget.stepBackNotifier?.value = _stepHistory.isNotEmpty ? _stepBack : null;
   }
 
   Widget _backButton(BuildContext context) {
@@ -1104,9 +1140,11 @@ class _Flow2State extends ConsumerState<_Flow2> {
                           fontWeight: FontWeight.w500,
                         )),
                 const SizedBox(height: 6),
-                // Show the number as supporting context, not the headline
+                // Show all three metrics — PRD D-35 requires upload visibility
                 SelectableText(
-                  'Measured speed from this device: ${mbps.toStringAsFixed(0)} Mbps',
+                  '${mbps.toStringAsFixed(0)} Mbps down · '
+                  '${_speedResult!.uploadMbps.toStringAsFixed(0)} Mbps up · '
+                  '${_speedResult!.latencyMs}ms latency',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
@@ -1221,8 +1259,8 @@ class _Flow2State extends ConsumerState<_Flow2> {
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
-              // Route to device connectivity issues flow
-              onPressed: () => widget.onNavigateToFlow(3),
+              // Route to Flow 3 pre-set to "connected but slow" — skips "can it connect?" step
+              onPressed: () => widget.onNavigateToFlow(31),
               icon: const Icon(Icons.smartphone),
               label: const Text('Just one specific device'),
             ),
@@ -1460,10 +1498,14 @@ class _Flow3 extends ConsumerStatefulWidget {
   /// When true, skip step 0 ("can your device connect?") and start directly
   /// at the connected-but-something-wrong path.
   final bool initialConnected;
+  /// When true (from Flow 2 "Just one specific device"), skip straight to the
+  /// slow-device path with device picker — don't ask "what's happening?"
+  final bool initialSlowDevice;
   /// The specific device that was selected in My Devices — pre-populates
   /// device-specific analysis in the slow device path.
   final DiagnosticClient? initialDevice;
-  const _Flow3({required this.onDone, this.onNavigateToMyDevices, this.initialConnected = false, this.initialDevice});
+  final ValueNotifier<VoidCallback?>? stepBackNotifier;
+  const _Flow3({required this.onDone, this.onNavigateToMyDevices, this.initialConnected = false, this.initialSlowDevice = false, this.initialDevice, this.stepBackNotifier});
 
   @override
   ConsumerState<_Flow3> createState() => _Flow3State();
@@ -1490,7 +1532,11 @@ class _Flow3State extends ConsumerState<_Flow3> {
   @override
   void initState() {
     super.initState();
-    if (widget.initialConnected) {
+    if (widget.initialSlowDevice) {
+      _step = 2;
+      _connectState = _ConnectState.canConnect;
+      _connectIssue = _ConnectIssue.slowOnDevice;
+    } else if (widget.initialConnected) {
       _step = 1;
       _connectState = _ConnectState.canConnect;
     }
@@ -1502,12 +1548,18 @@ class _Flow3State extends ConsumerState<_Flow3> {
       _stepHistory.add(_step);
       _step = newStep;
     });
+    _syncStepBackNotifier();
   }
 
   void _stepBack() {
     if (_stepHistory.isNotEmpty) {
       setState(() => _step = _stepHistory.removeLast());
+      _syncStepBackNotifier();
     }
+  }
+
+  void _syncStepBackNotifier() {
+    widget.stepBackNotifier?.value = _stepHistory.isNotEmpty ? _stepBack : null;
   }
 
   Widget _backButton(BuildContext context) {
@@ -1533,7 +1585,8 @@ class _Flow3State extends ConsumerState<_Flow3> {
         if (_step == 2 && _connectIssue == _ConnectIssue.slowOnDevice) ..._slowDevicePath(context, state),
         if (_step == 1 && _connectState == _ConnectState.cantConnect) ..._step1CantConnect(context),
         if (_step == 1 && _connectState == _ConnectState.wired) ..._step1Wired(context),
-        if (_step == 3) ..._pathA(context, state),
+        if (_step == 3 && _connectIssue == _ConnectIssue.other) ..._pathOther(context, state),
+        if (_step == 3 && _connectIssue != _ConnectIssue.other) ..._pathA(context, state),
         if (_step == 4) ..._pathB(context, state),
       ],
     );
@@ -1717,6 +1770,13 @@ class _Flow3State extends ConsumerState<_Flow3> {
     final isLoading = state.phase == PivotLoadPhase.idle ||
         state.phase == PivotLoadPhase.loading;
 
+    // Auto-fetch if data hasn't been loaded yet — don't require user to go back
+    if (state.phase == PivotLoadPhase.idle && clients.isEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) ref.read(instantVerifyPivotProvider.notifier).fetch();
+      });
+    }
+
     return _stepCard(context, Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1732,7 +1792,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
             child: Center(child: CircularProgressIndicator()),
           )
         else if (clients.isEmpty)
-          Text('No wireless devices detected. Run Instant-Test first.',
+          Text('No wireless devices detected. Only wired devices are connected, or your router didn\'t report any wireless clients.',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant))
         else
           for (final c in clients)
@@ -2012,21 +2072,33 @@ class _Flow3State extends ConsumerState<_Flow3> {
           const SizedBox(height: 10),
 
           // Force reconnect — deauthenticates the device so it re-associates fresh
-          OutlinedButton.icon(
-            onPressed: () {
-              // Show device picker if multiple clients, else show single action
-              _showDeauthPicker(context, state);
-            },
-            icon: const Icon(Icons.wifi_off_outlined, size: 18),
-            label: const Text('Force reconnect a device'),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Disconnects the device from WiFi for a moment — it reconnects fresh, '
-            'which often clears a dropping connection.',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant),
-          ),
+          Builder(builder: (ctx) {
+            final hasDevices = state.phase == PivotLoadPhase.jnapLoaded ||
+                state.phase == PivotLoadPhase.complete;
+            final wirelessCount = state.clients.where((c) => c.isWireless).length;
+            final enabled = hasDevices && wirelessCount > 0;
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                OutlinedButton.icon(
+                  onPressed: enabled ? () => _showDeauthPicker(ctx, state) : null,
+                  icon: const Icon(Icons.wifi_off_outlined, size: 18),
+                  label: const Text('Force reconnect a device'),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  !hasDevices
+                      ? 'Loading device list…'
+                      : wirelessCount == 0
+                          ? 'No wireless devices detected on your network.'
+                          : 'Disconnects the device from WiFi for a moment — it reconnects fresh, '
+                            'which often clears a dropping connection.',
+                  style: Theme.of(ctx).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(ctx).colorScheme.onSurfaceVariant),
+                ),
+              ],
+            );
+          }),
 
           if (hasChannelData) ...[
             const SizedBox(height: 10),
@@ -2528,6 +2600,55 @@ class _Flow3State extends ConsumerState<_Flow3> {
     return _pathA(context, state);
   }
 
+  /// "Something else" path — device is connected but issue doesn't fit other categories.
+  /// Shows general troubleshooting steps + support escalation.
+  List<Widget> _pathOther(BuildContext context, InstantVerifyPivotState state) {
+    return [
+      _backButton(context),
+      _stepCard(context, Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('General troubleshooting',
+              style: Theme.of(context)
+                  .textTheme
+                  .titleSmall
+                  ?.copyWith(fontWeight: FontWeight.w600)),
+          const SizedBox(height: 8),
+          Text(
+            'Your device is connected but something doesn\'t seem right. '
+            'Try these general steps:',
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+          const SizedBox(height: 12),
+          const _ClickChecklistItem('Restart the affected device (phone, laptop, etc.)'),
+          const _ClickChecklistItem('Forget this WiFi network on the device and reconnect'),
+          const _ClickChecklistItem('Check if the problem happens on other devices too'),
+          const _ClickChecklistItem('Try opening a website in a private/incognito window'),
+        ],
+      )),
+      _stepCard(context, Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('If those didn\'t help',
+              style: Theme.of(context)
+                  .textTheme
+                  .titleSmall
+                  ?.copyWith(fontWeight: FontWeight.w600)),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () => _confirmAndRestart(context, ref),
+              icon: const Icon(Icons.restart_alt),
+              label: const Text('Restart Router'),
+            ),
+          ),
+        ],
+      )),
+      _linksysSupportTile(context),
+    ];
+  }
+
   List<Widget> _pathA(BuildContext context, InstantVerifyPivotState state) {
     final ssid = state.wifiSsid ?? '(see router settings)';
     final password = state.wifiPassword ?? '(see router settings)';
@@ -2717,7 +2838,8 @@ enum _RouterPlacement { center, corner, enclosed }
 
 class _Flow4 extends StatefulWidget {
   final VoidCallback onDone;
-  const _Flow4({required this.onDone});
+  final ValueNotifier<VoidCallback?>? stepBackNotifier;
+  const _Flow4({required this.onDone, this.stepBackNotifier});
 
   @override
   State<_Flow4> createState() => _Flow4State();
@@ -2726,6 +2848,14 @@ class _Flow4 extends StatefulWidget {
 class _Flow4State extends State<_Flow4> {
   int _step = 0;
   _RouterPlacement? _placement;
+
+  void _goToStep1() {
+    setState(() => _step = 1);
+    widget.stepBackNotifier?.value = () {
+      setState(() => _step = 0);
+      widget.stepBackNotifier?.value = null;
+    };
+  }
 
   @override
   Widget build(BuildContext context) => Column(
@@ -2766,7 +2896,7 @@ class _Flow4State extends State<_Flow4> {
             width: double.infinity,
             child: FilledButton(
               onPressed:
-                  _placement == null ? null : () => setState(() => _step = 1),
+                  _placement == null ? null : _goToStep1,
               child: const Text('Continue'),
             ),
           ),
@@ -2871,7 +3001,8 @@ enum _DropScope { wholeInternet, specificDevices }
 class _Flow5 extends ConsumerStatefulWidget {
   final VoidCallback onDone;
   final ValueChanged<int> onNavigateToFlow;
-  const _Flow5({required this.onDone, required this.onNavigateToFlow});
+  final ValueNotifier<VoidCallback?>? stepBackNotifier;
+  const _Flow5({required this.onDone, required this.onNavigateToFlow, this.stepBackNotifier});
 
   @override
   ConsumerState<_Flow5> createState() => _Flow5State();
@@ -2898,12 +3029,18 @@ class _Flow5State extends ConsumerState<_Flow5> {
       _stepHistory.add(_step);
       _step = newStep;
     });
+    _syncStepBackNotifier();
   }
 
   void _stepBack() {
     if (_stepHistory.isNotEmpty) {
       setState(() => _step = _stepHistory.removeLast());
+      _syncStepBackNotifier();
     }
+  }
+
+  void _syncStepBackNotifier() {
+    widget.stepBackNotifier?.value = _stepHistory.isNotEmpty ? _stepBack : null;
   }
 
   Widget _backButton(BuildContext context) {
@@ -3491,7 +3628,8 @@ enum _NatOption { bridgeMode, apMode, callIsp, leaveAsIs }
 
 class _Flow6BridgeMode extends ConsumerStatefulWidget {
   final VoidCallback onDone;
-  const _Flow6BridgeMode({required this.onDone});
+  final ValueNotifier<VoidCallback?>? stepBackNotifier;
+  const _Flow6BridgeMode({required this.onDone, this.stepBackNotifier});
 
   @override
   ConsumerState<_Flow6BridgeMode> createState() => _Flow6BridgeModeState();
@@ -3502,8 +3640,14 @@ class _Flow6BridgeModeState extends ConsumerState<_Flow6BridgeMode> {
   _NatOption? _choice;
   final List<int> _stepHistory = [];
 
-  void _pushStep(int s) => setState(() { _stepHistory.add(_step); _step = s; });
-  void _stepBack() { if (_stepHistory.isNotEmpty) setState(() => _step = _stepHistory.removeLast()); }
+  void _pushStep(int s) {
+    setState(() { _stepHistory.add(_step); _step = s; });
+    widget.stepBackNotifier?.value = _stepHistory.isNotEmpty ? _stepBack : null;
+  }
+  void _stepBack() {
+    if (_stepHistory.isNotEmpty) setState(() => _step = _stepHistory.removeLast());
+    widget.stepBackNotifier?.value = _stepHistory.isNotEmpty ? _stepBack : null;
+  }
 
   Widget _backBtn(BuildContext context) => _stepHistory.isNotEmpty
       ? Padding(
