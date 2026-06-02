@@ -117,7 +117,6 @@ class _InstantVerifyPivotViewState
         actions: [
           Consumer(builder: (ctx, r, _) {
             final state = r.watch(instantVerifyPivotProvider);
-            if (state.routerModel == null) return const SizedBox.shrink();
             return IconButton(
               icon: const Icon(Icons.info_outline, size: 20),
               tooltip: 'Router info',

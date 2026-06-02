@@ -2009,16 +2009,53 @@ class _Flow3State extends ConsumerState<_Flow3> {
           Row(children: [
             const Icon(Icons.check_circle_outline, color: Colors.green, size: 18),
             const SizedBox(width: 8),
-            const Text('WiFi connection looks good from router\'s side',
+            const Text('WiFi connection looks good from the router\'s side',
                 style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
           ]),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
+          // Speed test result
+          if (state.speedTest != null) ...[
+            _allClearDataRow(context, colors,
+              icon: Icons.speed,
+              label: 'Internet speed',
+              value: '${state.speedTest!.downloadMbps.toStringAsFixed(0)} Mbps down · '
+                     '${state.speedTest!.uploadMbps.toStringAsFixed(0)} Mbps up',
+              note: state.speedTest!.downloadMbps < 25
+                  ? 'Speed is low — this may be an ISP issue, not your device. '
+                    'Contact your internet provider if this is consistently slow.'
+                  : 'Speed looks fine — the issue is likely on the device itself.',
+            ),
+            const SizedBox(height: 10),
+          ],
+          // Active device count
+          if (state.clients.isNotEmpty) ...[
+            _allClearDataRow(context, colors,
+              icon: Icons.devices,
+              label: 'Devices active',
+              value: '${state.clients.length} device${state.clients.length == 1 ? '' : 's'} connected',
+              note: state.clients.length > 10
+                  ? 'Many devices are connected. Heavy activity on other devices '
+                    '(streaming, downloads) can reduce speed for everyone.'
+                  : 'Device count is normal — network congestion is unlikely.',
+            ),
+            const SizedBox(height: 10),
+          ],
+          // Band distribution
+          if (state.wirelessDeviceCount > 0) ...[
+            _allClearDataRow(context, colors,
+              icon: Icons.wifi,
+              label: 'Band distribution',
+              value: '${state.twoPointFourGhzCount} on 2.4 GHz · '
+                     '${state.fiveGhzCount} on 5 GHz',
+              note: 'If other devices are on 2.4 GHz and streaming, they may be '
+                    'competing for bandwidth with this device.',
+            ),
+          ],
+          const SizedBox(height: 10),
           Text(
-            'Signal, band, and link rate look fine. The slowness may be:\n'
-            '  • Background apps or downloads on the device\n'
-            '  • Your ISP\'s speed (run Instant-Test to check)\n'
-            '  • Network congestion — too many devices active at once',
-            style: TextStyle(fontSize: 13, color: colors.onSurfaceVariant, height: 1.4),
+            'If the device still feels slow, try closing background apps and '
+            'running a speed test directly on that device.',
+            style: TextStyle(fontSize: 12, color: colors.onSurfaceVariant, height: 1.4),
           ),
         ]))
       else
@@ -2056,6 +2093,27 @@ class _Flow3State extends ConsumerState<_Flow3> {
 
       _linksysSupportTile(context),
     ];
+  }
+
+  Widget _allClearDataRow(BuildContext context, ColorScheme colors, {
+    required IconData icon,
+    required String label,
+    required String value,
+    required String note,
+  }) {
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Row(children: [
+        Icon(icon, size: 14, color: colors.onSurfaceVariant),
+        const SizedBox(width: 6),
+        Text(label,
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: colors.onSurfaceVariant)),
+        const Spacer(),
+        Text(value,
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: colors.onSurface)),
+      ]),
+      const SizedBox(height: 3),
+      Text(note, style: TextStyle(fontSize: 11, color: colors.onSurfaceVariant, height: 1.4)),
+    ]);
   }
 
   Widget _metaChip(BuildContext context, ColorScheme colors, String label) {
@@ -2329,6 +2387,28 @@ class _Flow3State extends ConsumerState<_Flow3> {
                 contentPadding: EdgeInsets.zero,
                 onTap: () async {
                   Navigator.pop(ctx);
+                  if (!context.mounted) return;
+                  final confirmed = await showDialog<bool>(
+                    context: context,
+                    builder: (dlg) => AlertDialog(
+                      title: const Text('Change WiFi channel?'),
+                      content: Text(
+                          'All devices on the $bandLabel network will briefly disconnect '
+                          'while the router switches channels. '
+                          'They will reconnect automatically within about 30 seconds.'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.of(dlg).pop(false),
+                          child: const Text('Cancel'),
+                        ),
+                        FilledButton(
+                          onPressed: () => Navigator.of(dlg).pop(true),
+                          child: const Text('Change Channel'),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (confirmed != true || !mounted) return;
                   final ok = await ref
                       .read(instantVerifyPivotProvider.notifier)
                       .changeRadioChannel(radioId, ch);
