@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:privacy_gui/page/_shared/components/layout_blocks/status_blocks.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
+import 'base_blocks.dart';
+import 'block_constants.dart';
+
 // =============================================================================
-// InfoList - Vertical key-value list (simple, full-width rows)
+// InfoList - Vertical key-value list
 // =============================================================================
 
+/// Vertical list of key-value pairs with optional copy support.
+///
+/// Use for displaying device info, server settings, etc.
 class InfoList extends StatelessWidget {
   final List<InfoListItem> items;
 
@@ -23,10 +28,7 @@ class InfoList extends StatelessWidget {
           final isLast = entry.key == items.length - 1;
           final item = entry.value;
           return Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.md,
-              vertical: AppSpacing.sm,
-            ),
+            padding: BlockConstants.paddingListItem,
             decoration: isLast
                 ? null
                 : BoxDecoration(
@@ -61,6 +63,7 @@ class InfoList extends StatelessWidget {
   }
 }
 
+/// Item for [InfoList].
 class InfoListItem {
   final String label;
   final String value;
@@ -75,42 +78,13 @@ class InfoListItem {
   });
 }
 
-class _CopyableText extends StatelessWidget {
-  final String text;
-
-  const _CopyableText({required this.text});
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return InkWell(
-      onTap: () {
-        Clipboard.setData(ClipboardData(text: text));
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Copied: $text'),
-            duration: const Duration(seconds: 1),
-          ),
-        );
-      },
-      borderRadius: BorderRadius.circular(AppSpacing.xxs),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Flexible(child: AppText.bodyMedium(text)),
-          AppGap.xs(),
-          AppIcon.font(Icons.copy, size: 14, color: colorScheme.primary),
-        ],
-      ),
-    );
-  }
-}
-
 // =============================================================================
 // InfoGrid - 2-column key-value grid
 // =============================================================================
 
+/// Grid layout for key-value pairs.
+///
+/// Supports full-width items and copyable values.
 class InfoGrid extends StatelessWidget {
   final List<InfoGridItem> items;
   final int crossAxisCount;
@@ -123,7 +97,6 @@ class InfoGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Group items into rows for height alignment
     final rows = <List<InfoGridItem>>[];
     var currentRow = <InfoGridItem>[];
 
@@ -177,6 +150,7 @@ class InfoGrid extends StatelessWidget {
   }
 }
 
+/// Item for [InfoGrid].
 class InfoGridItem {
   final String label;
   final String value;
@@ -219,128 +193,39 @@ class _InfoGridTile extends StatelessWidget {
 }
 
 // =============================================================================
-// ListPreview - Preview list with "View All" action
+// Shared copyable text widget
 // =============================================================================
 
-class ListPreview extends StatelessWidget {
-  final List<ListPreviewItem> items;
-  final int maxItems;
-  final int totalCount;
-  final String viewAllLabel;
-  final VoidCallback? onViewAll;
+class _CopyableText extends StatelessWidget {
+  final String text;
 
-  const ListPreview({
-    super.key,
-    required this.items,
-    this.maxItems = 3,
-    required this.totalCount,
-    this.viewAllLabel = 'View all',
-    this.onViewAll,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final displayItems = items.take(maxItems).toList();
-    final hasMore = totalCount > maxItems;
-
-    return Block(
-      padding: EdgeInsets.zero,
-      child: Column(
-        children: [
-          ...displayItems.asMap().entries.map((entry) {
-            final isLast = entry.key == displayItems.length - 1 && !hasMore;
-            return _ListPreviewTile(item: entry.value, showDivider: !isLast);
-          }),
-          if (hasMore)
-            InkWell(
-              onTap: onViewAll,
-              borderRadius: const BorderRadius.vertical(
-                bottom: Radius.circular(AppSpacing.sm),
-              ),
-              child: Container(
-                padding: const EdgeInsets.all(AppSpacing.sm),
-                decoration: BoxDecoration(
-                  border: Border(
-                    top: BorderSide(color: colorScheme.surfaceContainer),
-                  ),
-                ),
-                child: Center(
-                  child: AppText.labelMedium(
-                    '$viewAllLabel $totalCount',
-                    color: colorScheme.primary,
-                  ),
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-class ListPreviewItem {
-  final IconData icon;
-  final String title;
-  final String? subtitle;
-  final Widget? trailing;
-
-  const ListPreviewItem({
-    required this.icon,
-    required this.title,
-    this.subtitle,
-    this.trailing,
-  });
-}
-
-class _ListPreviewTile extends StatelessWidget {
-  final ListPreviewItem item;
-  final bool showDivider;
-
-  const _ListPreviewTile({required this.item, this.showDivider = true});
+  const _CopyableText({required this.text});
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.sm),
-      decoration: showDivider
-          ? BoxDecoration(
-              border: Border(
-                bottom: BorderSide(color: colorScheme.surfaceContainer),
-              ),
-            )
-          : null,
+    return InkWell(
+      onTap: () {
+        Clipboard.setData(ClipboardData(text: text));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Copied: $text'),
+            duration: const Duration(seconds: 1),
+          ),
+        );
+      },
+      borderRadius: BorderRadius.circular(AppSpacing.xxs),
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: colorScheme.surfaceContainer,
-              shape: BoxShape.circle,
-            ),
-            child: Center(
-              child: AppIcon.font(item.icon,
-                  size: 18, color: colorScheme.onSurfaceVariant),
-            ),
+          Flexible(child: AppText.bodyMedium(text)),
+          AppGap.xs(),
+          AppIcon.font(
+            Icons.copy,
+            size: BlockConstants.iconSm,
+            color: colorScheme.primary,
           ),
-          AppGap.sm(),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                AppText.labelMedium(item.title),
-                if (item.subtitle != null)
-                  AppText.bodySmall(
-                    item.subtitle!,
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-              ],
-            ),
-          ),
-          if (item.trailing != null) item.trailing!,
         ],
       ),
     );

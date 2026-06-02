@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
+import 'block_constants.dart';
+
 // =============================================================================
 // StatTile - Summary statistic tile (icon + value + label)
 // =============================================================================
 
+/// Statistic tile for dashboard stats panel.
+///
+/// Displays an icon, value, and label with optional trend indicator.
 class StatTile extends StatelessWidget {
   final IconData icon;
   final String value;
@@ -29,7 +34,8 @@ class StatTile extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          AppIcon.font(icon, size: 24, color: colorScheme.onSurface),
+          AppIcon.font(icon,
+              size: BlockConstants.iconLg, color: colorScheme.onSurface),
           AppGap.sm(),
           Row(
             mainAxisSize: MainAxisSize.min,
@@ -55,7 +61,7 @@ class StatTile extends StatelessWidget {
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(AppSpacing.sm),
+      borderRadius: BorderRadius.circular(BlockConstants.borderRadius),
       child: content,
     );
   }
@@ -108,44 +114,8 @@ class _TrendIndicator extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 16, color: color),
+        Icon(icon, size: BlockConstants.iconSm, color: color),
         if (trend.label != null) AppText.labelSmall(trend.label!, color: color),
-      ],
-    );
-  }
-}
-
-// =============================================================================
-// SectionDivider - Divider with optional title
-// =============================================================================
-
-class SectionDivider extends StatelessWidget {
-  final String? title;
-  final Widget? trailing;
-
-  const SectionDivider({
-    super.key,
-    this.title,
-    this.trailing,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    if (title == null && trailing == null) {
-      return const Divider();
-    }
-
-    return Column(
-      children: [
-        const Divider(),
-        AppGap.md(),
-        Row(
-          children: [
-            if (title != null) AppText.titleMedium(title!),
-            const Spacer(),
-            if (trailing != null) trailing!,
-          ],
-        ),
       ],
     );
   }
@@ -155,6 +125,7 @@ class SectionDivider extends StatelessWidget {
 // EmptyState - Empty state placeholder
 // =============================================================================
 
+/// Empty state placeholder with icon, message, and optional action.
 class EmptyState extends StatelessWidget {
   final IconData? icon;
   final String message;
@@ -182,8 +153,9 @@ class EmptyState extends StatelessWidget {
             if (icon != null) ...[
               AppIcon.font(
                 icon!,
-                size: 48,
-                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                size: BlockConstants.iconXl,
+                color: colorScheme.onSurfaceVariant
+                    .withValues(alpha: BlockConstants.disabledAlpha),
               ),
               AppGap.md(),
             ],
@@ -201,42 +173,6 @@ class EmptyState extends StatelessWidget {
             ],
           ],
         ),
-      ),
-    );
-  }
-}
-
-// =============================================================================
-// CountBadge - Numeric badge for counts
-// =============================================================================
-
-class CountBadge extends StatelessWidget {
-  final int count;
-  final Color? color;
-
-  const CountBadge({
-    super.key,
-    required this.count,
-    this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final badgeColor = color ?? colorScheme.primary;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.sm,
-        vertical: AppSpacing.xxs,
-      ),
-      decoration: BoxDecoration(
-        color: badgeColor.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(AppSpacing.md),
-      ),
-      child: AppText.labelSmall(
-        '$count',
-        color: badgeColor,
       ),
     );
   }

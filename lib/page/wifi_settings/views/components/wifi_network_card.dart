@@ -49,9 +49,9 @@ class WifiNetworkCard extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             // ── Band header + enable toggle ──────────────────────────────
-            _SettingBlock(
+            SettingBlock(
               title: n.isGuest ? 'Guest' : 'Main',
-              description: n.bandDisplayName,
+              value: n.bandDisplayName,
               semanticLabel: 'wifi-enable-${n.band}',
               trailing: AppSwitch(
                 value: n.enabled,
@@ -61,34 +61,34 @@ class WifiNetworkCard extends ConsumerWidget {
               ),
             ),
             // ── WiFi name ─────────────────────────────────────────────────
-            _SettingBlock(
+            SettingBlock(
               title: 'Name',
-              description: n.ssid.isNotEmpty ? n.ssid : '(No SSID)',
+              value: n.ssid.isNotEmpty ? n.ssid : '(No SSID)',
               semanticLabel: 'wifi-name-${n.band}',
               trailing: const AppIcon.font(AppFontIcons.edit),
               onTap: () => _editSsid(context, ref, n),
             ),
             // ── WiFi password & Security mode ────────────────────────────
             if (n.supportedSecurityModes.isNotEmpty) ...[
-              _SettingBlock(
+              SettingBlock(
                 title: 'Password',
-                description: '•' * 12,
+                value: '•' * 12,
                 trailing: const AppIcon.font(AppFontIcons.edit),
                 onTap: () => _editPassword(context, ref, n),
               ),
               if (!n.isGuest)
-                _SettingBlock(
+                SettingBlock(
                   title: 'Security mode',
-                  description: n.securityMode,
+                  value: n.securityMode,
                   trailing: const AppIcon.font(AppFontIcons.edit),
                   onTap: () => _editSecurityMode(context, ref, n),
                 ),
             ],
             // ── WiFi Mode ──────────────────────────────────────────────────
             if (!n.isGuest && n.supportedStandards.isNotEmpty)
-              _SettingBlock(
+              SettingBlock(
                 title: 'WiFi Mode',
-                description: _wifiModeDisplayName(n.operatingStandards),
+                value: _wifiModeDisplayName(n.operatingStandards),
                 trailing: n.radioInstancePath != null
                     ? const AppIcon.font(AppFontIcons.edit)
                     : null,
@@ -98,7 +98,7 @@ class WifiNetworkCard extends ConsumerWidget {
               ),
             // ── Broadcast SSID / Channel Width / Channel (main only) ──────
             if (!n.isGuest) ...[
-              _SettingBlock(
+              SettingBlock(
                 title: 'Broadcast SSID',
                 semanticLabel: 'wifi-broadcast-${n.band}',
                 trailing: AppSwitch(
@@ -111,9 +111,9 @@ class WifiNetworkCard extends ConsumerWidget {
                       : null,
                 ),
               ),
-              _SettingBlock(
+              SettingBlock(
                 title: 'Channel Width',
-                description:
+                value:
                     n.channelBandwidth.isNotEmpty ? n.channelBandwidth : 'Auto',
                 trailing: n.radioInstancePath != null
                     ? const AppIcon.font(AppFontIcons.edit)
@@ -122,9 +122,9 @@ class WifiNetworkCard extends ConsumerWidget {
                     ? () => _editChannelWidth(context, ref, n)
                     : null,
               ),
-              _SettingBlock(
+              SettingBlock(
                 title: 'Channel',
-                description: n.channelDisplay,
+                value: n.channelDisplay,
                 trailing: n.radioInstancePath != null
                     ? const AppIcon.font(AppFontIcons.edit)
                     : null,
@@ -489,62 +489,5 @@ class WifiNetworkCard extends ConsumerWidget {
         }
       }
     }
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Setting Block — Block-wrapped setting row
-// ---------------------------------------------------------------------------
-
-class _SettingBlock extends StatelessWidget {
-  final String title;
-  final String? description;
-  final Widget? trailing;
-  final VoidCallback? onTap;
-  final String? semanticLabel;
-
-  const _SettingBlock({
-    required this.title,
-    this.description,
-    this.trailing,
-    this.onTap,
-    this.semanticLabel,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.xs),
-      child: Block(
-        onTap: onTap,
-        padding: const EdgeInsets.symmetric(
-          vertical: AppSpacing.sm,
-          horizontal: AppSpacing.md,
-        ),
-        child: Semantics(
-          label: semanticLabel,
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    AppText.bodyMedium(title),
-                    if (description != null) ...[
-                      AppGap.xs(),
-                      AppText.labelLarge(description!),
-                    ],
-                  ],
-                ),
-              ),
-              if (trailing != null) ...[
-                AppGap.md(),
-                trailing!,
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
   }
 }
