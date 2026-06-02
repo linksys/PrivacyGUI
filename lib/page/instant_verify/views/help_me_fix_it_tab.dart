@@ -1071,7 +1071,7 @@ class _Flow2State extends ConsumerState<_Flow2> {
           if (_step == 0) ..._step0(context, state),
           if (_step == 1 && _speedResult != null) ..._step1(context),
           if (_step == 2) ..._step2(context),
-          if (_step == 3) ..._step3(context),
+          if (_step == 3) ..._step3(context, state),
           if (_step == 4) ..._step4(context),
           if (_step == 5) ..._step5Gaming(context),
         ],
@@ -1308,37 +1308,77 @@ class _Flow2State extends ConsumerState<_Flow2> {
     ];
   }
 
-  List<Widget> _step3(BuildContext context) => [
+  List<Widget> _step3(BuildContext context, InstantVerifyPivotState state) {
+    // D-45: Surface VerdictEngine findings before restart suggestion
+    final weakDevices = state.issueDevices;
+    final wireless = state.clients.where((c) => c.isWireless).toList();
+    final bandCrowded = wireless.length >= 4 &&
+        wireless.where((c) => c.band.contains('2.4')).length / wireless.length >= 0.6;
+    final weakNodes = state.weakBackhaulNodes;
+    final hasFindings = weakDevices.isNotEmpty || bandCrowded || weakNodes.isNotEmpty;
+
+    return [
+      if (hasFindings)
         _stepCard(context, Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Try restarting your router',
+            Text('Before restarting, here\'s what we noticed:',
                 style: Theme.of(context)
                     .textTheme
                     .titleSmall
                     ?.copyWith(fontWeight: FontWeight.w600)),
+            const SizedBox(height: 10),
+            if (weakDevices.isNotEmpty)
+              _checklistItem(context,
+                  '${weakDevices.length} device${weakDevices.length == 1 ? '' : 's'} '
+                  '${weakDevices.length == 1 ? 'has' : 'have'} a weak WiFi signal'),
+            if (bandCrowded)
+              _checklistItem(context,
+                  'Most of your devices are on the slower 2.4 GHz band'),
+            if (weakNodes.isNotEmpty)
+              _checklistItem(context,
+                  '${weakNodes.map((n) => n.name).join(', ')} '
+                  '${weakNodes.length == 1 ? 'has' : 'have'} a weak connection to your router'),
             const SizedBox(height: 8),
-            Text('Restarting can clear congestion and improve speeds.',
-                style: Theme.of(context).textTheme.bodyMedium),
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: _isRunning
-                  ? const _LoadingButton(label: 'Testing speed after restart…')
-                  : FilledButton.icon(
-                      onPressed: _restartAndRetest,
-                      icon: const Icon(Icons.restart_alt),
-                      label: const Text('Restart + Run Speed Test Again'),
-                    ),
-            ),
-            const SizedBox(height: 8),
-            TextButton(
-              onPressed: () => _pushStep(4),
-              child: const Text('Skip — already restarted'),
-            ),
+            Text('These may be causing the slowness.',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant)),
           ],
         )),
-      ];
+      _stepCard(context, Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            hasFindings
+                ? 'If none of these apply, try restarting your router'
+                : 'Try restarting your router',
+            style: Theme.of(context)
+                .textTheme
+                .titleSmall
+                ?.copyWith(fontWeight: FontWeight.w600)),
+          const SizedBox(height: 8),
+          Text('Restarting can clear congestion and improve speeds.',
+              style: Theme.of(context).textTheme.bodyMedium),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: _isRunning
+                ? const _LoadingButton(label: 'Testing speed after restart…')
+                : FilledButton.icon(
+                    onPressed: _restartAndRetest,
+                    icon: const Icon(Icons.restart_alt),
+                    label: const Text('Restart + Run Speed Test Again'),
+                  ),
+          ),
+          const SizedBox(height: 8),
+          TextButton(
+            onPressed: () => _pushStep(4),
+            child: const Text('Skip — already restarted'),
+          ),
+        ],
+      )),
+    ];
+  }
 
   List<Widget> _step4(BuildContext context) => [
         _stepCard(context, Column(
