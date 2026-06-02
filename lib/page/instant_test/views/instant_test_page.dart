@@ -17,13 +17,28 @@ class InstantTestPage extends ConsumerStatefulWidget {
 class _InstantTestPageState extends ConsumerState<InstantTestPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  // -1 = reset to landing menu; positive int = launch that flow
+  final _helpMeFlowNotifier = ValueNotifier<int?>(null);
 
   static const int _tabCount = 4;
+  static const int _helpMeFixItTabIndex = 3;
+  static const int _myDevicesTabIndex = 1;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: _tabCount, vsync: this);
+    // Re-tap on Tab 3 while already active → reset flow to landing menu
+    int _previousTab = 0;
+    _tabController.addListener(() {
+      if (!_tabController.indexIsChanging) {
+        if (_tabController.index == _helpMeFixItTabIndex &&
+            _previousTab == _helpMeFixItTabIndex) {
+          _helpMeFlowNotifier.value = -1;
+        }
+        _previousTab = _tabController.index;
+      }
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(instantTestProvider.notifier).fetch();
     });
@@ -32,6 +47,7 @@ class _InstantTestPageState extends ConsumerState<InstantTestPage>
   @override
   void dispose() {
     _tabController.dispose();
+    _helpMeFlowNotifier.dispose();
     super.dispose();
   }
 
@@ -53,11 +69,15 @@ class _InstantTestPageState extends ConsumerState<InstantTestPage>
       ),
       body: TabBarView(
         controller: _tabController,
-        children: const [
-          OverviewTab(),
-          MyDevicesTab(),
-          MyNetworkTab(),
-          HelpMeFixItTab(),
+        children: [
+          const OverviewTab(),
+          const MyDevicesTab(),
+          const MyNetworkTab(),
+          HelpMeFixItTab(
+            pendingFlowNotifier: _helpMeFlowNotifier,
+            onNavigateToMyDevices: () =>
+                _tabController.animateTo(_myDevicesTabIndex),
+          ),
         ],
       ),
     );
