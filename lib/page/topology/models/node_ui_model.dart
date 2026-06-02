@@ -23,6 +23,11 @@ class NodeUIModel extends Equatable {
   final bool isMaster; // First node in DataElements = gateway
   final int connectedDeviceCount; // Devices connected to this node
 
+  // ─── Network addresses ───
+  final String? ipAddress; // LAN IP address of the node
+  final List<String> ipv6Addresses; // LAN IPv6 addresses of the node
+  final String? wanIpAddress; // WAN IP address (master only)
+
   // ─── Backhaul info (for child nodes) ───
   final String backhaulMediaType; // "IEEE 802.11ax" / "Ethernet"
   final int backhaulPhyRate; // PHY rate in Mbps
@@ -52,6 +57,9 @@ class NodeUIModel extends Equatable {
     this.softwareVersion = '',
     this.isMaster = false,
     this.connectedDeviceCount = 0,
+    this.ipAddress,
+    this.ipv6Addresses = const [],
+    this.wanIpAddress,
     this.backhaulMediaType = '',
     this.backhaulPhyRate = 0,
     this.backhaulSignalStrength,
@@ -95,6 +103,9 @@ class NodeUIModel extends Equatable {
         softwareVersion,
         isMaster,
         connectedDeviceCount,
+        ipAddress,
+        ipv6Addresses,
+        wanIpAddress,
         backhaulMediaType,
         backhaulPhyRate,
         backhaulSignalStrength,

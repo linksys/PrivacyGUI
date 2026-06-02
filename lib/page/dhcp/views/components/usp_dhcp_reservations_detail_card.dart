@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
+import 'package:privacy_gui/page/_shared/components/detail_widgets.dart';
+import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/_shared/models/dhcp_reservation_ui_model.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/dhcp/providers/usp_dhcp_reservations_notifier.dart';
@@ -22,13 +24,14 @@ class UspDhcpReservationsDetailCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return AppCard(
+      padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              AppText.titleMedium('DHCP Reservations'),
+              AppText.titleSmall('DHCP Reservations'),
               Row(
                 children: [
                   AppText.labelLarge('${reservations.length}'),
@@ -41,9 +44,12 @@ class UspDhcpReservationsDetailCard extends ConsumerWidget {
               ),
             ],
           ),
-          AppGap.xl(),
+          AppGap.md(),
           if (reservations.isEmpty)
-            AppText.bodyMedium('No DHCP reservations configured')
+            const DetailEmptyBlock(
+              icon: Icons.bookmark_border,
+              message: 'No DHCP reservations configured',
+            )
           else
             ...reservations.map((r) => _buildReservationRow(context, ref, r)),
         ],
@@ -58,39 +64,42 @@ class UspDhcpReservationsDetailCard extends ConsumerWidget {
   ) {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-      child: Row(
-        children: [
-          AppSwitch(
-            value: reservation.enable,
-            scale: 0.8,
-            onChanged: isSaving
-                ? null
-                : (value) => ref
-                    .read(uspDhcpReservationsProvider.notifier)
-                    .toggleReservation(reservation, value),
-          ),
-          AppGap.sm(),
-          Expanded(child: AppText.bodyMedium(reservation.mac)),
-          SizedBox(
-            width: context.colWidth(2),
-            child: AppText.bodySmall(
-              reservation.ip,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
+      child: Block(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Row(
+          children: [
+            AppSwitch(
+              value: reservation.enable,
+              scale: 0.8,
+              onChanged: isSaving
+                  ? null
+                  : (value) => ref
+                      .read(uspDhcpReservationsProvider.notifier)
+                      .toggleReservation(reservation, value),
             ),
-          ),
-          AppIconButton(
-            icon: AppIcon.font(Icons.edit_outlined, size: 18),
-            onTap: isSaving
-                ? null
-                : () => _showEditDialog(context, ref, reservation),
-          ),
-          AppIconButton(
-            icon: AppIcon.font(Icons.delete_outline, size: 18),
-            onTap: isSaving
-                ? null
-                : () => _confirmDelete(context, ref, reservation),
-          ),
-        ],
+            AppGap.md(),
+            Expanded(child: AppText.bodyMedium(reservation.mac)),
+            SizedBox(
+              width: context.colWidth(2),
+              child: AppText.bodySmall(
+                reservation.ip,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+            AppIconButton(
+              icon: AppIcon.font(Icons.edit_outlined, size: 18),
+              onTap: isSaving
+                  ? null
+                  : () => _showEditDialog(context, ref, reservation),
+            ),
+            AppIconButton(
+              icon: AppIcon.font(Icons.delete_outline, size: 18),
+              onTap: isSaving
+                  ? null
+                  : () => _confirmDelete(context, ref, reservation),
+            ),
+          ],
+        ),
       ),
     );
   }

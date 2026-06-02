@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
+import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/shell/usp_top_bar.dart';
 import 'package:privacy_gui/page/unified_diagnostics/models/speed_test_state.dart';
@@ -337,7 +338,8 @@ class SpeedTestView extends ConsumerWidget {
         // Details
         if (result.downloadDurationMs != null &&
             result.downloadDurationMs! > 0) ...[
-          AppCard(
+          Block(
+            padding: const EdgeInsets.all(AppSpacing.md),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -497,7 +499,8 @@ class _LatencyCard extends StatelessWidget {
             ? colorScheme.tertiary
             : colorScheme.error;
 
-    return AppCard(
+    return Block(
+      padding: const EdgeInsets.all(AppSpacing.md),
       child: Row(
         children: [
           Container(
@@ -562,7 +565,8 @@ class _SpeedCard extends StatelessWidget {
     final isComplete = status == 'Complete';
     final isNotSupported = status == 'NotSupported';
 
-    return AppCard(
+    return Block(
+      padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
         children: [
           Icon(icon, color: color, size: 32),

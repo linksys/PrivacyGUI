@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
+import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/internet_settings/models/internet_settings_feature_state.dart';
 import 'package:privacy_gui/page/internet_settings/providers/usp_internet_settings_notifier.dart';
 import 'package:privacy_gui/page/internet_settings/views/components/usp_renew_action_card.dart';
-import 'package:privacy_gui/page/internet_settings/views/components/usp_section_card.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Release & Renew DHCP lease section.
@@ -23,29 +23,44 @@ class UspRenewSection extends ConsumerWidget {
     final isBridge = state.isBridgeMode;
     final l = loc(context);
     final wanIp = state.readOnlyInfo.staticIpAddress;
+    final iconColor = Theme.of(context).colorScheme.primary;
 
-    return UspSectionCard(
-      title: l.releaseAndRenew,
-      leadingIcon: Icons.sync,
+    return AppCard(
+      padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // IPv4 DHCP Renew
-          UspRenewActionCard(
-            protocolLabel: l.ipv4,
-            ipAddress: wanIp,
-            isLoading: activeMutation == 'renewIpv4',
-            onRenew:
-                isBridge ? null : () => _renewDhcp(context, ref, isIpv6: false),
+          Row(
+            children: [
+              AppIcon.font(Icons.sync, size: 20, color: iconColor),
+              AppGap.sm(),
+              AppText.titleSmall(l.releaseAndRenew),
+            ],
           ),
-          AppGap.lg(),
-          AppDivider(),
-          AppGap.lg(),
+          AppGap.md(),
+          // IPv4 DHCP Renew
+          Block(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: UspRenewActionCard(
+              protocolLabel: l.ipv4,
+              ipAddress: wanIp,
+              isLoading: activeMutation == 'renewIpv4',
+              onRenew: isBridge
+                  ? null
+                  : () => _renewDhcp(context, ref, isIpv6: false),
+            ),
+          ),
+          AppGap.sm(),
           // IPv6 DHCP Renew
-          UspRenewActionCard(
-            protocolLabel: l.ipv6,
-            isLoading: activeMutation == 'renewIpv6',
-            onRenew:
-                isBridge ? null : () => _renewDhcp(context, ref, isIpv6: true),
+          Block(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: UspRenewActionCard(
+              protocolLabel: l.ipv6,
+              isLoading: activeMutation == 'renewIpv6',
+              onRenew: isBridge
+                  ? null
+                  : () => _renewDhcp(context, ref, isIpv6: true),
+            ),
           ),
         ],
       ),

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:privacy_gui/page/_shared/components/detail_widgets.dart';
 import 'package:privacy_gui/page/_shared/models/time_settings_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/timezone_definitions.dart';
-import 'package:privacy_gui/page/_shared/components/usp_info_row.dart';
 import 'package:privacy_gui/page/_shared/utils/local_time_ticker.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -96,25 +96,33 @@ class _UspTimezoneCardState extends State<UspTimezoneCard>
                 ),
               ],
             ),
-            AppGap.xl(),
-            UspInfoRow(
-              label: 'Timezone',
-              value: tzDisplay,
-            ),
-            if (tzInfo != null && tzInfo.observesDST)
-              UspInfoRow(
-                label: 'Daylight Savings Time',
-                value: dstEnabled ? 'On' : 'Off',
-              ),
-            UspInfoRow(
-              label: 'NTP Server',
-              value: widget.timeSettings.ntpServer1.isNotEmpty
-                  ? widget.timeSettings.ntpServer1
-                  : '—',
-            ),
-            UspInfoRow(
-              label: 'Local Time',
-              value: timeDisplay,
+            AppGap.md(),
+            DetailInfoBlock(
+              children: [
+                DetailInfoTile(
+                  icon: Icons.public,
+                  label: 'Timezone',
+                  value: tzDisplay,
+                ),
+                if (tzInfo != null && tzInfo.observesDST)
+                  DetailInfoTile(
+                    icon: Icons.wb_sunny,
+                    label: 'Daylight Savings Time',
+                    value: dstEnabled ? 'On' : 'Off',
+                  ),
+                DetailInfoTile(
+                  icon: Icons.dns,
+                  label: 'NTP Server',
+                  value: widget.timeSettings.ntpServer1.isNotEmpty
+                      ? widget.timeSettings.ntpServer1
+                      : '—',
+                ),
+                DetailInfoTile(
+                  icon: Icons.access_time,
+                  label: 'Local Time',
+                  value: timeDisplay,
+                ),
+              ],
             ),
           ],
         ),

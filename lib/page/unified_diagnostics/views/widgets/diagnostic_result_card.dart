@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:privacy_gui/core/utils/wifi.dart';
+import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/util/network_utils.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -33,54 +34,52 @@ class DiagnosticResultCard extends StatelessWidget {
         _getSeverityColor(result.severity, colorScheme, appColors);
     final (title, metric, unit, subtitle) = _extractMetrics(result);
 
-    return AppCard(
+    return Block(
       onTap: _hasDetails ? () => _showDetailsSheet(context, colorScheme) : null,
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Header: Title + Status indicator
-            Row(
-              children: [
-                Expanded(
-                  child: AppText.titleSmall(title),
-                ),
-                _StatusBadge(
-                  severity: result.severity,
-                  color: severityColor,
-                ),
-              ],
-            ),
-            AppGap.lg(),
-            // Primary metric
-            _MetricDisplay(
-              metric: metric,
-              unit: unit,
-              color: severityColor,
-            ),
-            if (subtitle.isNotEmpty) ...[
-              AppGap.sm(),
-              AppText.bodySmall(
-                subtitle,
-                color: colorScheme.onSurfaceVariant,
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Header: Title + Status indicator
+          Row(
+            children: [
+              Expanded(
+                child: AppText.titleSmall(title),
+              ),
+              _StatusBadge(
+                severity: result.severity,
+                color: severityColor,
               ),
             ],
-            // Spacer for consistent card height (icon shown only if has details)
-            AppGap.xs(),
-            Align(
-              alignment: Alignment.centerRight,
-              child: Icon(
-                Icons.info_outline,
-                size: 16,
-                color: _hasDetails
-                    ? colorScheme.onSurfaceVariant
-                    : Colors.transparent,
-              ),
+          ),
+          AppGap.lg(),
+          // Primary metric
+          _MetricDisplay(
+            metric: metric,
+            unit: unit,
+            color: severityColor,
+          ),
+          if (subtitle.isNotEmpty) ...[
+            AppGap.sm(),
+            AppText.bodySmall(
+              subtitle,
+              color: colorScheme.onSurfaceVariant,
             ),
           ],
-        ),
+          // Spacer for consistent card height (icon shown only if has details)
+          AppGap.xs(),
+          Align(
+            alignment: Alignment.centerRight,
+            child: Icon(
+              Icons.info_outline,
+              size: 16,
+              color: _hasDetails
+                  ? colorScheme.onSurfaceVariant
+                  : Colors.transparent,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -533,68 +532,66 @@ class DiagnosticIssueCard extends StatelessWidget {
     final severityColor = isError ? colorScheme.error : colorScheme.tertiary;
     final (title, metric, unit, subtitle) = _extractIssueMetrics(result);
 
-    return AppCard(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header with severity indicator
-            Row(
-              children: [
-                Container(
-                  width: 4,
-                  height: 24,
-                  decoration: BoxDecoration(
-                    color: severityColor,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                AppGap.sm(),
-                Expanded(
-                  child: AppText.titleSmall(title),
-                ),
-                Icon(
-                  isError ? Icons.error_outline : Icons.warning_amber_outlined,
+    return Block(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header with severity indicator
+          Row(
+            children: [
+              Container(
+                width: 4,
+                height: 24,
+                decoration: BoxDecoration(
                   color: severityColor,
-                  size: 20,
+                  borderRadius: BorderRadius.circular(2),
                 ),
+              ),
+              AppGap.sm(),
+              Expanded(
+                child: AppText.titleSmall(title),
+              ),
+              Icon(
+                isError ? Icons.error_outline : Icons.warning_amber_outlined,
+                color: severityColor,
+                size: 20,
+              ),
+              AppGap.xs(),
+              AppText.labelSmall(
+                isError ? 'Error' : 'Warning',
+                color: severityColor,
+              ),
+            ],
+          ),
+          AppGap.md(),
+          // Metric + subtitle in row
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              AppText.displaySmall(
+                metric,
+                color: severityColor,
+              ),
+              if (unit.isNotEmpty) ...[
                 AppGap.xs(),
-                AppText.labelSmall(
-                  isError ? 'Error' : 'Warning',
-                  color: severityColor,
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: AppText.titleSmall(unit, color: severityColor),
                 ),
               ],
-            ),
-            AppGap.md(),
-            // Metric + subtitle in row
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                AppText.displaySmall(
-                  metric,
-                  color: severityColor,
+              AppGap.lg(),
+              Expanded(
+                child: AppText.bodyMedium(
+                  subtitle,
+                  color: colorScheme.onSurfaceVariant,
                 ),
-                if (unit.isNotEmpty) ...[
-                  AppGap.xs(),
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 4),
-                    child: AppText.titleSmall(unit, color: severityColor),
-                  ),
-                ],
-                AppGap.lg(),
-                Expanded(
-                  child: AppText.bodyMedium(
-                    subtitle,
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-            // Details section
-            ..._buildIssueDetails(result, colorScheme, appColors),
-          ],
-        ),
+              ),
+            ],
+          ),
+          // Details section
+          ..._buildIssueDetails(result, colorScheme, appColors),
+        ],
       ),
     );
   }

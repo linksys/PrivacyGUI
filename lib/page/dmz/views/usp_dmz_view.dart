@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
+import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/dmz/models/dmz_feature_state.dart';
 import 'package:privacy_gui/page/dmz/models/dmz_ui_model.dart';
@@ -164,31 +165,35 @@ class _UspDmzViewState extends ConsumerState<UspDmzView> {
     bool disabled,
   ) {
     return AppCard(
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                AppText.labelLarge('DMZ'),
-                AppGap.sm(),
-                AppText.bodyMedium(
-                  'Route all traffic to a host',
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ],
+      padding: const EdgeInsets.all(AppSpacing.md),
+      child: Block(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  AppText.labelLarge('DMZ'),
+                  AppGap.sm(),
+                  AppText.bodyMedium(
+                    'Route all traffic to a host',
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ],
+              ),
             ),
-          ),
-          AppSwitch(
-            value: pending.isEnabled,
-            onChanged: disabled
-                ? null
-                : (v) => notifier.updateSetting(
-                      (m) => m.copyWith(isEnabled: v),
-                    ),
-          ),
-        ],
+            AppSwitch(
+              value: pending.isEnabled,
+              onChanged: disabled
+                  ? null
+                  : (v) => notifier.updateSetting(
+                        (m) => m.copyWith(isEnabled: v),
+                      ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -204,17 +209,21 @@ class _UspDmzViewState extends ConsumerState<UspDmzView> {
     bool disabled,
   ) {
     return AppCard(
+      padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           AppText.titleSmall('Destination IP'),
-          AppGap.lg(),
-          AppIpv4TextField(
-            controller: _destIpController,
-            onChanged: (value) {
-              notifier.updateSetting((m) => m.copyWith(destIp: value));
-            },
-            errorText: ref.watch(uspDmzProvider).status.fieldErrors['destIp'],
+          AppGap.md(),
+          Block(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: AppIpv4TextField(
+              controller: _destIpController,
+              onChanged: (value) {
+                notifier.updateSetting((m) => m.copyWith(destIp: value));
+              },
+              errorText: ref.watch(uspDmzProvider).status.fieldErrors['destIp'],
+            ),
           ),
         ],
       ),
@@ -232,41 +241,45 @@ class _UspDmzViewState extends ConsumerState<UspDmzView> {
     bool disabled,
   ) {
     return AppCard(
+      padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           AppText.titleSmall('Source Restriction'),
-          AppGap.lg(),
-          AppRadioList(
-            selected: pending.sourceType,
-            itemHeight: 56,
-            items: [
-              AppRadioListItem(
-                title: 'Any (all sources)',
-                value: DmzSourceType.any,
-              ),
-              AppRadioListItem(
-                title: 'CIDR Range',
-                expandedWidget: pending.sourceType == DmzSourceType.cidr
-                    ? Container(
-                        constraints: const BoxConstraints(maxWidth: 429),
-                        child: AppTextFormField(
-                          controller: _cidrController,
-                          hintText: 'e.g. 192.168.1.0/24',
-                          onChanged: (value) {
-                            notifier.updateSetting(
-                                (m) => m.copyWith(sourcePrefix: value));
-                          },
-                        ),
-                      )
-                    : null,
-                value: DmzSourceType.cidr,
-              ),
-            ],
-            onChanged: (index, value) {
-              if (value == null || value == pending.sourceType) return;
-              notifier.updateSetting((m) => m.copyWith(sourceType: value));
-            },
+          AppGap.md(),
+          Block(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: AppRadioList(
+              selected: pending.sourceType,
+              itemHeight: 56,
+              items: [
+                AppRadioListItem(
+                  title: 'Any (all sources)',
+                  value: DmzSourceType.any,
+                ),
+                AppRadioListItem(
+                  title: 'CIDR Range',
+                  expandedWidget: pending.sourceType == DmzSourceType.cidr
+                      ? Container(
+                          constraints: const BoxConstraints(maxWidth: 429),
+                          child: AppTextFormField(
+                            controller: _cidrController,
+                            hintText: 'e.g. 192.168.1.0/24',
+                            onChanged: (value) {
+                              notifier.updateSetting(
+                                  (m) => m.copyWith(sourcePrefix: value));
+                            },
+                          ),
+                        )
+                      : null,
+                  value: DmzSourceType.cidr,
+                ),
+              ],
+              onChanged: (index, value) {
+                if (value == null || value == pending.sourceType) return;
+                notifier.updateSetting((m) => m.copyWith(sourceType: value));
+              },
+            ),
           ),
         ],
       ),

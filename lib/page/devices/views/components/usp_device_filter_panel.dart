@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/devices/providers/device_filter_provider.dart';
 import 'package:privacy_gui/page/devices/providers/device_filter_state.dart';
 import 'package:privacy_gui/page/_shared/components/wifi_ui.dart';
@@ -111,6 +112,7 @@ class UspDeviceFilterPanel extends ConsumerWidget {
       return SizedBox(
         width: context.colWidth(3),
         child: AppCard(
+          padding: const EdgeInsets.all(AppSpacing.md),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
@@ -120,10 +122,13 @@ class UspDeviceFilterPanel extends ConsumerWidget {
                 onClear: () =>
                     ref.read(deviceFilterConfigProvider.notifier).clearAll(),
               ),
-              AppGap.lg(),
-              _InfoNote(
-                text: 'Additional filters are only available for '
-                    'online devices.',
+              AppGap.md(),
+              Block(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                child: _InfoNote(
+                  text: 'Additional filters are only available for '
+                      'online devices.',
+                ),
               ),
             ],
           ),
@@ -134,6 +139,7 @@ class UspDeviceFilterPanel extends ConsumerWidget {
     return SizedBox(
       width: context.colWidth(3),
       child: AppCard(
+        padding: const EdgeInsets.all(AppSpacing.md),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
@@ -143,89 +149,114 @@ class UspDeviceFilterPanel extends ConsumerWidget {
               onClear: () =>
                   ref.read(deviceFilterConfigProvider.notifier).clearAll(),
             ),
-            AppGap.lg(),
+            AppGap.md(),
 
             // ── CONNECTION ────────────────────────────────────────────────
-            _SectionHeader(title: 'Connection'),
-            AppGap.sm(),
-            _DropdownRow<DeviceConnectionFilter>(
-              label: 'Type',
-              value: filter.connection,
-              items: DeviceConnectionFilter.values,
-              labelOf: _connectionLabel,
-              onChanged: (v) => ref
-                  .read(deviceFilterConfigProvider.notifier)
-                  .setConnection(v ?? DeviceConnectionFilter.all),
+            Block(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _SectionHeader(title: 'Connection'),
+                  AppGap.sm(),
+                  _DropdownRow<DeviceConnectionFilter>(
+                    label: 'Type',
+                    value: filter.connection,
+                    items: DeviceConnectionFilter.values,
+                    labelOf: _connectionLabel,
+                    onChanged: (v) => ref
+                        .read(deviceFilterConfigProvider.notifier)
+                        .setConnection(v ?? DeviceConnectionFilter.all),
+                  ),
+                  AppGap.sm(),
+                  _DropdownRow<DeviceSignalFilter>(
+                    label: 'Signal',
+                    value: filter.signal,
+                    items: _signalOptions(options),
+                    labelOf: (v) => _signalLabel(context, v),
+                    disabled: isEthernet,
+                    disabledTooltip: _kNotApplicableEthernet,
+                    onChanged: (v) => ref
+                        .read(deviceFilterConfigProvider.notifier)
+                        .setSignal(v ?? DeviceSignalFilter.all),
+                  ),
+                ],
+              ),
             ),
-            AppGap.sm(),
-            _DropdownRow<DeviceSignalFilter>(
-              label: 'Signal',
-              value: filter.signal,
-              items: _signalOptions(options),
-              labelOf: (v) => _signalLabel(context, v),
-              disabled: isEthernet,
-              disabledTooltip: _kNotApplicableEthernet,
-              onChanged: (v) => ref
-                  .read(deviceFilterConfigProvider.notifier)
-                  .setSignal(v ?? DeviceSignalFilter.all),
-            ),
-            AppGap.lg(),
 
             // ── WI-FI ─────────────────────────────────────────────────────
             // Hide the whole WiFi section when there is no data to offer;
             // grey it out when the user has scoped to Ethernet.
             if (options.ssids.isNotEmpty || options.bands.isNotEmpty) ...[
-              _SectionHeader(title: 'Wi-Fi'),
               AppGap.sm(),
-              if (options.ssids.isNotEmpty)
-                _DropdownRow<String>(
-                  label: 'SSID',
-                  value: filter.ssidName ?? _kAllSentinel,
-                  items: [_kAllSentinel, ...options.ssids],
-                  labelOf: (v) => v == _kAllSentinel ? _kAllLabel : v,
-                  disabled: isEthernet,
-                  disabledTooltip: _kNotApplicableEthernet,
-                  onChanged: (v) => ref
-                      .read(deviceFilterConfigProvider.notifier)
-                      .setSsidName(v == _kAllSentinel ? null : v),
+              Block(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _SectionHeader(title: 'Wi-Fi'),
+                    AppGap.sm(),
+                    if (options.ssids.isNotEmpty)
+                      _DropdownRow<String>(
+                        label: 'SSID',
+                        value: filter.ssidName ?? _kAllSentinel,
+                        items: [_kAllSentinel, ...options.ssids],
+                        labelOf: (v) => v == _kAllSentinel ? _kAllLabel : v,
+                        disabled: isEthernet,
+                        disabledTooltip: _kNotApplicableEthernet,
+                        onChanged: (v) => ref
+                            .read(deviceFilterConfigProvider.notifier)
+                            .setSsidName(v == _kAllSentinel ? null : v),
+                      ),
+                    if (options.ssids.isNotEmpty && options.bands.isNotEmpty)
+                      AppGap.sm(),
+                    if (options.bands.isNotEmpty)
+                      _DropdownRow<String>(
+                        label: 'Band',
+                        value: filter.band ?? _kAllSentinel,
+                        items: [_kAllSentinel, ...options.bands],
+                        labelOf: (v) => v == _kAllSentinel ? _kAllLabel : v,
+                        disabled: isEthernet,
+                        disabledTooltip: _kNotApplicableEthernet,
+                        onChanged: (v) => ref
+                            .read(deviceFilterConfigProvider.notifier)
+                            .setBand(v == _kAllSentinel ? null : v),
+                      ),
+                  ],
                 ),
-              if (options.ssids.isNotEmpty && options.bands.isNotEmpty)
-                AppGap.sm(),
-              if (options.bands.isNotEmpty)
-                _DropdownRow<String>(
-                  label: 'Band',
-                  value: filter.band ?? _kAllSentinel,
-                  items: [_kAllSentinel, ...options.bands],
-                  labelOf: (v) => v == _kAllSentinel ? _kAllLabel : v,
-                  disabled: isEthernet,
-                  disabledTooltip: _kNotApplicableEthernet,
-                  onChanged: (v) => ref
-                      .read(deviceFilterConfigProvider.notifier)
-                      .setBand(v == _kAllSentinel ? null : v),
-                ),
-              AppGap.lg(),
+              ),
             ],
 
             // ── LOCATION ──────────────────────────────────────────────────
             if (hasMultipleNodes) ...[
-              _SectionHeader(title: 'Location'),
               AppGap.sm(),
-              _DropdownRow<String>(
-                label: 'Connected via',
-                value: filter.nodeId ?? _kAllSentinel,
-                items: [
-                  _kAllSentinel,
-                  ...options.nodes.map((n) => n.deviceId),
-                ],
-                labelOf: (id) {
-                  if (id == _kAllSentinel) return _kAllLabel;
-                  final node =
-                      options.nodes.where((n) => n.deviceId == id).firstOrNull;
-                  return node?.model ?? id;
-                },
-                onChanged: (v) => ref
-                    .read(deviceFilterConfigProvider.notifier)
-                    .setNodeId(v == _kAllSentinel ? null : v),
+              Block(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _SectionHeader(title: 'Location'),
+                    AppGap.sm(),
+                    _DropdownRow<String>(
+                      label: 'Connected via',
+                      value: filter.nodeId ?? _kAllSentinel,
+                      items: [
+                        _kAllSentinel,
+                        ...options.nodes.map((n) => n.deviceId),
+                      ],
+                      labelOf: (id) {
+                        if (id == _kAllSentinel) return _kAllLabel;
+                        final node = options.nodes
+                            .where((n) => n.deviceId == id)
+                            .firstOrNull;
+                        return node?.model ?? id;
+                      },
+                      onChanged: (v) => ref
+                          .read(deviceFilterConfigProvider.notifier)
+                          .setNodeId(v == _kAllSentinel ? null : v),
+                    ),
+                  ],
+                ),
               ),
             ],
           ],

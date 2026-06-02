@@ -7,7 +7,9 @@ import 'package:privacy_gui/core/utils/icon_rules.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/_shared/components/detail_widgets.dart';
+import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/devices/views/components/usp_device_list_tile.dart';
+import 'package:privacy_gui/page/internet_settings/providers/wan_data_provider.dart';
 import 'package:privacy_gui/page/shell/usp_top_bar.dart';
 import 'package:privacy_gui/page/topology/models/node_ui_model.dart';
 import 'package:privacy_gui/page/topology/providers/node_detail_provider.dart';
@@ -55,9 +57,9 @@ class UspNodeDetailView extends ConsumerWidget {
 
         final node = detail.node!;
         return AppResponsiveLayout(
-          mobile: (_) => _buildMobileLayout(context, node, detail),
-          tablet: (_) => _buildMobileLayout(context, node, detail),
-          desktop: (_) => _buildDesktopLayout(context, node, detail),
+          mobile: (_) => _buildMobileLayout(context, ref, node, detail),
+          tablet: (_) => _buildMobileLayout(context, ref, node, detail),
+          desktop: (_) => _buildDesktopLayout(context, ref, node, detail),
         );
       },
     );
@@ -67,11 +69,13 @@ class UspNodeDetailView extends ConsumerWidget {
   // Layouts
   // ===========================================================================
 
-  Widget _buildMobileLayout(
-      BuildContext context, NodeUIModel node, UspNodeDetailState detail) {
+  Widget _buildMobileLayout(BuildContext context, WidgetRef ref,
+      NodeUIModel node, UspNodeDetailState detail) {
     return Column(
       children: [
         _buildNodeInfoCard(context, node),
+        AppGap.lg(),
+        _buildNetworkCard(context, ref, node),
         if (!node.isMaster && node.hasBackhaul) ...[
           AppGap.lg(),
           _buildBackhaulCard(context, node, detail.parentNode),
@@ -82,8 +86,8 @@ class UspNodeDetailView extends ConsumerWidget {
     );
   }
 
-  Widget _buildDesktopLayout(
-      BuildContext context, NodeUIModel node, UspNodeDetailState detail) {
+  Widget _buildDesktopLayout(BuildContext context, WidgetRef ref,
+      NodeUIModel node, UspNodeDetailState detail) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -92,6 +96,8 @@ class UspNodeDetailView extends ConsumerWidget {
           child: Column(
             children: [
               _buildNodeInfoCard(context, node),
+              AppGap.lg(),
+              _buildNetworkCard(context, ref, node),
               if (!node.isMaster && node.hasBackhaul) ...[
                 AppGap.lg(),
                 _buildBackhaulCard(context, node, detail.parentNode),
@@ -114,88 +120,140 @@ class UspNodeDetailView extends ConsumerWidget {
 
   Widget _buildNodeInfoCard(BuildContext context, NodeUIModel node) {
     final colorScheme = Theme.of(context).colorScheme;
-
     return AppCard(
+      padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header with image, name, and role badge
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(AppSpacing.sm),
-                decoration: BoxDecoration(
-                  color: colorScheme.primaryContainer,
-                  borderRadius: BorderRadius.circular(AppSpacing.sm),
-                ),
-                child: Image(
-                  image: DeviceImageHelper.getRouterImage(
-                    routerIconTestByModel(modelNumber: node.model),
+          // Header — image, name, role badge
+          Padding(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(AppSpacing.sm),
+                  decoration: BoxDecoration(
+                    color: colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(AppSpacing.sm),
                   ),
-                  width: 48,
-                  height: 48,
-                ),
-              ),
-              AppGap.md(),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    AppText.titleLarge(node.displayName),
-                    AppGap.xs(),
-                    DetailStatusBadge(
-                      isActive: true,
-                      activeLabel: node.roleLabel,
+                  child: AppImage.provider(
+                    imageProvider: DeviceImageHelper.getRouterImage(
+                      routerIconTestByModel(modelNumber: node.model),
                     ),
-                  ],
+                    width: 48,
+                    height: 48,
+                  ),
                 ),
-              ),
+                AppGap.md(),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      AppText.titleLarge(node.displayName),
+                      AppGap.xs(),
+                      DetailStatusBadge(
+                        isActive: true,
+                        activeLabel: node.roleLabel,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Hardware Info Block
+          DetailInfoBlock(
+            children: [
+              if (node.deviceId.toUpperCase() != 'GATEWAY')
+                DetailCopyableTile(
+                  icon: Icons.memory,
+                  label: 'MAC Address',
+                  value: node.deviceId,
+                ),
+              if (node.model.isNotEmpty)
+                DetailInfoTile(
+                  icon: Icons.router,
+                  label: 'Model',
+                  value: node.model,
+                ),
+              if (node.manufacturer.isNotEmpty)
+                DetailInfoTile(
+                  icon: Icons.business,
+                  label: 'Manufacturer',
+                  value: node.manufacturer,
+                ),
+              if (node.serialNumber.isNotEmpty)
+                DetailCopyableTile(
+                  icon: Icons.tag,
+                  label: 'Serial Number',
+                  value: node.serialNumber,
+                ),
+              if (node.softwareVersion.isNotEmpty)
+                DetailInfoTile(
+                  icon: Icons.system_update,
+                  label: 'Firmware',
+                  value: node.softwareVersion,
+                ),
             ],
           ),
-          AppGap.xl(),
-          // MAC Address (only if real MAC, not synthetic 'gateway')
-          if (node.deviceId.toUpperCase() != 'GATEWAY') ...[
-            DetailCopyableTile(
-              icon: Icons.memory,
-              label: 'MAC Address',
-              value: node.deviceId,
-            ),
-            AppGap.md(),
-          ],
-          // Model
-          if (node.model.isNotEmpty)
-            DetailInfoTile(
-              icon: Icons.router,
-              label: 'Model',
-              value: node.model,
-            ),
-          // Manufacturer
-          if (node.manufacturer.isNotEmpty) ...[
-            AppGap.md(),
-            DetailInfoTile(
-              icon: Icons.business,
-              label: 'Manufacturer',
-              value: node.manufacturer,
-            ),
-          ],
-          // Serial Number
-          if (node.serialNumber.isNotEmpty) ...[
-            AppGap.md(),
-            DetailCopyableTile(
-              icon: Icons.tag,
-              label: 'Serial Number',
-              value: node.serialNumber,
-            ),
-          ],
-          // Firmware
-          if (node.softwareVersion.isNotEmpty) ...[
-            AppGap.md(),
-            DetailInfoTile(
-              icon: Icons.system_update,
-              label: 'Firmware',
-              value: node.softwareVersion,
-            ),
-          ],
+        ],
+      ),
+    );
+  }
+
+  // ===========================================================================
+  // Network Card
+  // ===========================================================================
+
+  Widget _buildNetworkCard(
+      BuildContext context, WidgetRef ref, NodeUIModel node) {
+    final wanData =
+        node.isMaster ? ref.watch(wanDataProvider).valueOrNull?.model : null;
+    final wanIp = wanData?.ipAddress;
+    final wanIpv6Addresses = wanData?.ipv6Addresses ?? [];
+
+    return AppCard(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          DetailCardHeader(
+            icon: Icons.lan,
+            title: 'Network',
+          ),
+          AppGap.md(),
+          DetailInfoBlock(
+            children: [
+              // LAN IPv4
+              if (node.ipAddress != null && node.ipAddress!.isNotEmpty)
+                DetailCopyableTile(
+                  icon: Icons.language,
+                  label: 'LAN IP',
+                  value: node.ipAddress!,
+                ),
+              // LAN IPv6 (from Hosts)
+              for (final ipv6 in node.ipv6Addresses)
+                DetailCopyableTile(
+                  icon: Icons.language,
+                  label: 'LAN IPv6',
+                  value: ipv6,
+                ),
+              // WAN IPv4 (master only)
+              if (wanIp != null && wanIp.isNotEmpty)
+                DetailCopyableTile(
+                  icon: Icons.public,
+                  label: 'WAN IP',
+                  value: wanIp,
+                ),
+              // WAN IPv6 (master only)
+              for (final ipv6 in wanIpv6Addresses)
+                DetailCopyableTile(
+                  icon: Icons.public,
+                  label: 'WAN IPv6',
+                  value: ipv6,
+                ),
+            ],
+          ),
         ],
       ),
     );
@@ -211,6 +269,7 @@ class UspNodeDetailView extends ConsumerWidget {
     final isWifiBackhaul = !node.isEthernetBackhaul;
 
     return AppCard(
+      padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -218,31 +277,99 @@ class UspNodeDetailView extends ConsumerWidget {
             icon: Icons.sync_alt,
             title: 'Backhaul Connection',
           ),
-          AppGap.xl(),
-
-          // Connected To (parent node with navigation) - prominent position
+          AppGap.md(),
+          // Connected To Block
           if (parentNode != null) ...[
-            DetailNavigableTile(
-              icon: Icons.link,
-              label: 'Connected To',
-              value: '${parentNode.roleLabel} (${parentNode.model})',
-              trailing: Icon(Icons.chevron_right,
-                  size: 20, color: colorScheme.onSurfaceVariant),
+            Block(
               onTap: () => context.pushNamed(
                 RouteNamed.uspNodeDetail,
                 queryParameters: {'deviceId': parentNode.deviceId},
               ),
+              padding: const EdgeInsets.all(AppSpacing.md),
+              child: Row(
+                children: [
+                  Icon(Icons.link,
+                      size: 16, color: colorScheme.onSurfaceVariant),
+                  AppGap.sm(),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        AppText.labelSmall('Connected To',
+                            color: colorScheme.onSurfaceVariant),
+                        AppText.bodyMedium(
+                            '${parentNode.roleLabel} (${parentNode.model})'),
+                      ],
+                    ),
+                  ),
+                  Icon(Icons.chevron_right,
+                      size: 20, color: colorScheme.onSurfaceVariant),
+                ],
+              ),
             ),
-            AppGap.lg(),
+            AppGap.sm(),
           ],
-
-          // Signal Strength with visual bar (Wi-Fi only) - like Device Detail
-          if (node.backhaulSignalStrength != null && isWifiBackhaul) ...[
-            BackhaulSignalIndicator(rssi: node.backhaulSignalStrength!),
-            AppGap.lg(),
+          // Interface + Signal row (Wi-Fi backhaul)
+          if (isWifiBackhaul) ...[
+            Row(
+              children: [
+                Expanded(
+                  child: Block(
+                    padding: const EdgeInsets.all(AppSpacing.md),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.wifi,
+                                size: 16, color: colorScheme.onSurfaceVariant),
+                            AppGap.xs(),
+                            AppText.labelSmall('Interface',
+                                color: colorScheme.onSurfaceVariant),
+                          ],
+                        ),
+                        AppGap.xs(),
+                        AppText.bodyMedium(
+                            node.backhaulLinkType ?? node.backhaulMediaType),
+                      ],
+                    ),
+                  ),
+                ),
+                if (node.backhaulSignalStrength != null) ...[
+                  AppGap.sm(),
+                  Expanded(
+                    child: BackhaulSignalIndicator(
+                        rssi: node.backhaulSignalStrength!),
+                  ),
+                ],
+              ],
+            ),
+            AppGap.sm(),
+          ] else ...[
+            // Ethernet backhaul — just interface block
+            Block(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.settings_ethernet,
+                          size: 16, color: colorScheme.onSurfaceVariant),
+                      AppGap.xs(),
+                      AppText.labelSmall('Interface',
+                          color: colorScheme.onSurfaceVariant),
+                    ],
+                  ),
+                  AppGap.xs(),
+                  AppText.bodyMedium(
+                      node.backhaulLinkType ?? node.backhaulMediaType),
+                ],
+              ),
+            ),
+            AppGap.sm(),
           ],
-
-          // Throughput (Up/Down)
+          // Throughput Block
           if (node.backhaulUplinkRate != null ||
               node.backhaulDownlinkRate != null) ...[
             Row(
@@ -258,7 +385,7 @@ class UspNodeDetailView extends ConsumerWidget {
                   ),
                 if (node.backhaulUplinkRate != null &&
                     node.backhaulDownlinkRate != null)
-                  AppGap.md(),
+                  AppGap.sm(),
                 if (node.backhaulDownlinkRate != null)
                   Expanded(
                     child: DetailSpeedCard(
@@ -270,37 +397,64 @@ class UspNodeDetailView extends ConsumerWidget {
                   ),
               ],
             ),
-            AppGap.lg(),
+            AppGap.sm(),
           ],
-
-          // Bottom info row - compact labels like Device Detail
-          Wrap(
-            spacing: AppSpacing.md,
-            runSpacing: AppSpacing.sm,
-            children: [
-              // Connection Type
-              DetailCompactInfoTile(
-                icon: isWifiBackhaul ? Icons.wifi : Icons.settings_ethernet,
-                label: 'Interface',
-                value: node.backhaulLinkType ?? node.backhaulMediaType,
-              ),
-              // PHY Rate (Mbps → kbps for unified formatting)
-              if (node.backhaulPhyRate > 0)
-                DetailCompactInfoTile(
-                  icon: Icons.speed,
-                  label: 'PHY Rate',
-                  value: NetworkUtils.formatSpeed(node.backhaulPhyRate * 1000),
-                ),
-              // Last Contact
-              if (node.lastContactTime != null)
-                DetailCompactInfoTile(
-                  icon: Icons.access_time,
-                  label: 'Last Contact',
-                  value:
-                      DateFormatUtils.formatRelativeTime(node.lastContactTime),
-                ),
-            ],
-          ),
+          // PHY Rate + Last Contact row
+          if (node.backhaulPhyRate > 0 || node.lastContactTime != null)
+            Row(
+              children: [
+                if (node.backhaulPhyRate > 0)
+                  Expanded(
+                    child: Block(
+                      padding: const EdgeInsets.all(AppSpacing.md),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(Icons.speed,
+                                  size: 16,
+                                  color: colorScheme.onSurfaceVariant),
+                              AppGap.xs(),
+                              AppText.labelSmall('PHY Rate',
+                                  color: colorScheme.onSurfaceVariant),
+                            ],
+                          ),
+                          AppGap.xs(),
+                          AppText.bodyMedium(NetworkUtils.formatSpeed(
+                              node.backhaulPhyRate * 1000)),
+                        ],
+                      ),
+                    ),
+                  ),
+                if (node.backhaulPhyRate > 0 && node.lastContactTime != null)
+                  AppGap.sm(),
+                if (node.lastContactTime != null)
+                  Expanded(
+                    child: Block(
+                      padding: const EdgeInsets.all(AppSpacing.md),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(Icons.access_time,
+                                  size: 16,
+                                  color: colorScheme.onSurfaceVariant),
+                              AppGap.xs(),
+                              AppText.labelSmall('Last Contact',
+                                  color: colorScheme.onSurfaceVariant),
+                            ],
+                          ),
+                          AppGap.xs(),
+                          AppText.bodyMedium(DateFormatUtils.formatRelativeTime(
+                              node.lastContactTime)),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
+            ),
         ],
       ),
     );
@@ -316,6 +470,7 @@ class UspNodeDetailView extends ConsumerWidget {
     final activeCount = detail.activeDeviceCount;
 
     return AppCard(
+      padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -327,29 +482,33 @@ class UspNodeDetailView extends ConsumerWidget {
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
-          AppGap.xl(),
+          AppGap.md(),
           if (devices.isEmpty)
-            Center(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
-                child: AppText.bodyMedium(
-                  'No devices connected to this node',
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ),
+            const DetailEmptyBlock(
+              message: 'No devices connected to this node',
             )
           else
-            for (var i = 0; i < devices.length; i++)
-              UspDeviceListTile(
-                device: devices[i],
-                variant: i == devices.length - 1
-                    ? DeviceListTileVariant.flatLast
-                    : DeviceListTileVariant.flat,
-                onTap: () => context.goNamed(
-                  RouteNamed.uspDeviceDetail,
-                  queryParameters: {'mac': devices[i].mac},
-                ),
-              ),
+            Column(
+              children: [
+                for (var i = 0; i < devices.length; i++) ...[
+                  Block(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.md,
+                      vertical: AppSpacing.sm,
+                    ),
+                    child: UspDeviceListTile(
+                      device: devices[i],
+                      variant: DeviceListTileVariant.flatLast,
+                      onTap: () => context.goNamed(
+                        RouteNamed.uspDeviceDetail,
+                        queryParameters: {'mac': devices[i].mac},
+                      ),
+                    ),
+                  ),
+                  if (i < devices.length - 1) AppGap.sm(),
+                ],
+              ],
+            ),
         ],
       ),
     );

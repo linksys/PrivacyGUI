@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
+import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/local_network/models/local_network_feature_state.dart';
 import 'package:privacy_gui/page/local_network/providers/usp_local_network_notifier.dart';
@@ -188,36 +189,44 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
     final errors = state.status.validationErrors;
 
     return AppCard(
+      padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           AppText.titleSmall('Router'),
-          AppGap.lg(),
-          AppTextFormField(
-            controller: _hostNameController,
-            label: 'Hostname',
-            onChanged: (v) =>
-                notifier.updateSetting((m) => m.copyWith(hostName: v)),
-            externalErrorText: errors['hostName'],
-            enabled: !disabled,
-          ),
           AppGap.md(),
-          AppIpv4TextField(
-            controller: _ipAddressController,
-            label: 'IP Address',
-            onChanged: (v) =>
-                notifier.updateSetting((m) => m.copyWith(ipAddress: v)),
-            errorText: errors['ipAddress'],
-            enabled: !disabled,
-          ),
-          AppGap.md(),
-          AppIpv4TextField(
-            controller: _subnetMaskController,
-            label: 'Subnet Mask',
-            onChanged: (v) =>
-                notifier.updateSetting((m) => m.copyWith(subnetMask: v)),
-            errorText: errors['subnetMask'],
-            enabled: !disabled,
+          Block(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: Column(
+              children: [
+                AppTextFormField(
+                  controller: _hostNameController,
+                  label: 'Hostname',
+                  onChanged: (v) =>
+                      notifier.updateSetting((m) => m.copyWith(hostName: v)),
+                  externalErrorText: errors['hostName'],
+                  enabled: !disabled,
+                ),
+                AppGap.md(),
+                AppIpv4TextField(
+                  controller: _ipAddressController,
+                  label: 'IP Address',
+                  onChanged: (v) =>
+                      notifier.updateSetting((m) => m.copyWith(ipAddress: v)),
+                  errorText: errors['ipAddress'],
+                  enabled: !disabled,
+                ),
+                AppGap.md(),
+                AppIpv4TextField(
+                  controller: _subnetMaskController,
+                  label: 'Subnet Mask',
+                  onChanged: (v) =>
+                      notifier.updateSetting((m) => m.copyWith(subnetMask: v)),
+                  errorText: errors['subnetMask'],
+                  enabled: !disabled,
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -241,92 +250,123 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
         SegmentReadOnly.lockPrefix(state.status.lockedOctetCount);
 
     return AppCard(
+      padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Header with toggle
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              AppText.titleSmall('DHCP Server'),
-              AppSwitch(
-                value: pending.dhcpEnabled,
-                onChanged: disabled
-                    ? null
-                    : (v) => notifier
-                        .updateSetting((m) => m.copyWith(dhcpEnabled: v)),
-              ),
-            ],
+          Block(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                AppText.titleSmall('DHCP Server'),
+                AppSwitch(
+                  value: pending.dhcpEnabled,
+                  onChanged: disabled
+                      ? null
+                      : (v) => notifier
+                          .updateSetting((m) => m.copyWith(dhcpEnabled: v)),
+                ),
+              ],
+            ),
           ),
           // DHCP fields — only shown when enabled
           if (pending.dhcpEnabled) ...[
-            AppGap.lg(),
-            AppIpv4TextField(
-              controller: _minAddressController,
-              label: 'Pool Start',
-              onChanged: (v) =>
-                  notifier.updateSetting((m) => m.copyWith(minAddress: v)),
-              errorText: errors['minAddress'],
-              readOnly: poolReadOnly,
-              enabled: !disabled,
-            ),
-            AppGap.md(),
-            AppIpv4TextField(
-              controller: _maxAddressController,
-              label: 'Pool End',
-              onChanged: (v) =>
-                  notifier.updateSetting((m) => m.copyWith(maxAddress: v)),
-              errorText: errors['maxAddress'],
-              readOnly: poolReadOnly,
-              enabled: !disabled,
-            ),
-            AppGap.md(),
-            AppTextFormField(
-              controller: _leaseTimeController,
-              label: 'Lease Time (minutes)',
-              keyboardType: TextInputType.number,
-              onChanged: (v) {
-                final minutes = int.tryParse(v) ?? 0;
-                notifier.updateSetting(
-                    (m) => m.copyWith(leaseTimeMinutes: minutes));
-              },
-              externalErrorText: errors['leaseTime'],
-              enabled: !disabled,
-            ),
-            AppGap.lg(),
-            AppText.labelMedium('DNS Servers'),
             AppGap.sm(),
-            AppIpv4TextField(
-              controller: _dns1Controller,
-              label: 'DNS Server 1',
-              onChanged: (v) =>
-                  notifier.updateSetting((m) => m.copyWith(dnsServer1: v)),
-              errorText: errors['dnsServer1'],
-              enabled: !disabled,
+            // Pool Settings Block
+            Block(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  AppText.labelMedium('Address Pool'),
+                  AppGap.md(),
+                  AppIpv4TextField(
+                    controller: _minAddressController,
+                    label: 'Pool Start',
+                    onChanged: (v) => notifier
+                        .updateSetting((m) => m.copyWith(minAddress: v)),
+                    errorText: errors['minAddress'],
+                    readOnly: poolReadOnly,
+                    enabled: !disabled,
+                  ),
+                  AppGap.md(),
+                  AppIpv4TextField(
+                    controller: _maxAddressController,
+                    label: 'Pool End',
+                    onChanged: (v) => notifier
+                        .updateSetting((m) => m.copyWith(maxAddress: v)),
+                    errorText: errors['maxAddress'],
+                    readOnly: poolReadOnly,
+                    enabled: !disabled,
+                  ),
+                  AppGap.md(),
+                  AppTextFormField(
+                    controller: _leaseTimeController,
+                    label: 'Lease Time (minutes)',
+                    keyboardType: TextInputType.number,
+                    onChanged: (v) {
+                      final minutes = int.tryParse(v) ?? 0;
+                      notifier.updateSetting(
+                          (m) => m.copyWith(leaseTimeMinutes: minutes));
+                    },
+                    externalErrorText: errors['leaseTime'],
+                    enabled: !disabled,
+                  ),
+                ],
+              ),
             ),
-            AppGap.md(),
-            AppIpv4TextField(
-              controller: _dns2Controller,
-              label: 'DNS Server 2',
-              onChanged: (v) =>
-                  notifier.updateSetting((m) => m.copyWith(dnsServer2: v)),
-              errorText: errors['dnsServer2'],
-              enabled: !disabled,
+            AppGap.sm(),
+            // DNS Servers Block
+            Block(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  AppText.labelMedium('DNS Servers'),
+                  AppGap.md(),
+                  AppIpv4TextField(
+                    controller: _dns1Controller,
+                    label: 'DNS Server 1',
+                    onChanged: (v) => notifier
+                        .updateSetting((m) => m.copyWith(dnsServer1: v)),
+                    errorText: errors['dnsServer1'],
+                    enabled: !disabled,
+                  ),
+                  AppGap.md(),
+                  AppIpv4TextField(
+                    controller: _dns2Controller,
+                    label: 'DNS Server 2',
+                    onChanged: (v) => notifier
+                        .updateSetting((m) => m.copyWith(dnsServer2: v)),
+                    errorText: errors['dnsServer2'],
+                    enabled: !disabled,
+                  ),
+                  AppGap.md(),
+                  AppIpv4TextField(
+                    controller: _dns3Controller,
+                    label: 'DNS Server 3',
+                    onChanged: (v) => notifier
+                        .updateSetting((m) => m.copyWith(dnsServer3: v)),
+                    errorText: errors['dnsServer3'],
+                    enabled: !disabled,
+                  ),
+                ],
+              ),
             ),
-            AppGap.md(),
-            AppIpv4TextField(
-              controller: _dns3Controller,
-              label: 'DNS Server 3',
-              onChanged: (v) =>
-                  notifier.updateSetting((m) => m.copyWith(dnsServer3: v)),
-              errorText: errors['dnsServer3'],
-              enabled: !disabled,
-            ),
-            AppGap.lg(),
-            AppButton.text(
-              label: 'View DHCP Reservations',
-              icon: AppIcon.font(Icons.arrow_forward, size: 16),
+            AppGap.sm(),
+            // Reservations Link Block
+            Block(
               onTap: () => context.goNamed(RouteNamed.uspDhcpDetail),
+              padding: const EdgeInsets.all(AppSpacing.md),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  AppText.bodyMedium('View DHCP Reservations'),
+                  AppIcon.font(Icons.chevron_right, size: 20),
+                ],
+              ),
             ),
           ],
         ],

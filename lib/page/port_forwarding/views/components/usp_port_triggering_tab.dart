@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/page/_shared/components/detail_widgets.dart';
+import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/port_forwarding/models/port_triggering_rule_ui_model.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/port_forwarding/providers/usp_port_forwarding_page_notifier.dart';
@@ -35,7 +37,10 @@ class UspPortTriggeringTab extends ConsumerWidget {
         ),
         AppGap.lg(),
         if (rules.isEmpty)
-          AppText.bodyMedium('No port triggering rules configured')
+          const DetailEmptyBlock(
+            icon: Icons.swap_horiz,
+            message: 'No port triggering rules configured',
+          )
         else
           ...rules.map((r) => _buildRuleRow(context, ref, r)),
       ],
@@ -46,7 +51,8 @@ class UspPortTriggeringTab extends ConsumerWidget {
       BuildContext context, WidgetRef ref, PortTriggeringRuleUIModel rule) {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-      child: AppCard(
+      child: Block(
+        padding: const EdgeInsets.all(AppSpacing.md),
         child: Row(
           children: [
             AppSwitch(
@@ -58,7 +64,7 @@ class UspPortTriggeringTab extends ConsumerWidget {
                       .read(uspPortForwardingPageProvider.notifier)
                       .toggleTriggeringRule(rule, value),
             ),
-            AppGap.sm(),
+            AppGap.md(),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/page/_shared/components/detail_widgets.dart';
+import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/_shared/models/port_forwarding_rule_ui_model.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
@@ -36,7 +38,10 @@ class UspSinglePortTab extends ConsumerWidget {
         ),
         AppGap.lg(),
         if (rules.isEmpty)
-          AppText.bodyMedium('No single port forwarding rules configured')
+          const DetailEmptyBlock(
+            icon: Icons.open_in_browser,
+            message: 'No single port forwarding rules configured',
+          )
         else
           ...rules.map((r) => _buildRuleRow(context, ref, r)),
       ],
@@ -47,7 +52,8 @@ class UspSinglePortTab extends ConsumerWidget {
       BuildContext context, WidgetRef ref, PortForwardingRuleUIModel rule) {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-      child: AppCard(
+      child: Block(
+        padding: const EdgeInsets.all(AppSpacing.md),
         child: Row(
           children: [
             AppSwitch(
@@ -59,7 +65,7 @@ class UspSinglePortTab extends ConsumerWidget {
                       .read(uspPortForwardingPageProvider.notifier)
                       .toggleForwardingRule(rule, value),
             ),
-            AppGap.sm(),
+            AppGap.md(),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

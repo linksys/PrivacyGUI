@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 class FlowCard extends StatelessWidget {
@@ -26,8 +27,9 @@ class FlowCard extends StatelessWidget {
     return Semantics(
       button: true,
       label: title,
-      child: AppCard(
+      child: Block(
         onTap: onTap,
+        padding: const EdgeInsets.all(AppSpacing.md),
         child: Row(
           children: [
             Container(

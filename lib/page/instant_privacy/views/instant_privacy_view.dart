@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/page/_shared/components/detail_widgets.dart';
+import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/instant_privacy/models/instant_privacy_device_ui_model.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_notifier.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_state.dart';
 import 'package:privacy_gui/page/instant_privacy/services/instant_privacy_service.dart';
-import 'package:privacy_gui/page/instant_privacy/views/components/instant_privacy_device_tile.dart';
 import 'package:privacy_gui/page/shell/usp_top_bar.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -72,9 +73,9 @@ class InstantPrivacyView extends ConsumerWidget {
           'Lock your network to only currently connected devices. '
           'Any new device will be blocked until you disable Instant Privacy.',
         ),
-        AppGap.xl(),
-        _buildToggleCard(context, ref, state),
         AppGap.lg(),
+        _buildToggleCard(context, ref, state),
+        AppGap.md(),
         if (state.isEnabled)
           _buildAllowedDevicesList(context, ref, state)
         else
@@ -89,32 +90,37 @@ class InstantPrivacyView extends ConsumerWidget {
     UspInstantPrivacyState state,
   ) {
     return AppCard(
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                AppText.labelLarge('Instant Privacy'),
-                AppGap.xs(),
-                AppText.bodySmall(
-                  state.isEnabled
-                      ? 'Only allowed devices can connect'
-                      : 'All devices can connect freely',
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ],
+      padding: const EdgeInsets.all(AppSpacing.md),
+      child: Block(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  AppText.labelLarge('Instant Privacy'),
+                  AppGap.xs(),
+                  AppText.bodySmall(
+                    state.isEnabled
+                        ? 'Only allowed devices can connect'
+                        : 'All devices can connect freely',
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ],
+              ),
             ),
-          ),
-          AppSwitch(
-            value: state.isEnabled,
-            onChanged: state.isToggleDisabled
-                ? null
-                : (value) =>
-                    value ? _onEnable(context, ref) : _onDisable(context, ref),
-          ),
-        ],
+            AppSwitch(
+              value: state.isEnabled,
+              onChanged: state.isToggleDisabled
+                  ? null
+                  : (value) => value
+                      ? _onEnable(context, ref)
+                      : _onDisable(context, ref),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -142,7 +148,7 @@ class InstantPrivacyView extends ConsumerWidget {
         ),
         AppGap.md(),
         for (final device in state.connectedDevices) ...[
-          InstantPrivacyDeviceTile(device: device),
+          _buildDeviceBlock(context, device),
           AppGap.sm(),
         ],
       ],
@@ -150,26 +156,10 @@ class InstantPrivacyView extends ConsumerWidget {
   }
 
   Widget _buildEmptyDevicesMessage(BuildContext context) {
-    return AppCard(
-      child: Column(
-        children: [
-          AppIcon.font(
-            Icons.devices_other,
-            size: 40,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
-          AppGap.md(),
-          AppText.bodyMedium(
-            'No devices are currently connected.',
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
-          AppGap.xs(),
-          AppText.bodySmall(
-            'Instant Privacy cannot be enabled until at least one device is connected.',
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
-        ],
-      ),
+    return const DetailEmptyBlock(
+      message: 'No devices are currently connected.',
+      subtitle:
+          'Instant Privacy cannot be enabled until at least one device is connected.',
     );
   }
 
@@ -206,10 +196,39 @@ class InstantPrivacyView extends ConsumerWidget {
           )
         else
           for (final device in state.allowedDevices) ...[
-            InstantPrivacyDeviceTile(device: device),
+            _buildDeviceBlock(context, device),
             AppGap.sm(),
           ],
       ],
+    );
+  }
+
+  Widget _buildDeviceBlock(
+      BuildContext context, InstantPrivacyDeviceUIModel device) {
+    return Block(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      child: Row(
+        children: [
+          AppIcon.font(
+            Icons.devices,
+            size: 20,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+          AppGap.sm(),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AppText.bodyMedium(device.displayName),
+                AppText.bodySmall(
+                  device.mac,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 

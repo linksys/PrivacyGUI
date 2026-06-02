@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
+import 'package:privacy_gui/page/_shared/components/detail_widgets.dart';
+import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/ipv6_port_service/models/ipv6_port_service_feature_state.dart';
 import 'package:privacy_gui/page/ipv6_port_service/models/ipv6_port_service_ui_model.dart';
@@ -122,7 +124,10 @@ class UspIpv6PortServiceView extends ConsumerWidget {
         ),
         AppGap.lg(),
         if (rules.isEmpty)
-          AppText.bodyMedium('No IPv6 port service rules configured')
+          const DetailEmptyBlock(
+            icon: Icons.security,
+            message: 'No IPv6 port service rules configured',
+          )
         else
           ...rules.asMap().entries.map((entry) =>
               _buildRuleCard(context, ref, entry.key, entry.value, isSaving)),
@@ -143,7 +148,8 @@ class UspIpv6PortServiceView extends ConsumerWidget {
   ) {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-      child: AppCard(
+      child: Block(
+        padding: const EdgeInsets.all(AppSpacing.md),
         child: Row(
           children: [
             AppSwitch(
@@ -155,7 +161,7 @@ class UspIpv6PortServiceView extends ConsumerWidget {
                       .read(uspIpv6PortServiceProvider.notifier)
                       .toggleRule(index, value),
             ),
-            AppGap.sm(),
+            AppGap.md(),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

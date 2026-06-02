@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/usp/models/operate_result.dart';
+import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/unified_diagnostics/models/manual_tools_state.dart';
 import 'package:privacy_gui/page/unified_diagnostics/providers/manual_tools_notifier.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -129,7 +130,8 @@ class _DiagnosticManualToolsViewState
 
         // Error display
         if (state.errorMessage != null) ...[
-          AppCard(
+          Block(
+            padding: const EdgeInsets.all(AppSpacing.md),
             child: Row(
               children: [
                 AppIcon.font(Icons.error_outline,
@@ -225,7 +227,8 @@ class _DiagnosticManualToolsViewState
       DiagnosticType.nsLookup => ('Host Name', 'e.g. google.com'),
     };
 
-    return AppCard(
+    return Block(
+      padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -251,7 +254,8 @@ class _DiagnosticManualToolsViewState
     NetworkDiagnosticsState state,
     ManualToolsNotifier notifier,
   ) {
-    return AppCard(
+    return Block(
+      padding: const EdgeInsets.all(AppSpacing.md),
       child: SizedBox(
         width: double.infinity,
         child: Column(
@@ -329,7 +333,8 @@ class _DiagnosticManualToolsViewState
     NetworkDiagnosticsState state,
     ManualToolsNotifier notifier,
   ) {
-    return AppCard(
+    return Block(
+      padding: const EdgeInsets.all(AppSpacing.md),
       child: SizedBox(
         width: double.infinity,
         child: Column(
@@ -368,7 +373,8 @@ class _DiagnosticManualToolsViewState
     final successColor =
         result.successRate >= 100 ? colorScheme.primary : colorScheme.tertiary;
 
-    return AppCard(
+    return Block(
+      padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -446,7 +452,8 @@ class _DiagnosticManualToolsViewState
   Widget _buildTracerouteResult(BuildContext context, TracerouteResult result) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return AppCard(
+    return Block(
+      padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -546,7 +553,8 @@ class _DiagnosticManualToolsViewState
     NetworkDiagnosticsState state,
     ManualToolsNotifier notifier,
   ) {
-    return AppCard(
+    return Block(
+      padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -571,7 +579,8 @@ class _DiagnosticManualToolsViewState
     final colorScheme = Theme.of(context).colorScheme;
     final isOk = result.isComplete && result.hasAnswers;
 
-    return AppCard(
+    return Block(
+      padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

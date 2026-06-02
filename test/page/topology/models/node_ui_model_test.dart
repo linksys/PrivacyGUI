@@ -183,6 +183,9 @@ void main() {
         softwareVersion: '2.0.0',
         isMaster: true,
         connectedDeviceCount: 5,
+        ipAddress: '192.168.1.1',
+        ipv6Addresses: ['fe80::1'],
+        wanIpAddress: '203.0.113.1',
         backhaulMediaType: 'Ethernet',
         backhaulPhyRate: 1000,
         backhaulSignalStrength: -45,
@@ -191,8 +194,8 @@ void main() {
         backhaulDownlinkRate: 600000,
       );
 
-      // 22 props total: base fields + DataElements enrichment fields
-      expect(node.props, hasLength(22));
+      // 25 props total: base fields + network addresses + DataElements enrichment
+      expect(node.props, hasLength(25));
       expect(node.props, contains('AA:BB:CC:DD:EE:01'));
       expect(node.props, contains('Router'));
       expect(node.props, contains('linksys'));
@@ -202,6 +205,10 @@ void main() {
       expect(node.props, contains('2.0.0'));
       expect(node.props, contains(true));
       expect(node.props, contains(5));
+      expect(node.props, contains('192.168.1.1'));
+      // List uses reference equality, so check by finding the list element
+      expect(node.props.any((p) => p is List && p.contains('fe80::1')), isTrue);
+      expect(node.props, contains('203.0.113.1'));
       expect(node.props, contains('Ethernet'));
       expect(node.props, contains(1000));
       expect(node.props, contains(-45));
@@ -209,10 +216,7 @@ void main() {
       expect(node.props, contains('Wi-Fi'));
       expect(node.props, contains(600000));
       // Remaining DataElements enrichment fields default to null:
-      // dataElementsId, instancePath, backhaulAlId, backhaulMacAddress,
-      // backhaulParentDeviceId, backhaulParentBssid, lastContactTime = 7 nulls
-      // but backhaulLinkType and backhaulDownlinkRate are set, so 7 - 0 = 7
-      // Actually: dataElementsId(1) + instancePath(1) + backhaulAlId(1) +
+      // dataElementsId(1) + instancePath(1) + backhaulAlId(1) +
       // backhaulMacAddress(1) + backhaulParentDeviceId(1) + backhaulParentBssid(1) +
       // lastContactTime(1) = 7 nulls
       expect(node.props.where((p) => p == null).length, 7);

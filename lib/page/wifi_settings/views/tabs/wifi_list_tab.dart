@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_settings_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_settings_state.dart';
 import 'package:privacy_gui/page/wifi_settings/views/components/wifi_network_card.dart';
@@ -75,34 +76,41 @@ class UspWifiListTab extends ConsumerWidget {
         children: [
           // ── Quick Setup toggle card ──────────────────────────────
           AppCard(
-            child: Row(
-              children: [
-                AppIcon.font(
-                  Icons.bolt_outlined,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-                AppGap.md(),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      AppText.labelLarge('Quick Setup'),
-                      AppGap.xs(),
-                      AppText.bodySmall(
-                        'Apply the same WiFi settings to all bands at once',
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ],
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: Block(
+              padding: const EdgeInsets.symmetric(
+                vertical: AppSpacing.sm,
+                horizontal: AppSpacing.md,
+              ),
+              child: Row(
+                children: [
+                  AppIcon.font(
+                    Icons.bolt_outlined,
+                    color: Theme.of(context).colorScheme.primary,
                   ),
-                ),
-                AppSwitch(
-                  value: quickSetupEnabled,
-                  onChanged: (v) => ref
-                      .read(uspWifiSettingsProvider.notifier)
-                      .setQuickSetupEnabled(v),
-                ),
-              ],
+                  AppGap.md(),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        AppText.labelLarge('Quick Setup'),
+                        AppGap.xs(),
+                        AppText.bodySmall(
+                          'Apply the same WiFi settings to all bands at once',
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ],
+                    ),
+                  ),
+                  AppSwitch(
+                    value: quickSetupEnabled,
+                    onChanged: (v) => ref
+                        .read(uspWifiSettingsProvider.notifier)
+                        .setQuickSetupEnabled(v),
+                  ),
+                ],
+              ),
             ),
           ),
           AppGap.lg(),
