@@ -261,20 +261,13 @@ class _TroubleshootSheetState extends ConsumerState<_TroubleshootSheet> {
       final critical = signal < -82;
       return Text(
         critical
-            ? 'Very weak signal ($signal dBm) — this device is barely holding its connection. Move it much closer to your router or a mesh node.'
-            : 'Weak signal ($signal dBm). Moving this device closer to your router or a mesh node should improve its speed noticeably.',
+            ? loc(context).instantTestAdviceVeryWeak(signal)
+            : loc(context).instantTestAdviceWeak(signal),
       );
     }
     if (rateMbps != null && rateMbps < 10) {
-      return const Text(
-        'This device is getting very slow WiFi speeds despite an OK signal. '
-        'Check for interference (thick walls, metal appliances) between it and your router. '
-        'Moving closer or reconnecting to the 5 GHz band often helps.',
-      );
+      return Text(loc(context).instantTestAdviceSlowRate);
     }
-    return const Text(
-      'This device has a weak WiFi connection. Check for walls or appliances '
-      'between the device and your router.',
-    );
+    return Text(loc(context).instantTestAdviceGeneric);
   }
 }

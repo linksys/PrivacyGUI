@@ -1230,5 +1230,33 @@
   "instantTestDisconnectWeakNote": "Reconnecting forces the device to re-select its WiFi connection, which can improve a weak signal. Coming soon on USP firmware.",
   "instantTestRestartRebooting": "Router is rebooting",
   "instantTestRestartMessage": "All connected devices will be temporarily disconnected. Please wait.",
-  "instantTestRestartSuccess": "Router reboot complete"
+  "instantTestRestartSuccess": "Router reboot complete",
+  "instantTestAdviceVeryWeak": "Very weak signal ({signal} dBm) — this device is barely holding its connection. Move it much closer to your router or a mesh node.",
+  "@instantTestAdviceVeryWeak": {
+    "placeholders": { "signal": { "type": "int", "example": "-85" } }
+  },
+  "instantTestAdviceWeak": "Weak signal ({signal} dBm). Moving this device closer to your router or a mesh node should improve its speed noticeably.",
+  "@instantTestAdviceWeak": {
+    "placeholders": { "signal": { "type": "int", "example": "-77" } }
+  },
+  "instantTestAdviceSlowRate": "This device is getting very slow WiFi speeds despite an OK signal. Check for interference (thick walls, metal appliances) between it and your router. Moving closer or reconnecting to the 5 GHz band often helps.",
+  "instantTestAdviceGeneric": "This device has a weak WiFi connection. Check for walls or appliances between the device and your router.",
+  "instantTestLastChecked": "Last checked {time}",
+  "@instantTestLastChecked": {
+    "placeholders": { "time": { "type": "String", "example": "just now" } }
+  },
+  "instantTestLastCheckedJustNow": "just now",
+  "instantTestLastCheckedMinutesAgo": "{count} minute{count, plural, =1{} other{s}} ago",
+  "@instantTestLastCheckedMinutesAgo": {
+    "placeholders": { "count": { "type": "int", "example": "3" } }
+  },
+  "instantTestRunAgain": "Run Again",
+  "instantTestRouterLightQuestion": "What does my router light mean?",
+  "instantTestLedSheetTitle": "Router Light Guide",
+  "instantTestLedSolidWhite": "Everything is fine — connected to internet",
+  "instantTestLedPulsingBlue": "Starting up — wait about a minute",
+  "instantTestLedSolidRed": "No internet — check your cables",
+  "instantTestLedSolidYellow": "Needs attention — a service check failed",
+  "instantTestLedSolidGreen": "Everything looks good (shows briefly after test)",
+  "instantTestLedOff": "No power — check the power cable (or Night Mode is on)"
 }

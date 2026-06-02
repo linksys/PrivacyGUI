@@ -20,6 +20,9 @@ class OverviewTab extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Persistent LED light guide link (PRD S-1)
+          _LedGuideLink(),
+          const SizedBox(height: 8),
           if (state.isRestarting)
             const Center(child: CircularProgressIndicator()),
           if (state.phase == InstantTestLoadPhase.loading && !state.isRestarting)
@@ -67,11 +70,23 @@ class OverviewTab extends ConsumerWidget {
             // Checklist summary (D-41 staggered, D-35 speed details)
             const SizedBox(height: 12),
             _ChecklistSummary(state: state),
+            // checksRun + staleness indicator
             Padding(
               padding: const EdgeInsets.only(top: 8),
-              child: Text(
-                loc(context).instantTestChecksRun(verdict.checksRun),
-                style: Theme.of(context).textTheme.bodySmall,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      loc(context).instantTestChecksRun(verdict.checksRun),
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ),
+                  if (state.completedAt != null && !state.verdictIsPreliminary)
+                    _StalenessIndicator(
+                      completedAt: state.completedAt!,
+                      onRunAgain: () => ref.read(instantTestProvider.notifier).fetch(forceSpeedTest: true),
+                    ),
+                ],
               ),
             ),
           ],
@@ -558,4 +573,145 @@ class _GaugeRow extends StatelessWidget {
               color: scheme.onSurfaceVariant)),
     ]);
   }
+}
+
+// ── Staleness indicator — "Last checked N minutes ago · Run Again" ────────────
+
+class _StalenessIndicator extends StatefulWidget {
+  final DateTime completedAt;
+  final VoidCallback onRunAgain;
+
+  const _StalenessIndicator({required this.completedAt, required this.onRunAgain});
+
+  @override
+  State<_StalenessIndicator> createState() => _StalenessIndicatorState();
+}
+
+class _StalenessIndicatorState extends State<_StalenessIndicator> {
+  late int _minutesAgo;
+
+  @override
+  void initState() {
+    super.initState();
+    _update();
+    // Refresh every minute so the label stays accurate
+    Future.doWhile(() async {
+      await Future.delayed(const Duration(minutes: 1));
+      if (!mounted) return false;
+      _update();
+      return true;
+    });
+  }
+
+  void _update() {
+    final mins = DateTime.now().difference(widget.completedAt).inMinutes;
+    if (mounted) setState(() => _minutesAgo = mins);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final label = _minutesAgo == 0
+        ? loc(context).instantTestLastChecked(loc(context).instantTestLastCheckedJustNow)
+        : loc(context).instantTestLastChecked(
+            loc(context).instantTestLastCheckedMinutesAgo(_minutesAgo));
+
+    // Show "Run Again" only after 3+ minutes
+    if (_minutesAgo >= 3) {
+      return TextButton.icon(
+        onPressed: widget.onRunAgain,
+        icon: const Icon(Icons.refresh, size: 14),
+        label: Text(loc(context).instantTestRunAgain,
+            style: const TextStyle(fontSize: 12)),
+        style: TextButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          visualDensity: VisualDensity.compact,
+        ),
+      );
+    }
+
+    return Text(label,
+        style: Theme.of(context)
+            .textTheme
+            .bodySmall
+            ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant));
+  }
+}
+
+// ── LED light guide (PRD S-1) ─────────────────────────────────────────────────
+
+class _LedGuideLink extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return TextButton.icon(
+      onPressed: () => _showLedGuide(context),
+      icon: const Icon(Icons.lightbulb_outline, size: 16),
+      label: Text(loc(context).instantTestRouterLightQuestion,
+          style: const TextStyle(fontSize: 13)),
+      style: TextButton.styleFrom(
+        padding: EdgeInsets.zero,
+        visualDensity: VisualDensity.compact,
+        alignment: Alignment.centerLeft,
+      ),
+    );
+  }
+
+  void _showLedGuide(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (ctx) => _LedGuideSheet(),
+    );
+  }
+}
+
+class _LedGuideSheet extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final rows = [
+      (_color(Colors.white), 'Solid white', loc(context).instantTestLedSolidWhite),
+      (_color(Colors.blue), 'Pulsing blue', loc(context).instantTestLedPulsingBlue),
+      (_color(Colors.red), 'Solid red', loc(context).instantTestLedSolidRed),
+      (_color(Colors.amber), 'Solid yellow', loc(context).instantTestLedSolidYellow),
+      (_color(Colors.green), 'Solid green', loc(context).instantTestLedSolidGreen),
+      (const Icon(Icons.circle_outlined, size: 16, color: Colors.grey), 'Off', loc(context).instantTestLedOff),
+    ];
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(loc(context).instantTestLedSheetTitle,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+          const SizedBox(height: 4),
+          Text('Applies to M60, M62, MX6200 (Pinnacle platform)',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
+          const SizedBox(height: 16),
+          for (final (icon, pattern, description) in rows)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Row(children: [
+                icon,
+                const SizedBox(width: 12),
+                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(pattern, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13)),
+                  Text(description, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
+                ])),
+              ]),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _color(Color c) => Container(
+        width: 16,
+        height: 16,
+        decoration: BoxDecoration(
+          color: c,
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.grey.shade300),
+        ),
+      );
 }

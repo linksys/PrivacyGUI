@@ -59,6 +59,10 @@ class InstantTestState extends Equatable {
 
   final String browserTestStep;
 
+  // ── Staleness tracking ────────────────────────────────────────────────
+  /// When the last complete run finished. Used for "Last checked N minutes ago".
+  final DateTime? completedAt;
+
   // ── Agent-provided context (optional inputs) ─────────────────────────
   final double? planSpeedMbps;
 
@@ -104,6 +108,7 @@ class InstantTestState extends Equatable {
     this.routerSpeed,
     this.routerInternetResult,
     this.browserTestStep = 'idle',
+    this.completedAt,
     this.planSpeedMbps,
     this.deviceScores = const [],
     this.verdict,
@@ -142,6 +147,7 @@ class InstantTestState extends Equatable {
     RouterSpeedResult? routerSpeed,
     usp_speed.SpeedTestResult? routerInternetResult,
     String? browserTestStep,
+    DateTime? completedAt,
     double? planSpeedMbps,
     List<DeviceScore>? deviceScores,
     Verdict? verdict,
@@ -179,6 +185,7 @@ class InstantTestState extends Equatable {
       routerSpeed: routerSpeed ?? this.routerSpeed,
       routerInternetResult: routerInternetResult ?? this.routerInternetResult,
       browserTestStep: browserTestStep ?? this.browserTestStep,
+      completedAt: completedAt ?? this.completedAt,
       planSpeedMbps: planSpeedMbps ?? this.planSpeedMbps,
       deviceScores: deviceScores ?? this.deviceScores,
       verdict: verdict ?? this.verdict,
@@ -219,6 +226,7 @@ class InstantTestState extends Equatable {
         routerSpeed,
         routerInternetResult,
         browserTestStep,
+        completedAt,
         planSpeedMbps,
         deviceScores,
         verdict,

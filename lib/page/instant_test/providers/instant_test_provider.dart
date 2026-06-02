@@ -227,6 +227,7 @@ class InstantTestNotifier extends Notifier<InstantTestState> {
       phase: InstantTestLoadPhase.complete,
       browserTestStep: 'complete',
       verdictIsPreliminary: false,
+      completedAt: DateTime.now(),
     );
     _updateVerdict(preliminary: false);
   }
