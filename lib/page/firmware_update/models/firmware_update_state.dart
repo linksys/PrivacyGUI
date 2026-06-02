@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_image_ui_model.dart';
+import 'package:privacy_gui/page/firmware_update/models/firmware_ota_info.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_update_phase.dart';
 import 'package:privacy_gui/page/firmware_update/services/firmware_upload_strategy.dart';
 
@@ -19,6 +20,12 @@ class FirmwareUpdateState extends Equatable {
   /// The upload method used for the current/last upload (null if not started).
   final UploadMethod? uploadMethod;
 
+  /// OTA check result: available update info, or null if up to date / not checked.
+  final FirmwareOtaInfo? otaInfo;
+
+  /// Whether OTA check has been performed and no update was found.
+  final bool otaUpToDate;
+
   const FirmwareUpdateState({
     this.phase = FirmwareUpdatePhase.idle,
     this.activeBank,
@@ -32,6 +39,8 @@ class FirmwareUpdateState extends Equatable {
     this.rebootRemaining,
     this.errorMessage,
     this.uploadMethod,
+    this.otaInfo,
+    this.otaUpToDate = false,
   });
 
   double get uploadProgress =>
@@ -56,6 +65,8 @@ class FirmwareUpdateState extends Equatable {
     Duration? rebootRemaining,
     String? errorMessage,
     UploadMethod? uploadMethod,
+    FirmwareOtaInfo? otaInfo,
+    bool? otaUpToDate,
   }) {
     return FirmwareUpdateState(
       phase: phase ?? this.phase,
@@ -70,6 +81,8 @@ class FirmwareUpdateState extends Equatable {
       rebootRemaining: rebootRemaining ?? this.rebootRemaining,
       errorMessage: errorMessage ?? this.errorMessage,
       uploadMethod: uploadMethod ?? this.uploadMethod,
+      otaInfo: otaInfo ?? this.otaInfo,
+      otaUpToDate: otaUpToDate ?? this.otaUpToDate,
     );
   }
 
@@ -87,5 +100,7 @@ class FirmwareUpdateState extends Equatable {
         rebootRemaining,
         errorMessage,
         uploadMethod,
+        otaInfo,
+        otaUpToDate,
       ];
 }

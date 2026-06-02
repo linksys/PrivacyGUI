@@ -11,12 +11,17 @@ import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart'
     hide FirmwareImageUIModel;
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
 import 'package:privacy_gui/page/admin/views/dialogs/confirm_action_dialog.dart';
+import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_image_ui_model.dart';
+import 'package:privacy_gui/page/firmware_update/models/firmware_ota_info.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_update_phase.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_update_state.dart';
 import 'package:privacy_gui/page/firmware_update/providers/firmware_banks_data_provider.dart';
 import 'package:privacy_gui/page/firmware_update/providers/firmware_update_notifier.dart';
 import 'package:privacy_gui/page/firmware_update/services/firmware_local_upload_service.dart';
+import 'package:privacy_gui/page/firmware_update/services/firmware_ota_check_service.dart';
+import 'package:privacy_gui/page/internet_settings/providers/wan_data_provider.dart';
+import 'package:privacy_gui/page/topology/models/node_ui_model.dart';
 import 'package:privacy_gui/page/firmware_update/views/dialogs/firmware_update_recovery_dialog.dart';
 import 'package:privacy_gui/page/shell/usp_top_bar.dart';
 import 'package:privacy_gui/route/constants.dart';
@@ -35,9 +40,13 @@ class FirmwareUpdateView extends ConsumerStatefulWidget {
 }
 
 class _FirmwareUpdateViewState extends ConsumerState<FirmwareUpdateView> {
-  /// Delay after triggering install before showing recovery dialog.
+  /// Delay after triggering local install before showing recovery dialog.
   /// Router typically takes ~60-90 seconds to write firmware before reboot.
-  static const _installDelayBeforeReboot = Duration(seconds: 60);
+  static const _localInstallDelayBeforeReboot = Duration(seconds: 60);
+
+  /// Delay after triggering OTA install before showing recovery dialog.
+  /// Router needs to download (~50-100MB) + flash, typically ~120 seconds.
+  static const _otaInstallDelayBeforeReboot = Duration(seconds: 120);
 
   @override
   void initState() {
@@ -85,6 +94,11 @@ class _FirmwareUpdateViewState extends ConsumerState<FirmwareUpdateView> {
           isLoadingBanks: isLoadingBanks,
         ),
         AppGap.xl(),
+        _OtaCheckCard(
+          state: state,
+          onCheck: () => _onCheckForUpdates(context),
+        ),
+        AppGap.xl(),
         _buildActionCard(context, state),
         AppGap.xl(),
         _buildWarningNote(context),
@@ -95,6 +109,7 @@ class _FirmwareUpdateViewState extends ConsumerState<FirmwareUpdateView> {
   Widget _buildActionCard(BuildContext context, FirmwareUpdateState state) {
     switch (state.phase) {
       case FirmwareUpdatePhase.idle:
+      case FirmwareUpdatePhase.checkingOta:
         return _buildIdleCard(context, state);
       case FirmwareUpdatePhase.picking:
       case FirmwareUpdatePhase.validating:
@@ -339,6 +354,140 @@ class _FirmwareUpdateViewState extends ConsumerState<FirmwareUpdateView> {
     );
   }
 
+  Future<void> _onCheckForUpdates(BuildContext context) async {
+    try {
+      final params = await _buildOtaCheckParams();
+      if (params == null) {
+        if (context.mounted) {
+          showFailedSnackBar(context, 'Unable to gather device information');
+        }
+        return;
+      }
+
+      final notifier = ref.read(firmwareUpdateNotifierProvider.notifier);
+      final info = await notifier.checkForOtaUpdate(params);
+
+      if (!context.mounted) return;
+
+      if (info != null) {
+        // Update available - show dialog
+        await _showOtaUpdateDialog(context, info);
+      }
+      // If info is null, state.otaUpToDate is true, UI will show "Up to date"
+    } on FirmwareOtaCheckException catch (e) {
+      if (context.mounted) {
+        showFailedSnackBar(context, e.message);
+      }
+    }
+  }
+
+  Future<FirmwareOtaCheckParams?> _buildOtaCheckParams() async {
+    try {
+      final devicesData = await ref.read(devicesDataProvider.future);
+      final masterNode = devicesData.nodeModels.master;
+      if (masterNode == null) {
+        logger.w('[FirmwareUpdate] Master node not found');
+        return null;
+      }
+
+      final systemInfoData = await ref.read(systemInfoDataProvider.future);
+      final hardwareVersion =
+          _parseHardwareVersion(systemInfoData.model.hardwareVersion);
+
+      final wanData = await ref.read(wanDataProvider.future);
+      final ipAddress = wanData.model.ipAddress;
+
+      return FirmwareOtaCheckParams(
+        macAddress: _formatMacAddress(masterNode.deviceId),
+        installedVersion: masterNode.softwareVersion,
+        modelNumber: masterNode.model,
+        hardwareVersion: hardwareVersion,
+        ipAddress: ipAddress,
+      );
+    } catch (e) {
+      logger.e('[FirmwareUpdate] Failed to build OTA check params', error: e);
+      return null;
+    }
+  }
+
+  String _formatMacAddress(String mac) {
+    return mac.toUpperCase().replaceAll(':', '-');
+  }
+
+  String _parseHardwareVersion(String hwVersion) {
+    var version = hwVersion;
+    if (version.toUpperCase().startsWith('V')) {
+      version = version.substring(1);
+    }
+    final parsed = int.tryParse(version);
+    return parsed?.toString() ?? version;
+  }
+
+  Future<void> _showOtaUpdateDialog(
+      BuildContext context, FirmwareOtaInfo info) async {
+    final state = ref.read(firmwareUpdateNotifierProvider);
+    final currentVersion = state.activeBank?.version ?? '—';
+    final target = state.targetBank;
+
+    if (target == null) {
+      showFailedSnackBar(context, 'No target bank available');
+      return;
+    }
+
+    final confirmed = await showConfirmActionDialog(
+      context,
+      title: 'Update Available',
+      message: 'Current: $currentVersion\n'
+          'Available: ${info.version}\n\n'
+          'Do you want to update now?',
+      confirmLabel: 'Update',
+    );
+
+    if (confirmed != true || !context.mounted) return;
+
+    final notifier = ref.read(firmwareUpdateNotifierProvider.notifier);
+
+    try {
+      await notifier.triggerOtaInstall(
+        targetInstance: target.instance,
+        firmwareUrl: info.downloadUrl,
+      );
+    } catch (e, st) {
+      logger.e('[FirmwareUpdate] triggerOtaInstall error: $e',
+          error: e, stackTrace: st);
+      if (context.mounted) {
+        showFailedSnackBar(context, 'Failed to start OTA update');
+      }
+      return;
+    }
+
+    if (!context.mounted) return;
+
+    // Wait for OTA download + flash before entering recovery
+    await Future<void>.delayed(_otaInstallDelayBeforeReboot);
+    if (!context.mounted) return;
+
+    // Hand off to the shared recovery framework
+    final expectedVersion = info.version;
+    notifier.enterRecoveryWaiting();
+    await showFirmwareUpdateRecoveryDialog(context, ref);
+    if (!context.mounted) return;
+
+    final connState = ref.read(appConnectionStateProvider);
+    if (connState != AppConnectionState.authenticated) {
+      return;
+    }
+
+    try {
+      await notifier.verify(
+        expectedVersion: expectedVersion,
+        expectedActiveInstance: target.instance,
+      );
+    } catch (_) {
+      // Notifier already transitioned to `failed` and surfaced the message.
+    }
+  }
+
   Future<void> _onPickFile(BuildContext context) async {
     final notifier = ref.read(firmwareUpdateNotifierProvider.notifier);
     final ok = await notifier.pickAndValidateFile();
@@ -393,7 +542,7 @@ class _FirmwareUpdateViewState extends ConsumerState<FirmwareUpdateView> {
     // reboot. The actual flash write is happening in the background on the
     // router; we have no status feedback (B2 blocker), so a fixed delay is
     // the best we can do.
-    await Future<void>.delayed(_installDelayBeforeReboot);
+    await Future<void>.delayed(_localInstallDelayBeforeReboot);
     if (!context.mounted) return;
 
     // Hand off to the shared recovery framework. The dialog blocks until the
@@ -419,6 +568,70 @@ class _FirmwareUpdateViewState extends ConsumerState<FirmwareUpdateView> {
     } catch (_) {
       // Notifier already transitioned to `failed` and surfaced the message.
     }
+  }
+}
+
+/// Card for checking OTA firmware updates.
+class _OtaCheckCard extends StatelessWidget {
+  const _OtaCheckCard({
+    required this.state,
+    required this.onCheck,
+  });
+
+  final FirmwareUpdateState state;
+  final VoidCallback onCheck;
+
+  @override
+  Widget build(BuildContext context) {
+    final isChecking = state.phase == FirmwareUpdatePhase.checkingOta;
+    final scheme = Theme.of(context).colorScheme;
+
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppText.titleMedium('OTA Update'),
+          AppGap.md(),
+          Row(
+            children: [
+              if (isChecking)
+                AppButton.primaryOutline(
+                  label: 'Checking...',
+                  onTap: null,
+                  icon: const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                )
+              else
+                AppButton.primaryOutline(
+                  label: 'Check for Updates',
+                  onTap: onCheck,
+                ),
+              if (state.otaUpToDate && !isChecking) ...[
+                AppGap.md(),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.check_circle,
+                      size: 18,
+                      color: scheme.primary,
+                    ),
+                    AppGap.sm(),
+                    AppText.bodyMedium(
+                      'Your firmware is up to date',
+                      color: scheme.primary,
+                    ),
+                  ],
+                ),
+              ],
+            ],
+          ),
+        ],
+      ),
+    );
   }
 }
 
