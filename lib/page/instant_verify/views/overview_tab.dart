@@ -1389,11 +1389,14 @@ class _ChecklistSummaryState extends State<_ChecklistSummary> {
             : '\u2193 ${state.speedTest!.downloadMbps.toStringAsFixed(0)} Mbps  '
                 '\u2191 ${state.speedTest!.uploadMbps.toStringAsFixed(0)} Mbps  '
                 '${state.speedTest!.latencyMs}ms delay',
-        expandedDetail: state.speedTest != null
-            ? 'Speed measured from this device — other devices in your home may be faster or slower. '
-              'Speed can vary based on time of day, how many devices are active, '
-              'and your distance from the router.'
-            : 'The speed test did not complete. Try running again.',
+        expandedDetail: 'The speed test did not complete. Try running again.',
+        expandedWidget: state.speedTest != null
+            ? _SpeedGauge(
+                downloadMbps: state.speedTest!.downloadMbps,
+                uploadMbps: state.speedTest!.uploadMbps,
+                latencyMs: state.speedTest!.latencyMs,
+              )
+            : null,
       ),
       _SummaryRow(
         label: 'Devices checked',
@@ -1449,11 +1452,14 @@ class _SummaryRow {
   final _CheckDisplayState state;
   final String detail;
   final String expandedDetail;
+  /// When set, shown instead of expandedDetail text in the expanded panel.
+  final Widget? expandedWidget;
   const _SummaryRow({
     required this.label,
     required this.state,
     required this.detail,
     required this.expandedDetail,
+    this.expandedWidget,
   });
 }
 
@@ -1535,14 +1541,15 @@ class _SummaryRowWidget extends StatelessWidget {
                 borderRadius: BorderRadius.circular(6),
                 border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.5)),
               ),
-              child: Text(
-                row.expandedDetail,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: scheme.onSurfaceVariant,
-                  height: 1.4,
-                ),
-              ),
+              child: row.expandedWidget ??
+                  Text(
+                    row.expandedDetail,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: scheme.onSurfaceVariant,
+                      height: 1.4,
+                    ),
+                  ),
             ),
           ),
       ],
@@ -2130,5 +2137,124 @@ class _RestartCountdown extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+// ── Speed gauge widget shown in the speed row expanded panel ─────────────────
+
+class _SpeedGauge extends StatelessWidget {
+  final double downloadMbps;
+  final double uploadMbps;
+  final int latencyMs;
+
+  const _SpeedGauge({
+    required this.downloadMbps,
+    required this.uploadMbps,
+    required this.latencyMs,
+  });
+
+  static const double _maxMbps = 1000;
+
+  Color _latencyColor(int ms) {
+    if (ms <= 50) return Colors.green;
+    if (ms <= 100) return Colors.orange;
+    return Colors.red;
+  }
+
+  String _latencyLabel(int ms) {
+    if (ms <= 50) return 'Great';
+    if (ms <= 100) return 'OK';
+    return 'High';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final latColor = _latencyColor(latencyMs);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _GaugeRow(
+          label: 'Download',
+          value: '${downloadMbps.toStringAsFixed(0)} Mbps',
+          fraction: (downloadMbps / _maxMbps).clamp(0.0, 1.0),
+          color: Colors.blue,
+        ),
+        const SizedBox(height: 8),
+        _GaugeRow(
+          label: 'Upload',
+          value: '${uploadMbps.toStringAsFixed(0)} Mbps',
+          fraction: (uploadMbps / _maxMbps).clamp(0.0, 1.0),
+          color: Colors.indigo,
+        ),
+        const SizedBox(height: 8),
+        Row(children: [
+          SizedBox(
+            width: 72,
+            child: Text('Latency',
+                style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant)),
+          ),
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(color: latColor, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 6),
+          Text('${latencyMs}ms — ${_latencyLabel(latencyMs)}',
+              style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant)),
+        ]),
+        const SizedBox(height: 10),
+        Text(
+          'Speed measured from this device. '
+          'Results can vary by time of day and WiFi distance.',
+          style: TextStyle(
+              fontSize: 11, color: scheme.onSurfaceVariant, height: 1.4),
+        ),
+      ],
+    );
+  }
+}
+
+class _GaugeRow extends StatelessWidget {
+  final String label;
+  final String value;
+  final double fraction;
+  final Color color;
+
+  const _GaugeRow({
+    required this.label,
+    required this.value,
+    required this.fraction,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Row(children: [
+      SizedBox(
+        width: 72,
+        child: Text(label,
+            style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant)),
+      ),
+      Expanded(
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(3),
+          child: LinearProgressIndicator(
+            value: fraction,
+            minHeight: 6,
+            color: color,
+            backgroundColor: scheme.outlineVariant.withValues(alpha: 0.3),
+          ),
+        ),
+      ),
+      const SizedBox(width: 8),
+      Text(value,
+          style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+              color: scheme.onSurfaceVariant)),
+    ]);
   }
 }
