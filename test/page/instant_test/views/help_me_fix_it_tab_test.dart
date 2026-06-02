@@ -19,30 +19,30 @@ Widget _wrap(InstantTestState state) {
 }
 
 void main() {
-  group('HelpMeFixItTab — no issues', () {
-    testWidgets('shows no-issues message when all-clear', (tester) async {
+  // HelpMeFixItTab now shows the FlowMenu qualifier ("What are you running into?")
+  // as its landing state — not verdict findings. The old stub behavior is gone.
+
+  group('HelpMeFixItTab — landing state', () {
+    testWidgets('shows qualifier question when all-clear', (tester) async {
       await tester.pumpWidget(_wrap(InstantTestStateData.allClearState()));
       await tester.pump();
-      expect(find.text('No issues found that need attention.'), findsOneWidget);
+      expect(find.textContaining('What are you running into'), findsOneWidget);
     });
-  });
 
-  group('HelpMeFixItTab — WAN disconnected (has action)', () {
-    testWidgets('shows no action finding for WAN disconnect (no actionKey)',
-        (tester) async {
-      // WAN disconnect has no actionKey on the finding — no button shown
+    testWidgets('shows qualifier question when WAN disconnected', (tester) async {
       await tester.pumpWidget(_wrap(InstantTestStateData.wanDisconnectedState()));
       await tester.pump();
-      // HelpMeFixItTab only shows findings with actionKey
-      // WAN disconnect finding has no actionKey → shows "no issues" message
-      expect(find.text('No issues found that need attention.'), findsOneWidget);
+      expect(find.textContaining('What are you running into'), findsOneWidget);
     });
   });
 
   group('HelpMeFixItTab — renders without crash', () {
-    testWidgets('idle state renders', (tester) async {
+    testWidgets('idle state renders FlowMenu', (tester) async {
       await tester.pumpWidget(_wrap(InstantTestStateData.idleState()));
+      await tester.pump();
       expect(find.byType(HelpMeFixItTab), findsOneWidget);
+      // FlowMenu qualifier is shown
+      expect(find.textContaining('What are you running into'), findsOneWidget);
     });
   });
 }

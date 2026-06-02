@@ -33,8 +33,8 @@ class MyNetworkTab extends ConsumerWidget {
               ),
               title: Text(loc(context).instantTestInternetSection),
               subtitle: Text(wan?.isUp == true
-                  ? 'Connected · ${wan?.ipAddress ?? ''}'
-                  : 'Not connected'),
+                  ? '${loc(context).instantTestPortUp} · ${wan?.ipAddress ?? ''}'
+                  : loc(context).instantTestPortNoLink),
             ),
           ),
           const SizedBox(height: 16),
@@ -73,7 +73,7 @@ class MyNetworkTab extends ConsumerWidget {
                 subtitle: port.isUp && port.currentBitRate > 0
                     ? Text(
                         '${(port.currentBitRate / 1000000).toStringAsFixed(0)} Mbps')
-                    : Text(port.isUp ? 'Up' : 'No link'),
+                    : Text(port.isUp ? loc(context).instantTestPortUp : loc(context).instantTestPortNoLink),
               ),
           ],
 
@@ -102,7 +102,7 @@ class _NodeHealthRow extends StatelessWidget {
     String subtitle;
     if (node.isMaster) {
       indicatorColor = Colors.green;
-      subtitle = 'Gateway';
+      subtitle = loc(context).instantTestNodeGateway;
     } else if (isWired) {
       indicatorColor = Colors.green;
       subtitle = loc(context).instantTestNodeConnectedWired;
@@ -123,7 +123,7 @@ class _NodeHealthRow extends StatelessWidget {
         title: Text(node.displayName),
         subtitle: Text(subtitle),
         trailing: node.isMaster
-            ? const Chip(label: Text('Main'))
+            ? Chip(label: Text(loc(context).instantTestNodeMain))
             : null,
       ),
     );

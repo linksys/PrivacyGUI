@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/instant_test/providers/instant_test_provider.dart';
 import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
 import 'package:privacy_gui/page/devices/views/components/usp_device_list_tile.dart';
 import 'package:privacy_gui/page/instant_test/models/device_score.dart';
@@ -204,17 +205,16 @@ class _TroubleshootSheetState extends ConsumerState<_TroubleshootSheet> {
                     label: const Text('Disconnecting…'),
                   )
                 : OutlinedButton.icon(
-                    // USP deauth not implemented — disabled with coming-soon note
                     onPressed: null,
                     icon: const Icon(Icons.wifi_off_outlined, size: 18),
-                    label: const Text('Disconnect and reconnect'),
+                    label: Text(loc(context).instantTestDisconnectReconnect),
                   ),
             Padding(
               padding: const EdgeInsets.only(top: 4),
               child: Text(
                 isWeak
-                    ? 'Reconnecting forces the device to re-select its WiFi connection, which can improve a weak signal. Coming soon on USP firmware.'
-                    : 'Force reconnect coming soon on USP firmware.',
+                    ? loc(context).instantTestDisconnectWeakNote
+                    : loc(context).instantTestDisconnectComingSoon,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant),
               ),
             ),
@@ -229,10 +229,9 @@ class _TroubleshootSheetState extends ConsumerState<_TroubleshootSheet> {
                   }
                 : null,
             icon: const Icon(Icons.build_outlined, size: 18),
-            label: const Text('Go to Help Me Fix It → Device connectivity'),
+            label: Text(loc(context).instantTestGoToHelpMeFixIt),
           ),
           const SizedBox(height: 8),
-          // View full device details
           TextButton(
             onPressed: () {
               Navigator.of(context).pop();
@@ -241,7 +240,7 @@ class _TroubleshootSheetState extends ConsumerState<_TroubleshootSheet> {
                 queryParameters: {'mac': device.mac},
               );
             },
-            child: const Text('View Device Details'),
+            child: Text(loc(context).instantTestViewDeviceDetails),
           ),
         ],
       ),

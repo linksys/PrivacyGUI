@@ -91,10 +91,9 @@ class OverviewTab extends ConsumerWidget {
           ref,
           trigger: RecoveryTrigger.operationalReboot,
           cooldown: const Duration(seconds: 60),
-          title: 'Router is rebooting',
-          message:
-              'All connected devices will be temporarily disconnected. Please wait.',
-          successMessage: 'Router reboot complete',
+          title: loc(context).instantTestRestartRebooting,
+          message: loc(context).instantTestRestartMessage,
+          successMessage: loc(context).instantTestRestartSuccess,
         );
         if (context.mounted) {
           ref.read(instantTestProvider.notifier).fetch(forceSpeedTest: true);
@@ -154,14 +153,18 @@ class _StaggeredChecklistProgressState
 
   @override
   Widget build(BuildContext context) {
-    final labels = ['Checking router…', 'Checking internet…', 'Running speed test…'];
+    final labels = [
+      loc(context).instantTestCheckingRouter,
+      loc(context).instantTestCheckingInternet,
+      loc(context).instantTestRunningSpeedTest,
+    ];
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            _revealed == 0 ? 'Starting diagnostics…' : labels[(_revealed - 1).clamp(0, 2)],
+            _revealed == 0 ? loc(context).instantTestStartingDiagnostics : labels[(_revealed - 1).clamp(0, 2)],
             style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
           ),
           const SizedBox(height: 8),
@@ -195,8 +198,9 @@ class _ChecklistSummaryState extends State<_ChecklistSummary> {
 
     // Firmware state
     final fwAvailable = s.firmwareUpdateAvailable == true;
-    final fwLabel =
-        fwAvailable ? 'Software update available' : 'Software is up to date';
+    final fwLabel = fwAvailable
+        ? loc(context).instantTestSoftwareUpdateAvailable
+        : loc(context).instantTestSoftwareUpToDate;
     final fwState =
         fwAvailable ? _CheckDisplayState.available : _CheckDisplayState.pass;
 
@@ -305,7 +309,7 @@ class _ChecklistSummaryState extends State<_ChecklistSummary> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Test details',
+            loc(context).instantTestTestDetailsHeader,
             style: TextStyle(
               fontSize: 12,
               color: scheme.onSurfaceVariant,
