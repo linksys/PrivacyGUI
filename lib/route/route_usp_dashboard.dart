@@ -181,11 +181,5 @@ final uspDashboardRoute = ShellRoute(
       path: RoutePath.uspSpeedTest,
       builder: (context, state) => const SpeedTestView(),
     ),
-    if (kDebugMode)
-      LinksysRoute(
-        name: RouteNamed.uspDesignShowcase,
-        path: RoutePath.uspDesignShowcase,
-        builder: (context, state) => const LayoutBlocksShowcaseView(),
-      ),
   ],
 );

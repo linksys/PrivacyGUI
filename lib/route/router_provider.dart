@@ -62,7 +62,6 @@ import 'package:privacy_gui/page/apps/views/usp_apps_view.dart';
 import 'package:privacy_gui/page/unified_diagnostics/views/unified_diagnostics_view.dart';
 import 'package:privacy_gui/page/unified_diagnostics/views/speed_test_view.dart';
 import 'package:privacy_gui/page/instant_setup/services/pnp_status_service.dart';
-import 'package:privacy_gui/page/design_showcase/views/layout_blocks_showcase_view.dart';
 
 // PnP (Plug and Play) imports
 import 'package:privacy_gui/page/instant_setup/views/pnp_entry_view.dart';
