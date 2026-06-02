@@ -71,7 +71,13 @@ class _InstantTestPageState extends ConsumerState<InstantTestPage>
         controller: _tabController,
         children: [
           const OverviewTab(),
-          const MyDevicesTab(),
+          MyDevicesTab(
+            // Launch Help Me Fix It Flow 3 and navigate to that tab
+            onGoToFlow3: () {
+              _helpMeFlowNotifier.value = 3;
+              _tabController.animateTo(_helpMeFixItTabIndex);
+            },
+          ),
           const MyNetworkTab(),
           HelpMeFixItTab(
             pendingFlowNotifier: _helpMeFlowNotifier,

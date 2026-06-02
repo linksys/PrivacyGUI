@@ -9,7 +9,10 @@ import 'package:privacy_gui/page/instant_test/providers/instant_test_provider.da
 import 'package:privacy_gui/route/constants.dart';
 
 class MyDevicesTab extends ConsumerWidget {
-  const MyDevicesTab({super.key});
+  /// Called to navigate to Help Me Fix It tab and launch Flow 3 for a device.
+  final VoidCallback? onGoToFlow3;
+
+  const MyDevicesTab({super.key, this.onGoToFlow3});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -48,7 +51,11 @@ class MyDevicesTab extends ConsumerWidget {
       BuildContext context, DeviceUIModel device, DeviceScore score) {
     showModalBottomSheet<void>(
       context: context,
-      builder: (ctx) => _TroubleshootSheet(device: device, score: score),
+      builder: (ctx) => _TroubleshootSheet(
+        device: device,
+        score: score,
+        onGoToFlow3: onGoToFlow3,
+      ),
     );
   }
 }
@@ -134,38 +141,98 @@ class _DeviceRow extends StatelessWidget {
 }
 
 /// Bottom sheet with targeted advice for Issue-bucket devices.
-class _TroubleshootSheet extends StatelessWidget {
+/// Shows signal/rate context, targeted fix advice, Disconnect (USP pending),
+/// and a CTA to Help Me Fix It → Flow 3.
+class _TroubleshootSheet extends ConsumerStatefulWidget {
   final DeviceUIModel device;
   final DeviceScore score;
+  /// Called to open Help Me Fix It tab Flow 3 for this device.
+  final VoidCallback? onGoToFlow3;
 
-  const _TroubleshootSheet({required this.device, required this.score});
+  const _TroubleshootSheet({
+    required this.device,
+    required this.score,
+    this.onGoToFlow3,
+  });
+
+  @override
+  ConsumerState<_TroubleshootSheet> createState() => _TroubleshootSheetState();
+}
+
+class _TroubleshootSheetState extends ConsumerState<_TroubleshootSheet> {
+  bool _isDisconnecting = false;
+
+  DeviceUIModel get device => widget.device;
+  DeviceScore get score => widget.score;
 
   @override
   Widget build(BuildContext context) {
     final signal = device.signalStrength;
     final rateMbps =
         device.downlinkRate != null ? device.downlinkRate! / 1000000 : null;
+    final colors = Theme.of(context).colorScheme;
+    final isWeak = signal != null && signal < -75;
 
     return Padding(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            device.displayName,
-            style: Theme.of(context).textTheme.titleMedium,
+          // Device header with meta chips
+          Row(children: [
+            const Icon(Icons.devices, size: 20),
+            const SizedBox(width: 8),
+            Expanded(child: Text(device.displayName, style: Theme.of(context).textTheme.titleMedium)),
+          ]),
+          const SizedBox(height: 8),
+          Wrap(spacing: 8, children: [
+            if (device.band != null) _chip(context, device.band!),
+            if (signal != null) _chip(context, '$signal dBm'),
+            if (rateMbps != null) _chip(context, '↑${rateMbps.toStringAsFixed(0)} Mbps'),
+          ]),
+          const SizedBox(height: 16),
+          // Targeted advice
+          _adviceText(context, signal, rateMbps),
+          const SizedBox(height: 16),
+          // Reconnect — USP deauth not available yet; shown disabled with note
+          if (device.isWifi) ...[
+            _isDisconnecting
+                ? OutlinedButton.icon(
+                    onPressed: null,
+                    icon: const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2)),
+                    label: const Text('Disconnecting…'),
+                  )
+                : OutlinedButton.icon(
+                    // USP deauth not implemented — disabled with coming-soon note
+                    onPressed: null,
+                    icon: const Icon(Icons.wifi_off_outlined, size: 18),
+                    label: const Text('Disconnect and reconnect'),
+                  ),
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                isWeak
+                    ? 'Reconnecting forces the device to re-select its WiFi connection, which can improve a weak signal. Coming soon on USP firmware.'
+                    : 'Force reconnect coming soon on USP firmware.',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant),
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
+          // Go to Help Me Fix It Flow 3
+          OutlinedButton.icon(
+            onPressed: widget.onGoToFlow3 != null
+                ? () {
+                    Navigator.of(context).pop();
+                    widget.onGoToFlow3!();
+                  }
+                : null,
+            icon: const Icon(Icons.build_outlined, size: 18),
+            label: const Text('Go to Help Me Fix It → Device connectivity'),
           ),
-          const SizedBox(height: 4),
-          if (signal != null)
-            Text('Signal: $signal dBm',
-                style: Theme.of(context).textTheme.bodySmall),
-          if (rateMbps != null)
-            Text('Speed: ${rateMbps.toStringAsFixed(0)} Mbps',
-                style: Theme.of(context).textTheme.bodySmall),
-          const SizedBox(height: 16),
-          _adviceText(signal, rateMbps),
-          const SizedBox(height: 16),
+          const SizedBox(height: 8),
+          // View full device details
           TextButton(
             onPressed: () {
               Navigator.of(context).pop();
@@ -181,19 +248,29 @@ class _TroubleshootSheet extends StatelessWidget {
     );
   }
 
-  Widget _adviceText(int? signal, double? rateMbps) {
+  Widget _chip(BuildContext context, String label) {
+    final colors = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(color: colors.surfaceContainerHighest, borderRadius: BorderRadius.circular(12)),
+      child: Text(label, style: TextStyle(fontSize: 11, color: colors.onSurfaceVariant, fontWeight: FontWeight.w500)),
+    );
+  }
+
+  Widget _adviceText(BuildContext context, int? signal, double? rateMbps) {
     if (signal != null && signal < -75) {
-      return const Text(
-        'This device has a weak signal. Moving it closer to your router or a '
-        'mesh node will improve its connection. Walls, metal appliances, and '
-        'distance all reduce WiFi signal strength.',
+      final critical = signal < -82;
+      return Text(
+        critical
+            ? 'Very weak signal ($signal dBm) — this device is barely holding its connection. Move it much closer to your router or a mesh node.'
+            : 'Weak signal ($signal dBm). Moving this device closer to your router or a mesh node should improve its speed noticeably.',
       );
     }
     if (rateMbps != null && rateMbps < 10) {
       return const Text(
-        'This device is getting very slow WiFi speeds. Check for interference '
-        'between it and your router. Moving it closer or reconnecting to the '
-        '5 GHz band often helps.',
+        'This device is getting very slow WiFi speeds despite an OK signal. '
+        'Check for interference (thick walls, metal appliances) between it and your router. '
+        'Moving closer or reconnecting to the 5 GHz band often helps.',
       );
     }
     return const Text(
