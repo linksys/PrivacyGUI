@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/connection/helpers/recovery_dialog_helper.dart';
@@ -589,18 +591,20 @@ class _StalenessIndicator extends StatefulWidget {
 
 class _StalenessIndicatorState extends State<_StalenessIndicator> {
   late int _minutesAgo;
+  Timer? _timer;
 
   @override
   void initState() {
     super.initState();
     _update();
-    // Refresh every minute so the label stays accurate
-    Future.doWhile(() async {
-      await Future.delayed(const Duration(minutes: 1));
-      if (!mounted) return false;
-      _update();
-      return true;
-    });
+    // Use a cancellable Timer instead of Future.doWhile so disposal is clean
+    _timer = Timer.periodic(const Duration(minutes: 1), (_) => _update());
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
   }
 
   void _update() {

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/connection/helpers/recovery_dialog_helper.dart';
 import 'package:privacy_gui/core/connection/models/app_connection_state.dart';
 import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
+import 'package:privacy_gui/page/instant_test/views/components/pill_chip.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_radio_ui_model.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_notifier.dart';
 import 'package:privacy_gui/page/instant_test/providers/instant_test_provider.dart';
@@ -591,11 +592,16 @@ class _Flow2State extends ConsumerState<_Flow2> {
     final svc = ref.read(browserDiagnosticServiceProvider);
     try {
       final result = await svc.runInternetSpeedTest();
+      if (!mounted) return;
       setState(() => _speedResult = result);
     } catch (_) {
+      if (!mounted) return;
       setState(() => _speedResult = null);
     } finally {
-      setState(() { _isRunning = false; _step = 1; });
+      if (!mounted) return;
+      // Only advance to step 1 if we have a result; otherwise stay at step 0
+      // with isRunning=false so the user sees the retry button.
+      setState(() { _isRunning = false; if (_speedResult != null) _step = 1; });
     }
   }
 
@@ -607,12 +613,14 @@ class _Flow2State extends ConsumerState<_Flow2> {
     final svc = ref.read(browserDiagnosticServiceProvider);
     try {
       final result = await svc.runInternetSpeedTest();
+      if (!mounted) return;
       setState(() {
         _postRestartResult = result;
         _isRunning = false;
         if (result.downloadMbps < 25) { _step = 4; } else { _step = 1; _speedResult = result; }
       });
     } catch (_) {
+      if (!mounted) return;
       setState(() { _isRunning = false; _step = 4; });
     }
   }
@@ -821,6 +829,9 @@ class _Flow3State extends ConsumerState<_Flow3> {
   bool _macFilterDisabled = false;
   bool? _canSeeSsid;
   DeviceUIModel? _selectedDevice;
+  // Guards against fetch storm in _devicePickerCard: only trigger once per
+  // time the picker is shown (reset when _selectedDevice changes or flow exits)
+  bool _autoFetchTriggered = false;
   final List<int> _stepHistory = [];
 
   @override
@@ -932,8 +943,10 @@ class _Flow3State extends ConsumerState<_Flow3> {
     // USP: filter isWifi devices
     final clients = state.clients.where((c) => c.isWifi).toList();
     final isLoading = state.phase == InstantTestLoadPhase.loading;
-    // Auto-fetch if idle with no clients
-    if (state.phase == InstantTestLoadPhase.idle && clients.isEmpty) {
+    // Auto-fetch once if idle with no clients — guarded to prevent fetch storm
+    // if fetch() fails and resets to idle repeatedly
+    if (state.phase == InstantTestLoadPhase.idle && clients.isEmpty && !_autoFetchTriggered) {
+      _autoFetchTriggered = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) ref.read(instantTestProvider.notifier).fetch();
       });
@@ -1017,10 +1030,10 @@ class _Flow3State extends ConsumerState<_Flow3> {
         ]),
         const SizedBox(height: 8),
         Wrap(spacing: 12, children: [
-          _metaChip(context, colors, band.isNotEmpty ? band : 'WiFi'),
-          if (signal != null) _metaChip(context, colors, '$signal dBm'),
-          if (txRateMbps != null) _metaChip(context, colors, '↑${txRateMbps.toStringAsFixed(0)} Mbps'),
-          if (node != null) _metaChip(context, colors, node.isMaster ? 'On main router' : 'Via ${node.displayName}'),
+          PillChip(band.isNotEmpty ? band : 'WiFi'),
+          if (signal != null) PillChip('$signal dBm'),
+          if (txRateMbps != null) PillChip('↑${txRateMbps.toStringAsFixed(0)} Mbps'),
+          if (node != null) PillChip(node.isMaster ? 'On main router' : 'Via ${node.displayName}'),
         ]),
       ])),
       if (!hasIssues)
@@ -1044,14 +1057,6 @@ class _Flow3State extends ConsumerState<_Flow3> {
           ])),
       _linksysSupportTile(context),
     ];
-  }
-
-  Widget _metaChip(BuildContext context, ColorScheme colors, String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(color: colors.surfaceContainerHighest, borderRadius: BorderRadius.circular(12)),
-      child: Text(label, style: TextStyle(fontSize: 11, color: colors.onSurfaceVariant, fontWeight: FontWeight.w500)),
-    );
   }
 
   List<Widget> _keepsDroppingFlow(BuildContext context, InstantTestState state) {

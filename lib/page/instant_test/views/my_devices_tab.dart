@@ -2,16 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/page/instant_test/providers/instant_test_provider.dart';
 import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
 import 'package:privacy_gui/page/devices/views/components/usp_device_list_tile.dart';
 import 'package:privacy_gui/page/instant_test/models/device_score.dart';
 import 'package:privacy_gui/page/instant_test/providers/instant_test_provider.dart';
+import 'package:privacy_gui/page/instant_test/views/components/pill_chip.dart';
 import 'package:privacy_gui/route/constants.dart';
 
 class MyDevicesTab extends ConsumerWidget {
   /// Called to navigate to Help Me Fix It tab and launch Flow 3 for a device.
-  final VoidCallback? onGoToFlow3;
+  final ValueChanged<DeviceUIModel?>? onGoToFlow3;
 
   const MyDevicesTab({super.key, this.onGoToFlow3});
 
@@ -148,7 +148,7 @@ class _TroubleshootSheet extends ConsumerStatefulWidget {
   final DeviceUIModel device;
   final DeviceScore score;
   /// Called to open Help Me Fix It tab Flow 3 for this device.
-  final VoidCallback? onGoToFlow3;
+  final ValueChanged<DeviceUIModel?>? onGoToFlow3;
 
   const _TroubleshootSheet({
     required this.device,
@@ -188,9 +188,9 @@ class _TroubleshootSheetState extends ConsumerState<_TroubleshootSheet> {
           ]),
           const SizedBox(height: 8),
           Wrap(spacing: 8, children: [
-            if (device.band != null) _chip(context, device.band!),
-            if (signal != null) _chip(context, '$signal dBm'),
-            if (rateMbps != null) _chip(context, '↑${rateMbps.toStringAsFixed(0)} Mbps'),
+            if (device.band != null) PillChip(device.band!),
+            if (signal != null) PillChip('$signal dBm'),
+            if (rateMbps != null) PillChip('↑${rateMbps.toStringAsFixed(0)} Mbps'),
           ]),
           const SizedBox(height: 16),
           // Targeted advice
@@ -222,10 +222,11 @@ class _TroubleshootSheetState extends ConsumerState<_TroubleshootSheet> {
           ],
           // Go to Help Me Fix It Flow 3
           OutlinedButton.icon(
-            onPressed: widget.onGoToFlow3 != null
+            // Passes the specific device so InstantTestPage can fire flow 30
+          onPressed: widget.onGoToFlow3 != null
                 ? () {
                     Navigator.of(context).pop();
-                    widget.onGoToFlow3!();
+                    widget.onGoToFlow3!(widget.device);
                   }
                 : null,
             icon: const Icon(Icons.build_outlined, size: 18),
@@ -244,15 +245,6 @@ class _TroubleshootSheetState extends ConsumerState<_TroubleshootSheet> {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _chip(BuildContext context, String label) {
-    final colors = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(color: colors.surfaceContainerHighest, borderRadius: BorderRadius.circular(12)),
-      child: Text(label, style: TextStyle(fontSize: 11, color: colors.onSurfaceVariant, fontWeight: FontWeight.w500)),
     );
   }
 

@@ -226,7 +226,9 @@ class InstantTestState extends Equatable {
         routerSpeed,
         routerInternetResult,
         browserTestStep,
-        completedAt,
+        // completedAt intentionally excluded from props:
+        // wall-clock timestamps would make two diagnostically identical states
+        // unequal, causing spurious Riverpod re-notifications on every re-run.
         planSpeedMbps,
         deviceScores,
         verdict,
