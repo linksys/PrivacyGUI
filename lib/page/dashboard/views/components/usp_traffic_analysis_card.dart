@@ -52,34 +52,37 @@ class _UspTrafficAnalysisCardState
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Header: title + spinner + interval selector
-          Row(
-            children: [
-              AppText.titleMedium('Traffic Monitor'),
-              if (analysisState.isFetching) ...[
-                AppGap.sm(),
-                SizedBox(
-                  width: 14,
-                  height: 14,
-                  child: AppLoader(strokeWidth: 2),
+          SizedBox(
+            height: 36,
+            child: Row(
+              children: [
+                AppText.titleMedium('Traffic Monitor'),
+                if (analysisState.isFetching) ...[
+                  AppGap.sm(),
+                  SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: AppLoader(strokeWidth: 2),
+                  ),
+                ],
+                const Spacer(),
+                AppPopupMenu<Duration?>(
+                  icon: Icons.timer_outlined,
+                  iconSize: 20,
+                  items: _intervalOptions
+                      .map((e) => AppPopupMenuItem<Duration?>(
+                            value: e.$1,
+                            label: e.$2,
+                          ))
+                      .toList(),
+                  onSelected: (interval) {
+                    ref
+                        .read(uspTrafficAnalysisProvider.notifier)
+                        .setRefreshInterval(interval);
+                  },
                 ),
               ],
-              const Spacer(),
-              AppPopupMenu<Duration?>(
-                icon: Icons.timer_outlined,
-                iconSize: 20,
-                items: _intervalOptions
-                    .map((e) => AppPopupMenuItem<Duration?>(
-                          value: e.$1,
-                          label: e.$2,
-                        ))
-                    .toList(),
-                onSelected: (interval) {
-                  ref
-                      .read(uspTrafficAnalysisProvider.notifier)
-                      .setRefreshInterval(interval);
-                },
-              ),
-            ],
+            ),
           ),
           AppGap.md(),
           AppTabs(
@@ -496,34 +499,11 @@ class _DualBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final total = sent + recv;
     final fraction = maxValue > 0 ? total / maxValue : 0.0;
-    final sentFraction = total > 0 ? sent / total : 0.5;
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final barWidth = constraints.maxWidth * fraction;
-        return Align(
-          alignment: Alignment.centerLeft,
-          child: Container(
-            width: barWidth,
-            height: 12,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(4),
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: Row(
-              children: [
-                Container(
-                  width: barWidth * sentFraction,
-                  color: color,
-                ),
-                Expanded(
-                  child: Container(color: color.withValues(alpha: 0.4)),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
+    return AppLoader(
+      variant: LoaderVariant.linear,
+      value: fraction,
+      color: color,
     );
   }
 }

@@ -4,6 +4,7 @@ import 'package:privacy_gui/core/utils/device_classifier.dart';
 import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/_shared/components/card_skeleton.dart';
+import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/devices/views/components/device_icon_with_badge.dart';
 import 'package:privacy_gui/page/devices/views/components/usp_signal_strength_indicator.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -26,6 +27,7 @@ class UspConnectedDevicesCard extends ConsumerWidget {
     final devicesData = ref.watch(devicesDataProvider).valueOrNull;
     final devices = this.devices ?? devicesData?.clientDevices;
     if (devices == null) return const CardSkeleton.list(rows: 3);
+    final colorScheme = Theme.of(context).colorScheme;
     final activeDevices = devices.where((d) => d.isActive).toList();
     final inactiveDevices = devices.where((d) => !d.isActive).toList();
     final displayDevices = activeDevices.take(_maxDisplayCount).toList();
@@ -34,44 +36,71 @@ class UspConnectedDevicesCard extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
+          CardHeader(
+            title: 'Connected Devices',
+            trailing: onViewAll != null
+                ? AppButton.text(label: 'View All', onTap: onViewAll)
+                : null,
+          ),
+          AppGap.sm(),
+          // Status summary - metric tiles style
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Expanded(
-                child: AppText.titleMedium('Connected Devices'),
-              ),
-              if (onViewAll != null)
-                AppButton.text(
-                  label: 'View All',
-                  onTap: onViewAll,
+                child: Block(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      UspStatusDot(isActive: true, size: 10),
+                      AppGap.sm(),
+                      AppText.titleSmall('${activeDevices.length}'),
+                      AppGap.xs(),
+                      AppText.bodySmall(
+                        'Online',
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ],
+                  ),
                 ),
+              ),
+              AppGap.sm(),
+              Expanded(
+                child: Block(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      UspStatusDot(isActive: false, size: 10),
+                      AppGap.sm(),
+                      AppText.titleSmall('${inactiveDevices.length}'),
+                      AppGap.xs(),
+                      AppText.bodySmall(
+                        'Offline',
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ],
           ),
-          AppGap.xs(),
-          Row(
-            children: [
-              UspStatusDot(isActive: true, size: 8),
-              AppGap.xs(),
-              AppText.labelLarge('${activeDevices.length} Online'),
-              AppGap.md(),
-              UspStatusDot(isActive: false, size: 8),
-              AppGap.xs(),
-              AppText.labelLarge('${inactiveDevices.length} Offline'),
-            ],
-          ),
-          AppGap.xl(),
+          AppGap.md(),
           // Device list — only online devices, max 5
           if (activeDevices.isEmpty)
-            AppText.bodyMedium('No devices online')
+            const EmptyState(
+              icon: Icons.devices,
+              message: 'No devices online',
+            )
           else
             Expanded(
               child: SingleChildScrollView(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: displayDevices
-                      .map((d) => _buildDeviceRow(context, d))
-                      .toList(),
+                  children: [
+                    for (var i = 0; i < displayDevices.length; i++) ...[
+                      _buildDeviceRow(context, displayDevices[i]),
+                      if (i < displayDevices.length - 1) AppGap.sm(),
+                    ],
+                  ],
                 ),
               ),
             ),
@@ -87,63 +116,28 @@ class UspConnectedDevicesCard extends ConsumerWidget {
       mac: device.mac,
     );
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.md),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    return DeviceRow(
+      icon: DeviceIconWithBadge.multiInterface(
+        icon: deviceCategory.icon,
+        size: 28,
+        iconColor: scheme.onSurface,
+        hasMultipleInterfaces: device.hasMultipleInterfaces,
+      ),
+      title: device.displayName,
+      subtitle: device.ip,
+      trailing: Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          // Device icon (larger) with multi-interface badge
-          Container(
-            padding: const EdgeInsets.all(AppSpacing.sm),
-            decoration: BoxDecoration(
-              color: scheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(AppSpacing.sm),
+          if (device.parentNodeName != null)
+            _buildParentNodeBadge(context, device.parentNodeName!),
+          if (device.hasSignalDisplay)
+            UspSignalStrengthIndicator(rssi: device.signalStrength!)
+          else
+            AppText.bodySmall(
+              device.isWifi ? 'WiFi' : 'Wired',
+              color: scheme.onSurfaceVariant,
             ),
-            child: DeviceIconWithBadge.multiInterface(
-              icon: deviceCategory.icon,
-              size: 32,
-              iconColor: scheme.onSurface,
-              hasMultipleInterfaces: device.hasMultipleInterfaces,
-            ),
-          ),
-          AppGap.md(),
-          // Name + IP (subtitle)
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                AppText.bodyLarge(
-                  device.displayName,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                AppGap.xxs(),
-                AppText.bodySmall(
-                  device.ip,
-                  color: scheme.onSurfaceVariant,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-          AppGap.sm(),
-          // Parent node badge + Signal/Wired (stacked)
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              if (device.parentNodeName != null)
-                _buildParentNodeBadge(context, device.parentNodeName!),
-              AppGap.xxs(),
-              if (device.hasSignalDisplay)
-                UspSignalStrengthIndicator(rssi: device.signalStrength!)
-              else
-                AppText.bodySmall(
-                  device.isWifi ? 'WiFi' : 'Wired',
-                  color: scheme.onSurfaceVariant,
-                ),
-            ],
-          ),
         ],
       ),
     );
@@ -152,7 +146,7 @@ class UspConnectedDevicesCard extends ConsumerWidget {
   Widget _buildParentNodeBadge(BuildContext context, String nodeName) {
     final scheme = Theme.of(context).colorScheme;
     return Container(
-      constraints: const BoxConstraints(maxWidth: 120),
+      constraints: const BoxConstraints(maxWidth: 100),
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.sm,
         vertical: 2,

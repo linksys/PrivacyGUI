@@ -7,6 +7,7 @@ import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/dhcp/providers/usp_dhcp_reservations_notifier.dart';
 import 'package:privacy_gui/page/local_network/providers/dhcp_data_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/_shared/components/usp_mutation_helper.dart';
 import 'package:privacy_gui/page/_shared/components/card_skeleton.dart';
 import 'package:privacy_gui/page/dashboard/views/dialogs/dhcp_reservation_dialog.dart';
@@ -51,14 +52,16 @@ class UspDhcpReservationsCard extends ConsumerWidget {
               ),
             ],
           ),
-          AppGap.xl(),
+          AppGap.md(),
           if (reservations.isEmpty)
             AppText.bodyMedium('No DHCP reservations configured')
           else
-            ...reservations
-                .map((r) => _buildReservationRow(context, ref, r, isLoading)),
+            for (var i = 0; i < reservations.length; i++) ...[
+              _buildReservationRow(context, ref, reservations[i], isLoading),
+              if (i < reservations.length - 1) AppGap.sm(),
+            ],
           // ── Client leases section ──
-          AppGap.xl(),
+          AppGap.lg(),
           const Divider(),
           AppGap.md(),
           Row(
@@ -72,7 +75,10 @@ class UspDhcpReservationsCard extends ConsumerWidget {
           if (clients.isEmpty)
             AppText.bodyMedium('No DHCP clients')
           else
-            ...clients.map((c) => _buildClientRow(context, c)),
+            for (var i = 0; i < clients.length; i++) ...[
+              _buildClientRow(context, clients[i]),
+              if (i < clients.length - 1) AppGap.sm(),
+            ],
         ],
       ),
     );
@@ -80,8 +86,9 @@ class UspDhcpReservationsCard extends ConsumerWidget {
 
   Widget _buildReservationRow(BuildContext context, WidgetRef ref,
       DhcpReservationUIModel reservation, bool isLoading) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Block(
       child: Row(
         children: [
           AppSwitch(
@@ -100,13 +107,11 @@ class UspDhcpReservationsCard extends ConsumerWidget {
           ),
           AppGap.sm(),
           Expanded(child: AppText.bodyMedium(reservation.mac)),
-          SizedBox(
-            width: context.colWidth(2),
-            child: AppText.bodySmall(
-              reservation.ip,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
+          AppText.bodySmall(
+            reservation.ip,
+            color: colorScheme.onSurfaceVariant,
           ),
+          AppGap.sm(),
           AppIconButton(
             icon: AppIcon.font(Icons.delete_outline, size: 18),
             onTap: isLoading
@@ -120,15 +125,21 @@ class UspDhcpReservationsCard extends ConsumerWidget {
 
   Widget _buildClientRow(BuildContext context, DhcpClientUIModel client) {
     final colorScheme = Theme.of(context).colorScheme;
+    final appColors = Theme.of(context).extension<AppColorScheme>();
     final lease = client.leaseTimeFormatted;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+
+    return Block(
       child: Row(
         children: [
-          Icon(
-            Icons.circle,
-            size: 8,
-            color: client.active ? Colors.green : colorScheme.outline,
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: client.active
+                  ? (appColors?.semanticSuccess ?? Colors.green)
+                  : colorScheme.outline,
+            ),
           ),
           AppGap.sm(),
           Expanded(
@@ -144,22 +155,11 @@ class UspDhcpReservationsCard extends ConsumerWidget {
               ],
             ),
           ),
-          SizedBox(
-            width: context.colWidth(2),
-            child: AppText.bodySmall(
-              client.ip,
-              color: colorScheme.onSurfaceVariant,
-            ),
-          ),
-          if (lease.isNotEmpty)
-            SizedBox(
-              width: context.colWidth(1),
-              child: AppText.bodySmall(
-                lease,
-                color: colorScheme.onSurfaceVariant,
-                textAlign: TextAlign.end,
-              ),
-            ),
+          AppText.bodySmall(client.ip, color: colorScheme.onSurfaceVariant),
+          if (lease.isNotEmpty) ...[
+            AppGap.md(),
+            AppText.bodySmall(lease, color: colorScheme.onSurfaceVariant),
+          ],
         ],
       ),
     );

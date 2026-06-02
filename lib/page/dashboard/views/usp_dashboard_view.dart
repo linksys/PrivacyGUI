@@ -46,13 +46,7 @@ class UspDashboardView extends ConsumerWidget {
               if (isRefreshing)
                 Padding(
                   padding: const EdgeInsets.only(top: AppSpacing.md),
-                  child: LinearProgressIndicator(
-                    minHeight: 4,
-                    backgroundColor: Theme.of(context)
-                        .colorScheme
-                        .onSurface
-                        .withValues(alpha: 0.1),
-                  ),
+                  child: AppLoader(variant: LoaderVariant.linear),
                 ),
               Expanded(
                 child: asyncState.when(

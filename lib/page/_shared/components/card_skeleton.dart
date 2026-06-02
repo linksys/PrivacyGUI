@@ -9,7 +9,7 @@ import 'package:ui_kit_library/ui_kit.dart';
 ///
 /// Variants:
 /// - [CardSkeleton.stats] — 4 stat tiles in a row (Stats Panel)
-/// - [CardSkeleton.info] — title + N label-value rows (Device Info, LAN, etc.)
+/// - [CardSkeleton.info] — hero block + metric tiles + grid (Device Info, Network Status)
 /// - [CardSkeleton.list] — title + badge + N list item rows (Devices, DHCP, etc.)
 /// - [CardSkeleton.chart] — title + tab bar placeholder + chart area
 /// - [CardSkeleton.topology] — title + large visualization placeholder
@@ -28,7 +28,7 @@ class CardSkeleton extends StatelessWidget {
   /// 4 stat tiles in a row — matches [UspStatsPanel].
   const factory CardSkeleton.stats() = _CardSkeletonStats;
 
-  /// Title + N label-value rows — matches info cards (Device Info, LAN, etc.).
+  /// Hero block + metric tiles + grid — matches new info cards (Device Info, Network Status).
   const CardSkeleton.info({required int rows})
       : _variant = _SkeletonVariant.info,
         _rows = rows;
@@ -66,37 +66,74 @@ class CardSkeleton extends StatelessWidget {
   }
 
   // ---------------------------------------------------------------------------
-  // Info card — title + configurable number of label-value rows
+  // Info card — hero block + metric tiles + grid (matches new design)
   // ---------------------------------------------------------------------------
-
-  // Vary value widths so it looks natural
-  static const _valueWidths = [180.0, 140.0, 200.0, 120.0, 160.0];
 
   Widget _buildInfo() {
     return AppCard(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            AppSkeleton.text(width: 120, height: 20),
-            AppGap.xl(),
-            for (int i = 0; i < _rows; i++) ...[
-              Padding(
-                padding: const EdgeInsets.only(bottom: AppSpacing.md),
-                child: Row(
-                  children: [
-                    AppSkeleton.text(width: 100),
-                    AppGap.xl(),
-                    AppSkeleton.text(
-                      width: _valueWidths[i % _valueWidths.length],
-                    ),
-                  ],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          SizedBox(
+            height: 36,
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: AppSkeleton.text(width: 140, height: 20),
+            ),
+          ),
+          AppGap.md(),
+          // Hero block
+          AppSkeleton(
+            width: double.infinity,
+            height: 104,
+            borderRadius: BorderRadius.circular(AppSpacing.sm),
+          ),
+          AppGap.sm(),
+          // Metric tiles row
+          Row(
+            children: [
+              Expanded(
+                child: AppSkeleton(
+                  width: double.infinity,
+                  height: 64,
+                  borderRadius: BorderRadius.circular(AppSpacing.sm),
+                ),
+              ),
+              AppGap.sm(),
+              Expanded(
+                child: AppSkeleton(
+                  width: double.infinity,
+                  height: 64,
+                  borderRadius: BorderRadius.circular(AppSpacing.sm),
                 ),
               ),
             ],
-          ],
-        ),
+          ),
+          AppGap.sm(),
+          // Grid row
+          Row(
+            children: [
+              Expanded(
+                child: AppSkeleton(
+                  width: double.infinity,
+                  height: 52,
+                  borderRadius: BorderRadius.circular(AppSpacing.sm),
+                ),
+              ),
+              if (_rows > 1) ...[
+                AppGap.sm(),
+                Expanded(
+                  child: AppSkeleton(
+                    width: double.infinity,
+                    height: 52,
+                    borderRadius: BorderRadius.circular(AppSpacing.sm),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -107,13 +144,13 @@ class CardSkeleton extends StatelessWidget {
 
   Widget _buildList() {
     return AppCard(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header row with title + action button placeholders
-            Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header row with title + action button placeholders
+          SizedBox(
+            height: 36,
+            child: Row(
               children: [
                 AppSkeleton.text(width: 140, height: 20),
                 AppGap.md(),
@@ -125,23 +162,15 @@ class CardSkeleton extends StatelessWidget {
                     borderRadius: BorderRadius.circular(6)),
               ],
             ),
-            AppGap.xl(),
-            for (int i = 0; i < _rows; i++) ...[
-              Padding(
-                padding: const EdgeInsets.only(bottom: AppSpacing.md),
-                child: Row(
-                  children: [
-                    AppSkeleton.capsule(width: 36, height: 20),
-                    AppGap.md(),
-                    Expanded(child: AppSkeleton.text(width: double.infinity)),
-                    AppGap.md(),
-                    AppSkeleton.text(width: 80),
-                  ],
-                ),
-              ),
-            ],
-          ],
-        ),
+          ),
+          AppGap.md(),
+          // List items
+          AppSkeleton(
+            width: double.infinity,
+            height: _rows * 44.0,
+            borderRadius: BorderRadius.circular(AppSpacing.sm),
+          ),
+        ],
       ),
     );
   }
@@ -152,33 +181,38 @@ class CardSkeleton extends StatelessWidget {
 
   Widget _buildChart() {
     return AppCard(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Title
-            AppSkeleton.text(width: 140, height: 20),
-            AppGap.lg(),
-            // Tab bar placeholder
-            Row(
-              children: [
-                AppSkeleton.capsule(width: 60, height: 28),
-                AppGap.sm(),
-                AppSkeleton.capsule(width: 60, height: 28),
-                AppGap.sm(),
-                AppSkeleton.capsule(width: 60, height: 28),
-              ],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          SizedBox(
+            height: 36,
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: AppSkeleton.text(width: 140, height: 20),
             ),
-            AppGap.lg(),
-            // Chart area
-            AppSkeleton(
+          ),
+          AppGap.md(),
+          // Tab bar placeholder
+          Row(
+            children: [
+              AppSkeleton.capsule(width: 60, height: 28),
+              AppGap.sm(),
+              AppSkeleton.capsule(width: 60, height: 28),
+              AppGap.sm(),
+              AppSkeleton.capsule(width: 60, height: 28),
+            ],
+          ),
+          AppGap.lg(),
+          // Chart area
+          Expanded(
+            child: AppSkeleton(
               width: double.infinity,
-              height: 200,
+              height: double.infinity,
               borderRadius: BorderRadius.circular(8),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -189,26 +223,28 @@ class CardSkeleton extends StatelessWidget {
 
   Widget _buildTopology() {
     return AppCard(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            height: 36,
+            child: Row(
               children: [
                 AppSkeleton.text(width: 140, height: 20),
                 AppGap.md(),
                 AppSkeleton.capsule(width: 32, height: 20),
               ],
             ),
-            AppGap.xl(),
-            AppSkeleton(
+          ),
+          AppGap.md(),
+          Expanded(
+            child: AppSkeleton(
               width: double.infinity,
-              height: 320,
+              height: double.infinity,
               borderRadius: BorderRadius.circular(12),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

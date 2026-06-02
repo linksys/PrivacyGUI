@@ -55,36 +55,39 @@ class _UspSystemStatusCardState extends ConsumerState<UspSystemStatusCard> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Header: title + spinner + interval selector
-          Row(
-            children: [
-              AppText.titleMedium('System Status'),
-              if (monitorState.isFetching) ...[
-                AppGap.sm(),
-                SizedBox(
-                  width: 14,
-                  height: 14,
-                  child: AppLoader(strokeWidth: 2),
+          SizedBox(
+            height: 36,
+            child: Row(
+              children: [
+                AppText.titleMedium('System Status'),
+                if (monitorState.isFetching) ...[
+                  AppGap.sm(),
+                  SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: AppLoader(strokeWidth: 2),
+                  ),
+                ],
+                const Spacer(),
+                AppPopupMenu<Duration?>(
+                  icon: Icons.timer_outlined,
+                  iconSize: 20,
+                  items: _intervalOptions
+                      .map((e) => AppPopupMenuItem<Duration?>(
+                            value: e.$1,
+                            label: e.$2,
+                          ))
+                      .toList(),
+                  onSelected: (interval) {
+                    ref
+                        .read(uspSystemMonitorProvider.notifier)
+                        .setRefreshInterval(interval);
+                  },
                 ),
               ],
-              const Spacer(),
-              AppPopupMenu<Duration?>(
-                icon: Icons.timer_outlined,
-                iconSize: 20,
-                items: _intervalOptions
-                    .map((e) => AppPopupMenuItem<Duration?>(
-                          value: e.$1,
-                          label: e.$2,
-                        ))
-                    .toList(),
-                onSelected: (interval) {
-                  ref
-                      .read(uspSystemMonitorProvider.notifier)
-                      .setRefreshInterval(interval);
-                },
-              ),
-            ],
+            ),
           ),
-          AppGap.sm(),
+          AppGap.md(),
           AppTabs(
             tabs: _tabs,
             initialIndex: selectedTab,
