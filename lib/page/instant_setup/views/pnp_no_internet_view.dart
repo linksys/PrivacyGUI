@@ -9,11 +9,27 @@ import 'package:privacy_gui/route/constants.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// No-internet troubleshooter hub — restart modem or enter ISP settings.
-class PnpNoInternetView extends ConsumerWidget {
+class PnpNoInternetView extends ConsumerStatefulWidget {
   const PnpNoInternetView({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<PnpNoInternetView> createState() => _PnpNoInternetViewState();
+}
+
+class _PnpNoInternetViewState extends ConsumerState<PnpNoInternetView> {
+  bool _retrying = false;
+
+  Future<void> _onRetry() async {
+    setState(() => _retrying = true);
+    try {
+      await ref.read(pnpProvider.notifier).retryInternetCheck();
+    } finally {
+      if (mounted) setState(() => _retrying = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     // Listen for internet recovery → auto-navigate back to wizard.
     ref.listen(pnpProvider, (prev, next) {
       if (next.phase is WizardConfiguring || next.phase is WizardInitializing) {
@@ -21,97 +37,100 @@ class PnpNoInternetView extends ConsumerWidget {
       }
     });
 
-    return UiKitPageView(
-      appBarStyle: UiKitAppBarStyle.none,
+    return UiKitPageView.withSliver(
       scrollable: true,
+      appBarStyle: UiKitAppBarStyle.none,
+      backState: UiKitBackState.none,
       onBackTap: () => context.go(RoutePath.pnp),
-      child: (context, constraints) => Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.lg,
-          vertical: AppSpacing.lg,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Center(child: Assets.images.noInternetConnection.svg(width: 200)),
-            AppGap.lg(),
-            AppText.headlineSmall(loc(context).pnpErrorForStaticIpAndDhcp),
-            AppGap.xxxl(),
-
-            // Option 1: Restart modem
-            AppCard(
-              child: InkWell(
-                onTap: () => context.goNamed(RouteNamed.pnpUnplugModem),
-                child: Padding(
-                  padding: const EdgeInsets.all(AppSpacing.lg),
-                  child: Row(
-                    children: [
-                      AppIcon.font(Icons.power_settings_new),
-                      AppGap.md(),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            AppText.titleSmall(
-                              loc(context).pnpNoInternetConnectionRestartModem,
-                            ),
-                            AppGap.xs(),
-                            AppText.bodySmall(
-                              loc(context)
-                                  .pnpNoInternetConnectionRestartModemDesc,
-                            ),
-                          ],
-                        ),
-                      ),
-                      AppIcon.font(Icons.chevron_right),
-                    ],
+      child: (context, constraints) {
+        return Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 480),
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.xl),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Center(
+                    child: Assets.images.noInternetConnection.svg(width: 160),
                   ),
+                  AppGap.lg(),
+                  AppText.headlineSmall(
+                    loc(context).pnpErrorForStaticIpAndDhcp,
+                    textAlign: TextAlign.center,
+                  ),
+                  AppGap.xxxl(),
+                  _OptionCard(
+                    icon: Icons.power_settings_new,
+                    title: loc(context).pnpNoInternetConnectionRestartModem,
+                    description:
+                        loc(context).pnpNoInternetConnectionRestartModemDesc,
+                    onTap: () => context.goNamed(RouteNamed.pnpUnplugModem),
+                  ),
+                  AppGap.lg(),
+                  _OptionCard(
+                    icon: Icons.settings_ethernet,
+                    title: loc(context).pnpNoInternetConnectionEnterISP,
+                    description:
+                        loc(context).pnpNoInternetConnectionEnterISPDesc,
+                    onTap: () =>
+                        context.goNamed(RouteNamed.pnpIspTypeSelection),
+                  ),
+                  AppGap.xxxl(),
+                  Center(
+                    child: AppButton.text(
+                      label: loc(context).tryAgain,
+                      isLoading: _retrying,
+                      onTap: _retrying ? null : _onRetry,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _OptionCard extends StatelessWidget {
+  const _OptionCard({
+    required this.icon,
+    required this.title,
+    required this.description,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String description;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          child: Row(
+            children: [
+              AppIcon.font(icon),
+              AppGap.md(),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    AppText.titleSmall(title),
+                    AppGap.xs(),
+                    AppText.bodySmall(description),
+                  ],
                 ),
               ),
-            ),
-            AppGap.lg(),
-
-            // Option 2: Enter ISP settings
-            AppCard(
-              child: InkWell(
-                onTap: () => context.goNamed(RouteNamed.pnpIspTypeSelection),
-                child: Padding(
-                  padding: const EdgeInsets.all(AppSpacing.lg),
-                  child: Row(
-                    children: [
-                      AppIcon.font(Icons.settings_ethernet),
-                      AppGap.md(),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            AppText.titleSmall(
-                              loc(context).pnpNoInternetConnectionEnterISP,
-                            ),
-                            AppGap.xs(),
-                            AppText.bodySmall(
-                              loc(context).pnpNoInternetConnectionEnterISPDesc,
-                            ),
-                          ],
-                        ),
-                      ),
-                      AppIcon.font(Icons.chevron_right),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            AppGap.xxxl(),
-
-            // Retry button
-            Center(
-              child: AppButton.text(
-                label: loc(context).tryAgain,
-                onTap: () =>
-                    ref.read(pnpProvider.notifier).retryInternetCheck(),
-              ),
-            ),
-          ],
+              AppIcon.font(Icons.chevron_right),
+            ],
+          ),
         ),
       ),
     );
