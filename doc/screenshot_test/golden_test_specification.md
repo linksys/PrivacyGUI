@@ -114,7 +114,7 @@ State keys become part of the output filename (`{viewName}-{stateKey}-{device}-{
 
 ### Complete Example (Firewall)
 
-#### Test file: `test/usp_test/page/firewall/localizations/usp_firewall_view_test.dart`
+#### Test file: `test/golden_test/page/firewall/localizations/usp_firewall_view_test.dart`
 
 ```dart
 import 'package:privacy_gui/page/firewall/models/firewall_feature_state.dart';
@@ -147,7 +147,7 @@ void main() {
 }
 ```
 
-#### Fixtures: `test/usp_test/page/firewall/fixtures/firewall_test_data.dart`
+#### Fixtures: `test/golden_test/page/firewall/fixtures/firewall_test_data.dart`
 
 ```dart
 import 'package:privacy_gui/framework/preservable.dart';
@@ -228,7 +228,7 @@ FirewallFeatureState get errorState => FirewallFeatureState(
 );
 ```
 
-#### Mock: `test/usp_test/golden_framework/mocks/mock_firewall.dart`
+#### Mock: `test/golden_test/golden_framework/mocks/mock_firewall.dart`
 
 ```dart
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -346,7 +346,7 @@ Allowed finders for interactions:
 
 ### Shared Interactions
 
-UI components that are shared across multiple pages (e.g., the saving spinner dialog triggered by `doSomethingWithSpinner`) should be tested once in a shared test file (`test/usp_test/page/shared/shared_states_test.dart`) rather than duplicated in every feature test. Individual feature tests should NOT include a `saving` state — since the spinner is an imperative overlay (not provider-state-driven), it requires an interaction to capture, and testing it once is sufficient.
+UI components that are shared across multiple pages (e.g., the saving spinner dialog triggered by `doSomethingWithSpinner`) should be tested once in a shared test file (`test/golden_test/page/shared/shared_states_test.dart`) rather than duplicated in every feature test. Individual feature tests should NOT include a `saving` state — since the spinner is an imperative overlay (not provider-state-driven), it requires an interaction to capture, and testing it once is sufficient.
 
 ---
 
@@ -369,7 +369,7 @@ Each feature provides a `FixedXxxNotifier` that subclasses the real Notifier, re
 ### File Structure
 
 ```
-test/usp_test/golden_framework/
+test/golden_test/golden_framework/
   mocks/
     mock_firewall.dart      // FixedFirewallNotifier + firewallOverrides()
     mock_wifi_settings.dart // FixedWifiSettingsNotifier + wifiOverrides()
@@ -385,7 +385,7 @@ See the complete Firewall example above for `mock_firewall.dart` implementation.
 ### Common Overrides
 
 ```dart
-// test/usp_test/golden_framework/mocks/mock_common.dart
+// test/golden_test/golden_framework/mocks/mock_common.dart
 
 List<Override> commonOverrides() => [
   authProvider.overrideWith(() => FixedAuthNotifier()),
@@ -424,7 +424,7 @@ Shared test data (states, models) should be defined once and reused across unit 
 ### Fixture Location
 
 ```
-test/usp_test/page/firewall/
+test/golden_test/page/firewall/
   fixtures/
     firewall_test_data.dart    // shared FeatureState instances, model constants
   localizations/
@@ -579,7 +579,7 @@ Views that only render text, icons, and standard Flutter widgets do NOT need thi
 
 ### flutter_test_config.dart
 
-Located at `test/usp_test/flutter_test_config.dart`, this file is automatically loaded by the Flutter test runner for all tests under `test/usp_test/`. It configures:
+Located at `test/golden_test/flutter_test_config.dart`, this file is automatically loaded by the Flutter test runner for all tests under `test/golden_test/`. It configures:
 
 1. **Alchemist config** — Disables CI goldens, enables platform goldens with `diffThreshold: 0.025`
 2. **Font loading** — Loads real fonts so text renders readably (not Ahem blocks)
@@ -695,7 +695,7 @@ void _validateConfig(GoldenTestConfig config) {
 
 for view_file in lib/page/*/views/usp_*_view.dart; do
   feature=$(echo "$view_file" | sed 's|lib/page/\(.*\)/views/.*|\1|')
-  test_pattern="test/usp_test/page/$feature/localizations/*_test.dart"
+  test_pattern="test/golden_test/page/$feature/localizations/*_test.dart"
   if ! ls $test_pattern &>/dev/null 2>&1; then
     echo "FAIL $view_file: no golden test found"
     FAIL=1
@@ -717,7 +717,7 @@ done
 ### Framework Code
 
 ```
-test/usp_test/
+test/golden_test/
   flutter_test_config.dart        # Alchemist config + font loading (auto-loaded by test runner)
   golden_framework/
     golden_test_config.dart       # GoldenTestConfig, Interaction, ShellType
@@ -733,7 +733,7 @@ test/usp_test/
 ### Per-Feature Tests
 
 ```
-test/usp_test/
+test/golden_test/
   page/
     firewall/
       fixtures/
@@ -878,33 +878,33 @@ A typical view with 6 states, default config: `6 × 2 × 1 × 1 = 12 golden file
 ### Run all golden tests
 
 ```bash
-flutter test test/usp_test/
+flutter test test/golden_test/
 ```
 
 ### Run a specific feature
 
 ```bash
-flutter test test/usp_test/page/firewall/
+flutter test test/golden_test/page/firewall/
 ```
 
 ### Update golden files (regenerate baselines)
 
 ```bash
-flutter test --update-goldens test/usp_test/
-flutter test --update-goldens test/usp_test/page/firewall/  # single feature
+flutter test --update-goldens test/golden_test/
+flutter test --update-goldens test/golden_test/page/firewall/  # single feature
 ```
 
 ---
 
 ## Workflow: Adding Golden Tests for a New View
 
-1. Create mock file at `test/usp_test/golden_framework/mocks/mock_{feature}.dart`
+1. Create mock file at `test/golden_test/golden_framework/mocks/mock_{feature}.dart`
    - Implement `FixedXxxNotifier` subclass
    - Export `xxxOverrides(state)` helper function
-2. Create fixtures at `test/usp_test/page/{feature}/fixtures/{feature}_test_data.dart`
-3. Create test file at `test/usp_test/page/{feature}/localizations/usp_{feature}_view_test.dart`
+2. Create fixtures at `test/golden_test/page/{feature}/fixtures/{feature}_test_data.dart`
+3. Create test file at `test/golden_test/page/{feature}/localizations/usp_{feature}_view_test.dart`
 4. Write `GoldenTestConfig` with all required + feature-specific states
-5. Run `flutter test --update-goldens test/usp_test/page/{feature}/` to generate baselines
+5. Run `flutter test --update-goldens test/golden_test/page/{feature}/` to generate baselines
 6. Review generated images visually
 7. Commit golden files
 8. CI will validate coverage on merge
