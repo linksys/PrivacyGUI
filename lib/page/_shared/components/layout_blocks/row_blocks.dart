@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
-import 'base_blocks.dart';
 import 'block_constants.dart';
 
 // =============================================================================
@@ -10,6 +9,7 @@ import 'block_constants.dart';
 
 /// Device row block with icon, title, subtitle, and optional trailing widget.
 ///
+/// Uses [AppListTile] from UI Kit with custom icon container styling.
 /// Use in device lists, connected devices sections, etc.
 class DeviceRow extends StatelessWidget {
   final Widget icon;
@@ -31,46 +31,33 @@ class DeviceRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Block(
-      onTap: onTap,
-      padding: BlockConstants.paddingMd,
-      child: Row(
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(BlockConstants.borderRadius),
-            ),
-            child: Center(child: icon),
-          ),
-          AppGap.md(),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                AppText.bodyLarge(
-                  title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                if (subtitle != null)
-                  AppText.bodySmall(
-                    subtitle!,
-                    color: colorScheme.onSurfaceVariant,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-              ],
-            ),
-          ),
-          if (trailing != null) ...[
-            AppGap.sm(),
-            trailing!,
-          ],
-        ],
+    return AppListTile(
+      backgroundColor: colorScheme.surfaceContainerHighest
+          .withValues(alpha: BlockConstants.backgroundAlpha),
+      leading: Container(
+        width: 44,
+        height: 44,
+        decoration: BoxDecoration(
+          color: colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(BlockConstants.borderRadius),
+        ),
+        child: Center(child: icon),
       ),
+      title: AppText.bodyLarge(
+        title,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      subtitle: subtitle != null
+          ? AppText.bodySmall(
+              subtitle!,
+              color: colorScheme.onSurfaceVariant,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            )
+          : null,
+      trailing: trailing,
+      onTap: onTap,
     );
   }
 }
