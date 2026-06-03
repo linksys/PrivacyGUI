@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:privacy_gui/core/utils/device_classifier.dart';
+import 'package:privacy_gui/page/_shared/utils/device_classifier.dart';
 import 'package:privacy_gui/core/utils/oui_lookup.dart';
 import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';

@@ -1,4 +1,4 @@
-import 'package:privacy_gui/core/utils/device_classifier.dart';
+import 'package:privacy_gui/page/_shared/utils/device_classifier.dart';
 import 'package:privacy_gui/core/utils/device_image_helper.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
 import 'package:privacy_gui/core/utils/logger.dart';

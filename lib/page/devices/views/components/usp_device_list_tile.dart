@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:privacy_gui/core/utils/device_classifier.dart';
+import 'package:privacy_gui/page/_shared/utils/device_classifier.dart';
 import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
 import 'package:privacy_gui/page/_shared/components/usp_status_dot.dart';
 import 'package:privacy_gui/page/devices/views/components/device_icon_with_badge.dart';

@@ -1,5 +1,4 @@
 import 'package:equatable/equatable.dart';
-import 'package:flutter/material.dart';
 import 'package:privacy_gui/core/utils/wifi.dart';
 
 // ---------------------------------------------------------------------------
@@ -51,14 +50,6 @@ class DeviceInterfaceInfo extends Equatable {
 
 /// Connection type for UI display decisions.
 enum DeviceConnectionType { wifi, wired }
-
-extension DeviceConnectionTypeExt on DeviceConnectionType {
-  /// Icon for connection type (does not require i18n).
-  IconData get icon => switch (this) {
-        DeviceConnectionType.wifi => Icons.wifi,
-        DeviceConnectionType.wired => Icons.settings_ethernet,
-      };
-}
 
 /// Presentation Layer Model — aggregates codegen + enricher per-device info.
 ///

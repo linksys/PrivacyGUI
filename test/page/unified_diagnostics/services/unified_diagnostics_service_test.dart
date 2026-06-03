@@ -4,6 +4,7 @@ import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/models/operate_result.dart';
 import 'package:privacy_gui/core/usp/services/network_diagnostics_executor.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
+import 'package:privacy_gui/page/unified_diagnostics/models/diagnostic_result.dart';
 import 'package:privacy_gui/page/unified_diagnostics/services/unified_diagnostics_service.dart';
 import 'package:privacy_gui/page/_shared/components/wifi_ui.dart';
 
@@ -1181,7 +1182,7 @@ void main() {
       expect(result, hasLength(1));
       final node = result.single;
       expect(node.nodeId, 'agent-A');
-      expect(node.severity, MeshBackhaulSeverityBucket.healthy);
+      expect(node.severity, MeshBackhaulSeverity.healthy);
       expect(node.mediaType, contains('Ethernet'));
     });
 
@@ -1205,7 +1206,7 @@ void main() {
       when(() => mockUsp.get(any())).thenAnswer((_) async => response);
 
       final result = await service.checkMeshBackhaul();
-      expect(result.single.severity, MeshBackhaulSeverityBucket.poor);
+      expect(result.single.severity, MeshBackhaulSeverity.poor);
     });
 
     test('classifies marginal wireless backhaul as weak', () async {
@@ -1228,7 +1229,7 @@ void main() {
       when(() => mockUsp.get(any())).thenAnswer((_) async => response);
 
       final result = await service.checkMeshBackhaul();
-      expect(result.single.severity, MeshBackhaulSeverityBucket.weak);
+      expect(result.single.severity, MeshBackhaulSeverity.weak);
     });
 
     test('classifies strong wireless backhaul as healthy', () async {
@@ -1251,7 +1252,7 @@ void main() {
       when(() => mockUsp.get(any())).thenAnswer((_) async => response);
 
       final result = await service.checkMeshBackhaul();
-      expect(result.single.severity, MeshBackhaulSeverityBucket.healthy);
+      expect(result.single.severity, MeshBackhaulSeverity.healthy);
     });
 
     test('excludes the controller node from results', () async {

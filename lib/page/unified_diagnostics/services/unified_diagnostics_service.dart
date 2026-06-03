@@ -18,6 +18,7 @@ import 'package:privacy_gui/generated/wi_fi_radios.g.dart';
 import 'package:privacy_gui/generated/wi_fi_ssids.g.dart';
 import 'package:privacy_gui/generated/wifi_clients.g.dart';
 import 'package:privacy_gui/page/unified_diagnostics/models/device_score.dart';
+import 'package:privacy_gui/page/unified_diagnostics/models/diagnostic_result.dart';
 import 'package:privacy_gui/page/_shared/components/wifi_ui.dart';
 
 final unifiedDiagnosticsServiceProvider =
@@ -701,7 +702,7 @@ class UnifiedDiagnosticsService {
     }
   }
 
-  MeshBackhaulSeverityBucket _gradeMeshBackhaul({
+  MeshBackhaulSeverity _gradeMeshBackhaul({
     required bool wired,
     required int phyRateMbps,
     required int signalDbm,
@@ -709,9 +710,9 @@ class UnifiedDiagnosticsService {
     required bool isStale,
   }) {
     // Stale node is always at least a warning
-    if (isStale) return MeshBackhaulSeverityBucket.weak;
+    if (isStale) return MeshBackhaulSeverity.weak;
 
-    if (wired) return MeshBackhaulSeverityBucket.healthy;
+    if (wired) return MeshBackhaulSeverity.healthy;
 
     // Wireless backhaul thresholds (RSSI from wifi.dart):
     //   poor   — PHY < 100 Mbps OR RSSI < rssiFair (-78) OR very low downlink
@@ -721,17 +722,16 @@ class UnifiedDiagnosticsService {
     final lowRssi = signalDbm != 0 && signalDbm < rssiFair;
     final veryLowDownlink =
         lastDownlinkRateKbps > 0 && lastDownlinkRateKbps < 50000; // < 50 Mbps
-    if (lowPhy || lowRssi || veryLowDownlink)
-      return MeshBackhaulSeverityBucket.poor;
+    if (lowPhy || lowRssi || veryLowDownlink) return MeshBackhaulSeverity.poor;
 
     final marginalPhy = phyRateMbps > 0 && phyRateMbps < 400;
     final marginalRssi = signalDbm != 0 && signalDbm < rssiExcellent;
     final lowDownlink =
         lastDownlinkRateKbps > 0 && lastDownlinkRateKbps < 200000; // < 200 Mbps
     if (marginalPhy || marginalRssi || lowDownlink)
-      return MeshBackhaulSeverityBucket.weak;
+      return MeshBackhaulSeverity.weak;
 
-    return MeshBackhaulSeverityBucket.healthy;
+    return MeshBackhaulSeverity.healthy;
   }
 
   // ─── Helpers ─────────────────────────────────────────────
@@ -973,10 +973,6 @@ class _RadioBucket {
   }
 }
 
-/// Intermittent connection check result.
-/// Severity bucket emitted by [UnifiedDiagnosticsService.checkMeshBackhaul].
-enum MeshBackhaulSeverityBucket { healthy, weak, poor }
-
 /// Per-node backhaul snapshot returned by
 /// [UnifiedDiagnosticsService.checkMeshBackhaul]. Notifier maps this into the
 /// presentation-layer `MeshBackhaulCheckUIModel` / `MeshNodeBackhaulUIModel`.
@@ -990,7 +986,7 @@ class MeshBackhaulNodeRecord {
   final int lastDownlinkRateKbps;
   final int signalStrengthDbm;
   final bool isController;
-  final MeshBackhaulSeverityBucket severity;
+  final MeshBackhaulSeverity severity;
 
   // Parent node tracking
   final String? parentNodeId;

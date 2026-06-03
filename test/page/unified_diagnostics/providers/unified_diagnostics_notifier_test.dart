@@ -472,7 +472,7 @@ void main() {
                 lastDownlinkRateKbps: 1000,
                 signalStrengthDbm: 0,
                 isController: false,
-                severity: MeshBackhaulSeverityBucket.healthy,
+                severity: MeshBackhaulSeverity.healthy,
               ),
             ]);
 
@@ -505,7 +505,7 @@ void main() {
                 lastDownlinkRateKbps: 200,
                 signalStrengthDbm: -70,
                 isController: false,
-                severity: MeshBackhaulSeverityBucket.weak,
+                severity: MeshBackhaulSeverity.weak,
               ),
             ]);
 
@@ -539,7 +539,7 @@ void main() {
                 lastDownlinkRateKbps: 50,
                 signalStrengthDbm: -80,
                 isController: false,
-                severity: MeshBackhaulSeverityBucket.poor,
+                severity: MeshBackhaulSeverity.poor,
               ),
               const MeshBackhaulNodeRecord(
                 nodeId: 'agent-B',
@@ -551,7 +551,7 @@ void main() {
                 lastDownlinkRateKbps: 200,
                 signalStrengthDbm: -70,
                 isController: false,
-                severity: MeshBackhaulSeverityBucket.weak,
+                severity: MeshBackhaulSeverity.weak,
               ),
             ]);
 
