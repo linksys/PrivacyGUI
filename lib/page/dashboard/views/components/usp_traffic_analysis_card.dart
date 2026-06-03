@@ -37,9 +37,9 @@ class _UspTrafficAnalysisCardState
 
   static final _intervalOptions = <(Duration?, String)>[
     (null, 'Off'),
-    (Duration(seconds: 2), '2s'),
-    (Duration(seconds: 5), '5s'),
     (Duration(seconds: 10), '10s'),
+    (Duration(seconds: 30), '30s'),
+    (Duration(seconds: 60), '60s'),
   ];
 
   @override
