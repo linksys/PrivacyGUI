@@ -6,7 +6,10 @@ import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/core/usp/providers/bridge_request_throttler_provider.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
+import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_image_ui_model.dart';
+import 'package:privacy_gui/page/topology/models/node_ui_model.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_ota_info.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_update_phase.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_update_state.dart';
@@ -16,6 +19,7 @@ import 'package:privacy_gui/page/firmware_update/services/firmware_local_upload_
 import 'package:privacy_gui/page/firmware_update/services/firmware_ota_check_service.dart';
 import 'package:privacy_gui/page/firmware_update/services/firmware_validation_service.dart';
 import 'package:privacy_gui/page/firmware_update/services/usp_firmware_update_service.dart';
+import 'package:privacy_gui/page/internet_settings/providers/wan_data_provider.dart';
 
 final firmwareUpdateNotifierProvider =
     AutoDisposeNotifierProvider<FirmwareUpdateNotifier, FirmwareUpdateState>(
@@ -81,6 +85,51 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
       _fail(e.toString());
       rethrow;
     }
+  }
+
+  /// Build OTA check parameters from device data providers.
+  ///
+  /// Returns `null` if required data is unavailable (e.g., master node not found).
+  Future<FirmwareOtaCheckParams?> buildOtaCheckParams() async {
+    try {
+      final devicesData = await ref.read(devicesDataProvider.future);
+      final masterNode = devicesData.nodeModels.master;
+      if (masterNode == null) {
+        logger.w('[FirmwareUpdate] Master node not found');
+        return null;
+      }
+
+      final systemInfoData = await ref.read(systemInfoDataProvider.future);
+      final hardwareVersion =
+          _parseHardwareVersion(systemInfoData.model.hardwareVersion);
+
+      final wanData = await ref.read(wanDataProvider.future);
+      final ipAddress = wanData.model.ipAddress;
+
+      return FirmwareOtaCheckParams(
+        macAddress: _formatMacAddress(masterNode.deviceId),
+        installedVersion: masterNode.softwareVersion,
+        modelNumber: masterNode.model,
+        hardwareVersion: hardwareVersion,
+        ipAddress: ipAddress,
+      );
+    } catch (e) {
+      logger.e('[FirmwareUpdate] Failed to build OTA check params', error: e);
+      return null;
+    }
+  }
+
+  String _formatMacAddress(String mac) {
+    return mac.toUpperCase().replaceAll(':', '-');
+  }
+
+  String _parseHardwareVersion(String hwVersion) {
+    var version = hwVersion;
+    if (version.toUpperCase().startsWith('V')) {
+      version = version.substring(1);
+    }
+    final parsed = int.tryParse(version);
+    return parsed?.toString() ?? version;
   }
 
   /// Check for OTA firmware updates from the cloud.

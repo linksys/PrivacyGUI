@@ -34,7 +34,7 @@ class FirmwareOtaCheckService {
     final uri = Uri.parse('$baseUrl$kFirmwareOtaEndpoint')
         .replace(queryParameters: params.toQueryParams());
 
-    logger.d('[FirmwareOta] Checking for update at $uri');
+    logger.d('[FirmwareOta] Checking for update at ${uri.path}');
 
     try {
       final response = await _client.get(uri);

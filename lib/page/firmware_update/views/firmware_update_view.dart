@@ -1,17 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
-import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/core/connection/models/app_connection_state.dart';
 import 'package:privacy_gui/core/connection/providers/app_connection_state_provider.dart';
 import 'package:privacy_gui/core/utils/device_image_helper.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart'
     hide FirmwareImageUIModel;
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
 import 'package:privacy_gui/page/admin/views/dialogs/confirm_action_dialog.dart';
-import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_image_ui_model.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_ota_info.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_update_phase.dart';
@@ -20,8 +19,6 @@ import 'package:privacy_gui/page/firmware_update/providers/firmware_banks_data_p
 import 'package:privacy_gui/page/firmware_update/providers/firmware_update_notifier.dart';
 import 'package:privacy_gui/page/firmware_update/services/firmware_local_upload_service.dart';
 import 'package:privacy_gui/page/firmware_update/services/firmware_ota_check_service.dart';
-import 'package:privacy_gui/page/internet_settings/providers/wan_data_provider.dart';
-import 'package:privacy_gui/page/topology/models/node_ui_model.dart';
 import 'package:privacy_gui/page/firmware_update/views/dialogs/firmware_update_recovery_dialog.dart';
 import 'package:privacy_gui/page/shell/usp_top_bar.dart';
 import 'package:privacy_gui/route/constants.dart';
@@ -355,8 +352,10 @@ class _FirmwareUpdateViewState extends ConsumerState<FirmwareUpdateView> {
   }
 
   Future<void> _onCheckForUpdates(BuildContext context) async {
+    final notifier = ref.read(firmwareUpdateNotifierProvider.notifier);
+
     try {
-      final params = await _buildOtaCheckParams();
+      final params = await notifier.buildOtaCheckParams();
       if (params == null) {
         if (context.mounted) {
           showFailedSnackBar(context, 'Unable to gather device information');
@@ -364,63 +363,18 @@ class _FirmwareUpdateViewState extends ConsumerState<FirmwareUpdateView> {
         return;
       }
 
-      final notifier = ref.read(firmwareUpdateNotifierProvider.notifier);
       final info = await notifier.checkForOtaUpdate(params);
 
       if (!context.mounted) return;
 
       if (info != null) {
-        // Update available - show dialog
         await _showOtaUpdateDialog(context, info);
       }
-      // If info is null, state.otaUpToDate is true, UI will show "Up to date"
     } on FirmwareOtaCheckException catch (e) {
       if (context.mounted) {
         showFailedSnackBar(context, e.message);
       }
     }
-  }
-
-  Future<FirmwareOtaCheckParams?> _buildOtaCheckParams() async {
-    try {
-      final devicesData = await ref.read(devicesDataProvider.future);
-      final masterNode = devicesData.nodeModels.master;
-      if (masterNode == null) {
-        logger.w('[FirmwareUpdate] Master node not found');
-        return null;
-      }
-
-      final systemInfoData = await ref.read(systemInfoDataProvider.future);
-      final hardwareVersion =
-          _parseHardwareVersion(systemInfoData.model.hardwareVersion);
-
-      final wanData = await ref.read(wanDataProvider.future);
-      final ipAddress = wanData.model.ipAddress;
-
-      return FirmwareOtaCheckParams(
-        macAddress: _formatMacAddress(masterNode.deviceId),
-        installedVersion: masterNode.softwareVersion,
-        modelNumber: masterNode.model,
-        hardwareVersion: hardwareVersion,
-        ipAddress: ipAddress,
-      );
-    } catch (e) {
-      logger.e('[FirmwareUpdate] Failed to build OTA check params', error: e);
-      return null;
-    }
-  }
-
-  String _formatMacAddress(String mac) {
-    return mac.toUpperCase().replaceAll(':', '-');
-  }
-
-  String _parseHardwareVersion(String hwVersion) {
-    var version = hwVersion;
-    if (version.toUpperCase().startsWith('V')) {
-      version = version.substring(1);
-    }
-    final parsed = int.tryParse(version);
-    return parsed?.toString() ?? version;
   }
 
   Future<void> _showOtaUpdateDialog(
