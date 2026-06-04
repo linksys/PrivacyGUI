@@ -18,8 +18,8 @@ import 'package:privacy_gui/page/dashboard/mascot/linksys_mascot_renderer.dart';
 import 'package:privacy_gui/page/dashboard/mascot/mascot_providers.dart'
     show
         mascotControllerProvider,
-        mascotDialogProvider,
-        mascotRandomSpeechProvider;
+        mascotCoordinatorProvider,
+        mascotDialogProvider;
 import 'package:privacy_gui/page/dashboard/providers/dashboard_domain_ready_provider.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -70,36 +70,8 @@ class UspDashboardShell extends ConsumerWidget {
     final mascotController = ref.watch(mascotControllerProvider);
     final dialogProvider = ref.watch(mascotDialogProvider(context));
 
-    // Watch the random speech provider to keep it alive
-    ref.watch(mascotRandomSpeechProvider);
-
-    // Start/stop random speech based on mascot visibility
-    ref.listen<bool>(
-      appSettingsProvider.select((s) => s.showMascot),
-      (_, show) {
-        if (show && ref.read(dashboardDomainReadyProvider).hasValue) {
-          ref.read(mascotRandomSpeechProvider.notifier).start(mascotController);
-        } else {
-          ref.read(mascotRandomSpeechProvider.notifier).stop();
-        }
-      },
-    );
-
-    ref.listen<AsyncValue<void>>(
-      dashboardDomainReadyProvider,
-      (_, ready) {
-        if (ready.hasValue && ref.read(appSettingsProvider).showMascot) {
-          ref.read(mascotRandomSpeechProvider.notifier).start(mascotController);
-        }
-      },
-    );
-
-    // Initial start (listen doesn't fire on first build)
-    if (showMascot && isDashboardReady) {
-      Future.microtask(() {
-        ref.read(mascotRandomSpeechProvider.notifier).start(mascotController);
-      });
-    }
+    // Activate mascot coordinator (manages random speech timer internally)
+    ref.watch(mascotCoordinatorProvider);
 
     final isThemePanelOpen = ref.watch(demoUIProvider).isThemePanelOpen;
 

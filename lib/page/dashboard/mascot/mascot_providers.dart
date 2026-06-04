@@ -10,6 +10,7 @@ import 'package:privacy_gui/page/admin/providers/time_data_provider.dart';
 import 'package:privacy_gui/page/dashboard/providers/pdf_report_data_provider.dart';
 import 'package:privacy_gui/page/unified_diagnostics/models/diagnostic_state.dart';
 import 'package:privacy_gui/page/unified_diagnostics/providers/unified_diagnostics_notifier.dart';
+import 'package:privacy_gui/page/dashboard/providers/dashboard_domain_ready_provider.dart';
 import 'package:privacy_gui/providers/app_settings/app_settings_provider.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -134,20 +135,19 @@ DateTime? _getRouterTime(Ref ref) {
   return timeData?.model.parsedLocalTime;
 }
 
-/// Provider for random mascot speech timer.
+/// Coordinator for mascot behaviors.
 ///
-/// Periodically shows random messages when mascot is idle.
-final mascotRandomSpeechProvider =
-    NotifierProvider.autoDispose<MascotRandomSpeechNotifier, void>(
-  MascotRandomSpeechNotifier.new,
+/// Manages random speech timer based on app settings and dashboard state.
+/// Watch this provider in the shell to activate mascot behaviors.
+final mascotCoordinatorProvider =
+    NotifierProvider.autoDispose<MascotCoordinatorNotifier, void>(
+  MascotCoordinatorNotifier.new,
 );
 
-class MascotRandomSpeechNotifier extends AutoDisposeNotifier<void> {
+class MascotCoordinatorNotifier extends AutoDisposeNotifier<void> {
   Timer? _timer;
   final _random = Random();
-  MascotController? _controller;
-  VoidCallback? _listener;
-  bool _isRunning = false;
+  VoidCallback? _controllerListener;
 
   static const _minInterval = Duration(seconds: 10);
   static const _maxInterval = Duration(seconds: 30);
@@ -168,50 +168,43 @@ class MascotRandomSpeechNotifier extends AutoDisposeNotifier<void> {
 
   @override
   void build() {
-    ref.onDispose(_cleanup);
+    final showMascot =
+        ref.watch(appSettingsProvider.select((s) => s.showMascot));
+    final isDashboardReady = ref.watch(dashboardDomainReadyProvider).hasValue;
+    final controller = ref.watch(mascotControllerProvider);
+
+    ref.onDispose(() => _cleanup(controller));
+
+    if (showMascot && isDashboardReady) {
+      _startRandomSpeech(controller);
+    }
   }
 
-  void start(MascotController controller) {
-    if (_isRunning && _controller == controller) return;
-
-    _cleanup();
-    _controller = controller;
-    _isRunning = true;
-
-    _listener = () => _onControllerChanged(controller);
-    controller.addListener(_listener!);
-
+  void _startRandomSpeech(MascotController controller) {
+    _controllerListener = () => _onControllerChanged(controller);
+    controller.addListener(_controllerListener!);
     _scheduleNext(controller);
   }
 
-  void stop() {
-    _cleanup();
-  }
-
-  void _cleanup() {
+  void _cleanup(MascotController controller) {
     _timer?.cancel();
     _timer = null;
-    _isRunning = false;
-    if (_controller != null && _listener != null) {
-      _controller!.removeListener(_listener!);
+    if (_controllerListener != null) {
+      controller.removeListener(_controllerListener!);
+      _controllerListener = null;
     }
-    _controller = null;
-    _listener = null;
   }
 
   void _onControllerChanged(MascotController controller) {
     if (controller.state == MascotState.interacting) {
       _timer?.cancel();
       _timer = null;
-    } else if (controller.state == MascotState.idle &&
-        _timer == null &&
-        _isRunning) {
+    } else if (controller.state == MascotState.idle && _timer == null) {
       _scheduleNext(controller);
     }
   }
 
   void _scheduleNext(MascotController controller) {
-    if (!_isRunning) return;
     _timer?.cancel();
     final intervalRange =
         _maxInterval.inMilliseconds - _minInterval.inMilliseconds;
@@ -225,7 +218,6 @@ class MascotRandomSpeechNotifier extends AutoDisposeNotifier<void> {
   }
 
   void _showRandomMessage(MascotController controller) {
-    if (!_isRunning) return;
     if (!controller.isVisible) return;
     if (controller.isDialogVisible) return;
     if (controller.state == MascotState.interacting) return;
