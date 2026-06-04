@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/unified_diagnostics/models/speed_test_state.dart';
 import 'package:privacy_gui/page/unified_diagnostics/providers/speed_test_notifier.dart';
 import 'package:privacy_gui/page/unified_diagnostics/views/widgets/speed_gauge.dart';
@@ -160,7 +162,9 @@ class UspSpeedTestCard extends ConsumerWidget {
         AppIcon.font(Icons.error_outline, size: 32, color: colorScheme.error),
         AppGap.sm(),
         AppText.bodySmall(
-          state.errorMessage ?? 'Test failed',
+          state.error != null
+              ? _translateError(context, state.error!)
+              : loc(context).diagnosticUnexpectedError,
           textAlign: TextAlign.center,
           color: colorScheme.onSurfaceVariant,
           maxLines: 2,
@@ -249,6 +253,18 @@ class UspSpeedTestCard extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  String _translateError(BuildContext context, ServiceError error) {
+    return switch (error) {
+      DiagnosticTimeoutError(:final operation, :final host) =>
+        loc(context).diagnosticTimeout(operation, host ?? ''),
+      SpeedTestStatusError(:final status, :final target) =>
+        loc(context).speedTestStatusError(status, target ?? ''),
+      ConnectivityError() => loc(context).diagnosticsUnavailable,
+      NetworkError() => loc(context).routerLostConnection,
+      _ => loc(context).diagnosticUnexpectedError,
+    };
   }
 }
 

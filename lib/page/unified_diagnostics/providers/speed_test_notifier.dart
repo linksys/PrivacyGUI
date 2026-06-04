@@ -114,7 +114,7 @@ class SpeedTestNotifier extends AutoDisposeAsyncNotifier<SpeedTestState> {
       state = AsyncData(state.requireValue.copyWith(
         step: SpeedTestStep.error,
         clearProgress: true,
-        errorMessage: _scopeErrorMessage(mapped),
+        error: mapped,
       ));
       return;
     }
@@ -165,11 +165,12 @@ class SpeedTestNotifier extends AutoDisposeAsyncNotifier<SpeedTestState> {
       if (downloadStatus != 'Complete') {
         logger.w(
             '[USP][SpeedTest]: Download failed with status: $downloadStatus');
-        final errorMsg = _getDownloadErrorMessage(downloadStatus, downloadUrl);
+        final uri = Uri.tryParse(downloadUrl);
+        final host = uri?.host ?? downloadUrl;
         state = AsyncData(state.requireValue.copyWith(
           step: SpeedTestStep.error,
           clearProgress: true,
-          errorMessage: errorMsg,
+          error: SpeedTestStatusError(status: downloadStatus, target: host),
         ));
         return;
       }
@@ -211,7 +212,8 @@ class SpeedTestNotifier extends AutoDisposeAsyncNotifier<SpeedTestState> {
       state = AsyncData(state.requireValue.copyWith(
         step: SpeedTestStep.error,
         clearProgress: true,
-        errorMessage: 'Speed test timed out',
+        error:
+            DiagnosticTimeoutError(operation: 'speedTest', host: server.host),
       ));
     } catch (e) {
       logger.w('[USP][SpeedTest]: Failed: $e');
@@ -219,7 +221,7 @@ class SpeedTestNotifier extends AutoDisposeAsyncNotifier<SpeedTestState> {
       state = AsyncData(state.requireValue.copyWith(
         step: SpeedTestStep.error,
         clearProgress: true,
-        errorMessage: _runErrorMessage(mapped),
+        error: mapped,
       ));
     } finally {
       if (identical(_activeScope, scope)) _activeScope = null;
@@ -245,55 +247,5 @@ class SpeedTestNotifier extends AutoDisposeAsyncNotifier<SpeedTestState> {
       return;
     }
     state = const AsyncData(SpeedTestState());
-  }
-
-  // -------------------------------------------------------------------------
-  // Error messages
-  // -------------------------------------------------------------------------
-
-  String _scopeErrorMessage(ServiceError e) {
-    return switch (e) {
-      ConnectivityError() =>
-        'Speed test unavailable — diagnostics scope not ready',
-      NetworkError() => 'Speed test unavailable — router lost connection',
-      _ => 'Speed test unavailable — please try again',
-    };
-  }
-
-  String _runErrorMessage(ServiceError e) {
-    return switch (e) {
-      NetworkError() => 'Speed test failed — router lost connection',
-      ConnectivityError() =>
-        'Speed test unavailable — diagnostics scope not ready',
-      InvalidInputError(:final message) =>
-        message ?? 'Speed test failed — invalid configuration',
-      _ => 'Speed test failed — please try again',
-    };
-  }
-
-  String _getDownloadErrorMessage(String status, String url) {
-    // Extract hostname from URL for display
-    final uri = Uri.tryParse(url);
-    final host = uri?.host ?? url;
-
-    return switch (status) {
-      'Error_NoResponse' =>
-        'Could not connect to test server ($host). Please check your internet connection.',
-      'Error_InitConnectionFailed' =>
-        'Failed to establish connection to test server ($host).',
-      'Error_CannotResolveHostName' =>
-        'Could not resolve test server address ($host). DNS may be unavailable.',
-      'Error_Timeout' => 'Connection to test server timed out.',
-      'Error_TransferFailed' => 'Data transfer failed during test.',
-      'Error_PasswordRequestFailed' =>
-        'Authentication failed with test server.',
-      'Error_LoginFailed' => 'Login to test server failed.',
-      'Error_NoTransferMode' =>
-        'Server does not support required transfer mode.',
-      'Error_NoPASV' => 'Server does not support passive mode.',
-      'Error_IncorrectSize' => 'Downloaded file size mismatch.',
-      'Error_Internal' => 'Internal error occurred during speed test.',
-      _ => 'Speed test failed: $status',
-    };
   }
 }

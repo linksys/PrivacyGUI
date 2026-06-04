@@ -1167,5 +1167,43 @@
   "failedToLoadSettings": "Failed to load settings",
   "retry": "Retry",
   "pppStatus": "PPP Status",
-  "dhcpv6": "DHCPv6"
+  "dhcpv6": "DHCPv6",
+  "diagnosticTimeout": "{operation} timed out — no response from {host}",
+  "@diagnosticTimeout": {
+    "placeholders": {
+      "operation": {
+        "type": "String",
+        "example": "Ping"
+      },
+      "host": {
+        "type": "String",
+        "example": "8.8.8.8"
+      }
+    }
+  },
+  "diagnosticsUnavailable": "Unable to run diagnostics",
+  "routerLostConnection": "Router lost connection",
+  "diagnosticInvalidHost": "Invalid host: {host}",
+  "@diagnosticInvalidHost": {
+    "placeholders": {
+      "host": {
+        "type": "String",
+        "example": "google.com"
+      }
+    }
+  },
+  "diagnosticUnexpectedError": "Diagnostic failed — please try again",
+  "speedTestStatusError": "Speed test failed: {status} ({target})",
+  "@speedTestStatusError": {
+    "placeholders": {
+      "status": {
+        "type": "String",
+        "example": "Error_NoResponse"
+      },
+      "target": {
+        "type": "String",
+        "example": "speedtest.example.com"
+      }
+    }
+  }
 }

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/models/operate_result.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/unified_diagnostics/models/manual_tools_state.dart';
 import 'package:privacy_gui/page/unified_diagnostics/providers/manual_tools_notifier.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -128,7 +130,7 @@ class _DiagnosticManualToolsViewState
         ],
 
         // Error display
-        if (state.errorMessage != null) ...[
+        if (state.error != null) ...[
           AppCard(
             child: Row(
               children: [
@@ -137,7 +139,7 @@ class _DiagnosticManualToolsViewState
                 AppGap.md(),
                 Expanded(
                   child: AppText.bodyMedium(
-                    state.errorMessage!,
+                    _translateError(context, state.error!),
                     color: colorScheme.error,
                   ),
                 ),
@@ -317,6 +319,18 @@ class _DiagnosticManualToolsViewState
       DiagnosticType.ping => 'Pinging ${state.host}...',
       DiagnosticType.traceroute => 'Tracing route to ${state.host}...',
       DiagnosticType.nsLookup => 'Resolving ${state.host}...',
+    };
+  }
+
+  String _translateError(BuildContext context, ServiceError error) {
+    return switch (error) {
+      DiagnosticTimeoutError(:final operation, :final host) =>
+        loc(context).diagnosticTimeout(operation, host ?? ''),
+      ConnectivityError() => loc(context).diagnosticsUnavailable,
+      NetworkError() => loc(context).routerLostConnection,
+      InvalidInputError(:final field) =>
+        loc(context).diagnosticInvalidHost(field ?? ''),
+      _ => loc(context).diagnosticUnexpectedError,
     };
   }
 

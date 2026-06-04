@@ -128,26 +128,16 @@ class ManualToolsNotifier
       logger.w('[USP][Diagnostics]: Ping timeout: $e');
       state = AsyncData(state.requireValue.copyWith(
         status: DiagnosticStatus.error,
-        errorMessage: 'Ping timed out — no response from ${s.host}',
+        error: DiagnosticTimeoutError(operation: 'ping', host: s.host),
       ));
     } catch (e) {
       logger.w('[USP][Diagnostics]: Ping failed: $e');
       final mapped = e is ServiceError ? e : mapUspErrorToServiceError(e);
       state = AsyncData(state.requireValue.copyWith(
         status: DiagnosticStatus.error,
-        errorMessage: _pingErrorMessage(mapped, s.host),
+        error: mapped,
       ));
     }
-  }
-
-  String _pingErrorMessage(ServiceError e, String host) {
-    return switch (e) {
-      InvalidInputError(:final message) =>
-        message ?? 'Cannot ping $host — invalid host',
-      NetworkError() => 'Ping failed — router lost connection',
-      ConnectivityError() => 'Ping unavailable — diagnostics scope not ready',
-      _ => 'Ping failed — please try again',
-    };
   }
 
   // -------------------------------------------------------------------------
@@ -185,27 +175,16 @@ class ManualToolsNotifier
       logger.w('[USP][Diagnostics]: Traceroute timeout: $e');
       state = AsyncData(state.requireValue.copyWith(
         status: DiagnosticStatus.error,
-        errorMessage: 'Traceroute timed out — route to ${s.host} incomplete',
+        error: DiagnosticTimeoutError(operation: 'traceroute', host: s.host),
       ));
     } catch (e) {
       logger.w('[USP][Diagnostics]: Traceroute failed: $e');
       final mapped = e is ServiceError ? e : mapUspErrorToServiceError(e);
       state = AsyncData(state.requireValue.copyWith(
         status: DiagnosticStatus.error,
-        errorMessage: _tracerouteErrorMessage(mapped, s.host),
+        error: mapped,
       ));
     }
-  }
-
-  String _tracerouteErrorMessage(ServiceError e, String host) {
-    return switch (e) {
-      InvalidInputError(:final message) =>
-        message ?? 'Cannot trace $host — invalid host',
-      NetworkError() => 'Traceroute failed — router lost connection',
-      ConnectivityError() =>
-        'Traceroute unavailable — diagnostics scope not ready',
-      _ => 'Traceroute failed — please try again',
-    };
   }
 
   // -------------------------------------------------------------------------
@@ -245,27 +224,15 @@ class ManualToolsNotifier
       logger.w('[USP][Diagnostics]: NS Lookup timeout: $e');
       state = AsyncData(state.requireValue.copyWith(
         status: DiagnosticStatus.error,
-        errorMessage:
-            'NS Lookup timed out — no response while resolving ${s.host}',
+        error: DiagnosticTimeoutError(operation: 'nslookup', host: s.host),
       ));
     } catch (e) {
       logger.w('[USP][Diagnostics]: NS Lookup failed: $e');
       final mapped = e is ServiceError ? e : mapUspErrorToServiceError(e);
       state = AsyncData(state.requireValue.copyWith(
         status: DiagnosticStatus.error,
-        errorMessage: _nsLookupErrorMessage(mapped, s.host),
+        error: mapped,
       ));
     }
-  }
-
-  String _nsLookupErrorMessage(ServiceError e, String host) {
-    return switch (e) {
-      InvalidInputError(:final message) =>
-        message ?? 'Cannot resolve $host — invalid host',
-      NetworkError() => 'NS Lookup failed — router lost connection',
-      ConnectivityError() =>
-        'NS Lookup unavailable — diagnostics scope not ready',
-      _ => 'NS Lookup failed — please try again',
-    };
   }
 }

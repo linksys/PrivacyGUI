@@ -27,8 +27,8 @@ class DiagnosticReportService {
     buffer.writeln('Flow: ${_flowName(state)}');
     buffer.writeln();
 
-    if (state.errorMessage != null) {
-      buffer.writeln('ERROR: ${state.errorMessage}');
+    if (state.error != null) {
+      buffer.writeln('ERROR: ${state.error}');
       buffer.writeln();
     }
 

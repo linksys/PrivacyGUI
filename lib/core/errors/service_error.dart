@@ -252,6 +252,55 @@ final class ConnectivityError extends ServiceError {
 }
 
 // ============================================================================
+// Timeout Errors
+// ============================================================================
+
+/// Operation timed out before completing.
+///
+/// Used for diagnostic operations (ping, traceroute, nslookup, speed test)
+/// where we have a known timeout threshold and the operation didn't complete
+/// in time.
+final class DiagnosticTimeoutError extends ServiceError {
+  /// The operation that timed out (e.g. 'ping', 'traceroute', 'speedTest').
+  final String operation;
+
+  /// Optional target host involved in the operation.
+  final String? host;
+
+  const DiagnosticTimeoutError({required this.operation, this.host});
+
+  @override
+  String toString() {
+    final target = host != null ? ' to $host' : '';
+    return '$operation timed out$target';
+  }
+}
+
+// ============================================================================
+// Diagnostic Errors
+// ============================================================================
+
+/// Diagnostic operation failed with a specific status from the router.
+///
+/// Used for speed test download/upload failures where the router returns
+/// a status code indicating the failure reason.
+final class SpeedTestStatusError extends ServiceError {
+  /// The status code returned by the router (e.g. 'Error_NoResponse').
+  final String status;
+
+  /// Optional target host or URL involved.
+  final String? target;
+
+  const SpeedTestStatusError({required this.status, this.target});
+
+  @override
+  String toString() {
+    final t = target != null ? ' ($target)' : '';
+    return 'Diagnostic failed: $status$t';
+  }
+}
+
+// ============================================================================
 // Side Effect Error (Operation succeeded but device recovery timed out)
 // ============================================================================
 

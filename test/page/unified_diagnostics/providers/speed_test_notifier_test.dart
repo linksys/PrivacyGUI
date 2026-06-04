@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/models/operate_result.dart';
 import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
 import 'package:privacy_gui/core/usp/services/network_diagnostics_executor.dart';
@@ -177,7 +178,7 @@ void main() {
 
       final state = container.read(speedTestProvider).valueOrNull;
       expect(state?.step, SpeedTestStep.error);
-      expect(state?.errorMessage, contains('Could not connect'));
+      expect(state?.error, isA<SpeedTestStatusError>());
       container.dispose();
     });
 
