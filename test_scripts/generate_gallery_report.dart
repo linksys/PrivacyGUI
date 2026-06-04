@@ -261,8 +261,18 @@ String _generateHtml(
       font-size: 0.7rem; color: var(--color-accent); cursor: pointer; margin-right: 0.75rem; text-decoration: none;
     }
     .filter-group .filter-actions a:hover { text-decoration: underline; }
-    .filter-group label { display: inline-block; margin-right: 0.75rem; font-size: 0.875rem; cursor: pointer; }
-    .filter-group input { margin-right: 0.25rem; }
+    .filter-group .chip-container { display: flex; flex-wrap: wrap; gap: 0.375rem; }
+    .filter-chip {
+      display: inline-flex; align-items: center; padding: 0.25rem 0.75rem;
+      font-size: 0.8rem; border-radius: 9999px; cursor: pointer; user-select: none;
+      border: 1px solid var(--color-border); background: var(--color-bg); color: var(--color-text-muted);
+      transition: all 0.15s;
+    }
+    .filter-chip:hover { border-color: var(--color-accent); }
+    .filter-chip.active {
+      background: var(--color-accent); color: #fff; border-color: var(--color-accent);
+    }
+    .filter-chip input { display: none; }
     .back-to-top {
       position: fixed; bottom: 2rem; right: 2rem; z-index: 900;
       width: 44px; height: 44px; border-radius: 50%;
@@ -428,21 +438,25 @@ String _generateHtml(
 
   buffer.writeln(
       '    <div class="filter-group"><h3>Feature</h3><div class="filter-actions"><a onclick="toggleAll(\'feature\',true)">All</a><a onclick="toggleAll(\'feature\',false)">None</a></div>');
+  buffer.writeln('      <div class="chip-container">');
   for (final f in sortedFeatures) {
     buffer.writeln(
-        '      <label><input type="checkbox" name="feature" value="$f" checked onchange="applyFilters()">$f</label>');
+        '      <label class="filter-chip active"><input type="checkbox" name="feature" value="$f" checked onchange="toggleChip(this)">$f</label>');
   }
-  buffer.writeln('    </div>');
+  buffer.writeln('      </div></div>');
 
   buffer.writeln(
       '    <div class="filter-group"><h3>Locale</h3><div class="filter-actions"><a onclick="toggleAll(\'locale\',true)">All</a><a onclick="toggleAll(\'locale\',false)">None</a></div>');
+  buffer.writeln('      <div class="chip-container">');
   for (final l in sortedLocales) {
     buffer.writeln(
-        '      <label><input type="checkbox" name="locale" value="$l" checked onchange="applyFilters()">$l</label>');
+        '      <label class="filter-chip active"><input type="checkbox" name="locale" value="$l" checked onchange="toggleChip(this)">$l</label>');
   }
-  buffer.writeln('    </div>');
+  buffer.writeln('      </div></div>');
 
-  buffer.writeln('    <div class="filter-group"><h3>Device</h3>');
+  buffer.writeln(
+      '    <div class="filter-group"><h3>Device</h3><div class="filter-actions"><a onclick="toggleAll(\'device\',true)">All</a><a onclick="toggleAll(\'device\',false)">None</a></div>');
+  buffer.writeln('      <div class="chip-container">');
   final standardDevices = sortedDevices
       .where((d) => d.startsWith('phone') || d.startsWith('desktop'))
       .toList();
@@ -451,13 +465,13 @@ String _generateHtml(
       .toList();
   for (final d in standardDevices) {
     buffer.writeln(
-        '      <label><input type="checkbox" name="device" value="$d" checked onchange="applyFilters()">$d</label>');
+        '      <label class="filter-chip active"><input type="checkbox" name="device" value="$d" checked onchange="toggleChip(this)">$d</label>');
   }
   if (componentDevices.isNotEmpty) {
     buffer.writeln(
-        '      <label><input type="checkbox" name="device" value="_components" checked onchange="applyFilters()">Components (${componentDevices.length} sizes)</label>');
+        '      <label class="filter-chip active"><input type="checkbox" name="device" value="_components" checked onchange="toggleChip(this)">Components (${componentDevices.length} sizes)</label>');
   }
-  buffer.writeln('    </div>');
+  buffer.writeln('      </div></div>');
 
   buffer.writeln('  </div>');
 
@@ -742,8 +756,18 @@ String _generateHtml(
       if (e.target === document.getElementById('lightbox')) closeLightbox();
     });
 
+    function toggleChip(input) {
+      const chip = input.closest('.filter-chip');
+      chip.classList.toggle('active', input.checked);
+      applyFilters();
+    }
+
     function toggleAll(name, checked) {
-      document.querySelectorAll('input[name="' + name + '"]').forEach(cb => { cb.checked = checked; });
+      document.querySelectorAll('input[name="' + name + '"]').forEach(cb => {
+        cb.checked = checked;
+        const chip = cb.closest('.filter-chip');
+        if (chip) chip.classList.toggle('active', checked);
+      });
       applyFilters();
     }
 

@@ -117,8 +117,18 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
       font-size: 0.7rem; color: var(--color-accent); cursor: pointer; margin-right: 0.75rem; text-decoration: none;
     }
     .filter-group .filter-actions a:hover { text-decoration: underline; }
-    .filter-group label { display: inline-block; margin-right: 0.75rem; font-size: 0.875rem; cursor: pointer; }
-    .filter-group input { margin-right: 0.25rem; }
+    .filter-group .chip-container { display: flex; flex-wrap: wrap; gap: 0.375rem; }
+    .filter-chip {
+      display: inline-flex; align-items: center; padding: 0.25rem 0.75rem;
+      font-size: 0.8rem; border-radius: 9999px; cursor: pointer; user-select: none;
+      border: 1px solid var(--color-border); background: var(--color-bg); color: var(--color-text-muted);
+      transition: all 0.15s;
+    }
+    .filter-chip:hover { border-color: var(--color-accent); }
+    .filter-chip.active {
+      background: var(--color-accent); color: #fff; border-color: var(--color-accent);
+    }
+    .filter-chip input { display: none; }
     .back-to-top {
       position: fixed; bottom: 2rem; right: 2rem; z-index: 900;
       width: 44px; height: 44px; border-radius: 50%;
@@ -455,36 +465,61 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
 
       html += '<div class="filter-group"><h3>Locale</h3>';
       html += '<div class="filter-actions"><a onclick="toggleAll(' + "'locale'" + ',true)">All</a><a onclick="toggleAll(' + "'locale'" + ',false)">None</a></div>';
-      locales.forEach(function(l) { html += '<label><input type="checkbox" name="locale" value="' + l + '" checked onchange="renderResults()">' + l + '</label>'; });
-      html += '</div>';
+      html += '<div class="chip-container">';
+      locales.forEach(function(l) { html += '<label class="filter-chip active"><input type="checkbox" name="locale" value="' + l + '" checked onchange="toggleChip(this)">' + l + '</label>'; });
+      html += '</div></div>';
 
       html += '<div class="filter-group"><h3>Device</h3>';
       html += '<div class="filter-actions"><a onclick="toggleAll(' + "'device'" + ',true)">All</a><a onclick="toggleAll(' + "'device'" + ',false)">None</a></div>';
-      devices.forEach(function(d) { html += '<label><input type="checkbox" name="device" value="' + d + '" checked onchange="renderResults()">' + d + '</label>'; });
-      html += '</div>';
+      html += '<div class="chip-container">';
+      const standardDevices = devices.filter(d => d.startsWith('phone') || d.startsWith('desktop'));
+      const componentDevices = devices.filter(d => !d.startsWith('phone') && !d.startsWith('desktop'));
+      standardDevices.forEach(function(d) { html += '<label class="filter-chip active"><input type="checkbox" name="device" value="' + d + '" checked onchange="toggleChip(this)">' + d + '</label>'; });
+      if (componentDevices.length > 0) {
+        html += '<label class="filter-chip active"><input type="checkbox" name="device" value="_components" checked onchange="toggleChip(this)">Components (' + componentDevices.length + ' sizes)</label>';
+      }
+      html += '</div></div>';
 
       html += '<div class="filter-group"><h3>Result</h3>';
       html += '<div class="filter-actions"><a onclick="toggleAll(' + "'result'" + ',true)">All</a><a onclick="toggleAll(' + "'result'" + ',false)">None</a></div>';
-      html += '<label><input type="checkbox" name="result" value="success" checked onchange="renderResults()">Pass</label>';
-      html += '<label><input type="checkbox" name="result" value="error" checked onchange="renderResults()">Fail</label>';
-      html += '</div>';
+      html += '<div class="chip-container">';
+      html += '<label class="filter-chip active"><input type="checkbox" name="result" value="success" checked onchange="toggleChip(this)">Pass</label>';
+      html += '<label class="filter-chip active"><input type="checkbox" name="result" value="error" checked onchange="toggleChip(this)">Fail</label>';
+      html += '</div></div>';
 
       bar.innerHTML = html;
     }
 
+    function toggleChip(input) {
+      const chip = input.closest('.filter-chip');
+      chip.classList.toggle('active', input.checked);
+      renderResults();
+    }
+
+    function isStandardDevice(d) {
+      return d.startsWith('phone') || d.startsWith('desktop');
+    }
+
     function getFilters() {
       const locales = [...document.querySelectorAll('input[name="locale"]:checked')].map(e => e.value);
-      const devices = [...document.querySelectorAll('input[name="device"]:checked')].map(e => e.value);
+      const rawDevices = [...document.querySelectorAll('input[name="device"]:checked')].map(e => e.value);
+      const includeComponents = rawDevices.includes('_components');
+      const standardDevices = rawDevices.filter(d => d !== '_components');
       const results = [...document.querySelectorAll('input[name="result"]:checked')].map(e => e.value);
       const search = (document.getElementById('searchBox')?.value || '').toLowerCase();
-      return { locales, devices, results, search };
+      return { locales, standardDevices, includeComponents, results, search };
+    }
+
+    function matchDevice(device, filters) {
+      if (isStandardDevice(device)) return filters.standardDevices.includes(device);
+      return filters.includeComponents;
     }
 
     function renderResults() {
       const filters = getFilters();
       const tests = DATA.tests.filter(function(t) {
         if (!filters.locales.includes(t.locale)) return false;
-        if (!filters.devices.includes(t.deviceType)) return false;
+        if (!matchDevice(t.deviceType || '', filters)) return false;
         if (!filters.results.includes(t.result)) return false;
         if (quickFilter === 'overflow' && !t.hasOverflow) return false;
         if (filters.search) {
@@ -692,7 +727,11 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
     }
 
     function toggleAll(name, checked) {
-      document.querySelectorAll('input[name="' + name + '"]').forEach(cb => { cb.checked = checked; });
+      document.querySelectorAll('input[name="' + name + '"]').forEach(cb => {
+        cb.checked = checked;
+        const chip = cb.closest('.filter-chip');
+        if (chip) chip.classList.toggle('active', checked);
+      });
       renderResults();
     }
 
