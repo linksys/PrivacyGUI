@@ -6,7 +6,7 @@ import 'package:equatable/equatable.dart';
 /// When no update is available, the API returns an empty response body.
 class FirmwareOtaInfo extends Equatable {
   final String version;
-  final DateTime releaseDate;
+  final DateTime? releaseDate;
   final String downloadUrl;
   final String checksum;
   final String checkInterval;
@@ -14,7 +14,7 @@ class FirmwareOtaInfo extends Equatable {
 
   const FirmwareOtaInfo({
     required this.version,
-    required this.releaseDate,
+    this.releaseDate,
     required this.downloadUrl,
     required this.checksum,
     required this.checkInterval,
@@ -24,8 +24,7 @@ class FirmwareOtaInfo extends Equatable {
   factory FirmwareOtaInfo.fromJson(Map<String, dynamic> json) {
     return FirmwareOtaInfo(
       version: json['version'] as String? ?? '',
-      releaseDate: DateTime.tryParse(json['release_date'] as String? ?? '') ??
-          DateTime.now(),
+      releaseDate: DateTime.tryParse(json['release_date'] as String? ?? ''),
       downloadUrl: json['download_url'] as String? ?? '',
       checksum: json['checksum'] as String? ?? '',
       checkInterval: json['check_interval'] as String? ?? '',

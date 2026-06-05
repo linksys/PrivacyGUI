@@ -66,6 +66,7 @@ class FirmwareUpdateState extends Equatable {
     String? errorMessage,
     UploadMethod? uploadMethod,
     FirmwareOtaInfo? otaInfo,
+    bool clearOtaInfo = false,
     bool? otaUpToDate,
   }) {
     return FirmwareUpdateState(
@@ -81,7 +82,7 @@ class FirmwareUpdateState extends Equatable {
       rebootRemaining: rebootRemaining ?? this.rebootRemaining,
       errorMessage: errorMessage ?? this.errorMessage,
       uploadMethod: uploadMethod ?? this.uploadMethod,
-      otaInfo: otaInfo ?? this.otaInfo,
+      otaInfo: clearOtaInfo ? null : (otaInfo ?? this.otaInfo),
       otaUpToDate: otaUpToDate ?? this.otaUpToDate,
     );
   }

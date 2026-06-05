@@ -52,7 +52,7 @@ void main() {
       expect(info.downloadUrl, '');
     });
 
-    test('fromJson handles invalid date format', () {
+    test('fromJson handles invalid date format with null', () {
       final json = {
         'version': '1.0.0',
         'release_date': 'not-a-date',
@@ -65,8 +65,21 @@ void main() {
       final info = FirmwareOtaInfo.fromJson(json);
 
       expect(info.version, '1.0.0');
-      // Invalid date should fallback to DateTime.now() (just verify it doesn't throw)
-      expect(info.releaseDate, isA<DateTime>());
+      expect(info.releaseDate, isNull);
+    });
+
+    test('fromJson handles missing release_date with null', () {
+      final json = {
+        'version': '1.0.0',
+        'download_url': 'http://example.com/fw.img',
+        'checksum': '123',
+        'check_interval': 'daily',
+        'check_time': '06:00:00Z',
+      };
+
+      final info = FirmwareOtaInfo.fromJson(json);
+
+      expect(info.releaseDate, isNull);
     });
 
     test('equality works correctly', () {

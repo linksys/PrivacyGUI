@@ -141,7 +141,7 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
       FirmwareOtaCheckParams params) async {
     _setState(state.copyWith(
       phase: FirmwareUpdatePhase.checkingOta,
-      otaInfo: null,
+      clearOtaInfo: true,
       otaUpToDate: false,
       errorMessage: null,
     ));
@@ -157,7 +157,7 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
       } else {
         _setState(state.copyWith(
           phase: FirmwareUpdatePhase.idle,
-          otaInfo: null,
+          clearOtaInfo: true,
           otaUpToDate: true,
         ));
       }
