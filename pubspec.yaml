@@ -41,15 +41,11 @@ dependencies:
   flutter_native_splash: ^2.3.2
   test: ^1.19.5
   equatable: ^2.0.5
-  connectivity_plus: ^3.0.2
-  network_info_plus: ^4.0.2
-  permission_handler: ^10.2.0
-  device_info_plus: ^9.1.2
-  flutter_local_notifications: ^15.1.1
+  device_info_plus: ^11.1.0
   logger: ^2.0.2
   path_provider: ^2.1.0
-  share_plus: ^7.1.0
-  package_info_plus: ^4.1.0
+  share_plus: ^10.1.0
+  package_info_plus: ^8.1.0
   uuid: ^4.4.2
   flutter_inappwebview: ^5.7.0
   shared_preferences: ^2.0.15
@@ -58,28 +54,28 @@ dependencies:
   local_auth: ^2.1.7
   image: ^4.1.0
   collection: ^1.19.0
-  flutter_secure_storage: ^9.2.2
+  flutter_secure_storage: ^10.3.1
 
   ui_kit_library:
     git:
       url: https://github.com/linksys/privacyGUI-UI-kit.git
-      ref: v2.19.0
+      ref: v2.23.1
   generative_ui:
     git:
       url: https://github.com/linksys/privacyGUI-UI-kit.git
-      ref: v2.19.0
+      ref: v2.23.1
       path: generative_ui
   flutter_blue_plus: ^1.4.0
   crypto: ^3.0.2
   encrypt: ^5.0.3
   riverpod: ^2.6.1
   flutter_riverpod: ^2.6.1
-  go_router: ^14.2.8
+  go_router: ^17.0.0
   qr: ^3.0.1
   animated_list_plus: ^0.5.2
   http_parser: ^4.0.2
   meta: ^1.11.0
-  printing: ^5.13.1
+  printing: ^5.14.3
   get_it: ^7.7.0
   pdf: ^3.11.1
   web: ^1.1.1

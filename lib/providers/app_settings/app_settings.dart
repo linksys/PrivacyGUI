@@ -11,33 +11,38 @@ class AppSettings extends Equatable {
   final ThemeMode themeMode;
   final Locale? locale;
   final Color? themeColor;
+  final bool showMascot;
 
   const AppSettings({
     this.themeMode = ThemeMode.system,
     this.locale,
     this.themeColor,
+    this.showMascot = true,
   });
 
   AppSettings copyWith({
     ThemeMode? themeMode,
     ValueGetter<Locale?>? locale,
     ValueGetter<Color?>? themeColor,
+    bool? showMascot,
   }) {
     return AppSettings(
       themeMode: themeMode ?? this.themeMode,
       locale: locale != null ? locale() : this.locale,
       themeColor: themeColor != null ? themeColor() : this.themeColor,
+      showMascot: showMascot ?? this.showMascot,
     );
   }
 
   @override
-  List<Object?> get props => [themeMode, locale];
+  List<Object?> get props => [themeMode, locale, showMascot];
 
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
       'themeMode': themeMode.name,
       'locale': locale?.toLanguageTag(),
       'themeColor': themeColor?.toARGB32(),
+      'showMascot': showMascot,
     };
   }
 
@@ -50,6 +55,7 @@ class AppSettings extends Equatable {
           ? LocaleExt.fromLanguageTag(map['locale'])
           : null,
       themeColor: map['themeColor'] != null ? Color(map['themeColor']) : null,
+      showMascot: map['showMascot'] ?? true,
     );
   }
 

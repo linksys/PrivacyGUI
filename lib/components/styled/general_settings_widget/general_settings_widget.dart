@@ -36,7 +36,7 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
     final colorScheme = darkTheme.colorScheme;
 
     return AppPopupButton(
-      maxWidth: 240,
+      maxWidth: 280,
       position: PopupVerticalPosition.bottom,
       button: Semantics(
         identifier: 'now-topbar-icon-general-settings',
@@ -51,19 +51,22 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
       builder: (controller) {
         final locale =
             ref.watch(appSettingsProvider.select((value) => value.locale));
+        final showMascot =
+            ref.watch(appSettingsProvider.select((value) => value.showMascot));
         return Semantics(
           explicitChildNodes: true,
-          child: AppSurface(
-            padding: const EdgeInsets.all(8.0),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
             child: ConstrainedBox(
-              constraints: const BoxConstraints(minWidth: 200, maxWidth: 240),
+              constraints: const BoxConstraints(minWidth: 240, maxWidth: 280),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.start,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
+                  // Language
+                  SizedBox(
+                    height: 44,
                     child: LanguageTile(
                       locale: locale ?? const Locale('en'),
                       onTap: () {
@@ -71,36 +74,82 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
                       },
                       onSelected: (locale) {
                         final appSettings = ref.read(appSettingsProvider);
-
                         ref
                             .read(appSettingsProvider.notifier)
                             .update(appSettings.copyWith(locale: () => locale));
                       },
                     ),
                   ),
-                  AppGap.lg(),
-                  Padding(
-                    padding: EdgeInsets.all(AppSpacing.sm),
+
+                  // Theme
+                  SizedBox(
+                    height: 44,
                     child: Semantics(
                       identifier: 'now-general-settings-theme',
                       label: 'theme',
-                      child: const ThemeModeTile(),
+                      child: ThemeModeTile(
+                        onTap: () {
+                          controller.close();
+                        },
+                        onSelected: (mode) {
+                          final appSettings = ref.read(appSettingsProvider);
+                          ref
+                              .read(appSettingsProvider.notifier)
+                              .update(appSettings.copyWith(themeMode: mode));
+                        },
+                      ),
                     ),
                   ),
+
+                  // Mascot toggle
+                  SizedBox(
+                    height: 44,
+                    child: _buildMascotToggle(showMascot),
+                  ),
+
+                  if (loginType != LoginType.none) ...[
+                    AppGap.md(),
+                    const AppDivider(),
+                    AppGap.md(),
+
+                    // Legal links as compact row
+                    _buildLegalLinks(),
+                    AppGap.lg(),
+
+                    // Logout
+                    SizedBox(
+                      width: double.infinity,
+                      child: AppButton.dangerOutline(
+                        label: loc(context).logout,
+                        onTap: () {
+                          logger.i('[Auth]: The user manually logs out');
+                          ref.read(authProvider.notifier).logout();
+                        },
+                      ),
+                    ),
+                  ],
                   AppGap.lg(),
-                  ..._displayAdditional(loginType),
+
+                  // Version
                   FutureBuilder(
-                      future: getVersion(),
-                      initialData: '-',
-                      builder: (context, data) {
-                        return Semantics(
-                          identifier: 'now-general-text-version',
-                          label: 'version',
+                    future: getVersion(),
+                    initialData: '-',
+                    builder: (context, data) {
+                      return Semantics(
+                        identifier: 'now-general-text-version',
+                        label: 'version',
+                        child: Center(
                           child: AppText.bodySmall(
                             'version ${data.data}',
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurface
+                                .withValues(alpha: 0.5),
                           ),
-                        );
-                      }),
+                        ),
+                      );
+                    },
+                  ),
                 ],
               ),
             ),
@@ -110,56 +159,55 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
     );
   }
 
-  List<Widget> _displayAdditional(LoginType loginType) {
-    if (loginType != LoginType.none) {
-      return [
-        Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: AppButton.text(
-            label: loc(context).termsOfService,
-            onTap: () {
-              gotoOfficialWebUrl(linkTerms,
-                  locale: ref.read(appSettingsProvider).locale);
+  Widget _buildMascotToggle(bool showMascot) {
+    return Semantics(
+      identifier: 'now-general-settings-mascot',
+      label: 'mascot',
+      child: Row(
+        children: [
+          const Icon(Icons.pets, size: 20),
+          AppGap.lg(),
+          Expanded(
+            child: AppText.labelMedium('Show Mascot'),
+          ),
+          AppSwitch(
+            value: showMascot,
+            scale: 0.8,
+            onChanged: (value) {
+              final appSettings = ref.read(appSettingsProvider);
+              ref
+                  .read(appSettingsProvider.notifier)
+                  .update(appSettings.copyWith(showMascot: value));
             },
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLegalLinks() {
+    final locale = ref.read(appSettingsProvider).locale;
+
+    return Wrap(
+      spacing: 4,
+      runSpacing: 4,
+      children: [
+        AppButton.text(
+          label: loc(context).termsOfService,
+          size: AppButtonSize.small,
+          onTap: () => gotoOfficialWebUrl(linkTerms, locale: locale),
         ),
-        Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: AppButton.text(
-            label: loc(context).thirdPartyLicenses,
-            onTap: () {
-              gotoOfficialWebUrl(linkThirdParty,
-                  locale: ref.read(appSettingsProvider).locale);
-            },
-          ),
+        AppButton.text(
+          label: loc(context).thirdPartyLicenses,
+          size: AppButtonSize.small,
+          onTap: () => gotoOfficialWebUrl(linkThirdParty, locale: locale),
         ),
-        Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: AppButton.text(
-            label: loc(context).privacyAndSecurity,
-            onTap: () {
-              gotoOfficialWebUrl(linkPrivacy,
-                  locale: ref.read(appSettingsProvider).locale);
-            },
-          ),
+        AppButton.text(
+          label: loc(context).privacyAndSecurity,
+          size: AppButtonSize.small,
+          onTap: () => gotoOfficialWebUrl(linkPrivacy, locale: locale),
         ),
-        const Divider(
-          thickness: 1,
-        ),
-        Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: AppButton.dangerText(
-            label: loc(context).logout,
-            onTap: () {
-              logger.i('[Auth]: The user manually logs out');
-              ref.read(authProvider.notifier).logout();
-            },
-          ),
-        ),
-        AppGap.lg(),
-      ];
-    } else {
-      return [];
-    }
+      ],
+    );
   }
 }
