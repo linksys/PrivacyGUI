@@ -1,3 +1,4 @@
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/framework/preservable.dart';
 import 'package:privacy_gui/page/dmz/models/dmz_feature_state.dart';
 import 'package:privacy_gui/page/dmz/models/dmz_settings.dart';
@@ -66,8 +67,8 @@ DmzFeatureState get errorState => DmzFeatureState(
         original: DmzSettings.empty(),
         current: DmzSettings.empty(),
       ),
-      status: const DmzStatus(
+      status: DmzStatus(
         isLoading: false,
-        errorMessage: 'Connection failed',
+        error: const NetworkError(message: 'Connection failed'),
       ),
     );

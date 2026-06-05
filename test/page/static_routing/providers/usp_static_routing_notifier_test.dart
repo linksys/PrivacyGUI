@@ -86,7 +86,7 @@ void main() {
       await Future.delayed(Duration.zero);
 
       final state = container.read(uspStaticRoutingProvider);
-      expect(state.status.errorMessage, contains('connection lost'));
+      expect(state.status.error, isA<NetworkError>());
       expect(state.settings.current.routes, isEmpty);
       container.dispose();
     });

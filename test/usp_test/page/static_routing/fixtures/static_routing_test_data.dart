@@ -1,3 +1,4 @@
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/framework/preservable.dart';
 import 'package:privacy_gui/page/static_routing/models/static_route_list.dart';
 import 'package:privacy_gui/page/static_routing/models/static_routing_feature_state.dart';
@@ -77,7 +78,7 @@ StaticRoutingFeatureState get errorState => StaticRoutingFeatureState(
         original: const StaticRouteList(),
         current: const StaticRouteList(),
       ),
-      status: const StaticRoutingStatus(
-        errorMessage: 'Connection failed',
+      status: StaticRoutingStatus(
+        error: const NetworkError(message: 'Connection failed'),
       ),
     );

@@ -105,7 +105,7 @@ void main() {
       await Future.delayed(Duration.zero);
 
       final state = container.read(uspPortForwardingPageProvider);
-      expect(state.status.errorMessage, contains('timeout'));
+      expect(state.status.error, isA<NetworkError>());
       container.dispose();
     });
 

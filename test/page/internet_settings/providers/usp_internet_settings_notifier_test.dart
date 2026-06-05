@@ -93,7 +93,7 @@ void main() {
       await Future.delayed(Duration.zero);
 
       final state = container.read(uspInternetSettingsProvider);
-      expect(state.status.errorMessage, contains('bridge unreachable'));
+      expect(state.status.error, isA<NetworkError>());
       container.dispose();
     });
 
@@ -311,7 +311,7 @@ void main() {
 
       final state = container.read(uspInternetSettingsProvider);
       // Should hit the restore path which won't succeed with our mock.
-      expect(state.status.errorMessage, isNotNull);
+      expect(state.status.error, isNotNull);
       container.dispose();
     });
   });

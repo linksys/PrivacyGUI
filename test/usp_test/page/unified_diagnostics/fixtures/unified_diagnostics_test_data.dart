@@ -1,3 +1,4 @@
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/models/operate_result.dart';
 import 'package:privacy_gui/page/unified_diagnostics/models/device_score.dart';
 import 'package:privacy_gui/page/unified_diagnostics/models/diagnostic_result.dart';
@@ -726,10 +727,11 @@ const completedState = UnifiedDiagnosticsState(
 // Error — diagnostic failed
 // =============================================================================
 
-const errorState = UnifiedDiagnosticsState(
+final errorState = UnifiedDiagnosticsState(
   step: DiagnosticStep.showingResults,
   flow: DiagnosticFlow.internet,
-  errorMessage: 'Connection timed out — unable to reach diagnostic service',
+  error: const ConnectivityError(
+      message: 'Connection timed out — unable to reach diagnostic service'),
 );
 
 // =============================================================================
@@ -874,10 +876,10 @@ const manualToolsPingRunningState = NetworkDiagnosticsState(
 // Manual tools — error state
 // =============================================================================
 
-const manualToolsErrorState = NetworkDiagnosticsState(
+final manualToolsErrorState = NetworkDiagnosticsState(
   activeTab: DiagnosticType.ping,
   status: DiagnosticStatus.error,
   host: '192.168.99.99',
   pingCount: 3,
-  errorMessage: 'Ping timed out — no response from 192.168.99.99',
+  error: const DiagnosticTimeoutError(operation: 'Ping', host: '192.168.99.99'),
 );

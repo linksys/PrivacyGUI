@@ -1,3 +1,4 @@
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/framework/preservable.dart';
 import 'package:privacy_gui/page/firewall/models/firewall_feature_state.dart';
 import 'package:privacy_gui/page/firewall/models/firewall_settings.dart';
@@ -69,8 +70,8 @@ FirewallFeatureState get errorState => FirewallFeatureState(
         original: FirewallSettings.empty(),
         current: FirewallSettings.empty(),
       ),
-      status: const FirewallStatus(
+      status: FirewallStatus(
         isLoading: false,
-        errorMessage: 'Connection failed',
+        error: const NetworkError(message: 'Connection failed'),
       ),
     );
