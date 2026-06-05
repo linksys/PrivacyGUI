@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/_shared/models/dhcp_client_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/dhcp_reservation_ui_model.dart';
@@ -55,9 +56,8 @@ class UspDhcpDetailView extends ConsumerWidget {
           );
         }
 
-        if (reservationStatus.errorMessage != null) {
-          return _buildError(
-              childContext, ref, reservationStatus.errorMessage!);
+        if (reservationStatus.error != null) {
+          return _buildError(childContext, ref, reservationStatus.error!);
         }
 
         if (asyncDhcp.hasError && asyncDhcp.valueOrNull == null) {
@@ -100,12 +100,12 @@ class UspDhcpDetailView extends ConsumerWidget {
           AppIcon.font(Icons.error_outline,
               size: 48, color: Theme.of(context).colorScheme.error),
           AppGap.xl(),
-          AppText.titleMedium('Unable to load DHCP data'),
+          AppText.titleMedium(loc(context).failedToLoadSettings),
           AppGap.md(),
           AppText.bodyMedium(error.toString()),
           AppGap.xxl(),
           AppButton(
-            label: 'Retry',
+            label: loc(context).retry,
             onTap: () {
               ref.invalidate(dhcpDataProvider);
               ref

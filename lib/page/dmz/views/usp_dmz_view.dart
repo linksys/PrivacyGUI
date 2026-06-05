@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/dmz/models/dmz_feature_state.dart';
 import 'package:privacy_gui/page/dmz/models/dmz_ui_model.dart';
@@ -69,8 +71,8 @@ class _UspDmzViewState extends ConsumerState<UspDmzView> {
         if (status.isLoading) {
           return const Center(child: AppLoader());
         }
-        if (status.errorMessage != null) {
-          return _buildError(context, ref);
+        if (status.error != null) {
+          return _buildError(context, ref, status.error!);
         }
         _syncControllers(state);
         return _buildContent(context, ref, state);
@@ -101,7 +103,7 @@ class _UspDmzViewState extends ConsumerState<UspDmzView> {
   // Error
   // ---------------------------------------------------------------------------
 
-  Widget _buildError(BuildContext context, WidgetRef ref) {
+  Widget _buildError(BuildContext context, WidgetRef ref, ServiceError error) {
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -109,10 +111,12 @@ class _UspDmzViewState extends ConsumerState<UspDmzView> {
           AppIcon.font(Icons.error_outline,
               size: 48, color: Theme.of(context).colorScheme.error),
           AppGap.xl(),
-          AppText.titleMedium('Unable to load DMZ settings'),
+          AppText.titleMedium(loc(context).failedToLoadSettings),
           AppGap.md(),
+          AppText.bodyMedium(error.toString()),
+          AppGap.xl(),
           AppButton(
-            label: 'Retry',
+            label: loc(context).retry,
             onTap: () =>
                 ref.read(uspDmzProvider.notifier).fetch(forceRemote: true),
           ),

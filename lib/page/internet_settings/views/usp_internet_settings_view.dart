@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
@@ -42,24 +43,27 @@ class UspInternetSettingsView extends ConsumerWidget {
         if (state.status.isLoading) {
           return const Center(child: AppLoader());
         }
-        if (state.status.errorMessage != null) {
-          return _buildError(childContext, ref, state.status.errorMessage!);
+        if (state.status.error != null) {
+          return _buildError(childContext, ref, state.status.error!);
         }
         return _buildContent(childContext, ref, state);
       },
     );
   }
 
-  Widget _buildError(BuildContext context, WidgetRef ref, String error) {
+  Widget _buildError(BuildContext context, WidgetRef ref, ServiceError error) {
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          AppText.bodyLarge(loc(context).failedToLoadSettings),
-          AppGap.md(),
-          AppText.bodyMedium(error),
+          AppIcon.font(Icons.error_outline,
+              size: 48, color: Theme.of(context).colorScheme.error),
           AppGap.xl(),
-          AppButton.primary(
+          AppText.titleMedium(loc(context).failedToLoadSettings),
+          AppGap.md(),
+          AppText.bodyMedium(error.toString()),
+          AppGap.xl(),
+          AppButton(
             label: loc(context).retry,
             onTap: () => ref.read(uspInternetSettingsProvider.notifier).fetch(),
           ),

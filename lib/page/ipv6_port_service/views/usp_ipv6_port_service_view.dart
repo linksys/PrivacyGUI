@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/ipv6_port_service/models/ipv6_port_service_feature_state.dart';
 import 'package:privacy_gui/page/ipv6_port_service/models/ipv6_port_service_ui_model.dart';
@@ -38,8 +40,8 @@ class UspIpv6PortServiceView extends ConsumerWidget {
         if (status.isLoading) {
           return const Center(child: AppLoader());
         }
-        if (status.errorMessage != null) {
-          return _buildError(context, ref);
+        if (status.error != null) {
+          return _buildError(context, ref, status.error!);
         }
         return _buildContent(context, ref, state);
       },
@@ -69,7 +71,7 @@ class UspIpv6PortServiceView extends ConsumerWidget {
   // Error
   // ---------------------------------------------------------------------------
 
-  Widget _buildError(BuildContext context, WidgetRef ref) {
+  Widget _buildError(BuildContext context, WidgetRef ref, ServiceError error) {
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -77,10 +79,12 @@ class UspIpv6PortServiceView extends ConsumerWidget {
           AppIcon.font(Icons.error_outline,
               size: 48, color: Theme.of(context).colorScheme.error),
           AppGap.xl(),
-          AppText.titleMedium('Unable to load IPv6 port service'),
+          AppText.titleMedium(loc(context).failedToLoadSettings),
           AppGap.md(),
+          AppText.bodyMedium(error.toString()),
+          AppGap.xl(),
           AppButton(
-            label: 'Retry',
+            label: loc(context).retry,
             onTap: () => ref
                 .read(uspIpv6PortServiceProvider.notifier)
                 .fetch(forceRemote: true),

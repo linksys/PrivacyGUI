@@ -76,7 +76,7 @@ class UspStaticRoutingNotifier
       logger.e('[USP][Network][Routing]: Fetch failed', error: e);
       return (
         null,
-        StaticRoutingStatus(errorMessage: '$e'),
+        StaticRoutingStatus(error: e),
       );
     }
   }
