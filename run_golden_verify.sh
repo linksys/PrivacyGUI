@@ -38,6 +38,7 @@ if [ -z "$version" ]; then
 fi
 
 REPORT_DIR="test/golden_test"
+FAILED=0
 
 echo "*********************Golden Test Verification********************"
 echo "Locales: $locales"
@@ -52,8 +53,8 @@ if [ -z "$file" ]; then
     $FLUTTER test test/golden_test/ --file-reporter json:$REPORT_DIR/tests.json \
       --dart-define=locales="$locale" \
       --dart-define=screens="$screens" \
-      --dart-define=visualEffects=0 || true
-    $DART run test_scripts/test_result_parser.dart $REPORT_DIR/tests.json "$locale" || true
+      --dart-define=visualEffects=0 || FAILED=1
+    $DART run test_scripts/test_result_parser.dart $REPORT_DIR/tests.json "$locale" || FAILED=1
     rm -f $REPORT_DIR/tests.json
   done
 
@@ -65,8 +66,8 @@ else
   $FLUTTER test "$file" --file-reporter json:$REPORT_DIR/tests.json \
     --dart-define=locales="$locales" \
     --dart-define=screens="$screens" \
-    --dart-define=visualEffects=0 || true
-  $DART run test_scripts/test_result_parser.dart $REPORT_DIR/tests.json "$locales" || true
+    --dart-define=visualEffects=0 || FAILED=1
+  $DART run test_scripts/test_result_parser.dart $REPORT_DIR/tests.json "$locales" || FAILED=1
   rm -f $REPORT_DIR/tests.json
   $DART run test_scripts/combine_results.dart $REPORT_DIR "$version" $EMBED_FLAG
   echo ""
@@ -74,3 +75,4 @@ else
 fi
 
 echo "Golden Test Verification Finished!******************************************"
+exit $FAILED
