@@ -177,7 +177,8 @@ Future<void> _settleWithTimeout(WidgetTester tester) async {
 }
 
 /// Precaches images in a real async zone so asset resolution completes.
-Future<void> _precacheIfNeeded(WidgetTester tester, GoldenTestConfig config) async {
+Future<void> _precacheIfNeeded(
+    WidgetTester tester, GoldenTestConfig config) async {
   if (config.precacheImages == null) return;
   await tester.runAsync(() async {
     final element = tester.element(find.byType(MaterialApp));
