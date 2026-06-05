@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/page/_shared/providers/card_tab_state_provider.dart';
 import 'package:privacy_gui/page/_shared/components/usp_status_dot.dart';
-import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
+import 'package:privacy_gui/page/_shared/components/dashboard_card_template.dart';
 import 'package:privacy_gui/page/firewall/providers/firewall_data_provider.dart';
 import 'package:privacy_gui/page/_shared/components/card_skeleton.dart';
 import 'package:privacy_gui/page/port_forwarding/providers/port_forwarding_data_provider.dart';
+import 'package:privacy_gui/route/constants.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Firewall Configuration Overview card — 2-tab security overview.
@@ -17,11 +18,6 @@ class UspFirewallOverviewCard extends ConsumerWidget {
 
   static const _cardId = 'firewall_overview';
 
-  static const _tabs = [
-    TabItem(label: 'Rules'),
-    TabItem(label: 'Ports'),
-  ];
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // Firewall rules + DMZ from domain data provider (Layer 1).
@@ -31,38 +27,29 @@ class UspFirewallOverviewCard extends ConsumerWidget {
     if (firewallData == null) return const CardSkeleton.chart();
     final selectedTab = ref.watch(cardTabIndexProvider(_cardId));
 
-    return AppCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          CardHeader(title: 'Firewall Overview'),
-          AppGap.md(),
-          AppTabs(
-            tabs: _tabs,
-            initialIndex: selectedTab,
-            displayMode: TabDisplayMode.segmented,
-            showBorder: false,
-            onTabChanged: (index) =>
-                ref.read(cardTabIndexProvider(_cardId).notifier).state = index,
+    return DashboardCardTemplate.tabbed(
+      title: 'Firewall Overview',
+      detailRoute: RouteNamed.uspFirewall,
+      selectedTabIndex: selectedTab,
+      onTabChanged: (index) =>
+          ref.read(cardTabIndexProvider(_cardId).notifier).state = index,
+      tabs: [
+        CardTab(
+          label: 'Rules',
+          content: _RulesTab(
+            ruleSummaries: firewallData.ruleSummaries,
+            portForwardingCount: pfData?.ruleModels.length ?? 0,
+            dmzCount: firewallData.dmzSummaries.where((d) => d.enable).length,
           ),
-          AppGap.md(),
-          Expanded(
-            child: switch (selectedTab) {
-              0 => _RulesTab(
-                  ruleSummaries: firewallData.ruleSummaries,
-                  portForwardingCount: pfData?.ruleModels.length ?? 0,
-                  dmzCount:
-                      firewallData.dmzSummaries.where((d) => d.enable).length,
-                ),
-              1 => _PortsTab(
-                  portForwardingRules: pfData?.ruleModels ?? [],
-                  dmzSummaries: firewallData.dmzSummaries,
-                ),
-              _ => const SizedBox.shrink(),
-            },
+        ),
+        CardTab(
+          label: 'Ports',
+          content: _PortsTab(
+            portForwardingRules: pfData?.ruleModels ?? [],
+            dmzSummaries: firewallData.dmzSummaries,
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -123,16 +110,16 @@ class _RulesTab extends StatelessWidget {
 
     return Column(
       children: [
-        // Summary stats row - using InfoGrid pattern
-        InfoGrid(
-          items: [
-            InfoGridItem(
+        // Summary stats row
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            _StatChip(
                 label: 'FW Rules',
                 value: '$activeCount/${ruleSummaries.length}'),
-            InfoGridItem(label: 'Port Fwd', value: '$portForwardingCount'),
-            InfoGridItem(label: 'DMZ', value: '$dmzCount'),
+            _StatChip(label: 'Port Fwd', value: '$portForwardingCount'),
+            _StatChip(label: 'DMZ', value: '$dmzCount'),
           ],
-          crossAxisCount: 3,
         ),
         AppGap.md(),
         // Donut chart
@@ -285,6 +272,24 @@ class _PortsTab extends StatelessWidget {
 // =============================================================================
 // Shared widgets
 // =============================================================================
+
+class _StatChip extends StatelessWidget {
+  final String label;
+  final String value;
+  const _StatChip({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        AppText.titleMedium(value),
+        AppText.labelSmall(label,
+            color: Theme.of(context).colorScheme.onSurfaceVariant),
+      ],
+    );
+  }
+}
 
 class _ProtocolBadge extends StatelessWidget {
   final String protocol;

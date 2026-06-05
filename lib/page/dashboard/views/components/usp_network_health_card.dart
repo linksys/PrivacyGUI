@@ -2,11 +2,11 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/_shared/models/network_health_helpers.dart';
 import 'package:privacy_gui/page/_shared/models/traffic_analysis_state.dart';
 import 'package:privacy_gui/page/_shared/providers/card_tab_state_provider.dart';
 import 'package:privacy_gui/page/_shared/providers/usp_traffic_analysis_notifier.dart';
+import 'package:privacy_gui/page/_shared/components/dashboard_card_template.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Network Health Monitoring card — 3-tab card (F-022).
@@ -27,57 +27,41 @@ class UspNetworkHealthCard extends ConsumerStatefulWidget {
 class _UspNetworkHealthCardState extends ConsumerState<UspNetworkHealthCard> {
   static const _cardId = 'network_health';
 
-  static const _tabs = [
-    TabItem(label: 'Health'),
-    TabItem(label: 'Errors'),
-    TabItem(label: 'Loss'),
-  ];
-
   @override
   Widget build(BuildContext context) {
     final trafficState = ref.watch(uspTrafficAnalysisProvider);
     final selectedTab = ref.watch(cardTabIndexProvider(_cardId));
 
-    return AppCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            height: 36,
-            child: Row(
-              children: [
-                AppText.titleMedium('Network Health'),
-                if (trafficState.isFetching) ...[
-                  AppGap.sm(),
-                  SizedBox(
-                    width: 14,
-                    height: 14,
-                    child: AppLoader(strokeWidth: 2),
-                  ),
-                ],
-              ],
-            ),
-          ),
-          AppGap.md(),
-          AppTabs(
-            tabs: _tabs,
-            initialIndex: selectedTab,
-            displayMode: TabDisplayMode.segmented,
-            isScrollable: true,
-            showBorder: false,
-            onTabChanged: (index) =>
-                ref.read(cardTabIndexProvider(_cardId).notifier).state = index,
-          ),
-          AppGap.md(),
-          Expanded(
-            child: _buildTabView(context, trafficState, selectedTab),
-          ),
-        ],
-      ),
+    return DashboardCardTemplate.tabbed(
+      title: 'Network Health',
+      titleBadge: trafficState.isFetching
+          ? SizedBox(
+              width: 14,
+              height: 14,
+              child: AppLoader(strokeWidth: 2),
+            )
+          : null,
+      selectedTabIndex: selectedTab,
+      onTabChanged: (index) =>
+          ref.read(cardTabIndexProvider(_cardId).notifier).state = index,
+      tabs: [
+        CardTab(
+          label: 'Health',
+          content: _buildTabContent(context, trafficState, 0),
+        ),
+        CardTab(
+          label: 'Errors',
+          content: _buildTabContent(context, trafficState, 1),
+        ),
+        CardTab(
+          label: 'Loss',
+          content: _buildTabContent(context, trafficState, 2),
+        ),
+      ],
     );
   }
 
-  Widget _buildTabView(
+  Widget _buildTabContent(
     BuildContext context,
     TrafficAnalysisState state,
     int selectedTab,
@@ -172,26 +156,19 @@ class _HealthOverview extends StatelessWidget {
         AppGap.md(),
         // Summary metrics
         Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            Expanded(
-              child: _MetricChip(
-                label: 'Errors',
-                value: NetworkHealthHelpers.formatFaultRate(errorRate),
-              ),
+            _MetricChip(
+              label: 'Errors',
+              value: NetworkHealthHelpers.formatFaultRate(errorRate),
             ),
-            AppGap.sm(),
-            Expanded(
-              child: _MetricChip(
-                label: 'Discards',
-                value: NetworkHealthHelpers.formatFaultRate(discardRate),
-              ),
+            _MetricChip(
+              label: 'Discards',
+              value: NetworkHealthHelpers.formatFaultRate(discardRate),
             ),
-            AppGap.sm(),
-            Expanded(
-              child: _MetricChip(
-                label: 'Loss',
-                value: '${lossPercent.toStringAsFixed(2)}%',
-              ),
+            _MetricChip(
+              label: 'Loss',
+              value: '${lossPercent.toStringAsFixed(2)}%',
             ),
           ],
         ),
@@ -236,18 +213,15 @@ class _MetricChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBlock(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          AppText.labelSmall(
-            label,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
-          AppGap.xxs(),
-          AppText.bodyMedium(value),
-        ],
-      ),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        AppText.labelSmall(
+          label,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
+        AppText.bodyMedium(value),
+      ],
     );
   }
 }

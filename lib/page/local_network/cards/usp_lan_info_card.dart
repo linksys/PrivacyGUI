@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/page/_shared/models/lan_info_ui_model.dart';
-import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
-import 'package:privacy_gui/page/_shared/components/usp_status_dot.dart';
+import 'package:privacy_gui/page/_shared/components/usp_info_row.dart';
 import 'package:privacy_gui/page/_shared/components/card_skeleton.dart';
+import 'package:privacy_gui/page/_shared/components/dashboard_card_template.dart';
 import 'package:privacy_gui/page/local_network/providers/lan_data_provider.dart';
-import 'package:ui_kit_library/ui_kit.dart';
+import 'package:privacy_gui/route/constants.dart';
 
 class UspLanInfoCard extends ConsumerWidget {
   final LanInfoUIModel? info;
@@ -16,135 +16,27 @@ class UspLanInfoCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final info = this.info ?? ref.watch(lanDataProvider).valueOrNull?.model;
     if (info == null) return const CardSkeleton.info(rows: 4);
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return AppCard(
-      child: Column(
+    return DashboardCardTemplate(
+      title: 'LAN Information',
+      detailRoute: RouteNamed.uspLocalNetwork,
+      content: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CardHeader(title: 'LAN Information'),
-          AppGap.md(),
-          // Hero block - Router IP with DHCP status
-          LayoutBlock(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            child: Row(
-              children: [
-                Container(
-                  width: 56,
-                  height: 56,
-                  decoration: BoxDecoration(
-                    color: colorScheme.primaryContainer,
-                    shape: BoxShape.circle,
-                  ),
-                  child: AppIcon.font(
-                    Icons.router,
-                    color: colorScheme.primary,
-                    size: 28,
-                  ),
-                ),
-                AppGap.lg(),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      AppText.titleLarge(info.ipAddress),
-                      AppGap.xxs(),
-                      Row(
-                        children: [
-                          UspStatusDot(isActive: info.dhcpEnabled, size: 8),
-                          AppGap.xs(),
-                          AppText.bodyMedium(
-                            'DHCP ${info.dhcpEnabled ? "Enabled" : "Disabled"}',
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+          UspInfoRow(label: 'LAN IP Address', value: info.ipAddress),
+          UspInfoRow(label: 'Subnet Mask', value: info.subnetMask),
+          UspInfoRow(
+            label: 'DHCP Server',
+            value: info.dhcpEnabled ? 'Enabled' : 'Disabled',
           ),
-          AppGap.sm(),
-          // Subnet & DNS - 2 columns
-          Row(
-            children: [
-              Expanded(
-                child: _MetricTile(
-                  icon: Icons.lan,
-                  label: 'Subnet Mask',
-                  value: info.subnetMask,
-                  color: colorScheme.primary,
-                ),
-              ),
-              AppGap.sm(),
-              Expanded(
-                child: _MetricTile(
-                  icon: Icons.dns,
-                  label: 'DNS',
-                  value: info.dnsServers.isNotEmpty ? info.dnsServers : '-',
-                  color: colorScheme.secondary,
-                ),
-              ),
-            ],
-          ),
-          // DHCP Range & IPv6
-          if (info.dhcpEnabled && info.dhcpRange.isNotEmpty ||
-              info.ipv6Addresses.isNotEmpty ||
-              info.ipv6Enabled) ...[
-            AppGap.sm(),
-            InfoGrid(
-              items: [
-                if (info.dhcpEnabled && info.dhcpRange.isNotEmpty)
-                  InfoGridItem(label: 'DHCP Range', value: info.dhcpRange),
-                if (info.ipv6Addresses.isNotEmpty)
-                  InfoGridItem(
-                    label: 'IPv6',
-                    value: info.ipv6Addresses.first,
-                    copyable: true,
-                  )
-                else if (info.ipv6Enabled)
-                  InfoGridItem(label: 'IPv6', value: 'Enabled'),
-              ],
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _MetricTile extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-  final Color color;
-
-  const _MetricTile({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return LayoutBlock(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              AppIcon.font(icon, size: 14, color: color),
-              AppGap.xs(),
-              AppText.labelSmall(label, color: colorScheme.onSurfaceVariant),
-            ],
-          ),
-          AppGap.xs(),
-          AppText.titleSmall(value),
+          if (info.dhcpEnabled)
+            UspInfoRow(label: 'DHCP IP Range', value: info.dhcpRange),
+          if (info.dnsServers.isNotEmpty)
+            UspInfoRow(label: 'DNS Servers', value: info.dnsServers),
+          if (info.ipv6Addresses.isNotEmpty)
+            for (final addr in info.ipv6Addresses)
+              UspInfoRow(label: 'LAN IPv6', value: addr),
+          if (info.ipv6Addresses.isEmpty && info.ipv6Enabled)
+            UspInfoRow(label: 'IPv6', value: 'Enabled (no address)'),
         ],
       ),
     );

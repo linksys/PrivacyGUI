@@ -6,8 +6,10 @@ import 'package:privacy_gui/page/_shared/components/wifi_ui.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_client_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_radio_ui_model.dart';
 import 'package:privacy_gui/page/_shared/providers/card_tab_state_provider.dart';
+import 'package:privacy_gui/page/_shared/components/dashboard_card_template.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_data_provider.dart';
+import 'package:privacy_gui/route/constants.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// WiFi Performance Analytics card — 3-tab view.
@@ -19,12 +21,6 @@ class UspWifiPerformanceCard extends ConsumerWidget {
   const UspWifiPerformanceCard({super.key});
 
   static const _cardId = 'wifi_performance';
-
-  static const _tabs = [
-    TabItem(label: 'Signal'),
-    TabItem(label: 'Speed'),
-    TabItem(label: 'Channels'),
-  ];
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -53,40 +49,30 @@ class UspWifiPerformanceCard extends ConsumerWidget {
       ));
     }
 
-    return AppCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              AppText.titleMedium('WiFi Performance'),
-              AppText.labelLarge('${activeClients.length} clients'),
-            ],
+    return DashboardCardTemplate.tabbed(
+      title: 'WiFi Performance',
+      titleBadge: AppBadge(label: '${activeClients.length} clients'),
+      detailRoute: RouteNamed.uspWifiSettings,
+      tabs: [
+        CardTab(
+          label: 'Signal',
+          content: _SignalTab(clients: activeClients),
+        ),
+        CardTab(
+          label: 'Speed',
+          content: _SpeedTab(clients: activeClients),
+        ),
+        CardTab(
+          label: 'Channels',
+          content: _ChannelsTab(
+            radios: wifiData.radioModels,
+            clients: activeClients,
           ),
-          AppGap.md(),
-          AppTabs(
-            tabs: _tabs,
-            initialIndex: selectedTab,
-            displayMode: TabDisplayMode.segmented,
-            showBorder: false,
-            onTabChanged: (index) =>
-                ref.read(cardTabIndexProvider(_cardId).notifier).state = index,
-          ),
-          AppGap.md(),
-          Expanded(
-            child: switch (selectedTab) {
-              0 => _SignalTab(clients: activeClients),
-              1 => _SpeedTab(clients: activeClients),
-              2 => _ChannelsTab(
-                  radios: wifiData.radioModels,
-                  clients: activeClients,
-                ),
-              _ => const SizedBox.shrink(),
-            },
-          ),
-        ],
-      ),
+        ),
+      ],
+      selectedTabIndex: selectedTab,
+      onTabChanged: (index) =>
+          ref.read(cardTabIndexProvider(_cardId).notifier).state = index,
     );
   }
 }

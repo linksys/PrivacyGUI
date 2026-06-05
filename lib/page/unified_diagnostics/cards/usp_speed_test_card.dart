@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
+import 'package:privacy_gui/page/_shared/components/dashboard_card_template.dart';
 import 'package:privacy_gui/page/unified_diagnostics/models/speed_test_state.dart';
 import 'package:privacy_gui/page/unified_diagnostics/providers/speed_test_notifier.dart';
 import 'package:privacy_gui/page/unified_diagnostics/views/widgets/speed_gauge.dart';
@@ -19,12 +19,14 @@ class UspSpeedTestCard extends ConsumerWidget {
     final asyncState = ref.watch(speedTestProvider);
     final colorScheme = Theme.of(context).colorScheme;
 
-    return AppCard(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      child: asyncState.when(
+    return DashboardCardTemplate(
+      leading: AppIcon.font(Icons.speed, size: 20, color: colorScheme.primary),
+      title: 'Speed Test',
+      detailRoute: RouteNamed.uspSpeedTest,
+      content: asyncState.when(
         loading: () => const Center(child: AppLoader()),
         error: (_, __) => _buildError(context, ref),
-        data: (state) => _buildContent(context, ref, state, colorScheme),
+        data: (state) => _buildBody(context, ref, state, colorScheme),
       ),
     );
   }
@@ -45,40 +47,6 @@ class UspSpeedTestCard extends ConsumerWidget {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildContent(
-    BuildContext context,
-    WidgetRef ref,
-    SpeedTestState state,
-    ColorScheme colorScheme,
-  ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Header
-        Row(
-          children: [
-            AppIcon.font(Icons.speed, size: 20, color: colorScheme.primary),
-            AppGap.sm(),
-            AppText.titleSmall('Speed Test'),
-            const Spacer(),
-            // Navigate to full page
-            AppIconButton(
-              icon: AppIcon.font(Icons.open_in_new,
-                  size: 16, color: colorScheme.onSurfaceVariant),
-              tooltip: 'Open Speed Test',
-              semanticLabel: 'Open Speed Test',
-              onTap: () => context.goNamed(RouteNamed.uspSpeedTest),
-            ),
-          ],
-        ),
-        AppGap.sm(),
-        Expanded(
-          child: _buildBody(context, ref, state, colorScheme),
-        ),
-      ],
     );
   }
 
