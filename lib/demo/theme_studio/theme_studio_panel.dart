@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 import 'package:privacy_gui/demo/providers/demo_theme_config_provider.dart';
+import 'package:privacy_gui/demo/providers/demo_ui_provider.dart';
 import 'package:privacy_gui/route/router_provider.dart';
 
 import 'tabs/design_tab.dart';
@@ -105,6 +106,13 @@ class _ThemeStudioPanelState extends ConsumerState<ThemeStudioPanel> {
             tooltip: 'Reset to Defaults',
             onTap: () {
               ref.read(demoThemeConfigProvider.notifier).reset();
+            },
+          ),
+          AppIconButton.icon(
+            icon: AppIcon.font(Icons.close, size: 20),
+            tooltip: 'Close',
+            onTap: () {
+              ref.read(demoUIProvider.notifier).toggleThemePanel();
             },
           ),
         ],

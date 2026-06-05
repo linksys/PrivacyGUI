@@ -31,13 +31,22 @@ class DesignTab extends ConsumerWidget {
 
   Widget _buildStyleSelector(
       BuildContext context, WidgetRef ref, DemoThemeConfig config) {
-    final styles = ['glass', 'aurora', 'brutal', 'flat', 'neumorphic', 'pixel'];
+    final styles = [
+      'glass',
+      'aurora',
+      'brutal',
+      'flat',
+      'neumorphic',
+      'pixel',
+      'claymorphism',
+      'layered_elevation',
+    ];
     return Wrap(
       spacing: 8,
       runSpacing: 8,
       children: styles.map((style) {
         return AppTag(
-          label: style[0].toUpperCase() + style.substring(1),
+          label: _formatStyleLabel(style),
           isSelected: config.style == style,
           onTap: () {
             ref.read(demoThemeConfigProvider.notifier).setStyle(style);
@@ -45,6 +54,13 @@ class DesignTab extends ConsumerWidget {
         );
       }).toList(),
     );
+  }
+
+  String _formatStyleLabel(String style) {
+    return style
+        .split('_')
+        .map((word) => word[0].toUpperCase() + word.substring(1))
+        .join(' ');
   }
 
   Widget _buildOverlaySelector(
