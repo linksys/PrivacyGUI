@@ -1,0 +1,1488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Card Layout Design Proposal</title>
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #6750A4;
+      --tertiary: #7D5260;
+      --surface: #1C1B1F;
+      --surface-container: #2B2930;
+      --surface-container-high: #36343B;
+      --on-surface: #E6E1E5;
+      --on-surface-variant: #CAC4D0;
+      --success: #4CAF50;
+      --warning: #FF9800;
+      --error: #F44336;
+      --outline: #938F99;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #121212;
+      color: var(--on-surface);
+      padding: 40px;
+      line-height: 1.5;
+    }
+
+    h1 { font-size: 28px; margin-bottom: 8px; }
+    h2 { font-size: 20px; margin: 40px 0 16px; color: var(--primary); }
+    p.desc { color: var(--on-surface-variant); margin-bottom: 32px; font-size: 14px; }
+
+    .section { margin-bottom: 48px; }
+
+    .card {
+      background: var(--surface-container);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+
+    .card-title {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-title .material-icons-round {
+      font-size: 20px;
+      opacity: 0.7;
+    }
+
+    .material-icons-round {
+      font-family: 'Material Icons Round';
+      font-size: 24px;
+      line-height: 1;
+    }
+
+    .gap-sm { height: 8px; }
+    .gap-md { height: 12px; }
+    .gap-lg { height: 16px; }
+    .gap-xl { height: 24px; }
+
+    /* ========================================
+       EXISTING PATTERNS
+       ======================================== */
+
+    /* Signal Block */
+    .signal-block {
+      background: var(--surface-container-high);
+      border-radius: 8px;
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .signal-bars {
+      display: flex;
+      align-items: flex-end;
+      gap: 3px;
+      height: 28px;
+    }
+
+    .signal-bars .bar {
+      width: 6px;
+      border-radius: 2px;
+      background: var(--success);
+    }
+
+    .signal-bars .bar:nth-child(1) { height: 25%; }
+    .signal-bars .bar:nth-child(2) { height: 50%; }
+    .signal-bars .bar:nth-child(3) { height: 75%; }
+    .signal-bars .bar:nth-child(4) { height: 100%; }
+
+    .signal-bars.fair .bar:nth-child(3),
+    .signal-bars.fair .bar:nth-child(4) { background: var(--surface-container); }
+
+    .signal-info { flex: 1; }
+    .signal-value { font-size: 18px; font-weight: 600; }
+    .signal-label { font-size: 12px; color: var(--on-surface-variant); }
+
+    /* Speed Block */
+    .speed-row {
+      display: flex;
+      gap: 12px;
+    }
+
+    .speed-card {
+      flex: 1;
+      border-radius: 8px;
+      padding: 16px;
+      text-align: center;
+    }
+
+    .speed-card.upload { background: color-mix(in srgb, var(--tertiary) 20%, transparent); }
+    .speed-card.download { background: color-mix(in srgb, var(--primary) 20%, transparent); }
+
+    .speed-card .material-icons-round {
+      font-size: 20px;
+      margin-bottom: 4px;
+    }
+
+    .speed-card.upload .material-icons-round { color: var(--tertiary); }
+    .speed-card.download .material-icons-round { color: var(--primary); }
+
+    .speed-card .value { font-size: 24px; font-weight: 700; }
+    .speed-card.upload .value { color: var(--tertiary); }
+    .speed-card.download .value { color: var(--primary); }
+
+    .speed-card .unit { font-size: 14px; color: var(--on-surface-variant); }
+    .speed-card .label { font-size: 12px; color: var(--on-surface-variant); margin-top: 4px; }
+
+    /* Status Block */
+    .status-block {
+      background: var(--surface-container-high);
+      border-radius: 8px;
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .status-indicator {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .status-indicator .material-icons-round { font-size: 24px; }
+
+    .status-indicator.online {
+      background: color-mix(in srgb, var(--success) 20%, transparent);
+      color: var(--success);
+    }
+    .status-indicator.offline {
+      background: color-mix(in srgb, var(--error) 20%, transparent);
+      color: var(--error);
+    }
+    .status-indicator.warning {
+      background: color-mix(in srgb, var(--warning) 20%, transparent);
+      color: var(--warning);
+    }
+
+    .status-info { flex: 1; }
+    .status-title { font-size: 16px; font-weight: 600; }
+    .status-subtitle { font-size: 13px; color: var(--on-surface-variant); }
+
+    /* IP Block */
+    .ip-block {
+      background: var(--surface-container-high);
+      border-radius: 8px;
+      padding: 16px;
+      text-align: center;
+    }
+
+    .ip-block .label { font-size: 12px; color: var(--on-surface-variant); margin-bottom: 4px; }
+    .ip-block .value { font-size: 20px; font-weight: 600; font-family: monospace; }
+    .ip-block .subnet { font-size: 12px; color: var(--on-surface-variant); margin-top: 4px; }
+
+    /* Progress Block */
+    .progress-block {
+      background: var(--surface-container-high);
+      border-radius: 8px;
+      padding: 16px;
+    }
+
+    .progress-header { display: flex; justify-content: space-between; margin-bottom: 12px; }
+    .progress-title { font-size: 14px; font-weight: 500; }
+    .progress-value { font-size: 14px; color: var(--primary); font-weight: 600; }
+    .progress-value.warning { color: var(--warning); }
+    .progress-value.error { color: var(--error); }
+
+    .progress-bar {
+      height: 8px;
+      background: var(--surface-container);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .progress-bar .fill { height: 100%; background: var(--primary); border-radius: 4px; }
+    .progress-bar .fill.warning { background: var(--warning); }
+    .progress-bar .fill.error { background: var(--error); }
+
+    .progress-subtitle { font-size: 12px; color: var(--on-surface-variant); margin-top: 8px; }
+
+    /* Version Block */
+    .version-row {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .version-card {
+      flex: 1;
+      background: var(--surface-container-high);
+      border-radius: 8px;
+      padding: 16px;
+      position: relative;
+    }
+
+    .version-card.new::after {
+      content: 'NEW';
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: var(--primary);
+      color: white;
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .version-label { font-size: 12px; color: var(--on-surface-variant); margin-bottom: 4px; }
+    .version-value { font-size: 16px; font-weight: 600; font-family: monospace; }
+    .version-arrow { color: var(--on-surface-variant); }
+
+    /* Info Grid */
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    .info-grid-item {
+      background: var(--surface-container-high);
+      border-radius: 8px;
+      padding: 12px;
+    }
+
+    .info-grid-item .label {
+      font-size: 11px;
+      color: var(--on-surface-variant);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+
+    .info-grid-item .value { font-size: 14px; font-weight: 500; }
+
+    /* Compact Info Row */
+    .compact-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .compact-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .compact-item .material-icons-round { font-size: 16px; color: var(--on-surface-variant); }
+    .compact-item .label { font-size: 12px; color: var(--on-surface-variant); }
+    .compact-item .value { font-size: 12px; font-weight: 500; }
+
+    /* ========================================
+       NEW PATTERNS
+       ======================================== */
+
+    /* Comparison Block */
+    .comparison-block {
+      display: flex;
+      gap: 12px;
+      align-items: stretch;
+    }
+
+    .comparison-side {
+      flex: 1;
+      background: var(--surface-container-high);
+      border-radius: 8px;
+      padding: 16px;
+      position: relative;
+    }
+
+    .comparison-side.before { border-left: 3px solid var(--on-surface-variant); }
+    .comparison-side.after { border-left: 3px solid var(--primary); }
+
+    .comparison-side .tag {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--on-surface-variant);
+      margin-bottom: 8px;
+    }
+
+    .comparison-side.after .tag { color: var(--primary); }
+
+    .comparison-side .content { font-size: 14px; }
+
+    /* Highlight Value */
+    .highlight-value {
+      background: var(--surface-container-high);
+      border-radius: 8px;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .highlight-value .value {
+      font-size: 48px;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .highlight-value .label {
+      font-size: 14px;
+      color: var(--on-surface-variant);
+      margin-top: 4px;
+    }
+
+    .highlight-value .sub {
+      font-size: 12px;
+      color: var(--on-surface-variant);
+      margin-top: 8px;
+    }
+
+    /* Quota Block */
+    .quota-block {
+      background: var(--surface-container-high);
+      border-radius: 8px;
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .quota-visual {
+      display: flex;
+      gap: 4px;
+    }
+
+    .quota-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--surface-container);
+    }
+
+    .quota-dot.filled { background: var(--primary); }
+    .quota-dot.filled.warning { background: var(--warning); }
+
+    .quota-info { flex: 1; }
+    .quota-value { font-size: 18px; font-weight: 600; }
+    .quota-label { font-size: 12px; color: var(--on-surface-variant); }
+
+    /* Range Block */
+    .range-block {
+      background: var(--surface-container-high);
+      border-radius: 8px;
+      padding: 16px;
+    }
+
+    .range-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .range-header .material-icons-round { font-size: 18px; color: var(--on-surface-variant); }
+    .range-header .label { font-size: 14px; font-weight: 500; }
+
+    .range-visual {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .range-start, .range-end {
+      font-family: monospace;
+      font-size: 14px;
+      font-weight: 500;
+      padding: 6px 10px;
+      background: var(--surface-container);
+      border-radius: 4px;
+    }
+
+    .range-line {
+      flex: 1;
+      height: 2px;
+      background: linear-gradient(to right, var(--primary), var(--primary));
+      position: relative;
+    }
+
+    .range-line::before, .range-line::after {
+      content: '';
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      background: var(--primary);
+      border-radius: 50%;
+      top: -3px;
+    }
+
+    .range-line::before { left: 0; }
+    .range-line::after { right: 0; }
+
+    /* Split Row */
+    .split-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--surface-container-high);
+      border-radius: 8px;
+      padding: 16px;
+    }
+
+    .split-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .split-left .material-icons-round { font-size: 20px; color: var(--on-surface-variant); }
+    .split-left .label { font-size: 14px; font-weight: 500; }
+
+    .split-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .split-right .value {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--primary);
+    }
+
+    /* List Preview */
+    .list-preview {
+      background: var(--surface-container-high);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .list-preview-item {
+      display: flex;
+      align-items: center;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--surface-container);
+    }
+
+    .list-preview-item:last-child { border-bottom: none; }
+
+    .list-preview-item .icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--surface-container);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 12px;
+    }
+
+    .list-preview-item .icon .material-icons-round { font-size: 18px; color: var(--on-surface-variant); }
+
+    .list-preview-item .info { flex: 1; }
+    .list-preview-item .name { font-size: 14px; font-weight: 500; }
+    .list-preview-item .detail { font-size: 12px; color: var(--on-surface-variant); }
+
+    .list-preview-item .status {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 10px;
+    }
+
+    .list-preview-item .status.online {
+      background: color-mix(in srgb, var(--success) 20%, transparent);
+      color: var(--success);
+    }
+
+    .list-preview-footer {
+      padding: 12px 16px;
+      text-align: center;
+      color: var(--primary);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      border-top: 1px solid var(--surface-container);
+    }
+
+    .list-preview-footer:hover { background: var(--surface-container); }
+
+    /* Card Header */
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .card-header .title { font-size: 16px; font-weight: 600; flex: 1; }
+
+    .card-header .badge {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      background: color-mix(in srgb, var(--success) 20%, transparent);
+      color: var(--success);
+    }
+
+    .card-header .action {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--on-surface-variant);
+    }
+
+    .card-header .action:hover { background: var(--surface-container-high); }
+    .card-header .action .material-icons-round { font-size: 18px; }
+
+    /* Dual Metric */
+    .dual-metric {
+      display: flex;
+      gap: 12px;
+    }
+
+    .dual-metric-item {
+      flex: 1;
+      background: var(--surface-container-high);
+      border-radius: 8px;
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .dual-metric-item .gauge {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: conic-gradient(
+        var(--primary) 0deg,
+        var(--primary) calc(var(--percent) * 3.6deg),
+        var(--surface-container) calc(var(--percent) * 3.6deg)
+      );
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .dual-metric-item .gauge::before {
+      content: '';
+      position: absolute;
+      width: 36px;
+      height: 36px;
+      background: var(--surface-container-high);
+      border-radius: 50%;
+    }
+
+    .dual-metric-item .gauge .material-icons-round {
+      position: relative;
+      z-index: 1;
+      font-size: 18px;
+      color: var(--on-surface-variant);
+    }
+
+    .dual-metric-item .info { flex: 1; }
+    .dual-metric-item .value { font-size: 18px; font-weight: 600; }
+    .dual-metric-item .label { font-size: 12px; color: var(--on-surface-variant); }
+
+    /* Alert Banner */
+    .alert-banner {
+      border-radius: 8px;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .alert-banner.info {
+      background: color-mix(in srgb, var(--primary) 15%, var(--surface-container));
+      border-left: 4px solid var(--primary);
+    }
+
+    .alert-banner.warning {
+      background: color-mix(in srgb, var(--warning) 15%, var(--surface-container));
+      border-left: 4px solid var(--warning);
+    }
+
+    .alert-banner.error {
+      background: color-mix(in srgb, var(--error) 15%, var(--surface-container));
+      border-left: 4px solid var(--error);
+    }
+
+    .alert-banner .material-icons-round { font-size: 20px; }
+    .alert-banner.info .material-icons-round { color: var(--primary); }
+    .alert-banner.warning .material-icons-round { color: var(--warning); }
+    .alert-banner.error .material-icons-round { color: var(--error); }
+
+    .alert-banner .content { flex: 1; }
+    .alert-banner .title { font-size: 14px; font-weight: 500; }
+    .alert-banner .message { font-size: 12px; color: var(--on-surface-variant); }
+
+    /* Toggle Row */
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--surface-container-high);
+      border-radius: 8px;
+      padding: 16px;
+    }
+
+    .toggle-row .info { display: flex; align-items: center; gap: 12px; }
+    .toggle-row .info .material-icons-round { font-size: 20px; color: var(--on-surface-variant); }
+    .toggle-row .label { font-size: 14px; font-weight: 500; }
+
+    .toggle-switch {
+      width: 48px;
+      height: 28px;
+      background: var(--success);
+      border-radius: 14px;
+      position: relative;
+    }
+
+    .toggle-switch::after {
+      content: '';
+      position: absolute;
+      width: 24px;
+      height: 24px;
+      background: white;
+      border-radius: 50%;
+      top: 2px;
+      right: 2px;
+    }
+
+    .toggle-switch.off { background: var(--surface-container); }
+    .toggle-switch.off::after { right: auto; left: 2px; }
+
+    /* Navigable Block */
+    .nav-block {
+      display: flex;
+      align-items: center;
+      padding: 12px 16px;
+      background: var(--surface-container-high);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .nav-block:hover { background: #424047; }
+
+    .nav-block .material-icons-round { color: var(--on-surface-variant); margin-right: 12px; font-size: 20px; }
+    .nav-block .content { flex: 1; }
+    .nav-block .label { font-size: 12px; color: var(--on-surface-variant); }
+    .nav-block .value { font-size: 14px; font-weight: 500; }
+    .nav-block .chevron { color: var(--on-surface-variant); }
+
+    /* ========================================
+       COMPARISON LAYOUTS
+       ======================================== */
+
+    .comparison-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-top: 24px;
+    }
+
+    .comparison-col h4 {
+      font-size: 14px;
+      color: var(--on-surface-variant);
+      margin-bottom: 16px;
+      text-align: center;
+    }
+
+    .list-style {
+      background: var(--surface-container);
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    .list-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--surface-container-high);
+    }
+
+    .list-row:last-child { border-bottom: none; }
+    .list-row .label { color: var(--on-surface-variant); font-size: 14px; }
+    .list-row .value { font-size: 14px; }
+  </style>
+</head>
+<body>
+  <h1>Card Layout Design Proposal</h1>
+  <p class="desc">Reusable card layout patterns for emphasizing important information</p>
+
+  <!-- ============================================
+       SECTION 1: EXISTING PATTERNS
+       ============================================ -->
+  <section class="section">
+    <h2>1. Existing Patterns</h2>
+
+    <div class="card">
+      <div class="card-title"><span class="material-icons-round">signal_cellular_alt</span> SignalBlock</div>
+      <p class="desc" style="margin-bottom: 16px;">WiFi signal strength with visual bars</p>
+      <div class="signal-block">
+        <div class="signal-bars">
+          <div class="bar"></div>
+          <div class="bar"></div>
+          <div class="bar"></div>
+          <div class="bar"></div>
+        </div>
+        <div class="signal-info">
+          <div class="signal-value">-45 dBm</div>
+          <div class="signal-label">Excellent</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="material-icons-round">speed</span> SpeedBlock</div>
+      <p class="desc" style="margin-bottom: 16px;">Upload/Download speed comparison</p>
+      <div class="speed-row">
+        <div class="speed-card upload">
+          <span class="material-icons-round">arrow_upward</span>
+          <div class="value">1.25</div>
+          <div class="unit">Gbps</div>
+          <div class="label">Upload</div>
+        </div>
+        <div class="speed-card download">
+          <span class="material-icons-round">arrow_downward</span>
+          <div class="value">2.88</div>
+          <div class="unit">Gbps</div>
+          <div class="label">Download</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="material-icons-round">check_circle</span> StatusBlock</div>
+      <p class="desc" style="margin-bottom: 16px;">Connection status with icon indicator</p>
+      <div class="status-block">
+        <div class="status-indicator online">
+          <span class="material-icons-round">check</span>
+        </div>
+        <div class="status-info">
+          <div class="status-title">WAN Connected</div>
+          <div class="status-subtitle">PPPoE - 203.145.67.89</div>
+        </div>
+      </div>
+      <div class="gap-md"></div>
+      <div class="status-block">
+        <div class="status-indicator warning">
+          <span class="material-icons-round">warning</span>
+        </div>
+        <div class="status-info">
+          <div class="status-title">Limited Connectivity</div>
+          <div class="status-subtitle">DNS resolution failed</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="material-icons-round">language</span> IpAddressBlock</div>
+      <p class="desc" style="margin-bottom: 16px;">Prominent IP address display</p>
+      <div style="display: flex; gap: 12px;">
+        <div class="ip-block" style="flex: 1;">
+          <div class="label">LAN IP</div>
+          <div class="value">192.168.1.1</div>
+          <div class="subnet">/24 (255.255.255.0)</div>
+        </div>
+        <div class="ip-block" style="flex: 1;">
+          <div class="label">WAN IP</div>
+          <div class="value">203.145.67.89</div>
+          <div class="subnet">PPPoE</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="material-icons-round">data_usage</span> ProgressBlock</div>
+      <p class="desc" style="margin-bottom: 16px;">Usage/progress visualization</p>
+      <div class="progress-block">
+        <div class="progress-header">
+          <span class="progress-title">DHCP Pool Usage</span>
+          <span class="progress-value">67%</span>
+        </div>
+        <div class="progress-bar">
+          <div class="fill" style="width: 67%"></div>
+        </div>
+        <div class="progress-subtitle">134 / 200 addresses in use</div>
+      </div>
+      <div class="gap-md"></div>
+      <div class="progress-block">
+        <div class="progress-header">
+          <span class="progress-title">Storage Usage</span>
+          <span class="progress-value warning">89%</span>
+        </div>
+        <div class="progress-bar">
+          <div class="fill warning" style="width: 89%"></div>
+        </div>
+        <div class="progress-subtitle">890 MB / 1 GB</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="material-icons-round">system_update</span> VersionBlock</div>
+      <p class="desc" style="margin-bottom: 16px;">Before/After version comparison</p>
+      <div class="version-row">
+        <div class="version-card">
+          <div class="version-label">Current</div>
+          <div class="version-value">1.0.16.26013</div>
+        </div>
+        <span class="material-icons-round version-arrow">arrow_forward</span>
+        <div class="version-card new">
+          <div class="version-label">Available</div>
+          <div class="version-value">1.0.17.27001</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="material-icons-round">grid_on</span> InfoGrid</div>
+      <p class="desc" style="margin-bottom: 16px;">2-column key-value grid</p>
+      <div class="info-grid">
+        <div class="info-grid-item">
+          <div class="label">Manufacturer</div>
+          <div class="value">Linksys</div>
+        </div>
+        <div class="info-grid-item">
+          <div class="label">Model</div>
+          <div class="value">MX6200</div>
+        </div>
+        <div class="info-grid-item">
+          <div class="label">Serial Number</div>
+          <div class="value">ABC123456789</div>
+        </div>
+        <div class="info-grid-item">
+          <div class="label">Hardware Ver.</div>
+          <div class="value">1.0</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================
+       SECTION 2: NEW PATTERNS
+       ============================================ -->
+  <section class="section">
+    <h2>2. New Patterns</h2>
+
+    <div class="card">
+      <div class="card-title"><span class="material-icons-round">compare</span> ComparisonBlock</div>
+      <p class="desc" style="margin-bottom: 16px;">A vs B side-by-side comparison</p>
+      <div class="comparison-block">
+        <div class="comparison-side before">
+          <div class="tag">Before</div>
+          <div class="content">
+            <div style="font-weight: 500;">Channel 6</div>
+            <div style="font-size: 12px; color: var(--on-surface-variant);">2.4 GHz / 40 MHz</div>
+          </div>
+        </div>
+        <div class="comparison-side after">
+          <div class="tag">After</div>
+          <div class="content">
+            <div style="font-weight: 500;">Channel 149</div>
+            <div style="font-size: 12px; color: var(--on-surface-variant);">5 GHz / 80 MHz</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="material-icons-round">pin</span> HighlightValue</div>
+      <p class="desc" style="margin-bottom: 16px;">Single prominent value display</p>
+      <div style="display: flex; gap: 12px;">
+        <div class="highlight-value" style="flex: 1;">
+          <div class="value">24</div>
+          <div class="label">Active Devices</div>
+          <div class="sub">+3 from yesterday</div>
+        </div>
+        <div class="highlight-value" style="flex: 1;">
+          <div class="value" style="color: var(--success);">99.7%</div>
+          <div class="label">Uptime</div>
+          <div class="sub">Last 30 days</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="material-icons-round">blur_linear</span> QuotaBlock</div>
+      <p class="desc" style="margin-bottom: 16px;">X of Y visual quota indicator</p>
+      <div class="quota-block">
+        <div class="quota-visual">
+          <div class="quota-dot filled"></div>
+          <div class="quota-dot filled"></div>
+          <div class="quota-dot filled"></div>
+          <div class="quota-dot"></div>
+        </div>
+        <div class="quota-info">
+          <div class="quota-value">3 / 4</div>
+          <div class="quota-label">LAN Ports Connected</div>
+        </div>
+      </div>
+      <div class="gap-md"></div>
+      <div class="quota-block">
+        <div class="quota-visual">
+          <div class="quota-dot filled warning"></div>
+          <div class="quota-dot filled warning"></div>
+          <div class="quota-dot filled warning"></div>
+          <div class="quota-dot filled warning"></div>
+          <div class="quota-dot"></div>
+        </div>
+        <div class="quota-info">
+          <div class="quota-value">4 / 5</div>
+          <div class="quota-label">Mesh Nodes Online</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="material-icons-round">linear_scale</span> RangeBlock</div>
+      <p class="desc" style="margin-bottom: 16px;">Range visualization (start to end)</p>
+      <div class="range-block">
+        <div class="range-header">
+          <span class="material-icons-round">dns</span>
+          <span class="label">DHCP Range</span>
+        </div>
+        <div class="range-visual">
+          <div class="range-start">192.168.1.100</div>
+          <div class="range-line"></div>
+          <div class="range-end">192.168.1.200</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="material-icons-round">view_column</span> SplitRow</div>
+      <p class="desc" style="margin-bottom: 16px;">Left info / Right action or value</p>
+      <div class="split-row">
+        <div class="split-left">
+          <span class="material-icons-round">security</span>
+          <span class="label">Firewall</span>
+        </div>
+        <div class="split-right">
+          <span class="value">Enabled</span>
+          <span class="material-icons-round" style="font-size: 18px;">chevron_right</span>
+        </div>
+      </div>
+      <div class="gap-md"></div>
+      <div class="split-row">
+        <div class="split-left">
+          <span class="material-icons-round">vpn_key</span>
+          <span class="label">WPA Version</span>
+        </div>
+        <div class="split-right">
+          <span class="value">WPA3 Personal</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="material-icons-round">list</span> ListPreview</div>
+      <p class="desc" style="margin-bottom: 16px;">Preview list with "View All" action</p>
+      <div class="list-preview">
+        <div class="list-preview-item">
+          <div class="icon"><span class="material-icons-round">smartphone</span></div>
+          <div class="info">
+            <div class="name">iPhone 15 Pro</div>
+            <div class="detail">192.168.1.101</div>
+          </div>
+          <span class="status online">Online</span>
+        </div>
+        <div class="list-preview-item">
+          <div class="icon"><span class="material-icons-round">laptop</span></div>
+          <div class="info">
+            <div class="name">MacBook Pro</div>
+            <div class="detail">192.168.1.102</div>
+          </div>
+          <span class="status online">Online</span>
+        </div>
+        <div class="list-preview-item">
+          <div class="icon"><span class="material-icons-round">tv</span></div>
+          <div class="info">
+            <div class="name">Living Room TV</div>
+            <div class="detail">192.168.1.103</div>
+          </div>
+          <span class="status online">Online</span>
+        </div>
+        <div class="list-preview-footer">View all 12 devices</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="material-icons-round">title</span> CardHeader</div>
+      <p class="desc" style="margin-bottom: 16px;">Title + Badge + Action button</p>
+      <div class="card-header" style="margin-bottom: 0;">
+        <span class="title">WiFi Settings</span>
+        <span class="badge">Active</span>
+        <div class="action"><span class="material-icons-round">edit</span></div>
+        <div class="action"><span class="material-icons-round">more_vert</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="material-icons-round">donut_small</span> DualMetric</div>
+      <p class="desc" style="margin-bottom: 16px;">Two metrics with mini gauges</p>
+      <div class="dual-metric">
+        <div class="dual-metric-item">
+          <div class="gauge" style="--percent: 42;">
+            <span class="material-icons-round">memory</span>
+          </div>
+          <div class="info">
+            <div class="value">42%</div>
+            <div class="label">CPU Usage</div>
+          </div>
+        </div>
+        <div class="dual-metric-item">
+          <div class="gauge" style="--percent: 67;">
+            <span class="material-icons-round">storage</span>
+          </div>
+          <div class="info">
+            <div class="value">67%</div>
+            <div class="label">Memory</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="material-icons-round">campaign</span> AlertBanner</div>
+      <p class="desc" style="margin-bottom: 16px;">Prominent alert at card top</p>
+      <div class="alert-banner info">
+        <span class="material-icons-round">info</span>
+        <div class="content">
+          <div class="title">Firmware update available</div>
+          <div class="message">Version 1.0.17 includes security fixes</div>
+        </div>
+      </div>
+      <div class="gap-md"></div>
+      <div class="alert-banner warning">
+        <span class="material-icons-round">warning</span>
+        <div class="content">
+          <div class="title">Weak backhaul signal</div>
+          <div class="message">Node "Kitchen" may need relocation</div>
+        </div>
+      </div>
+      <div class="gap-md"></div>
+      <div class="alert-banner error">
+        <span class="material-icons-round">error</span>
+        <div class="content">
+          <div class="title">Internet disconnected</div>
+          <div class="message">Check modem or contact ISP</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="material-icons-round">toggle_on</span> ToggleRow</div>
+      <p class="desc" style="margin-bottom: 16px;">Feature on/off with switch</p>
+      <div class="toggle-row">
+        <div class="info">
+          <span class="material-icons-round">dns</span>
+          <span class="label">DHCP Server</span>
+        </div>
+        <div class="toggle-switch"></div>
+      </div>
+      <div class="gap-md"></div>
+      <div class="toggle-row">
+        <div class="info">
+          <span class="material-icons-round">language</span>
+          <span class="label">IPv6</span>
+        </div>
+        <div class="toggle-switch off"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================
+       SECTION 3: APPLICATION EXAMPLES
+       ============================================ -->
+  <section class="section">
+    <h2>3. Application: LAN Info Card</h2>
+
+    <div class="comparison-grid">
+      <div class="comparison-col">
+        <h4>Before</h4>
+        <div class="list-style">
+          <div class="card-title">LAN Information</div>
+          <div class="list-row">
+            <span class="label">LAN IP Address</span>
+            <span class="value">192.168.1.1</span>
+          </div>
+          <div class="list-row">
+            <span class="label">Subnet Mask</span>
+            <span class="value">255.255.255.0</span>
+          </div>
+          <div class="list-row">
+            <span class="label">DHCP Server</span>
+            <span class="value">Enabled</span>
+          </div>
+          <div class="list-row">
+            <span class="label">DHCP IP Range</span>
+            <span class="value">100-200</span>
+          </div>
+          <div class="list-row">
+            <span class="label">DNS Servers</span>
+            <span class="value">8.8.8.8, 8.8.4.4</span>
+          </div>
+        </div>
+      </div>
+      <div class="comparison-col">
+        <h4>After</h4>
+        <div class="card">
+          <div class="card-title">LAN Information</div>
+
+          <div class="ip-block">
+            <div class="label">LAN IP Address</div>
+            <div class="value">192.168.1.1</div>
+            <div class="subnet">/24 (255.255.255.0)</div>
+          </div>
+
+          <div class="gap-md"></div>
+
+          <div class="toggle-row">
+            <div class="info">
+              <span class="material-icons-round">dns</span>
+              <span class="label">DHCP Server</span>
+            </div>
+            <div class="toggle-switch"></div>
+          </div>
+
+          <div class="gap-md"></div>
+
+          <div class="progress-block">
+            <div class="progress-header">
+              <span class="progress-title">DHCP Pool (100-200)</span>
+              <span class="progress-value">67%</span>
+            </div>
+            <div class="progress-bar">
+              <div class="fill" style="width: 67%"></div>
+            </div>
+            <div class="progress-subtitle">67 / 100 addresses in use</div>
+          </div>
+
+          <div class="gap-md"></div>
+
+          <div class="compact-row">
+            <div class="compact-item">
+              <span class="material-icons-round">dns</span>
+              <span class="label">DNS</span>
+              <span class="value">8.8.8.8, 8.8.4.4</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>4. Application: WAN Status Card</h2>
+
+    <div class="comparison-grid">
+      <div class="comparison-col">
+        <h4>Before</h4>
+        <div class="list-style">
+          <div class="card-title">WAN Status</div>
+          <div class="list-row">
+            <span class="label">Status</span>
+            <span class="value">Connected</span>
+          </div>
+          <div class="list-row">
+            <span class="label">Type</span>
+            <span class="value">PPPoE</span>
+          </div>
+          <div class="list-row">
+            <span class="label">IP Address</span>
+            <span class="value">203.145.67.89</span>
+          </div>
+          <div class="list-row">
+            <span class="label">Gateway</span>
+            <span class="value">203.145.67.1</span>
+          </div>
+          <div class="list-row">
+            <span class="label">DNS</span>
+            <span class="value">168.95.1.1</span>
+          </div>
+        </div>
+      </div>
+      <div class="comparison-col">
+        <h4>After</h4>
+        <div class="card">
+          <div class="card-title">WAN Status</div>
+
+          <div class="status-block">
+            <div class="status-indicator online">
+              <span class="material-icons-round">check</span>
+            </div>
+            <div class="status-info">
+              <div class="status-title">Connected</div>
+              <div class="status-subtitle">PPPoE</div>
+            </div>
+          </div>
+
+          <div class="gap-md"></div>
+
+          <div class="ip-block">
+            <div class="label">WAN IP Address</div>
+            <div class="value">203.145.67.89</div>
+          </div>
+
+          <div class="gap-md"></div>
+
+          <div class="compact-row">
+            <div class="compact-item">
+              <span class="material-icons-round">router</span>
+              <span class="label">Gateway</span>
+              <span class="value">203.145.67.1</span>
+            </div>
+            <div class="compact-item">
+              <span class="material-icons-round">dns</span>
+              <span class="label">DNS</span>
+              <span class="value">168.95.1.1</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>5. Application: Device Info Card</h2>
+
+    <div class="comparison-grid">
+      <div class="comparison-col">
+        <h4>Before</h4>
+        <div class="list-style">
+          <div class="card-title">Device Information</div>
+          <div style="text-align: center; padding: 16px 0;">
+            <div style="width: 80px; height: 80px; background: var(--surface-container-high); border-radius: 8px; margin: 0 auto;"></div>
+          </div>
+          <div class="list-row">
+            <span class="label">Manufacturer</span>
+            <span class="value">Linksys</span>
+          </div>
+          <div class="list-row">
+            <span class="label">Model</span>
+            <span class="value">MX6200</span>
+          </div>
+          <div class="list-row">
+            <span class="label">Serial Number</span>
+            <span class="value">ABC123456789</span>
+          </div>
+          <div class="list-row">
+            <span class="label">Hardware Version</span>
+            <span class="value">1.0</span>
+          </div>
+          <div class="list-row">
+            <span class="label">Firmware Version</span>
+            <span class="value">1.0.16.26013</span>
+          </div>
+        </div>
+      </div>
+      <div class="comparison-col">
+        <h4>After</h4>
+        <div class="card">
+          <div class="card-title">Device Information</div>
+
+          <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 16px;">
+            <div style="width: 64px; height: 64px; background: var(--surface-container-high); border-radius: 8px;"></div>
+            <div style="flex: 1;">
+              <div style="font-size: 18px; font-weight: 600;">MX6200</div>
+              <div style="font-size: 13px; color: var(--on-surface-variant);">Linksys</div>
+            </div>
+            <span style="font-size: 11px; padding: 2px 8px; border-radius: 10px; background: color-mix(in srgb, var(--success) 20%, transparent); color: var(--success);">Online</span>
+          </div>
+
+          <div class="info-grid">
+            <div class="info-grid-item">
+              <div class="label">Serial Number</div>
+              <div class="value">ABC123456789</div>
+            </div>
+            <div class="info-grid-item">
+              <div class="label">Hardware Ver.</div>
+              <div class="value">1.0</div>
+            </div>
+            <div class="info-grid-item" style="grid-column: span 2;">
+              <div class="label">Firmware</div>
+              <div class="value">1.0.16.26013</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>6. Application: Firmware Update Card</h2>
+
+    <div class="comparison-grid">
+      <div class="comparison-col">
+        <h4>Before</h4>
+        <div class="list-style">
+          <div class="card-title">Firmware Update</div>
+          <div class="list-row">
+            <span class="label">Current Version</span>
+            <span class="value">1.0.16.26013</span>
+          </div>
+          <div class="list-row">
+            <span class="label">Available Version</span>
+            <span class="value">1.0.17.27001</span>
+          </div>
+          <div class="list-row">
+            <span class="label">Status</span>
+            <span class="value">Update Available</span>
+          </div>
+        </div>
+      </div>
+      <div class="comparison-col">
+        <h4>After</h4>
+        <div class="card">
+          <div class="card-title">Firmware Update</div>
+
+          <div class="version-row">
+            <div class="version-card">
+              <div class="version-label">Current</div>
+              <div class="version-value">1.0.16.26013</div>
+            </div>
+            <span class="material-icons-round version-arrow">arrow_forward</span>
+            <div class="version-card new">
+              <div class="version-label">Available</div>
+              <div class="version-value">1.0.17.27001</div>
+            </div>
+          </div>
+
+          <div class="gap-lg"></div>
+
+          <div class="alert-banner info">
+            <span class="material-icons-round">info</span>
+            <div class="content">
+              <div class="title">Update Available</div>
+              <div class="message">Security fixes and performance improvements</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================
+       SECTION 7: SUMMARY
+       ============================================ -->
+  <section class="section">
+    <h2>7. Layout Pattern Summary</h2>
+    <div class="card">
+      <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+        <thead>
+          <tr style="border-bottom: 2px solid var(--surface-container-high);">
+            <th style="text-align: left; padding: 12px 8px;">Pattern</th>
+            <th style="text-align: left; padding: 12px 8px;">Use Case</th>
+            <th style="text-align: left; padding: 12px 8px;">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="border-bottom: 1px solid var(--surface-container-high);">
+            <td style="padding: 12px 8px; font-weight: 500;">SignalBlock</td>
+            <td style="padding: 12px 8px; color: var(--on-surface-variant);">WiFi signal with visual bars</td>
+            <td style="padding: 12px 8px;"><span style="color: var(--success);">Exists</span></td>
+          </tr>
+          <tr style="border-bottom: 1px solid var(--surface-container-high);">
+            <td style="padding: 12px 8px; font-weight: 500;">SpeedBlock</td>
+            <td style="padding: 12px 8px; color: var(--on-surface-variant);">Upload/Download comparison</td>
+            <td style="padding: 12px 8px;"><span style="color: var(--success);">Exists</span></td>
+          </tr>
+          <tr style="border-bottom: 1px solid var(--surface-container-high);">
+            <td style="padding: 12px 8px; font-weight: 500;">StatusBlock</td>
+            <td style="padding: 12px 8px; color: var(--on-surface-variant);">Online/Offline/Warning states</td>
+            <td style="padding: 12px 8px;"><span style="color: var(--success);">Exists</span></td>
+          </tr>
+          <tr style="border-bottom: 1px solid var(--surface-container-high);">
+            <td style="padding: 12px 8px; font-weight: 500;">IpAddressBlock</td>
+            <td style="padding: 12px 8px; color: var(--on-surface-variant);">Prominent IP display</td>
+            <td style="padding: 12px 8px;"><span style="color: var(--warning);">New</span></td>
+          </tr>
+          <tr style="border-bottom: 1px solid var(--surface-container-high);">
+            <td style="padding: 12px 8px; font-weight: 500;">ProgressBlock</td>
+            <td style="padding: 12px 8px; color: var(--on-surface-variant);">Usage with progress bar</td>
+            <td style="padding: 12px 8px;"><span style="color: var(--warning);">New</span></td>
+          </tr>
+          <tr style="border-bottom: 1px solid var(--surface-container-high);">
+            <td style="padding: 12px 8px; font-weight: 500;">VersionBlock</td>
+            <td style="padding: 12px 8px; color: var(--on-surface-variant);">Before/After comparison</td>
+            <td style="padding: 12px 8px;"><span style="color: var(--warning);">New</span></td>
+          </tr>
+          <tr style="border-bottom: 1px solid var(--surface-container-high);">
+            <td style="padding: 12px 8px; font-weight: 500;">InfoGrid</td>
+            <td style="padding: 12px 8px; color: var(--on-surface-variant);">2-column key-value grid</td>
+            <td style="padding: 12px 8px;"><span style="color: var(--warning);">New</span></td>
+          </tr>
+          <tr style="border-bottom: 1px solid var(--surface-container-high);">
+            <td style="padding: 12px 8px; font-weight: 500;">ComparisonBlock</td>
+            <td style="padding: 12px 8px; color: var(--on-surface-variant);">A vs B side-by-side</td>
+            <td style="padding: 12px 8px;"><span style="color: var(--warning);">New</span></td>
+          </tr>
+          <tr style="border-bottom: 1px solid var(--surface-container-high);">
+            <td style="padding: 12px 8px; font-weight: 500;">HighlightValue</td>
+            <td style="padding: 12px 8px; color: var(--on-surface-variant);">Single prominent number</td>
+            <td style="padding: 12px 8px;"><span style="color: var(--warning);">New</span></td>
+          </tr>
+          <tr style="border-bottom: 1px solid var(--surface-container-high);">
+            <td style="padding: 12px 8px; font-weight: 500;">QuotaBlock</td>
+            <td style="padding: 12px 8px; color: var(--on-surface-variant);">X of Y visual indicator</td>
+            <td style="padding: 12px 8px;"><span style="color: var(--warning);">New</span></td>
+          </tr>
+          <tr style="border-bottom: 1px solid var(--surface-container-high);">
+            <td style="padding: 12px 8px; font-weight: 500;">RangeBlock</td>
+            <td style="padding: 12px 8px; color: var(--on-surface-variant);">Start to end range</td>
+            <td style="padding: 12px 8px;"><span style="color: var(--warning);">New</span></td>
+          </tr>
+          <tr style="border-bottom: 1px solid var(--surface-container-high);">
+            <td style="padding: 12px 8px; font-weight: 500;">SplitRow</td>
+            <td style="padding: 12px 8px; color: var(--on-surface-variant);">Left info / Right action</td>
+            <td style="padding: 12px 8px;"><span style="color: var(--warning);">New</span></td>
+          </tr>
+          <tr style="border-bottom: 1px solid var(--surface-container-high);">
+            <td style="padding: 12px 8px; font-weight: 500;">ListPreview</td>
+            <td style="padding: 12px 8px; color: var(--on-surface-variant);">Top N + View All</td>
+            <td style="padding: 12px 8px;"><span style="color: var(--warning);">New</span></td>
+          </tr>
+          <tr style="border-bottom: 1px solid var(--surface-container-high);">
+            <td style="padding: 12px 8px; font-weight: 500;">CardHeader</td>
+            <td style="padding: 12px 8px; color: var(--on-surface-variant);">Title + Badge + Actions</td>
+            <td style="padding: 12px 8px;"><span style="color: var(--warning);">New</span></td>
+          </tr>
+          <tr style="border-bottom: 1px solid var(--surface-container-high);">
+            <td style="padding: 12px 8px; font-weight: 500;">DualMetric</td>
+            <td style="padding: 12px 8px; color: var(--on-surface-variant);">Two metrics with gauges</td>
+            <td style="padding: 12px 8px;"><span style="color: var(--warning);">New</span></td>
+          </tr>
+          <tr style="border-bottom: 1px solid var(--surface-container-high);">
+            <td style="padding: 12px 8px; font-weight: 500;">AlertBanner</td>
+            <td style="padding: 12px 8px; color: var(--on-surface-variant);">Info/Warning/Error message</td>
+            <td style="padding: 12px 8px;"><span style="color: var(--warning);">New</span></td>
+          </tr>
+          <tr>
+            <td style="padding: 12px 8px; font-weight: 500;">ToggleRow</td>
+            <td style="padding: 12px 8px; color: var(--on-surface-variant);">Feature on/off status</td>
+            <td style="padding: 12px 8px;"><span style="color: var(--warning);">New</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+</body>
+</html>

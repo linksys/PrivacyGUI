@@ -91,7 +91,7 @@ class InstantPrivacyView extends ConsumerWidget {
   ) {
     return AppCard(
       padding: const EdgeInsets.all(AppSpacing.md),
-      child: Block(
+      child: LayoutBlock(
         padding: const EdgeInsets.all(AppSpacing.md),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -148,7 +148,7 @@ class InstantPrivacyView extends ConsumerWidget {
         ),
         AppGap.md(),
         for (final device in state.connectedDevices) ...[
-          _buildDeviceBlock(context, device),
+          _buildDeviceLayoutBlock(context, device),
           AppGap.sm(),
         ],
       ],
@@ -196,16 +196,16 @@ class InstantPrivacyView extends ConsumerWidget {
           )
         else
           for (final device in state.allowedDevices) ...[
-            _buildDeviceBlock(context, device),
+            _buildDeviceLayoutBlock(context, device),
             AppGap.sm(),
           ],
       ],
     );
   }
 
-  Widget _buildDeviceBlock(
+  Widget _buildDeviceLayoutBlock(
       BuildContext context, InstantPrivacyDeviceUIModel device) {
-    return Block(
+    return LayoutBlock(
       padding: const EdgeInsets.all(AppSpacing.md),
       child: Row(
         children: [

@@ -223,7 +223,7 @@ class _SettingBlock extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.xs),
-      child: Block(
+      child: LayoutBlock(
         onTap: onTap,
         padding: const EdgeInsets.symmetric(
           vertical: AppSpacing.sm,

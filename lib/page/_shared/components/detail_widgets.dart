@@ -358,7 +358,7 @@ class DetailInfoBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Block(
+    return LayoutBlock(
       padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -395,7 +395,7 @@ class DetailEmptyBlock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    return Block(
+    return LayoutBlock(
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxl),
       child: Center(
         child: Column(

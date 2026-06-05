@@ -94,7 +94,7 @@ class UspAdvancedSettingsView extends StatelessWidget {
   }
 
   Widget _buildCard(AppSectionItemData item) {
-    return Block(
+    return LayoutBlock(
       onTap: item.onTap,
       padding: const EdgeInsets.symmetric(
         vertical: AppSpacing.md,

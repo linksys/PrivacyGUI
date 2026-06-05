@@ -116,7 +116,7 @@ class UspWifiNetworksCard extends ConsumerWidget {
     final scheme = Theme.of(context).colorScheme;
     final isLoading = ref.watch(uspMutationLoadingProvider) == 'wifi_network';
 
-    return Block(
+    return LayoutBlock(
       padding: const EdgeInsets.all(AppSpacing.md),
       child: Opacity(
         opacity: network.isEnabled ? 1.0 : 0.5,

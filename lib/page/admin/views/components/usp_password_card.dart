@@ -25,7 +25,7 @@ class UspPasswordCard extends StatelessWidget {
           children: [
             AppText.titleMedium('Router Password'),
             AppGap.md(),
-            Block(
+            LayoutBlock(
               padding: const EdgeInsets.all(AppSpacing.md),
               child: Row(
                 children: [

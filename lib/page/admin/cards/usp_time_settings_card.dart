@@ -76,7 +76,7 @@ class _UspTimeSettingsCardState extends ConsumerState<UspTimeSettingsCard>
           ),
           AppGap.md(),
           // Hero block - Clock with current time
-          Block(
+          LayoutBlock(
             padding: const EdgeInsets.all(AppSpacing.md),
             child: Row(
               children: [

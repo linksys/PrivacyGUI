@@ -280,7 +280,7 @@ class UspNodeDetailView extends ConsumerWidget {
           AppGap.md(),
           // Connected To Block
           if (parentNode != null) ...[
-            Block(
+            LayoutBlock(
               onTap: () => context.pushNamed(
                 RouteNamed.uspNodeDetail,
                 queryParameters: {'deviceId': parentNode.deviceId},
@@ -314,7 +314,7 @@ class UspNodeDetailView extends ConsumerWidget {
             Row(
               children: [
                 Expanded(
-                  child: Block(
+                  child: LayoutBlock(
                     padding: const EdgeInsets.all(AppSpacing.md),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -347,7 +347,7 @@ class UspNodeDetailView extends ConsumerWidget {
             AppGap.sm(),
           ] else ...[
             // Ethernet backhaul — just interface block
-            Block(
+            LayoutBlock(
               padding: const EdgeInsets.all(AppSpacing.md),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -405,7 +405,7 @@ class UspNodeDetailView extends ConsumerWidget {
               children: [
                 if (node.backhaulPhyRate > 0)
                   Expanded(
-                    child: Block(
+                    child: LayoutBlock(
                       padding: const EdgeInsets.all(AppSpacing.md),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -431,7 +431,7 @@ class UspNodeDetailView extends ConsumerWidget {
                   AppGap.sm(),
                 if (node.lastContactTime != null)
                   Expanded(
-                    child: Block(
+                    child: LayoutBlock(
                       padding: const EdgeInsets.all(AppSpacing.md),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -491,7 +491,7 @@ class UspNodeDetailView extends ConsumerWidget {
             Column(
               children: [
                 for (var i = 0; i < devices.length; i++) ...[
-                  Block(
+                  LayoutBlock(
                     padding: const EdgeInsets.symmetric(
                       horizontal: AppSpacing.md,
                       vertical: AppSpacing.sm,

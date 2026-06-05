@@ -338,7 +338,7 @@ class SpeedTestView extends ConsumerWidget {
         // Details
         if (result.downloadDurationMs != null &&
             result.downloadDurationMs! > 0) ...[
-          Block(
+          LayoutBlock(
             padding: const EdgeInsets.all(AppSpacing.md),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -499,7 +499,7 @@ class _LatencyCard extends StatelessWidget {
             ? colorScheme.tertiary
             : colorScheme.error;
 
-    return Block(
+    return LayoutBlock(
       padding: const EdgeInsets.all(AppSpacing.md),
       child: Row(
         children: [
@@ -565,7 +565,7 @@ class _SpeedCard extends StatelessWidget {
     final isComplete = status == 'Complete';
     final isNotSupported = status == 'NotSupported';
 
-    return Block(
+    return LayoutBlock(
       padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
         children: [

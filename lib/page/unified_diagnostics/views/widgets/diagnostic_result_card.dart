@@ -34,7 +34,7 @@ class DiagnosticResultCard extends StatelessWidget {
         _getSeverityColor(result.severity, colorScheme, appColors);
     final (title, metric, unit, subtitle) = _extractMetrics(result);
 
-    return Block(
+    return LayoutBlock(
       onTap: _hasDetails ? () => _showDetailsSheet(context, colorScheme) : null,
       padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
@@ -532,7 +532,7 @@ class DiagnosticIssueCard extends StatelessWidget {
     final severityColor = isError ? colorScheme.error : colorScheme.tertiary;
     final (title, metric, unit, subtitle) = _extractIssueMetrics(result);
 
-    return Block(
+    return LayoutBlock(
       padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

@@ -195,7 +195,7 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
         children: [
           AppText.titleSmall('Router'),
           AppGap.md(),
-          Block(
+          LayoutBlock(
             padding: const EdgeInsets.all(AppSpacing.md),
             child: Column(
               children: [
@@ -255,7 +255,7 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Header with toggle
-          Block(
+          LayoutBlock(
             padding: const EdgeInsets.all(AppSpacing.md),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -275,7 +275,7 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
           if (pending.dhcpEnabled) ...[
             AppGap.sm(),
             // Pool Settings Block
-            Block(
+            LayoutBlock(
               padding: const EdgeInsets.all(AppSpacing.md),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -319,7 +319,7 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
             ),
             AppGap.sm(),
             // DNS Servers Block
-            Block(
+            LayoutBlock(
               padding: const EdgeInsets.all(AppSpacing.md),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -357,7 +357,7 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
             ),
             AppGap.sm(),
             // Reservations Link Block
-            Block(
+            LayoutBlock(
               onTap: () => context.goNamed(RouteNamed.uspDhcpDetail),
               padding: const EdgeInsets.all(AppSpacing.md),
               child: Row(

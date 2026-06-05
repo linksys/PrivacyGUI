@@ -134,7 +134,7 @@ class _QuickLinkFooter extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Block(
+    return LayoutBlock(
       onTap: () => gotoOfficialWebUrl(
         linkSupport,
         locale: ref.read(appSettingsProvider).locale,

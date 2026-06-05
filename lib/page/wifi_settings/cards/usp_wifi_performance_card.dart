@@ -145,7 +145,7 @@ class _SignalTab extends StatelessWidget {
               // Normalize: -100 dBm → 0.0, -30 dBm → 1.0
               final norm = ((rssi + 100) / 70).clamp(0.0, 1.0);
 
-              return Block(
+              return LayoutBlock(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -349,7 +349,7 @@ class _ChannelsTab extends StatelessWidget {
             final snr = avgSnrPerRadio[i] ?? 0;
             final snrNorm = normalizeSNR(snr.toInt());
 
-            return Block(
+            return LayoutBlock(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [

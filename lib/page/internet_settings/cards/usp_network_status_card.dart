@@ -45,7 +45,7 @@ class UspNetworkStatusCard extends ConsumerWidget {
           ),
           AppGap.md(),
           // Status hero block - Online/Offline with WAN IP
-          Block(
+          LayoutBlock(
             padding: const EdgeInsets.all(AppSpacing.md),
             child: Row(
               children: [

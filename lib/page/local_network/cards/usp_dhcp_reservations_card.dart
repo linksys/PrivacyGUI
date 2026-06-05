@@ -88,7 +88,7 @@ class UspDhcpReservationsCard extends ConsumerWidget {
       DhcpReservationUIModel reservation, bool isLoading) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Block(
+    return LayoutBlock(
       child: Row(
         children: [
           AppSwitch(
@@ -128,7 +128,7 @@ class UspDhcpReservationsCard extends ConsumerWidget {
     final appColors = Theme.of(context).extension<AppColorScheme>();
     final lease = client.leaseTimeFormatted;
 
-    return Block(
+    return LayoutBlock(
       child: Row(
         children: [
           Container(

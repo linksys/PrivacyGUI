@@ -49,7 +49,7 @@ class StatsSectionCard extends StatelessWidget {
             ],
           ),
           AppGap.md(),
-          Block(
+          LayoutBlock(
             padding: const EdgeInsets.all(AppSpacing.md),
             child: SizedBox(
               height: chartHeight,

@@ -134,7 +134,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Header Block
-          Block(
+          LayoutBlock(
             padding: const EdgeInsets.all(AppSpacing.md),
             child: Row(
               children: [
@@ -266,7 +266,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Primary interface
-        _buildInterfaceBlock(
+        _buildInterfaceLayoutBlock(
           context,
           isPrimary: true,
           isActive: device.isActive,
@@ -280,7 +280,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
         // Additional interfaces
         for (final iface in device.additionalInterfaces) ...[
           AppGap.sm(),
-          _buildInterfaceBlock(
+          _buildInterfaceLayoutBlock(
             context,
             isPrimary: false,
             isActive: iface.isActive,
@@ -295,7 +295,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
         // Parent node
         if (device.parentNodeName != null) ...[
           AppGap.sm(),
-          Block(
+          LayoutBlock(
             padding: const EdgeInsets.all(AppSpacing.md),
             child: DetailInfoTile(
               icon: Icons.router,
@@ -308,7 +308,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
     );
   }
 
-  Widget _buildInterfaceBlock(
+  Widget _buildInterfaceLayoutBlock(
     BuildContext context, {
     required bool isPrimary,
     required bool isActive,
@@ -321,7 +321,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
   }) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Block(
+    return LayoutBlock(
       padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -437,7 +437,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
           ),
           AppGap.md(),
           if (!device.hasWifiData)
-            Block(
+            LayoutBlock(
               padding: const EdgeInsets.all(AppSpacing.md),
               child: Row(
                 children: [
@@ -457,7 +457,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
               ),
             ),
           if (hasSignalData) ...[
-            _buildSignalBlock(context, device),
+            _buildSignalLayoutBlock(context, device),
             AppGap.sm(),
           ],
           if (hasSpeedData) ...[
@@ -469,7 +469,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
               children: [
                 if (device.interfaceType?.isNotEmpty == true) ...[
                   Expanded(
-                    child: Block(
+                    child: LayoutBlock(
                       padding: const EdgeInsets.all(AppSpacing.md),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -499,7 +499,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
                 ],
                 if (device.band != null) ...[
                   Expanded(
-                    child: Block(
+                    child: LayoutBlock(
                       padding: const EdgeInsets.all(AppSpacing.md),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -528,7 +528,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
                 ],
                 if (device.ssidName != null)
                   Expanded(
-                    child: Block(
+                    child: LayoutBlock(
                       padding: const EdgeInsets.all(AppSpacing.md),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -560,8 +560,8 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
     );
   }
 
-  Widget _buildSignalBlock(BuildContext context, DeviceUIModel device) {
-    return Block(
+  Widget _buildSignalLayoutBlock(BuildContext context, DeviceUIModel device) {
+    return LayoutBlock(
       padding: const EdgeInsets.all(AppSpacing.md),
       child: Row(
         children: [
@@ -676,7 +676,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
           ),
           AppGap.md(),
           if (detail.hasReservation) ...[
-            Block(
+            LayoutBlock(
               padding: const EdgeInsets.all(AppSpacing.md),
               child: Row(
                 children: [
@@ -707,7 +707,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
                   : () => _releaseReservation(context, ref, detail),
             ),
           ] else ...[
-            Block(
+            LayoutBlock(
               padding: const EdgeInsets.all(AppSpacing.md),
               child: Row(
                 children: [

@@ -39,7 +39,7 @@ class UspRenewSection extends ConsumerWidget {
           ),
           AppGap.md(),
           // IPv4 DHCP Renew
-          Block(
+          LayoutBlock(
             padding: const EdgeInsets.all(AppSpacing.md),
             child: UspRenewActionCard(
               protocolLabel: l.ipv4,
@@ -52,7 +52,7 @@ class UspRenewSection extends ConsumerWidget {
           ),
           AppGap.sm(),
           // IPv6 DHCP Renew
-          Block(
+          LayoutBlock(
             padding: const EdgeInsets.all(AppSpacing.md),
             child: UspRenewActionCard(
               protocolLabel: l.ipv6,

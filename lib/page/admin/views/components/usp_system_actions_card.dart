@@ -27,7 +27,7 @@ class UspSystemActionsCard extends StatelessWidget {
             Row(
               children: [
                 Expanded(
-                  child: Block(
+                  child: LayoutBlock(
                     padding: const EdgeInsets.all(AppSpacing.md),
                     child: Column(
                       children: [
@@ -44,7 +44,7 @@ class UspSystemActionsCard extends StatelessWidget {
                 ),
                 AppGap.sm(),
                 Expanded(
-                  child: Block(
+                  child: LayoutBlock(
                     padding: const EdgeInsets.all(AppSpacing.md),
                     child: Column(
                       children: [

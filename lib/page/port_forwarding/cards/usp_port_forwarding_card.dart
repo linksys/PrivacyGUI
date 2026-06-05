@@ -86,7 +86,7 @@ class UspPortForwardingCard extends ConsumerWidget {
       PortForwardingRuleUIModel rule, bool isLoading) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Block(
+    return LayoutBlock(
       child: Row(
         children: [
           AppSwitch(
@@ -122,7 +122,7 @@ class UspPortForwardingCard extends ConsumerWidget {
       PortTriggeringRuleUIModel trigger, bool isLoading) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Block(
+    return LayoutBlock(
       child: Row(
         children: [
           AppSwitch(

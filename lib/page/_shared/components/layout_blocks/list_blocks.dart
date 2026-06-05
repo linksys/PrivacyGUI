@@ -21,7 +21,7 @@ class InfoList extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Block(
+    return LayoutBlock(
       padding: EdgeInsets.zero,
       child: Column(
         children: items.asMap().entries.map((entry) {
@@ -174,7 +174,7 @@ class _InfoGridTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Block(
+    return LayoutBlock(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

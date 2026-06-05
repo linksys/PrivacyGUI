@@ -37,7 +37,7 @@ class UspEthernetPortsCard extends ConsumerWidget {
             Row(
               children: [
                 Expanded(
-                  child: Block(
+                  child: LayoutBlock(
                     padding: const EdgeInsets.all(AppSpacing.md),
                     child: Row(
                       children: [
@@ -73,7 +73,7 @@ class UspEthernetPortsCard extends ConsumerWidget {
                 ),
                 AppGap.sm(),
                 Expanded(
-                  child: Block(
+                  child: LayoutBlock(
                     padding: const EdgeInsets.all(AppSpacing.md),
                     child: Row(
                       children: [

@@ -166,7 +166,7 @@ class _UspDmzViewState extends ConsumerState<UspDmzView> {
   ) {
     return AppCard(
       padding: const EdgeInsets.all(AppSpacing.md),
-      child: Block(
+      child: LayoutBlock(
         padding: const EdgeInsets.all(AppSpacing.md),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -215,7 +215,7 @@ class _UspDmzViewState extends ConsumerState<UspDmzView> {
         children: [
           AppText.titleSmall('Destination IP'),
           AppGap.md(),
-          Block(
+          LayoutBlock(
             padding: const EdgeInsets.all(AppSpacing.md),
             child: AppIpv4TextField(
               controller: _destIpController,
@@ -247,7 +247,7 @@ class _UspDmzViewState extends ConsumerState<UspDmzView> {
         children: [
           AppText.titleSmall('Source Restriction'),
           AppGap.md(),
-          Block(
+          LayoutBlock(
             padding: const EdgeInsets.all(AppSpacing.md),
             child: AppRadioList(
               selected: pending.sourceType,

@@ -47,7 +47,7 @@ class UspConnectedDevicesCard extends ConsumerWidget {
           Row(
             children: [
               Expanded(
-                child: Block(
+                child: LayoutBlock(
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -65,7 +65,7 @@ class UspConnectedDevicesCard extends ConsumerWidget {
               ),
               AppGap.sm(),
               Expanded(
-                child: Block(
+                child: LayoutBlock(
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [

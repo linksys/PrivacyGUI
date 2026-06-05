@@ -123,7 +123,7 @@ class UspDeviceFilterPanel extends ConsumerWidget {
                     ref.read(deviceFilterConfigProvider.notifier).clearAll(),
               ),
               AppGap.md(),
-              Block(
+              LayoutBlock(
                 padding: const EdgeInsets.all(AppSpacing.md),
                 child: _InfoNote(
                   text: 'Additional filters are only available for '
@@ -152,7 +152,7 @@ class UspDeviceFilterPanel extends ConsumerWidget {
             AppGap.md(),
 
             // ── CONNECTION ────────────────────────────────────────────────
-            Block(
+            LayoutBlock(
               padding: const EdgeInsets.all(AppSpacing.md),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -189,7 +189,7 @@ class UspDeviceFilterPanel extends ConsumerWidget {
             // grey it out when the user has scoped to Ethernet.
             if (options.ssids.isNotEmpty || options.bands.isNotEmpty) ...[
               AppGap.sm(),
-              Block(
+              LayoutBlock(
                 padding: const EdgeInsets.all(AppSpacing.md),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -230,7 +230,7 @@ class UspDeviceFilterPanel extends ConsumerWidget {
             // ── LOCATION ──────────────────────────────────────────────────
             if (hasMultipleNodes) ...[
               AppGap.sm(),
-              Block(
+              LayoutBlock(
                 padding: const EdgeInsets.all(AppSpacing.md),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

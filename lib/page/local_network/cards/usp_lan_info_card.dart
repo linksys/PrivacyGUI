@@ -25,7 +25,7 @@ class UspLanInfoCard extends ConsumerWidget {
           CardHeader(title: 'LAN Information'),
           AppGap.md(),
           // Hero block - Router IP with DHCP status
-          Block(
+          LayoutBlock(
             padding: const EdgeInsets.all(AppSpacing.md),
             child: Row(
               children: [
@@ -131,7 +131,7 @@ class _MetricTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Block(
+    return LayoutBlock(
       padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

@@ -4,20 +4,20 @@ import 'package:ui_kit_library/ui_kit.dart';
 import 'block_constants.dart';
 
 // =============================================================================
-// Block - Universal wrapper with surfaceContainerHighest background
+// LayoutBlock - Universal wrapper with surfaceContainerHighest background
 // =============================================================================
 
 /// Base block wrapper for semantic grouping within cards.
 ///
 /// Use inside [AppCard] to create visual separation between content groups.
 /// Supports optional tap handler for interactive blocks.
-class Block extends StatelessWidget {
+class LayoutBlock extends StatelessWidget {
   final Widget child;
   final VoidCallback? onTap;
   final EdgeInsetsGeometry? padding;
   final bool showBorder;
 
-  const Block({
+  const LayoutBlock({
     super.key,
     required this.child,
     this.onTap,

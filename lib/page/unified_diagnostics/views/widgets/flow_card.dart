@@ -27,7 +27,7 @@ class FlowCard extends StatelessWidget {
     return Semantics(
       button: true,
       label: title,
-      child: Block(
+      child: LayoutBlock(
         onTap: onTap,
         padding: const EdgeInsets.all(AppSpacing.md),
         child: Row(

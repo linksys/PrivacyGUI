@@ -55,7 +55,7 @@ class UspSectionCard extends StatelessWidget {
           ),
           AppGap.md(),
           // Section content in Block
-          Block(
+          LayoutBlock(
             padding: const EdgeInsets.all(AppSpacing.md),
             child: child,
           ),

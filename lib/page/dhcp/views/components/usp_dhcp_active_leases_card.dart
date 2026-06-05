@@ -52,7 +52,7 @@ class UspDhcpActiveLeasesCard extends StatelessWidget {
     final lease = client.leaseTimeFormatted;
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-      child: Block(
+      child: LayoutBlock(
         padding: const EdgeInsets.all(AppSpacing.md),
         child: Row(
           children: [

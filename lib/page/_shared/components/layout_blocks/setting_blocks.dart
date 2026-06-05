@@ -33,7 +33,7 @@ class SwitchBlock extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Block(
+    return LayoutBlock(
       padding: BlockConstants.paddingMd,
       child: Semantics(
         label: semanticLabel,
@@ -99,7 +99,7 @@ class SettingBlock extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.xs),
-      child: Block(
+      child: LayoutBlock(
         onTap: onTap,
         padding: BlockConstants.paddingListItem,
         child: Semantics(
@@ -155,7 +155,7 @@ class NavLinkBlock extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Block(
+    return LayoutBlock(
       onTap: onTap,
       padding: BlockConstants.paddingMd,
       child: Row(
@@ -213,7 +213,7 @@ class FormFieldBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Block(
+    return LayoutBlock(
       padding: BlockConstants.paddingMd,
       child: label != null
           ? Column(

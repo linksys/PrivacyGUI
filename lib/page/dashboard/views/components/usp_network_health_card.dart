@@ -236,7 +236,7 @@ class _MetricChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Block(
+    return LayoutBlock(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [

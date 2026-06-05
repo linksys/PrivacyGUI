@@ -85,7 +85,7 @@ class _RadioContent extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Radio toggle with status
-        Block(
+        LayoutBlock(
           padding: const EdgeInsets.all(AppSpacing.md),
           child: Row(
             children: [

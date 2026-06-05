@@ -77,7 +77,7 @@ class UspWifiListTab extends ConsumerWidget {
           // ── Quick Setup toggle card ──────────────────────────────
           AppCard(
             padding: const EdgeInsets.all(AppSpacing.md),
-            child: Block(
+            child: LayoutBlock(
               padding: const EdgeInsets.symmetric(
                 vertical: AppSpacing.sm,
                 horizontal: AppSpacing.md,

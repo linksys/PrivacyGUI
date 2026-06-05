@@ -31,7 +31,7 @@ class FirmwareUpdateCard extends ConsumerWidget {
           children: [
             AppText.titleMedium('Firmware Update'),
             AppGap.md(),
-            Block(
+            LayoutBlock(
               padding: const EdgeInsets.all(AppSpacing.md),
               child: Row(
                 children: [

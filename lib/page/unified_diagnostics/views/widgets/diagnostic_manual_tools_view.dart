@@ -130,7 +130,7 @@ class _DiagnosticManualToolsViewState
 
         // Error display
         if (state.errorMessage != null) ...[
-          Block(
+          LayoutBlock(
             padding: const EdgeInsets.all(AppSpacing.md),
             child: Row(
               children: [
@@ -227,7 +227,7 @@ class _DiagnosticManualToolsViewState
       DiagnosticType.nsLookup => ('Host Name', 'e.g. google.com'),
     };
 
-    return Block(
+    return LayoutBlock(
       padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -254,7 +254,7 @@ class _DiagnosticManualToolsViewState
     NetworkDiagnosticsState state,
     ManualToolsNotifier notifier,
   ) {
-    return Block(
+    return LayoutBlock(
       padding: const EdgeInsets.all(AppSpacing.md),
       child: SizedBox(
         width: double.infinity,
@@ -333,7 +333,7 @@ class _DiagnosticManualToolsViewState
     NetworkDiagnosticsState state,
     ManualToolsNotifier notifier,
   ) {
-    return Block(
+    return LayoutBlock(
       padding: const EdgeInsets.all(AppSpacing.md),
       child: SizedBox(
         width: double.infinity,
@@ -373,7 +373,7 @@ class _DiagnosticManualToolsViewState
     final successColor =
         result.successRate >= 100 ? colorScheme.primary : colorScheme.tertiary;
 
-    return Block(
+    return LayoutBlock(
       padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -452,7 +452,7 @@ class _DiagnosticManualToolsViewState
   Widget _buildTracerouteResult(BuildContext context, TracerouteResult result) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Block(
+    return LayoutBlock(
       padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -553,7 +553,7 @@ class _DiagnosticManualToolsViewState
     NetworkDiagnosticsState state,
     ManualToolsNotifier notifier,
   ) {
-    return Block(
+    return LayoutBlock(
       padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -579,7 +579,7 @@ class _DiagnosticManualToolsViewState
     final colorScheme = Theme.of(context).colorScheme;
     final isOk = result.isComplete && result.hasAnswers;
 
-    return Block(
+    return LayoutBlock(
       padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

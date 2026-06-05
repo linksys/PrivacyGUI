@@ -40,7 +40,7 @@ class UspDeviceInfoCard extends ConsumerWidget {
           CardHeader(title: 'Device Information'),
           AppGap.md(),
           // Device hero block - model name with icon
-          Block(
+          LayoutBlock(
             padding: const EdgeInsets.all(AppSpacing.md),
             child: Row(
               children: [

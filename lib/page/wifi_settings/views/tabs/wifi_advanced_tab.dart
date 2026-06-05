@@ -88,7 +88,7 @@ class UspWifiAdvancedTab extends ConsumerWidget {
           // ── DFS (IEEE 802.11h) ───────────────────────────────────────
           AppCard(
             padding: const EdgeInsets.all(AppSpacing.md),
-            child: Block(
+            child: LayoutBlock(
               padding: const EdgeInsets.symmetric(
                 vertical: AppSpacing.sm,
                 horizontal: AppSpacing.md,

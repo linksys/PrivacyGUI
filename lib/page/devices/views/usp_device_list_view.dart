@@ -106,7 +106,7 @@ class _UspDeviceListViewState extends ConsumerState<UspDeviceListView> {
     return Column(
       children: [
         for (final device in devices) ...[
-          Block(
+          LayoutBlock(
             padding: const EdgeInsets.symmetric(
               horizontal: AppSpacing.md,
               vertical: AppSpacing.sm,
@@ -138,7 +138,7 @@ class _UspDeviceListViewState extends ConsumerState<UspDeviceListView> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Search + Status in one Block
-              Block(
+              LayoutBlock(
                 padding: const EdgeInsets.all(AppSpacing.md),
                 child: Row(
                   children: [
@@ -168,13 +168,13 @@ class _UspDeviceListViewState extends ConsumerState<UspDeviceListView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Search Block
-        Block(
+        LayoutBlock(
           padding: const EdgeInsets.all(AppSpacing.md),
           child: _buildSearchBar(),
         ),
         AppGap.sm(),
         // Status Block
-        Block(
+        LayoutBlock(
           padding: const EdgeInsets.all(AppSpacing.md),
           child: const UspDeviceStatusSegmented(),
         ),
