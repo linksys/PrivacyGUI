@@ -328,8 +328,8 @@ class _DiagnosticManualToolsViewState
         loc(context).diagnosticTimeout(operation, host ?? ''),
       ConnectivityError() => loc(context).diagnosticsUnavailable,
       NetworkError() => loc(context).routerLostConnection,
-      InvalidInputError(:final field) =>
-        loc(context).diagnosticInvalidHost(field ?? ''),
+      InvalidInputError(:final field, :final message) =>
+        loc(context).diagnosticInvalidHost(field ?? message ?? ''),
       _ => loc(context).diagnosticUnexpectedError,
     };
   }
