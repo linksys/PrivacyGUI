@@ -71,6 +71,25 @@ class UspFirmwareUpdateService {
     }
   }
 
+  Future<void> triggerOtaDownload({
+    required int targetInstance,
+    required String firmwareUrl,
+    bool autoActivate = true,
+  }) async {
+    try {
+      await FirmwareOperations.download(
+        _usp,
+        targetInstance,
+        url: firmwareUrl,
+        autoActivate: autoActivate ? 'true' : 'false',
+      );
+    } on ServiceError {
+      rethrow;
+    } catch (e) {
+      throw mapUspErrorToServiceError(e);
+    }
+  }
+
   Future<String> pollStatus(int instance) async {
     try {
       final images = await FirmwareImages.fetch(_usp);

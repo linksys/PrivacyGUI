@@ -10,6 +10,7 @@ const kCloudAware = 'CLOUD_AWARE_URL';
 const kCloudAwarePort = 'CLOUD_AWARE_PORT';
 const kCloudAwareKey = 'CLOUD_AWARE_KEY';
 const kCloudAwareScheme = 'CLOUD_AWARE_SCHEME';
+const kFirmwareOtaBase = 'FIRMWARE_OTA_BASE_URL';
 
 const linksysCloudBaseUrl = 'linksyssmartwifi.com';
 const linksysCloudStatusBaseUrl = 'cloudhealth.lswf.net/cloud-availability';
@@ -25,6 +26,7 @@ const kCloudEnvironmentConfigProd = {
   kCloudAwarePort: 3000,
   kCloudAwareKey: '339ec1249258dfd7e689',
   kCloudAwareScheme: 'https',
+  kFirmwareOtaBase: 'https://update.linksys.com',
 };
 // Linksys QA
 const kCloudEnvironmentConfigQa = {
@@ -37,6 +39,7 @@ const kCloudEnvironmentConfigQa = {
   kCloudAwarePort: 80,
   kCloudAwareKey: '372851d642c0f179905e',
   kCloudAwareScheme: 'http',
+  kFirmwareOtaBase: 'https://update-stage.linksys.com',
 };
 // Linksys DEV
 const kCloudEnvironmentConfigDev = {
@@ -49,6 +52,7 @@ const kCloudEnvironmentConfigDev = {
   kCloudAwarePort: 80,
   kCloudAwareKey: 'efeb0fd364285aaa1201',
   kCloudAwareScheme: 'http',
+  kFirmwareOtaBase: 'https://update-stage.linksys.com',
 };
 const Map<CloudEnvironment, dynamic> kCloudEnvironmentMap = {
   CloudEnvironment.prod: kCloudEnvironmentConfigProd,
@@ -121,6 +125,9 @@ const kDeviceUpload =
 const kTickets = '/cloud/v1/tickets';
 const kGetTicketDetails = '/cloud/v1/tickets/$kTicketId';
 const kCreateTicketUpload = '/cloud/v1/tickets/$kTicketId/uploads';
+
+// Firmware OTA
+const kFirmwareOtaEndpoint = '/api/v2/fw/update';
 
 // NEW smart device
 const kSmartDeviceAssociate = '/cloud/v1/smart-devices/associate';
