@@ -78,12 +78,17 @@ class NodeDetailPopup extends StatelessWidget {
             _row('Backhaul', backhaulLinkType),
           if (backhaulSignalStrength != null && backhaulLinkType != 'Ethernet')
             _row('Signal', '$backhaulSignalStrength dBm'),
-          if (backhaulUplinkRate != null || backhaulDownlinkRate != null)
+          if (backhaulUplinkRate != null && backhaulDownlinkRate != null)
             _row(
               'Speed',
-              'Up: ${NetworkUtils.formatSpeed(backhaulUplinkRate ?? 0)} / '
-                  'Down: ${NetworkUtils.formatSpeed(backhaulDownlinkRate ?? 0)}',
-            ),
+              'Up: ${NetworkUtils.formatSpeed(backhaulUplinkRate)} / '
+                  'Down: ${NetworkUtils.formatSpeed(backhaulDownlinkRate)}',
+            )
+          else if (backhaulUplinkRate != null)
+            _row('Speed', 'Up: ${NetworkUtils.formatSpeed(backhaulUplinkRate)}')
+          else if (backhaulDownlinkRate != null)
+            _row('Speed',
+                'Down: ${NetworkUtils.formatSpeed(backhaulDownlinkRate)}'),
         ],
         // Details button (optional)
         if (showDetailsButton && node.status == MeshNodeStatus.online)

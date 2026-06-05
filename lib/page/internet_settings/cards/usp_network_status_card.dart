@@ -72,7 +72,7 @@ class UspNetworkStatusCard extends ConsumerWidget {
           Row(
             children: [
               Expanded(
-                child: _MetricTile(
+                child: MetricTile(
                   icon: Icons.router,
                   label: 'Gateway',
                   value: wan.gateway.isNotEmpty ? wan.gateway : '-',
@@ -81,7 +81,7 @@ class UspNetworkStatusCard extends ConsumerWidget {
               ),
               AppGap.sm(),
               Expanded(
-                child: _MetricTile(
+                child: MetricTile(
                   icon: Icons.straighten,
                   label: 'MTU',
                   value: '${wan.mtu}',
@@ -135,43 +135,6 @@ class _StatusIndicator extends StatelessWidget {
         isOnline ? Icons.check : Icons.close,
         color: color,
         size: 28,
-      ),
-    );
-  }
-}
-
-class _MetricTile extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-  final Color color;
-
-  const _MetricTile({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Block(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              AppIcon.font(icon, size: 14, color: color),
-              AppGap.xs(),
-              AppText.labelSmall(label, color: colorScheme.onSurfaceVariant),
-            ],
-          ),
-          AppGap.xs(),
-          AppText.titleSmall(value),
-        ],
       ),
     );
   }

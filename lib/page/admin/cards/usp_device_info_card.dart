@@ -85,7 +85,7 @@ class UspDeviceInfoCard extends ConsumerWidget {
           Row(
             children: [
               Expanded(
-                child: _MetricTile(
+                child: MetricTile(
                   icon: Icons.system_update,
                   label: 'Firmware',
                   value: info.softwareVersion,
@@ -94,7 +94,7 @@ class UspDeviceInfoCard extends ConsumerWidget {
               ),
               AppGap.sm(),
               Expanded(
-                child: _MetricTile(
+                child: MetricTile(
                   icon: Icons.memory,
                   label: 'Hardware',
                   value: info.hardwareVersion,
@@ -120,43 +120,6 @@ class UspDeviceInfoCard extends ConsumerWidget {
                 ),
             ],
           ),
-        ],
-      ),
-    );
-  }
-}
-
-class _MetricTile extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-  final Color color;
-
-  const _MetricTile({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Block(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              AppIcon.font(icon, size: 14, color: color),
-              AppGap.xs(),
-              AppText.labelSmall(label, color: colorScheme.onSurfaceVariant),
-            ],
-          ),
-          AppGap.xs(),
-          AppText.titleSmall(value),
         ],
       ),
     );

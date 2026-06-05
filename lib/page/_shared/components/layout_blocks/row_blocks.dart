@@ -109,6 +109,8 @@ class NetworkBadge {
 }
 
 /// Visual widget for [NetworkBadge].
+///
+/// Uses [AppBadge] from UI Kit for consistent badge styling.
 class NetworkBadgeWidget extends StatelessWidget {
   final NetworkBadge badge;
 
@@ -116,28 +118,9 @@ class NetworkBadgeWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final color = badge.color ?? colorScheme.secondary;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.sm,
-        vertical: 2,
-      ),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: BlockConstants.badgeBackgroundAlpha),
-        borderRadius: BorderRadius.circular(AppSpacing.xs),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (badge.icon != null) ...[
-            Icon(badge.icon, size: 12, color: color),
-            AppGap.xxs(),
-          ],
-          AppText.labelSmall(badge.label, color: color),
-        ],
-      ),
+    return AppBadge(
+      label: badge.label,
+      color: badge.color,
     );
   }
 }
