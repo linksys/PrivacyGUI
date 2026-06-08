@@ -6,6 +6,7 @@ import 'package:privacy_gui/page/instant_verify/models/mesh_node_info.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_provider.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_state.dart';
 import 'package:privacy_gui/page/instant_verify/views/device_actions.dart';
+import 'package:privacygui_widgets/widgets/card/card.dart';
 
 /// PRD v0.7 Tab 1: My Devices
 ///
@@ -214,7 +215,8 @@ class _FlatDeviceList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final sorted = _sorted(state.clients);
-    return Card(
+    return AppCard(
+      padding: EdgeInsets.zero,
       child: Column(
         children: [
           for (final client in sorted)
@@ -309,7 +311,8 @@ class _NodeGroupState extends State<_NodeGroup> {
     final colors = Theme.of(context).colorScheme;
     final clientCount = widget.clients.length;
 
-    return Card(
+    return AppCard(
+      padding: EdgeInsets.zero,
       margin: const EdgeInsets.only(bottom: 12),
       child: Column(
         children: [

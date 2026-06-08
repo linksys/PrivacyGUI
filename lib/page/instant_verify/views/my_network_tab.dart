@@ -4,6 +4,7 @@ import 'package:privacy_gui/page/instant_verify/models/mesh_node_info.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_provider.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_state.dart';
 import 'package:privacy_gui/page/instant_verify/views/restart_helper.dart';
+import 'package:privacygui_widgets/widgets/card/card.dart';
 
 /// PRD v0.7 Tab 2: My Network
 ///
@@ -61,7 +62,8 @@ class _InternetConnectionCard extends StatelessWidget {
     final connected = state.wanConnected;
     final colors = Theme.of(context).colorScheme;
 
-    return Card(
+    return AppCard(
+      padding: EdgeInsets.zero,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -132,7 +134,8 @@ class _YourRouterCard extends StatelessWidget {
     final uptimeDays = state.uptimeSeconds ~/ 86400;
     final showUptime = uptimeDays >= 30;
 
-    return Card(
+    return AppCard(
+      padding: EdgeInsets.zero,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -280,7 +283,8 @@ class _SatelliteNodeCard extends StatelessWidget {
       backhaulColor = Colors.green;
     }
 
-    return Card(
+    return AppCard(
+      padding: EdgeInsets.zero,
       margin: const EdgeInsets.only(bottom: 8),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -358,7 +362,8 @@ class _WifiOverviewCard extends StatelessWidget {
     final isOvercrowded =
         wirelessTotal >= 4 && count24 > 0 && (count24 / wirelessTotal) >= 0.6;
 
-    return Card(
+    return AppCard(
+      padding: EdgeInsets.zero,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -435,7 +440,8 @@ class _GuestNetworkCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final guestEnabled = _isGuestEnabled();
 
-    return Card(
+    return AppCard(
+      padding: EdgeInsets.zero,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
