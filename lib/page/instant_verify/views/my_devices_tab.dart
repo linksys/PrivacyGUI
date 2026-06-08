@@ -42,7 +42,11 @@ class MyDevicesTab extends ConsumerWidget {
     final wirelessCount = state.wirelessDeviceCount;
     final wiredCount = state.wiredDeviceCount;
 
-    return SingleChildScrollView(
+    return RefreshIndicator(
+      onRefresh: () =>
+          ref.read(instantVerifyPivotProvider.notifier).fetch(),
+      child: SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -89,6 +93,7 @@ class MyDevicesTab extends ConsumerWidget {
           else
             _FlatDeviceList(state: state, onNavigateToFlow: onNavigateToFlow),
         ],
+      ),
       ),
     );
   }

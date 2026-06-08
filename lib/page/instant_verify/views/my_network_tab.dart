@@ -22,11 +22,33 @@ class MyNetworkTab extends ConsumerWidget {
       return const Center(child: CircularProgressIndicator());
     }
 
-    return SingleChildScrollView(
+    return RefreshIndicator(
+      onRefresh: () =>
+          ref.read(instantVerifyPivotProvider.notifier).fetch(),
+      child: SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text('Your Network',
+                    style: Theme.of(context).textTheme.titleLarge),
+              ),
+              IconButton(
+                icon: const Icon(Icons.refresh),
+                tooltip: 'Refresh',
+                onPressed: state.phase == PivotLoadPhase.loading
+                    ? null
+                    : () => ref
+                        .read(instantVerifyPivotProvider.notifier)
+                        .fetch(),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
           _InternetConnectionCard(state: state, ref: ref),
           const SizedBox(height: 12),
           _YourRouterCard(state: state, ref: ref),
@@ -43,6 +65,7 @@ class MyNetworkTab extends ConsumerWidget {
             _GuestNetworkCard(state: state, ref: ref),
           ],
         ],
+      ),
       ),
     );
   }
