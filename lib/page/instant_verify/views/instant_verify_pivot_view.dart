@@ -117,10 +117,56 @@ class _InstantVerifyPivotViewState
         actions: [
           Consumer(builder: (ctx, r, _) {
             final state = r.watch(instantVerifyPivotProvider);
-            return IconButton(
-              icon: const Icon(Icons.info_outline, size: 20),
-              tooltip: 'Router info',
-              onPressed: () => _showRouterInfo(ctx, state),
+            final colors = Theme.of(ctx).colorScheme;
+            // Inline router identity (model · firmware · serial), tap for full
+            // details. Replaces the old ⓘ icon — cleaner and informative at a
+            // glance. Falls back to a plain info icon until data has loaded.
+            final hasInfo = state.routerModel != null ||
+                state.routerFirmware != null ||
+                state.routerSerial != null;
+            if (!hasInfo) {
+              return IconButton(
+                icon: const Icon(Icons.info_outline, size: 20),
+                tooltip: 'Router info',
+                onPressed: () => _showRouterInfo(ctx, state),
+              );
+            }
+            return InkWell(
+              onTap: () => _showRouterInfo(ctx, state),
+              borderRadius: BorderRadius.circular(8),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                // Cap width so a long firmware+serial can never push into the
+                // title/tabs on a narrow phone — overflow ellipsizes instead.
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 150),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        state.routerModel ?? 'Router',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: colors.onSurface),
+                      ),
+                      Text(
+                        [
+                          if (state.routerFirmware != null) state.routerFirmware,
+                          if (state.routerSerial != null) state.routerSerial,
+                        ].join(' · '),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                            fontSize: 10, color: colors.onSurfaceVariant),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             );
           }),
         ],
