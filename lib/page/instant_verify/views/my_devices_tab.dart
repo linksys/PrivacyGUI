@@ -5,6 +5,7 @@ import 'package:privacy_gui/page/instant_verify/models/device_score.dart';
 import 'package:privacy_gui/page/instant_verify/models/mesh_node_info.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_provider.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_state.dart';
+import 'package:privacy_gui/page/instant_verify/views/device_actions.dart';
 
 /// PRD v0.7 Tab 1: My Devices
 ///
@@ -829,42 +830,14 @@ class _DeviceDetailSheetState extends ConsumerState<_DeviceDetailSheet> {
   }
 
   Future<void> _disconnectDevice(BuildContext context) async {
-    // Show warning before disconnecting
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Disconnect this device?'),
-        content: const Text(
-            'This will briefly disconnect the device from WiFi. '
-            'It will reconnect automatically within a few seconds, '
-            'which may improve its connection quality.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Disconnect'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true || !mounted) return;
-    setState(() => _isDisconnecting = true);
-    await ref
-        .read(instantVerifyPivotProvider.notifier)
-        .deauthClient(client.macAddress);
-    if (!mounted) return;
-    setState(() => _isDisconnecting = false);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-            '${client.displayNameWithOui} disconnected — '
-            'it should reconnect automatically.'),
-        duration: const Duration(seconds: 3),
-        behavior: SnackBarBehavior.floating,
-      ),
+    await confirmAndDeauth(
+      context,
+      ref,
+      mac: client.macAddress,
+      displayName: client.displayNameWithOui,
+      onProgress: (busy) {
+        if (mounted) setState(() => _isDisconnecting = busy);
+      },
     );
   }
 

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacy_gui/page/instant_verify/views/restart_helper.dart';
+import 'package:privacy_gui/page/instant_verify/views/device_actions.dart';
 import 'package:privacy_gui/page/instant_verify/models/diagnostic_client.dart';
 import 'package:privacy_gui/page/instant_verify/models/mesh_node_info.dart' show MeshNodeInfo, BackhaulHealth;
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_provider.dart';
@@ -2281,29 +2282,8 @@ class _Flow3State extends ConsumerState<_Flow3> {
     );
   }
 
-  Future<void> _doDeauth(BuildContext context, String mac, String name) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Force reconnect?'),
-        content: Text('$name will briefly lose its WiFi connection and reconnect automatically.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Reconnect')),
-        ],
-      ),
-    );
-    if (confirmed != true || !mounted) return;
-    await ref.read(instantVerifyPivotProvider.notifier).deauthClient(mac);
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('$name disconnected — should reconnect in a moment.'),
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 3),
-      ),
-    );
-  }
+  Future<void> _doDeauth(BuildContext context, String mac, String name) =>
+      confirmAndDeauth(context, ref, mac: mac, displayName: name);
 
   /// Channel change picker — built from live radioInfo so IDs are accurate.
   /// Suggested channels are non-overlapping / non-DFS best-practice values:
