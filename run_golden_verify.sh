@@ -1,5 +1,4 @@
 #!/bin/bash
-set -e
 
 # Detect fvm: use fvm flutter if available, otherwise use flutter directly
 if command -v fvm > /dev/null 2>&1 && [ -f ".fvmrc" ]; then
@@ -58,7 +57,7 @@ if [ -z "$file" ]; then
     rm -f $REPORT_DIR/tests.json
   done
 
-  $DART run test_scripts/combine_results.dart $REPORT_DIR "$version" $EMBED_FLAG
+  $DART run test_scripts/combine_results.dart $REPORT_DIR "$version" $EMBED_FLAG || FAILED=1
   echo ""
   echo "Report generated: $REPORT_DIR/golden_verify_report.html"
 else
@@ -69,7 +68,7 @@ else
     --dart-define=visualEffects=0 || FAILED=1
   $DART run test_scripts/test_result_parser.dart $REPORT_DIR/tests.json "$locales" || FAILED=1
   rm -f $REPORT_DIR/tests.json
-  $DART run test_scripts/combine_results.dart $REPORT_DIR "$version" $EMBED_FLAG
+  $DART run test_scripts/combine_results.dart $REPORT_DIR "$version" $EMBED_FLAG || FAILED=1
   echo ""
   echo "Report generated: $REPORT_DIR/golden_verify_report.html"
 fi
