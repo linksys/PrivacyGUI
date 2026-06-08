@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacy_gui/page/instant_verify/models/diagnostic_client.dart';
 import 'package:privacy_gui/page/instant_verify/models/mesh_node_info.dart' show MeshNodeInfo, BackhaulHealth;
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_provider.dart';
@@ -361,18 +362,15 @@ class _FlowShell extends StatelessWidget {
 // Shared widgets + helpers
 // ═══════════════════════════════════════════════════════════════════════════
 
-Widget _stepCard(BuildContext context, Widget child) {
-  final colors = Theme.of(context).colorScheme;
-  return Container(
-    margin: const EdgeInsets.only(bottom: 12),
-    decoration: BoxDecoration(
-      color: colors.surfaceContainerHigh,
-      borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: colors.outlineVariant.withOpacity(0.5)),
-    ),
-    child: Padding(padding: const EdgeInsets.all(16), child: child),
-  );
-}
+// Uses the design-system AppCard (same primitive as the dashboardMenu page)
+// so border color, surface, and radius exactly match the rest of the app.
+Widget _stepCard(BuildContext context, Widget child) => Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: AppCard(
+        padding: const EdgeInsets.all(16),
+        child: child,
+      ),
+    );
 
 Widget _infoBox(BuildContext context, String text,
     {IconData icon = Icons.info_outline, Color? color}) {
