@@ -141,7 +141,8 @@ class _InstantVerifyPivotViewState
           ],
         ),
       ),
-      body: TabBarView(
+      body: SelectionArea(
+        child: TabBarView(
         controller: _tabController,
         children: [
           OverviewTab(
@@ -166,6 +167,7 @@ class _InstantVerifyPivotViewState
             onNavigateToMyDevices: () => _tabController.animateTo(1),
           ),
         ],
+      ),
       ),
     );
   }

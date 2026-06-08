@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/page/instant_verify/models/diagnostic_client.dart';
 import 'package:privacy_gui/page/instant_verify/models/device_score.dart';
@@ -440,10 +439,12 @@ void _showDeviceDetail(
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
     ),
-    builder: (context) => _DeviceDetailSheet(
-      client: client,
-      state: state,
-      onNavigateToFlow: onNavigateToFlow,
+    builder: (context) => SelectionArea(
+      child: _DeviceDetailSheet(
+        client: client,
+        state: state,
+        onNavigateToFlow: onNavigateToFlow,
+      ),
     ),
   );
 }
@@ -721,22 +722,6 @@ class _DeviceDetailSheetState extends ConsumerState<_DeviceDetailSheet> {
                   color: colors.onSurface,
                   fontWeight: FontWeight.w500),
             ),
-          ),
-          IconButton(
-            icon: Icon(Icons.copy, size: 14, color: colors.onSurfaceVariant),
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-            tooltip: 'Copy $label',
-            onPressed: () {
-              Clipboard.setData(ClipboardData(text: value));
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('$label copied'),
-                  duration: const Duration(seconds: 1),
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
-            },
           ),
         ],
       ),
