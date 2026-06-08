@@ -72,6 +72,10 @@ class SseConnectionManager {
   bool _disposed = false;
   bool _intentionalDisconnect = false;
 
+  /// Number of consecutive failed reconnect attempts since the last successful
+  /// connection. Resets to 0 on successful connect or intentional disconnect.
+  int get reconnectAttempt => _reconnectAttempt;
+
   /// Guards [_handleStreamEnd] against double-fire when both _onError and
   /// _onDone trigger for the same stream failure. Reset in [connect].
   bool _streamEndHandled = false;
@@ -89,6 +93,11 @@ class SseConnectionManager {
 
   /// Called when connection transitions away from [SseConnectionState.connected].
   VoidCallback? onDisconnected;
+
+  /// Called on each reconnect failure with the current attempt number.
+  /// Used by app-level recovery to detect sustained disconnection earlier
+  /// than waiting for [SseConnectionState.suspended].
+  void Function(int attempt)? onReconnectFailed;
 
   // ══════════════════════════════════════════════════════════════════════════
   // Connect / Disconnect
@@ -275,6 +284,7 @@ class SseConnectionManager {
     _reconnectTimer = null;
 
     _reconnectAttempt++;
+    onReconnectFailed?.call(_reconnectAttempt);
 
     if (_reconnectAttempt > _maxRetries) {
       connectionState.value = SseConnectionState.suspended;

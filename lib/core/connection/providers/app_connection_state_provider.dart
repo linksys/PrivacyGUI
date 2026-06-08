@@ -27,6 +27,8 @@ final appConnectionStateProvider =
 );
 
 class AppConnectionStateNotifier extends Notifier<AppConnectionState> {
+  static const _reconnectFailureThreshold = 2;
+
   Timer? _probeTimer;
   Timer? _cooldownTimer;
   bool _sseSuspended = false;
@@ -44,8 +46,14 @@ class AppConnectionStateNotifier extends Notifier<AppConnectionState> {
   /// no probe has run since the last reset.
   ProbeResult? get lastProbeResult => _lastProbeResult;
 
+  /// The current recovery context, or `null` if not in recovery.
+  RecoveryContext? get recoveryContext => _recoveryContext;
+
   @override
   AppConnectionState build() {
+    final sseManager = ref.read(sseManagerProvider);
+    sseManager?.onReconnectFailed = _onSseReconnectFailed;
+
     ref.listen(sseConnectionStateProvider, (_, next) {
       final sseState = next.valueOrNull;
       _sseSuspended = sseState == SseConnectionState.suspended;
@@ -66,6 +74,7 @@ class AppConnectionStateNotifier extends Notifier<AppConnectionState> {
     ref.onDispose(() {
       _probeTimer?.cancel();
       _cooldownTimer?.cancel();
+      sseManager?.onReconnectFailed = null;
     });
 
     return AppConnectionState.authenticated;
@@ -91,6 +100,15 @@ class AppConnectionStateNotifier extends Notifier<AppConnectionState> {
       _startProbeLoop();
     } else {
       _cooldownTimer = Timer(context.cooldown, _startProbeLoop);
+    }
+  }
+
+  void _onSseReconnectFailed(int attempt) {
+    if (attempt >= _reconnectFailureThreshold &&
+        state == AppConnectionState.authenticated) {
+      logger.i('[Connection] SSE reconnect failed $attempt times '
+          '— auto-entering recovery');
+      enterWaiting(context: RecoveryContext.natural);
     }
   }
 
