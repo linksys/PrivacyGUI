@@ -52,10 +52,12 @@ class MyDevicesTab extends ConsumerWidget {
       BuildContext context, DeviceUIModel device, DeviceScore score) {
     showModalBottomSheet<void>(
       context: context,
-      builder: (ctx) => _TroubleshootSheet(
-        device: device,
-        score: score,
-        onGoToFlow3: onGoToFlow3,
+      builder: (ctx) => SelectionArea(
+        child: _TroubleshootSheet(
+          device: device,
+          score: score,
+          onGoToFlow3: onGoToFlow3,
+        ),
       ),
     );
   }

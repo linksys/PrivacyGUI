@@ -71,7 +71,8 @@ class _InstantTestPageState extends ConsumerState<InstantTestPage>
           ],
         ),
       ),
-      body: TabBarView(
+      body: SelectionArea(
+        child: TabBarView(
         controller: _tabController,
         children: [
           const OverviewTab(),
@@ -93,6 +94,7 @@ class _InstantTestPageState extends ConsumerState<InstantTestPage>
                 _tabController.animateTo(_myDevicesTabIndex),
           ),
         ],
+      ),
       ),
     );
   }
