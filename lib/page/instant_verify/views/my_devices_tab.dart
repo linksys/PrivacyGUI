@@ -46,16 +46,38 @@ class MyDevicesTab extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // ── Header ──────────────────────────────────────────────────
-          Text(
-            '$totalCount device${totalCount == 1 ? '' : 's'} connected',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            '$wirelessCount wireless, $wiredCount wired',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '$totalCount device${totalCount == 1 ? '' : 's'} connected',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '$wirelessCount wireless, $wiredCount wired',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                    ),
+                  ],
                 ),
+              ),
+              // Re-scan for devices (e.g. a device that joined after the last test)
+              IconButton(
+                icon: const Icon(Icons.refresh),
+                tooltip: 'Refresh devices',
+                onPressed: state.phase == PivotLoadPhase.loading
+                    ? null
+                    : () => ref
+                        .read(instantVerifyPivotProvider.notifier)
+                        .fetch(),
+              ),
+            ],
           ),
           const SizedBox(height: 16),
 

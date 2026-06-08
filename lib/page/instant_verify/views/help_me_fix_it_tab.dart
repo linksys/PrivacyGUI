@@ -361,10 +361,18 @@ class _FlowShell extends StatelessWidget {
 // Shared widgets + helpers
 // ═══════════════════════════════════════════════════════════════════════════
 
-Widget _stepCard(BuildContext context, Widget child) => Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: Padding(padding: const EdgeInsets.all(16), child: child),
-    );
+Widget _stepCard(BuildContext context, Widget child) {
+  final colors = Theme.of(context).colorScheme;
+  return Container(
+    margin: const EdgeInsets.only(bottom: 12),
+    decoration: BoxDecoration(
+      color: colors.surfaceContainerHigh,
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: colors.outlineVariant.withOpacity(0.5)),
+    ),
+    child: Padding(padding: const EdgeInsets.all(16), child: child),
+  );
+}
 
 Widget _infoBox(BuildContext context, String text,
     {IconData icon = Icons.info_outline, Color? color}) {
@@ -1989,7 +1997,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
             TextButton(
               onPressed: () => setState(() => _selectedDevice = null),
               style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(0, 28)),
-              child: const Text('Change'),
+              child: const Text('Switch Device'),
             ),
           ]),
           const SizedBox(height: 8),
@@ -2025,7 +2033,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
                     'Contact your internet provider if this is consistently slow.'
                   : 'Speed looks fine — the issue is likely on the device itself.',
             ),
-            const SizedBox(height: 10),
+            Divider(height: 20, color: colors.outlineVariant.withOpacity(0.4)),
           ],
           // Active device count
           if (state.clients.isNotEmpty) ...[
@@ -2038,7 +2046,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
                     '(streaming, downloads) can reduce speed for everyone.'
                   : 'Device count is normal — network congestion is unlikely.',
             ),
-            const SizedBox(height: 10),
+            Divider(height: 20, color: colors.outlineVariant.withOpacity(0.4)),
           ],
           // Band distribution
           if (state.wirelessDeviceCount > 0) ...[
@@ -2051,7 +2059,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
                     'competing for bandwidth with this device.',
             ),
           ],
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
           Text(
             'If the device still feels slow, try closing background apps and '
             'running a speed test directly on that device.',

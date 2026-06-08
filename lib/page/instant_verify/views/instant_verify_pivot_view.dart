@@ -113,7 +113,7 @@ class _InstantVerifyPivotViewState
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Instant Help'),
+        title: const Text('Instant-Test'),
         actions: [
           Consumer(builder: (ctx, r, _) {
             final state = r.watch(instantVerifyPivotProvider);
