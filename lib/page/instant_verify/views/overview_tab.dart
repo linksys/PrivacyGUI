@@ -7,6 +7,7 @@ import 'package:privacy_gui/page/instant_verify/models/verdict.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_provider.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_state.dart';
 import 'package:privacy_gui/page/instant_verify/services/browser_diagnostic_service.dart';
+import 'package:privacy_gui/page/instant_verify/views/restart_helper.dart';
 
 class OverviewTab extends ConsumerStatefulWidget {
   final VoidCallback? onViewClients;
@@ -148,13 +149,8 @@ class _OverviewTabState extends ConsumerState<OverviewTab> {
   Future<void> _handleAction(String actionKey) async {
     final notifier = ref.read(instantVerifyPivotProvider.notifier);
     if (actionKey == VerdictEngine.actionRestartRouter) {
-      final state = ref.read(instantVerifyPivotProvider);
-      if (state.hasRestartedThisSession) return;
-      final confirmed = await _confirmRestart(context);
-      if (confirmed == true) {
-        await notifier.restartRouter();
-        _startRestartCountdown();
-      }
+      // Shared confirm + singleton guard; countdown runs only on actual restart.
+      await confirmAndRestart(context, ref, onRestarted: _startRestartCountdown);
     } else if (actionKey == VerdictEngine.actionFirmwareUpdate) {
       final confirmed = await _confirmFirmwareUpdate(context);
       if (confirmed == true) {
@@ -201,30 +197,6 @@ class _OverviewTabState extends ConsumerState<OverviewTab> {
     }
     // If still unreachable after 2 more minutes, enable "Run Again" so user can retry
     if (mounted) setState(() => _restartCountdown = 0);
-  }
-
-  Future<bool?> _confirmRestart(BuildContext context) {
-    return showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Restart Router?'),
-        content: const Text(
-          'All devices will disconnect for about 2 minutes.\n\n'
-          'If you\'re on WiFi, this page will go blank. '
-          'Wait 2 minutes, reconnect to your WiFi, then return to 192.168.1.1.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Restart'),
-          ),
-        ],
-      ),
-    );
   }
 
   Future<bool?> _confirmFirmwareUpdate(BuildContext context) {

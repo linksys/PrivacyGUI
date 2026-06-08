@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
+import 'package:privacy_gui/page/instant_verify/views/restart_helper.dart';
 import 'package:privacy_gui/page/instant_verify/models/diagnostic_client.dart';
 import 'package:privacy_gui/page/instant_verify/models/mesh_node_info.dart' show MeshNodeInfo, BackhaulHealth;
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_provider.dart';
@@ -524,41 +525,10 @@ Widget _linksysSupportTile(BuildContext context) => Card(
     );
 
 /// Centralised restart confirmation. Shows a dialog, then calls restartRouter().
-Future<void> _confirmAndRestart(BuildContext context, WidgetRef ref) async {
-  final state = ref.read(instantVerifyPivotProvider);
-  if (state.hasRestartedThisSession) {
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('You\'ve already restarted this session. If the issue persists, contact Linksys Support.'),
-        behavior: SnackBarBehavior.floating,
-      ));
-    }
-    return;
-  }
-  final confirmed = await showDialog<bool>(
-    context: context,
-    builder: (ctx) => AlertDialog(
-      title: const Text('Restart your router?'),
-      content: const Text(
-          'All devices will disconnect for about 2 minutes.\n\n'
-          'If you\'re on WiFi, this page will go blank. '
-          'Wait 2 minutes, reconnect to your WiFi, then return to 192.168.1.1.'),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(ctx).pop(false),
-          child: const Text('Cancel'),
-        ),
-        FilledButton(
-          onPressed: () => Navigator.of(ctx).pop(true),
-          child: const Text('Restart'),
-        ),
-      ],
-    ),
-  );
-  if (confirmed == true && context.mounted) {
-    await ref.read(instantVerifyPivotProvider.notifier).restartRouter();
-  }
-}
+// Restart confirmation now lives in the shared restart_helper.dart (used by
+// all Instant-Test surfaces). Alias kept for the many in-file call sites.
+Future<void> _confirmAndRestart(BuildContext context, WidgetRef ref) =>
+    confirmAndRestart(context, ref);
 
 Widget _restartOrEscalate(BuildContext context, WidgetRef ref, InstantVerifyPivotState state) {
   if (state.hasRestartedThisSession) {

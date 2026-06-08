@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/page/instant_verify/models/mesh_node_info.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_provider.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_state.dart';
+import 'package:privacy_gui/page/instant_verify/views/restart_helper.dart';
 
 /// PRD v0.7 Tab 2: My Network
 ///
@@ -95,9 +96,7 @@ class _InternetConnectionCard extends StatelessWidget {
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton.icon(
-                  onPressed: () {
-                    ref.read(instantVerifyPivotProvider.notifier).restartRouter();
-                  },
+                  onPressed: () => confirmAndRestart(context, ref),
                   icon: const Icon(Icons.restart_alt),
                   label: const Text('Restart Router'),
                 ),
@@ -203,9 +202,7 @@ class _YourRouterCard extends StatelessWidget {
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton.icon(
-                    onPressed: () {
-                      ref.read(instantVerifyPivotProvider.notifier).restartRouter();
-                    },
+                    onPressed: () => confirmAndRestart(context, ref),
                     icon: const Icon(Icons.restart_alt),
                     label: const Text('Restart Router'),
                   ),
