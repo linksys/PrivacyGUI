@@ -1969,14 +1969,18 @@ class _Flow3State extends ConsumerState<_Flow3> {
               child: const Text('Switch Device'),
             ),
           ]),
-          const SizedBox(height: 8),
-          Wrap(spacing: 12, children: [
-            _metaChip(context, colors, band),
-            if (signal != null) _metaChip(context, colors, '$signal dBm'),
-            if (txRate != null) _metaChip(context, colors, '↑$txRate Mbps'),
-            if (node != null) _metaChip(context, colors,
-                node.isController ? 'On main router' : 'Via ${node.name}'),
-          ]),
+          const SizedBox(height: 12),
+          _deviceMetaRow(context, colors, label: 'Band', value: band),
+          if (signal != null)
+            _deviceMetaRow(context, colors,
+                label: 'Signal', value: _signalLabel(signal)),
+          if (txRate != null)
+            _deviceMetaRow(context, colors,
+                label: 'Link rate', value: _linkRateLabel(txRate)),
+          if (node != null)
+            _deviceMetaRow(context, colors,
+                label: 'Connected to',
+                value: node.isController ? 'Main router' : node.name),
         ],
       )),
 
@@ -2093,16 +2097,52 @@ class _Flow3State extends ConsumerState<_Flow3> {
     ]);
   }
 
-  Widget _metaChip(BuildContext context, ColorScheme colors, String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(
-        color: colors.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(12),
+  /// Labeled device-attribute row: "Label" left, value right. Replaces the
+  /// old unlabeled chips so each value is self-explanatory.
+  Widget _deviceMetaRow(BuildContext context, ColorScheme colors,
+      {required String label, required String value}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 110,
+            child: Text(label,
+                style: TextStyle(fontSize: 12, color: colors.onSurfaceVariant)),
+          ),
+          Expanded(
+            child: Text(value,
+                style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: colors.onSurface)),
+          ),
+        ],
       ),
-      child: Text(label,
-          style: TextStyle(fontSize: 11, color: colors.onSurfaceVariant, fontWeight: FontWeight.w500)),
     );
+  }
+
+  /// Customer-friendly signal description with the dBm in parentheses.
+  String _signalLabel(int dBm) {
+    final quality = dBm >= -60
+        ? 'Strong'
+        : dBm >= -70
+            ? 'Good'
+            : dBm >= -75
+                ? 'Weak'
+                : 'Very weak';
+    return '$quality ($dBm dBm)';
+  }
+
+  /// Format a link rate (Mbps) cleanly — promotes to Gbps at >= 1000.
+  String _linkRateLabel(int mbps) {
+    if (mbps >= 1000) {
+      final gbps = mbps / 1000;
+      // Trim trailing .0 (e.g. "1 Gbps" not "1.0 Gbps")
+      final s = gbps.toStringAsFixed(1);
+      return '${s.endsWith('.0') ? s.substring(0, s.length - 2) : s} Gbps';
+    }
+    return '$mbps Mbps';
   }
 
   List<Widget> _keepsDroppingFlow(BuildContext context, InstantVerifyPivotState state) {

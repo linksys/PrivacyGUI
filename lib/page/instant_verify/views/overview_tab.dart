@@ -1,5 +1,5 @@
-import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
+import 'package:privacy_gui/constants/build_config.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/page/instant_verify/models/device_score.dart';
 import 'package:privacy_gui/page/instant_verify/models/mesh_node_info.dart';
@@ -123,7 +123,10 @@ class _OverviewTabState extends ConsumerState<OverviewTab> {
                     },
             ),
           ),
-          if (kDebugMode) ...[
+          // Internal validation builds (deploy_local.sh sets force=local) get the
+          // mock-failure scenario picker; customer Jenkins builds (force!=local)
+          // do not. Replaces the old kDebugMode guard, which release builds strip.
+          if (BuildConfig.forceCommandType == ForceCommand.local) ...[
             const SizedBox(height: 8),
             Center(
               child: FilledButton.tonal(

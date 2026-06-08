@@ -131,38 +131,44 @@ class _InstantVerifyPivotViewState
                 onPressed: () => _showRouterInfo(ctx, state),
               );
             }
+            // Stacked, labeled router identity — tap for full details.
+            // Label + value per line so it reads cleanly instead of cluttered.
+            Widget infoLine(String label, String value) => RichText(
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.right,
+                  text: TextSpan(children: [
+                    TextSpan(
+                      text: '$label ',
+                      style: TextStyle(
+                          fontSize: 10, color: colors.onSurfaceVariant),
+                    ),
+                    TextSpan(
+                      text: value,
+                      style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: colors.onSurface),
+                    ),
+                  ]),
+                );
             return InkWell(
               onTap: () => _showRouterInfo(ctx, state),
               borderRadius: BorderRadius.circular(8),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                // Cap width so a long firmware+serial can never push into the
-                // title/tabs on a narrow phone — overflow ellipsizes instead.
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 150),
+                  constraints: const BoxConstraints(maxWidth: 220),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      Text(
-                        state.routerModel ?? 'Router',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: colors.onSurface),
-                      ),
-                      Text(
-                        [
-                          if (state.routerFirmware != null) state.routerFirmware,
-                          if (state.routerSerial != null) state.routerSerial,
-                        ].join(' · '),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                            fontSize: 10, color: colors.onSurfaceVariant),
-                      ),
+                      if (state.routerModel != null)
+                        infoLine('Model:', state.routerModel!),
+                      if (state.routerFirmware != null)
+                        infoLine('Ver:', state.routerFirmware!),
+                      if (state.routerSerial != null)
+                        infoLine('Serial:', state.routerSerial!),
                     ],
                   ),
                 ),

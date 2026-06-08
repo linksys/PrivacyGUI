@@ -1436,8 +1436,12 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
         final wireless = conn['wireless'] as Map<String, dynamic>?;
         if (wireless != null) {
           final devInfo = deviceMap[mac];
-          final txWireless = wireless['txRate'] as int?;
-          final rxWireless = wireless['rxRate'] as int?;
+          // wireless txRate/rxRate are in Kbps — convert to Mbps (the field's
+          // unit). Without this, a 1.3 Gbps link showed as "1297100 Mbps".
+          final txWirelessRaw = wireless['txRate'] as int?;
+          final rxWirelessRaw = wireless['rxRate'] as int?;
+          final txWireless = txWirelessRaw != null ? txWirelessRaw ~/ 1000 : null;
+          final rxWireless = rxWirelessRaw != null ? rxWirelessRaw ~/ 1000 : null;
           final txFromDevices = devInfo?['txRate'] != null
               ? int.tryParse(devInfo!['txRate']!)
               : null;
