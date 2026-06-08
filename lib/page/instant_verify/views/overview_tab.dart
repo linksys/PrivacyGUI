@@ -8,6 +8,7 @@ import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_p
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_state.dart';
 import 'package:privacy_gui/page/instant_verify/services/browser_diagnostic_service.dart';
 import 'package:privacy_gui/page/instant_verify/views/restart_helper.dart';
+import 'package:privacygui_widgets/widgets/card/card.dart';
 
 class OverviewTab extends ConsumerStatefulWidget {
   final VoidCallback? onViewClients;
@@ -70,11 +71,10 @@ class _OverviewTabState extends ConsumerState<OverviewTab> {
               state.verdict != null &&
               state.verdict!.findings.isNotEmpty) ...[
             const SizedBox(height: 12),
-            Card(
+            AppCard(
               color: Theme.of(context).colorScheme.tertiaryContainer,
-              child: Padding(
-                padding: const EdgeInsets.all(14),
-                child: Row(
+              padding: const EdgeInsets.all(14),
+              child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Icon(Icons.history, size: 18,
@@ -90,7 +90,6 @@ class _OverviewTabState extends ConsumerState<OverviewTab> {
                     ),
                   ],
                 ),
-              ),
             ),
           ],
           if (state.issueDevices.isNotEmpty) ...[
@@ -772,24 +771,11 @@ class _StatusCard extends StatelessWidget {
 
   Widget _card(BuildContext context,
       {required Widget child, Color? borderColor}) {
-    return Container(
+    // Uses the design-system AppCard (matches dashboardMenu + other tabs).
+    // borderColor still tints the frame by status when provided.
+    return AppCard(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: borderColor?.withValues(alpha: 0.4) ??
-              Theme.of(context).colorScheme.outlineVariant,
-          width: borderColor != null ? 1.5 : 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+      borderColor: borderColor?.withValues(alpha: 0.4),
       child: child,
     );
   }
@@ -913,13 +899,8 @@ class _DeviceIssuesCard extends StatelessWidget {
         ? 'Try moving your router to a more central location to improve their signal.'
         : 'Check for thick walls, metal objects, or appliances between these devices and your router.';
 
-    return Container(
+    return AppCard(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: scheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: scheme.outlineVariant),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1044,13 +1025,8 @@ class _MeshCard extends StatelessWidget {
     final nodes = state.meshNodes;
     final deviceCount = nodes.length;
 
-    return Container(
+    return AppCard(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: scheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: scheme.outlineVariant),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
