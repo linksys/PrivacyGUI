@@ -804,14 +804,18 @@ class UspCommandProvider implements IRouterCommandProvider {
   }
 }
 
+/// Function type for reading providers.
+/// Both [WidgetRef] and [ProviderContainer] satisfy this signature.
+typedef ProviderReader = T Function<T>(ProviderListenable<T> provider);
+
 /// Builds the router context string for AI system prompt.
 ///
 /// This provides current router state to the AI so it can make informed
 /// decisions without needing to query.
 ///
-/// Accepts [WidgetRef] from widgets. For provider-side usage, create
-/// a separate function that accepts [Ref].
-String buildRouterContext(WidgetRef ref) {
+/// Accepts a [ProviderReader] function. Use `ref.read` from WidgetRef/Ref,
+/// or `container.read` from ProviderContainer (for tests).
+String buildRouterContext(ProviderReader read) {
   _log('buildRouterContext: building context from providers...');
   final buffer = StringBuffer();
   buffer.writeln('# Current Router State\n');
@@ -823,7 +827,7 @@ String buildRouterContext(WidgetRef ref) {
   }
 
   // System Info
-  final sysInfo = getValue<SystemInfoData>(ref.read(systemInfoDataProvider));
+  final sysInfo = getValue<SystemInfoData>(read(systemInfoDataProvider));
   _log(
       'buildRouterContext: systemInfo=${sysInfo != null ? "present" : "null"}');
   if (sysInfo != null) {
@@ -840,7 +844,7 @@ String buildRouterContext(WidgetRef ref) {
   }
 
   // WAN Status
-  final wan = getValue<WanData>(ref.read(wanDataProvider));
+  final wan = getValue<WanData>(read(wanDataProvider));
   _log('buildRouterContext: wan=${wan != null ? "present" : "null"}');
   if (wan != null) {
     final m = wan.model;
@@ -855,7 +859,7 @@ String buildRouterContext(WidgetRef ref) {
   }
 
   // Devices
-  final devices = getValue<DevicesData>(ref.read(devicesDataProvider));
+  final devices = getValue<DevicesData>(read(devicesDataProvider));
   _log('buildRouterContext: devices=${devices != null ? "present" : "null"}');
   if (devices != null) {
     _log(
@@ -881,7 +885,7 @@ String buildRouterContext(WidgetRef ref) {
   }
 
   // WiFi
-  final wifi = getValue<WifiData>(ref.read(wifiDataProvider));
+  final wifi = getValue<WifiData>(read(wifiDataProvider));
   _log('buildRouterContext: wifi=${wifi != null ? "present" : "null"}');
   if (wifi != null) {
     buffer.writeln('## WiFi');
@@ -897,7 +901,7 @@ String buildRouterContext(WidgetRef ref) {
   }
 
   // LAN Configuration
-  final lan = getValue<LanData>(ref.read(lanDataProvider));
+  final lan = getValue<LanData>(read(lanDataProvider));
   _log('buildRouterContext: lan=${lan != null ? "present" : "null"}');
   if (lan != null) {
     final m = lan.model;
@@ -913,7 +917,7 @@ String buildRouterContext(WidgetRef ref) {
   }
 
   // Ethernet Ports
-  final ethernet = getValue<EthernetData>(ref.read(ethernetDataProvider));
+  final ethernet = getValue<EthernetData>(read(ethernetDataProvider));
   _log('buildRouterContext: ethernet=${ethernet != null ? "present" : "null"}');
   if (ethernet != null) {
     buffer.writeln('## Ethernet Ports');
@@ -926,7 +930,7 @@ String buildRouterContext(WidgetRef ref) {
   }
 
   // Security / Firewall
-  final firewall = getValue<FirewallData>(ref.read(firewallDataProvider));
+  final firewall = getValue<FirewallData>(read(firewallDataProvider));
   _log('buildRouterContext: firewall=${firewall != null ? "present" : "null"}');
   if (firewall != null) {
     final m = firewall.firewallModel;
@@ -943,7 +947,7 @@ String buildRouterContext(WidgetRef ref) {
 
   // Port Forwarding
   final portFwd =
-      getValue<PortForwardingData>(ref.read(portForwardingDataProvider));
+      getValue<PortForwardingData>(read(portForwardingDataProvider));
   _log(
       'buildRouterContext: portForwarding=${portFwd != null ? "present" : "null"}');
   if (portFwd != null && portFwd.ruleModels.isNotEmpty) {

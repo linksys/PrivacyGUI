@@ -280,7 +280,7 @@ void main() {
         ],
       );
 
-      final context = buildRouterContext(container);
+      final context = buildRouterContext(container.read);
 
       expect(context, contains('# Current Router State'));
       expect(context, contains('## Router'));
@@ -312,7 +312,7 @@ void main() {
         ],
       );
 
-      final context = buildRouterContext(container);
+      final context = buildRouterContext(container.read);
 
       expect(context, contains('# Current Router State'));
       // Should not crash, just omit sections with no data
