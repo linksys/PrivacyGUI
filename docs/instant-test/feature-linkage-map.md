@@ -3,12 +3,17 @@
 > Which actions appear in multiple places, and whether the logic is shared or
 > duplicated. The "to change X, edit these files" reference.
 
-Last Verified: 2026-06-08 (JNAP line)
+Last Verified: 2026-06-09 (JNAP line)
 
 ## Headline
 Business logic is centralized in the provider (single source of truth). After
-the 2026-06-08 refactors, the previously-duplicated UI dialogs are now shared
-too. This map tracks remaining and historical seams.
+the refactors, the previously-duplicated UI dialogs are now shared too. This map
+tracks remaining and historical seams.
+
+> Note: Instant-Test and Instant-Verify are now **separate tools** with their own
+> dashboardMenu cards and routes (`menuInstantTest` → `InstantVerifyPivotView`;
+> `menuInstantVerify` → the restored technician `InstantVerifyView`). This map
+> covers the Instant-Test (`InstantVerifyPivotView`) surfaces. See [[code-map]].
 
 ## Cross-Surface Action Map
 | Action | Logic (1 place) | UI trigger(s) | State |

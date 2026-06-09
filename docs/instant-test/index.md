@@ -3,7 +3,7 @@
 > Project knowledge base for the Instant-Test customer WiFi diagnostic feature.
 > Lives in-repo so it travels with the code. Mirrors the Linksys Engineering Wiki schema.
 
-Last updated: 2026-06-08
+Last updated: 2026-06-09
 
 ---
 
