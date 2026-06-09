@@ -75,14 +75,19 @@ class MacFilterAccessPoints {
           v == '0' ||
           v == 0 ||
           v == false ||
-          v == 'false')) continue;
+          v == 'false')) {
+        continue;
+      }
       final missing = <String>[];
-      if (!response.containsKey('${p}SSIDReference'))
+      if (!response.containsKey('${p}SSIDReference')) {
         missing.add('${p}SSIDReference');
-      if (!response.containsKey('${p}MACAddressControlEnabled'))
+      }
+      if (!response.containsKey('${p}MACAddressControlEnabled')) {
         missing.add('${p}MACAddressControlEnabled');
-      if (!response.containsKey('${p}AllowedMACAddress'))
+      }
+      if (!response.containsKey('${p}AllowedMACAddress')) {
         missing.add('${p}AllowedMACAddress');
+      }
       if (missing.isNotEmpty) {
         throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
       }
@@ -105,12 +110,14 @@ class MacFilterAccessPoints {
       {bool allowPartial = false}) async {
     final params = <String, dynamic>{};
     for (final update in updates) {
-      if (update.macAddressControlEnabled != null)
+      if (update.macAddressControlEnabled != null) {
         params['${update.instancePath}MACAddressControlEnabled'] =
             update.macAddressControlEnabled;
-      if (update.allowedMACAddress != null)
+      }
+      if (update.allowedMACAddress != null) {
         params['${update.instancePath}AllowedMACAddress'] =
             update.allowedMACAddress;
+      }
     }
     if (params.isEmpty) {
       return {

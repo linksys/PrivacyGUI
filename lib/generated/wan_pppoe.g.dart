@@ -16,27 +16,48 @@ class WanPppoe {
     required this.addressingType,
   });
 
-  static const _paths = [
-    'Device.PPP.Interface.1.Username',
-    'Device.PPP.Interface.1.Password',
-    'Device.IP.Interface.2.IPv4Address.1.AddressingType',
-  ];
+  /// Resolve the instance index by searching for Alias='cpe-wan'
+  static Future<String> _resolveInstance(UspClient client) async {
+    final response = await client.get(['Device.IP.Interface.*.Alias']);
+    for (final entry in response.entries) {
+      if (entry.value == 'cpe-wan') {
+        final match =
+            RegExp(r'Device\.IP\.Interface\.(\d+)\.').firstMatch(entry.key);
+        if (match != null) {
+          return 'Device.IP.Interface.${match.group(1)}.';
+        }
+      }
+    }
+    // Fallback to hardcoded instance 2
+    return 'Device.IP.Interface.2.';
+  }
+
+  /// Build parameter paths using the resolved instance path
+  static List<String> _buildPaths(String instancePath) => [
+        'Device.PPP.Interface.1.Username',
+        'Device.PPP.Interface.1.Password',
+        '${instancePath}IPv4Address.1.AddressingType',
+      ];
 
   /// Fetch all parameters via USP Get message
   static Future<WanPppoe> fetch(UspClient client) async {
-    final response = await client.get(_paths);
-    return WanPppoe._fromResponse(response);
+    final instancePath = await _resolveInstance(client);
+    final response = await client.get(_buildPaths(instancePath));
+    return WanPppoe._fromResponse(response, instancePath);
   }
 
-  factory WanPppoe._fromResponse(Map<String, dynamic> response) {
+  factory WanPppoe._fromResponse(
+      Map<String, dynamic> response, String instancePath) {
     final missing = <String>[];
-    if (!response.containsKey('Device.PPP.Interface.1.Username'))
+    if (!response.containsKey('Device.PPP.Interface.1.Username')) {
       missing.add('Device.PPP.Interface.1.Username');
-    if (!response.containsKey('Device.PPP.Interface.1.Password'))
+    }
+    if (!response.containsKey('Device.PPP.Interface.1.Password')) {
       missing.add('Device.PPP.Interface.1.Password');
-    if (!response
-        .containsKey('Device.IP.Interface.2.IPv4Address.1.AddressingType'))
-      missing.add('Device.IP.Interface.2.IPv4Address.1.AddressingType');
+    }
+    if (!response.containsKey('${instancePath}IPv4Address.1.AddressingType')) {
+      missing.add('${instancePath}IPv4Address.1.AddressingType');
+    }
     if (missing.isNotEmpty) {
       throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
     }
@@ -46,7 +67,7 @@ class WanPppoe {
       pppPassword:
           (response['Device.PPP.Interface.1.Password'] ?? '') as String,
       addressingType:
-          (response['Device.IP.Interface.2.IPv4Address.1.AddressingType'] ?? '')
+          (response['${instancePath}IPv4Address.1.AddressingType'] ?? '')
               as String,
     );
   }
@@ -60,13 +81,16 @@ class WanPppoe {
     bool allowPartial = false,
   }) async {
     final params = <String, dynamic>{};
-    if (pppUsername != null)
+    final instancePath = await _resolveInstance(client);
+    if (pppUsername != null) {
       params['Device.PPP.Interface.1.Username'] = pppUsername;
-    if (pppPassword != null)
+    }
+    if (pppPassword != null) {
       params['Device.PPP.Interface.1.Password'] = pppPassword;
-    if (addressingType != null)
-      params['Device.IP.Interface.2.IPv4Address.1.AddressingType'] =
-          addressingType;
+    }
+    if (addressingType != null) {
+      params['${instancePath}IPv4Address.1.AddressingType'] = addressingType;
+    }
     if (params.isEmpty) {
       return {
         'success': true,

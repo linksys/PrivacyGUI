@@ -109,7 +109,9 @@ class PortTriggering {
           v == '0' ||
           v == 0 ||
           v == false ||
-          v == 'false')) continue;
+          v == 'false')) {
+        continue;
+      }
       final childBase_0 = '${p}Rule.';
       final childIds_0 = <String>{};
       for (final key in response.keys) {
@@ -124,7 +126,7 @@ class PortTriggering {
             (a, b) => (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
       final rules = <PortTriggerForwardRule>[];
       for (final cid_0 in childSorted_0) {
-        final cp_0 = '${childBase_0}${cid_0}.';
+        final cp_0 = '$childBase_0$cid_0.';
         rules.add(PortTriggerForwardRule(
           instancePath: cp_0,
           forwardPort:
@@ -136,13 +138,21 @@ class PortTriggering {
         ));
       }
       final missing = <String>[];
-      if (!response.containsKey('${p}Enable')) missing.add('${p}Enable');
-      if (!response.containsKey('${p}Description'))
+      if (!response.containsKey('${p}Enable')) {
+        missing.add('${p}Enable');
+      }
+      if (!response.containsKey('${p}Description')) {
         missing.add('${p}Description');
-      if (!response.containsKey('${p}Port')) missing.add('${p}Port');
-      if (!response.containsKey('${p}PortEndRange'))
+      }
+      if (!response.containsKey('${p}Port')) {
+        missing.add('${p}Port');
+      }
+      if (!response.containsKey('${p}PortEndRange')) {
         missing.add('${p}PortEndRange');
-      if (!response.containsKey('${p}Protocol')) missing.add('${p}Protocol');
+      }
+      if (!response.containsKey('${p}Protocol')) {
+        missing.add('${p}Protocol');
+      }
       if (missing.isNotEmpty) {
         throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
       }
@@ -168,17 +178,22 @@ class PortTriggering {
       {bool allowPartial = false}) async {
     final params = <String, dynamic>{};
     for (final update in updates) {
-      if (update.enabled != null)
+      if (update.enabled != null) {
         params['${update.instancePath}Enable'] = update.enabled;
-      if (update.description != null)
+      }
+      if (update.description != null) {
         params['${update.instancePath}Description'] = update.description;
-      if (update.triggerPort != null)
+      }
+      if (update.triggerPort != null) {
         params['${update.instancePath}Port'] = update.triggerPort;
-      if (update.triggerPortEndRange != null)
+      }
+      if (update.triggerPortEndRange != null) {
         params['${update.instancePath}PortEndRange'] =
             update.triggerPortEndRange;
-      if (update.triggerProtocol != null)
+      }
+      if (update.triggerProtocol != null) {
         params['${update.instancePath}Protocol'] = update.triggerProtocol;
+      }
     }
     if (params.isEmpty) {
       return {
@@ -215,10 +230,15 @@ class PortTriggering {
     String? forwardProtocol,
   }) async {
     final params = <String, dynamic>{};
-    if (forwardPort != null) params['Port'] = forwardPort;
-    if (forwardPortEndRange != null)
+    if (forwardPort != null) {
+      params['Port'] = forwardPort;
+    }
+    if (forwardPortEndRange != null) {
       params['PortEndRange'] = forwardPortEndRange;
-    if (forwardProtocol != null) params['Protocol'] = forwardProtocol;
+    }
+    if (forwardProtocol != null) {
+      params['Protocol'] = forwardProtocol;
+    }
     return await client.add([
       {'path': '${parentInstancePath}Rule.', 'params': params}
     ]);

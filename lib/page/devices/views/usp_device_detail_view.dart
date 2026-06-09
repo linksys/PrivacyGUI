@@ -2,19 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/route/navigation_extensions.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
-import 'package:privacy_gui/core/utils/device_classifier.dart';
+import 'package:privacy_gui/page/_shared/utils/device_classifier.dart';
 import 'package:privacy_gui/core/utils/oui_lookup.dart';
-import 'package:privacy_gui/core/utils/wifi.dart';
 import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/page/_shared/extensions/device_ui_extensions.dart';
 import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
 import 'package:privacy_gui/page/_shared/components/usp_mutation_helper.dart';
 import 'package:privacy_gui/page/_shared/components/detail_widgets.dart';
+import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/dhcp/providers/usp_dhcp_reservations_notifier.dart';
 import 'package:privacy_gui/page/devices/providers/device_detail_provider.dart';
 import 'package:privacy_gui/page/devices/views/components/usp_signal_strength_indicator.dart';
 import 'package:privacy_gui/page/shell/usp_top_bar.dart';
 import 'package:privacy_gui/util/network_utils.dart';
-import 'package:privacy_gui/util/wifi_signal_utils.dart';
+import 'package:privacy_gui/page/_shared/components/wifi_ui.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 class UspDeviceDetailView extends ConsumerStatefulWidget {
@@ -114,6 +115,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
       ],
     );
   }
+
   // ===========================================================================
   // Device Identity Card
   // ===========================================================================
@@ -127,79 +129,81 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
     final colorScheme = Theme.of(context).colorScheme;
 
     return AppCard(
+      padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          // Header Block
+          LayoutBlock(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(AppSpacing.sm),
+                  decoration: BoxDecoration(
+                    color: colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(AppSpacing.sm),
+                  ),
+                  child: Icon(
+                    classification.category.icon,
+                    size: 28,
+                    color: colorScheme.onPrimaryContainer,
+                  ),
+                ),
+                AppGap.md(),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      AppText.titleLarge(device.displayName),
+                      AppGap.xxs(),
+                      AppText.labelMedium(
+                        classification.category.displayName,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ],
+                  ),
+                ),
+                DetailStatusBadge(isActive: device.isActive),
+              ],
+            ),
+          ),
+          AppGap.sm(),
+          // Device Info Block
+          DetailInfoBlock(
             children: [
-              Container(
-                padding: const EdgeInsets.all(AppSpacing.sm),
-                decoration: BoxDecoration(
-                  color: colorScheme.primaryContainer,
-                  borderRadius: BorderRadius.circular(AppSpacing.sm),
+              if (vendor != null)
+                DetailInfoTile(
+                  icon: Icons.business,
+                  label: 'Manufacturer',
+                  value: vendor,
                 ),
-                child: Icon(
-                  classification.category.icon,
-                  size: 28,
-                  color: colorScheme.onPrimaryContainer,
-                ),
+              DetailCopyableTile(
+                icon: Icons.memory,
+                label: 'MAC Address',
+                value: device.mac,
               ),
-              AppGap.md(),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    AppText.titleLarge(device.displayName),
-                    AppGap.xxs(),
-                    AppText.labelMedium(
-                      classification.category.displayName,
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ],
+              if (device.hostName.isNotEmpty &&
+                  device.hostName != device.displayName)
+                DetailInfoTile(
+                  icon: Icons.dns,
+                  label: 'Hostname',
+                  value: device.hostName,
                 ),
-              ),
-              DetailStatusBadge(isActive: device.isActive),
+              if (device.modelName?.isNotEmpty == true)
+                DetailInfoTile(
+                  icon: Icons.devices,
+                  label: 'Model',
+                  value: device.modelName!,
+                ),
+              if (device.operatingSystem?.isNotEmpty == true)
+                DetailInfoTile(
+                  icon: Icons.computer,
+                  label: 'Operating System',
+                  value: device.operatingSystem!,
+                ),
             ],
           ),
-          AppGap.xl(),
-          if (vendor != null) ...[
-            DetailInfoTile(
-              icon: Icons.business,
-              label: 'Manufacturer',
-              value: vendor,
-            ),
-            AppGap.md(),
-          ],
-          DetailCopyableTile(
-            icon: Icons.memory,
-            label: 'MAC Address',
-            value: device.mac,
-          ),
-          if (device.hostName.isNotEmpty &&
-              device.hostName != device.displayName) ...[
-            AppGap.md(),
-            DetailInfoTile(
-              icon: Icons.dns,
-              label: 'Hostname',
-              value: device.hostName,
-            ),
-          ],
-          if (device.modelName?.isNotEmpty == true) ...[
-            AppGap.md(),
-            DetailInfoTile(
-              icon: Icons.devices,
-              label: 'Model',
-              value: device.modelName!,
-            ),
-          ],
-          if (device.operatingSystem?.isNotEmpty == true) ...[
-            AppGap.md(),
-            DetailInfoTile(
-              icon: Icons.computer,
-              label: 'Operating System',
-              value: device.operatingSystem!,
-            ),
-          ],
         ],
       ),
     );
@@ -214,6 +218,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
     final hasMultipleInterfaces = device.hasMultipleInterfaces;
 
     return AppCard(
+      padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -224,27 +229,27 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
                 ? 'Network Connections (${device.interfaceCount})'
                 : (device.isWifi ? 'WiFi Connection' : 'Wired Connection'),
           ),
-          AppGap.xl(),
+          AppGap.md(),
           if (hasMultipleInterfaces) ...[
             _buildMultiInterfaceSection(context, device),
           ] else ...[
-            DetailCopyableTile(
-              icon: Icons.language,
-              label: 'IP Address',
-              value: device.ip,
+            DetailInfoBlock(
+              children: [
+                DetailCopyableTile(
+                  icon: Icons.language,
+                  label: 'IP Address',
+                  value: device.ip,
+                ),
+                if (device.ipv6Addresses.isNotEmpty)
+                  _buildIpv6Section(context, device.ipv6Addresses),
+                if (device.parentNodeName != null)
+                  DetailInfoTile(
+                    icon: Icons.router,
+                    label: 'Connected to',
+                    value: device.parentNodeName!,
+                  ),
+              ],
             ),
-            if (device.ipv6Addresses.isNotEmpty) ...[
-              AppGap.md(),
-              _buildIpv6Section(context, device.ipv6Addresses),
-            ],
-            if (device.parentNodeName != null) ...[
-              AppGap.md(),
-              DetailInfoTile(
-                icon: Icons.router,
-                label: 'Connected to',
-                value: device.parentNodeName!,
-              ),
-            ],
           ],
         ],
       ),
@@ -261,7 +266,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Primary interface
-        _buildInterfaceCard(
+        _buildInterfaceLayoutBlock(
           context,
           isPrimary: true,
           isActive: device.isActive,
@@ -274,8 +279,8 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
         ),
         // Additional interfaces
         for (final iface in device.additionalInterfaces) ...[
-          AppGap.md(),
-          _buildInterfaceCard(
+          AppGap.sm(),
+          _buildInterfaceLayoutBlock(
             context,
             isPrimary: false,
             isActive: iface.isActive,
@@ -287,20 +292,23 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
             signalStrength: iface.signalStrength,
           ),
         ],
-        // Parent node (shared across interfaces)
+        // Parent node
         if (device.parentNodeName != null) ...[
-          AppGap.lg(),
-          DetailInfoTile(
-            icon: Icons.router,
-            label: 'Connected to',
-            value: device.parentNodeName!,
+          AppGap.sm(),
+          LayoutBlock(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: DetailInfoTile(
+              icon: Icons.router,
+              label: 'Connected to',
+              value: device.parentNodeName!,
+            ),
           ),
         ],
       ],
     );
   }
 
-  Widget _buildInterfaceCard(
+  Widget _buildInterfaceLayoutBlock(
     BuildContext context, {
     required bool isPrimary,
     required bool isActive,
@@ -313,17 +321,8 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
   }) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Container(
+    return LayoutBlock(
       padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: isPrimary
-            ? colorScheme.primaryContainer.withValues(alpha: 0.3)
-            : colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(AppSpacing.sm),
-        border: isPrimary
-            ? Border.all(color: colorScheme.primary.withValues(alpha: 0.3))
-            : null,
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -422,13 +421,13 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
   // ===========================================================================
 
   Widget _buildWifiDetailsCard(BuildContext context, DeviceUIModel device) {
-    // Fine-grained rendering decisions (not card-level visibility)
     final hasSignalData = device.signalStrength != null;
     final hasSpeedData =
         device.downlinkRate != null || device.uplinkRate != null;
     final hasBandSsid = device.band != null || device.ssidName != null;
 
     return AppCard(
+      padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -436,14 +435,10 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
             icon: Icons.signal_wifi_4_bar,
             title: 'Signal & Speed',
           ),
-          AppGap.xl(),
+          AppGap.md(),
           if (!device.hasWifiData)
-            Container(
+            LayoutBlock(
               padding: const EdgeInsets.all(AppSpacing.md),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(AppSpacing.sm),
-              ),
               child: Row(
                 children: [
                   Icon(
@@ -462,57 +457,112 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
               ),
             ),
           if (hasSignalData) ...[
-            _buildSignalSection(context, device),
-            AppGap.lg(),
+            _buildSignalLayoutBlock(context, device),
+            AppGap.sm(),
           ],
-          if (hasSpeedData) _buildSpeedCards(context, device),
-          if (hasBandSsid || device.interfaceType?.isNotEmpty == true) ...[
-            AppGap.lg(),
+          if (hasSpeedData) ...[
+            _buildSpeedRow(context, device),
+            AppGap.sm(),
+          ],
+          if (hasBandSsid || device.interfaceType?.isNotEmpty == true)
             Row(
               children: [
-                if (device.interfaceType?.isNotEmpty == true)
+                if (device.interfaceType?.isNotEmpty == true) ...[
                   Expanded(
-                    child: DetailCompactInfoTile(
-                      icon: Icons.settings_input_antenna,
-                      label: 'Interface',
-                      value: device.interfaceType!,
+                    child: LayoutBlock(
+                      padding: const EdgeInsets.all(AppSpacing.md),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(Icons.settings_input_antenna,
+                                  size: 16,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant),
+                              AppGap.xs(),
+                              AppText.labelSmall('Interface',
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant),
+                            ],
+                          ),
+                          AppGap.xs(),
+                          AppText.bodyMedium(device.interfaceType!),
+                        ],
+                      ),
                     ),
                   ),
-                if (device.interfaceType?.isNotEmpty == true &&
-                    (device.band != null || device.ssidName != null))
-                  AppGap.md(),
-                if (device.band != null)
+                  if (device.band != null || device.ssidName != null)
+                    AppGap.sm(),
+                ],
+                if (device.band != null) ...[
                   Expanded(
-                    child: DetailCompactInfoTile(
-                      icon: Icons.wifi_channel,
-                      label: 'Band',
-                      value: device.band!,
+                    child: LayoutBlock(
+                      padding: const EdgeInsets.all(AppSpacing.md),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(Icons.wifi_channel,
+                                  size: 16,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant),
+                              AppGap.xs(),
+                              AppText.labelSmall('Band',
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant),
+                            ],
+                          ),
+                          AppGap.xs(),
+                          AppText.bodyMedium(device.band!),
+                        ],
+                      ),
                     ),
                   ),
-                if (device.band != null && device.ssidName != null) AppGap.md(),
+                  if (device.ssidName != null) AppGap.sm(),
+                ],
                 if (device.ssidName != null)
                   Expanded(
-                    child: DetailCompactInfoTile(
-                      icon: Icons.wifi,
-                      label: 'Network',
-                      value: device.ssidName!,
+                    child: LayoutBlock(
+                      padding: const EdgeInsets.all(AppSpacing.md),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(Icons.wifi,
+                                  size: 16,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant),
+                              AppGap.xs(),
+                              AppText.labelSmall('Network',
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant),
+                            ],
+                          ),
+                          AppGap.xs(),
+                          AppText.bodyMedium(device.ssidName!),
+                        ],
+                      ),
                     ),
                   ),
               ],
             ),
-          ],
         ],
       ),
     );
   }
 
-  Widget _buildSignalSection(BuildContext context, DeviceUIModel device) {
-    return Container(
+  Widget _buildSignalLayoutBlock(BuildContext context, DeviceUIModel device) {
+    return LayoutBlock(
       padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(AppSpacing.sm),
-      ),
       child: Row(
         children: [
           UspSignalStrengthIndicator(
@@ -541,7 +591,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
     );
   }
 
-  Widget _buildSpeedCards(BuildContext context, DeviceUIModel device) {
+  Widget _buildSpeedRow(BuildContext context, DeviceUIModel device) {
     final colorScheme = Theme.of(context).colorScheme;
     return Row(
       children: [
@@ -550,19 +600,19 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
             child: DetailSpeedCard(
               icon: Icons.arrow_downward,
               label: 'Download',
-              speedBps: device.downlinkRate!,
+              speedKbps: device.downlinkRate!,
               color: colorScheme.primary,
             ),
           ),
         if (device.downlinkRate != null && device.uplinkRate != null)
-          AppGap.md(),
+          AppGap.sm(),
         if (device.uplinkRate != null)
           Expanded(
             child: DetailSpeedCard(
               icon: Icons.arrow_upward,
               label: 'Upload',
-              speedBps: device.uplinkRate!,
-              color: colorScheme.secondary,
+              speedKbps: device.uplinkRate!,
+              color: colorScheme.tertiary,
             ),
           ),
       ],
@@ -577,6 +627,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
       BuildContext context, DeviceUIModel device) {
     final isWifi = device.isWifi;
     return AppCard(
+      padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -584,20 +635,22 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
             icon: isWifi ? Icons.wifi_off : Icons.cable,
             title: 'Network Details',
           ),
-          AppGap.xl(),
-          DetailInfoTile(
-            icon: isWifi ? Icons.wifi : Icons.settings_ethernet,
-            label: 'Connection Type',
-            value: isWifi ? 'WiFi (Wireless)' : 'Ethernet (Wired)',
+          AppGap.md(),
+          DetailInfoBlock(
+            children: [
+              DetailInfoTile(
+                icon: isWifi ? Icons.wifi : Icons.settings_ethernet,
+                label: 'Connection Type',
+                value: isWifi ? 'WiFi (Wireless)' : 'Ethernet (Wired)',
+              ),
+              if (device.parentNodeName != null)
+                DetailInfoTile(
+                  icon: Icons.router,
+                  label: 'Connected to',
+                  value: device.parentNodeName!,
+                ),
+            ],
           ),
-          if (device.parentNodeName != null) ...[
-            AppGap.md(),
-            DetailInfoTile(
-              icon: Icons.router,
-              label: 'Connected to',
-              value: device.parentNodeName!,
-            ),
-          ],
         ],
       ),
     );
@@ -613,6 +666,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
     final hasValidIpv4 = NetworkUtils.isValidIpAddress(device.ip);
 
     return AppCard(
+      padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -620,17 +674,10 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
             icon: Icons.bookmark,
             title: 'DHCP Reservation',
           ),
-          AppGap.xl(),
+          AppGap.md(),
           if (detail.hasReservation) ...[
-            Container(
+            LayoutBlock(
               padding: const EdgeInsets.all(AppSpacing.md),
-              decoration: BoxDecoration(
-                color: colorScheme.primaryContainer.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(AppSpacing.sm),
-                border: Border.all(
-                  color: colorScheme.primary.withValues(alpha: 0.3),
-                ),
-              ),
               child: Row(
                 children: [
                   Icon(
@@ -651,7 +698,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
                 ],
               ),
             ),
-            AppGap.lg(),
+            AppGap.md(),
             AppButton.primaryOutline(
               label: 'Release Reservation',
               isLoading: isLoading,
@@ -660,12 +707,8 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
                   : () => _releaseReservation(context, ref, detail),
             ),
           ] else ...[
-            Container(
+            LayoutBlock(
               padding: const EdgeInsets.all(AppSpacing.md),
-              decoration: BoxDecoration(
-                color: colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(AppSpacing.sm),
-              ),
               child: Row(
                 children: [
                   Icon(
@@ -685,7 +728,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
                 ],
               ),
             ),
-            AppGap.lg(),
+            AppGap.md(),
             AppButton.primary(
               label: 'Reserve IP Address',
               isLoading: isLoading,

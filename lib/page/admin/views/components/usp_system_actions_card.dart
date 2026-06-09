@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 class UspSystemActionsCard extends StatelessWidget {
@@ -13,27 +14,49 @@ class UspSystemActionsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return SizedBox(
       width: double.infinity,
       child: AppCard(
+        padding: const EdgeInsets.all(AppSpacing.md),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             AppText.titleMedium('System Actions'),
-            AppGap.xl(),
+            AppGap.md(),
             Row(
               children: [
                 Expanded(
-                  child: AppButton.primaryOutline(
-                    label: 'Reboot',
-                    onTap: onReboot,
+                  child: LayoutBlock(
+                    padding: const EdgeInsets.all(AppSpacing.md),
+                    child: Column(
+                      children: [
+                        Icon(Icons.restart_alt,
+                            size: 40, color: colorScheme.primary),
+                        AppGap.md(),
+                        AppButton.primaryOutline(
+                          label: 'Reboot',
+                          onTap: onReboot,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-                AppGap.lg(),
+                AppGap.sm(),
                 Expanded(
-                  child: AppButton.primaryOutline(
-                    label: 'Factory Reset',
-                    onTap: onFactoryReset,
+                  child: LayoutBlock(
+                    padding: const EdgeInsets.all(AppSpacing.md),
+                    child: Column(
+                      children: [
+                        Icon(Icons.settings_backup_restore,
+                            size: 40, color: colorScheme.error),
+                        AppGap.md(),
+                        AppButton.primaryOutline(
+                          label: 'Factory Reset',
+                          onTap: onFactoryReset,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],

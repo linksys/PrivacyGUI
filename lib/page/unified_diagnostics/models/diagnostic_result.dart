@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:privacy_gui/core/utils/wifi.dart';
 
 import 'package:privacy_gui/page/unified_diagnostics/models/device_score.dart';
 import 'package:privacy_gui/page/unified_diagnostics/services/unified_diagnostics_service.dart';
@@ -175,9 +176,9 @@ class WifiSignalCheckUIModel extends DiagnosticStepUIModel {
           },
         );
 
-  bool get isWeakSignal => connectedDevices > 0 && rssi < -70;
-  bool get isMediumSignal => rssi >= -70 && rssi < -50;
-  bool get isStrongSignal => rssi >= -50;
+  bool get isWeakSignal => connectedDevices > 0 && rssi < rssiGood;
+  bool get isMediumSignal => rssi >= rssiGood && rssi < rssiExcellent;
+  bool get isStrongSignal => rssi >= rssiExcellent;
   bool get hasPerRadio => radios.isNotEmpty;
 }
 
@@ -396,14 +397,20 @@ class MeshNodeBackhaulUIModel extends Equatable {
   /// Human-friendly label (manufacturer model, falls back to nodeId).
   final String label;
 
-  /// Backhaul media type (e.g. "Wi-Fi", "Ethernet", "MoCA", "G.hn").
+  /// Backhaul media type (e.g. "IEEE 802.11ax", "Ethernet", "MoCA", "G.hn").
   final String mediaType;
+
+  /// Backhaul link type from codegen ("Wi-Fi" or "Ethernet").
+  final String linkType;
 
   /// Negotiated PHY rate in Mbps (-1 if unknown).
   final int phyRateMbps;
 
-  /// Last data uplink rate observed in Mbps (-1 if unknown).
-  final int lastUplinkRateMbps;
+  /// Last data uplink rate observed in kbps (-1 if unknown).
+  final int lastUplinkRateKbps;
+
+  /// Last data downlink rate observed in kbps (-1 if unknown).
+  final int lastDownlinkRateKbps;
 
   /// Backhaul RSSI in dBm (0 if unknown — wired backhaul).
   final int signalStrengthDbm;
@@ -414,32 +421,53 @@ class MeshNodeBackhaulUIModel extends Equatable {
   /// Severity bucket for this node.
   final MeshBackhaulSeverity severity;
 
+  /// Parent node ID (BackhaulDeviceID from codegen).
+  final String? parentNodeId;
+
+  /// Parent node label (resolved from nodeId → label map).
+  final String? parentLabel;
+
+  /// Last contact time (ISO 8601 from codegen).
+  final String? lastContactTime;
+
+  /// Whether this node is stale (> 5 minutes since last contact).
+  final bool isStale;
+
   const MeshNodeBackhaulUIModel({
     required this.nodeId,
     required this.label,
     required this.mediaType,
+    required this.linkType,
     required this.phyRateMbps,
-    required this.lastUplinkRateMbps,
+    required this.lastUplinkRateKbps,
+    required this.lastDownlinkRateKbps,
     required this.signalStrengthDbm,
     required this.isController,
     required this.severity,
+    this.parentNodeId,
+    this.parentLabel,
+    this.lastContactTime,
+    this.isStale = false,
   });
 
-  bool get isWired =>
-      mediaType.contains('Ethernet') ||
-      mediaType.contains('MoCA') ||
-      mediaType.contains('G.hn');
+  bool get isWired => linkType == 'Ethernet';
 
   @override
   List<Object?> get props => [
         nodeId,
         label,
         mediaType,
+        linkType,
         phyRateMbps,
-        lastUplinkRateMbps,
+        lastUplinkRateKbps,
+        lastDownlinkRateKbps,
         signalStrengthDbm,
         isController,
         severity,
+        parentNodeId,
+        parentLabel,
+        lastContactTime,
+        isStale,
       ];
 }
 

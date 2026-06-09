@@ -77,11 +77,19 @@ class DhcpReservations {
           v == '0' ||
           v == 0 ||
           v == false ||
-          v == 'false')) continue;
+          v == 'false')) {
+        continue;
+      }
       final missing = <String>[];
-      if (!response.containsKey('${p}Enable')) missing.add('${p}Enable');
-      if (!response.containsKey('${p}Chaddr')) missing.add('${p}Chaddr');
-      if (!response.containsKey('${p}Yiaddr')) missing.add('${p}Yiaddr');
+      if (!response.containsKey('${p}Enable')) {
+        missing.add('${p}Enable');
+      }
+      if (!response.containsKey('${p}Chaddr')) {
+        missing.add('${p}Chaddr');
+      }
+      if (!response.containsKey('${p}Yiaddr')) {
+        missing.add('${p}Yiaddr');
+      }
       if (missing.isNotEmpty) {
         throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
       }
@@ -103,12 +111,15 @@ class DhcpReservations {
       {bool allowPartial = false}) async {
     final params = <String, dynamic>{};
     for (final update in updates) {
-      if (update.enable != null)
+      if (update.enable != null) {
         params['${update.instancePath}Enable'] = update.enable;
-      if (update.chaddr != null)
+      }
+      if (update.chaddr != null) {
         params['${update.instancePath}Chaddr'] = update.chaddr;
-      if (update.yiaddr != null)
+      }
+      if (update.yiaddr != null) {
         params['${update.instancePath}Yiaddr'] = update.yiaddr;
+      }
     }
     if (params.isEmpty) {
       return {

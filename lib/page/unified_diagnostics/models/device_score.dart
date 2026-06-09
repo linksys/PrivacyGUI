@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:privacy_gui/core/utils/wifi.dart';
 
 /// Device health score calculated from signal strength and data rate.
 class DeviceScoreUIModel extends Equatable {
@@ -51,20 +52,20 @@ class DeviceScoreUIModel extends Equatable {
   /// Whether this device has potential issues (score < 50).
   bool get hasIssue => isWireless && overallScore < 50;
 
-  /// Whether signal is weak (< -70 dBm).
-  bool get hasWeakSignal => isWireless && rssiDbm != null && rssiDbm! < -70;
+  /// Whether signal is weak (below rssiGood threshold).
+  bool get hasWeakSignal =>
+      isWireless && rssiDbm != null && rssiDbm! < rssiGood;
 
   /// Whether data rate is low (< 20 Mbps).
   bool get hasLowDataRate =>
       downlinkKbps != null && downlinkKbps! < 20000; // 20 Mbps
 
-  /// Convert RSSI (dBm) to score (0-100).
+  /// Convert RSSI (dBm) to score (0-100) using wifi.dart thresholds.
   static int _rssiToScore(int rssi) {
-    if (rssi >= -50) return 100; // Excellent
-    if (rssi >= -60) return 80; // Good
-    if (rssi >= -70) return 60; // Fair
-    if (rssi >= -80) return 40; // Weak
-    return 20; // Very weak
+    if (rssi >= rssiExcellent) return 100; // Excellent
+    if (rssi >= rssiGood) return 80; // Good
+    if (rssi >= rssiFair) return 60; // Fair
+    return 40; // Weak
   }
 
   /// Convert data rate (kbps) to score (0-100).
@@ -77,15 +78,14 @@ class DeviceScoreUIModel extends Equatable {
     return 20; // Very slow
   }
 
-  /// Human-readable signal strength label.
+  /// Human-readable signal strength label using wifi.dart thresholds.
   String get signalLabel {
     if (!isWireless) return 'Wired';
     if (rssiDbm == null) return 'Unknown';
-    if (rssiDbm! >= -50) return 'Excellent';
-    if (rssiDbm! >= -60) return 'Good';
-    if (rssiDbm! >= -70) return 'Fair';
-    if (rssiDbm! >= -80) return 'Weak';
-    return 'Very Weak';
+    if (rssiDbm! >= rssiExcellent) return 'Excellent';
+    if (rssiDbm! >= rssiGood) return 'Good';
+    if (rssiDbm! >= rssiFair) return 'Fair';
+    return 'Weak';
   }
 
   /// Human-readable data rate label.

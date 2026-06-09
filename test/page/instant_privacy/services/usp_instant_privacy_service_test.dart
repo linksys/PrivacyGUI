@@ -395,7 +395,7 @@ void main() {
       expect(result.allowedDevices[0].displayName, 'Laptop');
     });
 
-    test('allowed device uses Unknown Device when no host match', () async {
+    test('allowed device uses MAC when no host match', () async {
       stubFetchAll(mockUsp, apResponse: {
         'Device.WiFi.AccessPoint.1.SSIDReference': 'Device.WiFi.SSID.1',
         'Device.WiFi.AccessPoint.1.MACAddressControlEnabled': true,
@@ -404,8 +404,8 @@ void main() {
 
       final result = await service.fetchAll();
 
-      // FF:FF:FF:FF:FF:FF is not in connected devices → "Unknown Device"
-      expect(result.allowedDevices[0].displayName, 'Unknown Device');
+      // FF:FF:FF:FF:FF:FF is not in connected devices → MAC address as display name
+      expect(result.allowedDevices[0].displayName, 'FF:FF:FF:FF:FF:FF');
     });
   });
 

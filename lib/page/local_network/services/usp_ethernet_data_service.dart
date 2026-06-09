@@ -150,14 +150,37 @@ class UspEthernetDataService {
     }
 
     if (lanAggregate != null) {
-      // Filter wired client devices only (exclude mesh nodes: master/slave).
-      final wiredDevices = deviceModels
-          .where((d) => d.isActive && !d.isWifi && d.isClientDevice)
-          .toList();
+      // Collect wired connections from client devices.
+      // A device may have multiple interfaces (WiFi + Ethernet); check both
+      // the primary interface and additionalInterfaces for Ethernet.
+      final wiredConnections =
+          <({String displayName, String mac, String ip})>[];
+      for (final d in deviceModels) {
+        if (!d.isClientDevice) continue;
+        // Check primary interface
+        if (d.isActive && !d.isWifi) {
+          wiredConnections.add((
+            displayName: d.displayName,
+            mac: d.mac,
+            ip: d.ip,
+          ));
+        }
+        // Check additional interfaces for Ethernet connections
+        for (final iface in d.additionalInterfaces) {
+          if (iface.isActive && !iface.isWifi) {
+            wiredConnections.add((
+              displayName: d.displayName,
+              mac: iface.mac,
+              ip: iface.ip,
+            ));
+          }
+        }
+      }
+
       final lanBitRate = lanAggregate.currentBitRate;
       final lanIsUp = lanAggregate.status.toLowerCase() == 'up';
 
-      if (wiredDevices.isEmpty) {
+      if (wiredConnections.isEmpty) {
         result.add(EthernetPortUIModel(
           name: lanAggregate.name,
           label: 'LAN',
@@ -167,8 +190,8 @@ class UspEthernetDataService {
           currentBitRate: lanBitRate,
         ));
       } else {
-        for (var i = 0; i < wiredDevices.length; i++) {
-          final d = wiredDevices[i];
+        for (var i = 0; i < wiredConnections.length; i++) {
+          final conn = wiredConnections[i];
           result.add(EthernetPortUIModel(
             name: lanAggregate.name,
             label: 'LAN ${i + 1}',
@@ -178,9 +201,9 @@ class UspEthernetDataService {
             currentBitRate: lanBitRate,
             connectedDevices: [
               WiredDeviceInfo(
-                hostName: d.hostName,
-                macAddress: d.mac,
-                ipAddress: d.ip,
+                hostName: conn.displayName,
+                macAddress: conn.mac,
+                ipAddress: conn.ip,
               ),
             ],
           ));

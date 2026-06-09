@@ -21,6 +21,11 @@ void main() {
     multiApLastContactTime: '',
     multiApAssocIEEE1905DeviceRef: '',
     multiApEasyMeshAgentOperationMode: '',
+    backhaulBackhaulDeviceId: '',
+    backhaulBackhaulMacAddress: '',
+    backhaulLinkType: '',
+    backhaulMacAddressMultiAp: '',
+    backhaulStatsLastDataDownlinkRate: 0,
     backhaulStatsPacketsSent: 0,
     backhaulStatsPacketsReceived: 0,
     backhaulStatsErrorsSent: 0,
@@ -71,6 +76,11 @@ void main() {
     multiApLastContactTime: '',
     multiApAssocIEEE1905DeviceRef: '',
     multiApEasyMeshAgentOperationMode: '',
+    backhaulBackhaulDeviceId: 'AA:BB:CC:DD:EE:01',
+    backhaulBackhaulMacAddress: 'AA:BB:CC:DD:EE:02',
+    backhaulLinkType: 'Wi-Fi',
+    backhaulMacAddressMultiAp: 'AA:BB:CC:DD:EE:01',
+    backhaulStatsLastDataDownlinkRate: 600000,
     backhaulStatsPacketsSent: 1000,
     backhaulStatsPacketsReceived: 2000,
     backhaulStatsErrorsSent: 0,
@@ -176,6 +186,11 @@ void main() {
         multiApLastContactTime: '',
         multiApAssocIEEE1905DeviceRef: '',
         multiApEasyMeshAgentOperationMode: '',
+        backhaulBackhaulDeviceId: '',
+        backhaulBackhaulMacAddress: '',
+        backhaulLinkType: '',
+        backhaulMacAddressMultiAp: '',
+        backhaulStatsLastDataDownlinkRate: 0,
         backhaulStatsPacketsSent: 0,
         backhaulStatsPacketsReceived: 0,
         backhaulStatsErrorsSent: 0,
@@ -227,6 +242,11 @@ void main() {
         multiApLastContactTime: '',
         multiApAssocIEEE1905DeviceRef: '',
         multiApEasyMeshAgentOperationMode: '',
+        backhaulBackhaulDeviceId: '',
+        backhaulBackhaulMacAddress: '',
+        backhaulLinkType: '',
+        backhaulMacAddressMultiAp: '',
+        backhaulStatsLastDataDownlinkRate: 0,
         backhaulStatsPacketsSent: 0,
         backhaulStatsPacketsReceived: 0,
         backhaulStatsErrorsSent: 0,
@@ -263,6 +283,63 @@ void main() {
           'Device.WiFi.DataElements.Network.Device.2.');
       expect(result.nodes[0].backhaulAlId, 'AA:BB:CC:DD:EE:01');
       expect(result.nodes[0].backhaulMacAddress, 'AA:BB:CC:DD:EE:02');
+    });
+
+    test('includes backhaulLinkType', () {
+      final network = DataElementsNetwork(items: [slaveNode]);
+
+      final result = MeshTopologyBuilder.build(network);
+
+      expect(result.nodes[0].backhaulLinkType, 'Wi-Fi');
+    });
+
+    test('includes backhaulDownlinkRate', () {
+      final network = DataElementsNetwork(items: [slaveNode]);
+
+      final result = MeshTopologyBuilder.build(network);
+
+      expect(result.nodes[0].backhaulDownlinkRate, 600000);
+    });
+
+    test('includes backhaulParentDeviceId', () {
+      final network = DataElementsNetwork(items: [slaveNode]);
+
+      final result = MeshTopologyBuilder.build(network);
+
+      expect(result.nodes[0].backhaulParentDeviceId, 'AA:BB:CC:DD:EE:01');
+    });
+
+    test('includes backhaulParentBssid', () {
+      final network = DataElementsNetwork(items: [slaveNode]);
+
+      final result = MeshTopologyBuilder.build(network);
+
+      expect(result.nodes[0].backhaulParentBssid, 'AA:BB:CC:DD:EE:01');
+    });
+
+    test('excludes backhaulDownlinkRate when includeBackhaulStats is false',
+        () {
+      final network = DataElementsNetwork(items: [slaveNode]);
+
+      final result =
+          MeshTopologyBuilder.build(network, includeBackhaulStats: false);
+
+      expect(result.nodes[0].backhaulDownlinkRate, isNull);
+      // Non-stats fields are still included
+      expect(result.nodes[0].backhaulLinkType, 'Wi-Fi');
+      expect(result.nodes[0].backhaulParentDeviceId, 'AA:BB:CC:DD:EE:01');
+    });
+
+    test('returns null for empty new backhaul fields', () {
+      final network = DataElementsNetwork(items: [masterNode]);
+
+      final result = MeshTopologyBuilder.build(network);
+
+      expect(result.nodes[0].backhaulLinkType, isNull);
+      expect(result.nodes[0].backhaulDownlinkRate, isNull);
+      expect(result.nodes[0].backhaulParentDeviceId, isNull);
+      expect(result.nodes[0].backhaulParentBssid, isNull);
+      expect(result.nodes[0].lastContactTime, isNull);
     });
   });
 }

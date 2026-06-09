@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
+import 'package:privacy_gui/page/_shared/components/detail_widgets.dart';
+import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/static_routing/models/static_routing_feature_state.dart';
 import 'package:privacy_gui/page/static_routing/models/static_routing_ui_model.dart';
@@ -118,7 +120,10 @@ class UspStaticRoutingView extends ConsumerWidget {
         ),
         AppGap.lg(),
         if (routes.isEmpty)
-          AppText.bodyMedium('No static routes configured')
+          const DetailEmptyBlock(
+            icon: Icons.alt_route,
+            message: 'No static routes configured',
+          )
         else
           ...routes.asMap().entries.map((entry) =>
               _buildRouteCard(context, ref, entry.key, entry.value, isSaving)),
@@ -139,7 +144,8 @@ class UspStaticRoutingView extends ConsumerWidget {
   ) {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-      child: AppCard(
+      child: LayoutBlock(
+        padding: const EdgeInsets.all(AppSpacing.md),
         child: Row(
           children: [
             AppSwitch(
@@ -151,7 +157,7 @@ class UspStaticRoutingView extends ConsumerWidget {
                       .read(uspStaticRoutingProvider.notifier)
                       .toggleRoute(index, value),
             ),
-            AppGap.sm(),
+            AppGap.md(),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

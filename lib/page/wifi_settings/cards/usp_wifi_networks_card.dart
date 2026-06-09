@@ -5,6 +5,7 @@ import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/_shared/models/client_connection_detail.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_radio_ui_model.dart';
 import 'package:privacy_gui/page/_shared/components/card_skeleton.dart';
+import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/_shared/components/usp_mutation_helper.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_settings_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_data_provider.dart';
@@ -115,23 +116,14 @@ class UspWifiNetworksCard extends ConsumerWidget {
     final scheme = Theme.of(context).colorScheme;
     final isLoading = ref.watch(uspMutationLoadingProvider) == 'wifi_network';
 
-    return Container(
+    return LayoutBlock(
       padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerHighest.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(AppSpacing.sm),
-        border: Border.all(
-          color: network.isGuest
-              ? scheme.secondary.withValues(alpha: 0.3)
-              : scheme.outline.withValues(alpha: 0.2),
-        ),
-      ),
-      child: Row(
-        children: [
-          // Network info
-          Expanded(
-            child: Opacity(
-              opacity: network.isEnabled ? 1.0 : 0.5,
+      child: Opacity(
+        opacity: network.isEnabled ? 1.0 : 0.5,
+        child: Row(
+          children: [
+            // Network info
+            Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -147,7 +139,7 @@ class UspWifiNetworksCard extends ConsumerWidget {
                       ),
                       if (network.isGuest) ...[
                         AppGap.sm(),
-                        _buildGuestBadge(context),
+                        const NetworkBadgeWidget(badge: NetworkBadge.guest()),
                       ],
                     ],
                   ),
@@ -158,7 +150,8 @@ class UspWifiNetworksCard extends ConsumerWidget {
                       ...network.bands.map((band) => Padding(
                             padding:
                                 const EdgeInsets.only(right: AppSpacing.xs),
-                            child: _buildBandBadge(context, band),
+                            child: NetworkBadgeWidget(
+                                badge: NetworkBadge.fromBand(band)),
                           )),
                       AppGap.sm(),
                       Icon(
@@ -176,69 +169,21 @@ class UspWifiNetworksCard extends ConsumerWidget {
                 ],
               ),
             ),
-          ),
-          // QR / Share button
-          if (network.isEnabled && onShareTap != null) ...[
-            _buildShareButton(context, network.ssidName),
-            AppGap.sm(),
+            // QR / Share button
+            if (network.isEnabled && onShareTap != null) ...[
+              _buildShareButton(context, network.ssidName),
+              AppGap.sm(),
+            ],
+            // Enable/Disable toggle
+            AppSwitch(
+              value: network.isEnabled,
+              onChanged: isLoading
+                  ? null
+                  : (value) =>
+                      _confirmToggleNetwork(context, ref, network, value),
+            ),
           ],
-          // Enable/Disable toggle
-          AppSwitch(
-            value: network.isEnabled,
-            onChanged: isLoading
-                ? null
-                : (value) =>
-                    _confirmToggleNetwork(context, ref, network, value),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBandBadge(BuildContext context, String band) {
-    final scheme = Theme.of(context).colorScheme;
-
-    final (color, label) = switch (band.toLowerCase()) {
-      String b when b.contains('2.4') => (const Color(0xFF4A9EFF), '2.4G'),
-      String b when b.contains('5') && !b.contains('6') => (
-          const Color(0xFF4ADE80),
-          '5G'
         ),
-      String b when b.contains('6') => (const Color(0xFFA78BFA), '6G'),
-      _ => (scheme.outline, band),
-    };
-
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.sm,
-        vertical: 2,
-      ),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(AppSpacing.xs),
-      ),
-      child: AppText.labelSmall(
-        label,
-        color: color,
-      ),
-    );
-  }
-
-  Widget _buildGuestBadge(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.sm,
-        vertical: 2,
-      ),
-      decoration: BoxDecoration(
-        color: scheme.secondary.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(AppSpacing.xs),
-      ),
-      child: AppText.labelSmall(
-        'Guest',
-        color: scheme.secondary,
       ),
     );
   }

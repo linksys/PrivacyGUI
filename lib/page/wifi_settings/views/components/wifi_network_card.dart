@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
+import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/validator_rules/_validator_rules.dart';
 import 'package:privacy_gui/page/wifi_settings/models/wifi_network_ui_model.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_settings_provider.dart';
@@ -10,10 +11,7 @@ import 'package:ui_kit_library/ui_kit.dart';
 
 /// Card for a single WiFi network in Advanced mode.
 ///
-/// Reads the effective (user-edited) model from [settings.current.networks]
-/// so pending edits are reflected immediately. All field edits call
-/// [updateNetworkField] on the provider (staged — not written to firmware
-/// until the page-level Save button is tapped).
+/// Uses Card + Block pattern: AppCard as outer container, Block for each setting row.
 class WifiNetworkCard extends ConsumerWidget {
   final String ssidInstancePath;
   final bool lastInRow;
@@ -26,7 +24,6 @@ class WifiNetworkCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Watch the specific network from settings.current so edits rebuild.
     final n = ref.watch(
       uspWifiSettingsProvider.select((s) {
         try {
@@ -47,70 +44,51 @@ class WifiNetworkCard extends ConsumerWidget {
         right: lastInRow ? 0 : context.layoutGutter,
       ),
       child: AppCard(
-        padding: const EdgeInsets.symmetric(
-          vertical: AppSpacing.sm,
-          horizontal: AppSpacing.xxl,
-        ),
+        padding: const EdgeInsets.all(AppSpacing.md),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             // ── Band header + enable toggle ──────────────────────────────
-            _WifiTile(
+            SettingBlock(
               title: n.isGuest ? 'Guest' : 'Main',
-              description: n.bandDisplayName,
-              trailing: Semantics(
-                label: 'wifi-enable-${n.band}',
-                toggled: n.enabled,
-                enabled: true,
-                child: ExcludeSemantics(
-                  child: AppSwitch(
-                    value: n.enabled,
-                    onChanged: (v) => ref
-                        .read(uspWifiSettingsProvider.notifier)
-                        .updateNetworkField(ssidInstancePath, enabled: v),
-                  ),
-                ),
+              value: n.bandDisplayName,
+              semanticLabel: 'wifi-enable-${n.band}',
+              trailing: AppSwitch(
+                value: n.enabled,
+                onChanged: (v) => ref
+                    .read(uspWifiSettingsProvider.notifier)
+                    .updateNetworkField(ssidInstancePath, enabled: v),
               ),
             ),
             // ── WiFi name ─────────────────────────────────────────────────
-            const Divider(),
-            _WifiTile(
-              semanticLabel: 'wifi-name-${n.band}',
+            SettingBlock(
               title: 'Name',
-              description: n.ssid.isNotEmpty ? n.ssid : '(No SSID)',
+              value: n.ssid.isNotEmpty ? n.ssid : '(No SSID)',
+              semanticLabel: 'wifi-name-${n.band}',
               trailing: const AppIcon.font(AppFontIcons.edit),
               onTap: () => _editSsid(context, ref, n),
             ),
             // ── WiFi password & Security mode ────────────────────────────
-            // Hidden together when the network has no supported security modes
-            // (e.g. Guest on firmware that reports ModesSupported=''). Password
-            // is meaningless for an open network, so showing it would mislead.
-            // This mirrors the Quick Setup card's guard.
             if (n.supportedSecurityModes.isNotEmpty) ...[
-              const Divider(),
-              _WifiTile(
+              SettingBlock(
                 title: 'Password',
-                description: '\u2022' * 12,
+                value: '•' * 12,
                 trailing: const AppIcon.font(AppFontIcons.edit),
                 onTap: () => _editPassword(context, ref, n),
               ),
-              // Security mode — main networks only (guest is always open/None)
-              if (!n.isGuest) ...[
-                const Divider(),
-                _WifiTile(
+              if (!n.isGuest)
+                SettingBlock(
                   title: 'Security mode',
-                  description: n.securityMode,
+                  value: n.securityMode,
                   trailing: const AppIcon.font(AppFontIcons.edit),
                   onTap: () => _editSecurityMode(context, ref, n),
                 ),
-              ],
             ],
             // ── WiFi Mode ──────────────────────────────────────────────────
-            if (!n.isGuest && n.supportedStandards.isNotEmpty) ...[
-              const Divider(),
-              _WifiTile(
+            if (!n.isGuest && n.supportedStandards.isNotEmpty)
+              SettingBlock(
                 title: 'WiFi Mode',
-                description: _wifiModeDisplayName(n.operatingStandards),
+                value: _wifiModeDisplayName(n.operatingStandards),
                 trailing: n.radioInstancePath != null
                     ? const AppIcon.font(AppFontIcons.edit)
                     : null,
@@ -118,33 +96,24 @@ class WifiNetworkCard extends ConsumerWidget {
                     ? () => _editWifiMode(context, ref, n)
                     : null,
               ),
-            ],
             // ── Broadcast SSID / Channel Width / Channel (main only) ──────
             if (!n.isGuest) ...[
-              const Divider(),
-              _WifiTile(
+              SettingBlock(
                 title: 'Broadcast SSID',
-                trailing: Semantics(
-                  label: 'wifi-broadcast-${n.band}',
-                  toggled: n.ssidAdvertisementEnabled,
-                  enabled: n.accessPointInstancePath != null,
-                  child: ExcludeSemantics(
-                    child: AppSwitch(
-                      value: n.ssidAdvertisementEnabled,
-                      onChanged: n.accessPointInstancePath != null
-                          ? (v) => ref
-                              .read(uspWifiSettingsProvider.notifier)
-                              .updateNetworkField(ssidInstancePath,
-                                  broadcastSsid: v)
-                          : null,
-                    ),
-                  ),
+                semanticLabel: 'wifi-broadcast-${n.band}',
+                trailing: AppSwitch(
+                  value: n.ssidAdvertisementEnabled,
+                  onChanged: n.accessPointInstancePath != null
+                      ? (v) => ref
+                          .read(uspWifiSettingsProvider.notifier)
+                          .updateNetworkField(ssidInstancePath,
+                              broadcastSsid: v)
+                      : null,
                 ),
               ),
-              const Divider(),
-              _WifiTile(
+              SettingBlock(
                 title: 'Channel Width',
-                description:
+                value:
                     n.channelBandwidth.isNotEmpty ? n.channelBandwidth : 'Auto',
                 trailing: n.radioInstancePath != null
                     ? const AppIcon.font(AppFontIcons.edit)
@@ -153,10 +122,9 @@ class WifiNetworkCard extends ConsumerWidget {
                     ? () => _editChannelWidth(context, ref, n)
                     : null,
               ),
-              const Divider(),
-              _WifiTile(
+              SettingBlock(
                 title: 'Channel',
-                description: n.channelDisplay,
+                value: n.channelDisplay,
                 trailing: n.radioInstancePath != null
                     ? const AppIcon.font(AppFontIcons.edit)
                     : null,
@@ -200,7 +168,6 @@ class WifiNetworkCard extends ConsumerWidget {
 
   Future<void> _editPassword(
       BuildContext context, WidgetRef ref, WifiNetworkUIModel n) async {
-    // Pre-fill with any already-staged password (n.keyPassphrase reflects current).
     final controller = TextEditingController(text: n.keyPassphrase);
     bool isValid = false;
 
@@ -358,10 +325,8 @@ class WifiNetworkCard extends ConsumerWidget {
     final allOptions = _wifiModeOptions(n.supportedStandards);
     if (allOptions.isEmpty) return;
 
-    // Filter by current channel width: e.g. 80MHz requires at least ac.
-    // "Auto" imposes no constraint (minStandardForBandwidth returns null).
     final minStd = minStandardForBandwidth(n.channelBandwidth);
-    final bwIdx = bandwidthOrder.indexOf(n.channelBandwidth); // -1 for Auto
+    final bwIdx = bandwidthOrder.indexOf(n.channelBandwidth);
     final options = minStd != null && bwIdx > 0
         ? allOptions.where((mode) {
             final maxBw = maxBandwidthForStandards(mode);
@@ -414,17 +379,14 @@ class WifiNetworkCard extends ConsumerWidget {
             _ => ['Auto', '20MHz', '40MHz', '80MHz', '160MHz'],
           };
 
-    // Ensure "Auto" is always available (router may omit it from
-    // SupportedOperatingChannelBandwidths).
     if (!allOptions.contains('Auto')) {
       allOptions = ['Auto', ...allOptions];
     }
 
-    // Filter by current WiFi mode's maximum supported bandwidth.
     final maxBw = maxBandwidthForStandards(n.operatingStandards);
     final maxIdx = bandwidthIndex(maxBw);
     final options = allOptions.where((bw) {
-      if (bw == 'Auto') return true; // Auto is always valid
+      if (bw == 'Auto') return true;
       final idx = bandwidthOrder.indexOf(bw);
       return idx >= 0 && idx <= maxIdx;
     }).toList();
@@ -471,7 +433,6 @@ class WifiNetworkCard extends ConsumerWidget {
     const autoLabel = 'Auto';
     final currentLabel = n.autoChannelEnable ? autoLabel : n.channel.toString();
 
-    // Use per-bandwidth filtered channels when available; fall back to all.
     final channelsForCurrentBw =
         n.availableChannelsPerBandwidth[n.channelBandwidth];
     final effectiveChannels =
@@ -528,58 +489,5 @@ class WifiNetworkCard extends ConsumerWidget {
         }
       }
     }
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Private shared tile widget
-// ---------------------------------------------------------------------------
-
-class _WifiTile extends StatelessWidget {
-  final String title;
-  final String? description;
-  final Widget? trailing;
-  final VoidCallback? onTap;
-  final String? semanticLabel;
-
-  const _WifiTile({
-    required this.title,
-    this.description,
-    this.trailing,
-    this.onTap,
-    this.semanticLabel,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      label: semanticLabel,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    AppText.bodyMedium(title),
-                    if (description != null) ...[
-                      AppGap.xs(),
-                      AppText.labelLarge(description!),
-                    ],
-                  ],
-                ),
-              ),
-              if (trailing != null) ...[
-                AppGap.md(),
-                trailing!,
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
   }
 }

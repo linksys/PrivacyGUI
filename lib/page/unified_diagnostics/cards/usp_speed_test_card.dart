@@ -20,6 +20,7 @@ class UspSpeedTestCard extends ConsumerWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     return AppCard(
+      padding: const EdgeInsets.all(AppSpacing.md),
       child: asyncState.when(
         loading: () => const Center(child: AppLoader()),
         error: (_, __) => _buildError(context, ref),
@@ -61,7 +62,7 @@ class UspSpeedTestCard extends ConsumerWidget {
           children: [
             AppIcon.font(Icons.speed, size: 20, color: colorScheme.primary),
             AppGap.sm(),
-            AppText.titleMedium('Speed Test'),
+            AppText.titleSmall('Speed Test'),
             const Spacer(),
             // Navigate to full page
             AppIconButton(

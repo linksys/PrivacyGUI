@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
+import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/validator_rules/_validator_rules.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_settings_provider.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -9,13 +10,7 @@ import 'package:ui_kit_library/ui_kit.dart';
 /// Card for Quick Setup mode — displays a single aggregated Main or Guest
 /// network with only Name, Password, and Security mode fields.
 ///
-/// Reads from [settings.current.quickSetupMain] / [settings.current.quickSetupGuest]
-/// so pending edits are reflected immediately. All field edits call
-/// [updateQuickSetupField] on the provider (staged — not written to firmware
-/// until the page-level Save button is tapped).
-///
-/// Password shows a required indicator (red `(Required)`) until the user
-/// enters a valid passphrase, because TR-181 cannot return the current value.
+/// Uses Card + Block pattern: AppCard as outer container, Block for each setting row.
 class WifiQuickSetupCard extends ConsumerWidget {
   final bool isGuest;
   final bool lastInRow;
@@ -42,9 +37,6 @@ class WifiQuickSetupCard extends ConsumerWidget {
     if (pending == null) return const SizedBox.shrink();
 
     final passwordEntered = pending.password.isNotEmpty;
-    // Only show the red "(Required)" indicator when the upcoming Save will
-    // actually carry a passphrase write — otherwise the label would be a
-    // false alarm (Save can still succeed without any password entered).
     final passwordRequired = pending.isPasswordRequired(original);
 
     return Padding(
@@ -53,15 +45,12 @@ class WifiQuickSetupCard extends ConsumerWidget {
         right: lastInRow ? 0 : context.layoutGutter,
       ),
       child: AppCard(
-        padding: const EdgeInsets.symmetric(
-          vertical: AppSpacing.sm,
-          horizontal: AppSpacing.xxl,
-        ),
+        padding: const EdgeInsets.all(AppSpacing.md),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             // ── Header + enable toggle ────────────────────────────────────
-            _QuickSetupTile(
+            _SettingBlock(
               title: isGuest ? 'Guest' : 'Main',
               trailing: AppSwitch(
                 value: pending.enabled,
@@ -71,23 +60,18 @@ class WifiQuickSetupCard extends ConsumerWidget {
               ),
             ),
             // ── Name ─────────────────────────────────────────────────────
-            const Divider(),
-            _QuickSetupTile(
+            _SettingBlock(
               title: 'Name',
               description: pending.ssid.isNotEmpty ? pending.ssid : '(No SSID)',
               trailing: const AppIcon.font(AppFontIcons.edit),
               onTap: () => _editSsid(context, ref, pending.ssid),
             ),
-            // ── Password & Security mode — hidden together when the AP
-            //    has no supported security modes (e.g. Guest on firmware
-            //    that reports ModesSupported=''). Password is meaningless
-            //    for an open network, so showing it would be misleading.
+            // ── Password & Security mode ─────────────────────────────────
             if (pending.supportedSecurityModes.isNotEmpty) ...[
-              const Divider(),
-              _QuickSetupTile(
+              _SettingBlock(
                 title: 'Password',
                 description: passwordEntered
-                    ? '\u2022' * 12
+                    ? '•' * 12
                     : (passwordRequired ? '(Required)' : '(Unchanged)'),
                 descriptionColor: (passwordRequired && !passwordEntered)
                     ? Theme.of(context).colorScheme.error
@@ -95,8 +79,7 @@ class WifiQuickSetupCard extends ConsumerWidget {
                 trailing: const AppIcon.font(AppFontIcons.edit),
                 onTap: () => _editPassword(context, ref, pending.password),
               ),
-              const Divider(),
-              _QuickSetupTile(
+              _SettingBlock(
                 title: 'Security mode',
                 description: pending.securityMode,
                 trailing: const AppIcon.font(AppFontIcons.edit),
@@ -218,17 +201,17 @@ class WifiQuickSetupCard extends ConsumerWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Private tile widget
+// Setting Block — Block-wrapped setting row
 // ---------------------------------------------------------------------------
 
-class _QuickSetupTile extends StatelessWidget {
+class _SettingBlock extends StatelessWidget {
   final String title;
   final String? description;
   final Color? descriptionColor;
   final Widget? trailing;
   final VoidCallback? onTap;
 
-  const _QuickSetupTile({
+  const _SettingBlock({
     required this.title,
     this.description,
     this.descriptionColor,
@@ -238,10 +221,14 @@ class _QuickSetupTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+      child: LayoutBlock(
+        onTap: onTap,
+        padding: const EdgeInsets.symmetric(
+          vertical: AppSpacing.sm,
+          horizontal: AppSpacing.md,
+        ),
         child: Row(
           children: [
             Expanded(

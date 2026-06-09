@@ -111,20 +111,37 @@ class Ipv6PortService {
           v == '0' ||
           v == 0 ||
           v == false ||
-          v == 'false')) continue;
+          v == 'false')) {
+        continue;
+      }
       final missing = <String>[];
-      if (!response.containsKey('${p}Enable')) missing.add('${p}Enable');
-      if (!response.containsKey('${p}Description'))
+      if (!response.containsKey('${p}Enable')) {
+        missing.add('${p}Enable');
+      }
+      if (!response.containsKey('${p}Description')) {
         missing.add('${p}Description');
-      if (!response.containsKey('${p}IPVersion')) missing.add('${p}IPVersion');
-      if (!response.containsKey('${p}DestIP')) missing.add('${p}DestIP');
-      if (!response.containsKey('${p}DestPort')) missing.add('${p}DestPort');
-      if (!response.containsKey('${p}DestPortRangeMax'))
+      }
+      if (!response.containsKey('${p}IPVersion')) {
+        missing.add('${p}IPVersion');
+      }
+      if (!response.containsKey('${p}DestIP')) {
+        missing.add('${p}DestIP');
+      }
+      if (!response.containsKey('${p}DestPort')) {
+        missing.add('${p}DestPort');
+      }
+      if (!response.containsKey('${p}DestPortRangeMax')) {
         missing.add('${p}DestPortRangeMax');
-      if (!response.containsKey('${p}Protocol')) missing.add('${p}Protocol');
-      if (!response.containsKey('${p}Target')) missing.add('${p}Target');
-      if (!response.containsKey('${p}CreationDate'))
+      }
+      if (!response.containsKey('${p}Protocol')) {
+        missing.add('${p}Protocol');
+      }
+      if (!response.containsKey('${p}Target')) {
+        missing.add('${p}Target');
+      }
+      if (!response.containsKey('${p}CreationDate')) {
         missing.add('${p}CreationDate');
+      }
       if (missing.isNotEmpty) {
         throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
       }
@@ -155,23 +172,31 @@ class Ipv6PortService {
       {bool allowPartial = false}) async {
     final params = <String, dynamic>{};
     for (final update in updates) {
-      if (update.enable != null)
+      if (update.enable != null) {
         params['${update.instancePath}Enable'] = update.enable;
-      if (update.description != null)
+      }
+      if (update.description != null) {
         params['${update.instancePath}Description'] = update.description;
-      if (update.ipVersion != null)
+      }
+      if (update.ipVersion != null) {
         params['${update.instancePath}IPVersion'] = update.ipVersion;
-      if (update.destIp != null)
+      }
+      if (update.destIp != null) {
         params['${update.instancePath}DestIP'] = update.destIp;
-      if (update.destPort != null)
+      }
+      if (update.destPort != null) {
         params['${update.instancePath}DestPort'] = update.destPort;
-      if (update.destPortRangeMax != null)
+      }
+      if (update.destPortRangeMax != null) {
         params['${update.instancePath}DestPortRangeMax'] =
             update.destPortRangeMax;
-      if (update.protocol != null)
+      }
+      if (update.protocol != null) {
         params['${update.instancePath}Protocol'] = update.protocol;
-      if (update.target != null)
+      }
+      if (update.target != null) {
         params['${update.instancePath}Target'] = update.target;
+      }
     }
     if (params.isEmpty) {
       return {

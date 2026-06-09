@@ -713,16 +713,17 @@ class UnifiedDiagnosticsNotifier
               nodeId: r.nodeId,
               label: r.label,
               mediaType: r.mediaType,
+              linkType: r.linkType,
               phyRateMbps: r.phyRateMbps,
-              lastUplinkRateMbps: r.lastUplinkRateMbps,
+              lastUplinkRateKbps: r.lastUplinkRateKbps,
+              lastDownlinkRateKbps: r.lastDownlinkRateKbps,
               signalStrengthDbm: r.signalStrengthDbm,
               isController: r.isController,
-              severity: switch (r.severity) {
-                MeshBackhaulSeverityBucket.healthy =>
-                  MeshBackhaulSeverity.healthy,
-                MeshBackhaulSeverityBucket.weak => MeshBackhaulSeverity.weak,
-                MeshBackhaulSeverityBucket.poor => MeshBackhaulSeverity.poor,
-              },
+              severity: r.severity,
+              parentNodeId: r.parentNodeId,
+              parentLabel: r.parentLabel,
+              lastContactTime: r.lastContactTime,
+              isStale: r.isStale,
             ))
         .toList();
 

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/page/_shared/components/wifi_ui.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_client_ui_model.dart';
-import 'package:privacy_gui/page/_shared/models/wifi_performance_helpers.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/statistics/views/components/stats_section_card.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_data_provider.dart';
@@ -76,8 +76,8 @@ class StatsWifiSignalSection extends ConsumerWidget {
             itemBuilder: (context, index) {
               final c = clients[index];
               final rssi = c.client.signalStrength;
-              final tier = WifiPerformanceHelpers.signalTier(rssi);
-              final color = WifiPerformanceHelpers.tierColor(tier, colorScheme);
+              final tier = getSignalTier(rssi);
+              final color = tier.resolveColor(colorScheme);
               final norm = ((rssi + 100) / 70).clamp(0.0, 1.0);
 
               return Row(
@@ -110,8 +110,7 @@ class StatsWifiSignalSection extends ConsumerWidget {
                 width: 8,
                 height: 8,
                 decoration: BoxDecoration(
-                  color:
-                      WifiPerformanceHelpers.tierColor(entry.$1, colorScheme),
+                  color: entry.$1.resolveColor(colorScheme),
                   shape: BoxShape.circle,
                 ),
               ),

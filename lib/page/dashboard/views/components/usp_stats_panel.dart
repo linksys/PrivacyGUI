@@ -5,6 +5,7 @@ import 'package:privacy_gui/page/local_network/providers/ethernet_data_provider.
 import 'package:privacy_gui/page/port_forwarding/providers/port_forwarding_data_provider.dart';
 import 'package:privacy_gui/page/port_forwarding/providers/port_triggering_data_provider.dart';
 import 'package:privacy_gui/page/_shared/components/card_skeleton.dart';
+import 'package:privacy_gui/page/_shared/components/layout_blocks/stat_blocks.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_data_provider.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -40,7 +41,7 @@ class UspStatsPanel extends ConsumerWidget {
     return Row(
       children: [
         Expanded(
-          child: _StatTile(
+          child: StatTile(
             icon: Icons.router,
             value: '$nodeCount',
             label: 'Router',
@@ -48,7 +49,7 @@ class UspStatsPanel extends ConsumerWidget {
         ),
         AppGap.sm(),
         Expanded(
-          child: _StatTile(
+          child: StatTile(
             icon: Icons.devices,
             value: '$onlineCount',
             label: 'Devices',
@@ -56,7 +57,7 @@ class UspStatsPanel extends ConsumerWidget {
         ),
         AppGap.sm(),
         Expanded(
-          child: _StatTile(
+          child: StatTile(
             icon: Icons.lan,
             value: '$lanConnected/$lanTotal',
             label: 'LAN Ports',
@@ -64,7 +65,7 @@ class UspStatsPanel extends ConsumerWidget {
         ),
         AppGap.sm(),
         Expanded(
-          child: _StatTile(
+          child: StatTile(
             icon: Icons.wifi,
             value: '$enabledRadios/$radioCount',
             label: 'Radios',
@@ -72,46 +73,13 @@ class UspStatsPanel extends ConsumerWidget {
         ),
         AppGap.sm(),
         Expanded(
-          child: _StatTile(
+          child: StatTile(
             icon: Icons.shortcut,
             value: '$forwardCount',
             label: 'Port Rules',
           ),
         ),
       ],
-    );
-  }
-}
-
-class _StatTile extends StatelessWidget {
-  final IconData icon;
-  final String value;
-  final String label;
-
-  const _StatTile({
-    required this.icon,
-    required this.value,
-    required this.label,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final color = Theme.of(context).colorScheme.onSurface;
-
-    return AppCard(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          AppIcon.font(icon, size: 24, color: color),
-          AppGap.sm(),
-          AppText.titleSmall(value, color: color),
-          AppGap.xs(),
-          AppText.bodySmall(
-            label,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
-        ],
-      ),
     );
   }
 }

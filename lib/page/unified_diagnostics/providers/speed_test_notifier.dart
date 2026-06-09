@@ -2,11 +2,10 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
-import 'package:privacy_gui/core/usp/errors/usp_error.dart';
-import 'package:privacy_gui/core/utils/logger.dart';
-import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
 import 'package:privacy_gui/core/usp/services/network_diagnostics_executor.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/unified_diagnostics/models/speed_test_state.dart';
+import 'package:privacy_gui/page/unified_diagnostics/services/diagnostics_scope_service.dart';
 
 // ---------------------------------------------------------------------------
 // Provider
@@ -62,13 +61,13 @@ class SpeedTestNotifier extends AutoDisposeAsyncNotifier<SpeedTestState> {
     state = const AsyncData(SpeedTestState());
   }
 
-  NetworkDiagnosticsExecutor get _executor {
-    final executor = ref.read(networkDiagnosticsExecutorProvider);
-    if (executor == null) {
+  DiagnosticsScopeService get _svc {
+    final svc = ref.read(diagnosticsScopeServiceProvider);
+    if (svc == null) {
       throw const ConnectivityError(
-          message: 'NetworkDiagnosticsExecutor not available');
+          message: 'DiagnosticsScopeService not available');
     }
-    return executor;
+    return svc;
   }
 
   // -------------------------------------------------------------------------
@@ -93,6 +92,9 @@ class SpeedTestNotifier extends AutoDisposeAsyncNotifier<SpeedTestState> {
     final server = s.selectedServer;
     final downloadUrl = server.downloadUrl;
 
+    // Cache service reference at start — avoids ref.read() after dispose
+    final svc = _svc;
+
     state = AsyncData(s.copyWith(
       step: SpeedTestStep.testingLatency,
       result: null,
@@ -107,14 +109,13 @@ class SpeedTestNotifier extends AutoDisposeAsyncNotifier<SpeedTestState> {
     // when the last listener leaves the page.
     final DiagnosticScope scope;
     try {
-      scope = await _executor.acquireScope();
-    } catch (e) {
+      scope = await svc.acquireScope();
+    } on ServiceError catch (e) {
       logger.w('[USP][SpeedTest]: Failed to acquire scope: $e');
-      final mapped = e is ServiceError ? e : mapUspErrorToServiceError(e);
       state = AsyncData(state.requireValue.copyWith(
         step: SpeedTestStep.error,
         clearProgress: true,
-        errorMessage: _scopeErrorMessage(mapped),
+        errorMessage: _scopeErrorMessage(e),
       ));
       return;
     }
@@ -131,7 +132,8 @@ class SpeedTestNotifier extends AutoDisposeAsyncNotifier<SpeedTestState> {
       // Step 1: Latency test (ping the selected server)
       logger.d('[USP][SpeedTest]: Starting latency test to ${server.host}');
       try {
-        final pingResult = await scope.ping(
+        final pingResult = await svc.ping(
+          scope,
           host: server.host,
           numberOfRepetitions: 3,
           timeout: const Duration(seconds: 15),
@@ -152,7 +154,8 @@ class SpeedTestNotifier extends AutoDisposeAsyncNotifier<SpeedTestState> {
       ));
 
       logger.d('[USP][SpeedTest]: Starting download test: $downloadUrl');
-      final downloadResult = await scope.downloadDiagnostic(
+      final downloadResult = await svc.downloadDiagnostic(
+        scope,
         downloadUrl: downloadUrl,
         timeout: const Duration(seconds: 120),
       );
@@ -213,13 +216,12 @@ class SpeedTestNotifier extends AutoDisposeAsyncNotifier<SpeedTestState> {
         clearProgress: true,
         errorMessage: 'Speed test timed out',
       ));
-    } catch (e) {
+    } on ServiceError catch (e) {
       logger.w('[USP][SpeedTest]: Failed: $e');
-      final mapped = e is ServiceError ? e : mapUspErrorToServiceError(e);
       state = AsyncData(state.requireValue.copyWith(
         step: SpeedTestStep.error,
         clearProgress: true,
-        errorMessage: _runErrorMessage(mapped),
+        errorMessage: _runErrorMessage(e),
       ));
     } finally {
       if (identical(_activeScope, scope)) _activeScope = null;

@@ -4,6 +4,7 @@ import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/instant_safety/models/instant_safety_feature_state.dart';
 import 'package:privacy_gui/page/instant_safety/providers/instant_safety_provider.dart';
 import 'package:privacy_gui/page/shell/usp_top_bar.dart';
@@ -105,7 +106,7 @@ class UspInstantSafetyView extends ConsumerWidget {
           'malicious content with a single tap. Safe browsing applies to all '
           'devices on your network.',
         ),
-        AppGap.xl(),
+        AppGap.lg(),
         _buildSafeBrowsingCard(context, isEnabled, isSaving, notifier),
       ],
     );
@@ -117,36 +118,49 @@ class UspInstantSafetyView extends ConsumerWidget {
     bool isSaving,
     UspInstantSafetyNotifier notifier,
   ) {
+    final colorScheme = Theme.of(context).colorScheme;
     return AppCard(
+      padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: AppText.labelLarge('Safe Browsing (OpenDNS)'),
-              ),
-              AppSwitch(
-                value: isEnabled,
-                onChanged:
-                    isSaving ? null : (value) => notifier.setEnabled(value),
-              ),
-            ],
+          // Toggle Block
+          LayoutBlock(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: AppText.labelLarge('Safe Browsing (OpenDNS)'),
+                ),
+                AppSwitch(
+                  value: isEnabled,
+                  onChanged:
+                      isSaving ? null : (value) => notifier.setEnabled(value),
+                ),
+              ],
+            ),
           ),
           if (isEnabled) ...[
-            AppGap.lg(),
-            const Divider(height: 1),
-            AppGap.lg(),
-            AppText.bodySmall(
-              'DNS: 208.67.222.222, 208.67.220.220',
-              color: Colors.grey,
-            ),
-            AppGap.xs(),
-            AppText.bodySmall(
-              'All devices on your network will use OpenDNS Family Shield '
-              'for safer browsing.',
-              color: Colors.grey,
+            AppGap.sm(),
+            // Info Block
+            LayoutBlock(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  AppText.bodySmall(
+                    'DNS: 208.67.222.222, 208.67.220.220',
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                  AppGap.xs(),
+                  AppText.bodySmall(
+                    'All devices on your network will use OpenDNS Family Shield '
+                    'for safer browsing.',
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ],
+              ),
             ),
           ],
         ],

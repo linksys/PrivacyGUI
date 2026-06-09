@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/page/_shared/providers/card_tab_state_provider.dart';
 import 'package:privacy_gui/page/_shared/components/usp_status_dot.dart';
+import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/firewall/providers/firewall_data_provider.dart';
 import 'package:privacy_gui/page/_shared/components/card_skeleton.dart';
 import 'package:privacy_gui/page/port_forwarding/providers/port_forwarding_data_provider.dart';
@@ -34,7 +35,7 @@ class UspFirewallOverviewCard extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AppText.titleMedium('Firewall Overview'),
+          CardHeader(title: 'Firewall Overview'),
           AppGap.md(),
           AppTabs(
             tabs: _tabs,
@@ -122,16 +123,16 @@ class _RulesTab extends StatelessWidget {
 
     return Column(
       children: [
-        // Summary stats row
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            _StatChip(
+        // Summary stats row - using InfoGrid pattern
+        InfoGrid(
+          items: [
+            InfoGridItem(
                 label: 'FW Rules',
                 value: '$activeCount/${ruleSummaries.length}'),
-            _StatChip(label: 'Port Fwd', value: '$portForwardingCount'),
-            _StatChip(label: 'DMZ', value: '$dmzCount'),
+            InfoGridItem(label: 'Port Fwd', value: '$portForwardingCount'),
+            InfoGridItem(label: 'DMZ', value: '$dmzCount'),
           ],
+          crossAxisCount: 3,
         ),
         AppGap.md(),
         // Donut chart
@@ -284,24 +285,6 @@ class _PortsTab extends StatelessWidget {
 // =============================================================================
 // Shared widgets
 // =============================================================================
-
-class _StatChip extends StatelessWidget {
-  final String label;
-  final String value;
-  const _StatChip({required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        AppText.titleMedium(value),
-        AppText.labelSmall(label,
-            color: Theme.of(context).colorScheme.onSurfaceVariant),
-      ],
-    );
-  }
-}
 
 class _ProtocolBadge extends StatelessWidget {
   final String protocol;

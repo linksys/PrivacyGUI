@@ -66,14 +66,22 @@ class DhcpClients {
           v == '0' ||
           v == 0 ||
           v == false ||
-          v == 'false')) continue;
+          v == 'false')) {
+        continue;
+      }
       final missing = <String>[];
-      if (!response.containsKey('${p}Chaddr')) missing.add('${p}Chaddr');
-      if (!response.containsKey('${p}Active')) missing.add('${p}Active');
-      if (!response.containsKey('${p}IPv4Address.1.IPAddress'))
+      if (!response.containsKey('${p}Chaddr')) {
+        missing.add('${p}Chaddr');
+      }
+      if (!response.containsKey('${p}Active')) {
+        missing.add('${p}Active');
+      }
+      if (!response.containsKey('${p}IPv4Address.1.IPAddress')) {
         missing.add('${p}IPv4Address.1.IPAddress');
-      if (!response.containsKey('${p}IPv4Address.1.LeaseTimeRemaining'))
+      }
+      if (!response.containsKey('${p}IPv4Address.1.LeaseTimeRemaining')) {
         missing.add('${p}IPv4Address.1.LeaseTimeRemaining');
+      }
       if (missing.isNotEmpty) {
         throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
       }
