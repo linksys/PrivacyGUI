@@ -379,22 +379,27 @@ class DashboardCardTemplate extends StatelessWidget {
                 ),
                 AppGap.sm(),
               ],
-              GestureDetector(
-                onTap: () => context.pushNamed(detailRoute!),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    AppText.labelMedium(
-                      label,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                    AppGap.xs(),
-                    Icon(
-                      Icons.arrow_forward,
-                      size: 14,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                  ],
+              Semantics(
+                button: true,
+                label: label,
+                child: InkWell(
+                  onTap: () => context.pushNamed(detailRoute!),
+                  borderRadius: BorderRadius.circular(4),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      AppText.labelMedium(
+                        label,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      AppGap.xs(),
+                      Icon(
+                        Icons.arrow_forward,
+                        size: 14,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],

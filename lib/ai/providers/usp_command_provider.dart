@@ -809,17 +809,17 @@ class UspCommandProvider implements IRouterCommandProvider {
 /// This provides current router state to the AI so it can make informed
 /// decisions without needing to query.
 ///
-/// Works with both [Ref] (from providers) and [WidgetRef] (from widgets).
-String buildRouterContext(dynamic ref) {
+/// Accepts [WidgetRef] from widgets. For provider-side usage, create
+/// a separate function that accepts [Ref].
+String buildRouterContext(WidgetRef ref) {
   _log('buildRouterContext: building context from providers...');
   final buffer = StringBuffer();
   buffer.writeln('# Current Router State\n');
 
   // Helper to safely get valueOrNull from AsyncValue
-  T? getValue<T>(dynamic asyncValue) {
+  T? getValue<T>(AsyncValue<T>? asyncValue) {
     if (asyncValue == null) return null;
-    if (asyncValue.hasValue) return asyncValue.value as T?;
-    return null;
+    return asyncValue.valueOrNull;
   }
 
   // System Info

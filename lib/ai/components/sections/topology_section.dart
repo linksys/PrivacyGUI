@@ -31,18 +31,7 @@ class TopologySection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    debugPrint('[AI] TopologySection: gatewayName=$gatewayName');
-    debugPrint('[AI] TopologySection: extenders=${extenders?.length ?? 0}');
-    debugPrint('[AI] TopologySection: clients=${clients?.length ?? 0}');
-    if (clients != null) {
-      for (final c in clients!) {
-        debugPrint('[AI] TopologySection: client=${c['name']}');
-      }
-    }
-
     final topology = _buildTopology();
-    debugPrint(
-        '[AI] TopologySection: nodes=${topology.nodes.length}, links=${topology.links.length}');
 
     // Match dashboard topology card settings exactly
     return SizedBox(

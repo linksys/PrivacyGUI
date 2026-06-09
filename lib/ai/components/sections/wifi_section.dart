@@ -35,7 +35,6 @@ class WifiSection extends StatelessWidget {
   }
 
   String _maskPassword(String password) {
-    if (password.length <= 4) return '****';
-    return '${password.substring(0, 2)}${'*' * (password.length - 4)}${password.substring(password.length - 2)}';
+    return '********';
   }
 }

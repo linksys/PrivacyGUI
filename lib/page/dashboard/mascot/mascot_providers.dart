@@ -136,6 +136,11 @@ void _openThemeStudio(Ref ref) {
 }
 
 /// Navigate to AI Assistant page with mascot fly-in animation.
+///
+/// NOTE: Uses Navigator.push instead of go_router intentionally.
+/// The custom PageRouteBuilder enables the mascot fly-in transition
+/// which requires dynamic position calculation from MediaQuery.
+/// go_router's CustomTransitionPage doesn't easily support this pattern.
 void _openAiAssistant(BuildContext context) {
   final screenSize = MediaQuery.of(context).size;
 

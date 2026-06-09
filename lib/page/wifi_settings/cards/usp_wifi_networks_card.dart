@@ -39,13 +39,11 @@ class _WifiNetworkEntry {
 /// - Toggle for enable/disable (future)
 class UspWifiNetworksCard extends ConsumerWidget {
   final WifiData? wifiData;
-  final VoidCallback? onViewAll;
   final void Function(String ssid)? onShareTap;
 
   const UspWifiNetworksCard({
     super.key,
     this.wifiData,
-    this.onViewAll,
     this.onShareTap,
   });
 

@@ -14,12 +14,10 @@ import 'package:privacy_gui/page/_shared/components/usp_status_dot.dart';
 
 class UspConnectedDevicesCard extends ConsumerWidget {
   final List<DeviceUIModel>? devices;
-  final VoidCallback? onViewAll;
 
   const UspConnectedDevicesCard({
     super.key,
     this.devices,
-    this.onViewAll,
   });
 
   static const _maxDisplayCount = 5;
