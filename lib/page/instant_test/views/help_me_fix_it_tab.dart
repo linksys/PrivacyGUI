@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/connection/helpers/recovery_dialog_helper.dart';
 import 'package:privacy_gui/core/connection/models/app_connection_state.dart';
@@ -245,9 +246,14 @@ class _FlowShell extends StatelessWidget {
 
 // ── Shared helpers ────────────────────────────────────────────────────────────
 
-Widget _stepCard(BuildContext context, Widget child) => Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: Padding(padding: const EdgeInsets.all(16), child: child),
+// Uses the design-system AppCard (ui_kit_library) so section framing matches
+// the rest of the USP app instead of a borderless Material Card.
+Widget _stepCard(BuildContext context, Widget child) => Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: AppCard(
+        padding: const EdgeInsets.all(16),
+        child: child,
+      ),
     );
 
 Widget _infoBox(BuildContext context, String text, {IconData icon = Icons.info_outline, Color? color}) {

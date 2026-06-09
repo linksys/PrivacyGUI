@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/connection/helpers/recovery_dialog_helper.dart';
 import 'package:privacy_gui/core/connection/models/app_connection_state.dart';
@@ -47,8 +48,9 @@ class OverviewTab extends ConsumerWidget {
                 title: Text(loc(context).instantTestAllChecksPassed),
               ),
             for (final finding in verdict.findings)
-              Card(
+              AppCard(
                 margin: const EdgeInsets.symmetric(vertical: 4),
+                padding: EdgeInsets.zero,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [

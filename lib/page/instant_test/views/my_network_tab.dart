@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/instant_test/providers/instant_test_provider.dart';
@@ -25,7 +26,8 @@ class MyNetworkTab extends ConsumerWidget {
           Text(loc(context).instantTestInternetSection,
               style: Theme.of(context).textTheme.titleSmall),
           const SizedBox(height: 6),
-          Card(
+          AppCard(
+            padding: EdgeInsets.zero,
             child: ListTile(
               leading: Icon(
                 Icons.public,
@@ -116,8 +118,9 @@ class _NodeHealthRow extends StatelessWidget {
           (signal != null ? ' ($signal dBm)' : '');
     }
 
-    return Card(
+    return AppCard(
       margin: const EdgeInsets.symmetric(vertical: 4),
+      padding: EdgeInsets.zero,
       child: ListTile(
         leading: Icon(Icons.router, color: indicatorColor),
         title: Text(node.displayName),
@@ -153,7 +156,8 @@ class _SpeedLegsCard extends StatelessWidget {
         Text(loc(context).instantTestRouterSpeed,
             style: Theme.of(context).textTheme.titleSmall),
         const SizedBox(height: 6),
-        Card(
+        AppCard(
+          padding: EdgeInsets.zero,
           child: Padding(
             padding: const EdgeInsets.all(12),
             child: Column(
