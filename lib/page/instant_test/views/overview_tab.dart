@@ -196,7 +196,7 @@ class _StaggeredChecklistProgressState
 
 // ── Checklist summary ─────────────────────────────────────────────────────────
 
-enum _CheckDisplayState { pending, pass, fail, skipped, available }
+enum _CheckDisplayState { pending, pass, fail, warning, skipped, available }
 
 class _ChecklistSummary extends StatefulWidget {
   final InstantTestState state;
@@ -224,11 +224,14 @@ class _ChecklistSummaryState extends State<_ChecklistSummary> {
         fwAvailable ? _CheckDisplayState.available : _CheckDisplayState.pass;
 
     // Speed display — D-35: show download + upload + latency
-    final speedDetail = s.speedTest == null
-        ? 'Not completed'
-        : '↓ ${s.speedTest!.downloadMbps.toStringAsFixed(0)} Mbps  '
-            '↑ ${s.speedTest!.uploadMbps.toStringAsFixed(0)} Mbps  '
-            '${s.speedTest!.latencyMs}ms delay';
+    final speedDetail = s.speedTestFailed
+        ? "Didn't complete — tap Run Again"
+        : s.speedTest == null
+            ? 'Not completed'
+            : '↓ ${s.speedTest!.downloadMbps.toStringAsFixed(0)} Mbps  '
+                '↑ ${s.speedTest!.uploadMbps.toStringAsFixed(0)} Mbps  '
+                '${s.speedTest!.latencyMs}ms delay'
+                '${s.speedTest!.latencyMs > 100 ? ' — high lag' : ''}';
 
     // Device quality summary
     final issueCount = s.deviceScores.where((d) => d.isIssue).length;
@@ -281,9 +284,14 @@ class _ChecklistSummaryState extends State<_ChecklistSummary> {
       ),
       _SummaryRow(
         label: 'Speed check',
-        state: s.speedTest == null
-            ? _CheckDisplayState.skipped
-            : _CheckDisplayState.pass,
+        // Failed or high-latency → amber, so the row matches the top finding.
+        state: s.speedTestFailed
+            ? _CheckDisplayState.warning
+            : s.speedTest == null
+                ? _CheckDisplayState.skipped
+                : (s.speedTest!.latencyMs > 100
+                    ? _CheckDisplayState.warning
+                    : _CheckDisplayState.pass),
         detail: speedDetail,
         expandedDetail: s.speedTest == null
             ? 'The speed test did not complete. Try running again.'
@@ -298,9 +306,12 @@ class _ChecklistSummaryState extends State<_ChecklistSummary> {
       ),
       _SummaryRow(
         label: 'Devices checked',
+        // Weak-signal devices → amber, matching the "weak WiFi" finding.
         state: s.clients.isEmpty
             ? _CheckDisplayState.skipped
-            : _CheckDisplayState.pass,
+            : (issueCount > 0
+                ? _CheckDisplayState.warning
+                : _CheckDisplayState.pass),
         detail: deviceDetail,
         expandedDetail: s.clients.isEmpty
             ? 'No connected devices were detected.'
@@ -446,6 +457,8 @@ class _SummaryRowTile extends StatelessWidget {
         return const Icon(Icons.check_circle, color: Colors.green, size: 18);
       case _CheckDisplayState.fail:
         return const Icon(Icons.cancel, color: Colors.red, size: 18);
+      case _CheckDisplayState.warning:
+        return const Icon(Icons.warning_amber, color: Colors.orange, size: 18);
       case _CheckDisplayState.available:
         return const Icon(Icons.info, color: Colors.orange, size: 18);
       case _CheckDisplayState.skipped:
