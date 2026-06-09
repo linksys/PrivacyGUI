@@ -107,6 +107,11 @@ class InstantTestNotifier extends Notifier<InstantTestState> {
       final sysModel = sysInfoData?.model;
       final firmwareUpdateAvailable =
           firmwareBanks?.availableBank != null;
+      // Router identity for the AppBar header — model from the master node,
+      // serial from system info.
+      final masters = meshNodes.where((n) => n.isMaster);
+      final routerModel = masters.isNotEmpty ? masters.first.model : null;
+      final routerSerial = sysModel?.serialNumber;
 
       // Check for recent restart in localStorage
       final lastRestartStr = getStoredValue('instant_test_last_restart');
@@ -122,6 +127,8 @@ class InstantTestNotifier extends Notifier<InstantTestState> {
         clients: clients,
         meshNodes: meshNodes,
         ethernetPorts: ethernetPorts,
+        routerModel: routerModel,
+        routerSerial: routerSerial,
         firmwareVersion: sysModel?.softwareVersion,
         firmwareUpdateAvailable: firmwareUpdateAvailable,
         uptimeSeconds: sysModel?.uptime,

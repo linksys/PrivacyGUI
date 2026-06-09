@@ -35,6 +35,8 @@ class InstantTestState extends Equatable {
   final List<EthernetPortUIModel> ethernetPorts;
 
   // ── System info (from systemInfoDataProvider) ─────────────────────────
+  final String? routerModel;
+  final String? routerSerial;
   final String? firmwareVersion;
   final bool? firmwareUpdateAvailable;
   final int? uptimeSeconds;
@@ -96,6 +98,8 @@ class InstantTestState extends Equatable {
     this.clients = const [],
     this.meshNodes = const [],
     this.ethernetPorts = const [],
+    this.routerModel,
+    this.routerSerial,
     this.firmwareVersion,
     this.firmwareUpdateAvailable,
     this.uptimeSeconds,
@@ -136,6 +140,8 @@ class InstantTestState extends Equatable {
     List<DeviceUIModel>? clients,
     List<NodeUIModel>? meshNodes,
     List<EthernetPortUIModel>? ethernetPorts,
+    String? routerModel,
+    String? routerSerial,
     String? firmwareVersion,
     bool? firmwareUpdateAvailable,
     int? uptimeSeconds,
@@ -175,6 +181,8 @@ class InstantTestState extends Equatable {
       clients: clients ?? this.clients,
       meshNodes: meshNodes ?? this.meshNodes,
       ethernetPorts: ethernetPorts ?? this.ethernetPorts,
+      routerModel: routerModel ?? this.routerModel,
+      routerSerial: routerSerial ?? this.routerSerial,
       firmwareVersion: firmwareVersion ?? this.firmwareVersion,
       firmwareUpdateAvailable: firmwareUpdateAvailable ?? this.firmwareUpdateAvailable,
       uptimeSeconds: uptimeSeconds ?? this.uptimeSeconds,
@@ -217,6 +225,8 @@ class InstantTestState extends Equatable {
         clients,
         meshNodes,
         ethernetPorts,
+        routerModel,
+        routerSerial,
         firmwareVersion,
         firmwareUpdateAvailable,
         uptimeSeconds,
