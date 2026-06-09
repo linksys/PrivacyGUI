@@ -97,6 +97,9 @@ class VerdictEngine {
     required bool? dnsWorking,
     required double? downloadMbps,
     required int? latencyMs,
+    /// True when the speed test ran but didn't complete — surfaces as a warning
+    /// so a failed check is never swept into an all-clear. (Ported from JNAP.)
+    bool speedTestFailed = false,
     required bool? firmwareUpdateAvailable,
     required String? firmwareVersion,
     required int? uptimeSeconds,
@@ -389,6 +392,21 @@ class VerdictEngine {
             'but your device is only seeing ${downloadMbps.toStringAsFixed(0)} Mbps. '
             'The WiFi hop between your device and router is the bottleneck. '
             'Moving closer to your router or connecting with an Ethernet cable will help.',
+      ));
+    }
+
+    // ── Check 5b: Speed test couldn't complete ───────────────────────────
+    // A check that ran but didn't finish is itself an issue — never silently
+    // all-clear. Only when the internet is otherwise up. (Ported from JNAP.)
+    if (speedTestFailed && wanConnected != false && dnsWorking != false) {
+      findings.add(const VerdictFinding(
+        priority: VerdictPriority.warning,
+        headline: "We couldn't finish the speed test",
+        explanation:
+            'The internet speed check didn\'t complete — this can happen on a '
+            'busy or briefly-dropped connection. Other checks looked fine, but '
+            'we can\'t confirm your speed until this finishes. Try running the '
+            'test again.',
       ));
     }
 

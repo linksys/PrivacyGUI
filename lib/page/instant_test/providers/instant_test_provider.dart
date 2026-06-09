@@ -33,8 +33,24 @@ class InstantTestNotifier extends Notifier<InstantTestState> {
   int _fetchGeneration = 0;
 
   /// Timestamp of the last completed speed test — used to skip re-running
-  /// within 3 minutes unless explicitly forced.
+  /// within 3 minutes on passive reloads unless explicitly forced.
   DateTime? _lastSpeedTestTime;
+
+  /// Timestamp of the last speed-test ATTEMPT. Enforces a hard minimum cooldown
+  /// that even a forced/explicit re-run cannot bypass — abuse backstop against
+  /// button-hammering. (Ported from JNAP line.)
+  DateTime? _lastSpeedTestAttempt;
+
+  /// Minimum time between speed-test attempts, even when forced.
+  static const speedTestCooldown = Duration(seconds: 15);
+
+  /// Seconds remaining before another speed test may run (0 = ready).
+  int get speedTestCooldownRemaining {
+    if (_lastSpeedTestAttempt == null) return 0;
+    final remaining =
+        speedTestCooldown - DateTime.now().difference(_lastSpeedTestAttempt!);
+    return remaining.isNegative ? 0 : remaining.inSeconds + 1;
+  }
 
   @override
   InstantTestState build() {
@@ -159,14 +175,18 @@ class InstantTestNotifier extends Notifier<InstantTestState> {
     }
     _updateVerdict(preliminary: true);
 
-    // 3. Speed test (skip if recent and not forced)
+    // 3. Speed test (skip if recent and not forced, or within hard cooldown)
     final now = DateTime.now();
-    final skipSpeed = !forceSpeedTest &&
-        _lastSpeedTestTime != null &&
-        now.difference(_lastSpeedTestTime!).inMinutes < 3;
+    final withinHardCooldown = _lastSpeedTestAttempt != null &&
+        now.difference(_lastSpeedTestAttempt!) < speedTestCooldown;
+    final skipSpeed = withinHardCooldown ||
+        (!forceSpeedTest &&
+            _lastSpeedTestTime != null &&
+            now.difference(_lastSpeedTestTime!).inMinutes < 3);
 
     if (!skipSpeed) {
       if (_fetchGeneration != generation) return;
+      _lastSpeedTestAttempt = DateTime.now();
       state = state.copyWith(browserTestStep: 'speed');
 
       // Client→Internet leg (Cloudflare)
@@ -178,8 +198,15 @@ class InstantTestNotifier extends Notifier<InstantTestState> {
         },
       );
       if (_fetchGeneration != generation) return;
-      _lastSpeedTestTime = DateTime.now();
-      state = state.copyWith(speedTest: speed);
+      // A 0 download means the CDN was unreachable — don't store it as a real
+      // result (false "0 Mbps"); flag the check as failed so the UI surfaces
+      // "couldn't finish" instead of a false all-clear. (Ported from JNAP.)
+      if (speed.downloadMbps > 0) {
+        _lastSpeedTestTime = DateTime.now();
+        state = state.copyWith(speedTest: speed, speedTestFailed: false);
+      } else {
+        state = state.copyWith(speedTestFailed: true);
+      }
       _updateVerdict(preliminary: false);
 
       // Client→Router leg (D-R7 Phase 3): measures WiFi throughput
@@ -245,6 +272,7 @@ class InstantTestNotifier extends Notifier<InstantTestState> {
       dnsWorking: s.dnsCheck?.resolved,
       downloadMbps: s.speedTest?.downloadMbps,
       latencyMs: s.speedTest?.latencyMs,
+      speedTestFailed: s.speedTestFailed,
       firmwareUpdateAvailable: s.firmwareUpdateAvailable,
       firmwareVersion: s.firmwareVersion,
       uptimeSeconds: s.uptimeSeconds,

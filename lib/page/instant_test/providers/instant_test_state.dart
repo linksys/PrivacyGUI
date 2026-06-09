@@ -52,6 +52,9 @@ class InstantTestState extends Equatable {
   final DnsCheckResult? publicDnsCheck;
   final bool? configuredDnsReachable;
   final SpeedTestResult? speedTest;
+  /// True when the speed test ran but failed to complete (timeout/CDN/0). A
+  /// failed check must NOT be swept into an all-clear. (Ported from JNAP.)
+  final bool speedTestFailed;
   final RouterSpeedResult? routerSpeed;
 
   // ── Three-leg speed test: router→internet leg (USP speedTestProvider) ──
@@ -105,6 +108,7 @@ class InstantTestState extends Equatable {
     this.publicDnsCheck,
     this.configuredDnsReachable,
     this.speedTest,
+    this.speedTestFailed = false,
     this.routerSpeed,
     this.routerInternetResult,
     this.browserTestStep = 'idle',
@@ -144,6 +148,7 @@ class InstantTestState extends Equatable {
     DnsCheckResult? publicDnsCheck,
     bool? configuredDnsReachable,
     SpeedTestResult? speedTest,
+    bool? speedTestFailed,
     RouterSpeedResult? routerSpeed,
     usp_speed.SpeedTestResult? routerInternetResult,
     String? browserTestStep,
@@ -182,6 +187,7 @@ class InstantTestState extends Equatable {
       publicDnsCheck: publicDnsCheck ?? this.publicDnsCheck,
       configuredDnsReachable: configuredDnsReachable ?? this.configuredDnsReachable,
       speedTest: speedTest ?? this.speedTest,
+      speedTestFailed: speedTestFailed ?? this.speedTestFailed,
       routerSpeed: routerSpeed ?? this.routerSpeed,
       routerInternetResult: routerInternetResult ?? this.routerInternetResult,
       browserTestStep: browserTestStep ?? this.browserTestStep,
@@ -223,6 +229,7 @@ class InstantTestState extends Equatable {
         publicDnsCheck,
         configuredDnsReachable,
         speedTest,
+        speedTestFailed,
         routerSpeed,
         routerInternetResult,
         browserTestStep,
