@@ -62,6 +62,10 @@ class InstantVerifyPivotState extends Equatable {
   /// Null = not checked. Combined with [publicDnsCheck] for three-way diagnosis.
   final bool? configuredDnsReachable;
   final SpeedTestResult? speedTest;
+  /// True when the internet speed test ran but failed to complete (timeout,
+  /// CDN unreachable, or 0 result). Distinct from speedTest == null (not run).
+  /// A failed check must NOT be swept into an all-clear verdict.
+  final bool speedTestFailed;
   final RouterSpeedResult? routerSpeed;
 
   /// Current browser test step: 'idle' | 'gateway' | 'dns' | 'speed' | 'complete' | 'error'
@@ -137,6 +141,7 @@ class InstantVerifyPivotState extends Equatable {
     this.publicDnsCheck,
     this.configuredDnsReachable,
     this.speedTest,
+    this.speedTestFailed = false,
     this.routerSpeed,
     this.browserTestStep = 'idle',
     this.planSpeedMbps,
@@ -186,6 +191,7 @@ class InstantVerifyPivotState extends Equatable {
     DnsCheckResult? publicDnsCheck,
     bool? configuredDnsReachable,
     SpeedTestResult? speedTest,
+    bool? speedTestFailed,
     RouterSpeedResult? routerSpeed,
     String? browserTestStep,
     double? planSpeedMbps,
@@ -234,6 +240,7 @@ class InstantVerifyPivotState extends Equatable {
       publicDnsCheck: publicDnsCheck ?? this.publicDnsCheck,
       configuredDnsReachable: configuredDnsReachable ?? this.configuredDnsReachable,
       speedTest: speedTest ?? this.speedTest,
+      speedTestFailed: speedTestFailed ?? this.speedTestFailed,
       routerSpeed: routerSpeed ?? this.routerSpeed,
       browserTestStep: browserTestStep ?? this.browserTestStep,
       planSpeedMbps: planSpeedMbps ?? this.planSpeedMbps,
@@ -417,6 +424,7 @@ class InstantVerifyPivotState extends Equatable {
         publicDnsCheck,
         configuredDnsReachable,
         speedTest,
+        speedTestFailed,
         routerSpeed,
         browserTestStep,
         planSpeedMbps,

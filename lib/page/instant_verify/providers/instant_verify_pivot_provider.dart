@@ -401,18 +401,21 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
           },
         );
         if (_stale()) return;
-        // QA-1: Only store result if download > 0 — a zero result means the CDN
-        // was unreachable (not that the internet is actually 0 Mbps).
-        // A zero stored as SpeedTestResult would fire a false "0 Mbps" critical finding.
+        // A zero download means the CDN was unreachable (not that the internet
+        // is actually 0 Mbps) — don't store it as a real result (would fire a
+        // false "0 Mbps" critical). But DO flag the check as failed so the UI
+        // surfaces "couldn't complete — retry" instead of a false all-clear.
         if (speedResult.downloadMbps > 0) {
           _lastSpeedTestTime = DateTime.now();
-          state = state.copyWith(speedTest: speedResult);
+          state = state.copyWith(speedTest: speedResult, speedTestFailed: false);
           _recordAction('speed_test', result: '${speedResult.downloadMbps.toStringAsFixed(1)}_mbps');
         } else {
-          dev.log('InstantVerifyPivot: speed test returned 0 — CDN unreachable, discarding result');
+          dev.log('InstantVerifyPivot: speed test returned 0 — CDN unreachable, flagging as failed');
+          state = state.copyWith(speedTestFailed: true);
         }
       } catch (e) {
         dev.log('InstantVerifyPivot: speed test failed: $e');
+        if (!_stale()) state = state.copyWith(speedTestFailed: true);
       }
     } else if (!dns.resolved) {
       dev.log('InstantVerifyPivot: speed test skipped — DNS failed');

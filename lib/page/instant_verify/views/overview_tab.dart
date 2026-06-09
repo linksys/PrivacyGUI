@@ -66,6 +66,9 @@ class _OverviewTabState extends ConsumerState<OverviewTab> {
             onViewClients: widget.onViewClients,
             onNavigateToFlow: widget.onNavigateToFlow,
             hasRestarted: state.hasRestartedThisSession,
+            onRerun: () => ref
+                .read(instantVerifyPivotProvider.notifier)
+                .fetch(forceSpeedTest: true),
           ),
           if (state.recentPriorRestart &&
               state.verdict != null &&
@@ -533,6 +536,9 @@ class _StatusCard extends StatelessWidget {
   final VoidCallback? onViewClients;
   final void Function(int flowIndex)? onNavigateToFlow;
   final bool hasRestarted;
+  /// Re-run the full diagnostic (incl. speed test). Used by the
+  /// "speed test didn't complete" retry card.
+  final VoidCallback? onRerun;
 
   const _StatusCard({
     required this.state,
@@ -544,6 +550,7 @@ class _StatusCard extends StatelessWidget {
     this.onViewClients,
     this.onNavigateToFlow,
     this.hasRestarted = false,
+    this.onRerun,
   });
 
   @override
@@ -562,6 +569,45 @@ class _StatusCard extends StatelessWidget {
     }
 
     final verdict = state.verdict;
+
+    // Incomplete check — a check that didn't finish is itself an issue and must
+    // NOT be swept into a green all-clear. Show a non-alarming retry card.
+    // (Currently the speed test; pattern extends to other browser checks.)
+    if (state.speedTestFailed && (verdict == null || verdict.isAllClear)) {
+      return _card(
+        context,
+        borderColor: Colors.orange,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(children: [
+              const Icon(Icons.error_outline, color: Colors.orange, size: 22),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Text("We couldn't finish the speed test",
+                    style:
+                        TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+              ),
+            ]),
+            const SizedBox(height: 8),
+            Text(
+              'The internet speed check didn\'t complete — this can happen on a '
+              'busy or briefly-dropped connection. Other checks looked fine, but '
+              'we can\'t confirm your speed until this finishes.',
+              style: TextStyle(color: scheme.onSurfaceVariant, height: 1.4),
+            ),
+            const SizedBox(height: 16),
+            Center(
+              child: FilledButton.icon(
+                onPressed: onRerun,
+                icon: const Icon(Icons.refresh, size: 18),
+                label: const Text('Run the test again'),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
     // All clear state — "We didn't detect any issues" + flow cards (PRD v0.7 D-16)
     if (verdict == null || verdict.isAllClear) {
