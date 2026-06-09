@@ -1405,7 +1405,13 @@ class _ChecklistSummaryState extends State<_ChecklistSummary> {
       ),
       _SummaryRow(
         label: 'Devices checked',
-        state: state.clients.isNotEmpty ? _CheckDisplayState.pass : _CheckDisplayState.skipped,
+        // Flag amber when any device has a weak signal \u2014 matches the
+        // "weak WiFi" finding so the row reflects the top-level warning.
+        state: state.clients.isEmpty
+            ? _CheckDisplayState.skipped
+            : (state.issueDevices.isNotEmpty
+                ? _CheckDisplayState.warning
+                : _CheckDisplayState.pass),
         detail: state.clients.isEmpty
             ? 'No devices found'
             : '${state.clients.length} device${state.clients.length == 1 ? '' : 's'} \u2014 '
