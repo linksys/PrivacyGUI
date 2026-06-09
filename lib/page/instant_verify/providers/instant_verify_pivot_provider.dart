@@ -21,6 +21,23 @@ final instantVerifyPivotProvider =
   InstantVerifyPivotNotifier.new,
 );
 
+/// Outcome of a real auto channel optimization run (see optimizeChannels()).
+enum ChannelOptimizeStatus { optimized, alreadyOptimal, error }
+
+/// A single band's channel change from the optimization.
+class ChannelChange {
+  final String band; // e.g. '2.4GHz', '5GHz'
+  final int from;
+  final int to;
+  const ChannelChange({required this.band, required this.from, required this.to});
+}
+
+class ChannelOptimizeResult {
+  final ChannelOptimizeStatus status;
+  final List<ChannelChange> changes;
+  const ChannelOptimizeResult({required this.status, this.changes = const []});
+}
+
 class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
   /// Incremented on every fetch(). _runBrowserTests checks this before each
   /// state write — if it changed, a newer fetch started and we abort. (Fix: Item 2)
@@ -1131,6 +1148,77 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
       dev.log('InstantVerifyPivot: changeRadioChannel failed: $e');
       return false;
     }
+  }
+
+  /// Run the router's real auto channel optimization (firmware-side RF scan).
+  /// Reads current channels, triggers StartAutoChannelSelection, polls
+  /// GetSelectedChannels until it settles, and returns a before→after diff.
+  /// This replaces the old hardcoded "channel 6/36" suggestion with a genuine
+  /// least-congested-channel selection. Takes roughly a minute per node.
+  Future<ChannelOptimizeResult> optimizeChannels() async {
+    try {
+      // 1. Snapshot current channels (band → channel).
+      final before = await _readSelectedChannels();
+      if (before.isEmpty) {
+        return const ChannelOptimizeResult(status: ChannelOptimizeStatus.error);
+      }
+
+      // 2. Kick off the firmware RF scan + auto-selection.
+      await _send(JNAPAction.startAutoChannelSelection);
+
+      // 3. Poll GetSelectedChannels until it stops running (cap ~2.5 min).
+      Map<String, int> after = before;
+      for (var i = 0; i < 30; i++) {
+        await Future<void>.delayed(const Duration(seconds: 5));
+        final out = await _sendOptional(JNAPAction.getSelectedChannels);
+        if (out['isRunning'] == true) continue;
+        final settled = _parseSelectedChannels(out);
+        if (settled.isNotEmpty) {
+          after = settled;
+          break;
+        }
+      }
+
+      // 4. Diff: which bands changed.
+      final changes = <ChannelChange>[];
+      after.forEach((band, ch) {
+        final old = before[band];
+        if (old != null && old != ch) {
+          changes.add(ChannelChange(band: band, from: old, to: ch));
+        }
+      });
+      dev.log('InstantVerifyPivot: channel optimize — ${changes.length} changed');
+      return ChannelOptimizeResult(
+        status: changes.isEmpty
+            ? ChannelOptimizeStatus.alreadyOptimal
+            : ChannelOptimizeStatus.optimized,
+        changes: changes,
+      );
+    } catch (e) {
+      dev.log('InstantVerifyPivot: optimizeChannels failed: $e');
+      return const ChannelOptimizeResult(status: ChannelOptimizeStatus.error);
+    }
+  }
+
+  Future<Map<String, int>> _readSelectedChannels() async {
+    final out = await _sendOptional(JNAPAction.getSelectedChannels);
+    return _parseSelectedChannels(out);
+  }
+
+  /// Flatten GetSelectedChannels output to { bandLabel: channel }.
+  Map<String, int> _parseSelectedChannels(Map<String, dynamic> out) {
+    final result = <String, int>{};
+    final selected = out['selectedChannels'] as List? ?? [];
+    for (final dev in selected) {
+      final channels = (dev as Map<String, dynamic>)['channels'] as List? ?? [];
+      for (final c in channels) {
+        final m = c as Map<String, dynamic>;
+        final band = m['band'] as String?;
+        final ch = m['channel'] as int?;
+        if (band != null && ch != null) result[band] = ch;
+      }
+    }
+    return result;
   }
 
   void setPlanSpeed(double? mbps) {

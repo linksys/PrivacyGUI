@@ -850,21 +850,15 @@ class _DeviceDetailSheetState extends ConsumerState<_DeviceDetailSheet> {
   }
 
   Future<void> _triggerChannelRescan(BuildContext context) async {
-    // Determine which radio this client is on and pick a better channel
-    final band = client.band;
-    final is24 = band.contains('2.4');
-    final radioID = is24 ? 'RADIO_2.4GHz' : 'RADIO_5GHz';
-    // Use channel 6 (2.4 GHz) or 36 (5 GHz) as fallback clean channels
-    final betterChannel = is24 ? 6 : 36;
-
+    // Real firmware RF scan picks the clearest channels (not a hardcoded 6/36).
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Change WiFi channel?'),
-        content: Text(
-            'Your router will switch to a less congested channel on the '
-            '${is24 ? "2.4 GHz" : "5 GHz"} band. '
-            'All devices on that band will briefly disconnect and reconnect.'),
+        title: const Text('Optimize WiFi channels?'),
+        content: const Text(
+            'Your router will scan for the clearest WiFi channels and switch '
+            'automatically. This takes about a minute, and devices may briefly '
+            'disconnect and reconnect.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -872,23 +866,29 @@ class _DeviceDetailSheetState extends ConsumerState<_DeviceDetailSheet> {
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Change Channel'),
+            child: const Text('Optimize'),
           ),
         ],
       ),
     );
     if (confirmed != true || !mounted) return;
     setState(() => _isChangingChannel = true);
-    final success = await ref
+    final result = await ref
         .read(instantVerifyPivotProvider.notifier)
-        .changeRadioChannel(radioID, betterChannel);
+        .optimizeChannels();
     if (!mounted) return;
     setState(() => _isChangingChannel = false);
+    final msg = switch (result.status) {
+      ChannelOptimizeStatus.optimized =>
+        'WiFi channels optimized. Devices will reconnect in a moment.',
+      ChannelOptimizeStatus.alreadyOptimal =>
+        'Your WiFi is already on the clearest channels.',
+      ChannelOptimizeStatus.error =>
+        'Couldn\'t optimize right now — please try again in a moment.',
+    };
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(success
-            ? 'Channel changed. Devices will reconnect in a moment.'
-            : 'Could not change channel — your router may not support this.'),
+        content: Text(msg),
         duration: const Duration(seconds: 3),
         behavior: SnackBarBehavior.floating,
       ),

@@ -16,8 +16,10 @@ update, channel change, bridge-mode help) map to action keys the engine emits.
   core in [[concepts/two-line-strategy]].
 - JNAP and USP versions are ~95% identical; only input *types* differ
   (`DiagnosticClient` vs `DeviceUIModel`).
-- Channel recommendation is currently a hardcoded best-practice (6 / 36), NOT a
-  scan result — see [[roadmap]] B-18.
+- Channel optimization uses the firmware's REAL RF scan
+  (`provider.optimizeChannels()` → `StartAutoChannelSelection` + poll
+  `GetSelectedChannels`), not the old hardcoded 6/36. Returns a before→after
+  diff. See [[roadmap]] I-7.
 
 ## Principle: an incomplete check is an issue
 A check that runs but doesn't finish must NEVER be swept into a green all-clear.

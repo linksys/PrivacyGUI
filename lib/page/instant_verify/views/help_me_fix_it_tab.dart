@@ -2242,14 +2242,15 @@ class _Flow3State extends ConsumerState<_Flow3> {
           if (hasChannelData) ...[
             const SizedBox(height: 10),
             OutlinedButton.icon(
-              onPressed: () => _showChannelChangePicker(context, state),
+              onPressed: () => _optimizeChannels(context),
               icon: const Icon(Icons.wifi_tethering, size: 18),
-              label: const Text('Switch to a less congested WiFi channel'),
+              label: const Text('Optimize my WiFi channels'),
             ),
             const SizedBox(height: 4),
             Text(
-              'Interference from nearby networks can cause drops. Changing your '
-              'router\'s channel may fix this.',
+              'Interference from nearby networks can cause drops. Your router '
+              'will scan for the clearest channels and switch automatically — '
+              'this takes about a minute.',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant),
             ),
@@ -2330,100 +2331,63 @@ class _Flow3State extends ConsumerState<_Flow3> {
   Future<void> _doDeauth(BuildContext context, String mac, String name) =>
       confirmAndDeauth(context, ref, mac: mac, displayName: name);
 
-  /// Channel change picker — built from live radioInfo so IDs are accurate.
-  /// Suggested channels are non-overlapping / non-DFS best-practice values:
-  ///   2.4 GHz → channel 6 (one of 3 non-overlapping: 1, 6, 11)
-  ///   5 GHz   → channel 36 (first non-DFS channel in low band)
-  void _showChannelChangePicker(BuildContext context, InstantVerifyPivotState state) {
-    final radios = state.radioInfo?['radios'] as List? ?? [];
-    // Build (radioID, bandLabel, suggestedChannel) tuples from live data
-    final options = <(String, String, int)>[];
-    for (final r in radios) {
-      final radioId = (r as Map<String, dynamic>)['radioID'] as String?;
-      final band = r['band'] as String? ?? '';
-      if (radioId == null) continue;
-      if (band.contains('2.4')) {
-        options.add((radioId, '2.4 GHz', 6));
-      } else if (band.contains('5') && !band.contains('6')) {
-        options.add((radioId, '5 GHz', 36));
-      } else if (band.contains('6')) {
-        options.add((radioId, '6 GHz', 37));
-      }
-    }
-    // Fallback to hardcoded IDs if radioInfo unavailable
-    if (options.isEmpty) {
-      options.addAll([
-        ('RADIO_2.4GHz', '2.4 GHz', 6),
-        ('RADIO_5GHz', '5 GHz', 36),
-      ]);
-    }
-
-    showModalBottomSheet<void>(
+  /// Run the router's real auto channel optimization (firmware RF scan picks
+  /// the genuinely clearest channels — replaces the old hardcoded 6/36
+  /// suggestion). Shows a ~1-minute progress dialog, then the result with a
+  /// subtle before→after for the curious.
+  Future<void> _optimizeChannels(BuildContext context) async {
+    // Non-dismissible progress dialog while the router scans.
+    showDialog<void>(
       context: context,
-      shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Switch to a less congested channel',
-                style: Theme.of(ctx)
-                    .textTheme
-                    .titleSmall
-                    ?.copyWith(fontWeight: FontWeight.w600)),
-            const SizedBox(height: 4),
-            Text(
-              'Pick the radio to change. All devices on that band will briefly disconnect.\n'
-              'Not sure? Check your device\'s band in the Devices tab, or try both.',
-              style: Theme.of(ctx).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(ctx).colorScheme.onSurfaceVariant),
-            ),
-            const SizedBox(height: 12),
-            for (final (radioId, bandLabel, ch) in options)
-              ListTile(
-                leading: const Icon(Icons.wifi),
-                title: Text('$bandLabel radio — channel $ch'),
-                contentPadding: EdgeInsets.zero,
-                onTap: () async {
-                  Navigator.pop(ctx);
-                  if (!context.mounted) return;
-                  final confirmed = await showDialog<bool>(
-                    context: context,
-                    builder: (dlg) => AlertDialog(
-                      title: const Text('Change WiFi channel?'),
-                      content: Text(
-                          'All devices on the $bandLabel network will briefly disconnect '
-                          'while the router switches channels. '
-                          'They will reconnect automatically within about 30 seconds.'),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.of(dlg).pop(false),
-                          child: const Text('Cancel'),
-                        ),
-                        FilledButton(
-                          onPressed: () => Navigator.of(dlg).pop(true),
-                          child: const Text('Change Channel'),
-                        ),
-                      ],
-                    ),
-                  );
-                  if (confirmed != true || !mounted) return;
-                  final ok = await ref
-                      .read(instantVerifyPivotProvider.notifier)
-                      .changeRadioChannel(radioId, ch);
-                  if (!mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                    content: Text(ok
-                        ? '$bandLabel channel changed to $ch. Devices reconnecting…'
-                        : 'Could not change channel — try restarting your router.'),
-                    behavior: SnackBarBehavior.floating,
-                  ));
-                },
-              ),
-          ],
+      barrierDismissible: false,
+      builder: (dlg) => const AlertDialog(
+        content: Row(children: [
+          SizedBox(
+              width: 22,
+              height: 22,
+              child: CircularProgressIndicator(strokeWidth: 2.5)),
+          SizedBox(width: 16),
+          Expanded(
+            child: Text(
+                'Scanning for the clearest WiFi channels…\nThis takes about a minute.'),
+          ),
+        ]),
+      ),
+    );
+
+    final result =
+        await ref.read(instantVerifyPivotProvider.notifier).optimizeChannels();
+    if (!mounted) return;
+    Navigator.of(context, rootNavigator: true).pop(); // close progress
+    if (!context.mounted) return;
+
+    final (title, body) = switch (result.status) {
+      ChannelOptimizeStatus.optimized => (
+          'Your WiFi channels are tuned',
+          'We moved your WiFi to clearer channels to reduce interference.'
+              '${result.changes.isNotEmpty ? '\n\n${result.changes.map((c) => '• ${c.band}: channel ${c.from} → ${c.to}').join('\n')}' : ''}'
         ),
+      ChannelOptimizeStatus.alreadyOptimal => (
+          'Already on the best channels',
+          'Your WiFi is already using the clearest channels available — no change needed.'
+        ),
+      ChannelOptimizeStatus.error => (
+          'Couldn\'t optimize right now',
+          'We couldn\'t finish the channel scan. Please try again in a moment.'
+        ),
+    };
+
+    await showDialog<void>(
+      context: context,
+      builder: (dlg) => AlertDialog(
+        title: Text(title),
+        content: Text(body),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.of(dlg).pop(),
+            child: const Text('Done'),
+          ),
+        ],
       ),
     );
   }
