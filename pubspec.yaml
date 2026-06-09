@@ -57,14 +57,9 @@ dependencies:
   flutter_secure_storage: ^10.3.1
 
   ui_kit_library:
-    git:
-      url: https://github.com/linksys/privacyGUI-UI-kit.git
-      ref: v2.23.1
+    path: /Users/austin.chang/flutter-workspaces/ui_kit
   generative_ui:
-    git:
-      url: https://github.com/linksys/privacyGUI-UI-kit.git
-      ref: v2.23.1
-      path: generative_ui
+    path: /Users/austin.chang/flutter-workspaces/ui_kit/generative_ui
   flutter_blue_plus: ^1.4.0
   crypto: ^3.0.2
   encrypt: ^5.0.3

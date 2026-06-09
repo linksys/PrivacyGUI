@@ -17,6 +17,7 @@ class DashboardDialogProvider extends MascotDialogProvider {
     required this.onRunFlowDiagnostics,
     required this.onPrintReport,
     required this.onOpenThemeStudio,
+    required this.onOpenAiAssistant,
     required this.getLocale,
     required this.getFaqCategoryTitle,
     required this.getFaqItemTitle,
@@ -30,6 +31,7 @@ class DashboardDialogProvider extends MascotDialogProvider {
       onRunFlowDiagnostics;
   final Future<void> Function() onPrintReport;
   final VoidCallback onOpenThemeStudio;
+  final VoidCallback onOpenAiAssistant;
   final Locale? Function() getLocale;
   final bool isThemeStudioEnabled;
   final String Function(FaqCategory category) getFaqCategoryTitle;
@@ -52,6 +54,11 @@ class DashboardDialogProvider extends MascotDialogProvider {
       id: 'main',
       text: '$greeting\nHow can I help you today?',
       options: [
+        const MascotDialogOption(
+          id: 'ai_assistant',
+          label: 'AI Assistant',
+          icon: Icons.auto_awesome,
+        ),
         const MascotDialogOption(
           id: 'faq',
           label: 'FAQ',
@@ -143,6 +150,8 @@ class DashboardDialogProvider extends MascotDialogProvider {
     // Main menu
     if (nodeId == 'main') {
       switch (optionId) {
+        case 'ai_assistant':
+          return _handleAiAssistant();
         case 'faq':
           return _faqCategoriesMenu();
         case 'diagnostics':
@@ -390,6 +399,15 @@ class DashboardDialogProvider extends MascotDialogProvider {
   MascotDialogNode? _handleThemeStudio() {
     onOpenThemeStudio();
     return null; // Close dialog after opening theme studio
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // AI Assistant
+  // ══════════════════════════════════════════════════════════════════════════
+
+  MascotDialogNode? _handleAiAssistant() {
+    onOpenAiAssistant();
+    return null; // Close dialog, navigation handled by callback
   }
 }
 

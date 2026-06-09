@@ -31,6 +31,7 @@ void main() {
       ),
       onPrintReport: () async {},
       onOpenThemeStudio: () {},
+      onOpenAiAssistant: () {},
       getLocale: () => const Locale('en'),
       getFaqCategoryTitle: (category) => 'Category',
       getFaqItemTitle: (item) => 'Item',
@@ -40,14 +41,15 @@ void main() {
   });
 
   group('DashboardDialogProvider - getInitialDialog', () {
-    test('returns main menu with FAQ, diagnostics, and print options',
+    test(
+        'returns main menu with AI Assistant, FAQ, diagnostics, and print options',
         () async {
       final dialog = await provider.getInitialDialog();
 
       expect(dialog.id, 'main');
-      expect(dialog.options.length, 3);
+      expect(dialog.options.length, 4);
       expect(dialog.options.map((o) => o.id),
-          containsAll(['faq', 'diagnostics', 'print']));
+          containsAll(['ai_assistant', 'faq', 'diagnostics', 'print']));
     });
 
     test('includes theme studio option when enabled', () async {
@@ -63,6 +65,7 @@ void main() {
         ),
         onPrintReport: () async {},
         onOpenThemeStudio: () {},
+        onOpenAiAssistant: () {},
         getLocale: () => const Locale('en'),
         getFaqCategoryTitle: (category) => 'Category',
         getFaqItemTitle: (item) => 'Item',
@@ -72,7 +75,7 @@ void main() {
 
       final dialog = await providerWithThemeStudio.getInitialDialog();
 
-      expect(dialog.options.length, 4);
+      expect(dialog.options.length, 5);
       expect(dialog.options.map((o) => o.id), contains('theme_studio'));
     });
   });
@@ -91,6 +94,7 @@ void main() {
         ),
         onPrintReport: () async {},
         onOpenThemeStudio: () {},
+        onOpenAiAssistant: () {},
         getLocale: () => const Locale('en'),
         getFaqCategoryTitle: (category) => 'Category',
         getFaqItemTitle: (item) => 'Item',
@@ -123,6 +127,7 @@ void main() {
         ),
         onPrintReport: () async {},
         onOpenThemeStudio: () {},
+        onOpenAiAssistant: () {},
         getLocale: () => const Locale('en'),
         getFaqCategoryTitle: (category) => 'Category',
         getFaqItemTitle: (item) => 'Item',
@@ -155,6 +160,7 @@ void main() {
         ),
         onPrintReport: () async {},
         onOpenThemeStudio: () {},
+        onOpenAiAssistant: () {},
         getLocale: () => const Locale('en'),
         getFaqCategoryTitle: (category) => 'Category',
         getFaqItemTitle: (item) => 'Item',
@@ -187,6 +193,7 @@ void main() {
         ),
         onPrintReport: () async {},
         onOpenThemeStudio: () {},
+        onOpenAiAssistant: () {},
         getLocale: () => const Locale('en'),
         getFaqCategoryTitle: (category) => 'Category',
         getFaqItemTitle: (item) => 'Item',
@@ -273,6 +280,7 @@ void main() {
         ),
         onPrintReport: () async {},
         onOpenThemeStudio: () {},
+        onOpenAiAssistant: () {},
         getLocale: () => const Locale('en'),
         getFaqCategoryTitle: (category) => 'Category',
         getFaqItemTitle: (item) => 'Item',
