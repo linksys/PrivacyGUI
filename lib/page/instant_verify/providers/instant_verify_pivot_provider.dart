@@ -587,6 +587,7 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
       dnsWorking: s.dnsCheck?.resolved,
       downloadMbps: s.speedTest?.downloadMbps,
       latencyMs: s.speedTest?.latencyMs,
+      speedTestFailed: s.speedTestFailed,
       firmwareUpdateAvailable: s.firmwareUpdateAvailable,
       firmwareVersion: s.availableFirmwareVersion,
       uptimeSeconds: s.uptimeSeconds > 0 ? s.uptimeSeconds : null,
