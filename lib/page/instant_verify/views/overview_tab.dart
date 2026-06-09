@@ -239,6 +239,9 @@ class _OverviewTabState extends ConsumerState<OverviewTab> {
     final notifier = ref.read(instantVerifyPivotProvider.notifier);
     showModalBottomSheet<void>(
       context: context,
+      // Scroll-controlled so the sheet can grow past the default ~50% height
+      // and scroll — otherwise the lower scenarios get clipped on short windows.
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -282,8 +285,16 @@ class _OverviewTabState extends ConsumerState<OverviewTab> {
           ),
         ];
         return Padding(
-          padding: const EdgeInsets.fromLTRB(0, 16, 0, 32),
-          child: Column(
+          padding: EdgeInsets.only(
+            top: 16,
+            bottom: 32 + MediaQuery.of(ctx).viewInsets.bottom,
+          ),
+          child: ConstrainedBox(
+            // Cap at 80% of screen; the list scrolls within this.
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(ctx).size.height * 0.8,
+            ),
+            child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -317,7 +328,10 @@ class _OverviewTabState extends ConsumerState<OverviewTab> {
                 ),
               ),
               const SizedBox(height: 12),
-              ...scenarios.map((s) => ListTile(
+              Flexible(
+                child: ListView(
+                  shrinkWrap: true,
+                  children: scenarios.map((s) => ListTile(
                 leading: CircleAvatar(
                   radius: 18,
                   backgroundColor: s.color.withValues(alpha: 0.12),
@@ -339,8 +353,11 @@ class _OverviewTabState extends ConsumerState<OverviewTab> {
                   });
                   notifier.loadMockScenario(s.index);
                 },
-              )),
+              )).toList(),
+                ),
+              ),
             ],
+          ),
           ),
         );
       },
