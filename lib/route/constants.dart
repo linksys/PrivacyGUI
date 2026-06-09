@@ -23,6 +23,7 @@ class RoutePath {
 
   /// menu
   static const menuInstantVerify = 'menuInstantVerify';
+  static const menuInstantTest = 'menuInstantTest';
   static const menuInstantDevices = 'menuInstantDevices';
   static const menuIncredibleWiFi = 'menuIncredibleWiFi';
   static const menuInstantTopology = 'menuInstantTopology';
@@ -165,6 +166,7 @@ class RouteNamed {
   static const dashboardSupport = 'dashboardSupport';
 
   static const menuInstantVerify = 'menuInstantVerify';
+  static const menuInstantTest = 'menuInstantTest';
   static const menuInstantDevices = 'menuInstantDevices';
   static const menuIncredibleWiFi = 'menuIncredibleWiFi';
   static const menuInstantTopology = 'menuInstantTopology';

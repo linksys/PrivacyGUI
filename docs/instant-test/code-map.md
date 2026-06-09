@@ -3,9 +3,13 @@
 > Where everything lives. JNAP line (`lib/page/instant_verify/`) unless noted.
 
 ## Route Entry
-- `lib/route/route_menu.dart` → `RouteNamed.menuInstantVerify` / path `/menuInstantVerify`
-  → serves `InstantVerifyPivotView`.
-- (The old `InstantVerifyView` single-view was deleted 2026-06-08 — confirmed dead.)
+- **Instant-Test** (our customer tool): `RouteNamed.menuInstantTest` / path `/menuInstantTest`
+  → serves `InstantVerifyPivotView` (the 4-tab pivot). New dashboardMenu card "Instant-Test".
+- **Instant-Verify** (technician tool, separate): `RouteNamed.menuInstantVerify` / `/menuInstantVerify`
+  → serves `InstantVerifyView` (single-view, ping/traceroute). Its own "Instant-Verify" card.
+- History: the menuInstantVerify route was briefly co-opted to point at our pivot view, and
+  `InstantVerifyView` was deleted 2026-06-08 as "dead". Restored 2026-06-09 (identical to
+  `dev-1.2.9` original) and given Instant-Test its own route/card so the two are cleanly separate.
 
 ## Views (`lib/page/instant_verify/views/`)
 | File | Role |

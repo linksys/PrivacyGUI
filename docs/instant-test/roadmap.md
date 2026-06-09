@@ -20,7 +20,7 @@ Last updated: 2026-06-08
 ## Queued (improvement items)
 | ID | Item | Notes |
 |----|------|-------|
-| I-6 | **Instant-Test own card on dashboardMenu** | Move out of the Instant-Verify box. Touches shared `dashboard_menu_view.dart` + route registration — OUTSIDE the feature dir, affects the app's front door. Needs care. |
+| ~~I-6~~ | ~~Instant-Test own card on dashboardMenu~~ | ✅ Done 2026-06-09. Restored the original Instant-Verify technician tool (`InstantVerifyView`, recovered from git, identical to dev-1.2.9) to its own card/route; gave Instant-Test its own `menuInstantTest` route + dashboardMenu card (networkCheck icon) → `InstantVerifyPivotView`. The two tools are now cleanly separate. New l10n: instantTest/instantTestDesc. |
 | I-7 | **Channel recommendation: scan vs hardcoded (B-18)** | Today always recommends ch 6 / 36 (hardcoded, no scan). Decide: (a) run a real JNAP site-survey? (b) expose channel numbers to customers at all? (c) surface on landing page? Needs product decision + JNAP capability investigation. |
 | PORT | **Port all completed JNAP changes to USP branch** | Best as one batch after JNAP set approved on-device. USP file layout differs (`instant_test/`). Per [[processes/branch-strategy]]. |
 

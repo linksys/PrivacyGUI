@@ -499,6 +499,8 @@
   "instantTopologyDesc": "Node name and light settings",
   "instantVerify": "Instant-Verify",
   "instantVerifyDesc": "Designed for certified Network technician",
+  "instantTest": "Instant-Test",
+  "instantTestDesc": "Check your WiFi and fix common problems",
   "internalPort": "Internal Port",
   "internet": "Internet",
   "internetConnectionType": "Internet connection type",
