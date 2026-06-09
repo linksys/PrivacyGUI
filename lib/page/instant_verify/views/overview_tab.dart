@@ -119,7 +119,11 @@ class _OverviewTabState extends ConsumerState<OverviewTab> {
                         _findingsExpanded = false;
                         _checksExpanded = false;
                       });
-                      ref.read(instantVerifyPivotProvider.notifier).fetch();
+                      // Explicit user re-run → force the speed test (bypass the
+                      // 3-min throttle, which is only for passive reloads).
+                      ref
+                          .read(instantVerifyPivotProvider.notifier)
+                          .fetch(forceSpeedTest: true);
                     },
             ),
           ),

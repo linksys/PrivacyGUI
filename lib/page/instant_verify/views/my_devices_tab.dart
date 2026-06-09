@@ -44,7 +44,7 @@ class MyDevicesTab extends ConsumerWidget {
 
     return RefreshIndicator(
       onRefresh: () =>
-          ref.read(instantVerifyPivotProvider.notifier).fetch(),
+          ref.read(instantVerifyPivotProvider.notifier).fetch(forceSpeedTest: true),
       child: SingleChildScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(16),
@@ -81,7 +81,7 @@ class MyDevicesTab extends ConsumerWidget {
                     ? null
                     : () => ref
                         .read(instantVerifyPivotProvider.notifier)
-                        .fetch(),
+                        .fetch(forceSpeedTest: true),
               ),
             ],
           ),
