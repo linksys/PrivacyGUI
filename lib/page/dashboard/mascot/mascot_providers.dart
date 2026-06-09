@@ -304,6 +304,7 @@ class MascotCoordinatorNotifier extends AutoDisposeNotifier<void> {
       text: message,
       autoHide: true,
       autoHideDuration: _autoHideDuration,
+      showDismissButton: false,
     ));
   }
 }
