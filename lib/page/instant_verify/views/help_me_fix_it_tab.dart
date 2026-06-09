@@ -1492,7 +1492,10 @@ class _SpeedTierTable extends StatelessWidget {
               child: Row(
                 children: [
                   if (tiers[i].$3)
-                    const Icon(Icons.arrow_right, size: 18)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 5),
+                      child: Icon(Icons.circle, size: 8),
+                    )
                   else
                     const SizedBox(width: 18),
                   const SizedBox(width: 4),
@@ -2063,9 +2066,9 @@ class _Flow3State extends ConsumerState<_Flow3> {
                 color: f.color.withOpacity(0.08),
                 borderRadius: BorderRadius.circular(6),
               ),
-              child: Row(children: [
-                Icon(Icons.arrow_right, size: 16, color: f.color),
-                const SizedBox(width: 4),
+              child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Icon(Icons.lightbulb_outline, size: 16, color: f.color),
+                const SizedBox(width: 6),
                 Expanded(
                   child: Text(f.fix,
                       style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: f.color)),

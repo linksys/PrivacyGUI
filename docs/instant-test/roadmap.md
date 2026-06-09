@@ -31,6 +31,8 @@ Last updated: 2026-06-08
 | BUG-2 | "Step 2 of 4" shown but no step 4 reachable (hardcoded denominator on branching flows). | `_syncStepBackNotifier` x3 | ✅ Fixed 2026-06-08 — show "Step N", no fixed total |
 | BUG-3 | Link rate showed "1297100 Mbps" (Kbps stored as Mbps). | provider txRate parse | ✅ Fixed 2026-06-08 — ÷1000 + Gbps promotion |
 | BUG-4 | Failed/incomplete speed test was silently discarded → false green "We didn't detect any issues". | provider speed block + overview all-clear | ✅ Fixed 2026-06-09 — `speedTestFailed` flag blocks all-clear; orange "couldn't finish the speed test" card + Run Again. Pattern to extend to other browser checks. |
+| BUG-5 | Single-line fix-suggestion + speed-tier pointer still used triangle icons (arrow_right) → looked like hidden/expandable text. | help_me_fix_it_tab.dart | ✅ Fixed 2026-06-09 — fix suggestions use a lightbulb; tier pointer uses a dot. (play_arrow on action buttons kept — it's a real action.) |
+| BUG-6 | Finding/check mismatch: "High lag detected (103ms)" warning shown, but the Speed check row in Test details rendered green/pass — user couldn't see where the issue was. | overview_tab.dart Speed check row | ✅ Fixed 2026-06-09 — added a `warning` (amber) check state; Speed check row flags >100ms latency as warning with "— high lag" so it matches the finding. |
 
 ## Follow-ups
 - **Surface WHY a check failed** (not just that it did): timeout vs CDN-block vs DNS. Currently only `dev.log`'d (invisible on deployed router). Consider capturing a failure reason string in state for the retry card / support handoff.

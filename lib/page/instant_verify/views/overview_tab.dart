@@ -1380,12 +1380,20 @@ class _ChecklistSummaryState extends State<_ChecklistSummary> {
       ),
       _SummaryRow(
         label: 'Speed check',
-        state: state.speedTest == null ? _CheckDisplayState.skipped : _CheckDisplayState.pass,
+        // Flag high latency (>100ms) as a warning so the row visually matches
+        // the "High lag detected" finding \u2014 otherwise a green pass row makes
+        // the warning seem to come from nowhere.
+        state: state.speedTest == null
+            ? _CheckDisplayState.skipped
+            : (state.speedTest!.latencyMs > 100
+                ? _CheckDisplayState.warning
+                : _CheckDisplayState.pass),
         detail: state.speedTest == null
             ? 'Not completed'
             : '\u2193 ${state.speedTest!.downloadMbps.toStringAsFixed(0)} Mbps  '
                 '\u2191 ${state.speedTest!.uploadMbps.toStringAsFixed(0)} Mbps  '
-                '${state.speedTest!.latencyMs}ms delay',
+                '${state.speedTest!.latencyMs}ms delay'
+                '${state.speedTest!.latencyMs > 100 ? ' \u2014 high lag' : ''}',
         expandedDetail: 'The speed test did not complete. Try running again.',
         expandedWidget: state.speedTest != null
             ? _SpeedGauge(
@@ -1442,7 +1450,7 @@ class _ChecklistSummaryState extends State<_ChecklistSummary> {
   }
 }
 
-enum _CheckDisplayState { pass, fail, skipped, available }
+enum _CheckDisplayState { pass, fail, warning, skipped, available }
 
 class _SummaryRow {
   final String label;
@@ -1483,6 +1491,9 @@ class _SummaryRowWidget extends StatelessWidget {
       case _CheckDisplayState.fail:
         iconData = Icons.cancel;
         iconColor = Colors.red;
+      case _CheckDisplayState.warning:
+        iconData = Icons.warning_amber;
+        iconColor = Colors.orange;
       case _CheckDisplayState.skipped:
         iconData = Icons.remove_circle_outline;
         iconColor = scheme.outlineVariant;
