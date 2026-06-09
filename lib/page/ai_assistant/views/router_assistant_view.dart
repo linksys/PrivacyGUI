@@ -140,12 +140,13 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        title: const Text('Confirmation Required'),
+        title: AppText.titleMedium('Confirmation Required'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Are you sure you want to execute this operation?'),
+            AppText.bodyMedium(
+                'Are you sure you want to execute this operation?'),
             const SizedBox(height: 12),
             AppSurface(
               variant: SurfaceVariant.elevated,
@@ -164,19 +165,19 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
           ],
         ),
         actions: [
-          TextButton(
-            onPressed: () {
+          AppButton.text(
+            label: 'Cancel',
+            onTap: () {
               Navigator.pop(context);
               _controller?.cancelPendingAction();
             },
-            child: const Text('Cancel'),
           ),
-          FilledButton(
-            onPressed: () {
+          AppButton.primary(
+            label: 'Confirm',
+            onTap: () {
               Navigator.pop(context);
               _controller?.confirmPendingAction();
             },
-            child: const Text('Confirm'),
           ),
         ],
       ),
@@ -399,17 +400,18 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Change Configuration'),
-        content: const Text(
+        title: AppText.titleMedium('Change Configuration'),
+        content: AppText.bodyMedium(
           'Do you want to change AWS credentials?\nThis will clear the current conversation.',
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+          AppButton.text(
+            label: 'Cancel',
+            onTap: () => Navigator.pop(context),
           ),
-          FilledButton(
-            onPressed: () {
+          AppButton.primary(
+            label: 'Change',
+            onTap: () {
               Navigator.pop(context);
               setState(() {
                 _controller?.removeListener(_onControllerChanged);
@@ -418,7 +420,6 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
                 _configError = null;
               });
             },
-            child: const Text('Change'),
           ),
         ],
       ),
@@ -637,28 +638,27 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
   }
 
   Widget _buildErrorBanner() {
+    final theme = Theme.of(context);
     return Container(
       padding: const EdgeInsets.all(12),
-      color: Theme.of(context).colorScheme.errorContainer,
+      color: theme.colorScheme.errorContainer,
       child: Row(
         children: [
           Icon(
             Icons.error_outline,
-            color: Theme.of(context).colorScheme.onErrorContainer,
+            color: theme.colorScheme.onErrorContainer,
           ),
           const SizedBox(width: 8),
           Expanded(
-            child: Text(
+            child: AppText.bodyMedium(
               _controller?.errorMessage ?? 'An error occurred',
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.onErrorContainer,
-              ),
+              color: theme.colorScheme.onErrorContainer,
             ),
           ),
           if (_controller?.isRetryable == true)
-            TextButton(
-              onPressed: _controller?.retry,
-              child: const Text('Retry'),
+            AppButton.text(
+              label: 'Retry',
+              onTap: _controller?.retry,
             ),
         ],
       ),
