@@ -187,11 +187,10 @@ class UspInstantPrivacyService {
               d.hostName.isNotEmpty ? d.hostName : normalizeMac(d.macAddress),
     };
 
+    // Allowed list shows all whitelisted MACs with hostname if known, else MAC
     final allowed = allowedDevices(macAps).map((d) {
-      final name = hostnameByMac[d.mac] ?? 'Unknown Device';
-      return name == d.displayName
-          ? d
-          : InstantPrivacyDeviceUIModel(mac: d.mac, displayName: name);
+      final name = hostnameByMac[d.mac] ?? d.mac;
+      return InstantPrivacyDeviceUIModel(mac: d.mac, displayName: name);
     }).toList();
 
     return InstantPrivacyFetchResult(

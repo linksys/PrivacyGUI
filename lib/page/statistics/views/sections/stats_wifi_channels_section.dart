@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/page/_shared/components/wifi_ui.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_client_ui_model.dart';
-import 'package:privacy_gui/page/_shared/models/wifi_performance_helpers.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_radio_ui_model.dart';
 import 'package:privacy_gui/page/statistics/views/components/stats_section_card.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_data_provider.dart';
@@ -76,8 +76,7 @@ class StatsWifiChannelsSection extends ConsumerWidget {
       final radioIdx = bandToRadioIdx[c.band];
       if (radioIdx == null) continue;
       clientsPerRadio[radioIdx] = (clientsPerRadio[radioIdx] ?? 0) + 1;
-      final snr = WifiPerformanceHelpers.computeSNR(
-          c.client.signalStrength, c.client.noise);
+      final snr = computeSNR(c.client.signalStrength, c.client.noise);
       snrSumPerRadio[radioIdx] = (snrSumPerRadio[radioIdx] ?? 0) + snr;
       snrCountPerRadio[radioIdx] = (snrCountPerRadio[radioIdx] ?? 0) + 1;
     }
@@ -100,7 +99,7 @@ class StatsWifiChannelsSection extends ConsumerWidget {
           final radio = radios[i];
           final clientCount = clientsPerRadio[i] ?? 0;
           final snr = avgSnrPerRadio[i] ?? 0;
-          final snrNorm = WifiPerformanceHelpers.normalizeSNR(snr.toInt());
+          final snrNorm = normalizeSNR(snr.toInt());
 
           return Padding(
             padding: const EdgeInsets.only(bottom: AppSpacing.md),

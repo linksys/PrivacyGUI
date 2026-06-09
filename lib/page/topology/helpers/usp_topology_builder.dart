@@ -1,4 +1,4 @@
-import 'package:privacy_gui/core/utils/device_classifier.dart';
+import 'package:privacy_gui/page/_shared/utils/device_classifier.dart';
 import 'package:privacy_gui/core/utils/device_image_helper.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
@@ -65,6 +65,9 @@ class UspTopologyBuilder {
     final extenderNodeIdsNormalized = <String>{};
     // Map from normalized ID back to original deviceId for building 'extender-X' IDs.
     final normalizedToOriginal = <String, String>{};
+    // Map from normalized Device ID to extender node ID (for parent resolution)
+    final deviceIdToExtenderId = <String, String>{};
+
     for (final slaveNode in slaveNodes) {
       final extenderId = 'extender-${slaveNode.deviceId}';
       // Add Hosts MAC (deviceId)
@@ -72,6 +75,7 @@ class UspTopologyBuilder {
           slaveNode.deviceId.toUpperCase().replaceAll(':', '');
       extenderNodeIdsNormalized.add(normalizedHostsMac);
       normalizedToOriginal[normalizedHostsMac] = slaveNode.deviceId;
+      deviceIdToExtenderId[normalizedHostsMac] = extenderId;
       // Also add DataElements ID if different (may be a different interface MAC)
       if (slaveNode.dataElementsId != null &&
           slaveNode.dataElementsId!.isNotEmpty) {
@@ -80,11 +84,30 @@ class UspTopologyBuilder {
         if (normalizedDeMac != normalizedHostsMac) {
           extenderNodeIdsNormalized.add(normalizedDeMac);
           normalizedToOriginal[normalizedDeMac] = slaveNode.deviceId;
+          deviceIdToExtenderId[normalizedDeMac] = extenderId;
         }
       }
       logger.d('[USP][TopologyBuilder]: Slave ${slaveNode.deviceId} '
           '→ hostsMac: $normalizedHostsMac, '
-          'dataElementsId: ${slaveNode.dataElementsId}');
+          'dataElementsId: ${slaveNode.dataElementsId}, '
+          'backhaulParentDeviceId: ${slaveNode.backhaulParentDeviceId}');
+    }
+
+    // Helper to resolve slave parent ID using backhaulParentDeviceId
+    String resolveSlaveParentId(NodeUIModel slaveNode) {
+      final parentDeviceId = slaveNode.backhaulParentDeviceId;
+      if (parentDeviceId == null || parentDeviceId.isEmpty) {
+        return gatewayId;
+      }
+      final normalizedParentId =
+          parentDeviceId.toUpperCase().replaceAll(':', '');
+      return deviceIdToExtenderId[normalizedParentId] ?? gatewayId;
+    }
+
+    // Build extender nodes and links
+    for (final slaveNode in slaveNodes) {
+      final extenderId = 'extender-${slaveNode.deviceId}';
+      final parentId = resolveSlaveParentId(slaveNode);
 
       final extenderIconName = routerIconTestByModel(
         modelNumber: slaveNode.model,
@@ -94,7 +117,7 @@ class UspTopologyBuilder {
         name: slaveNode.displayName,
         type: MeshNodeType.extender,
         status: MeshNodeStatus.online,
-        parentId: gatewayId,
+        parentId: parentId,
         image: DeviceImageHelper.getRouterImage(extenderIconName),
         level: _backhaulRssiToLevel(slaveNode.backhaulSignalStrength),
         metadata: {
@@ -104,13 +127,21 @@ class UspTopologyBuilder {
           'serialNumber': slaveNode.serialNumber,
           'softwareVersion': slaveNode.softwareVersion,
           'isMaster': false,
+          'backhaulLinkType': slaveNode.backhaulLinkType,
+          'backhaulParentDeviceId': slaveNode.backhaulParentDeviceId,
+          'backhaulSignalStrength': slaveNode.backhaulSignalStrength,
+          'backhaulUplinkRate': slaveNode.backhaulUplinkRate,
+          'backhaulDownlinkRate': slaveNode.backhaulDownlinkRate,
+          'lastContactTime': slaveNode.lastContactTime,
         },
       ));
 
       links.add(MeshLink(
-        sourceId: gatewayId,
+        sourceId: parentId,
         targetId: extenderId,
-        connectionType: ConnectionType.wifi,
+        connectionType: slaveNode.backhaulLinkType == 'Ethernet'
+            ? ConnectionType.ethernet
+            : ConnectionType.wifi,
         rssi: slaveNode.backhaulSignalStrength,
         linkQuality: _rssiToLinkQuality(slaveNode.backhaulSignalStrength),
         throughput: slaveNode.backhaulUplinkRate != null

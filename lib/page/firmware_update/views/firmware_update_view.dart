@@ -231,7 +231,7 @@ class _FirmwareUpdateViewState extends ConsumerState<FirmwareUpdateView> {
           AppGap.md(),
           AppText.bodyMedium('$percent% complete'),
           AppGap.lg(),
-          LinearProgressIndicator(value: progress),
+          AppLoader(variant: LoaderVariant.linear, value: progress),
           AppGap.xl(),
           AppButton.primaryOutline(
             label: 'Cancel',

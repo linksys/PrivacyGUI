@@ -131,7 +131,7 @@ List<LayoutItem> _essentialLayout() => [
       _item('network_status', x: 6, y: 1, w: 6, h: 3),
       _item('lan_info', x: 0, y: 4, w: 6, h: 3),
       _item('connected_devices', x: 6, y: 4, w: 6, h: 4),
-      _item('wifi_status', x: 0, y: 8, w: 12, h: 6),
+      _item('wifi_status', x: 0, y: 8, w: 12, h: 4),
     ];
 
 /// Standard: 12 cards — common features at a glance.
@@ -156,7 +156,7 @@ List<LayoutItem> _standardLayout() => [
       _item('traffic_analysis', x: 6, y: 12, w: 6, h: 5),
       _item('connected_devices', x: 0, y: 17, w: 6, h: 4),
       _item('wifi_networks', x: 6, y: 17, w: 6, h: 4),
-      _item('time_settings', x: 0, y: 23, w: 6, h: 2),
+      _item('time_settings', x: 0, y: 23, w: 6, h: 3),
       _item('firewall_overview', x: 6, y: 23, w: 6, h: 4),
     ];
 
@@ -185,10 +185,10 @@ List<LayoutItem> _professionalLayout() => [
       _item('connected_devices', x: 6, y: 14, w: 6, h: 4),
       _item('topology', x: 0, y: 18, w: 6, h: 5),
       _item('device_analytics', x: 6, y: 18, w: 6, h: 5),
-      _item('wifi_status', x: 0, y: 23, w: 6, h: 6),
+      _item('wifi_status', x: 0, y: 23, w: 6, h: 4),
       _item('wifi_performance', x: 6, y: 23, w: 6, h: 5),
       _item('firewall_overview', x: 0, y: 29, w: 6, h: 4),
-      _item('time_settings', x: 6, y: 29, w: 6, h: 2),
+      _item('time_settings', x: 6, y: 29, w: 6, h: 3),
       _item('dhcp_reservations', x: 0, y: 33, w: 6, h: 4),
       _item('port_forwarding', x: 6, y: 33, w: 6, h: 4),
     ];

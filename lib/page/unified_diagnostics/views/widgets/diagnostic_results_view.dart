@@ -8,8 +8,9 @@ import '../../models/diagnostic_result.dart';
 import '../../models/diagnostic_state.dart';
 import '../../providers/unified_diagnostics_notifier.dart';
 import '../../services/diagnostic_report_service.dart';
+import 'diagnostic_result_card.dart';
+import 'diagnostic_results_grid.dart';
 import 'recommendation_card.dart';
-import 'step_result_tile.dart';
 import 'traceroute_detail_card.dart';
 
 class DiagnosticResultsView extends ConsumerWidget {
@@ -98,10 +99,11 @@ class _ResultsLayout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasIssues = errors.isNotEmpty || warnings.isNotEmpty;
     final hasRecs = state.recommendations.isNotEmpty;
     final tracerouteResults =
         state.results.whereType<TracerouteCheckUIModel>().toList();
+    final isSingleFlow = state.flow != null;
+    final allResults = [...errors, ...warnings, ...successful];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -116,58 +118,23 @@ class _ResultsLayout extends StatelessWidget {
               .length,
         ),
         AppGap.xl(),
-        if (sideBySide) ...[
-          IntrinsicHeight(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  flex: 7,
-                  child: _IssuesSection(
-                    errors: errors,
-                    warnings: warnings,
-                    colorScheme: colorScheme,
-                  ),
-                ),
-                AppGap.gutter(),
-                Expanded(
-                  flex: 5,
-                  child: _RecommendationsSection(
-                    recommendations: state.recommendations,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          AppGap.xl(),
-        ] else ...[
-          if (hasIssues) ...[
-            _IssuesSection(
-              errors: errors,
-              warnings: warnings,
-              colorScheme: colorScheme,
-            ),
-            AppGap.lg(),
-          ],
-          if (hasRecs) ...[
-            _RecommendationsSection(
-              recommendations: state.recommendations,
-            ),
-            AppGap.lg(),
-          ],
-        ],
-        if (successful.isNotEmpty) ...[
-          AppExpansionPanel.single(
-            headerTitle: 'Successful Checks (${successful.length})',
-            content: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children:
-                  successful.map((r) => StepResultTile(result: r)).toList(),
-            ),
-          ),
+        // Single flow: full-width cards stacked
+        // Full diagnostic: responsive grid
+        if (isSingleFlow)
+          ...allResults.map((r) => Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                child: DiagnosticResultCard(result: r),
+              ))
+        else
+          DiagnosticResultsGrid(results: allResults),
+        if (hasRecs) ...[
           AppGap.lg(),
+          _RecommendationsSection(recommendations: state.recommendations),
         ],
-        ...tracerouteResults.map((r) => TracerouteDetailCard(result: r)),
+        if (tracerouteResults.isNotEmpty) ...[
+          AppGap.lg(),
+          ...tracerouteResults.map((r) => TracerouteDetailCard(result: r)),
+        ],
         AppGap.xxxl(),
         _ActionBar(
           onRestart: onRestart,
@@ -182,46 +149,13 @@ class _ResultsLayout extends StatelessWidget {
 
 class _SectionHeader extends StatelessWidget {
   final String label;
-  final Color? color;
-  const _SectionHeader(this.label, {this.color});
+  const _SectionHeader(this.label);
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-      child: AppText.labelLarge(label, color: color),
-    );
-  }
-}
-
-class _IssuesSection extends StatelessWidget {
-  final List<DiagnosticStepUIModel> errors;
-  final List<DiagnosticStepUIModel> warnings;
-  final ColorScheme colorScheme;
-
-  const _IssuesSection({
-    required this.errors,
-    required this.warnings,
-    required this.colorScheme,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if (errors.isNotEmpty) ...[
-          _SectionHeader('Critical Issues', color: colorScheme.error),
-          ...errors
-              .map((r) => StepResultTile(result: r, initiallyExpanded: true)),
-          if (warnings.isNotEmpty) AppGap.lg(),
-        ],
-        if (warnings.isNotEmpty) ...[
-          _SectionHeader('Potential Issues', color: colorScheme.tertiary),
-          ...warnings
-              .map((r) => StepResultTile(result: r, initiallyExpanded: true)),
-        ],
-      ],
+      child: AppText.labelLarge(label),
     );
   }
 }

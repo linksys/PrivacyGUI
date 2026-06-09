@@ -30,72 +30,98 @@ class WanSettings {
     required this.currentMacAddress,
   });
 
-  static const _paths = [
-    'Device.IP.Interface.2.IPv4Address.1.AddressingType',
-    'Device.IP.Interface.2.MaxMTUSize',
-    'Device.IP.Interface.2.IPv4Address.1.IPAddress',
-    'Device.IP.Interface.2.IPv4Address.1.SubnetMask',
-    'Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DefaultGateway',
-    'Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DNSServers',
-    'Device.PPP.Interface.1.Username',
-    'Device.PPP.Interface.1.Password',
-    'Device.Bridging.Bridge.1.Enable',
-    'Device.Ethernet.Interface.1.MACAddress',
-  ];
+  /// Resolve the instance index by searching for Alias='cpe-wan'
+  static Future<String> _resolveInstance(UspClient client) async {
+    final response = await client.get(['Device.IP.Interface.*.Alias']);
+    for (final entry in response.entries) {
+      if (entry.value == 'cpe-wan') {
+        final match =
+            RegExp(r'Device\.IP\.Interface\.(\d+)\.').firstMatch(entry.key);
+        if (match != null) {
+          return 'Device.IP.Interface.${match.group(1)}.';
+        }
+      }
+    }
+    // Fallback to hardcoded instance 2
+    return 'Device.IP.Interface.2.';
+  }
+
+  /// Build parameter paths using the resolved instance path
+  static List<String> _buildPaths(String instancePath) => [
+        '${instancePath}IPv4Address.1.AddressingType',
+        '${instancePath}MaxMTUSize',
+        '${instancePath}IPv4Address.1.IPAddress',
+        '${instancePath}IPv4Address.1.SubnetMask',
+        '${instancePath}IPv4Address.1.X_LINKSYS_DefaultGateway',
+        '${instancePath}IPv4Address.1.X_LINKSYS_DNSServers',
+        'Device.PPP.Interface.1.Username',
+        'Device.PPP.Interface.1.Password',
+        'Device.Bridging.Bridge.1.Enable',
+        'Device.Ethernet.Interface.1.MACAddress',
+      ];
 
   /// Fetch all parameters via USP Get message
   static Future<WanSettings> fetch(UspClient client) async {
-    final response = await client.get(_paths);
-    return WanSettings._fromResponse(response);
+    final instancePath = await _resolveInstance(client);
+    final response = await client.get(_buildPaths(instancePath));
+    return WanSettings._fromResponse(response, instancePath);
   }
 
-  factory WanSettings._fromResponse(Map<String, dynamic> response) {
+  factory WanSettings._fromResponse(
+      Map<String, dynamic> response, String instancePath) {
     final missing = <String>[];
+    if (!response.containsKey('${instancePath}IPv4Address.1.AddressingType')) {
+      missing.add('${instancePath}IPv4Address.1.AddressingType');
+    }
+    if (!response.containsKey('${instancePath}MaxMTUSize')) {
+      missing.add('${instancePath}MaxMTUSize');
+    }
+    if (!response.containsKey('${instancePath}IPv4Address.1.IPAddress')) {
+      missing.add('${instancePath}IPv4Address.1.IPAddress');
+    }
+    if (!response.containsKey('${instancePath}IPv4Address.1.SubnetMask')) {
+      missing.add('${instancePath}IPv4Address.1.SubnetMask');
+    }
     if (!response
-        .containsKey('Device.IP.Interface.2.IPv4Address.1.AddressingType'))
-      missing.add('Device.IP.Interface.2.IPv4Address.1.AddressingType');
-    if (!response.containsKey('Device.IP.Interface.2.MaxMTUSize'))
-      missing.add('Device.IP.Interface.2.MaxMTUSize');
-    if (!response.containsKey('Device.IP.Interface.2.IPv4Address.1.IPAddress'))
-      missing.add('Device.IP.Interface.2.IPv4Address.1.IPAddress');
-    if (!response.containsKey('Device.IP.Interface.2.IPv4Address.1.SubnetMask'))
-      missing.add('Device.IP.Interface.2.IPv4Address.1.SubnetMask');
-    if (!response.containsKey(
-        'Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DefaultGateway'))
-      missing
-          .add('Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DefaultGateway');
-    if (!response.containsKey(
-        'Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DNSServers'))
-      missing.add('Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DNSServers');
-    if (!response.containsKey('Device.PPP.Interface.1.Username'))
+        .containsKey('${instancePath}IPv4Address.1.X_LINKSYS_DefaultGateway')) {
+      missing.add('${instancePath}IPv4Address.1.X_LINKSYS_DefaultGateway');
+    }
+    if (!response
+        .containsKey('${instancePath}IPv4Address.1.X_LINKSYS_DNSServers')) {
+      missing.add('${instancePath}IPv4Address.1.X_LINKSYS_DNSServers');
+    }
+    if (!response.containsKey('Device.PPP.Interface.1.Username')) {
       missing.add('Device.PPP.Interface.1.Username');
-    if (!response.containsKey('Device.PPP.Interface.1.Password'))
+    }
+    if (!response.containsKey('Device.PPP.Interface.1.Password')) {
       missing.add('Device.PPP.Interface.1.Password');
-    if (!response.containsKey('Device.Bridging.Bridge.1.Enable'))
+    }
+    if (!response.containsKey('Device.Bridging.Bridge.1.Enable')) {
       missing.add('Device.Bridging.Bridge.1.Enable');
-    if (!response.containsKey('Device.Ethernet.Interface.1.MACAddress'))
+    }
+    if (!response.containsKey('Device.Ethernet.Interface.1.MACAddress')) {
       missing.add('Device.Ethernet.Interface.1.MACAddress');
+    }
     if (missing.isNotEmpty) {
       throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
     }
     return WanSettings(
       addressingType:
-          (response['Device.IP.Interface.2.IPv4Address.1.AddressingType'] ?? '')
+          (response['${instancePath}IPv4Address.1.AddressingType'] ?? '')
               as String,
       mtu: int.tryParse(
-              response['Device.IP.Interface.2.MaxMTUSize']?.toString() ?? '') ??
+              response['${instancePath}MaxMTUSize']?.toString() ?? '') ??
           0,
       staticIpAddress:
-          (response['Device.IP.Interface.2.IPv4Address.1.IPAddress'] ?? '')
+          (response['${instancePath}IPv4Address.1.IPAddress'] ?? '') as String,
+      subnetMask:
+          (response['${instancePath}IPv4Address.1.SubnetMask'] ?? '') as String,
+      defaultGateway:
+          (response['${instancePath}IPv4Address.1.X_LINKSYS_DefaultGateway'] ??
+              '') as String,
+      dnsServers:
+          (response['${instancePath}IPv4Address.1.X_LINKSYS_DNSServers'] ?? '')
               as String,
-      subnetMask: (response['Device.IP.Interface.2.IPv4Address.1.SubnetMask'] ??
-          '') as String,
-      defaultGateway: (response[
-              'Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DefaultGateway'] ??
-          '') as String,
-      dnsServers: (response[
-              'Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DNSServers'] ??
-          '') as String,
       pppUsername:
           (response['Device.PPP.Interface.1.Username'] ?? '') as String,
       pppPassword:
@@ -115,7 +141,10 @@ class WanSettings {
     bool allowPartial = false,
   }) async {
     final params = <String, dynamic>{};
-    if (mtu != null) params['Device.IP.Interface.2.MaxMTUSize'] = mtu;
+    final instancePath = await _resolveInstance(client);
+    if (mtu != null) {
+      params['${instancePath}MaxMTUSize'] = mtu;
+    }
     if (params.isEmpty) {
       return {
         'success': true,

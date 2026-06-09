@@ -18,49 +18,68 @@ class WanTrafficStats {
     required this.packetsReceived,
   });
 
-  static const _paths = [
-    'Device.IP.Interface.2.Stats.BytesSent',
-    'Device.IP.Interface.2.Stats.BytesReceived',
-    'Device.IP.Interface.2.Stats.PacketsSent',
-    'Device.IP.Interface.2.Stats.PacketsReceived',
-  ];
+  /// Resolve the instance index by searching for Alias='cpe-wan'
+  static Future<String> _resolveInstance(UspClient client) async {
+    final response = await client.get(['Device.IP.Interface.*.Alias']);
+    for (final entry in response.entries) {
+      if (entry.value == 'cpe-wan') {
+        final match =
+            RegExp(r'Device\.IP\.Interface\.(\d+)\.').firstMatch(entry.key);
+        if (match != null) {
+          return 'Device.IP.Interface.${match.group(1)}.';
+        }
+      }
+    }
+    // Fallback to hardcoded instance 2
+    return 'Device.IP.Interface.2.';
+  }
+
+  /// Build parameter paths using the resolved instance path
+  static List<String> _buildPaths(String instancePath) => [
+        '${instancePath}Stats.BytesSent',
+        '${instancePath}Stats.BytesReceived',
+        '${instancePath}Stats.PacketsSent',
+        '${instancePath}Stats.PacketsReceived',
+      ];
 
   /// Fetch all parameters via USP Get message
   static Future<WanTrafficStats> fetch(UspClient client) async {
-    final response = await client.get(_paths);
-    return WanTrafficStats._fromResponse(response);
+    final instancePath = await _resolveInstance(client);
+    final response = await client.get(_buildPaths(instancePath));
+    return WanTrafficStats._fromResponse(response, instancePath);
   }
 
-  factory WanTrafficStats._fromResponse(Map<String, dynamic> response) {
+  factory WanTrafficStats._fromResponse(
+      Map<String, dynamic> response, String instancePath) {
     final missing = <String>[];
-    if (!response.containsKey('Device.IP.Interface.2.Stats.BytesSent'))
-      missing.add('Device.IP.Interface.2.Stats.BytesSent');
-    if (!response.containsKey('Device.IP.Interface.2.Stats.BytesReceived'))
-      missing.add('Device.IP.Interface.2.Stats.BytesReceived');
-    if (!response.containsKey('Device.IP.Interface.2.Stats.PacketsSent'))
-      missing.add('Device.IP.Interface.2.Stats.PacketsSent');
-    if (!response.containsKey('Device.IP.Interface.2.Stats.PacketsReceived'))
-      missing.add('Device.IP.Interface.2.Stats.PacketsReceived');
+    if (!response.containsKey('${instancePath}Stats.BytesSent')) {
+      missing.add('${instancePath}Stats.BytesSent');
+    }
+    if (!response.containsKey('${instancePath}Stats.BytesReceived')) {
+      missing.add('${instancePath}Stats.BytesReceived');
+    }
+    if (!response.containsKey('${instancePath}Stats.PacketsSent')) {
+      missing.add('${instancePath}Stats.PacketsSent');
+    }
+    if (!response.containsKey('${instancePath}Stats.PacketsReceived')) {
+      missing.add('${instancePath}Stats.PacketsReceived');
+    }
     if (missing.isNotEmpty) {
       throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
     }
     return WanTrafficStats(
       bytesSent: int.tryParse(
-              response['Device.IP.Interface.2.Stats.BytesSent']?.toString() ??
-                  '') ??
+              response['${instancePath}Stats.BytesSent']?.toString() ?? '') ??
           0,
       bytesReceived: int.tryParse(
-              response['Device.IP.Interface.2.Stats.BytesReceived']
-                      ?.toString() ??
+              response['${instancePath}Stats.BytesReceived']?.toString() ??
                   '') ??
           0,
       packetsSent: int.tryParse(
-              response['Device.IP.Interface.2.Stats.PacketsSent']?.toString() ??
-                  '') ??
+              response['${instancePath}Stats.PacketsSent']?.toString() ?? '') ??
           0,
       packetsReceived: int.tryParse(
-              response['Device.IP.Interface.2.Stats.PacketsReceived']
-                      ?.toString() ??
+              response['${instancePath}Stats.PacketsReceived']?.toString() ??
                   '') ??
           0,
     );

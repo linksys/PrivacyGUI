@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
@@ -66,20 +67,28 @@ class PnpService {
   /// `/api/v1/setup/status` API endpoint. This method only
   /// fetches device metadata (serialNumber, modelName).
   Future<FactoryDefaultCheckResult> checkFactoryDefault() async {
-    final info = await SystemInfo.fetch(_usp);
-    return FactoryDefaultCheckResult(
-      isFactoryDefault: false,
-      serialNumber: info.serialNumber,
-      modelName: info.modelName,
-    );
+    try {
+      final info = await SystemInfo.fetch(_usp);
+      return FactoryDefaultCheckResult(
+        isFactoryDefault: false,
+        serialNumber: info.serialNumber,
+        modelName: info.modelName,
+      );
+    } catch (e) {
+      throw mapUspErrorToServiceError(e);
+    }
   }
 
   // ─── Internet Check ──────────────────────────────────────
 
   /// Returns true if WAN is up with a valid IP address.
   Future<bool> checkInternetConnected() async {
-    final wan = await WanStatus.fetch(_usp);
-    return wan.status == 'Up' && wan.ipAddress.isNotEmpty;
+    try {
+      final wan = await WanStatus.fetch(_usp);
+      return wan.status == 'Up' && wan.ipAddress.isNotEmpty;
+    } catch (e) {
+      throw mapUspErrorToServiceError(e);
+    }
   }
 
   /// Ping 8.8.8.8 to verify actual internet connectivity.
@@ -100,10 +109,15 @@ class PnpService {
   /// - First SSID per radio = main network
   /// - Additional SSIDs sharing a radio = guest network
   Future<PnpWizardFetchResult> fetchWizardData() async {
-    final results = await Future.wait([
-      WiFiSsids.fetch(_usp),
-      WiFiAccessPoints.fetch(_usp),
-    ]);
+    final List<Object> results;
+    try {
+      results = await Future.wait([
+        WiFiSsids.fetch(_usp),
+        WiFiAccessPoints.fetch(_usp),
+      ]);
+    } catch (e) {
+      throw mapUspErrorToServiceError(e);
+    }
 
     final ssids = results[0] as WiFiSsids;
     final aps = results[1] as WiFiAccessPoints;
@@ -186,48 +200,53 @@ class PnpService {
 
   /// Save WiFi SSID + password changes across all enabled bands.
   Future<void> saveWifi(PnpWifiConfig config) async {
-    // ── Main WiFi ──
-    if (config.isSsidChanged) {
-      final ssidUpdates = config.ssidInstancePaths
-          .map((path) => WiFiSsidUpdate(instancePath: path, ssid: config.ssid))
-          .toList();
-      await WiFiSsids.update(_usp, ssidUpdates);
-    }
-
-    if (config.isPasswordChanged) {
-      final apUpdates = config.accessPointInstancePaths
-          .map((path) => WiFiAccessPointUpdate(
-                instancePath: path,
-                keyPassphrase: config.password,
-              ))
-          .toList();
-      await WiFiAccessPoints.update(_usp, apUpdates);
-    }
-
-    // ── Guest WiFi ──
-    if (config.isGuestDirty && config.guestSsidInstancePaths.isNotEmpty) {
-      // Enable/disable + SSID
-      if (config.isGuestEnabledChanged || config.isGuestSsidChanged) {
-        final guestSsidUpdates = config.guestSsidInstancePaths
-            .map((path) => WiFiSsidUpdate(
-                  instancePath: path,
-                  ssid: config.guestSsid,
-                  enable: config.guestEnabled,
-                ))
+    try {
+      // ── Main WiFi ──
+      if (config.isSsidChanged) {
+        final ssidUpdates = config.ssidInstancePaths
+            .map(
+                (path) => WiFiSsidUpdate(instancePath: path, ssid: config.ssid))
             .toList();
-        await WiFiSsids.update(_usp, guestSsidUpdates);
+        await WiFiSsids.update(_usp, ssidUpdates);
       }
 
-      // Password
-      if (config.isGuestPasswordChanged) {
-        final guestApUpdates = config.guestAccessPointInstancePaths
+      if (config.isPasswordChanged) {
+        final apUpdates = config.accessPointInstancePaths
             .map((path) => WiFiAccessPointUpdate(
                   instancePath: path,
-                  keyPassphrase: config.guestPassword,
+                  keyPassphrase: config.password,
                 ))
             .toList();
-        await WiFiAccessPoints.update(_usp, guestApUpdates);
+        await WiFiAccessPoints.update(_usp, apUpdates);
       }
+
+      // ── Guest WiFi ──
+      if (config.isGuestDirty && config.guestSsidInstancePaths.isNotEmpty) {
+        // Enable/disable + SSID
+        if (config.isGuestEnabledChanged || config.isGuestSsidChanged) {
+          final guestSsidUpdates = config.guestSsidInstancePaths
+              .map((path) => WiFiSsidUpdate(
+                    instancePath: path,
+                    ssid: config.guestSsid,
+                    enable: config.guestEnabled,
+                  ))
+              .toList();
+          await WiFiSsids.update(_usp, guestSsidUpdates);
+        }
+
+        // Password
+        if (config.isGuestPasswordChanged) {
+          final guestApUpdates = config.guestAccessPointInstancePaths
+              .map((path) => WiFiAccessPointUpdate(
+                    instancePath: path,
+                    keyPassphrase: config.guestPassword,
+                  ))
+              .toList();
+          await WiFiAccessPoints.update(_usp, guestApUpdates);
+        }
+      }
+    } catch (e) {
+      throw mapUspErrorToServiceError(e);
     }
   }
 
@@ -332,13 +351,21 @@ class PnpService {
 
   /// Reboot the router. Connection will be lost.
   Future<void> reboot() async {
-    await DeviceOperations.reboot(_usp);
+    try {
+      await DeviceOperations.reboot(_usp);
+    } catch (e) {
+      throw mapUspErrorToServiceError(e);
+    }
   }
 
   /// Check if the router is back by fetching SystemInfo.
   /// Returns serial number on success, throws on failure.
   Future<String> checkRouterIsBack() async {
-    final info = await SystemInfo.fetch(_usp);
-    return info.serialNumber;
+    try {
+      final info = await SystemInfo.fetch(_usp);
+      return info.serialNumber;
+    } catch (e) {
+      throw mapUspErrorToServiceError(e);
+    }
   }
 }

@@ -131,6 +131,7 @@ class DiagnosticRunningView extends ConsumerWidget {
           DiagnosticStep.runningSpeedTest,
           DiagnosticStep.checkingWifiSignal,
           DiagnosticStep.checkingDhcpPool,
+          DiagnosticStep.checkingMeshBackhaul,
           DiagnosticStep.checkingConnectedDevices,
         ],
     };
@@ -159,7 +160,7 @@ class DiagnosticRunningView extends ConsumerWidget {
           'Intermittent Connection Diagnostics',
           1,
         ),
-      null => (Icons.network_check, 'Full Diagnostic', 9),
+      null => (Icons.network_check, 'Full Diagnostic', 10),
     };
   }
 

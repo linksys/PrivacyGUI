@@ -83,14 +83,25 @@ class WiFiSsids {
           v == '0' ||
           v == 0 ||
           v == false ||
-          v == 'false')) continue;
+          v == 'false')) {
+        continue;
+      }
       final missing = <String>[];
-      if (!response.containsKey('${p}SSID')) missing.add('${p}SSID');
-      if (!response.containsKey('${p}Enable')) missing.add('${p}Enable');
-      if (!response.containsKey('${p}Status')) missing.add('${p}Status');
-      if (!response.containsKey('${p}BSSID')) missing.add('${p}BSSID');
-      if (!response.containsKey('${p}LowerLayers'))
+      if (!response.containsKey('${p}SSID')) {
+        missing.add('${p}SSID');
+      }
+      if (!response.containsKey('${p}Enable')) {
+        missing.add('${p}Enable');
+      }
+      if (!response.containsKey('${p}Status')) {
+        missing.add('${p}Status');
+      }
+      if (!response.containsKey('${p}BSSID')) {
+        missing.add('${p}BSSID');
+      }
+      if (!response.containsKey('${p}LowerLayers')) {
         missing.add('${p}LowerLayers');
+      }
       if (missing.isNotEmpty) {
         throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
       }
@@ -114,10 +125,12 @@ class WiFiSsids {
       {bool allowPartial = false}) async {
     final params = <String, dynamic>{};
     for (final update in updates) {
-      if (update.ssid != null)
+      if (update.ssid != null) {
         params['${update.instancePath}SSID'] = update.ssid;
-      if (update.enable != null)
+      }
+      if (update.enable != null) {
         params['${update.instancePath}Enable'] = update.enable;
+      }
     }
     if (params.isEmpty) {
       return {

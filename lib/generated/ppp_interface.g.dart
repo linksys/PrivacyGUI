@@ -97,19 +97,31 @@ class PppInterface {
           v == '0' ||
           v == 0 ||
           v == false ||
-          v == 'false')) continue;
+          v == 'false')) {
+        continue;
+      }
       final missing = <String>[];
-      if (!response.containsKey('${p}Username')) missing.add('${p}Username');
-      if (!response.containsKey('${p}Password')) missing.add('${p}Password');
-      if (!response.containsKey('${p}PPPoE.ServiceName'))
+      if (!response.containsKey('${p}Username')) {
+        missing.add('${p}Username');
+      }
+      if (!response.containsKey('${p}Password')) {
+        missing.add('${p}Password');
+      }
+      if (!response.containsKey('${p}PPPoE.ServiceName')) {
         missing.add('${p}PPPoE.ServiceName');
-      if (!response.containsKey('${p}ConnectionTrigger'))
+      }
+      if (!response.containsKey('${p}ConnectionTrigger')) {
         missing.add('${p}ConnectionTrigger');
-      if (!response.containsKey('${p}IdleDisconnectTime'))
+      }
+      if (!response.containsKey('${p}IdleDisconnectTime')) {
         missing.add('${p}IdleDisconnectTime');
-      if (!response.containsKey('${p}LCPEcho')) missing.add('${p}LCPEcho');
-      if (!response.containsKey('${p}ConnectionStatus'))
+      }
+      if (!response.containsKey('${p}LCPEcho')) {
+        missing.add('${p}LCPEcho');
+      }
+      if (!response.containsKey('${p}ConnectionStatus')) {
         missing.add('${p}ConnectionStatus');
+      }
       if (missing.isNotEmpty) {
         throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
       }
@@ -135,19 +147,24 @@ class PppInterface {
       {bool allowPartial = false}) async {
     final params = <String, dynamic>{};
     for (final update in updates) {
-      if (update.username != null)
+      if (update.username != null) {
         params['${update.instancePath}Username'] = update.username;
-      if (update.password != null)
+      }
+      if (update.password != null) {
         params['${update.instancePath}Password'] = update.password;
-      if (update.pppoeServiceName != null)
+      }
+      if (update.pppoeServiceName != null) {
         params['${update.instancePath}PPPoE.ServiceName'] =
             update.pppoeServiceName;
-      if (update.connectionTrigger != null)
+      }
+      if (update.connectionTrigger != null) {
         params['${update.instancePath}ConnectionTrigger'] =
             update.connectionTrigger;
-      if (update.idleDisconnectTime != null)
+      }
+      if (update.idleDisconnectTime != null) {
         params['${update.instancePath}IdleDisconnectTime'] =
             update.idleDisconnectTime;
+      }
     }
     if (params.isEmpty) {
       return {

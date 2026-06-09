@@ -162,7 +162,9 @@ class ConnectedDevices {
           v == '0' ||
           v == 0 ||
           v == false ||
-          v == 'false')) continue;
+          v == 'false')) {
+        continue;
+      }
       final childBase_0 = '${p}IPv4Address.';
       final childIds_0 = <String>{};
       for (final key in response.keys) {
@@ -177,7 +179,7 @@ class ConnectedDevices {
             (a, b) => (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
       final ipv4Addresses = <ConnectedDeviceIpv4>[];
       for (final cid_0 in childSorted_0) {
-        final cp_0 = '${childBase_0}${cid_0}.';
+        final cp_0 = '$childBase_0$cid_0.';
         ipv4Addresses.add(ConnectedDeviceIpv4(
           instancePath: cp_0,
           address: (response['${cp_0}IPAddress'] ?? '') as String,
@@ -197,20 +199,28 @@ class ConnectedDevices {
             (a, b) => (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
       final ipv6Addresses = <ConnectedDeviceIpv6>[];
       for (final cid_1 in childSorted_1) {
-        final cp_1 = '${childBase_1}${cid_1}.';
+        final cp_1 = '$childBase_1$cid_1.';
         ipv6Addresses.add(ConnectedDeviceIpv6(
           instancePath: cp_1,
           address: (response['${cp_1}IPAddress'] ?? '') as String,
         ));
       }
       final missing = <String>[];
-      if (!response.containsKey('${p}PhysAddress'))
+      if (!response.containsKey('${p}PhysAddress')) {
         missing.add('${p}PhysAddress');
-      if (!response.containsKey('${p}IPAddress')) missing.add('${p}IPAddress');
-      if (!response.containsKey('${p}HostName')) missing.add('${p}HostName');
-      if (!response.containsKey('${p}Active')) missing.add('${p}Active');
-      if (!response.containsKey('${p}Layer1Interface'))
+      }
+      if (!response.containsKey('${p}IPAddress')) {
+        missing.add('${p}IPAddress');
+      }
+      if (!response.containsKey('${p}HostName')) {
+        missing.add('${p}HostName');
+      }
+      if (!response.containsKey('${p}Active')) {
+        missing.add('${p}Active');
+      }
+      if (!response.containsKey('${p}Layer1Interface')) {
         missing.add('${p}Layer1Interface');
+      }
       if (missing.isNotEmpty) {
         throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
       }

@@ -1232,9 +1232,96 @@ All USP error parsing and `ServiceError` mapping is centralized in a single util
 
 ---
 
-## Article XIV: UI Kit Library Principle
+## Article XIV: Layout Composition Patterns
 
-**Section 14.1: Mandatory UI Component Usage**
+**Section 14.1: Definition and Scope**
+
+Layout Composition Patterns are **project-level layout conventions** built on top of UI Kit's Design System. They are NOT a Design System — that responsibility belongs to `ui_kit_library`. These patterns provide consistent visual grouping and hierarchy across feature pages.
+
+**Key Distinction**:
+- **UI Kit (Design System)**: Atomic components (buttons, text, cards, inputs) with design tokens
+- **Layout Composition Patterns**: Page-level layout conventions for arranging UI Kit components
+
+**Section 14.2: The Block Pattern**
+
+`Block` is a **layout helper container** that creates visual grouping within cards or as standalone list items. It provides a subtle background to distinguish content sections without adding visual weight.
+
+**Visual Parameters** (defined in `BlockConstants`):
+| Property | Value | Notes |
+|----------|-------|-------|
+| Background | `surfaceContainerHighest @ 50%` | Subtle grouping, not prominent |
+| Border Radius | `AppSpacing.sm` | Consistent with UI Kit |
+| Border | None | Avoid visual clutter from excessive lines |
+| Padding | `AppSpacing.md` (default) | Configurable per use case |
+
+**Section 14.3: Usage Patterns**
+
+Three canonical patterns for combining Card and Block:
+
+**Pattern A: Card + Block** (Detail/Settings Pages)
+```
+AppCard
+├── CardHeader (optional)
+├── Block (setting row 1)
+├── Block (setting row 2)
+└── Block (setting row 3)
+```
+Use for: Settings pages, detail views, form sections.
+
+**Pattern B: Block Alone** (List Items)
+```
+Column
+├── Block (list item 1)
+├── Block (list item 2)
+└── Block (list item 3)
+```
+Use for: Device lists, network lists, any repeating items without outer container.
+
+**Pattern C: Card Alone** (Simple Cards)
+```
+AppCard
+├── content
+└── ...
+```
+Use for: Dashboard cards, summary panels, standalone content without internal grouping.
+
+**Section 14.4: Shared Block Components**
+
+Reusable block components live in `lib/page/_shared/components/layout_blocks/`:
+
+| Component | Purpose | Example Use |
+|-----------|---------|-------------|
+| `Block` | Base container with background | Any grouped content |
+| `SwitchBlock` | Toggle setting row | Firewall toggles, WiFi enable |
+| `SettingBlock` | Label + value + optional action | WiFi name, security mode |
+| `NavLinkBlock` | Navigation link with description | "IPv6 Port Service" link |
+| `DeviceRow` | Device list item | Connected devices |
+| `StatTile` | Dashboard statistic | Device count, speed stats |
+
+**Section 14.5: Implementation Rules**
+
+1. **Use BlockConstants**: All block components MUST use values from `BlockConstants` for consistency
+2. **Prefer shared components**: Before creating a new block pattern, check if `setting_blocks.dart` or `row_blocks.dart` already provides it
+3. **Card vs Block decision**: Use Card for top-level containers; use Block for internal grouping or list items
+4. **No borders on Blocks**: Blocks use background color only — borders create visual noise
+
+**File Organization**:
+```
+lib/page/_shared/components/layout_blocks/
+├── index.dart              # Barrel export
+├── block_constants.dart    # Design tokens
+├── base_blocks.dart        # Block, CardHeader
+├── setting_blocks.dart     # SwitchBlock, SettingBlock, NavLinkBlock
+├── row_blocks.dart         # DeviceRow, NetworkBadge
+├── list_blocks.dart        # List-specific blocks
+└── stat_blocks.dart        # StatTile, EmptyState
+```
+
+---
+
+## Article XV: UI Kit Library Principle
+
+**Section 15.1: Mandatory UI Component Usage**
 
 When developing screens or features, all UI component usage MUST follow these two rules:
 
@@ -1287,7 +1374,7 @@ class NewCustomWidget extends StatelessWidget {
 //  How should I proceed?"
 ```
 
-**Section 14.2: Import Specification**
+**Section 15.2: Import Specification**
 
 Use the unified import approach when possible:
 
@@ -1300,7 +1387,7 @@ import 'package:ui_kit_library/ui_kit.dart';
 import 'package:ui_kit_library/src/foundation/accessibility/accessibility.dart';
 ```
 
-**Section 14.3: Code Review Checklist**
+**Section 15.3: Code Review Checklist**
 
 Code Review MUST check:
 - ✅ All UI components prioritize using ui_kit_library

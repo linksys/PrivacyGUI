@@ -99,18 +99,31 @@ class StaticRouting {
           v == '0' ||
           v == 0 ||
           v == false ||
-          v == 'false')) continue;
+          v == 'false')) {
+        continue;
+      }
       final missing = <String>[];
-      if (!response.containsKey('${p}Enable')) missing.add('${p}Enable');
-      if (!response.containsKey('${p}DestIPAddress'))
+      if (!response.containsKey('${p}Enable')) {
+        missing.add('${p}Enable');
+      }
+      if (!response.containsKey('${p}DestIPAddress')) {
         missing.add('${p}DestIPAddress');
-      if (!response.containsKey('${p}DestSubnetMask'))
+      }
+      if (!response.containsKey('${p}DestSubnetMask')) {
         missing.add('${p}DestSubnetMask');
-      if (!response.containsKey('${p}GatewayIPAddress'))
+      }
+      if (!response.containsKey('${p}GatewayIPAddress')) {
         missing.add('${p}GatewayIPAddress');
-      if (!response.containsKey('${p}Interface')) missing.add('${p}Interface');
-      if (!response.containsKey('${p}Origin')) missing.add('${p}Origin');
-      if (!response.containsKey('${p}Alias')) missing.add('${p}Alias');
+      }
+      if (!response.containsKey('${p}Interface')) {
+        missing.add('${p}Interface');
+      }
+      if (!response.containsKey('${p}Origin')) {
+        missing.add('${p}Origin');
+      }
+      if (!response.containsKey('${p}Alias')) {
+        missing.add('${p}Alias');
+      }
       if (missing.isNotEmpty) {
         throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
       }
@@ -136,19 +149,25 @@ class StaticRouting {
       {bool allowPartial = false}) async {
     final params = <String, dynamic>{};
     for (final update in updates) {
-      if (update.enable != null)
+      if (update.enable != null) {
         params['${update.instancePath}Enable'] = update.enable;
-      if (update.destIpAddress != null)
+      }
+      if (update.destIpAddress != null) {
         params['${update.instancePath}DestIPAddress'] = update.destIpAddress;
-      if (update.destSubnetMask != null)
+      }
+      if (update.destSubnetMask != null) {
         params['${update.instancePath}DestSubnetMask'] = update.destSubnetMask;
-      if (update.gatewayIpAddress != null)
+      }
+      if (update.gatewayIpAddress != null) {
         params['${update.instancePath}GatewayIPAddress'] =
             update.gatewayIpAddress;
-      if (update.interface_ != null)
+      }
+      if (update.interface_ != null) {
         params['${update.instancePath}Interface'] = update.interface_;
-      if (update.alias != null)
+      }
+      if (update.alias != null) {
         params['${update.instancePath}Alias'] = update.alias;
+      }
     }
     if (params.isEmpty) {
       return {

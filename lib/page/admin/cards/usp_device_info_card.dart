@@ -4,9 +4,10 @@ import 'package:privacy_gui/core/utils/device_image_helper.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
+import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/_shared/components/card_skeleton.dart';
+import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:ui_kit_library/ui_kit.dart';
-import 'package:privacy_gui/page/_shared/components/usp_info_row.dart';
 
 class UspDeviceInfoCard extends ConsumerWidget {
   final SystemInfoUIModel? info;
@@ -18,29 +19,107 @@ class UspDeviceInfoCard extends ConsumerWidget {
     final info =
         this.info ?? ref.watch(systemInfoDataProvider).valueOrNull?.model;
     if (info == null) return const CardSkeleton.info(rows: 5);
+
+    // Get MAC and hostname from master node
+    final devicesData = ref.watch(devicesDataProvider).valueOrNull;
+    final masterNode =
+        devicesData?.nodeModels.where((n) => n.isMaster).firstOrNull;
+    final macAddress = masterNode?.deviceId;
+    final hostName = masterNode?.displayName;
+
     final iconName = routerIconTestByModel(
       modelNumber: info.modelName,
       hardwareVersion: info.hardwareVersion,
     );
+    final colorScheme = Theme.of(context).colorScheme;
+
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AppText.titleMedium('Device Information'),
-          AppGap.lg(),
-          Center(
-            child: Image(
-              image: DeviceImageHelper.getRouterImage(iconName),
-              width: 100,
-              height: 100,
+          CardHeader(title: 'Device Information'),
+          AppGap.md(),
+          // Device hero block - model name with icon
+          LayoutBlock(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  decoration: BoxDecoration(
+                    color: colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(AppSpacing.sm),
+                  ),
+                  child: Image(
+                    image: DeviceImageHelper.getRouterImage(iconName),
+                    width: 72,
+                    height: 72,
+                  ),
+                ),
+                AppGap.lg(),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (hostName != null &&
+                          hostName.isNotEmpty &&
+                          hostName != info.modelName) ...[
+                        AppText.titleLarge(hostName),
+                        AppGap.xxs(),
+                        AppText.bodyMedium(info.modelName),
+                      ] else
+                        AppText.titleLarge(info.modelName),
+                      AppGap.xs(),
+                      AppText.bodySmall(
+                        info.manufacturer,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
-          AppGap.lg(),
-          UspInfoRow(label: 'Manufacturer', value: info.manufacturer),
-          UspInfoRow(label: 'Model', value: info.modelName),
-          UspInfoRow(label: 'Serial Number', value: info.serialNumber),
-          UspInfoRow(label: 'Hardware Version', value: info.hardwareVersion),
-          UspInfoRow(label: 'Firmware Version', value: info.softwareVersion),
+          AppGap.sm(),
+          // Firmware & Hardware - 2 columns
+          Row(
+            children: [
+              Expanded(
+                child: MetricTile(
+                  icon: Icons.system_update,
+                  label: 'Firmware',
+                  value: info.softwareVersion,
+                  color: colorScheme.primary,
+                ),
+              ),
+              AppGap.sm(),
+              Expanded(
+                child: MetricTile(
+                  icon: Icons.memory,
+                  label: 'Hardware',
+                  value: info.hardwareVersion,
+                  color: colorScheme.secondary,
+                ),
+              ),
+            ],
+          ),
+          AppGap.sm(),
+          // Serial & MAC - side by side with copy
+          InfoGrid(
+            items: [
+              InfoGridItem(
+                label: 'Serial',
+                value: info.serialNumber,
+                copyable: true,
+              ),
+              if (macAddress != null && macAddress.isNotEmpty)
+                InfoGridItem(
+                  label: 'MAC',
+                  value: macAddress.toUpperCase(),
+                  copyable: true,
+                ),
+            ],
+          ),
         ],
       ),
     );

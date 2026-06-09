@@ -38,7 +38,7 @@ class UspTrafficAnalysisNotifier extends Notifier<TrafficAnalysisState> {
       }
     });
 
-    const defaultInterval = Duration(seconds: 5);
+    const defaultInterval = Duration(seconds: 10);
     ref.listen(dashboardDomainReadyProvider, (_, next) {
       if (next is AsyncData) {
         setRefreshInterval(defaultInterval);

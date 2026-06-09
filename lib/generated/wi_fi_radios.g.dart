@@ -123,31 +123,49 @@ class WiFiRadios {
           v == '0' ||
           v == 0 ||
           v == false ||
-          v == 'false')) continue;
+          v == 'false')) {
+        continue;
+      }
       final missing = <String>[];
-      if (!response.containsKey('${p}Enable')) missing.add('${p}Enable');
-      if (!response.containsKey('${p}Status')) missing.add('${p}Status');
-      if (!response.containsKey('${p}Channel')) missing.add('${p}Channel');
-      if (!response.containsKey('${p}OperatingFrequencyBand'))
+      if (!response.containsKey('${p}Enable')) {
+        missing.add('${p}Enable');
+      }
+      if (!response.containsKey('${p}Status')) {
+        missing.add('${p}Status');
+      }
+      if (!response.containsKey('${p}Channel')) {
+        missing.add('${p}Channel');
+      }
+      if (!response.containsKey('${p}OperatingFrequencyBand')) {
         missing.add('${p}OperatingFrequencyBand');
-      if (!response.containsKey('${p}OperatingChannelBandwidth'))
+      }
+      if (!response.containsKey('${p}OperatingChannelBandwidth')) {
         missing.add('${p}OperatingChannelBandwidth');
-      if (!response.containsKey('${p}PossibleChannels'))
+      }
+      if (!response.containsKey('${p}PossibleChannels')) {
         missing.add('${p}PossibleChannels');
-      if (!response.containsKey('${p}OperatingStandards'))
+      }
+      if (!response.containsKey('${p}OperatingStandards')) {
         missing.add('${p}OperatingStandards');
-      if (!response.containsKey('${p}SupportedStandards'))
+      }
+      if (!response.containsKey('${p}SupportedStandards')) {
         missing.add('${p}SupportedStandards');
-      if (!response.containsKey('${p}TransmitPower'))
+      }
+      if (!response.containsKey('${p}TransmitPower')) {
         missing.add('${p}TransmitPower');
-      if (!response.containsKey('${p}MaxBitRate'))
+      }
+      if (!response.containsKey('${p}MaxBitRate')) {
         missing.add('${p}MaxBitRate');
-      if (!response.containsKey('${p}AutoChannelEnable'))
+      }
+      if (!response.containsKey('${p}AutoChannelEnable')) {
         missing.add('${p}AutoChannelEnable');
-      if (!response.containsKey('${p}IEEE80211hEnabled'))
+      }
+      if (!response.containsKey('${p}IEEE80211hEnabled')) {
         missing.add('${p}IEEE80211hEnabled');
-      if (!response.containsKey('${p}SupportedOperatingChannelBandwidths'))
+      }
+      if (!response.containsKey('${p}SupportedOperatingChannelBandwidths')) {
         missing.add('${p}SupportedOperatingChannelBandwidths');
+      }
       if (missing.isNotEmpty) {
         throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
       }
@@ -191,22 +209,28 @@ class WiFiRadios {
       {bool allowPartial = false}) async {
     final params = <String, dynamic>{};
     for (final update in updates) {
-      if (update.enable != null)
+      if (update.enable != null) {
         params['${update.instancePath}Enable'] = update.enable;
-      if (update.channel != null)
+      }
+      if (update.channel != null) {
         params['${update.instancePath}Channel'] = update.channel;
-      if (update.operatingChannelBandwidth != null)
+      }
+      if (update.operatingChannelBandwidth != null) {
         params['${update.instancePath}OperatingChannelBandwidth'] =
             update.operatingChannelBandwidth;
-      if (update.operatingStandards != null)
+      }
+      if (update.operatingStandards != null) {
         params['${update.instancePath}OperatingStandards'] =
             update.operatingStandards;
-      if (update.autoChannelEnable != null)
+      }
+      if (update.autoChannelEnable != null) {
         params['${update.instancePath}AutoChannelEnable'] =
             update.autoChannelEnable;
-      if (update.ieee80211hEnabled != null)
+      }
+      if (update.ieee80211hEnabled != null) {
         params['${update.instancePath}IEEE80211hEnabled'] =
             update.ieee80211hEnabled;
+      }
     }
     if (params.isEmpty) {
       return {

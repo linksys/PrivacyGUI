@@ -1,5 +1,4 @@
 import 'package:equatable/equatable.dart';
-import 'package:flutter/material.dart';
 import 'package:privacy_gui/core/utils/wifi.dart';
 
 // ---------------------------------------------------------------------------
@@ -52,14 +51,6 @@ class DeviceInterfaceInfo extends Equatable {
 /// Connection type for UI display decisions.
 enum DeviceConnectionType { wifi, wired }
 
-extension DeviceConnectionTypeExt on DeviceConnectionType {
-  /// Icon for connection type (does not require i18n).
-  IconData get icon => switch (this) {
-        DeviceConnectionType.wifi => Icons.wifi,
-        DeviceConnectionType.wired => Icons.settings_ethernet,
-      };
-}
-
 /// Presentation Layer Model — aggregates codegen + enricher per-device info.
 ///
 /// UI widgets depend only on this class, never directly on codegen Data Models.
@@ -75,8 +66,10 @@ class DeviceUIModel extends Equatable {
 
   // ─── WiFi enrichment (null if ethernet) ───
   final int? signalStrength; // RSSI dBm (from WifiClient)
-  final int? downlinkRate; // bits/sec (from WifiClient)
-  final int? uplinkRate; // bits/sec (from WifiClient)
+  final int?
+      downlinkRate; // kbps (from TR-181 LastDataDownlinkRate/LastDataUplinkRate)
+  final int?
+      uplinkRate; // kbps (from TR-181 LastDataDownlinkRate/LastDataUplinkRate)
   final String?
       band; // "2.4GHz" / "5GHz" / "6GHz" (from ClientConnectionDetail)
   final String? ssidName; // SSID name (from ClientConnectionDetail)

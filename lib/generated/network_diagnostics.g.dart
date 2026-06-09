@@ -14,8 +14,9 @@ class NetworkDiagnostics {
   }) async {
     final inputs = <String, String>{};
     inputs['Host'] = host;
-    if (numberOfRepetitions != null)
+    if (numberOfRepetitions != null) {
       inputs['NumberOfRepetitions'] = numberOfRepetitions;
+    }
     return await client.operate('Device.IP.Diagnostics.IPPing()', args: inputs);
   }
 
@@ -27,7 +28,9 @@ class NetworkDiagnostics {
   }) async {
     final inputs = <String, String>{};
     inputs['Host'] = host;
-    if (maxHopCount != null) inputs['MaxHopCount'] = maxHopCount;
+    if (maxHopCount != null) {
+      inputs['MaxHopCount'] = maxHopCount;
+    }
     return await client.operate('Device.IP.Diagnostics.TraceRoute()',
         args: inputs);
   }
@@ -40,7 +43,9 @@ class NetworkDiagnostics {
   }) async {
     final inputs = <String, String>{};
     inputs['HostName'] = hostName;
-    if (dnsServer != null) inputs['DNSServer'] = dnsServer;
+    if (dnsServer != null) {
+      inputs['DNSServer'] = dnsServer;
+    }
     return await client.operate('Device.DNS.Diagnostics.NSLookupDiagnostics()',
         args: inputs);
   }
@@ -55,10 +60,15 @@ class NetworkDiagnostics {
   }) async {
     final inputs = <String, String>{};
     inputs['DownloadURL'] = downloadURL;
-    if (ethernetPriority != null) inputs['EthernetPriority'] = ethernetPriority;
-    if (dscp != null) inputs['DSCP'] = dscp;
-    if (numberOfConnections != null)
+    if (ethernetPriority != null) {
+      inputs['EthernetPriority'] = ethernetPriority;
+    }
+    if (dscp != null) {
+      inputs['DSCP'] = dscp;
+    }
+    if (numberOfConnections != null) {
       inputs['NumberOfConnections'] = numberOfConnections;
+    }
     return await client.operate('Device.IP.Diagnostics.DownloadDiagnostics()',
         args: inputs);
   }
@@ -74,11 +84,18 @@ class NetworkDiagnostics {
   }) async {
     final inputs = <String, String>{};
     inputs['UploadURL'] = uploadURL;
-    if (testFileLength != null) inputs['TestFileLength'] = testFileLength;
-    if (ethernetPriority != null) inputs['EthernetPriority'] = ethernetPriority;
-    if (dscp != null) inputs['DSCP'] = dscp;
-    if (numberOfConnections != null)
+    if (testFileLength != null) {
+      inputs['TestFileLength'] = testFileLength;
+    }
+    if (ethernetPriority != null) {
+      inputs['EthernetPriority'] = ethernetPriority;
+    }
+    if (dscp != null) {
+      inputs['DSCP'] = dscp;
+    }
+    if (numberOfConnections != null) {
       inputs['NumberOfConnections'] = numberOfConnections;
+    }
     return await client.operate('Device.IP.Diagnostics.UploadDiagnostics()',
         args: inputs);
   }
@@ -95,10 +112,15 @@ class NetworkDiagnostics {
     final inputs = <String, String>{};
     inputs['Host'] = host;
     inputs['Port'] = port;
-    if (numberOfRepetitions != null)
+    if (numberOfRepetitions != null) {
       inputs['NumberOfRepetitions'] = numberOfRepetitions;
-    if (timeout != null) inputs['Timeout'] = timeout;
-    if (dataBlockSize != null) inputs['DataBlockSize'] = dataBlockSize;
+    }
+    if (timeout != null) {
+      inputs['Timeout'] = timeout;
+    }
+    if (dataBlockSize != null) {
+      inputs['DataBlockSize'] = dataBlockSize;
+    }
     return await client.operate('Device.IP.Diagnostics.UDPEchoDiagnostics()',
         args: inputs);
   }
@@ -114,11 +136,18 @@ class NetworkDiagnostics {
   }) async {
     final inputs = <String, String>{};
     inputs['HostList'] = hostList;
-    if (protocol != null) inputs['Protocol'] = protocol;
-    if (port != null) inputs['Port'] = port;
-    if (numberOfRepetitions != null)
+    if (protocol != null) {
+      inputs['Protocol'] = protocol;
+    }
+    if (port != null) {
+      inputs['Port'] = port;
+    }
+    if (numberOfRepetitions != null) {
       inputs['NumberOfRepetitions'] = numberOfRepetitions;
-    if (timeout != null) inputs['Timeout'] = timeout;
+    }
+    if (timeout != null) {
+      inputs['Timeout'] = timeout;
+    }
     return await client.operate(
         'Device.IP.Diagnostics.ServerSelectionDiagnostics()',
         args: inputs);

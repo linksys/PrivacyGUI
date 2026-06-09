@@ -66,4 +66,21 @@ class DateFormatUtils {
         timeAmount.inMinutes.remainder(60).toString().padLeft(2, '0');
     return '$h hr,$m min';
   }
+
+  /// Formats an ISO 8601 timestamp as relative time ("3 minutes ago").
+  static String formatRelativeTime(String? isoTime) {
+    if (isoTime == null || isoTime.isEmpty) return '--';
+    try {
+      final dateTime = DateTime.parse(isoTime);
+      final now = DateTime.now();
+      final diff = now.difference(dateTime);
+
+      if (diff.inSeconds < 60) return 'Just now';
+      if (diff.inMinutes < 60) return '${diff.inMinutes} minutes ago';
+      if (diff.inHours < 24) return '${diff.inHours} hours ago';
+      return '${diff.inDays} days ago';
+    } catch (_) {
+      return isoTime;
+    }
+  }
 }

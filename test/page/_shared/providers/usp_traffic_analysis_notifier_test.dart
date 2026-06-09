@@ -74,11 +74,11 @@ void main() {
   }
 
   group('UspTrafficAnalysisNotifier', () {
-    test('build starts with 5s default interval', () async {
+    test('build starts with 10s default interval', () async {
       final container = await createAndWait();
 
       final state = container.read(uspTrafficAnalysisProvider);
-      expect(state.refreshInterval, const Duration(seconds: 5));
+      expect(state.refreshInterval, const Duration(seconds: 10));
       container.dispose();
     });
 

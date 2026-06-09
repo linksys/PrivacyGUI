@@ -424,7 +424,15 @@ void main() {
   // ---------------------------------------------------------------------------
 
   group('UspLocalNetworkService — save', () {
+    // Mock for _resolveInstance() in LanNetworkInfo.save()
+    // UspClient.get() returns flat Map<String, dynamic>, not WASM format
+    final aliasResponse = <String, dynamic>{
+      'Device.IP.Interface.1.Alias': 'cpe-lan',
+      'Device.IP.Interface.2.Alias': 'cpe-wan',
+    };
+
     test('save succeeds when firmware returns success', () async {
+      when(() => mockUsp.get(any())).thenAnswer((_) async => aliasResponse);
       when(() => mockUsp.set(any())).thenAnswer((_) async => {
             'success': true,
             'result': {'data': <String, dynamic>{}},
@@ -439,6 +447,7 @@ void main() {
     });
 
     test('save throws UspCompleteFailureError on firmware failure', () async {
+      when(() => mockUsp.get(any())).thenAnswer((_) async => aliasResponse);
       when(() => mockUsp.set(any())).thenAnswer((_) async => {
             'success': false,
             'result': {
@@ -462,6 +471,7 @@ void main() {
     });
 
     test('save throws UspPartialFailureError on partial success', () async {
+      when(() => mockUsp.get(any())).thenAnswer((_) async => aliasResponse);
       when(() => mockUsp.set(any())).thenAnswer((_) async => {
             'success': true,
             'result': {
@@ -488,6 +498,7 @@ void main() {
     });
 
     test('save maps transport error to ServiceError', () async {
+      when(() => mockUsp.get(any())).thenAnswer((_) async => aliasResponse);
       when(() => mockUsp.set(any()))
           .thenThrow('Set failed: Transport error: Connection refused');
 

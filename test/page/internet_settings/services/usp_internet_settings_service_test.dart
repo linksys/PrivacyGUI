@@ -154,7 +154,16 @@ void main() {
   });
 
   group('saveAll', () {
+    // Mock for _resolveInstance() calls in codegen update methods
+    // UspClient.get() returns flat Map<String, dynamic>, not WASM format
+    final aliasResponse = <String, dynamic>{
+      'Device.IP.Interface.1.Alias': 'cpe-lan',
+      'Device.IP.Interface.2.Alias': 'cpe-wan',
+    };
+
     setUp(() {
+      // Default mock for _resolveInstance() get calls
+      when(() => mockUsp.get(any())).thenAnswer((_) async => aliasResponse);
       when(() => mockUsp.set(any())).thenAnswer((_) async => {
             'success': true,
             'result': {'data': <String, dynamic>{}}
@@ -583,7 +592,16 @@ void main() {
   // ---------------------------------------------------------------------------
 
   group('UspInternetSettingsService — UspResultParser failure handling', () {
+    // Mock for _resolveInstance() calls in codegen update methods
+    // UspClient.get() returns flat Map<String, dynamic>, not WASM format
+    final aliasResponse = <String, dynamic>{
+      'Device.IP.Interface.1.Alias': 'cpe-lan',
+      'Device.IP.Interface.2.Alias': 'cpe-wan',
+    };
+
     test('saveAll throws UspCompleteFailureError on SET failure', () async {
+      // Mock for _resolveInstance()
+      when(() => mockUsp.get(any())).thenAnswer((_) async => aliasResponse);
       // WASM v0.11.0 format: success=false
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
           .thenAnswer((_) async => {
@@ -613,6 +631,8 @@ void main() {
 
     test('saveAll throws UspPartialFailureError on SET partial failure',
         () async {
+      // Mock for _resolveInstance()
+      when(() => mockUsp.get(any())).thenAnswer((_) async => aliasResponse);
       // WASM v0.11.0 format: success=true but has error field
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
           .thenAnswer((_) async => {
@@ -701,6 +721,8 @@ void main() {
     });
 
     test('UspCompleteFailureError contains correct error message', () async {
+      // Mock for _resolveInstance()
+      when(() => mockUsp.get(any())).thenAnswer((_) async => aliasResponse);
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
           .thenAnswer((_) async => {
                 'success': false,
@@ -734,6 +756,8 @@ void main() {
     });
 
     test('UspPartialFailureError contains success and failure paths', () async {
+      // Mock for _resolveInstance()
+      when(() => mockUsp.get(any())).thenAnswer((_) async => aliasResponse);
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
           .thenAnswer((_) async => {
                 'success': true,
