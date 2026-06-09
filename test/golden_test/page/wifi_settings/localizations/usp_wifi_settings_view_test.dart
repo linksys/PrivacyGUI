@@ -73,8 +73,8 @@ void main() {
             ),
           ),
           steps: (tester) async {
-            final nameTile = find.text('HomeNetwork').first;
-            await tester.tap(nameTile);
+            await tester
+                .tap(find.bySemanticsLabel('wifi-name-2.4GHz').first);
             await tester.pump();
             for (int i = 0; i < 10; i++) {
               await tester.pump(const Duration(milliseconds: 50));
@@ -89,8 +89,8 @@ void main() {
             ),
           ),
           steps: (tester) async {
-            final passwordTile = find.text('•' * 12).first;
-            await tester.tap(passwordTile);
+            // '•' * 12 is locale-independent (unicode bullet character from fixture data)
+            await tester.tap(find.text('•' * 12).first);
             await tester.pump();
             for (int i = 0; i < 10; i++) {
               await tester.pump(const Duration(milliseconds: 50));
@@ -105,8 +105,8 @@ void main() {
             ),
           ),
           steps: (tester) async {
-            final securityTile = find.text('WPA2-Personal').first;
-            await tester.tap(securityTile);
+            // Security mode value from fixture data — not a localized string
+            await tester.tap(find.text('WPA2-Personal').first);
             await tester.pump();
             for (int i = 0; i < 10; i++) {
               await tester.pump(const Duration(milliseconds: 50));
@@ -121,8 +121,8 @@ void main() {
             ),
           ),
           steps: (tester) async {
-            final wifiModeTile = find.text('802.11b/g/n/ax Only').first;
-            await tester.tap(wifiModeTile);
+            // WiFi mode label from constant map — not localized
+            await tester.tap(find.text('802.11b/g/n/ax Only').first);
             await tester.pump();
             for (int i = 0; i < 10; i++) {
               await tester.pump(const Duration(milliseconds: 50));
@@ -137,8 +137,8 @@ void main() {
             ),
           ),
           steps: (tester) async {
-            final channelWidthTile = find.text('20MHz').first;
-            await tester.tap(channelWidthTile);
+            // Bandwidth value from fixture data — not localized
+            await tester.tap(find.text('20MHz').first);
             await tester.pump();
             for (int i = 0; i < 10; i++) {
               await tester.pump(const Duration(milliseconds: 50));
@@ -153,8 +153,8 @@ void main() {
             ),
           ),
           steps: (tester) async {
-            final channelDesc = find.text('6');
-            await tester.tap(channelDesc.first);
+            // Channel number from fixture data — not localized
+            await tester.tap(find.text('6').first);
             await tester.pump();
             for (int i = 0; i < 10; i++) {
               await tester.pump(const Duration(milliseconds: 50));
