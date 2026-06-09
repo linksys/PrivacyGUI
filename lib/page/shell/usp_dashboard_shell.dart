@@ -78,6 +78,7 @@ class _UspDashboardShellState extends ConsumerState<UspDashboardShell> {
       ref,
       trigger: RecoveryTrigger.natural,
       cooldown: Duration.zero,
+      skipEnterWaiting: true,
       title: 'Connection lost',
       message:
           'Lost connection to the router. Attempting to reconnect automatically...',
