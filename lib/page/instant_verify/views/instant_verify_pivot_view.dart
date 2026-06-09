@@ -113,6 +113,9 @@ class _InstantVerifyPivotViewState
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        // Taller toolbar so the 3-line stacked router info (Model/Ver/Serial)
+        // fits without vertical overflow.
+        toolbarHeight: 64,
         title: const Text('Instant-Test'),
         actions: [
           Consumer(builder: (ctx, r, _) {
@@ -133,24 +136,15 @@ class _InstantVerifyPivotViewState
             }
             // Stacked, labeled router identity — tap for full details.
             // Label + value per line so it reads cleanly instead of cluttered.
-            Widget infoLine(String label, String value) => RichText(
+            Widget infoLine(String label, String value) => Text(
+                  '$label $value',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.right,
-                  text: TextSpan(children: [
-                    TextSpan(
-                      text: '$label ',
-                      style: TextStyle(
-                          fontSize: 10, color: colors.onSurfaceVariant),
-                    ),
-                    TextSpan(
-                      text: value,
-                      style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: colors.onSurface),
-                    ),
-                  ]),
+                  style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: colors.onSurface),
                 );
             return InkWell(
               onTap: () => _showRouterInfo(ctx, state),
@@ -158,8 +152,9 @@ class _InstantVerifyPivotViewState
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 220),
+                  constraints: const BoxConstraints(maxWidth: 240),
                   child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [

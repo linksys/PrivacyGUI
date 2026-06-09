@@ -396,19 +396,19 @@ Widget _infoBox(BuildContext context, String text,
   );
 }
 
-/// Static numbered-step item — not interactive, use for sequential instructions.
+/// Static step item — not interactive. Uses a small dot marker (NOT a
+/// triangle/arrow, which reads as expandable/tappable).
 Widget _checklistItem(BuildContext context, String text) => Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.only(top: 2),
-            child: Icon(Icons.arrow_right,
-                size: 20,
-                color: Theme.of(context).colorScheme.primary),
+            padding: const EdgeInsets.only(top: 7, left: 4, right: 8),
+            child: Icon(Icons.circle,
+                size: 6,
+                color: Theme.of(context).colorScheme.onSurfaceVariant),
           ),
-          const SizedBox(width: 4),
           Expanded(
               child: SelectableText(text,
                   style: Theme.of(context).textTheme.bodyMedium)),
@@ -974,8 +974,9 @@ class _Flow2State extends ConsumerState<_Flow2> {
   void _syncStepBackNotifier() {
     widget.stepBackNotifier?.value = _stepHistory.isNotEmpty ? _stepBack : null;
     final current = _stepHistory.length + 1;
-    widget.stepIndicatorNotifier?.value =
-        current > 1 ? 'Step $current of 4' : null;
+    // Branching flows have no fixed length — show "Step N", not "of 4"
+    // (a fixed denominator falsely implies more steps remain on short paths).
+    widget.stepIndicatorNotifier?.value = current > 1 ? 'Step $current' : null;
   }
 
   double? get _mbps => _speedResult?.downloadMbps;
@@ -1605,8 +1606,9 @@ class _Flow3State extends ConsumerState<_Flow3> {
   void _syncStepBackNotifier() {
     widget.stepBackNotifier?.value = _stepHistory.isNotEmpty ? _stepBack : null;
     final current = _stepHistory.length + 1;
-    widget.stepIndicatorNotifier?.value =
-        current > 1 ? 'Step $current of 4' : null;
+    // Branching flows have no fixed length — show "Step N", not "of 4"
+    // (a fixed denominator falsely implies more steps remain on short paths).
+    widget.stepIndicatorNotifier?.value = current > 1 ? 'Step $current' : null;
   }
 
   @override
@@ -3176,7 +3178,7 @@ class _Flow5State extends ConsumerState<_Flow5> {
     widget.stepBackNotifier?.value = _stepHistory.isNotEmpty ? _stepBack : null;
     final current = _stepHistory.length + 1;
     widget.stepIndicatorNotifier?.value =
-        current > 1 ? 'Step $current of 5' : null;
+        current > 1 ? 'Step $current' : null;
   }
 
   @override
@@ -3779,7 +3781,7 @@ class _Flow6BridgeModeState extends ConsumerState<_Flow6BridgeMode> {
   void _syncNotifiers() {
     widget.stepBackNotifier?.value = _stepHistory.isNotEmpty ? _stepBack : null;
     final current = _stepHistory.length + 1;
-    widget.stepIndicatorNotifier?.value = current > 1 ? 'Step $current of 2' : null;
+    widget.stepIndicatorNotifier?.value = current > 1 ? 'Step $current' : null;
   }
 
   @override

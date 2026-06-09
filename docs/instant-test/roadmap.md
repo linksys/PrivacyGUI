@@ -27,8 +27,9 @@ Last updated: 2026-06-08
 ## Known Bugs (from testing)
 | ID | Bug | Location | Status |
 |----|-----|----------|--------|
-| BUG-1 | **Device connectivity → "Check your WiFi details": check items render as triangles** (`Icons.arrow_right`), making them look expandable, but they don't expand. Should be dots or checkmarks (non-interactive markers). | `help_me_fix_it_tab.dart` (arrow_right icons ~L407/1494/2061) | Open (reported 2026-06-08) |
-| BUG-2 | **Same screen shows "Step 2 of 4" but there's no further step reachable** — step counter overcounts or the flow dead-ends before step 4. | `help_me_fix_it_tab.dart` `_stepIndicatorNotifier` (~L48) | Open (reported 2026-06-08) |
+| BUG-1 | Device connectivity check items rendered as triangles (looked expandable). | `_checklistItem` help_me_fix_it_tab.dart | ✅ Fixed 2026-06-08 — now a small dot marker |
+| BUG-2 | "Step 2 of 4" shown but no step 4 reachable (hardcoded denominator on branching flows). | `_syncStepBackNotifier` x3 | ✅ Fixed 2026-06-08 — show "Step N", no fixed total |
+| BUG-3 | Link rate showed "1297100 Mbps" (Kbps stored as Mbps). | provider txRate parse | ✅ Fixed 2026-06-08 — ÷1000 + Gbps promotion |
 
 ## Larger Initiatives (plans live in PRODUCT_MANAGEMENT docs)
 | Item | Plan |
