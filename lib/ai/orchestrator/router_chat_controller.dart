@@ -3,6 +3,7 @@ import 'package:generative_ui/generative_ui.dart';
 
 import 'package:privacy_gui/ai/abstraction/_abstraction.dart';
 import 'package:privacy_gui/ai/prompts/router_system_prompt.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 
 /// Pending confirmation state for write/admin operations.
 class PendingConfirmation {
@@ -44,7 +45,7 @@ class RouterChatController extends ChangeNotifier {
   }
 
   static void _log(String message) {
-    debugPrint('[AI] ChatController: $message');
+    logger.d('[AI]: $message');
   }
 
   final IConversationGenerator _generator;

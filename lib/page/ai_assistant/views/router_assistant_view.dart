@@ -4,6 +4,7 @@ import 'package:generative_ui/generative_ui.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 import 'package:privacy_gui/ai/_ai.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/ai_assistant/providers/router_command_provider.dart';
 import 'package:privacy_gui/page/dashboard/mascot/mascot_hero_widget.dart';
 
@@ -71,11 +72,11 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
       _needsConfig = false;
       _configError = null;
     } on ConfigurationException catch (e) {
-      debugPrint('RouterAssistantView: Config error: $e');
+      logger.d('RouterAssistantView: Config error: $e');
       _needsConfig = true;
       _configError = e.message;
     } catch (e) {
-      debugPrint('RouterAssistantView: Unexpected error: $e');
+      logger.d('RouterAssistantView: Unexpected error: $e');
       _needsConfig = true;
       _configError = e.toString();
     }
@@ -546,7 +547,7 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
     final isUser = message.role == ChatRole.user;
 
     if (message.isToolResult) {
-      debugPrint('[AI] MessageBubble: skipping tool_result');
+      logger.d('[AI] MessageBubble: skipping tool_result');
       return const SizedBox.shrink();
     }
 
@@ -555,30 +556,30 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
 
     if (message.isUser) {
       textContent = message.content as String?;
-      debugPrint('[AI] MessageBubble: user message, content=$textContent');
+      logger.d('[AI] MessageBubble: user message, content=$textContent');
     } else if (message.isAssistant && message.response != null) {
       final textBlocks = message.response!.content.whereType<TextBlock>();
-      debugPrint(
+      logger.d(
           '[AI] MessageBubble: assistant message, textBlocks=${textBlocks.length}');
       if (textBlocks.isNotEmpty) {
         textContent = textBlocks.map((b) => b.text).join('\n');
         isA2UI = A2UIResponseRenderer.containsA2UI(textContent);
-        debugPrint(
+        logger.d(
             '[AI] MessageBubble: textContent length=${textContent.length}, isA2UI=$isA2UI');
-        debugPrint(
+        logger.d(
             '[AI] MessageBubble: textContent preview=${textContent.substring(0, textContent.length.clamp(0, 200))}');
       }
     } else {
-      debugPrint(
+      logger.d(
           '[AI] MessageBubble: unknown message type, role=${message.role}, isAssistant=${message.isAssistant}, response=${message.response}');
     }
 
     if (textContent == null || textContent.isEmpty) {
-      debugPrint('[AI] MessageBubble: no textContent, returning empty');
+      logger.d('[AI] MessageBubble: no textContent, returning empty');
       return const SizedBox.shrink();
     }
 
-    debugPrint('[AI] MessageBubble: rendering, isUser=$isUser, isA2UI=$isA2UI');
+    logger.d('[AI] MessageBubble: rendering, isUser=$isUser, isA2UI=$isA2UI');
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -592,7 +593,7 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
             child: isA2UI
                 ? Builder(
                     builder: (context) {
-                      debugPrint('[AI] Rendering A2UIResponseRenderer');
+                      logger.d('[AI] Rendering A2UIResponseRenderer');
                       return A2UIResponseRenderer(
                         content: textContent!,
                         registry: _registry,
@@ -617,7 +618,7 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
   }
 
   void _handleA2UIAction(Map<String, dynamic> data) {
-    debugPrint('A2UI Action: $data');
+    logger.d('A2UI Action: $data');
 
     final toolUseId = data['toolUseId'] as String?;
     if (toolUseId == null) return;

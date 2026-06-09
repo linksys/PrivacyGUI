@@ -1,6 +1,6 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/ai/abstraction/_abstraction.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/_shared/models/traffic_analysis_state.dart';
 import 'package:privacy_gui/page/_shared/providers/usp_device_analytics_notifier.dart';
 import 'package:privacy_gui/page/_shared/providers/usp_system_monitor_notifier.dart';
@@ -17,7 +17,7 @@ import 'package:privacy_gui/page/port_forwarding/providers/port_forwarding_data_
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_data_provider.dart';
 
 void _log(String message) {
-  debugPrint('[AI] CommandProvider: $message');
+  logger.d('[AI]: $message');
 }
 
 /// USP-based implementation of [IRouterCommandProvider].
