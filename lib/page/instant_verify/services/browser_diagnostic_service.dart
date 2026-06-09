@@ -102,7 +102,10 @@ class BrowserDiagnosticService {
   // Use the actual host serving this page — handles non-default LAN subnets.
   // Falls back to 192.168.1.1 if not running in a web context.
   static String get _gatewayUrl {
-    if (kIsWeb) return 'http://${Uri.base.host}';
+    // On web, use the page's own origin (scheme + host). Serving over HTTPS,
+    // a hardcoded http:// URL is blocked as mixed content / CORS — matching the
+    // page scheme avoids that. Native keeps the explicit router address.
+    if (kIsWeb) return Uri.base.origin;
     return 'http://192.168.1.1';
   }
   // CORS-safe connectivity endpoints (Access-Control-Allow-Origin: *)
