@@ -102,19 +102,10 @@ class UspConnectedDevicesCard extends ConsumerWidget {
               message: 'No devices online',
             )
           else
-            Expanded(
-              child: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    for (var i = 0; i < displayDevices.length; i++) ...[
-                      _buildDeviceRow(context, displayDevices[i]),
-                      if (i < displayDevices.length - 1) AppGap.sm(),
-                    ],
-                  ],
-                ),
-              ),
-            ),
+            for (var i = 0; i < displayDevices.length; i++) ...[
+              _buildDeviceRow(context, displayDevices[i]),
+              if (i < displayDevices.length - 1) AppGap.sm(),
+            ],
         ],
       ),
     );
