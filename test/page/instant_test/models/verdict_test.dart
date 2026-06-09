@@ -13,6 +13,7 @@ Verdict _compute({
   bool? dnsWorking = true,
   double? downloadMbps = 100,
   int? latencyMs = 20,
+  bool speedTestFailed = false,
   bool? firmwareUpdateAvailable = false,
   String? firmwareVersion,
   int? uptimeSeconds = 86400,
@@ -41,6 +42,7 @@ Verdict _compute({
     dnsWorking: dnsWorking,
     downloadMbps: downloadMbps,
     latencyMs: latencyMs,
+    speedTestFailed: speedTestFailed,
     firmwareUpdateAvailable: firmwareUpdateAvailable,
     firmwareVersion: firmwareVersion,
     uptimeSeconds: uptimeSeconds,
@@ -637,6 +639,38 @@ void main() {
     test('early return at gateway → checksRun is 1', () {
       final v = _compute(gatewayReachable: false);
       expect(v.checksRun, 1);
+    });
+  });
+
+  // Ported from JNAP (BUG-4): a failed/incomplete speed test must surface as a
+  // warning finding, never be swept into an all-clear.
+  group('VerdictEngine — speedTestFailed', () {
+    test('failed speed test (WAN+DNS up) yields a warning finding', () {
+      final v = _compute(speedTestFailed: true, downloadMbps: null);
+      expect(v.isAllClear, isFalse);
+      expect(
+        v.findings.any((f) =>
+            f.priority == VerdictPriority.warning &&
+            f.headline.contains("couldn't finish the speed test")),
+        isTrue,
+      );
+    });
+
+    test('speedTestFailed=false produces no speed-failure finding', () {
+      final v = _compute(speedTestFailed: false);
+      expect(
+        v.findings.any((f) => f.headline.contains("finish the speed test")),
+        isFalse,
+      );
+    });
+
+    test('failed speed test is suppressed when WAN is down (outage is the headline)',
+        () {
+      final v = _compute(speedTestFailed: true, wanConnected: false);
+      expect(
+        v.findings.any((f) => f.headline.contains("finish the speed test")),
+        isFalse,
+      );
     });
   });
 }

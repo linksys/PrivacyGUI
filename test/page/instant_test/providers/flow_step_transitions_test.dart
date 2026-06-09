@@ -148,4 +148,29 @@ void main() {
       expect(s.deviceScores.first.score, greaterThan(0));
     });
   });
+
+  // Ported fields (USP port 2026-06-09): router identity + speed-fail flag.
+  group('InstantTestState — ported fields', () {
+    test('speedTestFailed defaults false and round-trips via copyWith', () {
+      const s = InstantTestState();
+      expect(s.speedTestFailed, isFalse);
+      expect(s.copyWith(speedTestFailed: true).speedTestFailed, isTrue);
+    });
+
+    test('routerModel / routerSerial round-trip via copyWith', () {
+      const s = InstantTestState();
+      expect(s.routerModel, isNull);
+      expect(s.routerSerial, isNull);
+      final updated =
+          s.copyWith(routerModel: 'MR7500', routerSerial: 'SN-12345');
+      expect(updated.routerModel, 'MR7500');
+      expect(updated.routerSerial, 'SN-12345');
+    });
+
+    test('speedTestFailed participates in equality (props)', () {
+      const a = InstantTestState();
+      final b = a.copyWith(speedTestFailed: true);
+      expect(a == b, isFalse);
+    });
+  });
 }
