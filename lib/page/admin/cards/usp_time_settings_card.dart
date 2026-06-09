@@ -4,7 +4,7 @@ import 'package:privacy_gui/page/admin/providers/time_data_provider.dart';
 import 'package:privacy_gui/page/admin/providers/usp_admin_notifier.dart';
 import 'package:privacy_gui/page/_shared/models/time_settings_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/timezone_definitions.dart';
-import 'package:privacy_gui/page/_shared/components/usp_info_row.dart';
+import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/_shared/components/usp_mutation_helper.dart';
 import 'package:privacy_gui/page/_shared/components/card_skeleton.dart';
 import 'package:privacy_gui/page/_shared/components/dashboard_card_template.dart';
@@ -48,15 +48,18 @@ class _UspTimeSettingsCardState extends ConsumerState<UspTimeSettingsCard>
     if (timeData == null) return const CardSkeleton.info(rows: 2);
     final time = timeData.model;
     final isLoading = ref.watch(uspMutationLoadingProvider) == 'time';
+    final colorScheme = Theme.of(context).colorScheme;
+    final appColors = Theme.of(context).extension<AppColorScheme>();
 
     _syncIfChanged(timeData);
 
     final tzInfo = matchTimezone(time.localTimeZone);
     final tzDisplay = tzInfo != null
-        ? '${tzInfo.friendlyName} (${tzInfo.offsetDisplayText})'
+        ? tzInfo.friendlyName
         : time.localTimeZone.isNotEmpty
             ? time.localTimeZone
             : 'Not set';
+    final offsetDisplay = tzInfo?.offsetDisplayText ?? '';
 
     final timeDisplay = currentTime != null
         ? TimeSettingsUIModel.formatDateTime(currentTime!)
@@ -64,12 +67,6 @@ class _UspTimeSettingsCardState extends ConsumerState<UspTimeSettingsCard>
 
     return DashboardCardTemplate(
       title: 'Time Settings',
-      titleBadge: AppBadge(
-        label: time.status,
-        color: time.isSynchronized
-            ? Theme.of(context).extension<AppColorScheme>()?.semanticSuccess
-            : Theme.of(context).extension<AppColorScheme>()?.semanticWarning,
-      ),
       trailing: Semantics(
         label: 'Edit time settings',
         button: true,
@@ -82,15 +79,60 @@ class _UspTimeSettingsCardState extends ConsumerState<UspTimeSettingsCard>
       content: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          UspInfoRow(label: 'Timezone', value: tzDisplay),
-          if (tzInfo != null && tzInfo.observesDST)
-            UspInfoRow(
-              label: 'Daylight Savings Time',
-              value: inferDstEnabled(time.localTimeZone) ? 'On' : 'Off',
+          // Hero block - Clock with current time
+          LayoutBlock(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: Row(
+              children: [
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: colorScheme.primaryContainer,
+                    shape: BoxShape.circle,
+                  ),
+                  child: AppIcon.font(
+                    Icons.schedule,
+                    color: colorScheme.primary,
+                    size: 28,
+                  ),
+                ),
+                AppGap.lg(),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      AppText.titleLarge(timeDisplay),
+                      AppGap.xxs(),
+                      Row(
+                        children: [
+                          AppBadge(
+                            label: time.status,
+                            color: time.isSynchronized
+                                ? appColors?.semanticSuccess
+                                : appColors?.semanticWarning,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          UspInfoRow(
-            label: 'Local Time',
-            value: timeDisplay,
+          ),
+          AppGap.sm(),
+          // Timezone info
+          InfoGrid(
+            items: [
+              InfoGridItem(label: 'Timezone', value: tzDisplay),
+              if (offsetDisplay.isNotEmpty)
+                InfoGridItem(label: 'UTC Offset', value: offsetDisplay),
+              if (tzInfo != null && tzInfo.observesDST)
+                InfoGridItem(
+                  label: 'DST',
+                  value: inferDstEnabled(time.localTimeZone) ? 'On' : 'Off',
+                ),
+            ],
           ),
         ],
       ),

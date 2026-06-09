@@ -227,20 +227,10 @@ class _HorizontalBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fraction = maxValue > 0 ? value / maxValue : 0.0;
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return Align(
-          alignment: Alignment.centerLeft,
-          child: Container(
-            width: constraints.maxWidth * fraction,
-            height: 12,
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: BorderRadius.circular(4),
-            ),
-          ),
-        );
-      },
+    return AppLoader(
+      variant: LoaderVariant.linear,
+      value: fraction,
+      color: color,
     );
   }
 }

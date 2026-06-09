@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/_shared/models/network_health_helpers.dart';
 import 'package:privacy_gui/page/_shared/models/traffic_analysis_state.dart';
 import 'package:privacy_gui/page/_shared/providers/card_tab_state_provider.dart';
@@ -156,19 +157,26 @@ class _HealthOverview extends StatelessWidget {
         AppGap.md(),
         // Summary metrics
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            _MetricChip(
-              label: 'Errors',
-              value: NetworkHealthHelpers.formatFaultRate(errorRate),
+            Expanded(
+              child: _MetricChip(
+                label: 'Errors',
+                value: NetworkHealthHelpers.formatFaultRate(errorRate),
+              ),
             ),
-            _MetricChip(
-              label: 'Discards',
-              value: NetworkHealthHelpers.formatFaultRate(discardRate),
+            AppGap.sm(),
+            Expanded(
+              child: _MetricChip(
+                label: 'Discards',
+                value: NetworkHealthHelpers.formatFaultRate(discardRate),
+              ),
             ),
-            _MetricChip(
-              label: 'Loss',
-              value: '${lossPercent.toStringAsFixed(2)}%',
+            AppGap.sm(),
+            Expanded(
+              child: _MetricChip(
+                label: 'Loss',
+                value: '${lossPercent.toStringAsFixed(2)}%',
+              ),
             ),
           ],
         ),
@@ -213,15 +221,18 @@ class _MetricChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        AppText.labelSmall(
-          label,
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
-        ),
-        AppText.bodyMedium(value),
-      ],
+    return LayoutBlock(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AppText.labelSmall(
+            label,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+          AppGap.xxs(),
+          AppText.bodyMedium(value),
+        ],
+      ),
     );
   }
 }
