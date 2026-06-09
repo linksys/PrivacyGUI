@@ -286,6 +286,9 @@ class SseConnectionManager {
     _reconnectAttempt++;
     onReconnectFailed?.call(_reconnectAttempt);
 
+    // Callback may have triggered disconnect(); bail out if so.
+    if (_disposed || _intentionalDisconnect) return;
+
     if (_reconnectAttempt > _maxRetries) {
       connectionState.value = SseConnectionState.suspended;
       logger.w('[USP][SSE]: Max retries ($_maxRetries) reached — suspended. '

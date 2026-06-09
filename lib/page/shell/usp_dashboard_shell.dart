@@ -73,18 +73,25 @@ class _UspDashboardShellState extends ConsumerState<UspDashboardShell> {
 
   Future<void> _showNaturalRecoveryDialog() async {
     _recoveryDialogShowing = true;
-    await showRecoveryDialog(
-      context,
-      ref,
-      trigger: RecoveryTrigger.natural,
-      cooldown: Duration.zero,
-      skipEnterWaiting: true,
-      title: 'Connection lost',
-      message:
-          'Lost connection to the router. Attempting to reconnect automatically...',
-      successMessage: 'Reconnected to router',
-    );
-    _recoveryDialogShowing = false;
+    try {
+      if (ref.read(appConnectionStateProvider) !=
+          AppConnectionState.waitingForRecovery) {
+        return;
+      }
+      await showRecoveryDialog(
+        context,
+        ref,
+        trigger: RecoveryTrigger.natural,
+        cooldown: Duration.zero,
+        skipEnterWaiting: true,
+        title: 'Connection lost',
+        message:
+            'Lost connection to the router. Attempting to reconnect automatically...',
+        successMessage: 'Reconnected to router',
+      );
+    } finally {
+      _recoveryDialogShowing = false;
+    }
   }
 
   @override

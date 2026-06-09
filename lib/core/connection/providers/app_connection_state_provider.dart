@@ -125,6 +125,7 @@ class AppConnectionStateNotifier extends Notifier<AppConnectionState> {
     _probeTimer = null;
     _cooldownTimer?.cancel();
     _cooldownTimer = null;
+    _recoveryContext = null;
     _consecutiveFailures = 0;
     _lastProbeResult = null;
     state = AppConnectionState.loggedOut;
@@ -169,8 +170,9 @@ class AppConnectionStateNotifier extends Notifier<AppConnectionState> {
         _consecutiveFailures = 0;
         _probeTimer?.cancel();
         _probeTimer = null;
-        if (_recoveryContext?.trigger ==
-            RecoveryTrigger.operationalFactoryReset) {
+        final trigger = _recoveryContext?.trigger;
+        _recoveryContext = null;
+        if (trigger == RecoveryTrigger.operationalFactoryReset) {
           logger.i('[Connection] Recovered (factoryReset) — logging out');
           state = AppConnectionState.loggedOut;
           ref.read(authProvider.notifier).logout();
@@ -181,6 +183,7 @@ class AppConnectionStateNotifier extends Notifier<AppConnectionState> {
         }
         break;
       case ProbeResult.serialMismatch:
+        _recoveryContext = null;
         _probeTimer?.cancel();
         _probeTimer = null;
         state = AppConnectionState.loggedOut;
