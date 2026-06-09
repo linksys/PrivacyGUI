@@ -19,6 +19,7 @@ import 'package:privacy_gui/page/ai_assistant/views/router_assistant_view.dart';
 
 import 'dashboard_dialog_provider.dart';
 import 'mascot_hero_widget.dart';
+import 'mascot_message_provider.dart';
 
 /// Provider for the mascot controller.
 final mascotControllerProvider = Provider.autoDispose<MascotController>((ref) {
@@ -228,19 +229,6 @@ class MascotCoordinatorNotifier extends AutoDisposeNotifier<void> {
   static const _maxInterval = Duration(seconds: 30);
   static const _autoHideDuration = Duration(seconds: 5);
 
-  static const _randomMessages = [
-    'Everything looks good!',
-    'Your network is running smoothly.',
-    'All devices connected!',
-    'WiFi signal is strong.',
-    'No issues detected.',
-    'Tap me if you need help!',
-    'Need to run diagnostics?',
-    'I\'m here if you need me!',
-    'Network health: excellent!',
-    'All systems operational.',
-  ];
-
   @override
   void build() {
     final showMascot =
@@ -297,14 +285,16 @@ class MascotCoordinatorNotifier extends AutoDisposeNotifier<void> {
     if (controller.isDialogVisible) return;
     if (controller.state == MascotState.interacting) return;
 
-    final message = _randomMessages[_random.nextInt(_randomMessages.length)];
+    final messageProvider = ref.read(mascotMessageProvider);
+    final message = messageProvider.getRandomMessage();
 
     controller.showDialog(MascotDialogNode(
       id: 'random_speech',
-      text: message,
+      text: message.text,
       autoHide: true,
       autoHideDuration: _autoHideDuration,
       showDismissButton: false,
+      suggestedAnimation: message.suggestedAnimation,
     ));
   }
 }
