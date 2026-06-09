@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:privacy_gui/constants/build_config.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -24,6 +26,10 @@ class _OverviewTabState extends ConsumerState<OverviewTab> {
   bool _checksExpanded = false;
   int _restartCountdown = 0;
 
+  /// Ticks once a second while the speed-test cooldown is active so the
+  /// "Run Again" button can show a live countdown.
+  Timer? _cooldownTicker;
+
   @override
   void initState() {
     super.initState();
@@ -33,6 +39,29 @@ class _OverviewTabState extends ConsumerState<OverviewTab> {
       if (phase == PivotLoadPhase.idle) {
         ref.read(instantVerifyPivotProvider.notifier).fetch();
       }
+    });
+  }
+
+  @override
+  void dispose() {
+    _cooldownTicker?.cancel();
+    super.dispose();
+  }
+
+  /// Drive a 1s rebuild loop while the speed-test cooldown is counting down.
+  void _ensureCooldownTicker() {
+    if (_cooldownTicker != null) return;
+    final notifier = ref.read(instantVerifyPivotProvider.notifier);
+    if (notifier.speedTestCooldownRemaining <= 0) return;
+    _cooldownTicker = Timer.periodic(const Duration(seconds: 1), (t) {
+      if (!mounted ||
+          ref.read(instantVerifyPivotProvider.notifier)
+                  .speedTestCooldownRemaining <=
+              0) {
+        t.cancel();
+        _cooldownTicker = null;
+      }
+      if (mounted) setState(() {});
     });
   }
 
@@ -106,27 +135,43 @@ class _OverviewTabState extends ConsumerState<OverviewTab> {
             _RestartCountdown(secondsRemaining: _restartCountdown),
           ],
           const SizedBox(height: 24),
-          Center(
-            child: OutlinedButton.icon(
-              icon: const Icon(Icons.refresh, size: 18),
-              label: Text(state.hasRestartedThisSession ? 'Check Again' : 'Run Again'),
-              onPressed: state.phase == PivotLoadPhase.loading ||
-                      state.phase == PivotLoadPhase.jnapLoaded ||
-                      _restartCountdown > 0
-                  ? null
-                  : () {
-                      setState(() {
-                        _findingsExpanded = false;
-                        _checksExpanded = false;
-                      });
-                      // Explicit user re-run → force the speed test (bypass the
-                      // 3-min throttle, which is only for passive reloads).
-                      ref
-                          .read(instantVerifyPivotProvider.notifier)
-                          .fetch(forceSpeedTest: true);
-                    },
-            ),
-          ),
+          Builder(builder: (context) {
+            final notifier = ref.read(instantVerifyPivotProvider.notifier);
+            final cooldown = notifier.speedTestCooldownRemaining;
+            // Keep the live countdown ticking while cooling down.
+            if (cooldown > 0) _ensureCooldownTicker();
+            final baseLabel =
+                state.hasRestartedThisSession ? 'Check Again' : 'Run Again';
+            final isBusy = state.phase == PivotLoadPhase.loading ||
+                state.phase == PivotLoadPhase.jnapLoaded ||
+                _restartCountdown > 0;
+            return Center(
+              child: OutlinedButton.icon(
+                icon: const Icon(Icons.refresh, size: 18),
+                label: Text(
+                    cooldown > 0 ? '$baseLabel (${cooldown}s)' : baseLabel),
+                // Disabled while a run is in flight OR during the 15s
+                // anti-hammer cooldown after a speed test.
+                onPressed: isBusy || cooldown > 0
+                    ? null
+                    : () {
+                        setState(() {
+                          _findingsExpanded = false;
+                          _checksExpanded = false;
+                        });
+                        // Explicit user re-run → force the speed test (bypass
+                        // the 3-min passive throttle). The provider still
+                        // enforces the 15s hard cooldown as the backstop.
+                        ref
+                            .read(instantVerifyPivotProvider.notifier)
+                            .fetch(forceSpeedTest: true);
+                        // Start ticking so the button shows the cooldown.
+                        WidgetsBinding.instance.addPostFrameCallback(
+                            (_) => _ensureCooldownTicker());
+                      },
+              ),
+            );
+          }),
           // Internal validation builds (deploy_local.sh sets force=local) get the
           // mock-failure scenario picker; customer Jenkins builds (force!=local)
           // do not. Replaces the old kDebugMode guard, which release builds strip.

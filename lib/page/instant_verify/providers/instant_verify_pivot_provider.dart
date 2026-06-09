@@ -27,8 +27,25 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
   int _fetchGeneration = 0;
 
   /// Timestamp of the last completed speed test. Used to skip re-running
-  /// within 3 minutes unless explicitly forced. (Fix: Item 3)
+  /// within 3 minutes on passive reloads (unless explicitly forced). (Fix: Item 3)
   DateTime? _lastSpeedTestTime;
+
+  /// Timestamp of the last speed test ATTEMPT (success or fail). Enforces a
+  /// hard minimum cooldown that even a forced/explicit re-run cannot bypass —
+  /// the abuse backstop against button-hammering. Distinct from the 3-min
+  /// passive throttle above.
+  DateTime? _lastSpeedTestAttempt;
+
+  /// Minimum time between speed-test attempts, even when forced.
+  static const speedTestCooldown = Duration(seconds: 15);
+
+  /// Seconds remaining before another speed test may run (0 = ready).
+  int get speedTestCooldownRemaining {
+    if (_lastSpeedTestAttempt == null) return 0;
+    final elapsed = DateTime.now().difference(_lastSpeedTestAttempt!);
+    final remaining = speedTestCooldown - elapsed;
+    return remaining.isNegative ? 0 : remaining.inSeconds + 1;
+  }
 
   @override
   InstantVerifyPivotState build() => const InstantVerifyPivotState();
@@ -381,15 +398,22 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
       }
     }
 
-    // Internet speed test — skip if DNS failed (avoids contradictory 0-Mbps verdict),
-    // or if results are fresh and not forced. (Fixes: Item 3, Item 4)
+    // Internet speed test — skip if:
+    //  • DNS failed (avoids contradictory 0-Mbps verdict), OR
+    //  • passive reload with a result <3 min old and not forced, OR
+    //  • within the hard cooldown — abuse backstop that even a forced/explicit
+    //    re-run cannot bypass (prevents button-hammering the CDN). (Fixes: Item 3, Item 4)
+    final withinHardCooldown = _lastSpeedTestAttempt != null &&
+        DateTime.now().difference(_lastSpeedTestAttempt!) < speedTestCooldown;
     final skipSpeedTest = !dns.resolved ||
+        withinHardCooldown ||
         (!forceSpeedTest &&
             _lastSpeedTestTime != null &&
             DateTime.now().difference(_lastSpeedTestTime!) <
                 const Duration(minutes: 3));
 
     if (!skipSpeedTest) {
+      _lastSpeedTestAttempt = DateTime.now();
       if (_stale()) return;
       state = state.copyWith(browserTestStep: 'speed');
       try {
