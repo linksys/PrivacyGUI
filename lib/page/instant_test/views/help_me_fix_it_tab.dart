@@ -271,8 +271,8 @@ Widget _infoBox(BuildContext context, String text, {IconData icon = Icons.info_o
 Widget _checklistItem(BuildContext context, String text) => Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Padding(padding: const EdgeInsets.only(top: 2), child: Icon(Icons.arrow_right, size: 20, color: Theme.of(context).colorScheme.primary)),
-        const SizedBox(width: 4),
+        // Neutral dot marker — NOT a triangle/arrow (which reads as expandable).
+        Padding(padding: const EdgeInsets.only(top: 7, left: 4, right: 8), child: Icon(Icons.circle, size: 6, color: Theme.of(context).colorScheme.onSurfaceVariant)),
         Expanded(child: SelectableText(text, style: Theme.of(context).textTheme.bodyMedium)),
       ]),
     );
@@ -579,7 +579,8 @@ class _Flow2State extends ConsumerState<_Flow2> {
   void _syncStepBackNotifier() {
     widget.stepBackNotifier?.value = _stepHistory.isNotEmpty ? _stepBack : null;
     final current = _stepHistory.length + 1;
-    widget.stepIndicatorNotifier?.value = current > 1 ? 'Step $current of 4' : null;
+    // Branching flow — no fixed length; show "Step N" not a false "of 4".
+    widget.stepIndicatorNotifier?.value = current > 1 ? 'Step $current' : null;
   }
 
   double? get _mbps => _speedResult?.downloadMbps;
@@ -863,7 +864,8 @@ class _Flow3State extends ConsumerState<_Flow3> {
   void _syncStepBackNotifier() {
     widget.stepBackNotifier?.value = _stepHistory.isNotEmpty ? _stepBack : null;
     final current = _stepHistory.length + 1;
-    widget.stepIndicatorNotifier?.value = current > 1 ? 'Step $current of 4' : null;
+    // Branching flow — no fixed length; show "Step N" not a false "of 4".
+    widget.stepIndicatorNotifier?.value = current > 1 ? 'Step $current' : null;
   }
 
   @override
@@ -1058,7 +1060,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(color: f.color.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(6)),
-              child: Row(children: [Icon(Icons.arrow_right, size: 16, color: f.color), const SizedBox(width: 4), Expanded(child: Text(f.fix, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: f.color)))]),
+              child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [Icon(Icons.lightbulb_outline, size: 16, color: f.color), const SizedBox(width: 6), Expanded(child: Text(f.fix, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: f.color)))]),
             ),
           ])),
       _linksysSupportTile(context),
@@ -1451,7 +1453,7 @@ class _Flow5State extends ConsumerState<_Flow5> {
   void _syncStepBackNotifier() {
     widget.stepBackNotifier?.value = _stepHistory.isNotEmpty ? _stepBack : null;
     final current = _stepHistory.length + 1;
-    widget.stepIndicatorNotifier?.value = current > 1 ? 'Step $current of 5' : null;
+    widget.stepIndicatorNotifier?.value = current > 1 ? 'Step $current' : null;
   }
 
   @override
@@ -1697,7 +1699,7 @@ class _Flow6BridgeModeState extends ConsumerState<_Flow6BridgeMode> {
   void _syncNotifiers() {
     widget.stepBackNotifier?.value = _stepHistory.isNotEmpty ? _stepBack : null;
     final current = _stepHistory.length + 1;
-    widget.stepIndicatorNotifier?.value = current > 1 ? 'Step $current of 2' : null;
+    widget.stepIndicatorNotifier?.value = current > 1 ? 'Step $current' : null;
   }
 
   bool _isCgnatIp(String? ip) {

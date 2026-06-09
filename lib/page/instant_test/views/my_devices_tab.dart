@@ -192,7 +192,10 @@ class _TroubleshootSheetState extends ConsumerState<_TroubleshootSheet> {
           Wrap(spacing: 8, children: [
             if (device.band != null) PillChip(device.band!),
             if (signal != null) PillChip('$signal dBm'),
-            if (rateMbps != null) PillChip('↑${rateMbps.toStringAsFixed(0)} Mbps'),
+            if (rateMbps != null)
+              PillChip(rateMbps >= 1000
+                  ? '↑${(rateMbps / 1000).toStringAsFixed(1)} Gbps'
+                  : '↑${rateMbps.toStringAsFixed(0)} Mbps'),
           ]),
           const SizedBox(height: 16),
           // Targeted advice
