@@ -74,10 +74,14 @@ import 'package:privacy_gui/page/instant_setup/views/pnp_waiting_modem_view.dart
 import 'package:privacy_gui/page/instant_setup/views/pnp_pppoe_view.dart';
 import 'package:privacy_gui/page/instant_setup/views/pnp_static_ip_view.dart';
 
+// Remote Assistance imports
+import 'package:privacy_gui/page/remote_assistance/views/remote_assistance_confirm_view.dart';
+
 part 'route_home.dart';
 part 'route_local_login.dart';
 part 'route_usp_dashboard.dart';
 part 'route_pnp.dart';
+part 'route_remote_assistance.dart';
 
 // init path enum
 enum LocalWhereToGo {
@@ -93,6 +97,7 @@ final appRoutes = [
   uspDashboardRoute,
   pnpRoute,
   pnpNoInternetRoute,
+  remoteAssistanceRoute,
 ];
 
 /// Navigator key for the old dashboard shell (kept for component compatibility).
@@ -121,6 +126,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       } else if (state.matchedLocation.startsWith('/pnp') ||
           state.matchedLocation.startsWith('/pnpNoInternetConnection')) {
         // PnP routes — no auth required, pass through.
+        return state.uri.toString();
+      } else if (state.matchedLocation.startsWith('/remoteAssistance')) {
+        // Remote Assistance routes — no normal auth required, pass through.
         return state.uri.toString();
       } else if (state.matchedLocation.startsWith('/usp')) {
         // USP routes — check auth, redirect to login when logged out.
@@ -158,6 +166,13 @@ class RouterNotifier extends ChangeNotifier {
   }
 
   Future<String?> autoConfigurationLogic(GoRouterState state) async {
+    // Check for Remote Assistance mode via URL parameter
+    final raSession = state.uri.queryParameters['ra_session'];
+    if (raSession != null && raSession.isNotEmpty) {
+      logger.i('[Route]: Detected Remote Assistance session: $raSession');
+      return '${RoutePath.remoteAssistanceConfirm}?sessionId=$raSession';
+    }
+
     final loginType = _ref.read(authProvider
         .select((value) => value.value?.loginType ?? LoginType.none));
 
