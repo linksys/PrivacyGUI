@@ -489,8 +489,8 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('Continue'));
       await tester.pumpAndSettle();
-      // Now on step 1 (scope question). Back button should be present.
-      expect(find.text('← Back'), findsOneWidget);
+      // Now on step 1 (scope question). Shell back button present (arrow_back icon).
+      expect(find.byTooltip('Back to flows'), findsOneWidget);
     });
 
     testWidgets('tapping back returns to frequency question', (tester) async {
@@ -501,8 +501,8 @@ void main() {
       await tester.pumpAndSettle();
       // Verify we moved forward
       expect(find.text('Is it everything or specific devices?'), findsOneWidget);
-      // Go back
-      await tester.tap(find.text('← Back'));
+      // Go back via shell back button (handles step-back when flow has history)
+      await tester.tap(find.byTooltip('Back to flows'));
       await tester.pumpAndSettle();
       // Should be back on step 0
       expect(find.text('How often does it drop?'), findsOneWidget);

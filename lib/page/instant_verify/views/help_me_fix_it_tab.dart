@@ -976,7 +976,7 @@ class _Flow2State extends ConsumerState<_Flow2> {
     final current = _stepHistory.length + 1;
     // Branching flows have no fixed length — show "Step N", not "of 4"
     // (a fixed denominator falsely implies more steps remain on short paths).
-    widget.stepIndicatorNotifier?.value = current > 1 ? 'Step $current' : null;
+    widget.stepIndicatorNotifier?.value = null;
   }
 
   double? get _mbps => _speedResult?.downloadMbps;
@@ -1608,10 +1608,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
 
   void _syncStepBackNotifier() {
     widget.stepBackNotifier?.value = _stepHistory.isNotEmpty ? _stepBack : null;
-    final current = _stepHistory.length + 1;
-    // Branching flows have no fixed length — show "Step N", not "of 4"
-    // (a fixed denominator falsely implies more steps remain on short paths).
-    widget.stepIndicatorNotifier?.value = current > 1 ? 'Step $current' : null;
+    widget.stepIndicatorNotifier?.value = null;
   }
 
   @override
@@ -2275,6 +2272,8 @@ class _Flow3State extends ConsumerState<_Flow3> {
   }
 
   /// Show a picker of wireless devices, then deauth the selected one.
+  /// If we already have a device context (e.g. from My Devices → Troubleshoot),
+  /// skip the picker and deauth that device directly.
   void _showDeauthPicker(BuildContext context, InstantVerifyPivotState state) {
     if (state.phase == PivotLoadPhase.idle ||
         state.phase == PivotLoadPhase.loading) {
@@ -2296,6 +2295,13 @@ class _Flow3State extends ConsumerState<_Flow3> {
       );
       return;
     }
+
+    // If we arrived with a specific device context, use it directly.
+    if (_selectedDevice != null && _selectedDevice!.isWireless) {
+      _doDeauth(context, _selectedDevice!.macAddress, _selectedDevice!.displayNameWithOui);
+      return;
+    }
+
     showModalBottomSheet<void>(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -2336,6 +2342,28 @@ class _Flow3State extends ConsumerState<_Flow3> {
   /// suggestion). Shows a ~1-minute progress dialog, then the result with a
   /// subtle before→after for the curious.
   Future<void> _optimizeChannels(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dlg) => AlertDialog(
+        title: const Text('Optimize WiFi channels?'),
+        content: const Text(
+          'Your router will scan for clearer channels and switch automatically. '
+          'This may briefly disconnect devices or cause a short slowdown '
+          'while the change takes effect.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dlg).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dlg).pop(true),
+            child: const Text('Optimize'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+
     // Non-dismissible progress dialog while the router scans.
     showDialog<void>(
       context: context,
@@ -3143,9 +3171,7 @@ class _Flow5State extends ConsumerState<_Flow5> {
 
   void _syncStepBackNotifier() {
     widget.stepBackNotifier?.value = _stepHistory.isNotEmpty ? _stepBack : null;
-    final current = _stepHistory.length + 1;
-    widget.stepIndicatorNotifier?.value =
-        current > 1 ? 'Step $current' : null;
+    widget.stepIndicatorNotifier?.value = null;
   }
 
   @override
@@ -3747,8 +3773,7 @@ class _Flow6BridgeModeState extends ConsumerState<_Flow6BridgeMode> {
   }
   void _syncNotifiers() {
     widget.stepBackNotifier?.value = _stepHistory.isNotEmpty ? _stepBack : null;
-    final current = _stepHistory.length + 1;
-    widget.stepIndicatorNotifier?.value = current > 1 ? 'Step $current' : null;
+    widget.stepIndicatorNotifier?.value = null;
   }
 
   @override
