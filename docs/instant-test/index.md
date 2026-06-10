@@ -41,7 +41,9 @@ Last updated: 2026-06-09
 
 | Page | Summary |
 |------|---------|
+| [[next-steps]] | **START HERE next session** — done/outstanding/validation after 2026-06-09/10 |
 | [[roadmap]] | Improvement queue (I-1…I-8), backlog, what's done vs remaining |
+| [[usp-port-plan]] | USP branch port plan + change classification |
 
 ---
 
