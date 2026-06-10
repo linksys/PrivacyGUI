@@ -430,10 +430,11 @@ void main() {
       await tester.ensureVisible(find.text('Disconnect and reconnect this device'));
       await tester.tap(find.text('Disconnect and reconnect this device'));
       await tester.pumpAndSettle();
-      expect(find.text('Disconnect this device?'), findsOneWidget);
-      expect(find.textContaining('briefly disconnect'), findsOneWidget);
+      // Unified shared confirmAndDeauth dialog (I-2)
+      expect(find.text('Force reconnect?'), findsOneWidget);
+      expect(find.textContaining('briefly lose its WiFi connection'), findsOneWidget);
       expect(find.text('Cancel'), findsOneWidget);
-      expect(find.text('Disconnect'), findsOneWidget);
+      expect(find.text('Reconnect'), findsOneWidget);
     });
 
     testWidgets('cancel dismisses disconnect dialog', (tester) async {
@@ -443,7 +444,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('Cancel'));
       await tester.pumpAndSettle();
-      expect(find.text('Disconnect this device?'), findsNothing);
+      expect(find.text('Force reconnect?'), findsNothing);
     });
 
     testWidgets('disconnect button not shown for wired device', (tester) async {
@@ -512,8 +513,9 @@ void main() {
       await tester.ensureVisible(find.text('Try a cleaner WiFi channel'));
       await tester.tap(find.text('Try a cleaner WiFi channel'));
       await tester.pumpAndSettle();
-      expect(find.text('Change WiFi channel?'), findsOneWidget);
-      expect(find.textContaining('briefly disconnect and reconnect'), findsOneWidget);
+      // Now real firmware auto-optimize (I-7), not a hardcoded channel pick
+      expect(find.text('Optimize WiFi channels?'), findsOneWidget);
+      expect(find.textContaining('scan for the clearest WiFi channels'), findsOneWidget);
     });
 
     testWidgets('channel change not shown without channel data', (tester) async {

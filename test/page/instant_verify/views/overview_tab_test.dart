@@ -503,11 +503,16 @@ void main() {
       expect(find.text('Run Again'), findsOneWidget);
     });
 
-    testWidgets('"Test scenarios" button visible', (tester) async {
+    testWidgets('"Test scenarios" button gated on force=local (hidden in test env)',
+        (tester) async {
+      // The mock-scenario button is now gated on BuildConfig.forceCommandType
+      // == ForceCommand.local (set by deploy_local.sh), replacing the old
+      // kDebugMode guard. The test environment is not force=local, so the
+      // button is correctly absent. (Internal validation builds show it.)
       await tester.pumpWidget(_buildOverviewTab(_allClearState()));
       await tester.pump();
 
-      expect(find.text('Test scenarios'), findsOneWidget);
+      expect(find.text('Test scenarios'), findsNothing);
     });
   });
 
@@ -556,8 +561,8 @@ void main() {
       await tester.tap(find.text('Restart Router'));
       await tester.pumpAndSettle();
 
-      // Dialog should appear
-      expect(find.text('Restart Router?'), findsOneWidget);
+      // Dialog should appear (unified shared confirmAndRestart — I-1)
+      expect(find.text('Restart your router?'), findsOneWidget);
       expect(find.textContaining('All devices will disconnect'), findsOneWidget);
       expect(find.text('Cancel'), findsOneWidget);
       expect(find.text('Restart'), findsOneWidget);
