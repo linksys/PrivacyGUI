@@ -173,6 +173,12 @@ class RouterNotifier extends ChangeNotifier {
       return '${RoutePath.remoteAssistanceConfirm}?sessionId=$raSession';
     }
 
+    // Check for Remote build mode (force=remote)
+    if (BuildConfig.isRemote()) {
+      logger.i('[Route]: Remote build mode detected, redirecting to RA page');
+      return RoutePath.remoteAssistanceConfirm;
+    }
+
     final loginType = _ref.read(authProvider
         .select((value) => value.value?.loginType ?? LoginType.none));
 
