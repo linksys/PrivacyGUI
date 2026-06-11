@@ -5,7 +5,7 @@ final remoteAssistanceRoute = LinksysRoute(
   path: RoutePath.remoteAssistanceConfirm,
   config: LinksysRouteConfig(column: ColumnGrid(column: 12), noNaviRail: true),
   builder: (context, state) {
-    // Query params: session, token
+    // Query params: session, token, ended
     final sessionId = state.uri.queryParameters['session'] ?? '';
     final token = state.uri.queryParameters['token'] ?? '';
     final ended = state.uri.queryParameters['ended'] == 'true';

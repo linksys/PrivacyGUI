@@ -3,55 +3,25 @@ import 'build_config.dart';
 import 'client_type/client_type.dart';
 
 const kCloudBase = 'CLOUD_BASE_URL';
-const kCloudJNAP = 'CLOUD_JNAP_BASE_URL';
-const kCloudRemoteJNAP = 'CLOUD_REMOTE_JNAP_BASE_URL';
-const kCloudStatus = 'CLOUD_STATUS_URL';
-const kCloudAware = 'CLOUD_AWARE_URL';
-const kCloudAwarePort = 'CLOUD_AWARE_PORT';
-const kCloudAwareKey = 'CLOUD_AWARE_KEY';
-const kCloudAwareScheme = 'CLOUD_AWARE_SCHEME';
 const kFirmwareOtaBase = 'FIRMWARE_OTA_BASE_URL';
 
-const linksysCloudBaseUrl = 'linksyssmartwifi.com';
-const linksysCloudStatusBaseUrl = 'cloudhealth.lswf.net/cloud-availability';
+const linksysDomain = 'cloud1.linksyssmartwifi.com';
+const guardianDomain = 'guardian.tools'; // TODO: switch when ready
+const domainBase = linksysDomain;
 
 // Linksys PROD
 const kCloudEnvironmentConfigProd = {
-  kCloudBase: 'cloud1.$linksysCloudBaseUrl',
-  kCloudJNAP: 'https://cloud1.$linksysCloudBaseUrl/cloud/JNAP/',
-  kCloudRemoteJNAP:
-      'https://cloud1.$linksysCloudBaseUrl/cloud/v1/guardians/remote-assistances/sessions/$kVarRASessionId/actions/jnap/',
-  kCloudStatus: 'https://$linksysCloudStatusBaseUrl/cloud.json',
-  kCloudAware: 'aware.lswf.net',
-  kCloudAwarePort: 3000,
-  kCloudAwareKey: '339ec1249258dfd7e689',
-  kCloudAwareScheme: 'https',
+  kCloudBase: domainBase,
   kFirmwareOtaBase: 'https://update.linksys.com',
 };
 // Linksys QA
 const kCloudEnvironmentConfigQa = {
-  kCloudBase: 'qa.cloud1.$linksysCloudBaseUrl',
-  kCloudJNAP: 'https://qa.cloud1.$linksysCloudBaseUrl/cloud/JNAP/',
-  kCloudRemoteJNAP:
-      'https://qa.cloud1.$linksysCloudBaseUrl/cloud/v1/guardians/remote-assistances/sessions/$kVarRASessionId/actions/jnap/',
-  kCloudStatus: 'https://$linksysCloudStatusBaseUrl/cloud-qa.json',
-  kCloudAware: 'staging.ds.veriksystems.com',
-  kCloudAwarePort: 80,
-  kCloudAwareKey: '372851d642c0f179905e',
-  kCloudAwareScheme: 'http',
+  kCloudBase: 'qa.$domainBase',
   kFirmwareOtaBase: 'https://update-stage.linksys.com',
 };
 // Linksys DEV
 const kCloudEnvironmentConfigDev = {
-  kCloudBase: 'dev.$linksysCloudBaseUrl',
-  kCloudJNAP: 'https://dev.$linksysCloudBaseUrl/cloud/JNAP/',
-  kCloudRemoteJNAP:
-      'https://dev.cloud1.$linksysCloudBaseUrl/cloud/v1/guardians/remote-assistances/sessions/$kVarRASessionId/actions/jnap/',
-  kCloudStatus: 'https://$linksysCloudStatusBaseUrl/cloud-dev.json',
-  kCloudAware: 'staging.ds.veriksystems.com',
-  kCloudAwarePort: 80,
-  kCloudAwareKey: 'efeb0fd364285aaa1201',
-  kCloudAwareScheme: 'http',
+  kCloudBase: 'dev.$domainBase',
   kFirmwareOtaBase: 'https://update-stage.linksys.com',
 };
 const Map<CloudEnvironment, dynamic> kCloudEnvironmentMap = {
@@ -67,7 +37,6 @@ const kVarUsername = '{username}';
 const kVarToken = '{token}';
 const kVarEventSubscriptionId = '{eventSubscriptionId}';
 const kVarId = '{id}';
-const kTicketId = '{ticketId}';
 const kVarRASessionId = '{remoteassistancesessionId}';
 
 // Cloud API Service
@@ -104,9 +73,6 @@ const kTestPingPng = '/cloud/ping.png';
 const kDeviceNetworksEndpoint = '$kDeviceService/rest/networks/$kVarNetworkId';
 const kAccountNetworksEndpoint = '$kDeviceService/rest/accounts/self/networks';
 
-// const kDeviceRegistrationsEndpoint =
-//     '$kDeviceService/rest/devices/registrations';
-
 // Smart device service
 const kSmartDeviceRegisterEndpoint = '$kSmartDeviceService/rest/smartdevices';
 const kSmartDeviceVerificationEndpoint =
@@ -118,14 +84,6 @@ const kEventNetworkActionCreate =
     '$kEventService/rest/eventsubscriptions/$kVarEventSubscriptionId/actions';
 // Asset service
 const kFetchLinkup = '$kAssetService/rest/assets/linkup';
-// Storage service
-const kDeviceUpload =
-    '$kStorageService/rest/deviceuploads?uploadType=MOBILE_LOG';
-// Create Ticket
-const kTickets = '/cloud/v1/tickets';
-const kGetTicketDetails = '/cloud/v1/tickets/$kTicketId';
-const kCreateTicketUpload = '/cloud/v1/tickets/$kTicketId/uploads';
-
 // Firmware OTA
 const kFirmwareOtaEndpoint = '/api/v2/fw/update';
 
@@ -144,11 +102,6 @@ const kSessionInfo =
     '/cloud/v1/guardians/remote-assistances/sessions/$kVarRASessionId';
 const kCreatePin = '/cloud/v1/guardians/remote-assistances/sessions/pin';
 
-// Remote assistance - CA (Support) side
-const kRemoteAssistanceService = '/cloud/remote-access-service';
-const kRAPinVerify =
-    '$kRemoteAssistanceService/rest/remoteassistance/temporaryras';
-
 // Client type id/secret
 final kClientTypeId = clientTypeID;
 final kClientSecret = clientTypeSecret;
@@ -160,6 +113,3 @@ const kHeaderUserAgentId = 'X-Linksys-User-Agent-Id';
 const kHeaderTimestamp = 'X-Linksys-Timestamp';
 const kHeaderLinksysToken = 'X-Linksys-Token';
 const kHeaderSerialNumber = 'X-Linksys-SN';
-const kHeaderNetworkId = 'X-Linksys-Network-Id';
-
-///
