@@ -65,7 +65,7 @@ class _RemoteSessionChipState extends ConsumerState<RemoteSessionChip> {
 
     final remainingSeconds = state.remainingSeconds ?? 0;
     final colorScheme = Theme.of(context).colorScheme;
-    final chipColor = _getChipColor(remainingSeconds, colorScheme);
+    final urgencyColor = _getUrgencyColor(remainingSeconds, colorScheme);
     final screenSize = MediaQuery.of(context).size;
     final safeArea = MediaQuery.of(context).padding;
 
@@ -108,59 +108,42 @@ class _RemoteSessionChipState extends ConsumerState<RemoteSessionChip> {
           });
         },
         onTap: () => _showPopup(context, ref, state),
-        child: Material(
+        child: AppSurface(
           key: _popupKey,
-          color: Colors.transparent,
-          child: Container(
-            height: _chipHeight,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: chipColor.withValues(alpha: 0.95),
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.25),
-                  blurRadius: 10,
-                  offset: const Offset(0, 3),
-                ),
-              ],
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.support_agent,
-                  size: 18,
-                  color: _getTextColor(chipColor),
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  _formatTime(remainingSeconds),
-                  style: TextStyle(
-                    color: _getTextColor(chipColor),
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                  ),
-                ),
-              ],
-            ),
+          variant: SurfaceVariant.elevated,
+          borderRadius: 20,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.support_agent,
+                size: 18,
+                color: urgencyColor,
+              ),
+              const SizedBox(width: 6),
+              AppText.labelMedium(
+                _formatTime(remainingSeconds),
+                color: urgencyColor,
+              ),
+            ],
           ),
         ),
       ),
     );
   }
 
-  Color _getChipColor(int seconds, ColorScheme colorScheme) {
+  /// Returns urgency color based on remaining time:
+  /// - error: <= 1 minute
+  /// - tertiary: <= 5 minutes
+  /// - primary: normal
+  Color _getUrgencyColor(int seconds, ColorScheme colorScheme) {
     if (seconds <= 60) {
       return colorScheme.error;
     } else if (seconds <= 300) {
       return colorScheme.tertiary;
     }
     return colorScheme.primary;
-  }
-
-  Color _getTextColor(Color bgColor) {
-    return bgColor.computeLuminance() > 0.5 ? Colors.black : Colors.white;
   }
 
   String _formatTime(int seconds) {
@@ -417,14 +400,7 @@ class _SessionPopup extends StatelessWidget {
         children: [
           Icon(Icons.circle, size: 6, color: color),
           const SizedBox(width: 4),
-          Text(
-            text,
-            style: TextStyle(
-              color: color,
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
+          AppText.labelSmall(text, color: color),
         ],
       ),
     );
