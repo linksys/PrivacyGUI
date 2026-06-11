@@ -1937,17 +1937,20 @@ class _Flow3State extends ConsumerState<_Flow3> {
       }
     }
 
-    // 4. Very slow link rate despite OK signal
-    if (txRate != null && txRate < 12 && (signal == null || signal >= -75)) {
-      findings.add(_SlowDeviceFinding(
-        icon: Icons.speed,
-        color: Colors.orange,
-        title: 'Very slow WiFi link ($txRate Mbps)',
-        detail: 'The WiFi link speed to this device is very low despite '
-            'a reasonable signal. This can be caused by interference, '
-            'an older device, or the device being far from the router.',
-        fix: 'Try restarting the device or moving it closer',
-      ));
+    // 4. Low link rate for the band (5 GHz should be 100+, 2.4 GHz should be 30+)
+    if (txRate != null && (signal == null || signal >= -75)) {
+      final threshold = band.contains('5') ? 100 : 30;
+      if (txRate < threshold) {
+        findings.add(_SlowDeviceFinding(
+          icon: Icons.speed,
+          color: Colors.orange,
+          title: 'Slow link rate for ${band.contains('5') ? '5 GHz' : '2.4 GHz'} ($txRate Mbps)',
+          detail: 'This device is connected at $txRate Mbps — much lower than '
+              'expected for ${band.contains('5') ? '5 GHz (typically 400–1200 Mbps)' : '2.4 GHz (typically 50–150 Mbps)'}. '
+              'This can be caused by interference, distance, or an older WiFi chip.',
+          fix: 'Try restarting the device or moving it closer to the router',
+        ));
+      }
     }
 
     // 5. No issues found from router's perspective
