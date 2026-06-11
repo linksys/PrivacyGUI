@@ -82,10 +82,12 @@ class _RemoteAssistanceConfirmViewState
 
     try {
       final service = ref.read(remoteAssistanceServiceProvider);
-      final sessionInfo = await service.fetchSessionInfoForCA(
-        sessionToken: widget.token,
-        sessionId: widget.sessionId,
-      );
+      final sessionInfo = await service
+          .fetchSessionInfoForCA(
+            sessionToken: widget.token,
+            sessionId: widget.sessionId,
+          )
+          .timeout(const Duration(seconds: 15));
 
       if (!mounted) return;
 
@@ -117,6 +119,12 @@ class _RemoteAssistanceConfirmViewState
       _startCountdown();
       logger.d('[RA] Session validated: ${sessionInfo.status}, '
           'expires in ${_remainingSeconds}s');
+    } on TimeoutException {
+      if (!mounted) return;
+      setState(() {
+        _viewState = _ViewState.error;
+        _errorMessage = 'Connection timed out. Please try again.';
+      });
     } on ServiceError catch (e) {
       if (!mounted) return;
       setState(() {
@@ -128,7 +136,7 @@ class _RemoteAssistanceConfirmViewState
       if (!mounted) return;
       setState(() {
         _viewState = _ViewState.error;
-        _errorMessage = 'Failed to validate: ${e.toString()}';
+        _errorMessage = 'An unexpected error occurred. Please try again.';
       });
     }
   }

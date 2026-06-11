@@ -18,11 +18,15 @@ class RemoteAccessState extends Equatable {
   /// Session expiry time (fixed, doesn't change with countdown).
   final DateTime? expiryTime;
 
+  /// True when polling has failed multiple times consecutively.
+  final bool hasPollError;
+
   const RemoteAccessState({
     this.sessionInfo,
     this.sessionToken,
     this.remainingSeconds,
     this.expiryTime,
+    this.hasPollError = false,
   });
 
   RemoteAccessState copyWith({
@@ -30,6 +34,7 @@ class RemoteAccessState extends Equatable {
     String? sessionToken,
     int? remainingSeconds,
     DateTime? expiryTime,
+    bool? hasPollError,
     bool clearSessionInfo = false,
   }) {
     return RemoteAccessState(
@@ -39,10 +44,12 @@ class RemoteAccessState extends Equatable {
       remainingSeconds:
           clearSessionInfo ? null : (remainingSeconds ?? this.remainingSeconds),
       expiryTime: clearSessionInfo ? null : (expiryTime ?? this.expiryTime),
+      hasPollError:
+          clearSessionInfo ? false : (hasPollError ?? this.hasPollError),
     );
   }
 
   @override
   List<Object?> get props =>
-      [sessionInfo, sessionToken, remainingSeconds, expiryTime];
+      [sessionInfo, sessionToken, remainingSeconds, expiryTime, hasPollError];
 }

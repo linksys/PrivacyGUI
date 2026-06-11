@@ -7,13 +7,15 @@ import 'package:privacy_gui/core/cloud/model/guardians_remote_assistance.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/remote_assistance/services/remote_assistance_service.dart';
 import 'package:privacy_gui/providers/remote_access/remote_access_state.dart';
-// ignore: avoid_web_libraries_in_flutter
+// ignore: avoid_web_libraries_in_flutter, sessionStorage for web persistence
 import 'dart:html'
     if (dart.library.io) 'package:privacy_gui/providers/remote_access/stub_html.dart'
     as html;
 
 const _kSessionKey = 'ra_session';
 const _kPollInterval = Duration(seconds: 30);
+const _kMaxPollFailures = 3;
+const _kStorageSaveInterval = 10;
 
 /// Provider that manages remote assistance session state.
 ///
@@ -27,6 +29,7 @@ final remoteAccessProvider =
 class RemoteAccessNotifier extends Notifier<RemoteAccessState> {
   Timer? _countdownTimer;
   Timer? _pollTimer;
+  int _pollFailureCount = 0;
 
   @override
   RemoteAccessState build() {
@@ -85,8 +88,8 @@ class RemoteAccessNotifier extends Notifier<RemoteAccessState> {
         return;
       }
       state = state.copyWith(remainingSeconds: remaining - 1);
-      // Update storage with new remaining time periodically (every 10s)
-      if (remaining % 10 == 0) {
+      // Update storage with new remaining time periodically
+      if (remaining % _kStorageSaveInterval == 0) {
         _saveToStorage();
       }
     });
@@ -118,10 +121,12 @@ class RemoteAccessNotifier extends Notifier<RemoteAccessState> {
       logger.d(
           '[RA] Poll: remaining=${remainingSeconds}s, status=${info.status}');
 
+      _pollFailureCount = 0;
       state = state.copyWith(
         sessionInfo: info,
         remainingSeconds: remainingSeconds,
         expiryTime: expiryTime,
+        hasPollError: false,
       );
       _saveToStorage();
 
@@ -131,7 +136,12 @@ class RemoteAccessNotifier extends Notifier<RemoteAccessState> {
         _countdownTimer?.cancel();
       }
     } catch (e) {
-      logger.w('[RA] Poll failed: $e');
+      _pollFailureCount++;
+      logger.w('[RA] Poll failed (attempt $_pollFailureCount): $e');
+
+      if (_pollFailureCount >= _kMaxPollFailures) {
+        state = state.copyWith(hasPollError: true);
+      }
     }
   }
 
