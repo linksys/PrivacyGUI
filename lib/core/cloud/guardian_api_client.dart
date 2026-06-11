@@ -199,11 +199,24 @@ class GuardianApiClient {
       headers[kHeaderSerialNumber] = serialNumber;
     }
 
-    return switch (method) {
+    final response = await switch (method) {
       'GET' => _http.get(url, headers: headers),
       'POST' => _http.post(url, headers: headers),
       'DELETE' => _http.delete(url, headers: headers),
       _ => throw ArgumentError('Unsupported HTTP method: $method'),
     };
+
+    _validateResponse(response);
+    return response;
+  }
+
+  void _validateResponse(http.Response response) {
+    if (response.statusCode >= 400) {
+      logger.w('[Guardian] API error: ${response.statusCode} ${response.body}');
+      throw http.ClientException(
+        'API error ${response.statusCode}: ${response.reasonPhrase}',
+        response.request?.url,
+      );
+    }
   }
 }

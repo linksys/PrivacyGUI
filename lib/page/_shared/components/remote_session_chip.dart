@@ -189,17 +189,19 @@ class _RemoteSessionChipState extends ConsumerState<RemoteSessionChip> {
   Future<void> _disconnect(BuildContext context, WidgetRef ref) async {
     _removePopup();
 
-    // Capture router BEFORE async gap — context becomes invalid after await
+    // Capture all refs BEFORE async gap — context/ref may become invalid after await
     final router = GoRouter.of(context);
-
     final state = ref.read(remoteAccessProvider);
+    final notifier = ref.read(remoteAccessProvider.notifier);
+    final authNotifier = ref.read(authProvider.notifier);
+    final service = ref.read(remoteAssistanceServiceProvider);
+
     final sessionId = state.sessionInfo?.id;
     final sessionToken = state.sessionToken;
 
     // Call API to end session (best effort — don't block on failure)
     if (sessionId != null && sessionToken != null) {
       try {
-        final service = ref.read(remoteAssistanceServiceProvider);
         await service.endSessionForCA(
           sessionToken: sessionToken,
           sessionId: sessionId,
@@ -211,12 +213,12 @@ class _RemoteSessionChipState extends ConsumerState<RemoteSessionChip> {
     }
 
     // Clear session state (triggers chip to disappear)
-    ref.read(remoteAccessProvider.notifier).clearSession();
+    notifier.clearSession();
 
     // Navigate using captured router, then logout after frame completes
     router.go('${RoutePath.remoteAssistanceConfirm}?ended=true');
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(authProvider.notifier).logout();
+      authNotifier.logout();
     });
   }
 }

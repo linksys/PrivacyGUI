@@ -6,7 +6,7 @@ const kCloudBase = 'CLOUD_BASE_URL';
 const kFirmwareOtaBase = 'FIRMWARE_OTA_BASE_URL';
 
 const linksysDomain = 'cloud1.linksyssmartwifi.com';
-const guardianDomain = 'guardian.tools'; // TODO: switch when ready
+const guardianDomain = 'guardian.tools';
 const domainBase = guardianDomain;
 
 // Linksys PROD
