@@ -73,8 +73,7 @@ void main() {
             ),
           ),
           steps: (tester) async {
-            await tester
-                .tap(find.bySemanticsLabel('wifi-name-2.4GHz').first);
+            await tester.tap(find.bySemanticsLabel('wifi-name-2.4GHz').first);
             await tester.pump();
             for (int i = 0; i < 10; i++) {
               await tester.pump(const Duration(milliseconds: 50));
