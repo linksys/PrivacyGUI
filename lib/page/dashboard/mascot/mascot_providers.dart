@@ -12,9 +12,14 @@ import 'package:privacy_gui/page/unified_diagnostics/models/diagnostic_state.dar
 import 'package:privacy_gui/page/unified_diagnostics/providers/unified_diagnostics_notifier.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_domain_ready_provider.dart';
 import 'package:privacy_gui/providers/app_settings/app_settings_provider.dart';
+import 'package:privacy_gui/route/constants.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
+import 'package:privacy_gui/page/ai_assistant/views/router_assistant_view.dart';
+
 import 'dashboard_dialog_provider.dart';
+import 'mascot_hero_widget.dart';
+import 'mascot_message_provider.dart';
 
 /// Provider for the mascot controller.
 final mascotControllerProvider = Provider.autoDispose<MascotController>((ref) {
@@ -38,6 +43,7 @@ final mascotDialogProvider =
       onRunFlowDiagnostics: (flow) => _runFlowDiagnostics(ref, flow),
       onPrintReport: () => _printReport(ref),
       onOpenThemeStudio: () => _openThemeStudio(ref),
+      onOpenAiAssistant: () => _openAiAssistant(context),
       getLocale: () => locale,
       getFaqCategoryTitle: (category) => category.displayString(context),
       getFaqItemTitle: (item) => item.displayString(context),
@@ -129,6 +135,81 @@ void _openThemeStudio(Ref ref) {
   ref.read(demoUIProvider.notifier).toggleThemePanel();
 }
 
+/// Navigate to AI Assistant page with mascot fly-in animation.
+///
+/// NOTE: Uses Navigator.push instead of go_router intentionally.
+/// The custom PageRouteBuilder enables the mascot fly-in transition
+/// which requires dynamic position calculation from MediaQuery.
+/// go_router's CustomTransitionPage doesn't easily support this pattern.
+void _openAiAssistant(BuildContext context) {
+  final screenSize = MediaQuery.of(context).size;
+
+  // Mascot's starting position (bottom-right, where the overlay typically is)
+  const mascotSize = 80.0;
+  final startPosition = Offset(
+    screenSize.width - mascotSize - 24,
+    screenSize.height - mascotSize * 1.375 - 100,
+  );
+
+  Navigator.of(context).push(
+    PageRouteBuilder(
+      settings: const RouteSettings(name: RouteNamed.uspAiAssistant),
+      transitionDuration: const Duration(milliseconds: 500),
+      reverseTransitionDuration: const Duration(milliseconds: 400),
+      pageBuilder: (context, animation, secondaryAnimation) {
+        return const RouterAssistantView();
+      },
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        // Fade in the page content
+        final fadeAnimation = CurvedAnimation(
+          parent: animation,
+          curve: const Interval(0.3, 1.0, curve: Curves.easeOut),
+        );
+
+        // Mascot flies from its original position to center
+        final mascotAnimation = CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutCubic,
+        );
+
+        final endPosition = Offset(
+          screenSize.width / 2 - mascotSize / 2,
+          screenSize.height / 3 - mascotSize / 2,
+        );
+
+        final currentPosition = Offset.lerp(
+          startPosition,
+          endPosition,
+          mascotAnimation.value,
+        )!;
+
+        return Stack(
+          children: [
+            // Page content fades in
+            FadeTransition(
+              opacity: fadeAnimation,
+              child: child,
+            ),
+            // Mascot flies and fades out
+            if (animation.value < 0.9)
+              Positioned(
+                left: currentPosition.dx,
+                top: currentPosition.dy,
+                child: Opacity(
+                  opacity: (1.0 - animation.value).clamp(0.0, 1.0),
+                  child: const MascotHeroWidget(
+                    size: mascotSize,
+                    animation: MascotAnimationKey.greet,
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
+    ),
+  );
+}
+
 /// Get router's current local time for greeting.
 DateTime? _getRouterTime(Ref ref) {
   final timeData = ref.read(timeDataProvider).valueOrNull;
@@ -152,19 +233,6 @@ class MascotCoordinatorNotifier extends AutoDisposeNotifier<void> {
   static const _minInterval = Duration(seconds: 10);
   static const _maxInterval = Duration(seconds: 30);
   static const _autoHideDuration = Duration(seconds: 5);
-
-  static const _randomMessages = [
-    'Everything looks good!',
-    'Your network is running smoothly.',
-    'All devices connected!',
-    'WiFi signal is strong.',
-    'No issues detected.',
-    'Tap me if you need help!',
-    'Need to run diagnostics?',
-    'I\'m here if you need me!',
-    'Network health: excellent!',
-    'All systems operational.',
-  ];
 
   @override
   void build() {
@@ -222,13 +290,16 @@ class MascotCoordinatorNotifier extends AutoDisposeNotifier<void> {
     if (controller.isDialogVisible) return;
     if (controller.state == MascotState.interacting) return;
 
-    final message = _randomMessages[_random.nextInt(_randomMessages.length)];
+    final messageProvider = ref.read(mascotMessageProvider);
+    final message = messageProvider.getRandomMessage();
 
     controller.showDialog(MascotDialogNode(
       id: 'random_speech',
-      text: message,
+      text: message.text,
       autoHide: true,
       autoHideDuration: _autoHideDuration,
+      showDismissButton: false,
+      suggestedAnimation: message.suggestedAnimation,
     ));
   }
 }

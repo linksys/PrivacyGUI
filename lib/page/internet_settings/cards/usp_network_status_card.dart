@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/page/_shared/models/wan_status_ui_model.dart';
+import 'package:privacy_gui/page/_shared/components/dashboard_card_template.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/_shared/components/usp_mutation_helper.dart';
 import 'package:privacy_gui/page/_shared/components/card_skeleton.dart';
 import 'package:privacy_gui/page/internet_settings/providers/usp_internet_settings_notifier.dart';
 import 'package:privacy_gui/page/internet_settings/providers/wan_data_provider.dart';
+import 'package:privacy_gui/route/constants.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 class UspNetworkStatusCard extends ConsumerWidget {
@@ -20,30 +22,28 @@ class UspNetworkStatusCard extends ConsumerWidget {
     final isRenewing = ref.watch(uspMutationLoadingProvider) == 'wanRenew';
     final colorScheme = Theme.of(context).colorScheme;
 
-    return AppCard(
-      child: Column(
+    return DashboardCardTemplate(
+      title: 'Network Status',
+      trailing: wan.addressingType.toLowerCase() == 'dhcp'
+          ? AppButton.text(
+              label: isRenewing ? 'Renewing...' : 'Renew Lease',
+              onTap: isRenewing
+                  ? null
+                  : () => performUspMutation(
+                        context,
+                        ref,
+                        loadingKey: 'wanRenew',
+                        mutation: () => ref
+                            .read(uspInternetSettingsProvider.notifier)
+                            .renewDhcpLease(),
+                        successMessage: 'DHCP lease renewed',
+                      ),
+            )
+          : null,
+      detailRoute: RouteNamed.uspInternetSettings,
+      content: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CardHeader(
-            title: 'Network Status',
-            trailing: wan.addressingType.toLowerCase() == 'dhcp'
-                ? AppButton.text(
-                    label: isRenewing ? 'Renewing...' : 'Renew Lease',
-                    onTap: isRenewing
-                        ? null
-                        : () => performUspMutation(
-                              context,
-                              ref,
-                              loadingKey: 'wanRenew',
-                              mutation: () => ref
-                                  .read(uspInternetSettingsProvider.notifier)
-                                  .renewDhcpLease(),
-                              successMessage: 'DHCP lease renewed',
-                            ),
-                  )
-                : null,
-          ),
-          AppGap.md(),
           // Status hero block - Online/Offline with WAN IP
           LayoutBlock(
             padding: const EdgeInsets.all(AppSpacing.md),
@@ -68,7 +68,7 @@ class UspNetworkStatusCard extends ConsumerWidget {
             ),
           ),
           AppGap.sm(),
-          // Gateway & MTU - 2 columns
+          // Gateway & MTU - 2 columns using MetricTile
           Row(
             children: [
               Expanded(
@@ -91,7 +91,7 @@ class UspNetworkStatusCard extends ConsumerWidget {
             ],
           ),
           AppGap.sm(),
-          // Subnet & IPv6 info
+          // Subnet & IPv6 info using InfoGrid
           InfoGrid(
             items: [
               InfoGridItem(label: 'Subnet', value: wan.subnetMask),

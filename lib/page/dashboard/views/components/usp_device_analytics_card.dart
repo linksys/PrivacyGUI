@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/page/_shared/models/device_analytics_state.dart';
 import 'package:privacy_gui/page/_shared/providers/card_tab_state_provider.dart';
 import 'package:privacy_gui/page/_shared/providers/usp_device_analytics_notifier.dart';
+import 'package:privacy_gui/page/_shared/components/dashboard_card_template.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Device Connection Analytics card — 4 chart views via tab selector.
@@ -23,45 +24,34 @@ class _UspDeviceAnalyticsCardState
     extends ConsumerState<UspDeviceAnalyticsCard> {
   static const _cardId = 'device_analytics';
 
-  static const _tabs = [
-    TabItem(label: 'Distribution'),
-    TabItem(label: 'Trend'),
-    TabItem(label: 'Activity'),
-    TabItem(label: 'Signal'),
-  ];
-
   @override
   Widget build(BuildContext context) {
     final analyticsState = ref.watch(uspDeviceAnalyticsProvider);
     final selectedTab = ref.watch(cardTabIndexProvider(_cardId));
 
-    return AppCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            height: 36,
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: AppText.titleMedium('Device Analytics'),
-            ),
-          ),
-          AppGap.md(),
-          AppTabs(
-            tabs: _tabs,
-            initialIndex: selectedTab,
-            displayMode: TabDisplayMode.segmented,
-            isScrollable: true,
-            showBorder: false,
-            onTabChanged: (index) =>
-                ref.read(cardTabIndexProvider(_cardId).notifier).state = index,
-          ),
-          AppGap.md(),
-          Expanded(
-            child: _buildChartView(context, analyticsState, selectedTab),
-          ),
-        ],
-      ),
+    return DashboardCardTemplate.tabbed(
+      title: 'Device Analytics',
+      selectedTabIndex: selectedTab,
+      onTabChanged: (index) =>
+          ref.read(cardTabIndexProvider(_cardId).notifier).state = index,
+      tabs: [
+        CardTab(
+          label: 'Distribution',
+          content: _buildChartView(context, analyticsState, 0),
+        ),
+        CardTab(
+          label: 'Trend',
+          content: _buildChartView(context, analyticsState, 1),
+        ),
+        CardTab(
+          label: 'Activity',
+          content: _buildChartView(context, analyticsState, 2),
+        ),
+        CardTab(
+          label: 'Signal',
+          content: _buildChartView(context, analyticsState, 3),
+        ),
+      ],
     );
   }
 

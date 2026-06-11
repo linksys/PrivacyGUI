@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
+import 'package:privacy_gui/page/_shared/components/dashboard_card_template.dart';
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/_shared/components/card_skeleton.dart';
@@ -9,6 +10,7 @@ import 'package:privacy_gui/page/topology/helpers/topology_node_content_builder.
 import 'package:privacy_gui/page/topology/helpers/usp_topology_builder.dart';
 import 'package:privacy_gui/page/topology/models/node_ui_model.dart';
 import 'package:privacy_gui/page/topology/views/components/node_detail_popup.dart';
+import 'package:privacy_gui/route/constants.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Displays a network topology visualization of the router and connected devices.
@@ -47,53 +49,39 @@ class UspNetworkTopologyCard extends ConsumerWidget {
     final totalCount = devicesData?.totalClientCount ?? devices.length;
     final useRing = totalCount >= 8;
 
-    return AppCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              AppText.titleMedium('Network Topology'),
-              AppText.labelLarge(
-                '$onlineCount / $totalCount online',
-              ),
-            ],
-          ),
-          AppGap.xl(),
-          Expanded(
-            child: ClipRect(
-              child: _withTopologyAnimation(
-                context,
-                AppTopology(
-                  topology: topology,
-                  viewMode: TopologyViewMode.graph,
-                  layoutMode: LayoutRecommendation.auto,
-                  clientVisibility: useRing
-                      ? ClientVisibility.onHover
-                      : ClientVisibility.always,
-                  nodeRendererRegistry: NodeRendererRegistry.unified,
-                  enableAnimation: true,
-                  interactive: false,
-                  nodeContentBuilder: TopologyNodeContentBuilder.build,
-                  treeConfig: TopologyTreeConfiguration(
-                    titleBuilder: (node) => node.name,
-                    subtitleBuilder: (node) => node.extra ?? '',
-                    preferAnimationNode: true,
-                    showStatusIndicator: true,
-                    showStatusText: true,
-                    expanded: false,
-                  ),
-                  nodeDetailConfig: NodeDetailConfig(
-                    trigger: NodeDetailTrigger.tap,
-                    detailBuilder: (ctx, node, metadata) =>
-                        NodeDetailPopup.builder(ctx, node, metadata),
-                  ),
-                ),
-              ),
+    return DashboardCardTemplate(
+      title: 'Network Topology',
+      titleBadge: AppBadge(label: '$onlineCount / $totalCount online'),
+      detailRoute: RouteNamed.uspDeviceList,
+      scrollable: false,
+      content: ClipRect(
+        child: _withTopologyAnimation(
+          context,
+          AppTopology(
+            topology: topology,
+            viewMode: TopologyViewMode.graph,
+            layoutMode: LayoutRecommendation.auto,
+            clientVisibility:
+                useRing ? ClientVisibility.onHover : ClientVisibility.always,
+            nodeRendererRegistry: NodeRendererRegistry.unified,
+            enableAnimation: true,
+            interactive: false,
+            nodeContentBuilder: TopologyNodeContentBuilder.build,
+            treeConfig: TopologyTreeConfiguration(
+              titleBuilder: (node) => node.name,
+              subtitleBuilder: (node) => node.extra ?? '',
+              preferAnimationNode: true,
+              showStatusIndicator: true,
+              showStatusText: true,
+              expanded: false,
+            ),
+            nodeDetailConfig: NodeDetailConfig(
+              trigger: NodeDetailTrigger.tap,
+              detailBuilder: (ctx, node, metadata) =>
+                  NodeDetailPopup.builder(ctx, node, metadata),
             ),
           ),
-        ],
+        ),
       ),
     );
   }

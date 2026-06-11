@@ -2,8 +2,8 @@
 ///
 /// This module provides:
 /// - [IRouterCommandProvider] - Abstract interface for router command providers
-/// - [JnapCommandProvider] - JNAP-based implementation
-/// - [RouterAgentOrchestrator] - Orchestrates AI conversation with router commands
+/// - [UspCommandProvider] - USP-based implementation using dashboard providers
+/// - [RouterChatController] - Manages conversation state with confirmation flow
 /// - [RouterSystemPrompt] - System prompt templates
 /// - [RouterComponentRegistry] - Component registry with router-specific widgets
 library ai;

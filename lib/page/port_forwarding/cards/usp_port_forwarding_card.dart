@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/_shared/models/port_forwarding_rule_ui_model.dart';
 import 'package:privacy_gui/page/port_forwarding/models/port_triggering_rule_ui_model.dart';
+import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/_shared/components/usp_mutation_helper.dart';
+import 'package:privacy_gui/page/_shared/components/dashboard_card_template.dart';
 import 'package:privacy_gui/page/dashboard/views/dialogs/port_forwarding_dialog.dart';
 import 'package:privacy_gui/page/port_forwarding/providers/port_forwarding_data_provider.dart';
 import 'package:privacy_gui/page/_shared/components/card_skeleton.dart';
 import 'package:privacy_gui/page/port_forwarding/providers/port_triggering_data_provider.dart';
 import 'package:privacy_gui/page/port_forwarding/providers/usp_port_forwarding_page_notifier.dart';
-import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 class UspPortForwardingCard extends ConsumerWidget {
@@ -27,58 +27,46 @@ class UspPortForwardingCard extends ConsumerWidget {
     final triggers = ptData?.ruleModels ?? [];
     final isLoading = ref.watch(uspMutationLoadingProvider) == 'portForwarding';
 
-    return AppCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return DashboardCardTemplate.multiSection(
+      title: 'Port Rules',
+      trailing: AppIconButton(
+        icon: AppIcon.font(Icons.add, size: 20),
+        onTap:
+            isLoading ? null : () => _showAddPortForwardingDialog(context, ref),
+      ),
+      detailRoute: RouteNamed.uspPortForwardingDetail,
+      itemCount: rules.length + triggers.length,
+      detailLabel: 'View all',
+      sections: [
+        CardSection(
+          title: 'Port Forwarding',
+          titleBadge: AppText.labelMedium('${rules.length}'),
+          isEmpty: rules.isEmpty,
+          emptyMessage: 'No port forwarding rules configured',
+          content: Column(
             children: [
-              AppText.titleMedium('Port Rules'),
-              Row(
-                children: [
-                  AppText.labelLarge('${rules.length + triggers.length}'),
-                  AppGap.sm(),
-                  AppIconButton(
-                    icon: AppIcon.font(Icons.add, size: 20),
-                    onTap: isLoading
-                        ? null
-                        : () => _showAddPortForwardingDialog(context, ref),
-                  ),
-                  AppGap.sm(),
-                  AppIconButton(
-                    icon: AppIcon.font(Icons.open_in_new, size: 18),
-                    onTap: () =>
-                        context.goNamed(RouteNamed.uspPortForwardingDetail),
-                  ),
-                ],
-              ),
+              for (var i = 0; i < rules.length; i++) ...[
+                _buildPortForwardingRow(context, ref, rules[i], isLoading),
+                if (i < rules.length - 1) AppGap.sm(),
+              ],
             ],
           ),
-          AppGap.md(),
-          // Port Forwarding section
-          AppText.labelLarge('Port Forwarding'),
-          AppGap.sm(),
-          if (rules.isEmpty)
-            AppText.bodyMedium('No port forwarding rules configured')
-          else
-            for (var i = 0; i < rules.length; i++) ...[
-              _buildPortForwardingRow(context, ref, rules[i], isLoading),
-              if (i < rules.length - 1) AppGap.sm(),
+        ),
+        CardSection(
+          title: 'Port Triggering',
+          titleBadge: AppText.labelMedium('${triggers.length}'),
+          isEmpty: triggers.isEmpty,
+          emptyMessage: 'No port triggering rules configured',
+          content: Column(
+            children: [
+              for (var i = 0; i < triggers.length; i++) ...[
+                _buildPortTriggeringRow(context, ref, triggers[i], isLoading),
+                if (i < triggers.length - 1) AppGap.sm(),
+              ],
             ],
-          AppGap.lg(),
-          // Port Triggering section
-          AppText.labelLarge('Port Triggering'),
-          AppGap.sm(),
-          if (triggers.isEmpty)
-            AppText.bodyMedium('No port triggering rules configured')
-          else
-            for (var i = 0; i < triggers.length; i++) ...[
-              _buildPortTriggeringRow(context, ref, triggers[i], isLoading),
-              if (i < triggers.length - 1) AppGap.sm(),
-            ],
-        ],
-      ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -145,7 +133,7 @@ class UspPortForwardingCard extends ConsumerWidget {
             child: AppText.bodyMedium(trigger.displayName),
           ),
           AppText.bodySmall(
-            '${trigger.triggerPortDisplay} \u2192 ${trigger.forwardPortDisplay}',
+            '${trigger.triggerPortDisplay} → ${trigger.forwardPortDisplay}',
             color: colorScheme.onSurfaceVariant,
           ),
           AppGap.md(),
