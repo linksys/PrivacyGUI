@@ -97,10 +97,10 @@ const kGeoLocation = '/cloud/v1/guardians/devices/geolocation';
 const kDeviceToken = '/cloud/v1/guardians/devices/tokens';
 
 // Remote assistance - Guardian API (Client side)
-const kSessions = '/cloud/v1/guardians/remote-assistances/sessions';
+const kSessions = '/v1/guardians/remote-assistances/sessions';
 const kSessionInfo =
-    '/cloud/v1/guardians/remote-assistances/sessions/$kVarRASessionId';
-const kCreatePin = '/cloud/v1/guardians/remote-assistances/sessions/pin';
+    '/v1/guardians/remote-assistances/sessions/$kVarRASessionId';
+const kCreatePin = '/v1/guardians/remote-assistances/sessions/pin';
 
 // Client type id/secret
 final kClientTypeId = clientTypeID;
