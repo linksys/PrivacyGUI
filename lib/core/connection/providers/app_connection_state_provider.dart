@@ -27,6 +27,8 @@ final appConnectionStateProvider =
 );
 
 class AppConnectionStateNotifier extends Notifier<AppConnectionState> {
+  // Trigger recovery after 2 failures (~3-5s) instead of waiting for all 5
+  // retries to exhaust (~6 min with 504 timeouts on each attempt).
   static const _reconnectFailureThreshold = 2;
 
   Timer? _probeTimer;

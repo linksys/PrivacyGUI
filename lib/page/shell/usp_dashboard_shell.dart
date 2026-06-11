@@ -72,12 +72,12 @@ class _UspDashboardShellState extends ConsumerState<UspDashboardShell> {
   }
 
   Future<void> _showNaturalRecoveryDialog() async {
+    if (ref.read(appConnectionStateProvider) !=
+        AppConnectionState.waitingForRecovery) {
+      return;
+    }
     _recoveryDialogShowing = true;
     try {
-      if (ref.read(appConnectionStateProvider) !=
-          AppConnectionState.waitingForRecovery) {
-        return;
-      }
       await showRecoveryDialog(
         context,
         ref,

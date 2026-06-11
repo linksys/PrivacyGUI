@@ -572,6 +572,62 @@ void main() {
       verifyNever(() => mockSseManager.disconnect());
     });
 
+    test('recoveryContext is cleared after ProbeResult.recovered', () async {
+      when(() => mockSseManager.disconnect()).thenAnswer((_) async {});
+      when(() => mockSseManager.connect()).thenAnswer((_) async {});
+      when(() => mockProbe.probe(healthOnly: any(named: 'healthOnly')))
+          .thenAnswer((_) async => ProbeResult.recovered);
+
+      final container = createContainer();
+      addTearDown(container.dispose);
+
+      final notifier = container.read(appConnectionStateProvider.notifier);
+      notifier.enterWaiting(
+        context: RecoveryContext(
+          trigger: RecoveryTrigger.operationalReboot,
+          cooldown: Duration.zero,
+          healthOnly: true,
+        ),
+      );
+      expect(notifier.recoveryContext, isNotNull);
+
+      await Future.delayed(const Duration(milliseconds: 50));
+
+      expect(
+        container.read(appConnectionStateProvider),
+        AppConnectionState.authenticated,
+      );
+      expect(notifier.recoveryContext, isNull);
+    });
+
+    test('recoveryContext is cleared after ProbeResult.serialMismatch',
+        () async {
+      when(() => mockSseManager.disconnect()).thenAnswer((_) async {});
+      when(() => mockProbe.probe())
+          .thenAnswer((_) async => ProbeResult.serialMismatch);
+      when(() => mockAuthNotifier.logout()).thenAnswer((_) async {});
+
+      final container = createContainer();
+      addTearDown(container.dispose);
+
+      final notifier = container.read(appConnectionStateProvider.notifier);
+      notifier.enterWaiting(
+        context: RecoveryContext(
+          trigger: RecoveryTrigger.operationalWifiChange,
+          cooldown: Duration.zero,
+        ),
+      );
+      expect(notifier.recoveryContext, isNotNull);
+
+      await Future.delayed(const Duration(milliseconds: 50));
+
+      expect(
+        container.read(appConnectionStateProvider),
+        AppConnectionState.loggedOut,
+      );
+      expect(notifier.recoveryContext, isNull);
+    });
+
     test('recoveryContext getter exposes current context', () {
       when(() => mockSseManager.disconnect()).thenAnswer((_) async {});
       when(() => mockProbe.probe())
