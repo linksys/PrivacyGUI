@@ -228,10 +228,8 @@ class _RemoteSessionChipState extends ConsumerState<RemoteSessionChip> {
     ref.read(authProvider.notifier).logout();
 
     if (context.mounted) {
-      context.goNamed(
-        RouteNamed.remoteAssistanceConfirm,
-        queryParameters: {'ended': 'true'},
-      );
+      // Use go() with full path to replace history and prevent back navigation
+      context.go('${RoutePath.remoteAssistanceConfirm}?ended=true');
     }
   }
 }
@@ -257,7 +255,7 @@ class _SessionPopup extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final sessionInfo = state.sessionInfo!;
-    final remainingSeconds = state.remainingSeconds ?? 0;
+    final expiryTime = state.expiryTime;
     final colorScheme = Theme.of(context).colorScheme;
 
     final iconName =
@@ -349,12 +347,12 @@ class _SessionPopup extends StatelessWidget {
                   ),
                   AppGap.sm(),
 
-                  // Time remaining row
+                  // Expiry time row (fixed time, doesn't change)
                   _buildInfoRow(
-                    'Time Remaining',
+                    'Expires At',
                     AppText.labelMedium(
-                      _formatDuration(remainingSeconds),
-                      color: _getTimeColor(remainingSeconds, colorScheme),
+                      _formatExpiryTime(expiryTime),
+                      color: colorScheme.onSurface,
                     ),
                     colorScheme,
                   ),
@@ -428,23 +426,15 @@ class _SessionPopup extends StatelessWidget {
     );
   }
 
-  Color _getTimeColor(int seconds, ColorScheme colorScheme) {
-    if (seconds <= 60) return colorScheme.error;
-    if (seconds <= 300) return colorScheme.tertiary;
-    return colorScheme.primary;
-  }
+  String _formatExpiryTime(DateTime? expiryTime) {
+    if (expiryTime == null) return 'Unknown';
+    if (expiryTime.isBefore(DateTime.now())) return 'Expired';
 
-  String _formatDuration(int seconds) {
-    if (seconds <= 0) return 'Expired';
-    final hours = seconds ~/ 3600;
-    final minutes = (seconds % 3600) ~/ 60;
-    final secs = seconds % 60;
+    final hour = expiryTime.hour;
+    final minute = expiryTime.minute.toString().padLeft(2, '0');
+    final period = hour >= 12 ? 'PM' : 'AM';
+    final hour12 = hour > 12 ? hour - 12 : (hour == 0 ? 12 : hour);
 
-    if (hours > 0) {
-      return '${hours}h ${minutes}m';
-    } else if (minutes > 0) {
-      return '${minutes}m ${secs}s';
-    }
-    return '${secs}s';
+    return '$hour12:$minute $period';
   }
 }

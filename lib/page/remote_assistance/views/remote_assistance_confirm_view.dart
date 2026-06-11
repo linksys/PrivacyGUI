@@ -465,7 +465,7 @@ class _RemoteAssistanceConfirmViewState
   Widget _buildMissingParamsView(
       BuildContext context, ColorScheme colorScheme) {
     final missingParams = <String>[];
-    if (!_hasValidSessionId) missingParams.add('sessionId');
+    if (!_hasValidSessionId) missingParams.add('session');
     if (!_hasToken) missingParams.add('token');
 
     return UiKitPageView(
@@ -499,7 +499,7 @@ class _RemoteAssistanceConfirmViewState
                 AppGap.xl(),
                 AppText.bodySmall(
                   'Expected URL format:\n'
-                  '/remote-assistance?sessionId=<id>&token=<token>',
+                  '/remote-assistance?session=<id>&token=<token>',
                   textAlign: TextAlign.center,
                   color: colorScheme.onSurface.withValues(alpha: 0.5),
                 ),

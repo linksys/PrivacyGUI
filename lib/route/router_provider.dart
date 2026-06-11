@@ -150,7 +150,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             logger
                 .i('[Route]: Remote mode refresh, redirecting to confirm page');
             return '${RoutePath.remoteAssistanceConfirm}'
-                '?sessionId=${raState.sessionInfo!.id}'
+                '?session=${raState.sessionInfo!.id}'
                 '&token=${raState.sessionToken}';
           }
           logger.i('[Route]: Remote mode no session, redirecting to RA page');
@@ -191,10 +191,11 @@ class RouterNotifier extends ChangeNotifier {
 
   Future<String?> autoConfigurationLogic(GoRouterState state) async {
     // Check for Remote Assistance mode via URL parameter
-    final raSession = state.uri.queryParameters['ra_session'];
+    final raSession = state.uri.queryParameters['session'];
     if (raSession != null && raSession.isNotEmpty) {
+      final raToken = state.uri.queryParameters['token'] ?? '';
       logger.i('[Route]: Detected Remote Assistance session: $raSession');
-      return '${RoutePath.remoteAssistanceConfirm}?sessionId=$raSession';
+      return '${RoutePath.remoteAssistanceConfirm}?session=$raSession&token=$raToken';
     }
 
     // Check for Remote build mode (force=remote)

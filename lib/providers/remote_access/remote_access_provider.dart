@@ -4,6 +4,8 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/cloud/model/guardians_remote_assistance.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/page/remote_assistance/services/remote_assistance_service.dart';
 import 'package:privacy_gui/providers/remote_access/remote_access_state.dart';
 // ignore: avoid_web_libraries_in_flutter
 import 'dart:html'
@@ -11,6 +13,7 @@ import 'dart:html'
     as html;
 
 const _kSessionKey = 'ra_session';
+const _kPollInterval = Duration(seconds: 30);
 
 /// Provider that manages remote assistance session state.
 ///
@@ -23,17 +26,20 @@ final remoteAccessProvider =
 
 class RemoteAccessNotifier extends Notifier<RemoteAccessState> {
   Timer? _countdownTimer;
+  Timer? _pollTimer;
 
   @override
   RemoteAccessState build() {
     ref.onDispose(() {
       _countdownTimer?.cancel();
+      _pollTimer?.cancel();
     });
 
     // Try to restore from sessionStorage on init
     final restored = _restoreFromStorage();
     if (restored != null) {
       _startCountdown();
+      _startPolling();
       return restored;
     }
 
@@ -54,14 +60,19 @@ class RemoteAccessNotifier extends Notifier<RemoteAccessState> {
       return;
     }
 
+    // Calculate expiry time from remaining seconds
+    final expiryTime = DateTime.now().add(Duration(seconds: remainingSeconds));
+
     state = state.copyWith(
       sessionInfo: info,
       sessionToken: sessionToken,
       remainingSeconds: remainingSeconds,
+      expiryTime: expiryTime,
     );
 
     _saveToStorage();
     _startCountdown();
+    _startPolling();
   }
 
   void _startCountdown() {
@@ -81,9 +92,53 @@ class RemoteAccessNotifier extends Notifier<RemoteAccessState> {
     });
   }
 
+  void _startPolling() {
+    _pollTimer?.cancel();
+    _pollTimer = Timer.periodic(_kPollInterval, (_) => _pollSessionInfo());
+  }
+
+  Future<void> _pollSessionInfo() async {
+    final sessionId = state.sessionInfo?.id;
+    final sessionToken = state.sessionToken;
+    if (sessionId == null || sessionToken == null) return;
+
+    try {
+      final service = ref.read(remoteAssistanceServiceProvider);
+      final info = await service.fetchSessionInfoForCA(
+        sessionToken: sessionToken,
+        sessionId: sessionId,
+      );
+
+      // Calculate remaining seconds from API response
+      // expiredIn is negative when time remains, positive when expired
+      final remainingSeconds = info.expiredIn < 0 ? -info.expiredIn : 0;
+      final expiryTime =
+          DateTime.now().add(Duration(seconds: remainingSeconds));
+
+      logger.d(
+          '[RA] Poll: remaining=${remainingSeconds}s, status=${info.status}');
+
+      state = state.copyWith(
+        sessionInfo: info,
+        remainingSeconds: remainingSeconds,
+        expiryTime: expiryTime,
+      );
+      _saveToStorage();
+
+      // If session is no longer active, stop polling
+      if (info.status == GRASessionStatus.invalid) {
+        _pollTimer?.cancel();
+        _countdownTimer?.cancel();
+      }
+    } catch (e) {
+      logger.w('[RA] Poll failed: $e');
+    }
+  }
+
   /// Clear session state (when disconnecting).
   void clearSession() {
     _countdownTimer?.cancel();
+    _pollTimer?.cancel();
     state = state.copyWith(clearSessionInfo: true);
     _clearStorage();
   }
@@ -97,6 +152,7 @@ class RemoteAccessNotifier extends Notifier<RemoteAccessState> {
         'sessionInfo': state.sessionInfo?.toMap(),
         'sessionToken': state.sessionToken,
         'remainingSeconds': state.remainingSeconds,
+        'expiryTime': state.expiryTime?.millisecondsSinceEpoch,
         'savedAt': DateTime.now().millisecondsSinceEpoch,
       };
       html.window.sessionStorage[_kSessionKey] = jsonEncode(data);
@@ -117,6 +173,7 @@ class RemoteAccessNotifier extends Notifier<RemoteAccessState> {
 
       final savedAt = data['savedAt'] as int?;
       final savedRemaining = data['remainingSeconds'] as int?;
+      final expiryTimeMs = data['expiryTime'] as int?;
 
       // Calculate actual remaining time (adjust for time passed since save)
       int? remainingSeconds;
@@ -126,10 +183,17 @@ class RemoteAccessNotifier extends Notifier<RemoteAccessState> {
         remainingSeconds = (savedRemaining - elapsed).clamp(0, savedRemaining);
       }
 
+      // Restore expiry time
+      DateTime? expiryTime;
+      if (expiryTimeMs != null) {
+        expiryTime = DateTime.fromMillisecondsSinceEpoch(expiryTimeMs);
+      }
+
       return RemoteAccessState(
         sessionInfo: GRASessionInfo.fromMap(sessionInfoMap),
         sessionToken: data['sessionToken'] as String?,
         remainingSeconds: remainingSeconds,
+        expiryTime: expiryTime,
       );
     } catch (e) {
       _clearStorage();

@@ -15,16 +15,21 @@ class RemoteAccessState extends Equatable {
   /// Remaining seconds until session expires.
   final int? remainingSeconds;
 
+  /// Session expiry time (fixed, doesn't change with countdown).
+  final DateTime? expiryTime;
+
   const RemoteAccessState({
     this.sessionInfo,
     this.sessionToken,
     this.remainingSeconds,
+    this.expiryTime,
   });
 
   RemoteAccessState copyWith({
     GRASessionInfo? sessionInfo,
     String? sessionToken,
     int? remainingSeconds,
+    DateTime? expiryTime,
     bool clearSessionInfo = false,
   }) {
     return RemoteAccessState(
@@ -33,9 +38,11 @@ class RemoteAccessState extends Equatable {
           clearSessionInfo ? null : (sessionToken ?? this.sessionToken),
       remainingSeconds:
           clearSessionInfo ? null : (remainingSeconds ?? this.remainingSeconds),
+      expiryTime: clearSessionInfo ? null : (expiryTime ?? this.expiryTime),
     );
   }
 
   @override
-  List<Object?> get props => [sessionInfo, sessionToken, remainingSeconds];
+  List<Object?> get props =>
+      [sessionInfo, sessionToken, remainingSeconds, expiryTime];
 }

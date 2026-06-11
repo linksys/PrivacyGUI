@@ -5,10 +5,8 @@ final remoteAssistanceRoute = LinksysRoute(
   path: RoutePath.remoteAssistanceConfirm,
   config: LinksysRouteConfig(column: ColumnGrid(column: 12), noNaviRail: true),
   builder: (context, state) {
-    // Accept both sessionId and sessionID (case-insensitive)
-    final sessionId = state.uri.queryParameters['sessionId'] ??
-        state.uri.queryParameters['sessionID'] ??
-        '';
+    // Query params: session, token
+    final sessionId = state.uri.queryParameters['session'] ?? '';
     final token = state.uri.queryParameters['token'] ?? '';
     final ended = state.uri.queryParameters['ended'] == 'true';
     return RemoteAssistanceConfirmView(
