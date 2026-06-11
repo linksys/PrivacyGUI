@@ -16,8 +16,8 @@ export 'usp_response_helpers.dart';
 export 'bridge_request_throttler.dart' show RequestPriority;
 // Export USP operation result types for application layer use.
 export '../models/usp_operation_result.dart';
-// Export builder for Remote Assistance mode.
-export '../web/usp_client_wasm.dart' show UspClientBuilderJS;
+// Export builder for Remote Assistance mode (platform-agnostic entry point).
+export '../web/usp_client_builder.dart';
 
 // ===========================================================================
 // USP Subscription types (used by codegen-generated subscribe methods)
