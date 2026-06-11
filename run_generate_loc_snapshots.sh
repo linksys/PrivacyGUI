@@ -1,13 +1,21 @@
 #!/bin/bash
 set -e
 
-while getopts l:s:f:c:v: flag
+# Detect fvm: use fvm flutter if available, otherwise use flutter directly
+if command -v fvm > /dev/null 2>&1 && [ -f ".fvmrc" ]; then
+  FLUTTER="fvm flutter"
+  DART="fvm dart"
+else
+  FLUTTER="flutter"
+  DART="dart"
+fi
+
+while getopts l:s:f:v: flag
 do
     case "${flag}" in
         l) locales=${OPTARG};;
         s) screens=${OPTARG};;
         f) file=${OPTARG};;
-        c) copy=true;;
         v) version=${OPTARG};;
     esac
 done
@@ -25,40 +33,19 @@ echo "Locales: $locales"
 echo "Screens: $screens"
 echo "Version: $version"
 
-mkdir -p ./snapshots/
 if [ -z "$file" ]; then
-  locStr=${locales//,/_}
-  screenStr=${screens//,/_}
   IFS=',' read -ra LOCS <<< "$locales"
-  # IFS=',' read -ra SCREENS <<< "$screens"
-  g=1
-  # for screen in "${SCREENS[@]}"; do
-    for((i=0; i < ${#LOCS[@]}; i+=g))
-    do
-      part=( "${LOCS[@]:i:g}" )
-      locale=$(IFS=, ; echo "${part[*]}")
-      echo "Start run screenshot testing with screen: $screens, locales: $locale"
-      flutter test --file-reporter json:snapshots/tests.json --tags=loc --update-goldens --dart-define=locales="$locale" --dart-define=screens="$screens" --dart-define=visualEffects=0
-      dart test_scripts/test_result_parser.dart snapshots/tests.json "$locale" "$screenStr"
-      rm snapshots/tests.json
-    done
-  # done
-  
-  dart test_scripts/combine_results.dart snapshots "$version"
+  for((i=0; i < ${#LOCS[@]}; i++))
+  do
+    locale="${LOCS[$i]}"
+    echo "Start run screenshot testing with screen: $screens, locales: $locale"
+    $FLUTTER test test/golden_test/ --update-goldens --dart-define=locales="$locale" --dart-define=screens="$screens" --dart-define=visualEffects=0
+  done
 else
   echo "Target file: $file"
-  flutter test $file --tags=loc --update-goldens --dart-define=locales="$locales" --dart-define=screens="$screens" --dart-define=overlay="$overlay" --dart-define=visualEffects=0
-  exit $? # Exit with the status of the last command (flutter test)
+  $FLUTTER test $file --update-goldens --dart-define=locales="$locales" --dart-define=screens="$screens" --dart-define=visualEffects=0
+  exit $?
 fi
 echo 'Generating Localization snapshots Finished!******************************************'
 
-echo all screenshots to "snapshots" folder
-for dir in $(find ./ -iname 'goldens' -type d); do
-  echo $dir
-  if [ "$copy" = true ]; then
-    find "$dir" -type f -exec cp {} ./snapshots/ \;
-  else
-    find "$dir" -type f -exec mv {} ./snapshots/ \;
-  fi
-done
-dart run test_scripts/grep_loc_fils.dart
+$DART run test_scripts/generate_gallery_report.dart "$version"

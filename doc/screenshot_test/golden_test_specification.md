@@ -75,6 +75,10 @@ class GoldenTestConfig {
   /// Optional fixed height override. When set, all devices use this height
   /// instead of their default. Useful for views with tall scrollable content.
   final double? height;
+
+  /// Images to precache before taking the screenshot (optional).
+  /// Required for views that use Image widgets with package assets (e.g., DeviceImageHelper).
+  final List<ImageProvider> Function()? precacheImages;
 }
 
 enum ShellType { pageView, scaffold, custom }
@@ -110,7 +114,7 @@ State keys become part of the output filename (`{viewName}-{stateKey}-{device}-{
 
 ### Complete Example (Firewall)
 
-#### Test file: `test/usp_test/page/firewall/localizations/usp_firewall_view_test.dart`
+#### Test file: `test/golden_test/page/firewall/localizations/usp_firewall_view_test.dart`
 
 ```dart
 import 'package:privacy_gui/page/firewall/models/firewall_feature_state.dart';
@@ -143,7 +147,7 @@ void main() {
 }
 ```
 
-#### Fixtures: `test/usp_test/page/firewall/fixtures/firewall_test_data.dart`
+#### Fixtures: `test/golden_test/page/firewall/fixtures/firewall_test_data.dart`
 
 ```dart
 import 'package:privacy_gui/framework/preservable.dart';
@@ -224,7 +228,7 @@ FirewallFeatureState get errorState => FirewallFeatureState(
 );
 ```
 
-#### Mock: `test/usp_test/golden_framework/mocks/mock_firewall.dart`
+#### Mock: `test/golden_test/golden_framework/mocks/mock_firewall.dart`
 
 ```dart
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -323,9 +327,26 @@ Interaction keys follow the same snake_case rule as state keys. Name them by wha
 | `tab_guest` | Switch to the guest tab |
 | `dialog_add` | Open the "add item" dialog |
 
+### Finder Rules in Interaction Steps
+
+**NEVER use `find.text('...')` with hardcoded strings in interaction steps.** Golden tests run across multiple locales — English text won't exist in Japanese or other locale builds.
+
+| Forbidden | Use instead |
+|-----------|-------------|
+| `find.text('Setup')` | `find.byType(AppExpansionPanel)` |
+| `find.text('Save')` | `find.byType(AppButton)` with descendant matching |
+| `find.text('Guest')` | `find.byType(Tab).at(index)` |
+
+Allowed finders for interactions:
+- `find.byType(WidgetType)` — locale-independent
+- `find.byType(WidgetType).at(index)` — positional
+- `find.byIcon(Icons.xxx)` — locale-independent
+- `find.byKey(Key('...'))` — locale-independent
+- `find.descendant(of: ..., matching: find.byType(...))` — scoped
+
 ### Shared Interactions
 
-UI components that are shared across multiple pages (e.g., the saving spinner dialog triggered by `doSomethingWithSpinner`) should be tested once in a shared test file (`test/usp_test/page/shared/shared_states_test.dart`) rather than duplicated in every feature test. Individual feature tests should NOT include a `saving` state — since the spinner is an imperative overlay (not provider-state-driven), it requires an interaction to capture, and testing it once is sufficient.
+UI components that are shared across multiple pages (e.g., the saving spinner dialog triggered by `doSomethingWithSpinner`) should be tested once in a shared test file (`test/golden_test/page/shared/shared_states_test.dart`) rather than duplicated in every feature test. Individual feature tests should NOT include a `saving` state — since the spinner is an imperative overlay (not provider-state-driven), it requires an interaction to capture, and testing it once is sufficient.
 
 ---
 
@@ -348,7 +369,7 @@ Each feature provides a `FixedXxxNotifier` that subclasses the real Notifier, re
 ### File Structure
 
 ```
-test/usp_test/golden_framework/
+test/golden_test/golden_framework/
   mocks/
     mock_firewall.dart      // FixedFirewallNotifier + firewallOverrides()
     mock_wifi_settings.dart // FixedWifiSettingsNotifier + wifiOverrides()
@@ -364,7 +385,7 @@ See the complete Firewall example above for `mock_firewall.dart` implementation.
 ### Common Overrides
 
 ```dart
-// test/usp_test/golden_framework/mocks/mock_common.dart
+// test/golden_test/golden_framework/mocks/mock_common.dart
 
 List<Override> commonOverrides() => [
   authProvider.overrideWith(() => FixedAuthNotifier()),
@@ -403,7 +424,7 @@ Shared test data (states, models) should be defined once and reused across unit 
 ### Fixture Location
 
 ```
-test/usp_test/page/firewall/
+test/golden_test/page/firewall/
   fixtures/
     firewall_test_data.dart    // shared FeatureState instances, model constants
   localizations/
@@ -447,10 +468,8 @@ void runViewGoldenTests(GoldenTestConfig config) {
                 height: effectiveSize.height,
               ),
               pumpBeforeTest: (tester) async {
-                // Multiple pumps for async provider initialization
-                for (int i = 0; i < 5; i++) {
-                  await tester.pump(const Duration(milliseconds: 50));
-                }
+                await _precacheIfNeeded(tester, config);
+                await _settleWithTimeout(tester);
               },
               pumpWidget: (tester, widget) async {
                 _suppressOverflowErrors();
@@ -482,11 +501,10 @@ void runViewGoldenTests(GoldenTestConfig config) {
           fileName: name,
           constraints: BoxConstraints.expand(...),
           pumpBeforeTest: (tester) async {
-            for (int i = 0; i < 5; i++) {
-              await tester.pump(const Duration(milliseconds: 50));
-            }
+            await _precacheIfNeeded(tester, config);
+            await _settleWithTimeout(tester);
             await interactionEntry.value.steps(tester);
-            await tester.pump(const Duration(milliseconds: 100));
+            await _settleWithTimeout(tester);
           },
           pumpWidget: (tester, widget) async {
             _suppressOverflowErrors();
@@ -501,14 +519,59 @@ void runViewGoldenTests(GoldenTestConfig config) {
     }
   });
 }
+
+/// Pumps until no pending frames or timeout — whichever comes first.
+/// Won't fail on infinite animations (spinners, looping controllers).
+Future<void> _settleWithTimeout(WidgetTester tester) async {
+  try {
+    await tester.pumpAndSettle(
+      const Duration(milliseconds: 50),
+      EnginePhase.sendSemanticsUpdate,
+      const Duration(milliseconds: 500),
+    );
+  } on FlutterError {
+    await tester.pump();
+  }
+}
+
+/// Precaches images in a real async zone so asset resolution completes.
+Future<void> _precacheIfNeeded(WidgetTester tester, GoldenTestConfig config) async {
+  if (config.precacheImages == null) return;
+  await tester.runAsync(() async {
+    final element = tester.element(find.byType(MaterialApp));
+    for (final image in config.precacheImages!()) {
+      await precacheImage(image, element);
+    }
+  });
+}
 ```
 
 ### Key Implementation Details
 
 - **`physicalSize` + `devicePixelRatio`**: Both must be set for `MediaQuery.sizeOf` to report the correct viewport width. `setSurfaceSize` alone only controls the screenshot capture surface, not the logical size seen by widgets.
-- **Multiple pump cycles**: Async providers (especially those that read from SharedPreferences or perform post-frame callbacks) need multiple frames to initialize. 5×50ms pumps covers typical async initialization.
-- **Interaction post-pump**: After executing interaction steps, `pump(Duration(milliseconds: 100))` fires any pending delayed timers (e.g., animation callbacks).
+- **`_settleWithTimeout`**: Uses `pumpAndSettle` with a 500ms timeout instead of the naive 5×pump loop. If `pumpAndSettle` times out (due to infinite animations like spinners), it catches the `FlutterError` and pumps one final frame. This is both correct (waits for async providers to initialize) and robust (doesn't fail on looping animations).
+- **`_precacheIfNeeded`**: For views that render `Image` widgets with package assets (e.g., `DeviceImageHelper.getRouterImage()`), image resolution is async and won't complete inside the test's fake async zone. `tester.runAsync()` escapes the fake zone to allow real I/O, ensuring images are fully resolved before the screenshot is taken.
+- **Interaction settle**: After executing interaction steps (tab switches, dialog opens), `_settleWithTimeout` is called again to let the UI reach a stable state before capture.
 - **Overflow suppression**: `_suppressOverflowErrors()` prevents golden tests from failing due to cosmetic overflow — the overflow is visible in the golden image itself.
+
+### Image Precaching
+
+Views that use `Image` widgets with asset providers (from `ui_kit_library` or elsewhere) must declare `precacheImages` in their config. Without this, images may render as empty boxes because the asset bundle resolution Future never completes in the test environment's fake async zone.
+
+```dart
+GoldenTestConfig(
+  viewName: 'topology',
+  view: () => const UspTopologyView(),
+  shell: ShellType.custom,
+  precacheImages: () => [
+    DeviceImageHelper.getRouterImage('routerMx6200'),
+    DeviceImageHelper.getRouterImage('routerLn12'),
+  ],
+  states: { /* ... */ },
+)
+```
+
+Views that only render text, icons, and standard Flutter widgets do NOT need this — only views with `Image(image: ...)` or `DecorationImage`.
 
 ---
 
@@ -516,7 +579,7 @@ void runViewGoldenTests(GoldenTestConfig config) {
 
 ### flutter_test_config.dart
 
-Located at `test/usp_test/flutter_test_config.dart`, this file is automatically loaded by the Flutter test runner for all tests under `test/usp_test/`. It configures:
+Located at `test/golden_test/flutter_test_config.dart`, this file is automatically loaded by the Flutter test runner for all tests under `test/golden_test/`. It configures:
 
 1. **Alchemist config** — Disables CI goldens, enables platform goldens with `diffThreshold: 0.025`
 2. **Font loading** — Loads real fonts so text renders readably (not Ahem blocks)
@@ -632,7 +695,7 @@ void _validateConfig(GoldenTestConfig config) {
 
 for view_file in lib/page/*/views/usp_*_view.dart; do
   feature=$(echo "$view_file" | sed 's|lib/page/\(.*\)/views/.*|\1|')
-  test_pattern="test/usp_test/page/$feature/localizations/*_test.dart"
+  test_pattern="test/golden_test/page/$feature/localizations/*_test.dart"
   if ! ls $test_pattern &>/dev/null 2>&1; then
     echo "FAIL $view_file: no golden test found"
     FAIL=1
@@ -654,7 +717,7 @@ done
 ### Framework Code
 
 ```
-test/usp_test/
+test/golden_test/
   flutter_test_config.dart        # Alchemist config + font loading (auto-loaded by test runner)
   golden_framework/
     golden_test_config.dart       # GoldenTestConfig, Interaction, ShellType
@@ -670,7 +733,7 @@ test/usp_test/
 ### Per-Feature Tests
 
 ```
-test/usp_test/
+test/golden_test/
   page/
     firewall/
       fixtures/
@@ -815,33 +878,33 @@ A typical view with 6 states, default config: `6 × 2 × 1 × 1 = 12 golden file
 ### Run all golden tests
 
 ```bash
-flutter test test/usp_test/
+flutter test test/golden_test/
 ```
 
 ### Run a specific feature
 
 ```bash
-flutter test test/usp_test/page/firewall/
+flutter test test/golden_test/page/firewall/
 ```
 
 ### Update golden files (regenerate baselines)
 
 ```bash
-flutter test --update-goldens test/usp_test/
-flutter test --update-goldens test/usp_test/page/firewall/  # single feature
+flutter test --update-goldens test/golden_test/
+flutter test --update-goldens test/golden_test/page/firewall/  # single feature
 ```
 
 ---
 
 ## Workflow: Adding Golden Tests for a New View
 
-1. Create mock file at `test/usp_test/golden_framework/mocks/mock_{feature}.dart`
+1. Create mock file at `test/golden_test/golden_framework/mocks/mock_{feature}.dart`
    - Implement `FixedXxxNotifier` subclass
    - Export `xxxOverrides(state)` helper function
-2. Create fixtures at `test/usp_test/page/{feature}/fixtures/{feature}_test_data.dart`
-3. Create test file at `test/usp_test/page/{feature}/localizations/usp_{feature}_view_test.dart`
+2. Create fixtures at `test/golden_test/page/{feature}/fixtures/{feature}_test_data.dart`
+3. Create test file at `test/golden_test/page/{feature}/localizations/usp_{feature}_view_test.dart`
 4. Write `GoldenTestConfig` with all required + feature-specific states
-5. Run `flutter test --update-goldens test/usp_test/page/{feature}/` to generate baselines
+5. Run `flutter test --update-goldens test/golden_test/page/{feature}/` to generate baselines
 6. Review generated images visually
 7. Commit golden files
 8. CI will validate coverage on merge
@@ -851,5 +914,5 @@ flutter test --update-goldens test/usp_test/page/firewall/  # single feature
 ## Future Considerations
 
 - **CI environment standardization**: Golden images are generated on macOS with specific font rendering. CI runners on Linux may produce different pixel results. Consider a Docker image with fixed font rendering if cross-platform diffs become an issue.
-- **Animation determinism**: `JiggleShake` uses unseeded `Random()`, requiring `diffThreshold` tolerance. If more animations are added, consider seeding random sources or disabling animations during golden capture.
+- **Animation determinism**: `_settleWithTimeout` handles infinite animations gracefully (catches timeout and proceeds). `diffThreshold: 0.025` remains as a safety margin for non-deterministic animations like `JiggleShake` (uses unseeded `Random()`). If more such animations are added, consider seeding random sources.
 - **Shared golden baselines for loading/error**: Loading and error UI is shared across all views. A single shared golden test could cover those components, reducing per-feature state requirements.

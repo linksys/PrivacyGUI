@@ -91,6 +91,8 @@ artifacts/webApp
 # Goldens
 test/**/goldens/*
 test/**/localizations/failures/
+test/golden_test/*.html
+test/golden_test/*.json
 
 # mock
 test/**/*.mocks.dart
