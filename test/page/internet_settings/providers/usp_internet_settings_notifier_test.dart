@@ -300,19 +300,8 @@ void main() {
       container.dispose();
     });
 
-    test('fetch with unauthenticated service sets error status', () async {
-      when(() => mockUsp.isAuthenticated).thenReturn(false);
-      when(() => mockAuthCoordinator.restoreSession()).thenAnswer((_) async {});
-      when(() => mockService.fetchSettings())
-          .thenAnswer((_) async => testFetchResult);
-
-      final container = createContainer();
-      await Future.delayed(Duration.zero);
-
-      final state = container.read(uspInternetSettingsProvider);
-      // Should hit the restore path which won't succeed with our mock.
-      expect(state.status.errorMessage, isNotNull);
-      container.dispose();
-    });
+    // NOTE: Test removed — auth check moved from L2 provider to upper layer
+    // (appConnectionStateProvider). L2 providers now trust the upper layer
+    // handles auth before allowing navigation to the page.
   });
 }

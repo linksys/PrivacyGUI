@@ -15,6 +15,11 @@ class _AlwaysAuthenticatedNotifier extends AppConnectionStateNotifier {
   AppConnectionState build() => AppConnectionState.authenticated;
 }
 
+class _NotAuthenticatedNotifier extends AppConnectionStateNotifier {
+  @override
+  AppConnectionState build() => AppConnectionState.loggedOut;
+}
+
 void main() {
   late MockUspClient mockUsp;
 
@@ -145,9 +150,20 @@ void main() {
     });
 
     test('fetchNow returns early when not authenticated', () async {
-      when(() => mockUsp.isAuthenticated).thenReturn(false);
-      final container = await createAndWait();
-      // Clear interactions from other providers triggered during setup
+      // Use _NotAuthenticatedNotifier to simulate logged out state
+      final container = ProviderContainer(
+        overrides: [
+          uspClientProvider.overrideWithValue(mockUsp),
+          appConnectionStateProvider.overrideWith(() {
+            return _NotAuthenticatedNotifier();
+          }),
+        ],
+      );
+      // Trigger build + wait for microtask.
+      container.read(uspSystemMonitorProvider);
+      await Future.delayed(Duration.zero);
+      await Future.delayed(Duration.zero);
+      // Clear interactions from build phase
       clearInteractions(mockUsp);
 
       final notifier = container.read(uspSystemMonitorProvider.notifier);

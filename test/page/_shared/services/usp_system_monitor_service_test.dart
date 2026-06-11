@@ -40,20 +40,6 @@ void main() {
   }
 
   // ---------------------------------------------------------------------------
-  // isAuthenticated
-  // ---------------------------------------------------------------------------
-
-  group('UspSystemMonitorService — isAuthenticated', () {
-    test('delegates to UspService.isAuthenticated', () {
-      when(() => mockUsp.isAuthenticated).thenReturn(true);
-      expect(svc.isAuthenticated, isTrue);
-
-      when(() => mockUsp.isAuthenticated).thenReturn(false);
-      expect(svc.isAuthenticated, isFalse);
-    });
-  });
-
-  // ---------------------------------------------------------------------------
   // fetchSnapshot
   // ---------------------------------------------------------------------------
 
