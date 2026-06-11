@@ -1,13 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:privacy_gui/core/cloud/linksys_cloud_repository.dart';
+import 'package:privacy_gui/core/cloud/guardian_api_client.dart';
 import 'package:privacy_gui/core/cloud/model/error_response.dart';
 import 'package:privacy_gui/core/cloud/model/guardians_remote_assistance.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/page/remote_assistance/services/remote_assistance_service.dart';
 
-class MockLinksysCloudRepository extends Mock
-    implements LinksysCloudRepository {}
+class MockGuardianApiClient extends Mock implements GuardianApiClient {}
 
 /// Test data builder for Remote Assistance service tests.
 class RemoteAssistanceTestData {
@@ -74,25 +73,25 @@ class RemoteAssistanceTestData {
 }
 
 void main() {
-  late MockLinksysCloudRepository mockRepo;
+  late MockGuardianApiClient mockApi;
   late RemoteAssistanceService service;
 
   setUp(() {
-    mockRepo = MockLinksysCloudRepository();
-    service = RemoteAssistanceService(mockRepo);
+    mockApi = MockGuardianApiClient();
+    service = RemoteAssistanceService(mockApi);
   });
 
   group('RemoteAssistanceService.fetchSessions', () {
     test('returns list of sessions on success', () async {
       final expectedSessions = RemoteAssistanceTestData.sessionList();
 
-      when(() => mockRepo.fetchDeviceToken(
+      when(() => mockApi.fetchDeviceToken(
             serialNumber: any(named: 'serialNumber'),
             macAddress: any(named: 'macAddress'),
             deviceUUID: any(named: 'deviceUUID'),
           )).thenAnswer((_) async => RemoteAssistanceTestData.testDeviceToken);
 
-      when(() => mockRepo.getRemoteAssistanceSessions(
+      when(() => mockApi.getSessions(
             linksysToken: any(named: 'linksysToken'),
             serialNumber: any(named: 'serialNumber'),
           )).thenAnswer((_) async => expectedSessions);
@@ -107,26 +106,26 @@ void main() {
       expect(result.length, equals(2));
       expect(result[0].status, equals(GRASessionStatus.active));
 
-      verify(() => mockRepo.fetchDeviceToken(
+      verify(() => mockApi.fetchDeviceToken(
             serialNumber: RemoteAssistanceTestData.testSerialNumber,
             macAddress: RemoteAssistanceTestData.testMacAddress,
             deviceUUID: RemoteAssistanceTestData.testDeviceUUID,
           )).called(1);
 
-      verify(() => mockRepo.getRemoteAssistanceSessions(
+      verify(() => mockApi.getSessions(
             linksysToken: RemoteAssistanceTestData.testDeviceToken,
             serialNumber: RemoteAssistanceTestData.testSerialNumber,
           )).called(1);
     });
 
     test('returns empty list when no sessions exist', () async {
-      when(() => mockRepo.fetchDeviceToken(
+      when(() => mockApi.fetchDeviceToken(
             serialNumber: any(named: 'serialNumber'),
             macAddress: any(named: 'macAddress'),
             deviceUUID: any(named: 'deviceUUID'),
           )).thenAnswer((_) async => RemoteAssistanceTestData.testDeviceToken);
 
-      when(() => mockRepo.getRemoteAssistanceSessions(
+      when(() => mockApi.getSessions(
             linksysToken: any(named: 'linksysToken'),
             serialNumber: any(named: 'serialNumber'),
           )).thenAnswer((_) async => []);
@@ -141,7 +140,7 @@ void main() {
     });
 
     test('throws SessionTokenExpiredError on INVALID_SESSION', () async {
-      when(() => mockRepo.fetchDeviceToken(
+      when(() => mockApi.fetchDeviceToken(
             serialNumber: any(named: 'serialNumber'),
             macAddress: any(named: 'macAddress'),
             deviceUUID: any(named: 'deviceUUID'),
@@ -161,7 +160,7 @@ void main() {
     });
 
     test('throws UnauthorizedError on UNAUTHORIZED', () async {
-      when(() => mockRepo.fetchDeviceToken(
+      when(() => mockApi.fetchDeviceToken(
             serialNumber: any(named: 'serialNumber'),
             macAddress: any(named: 'macAddress'),
             deviceUUID: any(named: 'deviceUUID'),
@@ -185,13 +184,13 @@ void main() {
     test('returns session info on success', () async {
       final expectedSession = RemoteAssistanceTestData.sessionInfo();
 
-      when(() => mockRepo.fetchDeviceToken(
+      when(() => mockApi.fetchDeviceToken(
             serialNumber: any(named: 'serialNumber'),
             macAddress: any(named: 'macAddress'),
             deviceUUID: any(named: 'deviceUUID'),
           )).thenAnswer((_) async => RemoteAssistanceTestData.testDeviceToken);
 
-      when(() => mockRepo.getRemoteAssistanceSessionInfo(
+      when(() => mockApi.getSessionInfo(
             linksysToken: any(named: 'linksysToken'),
             sessionId: any(named: 'sessionId'),
             serialNumber: any(named: 'serialNumber'),
@@ -208,7 +207,7 @@ void main() {
       expect(result.id, equals(RemoteAssistanceTestData.testSessionId));
       expect(result.status, equals(GRASessionStatus.active));
 
-      verify(() => mockRepo.getRemoteAssistanceSessionInfo(
+      verify(() => mockApi.getSessionInfo(
             linksysToken: RemoteAssistanceTestData.testDeviceToken,
             sessionId: RemoteAssistanceTestData.testSessionId,
             serialNumber: RemoteAssistanceTestData.testSerialNumber,
@@ -216,13 +215,13 @@ void main() {
     });
 
     test('throws ResourceNotFoundError on NOT_FOUND', () async {
-      when(() => mockRepo.fetchDeviceToken(
+      when(() => mockApi.fetchDeviceToken(
             serialNumber: any(named: 'serialNumber'),
             macAddress: any(named: 'macAddress'),
             deviceUUID: any(named: 'deviceUUID'),
           )).thenAnswer((_) async => RemoteAssistanceTestData.testDeviceToken);
 
-      when(() => mockRepo.getRemoteAssistanceSessionInfo(
+      when(() => mockApi.getSessionInfo(
             linksysToken: any(named: 'linksysToken'),
             sessionId: any(named: 'sessionId'),
             serialNumber: any(named: 'serialNumber'),
@@ -245,13 +244,13 @@ void main() {
 
   group('RemoteAssistanceService.createPin', () {
     test('returns PIN on success', () async {
-      when(() => mockRepo.fetchDeviceToken(
+      when(() => mockApi.fetchDeviceToken(
             serialNumber: any(named: 'serialNumber'),
             macAddress: any(named: 'macAddress'),
             deviceUUID: any(named: 'deviceUUID'),
           )).thenAnswer((_) async => RemoteAssistanceTestData.testDeviceToken);
 
-      when(() => mockRepo.createRemoteAssistancePin(
+      when(() => mockApi.createPin(
             linksysToken: any(named: 'linksysToken'),
             serialNumber: any(named: 'serialNumber'),
           )).thenAnswer((_) async => RemoteAssistanceTestData.testPin);
@@ -264,20 +263,20 @@ void main() {
 
       expect(result, equals(RemoteAssistanceTestData.testPin));
 
-      verify(() => mockRepo.createRemoteAssistancePin(
+      verify(() => mockApi.createPin(
             linksysToken: RemoteAssistanceTestData.testDeviceToken,
             serialNumber: RemoteAssistanceTestData.testSerialNumber,
           )).called(1);
     });
 
     test('throws InvalidInputError on INVALID_INPUT', () async {
-      when(() => mockRepo.fetchDeviceToken(
+      when(() => mockApi.fetchDeviceToken(
             serialNumber: any(named: 'serialNumber'),
             macAddress: any(named: 'macAddress'),
             deviceUUID: any(named: 'deviceUUID'),
           )).thenAnswer((_) async => RemoteAssistanceTestData.testDeviceToken);
 
-      when(() => mockRepo.createRemoteAssistancePin(
+      when(() => mockApi.createPin(
             linksysToken: any(named: 'linksysToken'),
             serialNumber: any(named: 'serialNumber'),
           )).thenThrow(RemoteAssistanceTestData.errorResponse(
@@ -298,13 +297,13 @@ void main() {
 
   group('RemoteAssistanceService.endSession', () {
     test('completes successfully on success', () async {
-      when(() => mockRepo.fetchDeviceToken(
+      when(() => mockApi.fetchDeviceToken(
             serialNumber: any(named: 'serialNumber'),
             macAddress: any(named: 'macAddress'),
             deviceUUID: any(named: 'deviceUUID'),
           )).thenAnswer((_) async => RemoteAssistanceTestData.testDeviceToken);
 
-      when(() => mockRepo.deleteRemoteAssistanceSession(
+      when(() => mockApi.deleteSession(
             linksysToken: any(named: 'linksysToken'),
             sessionId: any(named: 'sessionId'),
             serialNumber: any(named: 'serialNumber'),
@@ -320,7 +319,7 @@ void main() {
         completes,
       );
 
-      verify(() => mockRepo.deleteRemoteAssistanceSession(
+      verify(() => mockApi.deleteSession(
             linksysToken: RemoteAssistanceTestData.testDeviceToken,
             sessionId: RemoteAssistanceTestData.testSessionId,
             serialNumber: RemoteAssistanceTestData.testSerialNumber,
@@ -328,7 +327,7 @@ void main() {
     });
 
     test('throws SessionTokenExpiredError on SESSION_EXPIRED', () async {
-      when(() => mockRepo.fetchDeviceToken(
+      when(() => mockApi.fetchDeviceToken(
             serialNumber: any(named: 'serialNumber'),
             macAddress: any(named: 'macAddress'),
             deviceUUID: any(named: 'deviceUUID'),
@@ -349,7 +348,7 @@ void main() {
     });
 
     test('throws SessionTokenExpiredError on BAD_AUTHENTICATION', () async {
-      when(() => mockRepo.fetchDeviceToken(
+      when(() => mockApi.fetchDeviceToken(
             serialNumber: any(named: 'serialNumber'),
             macAddress: any(named: 'macAddress'),
             deviceUUID: any(named: 'deviceUUID'),
@@ -374,7 +373,7 @@ void main() {
     test('returns session info on success (CA side)', () async {
       final expectedSession = RemoteAssistanceTestData.sessionInfo();
 
-      when(() => mockRepo.getRemoteAssistanceSessionInfoForCA(
+      when(() => mockApi.getSessionInfoForCA(
             sessionToken: any(named: 'sessionToken'),
             sessionId: any(named: 'sessionId'),
           )).thenAnswer((_) async => expectedSession);
@@ -386,13 +385,13 @@ void main() {
 
       expect(result, equals(expectedSession));
 
-      verify(() => mockRepo.getRemoteAssistanceSessionInfoForCA(
+      verify(() => mockApi.getSessionInfoForCA(
             sessionToken: RemoteAssistanceTestData.testSessionToken,
             sessionId: RemoteAssistanceTestData.testSessionId,
           )).called(1);
 
       // Verify fetchDeviceToken is NOT called for CA side
-      verifyNever(() => mockRepo.fetchDeviceToken(
+      verifyNever(() => mockApi.fetchDeviceToken(
             serialNumber: any(named: 'serialNumber'),
             macAddress: any(named: 'macAddress'),
             deviceUUID: any(named: 'deviceUUID'),
@@ -400,7 +399,7 @@ void main() {
     });
 
     test('throws ResourceNotFoundError on NOT_FOUND', () async {
-      when(() => mockRepo.getRemoteAssistanceSessionInfoForCA(
+      when(() => mockApi.getSessionInfoForCA(
             sessionToken: any(named: 'sessionToken'),
             sessionId: any(named: 'sessionId'),
           )).thenThrow(RemoteAssistanceTestData.errorResponse(
@@ -418,7 +417,7 @@ void main() {
     });
 
     test('throws SessionTokenExpiredError on INVALID_SESSION', () async {
-      when(() => mockRepo.getRemoteAssistanceSessionInfoForCA(
+      when(() => mockApi.getSessionInfoForCA(
             sessionToken: any(named: 'sessionToken'),
             sessionId: any(named: 'sessionId'),
           )).thenThrow(RemoteAssistanceTestData.errorResponse(
@@ -438,7 +437,7 @@ void main() {
 
   group('RemoteAssistanceService.endSessionForCA', () {
     test('completes successfully on success (CA side)', () async {
-      when(() => mockRepo.deleteRemoteAssistanceSessionForCA(
+      when(() => mockApi.deleteSessionForCA(
             sessionToken: any(named: 'sessionToken'),
             sessionId: any(named: 'sessionId'),
           )).thenAnswer((_) async {});
@@ -451,13 +450,13 @@ void main() {
         completes,
       );
 
-      verify(() => mockRepo.deleteRemoteAssistanceSessionForCA(
+      verify(() => mockApi.deleteSessionForCA(
             sessionToken: RemoteAssistanceTestData.testSessionToken,
             sessionId: RemoteAssistanceTestData.testSessionId,
           )).called(1);
 
       // Verify fetchDeviceToken is NOT called for CA side
-      verifyNever(() => mockRepo.fetchDeviceToken(
+      verifyNever(() => mockApi.fetchDeviceToken(
             serialNumber: any(named: 'serialNumber'),
             macAddress: any(named: 'macAddress'),
             deviceUUID: any(named: 'deviceUUID'),
@@ -465,7 +464,7 @@ void main() {
     });
 
     test('throws UnauthorizedError on UNAUTHORIZED', () async {
-      when(() => mockRepo.deleteRemoteAssistanceSessionForCA(
+      when(() => mockApi.deleteSessionForCA(
             sessionToken: any(named: 'sessionToken'),
             sessionId: any(named: 'sessionId'),
           )).thenThrow(RemoteAssistanceTestData.errorResponse(
@@ -487,7 +486,7 @@ void main() {
     // Test error mapping through public methods that call _mapError
 
     test('maps REQUEST_TIMEOUT to NetworkError', () async {
-      when(() => mockRepo.fetchDeviceToken(
+      when(() => mockApi.fetchDeviceToken(
             serialNumber: any(named: 'serialNumber'),
             macAddress: any(named: 'macAddress'),
             deviceUUID: any(named: 'deviceUUID'),
@@ -507,7 +506,7 @@ void main() {
     });
 
     test('maps unknown ErrorResponse code to UnexpectedError', () async {
-      when(() => mockRepo.fetchDeviceToken(
+      when(() => mockApi.fetchDeviceToken(
             serialNumber: any(named: 'serialNumber'),
             macAddress: any(named: 'macAddress'),
             deviceUUID: any(named: 'deviceUUID'),
@@ -527,7 +526,7 @@ void main() {
     });
 
     test('maps non-ErrorResponse exception to UnexpectedError', () async {
-      when(() => mockRepo.fetchDeviceToken(
+      when(() => mockApi.fetchDeviceToken(
             serialNumber: any(named: 'serialNumber'),
             macAddress: any(named: 'macAddress'),
             deviceUUID: any(named: 'deviceUUID'),

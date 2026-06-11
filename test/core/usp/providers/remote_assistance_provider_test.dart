@@ -231,7 +231,8 @@ void main() {
       expect(state.config, isNull);
     });
 
-    test('authProvider setLoginType not called after failed activate', () async {
+    test('authProvider setLoginType not called after failed activate',
+        () async {
       const config = RemoteAssistanceConfig(
         guardianBaseUrl: 'api.example.com',
         sessionId: 'session-123',
@@ -256,8 +257,11 @@ void main() {
 
   group('remoteAssistanceProvider integration', () {
     test('provider is a NotifierProvider', () {
-      expect(remoteAssistanceProvider,
-          isA<NotifierProvider<RemoteAssistanceNotifier, RemoteAssistanceState>>());
+      expect(
+          remoteAssistanceProvider,
+          isA<
+              NotifierProvider<RemoteAssistanceNotifier,
+                  RemoteAssistanceState>>());
     });
 
     test('multiple reads return same state', () {

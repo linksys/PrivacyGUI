@@ -1,22 +1,21 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/core/cloud/linksys_cloud_repository.dart';
+import 'package:privacy_gui/core/cloud/guardian_api_client.dart';
 import 'package:privacy_gui/core/cloud/model/error_response.dart';
 import 'package:privacy_gui/core/cloud/model/guardians_remote_assistance.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 
 final remoteAssistanceServiceProvider =
     Provider<RemoteAssistanceService>((ref) {
-  // Use cloud-only repository to ensure API calls go to cloud, not local router
-  return RemoteAssistanceService(ref.watch(cloudOnlyRepositoryProvider));
+  return RemoteAssistanceService(ref.watch(guardianApiClientProvider));
 });
 
 /// Service layer for Remote Assistance operations.
 ///
-/// Encapsulates Cloud API calls and error mapping per Article VI.
+/// Encapsulates Guardian API calls and error mapping per Article VI.
 class RemoteAssistanceService {
-  final LinksysCloudRepository _repo;
+  final GuardianApiClient _api;
 
-  RemoteAssistanceService(this._repo);
+  RemoteAssistanceService(this._api);
 
   /// Fetch all Remote Assistance sessions for a device.
   Future<List<GRASessionInfo>> fetchSessions({
@@ -25,12 +24,12 @@ class RemoteAssistanceService {
     required String deviceUUID,
   }) async {
     try {
-      final token = await _repo.fetchDeviceToken(
+      final token = await _api.fetchDeviceToken(
         serialNumber: serialNumber,
         macAddress: macAddress,
         deviceUUID: deviceUUID,
       );
-      return await _repo.getRemoteAssistanceSessions(
+      return await _api.getSessions(
         linksysToken: token,
         serialNumber: serialNumber,
       );
@@ -47,12 +46,12 @@ class RemoteAssistanceService {
     required String deviceUUID,
   }) async {
     try {
-      final token = await _repo.fetchDeviceToken(
+      final token = await _api.fetchDeviceToken(
         serialNumber: serialNumber,
         macAddress: macAddress,
         deviceUUID: deviceUUID,
       );
-      return await _repo.getRemoteAssistanceSessionInfo(
+      return await _api.getSessionInfo(
         linksysToken: token,
         sessionId: sessionId,
         serialNumber: serialNumber,
@@ -69,12 +68,12 @@ class RemoteAssistanceService {
     required String deviceUUID,
   }) async {
     try {
-      final token = await _repo.fetchDeviceToken(
+      final token = await _api.fetchDeviceToken(
         serialNumber: serialNumber,
         macAddress: macAddress,
         deviceUUID: deviceUUID,
       );
-      return await _repo.createRemoteAssistancePin(
+      return await _api.createPin(
         linksysToken: token,
         serialNumber: serialNumber,
       );
@@ -91,12 +90,12 @@ class RemoteAssistanceService {
     required String deviceUUID,
   }) async {
     try {
-      final token = await _repo.fetchDeviceToken(
+      final token = await _api.fetchDeviceToken(
         serialNumber: serialNumber,
         macAddress: macAddress,
         deviceUUID: deviceUUID,
       );
-      await _repo.deleteRemoteAssistanceSession(
+      await _api.deleteSession(
         linksysToken: token,
         sessionId: sessionId,
         serialNumber: serialNumber,
@@ -119,7 +118,7 @@ class RemoteAssistanceService {
     required String sessionId,
   }) async {
     try {
-      return await _repo.getRemoteAssistanceSessionInfoForCA(
+      return await _api.getSessionInfoForCA(
         sessionToken: sessionToken,
         sessionId: sessionId,
       );
@@ -134,7 +133,7 @@ class RemoteAssistanceService {
     required String sessionId,
   }) async {
     try {
-      await _repo.deleteRemoteAssistanceSessionForCA(
+      await _api.deleteSessionForCA(
         sessionToken: sessionToken,
         sessionId: sessionId,
       );

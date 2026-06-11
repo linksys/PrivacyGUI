@@ -102,11 +102,13 @@ void main() {
       final afterUpdate = DateTime.now();
       // Expiry time should be approximately now + 600 seconds
       expect(
-        state.expiryTime!.isAfter(beforeUpdate.add(const Duration(seconds: 599))),
+        state.expiryTime!
+            .isAfter(beforeUpdate.add(const Duration(seconds: 599))),
         isTrue,
       );
       expect(
-        state.expiryTime!.isBefore(afterUpdate.add(const Duration(seconds: 601))),
+        state.expiryTime!
+            .isBefore(afterUpdate.add(const Duration(seconds: 601))),
         isTrue,
       );
       container.dispose();
@@ -153,8 +155,10 @@ void main() {
       final sessionInfo = createTestSessionInfo();
 
       // Set initial session with token
-      notifier.updateSessionInfo(sessionInfo, 300, sessionToken: 'initial-token');
-      expect(container.read(remoteAccessProvider).sessionToken, 'initial-token');
+      notifier.updateSessionInfo(sessionInfo, 300,
+          sessionToken: 'initial-token');
+      expect(
+          container.read(remoteAccessProvider).sessionToken, 'initial-token');
 
       // Update without providing token - token should be preserved via copyWith
       final updatedInfo = createTestSessionInfo(expiredIn: -500);
@@ -241,7 +245,8 @@ void main() {
         final notifier = container.read(remoteAccessProvider.notifier);
         final sessionInfo = createTestSessionInfo();
 
-        notifier.updateSessionInfo(sessionInfo, 100, sessionToken: 'test-token');
+        notifier.updateSessionInfo(sessionInfo, 100,
+            sessionToken: 'test-token');
         async.flushMicrotasks();
 
         // Advance a few seconds
@@ -268,7 +273,8 @@ void main() {
         final sessionInfo = createTestSessionInfo();
 
         // Start with 100 seconds
-        notifier.updateSessionInfo(sessionInfo, 100, sessionToken: 'test-token');
+        notifier.updateSessionInfo(sessionInfo, 100,
+            sessionToken: 'test-token');
         async.flushMicrotasks();
 
         // Advance 10 seconds

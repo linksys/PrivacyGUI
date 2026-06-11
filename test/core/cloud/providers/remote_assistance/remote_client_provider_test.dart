@@ -534,7 +534,8 @@ void main() {
 
         // Wait another second
         await Future.delayed(const Duration(milliseconds: 1000));
-        final secondRead = container.read(remoteClientProvider).expiredCountdown;
+        final secondRead =
+            container.read(remoteClientProvider).expiredCountdown;
 
         expect(firstRead, isNotNull);
         expect(secondRead, isNotNull);
