@@ -138,11 +138,16 @@ const kSmartDeviceAssociate = '/cloud/v1/smart-devices/associate';
 const kGeoLocation = '/cloud/v1/guardians/devices/geolocation';
 const kDeviceToken = '/cloud/v1/guardians/devices/tokens';
 
-// Remote assistance
+// Remote assistance - Guardian API (Client side)
 const kSessions = '/cloud/v1/guardians/remote-assistances/sessions';
 const kSessionInfo =
     '/cloud/v1/guardians/remote-assistances/sessions/$kVarRASessionId';
 const kCreatePin = '/cloud/v1/guardians/remote-assistances/sessions/pin';
+
+// Remote assistance - CA (Support) side
+const kRemoteAssistanceService = '/cloud/remote-access-service';
+const kRAPinVerify =
+    '$kRemoteAssistanceService/rest/remoteassistance/temporaryras';
 
 // Client type id/secret
 final kClientTypeId = clientTypeID;

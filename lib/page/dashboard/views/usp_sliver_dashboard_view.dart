@@ -20,6 +20,7 @@ import 'package:privacy_gui/page/dashboard/providers/pdf_report_data_provider.da
 import 'package:privacy_gui/page/dashboard/providers/usp_layout_preferences_provider.dart';
 import 'package:privacy_gui/page/dashboard/views/components/settings/usp_layout_settings_panel.dart';
 import 'package:privacy_gui/page/dashboard/views/dialogs/preset_selection_dialog.dart';
+import 'package:privacy_gui/config/global_config.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sliver_dashboard/sliver_dashboard.dart';
@@ -57,6 +58,9 @@ class _UspSliverDashboardViewState
   Future<void> _showPresetDialogIfNeeded() async {
     if (_presetDialogShown) return;
     _presetDialogShown = true;
+
+    // Skip preset dialog in remote mode — uses fixed remote preset
+    if (!GlobalConfig.remote.showPresetDialog) return;
 
     final sharedPrefs = await SharedPreferences.getInstance();
     if (sharedPrefs.getBool(pUspPresetDialogSeen) == true) return;
@@ -200,6 +204,8 @@ class _UspSliverDashboardViewState
   // ---------------------------------------------------------------------------
 
   Widget _buildHeader(BuildContext context) {
+    final isRemoteMode = GlobalConfig.remote.isActive;
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -269,11 +275,14 @@ class _UspSliverDashboardViewState
                     .read(dashboardOrchestratorProvider.notifier)
                     .refreshAll(),
               ),
-              AppGap.sm(),
-              AppIconButton(
-                icon: AppIcon.font(Icons.edit),
-                onTap: _enterEditMode,
-              ),
+              // Hide edit button in remote mode
+              if (!isRemoteMode) ...[
+                AppGap.sm(),
+                AppIconButton(
+                  icon: AppIcon.font(Icons.edit),
+                  onTap: _enterEditMode,
+                ),
+              ],
             ],
           ],
         ),

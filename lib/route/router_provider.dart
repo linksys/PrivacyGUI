@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/config/global_config.dart';
 import 'package:privacy_gui/constants/build_config.dart';
+import 'package:privacy_gui/providers/remote_access/remote_access_provider.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
 import 'package:privacy_gui/core/models/device_info.dart';
 import 'package:privacy_gui/core/session/providers/session_provider.dart';
@@ -132,6 +134,28 @@ final routerProvider = Provider<GoRouter>((ref) {
         return state.uri.toString();
       } else if (state.matchedLocation.startsWith('/usp')) {
         // USP routes — check auth, redirect to login when logged out.
+        // In Remote build mode, redirect to confirm page with restored session params.
+        if (GlobalConfig.remote.isActive) {
+          // If already connected (USP layer active), allow access
+          final loginType =
+              ref.read(authProvider.select((value) => value.value?.loginType));
+          if (loginType == LoginType.remote) {
+            return state.uri.toString();
+          }
+
+          // Not connected — check for restored session to re-connect
+          final raState = ref.read(remoteAccessProvider);
+          if (raState.sessionInfo != null && raState.sessionToken != null) {
+            // Redirect to confirm page to re-establish connection
+            logger
+                .i('[Route]: Remote mode refresh, redirecting to confirm page');
+            return '${RoutePath.remoteAssistanceConfirm}'
+                '?sessionId=${raState.sessionInfo!.id}'
+                '&token=${raState.sessionToken}';
+          }
+          logger.i('[Route]: Remote mode no session, redirecting to RA page');
+          return RoutePath.remoteAssistanceConfirm;
+        }
         final loginType =
             ref.watch(authProvider.select((value) => value.value?.loginType));
         if (loginType == null || loginType == LoginType.none) {

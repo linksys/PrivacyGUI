@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
-import 'package:privacy_gui/core/usp/providers/usp_auth_coordinator.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/framework/preservable_contract.dart';
@@ -83,15 +82,6 @@ class UspInternetSettingsNotifier
       if (usp == null) {
         throw const ServiceNotInitializedError(
             message: 'USP service not available');
-      }
-
-      // Session restore on page reload (WASM state may be lost)
-      if (!usp.isAuthenticated) {
-        await ref.read(uspAuthCoordinatorProvider).restoreSession();
-        if (!usp.isAuthenticated) {
-          throw const ConnectivityError(
-              message: 'USP not authenticated after restore attempt');
-        }
       }
 
       final service = ref.read(uspInternetSettingsServiceProvider);

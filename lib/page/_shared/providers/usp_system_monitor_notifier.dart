@@ -38,11 +38,19 @@ class UspSystemMonitorNotifier extends Notifier<SystemMonitorState> {
     });
 
     const defaultInterval = Duration(seconds: 30);
+
+    // Listen for future state changes
     ref.listen(dashboardDomainReadyProvider, (_, next) {
       if (next is AsyncData) {
         setRefreshInterval(defaultInterval);
       }
     });
+
+    // Check if already ready (provider initialized after domain ready)
+    final domainReady = ref.read(dashboardDomainReadyProvider);
+    if (domainReady is AsyncData) {
+      Future.microtask(() => setRefreshInterval(defaultInterval));
+    }
 
     return const SystemMonitorState(
       refreshInterval: defaultInterval,
@@ -79,7 +87,7 @@ class UspSystemMonitorNotifier extends Notifier<SystemMonitorState> {
     if (connectionState != AppConnectionState.authenticated) return;
 
     final svc = ref.read(uspSystemMonitorServiceProvider);
-    if (svc == null || !svc.isAuthenticated) return;
+    if (svc == null) return;
 
     state = state.copyWith(isFetching: true);
     try {

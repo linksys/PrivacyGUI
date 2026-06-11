@@ -6,11 +6,13 @@ import 'package:privacy_gui/constants/_constants.dart';
 import 'package:privacy_gui/core/cloud/linksys_requests/asset_service.dart';
 import 'package:privacy_gui/core/cloud/linksys_requests/cloud2_service.dart';
 import 'package:privacy_gui/core/cloud/linksys_requests/event_service.dart';
+import 'package:privacy_gui/core/cloud/linksys_requests/guardians_remote_assistance_service.dart';
 import 'package:privacy_gui/core/cloud/linksys_requests/ping_service.dart';
 import 'package:privacy_gui/core/cloud/linksys_requests/smart_device_service.dart';
 import 'package:privacy_gui/core/cloud/model/cloud_event_action.dart';
 import 'package:privacy_gui/core/cloud/model/cloud_event_subscription.dart';
 import 'package:privacy_gui/core/cloud/model/cloud_linkup.dart';
+import 'package:privacy_gui/core/cloud/model/guardians_remote_assistance.dart';
 import 'package:privacy_gui/core/cloud/http/linksys_http_client.dart';
 import 'package:privacy_gui/core/cloud/linksys_requests/authorization_service.dart';
 import 'package:privacy_gui/core/cloud/linksys_requests/device_service.dart';
@@ -20,6 +22,7 @@ import 'package:privacy_gui/core/cloud/model/cloud_communication_method.dart';
 import 'package:privacy_gui/core/cloud/model/cloud_network_model.dart';
 import 'package:privacy_gui/core/cloud/model/cloud_session_model.dart';
 import 'package:privacy_gui/core/utils/ip_getter/ip_getter.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 
 final cloudRepositoryProvider = Provider((ref) => LinksysCloudRepository(
       httpClient: LinksysHttpClient(getHost: () {
@@ -27,6 +30,12 @@ final cloudRepositoryProvider = Provider((ref) => LinksysCloudRepository(
         if (localIP.isEmpty) return null;
         return localIP.startsWith('http') ? localIP : 'https://$localIP';
       }),
+    ));
+
+/// Cloud-only repository that always uses the cloud base URL.
+/// Use this for APIs that must go to cloud (e.g., Remote Assistance).
+final cloudOnlyRepositoryProvider = Provider((ref) => LinksysCloudRepository(
+      httpClient: LinksysHttpClient(),
     ));
 
 class LinksysCloudRepository {
@@ -273,5 +282,136 @@ class LinksysCloudRepository {
   }) {
     return _httpClient.geolocation(
         linksysToken: linksysToken, serialNumber: serialNumber);
+  }
+
+  // =========================================================================
+  // Remote Assistance (Guardian API)
+  // =========================================================================
+
+  /// Fetch device token from Guardian API.
+  ///
+  /// The device token is cached in secure storage with a 1-hour TTL.
+  Future<String> fetchDeviceToken({
+    required String serialNumber,
+    required String macAddress,
+    required String deviceUUID,
+  }) async {
+    // Check cached token
+    const storage = FlutterSecureStorage();
+    final cachedToken = await storage.read(key: pLinksysToken);
+    final cachedTs = await storage.read(key: pLinksysTokenTs);
+
+    if (cachedToken != null && cachedTs != null) {
+      final ts = int.tryParse(cachedTs) ?? 0;
+      final age = DateTime.now().millisecondsSinceEpoch - ts;
+      // Token valid for 1 hour
+      if (age < 3600000) {
+        logger.d('[Cloud]: Using cached device token');
+        return cachedToken;
+      }
+    }
+
+    // Fetch new token
+    logger.d('[Cloud]: Fetching new device token');
+    final response = await _httpClient.getDeviceToken(
+      serialNumber: serialNumber,
+      macAddress: macAddress,
+      deviceUUID: deviceUUID,
+    );
+    final data = jsonDecode(response.body);
+    final token = data['linksysToken'] as String;
+
+    // Cache the token
+    await storage.write(key: pLinksysToken, value: token);
+    await storage.write(
+      key: pLinksysTokenTs,
+      value: '${DateTime.now().millisecondsSinceEpoch}',
+    );
+
+    return token;
+  }
+
+  /// Get all Remote Assistance sessions for a device.
+  Future<List<GRASessionInfo>> getRemoteAssistanceSessions({
+    required String linksysToken,
+    required String serialNumber,
+  }) async {
+    final response = await _httpClient.getSessions(
+      linksysToken: linksysToken,
+      serialNumber: serialNumber,
+    );
+    final data = jsonDecode(response.body);
+    final content = data['content'] as List? ?? [];
+    return content.map((e) => GRASessionInfo.fromMap(e)).toList();
+  }
+
+  /// Get info for a specific Remote Assistance session.
+  Future<GRASessionInfo> getRemoteAssistanceSessionInfo({
+    required String linksysToken,
+    required String sessionId,
+    required String serialNumber,
+  }) async {
+    final response = await _httpClient.getSessionInfo(
+      linksysToken: linksysToken,
+      sessionId: sessionId,
+      serialNumber: serialNumber,
+    );
+    return GRASessionInfo.fromMap(jsonDecode(response.body));
+  }
+
+  /// Create a PIN for Remote Assistance.
+  Future<String> createRemoteAssistancePin({
+    required String linksysToken,
+    required String serialNumber,
+  }) async {
+    final response = await _httpClient.createPin(
+      linksysToken: linksysToken,
+      serialNumber: serialNumber,
+    );
+    final data = jsonDecode(response.body);
+    return data['pin'] as String;
+  }
+
+  /// Delete/terminate a Remote Assistance session.
+  Future<void> deleteRemoteAssistanceSession({
+    required String linksysToken,
+    required String sessionId,
+    required String serialNumber,
+  }) async {
+    await _httpClient.deleteSession(
+      linksysToken: linksysToken,
+      sessionId: sessionId,
+      serialNumber: serialNumber,
+    );
+  }
+
+  // =========================================================================
+  // Remote Assistance - CA (Support Agent) Side
+  // =========================================================================
+
+  /// Get session info for CA side using session token.
+  ///
+  /// CA uses Authorization header with the temporary session token,
+  /// not device token + serial number like the client side.
+  Future<GRASessionInfo> getRemoteAssistanceSessionInfoForCA({
+    required String sessionToken,
+    required String sessionId,
+  }) async {
+    final response = await _httpClient.getSessionInfoForCA(
+      sessionToken: sessionToken,
+      sessionId: sessionId,
+    );
+    return GRASessionInfo.fromMap(jsonDecode(response.body));
+  }
+
+  /// Delete/terminate session for CA side.
+  Future<void> deleteRemoteAssistanceSessionForCA({
+    required String sessionToken,
+    required String sessionId,
+  }) async {
+    await _httpClient.deleteSessionForCA(
+      sessionToken: sessionToken,
+      sessionId: sessionId,
+    );
   }
 }

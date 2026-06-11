@@ -117,6 +117,14 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     logger.d('[Auth]: persistLocalCredentials: done, state=$state');
   }
 
+  /// Sets the login type directly without performing login.
+  /// Used by Remote Assistance mode to set LoginType.remote.
+  void setLoginType(LoginType type) {
+    final previousState = state.value ?? AuthState.empty();
+    state = AsyncValue.data(previousState.copyWith(loginType: type));
+    logger.d('[Auth]: setLoginType: $type');
+  }
+
   /// Retrieves password hint from the router.
   ///
   /// TODO: Re-implement using USP when available.

@@ -4,7 +4,6 @@ import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/framework/preservable.dart';
 import 'package:privacy_gui/framework/preservable_contract.dart';
 import 'package:privacy_gui/framework/preservable_notifier_mixin.dart';
-import 'package:privacy_gui/core/usp/providers/usp_auth_coordinator.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/models/wifi_network_ui_model.dart';
@@ -71,16 +70,6 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
         null,
         WifiSettingsStatus(errorMessage: 'USP service not available')
       );
-    }
-
-    if (!usp.isAuthenticated) {
-      await ref.read(uspAuthCoordinatorProvider).restoreSession();
-      if (!usp.isAuthenticated) {
-        return (
-          null,
-          WifiSettingsStatus(errorMessage: 'USP not authenticated')
-        );
-      }
     }
 
     logger.d('[USP][WiFi]: Fetching WiFi data...');

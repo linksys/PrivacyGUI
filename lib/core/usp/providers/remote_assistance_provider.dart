@@ -4,6 +4,7 @@ import 'package:privacy_gui/constants/cloud_const.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/di.dart';
+import 'package:privacy_gui/providers/auth/auth_provider.dart';
 
 /// Configuration for Remote Assistance mode.
 class RemoteAssistanceConfig {
@@ -99,6 +100,9 @@ class RemoteAssistanceNotifier extends Notifier<RemoteAssistanceState> {
 
     getIt.registerSingleton<UspClient>(raClient);
     logger.i('[RA] UspClient replaced with Guardian-proxied client');
+
+    // Set login type to remote so auth checks pass
+    ref.read(authProvider.notifier).setLoginType(LoginType.remote);
 
     state = RemoteAssistanceState(
       isActive: true,
