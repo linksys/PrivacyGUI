@@ -24,6 +24,7 @@ import 'package:privacy_gui/core/utils/nodes.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_exception.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_state.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_step_state.dart';
+import 'package:privacy_gui/page/instant_setup/data/pnp_wifi_settings.dart';
 import 'package:privacy_gui/page/instant_setup/model/impl/guest_wifi_step.dart';
 import 'package:privacy_gui/page/instant_setup/model/impl/night_mode_step.dart';
 import 'package:privacy_gui/page/instant_setup/model/impl/personal_wifi_step.dart';
@@ -99,8 +100,7 @@ abstract class BasePnpNotifier extends Notifier<PnpState> {
   void setAttachedPassword(String? password);
 
   // Personal WiFi
-  ({String name, String password, String security})
-      getDefaultWiFiNameAndPassphrase();
+  PnpWiFiSettings getDefaultWiFiSettings();
   // Guest WiFi
   ({String name, String password}) getDefaultGuestWiFiNameAndPassPhrase();
 }
@@ -174,12 +174,19 @@ class MockPnpNotifier extends BasePnpNotifier {
   }
 
   @override
-  ({String name, String password, String security})
-      getDefaultWiFiNameAndPassphrase() {
-    return (
-      name: 'Linksys1234567',
-      password: 'Linksys123456@',
-      security: 'WPA2/WPA3-Mixed-Personal'
+  PnpWiFiSettings getDefaultWiFiSettings() {
+    return const PnpWiFiSettings(
+      isSplitMode: false,
+      radios: [
+        PnpWiFiRadio(
+          radioId: 'RADIO_2.4GHz',
+          band: 'RADIO_2.4GHz',
+          ssid: 'Linksys1234567',
+          password: 'Linksys123456@',
+          security: 'WPA2/WPA3-Mixed-Personal',
+          isEnabled: true,
+        ),
+      ],
     );
   }
 
@@ -409,23 +416,34 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
   }
 
   @override
-  ({String name, String password, String security})
-      getDefaultWiFiNameAndPassphrase() {
-    String? name, passphrase, security;
+  PnpWiFiSettings getDefaultWiFiSettings() {
     final getRadioInfoJson = getData(JNAPAction.getRadioInfo);
-    if (getRadioInfoJson != null) {
-      final getRadioInfo = GetRadioInfo.fromMap(getRadioInfoJson);
-      final radios = getRadioInfo.radios;
-      name = radios.firstOrNull?.settings.ssid;
-      passphrase = radios.firstOrNull?.settings.wpaPersonalSettings?.passphrase;
-      security = radios.firstOrNull?.settings.security;
+    if (getRadioInfoJson == null) {
+      return const PnpWiFiSettings(isSplitMode: false, radios: []);
     }
 
-    return (
-      name: name ?? '',
-      password: passphrase ?? '',
-      security: security ?? 'None'
-    );
+    final getRadioInfo = GetRadioInfo.fromMap(getRadioInfoJson);
+    // Note: RouterRadio.band is already in the same format as
+    // getSimpleWiFiSettings (e.g. '2.4GHz', no 'RADIO_' prefix), so it can be
+    // used directly as the per-band key in save().
+    final pnpRadios = getRadioInfo.radios
+        .map((r) => PnpWiFiRadio(
+              radioId: r.radioID,
+              band: r.band,
+              ssid: r.settings.ssid,
+              password: r.settings.wpaPersonalSettings?.passphrase ?? '',
+              security: r.settings.security,
+              isEnabled: r.settings.isEnabled,
+            ))
+        .toList();
+
+    // Determine split mode: check if any radio has different SSID or password
+    final firstRadio = pnpRadios.firstOrNull;
+    final isSplitMode = firstRadio != null &&
+        pnpRadios.any((r) =>
+            r.ssid != firstRadio.ssid || r.password != firstRadio.password);
+
+    return PnpWiFiSettings(isSplitMode: isSplitMode, radios: pnpRadios);
   }
 
   @override
@@ -456,32 +474,76 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
         serviceHelper.isSupportLedMode(deviceInfo?.services);
 
     // processing data
-    final defaultWiFi = getDefaultWiFiNameAndPassphrase();
+    final defaultWiFiSettings = getDefaultWiFiSettings();
     final defaultGuestWiFi = getDefaultGuestWiFiNameAndPassPhrase();
     // if configured call setUserAcknowledgedAutoConfiguration else call setAdminPassword
     final closeCommand = state.isRouterUnConfigured
         ? JNAPAction.pnpSetAdminPassword
         : JNAPAction.setUserAcknowledgedAutoConfiguration;
     final closeData = state.isRouterUnConfigured
-        ? {'adminPassword': defaultWiFi.password}
+        ? {'adminPassword': defaultWiFiSettings.primaryRadio?.password ?? ''}
         : <String, dynamic>{};
     // personal wifi
     final wifiStateData = getStepState(PersonalWiFiStep.id).data;
-    final wifiName = wifiStateData['ssid'] as String? ?? defaultWiFi.name;
-    final wifiPassphase =
-        wifiStateData['password'] as String? ?? defaultWiFi.password;
+    final isSplitMode = wifiStateData['isSplitMode'] as bool? ?? false;
     final simpleWiFiSettingsJson =
         getData(JNAPAction.getSimpleWiFiSettings) ?? {};
-    final simpleWiFiSettings =
-        List.from(simpleWiFiSettingsJson['simpleWiFiSettings'])
-            .map((e) => SimpleWiFiSettings.fromMap(e).copyWith(
-                ssid: wifiName,
-                passphrase: wifiPassphase,
-                security: defaultWiFi.security))
-            .toList();
 
-    final isWiFiChanged =
-        wifiName != defaultWiFi.name || wifiPassphase != defaultWiFi.password;
+    List<SimpleWiFiSettings> simpleWiFiSettings;
+    bool isWiFiChanged;
+
+    if (isSplitMode) {
+      // Split mode: apply per-band settings
+      final perBandSettings =
+          wifiStateData['perBandSettings'] as Map<String, dynamic>? ?? {};
+      // Security is authoritative from radio info (getRadioInfo). The
+      // getSimpleWiFiSettings response may report 'None', so we must always
+      // re-apply the real per-band security to avoid downgrading the network
+      // to open and wiping the passphrase.
+      final securityByBand = {
+        for (final r in defaultWiFiSettings.radios) r.band: r.security,
+      };
+      simpleWiFiSettings =
+          List.from(simpleWiFiSettingsJson['simpleWiFiSettings']).map((e) {
+        final existing = SimpleWiFiSettings.fromMap(e);
+        final bandSettings = perBandSettings[existing.band] as Map<String, dynamic>?;
+        final security = securityByBand[existing.band] ?? existing.security;
+        if (bandSettings != null) {
+          return existing.copyWith(
+            ssid: bandSettings['ssid'] as String? ?? existing.ssid,
+            passphrase: bandSettings['password'] as String? ?? existing.passphrase,
+            security: security,
+          );
+        }
+        return existing.copyWith(security: security);
+      }).toList();
+      // Only write if a band's ssid/password actually differs from the
+      // current router values, mirroring the unified-mode diff below.
+      isWiFiChanged = defaultWiFiSettings.radios.any((r) {
+        final bandSettings = perBandSettings[r.band] as Map<String, dynamic>?;
+        if (bandSettings == null) {
+          return false;
+        }
+        return (bandSettings['ssid'] as String?) != r.ssid ||
+            (bandSettings['password'] as String?) != r.password;
+      });
+    } else {
+      // Unified mode: apply same values to all bands
+      final primaryRadio = defaultWiFiSettings.primaryRadio;
+      final wifiName = wifiStateData['ssid'] as String? ?? primaryRadio?.ssid ?? '';
+      final wifiPassphrase =
+          wifiStateData['password'] as String? ?? primaryRadio?.password ?? '';
+      final wifiSecurity = primaryRadio?.security ?? 'None';
+      simpleWiFiSettings =
+          List.from(simpleWiFiSettingsJson['simpleWiFiSettings'])
+              .map((e) => SimpleWiFiSettings.fromMap(e).copyWith(
+                  ssid: wifiName,
+                  passphrase: wifiPassphrase,
+                  security: wifiSecurity))
+              .toList();
+      isWiFiChanged = wifiName != (primaryRadio?.ssid ?? '') ||
+          wifiPassphrase != (primaryRadio?.password ?? '');
+    }
     // guest wifi
     final guestWifiStateData = getStepState(GuestWiFiStep.id).data;
     final isGuestEnabled = guestWifiStateData['isEnabled'] as bool? ?? false;
@@ -569,7 +631,7 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
         })
         .then((_) async => await Future.delayed(const Duration(seconds: 3)))
         .then((_) => testConnectionReconnected())
-        .then((_) => checkAdminPassword(defaultWiFi.password))
+        .then((_) => checkAdminPassword(defaultWiFiSettings.primaryRadio?.password))
         .whenComplete(() => prefs.remove(pPnpConfiguredSN));
     // return Future.delayed(Duration(seconds: 5));
   }

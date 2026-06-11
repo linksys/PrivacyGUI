@@ -470,8 +470,9 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
                         '[PnP]: The customized WiFi has been reconnected - $isUnconfigured');
                     final password = ref
                         .read(pnpProvider.notifier)
-                        .getDefaultWiFiNameAndPassphrase()
-                        .password;
+                        .getDefaultWiFiSettings()
+                        .primaryRadio
+                        ?.password;
                     await ref
                         .read(pnpProvider.notifier)
                         .checkAdminPassword(password)
