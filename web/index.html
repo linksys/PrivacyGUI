@@ -26,15 +26,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="Linksys Now">
 
-  <script>
-    // Capture PWA install prompt event early prevents missing it due to Flutter loading time.
-    window.deferredBeforeInstallPromptEvent = null;
-    window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault();
-      window.deferredBeforeInstallPromptEvent = e;
-      console.log('PWA: Early capture of beforeinstallprompt');
-    });
-  </script>
+  <script src="early-bootstrap.js"></script>
   <link rel="apple-touch-icon" sizes="180x180" href="logo_icons/logo-icon-180.png">
 
   <!-- Favicon -->
@@ -112,38 +104,6 @@
       right: 0;
     }
   </style>
-  <script>
-    (function () {
-      const appSettingsString = window.localStorage.getItem('flutter.AppSettings');
-
-      if (appSettingsString) {
-        try {
-          // Parse twice since it stores as string with double quotes
-          const settings = JSON.parse(JSON.parse(appSettingsString));
-          const themeMode = settings.themeMode;
-          if (themeMode === 'system') {
-            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
-          } else {
-            document.documentElement.setAttribute('data-theme', themeMode);
-          }
-        } catch (error) {
-          console.error("app settings parse error: ", error);
-        }
-      } else {
-        console.log("app settings not found, by system");
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
-      }
-    })();
-  </script>
-  <script id="splash-screen-script">
-    function removeSplashFromWeb() {
-      document.getElementById("splash")?.remove();
-      document.getElementById("splash-branding")?.remove();
-      document.body.style.background = "transparent";
-    }
-  </script>
   <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
 </head>
 
