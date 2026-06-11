@@ -49,15 +49,17 @@ git diff --name-only <base>...HEAD -- '*.dart'
 
 **Step 1.1: Check Formatting**
 
-Run `dart format` in dry-run mode on ALL changed `.dart` files:
+Run `dart format` in dry-run mode on ALL changed `.dart` files. Use `fvm dart format` to ensure the correct SDK version is used:
 
 ```bash
-dart format --set-exit-if-changed --output=none <changed_dart_files>
+fvm dart format --set-exit-if-changed --output=none <changed_dart_files>
 ```
+
+If `fvm` is not available, fall back to `dart format`.
 
 - If exit code is non-zero, list the unformatted files
 - Severity: **ERROR**
-- Suggestion: "Run `dart format <file>` to fix"
+- Suggestion: "Run `fvm dart format <file>` to fix"
 
 **Step 1.2: Run Static Analysis**
 

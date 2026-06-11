@@ -18,21 +18,24 @@ Future<void> showRecoveryDialog(
   required RecoveryTrigger trigger,
   Duration cooldown = const Duration(seconds: 20),
   bool healthOnly = false,
+  bool skipEnterWaiting = false,
   String? title,
   String? message,
   String? successMessage,
 }) async {
   logger
       .d('[Recovery] showRecoveryDialog: trigger=$trigger, cooldown=$cooldown, '
-          'healthOnly=$healthOnly');
+          'healthOnly=$healthOnly, skipEnterWaiting=$skipEnterWaiting');
 
-  ref.read(appConnectionStateProvider.notifier).enterWaiting(
-        context: RecoveryContext(
-          trigger: trigger,
-          cooldown: cooldown,
-          healthOnly: healthOnly,
-        ),
-      );
+  if (!skipEnterWaiting) {
+    ref.read(appConnectionStateProvider.notifier).enterWaiting(
+          context: RecoveryContext(
+            trigger: trigger,
+            cooldown: cooldown,
+            healthOnly: healthOnly,
+          ),
+        );
+  }
 
   final navigator = Navigator.of(context, rootNavigator: true);
 

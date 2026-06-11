@@ -49,6 +49,12 @@ class SseManager {
   /// to wire [UspAuthCoordinator.ensureAuth].
   Future<void> Function()? onHeartbeatAuth;
 
+  /// Delegate called on each reconnect failure with the attempt number.
+  /// Set by provider layer to enable early recovery detection.
+  set onReconnectFailed(void Function(int attempt)? callback) {
+    connection.onReconnectFailed = callback;
+  }
+
   SseManager({
     required UspClient usp,
     required UspBridgeClient bridge,

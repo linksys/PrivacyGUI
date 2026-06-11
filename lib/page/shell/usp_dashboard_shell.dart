@@ -2,6 +2,9 @@ import 'package:flutter/material.dart' hide MenuController;
 import 'package:flutter/rendering.dart' show ScrollDirection;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/constants/build_config.dart';
+import 'package:privacy_gui/page/_shared/helpers/recovery_dialog_helper.dart';
+import 'package:privacy_gui/core/connection/models/app_connection_state.dart';
+import 'package:privacy_gui/core/connection/providers/app_connection_state_provider.dart';
 import 'package:privacy_gui/demo/providers/demo_theme_config_provider.dart';
 import 'package:privacy_gui/demo/providers/demo_ui_provider.dart';
 import 'package:privacy_gui/demo/theme_studio/demo_theme_builder.dart';
@@ -39,13 +42,60 @@ final uspMenuController = Provider((ref) => MenuController(
 ///
 /// Scroll detection is at the shell level so top/bottom bar hide-on-scroll
 /// applies to ALL child pages, not just the dashboard.
-class UspDashboardShell extends ConsumerWidget {
+class UspDashboardShell extends ConsumerStatefulWidget {
   final Widget child;
 
   const UspDashboardShell({super.key, required this.child});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<UspDashboardShell> createState() => _UspDashboardShellState();
+}
+
+class _UspDashboardShellState extends ConsumerState<UspDashboardShell> {
+  bool _recoveryDialogShowing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    ref.listenManual(appConnectionStateProvider, (prev, next) {
+      if (next == AppConnectionState.waitingForRecovery &&
+          prev != AppConnectionState.waitingForRecovery &&
+          !_recoveryDialogShowing) {
+        final notifier = ref.read(appConnectionStateProvider.notifier);
+        final isNatural =
+            notifier.recoveryContext?.trigger == RecoveryTrigger.natural;
+        if (isNatural) {
+          _showNaturalRecoveryDialog();
+        }
+      }
+    });
+  }
+
+  Future<void> _showNaturalRecoveryDialog() async {
+    if (ref.read(appConnectionStateProvider) !=
+        AppConnectionState.waitingForRecovery) {
+      return;
+    }
+    _recoveryDialogShowing = true;
+    try {
+      await showRecoveryDialog(
+        context,
+        ref,
+        trigger: RecoveryTrigger.natural,
+        cooldown: Duration.zero,
+        skipEnterWaiting: true,
+        title: 'Connection lost',
+        message:
+            'Lost connection to the router. Attempting to reconnect automatically...',
+        successMessage: 'Reconnected to router',
+      );
+    } finally {
+      _recoveryDialogShowing = false;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     // Trigger SSE bootstrap — connects SSE + registers core subscriptions.
     // FutureProvider is lazy; watching it ensures the connection starts
     // as soon as the shell is rendered (i.e., after successful login).
@@ -95,7 +145,7 @@ class UspDashboardShell extends ConsumerWidget {
                   }
                   return false;
                 },
-                child: child,
+                child: widget.child,
               ),
             ),
           ],
