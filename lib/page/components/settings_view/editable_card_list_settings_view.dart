@@ -47,9 +47,11 @@ class _EditableCardListsettingsViewState<T>
           AppTextButton(
             widget.addLabel!,
             icon: widget.addIcon ?? LinksysIcons.add,
-            onTap: widget.addEnabled ? () {
-              onEdit(null);
-            } : null,
+            onTap: widget.addEnabled
+                ? () {
+                    onEdit(null);
+                  }
+                : null,
           ),
       ],
       dataList: widget.dataList,

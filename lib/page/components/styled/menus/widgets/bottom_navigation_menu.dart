@@ -49,7 +49,11 @@ class _BottomNavigationMenuState extends State<BottomNavigationMenu> {
       data: theme.copyWith(),
       child: NavigationBar(
         selectedIndex: widget.items.indexOf(widget.selected ?? NaviType.home),
-        destinations: widget.items.map((e) => menuItemsMap[e]).nonNulls.map((e) => _bottomSheetIconView(e)).toList(),
+        destinations: widget.items
+            .map((e) => menuItemsMap[e])
+            .nonNulls
+            .map((e) => _bottomSheetIconView(e))
+            .toList(),
         onDestinationSelected: widget.onItemClick,
         indicatorColor: Theme.of(context).colorScheme.primary,
         elevation: 0,

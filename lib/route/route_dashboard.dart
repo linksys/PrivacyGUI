@@ -88,7 +88,6 @@ final dashboardRoute = ShellRoute(
           ),
           builder: (context, state) => const FaqListView(),
         ),
-        
       ],
     ),
   ],

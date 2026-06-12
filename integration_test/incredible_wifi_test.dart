@@ -384,17 +384,15 @@ void main() {
         // Disable other wifi
         if (wifiBands.contains('2.4')) {
           final wifiActions =
-            TestIncredibleWifiActions(tester, wifiBand: '2.4');
+              TestIncredibleWifiActions(tester, wifiBand: '2.4');
           await wifiActions.tapBandSwitch();
         }
         if (wifiBands.contains('5')) {
-          final wifiActions =
-            TestIncredibleWifiActions(tester, wifiBand: '5');
+          final wifiActions = TestIncredibleWifiActions(tester, wifiBand: '5');
           await wifiActions.tapBandSwitch();
         }
         if (wifiBands.contains('6')) {
-          final wifiActions =
-            TestIncredibleWifiActions(tester, wifiBand: '6');
+          final wifiActions = TestIncredibleWifiActions(tester, wifiBand: '6');
           await wifiActions.tapBandSwitch();
         }
         // Check the warning exist

@@ -86,8 +86,7 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
     return LayoutBuilder(builder: (context, constraint) {
       final maxLevel = treeController.roots.first.maxLevel();
       final double treeWidth = maxLevel * 72 + 420;
-      final double contentWidth =
-          ResponsiveLayout.getContentWidth(context);
+      final double contentWidth = ResponsiveLayout.getContentWidth(context);
       final double desiredTreeWidth =
           treeWidth > contentWidth ? treeWidth : contentWidth;
       return _isLoading
@@ -213,19 +212,16 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
                           guide: IndentGuide.connectingLines(
                             indent: 72,
                             thickness: 0.5,
-                            pathModifier: (path) =>
-                                TopologyNodeItem.buildPath(
-                                    path,
-                                    entry.node,
-                                    entry.node.data.isMaster
-                                        ? ref.watch(
-                                                internetStatusProvider) ==
-                                            InternetStatus.online
-                                        : entry.node.data.isOnline),
+                            pathModifier: (path) => TopologyNodeItem.buildPath(
+                                path,
+                                entry.node,
+                                entry.node.data.isMaster
+                                    ? ref.watch(internetStatusProvider) ==
+                                        InternetStatus.online
+                                    : entry.node.data.isOnline),
                           ),
                           child: Padding(
-                            padding:
-                                const EdgeInsets.fromLTRB(0, 16, 8, 0),
+                            padding: const EdgeInsets.fromLTRB(0, 16, 8, 0),
                             child: switch (entry.node.runtimeType) {
                               OnlineTopologyNode => Row(
                                   children: [

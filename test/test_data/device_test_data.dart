@@ -293,4 +293,3 @@ const slaveCherry7TestData4 = {
   },
   "speedMbps": "176.239"
 };
-

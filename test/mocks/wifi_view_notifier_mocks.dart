@@ -46,7 +46,8 @@ class _FakeWiFiViewState_1 extends _i1.SmartFake implements _i3.WiFiViewState {
 ///
 /// See the documentation for Mockito's code generation for more information.
 class MockWiFiViewNotifier extends _i2.Notifier<_i3.WiFiViewState>
-    with _i1.Mock implements _i3.WiFiViewNotifier {
+    with _i1.Mock
+    implements _i3.WiFiViewNotifier {
   @override
   _i2.NotifierProviderRef<_i3.WiFiViewState> get ref => (super.noSuchMethod(
         Invocation.getter(#ref),

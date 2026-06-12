@@ -57,7 +57,7 @@ class LinksysCacheManager {
 
   Future<bool> loadCache({required String serialNumber}) async {
     if (serialNumber != lastSerialNumber) {
-    logger.d("[CacheManager] SN changed. Starting to load cache");
+      logger.d("[CacheManager] SN changed. Starting to load cache");
       final value = await cacheManager.get();
       _cache = value ?? "";
       if (_cache.isEmpty) {
@@ -71,8 +71,7 @@ class LinksysCacheManager {
       }
       _data = allCaches[serialNumber];
       lastSerialNumber = serialNumber;
-      logger.d(
-          "[CacheManager] Load cache success for $serialNumber");
+      logger.d("[CacheManager] Load cache success for $serialNumber");
     }
     if (data.isEmpty) {
       return false;

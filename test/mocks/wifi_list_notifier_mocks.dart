@@ -48,7 +48,9 @@ class _FakeWiFiState_1 extends _i1.SmartFake implements _i3.WiFiState {
 /// A class which mocks [WifiListNotifier].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockWifiListNotifier extends _i2.Notifier<_i3.WiFiState> with  _i1.Mock implements _i4.WifiListNotifier {
+class MockWifiListNotifier extends _i2.Notifier<_i3.WiFiState>
+    with _i1.Mock
+    implements _i4.WifiListNotifier {
   @override
   _i2.NotifierProviderRef<_i3.WiFiState> get ref => (super.noSuchMethod(
         Invocation.getter(#ref),

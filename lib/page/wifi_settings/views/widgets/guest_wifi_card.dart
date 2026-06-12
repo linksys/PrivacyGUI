@@ -26,7 +26,8 @@ class GuestWiFiCard extends ConsumerStatefulWidget {
   ConsumerState<GuestWiFiCard> createState() => _GuestWiFiCardState();
 }
 
-class _GuestWiFiCardState extends ConsumerState<GuestWiFiCard> with WifiSettingModalMixin {
+class _GuestWiFiCardState extends ConsumerState<GuestWiFiCard>
+    with WifiSettingModalMixin {
   final _guestPasswordController = TextEditingController();
 
   @override
@@ -136,5 +137,4 @@ class _GuestWiFiCardState extends ConsumerState<GuestWiFiCard> with WifiSettingM
           });
         },
       );
-  
 }

@@ -15,7 +15,7 @@ class DeviceFilterConfigState extends Equatable {
     required this.nodeFilter,
     required this.wifiFilter,
     required this.bandFilter,
-     this.showOrphanNodes = false,
+    this.showOrphanNodes = false,
   });
 
   DeviceFilterConfigState copyWith({
@@ -67,7 +67,8 @@ class DeviceFilterConfigState extends Equatable {
 
   String toJson() => json.encode(toMap());
 
-  factory DeviceFilterConfigState.fromJson(String source) => DeviceFilterConfigState.fromMap(json.decode(source));
+  factory DeviceFilterConfigState.fromJson(String source) =>
+      DeviceFilterConfigState.fromMap(json.decode(source));
 
   @override
   String toString() {

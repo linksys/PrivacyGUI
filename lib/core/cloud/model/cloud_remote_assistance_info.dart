@@ -26,7 +26,8 @@ class CloudRemoteAssistanceInfo {
     int? currentTime,
   }) {
     return CloudRemoteAssistanceInfo(
-      remoteAssistanceSessionId: remoteAssistanceSessionId ?? this.remoteAssistanceSessionId,
+      remoteAssistanceSessionId:
+          remoteAssistanceSessionId ?? this.remoteAssistanceSessionId,
       status: status ?? this.status,
       expiredIn: expiredIn ?? this.expiredIn,
       createdAt: createdAt ?? this.createdAt,
@@ -52,14 +53,18 @@ class CloudRemoteAssistanceInfo {
       status: map['status'] != null ? map['status'] as String : null,
       expiredIn: map['expiredIn'] != null ? map['expiredIn'] as int : null,
       createdAt: map['createdAt'] != null ? map['createdAt'] as int : null,
-      statusChangedAt: map['statusChangedAt'] != null ? map['statusChangedAt'] as int : null,
-      currentTime: map['currentTime'] != null ? map['currentTime'] as int : null,
+      statusChangedAt:
+          map['statusChangedAt'] != null ? map['statusChangedAt'] as int : null,
+      currentTime:
+          map['currentTime'] != null ? map['currentTime'] as int : null,
     );
   }
 
   String toJson() => json.encode(toMap());
 
-  factory CloudRemoteAssistanceInfo.fromJson(String source) => CloudRemoteAssistanceInfo.fromMap(json.decode(source) as Map<String, dynamic>);
+  factory CloudRemoteAssistanceInfo.fromJson(String source) =>
+      CloudRemoteAssistanceInfo.fromMap(
+          json.decode(source) as Map<String, dynamic>);
 
   @override
   String toString() {
@@ -69,23 +74,22 @@ class CloudRemoteAssistanceInfo {
   @override
   bool operator ==(covariant CloudRemoteAssistanceInfo other) {
     if (identical(this, other)) return true;
-  
-    return 
-      other.remoteAssistanceSessionId == remoteAssistanceSessionId &&
-      other.status == status &&
-      other.expiredIn == expiredIn &&
-      other.createdAt == createdAt &&
-      other.statusChangedAt == statusChangedAt &&
-      other.currentTime == currentTime;
+
+    return other.remoteAssistanceSessionId == remoteAssistanceSessionId &&
+        other.status == status &&
+        other.expiredIn == expiredIn &&
+        other.createdAt == createdAt &&
+        other.statusChangedAt == statusChangedAt &&
+        other.currentTime == currentTime;
   }
 
   @override
   int get hashCode {
     return remoteAssistanceSessionId.hashCode ^
-      status.hashCode ^
-      expiredIn.hashCode ^
-      createdAt.hashCode ^
-      statusChangedAt.hashCode ^
-      currentTime.hashCode;
+        status.hashCode ^
+        expiredIn.hashCode ^
+        createdAt.hashCode ^
+        statusChangedAt.hashCode ^
+        currentTime.hashCode;
   }
 }

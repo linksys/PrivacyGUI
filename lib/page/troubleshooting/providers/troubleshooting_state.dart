@@ -5,8 +5,6 @@ import 'package:equatable/equatable.dart';
 
 import '../_troubleshooting.dart';
 
-
-
 class TroubleshootingState extends Equatable {
   final List<DeviceStatusModel> deviceStatusList;
   final List<DhcpClientModel> dhcpClientList;

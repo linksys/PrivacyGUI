@@ -22,9 +22,7 @@ const singlePortForwardingListTestState = {
 };
 
 const singlePortForwardingEmptyListTestState = {
-  "rules": [
-    
-  ],
+  "rules": [],
   "maxRules": 50,
   "maxDescriptionLength": 32
 };

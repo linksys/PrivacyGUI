@@ -50,15 +50,13 @@ void main() {
     // Night mode
     await setup.tapNextButton();
     await tester.pumpFrames(app(), const Duration(seconds: 60));
-    // 
+    //
     await setup.tapDoneButton();
     // Done
     await setup.tapDoneButton();
 
     // Dashboard
-      final quickPanelFinder = find.byType(DashboardQuickPanel);
-      expect(quickPanelFinder, findsOneWidget);
+    final quickPanelFinder = find.byType(DashboardQuickPanel);
+    expect(quickPanelFinder, findsOneWidget);
   });
-
 }
-

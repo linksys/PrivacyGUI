@@ -165,8 +165,8 @@ class _SelectNetworkViewState extends ConsumerState<SelectNetworkView> {
             children: [
               Image(
                 image: CustomTheme.of(context).getRouterImage(
-                      network.network.routerModelNumber,
-                    ),
+                  network.network.routerModelNumber,
+                ),
                 semanticLabel: 'router image',
                 width: 60,
                 height: 60,

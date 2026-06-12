@@ -172,9 +172,13 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
     final isLastBeforeYourNetwork =
         !isGuestWiFiSupport && !isNightModeSupport && !showYourNetwork;
     // Log PnP state for debugging
-    final autoConfigData = ref.read(pnpProvider.notifier).getData(JNAPAction.getAutoConfigurationSettings);
+    final autoConfigData = ref
+        .read(pnpProvider.notifier)
+        .getData(JNAPAction.getAutoConfigurationSettings);
     final autoConfigMethod = autoConfigData != null
-        ? AutoConfigurationSettings.fromMap(autoConfigData).autoConfigurationMethod?.name
+        ? AutoConfigurationSettings.fromMap(autoConfigData)
+            .autoConfigurationMethod
+            ?.name
         : 'unknown';
     logger.d('[PnP]: buildSteps state - '
         'isUnconfigured=$_isUnconfigured, '
@@ -199,9 +203,8 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
         ],
       (false, false, true) => [
           PersonalWiFiStep(
-              saveChanges: !isGuestWiFiSupport && !isNightModeSupport
-                  ? null
-                  : null),
+              saveChanges:
+                  !isGuestWiFiSupport && !isNightModeSupport ? null : null),
           if (isGuestWiFiSupport)
             GuestWiFiStep(saveChanges: !isNightModeSupport ? null : null),
           if (isNightModeSupport) NightModeStep(saveChanges: null),
@@ -215,9 +218,15 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
           YourNetworkStep(saveChanges: _confirmAddedNodes),
         ],
       _ => [
-          PersonalWiFiStep(saveChanges: isLastBeforeYourNetwork ? _saveChanges : null),
-          if (isGuestWiFiSupport) GuestWiFiStep(saveChanges: !isNightModeSupport && !showYourNetwork ? _saveChanges : null),
-          if (isNightModeSupport) NightModeStep(saveChanges: !showYourNetwork ? _saveChanges : null),
+          PersonalWiFiStep(
+              saveChanges: isLastBeforeYourNetwork ? _saveChanges : null),
+          if (isGuestWiFiSupport)
+            GuestWiFiStep(
+                saveChanges: !isNightModeSupport && !showYourNetwork
+                    ? _saveChanges
+                    : null),
+          if (isNightModeSupport)
+            NightModeStep(saveChanges: !showYourNetwork ? _saveChanges : null),
         ],
     };
   }

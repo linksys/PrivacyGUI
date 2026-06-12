@@ -322,7 +322,6 @@ final mockLinksysDarkTextTheme = TextTheme(
 );
 final List<String> _fallbackFontFamily = List.from(_testFonts.keys);
 
-
 ///
 /// Add fonts here is there has more fonts needed.
 ///

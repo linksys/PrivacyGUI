@@ -637,7 +637,8 @@ void main() async {
       ...responsiveDesktopScreens.map((e) => e.copyWith(height: 1280)).toList()
     ]);
 
-    testLocalizations('Dashboard Home View - Vertical Ports with speed check - init',
+    testLocalizations(
+        'Dashboard Home View - Vertical Ports with speed check - init',
         (tester, locale) async {
       when(mockHealthCheckProvider.build())
           .thenReturn(HealthCheckState.fromJson(healthCheckInitState));

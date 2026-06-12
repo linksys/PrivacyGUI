@@ -147,7 +147,7 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
         ref.watch(dashboardHomeProvider).isHealthCheckSupported;
     final isSupportVPN = getIt.get<ServiceHelper>().isSupportVPN();
     final showSpeedTest = isDisplaySpeedTest(ref);
-    
+
     return [
       AppSectionItemData(
           title: loc(context).incredibleWiFi,

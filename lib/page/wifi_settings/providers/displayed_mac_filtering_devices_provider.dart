@@ -9,7 +9,9 @@ final macFilteringDeviceListProvider = Provider((ref) {
   final deviceList = deviceListState.devices.where((device) => !device.isWired);
   final macAddresses = macFilteringState.settings.denyMacAddresses;
   final bssidList = macFilteringState.settings.bssids;
-  return (macAddresses.toSet()).difference(bssidList.toSet()).toList()
+  return (macAddresses.toSet())
+      .difference(bssidList.toSet())
+      .toList()
       .map((e) =>
           deviceList.firstWhereOrNull((device) => device.macAddress == e) ??
           DeviceListItem(macAddress: e, name: '--'))

@@ -185,7 +185,8 @@ class MockPnpNotifier extends _i2.Notifier<_i3.PnpState>
       );
 
   @override
-  _i8.Future<dynamic> fetchDeviceInfo([bool clearCurrentSN = true]) => (super.noSuchMethod(
+  _i8.Future<dynamic> fetchDeviceInfo([bool clearCurrentSN = true]) =>
+      (super.noSuchMethod(
         Invocation.method(
           #fetchDeviceInfo,
           [clearCurrentSN],
@@ -217,13 +218,15 @@ class MockPnpNotifier extends _i2.Notifier<_i3.PnpState>
       ) as _i8.Future<dynamic>);
 
   @override
-  _i8.Future<AutoConfigurationSettings?> autoConfigurationCheck() => (super.noSuchMethod(
+  _i8.Future<AutoConfigurationSettings?> autoConfigurationCheck() =>
+      (super.noSuchMethod(
         Invocation.method(
           #pnpCheck,
           [],
         ),
         returnValue: _i8.Future<AutoConfigurationSettings?>.value(null),
-        returnValueForMissingStub: _i8.Future<AutoConfigurationSettings?>.value(null),
+        returnValueForMissingStub:
+            _i8.Future<AutoConfigurationSettings?>.value(null),
       ) as _i8.Future<AutoConfigurationSettings?>);
 
   @override

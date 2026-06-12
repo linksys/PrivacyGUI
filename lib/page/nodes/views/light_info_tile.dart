@@ -33,7 +33,6 @@ class LightInfoImageTile extends StatelessWidget {
   }
 }
 
-
 class LightInfoTile extends StatelessWidget {
   final Color color;
   final Widget content;

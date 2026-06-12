@@ -52,8 +52,8 @@ class _FakeDMZSettingsState_1 extends _i1.SmartFake
 /// A class which mocks [DMZSettingNotifier].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockDMZSettingNotifier extends _i2.Notifier<
-        _i3.DMZSettingsState> with _i1.Mock
+class MockDMZSettingNotifier extends _i2.Notifier<_i3.DMZSettingsState>
+    with _i1.Mock
     implements _i4.DMZSettingNotifier {
   @override
   String get subnetMask => (super.noSuchMethod(

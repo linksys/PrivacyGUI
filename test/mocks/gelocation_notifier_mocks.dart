@@ -62,7 +62,8 @@ class _FakeGeolocationState_2 extends _i1.SmartFake
 /// A class which mocks [GeolocationNotifier].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockGeolocationNotifier extends _i2.AsyncNotifier<_i3.GeolocationState> with _i1.Mock
+class MockGeolocationNotifier extends _i2.AsyncNotifier<_i3.GeolocationState>
+    with _i1.Mock
     implements _i4.GeolocationNotifier {
   @override
   _i2.AsyncNotifierProviderRef<_i3.GeolocationState> get ref =>

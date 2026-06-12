@@ -36,7 +36,7 @@ import 'package:flutter/material.dart';
 //   }
 
 //   bool isDirty(String key) {
-    
+
 //     final value = registry.data[key]?.target;
 //     if (value == null) {
 //       return false;

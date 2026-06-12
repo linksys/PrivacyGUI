@@ -47,5 +47,4 @@ mixin CommonActionsMixin on BaseActions {
     expect(finder, findsOneWidget);
     return tester.element(finder);
   }
-
 }

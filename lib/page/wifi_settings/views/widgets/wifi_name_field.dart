@@ -34,8 +34,8 @@ class _WifiNameFieldState extends State<WifiNameField> {
       border: const OutlineInputBorder(),
       onChanged: widget.onChanged,
       errorText: () {
-        final errorKeys =
-            wifiSSIDValidator.validateDetail(widget.controller.text, onlyFailed: true);
+        final errorKeys = wifiSSIDValidator
+            .validateDetail(widget.controller.text, onlyFailed: true);
         if (errorKeys.isEmpty) {
           return null;
         } else if (errorKeys.keys.first == NoSurroundWhitespaceRule().name) {
