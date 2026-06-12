@@ -116,8 +116,12 @@ class GuardianApiClient {
     return GRASessionInfo.fromMap(jsonDecode(response.body));
   }
 
-  /// Create a PIN code for Remote Assistance.
-  Future<String> createPin({
+  /// Create a PIN code for Remote Assistance (customer UI).
+  ///
+  /// POST /remote-assistances/sessions/pin
+  /// Requires session to exist (CA must create it first).
+  /// Returns session id and pin.
+  Future<({String sessionId, String pin})> createPin({
     required String linksysToken,
     required String serialNumber,
   }) async {
@@ -127,7 +131,12 @@ class GuardianApiClient {
       linksysToken: linksysToken,
       serialNumber: serialNumber,
     );
-    return jsonDecode(response.body)['pin'] as String;
+    final body = jsonDecode(response.body);
+    logger.d('[Guardian] createPin response: $body');
+    return (
+      sessionId: body['id'] as String? ?? '',
+      pin: body['pin'] as String? ?? '',
+    );
   }
 
   /// Delete/terminate a Remote Assistance session.
@@ -199,6 +208,9 @@ class GuardianApiClient {
       headers[kHeaderSerialNumber] = serialNumber;
     }
 
+    logger.d('[Guardian] $method $url');
+    logger.d('[Guardian] Headers: ${headers.keys.toList()}');
+
     final response = await switch (method) {
       'GET' => _http.get(url, headers: headers),
       'POST' => _http.post(url, headers: headers),
@@ -206,6 +218,7 @@ class GuardianApiClient {
       _ => throw ArgumentError('Unsupported HTTP method: $method'),
     };
 
+    logger.d('[Guardian] Response: ${response.statusCode}');
     _validateResponse(response);
     return response;
   }

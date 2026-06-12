@@ -62,7 +62,10 @@ class RemoteAssistanceService {
   }
 
   /// Create a PIN for Remote Assistance.
-  Future<String> createPin({
+  ///
+  /// Requires session to exist (CA must create it first).
+  /// Returns session ID and PIN code.
+  Future<({String sessionId, String pin})> createPin({
     required String serialNumber,
     required String macAddress,
     required String deviceUUID,
@@ -73,10 +76,11 @@ class RemoteAssistanceService {
         macAddress: macAddress,
         deviceUUID: deviceUUID,
       );
-      return await _api.createPin(
+      final result = await _api.createPin(
         linksysToken: token,
         serialNumber: serialNumber,
       );
+      return (sessionId: result.sessionId, pin: result.pin);
     } catch (e) {
       throw _mapError(e);
     }

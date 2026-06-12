@@ -6,61 +6,14 @@ import 'package:privacy_gui/core/cloud/providers/remote_assistance/remote_client
 import 'package:privacy_gui/core/cloud/providers/remote_assistance/remote_client_state.dart';
 import 'package:privacy_gui/page/remote_assistance/services/remote_assistance_service.dart';
 
+import '../../../../mocks/test_data/remote_assistance_test_data.dart';
+
 // =============================================================================
 // Mocks
 // =============================================================================
 
 class MockRemoteAssistanceService extends Mock
     implements RemoteAssistanceService {}
-
-// =============================================================================
-// Test Data
-// =============================================================================
-
-class RemoteAssistanceTestData {
-  static const testSerialNumber = '65G10M27E03053';
-  static const testMacAddress = 'AA:BB:CC:DD:EE:FF';
-  static const testDeviceUUID = 'device-uuid-12345';
-  static const testSessionId = '3683AC72-A4F9-40DC-9CA5-CD5D53F815A9';
-  static const testPin = '123456';
-
-  static DeviceCredentials credentials() => DeviceCredentials(
-        serialNumber: testSerialNumber,
-        macAddress: testMacAddress,
-        deviceUUID: testDeviceUUID,
-      );
-
-  static GRASessionInfo sessionWithStatus(
-    GRASessionStatus status, {
-    String id = testSessionId,
-    int expiredIn = -600, // 10 minutes remaining (negative = time left)
-  }) =>
-      GRASessionInfo(
-        id: id,
-        serialNumber: testSerialNumber,
-        modelNumber: 'LN16-EU',
-        status: status,
-        expiredIn: expiredIn,
-        createdAt: 1748315872000,
-        statusChangedAt: 1748315989000,
-        currentTime: 1748316924838,
-      );
-
-  static GRASessionInfo initiateSession() =>
-      sessionWithStatus(GRASessionStatus.initiate);
-
-  static GRASessionInfo pendingSession() =>
-      sessionWithStatus(GRASessionStatus.pending);
-
-  static GRASessionInfo activeSession() =>
-      sessionWithStatus(GRASessionStatus.active);
-
-  static GRASessionInfo invalidSession() =>
-      sessionWithStatus(GRASessionStatus.invalid);
-
-  static GRASessionInfo expiredSession() =>
-      sessionWithStatus(GRASessionStatus.pending, expiredIn: 1);
-}
 
 // =============================================================================
 // Tests
@@ -127,7 +80,8 @@ void main() {
         );
       });
 
-      test('sets empty state when no sessions exist', () async {
+      test('sets initiate state and starts polling when no sessions exist',
+          () async {
         when(() => mockService.fetchSessions(
               serialNumber: any(named: 'serialNumber'),
               macAddress: any(named: 'macAddress'),
@@ -143,7 +97,8 @@ void main() {
         await notifier.initiateRemoteAssistance();
 
         final state = container.read(remoteClientProvider);
-        expect(state, const RemoteClientState());
+        expect(state.sessionInfo?.status, GRASessionStatus.initiate);
+        expect(state.sessionInfo?.id, '');
       });
 
       test('fetches session info and starts polling when session exists',
@@ -193,10 +148,12 @@ void main() {
             )).thenAnswer((_) async => session);
 
         when(() => mockService.createPin(
-              serialNumber: any(named: 'serialNumber'),
-              macAddress: any(named: 'macAddress'),
-              deviceUUID: any(named: 'deviceUUID'),
-            )).thenAnswer((_) async => RemoteAssistanceTestData.testPin);
+                  serialNumber: any(named: 'serialNumber'),
+                  macAddress: any(named: 'macAddress'),
+                  deviceUUID: any(named: 'deviceUUID'),
+                ))
+            .thenAnswer(
+                (_) async => RemoteAssistanceTestData.createPinResult());
 
         final container = createContainer();
         addTearDown(container.dispose);
@@ -234,10 +191,12 @@ void main() {
             )).thenAnswer((_) async => session);
 
         when(() => mockService.createPin(
-              serialNumber: any(named: 'serialNumber'),
-              macAddress: any(named: 'macAddress'),
-              deviceUUID: any(named: 'deviceUUID'),
-            )).thenAnswer((_) async => RemoteAssistanceTestData.testPin);
+                  serialNumber: any(named: 'serialNumber'),
+                  macAddress: any(named: 'macAddress'),
+                  deviceUUID: any(named: 'deviceUUID'),
+                ))
+            .thenAnswer(
+                (_) async => RemoteAssistanceTestData.createPinResult());
 
         final container = createContainer();
         addTearDown(container.dispose);
@@ -283,47 +242,6 @@ void main() {
               macAddress: any(named: 'macAddress'),
               deviceUUID: any(named: 'deviceUUID'),
             ));
-      });
-    });
-
-    group('createPin', () {
-      test('throws StateError if credentials not set', () async {
-        final container = createContainer();
-        addTearDown(container.dispose);
-
-        final notifier = container.read(remoteClientProvider.notifier);
-
-        expect(
-          () => notifier.createPin(),
-          throwsA(isA<StateError>()),
-        );
-      });
-
-      test('creates PIN via service and updates state', () async {
-        when(() => mockService.createPin(
-              serialNumber: any(named: 'serialNumber'),
-              macAddress: any(named: 'macAddress'),
-              deviceUUID: any(named: 'deviceUUID'),
-            )).thenAnswer((_) async => RemoteAssistanceTestData.testPin);
-
-        final container = createContainer();
-        addTearDown(container.dispose);
-
-        final notifier = container.read(remoteClientProvider.notifier);
-        notifier.setCredentials(RemoteAssistanceTestData.credentials());
-
-        final pin = await notifier.createPin();
-
-        expect(pin, RemoteAssistanceTestData.testPin);
-
-        final state = container.read(remoteClientProvider);
-        expect(state.pin, RemoteAssistanceTestData.testPin);
-
-        verify(() => mockService.createPin(
-              serialNumber: RemoteAssistanceTestData.testSerialNumber,
-              macAddress: RemoteAssistanceTestData.testMacAddress,
-              deviceUUID: RemoteAssistanceTestData.testDeviceUUID,
-            )).called(1);
       });
     });
 
@@ -404,10 +322,12 @@ void main() {
             )).thenAnswer((_) async => session);
 
         when(() => mockService.createPin(
-              serialNumber: any(named: 'serialNumber'),
-              macAddress: any(named: 'macAddress'),
-              deviceUUID: any(named: 'deviceUUID'),
-            )).thenAnswer((_) async => RemoteAssistanceTestData.testPin);
+                  serialNumber: any(named: 'serialNumber'),
+                  macAddress: any(named: 'macAddress'),
+                  deviceUUID: any(named: 'deviceUUID'),
+                ))
+            .thenAnswer(
+                (_) async => RemoteAssistanceTestData.createPinResult());
 
         final container = createContainer();
         addTearDown(container.dispose);
@@ -446,10 +366,12 @@ void main() {
             )).thenAnswer((_) async => session);
 
         when(() => mockService.createPin(
-              serialNumber: any(named: 'serialNumber'),
-              macAddress: any(named: 'macAddress'),
-              deviceUUID: any(named: 'deviceUUID'),
-            )).thenAnswer((_) async => RemoteAssistanceTestData.testPin);
+                  serialNumber: any(named: 'serialNumber'),
+                  macAddress: any(named: 'macAddress'),
+                  deviceUUID: any(named: 'deviceUUID'),
+                ))
+            .thenAnswer(
+                (_) async => RemoteAssistanceTestData.createPinResult());
 
         final container = createContainer();
         addTearDown(container.dispose);

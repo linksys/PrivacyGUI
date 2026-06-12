@@ -1,76 +1,13 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/cloud/guardian_api_client.dart';
-import 'package:privacy_gui/core/cloud/model/error_response.dart';
 import 'package:privacy_gui/core/cloud/model/guardians_remote_assistance.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/page/remote_assistance/services/remote_assistance_service.dart';
 
+import '../../../mocks/test_data/remote_assistance_test_data.dart';
+
 class MockGuardianApiClient extends Mock implements GuardianApiClient {}
-
-/// Test data builder for Remote Assistance service tests.
-class RemoteAssistanceTestData {
-  static const testSerialNumber = '65G10M27E03053';
-  static const testMacAddress = '11:22:33:44:55:66';
-  static const testDeviceUUID = 'device-uuid-1234';
-  static const testDeviceToken = 'device-token-abc123';
-  static const testSessionToken = 'session-token-xyz789';
-  static const testSessionId = '3683AC72-A4F9-40DC-9CA5-CD5D53F815A9';
-  static const testPin = '123456';
-  static const testModelNumber = 'LN16-EU';
-
-  /// Creates a GRASessionInfo with default or custom values.
-  static GRASessionInfo sessionInfo({
-    String id = testSessionId,
-    String serialNumber = testSerialNumber,
-    String modelNumber = testModelNumber,
-    GRASessionStatus status = GRASessionStatus.active,
-    int expiredIn = -748,
-    int createdAt = 1748315872000,
-    int statusChangedAt = 1748315989000,
-    int currentTime = 1748316924838,
-  }) =>
-      GRASessionInfo(
-        id: id,
-        serialNumber: serialNumber,
-        modelNumber: modelNumber,
-        status: status,
-        expiredIn: expiredIn,
-        createdAt: createdAt,
-        statusChangedAt: statusChangedAt,
-        currentTime: currentTime,
-      );
-
-  /// Creates a list of sessions with different statuses.
-  static List<GRASessionInfo> sessionList({int count = 2}) => [
-        sessionInfo(
-          id: 'session-1',
-          status: GRASessionStatus.active,
-        ),
-        if (count > 1)
-          sessionInfo(
-            id: 'session-2',
-            status: GRASessionStatus.pending,
-          ),
-        if (count > 2)
-          sessionInfo(
-            id: 'session-3',
-            status: GRASessionStatus.invalid,
-          ),
-      ];
-
-  /// Creates an ErrorResponse for testing error mapping.
-  static ErrorResponse errorResponse({
-    required String code,
-    String? message,
-    int status = 400,
-  }) =>
-      ErrorResponse(
-        status: status,
-        code: code,
-        errorMessage: message,
-      );
-}
 
 void main() {
   late MockGuardianApiClient mockApi;
@@ -146,7 +83,7 @@ void main() {
             deviceUUID: any(named: 'deviceUUID'),
           )).thenThrow(RemoteAssistanceTestData.errorResponse(
         code: 'INVALID_SESSION',
-        message: 'Session is invalid',
+        errorMessage: 'Session is invalid',
       ));
 
       expect(
@@ -166,7 +103,7 @@ void main() {
             deviceUUID: any(named: 'deviceUUID'),
           )).thenThrow(RemoteAssistanceTestData.errorResponse(
         code: 'UNAUTHORIZED',
-        message: 'Not authorized',
+        errorMessage: 'Not authorized',
       ));
 
       expect(
@@ -227,7 +164,7 @@ void main() {
             serialNumber: any(named: 'serialNumber'),
           )).thenThrow(RemoteAssistanceTestData.errorResponse(
         code: 'NOT_FOUND',
-        message: 'Session not found',
+        errorMessage: 'Session not found',
       ));
 
       expect(
@@ -251,9 +188,10 @@ void main() {
           )).thenAnswer((_) async => RemoteAssistanceTestData.testDeviceToken);
 
       when(() => mockApi.createPin(
-            linksysToken: any(named: 'linksysToken'),
-            serialNumber: any(named: 'serialNumber'),
-          )).thenAnswer((_) async => RemoteAssistanceTestData.testPin);
+                linksysToken: any(named: 'linksysToken'),
+                serialNumber: any(named: 'serialNumber'),
+              ))
+          .thenAnswer((_) async => RemoteAssistanceTestData.createPinResult());
 
       final result = await service.createPin(
         serialNumber: RemoteAssistanceTestData.testSerialNumber,
@@ -261,7 +199,8 @@ void main() {
         deviceUUID: RemoteAssistanceTestData.testDeviceUUID,
       );
 
-      expect(result, equals(RemoteAssistanceTestData.testPin));
+      expect(result.pin, equals(RemoteAssistanceTestData.testPin));
+      expect(result.sessionId, equals(RemoteAssistanceTestData.testSessionId));
 
       verify(() => mockApi.createPin(
             linksysToken: RemoteAssistanceTestData.testDeviceToken,
@@ -281,7 +220,7 @@ void main() {
             serialNumber: any(named: 'serialNumber'),
           )).thenThrow(RemoteAssistanceTestData.errorResponse(
         code: 'INVALID_INPUT',
-        message: 'Invalid serial number format',
+        errorMessage: 'Invalid serial number format',
       ));
 
       expect(
@@ -333,7 +272,7 @@ void main() {
             deviceUUID: any(named: 'deviceUUID'),
           )).thenThrow(RemoteAssistanceTestData.errorResponse(
         code: 'SESSION_EXPIRED',
-        message: 'Session has expired',
+        errorMessage: 'Session has expired',
       ));
 
       expect(
@@ -354,7 +293,7 @@ void main() {
             deviceUUID: any(named: 'deviceUUID'),
           )).thenThrow(RemoteAssistanceTestData.errorResponse(
         code: 'BAD_AUTHENTICATION',
-        message: 'Authentication failed',
+        errorMessage: 'Authentication failed',
       ));
 
       expect(
@@ -404,7 +343,7 @@ void main() {
             sessionId: any(named: 'sessionId'),
           )).thenThrow(RemoteAssistanceTestData.errorResponse(
         code: 'NOT_FOUND',
-        message: 'Session not found',
+        errorMessage: 'Session not found',
       ));
 
       expect(
@@ -422,7 +361,7 @@ void main() {
             sessionId: any(named: 'sessionId'),
           )).thenThrow(RemoteAssistanceTestData.errorResponse(
         code: 'INVALID_SESSION',
-        message: 'Invalid session token',
+        errorMessage: 'Invalid session token',
       ));
 
       expect(
@@ -469,7 +408,7 @@ void main() {
             sessionId: any(named: 'sessionId'),
           )).thenThrow(RemoteAssistanceTestData.errorResponse(
         code: 'UNAUTHORIZED',
-        message: 'Not authorized to end session',
+        errorMessage: 'Not authorized to end session',
       ));
 
       expect(
@@ -492,7 +431,7 @@ void main() {
             deviceUUID: any(named: 'deviceUUID'),
           )).thenThrow(RemoteAssistanceTestData.errorResponse(
         code: 'REQUEST_TIMEOUT',
-        message: 'Request timed out',
+        errorMessage: 'Request timed out',
       ));
 
       expect(
@@ -512,7 +451,7 @@ void main() {
             deviceUUID: any(named: 'deviceUUID'),
           )).thenThrow(RemoteAssistanceTestData.errorResponse(
         code: 'UNKNOWN_ERROR_CODE',
-        message: 'Something unexpected happened',
+        errorMessage: 'Something unexpected happened',
       ));
 
       expect(

@@ -62,6 +62,9 @@ class GRASessionInfo extends Equatable {
   final int statusChangedAt;
   final int currentTime;
 
+  /// PIN code for CA verification (may be null if not in response).
+  final String? pin;
+
   const GRASessionInfo({
     required this.id,
     required this.serialNumber,
@@ -71,6 +74,7 @@ class GRASessionInfo extends Equatable {
     required this.createdAt,
     required this.statusChangedAt,
     required this.currentTime,
+    this.pin,
   });
 
   @override
@@ -83,6 +87,7 @@ class GRASessionInfo extends Equatable {
         createdAt,
         statusChangedAt,
         currentTime,
+        pin,
       ];
 
   factory GRASessionInfo.fromMap(Map<String, dynamic> map) {
@@ -96,6 +101,7 @@ class GRASessionInfo extends Equatable {
       createdAt: map['createdAt'] as int? ?? 0,
       statusChangedAt: map['statusChangedAt'] as int? ?? 0,
       currentTime: map['currentTime'] as int? ?? 0,
+      pin: map['pin'] as String?,
     );
   }
 
@@ -109,6 +115,7 @@ class GRASessionInfo extends Equatable {
       'createdAt': createdAt,
       'statusChangedAt': statusChangedAt,
       'currentTime': currentTime,
+      if (pin != null) 'pin': pin,
     };
   }
 
