@@ -14,6 +14,7 @@ import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/bench_mark.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 final dashboardManagerProvider =
@@ -158,11 +159,13 @@ class DashboardManagerNotifier extends Notifier<DashboardManagerState> {
     benchMark.start();
     NodeDeviceInfo? nodeDeviceInfo = state.deviceInfo;
     if (nodeDeviceInfo == null) {
+      final isRemote =
+          ref.read(authProvider).value?.loginType == LoginType.remote;
       final routerRepository = ref.read(routerRepositoryProvider);
       final result = await routerRepository.send(
         JNAPAction.getDeviceInfo,
-        retries: 0,
-        timeoutMs: 3000,
+        retries: isRemote ? 1 : 0,
+        timeoutMs: isRemote ? 10000 : 3000,
       );
       nodeDeviceInfo = NodeDeviceInfo.fromJson(result.output);
     }
