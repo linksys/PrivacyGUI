@@ -127,7 +127,8 @@ class _PixelBuddyPainter extends CustomPainter {
   final bool isWalking;
   final bool isGreeting;
 
-  // Colors
+  // Mascot brand colors - intentionally hardcoded for character consistency
+  // These represent the physical router device and should not change with theme
   static const _bodyColor = Color(0xFFFAFAFA);
   static const _borderColor = Color(0xFF333333);
   static const _ledBlue = Color(0xFF00A3E0);

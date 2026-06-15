@@ -38,6 +38,7 @@ class PnpDemoLauncher extends ConsumerWidget {
         padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
             AppText.headlineSmall('PnP Demo Launcher'),
             AppGap.sm(),
@@ -45,25 +46,25 @@ class PnpDemoLauncher extends ConsumerWidget {
               'Select a PnP path to demo. Each card jumps directly to that stage.',
             ),
             AppGap.lg(),
-            Expanded(
-              child: GridView.builder(
-                gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                  maxCrossAxisExtent: 280,
-                  mainAxisExtent: 160,
-                  crossAxisSpacing: AppSpacing.md,
-                  mainAxisSpacing: AppSpacing.md,
-                ),
-                itemCount: entries.length,
-                itemBuilder: (context, index) {
-                  final e = entries[index];
-                  return _DemoCard(
-                    icon: e.icon,
-                    title: e.title,
-                    subtitle: e.subtitle,
-                    onTap: e.onTap,
-                  );
-                },
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                maxCrossAxisExtent: 280,
+                mainAxisExtent: 160,
+                crossAxisSpacing: AppSpacing.md,
+                mainAxisSpacing: AppSpacing.md,
               ),
+              itemCount: entries.length,
+              itemBuilder: (context, index) {
+                final e = entries[index];
+                return _DemoCard(
+                  icon: e.icon,
+                  title: e.title,
+                  subtitle: e.subtitle,
+                  onTap: e.onTap,
+                );
+              },
             ),
           ],
         ),
@@ -73,6 +74,14 @@ class PnpDemoLauncher extends ConsumerWidget {
 
   List<_DemoEntry> _buildEntries(BuildContext context, WidgetRef ref) {
     return [
+      _DemoEntry(
+        icon: Icons.dashboard,
+        title: 'USP Dashboard',
+        subtitle: 'Skip PnP, go directly to dashboard (Mascot)',
+        onTap: () {
+          context.go(RoutePath.uspDashboard);
+        },
+      ),
       _DemoEntry(
         icon: Icons.play_arrow_rounded,
         title: 'Full Flow',

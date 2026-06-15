@@ -18,8 +18,12 @@ import 'package:ui_kit_library/ui_kit.dart';
 import 'package:privacy_gui/page/ai_assistant/views/router_assistant_view.dart';
 
 import 'dashboard_dialog_provider.dart';
+import 'health_dialog_provider.dart';
+import 'mascot_config.dart';
 import 'mascot_hero_widget.dart';
 import 'mascot_message_provider.dart';
+import 'triggers/mascot_trigger.dart';
+import 'triggers/mascot_trigger_provider.dart';
 
 /// Provider for the mascot controller.
 final mascotControllerProvider = Provider.autoDispose<MascotController>((ref) {
@@ -38,6 +42,34 @@ final mascotDialogProvider =
     final controller = ref.watch(mascotControllerProvider);
 
     return DashboardDialogProvider(
+      controller: controller,
+      onRunFullDiagnostics: () => _runFullDiagnostics(ref),
+      onRunFlowDiagnostics: (flow) => _runFlowDiagnostics(ref, flow),
+      onPrintReport: () => _printReport(ref),
+      onOpenThemeStudio: () => _openThemeStudio(ref),
+      onOpenAiAssistant: () => _openAiAssistant(context),
+      getLocale: () => locale,
+      getFaqCategoryTitle: (category) => category.displayString(context),
+      getFaqItemTitle: (item) => item.displayString(context),
+      isThemeStudioEnabled: BuildConfig.enableThemeStudio,
+      getRouterTime: () => _getRouterTime(ref),
+    );
+  },
+);
+
+/// Provider for the health-based mascot dialog UI.
+///
+/// Uses word cloud + toolbar layout instead of fixed options.
+final mascotHealthDialogProvider = Provider.autoDispose
+    .family<HealthDialogProvider, (BuildContext, WidgetRef)>(
+  (ref, args) {
+    final (context, widgetRef) = args;
+    final locale = ref.watch(appSettingsProvider.select((s) => s.locale));
+    final controller = ref.watch(mascotControllerProvider);
+
+    return HealthDialogProvider(
+      ref: widgetRef,
+      context: context,
       controller: controller,
       onRunFullDiagnostics: () => _runFullDiagnostics(ref),
       onRunFlowDiagnostics: (flow) => _runFlowDiagnostics(ref, flow),
@@ -230,9 +262,9 @@ class MascotCoordinatorNotifier extends AutoDisposeNotifier<void> {
   final _random = Random();
   VoidCallback? _controllerListener;
 
-  static const _minInterval = Duration(seconds: 10);
-  static const _maxInterval = Duration(seconds: 30);
-  static const _autoHideDuration = Duration(seconds: 5);
+  static const _minInterval = kRandomSpeechMinInterval;
+  static const _maxInterval = kRandomSpeechMaxInterval;
+  static const _autoHideDuration = kRandomSpeechAutoHide;
 
   @override
   void build() {
@@ -245,7 +277,31 @@ class MascotCoordinatorNotifier extends AutoDisposeNotifier<void> {
 
     if (showMascot && isDashboardReady) {
       _startRandomSpeech(controller);
+      _startTriggerListener(controller);
     }
+  }
+
+  void _startTriggerListener(MascotController controller) {
+    final triggerNotifier = ref.read(mascotTriggerProvider.notifier);
+    triggerNotifier.onTrigger =
+        (trigger) => _handleTrigger(controller, trigger);
+  }
+
+  void _handleTrigger(MascotController controller, MascotTrigger trigger) {
+    if (!controller.isVisible) return;
+
+    // For critical triggers, interrupt current dialog
+    if (trigger.interruptCurrent && controller.isDialogVisible) {
+      controller.dismissDialog();
+    }
+
+    // Don't interrupt user interaction for non-critical triggers
+    if (!trigger.interruptCurrent &&
+        controller.state == MascotState.interacting) {
+      return;
+    }
+
+    controller.showDialog(trigger.toDialogNode());
   }
 
   void _startRandomSpeech(MascotController controller) {

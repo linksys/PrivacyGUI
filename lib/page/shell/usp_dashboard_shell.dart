@@ -22,7 +22,7 @@ import 'package:privacy_gui/page/dashboard/mascot/mascot_providers.dart'
     show
         mascotControllerProvider,
         mascotCoordinatorProvider,
-        mascotDialogProvider;
+        mascotHealthDialogProvider;
 import 'package:privacy_gui/page/dashboard/providers/dashboard_domain_ready_provider.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -118,7 +118,8 @@ class _UspDashboardShellState extends ConsumerState<UspDashboardShell> {
         ref.watch(appSettingsProvider.select((s) => s.showMascot));
     final isDashboardReady = ref.watch(dashboardDomainReadyProvider).hasValue;
     final mascotController = ref.watch(mascotControllerProvider);
-    final dialogProvider = ref.watch(mascotDialogProvider(context));
+    final dialogProvider =
+        ref.watch(mascotHealthDialogProvider((context, ref)));
 
     // Activate mascot coordinator (manages random speech timer internally)
     ref.watch(mascotCoordinatorProvider);
