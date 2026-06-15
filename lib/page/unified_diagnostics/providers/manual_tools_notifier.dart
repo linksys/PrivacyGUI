@@ -47,7 +47,7 @@ class ManualToolsNotifier
     final svc = ref.read(diagnosticsScopeServiceProvider);
     if (svc == null) {
       throw const ConnectivityError(
-          message: 'DiagnosticsScopeService not available');
+          detail: 'DiagnosticsScopeService not available');
     }
     return svc;
   }
@@ -145,8 +145,8 @@ class ManualToolsNotifier
 
   String _pingErrorMessage(ServiceError e, String host) {
     return switch (e) {
-      InvalidInputError(:final message) =>
-        message ?? 'Cannot ping $host — invalid host',
+      InvalidInputError(:final detail) =>
+        detail ?? 'Cannot ping $host — invalid host',
       NetworkError() => 'Ping failed — router lost connection',
       ConnectivityError() => 'Ping unavailable — diagnostics scope not ready',
       _ => 'Ping failed — please try again',
@@ -202,8 +202,8 @@ class ManualToolsNotifier
 
   String _tracerouteErrorMessage(ServiceError e, String host) {
     return switch (e) {
-      InvalidInputError(:final message) =>
-        message ?? 'Cannot trace $host — invalid host',
+      InvalidInputError(:final detail) =>
+        detail ?? 'Cannot trace $host — invalid host',
       NetworkError() => 'Traceroute failed — router lost connection',
       ConnectivityError() =>
         'Traceroute unavailable — diagnostics scope not ready',
@@ -263,8 +263,8 @@ class ManualToolsNotifier
 
   String _nsLookupErrorMessage(ServiceError e, String host) {
     return switch (e) {
-      InvalidInputError(:final message) =>
-        message ?? 'Cannot resolve $host — invalid host',
+      InvalidInputError(:final detail) =>
+        detail ?? 'Cannot resolve $host — invalid host',
       NetworkError() => 'NS Lookup failed — router lost connection',
       ConnectivityError() =>
         'NS Lookup unavailable — diagnostics scope not ready',

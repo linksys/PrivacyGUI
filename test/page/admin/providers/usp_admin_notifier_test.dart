@@ -81,7 +81,7 @@ void main() {
 
     test('build error sets AsyncError', () async {
       when(() => mockAdminService.fetchAdmin())
-          .thenThrow(const NetworkError(message: 'admin fetch failed'));
+          .thenThrow(const NetworkError(detail: 'admin fetch failed'));
       final container = createContainer();
 
       try {
@@ -180,7 +180,7 @@ void main() {
       when(() => mockAdminService.updatePassword(
             instancePath: any(named: 'instancePath'),
             newPassword: any(named: 'newPassword'),
-          )).thenThrow(const NetworkError(message: 'timeout'));
+          )).thenThrow(const NetworkError(detail: 'timeout'));
 
       final container = createContainer();
       await container.read(uspAdminProvider.future);
@@ -198,7 +198,7 @@ void main() {
       when(() => mockAdminService.fetchAdmin())
           .thenAnswer((_) async => testAdmin);
       when(() => mockAdminService.reboot())
-          .thenThrow(const ConnectivityError(message: 'connection refused'));
+          .thenThrow(const ConnectivityError(detail: 'connection refused'));
 
       final container = createContainer();
       await container.read(uspAdminProvider.future);

@@ -138,7 +138,7 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
 
   void setErrorMessage(UnexpectedError? error) {
     if (error != null) {
-      final errorCode = error.message ?? '';
+      final errorCode = error.detail ?? '';
       // Check if it's the invalid admin password error from CheckAdminPassword3
       if (errorCode == errorInvalidAdminPassword ||
           errorCode == errorPasswordCheckDelayed) {
@@ -323,7 +323,7 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
       if (result != null) {
         // Create the error and the countdown has yet to be triggered
         final loginError = UnexpectedError(
-          message: errorPasswordCheckDelayed,
+          detail: errorPasswordCheckDelayed,
           originalError: jsonEncode(result),
         );
         setErrorMessage(loginError);

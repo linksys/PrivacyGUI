@@ -55,7 +55,7 @@ void main() {
 
     test('sets error status when service throws ServiceError', () async {
       when(() => mockService.fetchIeee80211h())
-          .thenThrow(const NetworkError(message: 'timeout'));
+          .thenThrow(const NetworkError(detail: 'timeout'));
 
       final container = createContainer();
       await Future.delayed(Duration.zero);
@@ -243,7 +243,7 @@ void main() {
       when(() => mockService.setIeee80211hEnabled(
             radioPaths: any(named: 'radioPaths'),
             enabled: any(named: 'enabled'),
-          )).thenThrow(const InvalidInputError(message: 'read-only'));
+          )).thenThrow(const InvalidInputError(detail: 'read-only'));
 
       final container = createContainer();
       await Future.delayed(Duration.zero);

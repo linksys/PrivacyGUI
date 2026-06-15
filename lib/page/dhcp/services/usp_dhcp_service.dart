@@ -61,12 +61,12 @@ class UspDhcpService {
           throw UspPartialFailureError(
             summary: 'DHCP toggle partial failure: $errorSummary',
             successPaths: successes.map((s) => s.requestedPath).toList(),
-            failedPaths: failures.map((f) => f.requestedPath).toList(),
+            failures: failures,
           );
         case UspFailure(:final errorSummary, :final errors):
           throw UspCompleteFailureError(
             summary: 'DHCP toggle failed: $errorSummary',
-            failedPaths: errors.map((e) => e.requestedPath).toList(),
+            failures: errors,
           );
       }
     } catch (e) {
@@ -97,12 +97,12 @@ class UspDhcpService {
           throw UspPartialFailureError(
             summary: 'DHCP add partial failure: $errorSummary',
             successPaths: successes.map((s) => s.requestedPath).toList(),
-            failedPaths: failures.map((f) => f.requestedPath).toList(),
+            failures: failures,
           );
         case UspFailure(:final errorSummary, :final errors):
           throw UspCompleteFailureError(
             summary: 'DHCP add failed: $errorSummary',
-            failedPaths: errors.map((e) => e.requestedPath).toList(),
+            failures: errors,
           );
       }
     } catch (e) {
@@ -127,12 +127,12 @@ class UspDhcpService {
           throw UspPartialFailureError(
             summary: 'DHCP delete partial failure: $errorSummary',
             successPaths: successes.map((s) => s.requestedPath).toList(),
-            failedPaths: failures.map((f) => f.requestedPath).toList(),
+            failures: failures,
           );
         case UspFailure(:final errorSummary, :final errors):
           throw UspCompleteFailureError(
             summary: 'DHCP delete failed: $errorSummary',
-            failedPaths: errors.map((e) => e.requestedPath).toList(),
+            failures: errors,
           );
       }
     } catch (e) {
@@ -178,7 +178,7 @@ class UspDhcpService {
           case UspFailure(:final errorSummary, :final errors):
             throw UspCompleteFailureError(
               summary: 'DHCP batch delete failed: $errorSummary',
-              failedPaths: errors.map((e) => e.requestedPath).toList(),
+              failures: errors,
             );
         }
       }
@@ -203,7 +203,7 @@ class UspDhcpService {
           case UspFailure(:final errorSummary, :final errors):
             throw UspCompleteFailureError(
               summary: 'DHCP batch add failed: $errorSummary',
-              failedPaths: errors.map((e) => e.requestedPath).toList(),
+              failures: errors,
             );
         }
       }
@@ -242,7 +242,7 @@ class UspDhcpService {
           case UspFailure(:final errorSummary, :final errors):
             throw UspCompleteFailureError(
               summary: 'DHCP batch update failed: $errorSummary',
-              failedPaths: errors.map((e) => e.requestedPath).toList(),
+              failures: errors,
             );
         }
       }

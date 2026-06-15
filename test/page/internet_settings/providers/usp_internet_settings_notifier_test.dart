@@ -88,7 +88,7 @@ void main() {
 
     test('fetch error sets error status', () async {
       when(() => mockService.fetchSettings())
-          .thenThrow(const NetworkError(message: 'bridge unreachable'));
+          .thenThrow(const NetworkError(detail: 'bridge unreachable'));
       final container = createContainer();
       await Future.delayed(Duration.zero);
 
@@ -285,7 +285,7 @@ void main() {
       when(() => mockService.fetchSettings())
           .thenAnswer((_) async => testFetchResult);
       when(() => mockService.saveAll(any(), any()))
-          .thenThrow(const NetworkError(message: 'save failed'));
+          .thenThrow(const NetworkError(detail: 'save failed'));
 
       final container = createContainer();
       await Future.delayed(Duration.zero);

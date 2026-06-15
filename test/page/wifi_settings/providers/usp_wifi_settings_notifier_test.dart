@@ -552,7 +552,7 @@ void main() {
           uspClientProvider.overrideWithValue(mockUsp),
           uspAuthCoordinatorProvider.overrideWithValue(mockAuthCoordinator),
           wifiDataProvider.overrideWith(() =>
-              _ErrorWifiDataNotifier(const NetworkError(message: 'timeout'))),
+              _ErrorWifiDataNotifier(const NetworkError(detail: 'timeout'))),
         ],
       );
       container.listen(uspWifiSettingsProvider, (_, __) {});
@@ -585,7 +585,7 @@ void main() {
       when(() => mockService.saveAdvanced(
             original: any(named: 'original'),
             current: any(named: 'current'),
-          )).thenThrow(const NetworkError(message: 'HTTP 504'));
+          )).thenThrow(const NetworkError(detail: 'HTTP 504'));
 
       final container = createContainer();
       await Future.delayed(Duration.zero);
@@ -616,7 +616,7 @@ void main() {
       when(() => mockService.saveAdvanced(
             original: any(named: 'original'),
             current: any(named: 'current'),
-          )).thenThrow(const NetworkError(message: 'HTTP 504'));
+          )).thenThrow(const NetworkError(detail: 'HTTP 504'));
 
       final container = createContainer();
       await Future.delayed(Duration.zero);

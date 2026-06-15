@@ -16,35 +16,35 @@ void main() {
     });
 
     test('NetworkError appends message when present', () {
-      expect('${const NetworkError(message: 'Request timeout')}',
+      expect('${const NetworkError(detail: 'Request timeout')}',
           'Network error: Request timeout');
       expect('${const NetworkError()}', 'Network');
     });
 
     test('ConnectivityError appends message when present', () {
-      expect('${const ConnectivityError(message: 'Connection refused')}',
+      expect('${const ConnectivityError(detail: 'Connection refused')}',
           'Connectivity error: Connection refused');
       expect('${const ConnectivityError()}', 'Connectivity');
     });
 
     test('InvalidInputError shows field and message', () {
       expect(
-          '${const InvalidInputError(field: 'destIp', message: 'Invalid IP')}',
+          '${const InvalidInputError(field: 'destIp', detail: 'Invalid IP')}',
           'Invalid input: destIp: Invalid IP');
-      expect('${const InvalidInputError(message: 'bad value')}',
+      expect('${const InvalidInputError(detail: 'bad value')}',
           'Invalid input: bad value');
       expect('${const InvalidInputError()}', 'Invalid input');
     });
 
     test('UnexpectedError appends message when present', () {
-      expect('${const UnexpectedError(message: 'bad data')}',
+      expect('${const UnexpectedError(detail: 'bad data')}',
           'Unexpected error: bad data');
       expect('${const UnexpectedError()}', 'Unexpected');
     });
 
     test('ServiceNotInitializedError appends message when present', () {
       expect(
-          '${const ServiceNotInitializedError(message: 'USP service not available')}',
+          '${const ServiceNotInitializedError(detail: 'USP service not available')}',
           'Service not initialized: USP service not available');
       expect(
           '${const ServiceNotInitializedError()}', 'Service not initialized');

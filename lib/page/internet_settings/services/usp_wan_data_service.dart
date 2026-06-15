@@ -18,7 +18,7 @@ final uspWanDataServiceProvider = Provider<UspWanDataService>(
     final usp = ref.read(uspClientProvider);
     if (usp == null) {
       throw const ServiceNotInitializedError(
-          message: 'USP service not available');
+          detail: 'USP service not available');
     }
     return UspWanDataService(usp);
   },

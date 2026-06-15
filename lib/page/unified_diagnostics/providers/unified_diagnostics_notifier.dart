@@ -57,7 +57,7 @@ class UnifiedDiagnosticsNotifier
     final executor = ref.read(networkDiagnosticsExecutorProvider);
     if (executor == null) {
       throw const ConnectivityError(
-          message: 'NetworkDiagnosticsExecutor not available');
+          detail: 'NetworkDiagnosticsExecutor not available');
     }
     final scope = await executor.acquireScope();
     _scope = scope;

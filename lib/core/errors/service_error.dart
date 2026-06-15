@@ -1,3 +1,6 @@
+import 'package:privacy_gui/core/usp/models/usp_operation_result.dart'
+    show UspErrorDetail;
+
 /// Unified service error hierarchy for all data sources.
 ///
 /// This sealed class serves as the contract between Service layer and Provider layer.
@@ -28,7 +31,19 @@
 /// }
 /// ```
 sealed class ServiceError implements Exception {
-  const ServiceError();
+  /// Diagnostic raw fault code (firmware 7xxx/9xxx, WASM 9999, codegen 9998…).
+  /// For logging/debugging only — `null` when there is no code.
+  final int? code;
+
+  /// Raw technical message (firmware text / WASM string / error identifier).
+  ///
+  /// Primarily for logging/debugging. For most subtypes the UI derives a
+  /// localized message from the subtype itself and ignores [detail]. The
+  /// exception is fallback types like [UnexpectedError] that carry no
+  /// type-specific semantics — there the UI may surface [detail] directly.
+  final String? detail;
+
+  const ServiceError({this.code, this.detail});
 
   /// Human-readable label derived from the class name.
   ///
@@ -63,27 +78,27 @@ sealed class ServiceError implements Exception {
 
 /// User not authenticated
 final class NotAuthenticatedError extends ServiceError {
-  const NotAuthenticatedError();
+  const NotAuthenticatedError({super.code, super.detail});
 }
 
 /// Session token is invalid or expired
 final class InvalidSessionTokenError extends ServiceError {
-  const InvalidSessionTokenError();
+  const InvalidSessionTokenError({super.code, super.detail});
 }
 
 /// Session token has expired and cannot be refreshed
 final class SessionTokenExpiredError extends ServiceError {
-  const SessionTokenExpiredError();
+  const SessionTokenExpiredError({super.code, super.detail});
 }
 
 /// Invalid credentials (username/password combination)
 final class InvalidCredentialsError extends ServiceError {
-  const InvalidCredentialsError();
+  const InvalidCredentialsError({super.code, super.detail});
 }
 
 /// Unauthorized access attempt
 final class UnauthorizedError extends ServiceError {
-  const UnauthorizedError();
+  const UnauthorizedError({super.code, super.detail});
 }
 
 // ============================================================================
@@ -92,7 +107,7 @@ final class UnauthorizedError extends ServiceError {
 
 /// Requested resource not found
 final class ResourceNotFoundError extends ServiceError {
-  const ResourceNotFoundError();
+  const ResourceNotFoundError({super.code, super.detail});
 }
 
 // ============================================================================
@@ -101,12 +116,12 @@ final class ResourceNotFoundError extends ServiceError {
 
 /// Invalid OTP code
 final class InvalidOtpError extends ServiceError {
-  const InvalidOtpError();
+  const InvalidOtpError({super.code, super.detail});
 }
 
 /// OTP code has expired
 final class ExpiredOtpError extends ServiceError {
-  const ExpiredOtpError();
+  const ExpiredOtpError({super.code, super.detail});
 }
 
 // ============================================================================
@@ -115,23 +130,24 @@ final class ExpiredOtpError extends ServiceError {
 
 /// Admin account is locked
 final class AdminAccountLockedError extends ServiceError {
-  const AdminAccountLockedError();
+  const AdminAccountLockedError({super.code, super.detail});
 }
 
 /// Invalid reset code provided
 final class InvalidResetCodeError extends ServiceError {
   final int? attemptsRemaining;
-  const InvalidResetCodeError({this.attemptsRemaining});
+  const InvalidResetCodeError(
+      {this.attemptsRemaining, super.code, super.detail});
 }
 
 /// Too many consecutive invalid reset code attempts
 final class ConsecutiveInvalidResetCodeError extends ServiceError {
-  const ConsecutiveInvalidResetCodeError();
+  const ConsecutiveInvalidResetCodeError({super.code, super.detail});
 }
 
 /// Invalid admin password
 final class InvalidAdminPasswordError extends ServiceError {
-  const InvalidAdminPasswordError();
+  const InvalidAdminPasswordError({super.code, super.detail});
 }
 
 // ============================================================================
@@ -144,55 +160,55 @@ final class InvalidAdminPasswordError extends ServiceError {
 /// initialized (e.g. non-Web platform or WASM not loaded). This is a setup
 /// error, not a network connectivity issue.
 final class ServiceNotInitializedError extends ServiceError {
-  final String? message;
-  const ServiceNotInitializedError({this.message});
+  const ServiceNotInitializedError({super.code, super.detail});
 
   @override
   String toString() =>
-      message != null ? 'Service not initialized: $message' : super.toString();
+      detail != null ? 'Service not initialized: $detail' : super.toString();
 }
 
 /// Invalid input data
 final class InvalidInputError extends ServiceError {
   final String? field;
-  final String? message;
-  const InvalidInputError({this.field, this.message});
+  const InvalidInputError({this.field, super.code, super.detail});
 
   @override
   String toString() {
-    final detail = [
+    final parts = [
       if (field != null) field,
-      if (message != null) message,
+      if (detail != null) detail,
     ].join(': ');
-    return detail.isNotEmpty ? 'Invalid input: $detail' : super.toString();
+    return parts.isNotEmpty ? 'Invalid input: $parts' : super.toString();
   }
 }
 
-/// Unexpected error (fallback for unmapped errors)
+/// Unexpected error (fallback for unmapped errors).
+///
+/// This is the one type whose semantics the UI cannot derive from the type
+/// alone, so [detail] is meant to be surfaced to the user / used by callers
+/// (e.g. the local-login flow reads [detail] as an error-code identifier).
 final class UnexpectedError extends ServiceError {
   final Object? originalError;
-  final String? message;
-  const UnexpectedError({this.originalError, this.message});
+  const UnexpectedError({this.originalError, super.code, super.detail});
 
   @override
   String toString() =>
-      message != null ? 'Unexpected error: $message' : super.toString();
+      detail != null ? 'Unexpected error: $detail' : super.toString();
 }
 
 /// Network communication error
 final class NetworkError extends ServiceError {
-  final String? message;
-  const NetworkError({this.message});
+  const NetworkError({super.code, super.detail});
 
   @override
   String toString() =>
-      message != null ? 'Network error: $message' : super.toString();
+      detail != null ? 'Network error: $detail' : super.toString();
 }
 
 /// Storage operation error
 final class StorageError extends ServiceError {
   final Object? originalError;
-  const StorageError({this.originalError});
+  const StorageError({this.originalError, super.code, super.detail});
 }
 
 // ============================================================================
@@ -202,12 +218,20 @@ final class StorageError extends ServiceError {
 /// USP operation failed completely (all parameters failed)
 final class UspCompleteFailureError extends ServiceError {
   final String summary;
-  final List<String> failedPaths;
+
+  /// Full per-path diagnostics (path + errorCode + errorMessage), retained so
+  /// the UI can later derive a localized message from each [UspErrorDetail].
+  final List<UspErrorDetail> failures;
 
   const UspCompleteFailureError({
     required this.summary,
-    required this.failedPaths,
+    required this.failures,
+    super.code,
+    super.detail,
   });
+
+  /// Backward-compatible: the failed TR-181 paths.
+  List<String> get failedPaths => failures.map((f) => f.requestedPath).toList();
 
   @override
   String toString() => summary;
@@ -217,13 +241,20 @@ final class UspCompleteFailureError extends ServiceError {
 final class UspPartialFailureError extends ServiceError {
   final String summary;
   final List<String> successPaths;
-  final List<String> failedPaths;
+
+  /// Full per-path diagnostics for the failed entries.
+  final List<UspErrorDetail> failures;
 
   const UspPartialFailureError({
     required this.summary,
     required this.successPaths,
-    required this.failedPaths,
+    required this.failures,
+    super.code,
+    super.detail,
   });
+
+  /// Backward-compatible: the failed TR-181 paths.
+  List<String> get failedPaths => failures.map((f) => f.requestedPath).toList();
 
   @override
   String toString() => '(Partial) $summary';
@@ -238,17 +269,16 @@ final class SerialNumberMismatchError extends ServiceError {
   final String expected;
   final String actual;
   const SerialNumberMismatchError(
-      {required this.expected, required this.actual});
+      {required this.expected, required this.actual, super.code, super.detail});
 }
 
 /// Router connectivity error (cannot reach router)
 final class ConnectivityError extends ServiceError {
-  final String? message;
-  const ConnectivityError({this.message});
+  const ConnectivityError({super.code, super.detail});
 
   @override
   String toString() =>
-      message != null ? 'Connectivity error: $message' : super.toString();
+      detail != null ? 'Connectivity error: $detail' : super.toString();
 }
 
 // ============================================================================

@@ -82,7 +82,7 @@ void main() {
     test('build sets AsyncError with ServiceError when service throws',
         () async {
       when(() => mockService.fetch())
-          .thenThrow(const NetworkError(message: 'timeout'));
+          .thenThrow(const NetworkError(detail: 'timeout'));
       final container = createContainer();
 
       try {

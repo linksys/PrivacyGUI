@@ -158,7 +158,7 @@ void main() {
           uspMutationLockProvider.overrideWithValue(UspMutationLock()),
           firewallDataProvider.overrideWith(() => _TestFirewallDataNotifier(
                 testData,
-                errorToThrow: const NetworkError(message: 'timeout'),
+                errorToThrow: const NetworkError(detail: 'timeout'),
               )),
         ],
       );
@@ -175,7 +175,7 @@ void main() {
             original: any(named: 'original'),
             pending: any(named: 'pending'),
             context: any(named: 'context'),
-          )).thenThrow(const NetworkError(message: 'save failed'));
+          )).thenThrow(const NetworkError(detail: 'save failed'));
 
       final container = createContainer();
       await Future.delayed(Duration.zero);

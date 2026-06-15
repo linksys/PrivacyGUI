@@ -119,7 +119,7 @@ class UnifiedDiagnosticsService {
     if (wan.ipAddress.isEmpty) {
       throw const InvalidInputError(
           field: 'wanIp',
-          message: 'No WAN IP address — cannot determine gateway');
+          detail: 'No WAN IP address — cannot determine gateway');
     }
     final gateway = _deriveGateway(wan.ipAddress, wan.subnetMask);
     return ping(gateway, repeatCount: repeatCount);

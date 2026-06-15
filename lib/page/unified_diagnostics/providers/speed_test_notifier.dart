@@ -65,7 +65,7 @@ class SpeedTestNotifier extends AutoDisposeAsyncNotifier<SpeedTestState> {
     final svc = ref.read(diagnosticsScopeServiceProvider);
     if (svc == null) {
       throw const ConnectivityError(
-          message: 'DiagnosticsScopeService not available');
+          detail: 'DiagnosticsScopeService not available');
     }
     return svc;
   }
@@ -267,8 +267,8 @@ class SpeedTestNotifier extends AutoDisposeAsyncNotifier<SpeedTestState> {
       NetworkError() => 'Speed test failed — router lost connection',
       ConnectivityError() =>
         'Speed test unavailable — diagnostics scope not ready',
-      InvalidInputError(:final message) =>
-        message ?? 'Speed test failed — invalid configuration',
+      InvalidInputError(:final detail) =>
+        detail ?? 'Speed test failed — invalid configuration',
       _ => 'Speed test failed — please try again',
     };
   }

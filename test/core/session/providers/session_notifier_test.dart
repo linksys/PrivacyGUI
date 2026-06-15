@@ -108,7 +108,7 @@ void main() {
 
     test('throws ConnectivityError when router is unreachable', () async {
       when(() => mockService.checkRouterIsBack(any()))
-          .thenThrow(const ConnectivityError(message: 'unreachable'));
+          .thenThrow(const ConnectivityError(detail: 'unreachable'));
 
       final container = createContainer();
       final notifier = container.read(sessionProvider.notifier);
@@ -180,7 +180,7 @@ void main() {
 
     test('throws on API failure', () async {
       when(() => mockService.forceFetchDeviceInfo())
-          .thenThrow(const ConnectivityError(message: 'timeout'));
+          .thenThrow(const ConnectivityError(detail: 'timeout'));
 
       final container = createContainer();
       final notifier = container.read(sessionProvider.notifier);
@@ -237,7 +237,7 @@ void main() {
 
     test('throws on service failure', () async {
       when(() => mockService.fetchDeviceInfoAndInitializeServices())
-          .thenThrow(const ConnectivityError(message: 'network down'));
+          .thenThrow(const ConnectivityError(detail: 'network down'));
 
       final container = createContainer();
       final notifier = container.read(sessionProvider.notifier);

@@ -57,7 +57,6 @@ class UspInternetSettingsService {
         debugIpv6Enabled: ipv6.ipv6Enabled,
       );
     } catch (e) {
-      if (e is ServiceError) rethrow;
       throw mapUspErrorToServiceError(e);
     }
   }
@@ -454,12 +453,12 @@ class UspInternetSettingsService {
         throw UspPartialFailureError(
           summary: 'WAN update partial failure: $errorSummary',
           successPaths: successes.map((s) => s.requestedPath).toList(),
-          failedPaths: failures.map((f) => f.requestedPath).toList(),
+          failures: failures,
         );
       case UspFailure(:final errorSummary, :final errors):
         throw UspCompleteFailureError(
           summary: 'WAN update failed: $errorSummary',
-          failedPaths: errors.map((e) => e.requestedPath).toList(),
+          failures: errors,
         );
     }
   }
@@ -478,12 +477,12 @@ class UspInternetSettingsService {
         throw UspPartialFailureError(
           summary: 'WAN delete partial failure: $errorSummary',
           successPaths: successes.map((s) => s.requestedPath).toList(),
-          failedPaths: failures.map((f) => f.requestedPath).toList(),
+          failures: failures,
         );
       case UspFailure(:final errorSummary, :final errors):
         throw UspCompleteFailureError(
           summary: 'WAN delete failed: $errorSummary',
-          failedPaths: errors.map((e) => e.requestedPath).toList(),
+          failures: errors,
         );
     }
   }
@@ -502,12 +501,12 @@ class UspInternetSettingsService {
         throw UspPartialFailureError(
           summary: 'WAN operation partial failure: $errorSummary',
           successPaths: successes.map((s) => s.requestedPath).toList(),
-          failedPaths: failures.map((f) => f.requestedPath).toList(),
+          failures: failures,
         );
       case UspFailure(:final errorSummary, :final errors):
         throw UspCompleteFailureError(
           summary: 'WAN operation failed: $errorSummary',
-          failedPaths: errors.map((e) => e.requestedPath).toList(),
+          failures: errors,
         );
     }
   }

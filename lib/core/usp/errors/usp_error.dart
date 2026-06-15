@@ -114,26 +114,57 @@ UspError? parseUspError(Object error) {
 
 /// Converts any caught error from a USP codegen call into a [ServiceError].
 ///
-/// ## WASM String Contract
+/// ## Error Contract (the match points this function depends on)
 ///
-/// This function matches error strings from `usp_framework/usp-client/src/error.rs`.
-/// The following strings are part of the API contract:
+/// Errors reach this function from THREE sources. Each match point below is a
+/// brittle coupling — if the source string/code changes, the mapping silently
+/// breaks. This table lists ONLY the values actually compared against (not the
+/// full set of strings the sources can emit). Keep it in sync with the sources.
 ///
-/// | Dart match string       | WASM error type                  |
-/// |-------------------------|----------------------------------|
-/// | `'Invalid credentials'` | `AuthError::InvalidCredentials`  |
-/// | `'Session expired'`     | `AuthError::SessionExpired`      |
-/// | `'Invalid token'`       | `AuthError::InvalidToken`        |
-/// | `'Permission denied'`   | `AuthError::PermissionDenied`    |
-/// | `'Authentication required'` | `AuthError::AuthenticationRequired` |
-/// | `'Request timeout'`     | `TransportError::Timeout`        |
-/// | `'Connection refused'`  | `TransportError::ConnectionRefused` |
-/// | `'Path not found'`      | `OperationError::PathNotFound`   |
-/// | `'read-only'`           | `OperationError::ReadOnly`       |
-/// | `'Invalid value'`       | `OperationError::InvalidValue`   |
+/// ### Source 1 — Rust WASM client string `Display` (`usp-client/src/error.rs`)
 ///
-/// **Warning**: If WASM error messages change, this mapping will break silently.
-/// Update both sides together.
+/// | Dart match string         | Rust variant (error.rs)              | → ServiceError              |
+/// |---------------------------|--------------------------------------|-----------------------------|
+/// | `'Invalid credentials'`   | `AuthError::InvalidCredentials`      | InvalidCredentialsError     |
+/// | `'Session expired'`       | `AuthError::SessionExpired`          | SessionTokenExpiredError    |
+/// | `'Invalid token'`         | `AuthError::InvalidToken`            | InvalidSessionTokenError    |
+/// | `'Permission denied'`     | `AuthError::PermissionDenied`        | UnauthorizedError           |
+/// | `'Authentication required'`| `AuthError::AuthenticationRequired` | NotAuthenticatedError       |
+/// | `'Request timeout'`       | `TransportError::Timeout`            | NetworkError                |
+/// | `'Connection refused'`    | `TransportError::ConnectionRefused`  | ConnectivityError           |
+/// | HTTP status `401`         | `HTTP error: HTTP 401` (regex)       | NotAuthenticatedError       |
+///
+/// ### Source 2 — fault codes in `(code: XXXX)`, passed through from firmware
+/// (7xxx = TR-369 standard; 9xxx = bbfdm vendor). Rust only relays these.
+///
+/// | code | meaning                          | → ServiceError          |
+/// |------|----------------------------------|-------------------------|
+/// | 7004 | parameter not writable           | InvalidInputError       |
+/// | 7005 | invalid parameter name           | InvalidInputError       |
+/// | 7006 | invalid parameter value          | InvalidInputError       |
+/// | 7026 | parameter (path) not found       | ResourceNotFoundError   |
+/// | 7027 | object not found                 | ResourceNotFoundError   |
+/// | 9001 | bbfdm: request denied            | UnauthorizedError       |
+/// | 9005 | bbfdm: invalid/unimplemented param | ResourceNotFoundError |
+/// | 9007 | bbfdm: (resource not found)      | ResourceNotFoundError   |
+/// | 9008 | bbfdm: non-writable parameter    | InvalidInputError       |
+///
+/// ### Source 3 — Dart codegen (`lib/generated/*.g.dart`), NOT from Rust
+///
+/// | Dart match  | emitted by                                          | → ServiceError    |
+/// |-------------|-----------------------------------------------------|-------------------|
+/// | code `9998` | codegen "Required fields missing from response"     | InvalidInputError |
+/// |             | (category=validation → handled by the validation arm)|                  |
+///
+/// ### Dead match points (kept for completeness / contract tests only)
+/// `_mapOperationError` strings — `'Path not found'`, `'read-only'`,
+/// `'Invalid value'` — map `OperationError::*`, which is constructed ONLY in the
+/// Rust `ffi` module (native, `#[cfg(not(target_arch = "wasm32"))]`). They never
+/// fire in the production WASM build. See [_mapOperationError].
+///
+/// **Warning**: anything not matched above falls through to NetworkError
+/// (transport) or UnexpectedError (auth/protocol/unparseable). If source
+/// strings/codes change, update this table AND the contract tests together.
 ServiceError mapUspErrorToServiceError(Object error) {
   final parsed = parseUspError(error);
   if (parsed == null) {
@@ -147,7 +178,8 @@ ServiceError mapUspErrorToServiceError(Object error) {
     UspErrorCategory.transport => _mapTransportError(parsed),
     UspErrorCategory.protocol => _mapProtocolError(parsed),
     UspErrorCategory.operation => _mapOperationError(parsed),
-    UspErrorCategory.validation => InvalidInputError(message: parsed.message),
+    UspErrorCategory.validation =>
+      InvalidInputError(code: parsed.faultCode, detail: parsed.message),
   };
   logger.w('[USP][ServiceError]: "$error" → ${result.runtimeType}');
   return result;
@@ -155,35 +187,41 @@ ServiceError mapUspErrorToServiceError(Object error) {
 
 ServiceError _mapAuthError(UspError e) {
   final msg = e.message;
+  final code = e.faultCode;
   if (msg.contains('Invalid credentials')) {
-    return const InvalidCredentialsError();
+    return InvalidCredentialsError(code: code, detail: msg);
   }
-  if (msg.contains('Session expired')) return const SessionTokenExpiredError();
-  if (msg.contains('Invalid token')) return const InvalidSessionTokenError();
-  if (msg.contains('Permission denied')) return const UnauthorizedError();
+  if (msg.contains('Session expired')) {
+    return SessionTokenExpiredError(code: code, detail: msg);
+  }
+  if (msg.contains('Invalid token')) {
+    return InvalidSessionTokenError(code: code, detail: msg);
+  }
+  if (msg.contains('Permission denied')) {
+    return UnauthorizedError(code: code, detail: msg);
+  }
   if (msg.contains('Authentication required')) {
-    return const NotAuthenticatedError();
+    return NotAuthenticatedError(code: code, detail: msg);
   }
-  return UnexpectedError(originalError: e.rawError, message: msg);
+  return UnexpectedError(originalError: e.rawError, detail: msg);
 }
 
 ServiceError _mapTransportError(UspError e) {
   final status = e.httpStatus;
   if (status != null) {
     return switch (status) {
-      401 => const NotAuthenticatedError(),
-      504 => NetworkError(message: e.message),
-      _ => NetworkError(message: e.message),
+      401 => NotAuthenticatedError(code: status, detail: e.message),
+      _ => NetworkError(code: status, detail: e.message),
     };
   }
   final msg = e.message;
   if (msg.contains('Request timeout')) {
-    return NetworkError(message: msg);
+    return NetworkError(detail: msg);
   }
   if (msg.contains('Connection refused')) {
-    return ConnectivityError(message: msg);
+    return ConnectivityError(detail: msg);
   }
-  return NetworkError(message: msg);
+  return NetworkError(detail: msg);
 }
 
 ServiceError _mapProtocolError(UspError e) {
@@ -191,26 +229,45 @@ ServiceError _mapProtocolError(UspError e) {
   final code = e.faultCode;
   if (code != null) {
     return switch (code) {
-      7004 => InvalidInputError(message: e.message),
-      7026 => ResourceNotFoundError(),
-      9001 => UnauthorizedError(),
-      9005 => ResourceNotFoundError(),
-      9007 => ResourceNotFoundError(),
-      9008 => InvalidInputError(message: e.message),
-      _ => UnexpectedError(originalError: e.rawError, message: e.message),
+      7004 => InvalidInputError(code: code, detail: e.message), // not writable
+      7005 =>
+        InvalidInputError(code: code, detail: e.message), // bad param name
+      7006 => InvalidInputError(code: code, detail: e.message), // bad value
+      7026 => ResourceNotFoundError(code: code, detail: e.message), // path 404
+      7027 =>
+        ResourceNotFoundError(code: code, detail: e.message), // object 404
+      9001 => UnauthorizedError(code: code, detail: e.message), // bbfdm denied
+      9005 =>
+        ResourceNotFoundError(code: code, detail: e.message), // unimplemented
+      9007 => ResourceNotFoundError(code: code, detail: e.message),
+      9008 => InvalidInputError(code: code, detail: e.message), // non-writable
+      _ => UnexpectedError(originalError: e.rawError, detail: e.message),
     };
   }
-  return UnexpectedError(originalError: e.rawError, message: e.message);
+  return UnexpectedError(originalError: e.rawError, detail: e.message);
 }
 
+/// Maps `Operation error:` category strings.
+///
+/// NOTE: In the production WASM build this path is effectively unreachable.
+/// `UspError::OperationError` variants (`PathNotFound`/`ReadOnly`/`InvalidValue`)
+/// are only constructed in the Rust `ffi` module, which is gated behind
+/// `#[cfg(not(target_arch = "wasm32"))]` (lib.rs:22) — i.e. native FFI only,
+/// stripped from the WASM binary. The only WASM-side `OperationError` is
+/// `OperateFailed` from `subscribe`/`unsubscribe`, but those surface as a
+/// thrown string via Promise reject and never reach codegen's catch, so they
+/// don't pass through here.
+///
+/// Kept for completeness, defensive coverage, and to satisfy the existing
+/// contract tests (usp_error_test.dart). Do not rely on it firing in prod.
 ServiceError _mapOperationError(UspError e) {
   final msg = e.message;
   if (msg.contains('Path not found')) return const ResourceNotFoundError();
   if (msg.contains('read-only')) {
-    return InvalidInputError(message: msg);
+    return InvalidInputError(detail: msg);
   }
   if (msg.contains('Invalid value')) {
-    return InvalidInputError(message: msg);
+    return InvalidInputError(detail: msg);
   }
-  return UnexpectedError(originalError: e.rawError, message: msg);
+  return UnexpectedError(originalError: e.rawError, detail: msg);
 }

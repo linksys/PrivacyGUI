@@ -371,7 +371,7 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
       if (count == 0) {
         logger.w('[USP][WiFi]: No SSIDs found matching the requested name');
         throw const InvalidInputError(
-            message: 'No matching WiFi networks found');
+            detail: 'No matching WiFi networks found');
       }
       logger.d('[USP][WiFi]: Toggled $count SSIDs to $enable');
     } on ServiceError catch (e) {

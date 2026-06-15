@@ -63,11 +63,11 @@ class SessionService {
     if (_usp == null) {
       logger.e('[SessionService]: USP not available');
       throw const ServiceNotInitializedError(
-          message: 'USP service not available');
+          detail: 'USP service not available');
     }
     if (!_usp.isAuthenticated) {
       logger.d('[SessionService]: USP not authenticated');
-      throw const ConnectivityError(message: 'USP not authenticated');
+      throw const ConnectivityError(detail: 'USP not authenticated');
     }
     try {
       final systemInfo = await SystemInfo.fetch(_usp);
@@ -75,7 +75,7 @@ class SessionService {
       return NodeDeviceInfo.fromUsp(systemInfo);
     } catch (e) {
       logger.e('[SessionService]: USP device info fetch failed: $e');
-      throw ConnectivityError(message: e.toString());
+      throw ConnectivityError(detail: e.toString());
     }
   }
 }

@@ -15,7 +15,7 @@ final uspPortForwardingServiceProvider = Provider<UspPortForwardingService>(
     final usp = ref.read(uspClientProvider);
     if (usp == null) {
       throw const ServiceNotInitializedError(
-          message: 'USP service not available');
+          detail: 'USP service not available');
     }
     return UspPortForwardingService(usp);
   },
@@ -74,12 +74,12 @@ class UspPortForwardingService {
             summary:
                 'Toggle forwarding partial failure: ${f.first.errorMessage}',
             successPaths: [],
-            failedPaths: f.map((e) => e.requestedPath).toList(),
+            failures: f,
           );
         case UspFailure(errors: final e):
           throw UspCompleteFailureError(
             summary: 'Toggle forwarding failed: ${e.first.errorMessage}',
-            failedPaths: e.map((e) => e.requestedPath).toList(),
+            failures: e,
           );
       }
     } catch (e) {
@@ -121,12 +121,12 @@ class UspPortForwardingService {
           throw UspPartialFailureError(
             summary: 'Add forwarding partial failure: ${f.first.errorMessage}',
             successPaths: [],
-            failedPaths: f.map((e) => e.requestedPath).toList(),
+            failures: f,
           );
         case UspFailure(errors: final e):
           throw UspCompleteFailureError(
             summary: 'Add forwarding failed: ${e.first.errorMessage}',
-            failedPaths: e.map((e) => e.requestedPath).toList(),
+            failures: e,
           );
       }
     } catch (e) {
@@ -156,12 +156,12 @@ class UspPortForwardingService {
             summary:
                 'Toggle triggering partial failure: ${f.first.errorMessage}',
             successPaths: [],
-            failedPaths: f.map((e) => e.requestedPath).toList(),
+            failures: f,
           );
         case UspFailure(errors: final e):
           throw UspCompleteFailureError(
             summary: 'Toggle triggering failed: ${e.first.errorMessage}',
-            failedPaths: e.map((e) => e.requestedPath).toList(),
+            failures: e,
           );
       }
     } catch (e) {
@@ -286,7 +286,7 @@ class UspPortForwardingService {
       if (totalOps > 0 && failedOps == totalOps) {
         throw UspCompleteFailureError(
           summary: 'All forwarding batch operations failed',
-          failedPaths: [],
+          failures: const [],
         );
       }
 
@@ -440,7 +440,7 @@ class UspPortForwardingService {
       if (totalOps > 0 && failedOps == totalOps) {
         throw UspCompleteFailureError(
           summary: 'All triggering batch operations failed',
-          failedPaths: [],
+          failures: const [],
         );
       }
 
