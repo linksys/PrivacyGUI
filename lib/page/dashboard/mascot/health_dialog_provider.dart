@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/constants/url_links.dart';
 import 'package:privacy_gui/page/support/faq_data.dart';
 import 'package:privacy_gui/page/unified_diagnostics/models/diagnostic_state.dart';
@@ -24,13 +23,13 @@ import 'widgets/mascot_toolbar.dart';
 class HealthDialogProvider extends MascotDialogProvider {
   HealthDialogProvider({
     required this.ref,
-    required this.context,
     required this.controller,
     required this.onRunFullDiagnostics,
     required this.onRunFlowDiagnostics,
     required this.onPrintReport,
     required this.onOpenThemeStudio,
     required this.onOpenAiAssistant,
+    required this.onNavigate,
     required this.getLocale,
     required this.getFaqCategoryTitle,
     required this.getFaqItemTitle,
@@ -39,7 +38,6 @@ class HealthDialogProvider extends MascotDialogProvider {
   });
 
   final WidgetRef ref;
-  final BuildContext context;
   final MascotController controller;
   final Future<DiagnosticsResult> Function() onRunFullDiagnostics;
   final Future<DiagnosticsResult> Function(DiagnosticFlow flow)
@@ -47,6 +45,7 @@ class HealthDialogProvider extends MascotDialogProvider {
   final Future<void> Function() onPrintReport;
   final VoidCallback onOpenThemeStudio;
   final VoidCallback onOpenAiAssistant;
+  final void Function(String routeName) onNavigate;
   final Locale? Function() getLocale;
   final bool isThemeStudioEnabled;
   final String Function(FaqCategory category) getFaqCategoryTitle;
@@ -77,13 +76,9 @@ class HealthDialogProvider extends MascotDialogProvider {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        AppText.bodyMedium(
           greeting,
-          style: TextStyle(
-            color: textColor,
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-          ),
+          color: textColor,
         ),
         const SizedBox(height: 12),
         HealthStatusView(
@@ -159,8 +154,7 @@ class HealthDialogProvider extends MascotDialogProvider {
   ];
 
   void _handleDimensionTap(HealthDimensionType dimensionType) {
-    final registry = ref.read(healthDimensionRegistryProvider);
-    final dimension = registry.getDimension(dimensionType);
+    final dimension = HealthDimensions.byType(dimensionType);
     if (dimension == null) return;
 
     final healthState = ref.read(systemHealthProvider).valueOrNull;
@@ -188,7 +182,7 @@ class HealthDialogProvider extends MascotDialogProvider {
 
   void _handleHealthAction(HealthAction action) {
     if (action.routeName != null) {
-      context.push(action.routeName!);
+      onNavigate(action.routeName!);
       controller.dismissDialog();
     }
   }

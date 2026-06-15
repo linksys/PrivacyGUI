@@ -4,7 +4,7 @@
 
 The Mascot Health System provides a visual dashboard showing the overall health of the router system. It consists of:
 
-1. **Word Cloud UI** — Visual representation of system health dimensions
+1. **Health Status View** — Problem-first display highlighting issues at top, healthy items as chips
 2. **Toolbar** — Quick access to utilities (print, theme, FAQ, AI Assistant)
 3. **Health Evaluation** — Extensible dimension scoring with 6 built-in dimensions
 4. **Event Triggers** — SSE-driven proactive notifications
@@ -15,12 +15,12 @@ The Mascot Health System provides a visual dashboard showing the overall health 
 lib/page/dashboard/mascot/
 ├── mascot_config.dart           # Centralized configuration
 ├── mascot_providers.dart        # Coordinator + trigger integration
-├── health_dialog_provider.dart  # Word cloud dialog UI
+├── health_dialog_provider.dart  # Health dashboard dialog UI
 │
 ├── health/
 │   ├── health_dimension.dart         # Abstract interface + models
 │   ├── health_score.dart             # Score model + HealthTier
-│   ├── health_dimension_registry.dart # Registry for all dimensions
+│   ├── health_dimension_registry.dart # Static registry (HealthDimensions)
 │   ├── system_health_provider.dart   # Aggregated health state
 │   └── dimensions/                   # 6 built-in dimensions
 │       ├── internet_dimension.dart
@@ -36,7 +36,8 @@ lib/page/dashboard/mascot/
 │   └── mascot_trigger_provider.dart  # SSE listener + state detection
 │
 └── widgets/
-    ├── health_word_cloud.dart         # Word cloud widget
+    ├── health_status_view.dart        # Problem-first health display
+    ├── dimension_detail_view.dart     # Dimension detail with actions
     ├── dimension_tooltip_content.dart # Tooltip summary
     ├── dimension_actions_builder.dart # Action list builder
     └── mascot_toolbar.dart            # Utility toolbar

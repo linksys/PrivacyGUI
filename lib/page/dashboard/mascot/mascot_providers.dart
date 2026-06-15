@@ -11,6 +11,7 @@ import 'package:privacy_gui/page/dashboard/providers/pdf_report_data_provider.da
 import 'package:privacy_gui/page/unified_diagnostics/models/diagnostic_state.dart';
 import 'package:privacy_gui/page/unified_diagnostics/providers/unified_diagnostics_notifier.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_domain_ready_provider.dart';
+import 'package:privacy_gui/page/support/faq_data.dart';
 import 'package:privacy_gui/providers/app_settings/app_settings_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -47,7 +48,7 @@ final mascotDialogProvider =
       onRunFlowDiagnostics: (flow) => _runFlowDiagnostics(ref, flow),
       onPrintReport: () => _printReport(ref),
       onOpenThemeStudio: () => _openThemeStudio(ref),
-      onOpenAiAssistant: () => _openAiAssistant(context),
+      onOpenAiAssistant: () => openAiAssistantWithTransition(context),
       getLocale: () => locale,
       getFaqCategoryTitle: (category) => category.displayString(context),
       getFaqItemTitle: (item) => item.displayString(context),
@@ -57,28 +58,48 @@ final mascotDialogProvider =
   },
 );
 
+/// Arguments for creating [HealthDialogProvider].
+///
+/// Contains callbacks that require [BuildContext], allowing the widget layer
+/// to handle navigation and localization while keeping the provider context-free.
+class HealthDialogProviderArgs {
+  final WidgetRef widgetRef;
+  final void Function(String routeName) onNavigate;
+  final VoidCallback onOpenAiAssistant;
+  final String Function(FaqCategory category) getFaqCategoryTitle;
+  final String Function(FaqItem item) getFaqItemTitle;
+
+  const HealthDialogProviderArgs({
+    required this.widgetRef,
+    required this.onNavigate,
+    required this.onOpenAiAssistant,
+    required this.getFaqCategoryTitle,
+    required this.getFaqItemTitle,
+  });
+}
+
 /// Provider for the health-based mascot dialog UI.
 ///
 /// Uses word cloud + toolbar layout instead of fixed options.
-final mascotHealthDialogProvider = Provider.autoDispose
-    .family<HealthDialogProvider, (BuildContext, WidgetRef)>(
+/// Widget layer provides context-dependent callbacks via [HealthDialogProviderArgs].
+final mascotHealthDialogProvider =
+    Provider.autoDispose.family<HealthDialogProvider, HealthDialogProviderArgs>(
   (ref, args) {
-    final (context, widgetRef) = args;
     final locale = ref.watch(appSettingsProvider.select((s) => s.locale));
     final controller = ref.watch(mascotControllerProvider);
 
     return HealthDialogProvider(
-      ref: widgetRef,
-      context: context,
+      ref: args.widgetRef,
       controller: controller,
       onRunFullDiagnostics: () => _runFullDiagnostics(ref),
       onRunFlowDiagnostics: (flow) => _runFlowDiagnostics(ref, flow),
       onPrintReport: () => _printReport(ref),
       onOpenThemeStudio: () => _openThemeStudio(ref),
-      onOpenAiAssistant: () => _openAiAssistant(context),
+      onNavigate: args.onNavigate,
+      onOpenAiAssistant: args.onOpenAiAssistant,
       getLocale: () => locale,
-      getFaqCategoryTitle: (category) => category.displayString(context),
-      getFaqItemTitle: (item) => item.displayString(context),
+      getFaqCategoryTitle: args.getFaqCategoryTitle,
+      getFaqItemTitle: args.getFaqItemTitle,
       isThemeStudioEnabled: BuildConfig.enableThemeStudio,
       getRouterTime: () => _getRouterTime(ref),
     );
@@ -173,7 +194,7 @@ void _openThemeStudio(Ref ref) {
 /// The custom PageRouteBuilder enables the mascot fly-in transition
 /// which requires dynamic position calculation from MediaQuery.
 /// go_router's CustomTransitionPage doesn't easily support this pattern.
-void _openAiAssistant(BuildContext context) {
+void openAiAssistantWithTransition(BuildContext context) {
   final screenSize = MediaQuery.of(context).size;
 
   // Mascot's starting position (bottom-right, where the overlay typically is)

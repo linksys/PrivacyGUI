@@ -42,12 +42,16 @@ class MascotTriggerState {
   /// Previous firewall status for change detection.
   final bool? previousFirewallEnabled;
 
+  /// Previous disabled WiFi radios for change detection.
+  final Set<String>? previousDisabledRadios;
+
   const MascotTriggerState({
     this.lastTrigger,
     this.lastTriggerTime,
     this.previousWanUp,
     this.previousDeviceCount,
     this.previousFirewallEnabled,
+    this.previousDisabledRadios,
   });
 
   MascotTriggerState copyWith({
@@ -56,6 +60,7 @@ class MascotTriggerState {
     bool? previousWanUp,
     int? previousDeviceCount,
     bool? previousFirewallEnabled,
+    Set<String>? previousDisabledRadios,
   }) {
     return MascotTriggerState(
       lastTrigger: lastTrigger ?? this.lastTrigger,
@@ -64,6 +69,8 @@ class MascotTriggerState {
       previousDeviceCount: previousDeviceCount ?? this.previousDeviceCount,
       previousFirewallEnabled:
           previousFirewallEnabled ?? this.previousFirewallEnabled,
+      previousDisabledRadios:
+          previousDisabledRadios ?? this.previousDisabledRadios,
     );
   }
 }
@@ -98,11 +105,16 @@ class MascotTriggerNotifier extends AutoDisposeNotifier<MascotTriggerState> {
     final wan = ref.read(wanDataProvider).valueOrNull;
     final devices = ref.read(devicesDataProvider).valueOrNull;
     final firewall = ref.read(firewallDataProvider).valueOrNull;
+    final wifi = ref.read(wifiDataProvider).valueOrNull;
+
+    final disabledRadios =
+        wifi?.radioModels.where((r) => !r.enable).map((r) => r.band).toSet();
 
     state = MascotTriggerState(
       previousWanUp: wan?.model.isUp,
       previousDeviceCount: devices?.deviceModels.length,
       previousFirewallEnabled: firewall?.firewallModel.isIPv4FirewallEnabled,
+      previousDisabledRadios: disabledRadios,
     );
   }
 
@@ -234,13 +246,20 @@ class MascotTriggerNotifier extends AutoDisposeNotifier<MascotTriggerState> {
     final wifi = ref.read(wifiDataProvider).valueOrNull;
     if (wifi == null) return null;
 
-    // Check if any radio is disabled
-    // Note: This is a simplified check; a full implementation would
-    // track previous state per radio
-    final disabledRadios = wifi.radioModels.where((r) => !r.enable).toList();
-    if (disabledRadios.isEmpty) return null;
+    final currentDisabled =
+        wifi.radioModels.where((r) => !r.enable).map((r) => r.band).toSet();
+    final previousDisabled = state.previousDisabledRadios;
 
-    final band = disabledRadios.first.band;
+    // Update state for next comparison
+    state = state.copyWith(previousDisabledRadios: currentDisabled);
+
+    // Only trigger on actual state change (newly disabled radios)
+    if (previousDisabled == null) return null;
+
+    final newlyDisabled = currentDisabled.difference(previousDisabled);
+    if (newlyDisabled.isEmpty) return null;
+
+    final band = newlyDisabled.first;
     debugPrint('[Mascot][Trigger]: WiFi radio disabled — $band');
     return TriggerDefinitions.wifiRadioDisabled(band);
   }

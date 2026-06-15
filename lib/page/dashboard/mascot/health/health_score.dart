@@ -53,18 +53,18 @@ class HealthScore extends Equatable {
 /// Aggregated health state for all dimensions.
 class SystemHealthState extends Equatable {
   final Map<HealthDimensionType, HealthScore> scores;
-  final DateTime lastEvaluated;
+  final DateTime? lastEvaluated;
   final bool isEvaluating;
 
   const SystemHealthState({
     required this.scores,
-    required this.lastEvaluated,
+    this.lastEvaluated,
     this.isEvaluating = false,
   });
 
   const SystemHealthState.initial()
       : scores = const {},
-        lastEvaluated = const _Epoch(),
+        lastEvaluated = null,
         isEvaluating = true;
 
   /// Get score for a specific dimension, or null if not evaluated.
@@ -107,12 +107,4 @@ class SystemHealthState extends Equatable {
 
   @override
   List<Object?> get props => [scores, lastEvaluated, isEvaluating];
-}
-
-class _Epoch implements DateTime {
-  const _Epoch();
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) =>
-      DateTime.fromMillisecondsSinceEpoch(0);
 }

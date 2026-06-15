@@ -97,8 +97,7 @@ class SystemHealthNotifier extends AsyncNotifier<SystemHealthState> {
   }
 
   bool _shouldReEvaluate(InvalidationDomain domain) {
-    final registry = ref.read(healthDimensionRegistryProvider);
-    return registry.allWatchedDomains.contains(domain);
+    return HealthDimensions.allWatchedDomains.contains(domain);
   }
 
   void _debouncedReEvaluate() {
@@ -124,13 +123,12 @@ class SystemHealthNotifier extends AsyncNotifier<SystemHealthState> {
   }
 
   Future<SystemHealthState> _evaluate() async {
-    final registry = ref.read(healthDimensionRegistryProvider);
     final context = _buildContext();
     final now = DateTime.now();
 
     final scores = <HealthDimensionType, HealthScore>{};
 
-    for (final dimension in registry.dimensions) {
+    for (final dimension in HealthDimensions.all) {
       final score = dimension.evaluate(context);
       scores[dimension.type] = HealthScore(
         dimension: dimension.type,

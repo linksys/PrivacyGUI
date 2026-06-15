@@ -29,10 +29,9 @@ class HealthStatusView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final healthState = ref.watch(systemHealthProvider);
-    final registry = ref.watch(healthDimensionRegistryProvider);
 
     return healthState.when(
-      data: (state) => _buildStatusView(context, ref, state, registry),
+      data: (state) => _buildStatusView(context, ref, state),
       loading: () => _buildLoading(),
       error: (_, __) => AppText.bodyMedium(
         'Unable to load health data',
@@ -55,11 +54,10 @@ class HealthStatusView extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     SystemHealthState state,
-    HealthDimensionRegistry registry,
   ) {
     final evalContext = ref.read(healthEvaluationContextProvider);
 
-    final dimensions = registry.dimensions;
+    final dimensions = HealthDimensions.all;
     if (dimensions.isEmpty) {
       return AppText.bodyMedium('No dimensions', color: textColor);
     }
