@@ -43,6 +43,7 @@ String? errorCodeHelper(BuildContext context, String? code,
     errorInvalidPhone => loc(context).errorInvalidPhoneNumber,
     errorJNAPUnauthorized => loc(context).errorIncorrectPassword,
     errorAdminAccountLocked => loc(context).localLoginTooManyAttemptsTitle,
+    errorInvalidAdminPassword => loc(context).localLoginIncorrectRouterPassword,
     errorInvalidDestinationMACAddress =>
       loc(context).invalidDestinationMacAddress,
     errorInvalidDestinationIpAddress =>
@@ -61,6 +62,8 @@ String? errorCodeHelper(BuildContext context, String? code,
     errorVPNNotConnected => loc(context).vpnErrorVPNNotConnected,
     errorVPNUserAlreadyExists => loc(context).vpnErrorVPNUserAlreadyExists,
     errorVPNUserNotFound => loc(context).vpnErrorVPNUserNotFound,
+    errorUspNetworkError => loc(context).generalError,
+    errorUspServiceNotInitialized => loc(context).generalError,
     _ => unknownHandle(code),
   };
 }
