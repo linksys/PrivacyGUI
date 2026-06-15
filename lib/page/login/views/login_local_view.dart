@@ -171,6 +171,11 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
             setState(() {
               _errorMessage = loc(context).localLoginTooManyAttemptsTitle;
             });
+          } else {
+            // Simple invalid password error (no delay/attempts data from USP)
+            setState(() {
+              _errorMessage = loc(context).localLoginIncorrectRouterPassword;
+            });
           }
         }
       } else {

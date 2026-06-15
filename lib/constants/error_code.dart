@@ -41,5 +41,9 @@ const errorVPNNotConnected = "ErrorVPNNotConnected";
 const errorVPNUserAlreadyExists = "ErrorVPNUserAlreadyExists";
 const errorVPNUserNotFound = "ErrorVPNUserNotFound";
 
+// USP Error
+const errorUspNetworkError = 'ErrorUspNetworkError';
+const errorUspServiceNotInitialized = 'ErrorUspServiceNotInitialized';
+
 // JNAP retry list
 const errorJNAPRetryList = [errorUnexpected];
