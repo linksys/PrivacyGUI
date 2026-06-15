@@ -358,9 +358,8 @@ class UspInternetSettingsService {
           password: skipCredentials
               ? null
               : _diff(original.pppPassword, edited.pppPassword),
-          // pppoeServiceName — disabled: bbfdm rejects SET (fault 9001)
-          // pppoeServiceName:
-          //     _diff(original.pppoeServiceName, edited.pppoeServiceName),
+          pppoeServiceName:
+              _diff(original.pppoeServiceName, edited.pppoeServiceName),
           connectionTrigger:
               _diff(original.connectionTrigger, edited.connectionTrigger),
           idleDisconnectTime:
