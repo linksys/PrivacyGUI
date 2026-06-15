@@ -20,11 +20,11 @@ class WanStaticIp {
     required this.dnsServers,
   });
 
-  /// Resolve the instance index by searching for Alias='cpe-wan'
+  /// Resolve the instance index by searching for Alias='wan'
   static Future<String> _resolveInstance(UspClient client) async {
     final response = await client.get(['Device.IP.Interface.*.Alias']);
     for (final entry in response.entries) {
-      if (entry.value == 'cpe-wan') {
+      if (entry.value == 'wan') {
         final match =
             RegExp(r'Device\.IP\.Interface\.(\d+)\.').firstMatch(entry.key);
         if (match != null) {

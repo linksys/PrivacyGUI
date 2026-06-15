@@ -7,6 +7,7 @@ import 'package:privacy_gui/core/usp/services/usp_client.dart';
 /// Single instance from WiFiRadios
 class WiFiRadio {
   final String instancePath;
+  final String? alias;
   final bool enable;
   final String status;
   final int channel;
@@ -23,6 +24,7 @@ class WiFiRadio {
 
   const WiFiRadio({
     required this.instancePath,
+    this.alias,
     required this.enable,
     required this.status,
     required this.channel,
@@ -67,6 +69,7 @@ class WiFiRadios {
   const WiFiRadios({required this.items});
 
   static const _paths = [
+    'Device.WiFi.Radio.*.Alias',
     'Device.WiFi.Radio.*.Enable',
     'Device.WiFi.Radio.*.Status',
     'Device.WiFi.Radio.*.Channel',
@@ -104,6 +107,7 @@ class WiFiRadios {
     for (final id in sorted) {
       final p = '$basePath$id.';
       if ([
+        response['${p}Alias'],
         response['${p}Enable'],
         response['${p}Status'],
         response['${p}Channel'],
@@ -171,6 +175,9 @@ class WiFiRadios {
       }
       items.add(WiFiRadio(
         instancePath: p,
+        alias: response.containsKey('${p}Alias')
+            ? response['${p}Alias'] as String
+            : null,
         enable: response['${p}Enable'] == true ||
             response['${p}Enable'] == 'true' ||
             response['${p}Enable'] == '1',

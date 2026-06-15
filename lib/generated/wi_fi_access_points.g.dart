@@ -7,6 +7,7 @@ import 'package:privacy_gui/core/usp/services/usp_client.dart';
 /// Single instance from WiFiAccessPoints
 class WiFiAccessPoint {
   final String instancePath;
+  final String? alias;
   final bool enable;
   final String status;
   final String modesSupported;
@@ -18,6 +19,7 @@ class WiFiAccessPoint {
 
   const WiFiAccessPoint({
     required this.instancePath,
+    this.alias,
     required this.enable,
     required this.status,
     required this.modesSupported,
@@ -51,6 +53,7 @@ class WiFiAccessPoints {
   const WiFiAccessPoints({required this.items});
 
   static const _paths = [
+    'Device.WiFi.AccessPoint.*.Alias',
     'Device.WiFi.AccessPoint.*.Enable',
     'Device.WiFi.AccessPoint.*.Status',
     'Device.WiFi.AccessPoint.*.Security.ModesSupported',
@@ -83,6 +86,7 @@ class WiFiAccessPoints {
     for (final id in sorted) {
       final p = '$basePath$id.';
       if ([
+        response['${p}Alias'],
         response['${p}Enable'],
         response['${p}Status'],
         response['${p}Security.ModesSupported'],
@@ -130,6 +134,9 @@ class WiFiAccessPoints {
       }
       items.add(WiFiAccessPoint(
         instancePath: p,
+        alias: response.containsKey('${p}Alias')
+            ? response['${p}Alias'] as String
+            : null,
         enable: response['${p}Enable'] == true ||
             response['${p}Enable'] == 'true' ||
             response['${p}Enable'] == '1',

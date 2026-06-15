@@ -4,48 +4,51 @@
 
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 
-/// Single instance from EthernetInterfaces
-class EthernetInterface {
+/// Single instance from IpInterfaces
+class IpInterface {
   final String instancePath;
   final String? alias;
   final String name;
   final String status;
-  final bool upstream;
-  final int currentBitRate;
+  final String? type;
+  final bool ipv4Enable;
+  final bool ipv6Enable;
 
-  const EthernetInterface({
+  const IpInterface({
     required this.instancePath,
     this.alias,
     required this.name,
     required this.status,
-    required this.upstream,
-    required this.currentBitRate,
+    this.type,
+    required this.ipv4Enable,
+    required this.ipv6Enable,
   });
 }
 
-/// Physical Ethernet port status
-class EthernetInterfaces {
-  final List<EthernetInterface> items;
+/// IP interface instances with Alias for WAN/LAN discovery
+class IpInterfaces {
+  final List<IpInterface> items;
 
-  const EthernetInterfaces({required this.items});
+  const IpInterfaces({required this.items});
 
   static const _paths = [
-    'Device.Ethernet.Interface.*.Alias',
-    'Device.Ethernet.Interface.*.Name',
-    'Device.Ethernet.Interface.*.Status',
-    'Device.Ethernet.Interface.*.Upstream',
-    'Device.Ethernet.Interface.*.CurrentBitRate',
+    'Device.IP.Interface.*.Alias',
+    'Device.IP.Interface.*.Name',
+    'Device.IP.Interface.*.Status',
+    'Device.IP.Interface.*.Type',
+    'Device.IP.Interface.*.IPv4Enable',
+    'Device.IP.Interface.*.IPv6Enable',
   ];
 
   /// Fetch all instances via USP Get message
-  static Future<EthernetInterfaces> fetch(UspClient client) async {
+  static Future<IpInterfaces> fetch(UspClient client) async {
     final response = await client.get(_paths);
-    return EthernetInterfaces._fromResponse(response);
+    return IpInterfaces._fromResponse(response);
   }
 
-  factory EthernetInterfaces._fromResponse(Map<String, dynamic> response) {
-    final items = <EthernetInterface>[];
-    const basePath = 'Device.Ethernet.Interface.';
+  factory IpInterfaces._fromResponse(Map<String, dynamic> response) {
+    final items = <IpInterface>[];
+    const basePath = 'Device.IP.Interface.';
     final ids = <String>{};
     for (final key in response.keys) {
       if (key.startsWith(basePath)) {
@@ -62,8 +65,9 @@ class EthernetInterfaces {
         response['${p}Alias'],
         response['${p}Name'],
         response['${p}Status'],
-        response['${p}Upstream'],
-        response['${p}CurrentBitRate']
+        response['${p}Type'],
+        response['${p}IPv4Enable'],
+        response['${p}IPv6Enable']
       ].every((v) =>
           v == null ||
           v == '' ||
@@ -80,39 +84,33 @@ class EthernetInterfaces {
       if (!response.containsKey('${p}Status')) {
         missing.add('${p}Status');
       }
-      if (!response.containsKey('${p}Upstream')) {
-        missing.add('${p}Upstream');
+      if (!response.containsKey('${p}IPv4Enable')) {
+        missing.add('${p}IPv4Enable');
       }
-      if (!response.containsKey('${p}CurrentBitRate')) {
-        missing.add('${p}CurrentBitRate');
+      if (!response.containsKey('${p}IPv6Enable')) {
+        missing.add('${p}IPv6Enable');
       }
       if (missing.isNotEmpty) {
         throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
       }
-      items.add(EthernetInterface(
+      items.add(IpInterface(
         instancePath: p,
         alias: response.containsKey('${p}Alias')
             ? response['${p}Alias'] as String
             : null,
         name: (response['${p}Name'] ?? '') as String,
         status: (response['${p}Status'] ?? '') as String,
-        upstream: response['${p}Upstream'] == true ||
-            response['${p}Upstream'] == 'true' ||
-            response['${p}Upstream'] == '1',
-        currentBitRate:
-            int.tryParse(response['${p}CurrentBitRate']?.toString() ?? '') ?? 0,
+        type: response.containsKey('${p}Type')
+            ? response['${p}Type'] as String
+            : null,
+        ipv4Enable: response['${p}IPv4Enable'] == true ||
+            response['${p}IPv4Enable'] == 'true' ||
+            response['${p}IPv4Enable'] == '1',
+        ipv6Enable: response['${p}IPv6Enable'] == true ||
+            response['${p}IPv6Enable'] == 'true' ||
+            response['${p}IPv6Enable'] == '1',
       ));
     }
-    return EthernetInterfaces(items: items);
-  }
-
-  static Future<Subscription<EthernetInterfaces>> subscribe(
-      UspClient client) async {
-    return client.subscribe<EthernetInterfaces>(
-      id: 'ethernet-valuechange',
-      notifType: NotifType.valueChange,
-      paths: ['Device.Ethernet.Interface.'],
-      parser: EthernetInterfaces._fromResponse,
-    );
+    return IpInterfaces(items: items);
   }
 }

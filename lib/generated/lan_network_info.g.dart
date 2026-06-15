@@ -28,11 +28,11 @@ class LanNetworkInfo {
     required this.ipv6Enabled,
   });
 
-  /// Resolve the instance index by searching for Alias='cpe-lan'
+  /// Resolve the instance index by searching for Alias='lan'
   static Future<String> _resolveInstance(UspClient client) async {
     final response = await client.get(['Device.IP.Interface.*.Alias']);
     for (final entry in response.entries) {
-      if (entry.value == 'cpe-lan') {
+      if (entry.value == 'lan') {
         final match =
             RegExp(r'Device\.IP\.Interface\.(\d+)\.').firstMatch(entry.key);
         if (match != null) {

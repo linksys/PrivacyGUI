@@ -55,6 +55,58 @@ const _ipv6Response = <String, dynamic>{
   'Device.IPv6rd.InterfaceSetting.1.BorderRelayIPv4Addresses': '',
 };
 
+// Alias resolution responses
+const _ipAliasResponse = <String, dynamic>{
+  'Device.IP.Interface.1.Alias': 'lan',
+  'Device.IP.Interface.2.Alias': 'wan',
+};
+
+const _ethLinkAliasResponse = <String, dynamic>{
+  'Device.Ethernet.Link.1.Alias': 'eth-lan',
+  'Device.Ethernet.Link.2.Alias': 'eth-wan',
+};
+
+// WanMacClone response
+const _macCloneResponse = <String, dynamic>{
+  'Device.Ethernet.Link.2.MACAddress': 'AA:BB:CC:DD:EE:FF',
+  'Device.Ethernet.Link.2.Name': 'eth-wan',
+  'Device.Ethernet.Link.2.Status': 'Up',
+};
+
+/// Helper to create a mock get handler that handles all codegen paths
+Map<String, dynamic> Function(List<String>) createFetchMockHandler({
+  Map<String, dynamic> pppResponse = _pppResponse,
+  Map<String, dynamic> vlanResponse = _vlanResponse,
+}) {
+  return (List<String> paths) {
+    // Alias resolution (must be checked first)
+    if (paths.any((p) => p.contains('Ethernet.Link.*.Alias'))) {
+      return _ethLinkAliasResponse;
+    }
+    if (paths.any((p) => p.contains('IP.Interface.*.Alias'))) {
+      return _ipAliasResponse;
+    }
+    // WanMacClone fetch (specific instance, not wildcard)
+    if (paths.any((p) => p.contains('Ethernet.Link.') && !p.contains('*'))) {
+      return _macCloneResponse;
+    }
+    // Other fetches
+    if (paths.any((p) => p.contains('AddressingType'))) {
+      return _wanResponse;
+    }
+    if (paths.any((p) => p.contains('IPv6Enable'))) {
+      return _ipv6Response;
+    }
+    if (paths.any((p) => p.contains('PPP.Interface'))) {
+      return pppResponse;
+    }
+    if (paths.any((p) => p.contains('VLANTermination'))) {
+      return vlanResponse;
+    }
+    return {};
+  };
+}
+
 void main() {
   late MockUspClient mockUsp;
   late UspInternetSettingsService service;
@@ -66,21 +118,10 @@ void main() {
 
   group('fetchSettings', () {
     test('fetches WAN, IPv6, PPP, and VLAN settings in parallel', () async {
+      final handler = createFetchMockHandler();
       when(() => mockUsp.get(any())).thenAnswer((invocation) async {
         final paths = invocation.positionalArguments[0] as List<String>;
-        if (paths.any((p) => p.contains('AddressingType'))) {
-          return _wanResponse;
-        }
-        if (paths.any((p) => p.contains('IPv6Enable'))) {
-          return _ipv6Response;
-        }
-        if (paths.any((p) => p.contains('PPP.Interface'))) {
-          return _pppResponse;
-        }
-        if (paths.any((p) => p.contains('VLANTermination'))) {
-          return _vlanResponse;
-        }
-        return {};
+        return handler(paths);
       });
 
       final result = await service.fetchSettings();
@@ -102,21 +143,13 @@ void main() {
     });
 
     test('handles empty PPP and VLAN instances gracefully', () async {
+      final handler = createFetchMockHandler(
+        pppResponse: _pppEmptyResponse,
+        vlanResponse: _vlanEmptyResponse,
+      );
       when(() => mockUsp.get(any())).thenAnswer((invocation) async {
         final paths = invocation.positionalArguments[0] as List<String>;
-        if (paths.any((p) => p.contains('AddressingType'))) {
-          return _wanResponse;
-        }
-        if (paths.any((p) => p.contains('IPv6Enable'))) {
-          return _ipv6Response;
-        }
-        if (paths.any((p) => p.contains('PPP.Interface'))) {
-          return _pppEmptyResponse;
-        }
-        if (paths.any((p) => p.contains('VLANTermination'))) {
-          return _vlanEmptyResponse;
-        }
-        return {};
+        return handler(paths);
       });
 
       final result = await service.fetchSettings();
@@ -136,12 +169,25 @@ void main() {
 
       when(() => mockUsp.get(any())).thenAnswer((invocation) async {
         final paths = invocation.positionalArguments[0] as List<String>;
+        // Alias resolution
+        if (paths.any((p) => p.contains('Ethernet.Link.*.Alias'))) {
+          return _ethLinkAliasResponse;
+        }
+        if (paths.any((p) => p.contains('IP.Interface.*.Alias'))) {
+          return _ipAliasResponse;
+        }
+        if (paths
+            .any((p) => p.contains('Ethernet.Link.') && !p.contains('*'))) {
+          return _macCloneResponse;
+        }
         if (paths.any((p) => p.contains('AddressingType'))) return wanWith3Dns;
         if (paths.any((p) => p.contains('IPv6Enable'))) return _ipv6Response;
-        if (paths.any((p) => p.contains('PPP.Interface')))
+        if (paths.any((p) => p.contains('PPP.Interface'))) {
           return _pppEmptyResponse;
-        if (paths.any((p) => p.contains('VLANTermination')))
+        }
+        if (paths.any((p) => p.contains('VLANTermination'))) {
           return _vlanEmptyResponse;
+        }
         return {};
       });
 
@@ -157,8 +203,8 @@ void main() {
     // Mock for _resolveInstance() calls in codegen update methods
     // UspClient.get() returns flat Map<String, dynamic>, not WASM format
     final aliasResponse = <String, dynamic>{
-      'Device.IP.Interface.1.Alias': 'cpe-lan',
-      'Device.IP.Interface.2.Alias': 'cpe-wan',
+      'Device.IP.Interface.1.Alias': 'lan',
+      'Device.IP.Interface.2.Alias': 'wan',
     };
 
     setUp(() {
@@ -595,8 +641,8 @@ void main() {
     // Mock for _resolveInstance() calls in codegen update methods
     // UspClient.get() returns flat Map<String, dynamic>, not WASM format
     final aliasResponse = <String, dynamic>{
-      'Device.IP.Interface.1.Alias': 'cpe-lan',
-      'Device.IP.Interface.2.Alias': 'cpe-wan',
+      'Device.IP.Interface.1.Alias': 'lan',
+      'Device.IP.Interface.2.Alias': 'wan',
     };
 
     test('saveAll throws UspCompleteFailureError on SET failure', () async {

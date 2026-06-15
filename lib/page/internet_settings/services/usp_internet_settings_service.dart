@@ -6,6 +6,7 @@ import 'package:privacy_gui/generated/ppp_interface.g.dart';
 import 'package:privacy_gui/generated/vlan_termination.g.dart';
 import 'package:privacy_gui/generated/wan_bridge.g.dart';
 import 'package:privacy_gui/generated/wan_dhcp.g.dart';
+import 'package:privacy_gui/generated/wan_mac_clone.g.dart';
 import 'package:privacy_gui/generated/wan_operations.g.dart';
 import 'package:privacy_gui/generated/wan_pppoe.g.dart';
 import 'package:privacy_gui/generated/wan_settings.g.dart';
@@ -29,7 +30,7 @@ class UspInternetSettingsService {
   // Fetch
   // ---------------------------------------------------------------------------
 
-  /// Fetch WAN, IPv6, PPP, and VLAN settings in parallel.
+  /// Fetch WAN, IPv6, PPP, VLAN, and MAC clone settings in parallel.
   Future<InternetSettingsFetchResult> fetchSettings() async {
     try {
       final results = await Future.wait([
@@ -37,18 +38,20 @@ class UspInternetSettingsService {
         Ipv6Settings.fetch(_usp),
         PppInterface.fetch(_usp),
         VlanTermination.fetch(_usp),
+        WanMacClone.fetch(_usp),
       ]);
       final wan = results[0] as WanSettings;
       final ipv6 = results[1] as Ipv6Settings;
       final ppp = results[2] as PppInterface;
       final vlan = results[3] as VlanTermination;
+      final macClone = results[4] as WanMacClone;
 
       final pppInstance = ppp.items.isNotEmpty ? ppp.items.first : null;
       final vlanInstance = vlan.items.isNotEmpty ? vlan.items.first : null;
 
       return InternetSettingsFetchResult(
-        form: _buildForm(wan, ipv6, pppInstance, vlanInstance),
-        readOnlyInfo: _buildReadOnlyInfo(wan, pppInstance),
+        form: _buildForm(wan, ipv6, pppInstance, vlanInstance, macClone),
+        readOnlyInfo: _buildReadOnlyInfo(macClone, pppInstance, wan),
         pppInstancePath: pppInstance?.instancePath,
         vlanInstancePath: vlanInstance?.instancePath,
         debugAddressingType: wan.addressingType,
@@ -71,6 +74,7 @@ class UspInternetSettingsService {
     Ipv6Settings ipv6,
     PppInterfaceInstance? ppp,
     VlanTerminationInstance? vlan,
+    WanMacClone macClone,
   ) {
     // Split comma-separated DNS into 3 fields
     final dnsParts = wan.dnsServers
@@ -99,7 +103,7 @@ class UspInternetSettingsService {
       vlanEnabled: vlan?.enable ?? false,
       vlanId: vlan?.vlanId ?? 0,
       mtu: wan.mtu,
-      wanMacAddress: '',
+      wanMacAddress: macClone.macAddress,
       ipv6Enabled: ipv6.ipv6Enabled,
       dhcpv6Enabled: ipv6.dhcpv6Enabled,
       ipv6rdEnabled: ipv6.ipv6rdEnabled,
@@ -110,11 +114,12 @@ class UspInternetSettingsService {
   }
 
   InternetSettingsReadOnlyInfo _buildReadOnlyInfo(
-    WanSettings wan,
+    WanMacClone macClone,
     PppInterfaceInstance? ppp,
+    WanSettings wan,
   ) {
     return InternetSettingsReadOnlyInfo(
-      currentMacAddress: wan.currentMacAddress,
+      currentMacAddress: macClone.macAddress,
       pppConnectionStatus: ppp?.connectionStatus ?? '',
       staticIpAddress: wan.staticIpAddress,
     );
@@ -323,6 +328,12 @@ class UspInternetSettingsService {
     final mtuDiff = _diff(original.mtu, edited.mtu);
     if (mtuDiff != null) {
       _handleSetResult(await WanSettings.update(_usp, mtu: mtuDiff));
+    }
+
+    // MAC Clone — update via WanMacClone if changed
+    final macDiff = _diff(original.wanMacAddress, edited.wanMacAddress);
+    if (macDiff != null) {
+      _handleSetResult(await WanMacClone.update(_usp, macAddress: macDiff));
     }
   }
 

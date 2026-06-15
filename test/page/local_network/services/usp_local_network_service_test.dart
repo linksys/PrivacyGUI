@@ -427,8 +427,8 @@ void main() {
     // Mock for _resolveInstance() in LanNetworkInfo.save()
     // UspClient.get() returns flat Map<String, dynamic>, not WASM format
     final aliasResponse = <String, dynamic>{
-      'Device.IP.Interface.1.Alias': 'cpe-lan',
-      'Device.IP.Interface.2.Alias': 'cpe-wan',
+      'Device.IP.Interface.1.Alias': 'lan',
+      'Device.IP.Interface.2.Alias': 'wan',
     };
 
     test('save succeeds when firmware returns success', () async {
