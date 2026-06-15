@@ -42,11 +42,11 @@ class MultiInterfaceTrafficStats {
     required this.lanDiscardPacketsReceived,
   });
 
-  /// Resolve wan interface index by searching for Alias='cpe-wan'
+  /// Resolve wan interface index by searching for Alias='wan'
   static Future<String> _resolveWanInstance(UspClient client) async {
     final response = await client.get(['Device.IP.Interface.*.Alias']);
     for (final entry in response.entries) {
-      if (entry.value == 'cpe-wan') {
+      if (entry.value == 'wan') {
         final match =
             RegExp(r'Device\.IP\.Interface\.(\d+)\.').firstMatch(entry.key);
         if (match != null) {
@@ -58,11 +58,11 @@ class MultiInterfaceTrafficStats {
     return 'Device.IP.Interface.2.';
   }
 
-  /// Resolve lan interface index by searching for Alias='cpe-lan'
+  /// Resolve lan interface index by searching for Alias='lan'
   static Future<String> _resolveLanInstance(UspClient client) async {
     final response = await client.get(['Device.IP.Interface.*.Alias']);
     for (final entry in response.entries) {
-      if (entry.value == 'cpe-lan') {
+      if (entry.value == 'lan') {
         final match =
             RegExp(r'Device\.IP\.Interface\.(\d+)\.').firstMatch(entry.key);
         if (match != null) {

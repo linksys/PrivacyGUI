@@ -613,7 +613,7 @@ void main() {
 
   group('buildWifiNetworks — guest detection', () {
     WiFiSsid _ssid(String path, String name, String radio,
-            {bool enable = true}) =>
+            {bool enable = true, String? alias}) =>
         WiFiSsid(
           instancePath: path,
           ssid: name,
@@ -621,6 +621,7 @@ void main() {
           status: enable ? 'Up' : 'Down',
           bssid: 'AA:BB:CC:DD:EE:FF',
           lowerLayers: radio,
+          alias: alias,
         );
 
     WiFiAccessPoint _ap(String path, String ssidRef) => WiFiAccessPoint(
@@ -655,12 +656,14 @@ void main() {
     test('dual-band: 2 main + 2 guest', () {
       final networks = svc.buildWifiNetworks(
         ssids: WiFiSsids(items: [
-          _ssid('Device.WiFi.SSID.1.', 'Home', 'Device.WiFi.Radio.1.'),
-          _ssid('Device.WiFi.SSID.2.', 'Home', 'Device.WiFi.Radio.2.'),
+          _ssid('Device.WiFi.SSID.1.', 'Home', 'Device.WiFi.Radio.1.',
+              alias: 'wifi-2g'),
+          _ssid('Device.WiFi.SSID.2.', 'Home', 'Device.WiFi.Radio.2.',
+              alias: 'wifi-5g'),
           _ssid('Device.WiFi.SSID.3.', 'Home-Guest', 'Device.WiFi.Radio.1.',
-              enable: false),
+              enable: false, alias: 'wifi-2g-guest'),
           _ssid('Device.WiFi.SSID.4.', 'Home-Guest', 'Device.WiFi.Radio.2.',
-              enable: false),
+              enable: false, alias: 'wifi-5g-guest'),
         ]),
         accessPoints: WiFiAccessPoints(items: [
           _ap('Device.WiFi.AccessPoint.1.', 'Device.WiFi.SSID.1.'),
@@ -684,15 +687,18 @@ void main() {
     test('tri-band: 3 main + 3 guest', () {
       final networks = svc.buildWifiNetworks(
         ssids: WiFiSsids(items: [
-          _ssid('Device.WiFi.SSID.1.', 'Home', 'Device.WiFi.Radio.1.'),
-          _ssid('Device.WiFi.SSID.2.', 'Home', 'Device.WiFi.Radio.2.'),
-          _ssid('Device.WiFi.SSID.3.', 'Home', 'Device.WiFi.Radio.3.'),
+          _ssid('Device.WiFi.SSID.1.', 'Home', 'Device.WiFi.Radio.1.',
+              alias: 'wifi-2g'),
+          _ssid('Device.WiFi.SSID.2.', 'Home', 'Device.WiFi.Radio.2.',
+              alias: 'wifi-5g'),
+          _ssid('Device.WiFi.SSID.3.', 'Home', 'Device.WiFi.Radio.3.',
+              alias: 'wifi-6g'),
           _ssid('Device.WiFi.SSID.4.', 'Home-Guest', 'Device.WiFi.Radio.1.',
-              enable: false),
+              enable: false, alias: 'wifi-2g-guest'),
           _ssid('Device.WiFi.SSID.5.', 'Home-Guest', 'Device.WiFi.Radio.2.',
-              enable: false),
+              enable: false, alias: 'wifi-5g-guest'),
           _ssid('Device.WiFi.SSID.6.', 'Home-Guest', 'Device.WiFi.Radio.3.',
-              enable: false),
+              enable: false, alias: 'wifi-6g-guest'),
         ]),
         accessPoints: WiFiAccessPoints(items: [
           _ap('Device.WiFi.AccessPoint.1.', 'Device.WiFi.SSID.1.'),
@@ -720,11 +726,13 @@ void main() {
       expect(networks[5].isGuest, isTrue);
     });
 
-    test('guest SSID without "guest" in name still detected', () {
+    test('guest SSID without "guest" in name still detected by alias', () {
       final networks = svc.buildWifiNetworks(
         ssids: WiFiSsids(items: [
-          _ssid('Device.WiFi.SSID.1.', 'Home', 'Device.WiFi.Radio.1.'),
-          _ssid('Device.WiFi.SSID.2.', 'Visitors', 'Device.WiFi.Radio.1.'),
+          _ssid('Device.WiFi.SSID.1.', 'Home', 'Device.WiFi.Radio.1.',
+              alias: 'wifi-2g'),
+          _ssid('Device.WiFi.SSID.2.', 'Visitors', 'Device.WiFi.Radio.1.',
+              alias: 'wifi-2g-guest'),
         ]),
         accessPoints: WiFiAccessPoints(items: [
           _ap('Device.WiFi.AccessPoint.1.', 'Device.WiFi.SSID.1.'),
@@ -736,10 +744,10 @@ void main() {
       );
 
       expect(networks, hasLength(2));
-      expect(networks[0].isGuest, isFalse); // SSID.1 — Main
+      expect(networks[0].isGuest, isFalse); // SSID.1 — Main (alias: wifi-2g)
       expect(networks[0].ssid, 'Home');
-      expect(
-          networks[1].isGuest, isTrue); // SSID.2 — Guest (no "guest" in name)
+      expect(networks[1].isGuest,
+          isTrue); // SSID.2 — Guest (alias ends with -guest)
       expect(networks[1].ssid, 'Visitors');
     });
 

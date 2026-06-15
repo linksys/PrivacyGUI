@@ -51,8 +51,14 @@ bool _validateIpv6Fields(UspInternetSettingsForm form) {
 }
 
 bool _validateOptionalFields(UspInternetSettingsForm form) {
-  // MTU: 0 = auto, otherwise must be in valid range
-  if (form.mtu != 0 && (form.mtu < 576 || form.mtu > 1500)) return false;
+  // MTU must be in valid range: 576 (IPv4 RFC 791 min) to max by protocol
+  // Auto mode hidden — TR-181 cannot represent auto state
+  final mtuMax = switch (form.connectionType) {
+    UspWanConnectionType.pppoe => 1492, // 1500 - 8 (PPP header)
+    // Future: pptp/l2tp => 1460 (tunnel overhead)
+    _ => 1500, // Ethernet standard (DHCP, Static, Bridge)
+  };
+  if (form.mtu < 576 || form.mtu > mtuMax) return false;
   // MAC: empty = no clone, otherwise must be valid format
   if (form.wanMacAddress.isNotEmpty && !_isValidMac(form.wanMacAddress)) {
     return false;

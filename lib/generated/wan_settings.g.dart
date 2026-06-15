@@ -15,7 +15,6 @@ class WanSettings {
   final String pppUsername;
   final String pppPassword;
   final bool bridgeEnabled;
-  final String currentMacAddress;
 
   const WanSettings({
     required this.addressingType,
@@ -27,14 +26,13 @@ class WanSettings {
     required this.pppUsername,
     required this.pppPassword,
     required this.bridgeEnabled,
-    required this.currentMacAddress,
   });
 
-  /// Resolve the instance index by searching for Alias='cpe-wan'
+  /// Resolve the instance index by searching for Alias='wan'
   static Future<String> _resolveInstance(UspClient client) async {
     final response = await client.get(['Device.IP.Interface.*.Alias']);
     for (final entry in response.entries) {
-      if (entry.value == 'cpe-wan') {
+      if (entry.value == 'wan') {
         final match =
             RegExp(r'Device\.IP\.Interface\.(\d+)\.').firstMatch(entry.key);
         if (match != null) {
@@ -57,7 +55,6 @@ class WanSettings {
         'Device.PPP.Interface.1.Username',
         'Device.PPP.Interface.1.Password',
         'Device.Bridging.Bridge.1.Enable',
-        'Device.Ethernet.Interface.1.MACAddress',
       ];
 
   /// Fetch all parameters via USP Get message
@@ -99,9 +96,6 @@ class WanSettings {
     if (!response.containsKey('Device.Bridging.Bridge.1.Enable')) {
       missing.add('Device.Bridging.Bridge.1.Enable');
     }
-    if (!response.containsKey('Device.Ethernet.Interface.1.MACAddress')) {
-      missing.add('Device.Ethernet.Interface.1.MACAddress');
-    }
     if (missing.isNotEmpty) {
       throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
     }
@@ -129,8 +123,6 @@ class WanSettings {
       bridgeEnabled: response['Device.Bridging.Bridge.1.Enable'] == true ||
           response['Device.Bridging.Bridge.1.Enable'] == 'true' ||
           response['Device.Bridging.Bridge.1.Enable'] == '1',
-      currentMacAddress:
-          (response['Device.Ethernet.Interface.1.MACAddress'] ?? '') as String,
     );
   }
 
@@ -165,8 +157,7 @@ class WanSettings {
         'dnsServers: $dnsServers, '
         'pppUsername: $pppUsername, '
         'pppPassword: $pppPassword, '
-        'bridgeEnabled: $bridgeEnabled, '
-        'currentMacAddress: $currentMacAddress'
+        'bridgeEnabled: $bridgeEnabled'
         ')';
   }
 }
