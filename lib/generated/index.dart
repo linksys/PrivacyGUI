@@ -33,7 +33,6 @@ export 'network_diagnostics.g.dart';
 export 'wan_pppoe.g.dart';
 export 'wan_bridge.g.dart';
 export 'dns_client.g.dart';
-export 'wan_mac_clone.g.dart';
 export 'dhcp_reservations.g.dart';
 export 'ip_interfaces.g.dart';
 export 'wan_operations.g.dart';
