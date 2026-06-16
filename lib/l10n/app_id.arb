@@ -554,6 +554,7 @@
   "pnpWaitingModemTitle": "Memberi modem Anda waktu untuk menghubungi ISP",
   "pnpWaitingModemWaitStartUp": "Menunggu modem Anda hidup",
   "pnpWiFiReady": "{ssid} sudah siap",
+  "pnpNetworkReady": "Jaringan Anda sudah siap",
   "pnpWiFiReadyConnectToNewWiFi": "Menyambungkan perangkat ke WiFi baru Anda",
   "pnpYourNetworkDesc": "Konfirmasi semua Simpul ada di sini",
   "pnpYourNetworkTitle": "Jaringan Anda",
