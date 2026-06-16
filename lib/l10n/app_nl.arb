@@ -585,6 +585,7 @@
   "pnpWaitingModemTitle": "Wacht tot uw modem verbinding heeft gemaakt met uw internetprovider",
   "pnpWaitingModemWaitStartUp": "Wachten tot uw modem is opgestart",
   "pnpWiFiReady": "{ssid} is gereed",
+  "pnpNetworkReady": "Uw netwerk is gereed",
   "pnpWiFiReadyConnectToNewWiFi": "Verbind uw apparaten met uw nieuwe WiFi",
   "pnpYourNetworkDesc": "Controleer of alle nodes aanwezig zijn",
   "pnpYourNetworkTitle": "Uw netwerk",

@@ -554,6 +554,7 @@
   "pnpWaitingModemTitle": "กำลังให้เวลาโมเด็มของคุณได้ติดต่อ ISP ของคุณ",
   "pnpWaitingModemWaitStartUp": "กำลังรอโมเด็มของคุณให้พร้อมใช้งาน",
   "pnpWiFiReady": "{ssid} พร้อมแล้ว",
+  "pnpNetworkReady": "เครือข่ายของคุณพร้อมแล้ว",
   "pnpWiFiReadyConnectToNewWiFi": "เชื่อมต่ออุปกรณ์เข้ากับ WiFi ใหม่ของคุณ",
   "pnpYourNetworkDesc": "ยืนยันว่าโหนดทั้งหมดอยู่ที่นี่",
   "pnpYourNetworkTitle": "เครือข่ายของคุณ",

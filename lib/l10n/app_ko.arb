@@ -554,6 +554,7 @@
   "pnpWaitingModemTitle": "모뎀이 ISP와 연결될 때까지 기다리십시오.",
   "pnpWaitingModemWaitStartUp": "모뎀이 시작될 때까지 기다리는 중입니다.",
   "pnpWiFiReady": "{ssid}가 준비되었습니다.",
+  "pnpNetworkReady": "네트워크가 준비되었습니다.",
   "pnpWiFiReadyConnectToNewWiFi": "새로운 WiFi에 장치를 연결합니다",
   "pnpYourNetworkDesc": "모든 노드가 여기에 있는지 확인",
   "pnpYourNetworkTitle": "사용자의 네트워크",

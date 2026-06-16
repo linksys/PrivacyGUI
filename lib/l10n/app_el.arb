@@ -554,6 +554,7 @@
   "pnpWaitingModemTitle": "Δώστε χρόνο στο μόντεμ σας να επικοινωνήσει με τον ISP σας",
   "pnpWaitingModemWaitStartUp": "Αναμονή για την εκκίνηση του μόντεμ σας",
   "pnpWiFiReady": "Το {ssid} είναι έτοιμο",
+  "pnpNetworkReady": "Το δίκτυό σας είναι έτοιμο",
   "pnpWiFiReadyConnectToNewWiFi": "Συνδέστε τις συσκευές σας στο νέο WiFi",
   "pnpYourNetworkDesc": "Επιβεβαιώστε ότι όλοι οι κόμβοι είναι εδώ",
   "pnpYourNetworkTitle": "Το δίκτυο σας",
