@@ -13,7 +13,7 @@ import 'package:privacy_gui/core/jnap/models/firmware_update_settings.dart';
 import 'package:privacy_gui/core/jnap/models/guest_radio_settings.dart';
 import 'package:privacy_gui/core/jnap/models/node_light_settings.dart';
 import 'package:privacy_gui/core/jnap/models/radio_info.dart';
-import 'package:privacy_gui/core/jnap/models/simple_wifi_settings.dart';
+import 'package:privacy_gui/core/jnap/models/set_radio_settings.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
@@ -486,64 +486,69 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
     // personal wifi
     final wifiStateData = getStepState(PersonalWiFiStep.id).data;
     final isSplitMode = wifiStateData['isSplitMode'] as bool? ?? false;
-    final simpleWiFiSettingsJson =
-        getData(JNAPAction.getSimpleWiFiSettings) ?? {};
+    final getRadioInfoJson = getData(JNAPAction.getRadioInfo) ?? {};
+    final getRadioInfo = GetRadioInfo.fromMap(getRadioInfoJson);
 
-    List<SimpleWiFiSettings> simpleWiFiSettings;
-    bool isWiFiChanged;
-
-    if (isSplitMode) {
-      // Split mode: apply per-band settings
-      final perBandSettings =
-          wifiStateData['perBandSettings'] as Map<String, dynamic>? ?? {};
-      // Security is authoritative from radio info (getRadioInfo). The
-      // getSimpleWiFiSettings response may report 'None', so we must always
-      // re-apply the real per-band security to avoid downgrading the network
-      // to open and wiping the passphrase.
-      final securityByBand = {
-        for (final r in defaultWiFiSettings.radios) r.band: r.security,
-      };
-      simpleWiFiSettings =
-          List.from(simpleWiFiSettingsJson['simpleWiFiSettings']).map((e) {
-        final existing = SimpleWiFiSettings.fromMap(e);
-        final bandSettings = perBandSettings[existing.band] as Map<String, dynamic>?;
-        final security = securityByBand[existing.band] ?? existing.security;
-        if (bandSettings != null) {
-          return existing.copyWith(
-            ssid: bandSettings['ssid'] as String? ?? existing.ssid,
-            passphrase: bandSettings['password'] as String? ?? existing.passphrase,
-            security: security,
-          );
-        }
-        return existing.copyWith(security: security);
-      }).toList();
-      // Only write if a band's ssid/password actually differs from the
-      // current router values, mirroring the unified-mode diff below.
-      isWiFiChanged = defaultWiFiSettings.radios.any((r) {
-        final bandSettings = perBandSettings[r.band] as Map<String, dynamic>?;
+    // Resolve the new (ssid, password) for a given band.
+    //  - split mode: from wifiStateData['perBandSettings'][band]
+    //  - unified mode: the same ssid/password for every band
+    // Returns null when there is no override for this band (leave it as-is).
+    ({String ssid, String password})? resolveBandCredential(String band) {
+      if (isSplitMode) {
+        final perBandSettings =
+            wifiStateData['perBandSettings'] as Map<String, dynamic>? ?? {};
+        final bandSettings = perBandSettings[band] as Map<String, dynamic>?;
         if (bandSettings == null) {
-          return false;
+          return null;
         }
-        return (bandSettings['ssid'] as String?) != r.ssid ||
-            (bandSettings['password'] as String?) != r.password;
-      });
-    } else {
-      // Unified mode: apply same values to all bands
+        return (
+          ssid: bandSettings['ssid'] as String? ?? '',
+          password: bandSettings['password'] as String? ?? '',
+        );
+      }
       final primaryRadio = defaultWiFiSettings.primaryRadio;
-      final wifiName = wifiStateData['ssid'] as String? ?? primaryRadio?.ssid ?? '';
-      final wifiPassphrase =
-          wifiStateData['password'] as String? ?? primaryRadio?.password ?? '';
-      final wifiSecurity = primaryRadio?.security ?? 'None';
-      simpleWiFiSettings =
-          List.from(simpleWiFiSettingsJson['simpleWiFiSettings'])
-              .map((e) => SimpleWiFiSettings.fromMap(e).copyWith(
-                  ssid: wifiName,
-                  passphrase: wifiPassphrase,
-                  security: wifiSecurity))
-              .toList();
-      isWiFiChanged = wifiName != (primaryRadio?.ssid ?? '') ||
-          wifiPassphrase != (primaryRadio?.password ?? '');
+      return (
+        ssid: wifiStateData['ssid'] as String? ?? primaryRadio?.ssid ?? '',
+        password:
+            wifiStateData['password'] as String? ?? primaryRadio?.password ?? '',
+      );
     }
+
+    // Build SetRadioSettings from the current radio info, overriding only the
+    // ssid and passphrase per band. Every other field (mode/channel/
+    // channelWidth/broadcastSSID/security) is preserved straight from the
+    // device, which avoids the security-downgrade problem that
+    // SetSimpleWiFiSettings had (getSimpleWiFiSettings could report 'None').
+    final newRadios = getRadioInfo.radios.map((r) {
+      final credential = resolveBandCredential(r.band);
+      if (credential == null) {
+        return NewRadioSettings(radioID: r.radioID, settings: r.settings);
+      }
+      return NewRadioSettings(
+        radioID: r.radioID,
+        settings: r.settings.copyWith(
+          ssid: credential.ssid,
+          // copyWith uses `x ?? this.x`, so passing null keeps the existing
+          // value. Only update the passphrase when the band actually uses a
+          // WPA personal key (open networks have no wpaPersonalSettings).
+          wpaPersonalSettings: r.settings.wpaPersonalSettings
+              ?.copyWith(passphrase: credential.password),
+        ),
+      );
+    }).toList();
+    final setRadioSettings = SetRadioSettings(radios: newRadios);
+
+    // Only write if a band's ssid/password actually differs from the current
+    // router values (applies to both unified and split modes).
+    final isWiFiChanged = getRadioInfo.radios.any((r) {
+      final credential = resolveBandCredential(r.band);
+      if (credential == null) {
+        return false;
+      }
+      return credential.ssid != r.settings.ssid ||
+          credential.password !=
+              (r.settings.wpaPersonalSettings?.passphrase ?? '');
+    });
     // guest wifi
     final guestWifiStateData = getStepState(GuestWiFiStep.id).data;
     final isGuestEnabled = guestWifiStateData['isEnabled'] as bool? ?? false;
@@ -591,10 +596,7 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
     // Build transaction commands
     final transaction = JNAPTransactionBuilder(commands: [
       if (isWiFiChanged)
-        MapEntry(JNAPAction.setSimpleWiFiSettings, {
-          'simpleWiFiSettings':
-              simpleWiFiSettings.map((e) => e.toMap()).toList()
-        }),
+        MapEntry(JNAPAction.setRadioSettings, setRadioSettings.toMap()),
       if (isGuestWiFiSupport)
         MapEntry(
             JNAPAction.setGuestRadioSettings, setGuestRadioSettings.toMap()),
