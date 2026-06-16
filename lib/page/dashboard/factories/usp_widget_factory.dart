@@ -16,7 +16,7 @@ import 'package:privacy_gui/page/topology/cards/usp_network_topology_card.dart';
 import 'package:privacy_gui/page/wifi_settings/cards/usp_wifi_performance_card.dart';
 import 'package:privacy_gui/page/wifi_settings/cards/usp_wifi_networks_card.dart';
 import 'package:privacy_gui/page/wifi_settings/cards/usp_wifi_status_card.dart';
-import 'package:privacy_gui/page/unified_diagnostics/cards/usp_speed_test_card.dart';
+// import 'package:privacy_gui/page/unified_diagnostics/cards/usp_speed_test_card.dart'; // disabled: #857
 
 import '../views/components/_components.dart';
 
@@ -46,7 +46,7 @@ class UspWidgetFactory {
       'network_health' => UspNetworkHealthCard(),
       'firewall_overview' => UspFirewallOverviewCard(),
       'wifi_performance' => UspWifiPerformanceCard(),
-      'speed_test' => UspSpeedTestCard(),
+      // 'speed_test' => UspSpeedTestCard(), // disabled: blocked by FW support (#857)
       _ => null,
     };
   }

@@ -289,20 +289,21 @@ abstract class UspWidgetSpecs {
     },
   );
 
-  static const speedTest = WidgetSpec(
-    id: 'speed_test',
-    displayName: 'Speed Test',
-    constraints: {
-      DisplayMode.normal: WidgetGridConstraints(
-        minColumns: 3,
-        maxColumns: 6,
-        preferredColumns: 5,
-        heightStrategy: HeightStrategy.strict(3),
-        minHeightRows: 2,
-        maxHeightRows: 5,
-      ),
-    },
-  );
+  // Speed Test — disabled: blocked by FW support (#857)
+  // static const speedTest = WidgetSpec(
+  //   id: 'speed_test',
+  //   displayName: 'Speed Test',
+  //   constraints: {
+  //     DisplayMode.normal: WidgetGridConstraints(
+  //       minColumns: 3,
+  //       maxColumns: 6,
+  //       preferredColumns: 5,
+  //       heightStrategy: HeightStrategy.strict(3),
+  //       minHeightRows: 2,
+  //       maxHeightRows: 5,
+  //     ),
+  //   },
+  // );
 
   // ---------------------------------------------------------------------------
   // Registry
@@ -327,7 +328,7 @@ abstract class UspWidgetSpecs {
     wifiPerformance,
     trafficAnalysis,
     deviceAnalytics,
-    speedTest,
+    // speedTest, // disabled: blocked by FW support (#857)
   ];
 
   static WidgetSpec? getById(String id) {
