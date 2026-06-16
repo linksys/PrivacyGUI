@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/components/usp_info_row.dart';
-import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
-import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/internet_settings/models/usp_internet_settings_form.dart';
 import 'package:privacy_gui/page/internet_settings/models/usp_wan_connection_type.dart';
 import 'package:privacy_gui/page/internet_settings/providers/usp_internet_settings_notifier.dart';
@@ -28,7 +26,6 @@ class UspOptionalSection extends ConsumerStatefulWidget {
 
 class _UspOptionalSectionState extends ConsumerState<UspOptionalSection> {
   late TextEditingController _mtuController;
-  late TextEditingController _macController;
 
   @override
   void initState() {
@@ -36,7 +33,6 @@ class _UspOptionalSectionState extends ConsumerState<UspOptionalSection> {
     final form = widget.state.edited;
     _mtuController =
         TextEditingController(text: form.mtu == 0 ? '' : form.mtu.toString());
-    _macController = TextEditingController(text: form.wanMacAddress);
   }
 
   @override
@@ -48,16 +44,12 @@ class _UspOptionalSectionState extends ConsumerState<UspOptionalSection> {
       if (_mtuController.text != mtuText) {
         _mtuController.text = mtuText;
       }
-      if (_macController.text != form.wanMacAddress) {
-        _macController.text = form.wanMacAddress;
-      }
     }
   }
 
   @override
   void dispose() {
     _mtuController.dispose();
-    _macController.dispose();
     super.dispose();
   }
 
@@ -113,35 +105,14 @@ class _UspOptionalSectionState extends ConsumerState<UspOptionalSection> {
               ),
             ],
           ],
-          // MAC Address Clone (FW 1.2.1+ supports Ethernet.Link.MACAddress write)
-          AppGap.lg(),
-          AppDivider(),
-          AppGap.lg(),
-          AppText.labelLarge(l.macAddressClone),
-          AppGap.md(),
-          if (!isEditing) ...[
-            UspInfoRow(
-                label: l.currentMac, value: widget.state.currentMacAddress),
-          ] else ...[
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Expanded(
-                  child: AppTextFormField(
-                    controller: _macController,
-                    label: l.macAddress,
-                    onChanged: (v) =>
-                        _updateField((f) => f.copyWith(wanMacAddress: v)),
-                  ),
-                ),
-                AppGap.md(),
-                AppButton.text(
-                  label: 'Clone',
-                  onTap: () => _showCloneDialog(context),
-                ),
-              ],
-            ),
-          ],
+          // MAC Address Clone — disabled: USP data model does not support write
+          // AppGap.lg(),
+          // AppDivider(),
+          // AppGap.lg(),
+          // AppText.labelLarge(l.macAddressClone),
+          // AppGap.md(),
+          // UspInfoRow(
+          //     label: l.currentMac, value: widget.state.currentMacAddress),
         ],
       ),
     );
@@ -150,57 +121,5 @@ class _UspOptionalSectionState extends ConsumerState<UspOptionalSection> {
   void _updateField(
       UspInternetSettingsForm Function(UspInternetSettingsForm) updater) {
     ref.read(uspInternetSettingsProvider.notifier).updateField(updater);
-  }
-
-  void _showCloneDialog(BuildContext context) {
-    final devicesData = ref.read(devicesDataProvider).valueOrNull;
-    final devices = devicesData?.clientDevices
-            .where((d) => d.isActive && d.mac.isNotEmpty)
-            .toList() ??
-        <DeviceUIModel>[];
-
-    if (devices.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No connected devices found')),
-      );
-      return;
-    }
-
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Clone MAC Address'),
-        content: SizedBox(
-          width: 400,
-          child: ListView.builder(
-            shrinkWrap: true,
-            itemCount: devices.length,
-            itemBuilder: (_, index) {
-              final device = devices[index];
-              final displayName = device.friendlyName?.isNotEmpty == true
-                  ? device.friendlyName!
-                  : device.hostName.isNotEmpty
-                      ? device.hostName
-                      : device.mac;
-              return ListTile(
-                title: Text(displayName),
-                subtitle: Text(device.mac),
-                onTap: () {
-                  _macController.text = device.mac;
-                  _updateField((f) => f.copyWith(wanMacAddress: device.mac));
-                  Navigator.of(ctx).pop();
-                },
-              );
-            },
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel'),
-          ),
-        ],
-      ),
-    );
   }
 }

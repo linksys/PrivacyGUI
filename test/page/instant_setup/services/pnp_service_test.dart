@@ -60,17 +60,10 @@ void main() {
     'Device.IP.Interface.2.Alias': 'wan',
   };
 
-  // Alias resolution response for WanMacClone _resolveInstance()
+  // Alias resolution response for Ethernet.Link (used by various codegen)
   const ethLinkAliasResolutionResponse = <String, dynamic>{
     'Device.Ethernet.Link.1.Alias': 'eth-lan',
     'Device.Ethernet.Link.2.Alias': 'eth-wan',
-  };
-
-  // WanMacClone response (Ethernet.Link.2)
-  const macCloneResponse = <String, dynamic>{
-    'Device.Ethernet.Link.2.MACAddress': 'AA:BB:CC:DD:EE:FF',
-    'Device.Ethernet.Link.2.Name': 'eth-wan',
-    'Device.Ethernet.Link.2.Status': 'Up',
   };
 
   void setupFetchMocks({
@@ -79,17 +72,13 @@ void main() {
   }) {
     when(() => mockUsp.get(any())).thenAnswer((invocation) async {
       final paths = invocation.positionalArguments[0] as List<String>;
-      // Handle _resolveInstance() calls for WanMacClone (Ethernet.Link)
+      // Handle _resolveInstance() calls for Ethernet.Link
       if (paths.any((p) => p.contains('Ethernet.Link.*.Alias'))) {
         return ethLinkAliasResolutionResponse;
       }
       // Handle _resolveInstance() calls for WanSettings/Ipv6Settings (IP.Interface)
       if (paths.any((p) => p.contains('IP.Interface.*.Alias'))) {
         return ipAliasResolutionResponse;
-      }
-      // WanMacClone fetch (after alias resolution, paths contain specific instance)
-      if (paths.any((p) => p.contains('Ethernet.Link.') && !p.contains('*'))) {
-        return macCloneResponse;
       }
       if (paths.any((p) => p.contains('AddressingType'))) {
         return wanResponse;
@@ -209,13 +198,11 @@ void main() {
       // - Ipv6Settings._resolveInstance() + fetch() = 2 calls
       // - PppInterface.fetch() = 1 call
       // - VlanTermination.fetch() = 1 call
-      // - WanMacClone._resolveInstance() = 1 call
-      // - WanMacClone.fetch() = 1 call
       // saveAll:
       // - WanStaticIp.updateOrdered() → _resolveInstance() = 1 call
       // - Ipv6Settings.update() → _resolveInstance() = 1 call
-      // Total = 10 get calls
-      verify(() => mockUsp.get(any())).called(10);
+      // Total = 8 get calls
+      verify(() => mockUsp.get(any())).called(8);
 
       // Verify setOrdered was called for Static IP mode switch
       final capturedOrdered = verify(() => mockUsp.setOrdered(captureAny(),
@@ -252,12 +239,12 @@ void main() {
       await service.saveIspSettings(config);
 
       // Verify fetchSettings + saveAll get calls:
-      // fetchSettings: 8 calls (WanSettings, Ipv6, PPP, VLAN, WanMacClone resolve + fetch)
+      // fetchSettings: 6 calls (WanSettings, Ipv6, PPP, VLAN)
       // saveAll:
       // - WanPppoe.update() → _resolveInstance() = 1 call
       // - Ipv6Settings.update() → _resolveInstance() = 1 call
-      // Total = 10 get calls
-      verify(() => mockUsp.get(any())).called(10);
+      // Total = 8 get calls
+      verify(() => mockUsp.get(any())).called(8);
 
       // Verify PppInterface.add was called (new PPP instance created)
       final addCaptures = verify(() => mockUsp.add(captureAny())).captured;
@@ -298,10 +285,6 @@ void main() {
         if (paths.any((p) => p.contains('IP.Interface.*.Alias'))) {
           return ipAliasResolutionResponse;
         }
-        if (paths
-            .any((p) => p.contains('Ethernet.Link.') && !p.contains('*'))) {
-          return macCloneResponse;
-        }
         if (paths.any((p) => p.contains('AddressingType'))) {
           return wanPppoeResponse;
         }
@@ -330,8 +313,8 @@ void main() {
 
       await service.saveIspSettings(config);
 
-      // Verify fetchSettings was called (includes WanMacClone resolve + fetch = +2)
-      verify(() => mockUsp.get(any())).called(9);
+      // Verify fetchSettings was called
+      verify(() => mockUsp.get(any())).called(7);
 
       // Verify VlanTermination.delete was called
       final deleteCaptures =
@@ -354,10 +337,6 @@ void main() {
         }
         if (paths.any((p) => p.contains('IP.Interface.*.Alias'))) {
           return ipAliasResolutionResponse;
-        }
-        if (paths
-            .any((p) => p.contains('Ethernet.Link.') && !p.contains('*'))) {
-          return macCloneResponse;
         }
         if (paths.any((p) => p.contains('AddressingType'))) {
           return wanPppoeResponse;

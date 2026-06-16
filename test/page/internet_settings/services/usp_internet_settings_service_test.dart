@@ -66,13 +66,6 @@ const _ethLinkAliasResponse = <String, dynamic>{
   'Device.Ethernet.Link.2.Alias': 'eth-wan',
 };
 
-// WanMacClone response
-const _macCloneResponse = <String, dynamic>{
-  'Device.Ethernet.Link.2.MACAddress': 'AA:BB:CC:DD:EE:FF',
-  'Device.Ethernet.Link.2.Name': 'eth-wan',
-  'Device.Ethernet.Link.2.Status': 'Up',
-};
-
 /// Helper to create a mock get handler that handles all codegen paths
 Map<String, dynamic> Function(List<String>) createFetchMockHandler({
   Map<String, dynamic> pppResponse = _pppResponse,
@@ -85,10 +78,6 @@ Map<String, dynamic> Function(List<String>) createFetchMockHandler({
     }
     if (paths.any((p) => p.contains('IP.Interface.*.Alias'))) {
       return _ipAliasResponse;
-    }
-    // WanMacClone fetch (specific instance, not wildcard)
-    if (paths.any((p) => p.contains('Ethernet.Link.') && !p.contains('*'))) {
-      return _macCloneResponse;
     }
     // Other fetches
     if (paths.any((p) => p.contains('AddressingType'))) {
@@ -175,10 +164,6 @@ void main() {
         }
         if (paths.any((p) => p.contains('IP.Interface.*.Alias'))) {
           return _ipAliasResponse;
-        }
-        if (paths
-            .any((p) => p.contains('Ethernet.Link.') && !p.contains('*'))) {
-          return _macCloneResponse;
         }
         if (paths.any((p) => p.contains('AddressingType'))) return wanWith3Dns;
         if (paths.any((p) => p.contains('IPv6Enable'))) return _ipv6Response;
