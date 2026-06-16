@@ -521,6 +521,71 @@ void main() async {
     await tester.pump(const Duration(seconds: 3));
   });
 
+  testLocalizations('Instant Setup - PnP: Wifi ready (split SSID)',
+      (tester, locale) async {
+    when(mockPnpNotifier.build()).thenReturn(PnpState(
+      deviceInfo: NodeDeviceInfo.fromJson(jsonDecode(testDeviceInfo)['output']),
+      isUnconfigured: false,
+      isPrePaired: true,
+      stepStateList: const {
+        0: PnpStepState(
+          status: StepViewStatus.data,
+          data: {
+            "isSplitMode": true,
+            "perBandSettings": {
+              "2.4GHz": {
+                "ssid": "DULinksys12294-2.4GHz",
+                "password": "8kRnxa257@"
+              },
+              "5GHz": {
+                "ssid": "DULinksys12294-5GHz",
+                "password": "8kRnxa257@"
+              },
+              "6GHz": {
+                "ssid": "DULinksys12294-6GHz",
+                "password": "8kRnxa257@"
+              },
+            },
+            "ssid": "DULinksys12294-2.4GHz",
+            "password": "8kRnxa257@",
+          },
+        ),
+        1: PnpStepState(status: StepViewStatus.data, data: {}),
+        2: PnpStepState(status: StepViewStatus.data, data: {}),
+      },
+    ));
+
+    when(mockPnpNotifier.save()).thenAnswer((_) async {
+      await Future.delayed(const Duration(seconds: 3));
+    });
+
+    await tester.pumpWidget(
+      testableSingleRoute(
+        child: const PnpSetupView(),
+        config: LinksysRouteConfig(
+            column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
+        locale: locale,
+        overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
+      ),
+    );
+    await tester.pump(const Duration(seconds: 6));
+    // Trick - setState to trigger build
+    final state = tester
+        .state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
+    state.setState(() {});
+    await tester.pumpAndSettle();
+    final btnFinder = find.byType(FilledButton);
+    await tester.tap(btnFinder.first);
+    await tester.pumpAndSettle();
+    final btnFinder2 = find.byType(FilledButton);
+    await tester.tap(btnFinder2.first);
+    await tester.pumpAndSettle();
+    final btnFinder3 = find.byType(FilledButton);
+    await tester.tap(btnFinder3.first);
+    await tester.pump(const Duration(seconds: 3));
+    await tester.pump(const Duration(seconds: 3));
+  });
+
   testLocalizations('Instant Setup - PnP: Reconnect to your router wifi',
       (tester, locale) async {
     when(mockPnpNotifier.build()).thenReturn(PnpState(

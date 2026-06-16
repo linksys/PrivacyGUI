@@ -766,6 +766,7 @@
   "pnpWaitingModemTitle": "Giving your modem time to contact your ISP",
   "pnpWaitingModemWaitStartUp": "Waiting for your modem to start up",
   "pnpWiFiReady": "{ssid} is ready",
+  "pnpNetworkReady": "Your network is ready",
   "pnpWiFiReadyConnectToNewWiFi": "Connect your devices to your new WiFi",
   "pnpYourNetworkDesc": "Confirm all Nodes are here",
   "pnpYourNetworkTitle": "Your network",
