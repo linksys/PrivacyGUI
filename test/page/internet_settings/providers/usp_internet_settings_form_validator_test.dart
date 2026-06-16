@@ -160,7 +160,7 @@ void main() {
         final form = UspInternetSettingsForm(
           connectionType: UspWanConnectionType.dhcp,
           ipv6rdEnabled: true,
-          ipv6rdPrefix: '2001:db8::',
+          ipv6rdPrefix: '2001:db8::/32',
           ipv6rdIpv4MaskLength: 16,
           ipv6rdBorderRelay: '192.0.2.1',
           mtu: 1500,
@@ -180,13 +180,85 @@ void main() {
         expect(validateForm(form), isFalse);
       });
 
+      test('invalid when 6rd prefix is not CIDR format', () {
+        final form = UspInternetSettingsForm(
+          connectionType: UspWanConnectionType.dhcp,
+          ipv6rdEnabled: true,
+          ipv6rdPrefix: '2001:db8::', // missing /prefix
+          ipv6rdIpv4MaskLength: 16,
+          ipv6rdBorderRelay: '192.0.2.1',
+          mtu: 1500,
+        );
+        expect(validateForm(form), isFalse);
+      });
+
+      test('invalid when 6rd border relay is not valid IPv4', () {
+        final form = UspInternetSettingsForm(
+          connectionType: UspWanConnectionType.dhcp,
+          ipv6rdEnabled: true,
+          ipv6rdPrefix: '2001:db8::/32',
+          ipv6rdIpv4MaskLength: 16,
+          ipv6rdBorderRelay: '192.0.2', // incomplete
+          mtu: 1500,
+        );
+        expect(validateForm(form), isFalse);
+      });
+
       test('invalid when 6rd mask length exceeds 32', () {
         final form = UspInternetSettingsForm(
           connectionType: UspWanConnectionType.dhcp,
           ipv6rdEnabled: true,
-          ipv6rdPrefix: '2001:db8::',
+          ipv6rdPrefix: '2001:db8::/32',
           ipv6rdIpv4MaskLength: 33,
           ipv6rdBorderRelay: '192.0.2.1',
+          mtu: 1500,
+        );
+        expect(validateForm(form), isFalse);
+      });
+
+      test('invalid when 6rd prefix is loopback address', () {
+        final form = UspInternetSettingsForm(
+          connectionType: UspWanConnectionType.dhcp,
+          ipv6rdEnabled: true,
+          ipv6rdPrefix: '::1/128',
+          ipv6rdIpv4MaskLength: 0,
+          ipv6rdBorderRelay: '192.0.2.1',
+          mtu: 1500,
+        );
+        expect(validateForm(form), isFalse);
+      });
+
+      test('invalid when 6rd prefix is multicast address', () {
+        final form = UspInternetSettingsForm(
+          connectionType: UspWanConnectionType.dhcp,
+          ipv6rdEnabled: true,
+          ipv6rdPrefix: 'ff02::1/64',
+          ipv6rdIpv4MaskLength: 0,
+          ipv6rdBorderRelay: '192.0.2.1',
+          mtu: 1500,
+        );
+        expect(validateForm(form), isFalse);
+      });
+
+      test('invalid when 6rd prefix is unspecified address', () {
+        final form = UspInternetSettingsForm(
+          connectionType: UspWanConnectionType.dhcp,
+          ipv6rdEnabled: true,
+          ipv6rdPrefix: '::/0',
+          ipv6rdIpv4MaskLength: 0,
+          ipv6rdBorderRelay: '192.0.2.1',
+          mtu: 1500,
+        );
+        expect(validateForm(form), isFalse);
+      });
+
+      test('invalid when 6rd border relay is empty', () {
+        final form = UspInternetSettingsForm(
+          connectionType: UspWanConnectionType.dhcp,
+          ipv6rdEnabled: true,
+          ipv6rdPrefix: '2001:db8::/32',
+          ipv6rdIpv4MaskLength: 16,
+          ipv6rdBorderRelay: '',
           mtu: 1500,
         );
         expect(validateForm(form), isFalse);
