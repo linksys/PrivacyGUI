@@ -585,6 +585,7 @@
   "pnpWaitingModemTitle": "Laissez à votre modem le temps de contacter votre FAI",
   "pnpWaitingModemWaitStartUp": "Dans l'attente du démarrage de votre modem",
   "pnpWiFiReady": "{ssid} est prêt",
+  "pnpNetworkReady": "Votre réseau est prêt",
   "pnpWiFiReadyConnectToNewWiFi": "Connectez tous vos périphériques à votre nouveau réseau&nbsp;WiFi",
   "pnpYourNetworkDesc": "Confirmez que tous les nœuds sont ici",
   "pnpYourNetworkTitle": "Votre réseau",

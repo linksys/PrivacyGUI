@@ -585,6 +585,7 @@
   "pnpWaitingModemTitle": "In attesa della connessione del modem all'ISP",
   "pnpWaitingModemWaitStartUp": "In attesa dell'avvio completo del modem",
   "pnpWiFiReady": "{ssid} è pronta",
+  "pnpNetworkReady": "La tua rete è pronta",
   "pnpWiFiReadyConnectToNewWiFi": "Connetti i tuoi dispositivi al nuovo WiFi",
   "pnpYourNetworkDesc": "Confermare che tutti i nodi sono presenti.",
   "pnpYourNetworkTitle": "La tua rete",

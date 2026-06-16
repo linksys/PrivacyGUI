@@ -586,6 +586,7 @@
   "pnpWaitingModemTitle": "جارٍ إعطاء وقت للمودم الخاص بك للاتصال بمزود خدمة الإنترنت",
   "pnpWaitingModemWaitStartUp": "انتظر حتى يبدأ المودم الخاص بك بالعمل",
   "pnpWiFiReady": "{ssid} جاهز",
+  "pnpNetworkReady": "شبكتك جاهزة",
   "pnpWiFiReadyConnectToNewWiFi": "قم بتوصيل أجهزتك بشبكة WiFi الجديدة",
   "pnpYourNetworkDesc": "تأكد من وجود جميع العقد هنا",
   "pnpYourNetworkTitle": "شبكتك",

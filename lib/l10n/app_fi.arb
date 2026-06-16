@@ -554,6 +554,7 @@
   "pnpWaitingModemTitle": "Anna modeemille hetki aikaa muodostaa yhteys Internet-palveluntarjoajaan",
   "pnpWaitingModemWaitStartUp": "Odotetaan, että modeemi on käynnistynyt",
   "pnpWiFiReady": "{ssid} on valmis",
+  "pnpNetworkReady": "Verkkosi on valmis",
   "pnpWiFiReadyConnectToNewWiFi": "Yhdistä laitteet uuteen WiFi-verkkoon",
   "pnpYourNetworkDesc": "Varmista, että kaikki solmut ovat täällä",
   "pnpYourNetworkTitle": "Verkkosi",

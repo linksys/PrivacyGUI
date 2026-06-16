@@ -554,6 +554,7 @@
   "pnpWaitingModemTitle": "Hãy chờ modem liên lạc với ISP",
   "pnpWaitingModemWaitStartUp": "Đang chờ modem khởi động",
   "pnpWiFiReady": "{ssid} đã sẵn sàng",
+  "pnpNetworkReady": "Mạng của bạn đã sẵn sàng",
   "pnpWiFiReadyConnectToNewWiFi": "Kết nối các thiết bị của bạn với WiFi mới",
   "pnpYourNetworkDesc": "Mạng WiFi của bạn đã sẵn sàng",
   "pnpYourNetworkTitle": "Mạng của bạn",

@@ -585,6 +585,7 @@
   "pnpWaitingModemTitle": "Es dauert eine Weile, bis die Verbindung Ihres Modems mit dem Internet hergestellt wird",
   "pnpWaitingModemWaitStartUp": "Es wird gewartet, bis Ihr Modem hochgefahren ist",
   "pnpWiFiReady": "{ssid} ist bereit",
+  "pnpNetworkReady": "Ihr Netzwerk ist bereit",
   "pnpWiFiReadyConnectToNewWiFi": "Verbinden Sie Ihre Geräte mit Ihrem neuen WLAN",
   "pnpYourNetworkDesc": "Bestätigen Sie, dass alle Node hier sind",
   "pnpYourNetworkTitle": "Ihr Netzwerk",

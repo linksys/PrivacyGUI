@@ -554,6 +554,7 @@
   "pnpWaitingModemTitle": "Дождитесь, пока модем установит соединение с интернет-провайдером",
   "pnpWaitingModemWaitStartUp": "Ожидание запуска модема",
   "pnpWiFiReady": "{ssid} готов",
+  "pnpNetworkReady": "Ваша сеть готова",
   "pnpWiFiReadyConnectToNewWiFi": "Подключить устройства к новой сети WiFi",
   "pnpYourNetworkDesc": "Подтвердите, что все узлы здесь",
   "pnpYourNetworkTitle": "Ваша сеть",

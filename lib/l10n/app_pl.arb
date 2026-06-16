@@ -554,6 +554,7 @@
   "pnpWaitingModemTitle": "Oczekiwanie, aż modem skontaktuje się z dostawcą usług internetowych",
   "pnpWaitingModemWaitStartUp": "Oczekiwanie na uruchomienie modemu",
   "pnpWiFiReady": "{ssid} jest gotowy",
+  "pnpNetworkReady": "Twoja sieć jest gotowa",
   "pnpWiFiReadyConnectToNewWiFi": "Podłącz swoje urządzenia do nowej sieci WiFi",
   "pnpYourNetworkDesc": "Potwierdź, że wszystkie węzły są tutaj",
   "pnpYourNetworkTitle": "Twoja sieć",

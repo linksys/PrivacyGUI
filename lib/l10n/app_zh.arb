@@ -586,6 +586,7 @@
   "pnpWaitingModemTitle": "给您的调制解调器一点时间，以与ISP连接",
   "pnpWaitingModemWaitStartUp": "正在等待您的调制解调器重启",
   "pnpWiFiReady": "{ssid}已准备就绪",
+  "pnpNetworkReady": "您的网络已准备就绪",
   "pnpWiFiReadyConnectToNewWiFi": "将您的设备连接到您的新WiFi",
   "pnpYourNetworkDesc": "确认所有节点都在此处",
   "pnpYourNetworkTitle": "您的网络",

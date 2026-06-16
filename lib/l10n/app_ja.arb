@@ -586,6 +586,7 @@
   "pnpWaitingModemTitle": "モデム(ONU)がISPとの接続を確立するのを待ちます",
   "pnpWaitingModemWaitStartUp": "モデム(ONU)が起動するのを待っています",
   "pnpWiFiReady": "{ssid}の準備ができました",
+  "pnpNetworkReady": "ネットワークの準備ができました",
   "pnpWiFiReadyConnectToNewWiFi": "お手持ちのデバイスを新しいWiFiに接続してください:",
   "pnpYourNetworkDesc": "すべてのノードが現在地にあることを確認してください。",
   "pnpYourNetworkTitle": "ご利用のネットワーク",

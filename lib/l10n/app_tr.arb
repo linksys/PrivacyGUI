@@ -554,6 +554,7 @@
   "pnpWaitingModemTitle": "İSS'nizle iletişime geçmesi için modeminize zaman tanınıyor",
   "pnpWaitingModemWaitStartUp": "Modemin başlaması bekleniyor",
   "pnpWiFiReady": "{ssid} hazır",
+  "pnpNetworkReady": "Ağınız hazır",
   "pnpWiFiReadyConnectToNewWiFi": "Cihazlarınızı yeni WiFi ağınıza bağlayın",
   "pnpYourNetworkDesc": "Tüm Düğümlerin burada olduğunu onaylayın",
   "pnpYourNetworkTitle": "Ağınız",
