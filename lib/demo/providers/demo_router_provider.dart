@@ -10,6 +10,7 @@ import 'package:privacy_gui/demo/theme_studio/theme_studio_panel.dart';
 import 'package:privacy_gui/demo/providers/demo_ui_provider.dart';
 
 /// Route path for the PnP demo launcher (demo-only).
+/// Access via /demoPnpLauncher to test PnP flows.
 const _demoPnpLauncher = '/demoPnpLauncher';
 
 /// Overrides the main routerProvider for the Demo Application.
@@ -79,8 +80,9 @@ final demoRouterProvider = Provider<GoRouter>((ref) {
     ],
     redirect: (context, state) {
       if (state.matchedLocation == '/') {
-        // Demo mode: go to PnP launcher instead of auto-configuration.
-        return _demoPnpLauncher;
+        // Demo mode: go directly to USP Dashboard for UI verification.
+        // Access PnP flows via /demoPnpLauncher if needed.
+        return RoutePath.uspDashboard;
       } else if (state.matchedLocation == _demoPnpLauncher) {
         return state.uri.toString();
       } else if (state.matchedLocation == RoutePath.localLoginPassword) {

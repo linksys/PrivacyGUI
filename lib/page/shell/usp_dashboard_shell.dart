@@ -18,11 +18,14 @@ import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
 import 'package:privacy_gui/page/_shared/components/sse_connection_banner.dart';
 import 'package:privacy_gui/page/_shared/providers/usp_bars_visible_provider.dart';
 import 'package:privacy_gui/page/dashboard/mascot/linksys_mascot_renderer.dart';
+import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/page/dashboard/mascot/mascot_providers.dart'
     show
+        HealthDialogProviderArgs,
         mascotControllerProvider,
         mascotCoordinatorProvider,
-        mascotDialogProvider;
+        mascotHealthDialogProvider,
+        openAiAssistantWithTransition;
 import 'package:privacy_gui/page/dashboard/providers/dashboard_domain_ready_provider.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -118,7 +121,17 @@ class _UspDashboardShellState extends ConsumerState<UspDashboardShell> {
         ref.watch(appSettingsProvider.select((s) => s.showMascot));
     final isDashboardReady = ref.watch(dashboardDomainReadyProvider).hasValue;
     final mascotController = ref.watch(mascotControllerProvider);
-    final dialogProvider = ref.watch(mascotDialogProvider(context));
+    final dialogProvider = ref.watch(mascotHealthDialogProvider(
+      HealthDialogProviderArgs(
+        widgetRef: ref,
+        onNavigate: (routeName) {
+          if (context.mounted) context.push(routeName);
+        },
+        onOpenAiAssistant: () => openAiAssistantWithTransition(context),
+        getFaqCategoryTitle: (category) => category.displayString(context),
+        getFaqItemTitle: (item) => item.displayString(context),
+      ),
+    ));
 
     // Activate mascot coordinator (manages random speech timer internally)
     ref.watch(mascotCoordinatorProvider);

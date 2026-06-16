@@ -11,6 +11,7 @@ import 'package:privacy_gui/page/dashboard/providers/pdf_report_data_provider.da
 import 'package:privacy_gui/page/unified_diagnostics/models/diagnostic_state.dart';
 import 'package:privacy_gui/page/unified_diagnostics/providers/unified_diagnostics_notifier.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_domain_ready_provider.dart';
+import 'package:privacy_gui/page/support/faq_data.dart';
 import 'package:privacy_gui/providers/app_settings/app_settings_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -18,8 +19,12 @@ import 'package:ui_kit_library/ui_kit.dart';
 import 'package:privacy_gui/page/ai_assistant/views/router_assistant_view.dart';
 
 import 'dashboard_dialog_provider.dart';
+import 'health_dialog_provider.dart';
+import 'mascot_config.dart';
 import 'mascot_hero_widget.dart';
 import 'mascot_message_provider.dart';
+import 'triggers/mascot_trigger.dart';
+import 'triggers/mascot_trigger_provider.dart';
 
 /// Provider for the mascot controller.
 final mascotControllerProvider = Provider.autoDispose<MascotController>((ref) {
@@ -43,10 +48,58 @@ final mascotDialogProvider =
       onRunFlowDiagnostics: (flow) => _runFlowDiagnostics(ref, flow),
       onPrintReport: () => _printReport(ref),
       onOpenThemeStudio: () => _openThemeStudio(ref),
-      onOpenAiAssistant: () => _openAiAssistant(context),
+      onOpenAiAssistant: () => openAiAssistantWithTransition(context),
       getLocale: () => locale,
       getFaqCategoryTitle: (category) => category.displayString(context),
       getFaqItemTitle: (item) => item.displayString(context),
+      isThemeStudioEnabled: BuildConfig.enableThemeStudio,
+      getRouterTime: () => _getRouterTime(ref),
+    );
+  },
+);
+
+/// Arguments for creating [HealthDialogProvider].
+///
+/// Contains callbacks that require [BuildContext], allowing the widget layer
+/// to handle navigation and localization while keeping the provider context-free.
+class HealthDialogProviderArgs {
+  final WidgetRef widgetRef;
+  final void Function(String routeName) onNavigate;
+  final VoidCallback onOpenAiAssistant;
+  final String Function(FaqCategory category) getFaqCategoryTitle;
+  final String Function(FaqItem item) getFaqItemTitle;
+
+  const HealthDialogProviderArgs({
+    required this.widgetRef,
+    required this.onNavigate,
+    required this.onOpenAiAssistant,
+    required this.getFaqCategoryTitle,
+    required this.getFaqItemTitle,
+  });
+}
+
+/// Provider for the health-based mascot dialog UI.
+///
+/// Uses word cloud + toolbar layout instead of fixed options.
+/// Widget layer provides context-dependent callbacks via [HealthDialogProviderArgs].
+final mascotHealthDialogProvider =
+    Provider.autoDispose.family<HealthDialogProvider, HealthDialogProviderArgs>(
+  (ref, args) {
+    final locale = ref.watch(appSettingsProvider.select((s) => s.locale));
+    final controller = ref.watch(mascotControllerProvider);
+
+    return HealthDialogProvider(
+      ref: args.widgetRef,
+      controller: controller,
+      onRunFullDiagnostics: () => _runFullDiagnostics(ref),
+      onRunFlowDiagnostics: (flow) => _runFlowDiagnostics(ref, flow),
+      onPrintReport: () => _printReport(ref),
+      onOpenThemeStudio: () => _openThemeStudio(ref),
+      onNavigate: args.onNavigate,
+      onOpenAiAssistant: args.onOpenAiAssistant,
+      getLocale: () => locale,
+      getFaqCategoryTitle: args.getFaqCategoryTitle,
+      getFaqItemTitle: args.getFaqItemTitle,
       isThemeStudioEnabled: BuildConfig.enableThemeStudio,
       getRouterTime: () => _getRouterTime(ref),
     );
@@ -141,7 +194,7 @@ void _openThemeStudio(Ref ref) {
 /// The custom PageRouteBuilder enables the mascot fly-in transition
 /// which requires dynamic position calculation from MediaQuery.
 /// go_router's CustomTransitionPage doesn't easily support this pattern.
-void _openAiAssistant(BuildContext context) {
+void openAiAssistantWithTransition(BuildContext context) {
   final screenSize = MediaQuery.of(context).size;
 
   // Mascot's starting position (bottom-right, where the overlay typically is)
@@ -230,9 +283,9 @@ class MascotCoordinatorNotifier extends AutoDisposeNotifier<void> {
   final _random = Random();
   VoidCallback? _controllerListener;
 
-  static const _minInterval = Duration(seconds: 10);
-  static const _maxInterval = Duration(seconds: 30);
-  static const _autoHideDuration = Duration(seconds: 5);
+  static const _minInterval = kRandomSpeechMinInterval;
+  static const _maxInterval = kRandomSpeechMaxInterval;
+  static const _autoHideDuration = kRandomSpeechAutoHide;
 
   @override
   void build() {
@@ -245,7 +298,31 @@ class MascotCoordinatorNotifier extends AutoDisposeNotifier<void> {
 
     if (showMascot && isDashboardReady) {
       _startRandomSpeech(controller);
+      _startTriggerListener(controller);
     }
+  }
+
+  void _startTriggerListener(MascotController controller) {
+    final triggerNotifier = ref.read(mascotTriggerProvider.notifier);
+    triggerNotifier.onTrigger =
+        (trigger) => _handleTrigger(controller, trigger);
+  }
+
+  void _handleTrigger(MascotController controller, MascotTrigger trigger) {
+    if (!controller.isVisible) return;
+
+    // For critical triggers, interrupt current dialog
+    if (trigger.interruptCurrent && controller.isDialogVisible) {
+      controller.dismissDialog();
+    }
+
+    // Don't interrupt user interaction for non-critical triggers
+    if (!trigger.interruptCurrent &&
+        controller.state == MascotState.interacting) {
+      return;
+    }
+
+    controller.showDialog(trigger.toDialogNode());
   }
 
   void _startRandomSpeech(MascotController controller) {
