@@ -5,6 +5,7 @@ import 'package:privacy_gui/page/_shared/components/usp_info_row.dart';
 import 'package:privacy_gui/page/internet_settings/models/usp_internet_settings_form.dart';
 import 'package:privacy_gui/page/internet_settings/providers/usp_internet_settings_notifier.dart';
 import 'package:privacy_gui/page/internet_settings/models/internet_settings_feature_state.dart';
+import 'package:privacy_gui/page/internet_settings/providers/usp_internet_settings_form_validator.dart';
 import 'package:privacy_gui/page/internet_settings/views/components/usp_section_card.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -132,13 +133,18 @@ class _UspIpv6SectionState extends ConsumerState<UspIpv6Section> {
       AppTextFormField(
         controller: _prefixController,
         label: l.prefix,
+        hintText: '2001:db8::/32',
+        externalErrorText: validateIpv6rdPrefix(form.ipv6rdPrefix),
         onChanged: (v) => _updateField((f) => f.copyWith(ipv6rdPrefix: v)),
       ),
       AppGap.md(),
       AppTextFormField(
         controller: _maskLengthController,
         label: l.prefixLength,
+        hintText: '0-32',
         keyboardType: TextInputType.number,
+        externalErrorText:
+            validateIpv6rdPrefixLength(form.ipv6rdIpv4MaskLength),
         onChanged: (v) => _updateField(
             (f) => f.copyWith(ipv6rdIpv4MaskLength: int.tryParse(v) ?? 0)),
       ),
@@ -147,6 +153,7 @@ class _UspIpv6SectionState extends ConsumerState<UspIpv6Section> {
         controller: _borderRelayController,
         label: l.borderRelay,
         hintText: '192.0.2.1',
+        externalErrorText: validateIpv6rdBorderRelay(form.ipv6rdBorderRelay),
         onChanged: (v) => _updateField((f) => f.copyWith(ipv6rdBorderRelay: v)),
       ),
     ];
