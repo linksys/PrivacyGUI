@@ -39,7 +39,7 @@ class _UspIpv4SectionState extends ConsumerState<UspIpv4Section> {
   late TextEditingController _dns3Controller;
   late TextEditingController _pppUsernameController;
   late TextEditingController _pppPasswordController;
-  late TextEditingController _pppServiceNameController;
+  // late TextEditingController _pppServiceNameController;
   late TextEditingController _vlanIdController;
   late TextEditingController _idleTimeController;
 
@@ -59,8 +59,8 @@ class _UspIpv4SectionState extends ConsumerState<UspIpv4Section> {
     _dns3Controller = TextEditingController(text: form.dnsServer3);
     _pppUsernameController = TextEditingController(text: form.pppUsername);
     _pppPasswordController = TextEditingController(text: form.pppPassword);
-    _pppServiceNameController =
-        TextEditingController(text: form.pppoeServiceName);
+    // _pppServiceNameController =
+    //     TextEditingController(text: form.pppoeServiceName);
     _vlanIdController = TextEditingController(text: form.vlanId.toString());
     _idleTimeController =
         TextEditingController(text: form.idleDisconnectTime.toString());
@@ -84,7 +84,7 @@ class _UspIpv4SectionState extends ConsumerState<UspIpv4Section> {
     _syncIfDifferent(_dns3Controller, form.dnsServer3);
     _syncIfDifferent(_pppUsernameController, form.pppUsername);
     _syncIfDifferent(_pppPasswordController, form.pppPassword);
-    _syncIfDifferent(_pppServiceNameController, form.pppoeServiceName);
+    // _syncIfDifferent(_pppServiceNameController, form.pppoeServiceName);
     _syncIfDifferent(_vlanIdController, form.vlanId.toString());
     _syncIfDifferent(_idleTimeController, form.idleDisconnectTime.toString());
   }
@@ -105,7 +105,7 @@ class _UspIpv4SectionState extends ConsumerState<UspIpv4Section> {
     _dns3Controller.dispose();
     _pppUsernameController.dispose();
     _pppPasswordController.dispose();
-    _pppServiceNameController.dispose();
+    // _pppServiceNameController.dispose();
     _vlanIdController.dispose();
     _idleTimeController.dispose();
     super.dispose();
@@ -230,7 +230,8 @@ class _UspIpv4SectionState extends ConsumerState<UspIpv4Section> {
     if (!isEditing) {
       return [
         UspInfoRow(label: l.username, value: form.pppUsername),
-        UspInfoRow(label: l.serviceName, value: form.pppoeServiceName),
+        // ServiceName — disabled: bbfdm rejects SET (fault 9001)
+        // UspInfoRow(label: l.serviceName, value: form.pppoeServiceName),
         UspInfoRow(label: l.connectionMode, value: form.connectionTrigger),
         UspInfoRow(label: l.pppStatus, value: widget.state.pppConnectionStatus),
         if (form.vlanEnabled)
@@ -250,12 +251,13 @@ class _UspIpv4SectionState extends ConsumerState<UspIpv4Section> {
         obscureText: true,
         onChanged: (v) => _updateField((f) => f.copyWith(pppPassword: v)),
       ),
-      AppGap.md(),
-      AppTextFormField(
-        controller: _pppServiceNameController,
-        label: l.serviceNameOptional,
-        onChanged: (v) => _updateField((f) => f.copyWith(pppoeServiceName: v)),
-      ),
+      // ServiceName — disabled: bbfdm rejects SET (fault 9001)
+      // AppGap.md(),
+      // AppTextFormField(
+      //   controller: _pppServiceNameController,
+      //   label: l.serviceNameOptional,
+      //   onChanged: (v) => _updateField((f) => f.copyWith(pppoeServiceName: v)),
+      // ),
       AppGap.lg(),
       // Connection mode
       AppText.labelLarge(l.connectionMode),
