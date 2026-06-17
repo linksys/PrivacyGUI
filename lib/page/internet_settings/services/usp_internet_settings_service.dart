@@ -146,20 +146,13 @@ class UspInternetSettingsService {
         currentInstancePath: pppInstancePath,
       );
 
-      // Step 2: VLAN lifecycle
-      final vlanPath = await _handleVlanLifecycle(
-        original,
-        edited,
-        currentInstancePath: vlanInstancePath,
-      );
-
-      // Step 3: WAN mode switch or field edit (per-mode dispatch)
+      // Step 2: WAN mode switch or field edit (per-mode dispatch)
       final typeChanged = original.connectionType != edited.connectionType;
       final switchingToPppoe =
           typeChanged && edited.connectionType == UspWanConnectionType.pppoe;
       await _saveWanSettings(original, edited);
 
-      // Step 4: PPP instance fields (skip username/password if already sent
+      // Step 3: PPP instance fields (skip username/password if already sent
       // in the ordered Set above)
       if (pppPath != null &&
           edited.connectionType == UspWanConnectionType.pppoe) {
@@ -167,9 +160,9 @@ class UspInternetSettingsService {
             skipCredentials: switchingToPppoe);
       }
 
-      // Step 5: VLAN instance fields
-      if (vlanPath != null && edited.vlanEnabled) {
-        await _saveVlanSettings(original, edited, vlanPath);
+      // Step 4: VLAN settings (always use SET on existing instance)
+      if (vlanInstancePath != null) {
+        await _saveVlanSettings(original, edited, vlanInstancePath);
       }
 
       // Step 6: IPv6 fields
@@ -214,43 +207,6 @@ class UspInternetSettingsService {
   // ---------------------------------------------------------------------------
   // VLAN Lifecycle (DD-2: Match toggle — Add when enabling, Delete when disabling)
   // ---------------------------------------------------------------------------
-
-  /// Returns the VLAN instance path to use for subsequent Set operations,
-  /// or null if no VLAN instance exists after this step.
-  Future<String?> _handleVlanLifecycle(
-    UspInternetSettingsForm original,
-    UspInternetSettingsForm edited, {
-    String? currentInstancePath,
-  }) async {
-    final wasEnabled = original.vlanEnabled;
-    final isEnabled = edited.vlanEnabled;
-
-    if (!wasEnabled && isEnabled && currentInstancePath == null) {
-      // Enabling VLAN and no instance exists — Add
-      logger.d('[USP][WAN]: Adding VLANTermination instance');
-      final result = await VlanTermination.add(_usp, [{}]);
-      // Extract instance path from structured response
-      final parsedResult = UspResultParser.parseAddResult(result);
-      if (parsedResult is UspSuccess<List<String>>) {
-        final createdInstances = parsedResult.allCreatedInstances;
-        if (createdInstances.isNotEmpty) {
-          return createdInstances.first.affectedPath;
-        }
-      }
-      return null;
-    } else if (wasEnabled && !isEnabled && currentInstancePath != null) {
-      // Disabling VLAN — Delete
-      logger.d(
-          '[USP][WAN]: Deleting VLANTermination instance $currentInstancePath');
-      final deleteResult =
-          await VlanTermination.delete(_usp, [currentInstancePath]);
-      _handleDeleteResult(deleteResult);
-      return null;
-    }
-
-    // No lifecycle change — return current path
-    return currentInstancePath;
-  }
 
   // ---------------------------------------------------------------------------
   // WAN singleton save — DNS merge happens here
@@ -347,9 +303,8 @@ class UspInternetSettingsService {
           password: skipCredentials
               ? null
               : _diff(original.pppPassword, edited.pppPassword),
-          // pppoeServiceName — disabled: bbfdm rejects SET (fault 9001)
-          // pppoeServiceName:
-          //     _diff(original.pppoeServiceName, edited.pppoeServiceName),
+          pppoeServiceName:
+              _diff(original.pppoeServiceName, edited.pppoeServiceName),
           connectionTrigger:
               _diff(original.connectionTrigger, edited.connectionTrigger),
           idleDisconnectTime:
@@ -465,29 +420,6 @@ class UspInternetSettingsService {
   }
 
   /// Parse and validate DELETE result using standard UspResultParser (Strict mode).
-  void _handleDeleteResult(Map<String, dynamic> result) {
-    final parsed = UspResultParser.parseDeleteResult(result);
-    switch (parsed) {
-      case UspSuccess():
-        break;
-      case UspPartialSuccess(
-          :final errorSummary,
-          :final successes,
-          :final failures
-        ):
-        throw UspPartialFailureError(
-          summary: 'WAN delete partial failure: $errorSummary',
-          successPaths: successes.map((s) => s.requestedPath).toList(),
-          failedPaths: failures.map((f) => f.requestedPath).toList(),
-        );
-      case UspFailure(:final errorSummary, :final errors):
-        throw UspCompleteFailureError(
-          summary: 'WAN delete failed: $errorSummary',
-          failedPaths: errors.map((e) => e.requestedPath).toList(),
-        );
-    }
-  }
-
   /// Parse and validate OPERATE result using standard UspResultParser (Strict mode).
   void _handleOperateResult(Map<String, dynamic> result) {
     final parsed = UspResultParser.parseOperateResult(result);
