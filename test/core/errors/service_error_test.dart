@@ -8,11 +8,6 @@ void main() {
       expect('${const SessionTokenExpiredError()}', 'Session token expired');
       expect('${const NotAuthenticatedError()}', 'Not authenticated');
       expect('${const ResourceNotFoundError()}', 'Resource not found');
-      expect('${const AdminAccountLockedError()}', 'Admin account locked');
-    });
-
-    test('preserves acronyms (OTP)', () {
-      expect('${const InvalidOtpError()}', 'Invalid otp');
     });
 
     test('NetworkError appends message when present', () {

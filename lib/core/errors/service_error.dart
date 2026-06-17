@@ -10,24 +10,21 @@ import 'package:privacy_gui/core/usp/models/usp_operation_result.dart'
 ///
 /// Example:
 /// ```dart
-/// // In Service layer - map JNAP errors to ServiceError
+/// // In Service layer - map USP/JNAP errors to ServiceError
 /// try {
-///   await routerRepository.send(...);
-/// } on JNAPError catch (e) {
-///   throw switch (e.result) {
-///     'ErrorInvalidResetCode' => InvalidResetCodeError(attemptsRemaining: 3),
-///     'ErrorAdminAccountLocked' => const AdminAccountLockedError(),
+///   await uspService.setParameters(...);
+/// } catch (e) {
+///   throw switch (e) {
+///     UspError(:final code) when code == 7010 => const InvalidInputError(),
 ///     _ => UnexpectedError(originalError: e),
 ///   };
 /// }
 ///
 /// // In Provider layer - catch ServiceError only
 /// try {
-///   await service.verifyCode(code);
-/// } on InvalidResetCodeError catch (e) {
-///   state = state.copyWith(attemptsRemaining: e.attemptsRemaining);
-/// } on AdminAccountLockedError {
-///   // Handle locked account
+///   await service.updateSettings(settings);
+/// } on InvalidInputError {
+///   state = state.copyWith(hasInputError: true);
 /// }
 /// ```
 sealed class ServiceError implements Exception {
@@ -111,46 +108,6 @@ final class ResourceNotFoundError extends ServiceError {
 }
 
 // ============================================================================
-// OTP Errors
-// ============================================================================
-
-/// Invalid OTP code
-final class InvalidOtpError extends ServiceError {
-  const InvalidOtpError({super.code, super.detail});
-}
-
-/// OTP code has expired
-final class ExpiredOtpError extends ServiceError {
-  const ExpiredOtpError({super.code, super.detail});
-}
-
-// ============================================================================
-// Admin Password Errors
-// ============================================================================
-
-/// Admin account is locked
-final class AdminAccountLockedError extends ServiceError {
-  const AdminAccountLockedError({super.code, super.detail});
-}
-
-/// Invalid reset code provided
-final class InvalidResetCodeError extends ServiceError {
-  final int? attemptsRemaining;
-  const InvalidResetCodeError(
-      {this.attemptsRemaining, super.code, super.detail});
-}
-
-/// Too many consecutive invalid reset code attempts
-final class ConsecutiveInvalidResetCodeError extends ServiceError {
-  const ConsecutiveInvalidResetCodeError({super.code, super.detail});
-}
-
-/// Invalid admin password
-final class InvalidAdminPasswordError extends ServiceError {
-  const InvalidAdminPasswordError({super.code, super.detail});
-}
-
-// ============================================================================
 // General Errors
 // ============================================================================
 
@@ -203,6 +160,18 @@ final class NetworkError extends ServiceError {
   @override
   String toString() =>
       detail != null ? 'Network error: $detail' : super.toString();
+}
+
+/// Operation timed out before completing.
+///
+/// A generic timeout (any operation may time out) — not bound to a specific
+/// feature. Used e.g. by diagnostics to fold Dart's [TimeoutException] into the
+/// [ServiceError] hierarchy so the UI can localize it by type.
+final class TimeoutError extends ServiceError {
+  const TimeoutError({super.code, super.detail});
+
+  @override
+  String toString() => detail != null ? 'Timeout: $detail' : super.toString();
 }
 
 /// Storage operation error
@@ -279,38 +248,4 @@ final class ConnectivityError extends ServiceError {
   @override
   String toString() =>
       detail != null ? 'Connectivity error: $detail' : super.toString();
-}
-
-// ============================================================================
-// Side Effect Error (Operation succeeded but device recovery timed out)
-// ============================================================================
-
-/// Operation succeeded but triggered a side effect requiring device recovery.
-///
-/// Unlike other [ServiceError] subtypes, this indicates the operation DID succeed.
-/// The device is now recovering (restarting, reconnecting, etc.) and we timed out
-/// waiting for it to come back online.
-///
-/// - [originalResult]: The JNAP result from the operation that triggered the
-///   side effect. Contains data like redirection URLs needed after device recovery.
-/// - [lastPolledResult]: The last successful poll result before timeout.
-///   Useful for diagnosing the device's final known state.
-///
-/// UI should typically:
-/// 1. Inform user the settings were saved
-/// 2. Guide user to reconnect to the device
-///
-/// Example:
-/// ```dart
-/// try {
-///   await service.saveSettings(settings);
-/// } on ServiceSideEffectError {
-///   showRouterNotFoundAlert(context, ref);
-/// }
-/// ```
-final class ServiceSideEffectError extends ServiceError {
-  final Object? originalResult;
-  final Object? lastPolledResult;
-
-  const ServiceSideEffectError([this.originalResult, this.lastPolledResult]);
 }

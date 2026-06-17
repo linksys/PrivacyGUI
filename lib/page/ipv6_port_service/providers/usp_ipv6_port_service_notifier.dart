@@ -68,7 +68,7 @@ class UspIpv6PortServiceNotifier
       logger.e('[USP][Firewall][IPv6Port]: Fetch failed', error: e);
       return (
         null,
-        Ipv6PortServiceStatus(errorMessage: '$e'),
+        Ipv6PortServiceStatus(error: e),
       );
     }
   }

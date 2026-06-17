@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/components/localizations/service_error_localizations.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
+import 'package:privacy_gui/components/views/service_error_view.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/instant_safety/models/instant_safety_feature_state.dart';
@@ -34,8 +36,11 @@ class UspInstantSafetyView extends ConsumerWidget {
         if (state.status.isLoading) {
           return const Center(child: AppLoader());
         }
-        if (state.status.errorMessage != null) {
-          return _buildError(context, ref, state.status.errorMessage!);
+        if (state.status.error != null) {
+          return ServiceErrorView(
+            error: state.status.error,
+            onRetry: () => ref.invalidate(uspInstantSafetyProvider),
+          );
         }
         return _buildContent(context, ref, state);
       },
@@ -57,31 +62,6 @@ class UspInstantSafetyView extends ConsumerWidget {
       isPositiveEnabled: !state.status.isSaving,
       onPositiveTap: () => _onSave(context, ref),
       onNegativeTap: () => ref.read(uspInstantSafetyProvider.notifier).revert(),
-    );
-  }
-
-  // ---------------------------------------------------------------------------
-  // Error
-  // ---------------------------------------------------------------------------
-
-  Widget _buildError(BuildContext context, WidgetRef ref, String error) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          AppIcon.font(Icons.error_outline,
-              size: 48, color: Theme.of(context).colorScheme.error),
-          AppGap.xl(),
-          AppText.titleMedium('Unable to load safe browsing settings'),
-          AppGap.md(),
-          AppText.bodyMedium(error),
-          AppGap.xxl(),
-          AppButton(
-            label: 'Retry',
-            onTap: () => ref.invalidate(uspInstantSafetyProvider),
-          ),
-        ],
-      ),
     );
   }
 
@@ -183,7 +163,7 @@ class UspInstantSafetyView extends ConsumerWidget {
       }
     } catch (e) {
       if (context.mounted) {
-        showFailedSnackBar(context, 'Failed to save: $e');
+        showFailedSnackBar(context, localizeServiceError(context, e));
       }
     }
   }

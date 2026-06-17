@@ -78,7 +78,7 @@ void main() {
       await Future.delayed(Duration.zero);
 
       final state = container.read(uspDhcpReservationsProvider);
-      expect(state.status.errorMessage, contains('timeout'));
+      expect(state.status.error, isA<NetworkError>());
       expect(state.settings.current.reservations, isEmpty);
       container.dispose();
     });

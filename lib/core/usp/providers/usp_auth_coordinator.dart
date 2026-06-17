@@ -147,7 +147,7 @@ class UspAuthCoordinator {
     if (_usp == null) {
       logger.w('[USP][Auth]: tryUspLogin skipped: UspClient is null');
       throw const ServiceNotInitializedError(
-          message: 'USP client not available');
+          detail: 'USP client not available');
     }
     try {
       await _usp.login(password);
@@ -162,15 +162,15 @@ class UspAuthCoordinator {
       // Map WASM errors to ServiceError
       final errorStr = e.toString();
       if (_isAccountLockedError(e)) {
-        throw const AdminAccountLockedError();
+        throw UnexpectedError(originalError: e, detail: 'Account locked');
       } else if (_isAuthError(e)) {
         throw const InvalidCredentialsError();
       } else if (errorStr.contains('HTTP 5') ||
           errorStr.contains('network') ||
           errorStr.contains('fetch')) {
-        throw NetworkError(message: errorStr);
+        throw NetworkError(detail: errorStr);
       }
-      throw UnexpectedError(originalError: e, message: errorStr);
+      throw UnexpectedError(originalError: e, detail: errorStr);
     }
   }
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/components/localizations/service_error_localizations.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_settings_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_settings_state.dart';
@@ -34,8 +35,8 @@ class UspWifiListTab extends ConsumerWidget {
     }
 
     // Error or empty state
-    if (state.status.errorMessage != null ||
-        state.settings.current.networks.isEmpty) {
+    if (state.status.error != null || state.settings.current.networks.isEmpty) {
+      final error = state.status.error;
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.xl),
@@ -46,8 +47,9 @@ class UspWifiListTab extends ConsumerWidget {
                   color: Theme.of(context).colorScheme.error),
               AppGap.md(),
               AppText.bodyMedium(
-                state.status.errorMessage ??
-                    'No WiFi networks found. Check router connection.',
+                error != null
+                    ? localizeServiceError(context, error)
+                    : 'No WiFi networks found. Check router connection.',
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ],

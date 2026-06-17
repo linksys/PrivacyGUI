@@ -1,3 +1,4 @@
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/framework/preservable.dart';
 import 'package:privacy_gui/page/_shared/models/port_forwarding_rule_ui_model.dart';
 import 'package:privacy_gui/page/port_forwarding/models/port_forwarding_page_feature_state.dart';
@@ -163,6 +164,6 @@ PortForwardingPageFeatureState get errorState => PortForwardingPageFeatureState(
         current: const PortForwardingPageSettings(),
       ),
       status: const PortForwardingPageStatus(
-        errorMessage: 'Connection failed',
+        error: ConnectivityError(detail: 'Connection failed'),
       ),
     );

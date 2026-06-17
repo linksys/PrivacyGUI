@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/components/views/service_error_view.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/wifi_settings/models/wifi_advanced_feature_state.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_advanced_provider.dart';
@@ -29,30 +30,11 @@ class UspWifiAdvancedTab extends ConsumerWidget {
       );
     }
 
-    if (status.errorMessage != null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.xl),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              AppIcon.font(
-                Icons.error_outline,
-                size: 48,
-                color: Theme.of(context).colorScheme.error,
-              ),
-              AppGap.xl(),
-              AppText.titleMedium('Unable to load advanced settings'),
-              AppGap.md(),
-              AppButton(
-                label: 'Retry',
-                onTap: () => ref
-                    .read(uspWifiAdvancedProvider.notifier)
-                    .fetch(forceRemote: true),
-              ),
-            ],
-          ),
-        ),
+    if (status.error != null) {
+      return ServiceErrorView(
+        error: status.error,
+        onRetry: () =>
+            ref.read(uspWifiAdvancedProvider.notifier).fetch(forceRemote: true),
       );
     }
 

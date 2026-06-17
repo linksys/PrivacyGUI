@@ -133,7 +133,7 @@ void main() {
       await Future.delayed(Duration.zero);
 
       final state = container.read(uspWifiSettingsProvider);
-      expect(state.status.errorMessage, isNotNull);
+      expect(state.status.error, isA<ServiceNotInitializedError>());
       container.dispose();
     });
 
@@ -560,8 +560,7 @@ void main() {
       await Future.delayed(Duration.zero);
 
       final state = container.read(uspWifiSettingsProvider);
-      expect(state.status.errorMessage, isNotNull);
-      expect(state.status.errorMessage, contains('Network error'));
+      expect(state.status.error, isA<NetworkError>());
       expect(state.settings.current.networks, isEmpty);
       container.dispose();
     });

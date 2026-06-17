@@ -82,7 +82,7 @@ void main() {
       await Future.delayed(Duration.zero);
 
       final state = container.read(uspIpv6PortServiceProvider);
-      expect(state.status.errorMessage, contains('fetch failed'));
+      expect(state.status.error, isA<NetworkError>());
       expect(state.settings.current.rules, isEmpty);
       container.dispose();
     });

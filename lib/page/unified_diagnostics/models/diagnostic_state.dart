@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/page/unified_diagnostics/models/speed_test_state.dart';
 
 import 'diagnostic_result.dart';
@@ -159,8 +160,8 @@ class UnifiedDiagnosticsState extends Equatable {
   /// Recommendations based on diagnostic results.
   final List<RecommendationUIModel> recommendations;
 
-  /// Error message if a step failed.
-  final String? errorMessage;
+  /// Error if a step failed.
+  final ServiceError? error;
 
   /// Progress of current step (0.0–1.0).
   final double? progress;
@@ -172,7 +173,7 @@ class UnifiedDiagnosticsState extends Equatable {
     this.results = const [],
     this.speedTest,
     this.recommendations = const [],
-    this.errorMessage,
+    this.error,
     this.progress,
   });
 
@@ -199,7 +200,7 @@ class UnifiedDiagnosticsState extends Equatable {
     List<DiagnosticStepUIModel>? results,
     SpeedTestResult? speedTest,
     List<RecommendationUIModel>? recommendations,
-    String? errorMessage,
+    ServiceError? error,
     double? progress,
     bool clearError = false,
     bool clearSpeedTest = false,
@@ -219,7 +220,7 @@ class UnifiedDiagnosticsState extends Equatable {
       recommendations: clearRecommendations
           ? const []
           : (recommendations ?? this.recommendations),
-      errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
+      error: clearError ? null : (error ?? this.error),
       progress: clearProgress ? null : (progress ?? this.progress),
     );
   }
@@ -232,7 +233,7 @@ class UnifiedDiagnosticsState extends Equatable {
         results,
         speedTest,
         recommendations,
-        errorMessage,
+        error,
         progress,
       ];
 }

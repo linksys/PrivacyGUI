@@ -87,7 +87,7 @@ void main() {
       await Future.delayed(Duration.zero);
 
       final state = container.read(uspDmzProvider);
-      expect(state.status.errorMessage, contains('Network error'));
+      expect(state.status.error, isA<NetworkError>());
       // Settings remain empty (initial) since performFetch returned null.
       expect(state.settings.current, const DmzSettings.empty());
       container.dispose();

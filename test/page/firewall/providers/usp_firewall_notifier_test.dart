@@ -166,7 +166,7 @@ void main() {
       await Future.delayed(Duration.zero);
 
       final state = container.read(uspFirewallProvider);
-      expect(state.status.errorMessage, contains('Network error'));
+      expect(state.status.error, isA<NetworkError>());
       container.dispose();
     });
 

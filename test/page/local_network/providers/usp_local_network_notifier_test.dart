@@ -191,7 +191,7 @@ void main() {
       await Future.delayed(Duration.zero);
 
       final state = container.read(uspLocalNetworkProvider);
-      expect(state.status.errorMessage, contains('Network error'));
+      expect(state.status.error, isA<NetworkError>());
       container.dispose();
     });
 

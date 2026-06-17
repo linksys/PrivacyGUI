@@ -247,19 +247,25 @@ ServiceError _mapProtocolError(UspError e) {
   return UnexpectedError(originalError: e.rawError, detail: e.message);
 }
 
-/// Maps `Operation error:` category strings.
+/// Maps `Operation error:` category strings (e.g. "Path not found: ...",
+/// "Parameter is read-only: ...", "Invalid value '...' for '...': ...").
 ///
-/// NOTE: In the production WASM build this path is effectively unreachable.
-/// `UspError::OperationError` variants (`PathNotFound`/`ReadOnly`/`InvalidValue`)
-/// are only constructed in the Rust `ffi` module, which is gated behind
-/// `#[cfg(not(target_arch = "wasm32"))]` (lib.rs:22) — i.e. native FFI only,
-/// stripped from the WASM binary. The only WASM-side `OperationError` is
-/// `OperateFailed` from `subscribe`/`unsubscribe`, but those surface as a
-/// thrown string via Promise reject and never reach codegen's catch, so they
-/// don't pass through here.
+/// Two things to know about this mapper:
 ///
-/// Kept for completeness, defensive coverage, and to satisfy the existing
-/// contract tests (usp_error_test.dart). Do not rely on it firing in prod.
+/// 1. **Effectively dead in production.** `UspError::OperationError` variants
+///    are constructed ONLY in the Rust `ffi` module, gated behind
+///    `#[cfg(not(target_arch = "wasm32"))]` — native FFI only, stripped from the
+///    WASM binary the app actually runs. (The one WASM-side `OperationError`,
+///    `OperateFailed` from subscribe/unsubscribe, surfaces as a thrown string
+///    via Promise reject and never reaches codegen's catch, so it skips here.)
+///    Kept only for completeness + the existing contract tests; don't rely on
+///    it firing in prod.
+///
+/// 2. **No `code` is passed — by design.** Unlike protocol errors, the Rust
+///    `OperationError` Display strings carry NO `(code: XXXX)` suffix (they are
+///    path/reason text only). So `parseUspError`'s regex never extracts a
+///    faultCode here — `e.faultCode` is always null. Passing `code:` would just
+///    forward null, so it's omitted. Only `detail` (the raw message) is kept.
 ServiceError _mapOperationError(UspError e) {
   final msg = e.message;
   if (msg.contains('Path not found')) return const ResourceNotFoundError();

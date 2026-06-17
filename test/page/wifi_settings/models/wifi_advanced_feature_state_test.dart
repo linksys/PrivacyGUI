@@ -11,7 +11,7 @@ void main() {
 
       expect(state.status.isLoading, isTrue);
       expect(state.status.isSaving, isFalse);
-      expect(state.status.errorMessage, isNull);
+      expect(state.status.error, isNull);
       expect(state.settings.current.ieee80211hByRadio, isEmpty);
       expect(state.settings.original.ieee80211hByRadio, isEmpty);
       expect(state.isDirty, isFalse);

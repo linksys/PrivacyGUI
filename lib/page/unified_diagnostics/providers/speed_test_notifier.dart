@@ -115,7 +115,7 @@ class SpeedTestNotifier extends AutoDisposeAsyncNotifier<SpeedTestState> {
       state = AsyncData(state.requireValue.copyWith(
         step: SpeedTestStep.error,
         clearProgress: true,
-        errorMessage: _scopeErrorMessage(e),
+        error: e,
       ));
       return;
     }
@@ -168,11 +168,15 @@ class SpeedTestNotifier extends AutoDisposeAsyncNotifier<SpeedTestState> {
       if (downloadStatus != 'Complete') {
         logger.w(
             '[USP][SpeedTest]: Download failed with status: $downloadStatus');
+        // Router-reported business status (not a ServiceError): the operate
+        // completed, but the firmware reports a download failure. Wrap the
+        // existing English message as UnexpectedError(detail) for now — speed
+        // test domain l10n is a later feature scope, out of this error-line pass.
         final errorMsg = _getDownloadErrorMessage(downloadStatus, downloadUrl);
         state = AsyncData(state.requireValue.copyWith(
           step: SpeedTestStep.error,
           clearProgress: true,
-          errorMessage: errorMsg,
+          error: UnexpectedError(detail: errorMsg),
         ));
         return;
       }
@@ -214,14 +218,14 @@ class SpeedTestNotifier extends AutoDisposeAsyncNotifier<SpeedTestState> {
       state = AsyncData(state.requireValue.copyWith(
         step: SpeedTestStep.error,
         clearProgress: true,
-        errorMessage: 'Speed test timed out',
+        error: TimeoutError(detail: e.toString()),
       ));
     } on ServiceError catch (e) {
       logger.w('[USP][SpeedTest]: Failed: $e');
       state = AsyncData(state.requireValue.copyWith(
         step: SpeedTestStep.error,
         clearProgress: true,
-        errorMessage: _runErrorMessage(e),
+        error: e,
       ));
     } finally {
       if (identical(_activeScope, scope)) _activeScope = null;
@@ -252,26 +256,6 @@ class SpeedTestNotifier extends AutoDisposeAsyncNotifier<SpeedTestState> {
   // -------------------------------------------------------------------------
   // Error messages
   // -------------------------------------------------------------------------
-
-  String _scopeErrorMessage(ServiceError e) {
-    return switch (e) {
-      ConnectivityError() =>
-        'Speed test unavailable — diagnostics scope not ready',
-      NetworkError() => 'Speed test unavailable — router lost connection',
-      _ => 'Speed test unavailable — please try again',
-    };
-  }
-
-  String _runErrorMessage(ServiceError e) {
-    return switch (e) {
-      NetworkError() => 'Speed test failed — router lost connection',
-      ConnectivityError() =>
-        'Speed test unavailable — diagnostics scope not ready',
-      InvalidInputError(:final detail) =>
-        detail ?? 'Speed test failed — invalid configuration',
-      _ => 'Speed test failed — please try again',
-    };
-  }
 
   String _getDownloadErrorMessage(String status, String url) {
     // Extract hostname from URL for display

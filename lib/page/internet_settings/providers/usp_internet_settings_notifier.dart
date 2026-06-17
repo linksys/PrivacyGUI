@@ -128,7 +128,7 @@ class UspInternetSettingsNotifier
       logger.e('[USP][Network][WAN]: Fetch failed', error: e);
       return (
         null,
-        InternetSettingsStatus(isLoading: false, errorMessage: '$e'),
+        InternetSettingsStatus(isLoading: false, error: e),
       );
     }
   }

@@ -69,7 +69,10 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
     if (usp == null) {
       return (
         null,
-        WifiSettingsStatus(errorMessage: 'USP service not available')
+        WifiSettingsStatus(
+          error: const ServiceNotInitializedError(
+              detail: 'USP service not available'),
+        )
       );
     }
 
@@ -78,7 +81,9 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
       if (!usp.isAuthenticated) {
         return (
           null,
-          WifiSettingsStatus(errorMessage: 'USP not authenticated')
+          WifiSettingsStatus(
+            error: const NotAuthenticatedError(detail: 'USP not authenticated'),
+          )
         );
       }
     }
@@ -96,7 +101,7 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
       logger.w('[USP][WiFi]: WiFi data fetch failed: $e');
       return (
         null,
-        WifiSettingsStatus(errorMessage: '$e'),
+        WifiSettingsStatus(error: e),
       );
     }
     final (:radios, :ssids, :accessPoints) = wifiData.codegenContext.raw;

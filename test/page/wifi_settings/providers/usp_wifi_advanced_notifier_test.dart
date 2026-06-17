@@ -41,7 +41,7 @@ void main() {
 
       final state = container.read(uspWifiAdvancedProvider);
       expect(state.status.isLoading, isFalse);
-      expect(state.status.errorMessage, isNull);
+      expect(state.status.error, isNull);
       expect(state.settings.current.ieee80211hByRadio, {
         'Device.WiFi.Radio.1.': true,
         'Device.WiFi.Radio.2.': false,
@@ -61,7 +61,7 @@ void main() {
       await Future.delayed(Duration.zero);
 
       final state = container.read(uspWifiAdvancedProvider);
-      expect(state.status.errorMessage, isNotNull);
+      expect(state.status.error, isA<NetworkError>());
       expect(state.settings.current.ieee80211hByRadio, isEmpty);
       container.dispose();
     });

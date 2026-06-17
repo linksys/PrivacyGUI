@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/components/localizations/service_error_localizations.dart';
 import 'package:privacy_gui/core/usp/models/operate_result.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/unified_diagnostics/models/manual_tools_state.dart';
@@ -129,7 +130,7 @@ class _DiagnosticManualToolsViewState
         ],
 
         // Error display
-        if (state.errorMessage != null) ...[
+        if (state.error != null) ...[
           LayoutBlock(
             padding: const EdgeInsets.all(AppSpacing.md),
             child: Row(
@@ -139,7 +140,7 @@ class _DiagnosticManualToolsViewState
                 AppGap.md(),
                 Expanded(
                   child: AppText.bodyMedium(
-                    state.errorMessage!,
+                    localizeServiceError(context, state.error!),
                     color: colorScheme.error,
                   ),
                 ),

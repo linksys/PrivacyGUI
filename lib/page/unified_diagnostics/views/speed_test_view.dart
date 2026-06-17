@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/components/localizations/service_error_localizations.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
@@ -396,9 +397,9 @@ class SpeedTestView extends ConsumerWidget {
           AppGap.xl(),
           AppText.titleMedium('Speed Test Failed'),
           AppGap.md(),
-          if (state.errorMessage != null)
+          if (state.error != null)
             AppText.bodyMedium(
-              state.errorMessage!,
+              localizeServiceError(context, state.error!),
               textAlign: TextAlign.center,
               color: colorScheme.onSurfaceVariant,
             ),

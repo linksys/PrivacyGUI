@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/page/internet_settings/models/internet_settings_read_only_info.dart';
 
 /// Transient (non-editable) status for the internet settings feature page.
@@ -8,7 +9,10 @@ class InternetSettingsStatus extends Equatable {
   final bool isLoading;
   final bool isSaving;
   final bool isEditing;
-  final String? errorMessage;
+
+  /// Typed error from the last fetch. The View localizes it via
+  /// `localizeServiceError`; null means no error.
+  final ServiceError? error;
 
   /// Tracks active mutation: null (idle), 'save', 'renewIpv4', 'renewIpv6'.
   final String? activeMutation;
@@ -28,7 +32,7 @@ class InternetSettingsStatus extends Equatable {
     this.isLoading = true,
     this.isSaving = false,
     this.isEditing = false,
-    this.errorMessage,
+    this.error,
     this.activeMutation,
     this.readOnlyInfo = const InternetSettingsReadOnlyInfo(),
     this.pppInstancePath,
@@ -39,7 +43,8 @@ class InternetSettingsStatus extends Equatable {
     bool? isLoading,
     bool? isSaving,
     bool? isEditing,
-    String? errorMessage,
+    ServiceError? error,
+    bool clearError = false,
     String? activeMutation,
     bool clearActiveMutation = false,
     InternetSettingsReadOnlyInfo? readOnlyInfo,
@@ -52,7 +57,7 @@ class InternetSettingsStatus extends Equatable {
       isLoading: isLoading ?? this.isLoading,
       isSaving: isSaving ?? this.isSaving,
       isEditing: isEditing ?? this.isEditing,
-      errorMessage: errorMessage,
+      error: clearError ? null : (error ?? this.error),
       activeMutation:
           clearActiveMutation ? null : (activeMutation ?? this.activeMutation),
       readOnlyInfo: readOnlyInfo ?? this.readOnlyInfo,
@@ -70,7 +75,7 @@ class InternetSettingsStatus extends Equatable {
         isLoading,
         isSaving,
         isEditing,
-        errorMessage,
+        error,
         activeMutation,
         readOnlyInfo,
         pppInstancePath,
