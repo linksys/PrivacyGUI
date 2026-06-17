@@ -165,7 +165,7 @@ class UspInternetSettingsService {
         await _saveVlanSettings(original, edited, vlanInstancePath);
       }
 
-      // Step 6: IPv6 fields
+      // Step 5: IPv6 fields
       await _saveIpv6Settings(original, edited);
     } catch (e) {
       if (e is ServiceError) rethrow;
@@ -203,10 +203,6 @@ class UspInternetSettingsService {
 
     return currentInstancePath;
   }
-
-  // ---------------------------------------------------------------------------
-  // VLAN Lifecycle (DD-2: Match toggle — Add when enabling, Delete when disabling)
-  // ---------------------------------------------------------------------------
 
   // ---------------------------------------------------------------------------
   // WAN singleton save — DNS merge happens here
@@ -419,7 +415,6 @@ class UspInternetSettingsService {
     }
   }
 
-  /// Parse and validate DELETE result using standard UspResultParser (Strict mode).
   /// Parse and validate OPERATE result using standard UspResultParser (Strict mode).
   void _handleOperateResult(Map<String, dynamic> result) {
     final parsed = UspResultParser.parseOperateResult(result);
