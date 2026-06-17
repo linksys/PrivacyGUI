@@ -290,26 +290,7 @@ void main() {
       verify(() => mockUsp.add(any())).called(1);
     });
 
-    test('adds VLAN instance when enabling VLAN without existing instance',
-        () async {
-      when(() => mockUsp.add(any())).thenAnswer((_) async => {
-            'overallSuccess': true,
-            'hasAnySuccess': true,
-            'hasErrors': false,
-            'results': [
-              {
-                'requestedPath': 'Device.Ethernet.VLANTermination.',
-                'success': true,
-                'createdInstances': [
-                  {
-                    'affectedPath': 'Device.Ethernet.VLANTermination.1.',
-                    'initialParams': {}
-                  }
-                ]
-              }
-            ]
-          });
-
+    test('enables VLAN via SET on existing instance', () async {
       final original = UspInternetSettingsForm(
         connectionType: UspWanConnectionType.pppoe,
         pppUsername: 'user',
@@ -322,18 +303,19 @@ void main() {
         original,
         edited,
         pppInstancePath: 'Device.PPP.Interface.1.',
+        vlanInstancePath: 'Device.Ethernet.VLANTermination.1.',
       );
 
-      verify(() => mockUsp.add(any())).called(1);
+      final captured = verify(() => mockUsp.set(captureAny())).captured;
+      final vlanSet = captured.lastWhere((params) => (params
+              as Map<String, dynamic>)
+          .keys
+          .any((k) => k.contains('VLANTermination'))) as Map<String, dynamic>;
+      expect(vlanSet['Device.Ethernet.VLANTermination.1.Enable'], isTrue);
+      expect(vlanSet['Device.Ethernet.VLANTermination.1.VLANID'], equals(100));
     });
 
-    test('deletes VLAN instance when disabling VLAN', () async {
-      // WASM v0.11.0 format for DELETE success
-      when(() => mockUsp.delete(any())).thenAnswer((_) async => {
-            'success': true,
-            'result': {'data': <String, dynamic>{}},
-          });
-
+    test('disables VLAN via SET on existing instance', () async {
       final original = UspInternetSettingsForm(
         connectionType: UspWanConnectionType.pppoe,
         pppUsername: 'user',
@@ -350,7 +332,37 @@ void main() {
         vlanInstancePath: 'Device.Ethernet.VLANTermination.1.',
       );
 
-      verify(() => mockUsp.delete(any())).called(1);
+      final captured = verify(() => mockUsp.set(captureAny())).captured;
+      final vlanSet = captured.lastWhere((params) => (params
+              as Map<String, dynamic>)
+          .keys
+          .any((k) => k.contains('VLANTermination'))) as Map<String, dynamic>;
+      expect(vlanSet['Device.Ethernet.VLANTermination.1.Enable'], isFalse);
+    });
+
+    test('skips VLAN SET when no vlanInstancePath provided', () async {
+      final original = UspInternetSettingsForm(
+        connectionType: UspWanConnectionType.pppoe,
+        pppUsername: 'user',
+        pppPassword: 'pass',
+        vlanEnabled: false,
+        mtu: 1492,
+      );
+      final edited =
+          original.copyWith(vlanEnabled: true, vlanId: 100, mtu: 1400);
+
+      await service.saveAll(
+        original,
+        edited,
+        pppInstancePath: 'Device.PPP.Interface.1.',
+      );
+
+      // MTU change triggers a set() call, but VLAN keys should not appear
+      final setInvocations = verify(() => mockUsp.set(captureAny())).captured;
+      for (final params in setInvocations) {
+        final map = params as Map<String, dynamic>;
+        expect(map.keys.any((k) => k.contains('VLANTermination')), isFalse);
+      }
     });
 
     test('switching to DHCP sends only AddressingType', () async {
@@ -690,42 +702,6 @@ void main() {
       expect(
         () => service.saveAll(original, edited),
         throwsA(isA<UspPartialFailureError>()),
-      );
-    });
-
-    test('delete VLAN throws UspCompleteFailureError on DELETE failure',
-        () async {
-      // WASM v0.11.0 format: success=false for DELETE
-      when(() => mockUsp.delete(any())).thenAnswer((_) async => {
-            'success': false,
-            'result': {
-              'data': <String, dynamic>{},
-              'error': {
-                'Device.Ethernet.VLANTermination.1.': {
-                  'errorCode': 7003,
-                  'errorMessage': 'Invalid path',
-                },
-              },
-            },
-          });
-
-      final original = UspInternetSettingsForm(
-        connectionType: UspWanConnectionType.pppoe,
-        pppUsername: 'user',
-        pppPassword: 'pass',
-        vlanEnabled: true,
-        vlanId: 100,
-      );
-      final edited = original.copyWith(vlanEnabled: false);
-
-      expect(
-        () => service.saveAll(
-          original,
-          edited,
-          pppInstancePath: 'Device.PPP.Interface.1.',
-          vlanInstancePath: 'Device.Ethernet.VLANTermination.1.',
-        ),
-        throwsA(isA<UspCompleteFailureError>()),
       );
     });
 
