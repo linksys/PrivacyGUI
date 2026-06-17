@@ -72,12 +72,14 @@ String? validateIpv6rdPrefixLength(int value) {
 }
 
 bool _validateOptionalFields(UspInternetSettingsForm form) {
+  // Bridge mode: MTU uses auto (0) — not user-configurable
+  if (form.connectionType == UspWanConnectionType.bridge) {
+    return true;
+  }
   // MTU must be in valid range: 576 (IPv4 RFC 791 min) to max by protocol
-  // Auto mode hidden — TR-181 cannot represent auto state
   final mtuMax = switch (form.connectionType) {
     UspWanConnectionType.pppoe => 1492, // 1500 - 8 (PPP header)
-    // Future: pptp/l2tp => 1460 (tunnel overhead)
-    _ => 1500, // Ethernet standard (DHCP, Static, Bridge)
+    _ => 1500, // Ethernet standard (DHCP, Static)
   };
   if (form.mtu < 576 || form.mtu > mtuMax) return false;
   // MAC: empty = no clone, otherwise must be valid format

@@ -76,14 +76,18 @@ class _UspOptionalSectionState extends ConsumerState<UspOptionalSection> {
     final isEditing = widget.isEditing;
     final l = loc(context);
 
+    final isBridge = form.connectionType == UspWanConnectionType.bridge;
+
     return UspSectionCard(
       title: l.optionalSettings,
       leadingIcon: Icons.tune,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // MTU — manual input only (Auto hidden: TR-181 cannot represent auto state)
-          if (!isEditing) ...[
+          // MTU — hidden for bridge mode (uses auto), manual input for others
+          if (isBridge) ...[
+            UspInfoRow(label: l.mtu, value: l.auto),
+          ] else if (!isEditing) ...[
             UspInfoRow(label: l.mtu, value: '${form.mtu}'),
           ] else ...[
             AppTextFormField(
