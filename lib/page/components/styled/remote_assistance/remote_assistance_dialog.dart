@@ -12,7 +12,6 @@ import 'package:url_launcher/url_launcher.dart';
 
 Future<void> showRemoteAssistanceDialog(BuildContext context, WidgetRef ref,
     {bool isPassive = false}) {
-      
   return showDialog(
     context: context,
     barrierDismissible: false,

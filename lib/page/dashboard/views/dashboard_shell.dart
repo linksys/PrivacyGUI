@@ -45,7 +45,8 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
     ref.listen(
       remoteClientProvider.select((state) => state.sessionInfo?.status),
       (prevStatus, nextStatus) {
-        logger.i('[DashboardShell]: session status changed: $prevStatus -> $nextStatus');
+        logger.i(
+            '[DashboardShell]: session status changed: $prevStatus -> $nextStatus');
         final loginType = ref.read(authProvider).value?.loginType;
         if (loginType != LoginType.local) return;
         if (prevStatus != GRASessionStatus.active &&

@@ -106,7 +106,8 @@ class RemoteClientNotifier extends Notifier<RemoteClientState> {
       return;
     }
     logger.i('[RemoteAssistance]: sessions: ${sessions.first.id}');
-    final sessionInfo = await fetchSessionInfo(sessions.first.id, startCountdown: true);
+    final sessionInfo =
+        await fetchSessionInfo(sessions.first.id, startCountdown: true);
     if (sessionInfo == null) {
       state = RemoteClientState();
       return;
