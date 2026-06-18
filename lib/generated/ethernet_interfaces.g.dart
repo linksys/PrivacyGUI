@@ -7,6 +7,7 @@ import 'package:privacy_gui/core/usp/services/usp_client.dart';
 /// Single instance from EthernetInterfaces
 class EthernetInterface {
   final String instancePath;
+  final String? alias;
   final String name;
   final String status;
   final bool upstream;
@@ -14,6 +15,7 @@ class EthernetInterface {
 
   const EthernetInterface({
     required this.instancePath,
+    this.alias,
     required this.name,
     required this.status,
     required this.upstream,
@@ -28,6 +30,7 @@ class EthernetInterfaces {
   const EthernetInterfaces({required this.items});
 
   static const _paths = [
+    'Device.Ethernet.Interface.*.Alias',
     'Device.Ethernet.Interface.*.Name',
     'Device.Ethernet.Interface.*.Status',
     'Device.Ethernet.Interface.*.Upstream',
@@ -56,6 +59,7 @@ class EthernetInterfaces {
     for (final id in sorted) {
       final p = '$basePath$id.';
       if ([
+        response['${p}Alias'],
         response['${p}Name'],
         response['${p}Status'],
         response['${p}Upstream'],
@@ -87,6 +91,9 @@ class EthernetInterfaces {
       }
       items.add(EthernetInterface(
         instancePath: p,
+        alias: response.containsKey('${p}Alias')
+            ? response['${p}Alias'] as String
+            : null,
         name: (response['${p}Name'] ?? '') as String,
         status: (response['${p}Status'] ?? '') as String,
         upstream: response['${p}Upstream'] == true ||

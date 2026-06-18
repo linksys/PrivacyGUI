@@ -1,9 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/components/styled/menus/menu_consts.dart';
-import 'package:privacy_gui/page/dashboard/views/dashboard_shell.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:ui_kit_library/ui_kit.dart';
+
+/// Navigation item model for dashboard bottom navigation.
+class DashboardNaviItem {
+  const DashboardNaviItem({
+    required this.icon,
+    required this.type,
+    required this.rootPath,
+  });
+
+  final IconData icon;
+  final NaviType type;
+  final String rootPath;
+}
 
 class BottomNavigationMenu extends StatefulWidget {
   final List<NaviType> items;

@@ -60,8 +60,9 @@ void main(List<String> args) {
     //
     final encoder = JsonEncoder.withIndent('  ');
 
+    final outputDir = File(testResultJsonPath).parent.path;
     final reportJsonFile =
-        File('snapshots/localizations-test-reports$fileSuffix.json');
+        File('$outputDir/localizations-test-reports$fileSuffix.json');
     if (!reportJsonFile.existsSync()) {
       reportJsonFile.createSync(recursive: true);
     }
@@ -76,18 +77,34 @@ void main(List<String> args) {
     // reportRawJsonFile.writeAsStringSync(encoder.convert(testResult));
 
     // Extract all test cases as flat list
-    final suitesJson = testResult['suites'] as List<Map<String, dynamic>>;
+    final suitesJson =
+        testResult['suites'] as List<Map<String, dynamic>>? ?? [];
+    if (suitesJson.isEmpty) {
+      reportJsonFile.writeAsStringSync(encoder.convert([]));
+      print('No test suites found in results');
+      return;
+    }
     final groupsJson = suitesJson
+        .where((e) => e['groups'] != null)
         .map((e) => List.from(e['groups']))
-        .reduce((value, list) => value..addAll(list));
+        .fold<List>([], (value, list) => value..addAll(list));
     final testsJson = groupsJson
+        .where((e) => e['tests'] != null)
         .map((e) => List.from(e['tests']))
-        .reduce((value, list) => value..addAll(list));
+        .fold<List>([], (value, list) => value..addAll(list));
+
+    // Extract failure images for failed tests (after all metadata is populated)
+    for (final test in testsJson) {
+      if (test is Map<String, dynamic> && test['result'] == 'error') {
+        extractFailureImages(test);
+      }
+    }
+
     reportJsonFile.writeAsStringSync(encoder.convert(testsJson));
 
     //
 
-    if (!testResult['result']['success']) {
+    if (testResult['result'] != null && !testResult['result']['success']) {
       exit(1);
     }
   }, onError: (e) {
@@ -197,6 +214,25 @@ handleTestRecord(String record, Map<String, dynamic> testResult) {
 
 extractInfo(Map<String, dynamic> test) {
   final name = test['name'];
+
+  // New golden framework format: " viewName - state - device - locale (variant: ...)"
+  final newRegex =
+      RegExp(r'\s*(\w+)\s*-\s*(\w+)\s*-\s*(\w+)\s*-\s*(\w+)\s*\(variant:');
+  final newMatch = newRegex.firstMatch(name);
+  if (newMatch != null) {
+    final viewName = newMatch.group(1)!;
+    final state = newMatch.group(2)!;
+    final deviceType = newMatch.group(3)!;
+    final locale = newMatch.group(4)!;
+    final tsName = '$viewName-$state';
+    test['filePath'] = '$locale/$deviceType/$tsName-$deviceType-$locale.png';
+    test['locale'] = locale;
+    test['deviceType'] = deviceType;
+    test['tsName'] = tsName;
+    return;
+  }
+
+  // Legacy format: "name (variant: device-locale_region(...)"
   final regex = RegExp(r'(.*) \(variant: (.*)-(.*)_(.*)\(.*');
   final match = regex.firstMatch(name);
   final tsName = match?.group(1)?.trim();
@@ -205,14 +241,73 @@ extractInfo(Map<String, dynamic> test) {
   final locale = (match?.group(3) ?? '').isNotEmpty
       ? '${match?.group(3)}${region.isNotEmpty ? '_$region' : ''}'
       : null;
-  String? link;
   if (tsName != null && locale != null && deviceType != null) {
-    // Use relative path
-    link = '$locale/$deviceType/$tsName-$deviceType-$locale.png';
-    test['filePath'] = link;
+    test['filePath'] = '$locale/$deviceType/$tsName-$deviceType-$locale.png';
     test['locale'] = locale;
     test['deviceType'] = deviceType;
     test['tsName'] = tsName;
+  }
+}
+
+extractFailureImages(Map<String, dynamic> test) {
+  final messages = test['messages'] as List<String>?;
+  if (messages == null || messages.isEmpty) return;
+
+  final fullMessage = messages.join('\n');
+
+  // Strategy 1: Parse failure image paths from error message
+  final failurePathRegex = RegExp(r'([\w/._-]+/failures/[\w._-]+\.png)');
+  final matches = failurePathRegex.allMatches(fullMessage);
+
+  String? diffPath;
+  String? actualPath;
+  String? expectedPath;
+
+  if (matches.isNotEmpty) {
+    for (final match in matches) {
+      final path = match.group(1)!;
+      if (path.contains('isolatedDiff') || path.contains('maskedDiff')) {
+        diffPath = path;
+      } else if (path.contains('testImage')) {
+        actualPath = path;
+      } else if (path.contains('masterImage')) {
+        expectedPath = path;
+      }
+    }
+  }
+
+  // Strategy 2: Infer paths from test metadata (for Alchemist golden tests)
+  if (actualPath == null && expectedPath == null) {
+    final testCaseFilePath = test['testCaseFilePath'] as String?;
+    final tsName = test['tsName'] as String?;
+    final deviceType = test['deviceType'] as String?;
+    final locale = test['locale'] as String?;
+    if (testCaseFilePath != null &&
+        tsName != null &&
+        deviceType != null &&
+        locale != null) {
+      // testCaseFilePath starts with /test/... — strip leading slash for relative path
+      final relativePath = testCaseFilePath.startsWith('/')
+          ? testCaseFilePath.substring(1)
+          : testCaseFilePath;
+      final testDir = relativePath.replaceFirst(RegExp(r'/[^/]+$'), '');
+      final goldenName = '$tsName-$deviceType-$locale';
+      final failureDir = '$testDir/failures';
+      final testImagePath = '$failureDir/${goldenName}_testImage.png';
+      final masterImagePath = '$failureDir/${goldenName}_masterImage.png';
+      final isolatedDiffPath = '$failureDir/${goldenName}_isolatedDiff.png';
+      if (File(testImagePath).existsSync()) actualPath = testImagePath;
+      if (File(masterImagePath).existsSync()) expectedPath = masterImagePath;
+      if (File(isolatedDiffPath).existsSync()) diffPath = isolatedDiffPath;
+    }
+  }
+
+  if (diffPath != null || actualPath != null || expectedPath != null) {
+    test['failureImages'] = <String, String?>{
+      'expected': expectedPath,
+      'actual': actualPath,
+      'diff': diffPath,
+    };
   }
 }
 

@@ -219,7 +219,7 @@ void main() {
 
     test('failed USP login sets error state when guardError is true', () async {
       when(() => mockUspCoordinator.tryUspLogin('wrong'))
-          .thenAnswer((_) async => false);
+          .thenThrow(const InvalidCredentialsError());
 
       final container = createContainer();
       container.read(authProvider);
@@ -230,12 +230,13 @@ void main() {
 
       final state = container.read(authProvider);
       expect(state.hasError, isTrue);
+      expect(state.error, isA<UnexpectedError>());
       container.dispose();
     });
 
     test('failed USP login throws when guardError is false', () async {
       when(() => mockUspCoordinator.tryUspLogin('wrong'))
-          .thenAnswer((_) async => false);
+          .thenThrow(const InvalidCredentialsError());
 
       final container = createContainer();
       container.read(authProvider);
@@ -244,14 +245,14 @@ void main() {
       final notifier = container.read(authProvider.notifier);
       expect(
         () => notifier.localLogin('wrong', guardError: false),
-        throwsException,
+        throwsA(isA<InvalidCredentialsError>()),
       );
       container.dispose();
     });
 
     test('login does not call fetchDeviceInfo if USP fails', () async {
       when(() => mockUspCoordinator.tryUspLogin('wrong'))
-          .thenAnswer((_) async => false);
+          .thenThrow(const InvalidCredentialsError());
 
       final container = createContainer();
       container.read(authProvider);

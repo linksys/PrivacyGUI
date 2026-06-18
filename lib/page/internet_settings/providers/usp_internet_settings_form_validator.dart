@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/page/internet_settings/models/usp_internet_settings_form.dart';
 import 'package:privacy_gui/page/internet_settings/models/usp_wan_connection_type.dart';
 import 'package:privacy_gui/page/internet_settings/providers/usp_internet_settings_notifier.dart';
+import 'package:privacy_gui/validator_rules/rules.dart';
 
 /// Whether the current edited form is valid for saving.
 ///
@@ -44,15 +45,43 @@ bool _validateIpv4Fields(UspInternetSettingsForm form) {
 
 bool _validateIpv6Fields(UspInternetSettingsForm form) {
   if (!form.ipv6rdEnabled) return true;
-  return form.ipv6rdPrefix.isNotEmpty &&
-      form.ipv6rdBorderRelay.isNotEmpty &&
+  return isValidIpv6Cidr(form.ipv6rdPrefix) &&
+      _isValidIpv4(form.ipv6rdBorderRelay) &&
       form.ipv6rdIpv4MaskLength >= 0 &&
       form.ipv6rdIpv4MaskLength <= 32;
 }
 
+/// Validate IPv6 prefix field - returns error message or null if valid.
+String? validateIpv6rdPrefix(String value) {
+  if (value.isEmpty) return 'Required';
+  if (!isValidIpv6Cidr(value)) return 'Invalid IPv6 prefix format';
+  return null;
+}
+
+/// Validate 6rd border relay field - returns error message or null if valid.
+String? validateIpv6rdBorderRelay(String value) {
+  if (value.isEmpty) return 'Required';
+  if (!_isValidIpv4(value)) return 'Invalid IPv4 address';
+  return null;
+}
+
+/// Validate 6rd prefix length field - returns error message or null if valid.
+String? validateIpv6rdPrefixLength(int value) {
+  if (value < 0 || value > 32) return 'Must be 0-32';
+  return null;
+}
+
 bool _validateOptionalFields(UspInternetSettingsForm form) {
-  // MTU: 0 = auto, otherwise must be in valid range
-  if (form.mtu != 0 && (form.mtu < 576 || form.mtu > 1500)) return false;
+  // Bridge mode: MTU uses auto (0) — not user-configurable
+  if (form.connectionType == UspWanConnectionType.bridge) {
+    return true;
+  }
+  // MTU must be in valid range: 576 (IPv4 RFC 791 min) to max by protocol
+  final mtuMax = switch (form.connectionType) {
+    UspWanConnectionType.pppoe => 1492, // 1500 - 8 (PPP header)
+    _ => 1500, // Ethernet standard (DHCP, Static)
+  };
+  if (form.mtu < 576 || form.mtu > mtuMax) return false;
   // MAC: empty = no clone, otherwise must be valid format
   if (form.wanMacAddress.isNotEmpty && !_isValidMac(form.wanMacAddress)) {
     return false;
@@ -64,19 +93,11 @@ bool _validateOptionalFields(UspInternetSettingsForm form) {
 // Validators
 // ---------------------------------------------------------------------------
 
-final _ipv4Pattern = RegExp(
-  r'^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$',
-);
+final _ipAddressRule = IpAddressRule();
 
 bool _isValidIpv4(String value) {
   if (value.isEmpty) return false;
-  final match = _ipv4Pattern.firstMatch(value);
-  if (match == null) return false;
-  for (int i = 1; i <= 4; i++) {
-    final octet = int.tryParse(match.group(i)!) ?? -1;
-    if (octet < 0 || octet > 255) return false;
-  }
-  return true;
+  return _ipAddressRule.validate(value);
 }
 
 bool _isValidSubnetMask(String value) {
@@ -95,3 +116,19 @@ final _macPattern = RegExp(
 );
 
 bool _isValidMac(String value) => _macPattern.hasMatch(value);
+
+final _ipv6Rule = IPv6WithReservedRule();
+
+/// Validate IPv6 CIDR notation (e.g. 2001:db8::/32).
+/// Accepts compressed forms (::) and requires prefix length.
+/// Rejects reserved addresses (loopback, multicast, deprecated).
+bool isValidIpv6Cidr(String value) {
+  if (value.isEmpty) return false;
+  final parts = value.split('/');
+  if (parts.length != 2) return false;
+
+  final prefixLen = int.tryParse(parts[1]);
+  if (prefixLen == null || prefixLen < 0 || prefixLen > 128) return false;
+
+  return _ipv6Rule.validate(parts[0]);
+}

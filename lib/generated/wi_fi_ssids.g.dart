@@ -7,6 +7,7 @@ import 'package:privacy_gui/core/usp/services/usp_client.dart';
 /// Single instance from WiFiSsids
 class WiFiSsid {
   final String instancePath;
+  final String? alias;
   final String ssid;
   final bool enable;
   final String status;
@@ -15,6 +16,7 @@ class WiFiSsid {
 
   const WiFiSsid({
     required this.instancePath,
+    this.alias,
     required this.ssid,
     required this.enable,
     required this.status,
@@ -43,6 +45,7 @@ class WiFiSsids {
   const WiFiSsids({required this.items});
 
   static const _paths = [
+    'Device.WiFi.SSID.*.Alias',
     'Device.WiFi.SSID.*.SSID',
     'Device.WiFi.SSID.*.Enable',
     'Device.WiFi.SSID.*.Status',
@@ -72,6 +75,7 @@ class WiFiSsids {
     for (final id in sorted) {
       final p = '$basePath$id.';
       if ([
+        response['${p}Alias'],
         response['${p}SSID'],
         response['${p}Enable'],
         response['${p}Status'],
@@ -107,6 +111,9 @@ class WiFiSsids {
       }
       items.add(WiFiSsid(
         instancePath: p,
+        alias: response.containsKey('${p}Alias')
+            ? response['${p}Alias'] as String
+            : null,
         ssid: (response['${p}SSID'] ?? '') as String,
         enable: response['${p}Enable'] == true ||
             response['${p}Enable'] == 'true' ||

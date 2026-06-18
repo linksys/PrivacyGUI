@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
@@ -36,12 +37,29 @@ class UspAuthCoordinator {
   /// At 12 min, the worst-case margin is ~2:30 (heartbeat at 12:29 + refresh).
   static const Duration _refreshThreshold = Duration(minutes: 12);
 
-  // Matches WASM error format "Transport error: HTTP error: HTTP 401"
-  // and simplified format "HTTP 401 Unauthorized". Avoids false positives
-  // on non-401 status codes (e.g., "HTTP 500").
-  static final _authErrorPattern = RegExp(r'HTTP (?:error: HTTP )?401');
+  // Matches invalid credentials errors:
+  // - WASM: "Transport error: HTTP error: HTTP 401"
+  // - WASM: "HTTP 401 Unauthorized"
+  // - WASM/Rust: "Login failed: Authentication error: Invalid credentials"
+  // - Bridge CGI: "Invalid username or password", "Invalid password"
+  static final _invalidCredentialsPattern = RegExp(
+    r'HTTP (?:error: HTTP )?401|Invalid (username or password|password|credentials)',
+    caseSensitive: false,
+  );
+
+  // Matches account locked errors:
+  // - Bridge CGI: "Account locked", "Account is locked"
+  static final _accountLockedPattern = RegExp(
+    r'Account.*(locked|lock)',
+    caseSensitive: false,
+  );
+
   static bool _isAuthError(Object error) {
-    return _authErrorPattern.hasMatch(error.toString());
+    return _invalidCredentialsPattern.hasMatch(error.toString());
+  }
+
+  static bool _isAccountLockedError(Object error) {
+    return _accountLockedPattern.hasMatch(error.toString());
   }
 
   UspAuthCoordinator(this._usp, this._storage) {
@@ -124,23 +142,35 @@ class UspAuthCoordinator {
   /// Attempts USP login independently (not as sync after JNAP).
   ///
   /// Used as fallback when JNAP is unavailable (e.g., firmware disabled JNAP).
-  /// Returns true if USP login succeeds and is authenticated.
-  Future<bool> tryUspLogin(String password) async {
+  /// Throws [ServiceError] on failure to preserve error details for UI display.
+  Future<void> tryUspLogin(String password) async {
     if (_usp == null) {
       logger.w('[USP][Auth]: tryUspLogin skipped: UspClient is null');
-      return false;
+      throw const ServiceNotInitializedError(
+          message: 'USP client not available');
     }
     try {
       await _usp.login(password);
-      final authenticated = _usp.isAuthenticated;
-      if (authenticated) {
-        _lastTokenRefresh = DateTime.now();
-        logger.d('[USP][Auth]: USP standalone login succeeded');
+      if (!_usp.isAuthenticated) {
+        throw const InvalidCredentialsError();
       }
-      return authenticated;
+      _lastTokenRefresh = DateTime.now();
+      logger.d('[USP][Auth]: USP standalone login succeeded');
     } catch (e) {
       logger.w('[USP][Auth]: USP standalone login failed: $e');
-      return false;
+      if (e is ServiceError) rethrow;
+      // Map WASM errors to ServiceError
+      final errorStr = e.toString();
+      if (_isAccountLockedError(e)) {
+        throw const AdminAccountLockedError();
+      } else if (_isAuthError(e)) {
+        throw const InvalidCredentialsError();
+      } else if (errorStr.contains('HTTP 5') ||
+          errorStr.contains('network') ||
+          errorStr.contains('fetch')) {
+        throw NetworkError(message: errorStr);
+      }
+      throw UnexpectedError(originalError: e, message: errorStr);
     }
   }
 

@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/config/global_config.dart';
+import 'package:privacy_gui/core/connection/models/app_connection_state.dart';
+import 'package:privacy_gui/core/connection/providers/app_connection_state_provider.dart';
 import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
 import 'package:privacy_gui/core/usp/services/sse_connection_manager.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -58,6 +60,12 @@ class _SseConnectionBannerState extends ConsumerState<SseConnectionBanner> {
     // Hide banner in demo mode (where sseManagerProvider returns null)
     final sseManager = ref.watch(sseManagerProvider);
     if (sseManager == null) return const SizedBox.shrink();
+
+    // Hide when recovery dialog is handling the disconnection UI
+    final connState = ref.watch(appConnectionStateProvider);
+    if (connState == AppConnectionState.waitingForRecovery) {
+      return const SizedBox.shrink();
+    }
 
     // Keep the watch so the widget rebuilds when the provider emits, but
     // all state reconciliation happens in the listenManual callback above.

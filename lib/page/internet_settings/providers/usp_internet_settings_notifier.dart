@@ -152,6 +152,9 @@ class UspInternetSettingsNotifier
           vlanInstancePath: state.status.vlanInstancePath,
         );
         logger.d('[USP][Network][WAN]: Save complete');
+
+        // Invalidate L1 wanDataProvider so Dashboard card refreshes
+        ref.invalidate(wanDataProvider);
       });
 
       // After save, exit edit mode (status will be updated by re-fetch)

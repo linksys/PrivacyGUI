@@ -55,9 +55,15 @@ void main() {
   };
 
   // Alias resolution response for WanSettings and Ipv6Settings _resolveInstance()
-  const aliasResolutionResponse = <String, dynamic>{
-    'Device.IP.Interface.1.Alias': 'cpe-lan',
-    'Device.IP.Interface.2.Alias': 'cpe-wan',
+  const ipAliasResolutionResponse = <String, dynamic>{
+    'Device.IP.Interface.1.Alias': 'lan',
+    'Device.IP.Interface.2.Alias': 'wan',
+  };
+
+  // Alias resolution response for Ethernet.Link (used by various codegen)
+  const ethLinkAliasResolutionResponse = <String, dynamic>{
+    'Device.Ethernet.Link.1.Alias': 'eth-lan',
+    'Device.Ethernet.Link.2.Alias': 'eth-wan',
   };
 
   void setupFetchMocks({
@@ -66,9 +72,13 @@ void main() {
   }) {
     when(() => mockUsp.get(any())).thenAnswer((invocation) async {
       final paths = invocation.positionalArguments[0] as List<String>;
-      // Handle _resolveInstance() calls for WanSettings/Ipv6Settings
-      if (paths.any((p) => p.contains('Interface.*.Alias'))) {
-        return aliasResolutionResponse;
+      // Handle _resolveInstance() calls for Ethernet.Link
+      if (paths.any((p) => p.contains('Ethernet.Link.*.Alias'))) {
+        return ethLinkAliasResolutionResponse;
+      }
+      // Handle _resolveInstance() calls for WanSettings/Ipv6Settings (IP.Interface)
+      if (paths.any((p) => p.contains('IP.Interface.*.Alias'))) {
+        return ipAliasResolutionResponse;
       }
       if (paths.any((p) => p.contains('AddressingType'))) {
         return wanResponse;
@@ -229,7 +239,7 @@ void main() {
       await service.saveIspSettings(config);
 
       // Verify fetchSettings + saveAll get calls:
-      // fetchSettings: 6 calls
+      // fetchSettings: 6 calls (WanSettings, Ipv6, PPP, VLAN)
       // saveAll:
       // - WanPppoe.update() → _resolveInstance() = 1 call
       // - Ipv6Settings.update() → _resolveInstance() = 1 call
@@ -269,6 +279,12 @@ void main() {
 
       when(() => mockUsp.get(any())).thenAnswer((invocation) async {
         final paths = invocation.positionalArguments[0] as List<String>;
+        if (paths.any((p) => p.contains('Ethernet.Link.*.Alias'))) {
+          return ethLinkAliasResolutionResponse;
+        }
+        if (paths.any((p) => p.contains('IP.Interface.*.Alias'))) {
+          return ipAliasResolutionResponse;
+        }
         if (paths.any((p) => p.contains('AddressingType'))) {
           return wanPppoeResponse;
         }
@@ -316,6 +332,12 @@ void main() {
 
       when(() => mockUsp.get(any())).thenAnswer((invocation) async {
         final paths = invocation.positionalArguments[0] as List<String>;
+        if (paths.any((p) => p.contains('Ethernet.Link.*.Alias'))) {
+          return ethLinkAliasResolutionResponse;
+        }
+        if (paths.any((p) => p.contains('IP.Interface.*.Alias'))) {
+          return ipAliasResolutionResponse;
+        }
         if (paths.any((p) => p.contains('AddressingType'))) {
           return wanPppoeResponse;
         }

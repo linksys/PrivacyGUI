@@ -4,7 +4,9 @@ import 'package:privacy_gui/page/_shared/models/lan_info_ui_model.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/_shared/components/usp_status_dot.dart';
 import 'package:privacy_gui/page/_shared/components/card_skeleton.dart';
+import 'package:privacy_gui/page/_shared/components/dashboard_card_template.dart';
 import 'package:privacy_gui/page/local_network/providers/lan_data_provider.dart';
+import 'package:privacy_gui/route/constants.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 class UspLanInfoCard extends ConsumerWidget {
@@ -18,12 +20,12 @@ class UspLanInfoCard extends ConsumerWidget {
     if (info == null) return const CardSkeleton.info(rows: 4);
     final colorScheme = Theme.of(context).colorScheme;
 
-    return AppCard(
-      child: Column(
+    return DashboardCardTemplate(
+      title: 'LAN Information',
+      detailRoute: RouteNamed.uspLocalNetwork,
+      content: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CardHeader(title: 'LAN Information'),
-          AppGap.md(),
           // Hero block - Router IP with DHCP status
           LayoutBlock(
             padding: const EdgeInsets.all(AppSpacing.md),
@@ -70,7 +72,7 @@ class UspLanInfoCard extends ConsumerWidget {
           Row(
             children: [
               Expanded(
-                child: _MetricTile(
+                child: MetricTile(
                   icon: Icons.lan,
                   label: 'Subnet Mask',
                   value: info.subnetMask,
@@ -79,7 +81,7 @@ class UspLanInfoCard extends ConsumerWidget {
               ),
               AppGap.sm(),
               Expanded(
-                child: _MetricTile(
+                child: MetricTile(
                   icon: Icons.dns,
                   label: 'DNS',
                   value: info.dnsServers.isNotEmpty ? info.dnsServers : '-',
@@ -108,43 +110,6 @@ class UspLanInfoCard extends ConsumerWidget {
               ],
             ),
           ],
-        ],
-      ),
-    );
-  }
-}
-
-class _MetricTile extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-  final Color color;
-
-  const _MetricTile({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return LayoutBlock(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              AppIcon.font(icon, size: 14, color: color),
-              AppGap.xs(),
-              AppText.labelSmall(label, color: colorScheme.onSurfaceVariant),
-            ],
-          ),
-          AppGap.xs(),
-          AppText.titleSmall(value),
         ],
       ),
     );

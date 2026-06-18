@@ -1,14 +1,16 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:privacy_gui/constants/error_code.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
 import 'package:privacy_gui/core/connection/services/router_fingerprint_service.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/session/providers/session_provider.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
+import 'package:privacy_gui/core/usp/providers/usp_auth_coordinator.dart';
 import 'package:privacy_gui/providers/auth/auth_service.dart';
 import 'package:privacy_gui/providers/auth/auth_state.dart';
 import 'package:privacy_gui/providers/auth/auth_types.dart';
-import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
-import 'package:privacy_gui/core/usp/providers/usp_auth_coordinator.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 // Re-export AuthState and LoginType for backward compatibility with existing code
@@ -70,8 +72,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     state = const AsyncValue.loading();
     try {
       final uspCoordinator = ref.read(uspAuthCoordinatorProvider);
-      final uspSuccess = await uspCoordinator.tryUspLogin(password);
-      if (!uspSuccess) throw Exception('USP login failed');
+      await uspCoordinator.tryUspLogin(password);
 
       await const FlutterSecureStorage()
           .write(key: pLocalPassword, value: password);
@@ -89,12 +90,52 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       ));
     } catch (e, st) {
       if (guardError) {
-        state = AsyncValue.error(e, st);
+        // Map ServiceError to UnexpectedError with error code for View layer
+        final viewError = _mapToViewError(e);
+        state = AsyncValue.error(viewError, st);
       } else {
         rethrow;
       }
     }
     logger.d('[Auth]: localLogin: done, state=$state');
+  }
+
+  /// Maps ServiceError to UnexpectedError with proper error code for View layer.
+  ServiceError _mapToViewError(Object error) {
+    if (error is AdminAccountLockedError) {
+      return UnexpectedError(
+        message: errorAdminAccountLocked,
+        originalError: error,
+      );
+    }
+    if (error is InvalidCredentialsError) {
+      return UnexpectedError(
+        message: errorInvalidAdminPassword,
+        originalError: error,
+      );
+    }
+    if (error is NetworkError) {
+      return UnexpectedError(
+        message: errorUspNetworkError,
+        originalError: error,
+      );
+    }
+    if (error is ServiceNotInitializedError) {
+      return UnexpectedError(
+        message: errorUspServiceNotInitialized,
+        originalError: error,
+      );
+    }
+    if (error is ServiceError) {
+      return UnexpectedError(
+        message: errorUnexpected,
+        originalError: error,
+      );
+    }
+    return UnexpectedError(
+      message: errorUnexpected,
+      originalError: error,
+    );
   }
 
   /// Persists local credentials without attempting USP login.

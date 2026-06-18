@@ -7,8 +7,10 @@ import 'package:privacy_gui/page/_shared/models/timezone_definitions.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/_shared/components/usp_mutation_helper.dart';
 import 'package:privacy_gui/page/_shared/components/card_skeleton.dart';
+import 'package:privacy_gui/page/_shared/components/dashboard_card_template.dart';
 import 'package:privacy_gui/page/_shared/utils/local_time_ticker.dart';
 import 'package:privacy_gui/page/admin/views/dialogs/timezone_edit_dialog.dart';
+import 'package:privacy_gui/route/constants.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 class UspTimeSettingsCard extends ConsumerStatefulWidget {
@@ -63,18 +65,20 @@ class _UspTimeSettingsCardState extends ConsumerState<UspTimeSettingsCard>
         ? TimeSettingsUIModel.formatDateTime(currentTime!)
         : time.formattedDateTime;
 
-    return AppCard(
-      child: Column(
+    return DashboardCardTemplate(
+      title: 'Time Settings',
+      trailing: Semantics(
+        label: 'Edit time settings',
+        button: true,
+        child: AppIconButton(
+          icon: AppIcon.font(Icons.edit, size: 18),
+          onTap: isLoading ? null : () => _editTimezone(context, ref, time),
+        ),
+      ),
+      detailRoute: RouteNamed.uspAdmin,
+      content: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CardHeader(
-            title: 'Time Settings',
-            trailing: AppIconButton(
-              icon: AppIcon.font(Icons.edit, size: 18),
-              onTap: isLoading ? null : () => _editTimezone(context, ref, time),
-            ),
-          ),
-          AppGap.md(),
           // Hero block - Clock with current time
           LayoutBlock(
             padding: const EdgeInsets.all(AppSpacing.md),

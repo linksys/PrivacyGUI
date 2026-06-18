@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:generative_ui/generative_ui.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 

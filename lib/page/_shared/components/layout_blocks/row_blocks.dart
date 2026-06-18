@@ -121,6 +121,7 @@ class NetworkBadgeWidget extends StatelessWidget {
     return AppBadge(
       label: badge.label,
       color: badge.color,
+      icon: badge.icon != null ? Icon(badge.icon, size: 12) : null,
     );
   }
 }

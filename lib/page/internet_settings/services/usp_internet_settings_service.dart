@@ -114,7 +114,7 @@ class UspInternetSettingsService {
     PppInterfaceInstance? ppp,
   ) {
     return InternetSettingsReadOnlyInfo(
-      currentMacAddress: wan.currentMacAddress,
+      currentMacAddress: '', // MAC Clone disabled
       pppConnectionStatus: ppp?.connectionStatus ?? '',
       staticIpAddress: wan.staticIpAddress,
     );

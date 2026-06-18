@@ -9,6 +9,7 @@ import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart'
 import 'package:privacy_gui/page/_shared/providers/usp_system_monitor_notifier.dart';
 import 'package:privacy_gui/page/_shared/providers/usp_traffic_analysis_notifier.dart';
 import 'package:privacy_gui/page/_shared/components/card_skeleton.dart';
+import 'package:privacy_gui/page/_shared/components/dashboard_card_template.dart';
 import 'package:privacy_gui/page/_shared/components/usp_info_row.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -29,13 +30,6 @@ class UspSystemStatusCard extends ConsumerStatefulWidget {
 class _UspSystemStatusCardState extends ConsumerState<UspSystemStatusCard> {
   static const _cardId = 'system_status';
 
-  static const _tabs = [
-    TabItem(label: 'Monitor'),
-    TabItem(label: 'Trends'),
-    TabItem(label: 'Distribution'),
-    TabItem(label: 'Correlation'),
-  ];
-
   static final _intervalOptions = <(Duration?, String)>[
     (null, 'Off'),
     (Duration(seconds: 10), '10s'),
@@ -50,79 +44,56 @@ class _UspSystemStatusCardState extends ConsumerState<UspSystemStatusCard> {
     final monitorState = ref.watch(uspSystemMonitorProvider);
     final selectedTab = ref.watch(cardTabIndexProvider(_cardId));
 
-    return AppCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header: title + spinner + interval selector
-          SizedBox(
-            height: 36,
-            child: Row(
-              children: [
-                AppText.titleMedium('System Status'),
-                if (monitorState.isFetching) ...[
-                  AppGap.sm(),
-                  SizedBox(
-                    width: 14,
-                    height: 14,
-                    child: AppLoader(strokeWidth: 2),
-                  ),
-                ],
-                const Spacer(),
-                AppPopupMenu<Duration?>(
-                  icon: Icons.timer_outlined,
-                  iconSize: 20,
-                  items: _intervalOptions
-                      .map((e) => AppPopupMenuItem<Duration?>(
-                            value: e.$1,
-                            label: e.$2,
-                          ))
-                      .toList(),
-                  onSelected: (interval) {
-                    ref
-                        .read(uspSystemMonitorProvider.notifier)
-                        .setRefreshInterval(interval);
-                  },
-                ),
-              ],
-            ),
-          ),
-          AppGap.md(),
-          AppTabs(
-            tabs: _tabs,
-            initialIndex: selectedTab,
-            displayMode: TabDisplayMode.segmented,
-            isScrollable: true,
-            showBorder: false,
-            onTabChanged: (index) =>
-                ref.read(cardTabIndexProvider(_cardId).notifier).state = index,
-          ),
-          AppGap.md(),
-          Expanded(
-            child: _buildTabView(context, info, monitorState, selectedTab),
-          ),
-        ],
+    return DashboardCardTemplate.tabbed(
+      title: 'System Status',
+      titleBadge: monitorState.isFetching
+          ? SizedBox(
+              width: 14,
+              height: 14,
+              child: AppLoader(strokeWidth: 2),
+            )
+          : null,
+      trailing: AppPopupMenu<Duration?>(
+        icon: Icons.timer_outlined,
+        iconSize: 20,
+        items: _intervalOptions
+            .map((e) => AppPopupMenuItem<Duration?>(
+                  value: e.$1,
+                  label: e.$2,
+                ))
+            .toList(),
+        onSelected: (interval) {
+          ref
+              .read(uspSystemMonitorProvider.notifier)
+              .setRefreshInterval(interval);
+        },
       ),
+      selectedTabIndex: selectedTab,
+      onTabChanged: (index) =>
+          ref.read(cardTabIndexProvider(_cardId).notifier).state = index,
+      tabs: [
+        CardTab(
+          label: 'Monitor',
+          content: _MonitorView(info: info, monitorState: monitorState),
+        ),
+        CardTab(
+          label: 'Trends',
+          content: monitorState.history.isNotEmpty
+              ? _TrendsView(monitorState: monitorState)
+              : _buildEmptyState(context, 'Waiting for data...'),
+        ),
+        CardTab(
+          label: 'Distribution',
+          content: monitorState.history.isNotEmpty
+              ? _DistributionView(monitorState: monitorState)
+              : _buildEmptyState(context, 'Waiting for data...'),
+        ),
+        CardTab(
+          label: 'Correlation',
+          content: _CorrelationView(monitorState: monitorState, ref: ref),
+        ),
+      ],
     );
-  }
-
-  Widget _buildTabView(
-    BuildContext context,
-    SystemInfoUIModel info,
-    SystemMonitorState monitorState,
-    int selectedTab,
-  ) {
-    return switch (selectedTab) {
-      0 => _MonitorView(info: info, monitorState: monitorState),
-      1 => monitorState.history.isNotEmpty
-          ? _TrendsView(monitorState: monitorState)
-          : _buildEmptyState(context, 'Waiting for data...'),
-      2 => monitorState.history.isNotEmpty
-          ? _DistributionView(monitorState: monitorState)
-          : _buildEmptyState(context, 'Waiting for data...'),
-      3 => _CorrelationView(monitorState: monitorState, ref: ref),
-      _ => const SizedBox.shrink(),
-    };
   }
 
   Widget _buildEmptyState(BuildContext context, String message) {

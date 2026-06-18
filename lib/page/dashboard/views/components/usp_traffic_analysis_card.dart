@@ -7,6 +7,7 @@ import 'package:privacy_gui/page/_shared/utils/usp_formatters.dart';
 import 'package:privacy_gui/page/_shared/models/traffic_analysis_state.dart';
 import 'package:privacy_gui/page/_shared/providers/card_tab_state_provider.dart';
 import 'package:privacy_gui/page/_shared/providers/usp_traffic_analysis_notifier.dart';
+import 'package:privacy_gui/page/_shared/components/dashboard_card_template.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Unified traffic monitor card — real-time WAN speed + multi-interface
@@ -28,18 +29,11 @@ class _UspTrafficAnalysisCardState
     extends ConsumerState<UspTrafficAnalysisCard> {
   static const _cardId = 'traffic_analysis';
 
-  static const _tabs = [
-    TabItem(label: 'Monitor'),
-    TabItem(label: 'Comparison'),
-    TabItem(label: 'Distribution'),
-    TabItem(label: 'Trends'),
-  ];
-
   static final _intervalOptions = <(Duration?, String)>[
     (null, 'Off'),
+    (Duration(seconds: 2), '2s'),
+    (Duration(seconds: 5), '5s'),
     (Duration(seconds: 10), '10s'),
-    (Duration(seconds: 30), '30s'),
-    (Duration(seconds: 60), '60s'),
   ];
 
   @override
@@ -47,59 +41,51 @@ class _UspTrafficAnalysisCardState
     final analysisState = ref.watch(uspTrafficAnalysisProvider);
     final selectedTab = ref.watch(cardTabIndexProvider(_cardId));
 
-    return AppCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header: title + spinner + interval selector
-          SizedBox(
-            height: 36,
-            child: Row(
-              children: [
-                AppText.titleMedium('Traffic Monitor'),
-                if (analysisState.isFetching) ...[
-                  AppGap.sm(),
-                  SizedBox(
-                    width: 14,
-                    height: 14,
-                    child: AppLoader(strokeWidth: 2),
-                  ),
-                ],
-                const Spacer(),
-                AppPopupMenu<Duration?>(
-                  icon: Icons.timer_outlined,
-                  iconSize: 20,
-                  items: _intervalOptions
-                      .map((e) => AppPopupMenuItem<Duration?>(
-                            value: e.$1,
-                            label: e.$2,
-                          ))
-                      .toList(),
-                  onSelected: (interval) {
-                    ref
-                        .read(uspTrafficAnalysisProvider.notifier)
-                        .setRefreshInterval(interval);
-                  },
-                ),
-              ],
-            ),
-          ),
-          AppGap.md(),
-          AppTabs(
-            tabs: _tabs,
-            initialIndex: selectedTab,
-            displayMode: TabDisplayMode.segmented,
-            isScrollable: true,
-            showBorder: false,
-            onTabChanged: (index) =>
-                ref.read(cardTabIndexProvider(_cardId).notifier).state = index,
-          ),
-          AppGap.md(),
-          Expanded(
-            child: _buildChartView(context, analysisState, selectedTab),
-          ),
-        ],
+    return DashboardCardTemplate.tabbed(
+      title: 'Traffic Monitor',
+      titleBadge: analysisState.isFetching
+          ? SizedBox(
+              width: 14,
+              height: 14,
+              child: AppLoader(strokeWidth: 2),
+            )
+          : null,
+      trailing: AppPopupMenu<Duration?>(
+        icon: Icons.timer_outlined,
+        iconSize: 20,
+        items: _intervalOptions
+            .map((e) => AppPopupMenuItem<Duration?>(
+                  value: e.$1,
+                  label: e.$2,
+                ))
+            .toList(),
+        onSelected: (interval) {
+          ref
+              .read(uspTrafficAnalysisProvider.notifier)
+              .setRefreshInterval(interval);
+        },
       ),
+      selectedTabIndex: selectedTab,
+      onTabChanged: (index) =>
+          ref.read(cardTabIndexProvider(_cardId).notifier).state = index,
+      tabs: [
+        CardTab(
+          label: 'Monitor',
+          content: _buildChartView(context, analysisState, 0),
+        ),
+        CardTab(
+          label: 'Comparison',
+          content: _buildChartView(context, analysisState, 1),
+        ),
+        CardTab(
+          label: 'Distribution',
+          content: _buildChartView(context, analysisState, 2),
+        ),
+        CardTab(
+          label: 'Trends',
+          content: _buildChartView(context, analysisState, 3),
+        ),
+      ],
     );
   }
 
@@ -499,11 +485,34 @@ class _DualBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final total = sent + recv;
     final fraction = maxValue > 0 ? total / maxValue : 0.0;
+    final sentFraction = total > 0 ? sent / total : 0.5;
 
-    return AppLoader(
-      variant: LoaderVariant.linear,
-      value: fraction,
-      color: color,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final barWidth = constraints.maxWidth * fraction;
+        return Align(
+          alignment: Alignment.centerLeft,
+          child: Container(
+            width: barWidth,
+            height: 12,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(4),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: Row(
+              children: [
+                Container(
+                  width: barWidth * sentFraction,
+                  color: color,
+                ),
+                Expanded(
+                  child: Container(color: color.withValues(alpha: 0.4)),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

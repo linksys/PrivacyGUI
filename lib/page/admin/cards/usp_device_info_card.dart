@@ -6,7 +6,9 @@ import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/_shared/components/card_skeleton.dart';
+import 'package:privacy_gui/page/_shared/components/dashboard_card_template.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
+import 'package:privacy_gui/route/constants.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 class UspDeviceInfoCard extends ConsumerWidget {
@@ -33,12 +35,12 @@ class UspDeviceInfoCard extends ConsumerWidget {
     );
     final colorScheme = Theme.of(context).colorScheme;
 
-    return AppCard(
-      child: Column(
+    return DashboardCardTemplate(
+      title: 'Device Information',
+      detailRoute: RouteNamed.uspAdmin,
+      content: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CardHeader(title: 'Device Information'),
-          AppGap.md(),
           // Device hero block - model name with icon
           LayoutBlock(
             padding: const EdgeInsets.all(AppSpacing.md),

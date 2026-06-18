@@ -4,20 +4,20 @@ import 'package:privacy_gui/page/_shared/utils/device_classifier.dart';
 import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/_shared/components/card_skeleton.dart';
+import 'package:privacy_gui/page/_shared/components/dashboard_card_template.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/devices/views/components/device_icon_with_badge.dart';
 import 'package:privacy_gui/page/devices/views/components/usp_signal_strength_indicator.dart';
+import 'package:privacy_gui/route/constants.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 import 'package:privacy_gui/page/_shared/components/usp_status_dot.dart';
 
 class UspConnectedDevicesCard extends ConsumerWidget {
   final List<DeviceUIModel>? devices;
-  final VoidCallback? onViewAll;
 
   const UspConnectedDevicesCard({
     super.key,
     this.devices,
-    this.onViewAll,
   });
 
   static const _maxDisplayCount = 5;
@@ -32,18 +32,27 @@ class UspConnectedDevicesCard extends ConsumerWidget {
     final inactiveDevices = devices.where((d) => !d.isActive).toList();
     final displayDevices = activeDevices.take(_maxDisplayCount).toList();
 
-    return AppCard(
-      child: Column(
+    return DashboardCardTemplate(
+      title: 'Connected Devices',
+      titleBadge: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          UspStatusDot(isActive: true, size: 8),
+          AppGap.xs(),
+          AppText.labelSmall('${activeDevices.length}'),
+          AppGap.sm(),
+          UspStatusDot(isActive: false, size: 8),
+          AppGap.xs(),
+          AppText.labelSmall('${inactiveDevices.length}'),
+        ],
+      ),
+      detailRoute: RouteNamed.uspDeviceList,
+      itemCount: devices.length,
+      detailLabel: 'View all',
+      content: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CardHeader(
-            title: 'Connected Devices',
-            trailing: onViewAll != null
-                ? AppButton.text(label: 'View All', onTap: onViewAll)
-                : null,
-          ),
-          AppGap.sm(),
-          // Status summary - metric tiles style
+          // Status summary - metric tiles style using LayoutBlock
           Row(
             children: [
               Expanded(
@@ -84,26 +93,17 @@ class UspConnectedDevicesCard extends ConsumerWidget {
             ],
           ),
           AppGap.md(),
-          // Device list — only online devices, max 5
+          // Device list - only online devices, max 5
           if (activeDevices.isEmpty)
             const EmptyState(
               icon: Icons.devices,
               message: 'No devices online',
             )
           else
-            Expanded(
-              child: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    for (var i = 0; i < displayDevices.length; i++) ...[
-                      _buildDeviceRow(context, displayDevices[i]),
-                      if (i < displayDevices.length - 1) AppGap.sm(),
-                    ],
-                  ],
-                ),
-              ),
-            ),
+            for (var i = 0; i < displayDevices.length; i++) ...[
+              _buildDeviceRow(context, displayDevices[i]),
+              if (i < displayDevices.length - 1) AppGap.sm(),
+            ],
         ],
       ),
     );
