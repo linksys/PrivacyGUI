@@ -603,15 +603,17 @@ void main() {
       });
     });
 
-    test('positive expiredIn (already expired) results in zero remaining', () {
+    test('positive expiredIn uses abs() for forward compatibility', () {
+      // Cloud API will change expiredIn from negative to positive in future.
+      // Using abs() ensures both conventions work.
       fakeAsync((async) {
-        final expiredInfo = createTestSessionInfo(
-          expiredIn: 100, // Already expired 100 seconds ago
+        final infoWithPositiveExpiredIn = createTestSessionInfo(
+          expiredIn: 500, // Future format: positive = remaining seconds
         );
         when(() => mockService.fetchSessionInfoForCA(
               sessionToken: any(named: 'sessionToken'),
               sessionId: any(named: 'sessionId'),
-            )).thenAnswer((_) async => expiredInfo);
+            )).thenAnswer((_) async => infoWithPositiveExpiredIn);
 
         final container = createContainer();
         final notifier = container.read(remoteAccessProvider.notifier);
@@ -629,7 +631,7 @@ void main() {
         async.flushMicrotasks();
 
         final state = container.read(remoteAccessProvider);
-        expect(state.remainingSeconds, 0);
+        expect(state.remainingSeconds, 500); // abs(500) = 500
 
         container.dispose();
       });

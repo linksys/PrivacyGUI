@@ -319,7 +319,8 @@ class RemoteClientNotifier extends Notifier<RemoteClientState> {
   ) async* {
     final creds = _creds;
 
-    while (state.sessionInfo != null && state.sessionInfo!.expiredIn < 0) {
+    while (
+        state.sessionInfo != null && state.sessionInfo!.expiredIn.abs() > 0) {
       try {
         final sessionInfo = await _svc.fetchSessionInfo(
           sessionId: sessionId,
@@ -343,7 +344,7 @@ class RemoteClientNotifier extends Notifier<RemoteClientState> {
       const Duration(seconds: 1),
       (timer) {
         var countdown = state.expiredCountdown;
-        countdown ??= sessionInfo.expiredIn * -1;
+        countdown ??= sessionInfo.expiredIn.abs();
         countdown--;
 
         state = state.copyWith(expiredCountdown: () => countdown);

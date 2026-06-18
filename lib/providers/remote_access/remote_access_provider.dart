@@ -114,8 +114,8 @@ class RemoteAccessNotifier extends Notifier<RemoteAccessState> {
       );
 
       // Calculate remaining seconds from API response
-      // expiredIn is negative when time remains, positive when expired
-      final remainingSeconds = info.expiredIn < 0 ? -info.expiredIn : 0;
+      // Use abs() to handle both negative (current) and positive (future) expiredIn values
+      final remainingSeconds = info.expiredIn.abs();
       final expiryTime =
           DateTime.now().add(Duration(seconds: remainingSeconds));
 
