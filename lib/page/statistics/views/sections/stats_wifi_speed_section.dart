@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_client_ui_model.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/statistics/views/components/stats_section_card.dart';
@@ -15,12 +16,12 @@ class StatsWifiSpeedSection extends ConsumerWidget {
     final wifiData = ref.watch(wifiDataProvider).valueOrNull;
     if (wifiData == null) {
       return StatsSectionCard(
-        title: 'WiFi Client Speed',
-        subtitle: 'Downlink/Uplink rates per client',
+        title: loc(context).wifiClientSpeed,
+        subtitle: loc(context).wifiClientSpeedSubtitle,
         chartHeight: 260,
         child: Center(
           child: AppText.bodyMedium(
-            'Loading...',
+            loc(context).loading,
             color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
         ),
@@ -31,13 +32,13 @@ class StatsWifiSpeedSection extends ConsumerWidget {
     final activeClients = _buildClientList(wifiData, devicesData);
 
     return StatsSectionCard(
-      title: 'WiFi Client Speed',
-      subtitle: 'Downlink/Uplink rates per client',
+      title: loc(context).wifiClientSpeed,
+      subtitle: loc(context).wifiClientSpeedSubtitle,
       chartHeight: 260,
       child: activeClients.isEmpty
           ? Center(
               child: AppText.bodyMedium(
-                'No WiFi clients connected',
+                loc(context).noWifiClientsConnected,
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             )
@@ -77,12 +78,12 @@ class StatsWifiSpeedSection extends ConsumerWidget {
           child: AppBarChart(
             series: [
               AppChartSeries(
-                label: 'Downlink',
+                label: loc(context).downlink,
                 data: dlData,
                 color: colorScheme.primary,
               ),
               AppChartSeries(
-                label: 'Uplink',
+                label: loc(context).uplink,
                 data: ulData,
                 color: colorScheme.secondary,
               ),
@@ -100,11 +101,11 @@ class StatsWifiSpeedSection extends ConsumerWidget {
           children: [
             StatsLegendDot(color: colorScheme.primary),
             AppGap.xs(),
-            AppText.labelSmall('Downlink'),
+            AppText.labelSmall(loc(context).downlink),
             AppGap.lg(),
             StatsLegendDot(color: colorScheme.secondary),
             AppGap.xs(),
-            AppText.labelSmall('Uplink'),
+            AppText.labelSmall(loc(context).uplink),
           ],
         ),
       ],

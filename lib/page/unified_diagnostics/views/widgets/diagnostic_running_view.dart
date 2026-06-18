@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 import 'package:privacy_gui/page/unified_diagnostics/providers/speed_test_notifier.dart';
 
@@ -15,7 +16,7 @@ class DiagnosticRunningView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
-    final (flowIcon, flowTitle, _) = _getFlowMeta(state);
+    final (flowIcon, flowTitle, _) = _getFlowMeta(context, state);
     final steps = _getFlowSteps(state);
 
     return Column(
@@ -39,7 +40,7 @@ class DiagnosticRunningView extends ConsumerWidget {
                 children: [
                   AppText.titleMedium(flowTitle),
                   AppText.bodySmall(
-                    'Diagnosing your network path...',
+                    loc(context).diagnosingNetworkPath,
                     color: colorScheme.onSurfaceVariant,
                   ),
                 ],
@@ -78,8 +79,9 @@ class DiagnosticRunningView extends ConsumerWidget {
           return _DiagnosticStepNode(
             key: ValueKey(step),
             step: step,
-            title: _getStepLabel(step),
-            subtitle: isCompleted ? _getStepSummary(result) : progressDetail,
+            title: _getStepLabel(context, step),
+            subtitle:
+                isCompleted ? _getStepSummary(context, result) : progressDetail,
             severity: isCompleted ? result.severity : null,
             isCurrent: isCurrent,
             isWaiting: isWaiting,
@@ -90,7 +92,7 @@ class DiagnosticRunningView extends ConsumerWidget {
         AppGap.lg(),
         Center(
           child: AppButton.text(
-            label: 'Cancel Diagnostics',
+            label: loc(context).cancelDiagnostics,
             onTap: () => ref.read(unifiedDiagnosticsProvider.notifier).cancel(),
           ),
         ),
@@ -137,54 +139,61 @@ class DiagnosticRunningView extends ConsumerWidget {
     };
   }
 
-  (IconData, String, int) _getFlowMeta(UnifiedDiagnosticsState state) {
+  (IconData, String, int) _getFlowMeta(
+      BuildContext context, UnifiedDiagnosticsState state) {
     return switch (state.flow) {
-      DiagnosticFlow.internet => (Icons.language, 'Internet Diagnostics', 7),
+      DiagnosticFlow.internet => (
+          Icons.language,
+          loc(context).internetDiagnostics,
+          7
+        ),
       DiagnosticFlow.deviceIssues => (
           Icons.devices,
-          'Device Issues Diagnostics',
+          loc(context).deviceIssuesDiagnostics,
           1,
         ),
       DiagnosticFlow.wifiCoverage => (
           Icons.wifi,
-          'WiFi Coverage Diagnostics',
+          loc(context).wifiCoverageDiagnostics,
           1,
         ),
       DiagnosticFlow.meshBackhaul => (
           Icons.hub,
-          'Mesh Backhaul Diagnostics',
+          loc(context).meshBackhaulDiagnostics,
           1,
         ),
       DiagnosticFlow.intermittent => (
           Icons.sync_problem,
-          'Intermittent Connection Diagnostics',
+          loc(context).intermittentConnectionDiagnostics,
           1,
         ),
-      null => (Icons.network_check, 'Full Diagnostic', 10),
+      null => (Icons.network_check, loc(context).fullDiagnostic, 10),
     };
   }
 
-  String _getStepLabel(DiagnosticStep step) {
+  String _getStepLabel(BuildContext context, DiagnosticStep step) {
     return switch (step) {
-      DiagnosticStep.checkingWanStatus => 'WAN Status',
-      DiagnosticStep.checkingDhcp => 'DHCP Lease',
-      DiagnosticStep.checkingDhcpPool => 'DHCP Pool Usage',
-      DiagnosticStep.pingGateway => 'Gateway Connection',
-      DiagnosticStep.pingDns => 'DNS Connection',
-      DiagnosticStep.pingInternet => 'Internet Connectivity',
-      DiagnosticStep.dnsLookup => 'DNS Resolution',
-      DiagnosticStep.runningSpeedTest => 'Speed Test',
-      DiagnosticStep.checkingWifiSignal => 'WiFi Signal Analysis',
-      DiagnosticStep.checkingConnectedDevices => 'Connected Devices',
-      DiagnosticStep.runningTraceroute => 'Network Path Analysis',
-      DiagnosticStep.analyzing => 'Analyzing Results...',
-      _ => 'Running...',
+      DiagnosticStep.checkingWanStatus => loc(context).wanStatus,
+      DiagnosticStep.checkingDhcp => loc(context).dhcpLease,
+      DiagnosticStep.checkingDhcpPool => loc(context).dhcpPoolUsage,
+      DiagnosticStep.pingGateway => loc(context).gatewayConnection,
+      DiagnosticStep.pingDns => loc(context).dnsConnection,
+      DiagnosticStep.pingInternet => loc(context).internetConnectivity,
+      DiagnosticStep.dnsLookup => loc(context).dnsResolution,
+      DiagnosticStep.runningSpeedTest => loc(context).speedTest,
+      DiagnosticStep.checkingWifiSignal => loc(context).wifiSignalAnalysis,
+      DiagnosticStep.checkingConnectedDevices => loc(context).connectedDevices,
+      DiagnosticStep.runningTraceroute => loc(context).networkPathAnalysis,
+      DiagnosticStep.analyzing => loc(context).analyzingResults,
+      _ => loc(context).loading,
     };
   }
 
-  String? _getStepSummary(DiagnosticStepUIModel result) {
-    if (result.severity == DiagnosticSeverity.skipped) return 'Skipped';
-    if (result.severity == DiagnosticSeverity.error) return 'Issue detected';
+  String? _getStepSummary(BuildContext context, DiagnosticStepUIModel result) {
+    if (result.severity == DiagnosticSeverity.skipped)
+      return loc(context).skipped;
+    if (result.severity == DiagnosticSeverity.error)
+      return loc(context).issueDetected;
 
     return switch (result) {
       WanStatusCheckUIModel r => r.status,
@@ -192,13 +201,13 @@ class DiagnosticRunningView extends ConsumerWidget {
       WifiSignalCheckUIModel r => '${r.rssi} dBm',
       DhcpPoolCheckUIModel r => '${r.usedLeases}/${r.capacity} used',
       ConnectedDevicesCheckUIModel r => '${r.totalDevices} devices',
-      DnsLookupCheckUIModel r => r.hasResolved ? 'OK' : 'Failed',
+      DnsLookupCheckUIModel r => r.hasResolved ? 'OK' : loc(context).failed,
       TracerouteCheckUIModel r => '${r.hops.length} hops',
       _ when result.step == DiagnosticStep.runningSpeedTest => result.rawData
               .containsKey('downloadMbps')
           ? '${(result.rawData['downloadMbps'] as double).toStringAsFixed(1)} Mbps'
-          : 'Completed',
-      _ => 'Completed',
+          : loc(context).completed,
+      _ => loc(context).completed,
     };
   }
 }

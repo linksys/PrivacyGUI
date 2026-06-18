@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/components/localizations/service_error_localizations.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_settings_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_settings_state.dart';
@@ -49,7 +50,7 @@ class UspWifiListTab extends ConsumerWidget {
               AppText.bodyMedium(
                 error != null
                     ? localizeServiceError(context, error)
-                    : 'No WiFi networks found. Check router connection.',
+                    : loc(context).noWifiNetworksFound,
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ],
@@ -96,10 +97,10 @@ class UspWifiListTab extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        AppText.labelLarge('Quick Setup'),
+                        AppText.labelLarge(loc(context).quickSetup),
                         AppGap.xs(),
                         AppText.bodySmall(
-                          'Apply the same WiFi settings to all bands at once',
+                          loc(context).quickSetupApplyDesc,
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ],
@@ -180,8 +181,7 @@ class UspWifiListTab extends ConsumerWidget {
           AppGap.sm(),
           Expanded(
             child: AppText.bodySmall(
-              'Quick Setup applies the same name, password, and security '
-              'mode to all bands. A password is required to save.',
+              loc(context).quickSetupNotice,
               color: colorScheme.onSurfaceVariant,
             ),
           ),

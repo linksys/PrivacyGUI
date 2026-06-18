@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/components/localizations/service_error_localizations.dart';
 import 'package:privacy_gui/core/usp/models/operate_result.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/unified_diagnostics/models/manual_tools_state.dart';
 import 'package:privacy_gui/page/unified_diagnostics/providers/manual_tools_notifier.dart';
@@ -61,12 +62,12 @@ class _DiagnosticManualToolsViewState
           AppIcon.font(Icons.error_outline,
               size: 48, color: Theme.of(context).colorScheme.error),
           AppGap.xl(),
-          AppText.titleMedium('Unable to load diagnostics'),
+          AppText.titleMedium(loc(context).unableToLoadDiagnostics),
           AppGap.md(),
           AppText.bodyMedium(error.toString()),
           AppGap.xxl(),
           AppButton(
-            label: 'Retry',
+            label: loc(context).retry,
             onTap: () => ref.invalidate(manualToolsProvider),
           ),
         ],
@@ -82,7 +83,7 @@ class _DiagnosticManualToolsViewState
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         AppText.bodyMedium(
-          'Run network diagnostics from your router to test connectivity',
+          loc(context).runNetworkDiagnosticsDesc,
           color: colorScheme.onSurfaceVariant,
         ),
         AppGap.xl(),
@@ -109,7 +110,7 @@ class _DiagnosticManualToolsViewState
         SizedBox(
           width: double.infinity,
           child: AppButton.primary(
-            label: _getRunButtonLabel(state),
+            label: _getRunButtonLabel(context, state),
             onTap:
                 _canRun(state) ? () => _runDiagnostic(state, notifier) : null,
           ),
@@ -122,7 +123,7 @@ class _DiagnosticManualToolsViewState
           AppGap.sm(),
           Center(
             child: AppText.bodySmall(
-              _getRunningLabel(state),
+              _getRunningLabel(context, state),
               color: colorScheme.onSurfaceVariant,
             ),
           ),
@@ -177,7 +178,7 @@ class _DiagnosticManualToolsViewState
       children: [
         Expanded(
           child: _TabButton(
-            label: 'Ping',
+            label: loc(context).ping,
             isSelected: state.activeTab == DiagnosticType.ping,
             onTap: state.isRunning
                 ? null
@@ -188,7 +189,7 @@ class _DiagnosticManualToolsViewState
         AppGap.sm(),
         Expanded(
           child: _TabButton(
-            label: 'Traceroute',
+            label: loc(context).traceroute,
             isSelected: state.activeTab == DiagnosticType.traceroute,
             onTap: state.isRunning
                 ? null
@@ -199,7 +200,7 @@ class _DiagnosticManualToolsViewState
         AppGap.sm(),
         Expanded(
           child: _TabButton(
-            label: 'NS Lookup',
+            label: loc(context).nsLookup,
             isSelected: state.activeTab == DiagnosticType.nsLookup,
             onTap: state.isRunning
                 ? null
@@ -222,10 +223,13 @@ class _DiagnosticManualToolsViewState
   ) {
     final (label, hint) = switch (state.activeTab) {
       DiagnosticType.ping || DiagnosticType.traceroute => (
-          'Target Host',
-          'e.g. 8.8.8.8 or google.com'
+          loc(context).targetHost,
+          loc(context).targetHostHint
         ),
-      DiagnosticType.nsLookup => ('Host Name', 'e.g. google.com'),
+      DiagnosticType.nsLookup => (
+          loc(context).hostName,
+          loc(context).hostNameHint
+        ),
     };
 
     return LayoutBlock(
@@ -262,7 +266,7 @@ class _DiagnosticManualToolsViewState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            AppText.titleSmall('Packet Count'),
+            AppText.titleSmall(loc(context).packetCount),
             AppGap.lg(),
             AppChipGroup(
               chips: [
@@ -290,11 +294,12 @@ class _DiagnosticManualToolsViewState
   // Helper methods for run button and labels
   // ---------------------------------------------------------------------------
 
-  String _getRunButtonLabel(NetworkDiagnosticsState state) {
+  String _getRunButtonLabel(
+      BuildContext context, NetworkDiagnosticsState state) {
     return switch (state.activeTab) {
-      DiagnosticType.ping => 'Run Ping',
-      DiagnosticType.traceroute => 'Run Traceroute',
-      DiagnosticType.nsLookup => 'Run NS Lookup',
+      DiagnosticType.ping => loc(context).runPing,
+      DiagnosticType.traceroute => loc(context).runTraceroute,
+      DiagnosticType.nsLookup => loc(context).runNsLookup,
     };
   }
 
@@ -317,11 +322,11 @@ class _DiagnosticManualToolsViewState
     }
   }
 
-  String _getRunningLabel(NetworkDiagnosticsState state) {
+  String _getRunningLabel(BuildContext context, NetworkDiagnosticsState state) {
     return switch (state.activeTab) {
-      DiagnosticType.ping => 'Pinging ${state.host}...',
-      DiagnosticType.traceroute => 'Tracing route to ${state.host}...',
-      DiagnosticType.nsLookup => 'Resolving ${state.host}...',
+      DiagnosticType.ping => loc(context).pingingHost(state.host),
+      DiagnosticType.traceroute => loc(context).tracingRouteTo(state.host),
+      DiagnosticType.nsLookup => loc(context).resolvingHost(state.host),
     };
   }
 
@@ -341,7 +346,7 @@ class _DiagnosticManualToolsViewState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            AppText.titleSmall('Max Hops'),
+            AppText.titleSmall(loc(context).maxHops),
             AppGap.lg(),
             AppChipGroup(
               chips: [
@@ -389,7 +394,7 @@ class _DiagnosticManualToolsViewState
               ),
               AppGap.sm(),
               AppText.titleSmall(
-                'Ping ${result.host}',
+                loc(context).pingHost(result.host),
               ),
             ],
           ),
@@ -399,19 +404,19 @@ class _DiagnosticManualToolsViewState
           Row(
             children: [
               _StatBox(
-                label: 'Avg',
+                label: loc(context).avgShort,
                 value: '${result.avgResponseTime}ms',
                 colorScheme: colorScheme,
               ),
               AppGap.md(),
               _StatBox(
-                label: 'Min',
+                label: loc(context).minShort,
                 value: '${result.minResponseTime}ms',
                 colorScheme: colorScheme,
               ),
               AppGap.md(),
               _StatBox(
-                label: 'Max',
+                label: loc(context).maxShort,
                 value: '${result.maxResponseTime}ms',
                 colorScheme: colorScheme,
               ),
@@ -422,7 +427,7 @@ class _DiagnosticManualToolsViewState
           // Success rate
           Row(
             children: [
-              AppText.bodyMedium('Success: '),
+              AppText.bodyMedium('${loc(context).successLabel}: '),
               AppText.bodyMedium(
                 '${result.successCount}/${result.totalCount}',
                 color: successColor,
@@ -468,11 +473,11 @@ class _DiagnosticManualToolsViewState
               ),
               AppGap.sm(),
               AppText.titleSmall(
-                'Traceroute to ${result.host}',
+                loc(context).tracerouteTo(result.host),
               ),
               const Spacer(),
               AppText.bodySmall(
-                '${result.hops.length} hops',
+                loc(context).nHops(result.hops.length),
                 color: colorScheme.onSurfaceVariant,
               ),
             ],
@@ -489,17 +494,17 @@ class _DiagnosticManualToolsViewState
               ),
               Expanded(
                 flex: 3,
-                child: AppText.labelSmall('Host',
+                child: AppText.labelSmall(loc(context).hostColumn,
                     color: colorScheme.onSurfaceVariant),
               ),
               Expanded(
                 flex: 2,
-                child: AppText.labelSmall('IP',
+                child: AppText.labelSmall(loc(context).ipColumn,
                     color: colorScheme.onSurfaceVariant),
               ),
               SizedBox(
                 width: 64,
-                child: AppText.labelSmall('Avg RTT',
+                child: AppText.labelSmall(loc(context).avgRtt,
                     color: colorScheme.onSurfaceVariant),
               ),
             ],
@@ -559,11 +564,11 @@ class _DiagnosticManualToolsViewState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AppText.titleSmall('DNS Server (optional)'),
+          AppText.titleSmall(loc(context).dnsServerOptional),
           AppGap.lg(),
           AppTextField(
             controller: _dnsServerController,
-            hintText: 'e.g. 8.8.8.8 — leave blank to use the system resolver',
+            hintText: loc(context).dnsServerHint,
             enabled: !state.isRunning,
             onChanged: (value) => notifier.updateDnsServer(value),
           ),
@@ -593,7 +598,7 @@ class _DiagnosticManualToolsViewState
                 color: isOk ? colorScheme.primary : colorScheme.error,
               ),
               AppGap.sm(),
-              AppText.titleSmall('NS Lookup ${result.hostName}'),
+              AppText.titleSmall(loc(context).nsLookupHost(result.hostName)),
               const Spacer(),
               AppText.bodySmall(
                 result.status,
@@ -604,7 +609,7 @@ class _DiagnosticManualToolsViewState
           AppGap.lg(),
           if (result.answers.isEmpty)
             AppText.bodyMedium(
-              'No answers returned.',
+              loc(context).noAnswersReturned,
               color: colorScheme.onSurfaceVariant,
             )
           else ...[
@@ -621,21 +626,21 @@ class _DiagnosticManualToolsViewState
                 Expanded(
                   flex: 3,
                   child: AppText.labelSmall(
-                    'IPs',
+                    loc(context).ipsColumn,
                     color: colorScheme.onSurfaceVariant,
                   ),
                 ),
                 Expanded(
                   flex: 2,
                   child: AppText.labelSmall(
-                    'DNS Server',
+                    loc(context).dnsServerColumn,
                     color: colorScheme.onSurfaceVariant,
                   ),
                 ),
                 SizedBox(
                   width: 64,
                   child: AppText.labelSmall(
-                    'RT',
+                    loc(context).rtColumn,
                     color: colorScheme.onSurfaceVariant,
                   ),
                 ),

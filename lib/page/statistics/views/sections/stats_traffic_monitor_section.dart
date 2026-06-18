@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/utils/usp_formatters.dart';
 import 'package:privacy_gui/page/_shared/models/traffic_analysis_state.dart';
 import 'package:privacy_gui/page/_shared/providers/usp_traffic_analysis_notifier.dart';
@@ -15,11 +16,11 @@ class StatsTrafficMonitorSection extends ConsumerWidget {
     final state = ref.watch(uspTrafficAnalysisProvider);
 
     return StatsSectionCard(
-      title: 'Traffic Monitor',
-      subtitle: 'Real-time WAN upload/download speeds',
+      title: loc(context).trafficMonitor,
+      subtitle: loc(context).trafficMonitorSubtitle,
       chartHeight: 280,
       child: state.history.isEmpty
-          ? _emptyState(context, 'Waiting for traffic data...')
+          ? _emptyState(context, loc(context).waitingForTrafficData)
           : _buildChart(context, state),
     );
   }
@@ -38,7 +39,7 @@ class StatsTrafficMonitorSection extends ConsumerWidget {
           children: [
             Expanded(
               child: _SpeedTile(
-                label: 'Upload',
+                label: loc(context).upload,
                 icon: Icons.arrow_upward,
                 bytesPerSec: upload,
                 color: colorScheme.primary,
@@ -47,7 +48,7 @@ class StatsTrafficMonitorSection extends ConsumerWidget {
             AppGap.md(),
             Expanded(
               child: _SpeedTile(
-                label: 'Download',
+                label: loc(context).download,
                 icon: Icons.arrow_downward,
                 bytesPerSec: download,
                 color: colorScheme.secondary,
@@ -60,7 +61,7 @@ class StatsTrafficMonitorSection extends ConsumerWidget {
           child: AppLineChart(
             series: [
               AppChartSeries(
-                label: 'Upload',
+                label: loc(context).upload,
                 data: history
                     .map((s) =>
                         s.interfaces[TrafficInterface.wan]?.uploadBytesPerSec ??
@@ -70,7 +71,7 @@ class StatsTrafficMonitorSection extends ConsumerWidget {
                 color: colorScheme.primary,
               ),
               AppChartSeries(
-                label: 'Download',
+                label: loc(context).download,
                 data: history
                     .map((s) =>
                         s.interfaces[TrafficInterface.wan]
@@ -90,11 +91,11 @@ class StatsTrafficMonitorSection extends ConsumerWidget {
           children: [
             StatsLegendDot(color: colorScheme.primary),
             AppGap.xs(),
-            AppText.labelSmall('Upload'),
+            AppText.labelSmall(loc(context).upload),
             AppGap.lg(),
             StatsLegendDot(color: colorScheme.secondary),
             AppGap.xs(),
-            AppText.labelSmall('Download'),
+            AppText.labelSmall(loc(context).download),
             const Spacer(),
             if (wan != null) ...[
               AppText.labelSmall(

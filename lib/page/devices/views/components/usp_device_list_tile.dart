@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/utils/device_classifier.dart';
 import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
 import 'package:privacy_gui/page/_shared/components/usp_status_dot.dart';
@@ -47,7 +48,7 @@ class UspDeviceListTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final subtitle = _buildSubtitle();
+    final subtitle = _buildSubtitle(context);
 
     final deviceCategory = DeviceClassifier.classify(
       hostname: device.hostName,
@@ -149,7 +150,7 @@ class UspDeviceListTile extends StatelessWidget {
     return Opacity(opacity: device.displayOpacity, child: tile);
   }
 
-  String _buildSubtitle() {
+  String _buildSubtitle(BuildContext context) {
     final parts = <String>[];
 
     // Connection type - for multi-interface show both types
@@ -159,11 +160,11 @@ class UspDeviceListTile extends StatelessWidget {
       final hasEthernet =
           !device.isWifi || device.additionalInterfaces.any((i) => !i.isWifi);
       if (hasWifi && hasEthernet) {
-        parts.add('WiFi + Ethernet');
+        parts.add(loc(context).wifiPlusEthernet);
       } else if (hasWifi) {
-        parts.add('WiFi');
+        parts.add(loc(context).wifi);
       } else {
-        parts.add('Ethernet');
+        parts.add(loc(context).ethernet);
       }
     } else if (device.isWifi) {
       final bandSsid = [
@@ -172,12 +173,12 @@ class UspDeviceListTile extends StatelessWidget {
           device.ssidName!,
       ].join(' · ');
       // Show "WiFi" fallback when no band/SSID data available.
-      parts.add(bandSsid.isNotEmpty ? bandSsid : 'WiFi');
+      parts.add(bandSsid.isNotEmpty ? bandSsid : loc(context).wifi);
     } else {
-      parts.add('Ethernet');
+      parts.add(loc(context).ethernet);
     }
     if (device.parentNodeName != null) {
-      parts.add('via ${device.parentNodeName}');
+      parts.add(loc(context).viaNode(device.parentNodeName!));
     }
     return parts.join(' · ');
   }

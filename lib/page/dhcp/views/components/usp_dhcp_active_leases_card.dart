@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/components/detail_widgets.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/_shared/models/dhcp_client_ui_model.dart';
@@ -30,15 +31,15 @@ class UspDhcpActiveLeasesCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              AppText.titleSmall('Active Leases'),
+              AppText.titleSmall(loc(context).activeLeases),
               AppText.labelLarge('$activeCount / ${clients.length}'),
             ],
           ),
           AppGap.md(),
           if (sorted.isEmpty)
-            const DetailEmptyBlock(
+            DetailEmptyBlock(
               icon: Icons.devices,
-              message: 'No DHCP clients',
+              message: loc(context).noDhcpClients,
             )
           else
             ...sorted.map((c) => _buildClientRow(context, c)),
@@ -71,7 +72,7 @@ class UspDhcpActiveLeasesCard extends StatelessWidget {
                     [
                       if (client.hostName.isNotEmpty) client.mac,
                       if (client.leaseExpiryFormatted.isNotEmpty)
-                        'Lease: ${client.leaseExpiryFormatted}',
+                        loc(context).leaseExpiry(client.leaseExpiryFormatted),
                     ].join(' · '),
                     color: colorScheme.onSurfaceVariant,
                   ),

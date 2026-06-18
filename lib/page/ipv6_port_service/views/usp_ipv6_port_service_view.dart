@@ -6,6 +6,7 @@ import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/components/views/service_error_view.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/components/detail_widgets.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/route/constants.dart';
@@ -27,7 +28,7 @@ class UspIpv6PortServiceView extends ConsumerWidget {
 
     return UiKitPageView.withSliver(
       scrollable: true,
-      title: 'IPv6 Port Service',
+      title: loc(context).ipv6PortService,
       topbar: const PreferredSize(
         preferredSize: Size.fromHeight(64),
         child: UspTopBar(),
@@ -66,7 +67,7 @@ class UspIpv6PortServiceView extends ConsumerWidget {
   ) {
     if (!state.isDirty) return null;
     return UiKitBottomBarConfig(
-      positiveLabel: 'Save',
+      positiveLabel: loc(context).save,
       isPositiveEnabled: !state.status.isSaving,
       onPositiveTap: () => _onSave(context, ref),
       onNegativeTap: () =>
@@ -90,14 +91,14 @@ class UspIpv6PortServiceView extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         AppText.bodyMedium(
-          'Manage IPv6 inbound port access rules',
+          loc(context).ipv6PortServicePageDesc,
           color: Theme.of(context).colorScheme.onSurfaceVariant,
         ),
         AppGap.xl(),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            AppText.titleMedium('Rules'),
+            AppText.titleMedium(loc(context).rules),
             AppIconButton(
               icon: AppIcon.font(Icons.add, size: 20),
               onTap: isSaving ? null : () => _showAddDialog(context, ref),
@@ -106,9 +107,9 @@ class UspIpv6PortServiceView extends ConsumerWidget {
         ),
         AppGap.lg(),
         if (rules.isEmpty)
-          const DetailEmptyBlock(
+          DetailEmptyBlock(
             icon: Icons.security,
-            message: 'No IPv6 port service rules configured',
+            message: loc(context).noIpv6PortServiceRules,
           )
         else
           ...rules.asMap().entries.map((entry) =>
@@ -151,7 +152,7 @@ class UspIpv6PortServiceView extends ConsumerWidget {
                   AppText.bodyMedium(
                     rule.description.isNotEmpty
                         ? rule.description
-                        : '(unnamed)',
+                        : loc(context).unnamed,
                   ),
                   AppText.bodySmall(
                     rule.ipv6Address,
@@ -253,7 +254,7 @@ class UspIpv6PortServiceView extends ConsumerWidget {
         ref.read(uspIpv6PortServiceProvider.notifier).save(),
       );
       if (context.mounted) {
-        showSuccessSnackBar(context, 'IPv6 port rules saved');
+        showSuccessSnackBar(context, loc(context).ipv6PortRulesSaved);
       }
     } catch (e) {
       if (context.mounted) {

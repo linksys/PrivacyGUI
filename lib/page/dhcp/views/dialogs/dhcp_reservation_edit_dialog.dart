@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/models/dhcp_reservation_ui_model.dart';
 import 'package:privacy_gui/validator_rules/rules.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -63,25 +64,36 @@ class _DhcpReservationEditDialogState extends State<DhcpReservationEditDialog> {
     final ip = _ipController.text.trim();
 
     if (mac.isNotEmpty && !_macRule.validate(mac)) {
-      errors['mac'] = 'Invalid MAC address format (e.g. AA:BB:CC:DD:EE:FF)';
+      errors['mac'] = 'invalidMacAddressFormat';
     }
 
     if (ip.isNotEmpty) {
       if (!_ipRule.validate(ip)) {
-        errors['ip'] = 'Invalid IP address format';
+        errors['ip'] = 'invalidIpv4Format';
       } else if (!_ipNoReservedRule.validate(ip)) {
-        errors['ip'] = 'Reserved IP address is not allowed';
+        errors['ip'] = 'reservedIpNotAllowed';
       }
     }
 
     setState(() => _errors = errors);
   }
 
+  String? _localizeError(String? key) {
+    if (key == null) return null;
+    return switch (key) {
+      'invalidMacAddressFormat' => loc(context).invalidMacAddressFormat,
+      'invalidIpv4Format' => loc(context).invalidIpv4Format,
+      'reservedIpNotAllowed' => loc(context).reservedIpNotAllowed,
+      _ => key,
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     return AppDialog(
-      title: AppText.titleLarge(
-          _isEdit ? 'Edit DHCP Reservation' : 'Add DHCP Reservation'),
+      title: AppText.titleLarge(_isEdit
+          ? loc(context).editDhcpReservation
+          : loc(context).addDhcpReservation),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -99,9 +111,9 @@ class _DhcpReservationEditDialogState extends State<DhcpReservationEditDialog> {
             },
             child: AppTextField(
               controller: _macController,
-              hintText: 'MAC Address (e.g. AA:BB:CC:DD:EE:FF)',
+              hintText: loc(context).macAddressHint,
               onChanged: (_) => _validate(),
-              errorText: _errors['mac'],
+              errorText: _localizeError(_errors['mac']),
             ),
           ),
           AppGap.lg(),
@@ -119,16 +131,16 @@ class _DhcpReservationEditDialogState extends State<DhcpReservationEditDialog> {
             },
             child: AppTextField(
               controller: _ipController,
-              hintText: 'IP Address (e.g. 192.168.1.100)',
+              hintText: loc(context).ipAddressHint,
               onChanged: (_) => _validate(),
-              errorText: _errors['ip'],
+              errorText: _localizeError(_errors['ip']),
             ),
           ),
           AppGap.lg(),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              AppText.bodyMedium('Enabled'),
+              AppText.bodyMedium(loc(context).enabled),
               AppSwitch(
                 value: _enabled,
                 onChanged: (value) => setState(() => _enabled = value),
@@ -139,11 +151,11 @@ class _DhcpReservationEditDialogState extends State<DhcpReservationEditDialog> {
       ),
       actions: [
         AppButton.text(
-          label: 'Cancel',
+          label: loc(context).cancel,
           onTap: () => context.pop(),
         ),
         AppButton.text(
-          label: _isEdit ? 'Save' : 'Add',
+          label: _isEdit ? loc(context).save : loc(context).add,
           onTap: _isFormValid ? _submit : null,
         ),
       ],

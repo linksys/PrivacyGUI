@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/models/device_analytics_state.dart';
 import 'package:privacy_gui/page/_shared/providers/usp_device_analytics_notifier.dart';
 import 'package:privacy_gui/page/statistics/views/components/stats_section_card.dart';
@@ -14,13 +15,13 @@ class StatsDeviceDistributionSection extends ConsumerWidget {
     final state = ref.watch(uspDeviceAnalyticsProvider);
 
     return StatsSectionCard(
-      title: 'Device Distribution',
-      subtitle: 'WiFi vs Wired device breakdown',
+      title: loc(context).deviceDistribution,
+      subtitle: loc(context).deviceDistributionSubtitle,
       chartHeight: 320,
       child: state.current == null
           ? Center(
               child: AppText.bodyMedium(
-                'Waiting for device data...',
+                loc(context).waitingForDeviceData,
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             )
@@ -39,18 +40,18 @@ class StatsDeviceDistributionSection extends ConsumerWidget {
               sections: [
                 AppPieSection(
                     value: distribution.wifiCount.toDouble(),
-                    label: 'WiFi',
+                    label: loc(context).wifi,
                     color: colorScheme.primary),
                 AppPieSection(
                     value: distribution.wiredCount.toDouble(),
-                    label: 'Wired',
+                    label: loc(context).wired,
                     color: colorScheme.secondary),
               ],
               defaultCenter: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   AppText.titleMedium('${distribution.onlineCount}'),
-                  AppText.labelSmall('online',
+                  AppText.labelSmall(loc(context).online,
                       color: colorScheme.onSurfaceVariant),
                 ],
               ),
@@ -69,14 +70,15 @@ class StatsDeviceDistributionSection extends ConsumerWidget {
           children: [
             StatsLegendDot(color: colorScheme.primary),
             AppGap.xs(),
-            AppText.labelSmall('WiFi: ${distribution.wifiCount}'),
+            AppText.labelSmall(loc(context).wifiCount(distribution.wifiCount)),
             AppGap.lg(),
             StatsLegendDot(color: colorScheme.secondary),
             AppGap.xs(),
-            AppText.labelSmall('Wired: ${distribution.wiredCount}'),
+            AppText.labelSmall(
+                loc(context).wiredCount(distribution.wiredCount)),
             AppGap.lg(),
             AppText.labelSmall(
-              '${distribution.offlineCount} offline',
+              loc(context).nOffline(distribution.offlineCount),
               color: colorScheme.onSurfaceVariant,
             ),
           ],

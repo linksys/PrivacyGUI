@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_radio_ui_model.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -35,14 +36,14 @@ class _WifiChannelDialogState extends State<WifiChannelDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text('Channel — ${widget.radio.band}'),
+      title: Text('${loc(context).channel} — ${widget.radio.band}'),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              AppText.bodyMedium('Auto Channel'),
+              AppText.bodyMedium(loc(context).autoChannel),
               AppSwitch(
                 value: _autoChannel,
                 onChanged: (value) => setState(() => _autoChannel = value),
@@ -52,7 +53,7 @@ class _WifiChannelDialogState extends State<WifiChannelDialog> {
           AppGap.lg(),
           AppTextField(
             controller: _channelController,
-            hintText: 'Channel number',
+            hintText: loc(context).channelNumber,
             keyboardType: TextInputType.number,
             readOnly: _autoChannel,
           ),
@@ -61,7 +62,7 @@ class _WifiChannelDialogState extends State<WifiChannelDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+          child: Text(loc(context).cancel),
         ),
         FilledButton(
           onPressed: () {
@@ -70,7 +71,7 @@ class _WifiChannelDialogState extends State<WifiChannelDialog> {
             Navigator.of(context)
                 .pop((channel: channel, autoChannel: _autoChannel));
           },
-          child: const Text('Apply'),
+          child: Text(loc(context).apply),
         ),
       ],
     );

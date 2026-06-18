@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/models/traffic_analysis_state.dart';
 import 'package:privacy_gui/page/_shared/providers/usp_traffic_analysis_notifier.dart';
 import 'package:privacy_gui/page/statistics/views/components/stats_section_card.dart';
@@ -16,13 +17,13 @@ class StatsTrafficTrendsSection extends ConsumerWidget {
     final state = ref.watch(uspTrafficAnalysisProvider);
 
     return StatsSectionCard(
-      title: 'Traffic Trends',
-      subtitle: 'Bytes/s and Packets/s dual-axis view',
+      title: loc(context).trafficTrends,
+      subtitle: loc(context).trafficTrendsSubtitle,
       chartHeight: 280,
       child: state.history.isEmpty
           ? Center(
               child: AppText.bodyMedium(
-                'Collecting data...',
+                loc(context).collectingData,
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             )
@@ -53,13 +54,13 @@ class StatsTrafficTrendsSection extends ConsumerWidget {
           child: AppLineChart(
             series: [
               AppChartSeries(
-                label: 'Bytes/s',
+                label: loc(context).bytesPerSec,
                 data: byteRates,
                 filled: true,
                 color: colorScheme.primary,
               ),
               AppChartSeries(
-                label: 'Pkts/s',
+                label: loc(context).packetsPerSec,
                 data: packetRates,
                 dashed: true,
                 color: colorScheme.tertiary,
@@ -71,7 +72,8 @@ class StatsTrafficTrendsSection extends ConsumerWidget {
             secondaryYAxis: AppChartAxis(min: 0, max: packetsMax),
             secondaryYLabelFormatter: _formatPacketsLabel,
             tooltipFormatter: (label, v) {
-              if (label == 'Bytes/s') return _formatBytesLabel(v);
+              if (label == loc(context).bytesPerSec)
+                return _formatBytesLabel(v);
               return '$label: ${_formatPacketsLabel(v)}';
             },
             enableZoom: true,
@@ -83,11 +85,11 @@ class StatsTrafficTrendsSection extends ConsumerWidget {
           children: [
             StatsLegendDot(color: colorScheme.primary),
             AppGap.xs(),
-            AppText.labelSmall('Bytes/s'),
+            AppText.labelSmall(loc(context).bytesPerSec),
             AppGap.lg(),
             Container(width: 16, height: 2, color: colorScheme.tertiary),
             AppGap.xs(),
-            AppText.labelSmall('Pkts/s'),
+            AppText.labelSmall(loc(context).packetsPerSec),
           ],
         ),
       ],

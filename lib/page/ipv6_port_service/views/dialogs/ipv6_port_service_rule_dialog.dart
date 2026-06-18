@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/ipv6_port_service/models/ipv6_port_service_ui_model.dart';
 import 'package:privacy_gui/page/ipv6_port_service/services/usp_ipv6_port_service_service.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -101,14 +102,14 @@ class _Ipv6PortServiceRuleDialogState extends State<Ipv6PortServiceRuleDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(_isEdit ? 'Edit Rule' : 'Add Rule'),
+      title: Text(_isEdit ? loc(context).editRule : loc(context).addRule),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             AppTextField(
               controller: _descriptionController,
-              hintText: 'Rule Name',
+              hintText: loc(context).ruleName,
               errorText: _errors['description'],
               onChanged: (_) => _validate(),
             ),
@@ -119,7 +120,7 @@ class _Ipv6PortServiceRuleDialogState extends State<Ipv6PortServiceRuleDialog> {
               onSelected: (_) => _validate(),
               child: AppTextField(
                 controller: _ipv6Controller,
-                hintText: 'IPv6 Address (type to search devices)',
+                hintText: loc(context).ipv6AddressSearchHint,
                 errorText: _errors['ipv6Address'],
                 onChanged: (_) => _validate(),
               ),
@@ -128,7 +129,7 @@ class _Ipv6PortServiceRuleDialogState extends State<Ipv6PortServiceRuleDialog> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                AppText.bodyMedium('Protocol'),
+                AppText.bodyMedium(loc(context).protocol),
                 SegmentedButton<String>(
                   segments: UspIpv6PortServiceService.protocolOptions
                       .map((name) =>
@@ -144,8 +145,8 @@ class _Ipv6PortServiceRuleDialogState extends State<Ipv6PortServiceRuleDialog> {
             AppRangeInput(
               startController: _startPortController,
               endController: _endPortController,
-              startLabel: 'Start Port',
-              endLabel: 'End Port',
+              startLabel: loc(context).startPort,
+              endLabel: loc(context).endPort,
               errorText: _errors['startPort'] ?? _errors['endPort'],
               onChanged: (_, __) => _validate(),
             ),
@@ -153,7 +154,7 @@ class _Ipv6PortServiceRuleDialogState extends State<Ipv6PortServiceRuleDialog> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                AppText.bodyMedium('Enabled'),
+                AppText.bodyMedium(loc(context).enabled),
                 AppSwitch(
                   value: _enabled,
                   onChanged: (value) => setState(() => _enabled = value),
@@ -166,11 +167,11 @@ class _Ipv6PortServiceRuleDialogState extends State<Ipv6PortServiceRuleDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+          child: Text(loc(context).cancel),
         ),
         FilledButton(
           onPressed: _isFormValid ? _submit : null,
-          child: Text(_isEdit ? 'Save' : 'Add'),
+          child: Text(_isEdit ? loc(context).save : loc(context).add),
         ),
       ],
     );

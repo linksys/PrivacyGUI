@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/models/network_health_helpers.dart';
 import 'package:privacy_gui/page/_shared/models/traffic_analysis_state.dart';
 import 'package:privacy_gui/page/_shared/providers/usp_traffic_analysis_notifier.dart';
@@ -17,13 +18,13 @@ class StatsErrorRatesSection extends ConsumerWidget {
     final state = ref.watch(uspTrafficAnalysisProvider);
 
     return StatsSectionCard(
-      title: 'Network Error Rates',
-      subtitle: 'WAN error and discard rates over time',
+      title: loc(context).networkErrorRates,
+      subtitle: loc(context).networkErrorRatesSubtitle,
       chartHeight: 280,
       child: state.history.isEmpty
           ? Center(
               child: AppText.bodyMedium(
-                'Enable traffic monitor for error data',
+                loc(context).enableTrafficMonitorForErrorData,
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             )
@@ -64,13 +65,13 @@ class StatsErrorRatesSection extends ConsumerWidget {
             child: AppLineChart(
               series: [
                 AppChartSeries(
-                  label: 'Errors',
+                  label: loc(context).errors,
                   data: errorData,
                   filled: true,
                   color: colorScheme.error,
                 ),
                 AppChartSeries(
-                  label: 'Discards',
+                  label: loc(context).discards,
                   data: discardData,
                   color: Colors.orange,
                 ),

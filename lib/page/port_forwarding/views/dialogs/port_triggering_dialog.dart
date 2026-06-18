@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/port_forwarding/models/port_triggering_rule_ui_model.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -88,7 +89,9 @@ class _PortTriggeringDialogState extends State<PortTriggeringDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(_isEdit ? 'Edit Port Triggering' : 'Add Port Triggering'),
+      title: Text(_isEdit
+          ? loc(context).editPortTriggering
+          : loc(context).addPortTriggering),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -96,17 +99,17 @@ class _PortTriggeringDialogState extends State<PortTriggeringDialog> {
           children: [
             AppTextField(
               controller: _descController,
-              hintText: 'Description',
+              hintText: loc(context).description,
             ),
             AppGap.xl(),
-            AppText.labelLarge('Trigger Ports'),
+            AppText.labelLarge(loc(context).triggerPorts),
             AppGap.md(),
             Row(
               children: [
                 Expanded(
                   child: AppTextField(
                     controller: _trigPortStartController,
-                    hintText: 'Start Port',
+                    hintText: loc(context).startPort,
                     keyboardType: TextInputType.number,
                   ),
                 ),
@@ -114,7 +117,7 @@ class _PortTriggeringDialogState extends State<PortTriggeringDialog> {
                 Expanded(
                   child: AppTextField(
                     controller: _trigPortEndController,
-                    hintText: 'End Port (optional)',
+                    hintText: loc(context).endPortOptional,
                     keyboardType: TextInputType.number,
                   ),
                 ),
@@ -124,7 +127,7 @@ class _PortTriggeringDialogState extends State<PortTriggeringDialog> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                AppText.bodyMedium('Protocol'),
+                AppText.bodyMedium(loc(context).protocol),
                 SegmentedButton<String>(
                   segments: const [
                     ButtonSegment(value: 'TCP', label: Text('TCP')),
@@ -138,14 +141,14 @@ class _PortTriggeringDialogState extends State<PortTriggeringDialog> {
               ],
             ),
             AppGap.xl(),
-            AppText.labelLarge('Forwarded Ports'),
+            AppText.labelLarge(loc(context).forwardedPorts),
             AppGap.md(),
             Row(
               children: [
                 Expanded(
                   child: AppTextField(
                     controller: _fwdPortStartController,
-                    hintText: 'Start Port',
+                    hintText: loc(context).startPort,
                     keyboardType: TextInputType.number,
                   ),
                 ),
@@ -153,7 +156,7 @@ class _PortTriggeringDialogState extends State<PortTriggeringDialog> {
                 Expanded(
                   child: AppTextField(
                     controller: _fwdPortEndController,
-                    hintText: 'End Port (optional)',
+                    hintText: loc(context).endPortOptional,
                     keyboardType: TextInputType.number,
                   ),
                 ),
@@ -163,7 +166,7 @@ class _PortTriggeringDialogState extends State<PortTriggeringDialog> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                AppText.bodyMedium('Protocol'),
+                AppText.bodyMedium(loc(context).protocol),
                 SegmentedButton<String>(
                   segments: const [
                     ButtonSegment(value: 'TCP', label: Text('TCP')),
@@ -180,7 +183,7 @@ class _PortTriggeringDialogState extends State<PortTriggeringDialog> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                AppText.bodyMedium('Enabled'),
+                AppText.bodyMedium(loc(context).enabled),
                 AppSwitch(
                   value: _enabled,
                   onChanged: (value) => setState(() => _enabled = value),
@@ -193,11 +196,11 @@ class _PortTriggeringDialogState extends State<PortTriggeringDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+          child: Text(loc(context).cancel),
         ),
         FilledButton(
           onPressed: _submit,
-          child: Text(_isEdit ? 'Save' : 'Add'),
+          child: Text(_isEdit ? loc(context).save : loc(context).add),
         ),
       ],
     );

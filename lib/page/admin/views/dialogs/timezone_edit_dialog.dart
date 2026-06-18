@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/models/time_settings_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/timezone_definitions.dart';
 import 'package:privacy_gui/page/_shared/models/timezone_info.dart';
@@ -24,7 +25,7 @@ Future<TimezoneEditResult?> showTimezoneEditDialog(
     context,
     scrollable: false,
     useRootNavigator: false,
-    title: 'Edit Timezone',
+    title: loc(context).editTimezone,
     checkPositiveEnabled: () => selected != null,
     contentBuilder: (context, setState, onSubmit) {
       final filtered = searchQuery.isEmpty
@@ -51,7 +52,7 @@ Future<TimezoneEditResult?> showTimezoneEditDialog(
           // Search field
           AppTextFormField(
             key: const Key('timezoneSearchField'),
-            hintText: 'Search timezone...',
+            hintText: loc(context).searchTimezone,
             prefixIcon: const Icon(Icons.search, size: 20),
             onChanged: (value) {
               setState(() {
@@ -65,8 +66,7 @@ Future<TimezoneEditResult?> showTimezoneEditDialog(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Expanded(
-                child: AppText.bodyMedium(
-                    'Automatically adjust for Daylight Savings Time'),
+                child: AppText.bodyMedium(loc(context).daylightSavingsTime),
               ),
               AppSwitch(
                 key: const Key('dstToggle'),
@@ -87,7 +87,7 @@ Future<TimezoneEditResult?> showTimezoneEditDialog(
             height: 300,
             child: filtered.isEmpty
                 ? Center(
-                    child: AppText.bodyMedium('No timezones found'),
+                    child: AppText.bodyMedium(loc(context).noTimezonesFound),
                   )
                 : ListView.separated(
                     itemCount: filtered.length,
@@ -228,7 +228,7 @@ class _AdvancedSection extends StatelessWidget {
                     ),
                   ),
                   AppGap.xs(),
-                  AppText.labelLarge('Advanced'),
+                  AppText.labelLarge(loc(context).advanced),
                 ],
               ),
             ),
@@ -239,7 +239,7 @@ class _AdvancedSection extends StatelessWidget {
           AppTextFormField(
             key: const Key('ntpServerField'),
             controller: ntpController,
-            label: 'NTP Server',
+            label: loc(context).ntpServer,
           ),
         ],
       ],

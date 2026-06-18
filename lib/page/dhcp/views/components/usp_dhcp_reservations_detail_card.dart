@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/components/detail_widgets.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/_shared/models/dhcp_reservation_ui_model.dart';
@@ -31,7 +32,7 @@ class UspDhcpReservationsDetailCard extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              AppText.titleSmall('DHCP Reservations'),
+              AppText.titleSmall(loc(context).dhcpReservations),
               Row(
                 children: [
                   AppText.labelLarge('${reservations.length}'),
@@ -46,9 +47,9 @@ class UspDhcpReservationsDetailCard extends ConsumerWidget {
           ),
           AppGap.md(),
           if (reservations.isEmpty)
-            const DetailEmptyBlock(
+            DetailEmptyBlock(
               icon: Icons.bookmark_border,
-              message: 'No DHCP reservations configured',
+              message: loc(context).noDhcpReservations,
             )
           else
             ...reservations.map((r) => _buildReservationRow(context, ref, r)),
@@ -180,15 +181,16 @@ class UspDhcpReservationsDetailCard extends ConsumerWidget {
   ) async {
     final confirmed = await showSimpleAppDialog<bool>(
       context,
-      title: 'Delete Reservation',
-      content: AppText.bodyMedium('Delete reservation for ${reservation.mac}?'),
+      title: loc(context).deleteReservation,
+      content: AppText.bodyMedium(
+          loc(context).deleteReservationConfirm(reservation.mac)),
       actions: [
         AppButton.text(
-          label: 'Cancel',
+          label: loc(context).cancel,
           onTap: () => context.pop(),
         ),
         AppButton.dangerText(
-          label: 'Delete',
+          label: loc(context).delete,
           onTap: () => context.pop(true),
         ),
       ],

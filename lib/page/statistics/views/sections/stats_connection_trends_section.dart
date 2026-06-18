@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/models/device_analytics_state.dart';
 import 'package:privacy_gui/page/_shared/providers/usp_device_analytics_notifier.dart';
 import 'package:privacy_gui/page/statistics/views/components/stats_section_card.dart';
@@ -14,13 +15,13 @@ class StatsConnectionTrendsSection extends ConsumerWidget {
     final state = ref.watch(uspDeviceAnalyticsProvider);
 
     return StatsSectionCard(
-      title: 'Connection Trends',
-      subtitle: '24-hour device count by connection type',
+      title: loc(context).connectionTrends,
+      subtitle: loc(context).connectionTrendsSubtitle,
       chartHeight: 260,
       child: state.hourlyHistory.isEmpty
           ? Center(
               child: AppText.bodyMedium(
-                'Collecting hourly data...',
+                loc(context).collectingHourlyData,
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             )
@@ -56,9 +57,11 @@ class StatsConnectionTrendsSection extends ConsumerWidget {
           child: AppBarChart(
             series: [
               AppChartSeries(
-                  label: 'WiFi', data: wifiData, color: colorScheme.primary),
+                  label: loc(context).wifi,
+                  data: wifiData,
+                  color: colorScheme.primary),
               AppChartSeries(
-                  label: 'Wired',
+                  label: loc(context).wired,
                   data: wiredData,
                   color: colorScheme.secondary),
             ],
@@ -72,11 +75,11 @@ class StatsConnectionTrendsSection extends ConsumerWidget {
           children: [
             StatsLegendDot(color: colorScheme.primary),
             AppGap.xs(),
-            AppText.labelSmall('WiFi'),
+            AppText.labelSmall(loc(context).wifi),
             AppGap.lg(),
             StatsLegendDot(color: colorScheme.secondary),
             AppGap.xs(),
-            AppText.labelSmall('Wired'),
+            AppText.labelSmall(loc(context).wired),
           ],
         ),
       ],

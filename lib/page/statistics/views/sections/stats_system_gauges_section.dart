@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/utils/usp_formatters.dart';
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
 import 'package:privacy_gui/page/_shared/providers/usp_system_monitor_notifier.dart';
@@ -17,13 +18,13 @@ class StatsSystemGaugesSection extends ConsumerWidget {
     final monitorState = ref.watch(uspSystemMonitorProvider);
 
     return StatsSectionCard(
-      title: 'CPU & Memory',
-      subtitle: 'Current resource utilization',
+      title: loc(context).cpuAndMemory,
+      subtitle: loc(context).currentResourceUtilization,
       chartHeight: 240,
       child: info == null
           ? Center(
               child: AppText.bodyMedium(
-                'Loading...',
+                loc(context).loading,
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             )
@@ -45,7 +46,7 @@ class StatsSystemGaugesSection extends ConsumerWidget {
 
     return Column(
       children: [
-        UspInfoRow(label: 'Uptime', value: info.formattedUptime),
+        UspInfoRow(label: loc(context).uptime, value: info.formattedUptime),
         AppGap.md(),
         Expanded(
           child: Row(
@@ -58,7 +59,7 @@ class StatsSystemGaugesSection extends ConsumerWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     AppText.titleMedium('$cpuPercent%'),
-                    AppText.bodySmall('CPU'),
+                    AppText.bodySmall(loc(context).cpu),
                   ],
                 ),
               ),
@@ -69,7 +70,7 @@ class StatsSystemGaugesSection extends ConsumerWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     AppText.titleMedium('$memPercent%'),
-                    AppText.bodySmall('Memory'),
+                    AppText.bodySmall(loc(context).memory),
                   ],
                 ),
               ),
@@ -79,7 +80,7 @@ class StatsSystemGaugesSection extends ConsumerWidget {
         AppGap.sm(),
         Center(
           child: AppText.bodySmall(
-            '$memUsedStr / $memTotalStr used',
+            loc(context).memoryUsed(memUsedStr, memTotalStr),
             color: colorScheme.onSurfaceVariant,
           ),
         ),
@@ -88,11 +89,13 @@ class StatsSystemGaugesSection extends ConsumerWidget {
           children: [
             StatsLegendDot(color: colorScheme.primary),
             AppGap.xs(),
-            AppText.labelSmall('CPU: ${latest?.cpuPercent ?? '--'}%'),
+            AppText.labelSmall(
+                loc(context).cpuPercent('${latest?.cpuPercent ?? '--'}')),
             AppGap.lg(),
             StatsLegendDot(color: colorScheme.secondary),
             AppGap.xs(),
-            AppText.labelSmall('Memory: ${latest?.memoryPercent ?? '--'}%'),
+            AppText.labelSmall(
+                loc(context).memoryPercent('${latest?.memoryPercent ?? '--'}')),
           ],
         ),
       ],

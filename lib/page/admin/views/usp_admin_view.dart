@@ -29,7 +29,7 @@ class UspAdminView extends ConsumerWidget {
 
     return UiKitPageView.withSliver(
       scrollable: true,
-      title: 'Administration',
+      title: loc(context).administration,
       topbar: const PreferredSize(
         preferredSize: Size.fromHeight(64),
         child: UspTopBar(),
@@ -175,7 +175,8 @@ class UspAdminView extends ConsumerWidget {
               ntpServer1: result.ntpServer1,
             ),
       );
-      if (context.mounted) showSuccessSnackBar(context, 'Timezone updated');
+      if (context.mounted)
+        showSuccessSnackBar(context, loc(context).timezoneUpdated);
     } catch (e) {
       if (context.mounted) {
         showFailedSnackBar(context, localizeServiceError(context, e));
@@ -194,7 +195,7 @@ class UspAdminView extends ConsumerWidget {
         },
       );
       if (result == true && context.mounted) {
-        showSuccessSnackBar(context, 'Password updated');
+        showSuccessSnackBar(context, loc(context).passwwordUpdated);
       }
     } catch (e) {
       if (context.mounted) {
@@ -206,10 +207,9 @@ class UspAdminView extends ConsumerWidget {
   Future<void> _reboot(BuildContext context, WidgetRef ref) async {
     final confirmed = await showConfirmActionDialog(
       context,
-      title: 'Reboot Router',
-      message:
-          'The router will restart. All connected devices will be temporarily disconnected.',
-      confirmLabel: 'Reboot',
+      title: loc(context).rebootRouter,
+      message: loc(context).rebootRouterMessage,
+      confirmLabel: loc(context).restart,
     );
     if (confirmed != true || !context.mounted) return;
     try {
@@ -224,10 +224,9 @@ class UspAdminView extends ConsumerWidget {
         ref,
         trigger: RecoveryTrigger.operationalReboot,
         cooldown: const Duration(seconds: 60),
-        title: 'Router is rebooting',
-        message:
-            'All connected devices will be temporarily disconnected. Please wait.',
-        successMessage: 'Router reboot complete',
+        title: loc(context).routerIsRebooting,
+        message: loc(context).rebootWaitMessage,
+        successMessage: loc(context).routerRebootComplete,
       );
     } catch (e) {
       if (context.mounted) {
@@ -239,10 +238,9 @@ class UspAdminView extends ConsumerWidget {
   Future<void> _factoryReset(BuildContext context, WidgetRef ref) async {
     final confirmed = await showConfirmActionDialog(
       context,
-      title: 'Factory Reset',
-      message:
-          'This will erase all settings and restore the router to factory defaults. This action cannot be undone.',
-      confirmLabel: 'Reset',
+      title: loc(context).factoryResetTitle,
+      message: loc(context).factoryResetDesc,
+      confirmLabel: loc(context).reset,
     );
     if (confirmed != true || !context.mounted) return;
     try {
@@ -258,9 +256,8 @@ class UspAdminView extends ConsumerWidget {
         trigger: RecoveryTrigger.operationalFactoryReset,
         cooldown: const Duration(seconds: 90),
         healthOnly: true,
-        title: 'Factory reset in progress',
-        message:
-            'The router is restoring to factory defaults. You will need to set up and log in again.',
+        title: loc(context).factoryResetInProgress,
+        message: loc(context).factoryResetWaitMessage,
       );
     } catch (e) {
       if (context.mounted) {

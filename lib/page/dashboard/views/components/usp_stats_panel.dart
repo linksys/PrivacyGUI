@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/local_network/providers/ethernet_data_provider.dart';
 import 'package:privacy_gui/page/port_forwarding/providers/port_forwarding_data_provider.dart';
@@ -44,7 +45,7 @@ class UspStatsPanel extends ConsumerWidget {
           child: StatTile(
             icon: Icons.router,
             value: '$nodeCount',
-            label: 'Router',
+            label: loc(context).router,
           ),
         ),
         AppGap.sm(),
@@ -52,7 +53,7 @@ class UspStatsPanel extends ConsumerWidget {
           child: StatTile(
             icon: Icons.devices,
             value: '$onlineCount',
-            label: 'Devices',
+            label: loc(context).devices,
           ),
         ),
         AppGap.sm(),
@@ -60,7 +61,7 @@ class UspStatsPanel extends ConsumerWidget {
           child: StatTile(
             icon: Icons.lan,
             value: '$lanConnected/$lanTotal',
-            label: 'LAN Ports',
+            label: loc(context).lanPorts,
           ),
         ),
         AppGap.sm(),
@@ -68,7 +69,7 @@ class UspStatsPanel extends ConsumerWidget {
           child: StatTile(
             icon: Icons.wifi,
             value: '$enabledRadios/$radioCount',
-            label: 'Radios',
+            label: loc(context).radios,
           ),
         ),
         AppGap.sm(),
@@ -76,7 +77,7 @@ class UspStatsPanel extends ConsumerWidget {
           child: StatTile(
             icon: Icons.shortcut,
             value: '$forwardCount',
-            label: 'Port Rules',
+            label: loc(context).portRules,
           ),
         ),
       ],

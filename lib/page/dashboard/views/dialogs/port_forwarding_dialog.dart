@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/models/port_forwarding_rule_ui_model.dart';
 import 'package:privacy_gui/validator_rules/rules.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -82,13 +83,13 @@ class _PortForwardingDialogState extends State<PortForwardingDialog> {
   static final _ipNoReservedRule = IpAddressNoReservedRule();
   static final _noWhitespaceRule = NoSurroundWhitespaceRule();
 
-  void _validate() {
+  void _validate(BuildContext context) {
     setState(() {
-      _errors = _validateFields();
+      _errors = _validateFields(context);
     });
   }
 
-  Map<String, String> _validateFields() {
+  Map<String, String> _validateFields(BuildContext context) {
     final errors = <String, String>{};
     final desc = _descController.text.trim();
     final extPort = _extPortController.text.trim();
@@ -97,42 +98,42 @@ class _PortForwardingDialogState extends State<PortForwardingDialog> {
 
     // Description
     if (desc.isEmpty) {
-      errors['description'] = 'Description is required';
+      errors['description'] = loc(context).descriptionRequired;
     } else if (!_noWhitespaceRule.validate(desc)) {
-      errors['description'] = 'No leading or trailing spaces';
+      errors['description'] = loc(context).noLeadingTrailingSpaces;
     } else if (desc.length > 32) {
-      errors['description'] = 'Must be 32 characters or less';
+      errors['description'] = loc(context).mustBe32CharsOrLess;
     }
 
     // External port
     final ext = int.tryParse(extPort);
     if (extPort.isEmpty) {
-      errors['externalPort'] = 'External port is required';
+      errors['externalPort'] = loc(context).externalPortRequired;
     } else if (ext == null || ext < 1 || ext > 65535) {
-      errors['externalPort'] = 'Port must be 1-65535';
+      errors['externalPort'] = loc(context).portMustBe1To65535;
     }
 
     // Internal port
     final intP = int.tryParse(intPort);
     if (intPort.isEmpty) {
-      errors['internalPort'] = 'Internal port is required';
+      errors['internalPort'] = loc(context).internalPortRequired;
     } else if (intP == null || intP < 1 || intP > 65535) {
-      errors['internalPort'] = 'Port must be 1-65535';
+      errors['internalPort'] = loc(context).portMustBe1To65535;
     }
 
     // Internal client (IPv4)
     if (client.isEmpty) {
-      errors['internalClient'] = 'IP address is required';
+      errors['internalClient'] = loc(context).ipAddressRequired;
     } else if (!_ipAddressRule.validate(client)) {
-      errors['internalClient'] = 'Invalid IPv4 address format';
+      errors['internalClient'] = loc(context).invalidIpv4Format;
     } else if (!_ipNoReservedRule.validate(client)) {
-      errors['internalClient'] = 'Reserved IP address is not allowed';
+      errors['internalClient'] = loc(context).reservedIpNotAllowed;
     }
 
     return errors;
   }
 
-  bool get _isFormValid => _validateFields().isEmpty;
+  bool _isFormValid(BuildContext context) => _validateFields(context).isEmpty;
 
   // ---------------------------------------------------------------------------
   // Build
@@ -141,55 +142,58 @@ class _PortForwardingDialogState extends State<PortForwardingDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(_isEdit ? 'Edit Port Forwarding' : 'Add Port Forwarding'),
+      title: Text(_isEdit
+          ? loc(context).editPortForwarding
+          : loc(context).addPortForwarding),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             AppTextField(
               controller: _descController,
-              hintText: 'Description',
+              hintText: loc(context).description,
               errorText: _errors['description'],
-              onChanged: (_) => _validate(),
+              onChanged: (_) => _validate(context),
             ),
             AppGap.lg(),
             AppTextField(
               controller: _extPortController,
-              hintText: 'External Port',
+              hintText: loc(context).externalPort,
               keyboardType: TextInputType.number,
               errorText: _errors['externalPort'],
-              onChanged: (_) => _validate(),
+              onChanged: (_) => _validate(context),
             ),
             AppGap.lg(),
             AppTextField(
               controller: _intPortController,
-              hintText: 'Internal Port',
+              hintText: loc(context).internalPort,
               keyboardType: TextInputType.number,
               errorText: _errors['internalPort'],
-              onChanged: (_) => _validate(),
+              onChanged: (_) => _validate(context),
             ),
             AppGap.lg(),
             AppSelectAutoComplete(
               options: widget.deviceOptions,
               controller: _intClientController,
-              onSelected: (_) => _validate(),
+              onSelected: (_) => _validate(context),
               child: AppTextField(
                 controller: _intClientController,
-                hintText: 'Internal IP (e.g. 192.168.1.100)',
+                hintText: loc(context).internalIpHint,
                 errorText: _errors['internalClient'],
-                onChanged: (_) => _validate(),
+                onChanged: (_) => _validate(context),
               ),
             ),
             AppGap.lg(),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                AppText.bodyMedium('Protocol'),
+                AppText.bodyMedium(loc(context).protocol),
                 SegmentedButton<String>(
-                  segments: const [
-                    ButtonSegment(value: 'TCP', label: Text('TCP')),
-                    ButtonSegment(value: 'UDP', label: Text('UDP')),
-                    ButtonSegment(value: 'Both', label: Text('Both')),
+                  segments: [
+                    ButtonSegment(value: 'TCP', label: Text(loc(context).tcp)),
+                    ButtonSegment(value: 'UDP', label: Text(loc(context).udp)),
+                    ButtonSegment(
+                        value: 'Both', label: Text(loc(context).both)),
                   ],
                   selected: {_protocol},
                   onSelectionChanged: (v) =>
@@ -201,7 +205,7 @@ class _PortForwardingDialogState extends State<PortForwardingDialog> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                AppText.bodyMedium('Enabled'),
+                AppText.bodyMedium(loc(context).enabled),
                 AppSwitch(
                   value: _enabled,
                   onChanged: (value) => setState(() => _enabled = value),
@@ -214,11 +218,11 @@ class _PortForwardingDialogState extends State<PortForwardingDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+          child: Text(loc(context).cancel),
         ),
         FilledButton(
-          onPressed: _isFormValid ? _submit : null,
-          child: Text(_isEdit ? 'Save' : 'Add'),
+          onPressed: _isFormValid(context) ? _submit : null,
+          child: Text(_isEdit ? loc(context).save : loc(context).add),
         ),
       ],
     );

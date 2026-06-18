@@ -6,6 +6,7 @@ import 'package:privacy_gui/core/connection/models/app_connection_state.dart';
 import 'package:privacy_gui/core/connection/providers/app_connection_state_provider.dart';
 import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
 import 'package:privacy_gui/core/usp/services/sse_connection_manager.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// A page-wide banner that appears when the SSE connection is not healthy.
@@ -124,19 +125,19 @@ class _SseConnectionBannerState extends ConsumerState<SseConnectionBanner> {
     final (icon, label) = switch (state) {
       SseConnectionState.connecting => (
           Icons.sync,
-          'Connecting to router...',
+          loc(context).connectingToRouter,
         ),
       SseConnectionState.reconnecting => (
           Icons.sync,
-          'Reconnecting...',
+          loc(context).reconnecting,
         ),
       SseConnectionState.suspended => (
           Icons.cloud_off,
-          'Real-time connection lost',
+          loc(context).realTimeConnectionLost,
         ),
       SseConnectionState.disconnected => (
           Icons.cloud_off,
-          'Disconnected',
+          loc(context).disconnected,
         ),
       _ => (Icons.info_outline, ''),
     };
@@ -164,7 +165,7 @@ class _SseConnectionBannerState extends ConsumerState<SseConnectionBanner> {
               ),
               if (isSevere)
                 AppButton.text(
-                  label: 'Reconnect',
+                  label: loc(context).reconnect,
                   onTap: () {
                     ref.read(sseManagerProvider)?.tryReconnect();
                   },
