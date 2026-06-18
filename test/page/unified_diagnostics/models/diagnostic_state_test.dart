@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/page/unified_diagnostics/models/speed_test_state.dart';
 import 'package:privacy_gui/page/unified_diagnostics/models/diagnostic_state.dart';
 
@@ -73,7 +74,7 @@ void main() {
       expect(state.results, isEmpty);
       expect(state.speedTest, isNull);
       expect(state.recommendations, isEmpty);
-      expect(state.errorMessage, isNull);
+      expect(state.error, isNull);
       expect(state.progress, isNull);
     });
 
@@ -110,24 +111,24 @@ void main() {
       final initial = UnifiedDiagnosticsState(
         step: DiagnosticStep.checkingWanStatus,
         flow: DiagnosticFlow.internet,
-        errorMessage: 'test error',
+        error: const NetworkError(detail: 'test error'),
       );
 
       final copied = initial.copyWith(step: DiagnosticStep.pingGateway);
 
       expect(copied.step, DiagnosticStep.pingGateway);
       expect(copied.flow, DiagnosticFlow.internet);
-      expect(copied.errorMessage, 'test error');
+      expect(copied.error, isA<NetworkError>());
     });
 
     test('copyWith clears error when requested', () {
       final initial = UnifiedDiagnosticsState(
-        errorMessage: 'test error',
+        error: const NetworkError(detail: 'test error'),
       );
 
       final cleared = initial.copyWith(clearError: true);
 
-      expect(cleared.errorMessage, isNull);
+      expect(cleared.error, isNull);
     });
 
     test('copyWith clears speedTest when requested', () {

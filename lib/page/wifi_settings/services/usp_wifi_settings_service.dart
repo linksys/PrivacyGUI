@@ -238,11 +238,11 @@ class UspWifiSettingsService {
             (ssidChanged || enabledChanged)) {
           if (ssidChanged) {
             if (pending.ssid.isEmpty) {
-              throw InvalidInputError(message: 'SSID name cannot be empty');
+              throw InvalidInputError(detail: 'SSID name cannot be empty');
             }
             if (pending.ssid.length > 32) {
               throw InvalidInputError(
-                  message: 'SSID name cannot exceed 32 characters');
+                  detail: 'SSID name cannot exceed 32 characters');
             }
           }
           for (final p in aggregate.ssidInstancePaths) {
@@ -262,12 +262,12 @@ class UspWifiSettingsService {
                   summary:
                       'WiFi SSID update partial failure: ${f.first.errorMessage}',
                   successPaths: [],
-                  failedPaths: f.map((e) => e.requestedPath).toList(),
+                  failures: f,
                 );
               case UspFailure(errors: final e):
                 throw UspCompleteFailureError(
                   summary: 'WiFi SSID update failed: ${e.first.errorMessage}',
-                  failedPaths: e.map((e) => e.requestedPath).toList(),
+                  failures: e,
                 );
             }
           }
@@ -316,12 +316,12 @@ class UspWifiSettingsService {
                   summary:
                       'WiFi AP update partial failure: ${f.first.errorMessage}',
                   successPaths: [],
-                  failedPaths: f.map((e) => e.requestedPath).toList(),
+                  failures: f,
                 );
               case UspFailure(errors: final e):
                 throw UspCompleteFailureError(
                   summary: 'WiFi AP update failed: ${e.first.errorMessage}',
-                  failedPaths: e.map((e) => e.requestedPath).toList(),
+                  failures: e,
                 );
             }
           }
@@ -373,12 +373,12 @@ class UspWifiSettingsService {
                 summary:
                     'WiFi SSID update partial failure: ${f.first.errorMessage}',
                 successPaths: [],
-                failedPaths: f.map((e) => e.requestedPath).toList(),
+                failures: f,
               );
             case UspFailure(errors: final e):
               throw UspCompleteFailureError(
                 summary: 'WiFi SSID update failed: ${e.first.errorMessage}',
-                failedPaths: e.map((e) => e.requestedPath).toList(),
+                failures: e,
               );
           }
         }
@@ -413,12 +413,12 @@ class UspWifiSettingsService {
                 summary:
                     'WiFi AP update partial failure: ${f.first.errorMessage}',
                 successPaths: [],
-                failedPaths: f.map((e) => e.requestedPath).toList(),
+                failures: f,
               );
             case UspFailure(errors: final e):
               throw UspCompleteFailureError(
                 summary: 'WiFi AP update failed: ${e.first.errorMessage}',
-                failedPaths: e.map((e) => e.requestedPath).toList(),
+                failures: e,
               );
           }
         }
@@ -456,12 +456,12 @@ class UspWifiSettingsService {
                 summary:
                     'WiFi Radio update partial failure: ${f.first.errorMessage}',
                 successPaths: [],
-                failedPaths: f.map((e) => e.requestedPath).toList(),
+                failures: f,
               );
             case UspFailure(errors: final e):
               throw UspCompleteFailureError(
                 summary: 'WiFi Radio update failed: ${e.first.errorMessage}',
-                failedPaths: e.map((e) => e.requestedPath).toList(),
+                failures: e,
               );
           }
         }
@@ -491,12 +491,12 @@ class UspWifiSettingsService {
           throw UspPartialFailureError(
             summary: 'Toggle radio partial failure: ${f.first.errorMessage}',
             successPaths: [],
-            failedPaths: f.map((e) => e.requestedPath).toList(),
+            failures: f,
           );
         case UspFailure(errors: final e):
           throw UspCompleteFailureError(
             summary: 'Toggle radio failed: ${e.first.errorMessage}',
-            failedPaths: e.map((e) => e.requestedPath).toList(),
+            failures: e,
           );
       }
     } catch (e) {
@@ -531,12 +531,12 @@ class UspWifiSettingsService {
             summary:
                 'Update radio channel partial failure: ${f.first.errorMessage}',
             successPaths: [],
-            failedPaths: f.map((e) => e.requestedPath).toList(),
+            failures: f,
           );
         case UspFailure(errors: final e):
           throw UspCompleteFailureError(
             summary: 'Update radio channel failed: ${e.first.errorMessage}',
-            failedPaths: e.map((e) => e.requestedPath).toList(),
+            failures: e,
           );
       }
     } catch (e) {
@@ -574,12 +574,12 @@ class UspWifiSettingsService {
           throw UspPartialFailureError(
             summary: 'Toggle SSIDs partial failure: ${f.first.errorMessage}',
             successPaths: [],
-            failedPaths: f.map((e) => e.requestedPath).toList(),
+            failures: f,
           );
         case UspFailure(errors: final e):
           throw UspCompleteFailureError(
             summary: 'Toggle SSIDs failed: ${e.first.errorMessage}',
-            failedPaths: e.map((e) => e.requestedPath).toList(),
+            failures: e,
           );
       }
     } catch (e) {

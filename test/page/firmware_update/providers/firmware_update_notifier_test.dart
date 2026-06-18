@@ -171,7 +171,7 @@ void main() {
     test('loadBanks failure transitions to failed phase', () async {
       final container = createContainer(
         banksData: AsyncError(
-            const NetworkError(message: 'timeout'), StackTrace.current),
+            const NetworkError(detail: 'timeout'), StackTrace.current),
       );
       addTearDown(container.dispose);
 
@@ -346,7 +346,7 @@ void main() {
             commandKey: any(named: 'commandKey'),
             isCancelled: any(named: 'isCancelled'),
             onProgress: any(named: 'onProgress'),
-          )).thenThrow(const NetworkError(message: 'chunk timeout'));
+          )).thenThrow(const NetworkError(detail: 'chunk timeout'));
       final container = createContainer(
         picker: _StubPickerService(
           FirmwarePickedFile(name: 'fw.img', size: bytes.length, bytes: bytes),
@@ -702,7 +702,7 @@ void main() {
         when(() => mockService.triggerOtaDownload(
               targetInstance: any(named: 'targetInstance'),
               firmwareUrl: any(named: 'firmwareUrl'),
-            )).thenThrow(const NetworkError(message: 'Download failed'));
+            )).thenThrow(const NetworkError(detail: 'Download failed'));
 
         final container = createContainer();
         addTearDown(container.dispose);

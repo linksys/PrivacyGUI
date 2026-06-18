@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/components/localizations/service_error_localizations.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
+import 'package:privacy_gui/components/views/service_error_view.dart';
 import 'package:privacy_gui/page/_shared/components/detail_widgets.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/route/constants.dart';
@@ -40,8 +42,13 @@ class UspIpv6PortServiceView extends ConsumerWidget {
         if (status.isLoading) {
           return const Center(child: AppLoader());
         }
-        if (status.errorMessage != null) {
-          return _buildError(context, ref);
+        if (status.error != null) {
+          return ServiceErrorView(
+            error: status.error,
+            onRetry: () => ref
+                .read(uspIpv6PortServiceProvider.notifier)
+                .fetch(forceRemote: true),
+          );
         }
         return _buildContent(context, ref, state);
       },
@@ -64,31 +71,6 @@ class UspIpv6PortServiceView extends ConsumerWidget {
       onPositiveTap: () => _onSave(context, ref),
       onNegativeTap: () =>
           ref.read(uspIpv6PortServiceProvider.notifier).revert(),
-    );
-  }
-
-  // ---------------------------------------------------------------------------
-  // Error
-  // ---------------------------------------------------------------------------
-
-  Widget _buildError(BuildContext context, WidgetRef ref) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          AppIcon.font(Icons.error_outline,
-              size: 48, color: Theme.of(context).colorScheme.error),
-          AppGap.xl(),
-          AppText.titleMedium('Unable to load IPv6 port service'),
-          AppGap.md(),
-          AppButton(
-            label: 'Retry',
-            onTap: () => ref
-                .read(uspIpv6PortServiceProvider.notifier)
-                .fetch(forceRemote: true),
-          ),
-        ],
-      ),
     );
   }
 
@@ -275,7 +257,7 @@ class UspIpv6PortServiceView extends ConsumerWidget {
       }
     } catch (e) {
       if (context.mounted) {
-        showFailedSnackBar(context, 'Failed to save: $e');
+        showFailedSnackBar(context, localizeServiceError(context, e));
       }
     }
   }

@@ -194,6 +194,27 @@ void main() {
       expect(mapUspErrorToServiceError(raw), isA<InvalidInputError>());
     });
 
+    test('maps Protocol fault 7005 to InvalidInputError', () {
+      const raw =
+          'Set failed: Protocol error: Decoding error: Received error response: '
+          'SetFailed: Invalid parameter name (code: 7005)';
+      expect(mapUspErrorToServiceError(raw), isA<InvalidInputError>());
+    });
+
+    test('maps Protocol fault 7006 to InvalidInputError', () {
+      const raw =
+          'Set failed: Protocol error: Decoding error: Received error response: '
+          'SetFailed: Invalid parameter value (code: 7006)';
+      expect(mapUspErrorToServiceError(raw), isA<InvalidInputError>());
+    });
+
+    test('maps Protocol fault 7027 to ResourceNotFoundError', () {
+      const raw =
+          'Delete failed: Protocol error: Decoding error: Received error response: '
+          'DeleteFailed: Object does not exist (code: 7027)';
+      expect(mapUspErrorToServiceError(raw), isA<ResourceNotFoundError>());
+    });
+
     test('maps Protocol fault 9001 to UnauthorizedError', () {
       const raw =
           'Set failed: Protocol error: Decoding error: Received error response: '

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/components/localizations/service_error_localizations.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
+import 'package:privacy_gui/components/views/service_error_view.dart';
 import 'package:privacy_gui/page/internet_settings/models/internet_settings_feature_state.dart';
 import 'package:privacy_gui/page/internet_settings/providers/usp_internet_settings_form_validator.dart';
 import 'package:privacy_gui/page/internet_settings/providers/usp_internet_settings_notifier.dart';
@@ -42,29 +44,15 @@ class UspInternetSettingsView extends ConsumerWidget {
         if (state.status.isLoading) {
           return const Center(child: AppLoader());
         }
-        if (state.status.errorMessage != null) {
-          return _buildError(childContext, ref, state.status.errorMessage!);
+        if (state.status.error != null) {
+          return ServiceErrorView(
+            error: state.status.error,
+            onRetry: () =>
+                ref.read(uspInternetSettingsProvider.notifier).fetch(),
+          );
         }
         return _buildContent(childContext, ref, state);
       },
-    );
-  }
-
-  Widget _buildError(BuildContext context, WidgetRef ref, String error) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          AppText.bodyLarge(loc(context).failedToLoadSettings),
-          AppGap.md(),
-          AppText.bodyMedium(error),
-          AppGap.xl(),
-          AppButton.primary(
-            label: loc(context).retry,
-            onTap: () => ref.read(uspInternetSettingsProvider.notifier).fetch(),
-          ),
-        ],
-      ),
     );
   }
 
@@ -205,7 +193,7 @@ class UspInternetSettingsView extends ConsumerWidget {
       }
     } catch (e) {
       if (context.mounted) {
-        showFailedSnackBar(context, 'Failed to save: $e');
+        showFailedSnackBar(context, localizeServiceError(context, e));
       }
     }
   }

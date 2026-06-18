@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/models/operate_result.dart';
 import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
 import 'package:privacy_gui/core/usp/services/network_diagnostics_executor.dart';
@@ -226,7 +227,7 @@ void main() {
 
       final state = container.read(manualToolsProvider).valueOrNull;
       expect(state?.status, DiagnosticStatus.error);
-      expect(state?.errorMessage, contains('timed out'));
+      expect(state?.error, isA<TimeoutError>());
       container.dispose();
     });
 
@@ -235,7 +236,7 @@ void main() {
             host: any(named: 'host'),
             numberOfRepetitions: any(named: 'numberOfRepetitions'),
             timeout: any(named: 'timeout'),
-          )).thenThrow(Exception('network error'));
+          )).thenThrow(const NetworkError(detail: 'network error'));
 
       final container = createContainer();
       await container.read(manualToolsProvider.future);
@@ -245,7 +246,7 @@ void main() {
 
       final state = container.read(manualToolsProvider).valueOrNull;
       expect(state?.status, DiagnosticStatus.error);
-      expect(state?.errorMessage, contains('Ping failed'));
+      expect(state?.error, isA<NetworkError>());
       container.dispose();
     });
 
@@ -291,7 +292,7 @@ void main() {
 
       final state = container.read(manualToolsProvider).valueOrNull;
       expect(state?.status, DiagnosticStatus.error);
-      expect(state?.errorMessage, contains('Traceroute timed out'));
+      expect(state?.error, isA<TimeoutError>());
       container.dispose();
     });
 
@@ -363,7 +364,7 @@ void main() {
 
       final state = container.read(manualToolsProvider).valueOrNull;
       expect(state?.status, DiagnosticStatus.error);
-      expect(state?.errorMessage, contains('NS Lookup timed out'));
+      expect(state?.error, isA<TimeoutError>());
       container.dispose();
     });
 

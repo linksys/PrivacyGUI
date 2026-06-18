@@ -1167,5 +1167,17 @@
   "failedToLoadSettings": "Failed to load settings",
   "retry": "Retry",
   "pppStatus": "PPP Status",
-  "dhcpv6": "DHCPv6"
+  "dhcpv6": "DHCPv6",
+  "errorNotAuthenticated": "You are not signed in. Please sign in and try again.",
+  "errorInvalidCredentials": "Incorrect username or password.",
+  "errorSessionExpired": "Your session has expired. Please sign in again.",
+  "errorInvalidSessionToken": "Your session is invalid. Please sign in again.",
+  "errorUnauthorized": "You do not have permission to perform this action.",
+  "errorResourceNotFound": "The requested setting could not be found on the router.",
+  "errorInvalidInput": "The value entered is not valid. Please check and try again.",
+  "errorNetwork": "Network error. Please check your connection and try again.",
+  "errorConnectivity": "Cannot reach the router. Please check your connection.",
+  "errorTimeout": "The operation timed out. Please try again.",
+  "errorServiceNotReady": "The service is not ready yet. Please try again in a moment.",
+  "errorUnexpected": "Something went wrong. Please try again."
 }

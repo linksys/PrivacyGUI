@@ -36,8 +36,7 @@ final uspInternetSettingsServiceProvider =
     Provider.autoDispose<UspInternetSettingsService>((ref) {
   final usp = ref.watch(uspClientProvider);
   if (usp == null) {
-    throw const ServiceNotInitializedError(
-        message: 'USP service not available');
+    throw const ServiceNotInitializedError(detail: 'USP service not available');
   }
   return UspInternetSettingsService(usp);
 });
@@ -82,7 +81,7 @@ class UspInternetSettingsNotifier
       final usp = ref.read(uspClientProvider);
       if (usp == null) {
         throw const ServiceNotInitializedError(
-            message: 'USP service not available');
+            detail: 'USP service not available');
       }
 
       // Session restore on page reload (WASM state may be lost)
@@ -90,7 +89,7 @@ class UspInternetSettingsNotifier
         await ref.read(uspAuthCoordinatorProvider).restoreSession();
         if (!usp.isAuthenticated) {
           throw const ConnectivityError(
-              message: 'USP not authenticated after restore attempt');
+              detail: 'USP not authenticated after restore attempt');
         }
       }
 
@@ -129,7 +128,7 @@ class UspInternetSettingsNotifier
       logger.e('[USP][Network][WAN]: Fetch failed', error: e);
       return (
         null,
-        InternetSettingsStatus(isLoading: false, errorMessage: '$e'),
+        InternetSettingsStatus(isLoading: false, error: e),
       );
     }
   }

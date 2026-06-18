@@ -88,12 +88,12 @@ void main() {
 
     test('fetch error sets error status', () async {
       when(() => mockService.fetchSettings())
-          .thenThrow(const NetworkError(message: 'bridge unreachable'));
+          .thenThrow(const NetworkError(detail: 'bridge unreachable'));
       final container = createContainer();
       await Future.delayed(Duration.zero);
 
       final state = container.read(uspInternetSettingsProvider);
-      expect(state.status.errorMessage, contains('bridge unreachable'));
+      expect(state.status.error, isA<NetworkError>());
       container.dispose();
     });
 
@@ -285,7 +285,7 @@ void main() {
       when(() => mockService.fetchSettings())
           .thenAnswer((_) async => testFetchResult);
       when(() => mockService.saveAll(any(), any()))
-          .thenThrow(const NetworkError(message: 'save failed'));
+          .thenThrow(const NetworkError(detail: 'save failed'));
 
       final container = createContainer();
       await Future.delayed(Duration.zero);
@@ -311,7 +311,7 @@ void main() {
 
       final state = container.read(uspInternetSettingsProvider);
       // Should hit the restore path which won't succeed with our mock.
-      expect(state.status.errorMessage, isNotNull);
+      expect(state.status.error, isNotNull);
       container.dispose();
     });
   });

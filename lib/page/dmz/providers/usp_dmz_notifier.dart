@@ -73,7 +73,7 @@ class UspDmzNotifier extends AutoDisposeNotifier<DmzFeatureState>
       logger.e('[USP][Firewall][DMZ]: Fetch failed', error: e);
       return (
         null,
-        DmzStatus(isLoading: false, errorMessage: '$e'),
+        DmzStatus(isLoading: false, error: e),
       );
     }
   }

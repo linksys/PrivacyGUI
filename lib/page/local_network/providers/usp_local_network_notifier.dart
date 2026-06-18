@@ -91,7 +91,7 @@ class UspLocalNetworkNotifier
       logger.e('[USP][Network][LAN]: Fetch failed', error: e);
       return (
         null,
-        LocalNetworkStatus(isLoading: false, errorMessage: '$e'),
+        LocalNetworkStatus(isLoading: false, error: e),
       );
     }
   }

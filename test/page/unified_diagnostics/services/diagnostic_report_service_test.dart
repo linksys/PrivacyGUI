@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/page/unified_diagnostics/models/diagnostic_result.dart';
 import 'package:privacy_gui/page/unified_diagnostics/models/diagnostic_state.dart';
 import 'package:privacy_gui/page/unified_diagnostics/models/speed_test_state.dart';
@@ -37,10 +38,10 @@ void main() {
     });
 
     test('renders error message when present', () {
-      const state =
-          UnifiedDiagnosticsState(errorMessage: 'Network unreachable');
+      const state = UnifiedDiagnosticsState(
+          error: NetworkError(detail: 'Network unreachable'));
       final report = service.buildTextReport(state);
-      expect(report, contains('ERROR: Network unreachable'));
+      expect(report, contains('Network unreachable'));
     });
 
     test('renders ping result with severity icon and details', () {

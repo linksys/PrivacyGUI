@@ -19,7 +19,7 @@ final uspSystemInfoDataServiceProvider = Provider<UspSystemInfoDataService>(
     final usp = ref.read(uspClientProvider);
     if (usp == null) {
       throw const ServiceNotInitializedError(
-          message: 'USP service not available');
+          detail: 'USP service not available');
     }
     return UspSystemInfoDataService(usp);
   },

@@ -124,7 +124,7 @@ class DashboardOrchestrator extends AsyncNotifier<DashboardOrchestratorState> {
     final usp = ref.watch(uspClientProvider);
     if (usp == null) {
       throw const ServiceNotInitializedError(
-          message: 'USP service not available');
+          detail: 'USP service not available');
     }
     // On page reload WASM state is lost — attempt session restore
     if (!usp.isAuthenticated) {

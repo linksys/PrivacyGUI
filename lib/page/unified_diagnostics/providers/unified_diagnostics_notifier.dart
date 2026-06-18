@@ -57,7 +57,7 @@ class UnifiedDiagnosticsNotifier
     final executor = ref.read(networkDiagnosticsExecutorProvider);
     if (executor == null) {
       throw const ConnectivityError(
-          message: 'NetworkDiagnosticsExecutor not available');
+          detail: 'NetworkDiagnosticsExecutor not available');
     }
     final scope = await executor.acquireScope();
     _scope = scope;
@@ -296,7 +296,8 @@ class UnifiedDiagnosticsNotifier
     if (_cancelled) return;
     final svc = _svc;
     if (svc == null) {
-      _setError('Diagnostics service not available');
+      _setError(const ServiceNotInitializedError(
+          detail: 'Diagnostics service not available'));
       return;
     }
 
@@ -450,7 +451,8 @@ class UnifiedDiagnosticsNotifier
     if (_cancelled) return;
     final svc = _svc;
     if (svc == null) {
-      _setError('Diagnostics service not available');
+      _setError(const ServiceNotInitializedError(
+          detail: 'Diagnostics service not available'));
       return;
     }
 
@@ -576,7 +578,8 @@ class UnifiedDiagnosticsNotifier
     if (_cancelled) return;
     final svc = _svc;
     if (svc == null) {
-      _setError('Diagnostics service not available');
+      _setError(const ServiceNotInitializedError(
+          detail: 'Diagnostics service not available'));
       return;
     }
 
@@ -628,7 +631,8 @@ class UnifiedDiagnosticsNotifier
     if (_cancelled) return;
     final svc = _svc;
     if (svc == null) {
-      _setError('Diagnostics service not available');
+      _setError(const ServiceNotInitializedError(
+          detail: 'Diagnostics service not available'));
       return;
     }
 
@@ -674,7 +678,8 @@ class UnifiedDiagnosticsNotifier
     if (_cancelled) return;
     final svc = _svc;
     if (svc == null) {
-      _setError('Diagnostics service not available');
+      _setError(const ServiceNotInitializedError(
+          detail: 'Diagnostics service not available'));
       return;
     }
 
@@ -751,7 +756,8 @@ class UnifiedDiagnosticsNotifier
     if (_cancelled) return;
     final svc = _svc;
     if (svc == null) {
-      _setError('Diagnostics service not available');
+      _setError(const ServiceNotInitializedError(
+          detail: 'Diagnostics service not available'));
       return;
     }
 
@@ -836,7 +842,7 @@ class UnifiedDiagnosticsNotifier
         }
       } else if (speedState.step == SpeedTestStep.error) {
         if (!completer.isCompleted) {
-          logger.w('[Diagnostics] SpeedTest error: ${speedState.errorMessage}');
+          logger.w('[Diagnostics] SpeedTest error: ${speedState.error}');
           completer.complete(null);
         }
       }
@@ -1357,11 +1363,11 @@ class UnifiedDiagnosticsNotifier
     );
   }
 
-  void _setError(String message) {
-    logger.e('[Diagnostics] Error: $message');
+  void _setError(ServiceError error) {
+    logger.e('[Diagnostics] Error: $error');
     state = state.copyWith(
       step: DiagnosticStep.showingResults,
-      errorMessage: message,
+      error: error,
     );
   }
 }

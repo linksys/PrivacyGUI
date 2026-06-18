@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/components/localizations/service_error_localizations.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/_shared/components/dashboard_card_template.dart';
 import 'package:privacy_gui/page/unified_diagnostics/models/speed_test_state.dart';
@@ -129,7 +130,9 @@ class UspSpeedTestCard extends ConsumerWidget {
         AppIcon.font(Icons.error_outline, size: 32, color: colorScheme.error),
         AppGap.sm(),
         AppText.bodySmall(
-          state.errorMessage ?? 'Test failed',
+          state.error != null
+              ? localizeServiceError(context, state.error!)
+              : 'Test failed',
           textAlign: TextAlign.center,
           color: colorScheme.onSurfaceVariant,
           maxLines: 2,

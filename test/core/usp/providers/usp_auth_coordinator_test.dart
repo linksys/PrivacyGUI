@@ -4,6 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:privacy_gui/constants/error_code.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/providers/usp_auth_coordinator.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 
@@ -205,6 +207,45 @@ void main() {
       // Immediate ensureAuth should skip
       await coordinator.ensureAuth();
       verifyNever(() => mockUsp.refreshToken());
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // tryUspLogin error mapping — WASM errors → typed ServiceError for the UI
+  // ---------------------------------------------------------------------------
+  group('tryUspLogin error mapping', () {
+    test(
+        'account-locked WASM error → UnexpectedError carrying '
+        'errorAdminAccountLocked (so the login view shows the lockout message)',
+        () async {
+      when(() => mockUsp.login(any()))
+          .thenThrow(Exception('Account is locked'));
+
+      await expectLater(
+        coordinator.tryUspLogin('password'),
+        throwsA(isA<UnexpectedError>()
+            .having((e) => e.detail, 'detail', errorAdminAccountLocked)),
+      );
+    });
+
+    test('invalid-credentials WASM error → InvalidCredentialsError', () async {
+      when(() => mockUsp.login(any())).thenThrow(
+          Exception('Login failed: Authentication error: Invalid credentials'));
+
+      await expectLater(
+        coordinator.tryUspLogin('password'),
+        throwsA(isA<InvalidCredentialsError>()),
+      );
+    });
+
+    test('authenticated=false after login → InvalidCredentialsError', () async {
+      when(() => mockUsp.login(any())).thenAnswer((_) async {});
+      when(() => mockUsp.isAuthenticated).thenReturn(false);
+
+      await expectLater(
+        coordinator.tryUspLogin('password'),
+        throwsA(isA<InvalidCredentialsError>()),
+      );
     });
   });
 

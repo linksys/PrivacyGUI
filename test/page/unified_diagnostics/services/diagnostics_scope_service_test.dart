@@ -55,7 +55,7 @@ void main() {
 
     test('rethrows ServiceError unchanged', () async {
       when(() => mockExecutor.acquireScope())
-          .thenThrow(const NetworkError(message: 'Connection lost'));
+          .thenThrow(const NetworkError(detail: 'Connection lost'));
 
       expect(
         () => service.acquireScope(),
@@ -152,7 +152,7 @@ void main() {
             host: any(named: 'host'),
             numberOfRepetitions: any(named: 'numberOfRepetitions'),
             timeout: any(named: 'timeout'),
-          )).thenThrow(const InvalidInputError(message: 'Invalid host'));
+          )).thenThrow(const InvalidInputError(detail: 'Invalid host'));
 
       expect(
         () => service.ping(mockScope, host: 'invalid'),

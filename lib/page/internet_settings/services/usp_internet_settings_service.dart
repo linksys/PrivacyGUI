@@ -18,8 +18,8 @@ import 'package:privacy_gui/page/internet_settings/models/usp_wan_connection_typ
 /// Stateless service that wraps USP generated code for internet settings.
 ///
 /// Provides fetch, diff-based save, and DHCP renewal operations.
-/// Handles PPP/VLAN multi-instance lifecycle (Add/Delete) and
-/// DNS comma-separated conversion.
+/// Handles PPP instance lifecycle (Add) and VLAN enable/disable via SET on an
+/// existing instance, plus DNS comma-separated conversion.
 class UspInternetSettingsService {
   final UspClient _usp;
 
@@ -57,7 +57,6 @@ class UspInternetSettingsService {
         debugIpv6Enabled: ipv6.ipv6Enabled,
       );
     } catch (e) {
-      if (e is ServiceError) rethrow;
       throw mapUspErrorToServiceError(e);
     }
   }
@@ -405,12 +404,12 @@ class UspInternetSettingsService {
         throw UspPartialFailureError(
           summary: 'WAN update partial failure: $errorSummary',
           successPaths: successes.map((s) => s.requestedPath).toList(),
-          failedPaths: failures.map((f) => f.requestedPath).toList(),
+          failures: failures,
         );
       case UspFailure(:final errorSummary, :final errors):
         throw UspCompleteFailureError(
           summary: 'WAN update failed: $errorSummary',
-          failedPaths: errors.map((e) => e.requestedPath).toList(),
+          failures: errors,
         );
     }
   }
@@ -429,12 +428,12 @@ class UspInternetSettingsService {
         throw UspPartialFailureError(
           summary: 'WAN operation partial failure: $errorSummary',
           successPaths: successes.map((s) => s.requestedPath).toList(),
-          failedPaths: failures.map((f) => f.requestedPath).toList(),
+          failures: failures,
         );
       case UspFailure(:final errorSummary, :final errors):
         throw UspCompleteFailureError(
           summary: 'WAN operation failed: $errorSummary',
-          failedPaths: errors.map((e) => e.requestedPath).toList(),
+          failures: errors,
         );
     }
   }
@@ -445,7 +444,9 @@ class InternetSettingsFetchResult {
   final UspInternetSettingsForm form;
   final InternetSettingsReadOnlyInfo readOnlyInfo;
 
-  /// Instance paths for lifecycle management — tracked by state/notifier.
+  /// Existing instance paths tracked by state/notifier: [pppInstancePath] for
+  /// the PPP instance lifecycle, [vlanInstancePath] as the SET target for VLAN
+  /// enable/disable.
   final String? pppInstancePath;
   final String? vlanInstancePath;
 

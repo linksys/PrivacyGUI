@@ -90,7 +90,7 @@ void main() {
 
     test('uploadChunk rethrows ServiceError', () async {
       when(() => mockUsp.operate(any(), args: any(named: 'args')))
-          .thenThrow(const NetworkError(message: 'Connection lost'));
+          .thenThrow(const NetworkError(detail: 'Connection lost'));
 
       expect(
         () => strategy.uploadChunk(
