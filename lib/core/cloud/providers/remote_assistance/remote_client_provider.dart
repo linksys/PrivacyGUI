@@ -147,6 +147,8 @@ class RemoteClientNotifier extends Notifier<RemoteClientState> {
     });
   }
 
+  // yield synchronously triggers the listener in _startSessionInfoStream,
+  // which updates state before the next loop iteration checks expiredIn.
   Stream<GRASessionInfo?> _fetchSessionInfoStream(String sessionId,
       {int interval = 3}) async* {
     while (state.sessionInfo?.expiredIn != null &&
