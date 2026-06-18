@@ -83,6 +83,25 @@ class _RemoteAssistanceDialogState
     final colorScheme = Theme.of(context).colorScheme;
     final status = state.sessionInfo?.status;
 
+    // Listen for session becoming invalid while ACTIVE and auto-show message
+    ref.listen(remoteClientProvider, (prev, next) {
+      final prevStatus = prev?.sessionInfo?.status;
+      final nextStatus = next.sessionInfo?.status;
+
+      // Only trigger if status was ACTIVE and changed TO invalid
+      if (prevStatus == GRASessionStatus.active &&
+          nextStatus == GRASessionStatus.invalid) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Remote assistance session has ended'),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      }
+    });
+
     return AlertDialog(
       contentPadding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
       content: SizedBox(
@@ -681,12 +700,39 @@ class _CountdownChip extends StatelessWidget {
 /// Dialog shown when an ACTIVE RA session is restored after page refresh.
 ///
 /// This is a blocking dialog that only allows ending the session.
+/// Automatically closes when the session becomes INVALID (e.g., CA ended it).
 class RemoteAssistanceActiveDialog extends ConsumerWidget {
   const RemoteAssistanceActiveDialog({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(remoteClientProvider);
+    final status = state.sessionInfo?.status;
+
+    // Listen for session becoming invalid and auto-close
+    ref.listen(remoteClientProvider, (prev, next) {
+      final prevStatus = prev?.sessionInfo?.status;
+      final nextStatus = next.sessionInfo?.status;
+
+      // Only trigger if status changed TO invalid (not initial)
+      if (prevStatus != null &&
+          prevStatus != GRASessionStatus.invalid &&
+          nextStatus == GRASessionStatus.invalid) {
+        // Show snackbar and close dialog
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Remote assistance session has ended'),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+          Navigator.of(context).pop();
+        }
+      }
+    });
+
+    // If already invalid when dialog opens (edge case), show invalid UI
+    final isInvalid = status == GRASessionStatus.invalid;
 
     return AlertDialog(
       contentPadding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
@@ -695,26 +741,41 @@ class RemoteAssistanceActiveDialog extends ConsumerWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Header with animated icon
-            const _ActiveAnimatedIcon(),
+            // Header
+            if (isInvalid)
+              _StatusIcon(
+                icon: Icons.error_outline,
+                color: Theme.of(context).colorScheme.error,
+                backgroundColor: Theme.of(context).colorScheme.errorContainer,
+              )
+            else
+              const _ActiveAnimatedIcon(),
             AppGap.lg(),
             AppText.titleLarge(loc(context).remoteAssistance),
             AppGap.xl(),
             // Content
-            _ActiveContent(state: state),
+            if (isInvalid)
+              const _InvalidContent()
+            else
+              _ActiveContent(state: state),
             AppGap.xl(),
-            // Actions - only End Session
+            // Actions
             SizedBox(
               width: double.infinity,
-              child: AppButton.danger(
-                label: 'End Session',
-                onTap: () async {
-                  await ref
-                      .read(remoteClientProvider.notifier)
-                      .endRemoteAssistance();
-                  if (context.mounted) Navigator.of(context).pop();
-                },
-              ),
+              child: isInvalid
+                  ? AppButton.text(
+                      label: loc(context).close,
+                      onTap: () => Navigator.of(context).pop(),
+                    )
+                  : AppButton.danger(
+                      label: 'End Session',
+                      onTap: () async {
+                        await ref
+                            .read(remoteClientProvider.notifier)
+                            .endRemoteAssistance();
+                        if (context.mounted) Navigator.of(context).pop();
+                      },
+                    ),
             ),
           ],
         ),
