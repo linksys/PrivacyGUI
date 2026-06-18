@@ -14,6 +14,8 @@ import 'package:privacy_gui/route/router_provider.dart';
 import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
 import 'package:privacy_gui/page/_shared/components/remote_session_chip.dart';
 import 'package:privacy_gui/page/_shared/components/sse_connection_banner.dart';
+import 'package:privacy_gui/page/remote_assistance/views/remote_assistance_banner.dart';
+import 'package:privacy_gui/page/remote_assistance/views/remote_assistance_session_guard.dart';
 import 'package:privacy_gui/page/_shared/providers/usp_bars_visible_provider.dart';
 import 'package:privacy_gui/page/dashboard/mascot/linksys_mascot_renderer.dart';
 import 'package:privacy_gui/page/dashboard/mascot/mascot_providers.dart'
@@ -85,6 +87,8 @@ class UspDashboardShell extends ConsumerWidget {
         Column(
           children: [
             const SseConnectionBanner(),
+            // Remote Assistance Banner (for PENDING status after refresh, client-side only)
+            if (!isRemoteMode) const RemoteAssistanceBanner(),
             Expanded(
               child: NotificationListener<UserScrollNotification>(
                 onNotification: (notification) {
@@ -135,6 +139,12 @@ class UspDashboardShell extends ConsumerWidget {
         ),
         child: content,
       );
+    }
+
+    // Wrap with RemoteAssistanceSessionGuard for client-side session recovery
+    // (shows blocking dialog if ACTIVE session exists after page refresh)
+    if (!isRemoteMode) {
+      content = RemoteAssistanceSessionGuard(child: content);
     }
 
     return Scaffold(
