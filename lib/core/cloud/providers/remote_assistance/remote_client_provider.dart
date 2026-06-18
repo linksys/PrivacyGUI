@@ -20,15 +20,18 @@ class RemoteClientNotifier extends Notifier<RemoteClientState> {
   RemoteClientState build() => RemoteClientState();
 
   Future<GRASessionInfo?> fetchSessionInfo(
-    String sessionId,
-  ) async {
+    String sessionId, {
+    bool startCountdown = false,
+  }) async {
     final master = ref.read(deviceManagerProvider).masterDevice;
 
     final sessionInfo = await ref
         .read(deviceCloudServiceProvider)
         .getSessionInfo(master: master, sessionId: sessionId);
     state = state.copyWith(sessionInfo: () => sessionInfo);
-    _startExpiredCountdownTimer(sessionInfo);
+    if (startCountdown) {
+      _startExpiredCountdownTimer(sessionInfo);
+    }
     return sessionInfo;
   }
 
@@ -38,6 +41,33 @@ class RemoteClientNotifier extends Notifier<RemoteClientState> {
         await ref.read(deviceCloudServiceProvider).getSessions(master: master);
     state = state.copyWith(sessions: () => sessions);
     return sessions;
+  }
+
+  Future<GRASessionStatus?> checkActiveSession() async {
+    logger.i('[RemoteAssistance]: checkActiveSession');
+    try {
+      final sessions = await fetchSessions();
+      if (sessions.isEmpty) {
+        state = state.copyWith(sessionInfo: () => null);
+        return null;
+      }
+      final master = ref.read(deviceManagerProvider).masterDevice;
+      final sessionInfo = await ref
+          .read(deviceCloudServiceProvider)
+          .getSessionInfo(master: master, sessionId: sessions.first.id);
+      state = state.copyWith(sessionInfo: () => sessionInfo);
+      return sessionInfo.status;
+    } catch (e) {
+      logger.e('[RemoteAssistance]: checkActiveSession error: $e');
+      return null;
+    }
+  }
+
+  void startSessionInfoStream() {
+    final sessionId = state.sessionInfo?.id;
+    if (sessionId != null) {
+      _startSessionInfoStream(sessionId);
+    }
   }
 
   Future<void> initiateRemoteAssistance() async {
@@ -76,7 +106,7 @@ class RemoteClientNotifier extends Notifier<RemoteClientState> {
       return;
     }
     logger.i('[RemoteAssistance]: sessions: ${sessions.first.id}');
-    final sessionInfo = await fetchSessionInfo(sessions.first.id);
+    final sessionInfo = await fetchSessionInfo(sessions.first.id, startCountdown: true);
     if (sessionInfo == null) {
       state = RemoteClientState();
       return;
@@ -117,12 +147,14 @@ class RemoteClientNotifier extends Notifier<RemoteClientState> {
     });
   }
 
-  // create a stream to fetch session info every 3 seconds
   Stream<GRASessionInfo?> _fetchSessionInfoStream(String sessionId,
       {int interval = 3}) async* {
     while (state.sessionInfo?.expiredIn != null &&
         state.sessionInfo!.expiredIn < 0) {
-      final sessionInfo = await fetchSessionInfo(sessionId);
+      final master = ref.read(deviceManagerProvider).masterDevice;
+      final sessionInfo = await ref
+          .read(deviceCloudServiceProvider)
+          .getSessionInfo(master: master, sessionId: sessionId);
       yield sessionInfo;
       await Future.delayed(Duration(seconds: interval));
     }
@@ -142,7 +174,7 @@ class RemoteClientNotifier extends Notifier<RemoteClientState> {
     _expiredCountdownTimer =
         Timer.periodic(const Duration(seconds: 1), (timer) {
       var expiredCountdown = state.expiredCountdown;
-      expiredCountdown ??= sessionInfo.expiredIn * -1;
+      expiredCountdown ??= sessionInfo.expiredIn.abs();
       expiredCountdown--;
       state = state.copyWith(expiredCountdown: () => expiredCountdown);
       if (expiredCountdown < 0) {

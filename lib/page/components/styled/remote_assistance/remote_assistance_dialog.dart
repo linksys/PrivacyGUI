@@ -10,31 +10,41 @@ import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacy_gui/core/cloud/model/guardians_remote_assistance.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-void showRemoteAssistanceDialog(BuildContext context, WidgetRef ref) {
-  showDialog(
+Future<void> showRemoteAssistanceDialog(BuildContext context, WidgetRef ref,
+    {bool isPassive = false}) {
+      
+  return showDialog(
     context: context,
     barrierDismissible: false,
     builder: (context) {
-      bool isLoading = true;
+      bool isReady = isPassive;
+      bool hasInitialized = false;
       return Consumer(
         builder: (context, ref, child) {
           return AlertDialog(
             title: AppText.titleMedium(loc(context).remoteAssistance),
             content: StatefulBuilder(builder: (context, setState) {
-              if (isLoading) {
-                ref
-                    .read(remoteClientProvider.notifier)
-                    .initiateRemoteAssistance()
-                    .then((_) {
-                  setState(() {
-                    isLoading = false;
+              if (!hasInitialized) {
+                hasInitialized = true;
+                if (isPassive) {
+                  ref
+                      .read(remoteClientProvider.notifier)
+                      .startSessionInfoStream();
+                } else {
+                  ref
+                      .read(remoteClientProvider.notifier)
+                      .initiateRemoteAssistance()
+                      .then((_) {
+                    setState(() {
+                      isReady = true;
+                    });
                   });
-                });
+                }
               }
               return SizedBox(
                 width: 400,
                 height: 400,
-                child: isLoading
+                child: !isReady
                     ? const Center(child: CircularProgressIndicator())
                     : _buildRemoteAssistanceDialog(ref, context),
               );
@@ -91,7 +101,7 @@ Widget _buildInitiateWidget(BuildContext context) {
 }
 
 Widget _buildPendingWidget(RemoteClientState state, BuildContext context) {
-  final initialSeconds = (2700 + (state.sessionInfo?.expiredIn ?? 0)) * -1;
+  final initialSeconds = (2700 + (state.sessionInfo?.expiredIn ?? 0)).abs();
   return Column(
     mainAxisSize: MainAxisSize.min,
     crossAxisAlignment: CrossAxisAlignment.start,
@@ -118,7 +128,7 @@ Widget _buildInvalidWidget(BuildContext context) {
 }
 
 Widget _buildCountingWidget(RemoteClientState state, BuildContext context) {
-  final initialSeconds = (state.sessionInfo?.expiredIn ?? 0) * -1;
+  final initialSeconds = (state.sessionInfo?.expiredIn ?? 0).abs();
   return Column(
     mainAxisSize: MainAxisSize.min,
     crossAxisAlignment: CrossAxisAlignment.start,
