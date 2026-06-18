@@ -2,6 +2,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:privacy_gui/constants/error_code.dart';
 import 'package:privacy_gui/core/connection/services/router_fingerprint_service.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/models/device_info.dart';
@@ -247,6 +248,32 @@ void main() {
         () => notifier.localLogin('wrong', guardError: false),
         throwsA(isA<InvalidCredentialsError>()),
       );
+      container.dispose();
+    });
+
+    test(
+        'account-locked error is passed through to the view as '
+        'errorAdminAccountLocked (not overwritten to errorUnexpected)',
+        () async {
+      // The coordinator surfaces account-locked as an UnexpectedError carrying
+      // the error-code identifier in `detail`. _mapToViewError must keep it.
+      when(() => mockUspCoordinator.tryUspLogin('locked')).thenThrow(
+          UnexpectedError(
+              originalError: Exception('Account is locked'),
+              detail: errorAdminAccountLocked));
+
+      final container = createContainer();
+      container.read(authProvider);
+      await Future.delayed(Duration.zero);
+
+      final notifier = container.read(authProvider.notifier);
+      await notifier.localLogin('locked', guardError: true);
+
+      final state = container.read(authProvider);
+      expect(state.hasError, isTrue);
+      final error = state.error;
+      expect(error, isA<UnexpectedError>());
+      expect((error as UnexpectedError).detail, errorAdminAccountLocked);
       container.dispose();
     });
 

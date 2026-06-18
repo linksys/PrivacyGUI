@@ -102,6 +102,13 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
 
   /// Maps ServiceError to UnexpectedError with proper error code for View layer.
   ServiceError _mapToViewError(Object error) {
+    // Passthrough: the coordinator may already have produced an UnexpectedError
+    // carrying an error-code identifier in `detail` (e.g. account-locked). Don't
+    // overwrite it with the generic errorUnexpected below — keep it so the login
+    // view's errorCodeHelper can resolve the specific message.
+    if (error is UnexpectedError && error.detail == errorAdminAccountLocked) {
+      return error;
+    }
     if (error is InvalidCredentialsError) {
       return UnexpectedError(
         detail: errorInvalidAdminPassword,

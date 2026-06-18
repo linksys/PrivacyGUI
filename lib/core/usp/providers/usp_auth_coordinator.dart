@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:privacy_gui/constants/error_code.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
@@ -162,7 +163,10 @@ class UspAuthCoordinator {
       // Map WASM errors to ServiceError
       final errorStr = e.toString();
       if (_isAccountLockedError(e)) {
-        throw UnexpectedError(originalError: e, detail: 'Account locked');
+        // Carry the error-code identifier (not a free-form string) so the login
+        // view's errorCodeHelper resolves it to the "too many attempts /
+        // account locked" message. See _mapToViewError passthrough.
+        throw UnexpectedError(originalError: e, detail: errorAdminAccountLocked);
       } else if (_isAuthError(e)) {
         throw const InvalidCredentialsError();
       } else if (errorStr.contains('HTTP 5') ||
