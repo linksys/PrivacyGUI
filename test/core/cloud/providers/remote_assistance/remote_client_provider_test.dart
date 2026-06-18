@@ -4,7 +4,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/cloud/model/guardians_remote_assistance.dart';
 import 'package:privacy_gui/core/cloud/providers/remote_assistance/remote_client_provider.dart';
 import 'package:privacy_gui/core/cloud/providers/remote_assistance/remote_client_state.dart';
-import 'package:privacy_gui/page/remote_assistance/services/remote_assistance_service.dart';
+import 'package:privacy_gui/core/cloud/services/remote_assistance_service.dart';
 
 import '../../../../mocks/test_data/remote_assistance_test_data.dart';
 
@@ -305,7 +305,8 @@ void main() {
         expect(state, const RemoteClientState());
       });
 
-      test('does not delete session when session is PENDING', () async {
+      test('deletes session when session is PENDING (PIN exists server-side)',
+          () async {
         final session = RemoteAssistanceTestData.pendingSession();
 
         when(() => mockService.fetchSessions(
@@ -329,6 +330,13 @@ void main() {
             .thenAnswer(
                 (_) async => RemoteAssistanceTestData.createPinResult());
 
+        when(() => mockService.endSession(
+              sessionId: any(named: 'sessionId'),
+              serialNumber: any(named: 'serialNumber'),
+              macAddress: any(named: 'macAddress'),
+              deviceUUID: any(named: 'deviceUUID'),
+            )).thenAnswer((_) async {});
+
         final container = createContainer();
         addTearDown(container.dispose);
 
@@ -338,12 +346,13 @@ void main() {
         await notifier.initiateRemoteAssistance();
         await notifier.endRemoteAssistance();
 
-        verifyNever(() => mockService.endSession(
+        // PENDING now calls endSession because PIN exists server-side
+        verify(() => mockService.endSession(
               sessionId: any(named: 'sessionId'),
               serialNumber: any(named: 'serialNumber'),
               macAddress: any(named: 'macAddress'),
               deviceUUID: any(named: 'deviceUUID'),
-            ));
+            )).called(1);
 
         final state = container.read(remoteClientProvider);
         expect(state, const RemoteClientState());

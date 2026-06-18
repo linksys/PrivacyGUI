@@ -1,6 +1,11 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+// ignore: avoid_web_libraries_in_flutter
+import 'dart:html'
+    if (dart.library.io) 'package:privacy_gui/providers/remote_access/stub_html.dart'
+    as html;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
@@ -14,7 +19,7 @@ import 'package:privacy_gui/core/utils/device_image_helper.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/page/remote_assistance/services/remote_assistance_service.dart';
+import 'package:privacy_gui/core/cloud/services/remote_assistance_service.dart';
 import 'package:privacy_gui/providers/remote_access/remote_access_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -53,6 +58,14 @@ class _RemoteAssistanceConfirmViewState
   @override
   void initState() {
     super.initState();
+    // Strip token from URL to prevent leakage via history/Referer
+    if (kIsWeb && widget.token.isNotEmpty) {
+      html.window.history.replaceState(
+        null,
+        '',
+        '${RoutePath.remoteAssistanceConfirm}?session=${widget.sessionId}',
+      );
+    }
     // Auto-validate if all required params are present
     if (_hasRequiredParams) {
       WidgetsBinding.instance.addPostFrameCallback((_) {

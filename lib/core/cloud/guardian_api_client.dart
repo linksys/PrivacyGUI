@@ -6,6 +6,8 @@ import 'package:http/http.dart' as http;
 import 'package:privacy_gui/constants/_constants.dart';
 import 'package:privacy_gui/core/cloud/http/linksys_http_client.dart';
 import 'package:privacy_gui/core/cloud/model/guardians_remote_assistance.dart';
+import 'package:privacy_gui/core/cloud/model/error_response.dart';
+import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 
 final guardianApiClientProvider = Provider((ref) => GuardianApiClient());
@@ -70,7 +72,15 @@ class GuardianApiClient {
     });
 
     final response = await _http.get(url, headers: _defaultHeaders);
-    final token = jsonDecode(response.body)['linksysToken'] as String;
+    final body = jsonDecode(response.body);
+    final token = body['linksysToken'] as String?;
+    if (token == null || token.isEmpty) {
+      throw ErrorResponse(
+        status: response.statusCode,
+        code: 'MISSING_TOKEN',
+        errorMessage: 'Device token not found in response',
+      );
+    }
 
     await storage.write(key: pLinksysToken, value: token);
     await storage.write(
@@ -132,11 +142,17 @@ class GuardianApiClient {
       serialNumber: serialNumber,
     );
     final body = jsonDecode(response.body);
-    logger.d('[Guardian] createPin response: $body');
-    return (
-      sessionId: body['id'] as String? ?? '',
-      pin: body['pin'] as String? ?? '',
-    );
+    final sessionId = body['id'] as String?;
+    final pin = body['pin'] as String?;
+    if (sessionId == null || sessionId.isEmpty || pin == null || pin.isEmpty) {
+      throw ErrorResponse(
+        status: response.statusCode,
+        code: 'MISSING_PIN',
+        errorMessage: 'PIN or session ID not found in response',
+      );
+    }
+    logger.d('[Guardian] createPin: success');
+    return (sessionId: sessionId, pin: pin);
   }
 
   /// Delete/terminate a Remote Assistance session.
@@ -226,9 +242,22 @@ class GuardianApiClient {
   void _validateResponse(http.Response response) {
     if (response.statusCode >= 400) {
       logger.w('[Guardian] API error: ${response.statusCode} ${response.body}');
-      throw http.ClientException(
-        'API error ${response.statusCode}: ${response.reasonPhrase}',
-        response.request?.url,
+      // Try to parse JSON error response
+      if (response.body.isJsonFormat()) {
+        throw ErrorResponse.fromJson(
+            response.statusCode, jsonDecode(response.body));
+      }
+      // Non-JSON: create error from HTTP status
+      final code = switch (response.statusCode) {
+        401 => 'UNAUTHORIZED',
+        403 => 'FORBIDDEN',
+        404 => 'NOT_FOUND',
+        _ => 'HTTP_ERROR',
+      };
+      throw ErrorResponse(
+        status: response.statusCode,
+        code: code,
+        errorMessage: response.reasonPhrase,
       );
     }
   }

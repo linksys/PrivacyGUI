@@ -3,7 +3,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/cloud/guardian_api_client.dart';
 import 'package:privacy_gui/core/cloud/model/guardians_remote_assistance.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
-import 'package:privacy_gui/page/remote_assistance/services/remote_assistance_service.dart';
+import 'package:privacy_gui/core/cloud/services/remote_assistance_service.dart';
 
 import '../../../mocks/test_data/remote_assistance_test_data.dart';
 

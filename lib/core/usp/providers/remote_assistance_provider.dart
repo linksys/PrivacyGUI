@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/constants/cloud_const.dart';
+import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/di.dart';
@@ -90,16 +91,17 @@ class RemoteAssistanceNotifier extends Notifier<RemoteAssistanceState> {
     final jsClient = builder.build();
     final raClient = UspClient.fromBuilder(jsClient);
 
-    // Replace the existing UspClient singleton
-    if (getIt.isRegistered<UspClient>()) {
-      logger.d('[RA] Unregistering existing UspClient');
-      final oldClient = getIt<UspClient>();
-      getIt.unregister<UspClient>();
-      oldClient.dispose();
-    }
-
-    getIt.registerSingleton<UspClient>(raClient);
-    logger.i('[RA] UspClient replaced with Guardian-proxied client');
+    // Swap UspClient atomically with mutation lock to prevent races
+    await ref.read(uspMutationLockProvider).withLock(() async {
+      if (getIt.isRegistered<UspClient>()) {
+        logger.d('[RA] Unregistering existing UspClient');
+        final oldClient = getIt<UspClient>();
+        getIt.unregister<UspClient>();
+        oldClient.dispose();
+      }
+      getIt.registerSingleton<UspClient>(raClient);
+      logger.i('[RA] UspClient replaced with Guardian-proxied client');
+    });
 
     // Set login type to remote so auth checks pass
     ref.read(authProvider.notifier).setLoginType(LoginType.remote);
@@ -112,10 +114,21 @@ class RemoteAssistanceNotifier extends Notifier<RemoteAssistanceState> {
 
   /// Deactivates Remote Assistance mode.
   ///
-  /// Note: This does NOT restore the original local UspClient.
+  /// Disposes and unregisters the Guardian-proxied UspClient.
   /// The app should navigate to login or restart for normal operation.
-  void deactivate() {
+  Future<void> deactivate() async {
     logger.i('[RA] Deactivating Remote Assistance');
+
+    // Dispose the RA client if registered
+    await ref.read(uspMutationLockProvider).withLock(() async {
+      if (getIt.isRegistered<UspClient>()) {
+        final client = getIt<UspClient>();
+        getIt.unregister<UspClient>();
+        client.dispose();
+        logger.d('[RA] UspClient unregistered and disposed');
+      }
+    });
+
     state = const RemoteAssistanceState();
   }
 }

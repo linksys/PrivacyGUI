@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/cloud/model/guardians_remote_assistance.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
-import 'package:privacy_gui/page/remote_assistance/services/remote_assistance_service.dart';
+import 'package:privacy_gui/core/cloud/services/remote_assistance_service.dart';
 import 'package:privacy_gui/providers/remote_access/remote_access_state.dart';
 // ignore: avoid_web_libraries_in_flutter, sessionStorage for web persistence
 import 'dart:html'

@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/cloud/model/guardians_remote_assistance.dart';
-import 'package:privacy_gui/page/remote_assistance/services/remote_assistance_service.dart';
+import 'package:privacy_gui/core/cloud/services/remote_assistance_service.dart';
 import 'package:privacy_gui/providers/remote_access/remote_access_provider.dart';
 
 class MockRemoteAssistanceService extends Mock

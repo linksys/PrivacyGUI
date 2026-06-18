@@ -5,7 +5,7 @@ import 'package:privacy_gui/core/cloud/model/guardians_remote_assistance.dart';
 import 'package:privacy_gui/core/cloud/providers/remote_assistance/remote_client_state.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
-import 'package:privacy_gui/page/remote_assistance/services/remote_assistance_service.dart';
+import 'package:privacy_gui/core/cloud/services/remote_assistance_service.dart';
 
 final remoteClientProvider =
     NotifierProvider<RemoteClientNotifier, RemoteClientState>(
@@ -143,7 +143,7 @@ class RemoteClientNotifier extends Notifier<RemoteClientState> {
         deviceUUID: creds.deviceUUID,
       );
       state = state.copyWith(pin: () => result.pin);
-      logger.i('[RemoteAssistance]: PIN created: ${result.pin}');
+      logger.i('[RemoteAssistance]: PIN created successfully');
     } on ServiceError catch (e) {
       logger.e('[RemoteAssistance]: Failed to create PIN', error: e);
       rethrow;
@@ -276,21 +276,29 @@ class RemoteClientNotifier extends Notifier<RemoteClientState> {
     _expiredCountdownTimer = null;
 
     final sessionId = state.sessionInfo?.id;
-    if (sessionId == null) {
+    final status = state.sessionInfo?.status;
+    if (sessionId == null || sessionId.isEmpty) {
       state = const RemoteClientState();
       return;
     }
 
-    // Only delete if session is active
-    if (state.sessionInfo?.status == GRASessionStatus.active) {
+    // Delete session if PENDING or ACTIVE (PIN exists server-side)
+    if (status == GRASessionStatus.pending ||
+        status == GRASessionStatus.active) {
       final creds = _creds;
-      await _svc.endSession(
-        sessionId: sessionId,
-        serialNumber: creds.serialNumber,
-        macAddress: creds.macAddress,
-        deviceUUID: creds.deviceUUID,
-      );
-      logger.i('[RemoteAssistance]: Session ended');
+      try {
+        await _svc.endSession(
+          sessionId: sessionId,
+          serialNumber: creds.serialNumber,
+          macAddress: creds.macAddress,
+          deviceUUID: creds.deviceUUID,
+        );
+        logger.i('[RemoteAssistance]: Session ended (was $status)');
+      } on ServiceError catch (e) {
+        // Log but don't block UI flow if server-side deletion fails
+        logger.w('[RemoteAssistance]: Failed to end session on server',
+            error: e);
+      }
     }
 
     state = const RemoteClientState();
