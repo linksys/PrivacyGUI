@@ -63,6 +63,20 @@ class _RemoteSessionChipState extends ConsumerState<RemoteSessionChip> {
       return const SizedBox.shrink();
     }
 
+    // Listen for session becoming invalid (e.g., 401 from polling)
+    // and auto-disconnect
+    ref.listen(remoteAccessProvider, (prev, next) {
+      final prevStatus = prev?.sessionInfo?.status;
+      final nextStatus = next.sessionInfo?.status;
+
+      // Only trigger if status changed TO invalid (not initial invalid)
+      if (prevStatus != null &&
+          prevStatus != GRASessionStatus.invalid &&
+          nextStatus == GRASessionStatus.invalid) {
+        _handleForceDisconnect(context, ref);
+      }
+    });
+
     final remainingSeconds = state.remainingSeconds ?? 0;
     final colorScheme = Theme.of(context).colorScheme;
     final urgencyColor = _getUrgencyColor(remainingSeconds, colorScheme);
@@ -217,6 +231,29 @@ class _RemoteSessionChipState extends ConsumerState<RemoteSessionChip> {
 
     // Navigate using captured router, then logout after frame completes
     router.go('${RoutePath.remoteAssistanceConfirm}?ended=true');
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      authNotifier.logout();
+    });
+  }
+
+  /// Handle force disconnect when session becomes invalid (e.g., 401).
+  ///
+  /// Unlike manual disconnect, we don't call the API (it already failed)
+  /// and we use a different query param to show appropriate message.
+  void _handleForceDisconnect(BuildContext context, WidgetRef ref) {
+    _removePopup();
+
+    final router = GoRouter.of(context);
+    final notifier = ref.read(remoteAccessProvider.notifier);
+    final authNotifier = ref.read(authProvider.notifier);
+
+    logger.d('[RA] Force disconnect due to session invalidation');
+
+    // Clear session state
+    notifier.clearSession();
+
+    // Navigate with expired param (different message than manual end)
+    router.go('${RoutePath.remoteAssistanceConfirm}?expired=true');
     WidgetsBinding.instance.addPostFrameCallback((_) {
       authNotifier.logout();
     });

@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/cloud/model/guardians_remote_assistance.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/remote_assistance/services/remote_assistance_service.dart';
 import 'package:privacy_gui/providers/remote_access/remote_access_state.dart';
@@ -135,6 +136,10 @@ class RemoteAccessNotifier extends Notifier<RemoteAccessState> {
         _pollTimer?.cancel();
         _countdownTimer?.cancel();
       }
+    } on UnauthorizedError {
+      // 401 — session token invalid/expired, force end session
+      logger.w('[RA] Poll unauthorized (401) — forcing session end');
+      _forceSessionEnd();
     } catch (e) {
       _pollFailureCount++;
       logger.w('[RA] Poll failed (attempt $_pollFailureCount): $e');
@@ -143,6 +148,32 @@ class RemoteAccessNotifier extends Notifier<RemoteAccessState> {
         state = state.copyWith(hasPollError: true);
       }
     }
+  }
+
+  /// Force session end due to auth failure (401).
+  ///
+  /// Creates a new session info with INVALID status and stops all timers.
+  /// The UI will detect this state change and navigate away appropriately.
+  void _forceSessionEnd() {
+    _pollTimer?.cancel();
+    _countdownTimer?.cancel();
+
+    // Create invalid session info to trigger UI end flow
+    final currentInfo = state.sessionInfo;
+    if (currentInfo != null) {
+      final invalidInfo = GRASessionInfo(
+        id: currentInfo.id,
+        serialNumber: currentInfo.serialNumber,
+        modelNumber: currentInfo.modelNumber,
+        status: GRASessionStatus.invalid,
+        expiredIn: 0,
+        createdAt: currentInfo.createdAt,
+        statusChangedAt: DateTime.now().millisecondsSinceEpoch,
+        currentTime: DateTime.now().millisecondsSinceEpoch,
+      );
+      state = state.copyWith(sessionInfo: invalidInfo, remainingSeconds: 0);
+    }
+    _clearStorage();
   }
 
   /// Clear session state (when disconnecting).

@@ -149,6 +149,10 @@ class RemoteAssistanceService {
   /// Map Cloud API errors to ServiceError (Article XIII).
   ServiceError _mapError(Object error) {
     if (error is ErrorResponse) {
+      // Check HTTP status first — 401 always means unauthorized
+      if (error.status == 401) {
+        return const UnauthorizedError();
+      }
       return switch (error.code) {
         'INVALID_SESSION' ||
         'SESSION_EXPIRED' ||
