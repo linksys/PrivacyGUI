@@ -585,6 +585,7 @@
   "pnpWaitingModemTitle": "Giv dit modem tid til at kontakte din internetudbyder",
   "pnpWaitingModemWaitStartUp": "Venter på at dit modem er startet helt op",
   "pnpWiFiReady": "{ssid} er klar",
+  "pnpNetworkReady": "Dit netværk er klar",
   "pnpWiFiReadyConnectToNewWiFi": "Tilslut dine enheder til det nye WiFi-netværk",
   "pnpYourNetworkDesc": "Bekræft, at alle noder er her",
   "pnpYourNetworkTitle": "Dit netværk",

@@ -460,7 +460,7 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
       var ssid = '';
       if (_password != null) {
         ssid = await pnp.fetchData().then((value) {
-          return pnp.getDefaultWiFiNameAndPassphrase().name;
+          return pnp.getDefaultWiFiSettings().primaryRadio?.ssid ?? '';
         }).onError((error, stackTrace) {
           logger.e(
               '[PnP Troubleshooter]: Fetch data failed (Getting SSID): $error');

@@ -12,6 +12,7 @@ import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_exception.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_provider.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_step_state.dart';
+import 'package:privacy_gui/page/instant_setup/data/pnp_wifi_settings.dart';
 import 'package:privacy_gui/page/instant_setup/model/pnp_step.dart';
 import 'package:privacy_gui/page/instant_setup/pnp_setup_view.dart';
 import 'package:privacy_gui/route/route_model.dart';
@@ -51,11 +52,21 @@ void main() async {
       throw ExceptionInvalidAdminPassword();
     });
     when(mockPnpNotifier.fetchData()).thenAnswer((_) async {});
-    when(mockPnpNotifier.getDefaultWiFiNameAndPassphrase()).thenReturn((
-      name: 'Linksys1234567',
-      password: 'Linksys123456@',
-      security: 'WPA2/WPA3-Mixed-Personal'
-    ));
+    when(mockPnpNotifier.getDefaultWiFiSettings()).thenReturn(
+      const PnpWiFiSettings(
+        isSplitMode: false,
+        radios: [
+          PnpWiFiRadio(
+            radioId: 'RADIO_2.4GHz',
+            band: 'RADIO_2.4GHz',
+            ssid: 'Linksys1234567',
+            password: 'Linksys123456@',
+            security: 'WPA2/WPA3-Mixed-Personal',
+            isEnabled: true,
+          ),
+        ],
+      ),
+    );
     when(mockPnpNotifier.getDefaultGuestWiFiNameAndPassPhrase()).thenReturn((
       name: 'Guest-Linksys1234567',
       password: 'GuestLinksys123456@',
@@ -97,6 +108,56 @@ void main() async {
     // Trick - setState to trigger build
     final state =
         tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
+    state.setState(() {});
+    await tester.pumpAndSettle();
+  });
+
+  testLocalizations('Instant Setup - PnP: Personalize your wifi (split SSID)',
+      (tester, locale) async {
+    when(mockPnpNotifier.getDefaultWiFiSettings()).thenReturn(
+      const PnpWiFiSettings(
+        isSplitMode: true,
+        radios: [
+          PnpWiFiRadio(
+            radioId: 'RADIO_2.4GHz',
+            band: 'RADIO_2.4GHz',
+            ssid: 'DULinksys12294-2.4GHz',
+            password: 'Linksys123456@',
+            security: 'WPA2/WPA3-Mixed-Personal',
+            isEnabled: true,
+          ),
+          PnpWiFiRadio(
+            radioId: 'RADIO_5GHz',
+            band: 'RADIO_5GHz',
+            ssid: 'DULinksys12294-5GHz',
+            password: 'Linksys567890@',
+            security: 'WPA2/WPA3-Mixed-Personal',
+            isEnabled: true,
+          ),
+          PnpWiFiRadio(
+            radioId: 'RADIO_6GHz',
+            band: 'RADIO_6GHz',
+            ssid: 'DULinksys12294-6GHz',
+            password: 'Linksys135790@',
+            security: 'WPA3-Personal',
+            isEnabled: true,
+          ),
+        ],
+      ),
+    );
+    final view = testableSingleRoute(
+      child: PnpSetupView(),
+      config: LinksysRouteConfig(
+        column: ColumnGrid(column: 6, centered: true),
+        noNaviRail: true,
+      ),
+      locale: locale,
+      overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
+    );
+    await tester.pumpWidget(view);
+    await tester.pump(const Duration(seconds: 3));
+    // Trick - setState to trigger build
+    final state = tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
     state.setState(() {});
     await tester.pumpAndSettle();
   });
@@ -458,6 +519,71 @@ void main() async {
     await tester.enterText(ssidEditFinder, 'MyAwesomeWiFiName');
     await tester.pumpAndSettle();
     await tester.enterText(passwordEditFinder, 'MyAwesomeWiFiPassword!');
+    await tester.pumpAndSettle();
+    final btnFinder = find.byType(FilledButton);
+    await tester.tap(btnFinder.first);
+    await tester.pumpAndSettle();
+    final btnFinder2 = find.byType(FilledButton);
+    await tester.tap(btnFinder2.first);
+    await tester.pumpAndSettle();
+    final btnFinder3 = find.byType(FilledButton);
+    await tester.tap(btnFinder3.first);
+    await tester.pump(const Duration(seconds: 3));
+    await tester.pump(const Duration(seconds: 3));
+  });
+
+  testLocalizations('Instant Setup - PnP: Wifi ready (split SSID)',
+      (tester, locale) async {
+    when(mockPnpNotifier.build()).thenReturn(PnpState(
+      deviceInfo: NodeDeviceInfo.fromJson(jsonDecode(testDeviceInfo)['output']),
+      isUnconfigured: false,
+      isPrePaired: true,
+      stepStateList: const {
+        0: PnpStepState(
+          status: StepViewStatus.data,
+          data: {
+            "isSplitMode": true,
+            "perBandSettings": {
+              "2.4GHz": {
+                "ssid": "DULinksys12294-2.4GHz",
+                "password": "8kRnxa257@"
+              },
+              "5GHz": {
+                "ssid": "DULinksys12294-5GHz",
+                "password": "8kRnxa257@"
+              },
+              "6GHz": {
+                "ssid": "DULinksys12294-6GHz",
+                "password": "8kRnxa257@"
+              },
+            },
+            "ssid": "DULinksys12294-2.4GHz",
+            "password": "8kRnxa257@",
+          },
+        ),
+        1: PnpStepState(status: StepViewStatus.data, data: {}),
+        2: PnpStepState(status: StepViewStatus.data, data: {}),
+      },
+    ));
+
+    when(mockPnpNotifier.save()).thenAnswer((_) async {
+      await Future.delayed(const Duration(seconds: 3));
+    });
+
+    await tester.pumpWidget(
+      testableSingleRoute(
+        child: const PnpSetupView(),
+        config: LinksysRouteConfig(
+            column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
+        locale: locale,
+        overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
+      ),
+    );
+    await tester.pump(const Duration(seconds: 6));
+    // Trick - setState to trigger build
+    final state = tester
+        .state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
+    state.setState(() {});
     await tester.pumpAndSettle();
     final btnFinder = find.byType(FilledButton);
     await tester.tap(btnFinder.first);

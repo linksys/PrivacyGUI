@@ -587,6 +587,7 @@
   "pnpWaitingModemTitle": "請稍候，讓數據機與 ISP 連線",
   "pnpWaitingModemWaitStartUp": "正在等候數據機啟動",
   "pnpWiFiReady": "{ssid} 已準備好了",
+  "pnpNetworkReady": "您的網路已準備好了",
   "pnpWiFiReadyConnectToNewWiFi": "將裝置連接至您的新 WiFi",
   "pnpYourNetworkDesc": "確認所有節點都在此處",
   "pnpYourNetworkTitle": "您的網路",
