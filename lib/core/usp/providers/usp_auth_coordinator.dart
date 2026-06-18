@@ -166,7 +166,8 @@ class UspAuthCoordinator {
         // Carry the error-code identifier (not a free-form string) so the login
         // view's errorCodeHelper resolves it to the "too many attempts /
         // account locked" message. See _mapToViewError passthrough.
-        throw UnexpectedError(originalError: e, detail: errorAdminAccountLocked);
+        throw UnexpectedError(
+            originalError: e, detail: errorAdminAccountLocked);
       } else if (_isAuthError(e)) {
         throw const InvalidCredentialsError();
       } else if (errorStr.contains('HTTP 5') ||

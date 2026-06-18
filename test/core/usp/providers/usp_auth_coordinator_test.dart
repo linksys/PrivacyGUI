@@ -223,8 +223,8 @@ void main() {
 
       await expectLater(
         coordinator.tryUspLogin('password'),
-        throwsA(isA<UnexpectedError>().having(
-            (e) => e.detail, 'detail', errorAdminAccountLocked)),
+        throwsA(isA<UnexpectedError>()
+            .having((e) => e.detail, 'detail', errorAdminAccountLocked)),
       );
     });
 

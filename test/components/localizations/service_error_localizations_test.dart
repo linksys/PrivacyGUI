@@ -12,8 +12,8 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 /// mapping drifts. The expected value is `loc(ctx).errorXxx`, captured from the
 /// same context, never a hardcoded string.
 
-UspErrorDetail _detail(int code) =>
-    UspErrorDetail(requestedPath: 'Device.X.1.', errorCode: code, errorMessage: 'raw');
+UspErrorDetail _detail(int code) => UspErrorDetail(
+    requestedPath: 'Device.X.1.', errorCode: code, errorMessage: 'raw');
 
 UspCompleteFailureError _completeWith(int code) =>
     UspCompleteFailureError(summary: 's', failures: [_detail(code)]);
@@ -96,7 +96,8 @@ void main() {
       final ctx = await pumpContext(tester);
       final l = loc(ctx);
       for (final code in [7004, 7005, 7006, 9008]) {
-        expect(localizeServiceError(ctx, _completeWith(code)), l.errorInvalidInput,
+        expect(
+            localizeServiceError(ctx, _completeWith(code)), l.errorInvalidInput,
             reason: 'code $code should map to errorInvalidInput');
       }
     });
