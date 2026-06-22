@@ -40,7 +40,7 @@ class UspSystemMonitorNotifier extends Notifier<SystemMonitorState> {
     const defaultInterval = Duration(seconds: 30);
     ref.listen(dashboardDomainReadyProvider, (_, next) {
       if (next is AsyncData) {
-        setRefreshInterval(defaultInterval);
+        _startTimerIfAuthenticated(defaultInterval);
       }
     });
 
@@ -48,15 +48,21 @@ class UspSystemMonitorNotifier extends Notifier<SystemMonitorState> {
     // already completed before this provider was first read, the listener above
     // will never fire. Check current state and start timer if ready.
     final domainReady = ref.read(dashboardDomainReadyProvider);
-    final isAuthenticated = ref.read(appConnectionStateProvider) ==
-        AppConnectionState.authenticated;
-    if (domainReady is AsyncData && isAuthenticated) {
-      Future.microtask(() => setRefreshInterval(defaultInterval));
+    if (domainReady is AsyncData) {
+      Future.microtask(() => _startTimerIfAuthenticated(defaultInterval));
     }
 
     return const SystemMonitorState(
       refreshInterval: defaultInterval,
     );
+  }
+
+  void _startTimerIfAuthenticated(Duration interval) {
+    final isAuthenticated = ref.read(appConnectionStateProvider) ==
+        AppConnectionState.authenticated;
+    if (isAuthenticated) {
+      setRefreshInterval(interval);
+    }
   }
 
   /// Push a snapshot from the dashboard notifier (avoids duplicate fetch).
