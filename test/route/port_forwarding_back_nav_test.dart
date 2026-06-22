@@ -36,8 +36,8 @@ void main() {
       return null;
     }
 
-    bool isNestedUnder(List<RouteBase> routes, String parentName,
-        String childName) {
+    bool isNestedUnder(
+        List<RouteBase> routes, String parentName, String childName) {
       for (final r in routes) {
         if (r is GoRoute && r.name == parentName) {
           return findRoute(r.routes, childName) != null;
@@ -47,28 +47,31 @@ void main() {
       return false;
     }
 
-    test('uspPortForwardingDetail is a parallel direct child of the shell, '
+    test(
+        'uspPortForwardingDetail is a parallel direct child of the shell, '
         'NOT nested under uspAdvancedSettings', () {
       final shellRoutes = uspDashboardRoute.routes;
 
       // It exists as a direct child of the shell.
-      final directChild = shellRoutes.whereType<GoRoute>().any(
-          (r) => r.name == RouteNamed.uspPortForwardingDetail);
+      final directChild = shellRoutes
+          .whereType<GoRoute>()
+          .any((r) => r.name == RouteNamed.uspPortForwardingDetail);
       expect(directChild, isTrue,
           reason:
               'uspPortForwardingDetail must be a parallel direct child of the dashboard shell');
 
       // It is NOT nested under uspAdvancedSettings anymore.
-      final nested = isNestedUnder(shellRoutes,
-          RouteNamed.uspAdvancedSettings, RouteNamed.uspPortForwardingDetail);
+      final nested = isNestedUnder(shellRoutes, RouteNamed.uspAdvancedSettings,
+          RouteNamed.uspPortForwardingDetail);
       expect(nested, isFalse,
           reason:
               'uspPortForwardingDetail must NOT be nested under uspAdvancedSettings (issue #969)');
     });
 
     test('canonical path is a single flat segment', () {
-      final route = uspDashboardRoute.routes.whereType<GoRoute>().firstWhere(
-          (r) => r.name == RouteNamed.uspPortForwardingDetail);
+      final route = uspDashboardRoute.routes
+          .whereType<GoRoute>()
+          .firstWhere((r) => r.name == RouteNamed.uspPortForwardingDetail);
       expect(route.path, RoutePath.uspPortForwardingDetail);
       expect(route.path, startsWith('/'));
       expect('/'.allMatches(route.path).length, 1,
@@ -120,8 +123,7 @@ void main() {
                   body: Center(
                     child: ElevatedButton(
                       key: const Key('dashToDetail'),
-                      onPressed: () =>
-                          c.pushNamed('uspPortForwardingDetail'),
+                      onPressed: () => c.pushNamed('uspPortForwardingDetail'),
                       child: const Text('Dashboard'),
                     ),
                   ),
@@ -134,8 +136,7 @@ void main() {
                   body: Center(
                     child: ElevatedButton(
                       key: const Key('advToDetail'),
-                      onPressed: () =>
-                          c.pushNamed('uspPortForwardingDetail'),
+                      onPressed: () => c.pushNamed('uspPortForwardingDetail'),
                       child: const Text('Advanced Settings'),
                     ),
                   ),
@@ -145,8 +146,7 @@ void main() {
               GoRoute(
                 name: 'uspPortForwardingDetail',
                 path: '/uspPortForwardingDetail',
-                builder: (c, s) =>
-                    detailPage(c, 'uspAdvancedSettings'),
+                builder: (c, s) => detailPage(c, 'uspAdvancedSettings'),
               ),
             ],
           ),

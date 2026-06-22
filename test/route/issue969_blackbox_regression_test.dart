@@ -34,7 +34,8 @@ void main() {
   }
 
   group('#969 black-box: real production route structure', () {
-    test('AC1 structure: uspPortForwardingDetail is a DIRECT child of the '
+    test(
+        'AC1 structure: uspPortForwardingDetail is a DIRECT child of the '
         'dashboard ShellRoute (flat canonical URL)', () {
       final pf = directChild(RouteNamed.uspPortForwardingDetail);
       expect(pf, isNotNull,
@@ -47,7 +48,8 @@ void main() {
               'Advanced Settings parent on web reload/deep-link');
     });
 
-    test('AC2 + AC-原則: uspAdvancedSettings still exists as a direct shell '
+    test(
+        'AC2 + AC-原則: uspAdvancedSettings still exists as a direct shell '
         'child AND retains ALL six legitimate nested sub-routes', () {
       final adv = directChild(RouteNamed.uspAdvancedSettings);
       expect(adv, isNotNull);
@@ -71,14 +73,16 @@ void main() {
               'sub-routes — no more (PF detail must be gone), no fewer.');
     });
 
-    test('AC2 regression: uspPortForwardingDetail is NOT nested under '
+    test(
+        'AC2 regression: uspPortForwardingDetail is NOT nested under '
         'uspAdvancedSettings anymore', () {
       final adv = directChild(RouteNamed.uspAdvancedSettings)!;
       expect(childOf(adv, RouteNamed.uspPortForwardingDetail), isNull,
           reason: 'PF detail must no longer be a child of Advanced Settings');
     });
 
-    test('AC3: Instant Privacy is a parallel shell sibling, NOT under '
+    test(
+        'AC3: Instant Privacy is a parallel shell sibling, NOT under '
         'Advanced Settings and NOT under Dashboard', () {
       // It exists as its own top-level shell child (parallel route).
       expect(directChild(RouteNamed.uspInstantPrivacy), isNotNull);
