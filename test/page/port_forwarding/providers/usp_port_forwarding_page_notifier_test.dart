@@ -98,14 +98,14 @@ void main() {
 
     test('fetch error sets error status', () async {
       when(() => mockService.fetchForwardingRules())
-          .thenThrow(const NetworkError(message: 'timeout'));
+          .thenThrow(const NetworkError(detail: 'timeout'));
       when(() => mockService.fetchTriggeringRules())
           .thenAnswer((_) async => [pt1]);
       final container = createContainer();
       await Future.delayed(Duration.zero);
 
       final state = container.read(uspPortForwardingPageProvider);
-      expect(state.status.errorMessage, contains('timeout'));
+      expect(state.status.error, isA<NetworkError>());
       container.dispose();
     });
 
@@ -287,7 +287,7 @@ void main() {
       when(() => mockService.saveForwardingBatch(
             original: any(named: 'original'),
             current: any(named: 'current'),
-          )).thenThrow(const NetworkError(message: 'save failed'));
+          )).thenThrow(const NetworkError(detail: 'save failed'));
       when(() => mockService.saveTriggeringBatch(
             original: any(named: 'original'),
             current: any(named: 'current'),

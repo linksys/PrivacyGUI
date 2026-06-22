@@ -64,7 +64,7 @@ void main() {
 
     test('build error sets AsyncError', () async {
       when(() => mockService.fetchAll())
-          .thenThrow(const NetworkError(message: 'fetch failed'));
+          .thenThrow(const NetworkError(detail: 'fetch failed'));
       final container = createContainer();
 
       try {
@@ -139,7 +139,7 @@ void main() {
       when(() => mockService.fetchAll())
           .thenAnswer((_) async => disabledResult);
       when(() => mockService.enable(any(), any()))
-          .thenThrow(const NetworkError(message: 'enable failed'));
+          .thenThrow(const NetworkError(detail: 'enable failed'));
 
       final container = createContainer();
       await container.read(uspInstantPrivacyProvider.future);

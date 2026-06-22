@@ -144,7 +144,7 @@ void main() {
 
     test('rethrows existing ServiceError without re-mapping', () async {
       when(() => mockUsp.operate(any(), args: any(named: 'args')))
-          .thenThrow(const NetworkError(message: 'timeout'));
+          .thenThrow(const NetworkError(detail: 'timeout'));
 
       expect(
         () => service.uploadFile(

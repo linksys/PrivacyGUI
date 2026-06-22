@@ -64,7 +64,7 @@ class UspIpv6PortServiceService {
           case UspFailure(:final errorSummary, :final errors):
             throw UspCompleteFailureError(
               summary: 'IPv6 port service batch delete failed: $errorSummary',
-              failedPaths: errors.map((e) => e.requestedPath).toList(),
+              failures: errors,
             );
         }
       }
@@ -98,7 +98,7 @@ class UspIpv6PortServiceService {
           case UspFailure(:final errorSummary, :final errors):
             throw UspCompleteFailureError(
               summary: 'IPv6 port service batch add failed: $errorSummary',
-              failedPaths: errors.map((e) => e.requestedPath).toList(),
+              failures: errors,
             );
         }
       }
@@ -141,7 +141,7 @@ class UspIpv6PortServiceService {
           case UspFailure(:final errorSummary, :final errors):
             throw UspCompleteFailureError(
               summary: 'IPv6 port service batch update failed: $errorSummary',
-              failedPaths: errors.map((e) => e.requestedPath).toList(),
+              failures: errors,
             );
         }
       }

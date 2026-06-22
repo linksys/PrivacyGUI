@@ -1,3 +1,4 @@
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/framework/preservable.dart';
 import 'package:privacy_gui/page/internet_settings/models/internet_settings_feature_state.dart';
 import 'package:privacy_gui/page/internet_settings/models/internet_settings_read_only_info.dart';
@@ -160,6 +161,6 @@ InternetSettingsFeatureState get errorState => InternetSettingsFeatureState(
       ),
       status: const InternetSettingsStatus(
         isLoading: false,
-        errorMessage: 'Connection failed',
+        error: ConnectivityError(detail: 'Connection failed'),
       ),
     );

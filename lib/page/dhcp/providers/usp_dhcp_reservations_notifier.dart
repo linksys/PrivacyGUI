@@ -75,7 +75,7 @@ class UspDhcpReservationsNotifier
       logger.e('[USP][DHCP][Reservations]: Fetch failed', error: e);
       return (
         null,
-        DhcpReservationsStatus(errorMessage: '$e'),
+        DhcpReservationsStatus(error: e),
       );
     }
   }

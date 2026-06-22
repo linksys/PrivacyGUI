@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/models/operate_result.dart';
 import 'package:privacy_gui/page/unified_diagnostics/models/manual_tools_state.dart';
 
@@ -88,11 +89,12 @@ void main() {
         expect(next.dnsServer, baseline.dnsServer);
       });
 
-      test('clearError resets errorMessage to null', () {
-        final withError = baseline.copyWith(errorMessage: 'oops');
-        expect(withError.errorMessage, 'oops');
+      test('clearError resets error to null', () {
+        final withError =
+            baseline.copyWith(error: const UnexpectedError(detail: 'oops'));
+        expect(withError.error, isA<UnexpectedError>());
         final cleared = withError.copyWith(clearError: true);
-        expect(cleared.errorMessage, isNull);
+        expect(cleared.error, isNull);
       });
 
       test('clearPingResult resets pingResult to null', () {

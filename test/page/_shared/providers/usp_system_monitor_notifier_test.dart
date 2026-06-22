@@ -7,6 +7,7 @@ import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/_shared/models/system_monitor_state.dart';
 import 'package:privacy_gui/page/_shared/providers/usp_system_monitor_notifier.dart';
+import 'package:privacy_gui/page/dashboard/providers/dashboard_domain_ready_provider.dart';
 
 class MockUspClient extends Mock implements UspClient {}
 
@@ -15,7 +16,7 @@ class _AlwaysAuthenticatedNotifier extends AppConnectionStateNotifier {
   AppConnectionState build() => AppConnectionState.authenticated;
 }
 
-class _NotAuthenticatedNotifier extends AppConnectionStateNotifier {
+class _LoggedOutNotifier extends AppConnectionStateNotifier {
   @override
   AppConnectionState build() => AppConnectionState.loggedOut;
 }
@@ -150,20 +151,9 @@ void main() {
     });
 
     test('fetchNow returns early when not authenticated', () async {
-      // Use _NotAuthenticatedNotifier to simulate logged out state
-      final container = ProviderContainer(
-        overrides: [
-          uspClientProvider.overrideWithValue(mockUsp),
-          appConnectionStateProvider.overrideWith(() {
-            return _NotAuthenticatedNotifier();
-          }),
-        ],
-      );
-      // Trigger build + wait for microtask.
-      container.read(uspSystemMonitorProvider);
-      await Future.delayed(Duration.zero);
-      await Future.delayed(Duration.zero);
-      // Clear interactions from build phase
+      when(() => mockUsp.isAuthenticated).thenReturn(false);
+      final container = await createAndWait();
+      // Clear interactions from other providers triggered during setup
       clearInteractions(mockUsp);
 
       final notifier = container.read(uspSystemMonitorProvider.notifier);
@@ -202,6 +192,59 @@ void main() {
 
       final state = container.read(uspSystemMonitorProvider);
       expect(state.isFetching, isFalse);
+      container.dispose();
+    });
+
+    test('starts timer when dashboardDomainReadyProvider already resolved',
+        () async {
+      final container = ProviderContainer(
+        overrides: [
+          uspClientProvider.overrideWithValue(mockUsp),
+          appConnectionStateProvider.overrideWith(() {
+            return _AlwaysAuthenticatedNotifier();
+          }),
+          dashboardDomainReadyProvider.overrideWith((ref) async {}),
+        ],
+      );
+      // Wait for dashboardDomainReadyProvider to resolve BEFORE reading the monitor.
+      await container.read(dashboardDomainReadyProvider.future);
+
+      // Now read the monitor provider — it should detect already-resolved state.
+      container.read(uspSystemMonitorProvider);
+      // Wait for microtask + initial fetch.
+      await Future.delayed(Duration.zero);
+      await Future.delayed(Duration.zero);
+
+      final state = container.read(uspSystemMonitorProvider);
+      expect(state.refreshInterval, const Duration(seconds: 30));
+      // Timer started and fetched data.
+      verify(() => mockUsp.get(any())).called(greaterThan(0));
+      container.dispose();
+    });
+
+    test(
+        'does not start timer when dashboardDomainReadyProvider resolved but not authenticated',
+        () async {
+      final container = ProviderContainer(
+        overrides: [
+          uspClientProvider.overrideWithValue(mockUsp),
+          appConnectionStateProvider.overrideWith(() {
+            return _LoggedOutNotifier();
+          }),
+          dashboardDomainReadyProvider.overrideWith((ref) async {}),
+        ],
+      );
+      // Wait for dashboardDomainReadyProvider to resolve BEFORE reading the monitor.
+      await container.read(dashboardDomainReadyProvider.future);
+
+      // Now read the monitor provider.
+      container.read(uspSystemMonitorProvider);
+      // Wait for microtask.
+      await Future.delayed(Duration.zero);
+      await Future.delayed(Duration.zero);
+
+      // Timer should not have started (no fetch calls).
+      verifyNever(() => mockUsp.get(any()));
       container.dispose();
     });
   });

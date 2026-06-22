@@ -4,6 +4,7 @@ import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/framework/preservable.dart';
 import 'package:privacy_gui/framework/preservable_contract.dart';
 import 'package:privacy_gui/framework/preservable_notifier_mixin.dart';
+import 'package:privacy_gui/core/usp/providers/usp_auth_coordinator.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/models/wifi_network_ui_model.dart';
@@ -68,8 +69,23 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
     if (usp == null) {
       return (
         null,
-        WifiSettingsStatus(errorMessage: 'USP service not available')
+        WifiSettingsStatus(
+          error: const ServiceNotInitializedError(
+              detail: 'USP service not available'),
+        )
       );
+    }
+
+    if (!usp.isAuthenticated) {
+      await ref.read(uspAuthCoordinatorProvider).restoreSession();
+      if (!usp.isAuthenticated) {
+        return (
+          null,
+          WifiSettingsStatus(
+            error: const NotAuthenticatedError(detail: 'USP not authenticated'),
+          )
+        );
+      }
     }
 
     logger.d('[USP][WiFi]: Fetching WiFi data...');
@@ -85,7 +101,7 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
       logger.w('[USP][WiFi]: WiFi data fetch failed: $e');
       return (
         null,
-        WifiSettingsStatus(errorMessage: '$e'),
+        WifiSettingsStatus(error: e),
       );
     }
     final (:radios, :ssids, :accessPoints) = wifiData.codegenContext.raw;
@@ -360,7 +376,7 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
       if (count == 0) {
         logger.w('[USP][WiFi]: No SSIDs found matching the requested name');
         throw const InvalidInputError(
-            message: 'No matching WiFi networks found');
+            detail: 'No matching WiFi networks found');
       }
       logger.d('[USP][WiFi]: Toggled $count SSIDs to $enable');
     } on ServiceError catch (e) {

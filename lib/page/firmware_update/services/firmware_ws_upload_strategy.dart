@@ -72,7 +72,7 @@ class FirmwareWsUploadStrategy implements FirmwareUploadStrategy {
       await _turboManager.start();
     } catch (e) {
       logger.e('$_tag Failed to start turbo session: $e');
-      throw NetworkError(message: 'Failed to acquire turbo channel: $e');
+      throw NetworkError(detail: 'Failed to acquire turbo channel: $e');
     }
 
     // 2. Connect WebSocket
@@ -81,7 +81,7 @@ class FirmwareWsUploadStrategy implements FirmwareUploadStrategy {
     } catch (e) {
       logger.e('$_tag Failed to connect WebSocket: $e');
       await _turboManager.release();
-      throw NetworkError(message: 'WebSocket connection failed: $e');
+      throw NetworkError(detail: 'WebSocket connection failed: $e');
     }
 
     // 3. Setup message listener
@@ -92,7 +92,7 @@ class FirmwareWsUploadStrategy implements FirmwareUploadStrategy {
           _responseCompleter!.completeError(
             UspCompleteFailureError(
               summary: msg.error?.message ?? 'Unknown error',
-              failedPaths: const [],
+              failures: const [],
             ),
           );
         } else {
@@ -122,7 +122,7 @@ class FirmwareWsUploadStrategy implements FirmwareUploadStrategy {
       _responseCompleter = null;
       logger.e('$_tag WebSocketConnect handshake failed: $e');
       await finalize();
-      throw NetworkError(message: 'WebSocket handshake failed: $e');
+      throw NetworkError(detail: 'WebSocket handshake failed: $e');
     }
 
     logger.i('$_tag WebSocket upload prepared');
@@ -170,7 +170,7 @@ class FirmwareWsUploadStrategy implements FirmwareUploadStrategy {
       );
     } catch (e) {
       if (e is ServiceError) rethrow;
-      throw NetworkError(message: 'Chunk $sequenceNumber upload failed: $e');
+      throw NetworkError(detail: 'Chunk $sequenceNumber upload failed: $e');
     } finally {
       _responseCompleter = null;
     }

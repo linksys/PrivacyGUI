@@ -89,7 +89,7 @@ class UspPortForwardingPageNotifier
       logger.e('[USP][Firewall][PortForwarding]: Fetch failed', error: e);
       return (
         null,
-        PortForwardingPageStatus(errorMessage: '$e'),
+        PortForwardingPageStatus(error: e),
       );
     }
   }

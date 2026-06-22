@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/components/localizations/service_error_localizations.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
+import 'package:privacy_gui/components/views/service_error_view.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/port_forwarding/models/port_forwarding_page_feature_state.dart';
 import 'package:privacy_gui/page/port_forwarding/models/port_forwarding_page_status.dart';
@@ -123,24 +125,12 @@ class _UspPortForwardingDetailViewState
     if (status.isLoading) {
       return const Center(child: AppLoader());
     }
-    if (status.errorMessage != null) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AppIcon.font(Icons.error_outline,
-                size: 48, color: Theme.of(context).colorScheme.error),
-            AppGap.xl(),
-            AppText.titleMedium('Unable to load data'),
-            AppGap.md(),
-            AppButton(
-              label: 'Retry',
-              onTap: () => ref
-                  .read(uspPortForwardingPageProvider.notifier)
-                  .fetch(forceRemote: true),
-            ),
-          ],
-        ),
+    if (status.error != null) {
+      return ServiceErrorView(
+        error: status.error,
+        onRetry: () => ref
+            .read(uspPortForwardingPageProvider.notifier)
+            .fetch(forceRemote: true),
       );
     }
     return CustomScrollView(
@@ -170,7 +160,7 @@ class _UspPortForwardingDetailViewState
       }
     } catch (e) {
       if (context.mounted) {
-        showFailedSnackBar(context, 'Failed to save: $e');
+        showFailedSnackBar(context, localizeServiceError(context, e));
       }
     }
   }

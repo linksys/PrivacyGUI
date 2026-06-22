@@ -188,7 +188,7 @@ void main() {
       when(() => mockService.fetch()).thenAnswer(
           (_) async => const SafeBrowsingUIModel(type: SafeBrowsingType.off));
       when(() => mockService.save(any()))
-          .thenThrow(const NetworkError(message: 'save failed'));
+          .thenThrow(const NetworkError(detail: 'save failed'));
 
       final container = createContainer();
       await Future.delayed(Duration.zero);

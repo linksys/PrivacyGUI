@@ -54,12 +54,12 @@ class UspAdminService {
           throw UspPartialFailureError(
             summary: 'Password update partial failure: $errorSummary',
             successPaths: successes.map((s) => s.requestedPath).toList(),
-            failedPaths: failures.map((f) => f.requestedPath).toList(),
+            failures: failures,
           );
         case UspFailure(:final errorSummary, :final errors):
           throw UspCompleteFailureError(
             summary: 'Password update failed: $errorSummary',
-            failedPaths: errors.map((e) => e.requestedPath).toList(),
+            failures: errors,
           );
       }
     } catch (e) {
@@ -97,12 +97,12 @@ class UspAdminService {
           throw UspPartialFailureError(
             summary: 'Time settings partial failure: $errorSummary',
             successPaths: successes.map((s) => s.requestedPath).toList(),
-            failedPaths: failures.map((f) => f.requestedPath).toList(),
+            failures: failures,
           );
         case UspFailure(:final errorSummary, :final errors):
           throw UspCompleteFailureError(
             summary: 'Time settings update failed: $errorSummary',
-            failedPaths: errors.map((e) => e.requestedPath).toList(),
+            failures: errors,
           );
       }
     } catch (e) {
@@ -138,12 +138,12 @@ class UspAdminService {
           throw UspPartialFailureError(
             summary: 'Timezone update partial failure: $errorSummary',
             successPaths: successes.map((s) => s.requestedPath).toList(),
-            failedPaths: failures.map((f) => f.requestedPath).toList(),
+            failures: failures,
           );
         case UspFailure(:final errorSummary, :final errors):
           throw UspCompleteFailureError(
             summary: 'Timezone update failed: $errorSummary',
-            failedPaths: errors.map((e) => e.requestedPath).toList(),
+            failures: errors,
           );
       }
     } catch (e) {

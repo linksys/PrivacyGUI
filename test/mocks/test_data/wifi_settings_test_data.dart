@@ -1,3 +1,4 @@
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/generated/wi_fi_access_points.g.dart';
 import 'package:privacy_gui/generated/wi_fi_radios.g.dart';
 import 'package:privacy_gui/generated/wi_fi_ssids.g.dart';
@@ -391,14 +392,14 @@ class WifiSettingsTestData {
   static WifiSettingsStatus createStatus({
     bool isLoading = false,
     bool isSaving = false,
-    String? errorMessage,
+    ServiceError? error,
     WifiQuickSetupNetwork? quickSetupMainAggregate,
     WifiQuickSetupNetwork? quickSetupGuestAggregate,
   }) =>
       WifiSettingsStatus(
         isLoading: isLoading,
         isSaving: isSaving,
-        errorMessage: errorMessage,
+        error: error,
         quickSetupMainAggregate: quickSetupMainAggregate,
         quickSetupGuestAggregate: quickSetupGuestAggregate,
       );

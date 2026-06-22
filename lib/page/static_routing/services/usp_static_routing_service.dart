@@ -77,7 +77,7 @@ class UspStaticRoutingService {
           case UspFailure(:final errorSummary, :final errors):
             throw UspCompleteFailureError(
               summary: 'Static routing batch delete failed: $errorSummary',
-              failedPaths: errors.map((e) => e.requestedPath).toList(),
+              failures: errors,
             );
         }
       }
@@ -109,7 +109,7 @@ class UspStaticRoutingService {
           case UspFailure(:final errorSummary, :final errors):
             throw UspCompleteFailureError(
               summary: 'Static routing batch add failed: $errorSummary',
-              failedPaths: errors.map((e) => e.requestedPath).toList(),
+              failures: errors,
             );
         }
       }
@@ -151,7 +151,7 @@ class UspStaticRoutingService {
           case UspFailure(:final errorSummary, :final errors):
             throw UspCompleteFailureError(
               summary: 'Static routing batch update failed: $errorSummary',
-              failedPaths: errors.map((e) => e.requestedPath).toList(),
+              failures: errors,
             );
         }
       }

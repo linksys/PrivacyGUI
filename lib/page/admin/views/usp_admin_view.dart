@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/components/localizations/service_error_localizations.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/helpers/recovery_dialog_helper.dart';
 import 'package:privacy_gui/core/connection/models/app_connection_state.dart';
 import 'package:privacy_gui/page/admin/providers/usp_admin_notifier.dart';
@@ -58,12 +60,12 @@ class UspAdminView extends ConsumerWidget {
           AppIcon.font(Icons.error_outline,
               size: 48, color: Theme.of(context).colorScheme.error),
           AppGap.xl(),
-          AppText.titleMedium('Unable to load admin data'),
+          AppText.titleMedium(loc(context).failedToLoadSettings),
           AppGap.md(),
-          AppText.bodyMedium(error.toString()),
+          AppText.bodyMedium(localizeServiceError(context, error)),
           AppGap.xxl(),
           AppButton(
-            label: 'Retry',
+            label: loc(context).retry,
             onTap: () => ref.invalidate(uspAdminProvider),
           ),
         ],
@@ -176,7 +178,7 @@ class UspAdminView extends ConsumerWidget {
       if (context.mounted) showSuccessSnackBar(context, 'Timezone updated');
     } catch (e) {
       if (context.mounted) {
-        showFailedSnackBar(context, 'Failed to update timezone: $e');
+        showFailedSnackBar(context, localizeServiceError(context, e));
       }
     }
   }
@@ -196,7 +198,7 @@ class UspAdminView extends ConsumerWidget {
       }
     } catch (e) {
       if (context.mounted) {
-        showFailedSnackBar(context, 'Failed to update password: $e');
+        showFailedSnackBar(context, localizeServiceError(context, e));
       }
     }
   }
@@ -228,7 +230,9 @@ class UspAdminView extends ConsumerWidget {
         successMessage: 'Router reboot complete',
       );
     } catch (e) {
-      if (context.mounted) showFailedSnackBar(context, 'Reboot failed: $e');
+      if (context.mounted) {
+        showFailedSnackBar(context, localizeServiceError(context, e));
+      }
     }
   }
 
@@ -260,7 +264,7 @@ class UspAdminView extends ConsumerWidget {
       );
     } catch (e) {
       if (context.mounted) {
-        showFailedSnackBar(context, 'Factory reset failed: $e');
+        showFailedSnackBar(context, localizeServiceError(context, e));
       }
     }
   }

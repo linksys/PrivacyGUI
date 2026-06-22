@@ -219,12 +219,12 @@ class UspInstantPrivacyService {
             throw UspPartialFailureError(
               summary: 'MAC filter enable partial failure: $errorSummary',
               successPaths: successes.map((s) => s.requestedPath).toList(),
-              failedPaths: failures.map((f) => f.requestedPath).toList(),
+              failures: failures,
             );
           case UspFailure(:final errorSummary, :final errors):
             throw UspCompleteFailureError(
               summary: 'MAC filter enable failed: $errorSummary',
-              failedPaths: errors.map((e) => e.requestedPath).toList(),
+              failures: errors,
             );
         }
       }
@@ -252,12 +252,12 @@ class UspInstantPrivacyService {
             throw UspPartialFailureError(
               summary: 'MAC filter disable partial failure: $errorSummary',
               successPaths: successes.map((s) => s.requestedPath).toList(),
-              failedPaths: failures.map((f) => f.requestedPath).toList(),
+              failures: failures,
             );
           case UspFailure(:final errorSummary, :final errors):
             throw UspCompleteFailureError(
               summary: 'MAC filter disable failed: $errorSummary',
-              failedPaths: errors.map((e) => e.requestedPath).toList(),
+              failures: errors,
             );
         }
       }
@@ -286,12 +286,12 @@ class UspInstantPrivacyService {
           throw UspPartialFailureError(
             summary: 'MAC filter add partial failure: $errorSummary',
             successPaths: successes.map((s) => s.requestedPath).toList(),
-            failedPaths: failures.map((f) => f.requestedPath).toList(),
+            failures: failures,
           );
         case UspFailure(:final errorSummary, :final errors):
           throw UspCompleteFailureError(
             summary: 'MAC filter add failed: $errorSummary',
-            failedPaths: errors.map((e) => e.requestedPath).toList(),
+            failures: errors,
           );
       }
     } catch (e) {

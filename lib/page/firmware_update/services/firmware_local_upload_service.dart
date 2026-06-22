@@ -113,7 +113,7 @@ class FirmwareLocalUploadService {
     final total = _chunker.totalFragments(bytes.length);
     if (total == 0) {
       throw const InvalidInputError(
-        message: 'Cannot upload an empty firmware image',
+        detail: 'Cannot upload an empty firmware image',
       );
     }
 

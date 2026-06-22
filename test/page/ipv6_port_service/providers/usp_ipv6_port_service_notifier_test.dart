@@ -77,12 +77,12 @@ void main() {
 
     test('fetch error sets error status', () async {
       when(() => mockService.fetch())
-          .thenThrow(const NetworkError(message: 'fetch failed'));
+          .thenThrow(const NetworkError(detail: 'fetch failed'));
       final container = createContainer();
       await Future.delayed(Duration.zero);
 
       final state = container.read(uspIpv6PortServiceProvider);
-      expect(state.status.errorMessage, contains('fetch failed'));
+      expect(state.status.error, isA<NetworkError>());
       expect(state.settings.current.rules, isEmpty);
       container.dispose();
     });
@@ -169,7 +169,7 @@ void main() {
       when(() => mockService.saveBatch(
             original: any(named: 'original'),
             current: any(named: 'current'),
-          )).thenThrow(const NetworkError(message: 'save failed'));
+          )).thenThrow(const NetworkError(detail: 'save failed'));
 
       final container = createContainer();
       await Future.delayed(Duration.zero);

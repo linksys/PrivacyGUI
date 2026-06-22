@@ -70,7 +70,7 @@ class UspWifiAdvancedNotifier
       logger.e('[USP][WiFi][Advanced]: Fetch failed', error: e);
       return (
         null,
-        WifiAdvancedStatus(errorMessage: '$e'),
+        WifiAdvancedStatus(error: e),
       );
     }
   }

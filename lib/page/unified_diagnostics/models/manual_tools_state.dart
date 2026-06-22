@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/services/sse_operation_awaiter.dart';
 
 /// Which diagnostic tool is active.
@@ -21,7 +22,7 @@ class NetworkDiagnosticsState extends Equatable {
   final PingResult? pingResult;
   final TracerouteResult? tracerouteResult;
   final NsLookupResult? nsLookupResult;
-  final String? errorMessage;
+  final ServiceError? error;
 
   const NetworkDiagnosticsState({
     this.activeTab = DiagnosticType.ping,
@@ -33,7 +34,7 @@ class NetworkDiagnosticsState extends Equatable {
     this.pingResult,
     this.tracerouteResult,
     this.nsLookupResult,
-    this.errorMessage,
+    this.error,
   });
 
   NetworkDiagnosticsState copyWith({
@@ -49,7 +50,7 @@ class NetworkDiagnosticsState extends Equatable {
     bool clearTracerouteResult = false,
     NsLookupResult? nsLookupResult,
     bool clearNsLookupResult = false,
-    String? errorMessage,
+    ServiceError? error,
     bool clearError = false,
   }) {
     return NetworkDiagnosticsState(
@@ -65,7 +66,7 @@ class NetworkDiagnosticsState extends Equatable {
           : (tracerouteResult ?? this.tracerouteResult),
       nsLookupResult:
           clearNsLookupResult ? null : (nsLookupResult ?? this.nsLookupResult),
-      errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
+      error: clearError ? null : (error ?? this.error),
     );
   }
 
@@ -87,6 +88,6 @@ class NetworkDiagnosticsState extends Equatable {
         pingResult,
         tracerouteResult,
         nsLookupResult,
-        errorMessage,
+        error,
       ];
 }

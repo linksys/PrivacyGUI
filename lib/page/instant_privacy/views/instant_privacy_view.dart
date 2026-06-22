@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/components/localizations/service_error_localizations.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/_shared/components/detail_widgets.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
@@ -48,12 +50,12 @@ class InstantPrivacyView extends ConsumerWidget {
           AppIcon.font(Icons.error_outline,
               size: 48, color: Theme.of(context).colorScheme.error),
           AppGap.xl(),
-          AppText.titleMedium('Unable to load Instant Privacy settings'),
+          AppText.titleMedium(loc(context).failedToLoadSettings),
           AppGap.md(),
-          AppText.bodyMedium(error.toString()),
+          AppText.bodyMedium(localizeServiceError(context, error)),
           AppGap.xxl(),
           AppButton(
-            label: 'Retry',
+            label: loc(context).retry,
             onTap: () => ref.invalidate(uspInstantPrivacyProvider),
           ),
         ],
@@ -262,7 +264,7 @@ class InstantPrivacyView extends ConsumerWidget {
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to enable Instant Privacy: $e')),
+          SnackBar(content: Text(localizeServiceError(context, e))),
         );
       }
     }
@@ -294,7 +296,7 @@ class InstantPrivacyView extends ConsumerWidget {
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to disable Instant Privacy: $e')),
+          SnackBar(content: Text(localizeServiceError(context, e))),
         );
       }
     }
@@ -320,7 +322,7 @@ class InstantPrivacyView extends ConsumerWidget {
           } catch (e) {
             if (context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Failed to add device: $e')),
+                SnackBar(content: Text(localizeServiceError(context, e))),
               );
             }
           }

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/components/localizations/service_error_localizations.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
+import 'package:privacy_gui/components/views/service_error_view.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/dmz/models/dmz_feature_state.dart';
@@ -70,8 +72,12 @@ class _UspDmzViewState extends ConsumerState<UspDmzView> {
         if (status.isLoading) {
           return const Center(child: AppLoader());
         }
-        if (status.errorMessage != null) {
-          return _buildError(context, ref);
+        if (status.error != null) {
+          return ServiceErrorView(
+            error: status.error,
+            onRetry: () =>
+                ref.read(uspDmzProvider.notifier).fetch(forceRemote: true),
+          );
         }
         _syncControllers(state);
         return _buildContent(context, ref, state);
@@ -95,30 +101,6 @@ class _UspDmzViewState extends ConsumerState<UspDmzView> {
           !state.status.isSaving && state.status.fieldErrors.isEmpty,
       onPositiveTap: () => _onSave(context, ref),
       onNegativeTap: () => ref.read(uspDmzProvider.notifier).revert(),
-    );
-  }
-
-  // ---------------------------------------------------------------------------
-  // Error
-  // ---------------------------------------------------------------------------
-
-  Widget _buildError(BuildContext context, WidgetRef ref) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          AppIcon.font(Icons.error_outline,
-              size: 48, color: Theme.of(context).colorScheme.error),
-          AppGap.xl(),
-          AppText.titleMedium('Unable to load DMZ settings'),
-          AppGap.md(),
-          AppButton(
-            label: 'Retry',
-            onTap: () =>
-                ref.read(uspDmzProvider.notifier).fetch(forceRemote: true),
-          ),
-        ],
-      ),
     );
   }
 
@@ -301,7 +283,7 @@ class _UspDmzViewState extends ConsumerState<UspDmzView> {
       }
     } catch (e) {
       if (context.mounted) {
-        showFailedSnackBar(context, 'Failed to save: $e');
+        showFailedSnackBar(context, localizeServiceError(context, e));
       }
     }
   }

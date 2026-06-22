@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 
 enum SpeedTestStep {
   idle,
@@ -147,7 +148,7 @@ class SpeedTestState extends Equatable {
   final SpeedTestStep step;
   final SpeedTestServer selectedServer;
   final SpeedTestResult? result;
-  final String? errorMessage;
+  final ServiceError? error;
   final String? progressMessage;
 
   const SpeedTestState({
@@ -159,7 +160,7 @@ class SpeedTestState extends Equatable {
       sizeMb: 100,
     ),
     this.result,
-    this.errorMessage,
+    this.error,
     this.progressMessage,
   });
 
@@ -175,7 +176,7 @@ class SpeedTestState extends Equatable {
     SpeedTestServer? selectedServer,
     SpeedTestResult? result,
     bool clearResult = false,
-    String? errorMessage,
+    ServiceError? error,
     bool clearError = false,
     String? progressMessage,
     bool clearProgress = false,
@@ -184,7 +185,7 @@ class SpeedTestState extends Equatable {
       step: step ?? this.step,
       selectedServer: selectedServer ?? this.selectedServer,
       result: clearResult ? null : (result ?? this.result),
-      errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
+      error: clearError ? null : (error ?? this.error),
       progressMessage:
           clearProgress ? null : (progressMessage ?? this.progressMessage),
     );
@@ -192,5 +193,5 @@ class SpeedTestState extends Equatable {
 
   @override
   List<Object?> get props =>
-      [step, selectedServer, result, errorMessage, progressMessage];
+      [step, selectedServer, result, error, progressMessage];
 }

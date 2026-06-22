@@ -68,12 +68,12 @@ class UspLocalNetworkService {
           throw UspPartialFailureError(
             summary: 'Local network update partial failure: $errorSummary',
             successPaths: successes.map((s) => s.requestedPath).toList(),
-            failedPaths: failures.map((f) => f.requestedPath).toList(),
+            failures: failures,
           );
         case UspFailure(:final errorSummary, :final errors):
           throw UspCompleteFailureError(
             summary: 'Local network update failed: $errorSummary',
-            failedPaths: errors.map((e) => e.requestedPath).toList(),
+            failures: errors,
           );
       }
     } catch (e) {

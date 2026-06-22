@@ -81,13 +81,13 @@ void main() {
 
     test('fetch error sets error status, no settings change', () async {
       when(() => mockService.fetch())
-          .thenThrow(const NetworkError(message: 'network error'));
+          .thenThrow(const NetworkError(detail: 'network error'));
       final container = createContainer();
 
       await Future.delayed(Duration.zero);
 
       final state = container.read(uspDmzProvider);
-      expect(state.status.errorMessage, contains('Network error'));
+      expect(state.status.error, isA<NetworkError>());
       // Settings remain empty (initial) since performFetch returned null.
       expect(state.settings.current, const DmzSettings.empty());
       container.dispose();
@@ -234,7 +234,7 @@ void main() {
       when(() => mockService.update(
             instancePath: any(named: 'instancePath'),
             model: any(named: 'model'),
-          )).thenThrow(const NetworkError(message: 'save failed'));
+          )).thenThrow(const NetworkError(detail: 'save failed'));
       when(() => mockService.validateForm(any())).thenReturn({});
 
       final container = createContainer();
