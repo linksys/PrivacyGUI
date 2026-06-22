@@ -159,12 +159,12 @@ class _RemoteAssistanceConfirmViewState
       SessionTokenExpiredError() => 'Token expired or invalid',
       UnauthorizedError() => 'Unauthorized - invalid token',
       ResourceNotFoundError() => 'Session not found',
-      NetworkError(:final message) =>
-        'Network error${message != null ? ': $message' : ' - please try again'}',
-      InvalidInputError(:final message) =>
-        'Invalid input${message != null ? ': $message' : ''}',
-      UnexpectedError(:final message) =>
-        'Validation failed${message != null ? ': $message' : ''}',
+      NetworkError(:final detail) =>
+        'Network error${detail != null ? ': $detail' : ' - please try again'}',
+      InvalidInputError(:final detail) =>
+        'Invalid input${detail != null ? ': $detail' : ''}',
+      UnexpectedError(:final detail) =>
+        'Validation failed${detail != null ? ': $detail' : ''}',
       _ => 'Validation failed: ${error.toString()}',
     };
   }

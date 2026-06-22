@@ -193,8 +193,19 @@ void main() {
 
     test('fetchNow returns early when not authenticated', () async {
       when(() => mockUsp.isAuthenticated).thenReturn(false);
-      final container = await createAndWait();
-      // Clear interactions from other providers triggered during setup
+      final container = ProviderContainer(
+        overrides: [
+          uspClientProvider.overrideWithValue(mockUsp),
+          appConnectionStateProvider.overrideWith(() {
+            return _LoggedOutNotifier();
+          }),
+        ],
+      );
+      // Trigger build + wait for microtask (auto-timer won't start since not authenticated)
+      container.read(uspTrafficAnalysisProvider);
+      await Future.delayed(Duration.zero);
+      await Future.delayed(Duration.zero);
+      // Clear any interactions from setup
       clearInteractions(mockUsp);
 
       final notifier = container.read(uspTrafficAnalysisProvider.notifier);
