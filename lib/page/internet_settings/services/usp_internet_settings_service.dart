@@ -1,7 +1,9 @@
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/generated/gre_tunnel.g.dart';
 import 'package:privacy_gui/generated/ipv6settings.g.dart';
+import 'package:privacy_gui/generated/l2tp_tunnel.g.dart';
 import 'package:privacy_gui/generated/ppp_interface.g.dart';
 import 'package:privacy_gui/generated/vlan_termination.g.dart';
 import 'package:privacy_gui/generated/wan_bridge.g.dart';
@@ -29,7 +31,7 @@ class UspInternetSettingsService {
   // Fetch
   // ---------------------------------------------------------------------------
 
-  /// Fetch WAN, IPv6, PPP, and VLAN settings in parallel.
+  /// Fetch WAN, IPv6, PPP, VLAN, and tunnel settings in parallel.
   Future<InternetSettingsFetchResult> fetchSettings() async {
     try {
       final results = await Future.wait([
@@ -37,17 +39,21 @@ class UspInternetSettingsService {
         Ipv6Settings.fetch(_usp),
         PppInterface.fetch(_usp),
         VlanTermination.fetch(_usp),
+        GreTunnel.fetch(_usp),
+        L2tpTunnel.fetch(_usp),
       ]);
       final wan = results[0] as WanSettings;
       final ipv6 = results[1] as Ipv6Settings;
       final ppp = results[2] as PppInterface;
       final vlan = results[3] as VlanTermination;
+      final gre = results[4] as GreTunnel;
+      final l2tp = results[5] as L2tpTunnel;
 
       final pppInstance = ppp.items.isNotEmpty ? ppp.items.first : null;
       final vlanInstance = vlan.items.isNotEmpty ? vlan.items.first : null;
 
       return InternetSettingsFetchResult(
-        form: _buildForm(wan, ipv6, pppInstance, vlanInstance),
+        form: _buildForm(wan, ipv6, pppInstance, vlanInstance, gre, l2tp),
         readOnlyInfo: _buildReadOnlyInfo(wan, pppInstance),
         pppInstancePath: pppInstance?.instancePath,
         vlanInstancePath: vlanInstance?.instancePath,
@@ -70,6 +76,8 @@ class UspInternetSettingsService {
     Ipv6Settings ipv6,
     PppInterfaceInstance? ppp,
     VlanTerminationInstance? vlan,
+    GreTunnel gre,
+    L2tpTunnel l2tp,
   ) {
     // Split comma-separated DNS into 3 fields
     final dnsParts = wan.dnsServers
@@ -78,11 +86,22 @@ class UspInternetSettingsService {
         .where((s) => s.isNotEmpty)
         .toList();
 
+    final lowerLayers = ppp?.lowerLayers ?? '';
+    final connectionType = UspWanConnectionType.fromRawFields(
+      addressingType: wan.addressingType,
+      bridgeEnabled: wan.bridgeEnabled,
+      lowerLayers: lowerLayers,
+    );
+
+    // Resolve server address from the appropriate tunnel
+    final serverAddress = switch (connectionType) {
+      UspWanConnectionType.pptp => gre.remoteEndpoints,
+      UspWanConnectionType.l2tp => l2tp.remoteEndpoints,
+      _ => '',
+    };
+
     return UspInternetSettingsForm(
-      connectionType: UspWanConnectionType.fromRawFields(
-        addressingType: wan.addressingType,
-        bridgeEnabled: wan.bridgeEnabled,
-      ),
+      connectionType: connectionType,
       staticIpAddress: wan.staticIpAddress,
       subnetMask: wan.subnetMask,
       defaultGateway: wan.defaultGateway,
@@ -95,6 +114,7 @@ class UspInternetSettingsService {
       connectionTrigger: ppp?.connectionTrigger ?? 'AlwaysOn',
       idleDisconnectTime: ppp?.idleDisconnectTime ?? 0,
       lcpEchoInterval: ppp?.lcpEcho ?? 0,
+      serverAddress: serverAddress,
       vlanEnabled: vlan?.enable ?? false,
       vlanId: vlan?.vlanId ?? 0,
       mtu: wan.mtu,
@@ -126,12 +146,13 @@ class UspInternetSettingsService {
   /// Save all changed fields by comparing [original] vs [edited].
   ///
   /// Orchestration order:
-  /// 1. Handle PPP instance lifecycle (Add/Delete)
-  /// 2. Handle VLAN instance lifecycle (Add/Delete)
-  /// 3. Save singleton WAN fields
-  /// 4. Save PPP instance fields (if instance exists)
-  /// 5. Save VLAN instance fields (if instance exists)
-  /// 6. Save IPv6 fields
+  /// 1. Handle PPP instance lifecycle (Add if needed)
+  /// 2. Set PPP LowerLayers (tunnel type selection)
+  /// 3. Set tunnel RemoteEndpoints (server address)
+  /// 4. Save singleton WAN fields (mode switch or field edit)
+  /// 5. Save PPP instance fields (credentials, connection mode)
+  /// 6. Save VLAN instance fields (if instance exists)
+  /// 7. Save IPv6 fields
   Future<void> saveAll(
     UspInternetSettingsForm original,
     UspInternetSettingsForm edited, {
@@ -145,26 +166,33 @@ class UspInternetSettingsService {
         currentInstancePath: pppInstancePath,
       );
 
-      // Step 2: WAN mode switch or field edit (per-mode dispatch)
-      final typeChanged = original.connectionType != edited.connectionType;
-      final switchingToPppoe =
-          typeChanged && edited.connectionType == UspWanConnectionType.pppoe;
-      await _saveWanSettings(original, edited);
-
-      // Step 3: PPP instance fields (skip username/password if already sent
-      // in the ordered Set above)
-      if (pppPath != null &&
-          edited.connectionType == UspWanConnectionType.pppoe) {
-        await _savePppSettings(original, edited, pppPath,
-            skipCredentials: switchingToPppoe);
+      // Step 2: Set LowerLayers on PPP instance (tunnel type selection)
+      if (pppPath != null && edited.connectionType.isPppBased) {
+        await _savePppLowerLayers(original, edited, pppPath);
       }
 
-      // Step 4: VLAN settings (always use SET on existing instance)
+      // Step 3: Set tunnel RemoteEndpoints (server address)
+      await _saveTunnelRemoteEndpoints(original, edited);
+
+      // Step 4: WAN mode switch or field edit (per-mode dispatch)
+      final typeChanged = original.connectionType != edited.connectionType;
+      final switchingToPppBased =
+          typeChanged && edited.connectionType.isPppBased;
+      await _saveWanSettings(original, edited);
+
+      // Step 5: PPP instance fields (skip username/password if already sent
+      // in the ordered Set above)
+      if (pppPath != null && edited.connectionType.isPppBased) {
+        await _savePppSettings(original, edited, pppPath,
+            skipCredentials: switchingToPppBased);
+      }
+
+      // Step 6: VLAN settings (always use SET on existing instance)
       if (vlanInstancePath != null) {
         await _saveVlanSettings(original, edited, vlanInstancePath);
       }
 
-      // Step 5: IPv6 fields
+      // Step 7: IPv6 fields
       await _saveIpv6Settings(original, edited);
     } catch (e) {
       if (e is ServiceError) rethrow;
@@ -179,16 +207,17 @@ class UspInternetSettingsService {
   /// Returns the PPP instance path to use for subsequent Set operations,
   /// or null if no PPP instance exists after this step.
   ///
-  /// Only creates a new instance when switching TO PPPoE and none exists.
-  /// Never deletes — the instance persists across mode switches.
+  /// Only creates a new instance when switching TO a PPP-based type and none
+  /// exists. Never deletes — the instance persists across mode switches.
   Future<String?> _handlePppLifecycle(
     UspInternetSettingsForm edited, {
     String? currentInstancePath,
   }) async {
-    final isPppoe = edited.connectionType == UspWanConnectionType.pppoe;
+    final isPppBased = edited.connectionType.isPppBased;
 
-    if (isPppoe && currentInstancePath == null) {
-      logger.d('[USP][WAN]: Adding PPP.Interface instance for PPPoE');
+    if (isPppBased && currentInstancePath == null) {
+      logger.d('[USP][WAN]: Adding PPP.Interface instance for '
+          '${edited.connectionType.name}');
       final result = await PppInterface.add(_usp, [{}]);
       final parsedResult = UspResultParser.parseAddResult(result);
       if (parsedResult is UspSuccess<List<String>>) {
@@ -241,6 +270,16 @@ class UspInternetSettingsService {
             allowPartial: true,
           ));
 
+        case UspWanConnectionType.pptp:
+        case UspWanConnectionType.l2tp:
+          _handleSetResult(await WanPppoe.update(
+            _usp,
+            pppUsername: edited.pppUsername,
+            pppPassword: edited.pppPassword,
+            addressingType: 'IPCP',
+            allowPartial: true,
+          ));
+
         case UspWanConnectionType.bridge:
           _handleSetResult(await WanBridge.update(_usp, addressingType: ''));
       }
@@ -266,6 +305,8 @@ class UspInternetSettingsService {
           break;
 
         case UspWanConnectionType.pppoe:
+        case UspWanConnectionType.pptp:
+        case UspWanConnectionType.l2tp:
           break;
       }
     }
@@ -307,6 +348,58 @@ class UspInternetSettingsService {
         )
       ],
     ));
+  }
+
+  // ---------------------------------------------------------------------------
+  // PPP LowerLayers — sets the tunnel type reference
+  // ---------------------------------------------------------------------------
+
+  Future<void> _savePppLowerLayers(
+    UspInternetSettingsForm original,
+    UspInternetSettingsForm edited,
+    String instancePath,
+  ) async {
+    final targetLowerLayers = edited.connectionType.pppLowerLayers;
+    if (targetLowerLayers == null) return;
+
+    final originalLowerLayers = original.connectionType.pppLowerLayers ?? '';
+    if (originalLowerLayers == targetLowerLayers) return;
+
+    logger.d('[USP][WAN]: Setting LowerLayers to $targetLowerLayers');
+    _handleSetResult(await PppInterface.update(
+      _usp,
+      [
+        PppInterfaceInstanceUpdate(
+          instancePath: instancePath,
+          lowerLayers: targetLowerLayers,
+        )
+      ],
+    ));
+  }
+
+  // ---------------------------------------------------------------------------
+  // Tunnel RemoteEndpoints — server address for PPTP/L2TP
+  // ---------------------------------------------------------------------------
+
+  Future<void> _saveTunnelRemoteEndpoints(
+    UspInternetSettingsForm original,
+    UspInternetSettingsForm edited,
+  ) async {
+    final serverDiff = _diff(original.serverAddress, edited.serverAddress);
+    if (serverDiff == null) return;
+
+    switch (edited.connectionType) {
+      case UspWanConnectionType.pptp:
+        logger.d('[USP][WAN]: Setting GRE RemoteEndpoints to $serverDiff');
+        _handleSetResult(
+            await GreTunnel.update(_usp, remoteEndpoints: serverDiff));
+      case UspWanConnectionType.l2tp:
+        logger.d('[USP][WAN]: Setting L2TP RemoteEndpoints to $serverDiff');
+        _handleSetResult(
+            await L2tpTunnel.update(_usp, remoteEndpoints: serverDiff));
+      default:
+        break;
+    }
   }
 
   // ---------------------------------------------------------------------------

@@ -70,6 +70,8 @@ class UspConnectionStatusBanner extends StatelessWidget {
       UspWanConnectionType.dhcp => l.connectionTypeDhcp,
       UspWanConnectionType.staticIp => l.connectionTypeStatic,
       UspWanConnectionType.pppoe => l.connectionTypePppoe,
+      UspWanConnectionType.pptp => 'PPTP',
+      UspWanConnectionType.l2tp => 'L2TP',
       UspWanConnectionType.bridge => l.connectionTypeBridge,
     };
   }

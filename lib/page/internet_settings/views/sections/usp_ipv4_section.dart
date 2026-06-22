@@ -40,6 +40,7 @@ class _UspIpv4SectionState extends ConsumerState<UspIpv4Section> {
   late TextEditingController _pppUsernameController;
   late TextEditingController _pppPasswordController;
   late TextEditingController _pppServiceNameController;
+  late TextEditingController _serverAddressController;
   late TextEditingController _vlanIdController;
   late TextEditingController _idleTimeController;
 
@@ -61,6 +62,7 @@ class _UspIpv4SectionState extends ConsumerState<UspIpv4Section> {
     _pppPasswordController = TextEditingController(text: form.pppPassword);
     _pppServiceNameController =
         TextEditingController(text: form.pppoeServiceName);
+    _serverAddressController = TextEditingController(text: form.serverAddress);
     _vlanIdController = TextEditingController(text: form.vlanId.toString());
     _idleTimeController =
         TextEditingController(text: form.idleDisconnectTime.toString());
@@ -85,6 +87,7 @@ class _UspIpv4SectionState extends ConsumerState<UspIpv4Section> {
     _syncIfDifferent(_pppUsernameController, form.pppUsername);
     _syncIfDifferent(_pppPasswordController, form.pppPassword);
     _syncIfDifferent(_pppServiceNameController, form.pppoeServiceName);
+    _syncIfDifferent(_serverAddressController, form.serverAddress);
     _syncIfDifferent(_vlanIdController, form.vlanId.toString());
     _syncIfDifferent(_idleTimeController, form.idleDisconnectTime.toString());
   }
@@ -106,6 +109,7 @@ class _UspIpv4SectionState extends ConsumerState<UspIpv4Section> {
     _pppUsernameController.dispose();
     _pppPasswordController.dispose();
     _pppServiceNameController.dispose();
+    _serverAddressController.dispose();
     _vlanIdController.dispose();
     _idleTimeController.dispose();
     super.dispose();
@@ -161,6 +165,9 @@ class _UspIpv4SectionState extends ConsumerState<UspIpv4Section> {
         return _buildStaticIpFields(form, isEditing);
       case UspWanConnectionType.pppoe:
         return _buildPppoeFields(form, isEditing);
+      case UspWanConnectionType.pptp:
+      case UspWanConnectionType.l2tp:
+        return _buildTunnelFields(form, isEditing);
       case UspWanConnectionType.bridge:
         return _buildBridgeFields();
     }
@@ -315,6 +322,93 @@ class _UspIpv4SectionState extends ConsumerState<UspIpv4Section> {
     ];
   }
 
+  List<Widget> _buildTunnelFields(
+      UspInternetSettingsForm form, bool isEditing) {
+    final l = loc(context);
+    final typeName =
+        form.connectionType == UspWanConnectionType.pptp ? 'PPTP' : 'L2TP';
+    if (!isEditing) {
+      return [
+        UspInfoRow(label: '$typeName Server', value: form.serverAddress),
+        UspInfoRow(label: l.username, value: form.pppUsername),
+        UspInfoRow(label: l.connectionMode, value: form.connectionTrigger),
+        UspInfoRow(label: l.pppStatus, value: widget.state.pppConnectionStatus),
+        if (form.vlanEnabled)
+          UspInfoRow(label: l.vlanIdOptional, value: '${form.vlanId}'),
+      ];
+    }
+    return [
+      AppTextFormField(
+        controller: _serverAddressController,
+        label: '$typeName Server',
+        hintText: 'vpn.example.com',
+        onChanged: (v) => _updateField((f) => f.copyWith(serverAddress: v)),
+      ),
+      AppGap.md(),
+      AppTextFormField(
+        controller: _pppUsernameController,
+        label: l.username,
+        onChanged: (v) => _updateField((f) => f.copyWith(pppUsername: v)),
+      ),
+      AppGap.md(),
+      AppTextFormField(
+        controller: _pppPasswordController,
+        label: l.password,
+        obscureText: true,
+        onChanged: (v) => _updateField((f) => f.copyWith(pppPassword: v)),
+      ),
+      AppGap.lg(),
+      // Connection mode
+      AppText.labelLarge(l.connectionMode),
+      AppGap.sm(),
+      AppRadioList<String>(
+        items: [
+          AppRadioListItem(title: l.keepAlive, value: 'AlwaysOn'),
+          AppRadioListItem(title: l.connectOnDemand, value: 'OnDemand'),
+        ],
+        selected: form.connectionTrigger,
+        onChanged: (_, v) {
+          if (v != null) {
+            _updateField((f) => f.copyWith(connectionTrigger: v));
+          }
+        },
+      ),
+      AppGap.md(),
+      if (form.connectionTrigger == 'OnDemand') ...[
+        AppTextFormField(
+          controller: _idleTimeController,
+          label: l.maxIdleTime,
+          keyboardType: TextInputType.number,
+          onChanged: (v) => _updateField(
+              (f) => f.copyWith(idleDisconnectTime: int.tryParse(v) ?? 0)),
+        ),
+        AppGap.md(),
+      ],
+      // VLAN
+      AppGap.md(),
+      Row(
+        children: [
+          AppText.labelLarge(l.vlanTagging),
+          const Spacer(),
+          AppSwitch(
+            value: form.vlanEnabled,
+            onChanged: (v) => _updateField((f) => f.copyWith(vlanEnabled: v)),
+          ),
+        ],
+      ),
+      if (form.vlanEnabled) ...[
+        AppGap.md(),
+        AppTextFormField(
+          controller: _vlanIdController,
+          label: l.vlanIdOptional,
+          keyboardType: TextInputType.number,
+          onChanged: (v) =>
+              _updateField((f) => f.copyWith(vlanId: int.tryParse(v) ?? 0)),
+        ),
+      ],
+    ];
+  }
+
   List<Widget> _buildBridgeFields() {
     return [
       AppGap.md(),
@@ -328,6 +422,8 @@ class _UspIpv4SectionState extends ConsumerState<UspIpv4Section> {
       UspWanConnectionType.dhcp => l.connectionTypeDhcp,
       UspWanConnectionType.staticIp => l.connectionTypeStatic,
       UspWanConnectionType.pppoe => l.connectionTypePppoe,
+      UspWanConnectionType.pptp => 'PPTP',
+      UspWanConnectionType.l2tp => 'L2TP',
       UspWanConnectionType.bridge => l.connectionTypeBridge,
     };
   }

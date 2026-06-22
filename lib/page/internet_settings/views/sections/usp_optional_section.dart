@@ -59,7 +59,9 @@ class _UspOptionalSectionState extends ConsumerState<UspOptionalSection> {
     // MTU max varies by connection type due to protocol overhead
     return switch (type) {
       UspWanConnectionType.pppoe => 1492, // 1500 - 8 (PPP header)
-      // Future: pptp/l2tp => 1460 (tunnel overhead)
+      UspWanConnectionType.pptp ||
+      UspWanConnectionType.l2tp =>
+        1460, // tunnel overhead
       _ => 1500, // Ethernet standard (DHCP, Static, Bridge)
     };
   }

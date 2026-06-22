@@ -31,6 +31,50 @@ const _pppResponse = <String, dynamic>{
   'Device.PPP.Interface.1.IdleDisconnectTime': '0',
   'Device.PPP.Interface.1.LCPEcho': '30',
   'Device.PPP.Interface.1.ConnectionStatus': 'Connected',
+  'Device.PPP.Interface.1.LowerLayers': '',
+};
+
+// Test data — PPP with GRE LowerLayers (PPTP)
+const _pppPptpResponse = <String, dynamic>{
+  'Device.PPP.Interface.1.Username': 'vpnuser',
+  'Device.PPP.Interface.1.Password': 'vpnpass',
+  'Device.PPP.Interface.1.PPPoE.ServiceName': '',
+  'Device.PPP.Interface.1.ConnectionTrigger': 'AlwaysOn',
+  'Device.PPP.Interface.1.IdleDisconnectTime': '0',
+  'Device.PPP.Interface.1.LCPEcho': '0',
+  'Device.PPP.Interface.1.ConnectionStatus': 'Connected',
+  'Device.PPP.Interface.1.LowerLayers': 'Device.GRE.Tunnel.1.Interface.1',
+};
+
+// Test data — PPP with L2TPv2 LowerLayers (L2TP)
+const _pppL2tpResponse = <String, dynamic>{
+  'Device.PPP.Interface.1.Username': 'l2tpuser',
+  'Device.PPP.Interface.1.Password': 'l2tppass',
+  'Device.PPP.Interface.1.PPPoE.ServiceName': '',
+  'Device.PPP.Interface.1.ConnectionTrigger': 'AlwaysOn',
+  'Device.PPP.Interface.1.IdleDisconnectTime': '0',
+  'Device.PPP.Interface.1.LCPEcho': '0',
+  'Device.PPP.Interface.1.ConnectionStatus': 'Connected',
+  'Device.PPP.Interface.1.LowerLayers': 'Device.L2TPv2.Tunnel.1.Interface.1',
+};
+
+// Test data — GRE Tunnel
+const _greResponse = <String, dynamic>{
+  'Device.GRE.Tunnel.1.RemoteEndpoints': 'pptp.example.com',
+};
+
+// Test data — L2TP Tunnel
+const _l2tpResponse = <String, dynamic>{
+  'Device.L2TPv2.Tunnel.1.RemoteEndpoints': 'l2tp.example.com',
+};
+
+// Test data — GRE/L2TP empty
+const _greEmptyResponse = <String, dynamic>{
+  'Device.GRE.Tunnel.1.RemoteEndpoints': '',
+};
+
+const _l2tpEmptyResponse = <String, dynamic>{
+  'Device.L2TPv2.Tunnel.1.RemoteEndpoints': '',
 };
 
 // Test data — PPP empty (no instances)
@@ -68,8 +112,11 @@ const _ethLinkAliasResponse = <String, dynamic>{
 
 /// Helper to create a mock get handler that handles all codegen paths
 Map<String, dynamic> Function(List<String>) createFetchMockHandler({
+  Map<String, dynamic> wanResponse = _wanResponse,
   Map<String, dynamic> pppResponse = _pppResponse,
   Map<String, dynamic> vlanResponse = _vlanResponse,
+  Map<String, dynamic> greResponse = _greEmptyResponse,
+  Map<String, dynamic> l2tpResponse = _l2tpEmptyResponse,
 }) {
   return (List<String> paths) {
     // Alias resolution (must be checked first)
@@ -79,9 +126,16 @@ Map<String, dynamic> Function(List<String>) createFetchMockHandler({
     if (paths.any((p) => p.contains('IP.Interface.*.Alias'))) {
       return _ipAliasResponse;
     }
+    // Tunnel fetches
+    if (paths.any((p) => p.contains('GRE.Tunnel'))) {
+      return greResponse;
+    }
+    if (paths.any((p) => p.contains('L2TPv2.Tunnel'))) {
+      return l2tpResponse;
+    }
     // Other fetches
     if (paths.any((p) => p.contains('AddressingType'))) {
-      return _wanResponse;
+      return wanResponse;
     }
     if (paths.any((p) => p.contains('IPv6Enable'))) {
       return _ipv6Response;
@@ -164,6 +218,12 @@ void main() {
         }
         if (paths.any((p) => p.contains('IP.Interface.*.Alias'))) {
           return _ipAliasResponse;
+        }
+        if (paths.any((p) => p.contains('GRE.Tunnel'))) {
+          return _greEmptyResponse;
+        }
+        if (paths.any((p) => p.contains('L2TPv2.Tunnel'))) {
+          return _l2tpEmptyResponse;
         }
         if (paths.any((p) => p.contains('AddressingType'))) return wanWith3Dns;
         if (paths.any((p) => p.contains('IPv6Enable'))) return _ipv6Response;
@@ -547,6 +607,136 @@ void main() {
         equals(1400),
       );
       expect(mtuParams.first.length, equals(1));
+    });
+
+    test('switching to PPTP sets LowerLayers, RemoteEndpoints, and IPCP',
+        () async {
+      final original = UspInternetSettingsForm(
+        connectionType: UspWanConnectionType.dhcp,
+      );
+      final edited = original.copyWith(
+        connectionType: UspWanConnectionType.pptp,
+        serverAddress: 'pptp.example.com',
+        pppUsername: 'vpnuser',
+        pppPassword: 'vpnpass',
+      );
+
+      await service.saveAll(
+        original,
+        edited,
+        pppInstancePath: 'Device.PPP.Interface.1.',
+      );
+
+      final captured = verify(
+        () =>
+            mockUsp.set(captureAny(), allowPartial: any(named: 'allowPartial')),
+      ).captured;
+      final allParams = captured.whereType<Map<String, dynamic>>().toList();
+
+      // Verify LowerLayers was set to GRE
+      final lowerLayersSet = allParams
+          .where((m) => m.containsKey('Device.PPP.Interface.1.LowerLayers'));
+      expect(lowerLayersSet, isNotEmpty);
+      expect(lowerLayersSet.first['Device.PPP.Interface.1.LowerLayers'],
+          equals('Device.GRE.Tunnel.1.Interface.1'));
+
+      // Verify RemoteEndpoints was set
+      final greSet = allParams
+          .where((m) => m.containsKey('Device.GRE.Tunnel.1.RemoteEndpoints'));
+      expect(greSet, isNotEmpty);
+      expect(greSet.first['Device.GRE.Tunnel.1.RemoteEndpoints'],
+          equals('pptp.example.com'));
+
+      // Verify AddressingType set to IPCP
+      final ipcpSet = allParams.where((m) =>
+          m.containsKey('Device.IP.Interface.2.IPv4Address.1.AddressingType'));
+      expect(ipcpSet, isNotEmpty);
+      expect(
+          ipcpSet.first['Device.IP.Interface.2.IPv4Address.1.AddressingType'],
+          equals('IPCP'));
+    });
+
+    test('switching to L2TP sets LowerLayers to L2TPv2', () async {
+      final original = UspInternetSettingsForm(
+        connectionType: UspWanConnectionType.dhcp,
+      );
+      final edited = original.copyWith(
+        connectionType: UspWanConnectionType.l2tp,
+        serverAddress: 'l2tp.example.com',
+        pppUsername: 'l2tpuser',
+        pppPassword: 'l2tppass',
+      );
+
+      await service.saveAll(
+        original,
+        edited,
+        pppInstancePath: 'Device.PPP.Interface.1.',
+      );
+
+      final captured = verify(
+        () =>
+            mockUsp.set(captureAny(), allowPartial: any(named: 'allowPartial')),
+      ).captured;
+      final allParams = captured.whereType<Map<String, dynamic>>().toList();
+
+      // Verify LowerLayers was set to L2TPv2
+      final lowerLayersSet = allParams
+          .where((m) => m.containsKey('Device.PPP.Interface.1.LowerLayers'));
+      expect(lowerLayersSet, isNotEmpty);
+      expect(lowerLayersSet.first['Device.PPP.Interface.1.LowerLayers'],
+          equals('Device.L2TPv2.Tunnel.1.Interface.1'));
+
+      // Verify L2TP RemoteEndpoints was set
+      final l2tpSet = allParams.where(
+          (m) => m.containsKey('Device.L2TPv2.Tunnel.1.RemoteEndpoints'));
+      expect(l2tpSet, isNotEmpty);
+      expect(l2tpSet.first['Device.L2TPv2.Tunnel.1.RemoteEndpoints'],
+          equals('l2tp.example.com'));
+    });
+
+    test('fetch detects PPTP from lowerLayers containing GRE.Tunnel', () async {
+      final wanIpcp = Map<String, dynamic>.from(_wanResponse);
+      wanIpcp['Device.IP.Interface.2.IPv4Address.1.AddressingType'] = 'IPCP';
+
+      final handler = createFetchMockHandler(
+        wanResponse: wanIpcp,
+        pppResponse: _pppPptpResponse,
+        greResponse: _greResponse,
+        l2tpResponse: _l2tpEmptyResponse,
+      );
+      when(() => mockUsp.get(any())).thenAnswer((invocation) async {
+        final paths = invocation.positionalArguments[0] as List<String>;
+        return handler(paths);
+      });
+
+      final result = await service.fetchSettings();
+
+      expect(result.form.connectionType, equals(UspWanConnectionType.pptp));
+      expect(result.form.serverAddress, equals('pptp.example.com'));
+      expect(result.form.pppUsername, equals('vpnuser'));
+    });
+
+    test('fetch detects L2TP from lowerLayers containing L2TPv2.Tunnel',
+        () async {
+      final wanIpcp = Map<String, dynamic>.from(_wanResponse);
+      wanIpcp['Device.IP.Interface.2.IPv4Address.1.AddressingType'] = 'IPCP';
+
+      final handler = createFetchMockHandler(
+        wanResponse: wanIpcp,
+        pppResponse: _pppL2tpResponse,
+        greResponse: _greEmptyResponse,
+        l2tpResponse: _l2tpResponse,
+      );
+      when(() => mockUsp.get(any())).thenAnswer((invocation) async {
+        final paths = invocation.positionalArguments[0] as List<String>;
+        return handler(paths);
+      });
+
+      final result = await service.fetchSettings();
+
+      expect(result.form.connectionType, equals(UspWanConnectionType.l2tp));
+      expect(result.form.serverAddress, equals('l2tp.example.com'));
+      expect(result.form.pppUsername, equals('l2tpuser'));
     });
   });
 
