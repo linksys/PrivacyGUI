@@ -45,6 +45,16 @@ class UspTrafficAnalysisNotifier extends Notifier<TrafficAnalysisState> {
       }
     });
 
+    // ref.listen only fires on state CHANGES — if dashboardDomainReadyProvider
+    // already completed before this provider was first read, the listener above
+    // will never fire. Check current state and start timer if ready.
+    final domainReady = ref.read(dashboardDomainReadyProvider);
+    final isAuthenticated = ref.read(appConnectionStateProvider) ==
+        AppConnectionState.authenticated;
+    if (domainReady is AsyncData && isAuthenticated) {
+      Future.microtask(() => setRefreshInterval(defaultInterval));
+    }
+
     return const TrafficAnalysisState(
       refreshInterval: defaultInterval,
     );
