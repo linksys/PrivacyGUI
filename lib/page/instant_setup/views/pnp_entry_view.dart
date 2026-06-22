@@ -77,7 +77,7 @@ class _PnpEntryViewState extends ConsumerState<PnpEntryView> {
             const AppLoader(),
             AppGap.xxxl(),
             AppText.bodyMedium(
-              loc(context).pnpWaitingModemCheckingInternet,
+              loc(context).checkingForInternet,
               textAlign: TextAlign.center,
             ),
           ],

@@ -427,7 +427,7 @@ class _DiagnosticManualToolsViewState
           // Success rate
           Row(
             children: [
-              AppText.bodyMedium('${loc(context).successLabel}: '),
+              AppText.bodyMedium('${loc(context).success}: '),
               AppText.bodyMedium(
                 '${result.successCount}/${result.totalCount}',
                 color: successColor,
@@ -494,7 +494,7 @@ class _DiagnosticManualToolsViewState
               ),
               Expanded(
                 flex: 3,
-                child: AppText.labelSmall(loc(context).hostColumn,
+                child: AppText.labelSmall(loc(context).host,
                     color: colorScheme.onSurfaceVariant),
               ),
               Expanded(
@@ -633,7 +633,7 @@ class _DiagnosticManualToolsViewState
                 Expanded(
                   flex: 2,
                   child: AppText.labelSmall(
-                    loc(context).dnsServerColumn,
+                    loc(context).dnsServer,
                     color: colorScheme.onSurfaceVariant,
                   ),
                 ),

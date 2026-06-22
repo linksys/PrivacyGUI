@@ -91,7 +91,7 @@ class UspIpv6PortServiceView extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         AppText.bodyMedium(
-          loc(context).ipv6PortServicePageDesc,
+          loc(context).manageIpv6PortRules,
           color: Theme.of(context).colorScheme.onSurfaceVariant,
         ),
         AppGap.xl(),

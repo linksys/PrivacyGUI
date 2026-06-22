@@ -27,7 +27,7 @@ class PnpUnplugModemView extends StatelessWidget {
                 AppGap.xxxl(),
                 AppText.headlineSmall(loc(context).pnpUnplugModemTitle),
                 AppGap.md(),
-                AppText.bodyMedium(loc(context).pnpUnplugModemDesc),
+                AppText.bodyMedium(loc(context).pnpIspSettingsContactDesc),
                 AppGap.xxxl(),
                 _buildTipCard(context),
                 AppGap.xxxl(),

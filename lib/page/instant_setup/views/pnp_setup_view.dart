@@ -426,7 +426,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
           const AppLoader(),
           AppGap.lg(),
           AppText.bodyMedium(
-            '${loc(context).pnpWaitingModemCheckingInternet} ($attempt/$maxAttempts)',
+            '${loc(context).checkingForInternet} ($attempt/$maxAttempts)',
           ),
         ],
       ),

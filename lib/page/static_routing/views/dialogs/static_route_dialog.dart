@@ -108,7 +108,7 @@ class _StaticRouteDialogState extends State<StaticRouteDialog> {
             AppGap.lg(),
             AppIpv4TextField(
               controller: _destIpController,
-              label: loc(context).destinationIpLabel,
+              label: loc(context).destinationIp,
               errorText: _errors['destIp'],
               onChanged: (_) => _validate(),
             ),
@@ -130,7 +130,7 @@ class _StaticRouteDialogState extends State<StaticRouteDialog> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                AppText.bodyMedium(loc(context).interfaceLabel),
+                AppText.bodyMedium(loc(context).labelInterface),
                 SegmentedButton<String>(
                   segments: UspStaticRoutingService.interfaceOptions
                       .map((name) =>

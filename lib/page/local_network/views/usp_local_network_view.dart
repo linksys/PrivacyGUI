@@ -400,7 +400,7 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
           ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: Text(loc(context).continueLabel),
+            child: Text(loc(context).textContinue),
           ),
         ],
       ),

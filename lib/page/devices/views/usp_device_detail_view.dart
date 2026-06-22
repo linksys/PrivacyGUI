@@ -227,7 +227,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
             icon:
                 hasMultipleInterfaces ? Icons.hub : device.connectionType.icon,
             title: hasMultipleInterfaces
-                ? loc(context).networkConnectionsCount(device.interfaceCount)
+                ? loc(context).networkConnections(device.interfaceCount)
                 : (device.isWifi
                     ? loc(context).wifiConnection
                     : loc(context).wiredConnection),
@@ -485,7 +485,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
                                       .colorScheme
                                       .onSurfaceVariant),
                               AppGap.xs(),
-                              AppText.labelSmall(loc(context).interfaceLabel,
+                              AppText.labelSmall(loc(context).labelInterface,
                                   color: Theme.of(context)
                                       .colorScheme
                                       .onSurfaceVariant),
@@ -725,7 +725,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
                   Expanded(
                     child: AppText.bodyMedium(
                       hasValidIpv4
-                          ? loc(context).noReservationDesc
+                          ? loc(context).noReservationIpMayChange
                           : loc(context).noIpv4AddressDesc,
                       color: colorScheme.onSurfaceVariant,
                     ),

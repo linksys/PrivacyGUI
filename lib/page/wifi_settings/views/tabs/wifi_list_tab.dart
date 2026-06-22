@@ -100,7 +100,7 @@ class UspWifiListTab extends ConsumerWidget {
                         AppText.labelLarge(loc(context).quickSetup),
                         AppGap.xs(),
                         AppText.bodySmall(
-                          loc(context).quickSetupApplyDesc,
+                          loc(context).applyToAllBandsDesc,
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ],

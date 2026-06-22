@@ -192,7 +192,7 @@ class _PortRangeForwardingDialogState extends State<PortRangeForwardingDialog> {
           AppGap.lg(),
           AppTextField(
             controller: _intClientController,
-            hintText: loc(context).internalIpExample,
+            hintText: loc(context).internalIpHint,
             errorText: _localizeError(_errors['client']),
             onChanged: (_) => _validate(),
           ),

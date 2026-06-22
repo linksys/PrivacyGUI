@@ -389,7 +389,7 @@ class _FirmwareUpdateViewState extends ConsumerState<FirmwareUpdateView> {
     final confirmed = await showConfirmActionDialog(
       context,
       title: loc(context).updateAvailable,
-      message: '${loc(context).currentVersionLabel(currentVersion)}\n'
+      message: '${loc(context).currentVersion(currentVersion)}\n'
           '${loc(context).availableVersionLabel(info.version)}\n\n'
           '${loc(context).doYouWantToUpdateNow}',
       confirmLabel: loc(context).update,

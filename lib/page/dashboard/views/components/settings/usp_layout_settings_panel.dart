@@ -33,7 +33,7 @@ class UspLayoutSettingsPanel extends ConsumerWidget {
                 AppGap.md(),
                 Expanded(
                   child: AppText.bodySmall(
-                    loc(context).layoutSettingsInstructions,
+                    loc(context).layoutSettingsDescription,
                   ),
                 ),
               ],

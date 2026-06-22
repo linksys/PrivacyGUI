@@ -238,7 +238,7 @@ class UspAdminView extends ConsumerWidget {
   Future<void> _factoryReset(BuildContext context, WidgetRef ref) async {
     final confirmed = await showConfirmActionDialog(
       context,
-      title: loc(context).factoryResetTitle,
+      title: loc(context).resetToFactoryDefault,
       message: loc(context).factoryResetDesc,
       confirmLabel: loc(context).reset,
     );

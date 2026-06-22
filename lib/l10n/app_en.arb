@@ -8,7 +8,6 @@
   "add": "Add",
   "additionalFiltersOnlineOnly": "Additional filters are only available for online devices.",
   "all": "All",
-  "addDHCPReservation": "Add DHCP Reservation",
   "addDns": "+ Add DNS",
   "addPortForwarding": "Add Port Forwarding",
   "addNodes": "Add nodes",
@@ -119,7 +118,6 @@
   "collectingData": "Collecting data...",
   "collectingHourlyData": "Collecting hourly data...",
   "connectOnDemand": "Connect on demand",
-  "connectTo": "Connected to",
   "connectedSpeed": "Connected Speed",
   "connectedVia": "Connected via",
   "connectedWithMLO": "Connected with MLO",
@@ -129,14 +127,12 @@
   "connectionMode": "Connection Mode",
   "connectionStatus": "Connection Status",
   "connectionType": "Connection Type",
-  "connectionTypeAutomatic": "Automatic",
   "connectionTypeBridge": "Bridge Mode",
   "connectionTypeDhcp": "Automatic Configuration - DHCP",
   "connectionTypeL2tp": "L2TP",
   "connectionTypePassThrough": "Pass-through",
   "connectionTypePppoe": "PPPoE",
   "connectionTypePptp": "PPTP",
-  "connectionTypeStatic": "Static IP",
   "connectivity": "Connectivity",
   "copyRight": "© {year} Linksys Holdings, Inc. and/or its affiliates. All rights reserved.",
   "@copyRight": {
@@ -186,10 +182,6 @@
   "dashboardSupportFAQTitle": "View FAQ",
   "dashboardSettings": "Dashboard Settings",
   "dashboardEnableCustomLayout": "Enable Custom Layout",
-  "dashboardAvailableWidgets": "Available Widgets",
-  "dashboardResetLayout": "Reset Layout",
-  "dashboardLayoutOptimized": "Layout optimized",
-  "dashboardLayoutResetToDefaults": "Layout reset to defaults",
   "dashboardUnknownWidget": "Unknown: {widgetId}",
   "@dashboardUnknownWidget": {
     "placeholders": {
@@ -208,7 +200,6 @@
       }
     }
   },
-  "dashboardStartSpeedTest": "Start Speed Test",
   "dashboardChangeViewMode": "Change View Mode",
   "beta": "BETA",
   "topology": "Topology",
@@ -262,7 +253,6 @@
   "disconnectClient": "Disconnect client",
   "dmz": "DMZ",
   "dmzDescription": "The De-Militarized Zone (DMZ) feature forwards all inbound traffic to a specified IP address on your network and removes your router's firewall protection for a device.",
-  "dmzDestinationIPAddress": "Destination IP Address:",
   "dmzSourceIPAddress": "Source IP Address:",
   "dmzSourceRangeError": "The end IP address must be larger or equal to the start IP address",
   "dmzViewDHCP": "View DHCP Client Table",
@@ -282,7 +272,6 @@
   "dynamicRouting": "Dynamic routing (RIP)",
   "eap": "EAP",
   "edit": "Edit",
-  "editDHCPReservation": "Edit DHCP Reservation",
   "editPortForwarding": "Edit Port Forwarding",
   "email": "Email",
   "enableTrafficMonitorForCorrelation": "Enable traffic monitor for correlation data",
@@ -325,7 +314,6 @@
   "factoryResetOk": "Yes, Factory Reset All",
   "factoryResetOkSingle": "Yes, Factory Reset",
   "factoryResetParentTitle": "Reset Parent and all its child/s to Factory Default",
-  "factoryResetTitle": "Reset to Factory Default",
   "failedExclamation": "Failed!",
   "fair": "Fair",
   "faqListCannotAddChildNode": "Can't add child nodes to network",
@@ -363,7 +351,6 @@
   "firmwareDownloadingMessage3": "This will take about 15 minutes, after which your WiFi will restart.",
   "firmwareDownloadingTitle": "Downloading...",
   "firmwareInstallingTitle": "Installing...",
-  "firmwareRebootingTitle": "Restarting...",
   "firmwareRestartingMessage1": "Restarting your WiFi",
   "firmwareRestartingMessage2": "Future updates will happen overnight - automatically - and only take a few minutes.",
   "firmwareRestartingMessage3": "This takes 2-3 minutes.",
@@ -435,7 +422,6 @@
   },
   "hostNameLengthError": "Host name must be between 1 and 15 characters.",
   "inactive": "Inactive",
-  "incorrectPassword": "Incorrect password",
   "incredibleWiFi": "Incredible-WiFi",
   "incredibleWiFiDesc": "Change WiFi name and password",
   "indexedPort": "Port {index}",
@@ -534,7 +520,6 @@
   "localResetRouterPasswordDescription": "Pick something memorable, but secure.",
   "localResetRouterPasswordSuccessContent": "You've updated your router password.",
   "localResetRouterPasswordSuccessNext": "Go back to Login",
-  "localResetRouterPasswordTitle": "New router password",
   "localRouterRecoveryDescription": "To set a new router password, enter the 5-digit recovery key.",
   "localRouterRecoveryKeyErorr": "That key didn't work. Check it and try again.",
   "localRouterRecoveryKeyLastChance": "Acccess will be locked to pretect you if the next attempt is incorrect.",
@@ -617,13 +602,11 @@
   "modalOfflineNodeCheckTitle1": "Power is on",
   "modalOfflineNodeCheckTitle2": "Make sure the power cord is plugged in and the light is on. If you have Night Mode on, the node light will be off during certain hours.",
   "modalOfflineNodeCheckTitle3": "Nodes are within range",
-  "modalOfflineNodeTitle": "Let's check a few things",
   "modalOfflineRemoveNodeFromNetwork": "Remove node from network",
   "modalPnpWiFiDefaultsInfoDesc1": "Your router comes with 3 defaults: the WiFi name, WiFi password, and router password.",
   "modalPnpWiFiDefaultsInfoDesc2": "These are printed on the Quick Start Guide and on the bottom of your router.",
   "modalPnpWiFiDefaultsInfoDesc3": "By default, the router password is the same as the WiFi password, but if you were to customize one they would be different.",
   "modalPnpWiFiDefaultsInfoDesc4": "To reinstate these default settings, factory reset your router.",
-  "modalPnpWiFiDefaultsInfoTitle": "Personalize your WiFi name and password",
   "modalRemoveNodeDesc": "Are you sure you want to remove {node} from your mesh network?",
   "@modalRemoveNodeDesc": {
     "description": "Node name",
@@ -635,7 +618,6 @@
     }
   },
   "modalRouterPasswordLocation": "Your router password is the same as your default WiFi password, printed on the Quick Start Guide and on the bottom of your router.",
-  "modalTroubleshootNoNodesFound": "Let's check a few things",
   "modalTroubleshootNoNodesFoundDesc1": "Make sure the Nodes you're adding are fully powered on, indicated by a solid blue light",
   "modalTroubleshootNoNodesFoundDesc2": "Nodes are within range. Try moving them closer to the Router. Once added to your network, you can move them further away.",
   "model": "Model",
@@ -795,17 +777,16 @@
   "pnpFwUpdateDesc": "Please wait as we download and reboot your device. The LED will turn bright white when the process is complete. Your Router's WiFi might briefly turn off and then on again. If you lose connection, reconnect to your Router's WiFi to access Internet.",
   "pnpFwUpdateTitle": "Saving your configuration and checking for software updates...",
   "pnpGuestWiFiDesc": "Turn on guest network to create separate WiFi network for guests and maintain the privacy of your main network.",
-  "pnpIspSaveStepCheckingInternet": "Checking for internet...",
+  "checkingForInternet": "Checking for internet...",
   "pnpIspSaveStepSaving": "Saving settings...",
   "pnpIspSaveStepVerifying": "Verifying settings...",
-  "pnpIspSettingsAuthTitle": "Enter your router's password to proceed",
   "pnpIspTypeSelectionDhcpConfirm": "Are you sure you want to switch to DHCP mode?",
   "pnpIspTypeSelectionDhcpDesc": "Dynamic Host Configuration Protocol (DHCP) automatically assigns IP addresses to devices connected to the network.",
   "pnpIspTypeSelectionPppoeDesc": "Point-to-Point Protocol over ethernet is a specification for connecting multiple computer users on an ethernet local area network to a remote site.",
   "pnpIspTypeSelectionPppoeVlanDesc": "Sometimes your ISP may require you to have a PPPoE over VLAN to access the internet.",
   "pnpIspTypeSelectionStaticDesc": "A static Internet Protocol (IP) address (static IP address) is a permanent number assigned to a network by an internet service provider (ISP).",
   "pnpIspTypeSelectionTitle": "What type of ISP settings do you have?",
-  "pnpModemLightsOffDesc": "These settings are provided by your Internet Service Provider (ISP). If you aren't sure about yours, we recommend contacting your ISP.",
+  "pnpIspSettingsContactDesc": "These settings are provided by your Internet Service Provider (ISP). If you aren't sure about yours, we recommend contacting your ISP.",
   "pnpModemLightsOffTip": "Are the lights still on after unplugging?",
   "pnpModemLightsOffTipDesc": "Your modem may have a backup battery. To restart, DO NOT remove the battery. Follow these instructions:",
   "pnpModemLightsOffTipStep1": "Find the modem's power, reboot or restart button. Press and hold it. Do not press RESET as it may restore the modem to factory settings. If your modem does not have a power, reboot or restart button, contact your Internet Service Provider for guidance.",
@@ -821,22 +802,17 @@
   "pnpPersonalizeInfo": "Keep in mind that changing your WiFi name and password means that what's printed on the Quick Start Guide won't work.",
   "pnpPersonalizeWiFiTitle": "Personalize your WiFi name and password",
   "pnpPppoeAddVlan": "Add VLAN ID",
-  "pnpPppoeDesc": "These settings are provided by your Internet Service Provider (ISP). If you aren't sure about yours, we recommend contacting your ISP.",
   "pnpPppoeRemoveVlan": "Remove VLAN ID",
-  "pnpPppoeTitle": "Enter ISP settings",
   "pnpReconnectWiFi": "Reconnect to your router's WiFi to continue setup",
-  "pnpRouterLoginDesc": "Enter your router's password to proceed",
   "pnpRouterLoginWhereIsIt": "Where is it?",
   "pnpSavingChangesDesc": "Your router's WiFi will briefly turn off and then on again. If you lose connection, reconnect to your router's WiFi to finish setup.",
   "pnpScanQR": "Scan QR code or use password to connect",
   "pnpStaticIpDesc": "These settings are for users with a manually-assigned static IP address.",
-  "pnpUnplugModemDesc": "These settings are provided by your Internet Service Provider (ISP). If you aren't sure about yours, we recommend contacting your ISP.",
   "pnpUnplugModemTip": "Not sure which device is the modem?",
   "pnpUnplugModemTipDesc1": "Modems are usually connected to the internet via a coaxial cable or phone cable coming into your home.",
   "pnpUnplugModemTipDesc2": "Modems can be horizontal or vertical depending on the brand.",
   "pnpUnplugModemTipTitle": "Identifying your modem",
   "pnpUnplugModemTitle": "Unplug your modem",
-  "pnpWaitingModemCheckingInternet": "Checking for internet...",
   "pnpWaitingModemDesc": "Your ISP needs time to issue a new IP address to your router to connect to the internet",
   "pnpWaitingModemPlugBack": "Plug your modem back in",
   "pnpWaitingModemPluggedIn": "It's plugged in",
@@ -857,7 +833,6 @@
   "pnpYourNetworkTitle": "Your network",
   "poor": "Poor",
   "portRangeError": "The end port must be larger or equal to the start port.",
-  "portRangeForwarding": "Port range forwarding",
   "portRangeForwardingDescription": "Continuously forward traffic from a range of ports to a specific device.",
   "portRangeTriggering": "Port range triggering",
   "ports": "Ports",
@@ -967,7 +942,6 @@
   "signalQualitySubtitle": "WiFi signal quality by frequency band",
   "signalStrength": "Signal strength",
   "singapore": "Singapore",
-  "singlePortForwarding": "Single port forwarding",
   "sixrdTunnel": "6rd tunnel",
   "size": "Size",
   "sku": "SKU",
@@ -1094,7 +1068,6 @@
   "timezoneArizona": "Arizona",
   "timezoneArmenia": "Armenia",
   "timezoneAtlanticTimeCanadaGreenlandAtlanticIslands": "Atlantic Time (Canada, Greenland, Atlantic Islands)",
-  "timezoneAustralia": "Australia",
   "timezoneAzores": "Azores",
   "timezoneBangladeshRussia": "Bangladesh, Russia",
   "timezoneBoliviaVenezuela": "Bolivia, Venezuela",
@@ -1114,12 +1087,10 @@
   "timezoneIndianaEastColombiaPanama": "Indiana East, Colombia, Panama",
   "timezoneJapanKorea": "Japan, Korea",
   "timezoneKwajalein": "Kwajalein",
-  "timezoneMexico": "Mexico",
   "timezoneMidAtlantic": "Mid-Atlantic",
   "timezoneMidwayIslandSamoa": "Midway Island, Samoa",
   "timezoneMountainTimeUsaAndCanada": "Mountain Time (USA & Canada)",
   "timezoneMumbaiKolkataChennaiNewDelhi": "Mumbai, Kolkata, Chennai, New Delhi",
-  "timezoneNewZealand": "New Zealand",
   "timezoneNewfoundland": "Newfoundland",
   "timezonePacificTimeUsaAndCanada": "Pacific Time (USA & Canada)",
   "timezonePakistanRussia": "Pakistan, Russia",
@@ -1187,16 +1158,12 @@
   "vpnBytesReceived": "Bytes Received",
   "vpnBytesSent": "Bytes Sent",
   "vpnConnected": "Connected",
-  "vpnConnecting": "Connecting",
   "vpnCurrentBandwidth": "Current Bandwidth",
   "vpnDesc": "Configure your VPN settings for secure remote access.",
-  "vpnDisconnected": "Disconnected",
-  "vpnEnabled": "Enabled",
   "vpnErrorVPNNotConnected": "VPN not connected",
   "vpnErrorVPNUserAlreadyExists": "VPN user already exists",
   "vpnErrorVPNUserNotFound": "VPN user not found",
   "vpnEspProposal": "ESP Proposal",
-  "vpnFailed": "Failed",
   "vpnIkeMode": "IKE Mode",
   "vpnIkeProposal": "IKE Proposal",
   "vpnPacketsReceived": "Packets Received",
@@ -1206,8 +1173,6 @@
   "vpnSettingsTitle": "VPN Settings",
   "vpnTunnelStatistics": "Tunnel Statistics",
   "vpnTunneledUserSection": "Tunneled User",
-  "vpnUnknown": "Unknown",
-  "vpnUptime": "Uptime",
   "vpnUserCredentialsSection": "User Credentials",
   "waitingForData": "Waiting for data...",
   "waitingForDeviceData": "Waiting for device data...",
@@ -1327,15 +1292,14 @@
   "endRemoteAssistanceDesc": "End remote assistance session?",
   "wifiModeNotAvailable": "Mode change resets channel width to auto.",
   "quickSetup": "Quick Setup",
-  "quickSetupDescription": "Apply the same WiFi settings to all bands at once",
+  "applyToAllBandsDesc": "Apply the same WiFi settings to all bands at once",
   "pwaGetTheApp": "Get the App",
   "pwaInstallDescription": "Install for a better experience",
   "pwaInstallButton": "INSTALL",
-  "pwaIosInstallTitle": "Install Linksys Now",
+  "pwaInstallTitle": "Install Linksys Now",
   "pwaIosInstallDescription": "Install this app on your iPhone for a better experience.",
   "pwaIosStep1": "Tap the Share button in the browser menu bar.",
   "pwaIosStep2": "Scroll down and tap \"Add to Home Screen\".",
-  "pwaMacInstallTitle": "Install Linksys Now",
   "pwaMacInstallDescription": "Add this app to your Dock for quick access.",
   "pwaMacStep1": "Click the Share button in the Safari toolbar.",
   "pwaMacStep2": "Choose \"Add to Dock\".",
@@ -1464,15 +1428,6 @@
   "updateFailed": "Update failed",
   "firmwareUpdateWarning": "The update will take approximately 5–8 minutes. Do not power off or disconnect the router during the process.",
   "noTargetBankAvailable": "No target bank available",
-  "currentVersionLabel": "Current: {version}",
-  "@currentVersionLabel": {
-    "placeholders": {
-      "version": {
-        "type": "String",
-        "example": "1.0.0"
-      }
-    }
-  },
   "availableVersionLabel": "Available: {version}",
   "@availableVersionLabel": {
     "placeholders": {
@@ -1557,7 +1512,6 @@
       }
     }
   },
-  "dashboardSettingsTitle": "Dashboard Settings",
   "unknownWidget": "Unknown widget: {id}",
   "@unknownWidget": {
     "placeholders": {
@@ -1579,6 +1533,7 @@
   },
   "layoutSettingsDescription": "Drag and drop widgets to reorder. Use the resize handles to adjust size. Remove widgets with the close button — re-add them here.",
   "layoutResetToDefaults": "Layout reset to defaults",
+  "resetLayout": "Reset Layout",
   "dashboardStyle": "Dashboard Style",
   "noPresetSelected": "No preset selected",
   "availableWidgets": "Available Widgets",
@@ -1623,9 +1578,6 @@
       }
     }
   },
-  "notApplicableForEthernet": "Not applicable for Ethernet devices",
-  "allLabel": "All",
-  "signalLabel": "Signal",
   "deviceNotFound": "Device not found",
   "networkConnections": "Network Connections ({count})",
   "@networkConnections": {
@@ -1638,9 +1590,6 @@
   },
   "primary": "Primary",
   "signalDataNotAvailable": "Signal data not available for this device.",
-  "interfaceLabel": "Interface",
-  "bandLabel": "Band",
-  "networkLabel": "Network",
   "reserved": "Reserved",
   "noReservationIpMayChange": "No reservation. IP may change on reconnect.",
   "showLess": "Show less",
@@ -1760,7 +1709,7 @@
   "avgShort": "Avg",
   "minShort": "Min",
   "maxShort": "Max",
-  "successLabel": "Success",
+  "success": "Success",
   "pingHost": "Ping {host}",
   "@pingHost": {
     "placeholders": {
@@ -1785,7 +1734,6 @@
       }
     }
   },
-  "hostColumn": "Host",
   "ipColumn": "IP",
   "avgRtt": "Avg RTT",
   "dnsServerOptional": "DNS Server (optional)",
@@ -1800,7 +1748,6 @@
   },
   "noAnswersReturned": "No answers returned.",
   "ipsColumn": "IPs",
-  "dnsServerColumn": "DNS Server",
   "rtColumn": "RT",
   "unableToLoadDiagnostics": "Unable to load diagnostics",
   "unableToLoadSpeedTest": "Unable to load speed test",
@@ -1844,11 +1791,7 @@
   "wirelessClients": "Wireless Clients",
   "dhcpDisabled": "DHCP disabled",
   "poolRangeUnavailable": "Pool range unavailable",
-  "rangeLabel": "Range",
-  "capacityLabel": "Capacity",
-  "usedLabel": "Used",
   "totalDevices": "Total Devices",
-  "activeLabel": "Active",
   "highBandwidth": "High Bandwidth",
   "withIssues": "With Issues",
   "weakSignal": "Weak Signal",
@@ -1865,12 +1808,10 @@
   "recentRebootDetected": "Recent reboot detected",
   "slowHops": "Slow Hops",
   "singleRouterSetupNoBackhaul": "Single-router setup — no backhaul",
-  "nodesLabel": "Nodes",
   "poorBackhaul": "Poor backhaul",
   "weakBackhaul": "Weak backhaul",
   "healthy": "Healthy",
   "connectedTo": "Connected to",
-  "speedLabel": "Speed",
   "staticIp": "Static IP",
   "uploadTestNotSupported": "Upload test not supported on this firmware.",
   "nMsLatency": "{ms} ms latency",
@@ -1915,7 +1856,6 @@
   "diagnosticsRecBandwidthHogDesc": "Some devices are using a lot of bandwidth.",
   "diagnosticsRecBottleneckDesc": "Network latency detected at a specific hop.",
   "noClients": "No clients",
-  "singleRouterNoBackhaul": "Single-router setup — no backhaul",
   "stale": "Stale",
   "note": "Note",
   "none": "None",
@@ -1957,22 +1897,6 @@
       }
     }
   },
-  "widgetResized": "Widget \"{id}\" resized to fit constraints",
-  "@widgetResized": {
-    "placeholders": {
-      "id": {
-        "type": "String"
-      }
-    }
-  },
-  "unknownWidget": "Unknown widget: {id}",
-  "@unknownWidget": {
-    "placeholders": {
-      "id": {
-        "type": "String"
-      }
-    }
-  },
   "releaseToRemove": "Release to Remove",
   "dragHereToRemove": "Drag Here to Remove",
   "traffic": "Traffic",
@@ -1981,14 +1905,11 @@
   "radios": "Radios",
   "portRules": "Port Rules",
   "channelNumber": "Channel number",
-  "layoutSettingsInstructions": "Drag and drop widgets to reorder. Use the resize handles to adjust size. Remove widgets with the close button — re-add them here.",
-  "resetLayout": "Reset Layout",
   "change": "Change",
   "builtInWidgets": "Built-in Widgets",
   "appWidgetCards": "App Widget Cards",
   "wifiSettingsSaved": "WiFi settings saved",
   "noWifiNetworksFound": "No WiFi networks found. Check router connection.",
-  "quickSetupApplyDesc": "Apply the same WiFi settings to all bands at once",
   "quickSetupNotice": "Quick Setup applies the same name, password, and security mode to all bands. A password is required to save.",
   "noAdvancedWifiSettings": "No advanced WiFi settings available for this device.",
   "dynamicFrequencySelection": "Dynamic Frequency Selection (DFS)",
@@ -2059,7 +1980,6 @@
       }
     }
   },
-  "internalIpExample": "Internal IP (e.g. 192.168.1.100)",
   "hostname": "Hostname",
   "addressPool": "Address Pool",
   "poolStart": "Pool Start",
@@ -2073,7 +1993,6 @@
   "localNetworkSettingsSaved": "Local network settings saved",
   "changeNetworkSettingsTitle": "Change Network Settings?",
   "changeNetworkSettingsDesc": "Changing the router IP address or subnet mask may cause a temporary loss of network connectivity. Do you want to continue?",
-  "continueLabel": "Continue",
   "dhcpSettings": "DHCP Settings",
   "dhcpReservationsSaved": "DHCP reservations saved",
   "noDhcpReservations": "No DHCP reservations configured",
@@ -2147,9 +2066,7 @@
   },
   "unnamed": "(unnamed)",
   "editStaticRoute": "Edit Static Route",
-  "destinationIpLabel": "Destination IP",
   "gatewayIp": "Gateway IP",
-  "ipv6PortServicePageDesc": "Manage IPv6 inbound port access rules",
   "noIpv6PortServiceRules": "No IPv6 port service rules configured",
   "ipv6PortRulesSaved": "IPv6 port rules saved",
   "ipv6AddressSearchHint": "IPv6 Address (type to search devices)",
@@ -2198,7 +2115,6 @@
   "disableInstantPrivacyDesc": "All devices will be able to connect freely to your network.",
   "addDeviceManually": "Add device manually",
   "enterMacAddressToAllow": "Enter the MAC address of the device to allow.",
-  "invalidMacFormat": "Invalid MAC address format (e.g. AA:BB:CC:DD:EE:FF)",
   "deviceAlreadyInAllowedList": "This device is already in the allowed list",
   "adding": "Adding…",
   "instantSafetyPageDesc": "Protect your family and block pre-determined adult, illegal and malicious content with a single tap. Safe browsing applies to all devices on your network.",
@@ -2238,21 +2154,10 @@
   "searchByNameMacIp": "Search by name, MAC, or IP",
   "noDevicesMatchFilters": "No devices match the current filters",
   "deviceDetail": "Device Detail",
-  "deviceNotFound": "Device not found",
   "backToDevices": "Back to Devices",
   "operatingSystem": "Operating System",
-  "networkConnectionsCount": "Network Connections ({count})",
-  "@networkConnectionsCount": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "wifiConnection": "WiFi Connection",
   "wiredConnection": "Wired Connection",
-  "connectedTo": "Connected to",
-  "primary": "Primary",
   "ipLabel": "IP: {ip}",
   "@ipLabel": {
     "placeholders": {
@@ -2270,19 +2175,14 @@
     }
   },
   "signalAndSpeed": "Signal & Speed",
-  "signalDataNotAvailable": "Signal data not available for this device.",
   "networkDetails": "Network Details",
   "wifiWireless": "WiFi (Wireless)",
   "ethernetWired": "Ethernet (Wired)",
   "dhcpReservation": "DHCP Reservation",
-  "reserved": "Reserved",
   "releaseReservation": "Release Reservation",
-  "noReservationDesc": "No reservation. IP may change on reconnect.",
   "noIpv4AddressDesc": "No IPv4 address. Cannot create reservation.",
   "reserveIpAddress": "Reserve IP Address",
-  "ipv6Address": "IPv6 Address",
   "ipv6Addresses": "IPv6 Addresses",
-  "showLess": "Show less",
   "nMore": "+{count} more",
   "@nMore": {
     "placeholders": {
@@ -2293,7 +2193,6 @@
   },
   "ipAddressReserved": "IP address reserved",
   "reservationReleased": "Reservation released",
-  "wifiPlusEthernet": "WiFi + Ethernet",
   "viaNode": "via {node}",
   "@viaNode": {
     "placeholders": {

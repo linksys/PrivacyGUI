@@ -397,7 +397,7 @@ class _AddMacDialogState extends State<_AddMacDialog> {
   String? _localizeError(String? key) {
     if (key == null) return null;
     return switch (key) {
-      'invalidMacFormat' => loc(context).invalidMacFormat,
+      'invalidMacFormat' => loc(context).invalidMacAddressFormat,
       'deviceAlreadyInAllowedList' => loc(context).deviceAlreadyInAllowedList,
       _ => key,
     };

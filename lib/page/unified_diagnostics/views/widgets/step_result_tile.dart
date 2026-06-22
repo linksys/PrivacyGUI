@@ -259,7 +259,7 @@ class StepResultTile extends StatelessWidget {
       MeshBackhaulCheckUIModel r => r.nodes.isEmpty
           ? [
               _ResultDetail(
-                  loc(context).mesh, loc(context).singleRouterNoBackhaul),
+                  loc(context).mesh, loc(context).singleRouterSetupNoBackhaul),
             ]
           : [
               _ResultDetail(loc(context).nodes, '${r.nodes.length}'),

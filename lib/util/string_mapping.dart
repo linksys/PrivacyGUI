@@ -22,7 +22,7 @@ ConnectionTypeData toConnectionTypeData(BuildContext context, String type) {
     case 'Static':
       return ConnectionTypeData(
         type: type,
-        title: loc(context).connectionTypeStatic,
+        title: loc(context).staticIp,
       );
     case 'PPPoE':
       return ConnectionTypeData(
@@ -47,7 +47,7 @@ ConnectionTypeData toConnectionTypeData(BuildContext context, String type) {
     case 'Automatic':
       return ConnectionTypeData(
         type: type,
-        title: loc(context).connectionTypeAutomatic,
+        title: loc(context).automatic,
       );
     case 'Pass-through':
       return ConnectionTypeData(
