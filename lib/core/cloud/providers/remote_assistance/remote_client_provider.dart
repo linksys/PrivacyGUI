@@ -43,17 +43,18 @@ class RemoteClientNotifier extends Notifier<RemoteClientState> {
   DeviceCredentials? _credentials;
 
   @override
-  RemoteClientState build() => const RemoteClientState();
+  RemoteClientState build() {
+    ref.onDispose(() {
+      _sessionPollSub?.cancel();
+      _sessionCreationPollTimer?.cancel();
+      _expiredCountdownTimer?.cancel();
+    });
+    return const RemoteClientState();
+  }
 
   RemoteAssistanceService get _svc => ref.read(remoteAssistanceServiceProvider);
 
-  DeviceCredentials get _creds {
-    if (_credentials == null) {
-      throw StateError(
-          'Device credentials not set. Call setCredentials first.');
-    }
-    return _credentials!;
-  }
+  DeviceCredentials? get _credsOrNull => _credentials;
 
   /// Set device credentials for API calls.
   ///
@@ -72,7 +73,11 @@ class RemoteClientNotifier extends Notifier<RemoteClientState> {
   ///
   /// Requires [setCredentials] to be called first.
   Future<void> initiateRemoteAssistance() async {
-    final creds = _creds;
+    final creds = _credsOrNull;
+    if (creds == null) {
+      logger.w('[RemoteAssistance]: Credentials not set');
+      return;
+    }
 
     logger.i('[RemoteAssistance]: initiateRemoteAssistance');
 
@@ -135,7 +140,11 @@ class RemoteClientNotifier extends Notifier<RemoteClientState> {
 
   /// Create PIN via API.
   Future<void> _createPin() async {
-    final creds = _creds;
+    final creds = _credsOrNull;
+    if (creds == null) {
+      logger.w('[RemoteAssistance]: Cannot create PIN - credentials not set');
+      return;
+    }
     try {
       final result = await _svc.createPin(
         serialNumber: creds.serialNumber,
@@ -158,7 +167,13 @@ class RemoteClientNotifier extends Notifier<RemoteClientState> {
     _sessionCreationPollTimer?.cancel();
     _sessionCreationPollTimer =
         Timer.periodic(Duration(seconds: intervalSeconds), (_) async {
-      final creds = _creds;
+      final creds = _credsOrNull;
+      if (creds == null) {
+        logger.w('[RemoteAssistance]: Credentials not set, canceling poll');
+        _sessionCreationPollTimer?.cancel();
+        _sessionCreationPollTimer = null;
+        return;
+      }
 
       try {
         final sessions = await _svc.fetchSessions(
@@ -216,7 +231,11 @@ class RemoteClientNotifier extends Notifier<RemoteClientState> {
       return true;
     }
 
-    final creds = _creds;
+    final creds = _credsOrNull;
+    if (creds == null) {
+      logger.d('[RemoteAssistance]: Credentials not set - cannot restore');
+      return false;
+    }
     try {
       final sessions = await _svc.fetchSessions(
         serialNumber: creds.serialNumber,
@@ -285,7 +304,13 @@ class RemoteClientNotifier extends Notifier<RemoteClientState> {
     // Delete session if PENDING or ACTIVE (PIN exists server-side)
     if (status == GRASessionStatus.pending ||
         status == GRASessionStatus.active) {
-      final creds = _creds;
+      final creds = _credsOrNull;
+      if (creds == null) {
+        logger
+            .w('[RemoteAssistance]: Cannot end session - credentials not set');
+        state = const RemoteClientState();
+        return;
+      }
       try {
         await _svc.endSession(
           sessionId: sessionId,
@@ -311,7 +336,10 @@ class RemoteClientNotifier extends Notifier<RemoteClientState> {
       (sessionInfo) {
         if (sessionInfo != null) {
           state = state.copyWith(sessionInfo: () => sessionInfo);
-          _startExpiredCountdownTimer(sessionInfo);
+          // Only start countdown timer if not already running
+          if (_expiredCountdownTimer == null) {
+            _startExpiredCountdownTimer(sessionInfo);
+          }
         }
       },
       onError: (e) {
@@ -325,10 +353,16 @@ class RemoteClientNotifier extends Notifier<RemoteClientState> {
     String sessionId,
     int intervalSeconds,
   ) async* {
-    final creds = _creds;
+    final creds = _credsOrNull;
+    if (creds == null) {
+      logger.w('[RemoteAssistance]: Cannot poll - credentials not set');
+      return;
+    }
 
-    while (
-        state.sessionInfo != null && state.sessionInfo!.expiredIn.abs() > 0) {
+    // Poll while session is valid (not INVALID) and not expired (expiredIn <= 0 means time remaining)
+    while (state.sessionInfo != null &&
+        state.sessionInfo!.status != GRASessionStatus.invalid &&
+        state.sessionInfo!.expiredIn <= 0) {
       try {
         final sessionInfo = await _svc.fetchSessionInfo(
           sessionId: sessionId,

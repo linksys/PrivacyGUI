@@ -160,11 +160,11 @@ class RemoteAssistanceService {
           const SessionTokenExpiredError(),
         'UNAUTHORIZED' => const UnauthorizedError(),
         'NOT_FOUND' => const ResourceNotFoundError(),
-        'INVALID_INPUT' => InvalidInputError(message: error.errorMessage),
-        'REQUEST_TIMEOUT' => NetworkError(message: error.errorMessage),
-        _ => UnexpectedError(originalError: error, message: error.errorMessage),
+        'INVALID_INPUT' => InvalidInputError(detail: error.errorMessage),
+        'REQUEST_TIMEOUT' => NetworkError(detail: error.errorMessage),
+        _ => UnexpectedError(originalError: error, detail: error.errorMessage),
       };
     }
-    return UnexpectedError(originalError: error, message: error.toString());
+    return UnexpectedError(originalError: error, detail: error.toString());
   }
 }

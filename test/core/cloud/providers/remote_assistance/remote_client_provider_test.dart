@@ -64,20 +64,21 @@ void main() {
     });
 
     group('initiateRemoteAssistance', () {
-      test('throws StateError if credentials not set', () async {
+      test('returns early without error if credentials not set', () async {
         final container = createContainer();
         addTearDown(container.dispose);
 
         final notifier = container.read(remoteClientProvider.notifier);
 
-        expect(
-          () => notifier.initiateRemoteAssistance(),
-          throwsA(isA<StateError>().having(
-            (e) => e.message,
-            'message',
-            contains('Device credentials not set'),
-          )),
-        );
+        // Should return early without throwing
+        await notifier.initiateRemoteAssistance();
+
+        // State should remain unchanged (no API calls made)
+        verifyNever(() => mockService.fetchSessions(
+              serialNumber: any(named: 'serialNumber'),
+              macAddress: any(named: 'macAddress'),
+              deviceUUID: any(named: 'deviceUUID'),
+            ));
       });
 
       test('sets initiate state and starts polling when no sessions exist',
@@ -417,8 +418,14 @@ void main() {
               deviceUUID: any(named: 'deviceUUID'),
             )).thenAnswer((_) async => session);
 
+        when(() => mockService.endSession(
+              sessionId: any(named: 'sessionId'),
+              serialNumber: any(named: 'serialNumber'),
+              macAddress: any(named: 'macAddress'),
+              deviceUUID: any(named: 'deviceUUID'),
+            )).thenAnswer((_) async {});
+
         final container = createContainer();
-        addTearDown(container.dispose);
 
         final notifier = container.read(remoteClientProvider.notifier);
         notifier.setCredentials(RemoteAssistanceTestData.credentials());
@@ -433,6 +440,10 @@ void main() {
         // After ~1 second, should be around 599
         expect(state.expiredCountdown, isNotNull);
         expect(state.expiredCountdown, lessThan(600));
+
+        // Clean up: end session to stop polling before container dispose
+        await notifier.endRemoteAssistance();
+        container.dispose();
       });
 
       test('countdown decrements each second', () async {
