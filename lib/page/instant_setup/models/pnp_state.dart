@@ -167,12 +167,15 @@ class WizardSaved extends PnpPhase {
 class WizardNeedsReconnect extends PnpPhase {
   final String newSsid;
   final String newPassword;
+  final PnpWifiConfig? wifiConfig;
+
   const WizardNeedsReconnect({
     required this.newSsid,
     required this.newPassword,
+    this.wifiConfig,
   });
   @override
-  List<Object?> get props => [newSsid, newPassword];
+  List<Object?> get props => [newSsid, newPassword, wifiConfig];
 }
 
 /// Polling for router after reconnect.
@@ -195,12 +198,24 @@ class WizardCheckingFirmware extends PnpPhase {
 }
 
 /// Setup complete — show new WiFi credentials and proceed to dashboard.
+///
+/// For unified mode: [ssid] and [password] are set.
+/// For split mode: [wifiConfig] contains per-band credentials.
 class WizardWifiReady extends PnpPhase {
   final String ssid;
   final String password;
-  const WizardWifiReady({required this.ssid, required this.password});
+  final PnpWifiConfig? wifiConfig;
+
+  const WizardWifiReady({
+    required this.ssid,
+    required this.password,
+    this.wifiConfig,
+  });
+
+  bool get isSplitMode => wifiConfig?.isSplitMode ?? false;
+
   @override
-  List<Object?> get props => [ssid, password];
+  List<Object?> get props => [ssid, password, wifiConfig];
 }
 
 /// Recoverable error during wizard phase.

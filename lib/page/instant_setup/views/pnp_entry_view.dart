@@ -31,7 +31,14 @@ class _PnpEntryViewState extends ConsumerState<PnpEntryView> {
     final pnpState = ref.watch(pnpProvider);
 
     ref.listen(pnpProvider, (prev, next) {
-      if (next.phase is WizardConfiguring) {
+      // Only navigate to config from initial states (AdminInternetConnected,
+      // WizardInitializing), not when returning from save failure (WizardSaving).
+      // This prevents re-navigating to /pnp/config when save fails, which would
+      // reset the view's local _currentStep state and show step 0 instead of
+      // the step where the user pressed save.
+      if (next.phase is WizardConfiguring &&
+          prev?.phase is! WizardSaving &&
+          prev?.phase is! WizardConfiguring) {
         context.goNamed(RouteNamed.pnpConfig);
       }
       if (next.phase is NoInternet) {
