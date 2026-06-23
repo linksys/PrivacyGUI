@@ -153,7 +153,7 @@ final uspDashboardRoute = ShellRoute(
         ),
       ],
     ),
-    if (kDebugMode || BuildConfig.enableTestConsole)
+    if (kDebugMode || GlobalConfig.feature.enableTestConsole)
       LinksysRoute(
         name: RouteNamed.uspTestConsole,
         path: RoutePath.uspTestConsole,

@@ -30,8 +30,6 @@ class UspSystemMonitorService {
 
   UspSystemMonitorService(this._usp);
 
-  bool get isAuthenticated => _usp.isAuthenticated;
-
   /// Fetches current CPU/memory stats and returns a [SystemSnapshot].
   Future<SystemSnapshot> fetchSnapshot() async {
     final info = await SystemInfo.fetch(_usp);

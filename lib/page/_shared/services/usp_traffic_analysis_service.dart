@@ -30,8 +30,6 @@ class UspTrafficAnalysisService {
 
   UspTrafficAnalysisService(this._usp);
 
-  bool get isAuthenticated => _usp.isAuthenticated;
-
   /// Fetches current WAN/LAN traffic counters and returns baselines.
   ///
   /// The provider is responsible for computing rates by comparing

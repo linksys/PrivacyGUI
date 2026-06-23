@@ -6,6 +6,8 @@
 class UspClientWeb {
   UspClientWeb(String baseUrl);
 
+  UspClientWeb.fromJsClient(dynamic jsClient);
+
   bool get isAuthenticated => false;
 
   String? get sessionToken => null;

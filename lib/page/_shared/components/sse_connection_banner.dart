@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/config/global_config.dart';
 import 'package:privacy_gui/core/connection/models/app_connection_state.dart';
 import 'package:privacy_gui/core/connection/providers/app_connection_state_provider.dart';
 import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
@@ -54,6 +55,9 @@ class _SseConnectionBannerState extends ConsumerState<SseConnectionBanner> {
 
   @override
   Widget build(BuildContext context) {
+    // Hide banner in Remote Assistance mode (SSE not supported via Guardian proxy)
+    if (GlobalConfig.remote.isActive) return const SizedBox.shrink();
+
     // Hide banner in demo mode (where sseManagerProvider returns null)
     final sseManager = ref.watch(sseManagerProvider);
     if (sseManager == null) return const SizedBox.shrink();

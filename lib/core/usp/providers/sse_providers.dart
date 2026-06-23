@@ -10,6 +10,7 @@ import 'package:privacy_gui/core/usp/services/sse_connection_manager.dart';
 import 'package:privacy_gui/core/usp/services/sse_manager.dart';
 import 'package:privacy_gui/core/usp/services/sse_operation_awaiter.dart';
 import 'package:privacy_gui/core/usp/services/usp_bridge_client.dart';
+import 'package:privacy_gui/config/global_config.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 
 /// Provides [UspBridgeClient] instance — depends on [UspClient].
@@ -111,6 +112,12 @@ final networkDiagnosticsExecutorProvider =
 /// Watch this from the app shell to trigger SSE connection after login.
 /// Core subscriptions are "always-on" while the app is connected.
 final sseBootstrapProvider = FutureProvider<void>((ref) async {
+  // Skip SSE in Remote Assistance mode — Guardian proxy does not support SSE
+  if (GlobalConfig.remote.isActive) {
+    logger.d('[USP][SSE][Bootstrap]: Skipping in Remote Assistance mode');
+    return;
+  }
+
   final manager = ref.watch(sseManagerProvider);
   if (manager == null) return;
 

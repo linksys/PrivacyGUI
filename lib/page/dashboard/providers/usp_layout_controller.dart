@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/config/global_config.dart';
 import 'package:privacy_gui/page/dashboard/models/display_mode.dart';
 import 'package:privacy_gui/page/dashboard/models/widget_spec.dart';
 import 'package:privacy_gui/page/dashboard/providers/layout_item_factory.dart';
@@ -45,7 +46,20 @@ class UspSliverDashboardControllerNotifier
   /// All saved IDs are accepted — unknown IDs may be package widgets whose
   /// specs load asynchronously after dashboard init. The grid renders them
   /// as "Unknown widget" until their template is available.
+  ///
+  /// In Remote mode, always uses the remote preset layout (no persistence).
   Future<void> _initializeLayout() async {
+    // Remote mode: use fixed remote preset layout, skip persistence
+    final forcedPreset = GlobalConfig.remote.forcedPreset;
+    if (forcedPreset != null) {
+      state = DashboardController(
+        initialSlotCount: 12,
+        initialLayout: forcedPreset.createLayout(),
+      );
+      _preSeedBreakpoints();
+      return;
+    }
+
     final prefs = await SharedPreferences.getInstance();
     final layoutJson = prefs.getString(pUspSliverDashboardLayout);
 

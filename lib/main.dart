@@ -7,6 +7,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:privacy_gui/config/global_config.dart';
 import 'package:privacy_gui/constants/_constants.dart';
 import 'package:privacy_gui/app.dart';
 import 'package:privacy_gui/di.dart';
@@ -69,6 +70,7 @@ void main() async {
   initErrorHandler();
 
   await BuildConfig.load();
+  await GlobalConfig.load();
   await OuiLookup.initialize();
   if (!kIsWeb) {
     HttpOverrides.global = MyHTTPOverrides();

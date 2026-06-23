@@ -39,6 +39,8 @@ class UspTrafficAnalysisNotifier extends Notifier<TrafficAnalysisState> {
     });
 
     const defaultInterval = Duration(seconds: 10);
+
+    // Listen for future state changes
     ref.listen(dashboardDomainReadyProvider, (_, next) {
       if (next is AsyncData) {
         _startTimerIfAuthenticated(defaultInterval);
@@ -89,7 +91,7 @@ class UspTrafficAnalysisNotifier extends Notifier<TrafficAnalysisState> {
     if (connectionState != AppConnectionState.authenticated) return;
 
     final svc = ref.read(uspTrafficAnalysisServiceProvider);
-    if (svc == null || !svc.isAuthenticated) return;
+    if (svc == null) return;
 
     state = state.copyWith(isFetching: true);
     try {

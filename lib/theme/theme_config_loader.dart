@@ -1,24 +1,10 @@
 import 'package:flutter/foundation.dart';
+import 'package:privacy_gui/config/global_config.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/theme/theme_json_config.dart';
+import 'package:privacy_gui/theme/theme_source.dart';
 
-/// Theme source enumeration.
-enum ThemeSource {
-  /// Resolve by priority (default).
-  normal,
-
-  /// Force use CI/CD environment variable.
-  cicd,
-
-  /// Force use remote API.
-  network,
-
-  /// Force use assets file.
-  assets,
-
-  /// Force use built-in default.
-  defaultTheme
-}
+export 'package:privacy_gui/theme/theme_source.dart';
 
 /// Theme configuration loader.
 ///
@@ -28,6 +14,7 @@ enum ThemeSource {
 /// Use [ThemeConfigLoader.forTesting] to inject dependencies in tests.
 class ThemeConfigLoader {
   final ThemeSource _forcedSource;
+  final Map<String, dynamic>? _themeConfig;
   final String _themeJsonEnv;
   final String _themeNetworkUrl;
   final String _themeAssetPath;
@@ -49,21 +36,34 @@ class ThemeConfigLoader {
   static const _envThemeNetworkUrl =
       String.fromEnvironment('THEME_NETWORK_URL', defaultValue: '');
 
-  /// Production constructor. Reads settings from compile-time environment.
+  /// Production constructor.
+  ///
+  /// Priority: GlobalConfig.theme (from app_config.json) > dart-define env vars.
+  /// If theme section is not present in JSON, falls back to compile-time env.
   ThemeConfigLoader()
-      : _forcedSource = _parseSource(_envThemeSource),
+      : _forcedSource = _resolveSource(),
+        _themeConfig = GlobalConfig.theme.config,
         _themeJsonEnv = _envThemeJson,
-        _themeNetworkUrl = _envThemeNetworkUrl,
-        _themeAssetPath = _envThemeAssetPath;
+        _themeNetworkUrl = GlobalConfig.theme.networkUrl ?? _envThemeNetworkUrl,
+        _themeAssetPath = GlobalConfig.theme.assetPath ?? _envThemeAssetPath;
+
+  static ThemeSource _resolveSource() {
+    if (GlobalConfig.theme.isConfigured && GlobalConfig.theme.source != null) {
+      return GlobalConfig.theme.source!;
+    }
+    return _parseSource(_envThemeSource);
+  }
 
   /// Test constructor. Allows injecting all dependencies.
   @visibleForTesting
   ThemeConfigLoader.forTesting({
     required ThemeSource forcedSource,
+    Map<String, dynamic>? themeConfig,
     String themeJsonEnv = '',
     String themeNetworkUrl = '',
     String themeAssetPath = 'assets/theme.json',
   })  : _forcedSource = forcedSource,
+        _themeConfig = themeConfig,
         _themeJsonEnv = themeJsonEnv,
         _themeNetworkUrl = themeNetworkUrl,
         _themeAssetPath = themeAssetPath;
@@ -96,6 +96,7 @@ class ThemeConfigLoader {
   /// Returns true if device-specific theme should be used (no overrides).
   bool _shouldUseDeviceTheme() {
     return _forcedSource == ThemeSource.normal &&
+        _themeConfig == null &&
         _themeJsonEnv.isEmpty &&
         _themeNetworkUrl.isEmpty;
   }
@@ -104,7 +105,7 @@ class ThemeConfigLoader {
 
   Future<ThemeJsonConfig> _resolveOverride() async {
     return switch (_forcedSource) {
-      ThemeSource.cicd => ThemeJsonConfig.fromJsonString(_themeJsonEnv),
+      ThemeSource.cicd => _loadFromConfig(),
       ThemeSource.network => await _tryLoadFromNetwork(_themeNetworkUrl) ??
           ThemeJsonConfig.defaultConfig(),
       ThemeSource.assets =>
@@ -115,7 +116,10 @@ class ThemeConfigLoader {
   }
 
   Future<ThemeJsonConfig> _resolveByPriority() async {
-    // 1. CI/CD
+    // 1. CI/CD (app_config.json inline config or dart-define THEME_JSON)
+    if (_themeConfig != null) {
+      return ThemeJsonConfig.fromJson(_themeConfig);
+    }
     if (_themeJsonEnv.isNotEmpty) {
       return ThemeJsonConfig.fromJsonString(_themeJsonEnv);
     }
@@ -132,6 +136,14 @@ class ThemeConfigLoader {
 
     // 4. Default
     return ThemeJsonConfig.defaultConfig();
+  }
+
+  /// Load from inline config (app_config.json) or fallback to dart-define.
+  ThemeJsonConfig _loadFromConfig() {
+    if (_themeConfig != null) {
+      return ThemeJsonConfig.fromJson(_themeConfig);
+    }
+    return ThemeJsonConfig.fromJsonString(_themeJsonEnv);
   }
 
   Future<ThemeJsonConfig?> _tryLoadFromAssets() async {
