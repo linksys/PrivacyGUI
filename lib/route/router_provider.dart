@@ -121,8 +121,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       if (state.matchedLocation == '/') {
         return router.autoConfigurationLogic(state);
       } else if (state.matchedLocation == RoutePath.localLoginPassword) {
-        router.autoConfigurationLogic(state);
-        return router.redirectLogic(state);
+        // Login page — no auth check needed, pass through
+        return state.uri.toString();
       } else if (state.matchedLocation.startsWith('/autoParentFirstLogin')) {
         // bypass auto parent first login page
         return state.uri.toString();

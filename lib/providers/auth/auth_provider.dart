@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:privacy_gui/constants/error_code.dart';
@@ -21,46 +23,63 @@ final authProvider =
     AsyncNotifierProvider<AuthNotifier, AuthState>(() => AuthNotifier());
 
 class AuthNotifier extends AsyncNotifier<AuthState> {
+  Completer<AuthState?>? _initInProgress;
+
   @override
   Future<AuthState> build() => Future.value(AuthState.empty());
 
   AuthService get _authService => ref.read(authServiceProvider);
 
   Future<AuthState?> init() async {
-    // Note: Do NOT set `state = AsyncValue.loading()` synchronously here.
-    // This method can be called during initState/widget mount, and a
-    // synchronous state change would trigger provider notifications that
-    // cause a !_dirty assertion in ProviderScope.
-    state = await AsyncValue.guard(() async {
-      // Determine login type from stored credentials
-      final loginTypeResult = await _authService.getStoredLoginType();
-      final loginType = loginTypeResult.when(
-        success: (type) => type,
-        failure: (_) => LoginType.none,
-      );
+    // Coalesce concurrent init calls — return in-flight result if one exists
+    if (_initInProgress != null) {
+      logger.d('[Auth]: init already in progress, awaiting...');
+      return _initInProgress!.future;
+    }
 
-      // Get stored local password
-      final passwordResult = await _authService.getStoredLocalPassword();
-      final localPassword = passwordResult.when(
-        success: (p) => p,
-        failure: (_) => null,
-      );
+    _initInProgress = Completer<AuthState?>();
+    try {
+      // Note: Do NOT set `state = AsyncValue.loading()` synchronously here.
+      // This method can be called during initState/widget mount, and a
+      // synchronous state change would trigger provider notifications that
+      // cause a !_dirty assertion in ProviderScope.
+      state = await AsyncValue.guard(() async {
+        // Determine login type from stored credentials
+        final loginTypeResult = await _authService.getStoredLoginType();
+        final loginType = loginTypeResult.when(
+          success: (type) => type,
+          failure: (_) => LoginType.none,
+        );
 
-      logger.d(
-          '[Auth]init: hasPassword=${localPassword != null}, loginType=$loginType');
+        // Get stored local password
+        final passwordResult = await _authService.getStoredLocalPassword();
+        final localPassword = passwordResult.when(
+          success: (p) => p,
+          failure: (_) => null,
+        );
 
-      // Restore USP session on page reload / app restart (local login only)
-      if (loginType == LoginType.local) {
-        await ref.read(uspAuthCoordinatorProvider).restoreSession();
-      }
+        logger.d(
+            '[Auth]init: hasPassword=${localPassword != null}, loginType=$loginType');
 
-      return AuthState(
-        localPasswordHint: state.value?.localPasswordHint,
-        loginType: loginType,
-        localPassword: localPassword,
-      );
-    });
-    return state.value;
+        // Restore USP session on page reload / app restart (local login only)
+        if (loginType == LoginType.local) {
+          await ref.read(uspAuthCoordinatorProvider).restoreSession();
+        }
+
+        return AuthState(
+          localPasswordHint: state.value?.localPasswordHint,
+          loginType: loginType,
+          localPassword: localPassword,
+        );
+      });
+      _initInProgress!.complete(state.value);
+      return state.value;
+    } catch (e) {
+      _initInProgress!.completeError(e);
+      rethrow;
+    } finally {
+      _initInProgress = null;
+    }
   }
 
   /// Performs local login via USP.
