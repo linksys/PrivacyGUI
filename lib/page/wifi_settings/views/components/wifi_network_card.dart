@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/validator_rules/_validator_rules.dart';
 import 'package:privacy_gui/page/wifi_settings/models/wifi_network_ui_model.dart';
@@ -50,7 +51,7 @@ class WifiNetworkCard extends ConsumerWidget {
           children: [
             // ── Band header + enable toggle ──────────────────────────────
             SettingBlock(
-              title: n.isGuest ? 'Guest' : 'Main',
+              title: n.isGuest ? loc(context).guest : loc(context).main,
               value: n.bandDisplayName,
               semanticLabel: 'wifi-enable-${n.band}',
               trailing: AppSwitch(
@@ -62,8 +63,8 @@ class WifiNetworkCard extends ConsumerWidget {
             ),
             // ── WiFi name ─────────────────────────────────────────────────
             SettingBlock(
-              title: 'Name',
-              value: n.ssid.isNotEmpty ? n.ssid : '(No SSID)',
+              title: loc(context).name,
+              value: n.ssid.isNotEmpty ? n.ssid : loc(context).noSsid,
               semanticLabel: 'wifi-name-${n.band}',
               trailing: const AppIcon.font(AppFontIcons.edit),
               onTap: () => _editSsid(context, ref, n),
@@ -71,14 +72,14 @@ class WifiNetworkCard extends ConsumerWidget {
             // ── WiFi password & Security mode ────────────────────────────
             if (n.supportedSecurityModes.isNotEmpty) ...[
               SettingBlock(
-                title: 'Password',
+                title: loc(context).password,
                 value: '•' * 12,
                 trailing: const AppIcon.font(AppFontIcons.edit),
                 onTap: () => _editPassword(context, ref, n),
               ),
               if (!n.isGuest)
                 SettingBlock(
-                  title: 'Security mode',
+                  title: loc(context).securityMode,
                   value: n.securityMode,
                   trailing: const AppIcon.font(AppFontIcons.edit),
                   onTap: () => _editSecurityMode(context, ref, n),
@@ -87,8 +88,8 @@ class WifiNetworkCard extends ConsumerWidget {
             // ── WiFi Mode ──────────────────────────────────────────────────
             if (!n.isGuest && n.supportedStandards.isNotEmpty)
               SettingBlock(
-                title: 'WiFi Mode',
-                value: _wifiModeDisplayName(n.operatingStandards),
+                title: loc(context).wifiMode,
+                value: _wifiModeDisplayName(context, n.operatingStandards),
                 trailing: n.radioInstancePath != null
                     ? const AppIcon.font(AppFontIcons.edit)
                     : null,
@@ -99,7 +100,7 @@ class WifiNetworkCard extends ConsumerWidget {
             // ── Broadcast SSID / Channel Width / Channel (main only) ──────
             if (!n.isGuest) ...[
               SettingBlock(
-                title: 'Broadcast SSID',
+                title: loc(context).broadcastSSID,
                 semanticLabel: 'wifi-broadcast-${n.band}',
                 trailing: AppSwitch(
                   value: n.ssidAdvertisementEnabled,
@@ -112,9 +113,10 @@ class WifiNetworkCard extends ConsumerWidget {
                 ),
               ),
               SettingBlock(
-                title: 'Channel Width',
-                value:
-                    n.channelBandwidth.isNotEmpty ? n.channelBandwidth : 'Auto',
+                title: loc(context).channelWidth,
+                value: n.channelBandwidth.isNotEmpty
+                    ? n.channelBandwidth
+                    : loc(context).auto,
                 trailing: n.radioInstancePath != null
                     ? const AppIcon.font(AppFontIcons.edit)
                     : null,
@@ -123,7 +125,7 @@ class WifiNetworkCard extends ConsumerWidget {
                     : null,
               ),
               SettingBlock(
-                title: 'Channel',
+                title: loc(context).channel,
                 value: n.channelDisplay,
                 trailing: n.radioInstancePath != null
                     ? const AppIcon.font(AppFontIcons.edit)
@@ -148,13 +150,13 @@ class WifiNetworkCard extends ConsumerWidget {
     final controller = TextEditingController(text: n.ssid);
     final result = await showSubmitAppDialog<String>(
       context,
-      title: 'Name',
+      title: loc(context).name,
       contentBuilder: (ctx, setState, onSubmit) => AppTextFormField(
         controller: controller,
-        label: 'Name',
+        label: loc(context).name,
         onChanged: (_) => setState(() {}),
       ),
-      positiveLabel: 'OK',
+      positiveLabel: loc(context).ok,
       event: () async => controller.text,
       checkPositiveEnabled: () => controller.text.trim().isNotEmpty,
     );
@@ -173,21 +175,21 @@ class WifiNetworkCard extends ConsumerWidget {
 
     final passwordRules = [
       AppPasswordRule(
-        label: '8 to 63 characters',
+        label: loc(context).passwordLength8To63,
         validate: (text) => LengthRule(min: 8, max: 63).validate(text),
       ),
       AppPasswordRule(
-        label: 'Printable characters only, no leading or trailing spaces',
+        label: loc(context).printableCharsOnly,
         validate: (text) => WiFiPasswordRule(ignoreLength: true).validate(text),
       ),
     ];
 
     final result = await showSubmitAppDialog<String>(
       context,
-      title: 'Password',
+      title: loc(context).password,
       contentBuilder: (ctx, setState, onSubmit) => AppPasswordInput(
         controller: controller,
-        label: 'Password',
+        label: loc(context).password,
         rules: passwordRules,
         onChanged: (_) {
           setState(() {
@@ -195,7 +197,7 @@ class WifiNetworkCard extends ConsumerWidget {
           });
         },
       ),
-      positiveLabel: 'OK',
+      positiveLabel: loc(context).ok,
       event: () async => controller.text,
       checkPositiveEnabled: () => isValid,
     );
@@ -212,7 +214,7 @@ class WifiNetworkCard extends ConsumerWidget {
     String selected = n.securityMode;
     final result = await showSimpleAppDialog<String>(
       context,
-      title: 'Security mode',
+      title: loc(context).securityMode,
       content: StatefulBuilder(
         builder: (ctx, setState) => AppRadioList<String>(
           selected: selected,
@@ -225,8 +227,9 @@ class WifiNetworkCard extends ConsumerWidget {
         ),
       ),
       actions: [
-        AppButton.text(label: 'Cancel', onTap: () => context.pop()),
-        AppButton.text(label: 'OK', onTap: () => context.pop(selected)),
+        AppButton.text(label: loc(context).cancel, onTap: () => context.pop()),
+        AppButton.text(
+            label: loc(context).ok, onTap: () => context.pop(selected)),
       ],
     );
     if (result != null && result != n.securityMode && context.mounted) {
@@ -315,8 +318,8 @@ class WifiNetworkCard extends ConsumerWidget {
     return options;
   }
 
-  String _wifiModeDisplayName(String value) {
-    if (value.isEmpty) return 'Mixed';
+  String _wifiModeDisplayName(BuildContext context, String value) {
+    if (value.isEmpty) return loc(context).mixed;
     return _wifiModeLabels[_toFirmwareMode(value)] ?? value;
   }
 
@@ -341,7 +344,7 @@ class WifiNetworkCard extends ConsumerWidget {
 
     final result = await showSimpleAppDialog<String>(
       context,
-      title: 'WiFi Mode',
+      title: loc(context).wifiMode,
       content: StatefulBuilder(
         builder: (ctx, setState) => AppRadioList<String>(
           selected: selected,
@@ -357,8 +360,9 @@ class WifiNetworkCard extends ConsumerWidget {
         ),
       ),
       actions: [
-        AppButton.text(label: 'Cancel', onTap: () => context.pop()),
-        AppButton.text(label: 'OK', onTap: () => context.pop(selected)),
+        AppButton.text(label: loc(context).cancel, onTap: () => context.pop()),
+        AppButton.text(
+            label: loc(context).ok, onTap: () => context.pop(selected)),
       ],
     );
     if (result != null && result != current && context.mounted) {
@@ -396,7 +400,7 @@ class WifiNetworkCard extends ConsumerWidget {
 
     final result = await showSimpleAppDialog<String>(
       context,
-      title: 'Channel Width',
+      title: loc(context).channelWidth,
       content: StatefulBuilder(
         builder: (ctx, setState) => AppRadioList<String>(
           selected: selected,
@@ -406,7 +410,7 @@ class WifiNetworkCard extends ConsumerWidget {
               title: bw,
               value: bw,
               descriptionWidget: chCount != null
-                  ? AppText.bodySmall('$chCount channels available')
+                  ? AppText.bodySmall(loc(context).nChannelsAvailable(chCount))
                   : null,
             );
           }).toList(),
@@ -416,8 +420,9 @@ class WifiNetworkCard extends ConsumerWidget {
         ),
       ),
       actions: [
-        AppButton.text(label: 'Cancel', onTap: () => context.pop()),
-        AppButton.text(label: 'OK', onTap: () => context.pop(selected)),
+        AppButton.text(label: loc(context).cancel, onTap: () => context.pop()),
+        AppButton.text(
+            label: loc(context).ok, onTap: () => context.pop(selected)),
       ],
     );
     if (result != null && result != current && context.mounted) {
@@ -456,7 +461,7 @@ class WifiNetworkCard extends ConsumerWidget {
 
     final result = await showSimpleAppDialog<String>(
       context,
-      title: 'Channel',
+      title: loc(context).channel,
       scrollable: true,
       content: StatefulBuilder(
         builder: (ctx, setState) => AppRadioList<String>(
@@ -468,8 +473,9 @@ class WifiNetworkCard extends ConsumerWidget {
         ),
       ),
       actions: [
-        AppButton.text(label: 'Cancel', onTap: () => context.pop()),
-        AppButton.text(label: 'OK', onTap: () => context.pop(selected)),
+        AppButton.text(label: loc(context).cancel, onTap: () => context.pop()),
+        AppButton.text(
+            label: loc(context).ok, onTap: () => context.pop(selected)),
       ],
     );
     if (result != null && result != currentLabel && context.mounted) {

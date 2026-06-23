@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/shell/usp_top_bar.dart';
 import 'package:privacy_gui/page/statistics/views/sections/_sections.dart';
@@ -38,7 +39,7 @@ class _UspStatisticsViewState extends ConsumerState<UspStatisticsView>
     // and SliverAppBar scrolls away with the content.
     return LayoutBuilder(builder: (context, constraints) {
       return UiKitPageView.withSliver(
-        title: 'Statistics',
+        title: loc(context).statistics,
         topbar: const PreferredSize(
           preferredSize: Size.fromHeight(64),
           child: UspTopBar(),
@@ -47,10 +48,10 @@ class _UspStatisticsViewState extends ConsumerState<UspStatisticsView>
         showAppBarBorder: false,
         showTabBorder: false,
         backFallback: RouteNamed.uspMenu,
-        tabs: const [
-          Tab(text: 'Network'),
-          Tab(text: 'Devices'),
-          Tab(text: 'System'),
+        tabs: [
+          Tab(text: loc(context).network),
+          Tab(text: loc(context).devices),
+          Tab(text: loc(context).system),
         ],
         tabContentViews: const [
           _NetworkTab(),

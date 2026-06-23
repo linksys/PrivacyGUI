@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/models/lan_info_ui_model.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/_shared/components/usp_status_dot.dart';
@@ -16,22 +17,29 @@ class UspDhcpServerInfoCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CardHeader(title: 'DHCP Server'),
+          CardHeader(title: loc(context).dhcpServer),
           AppGap.md(),
           InfoList(
             items: [
               InfoListItem(
-                label: 'Status',
-                value: info.dhcpEnabled ? 'Enabled' : 'Disabled',
+                label: loc(context).status,
+                value: info.dhcpEnabled
+                    ? loc(context).enabled
+                    : loc(context).disabled,
                 leading: UspStatusDot(isActive: info.dhcpEnabled, size: 10),
               ),
               InfoListItem(
-                  label: 'Router IP', value: info.ipAddress, copyable: true),
-              InfoListItem(label: 'Subnet Mask', value: info.subnetMask),
+                  label: loc(context).routerIp,
+                  value: info.ipAddress,
+                  copyable: true),
+              InfoListItem(
+                  label: loc(context).subnetMask, value: info.subnetMask),
               if (info.dhcpRange.isNotEmpty)
-                InfoListItem(label: 'DHCP Range', value: info.dhcpRange),
+                InfoListItem(
+                    label: loc(context).dhcpRange, value: info.dhcpRange),
               if (info.dnsServers.isNotEmpty)
-                InfoListItem(label: 'DNS Servers', value: info.dnsServers),
+                InfoListItem(
+                    label: loc(context).dnsServers, value: info.dnsServers),
             ],
           ),
         ],

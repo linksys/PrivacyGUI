@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../providers/unified_diagnostics_notifier.dart';
@@ -15,16 +16,15 @@ class DiagnosticStartView extends ConsumerWidget {
     final chooseIssue = _SecondaryAction(
       icon: Icons.search,
       iconTint: _SecondaryTint.secondary,
-      title: 'Choose Specific Issue',
-      description:
-          'Experiencing a specific problem? Select from common scenarios.',
+      title: loc(context).chooseSpecificIssue,
+      description: loc(context).chooseSpecificIssueDesc,
       onTap: notifier.startWithPreQualifier,
     );
     final manualTools = _SecondaryAction(
       icon: Icons.terminal,
       iconTint: _SecondaryTint.tertiary,
-      title: 'Manual Tools',
-      description: 'Run ping, traceroute, or NS lookup against any host.',
+      title: loc(context).manualTools,
+      description: loc(context).manualToolsDesc,
       onTap: notifier.openManualTools,
     );
 
@@ -118,7 +118,7 @@ class _PrimaryAction extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     return Semantics(
       button: true,
-      label: 'Run Full Diagnostic',
+      label: loc(context).runFullDiagnostic,
       child: AppCard(
         isSelected: true,
         onTap: onTap,
@@ -130,18 +130,17 @@ class _PrimaryAction extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  AppText.titleLarge('Run Full Diagnostic'),
+                  AppText.titleLarge(loc(context).runFullDiagnostic),
                   AppGap.xs(),
                   AppText.bodySmall(
-                    'Automatically check every component of your network '
-                    'to find and fix issues.',
+                    loc(context).runFullDiagnosticDesc,
                     color: colorScheme.onSurfaceVariant,
                   ),
                 ],
               ),
             ),
             AppGap.lg(),
-            AppButton(label: 'Start Now', onTap: onTap),
+            AppButton(label: loc(context).startNow, onTap: onTap),
           ],
         ),
       ),
@@ -221,7 +220,8 @@ class _OrDivider extends StatelessWidget {
         const Expanded(child: Divider()),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-          child: AppText.bodySmall('OR', color: colorScheme.onSurfaceVariant),
+          child: AppText.bodySmall(loc(context).or,
+              color: colorScheme.onSurfaceVariant),
         ),
         const Expanded(child: Divider()),
       ],

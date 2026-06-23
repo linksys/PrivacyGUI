@@ -24,7 +24,7 @@ class MacSafariInstallInstructionSheet extends StatelessWidget {
           children: [
             Expanded(
               child: AppText.titleLarge(
-                loc(context).pwaMacInstallTitle,
+                loc(context).pwaInstallTitle,
               ),
             ),
             AppIconButton(

@@ -24,7 +24,7 @@ class IosInstallInstructionSheet extends StatelessWidget {
           children: [
             Expanded(
               child: AppText.titleLarge(
-                loc(context).pwaIosInstallTitle,
+                loc(context).pwaInstallTitle,
               ),
             ),
             AppIconButton(

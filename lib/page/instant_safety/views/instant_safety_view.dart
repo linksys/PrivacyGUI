@@ -5,6 +5,7 @@ import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/components/views/service_error_view.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/instant_safety/models/instant_safety_feature_state.dart';
@@ -22,7 +23,7 @@ class UspInstantSafetyView extends ConsumerWidget {
 
     return UiKitPageView.withSliver(
       scrollable: true,
-      title: 'Instant Safety',
+      title: loc(context).instantSafety,
       topbar: const PreferredSize(
         preferredSize: Size.fromHeight(64),
         child: UspTopBar(),
@@ -58,7 +59,7 @@ class UspInstantSafetyView extends ConsumerWidget {
   ) {
     if (!state.isDirty) return null;
     return UiKitBottomBarConfig(
-      positiveLabel: 'Save',
+      positiveLabel: loc(context).save,
       isPositiveEnabled: !state.status.isSaving,
       onPositiveTap: () => _onSave(context, ref),
       onNegativeTap: () => ref.read(uspInstantSafetyProvider.notifier).revert(),
@@ -82,9 +83,7 @@ class UspInstantSafetyView extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         AppText.bodyMedium(
-          'Protect your family and block pre-determined adult, illegal and '
-          'malicious content with a single tap. Safe browsing applies to all '
-          'devices on your network.',
+          loc(context).instantSafetyPageDesc,
         ),
         AppGap.lg(),
         _buildSafeBrowsingCard(context, isEnabled, isSaving, notifier),
@@ -111,7 +110,7 @@ class UspInstantSafetyView extends ConsumerWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Expanded(
-                  child: AppText.labelLarge('Safe Browsing (OpenDNS)'),
+                  child: AppText.labelLarge(loc(context).safeBrowsingOpenDns),
                 ),
                 AppSwitch(
                   value: isEnabled,
@@ -130,13 +129,12 @@ class UspInstantSafetyView extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   AppText.bodySmall(
-                    'DNS: 208.67.222.222, 208.67.220.220',
+                    loc(context).openDnsServers,
                     color: colorScheme.onSurfaceVariant,
                   ),
                   AppGap.xs(),
                   AppText.bodySmall(
-                    'All devices on your network will use OpenDNS Family Shield '
-                    'for safer browsing.',
+                    loc(context).openDnsFamilyShieldDesc,
                     color: colorScheme.onSurfaceVariant,
                   ),
                 ],
@@ -159,7 +157,7 @@ class UspInstantSafetyView extends ConsumerWidget {
         ref.read(uspInstantSafetyProvider.notifier).save(),
       );
       if (context.mounted) {
-        showSuccessSnackBar(context, 'Safe browsing settings saved');
+        showSuccessSnackBar(context, loc(context).safeBrowsingSettingsSaved);
       }
     } catch (e) {
       if (context.mounted) {

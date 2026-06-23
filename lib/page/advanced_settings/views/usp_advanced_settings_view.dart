@@ -19,7 +19,7 @@ class UspAdvancedSettingsView extends StatelessWidget {
 
     return UiKitPageView.withSliver(
       scrollable: true,
-      title: 'Advanced Settings',
+      title: loc(context).advancedSettings,
       topbar: const PreferredSize(
         preferredSize: Size.fromHeight(64),
         child: UspTopBar(),
@@ -83,7 +83,7 @@ class UspAdvancedSettingsView extends StatelessWidget {
         onTap: () => context.pushNamed(RouteNamed.uspDmz),
       ),
       AppSectionItemData(
-        title: 'Port Forwarding',
+        title: loc(context).portForwarding,
         onTap: () => context.pushNamed(RouteNamed.uspPortForwardingDetail),
       ),
       AppSectionItemData(

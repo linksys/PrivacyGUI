@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/models/device_analytics_state.dart';
 import 'package:privacy_gui/page/_shared/providers/usp_device_analytics_notifier.dart';
 import 'package:privacy_gui/page/statistics/views/components/stats_section_card.dart';
@@ -24,13 +25,13 @@ class _StatsSignalQualitySectionState
     final current = state.current;
 
     return StatsSectionCard(
-      title: 'Signal Quality',
-      subtitle: 'WiFi signal quality by frequency band',
+      title: loc(context).signalQuality,
+      subtitle: loc(context).signalQualitySubtitle,
       chartHeight: 280,
       child: current == null || current.bandSignalQuality.isEmpty
           ? Center(
               child: AppText.bodyMedium(
-                'No WiFi signal data...',
+                loc(context).noWifiSignalData,
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             )
@@ -52,7 +53,7 @@ class _StatsSignalQualitySectionState
                 ? AppRadarChart(
                     series: [
                       AppRadarSeries(
-                        label: 'Signal Quality',
+                        label: loc(context).signalQuality,
                         data: bands.values.map((v) => v * 100).toList(),
                         color: colorScheme.primary,
                         filled: true,
@@ -75,7 +76,7 @@ class _StatsSignalQualitySectionState
                 : AppBarChart(
                     series: [
                       AppChartSeries(
-                        label: 'Signal',
+                        label: loc(context).signal,
                         data: bands.values.map((v) => v * 100).toList(),
                         color: colorScheme.primary,
                       ),
@@ -100,10 +101,10 @@ class _StatsSignalQualitySectionState
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               for (final entry in [
-                (3, 'Excellent', colorScheme.primary),
-                (2, 'Good', Colors.lightGreen),
-                (1, 'Fair', Colors.orange),
-                (0, 'Poor', colorScheme.error),
+                (3, loc(context).excellent, colorScheme.primary),
+                (2, loc(context).good, Colors.lightGreen),
+                (1, loc(context).fair, Colors.orange),
+                (0, loc(context).poor, colorScheme.error),
               ]) ...[
                 if (distribution.signalLevelDistribution
                     .containsKey(entry.$1)) ...[

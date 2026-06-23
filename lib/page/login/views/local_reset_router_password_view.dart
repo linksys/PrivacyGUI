@@ -91,8 +91,7 @@ class _LocalResetRouterPasswordViewState
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                AppText.headlineSmall(
-                    loc(context).localResetRouterPasswordTitle),
+                AppText.headlineSmall(loc(context).routerPasswordNew),
                 AppGap.lg(),
                 AppText.bodyMedium(
                     loc(context).localResetRouterPasswordDescription),

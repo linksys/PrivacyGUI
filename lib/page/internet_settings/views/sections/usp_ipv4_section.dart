@@ -326,7 +326,7 @@ class _UspIpv4SectionState extends ConsumerState<UspIpv4Section> {
     final l = loc(context);
     return switch (type) {
       UspWanConnectionType.dhcp => l.connectionTypeDhcp,
-      UspWanConnectionType.staticIp => l.connectionTypeStatic,
+      UspWanConnectionType.staticIp => l.staticIp,
       UspWanConnectionType.pppoe => l.connectionTypePppoe,
       UspWanConnectionType.bridge => l.connectionTypeBridge,
     };

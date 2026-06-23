@@ -61,29 +61,29 @@ class UspMenuView extends ConsumerWidget {
     return [
       AppSectionItemData(
         semanticLabel: 'menu-wifi-settings',
-        title: 'WiFi Settings',
-        description: 'Networks, security, MAC filtering',
+        title: loc(context).menuWifiSettings,
+        description: loc(context).menuWifiSettingsDesc,
         iconData: Icons.wifi,
         onTap: () => context.goNamed(RouteNamed.uspWifiSettings),
       ),
       AppSectionItemData(
         semanticLabel: 'menu-topology',
-        title: 'Topology',
-        description: 'View network topology and mesh nodes',
+        title: loc(context).topology,
+        description: loc(context).menuTopologyDesc,
         iconData: Icons.account_tree,
         onTap: () => context.goNamed(RouteNamed.uspTopology),
       ),
       AppSectionItemData(
         semanticLabel: 'menu-devices',
-        title: 'Devices',
-        description: 'View and manage connected devices',
+        title: loc(context).devices,
+        description: loc(context).instantDevicesDesc,
         iconData: Icons.devices,
         onTap: () => context.goNamed(RouteNamed.uspDeviceList),
       ),
       AppSectionItemData(
         semanticLabel: 'menu-instant-safety',
-        title: 'Instant Safety',
-        description: 'Safe browsing with OpenDNS',
+        title: loc(context).instantSafety,
+        description: loc(context).menuInstantSafetyDesc,
         iconData: Icons.shield_outlined,
         badges: lanData != null
             ? [isSafetyEnabled ? MenuBadge.on : MenuBadge.off]
@@ -92,8 +92,8 @@ class UspMenuView extends ConsumerWidget {
       ),
       AppSectionItemData(
         semanticLabel: 'menu-instant-privacy',
-        title: 'Instant Privacy',
-        description: 'Lock network to currently connected devices',
+        title: loc(context).instantPrivacy,
+        description: loc(context).instantPrivacyDesc,
         iconData: Icons.lock_outlined,
         badges: privacyState != null
             ? [privacyState.isEnabled ? MenuBadge.on : MenuBadge.off]
@@ -102,15 +102,15 @@ class UspMenuView extends ConsumerWidget {
       ),
       AppSectionItemData(
         semanticLabel: 'menu-administration',
-        title: 'Administration',
-        description: 'Password, timezone, reboot',
+        title: loc(context).administration,
+        description: loc(context).menuAdministrationDesc,
         iconData: Icons.admin_panel_settings,
         onTap: () => context.goNamed(RouteNamed.uspAdmin),
       ),
       AppSectionItemData(
         semanticLabel: 'menu-advanced-settings',
-        title: 'Advanced Settings',
-        description: 'Firewall, local network, DMZ, port forwarding, routing',
+        title: loc(context).advancedSettings,
+        description: loc(context).menuAdvancedSettingsDesc,
         iconData: Icons.tune,
         onTap: () => context.goNamed(RouteNamed.uspAdvancedSettings),
       ),
@@ -123,22 +123,22 @@ class UspMenuView extends ConsumerWidget {
       // ),
       AppSectionItemData(
         semanticLabel: 'menu-statistics',
-        title: 'Statistics',
-        description: 'Network, device, and system analytics',
+        title: loc(context).statistics,
+        description: loc(context).menuStatisticsDesc,
         iconData: Icons.bar_chart,
         onTap: () => context.goNamed(RouteNamed.uspStatistics),
       ),
       AppSectionItemData(
         semanticLabel: 'menu-speed-test',
-        title: 'Speed Test',
-        description: 'Test your internet connection speed',
+        title: loc(context).speedTest,
+        description: loc(context).menuSpeedTestDesc,
         iconData: Icons.speed,
         onTap: () => context.goNamed(RouteNamed.uspSpeedTest),
       ),
       AppSectionItemData(
         semanticLabel: 'menu-network-diagnostics',
-        title: 'Network Diagnostics',
-        description: 'Run guided checks and manual ping/traceroute tools',
+        title: loc(context).networkDiagnostics,
+        description: loc(context).menuNetworkDiagnosticsDesc,
         iconData: Icons.network_check,
         onTap: () => context.goNamed(RouteNamed.uspUnifiedDiagnostics),
       ),

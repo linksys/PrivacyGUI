@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/utils/usp_formatters.dart';
 import 'package:privacy_gui/page/_shared/models/traffic_analysis_state.dart';
 import 'package:privacy_gui/page/_shared/providers/usp_traffic_analysis_notifier.dart';
@@ -17,13 +18,13 @@ class StatsTrafficDistributionSection extends ConsumerWidget {
     final state = ref.watch(uspTrafficAnalysisProvider);
 
     return StatsSectionCard(
-      title: 'Traffic Distribution',
-      subtitle: 'Cumulative traffic proportion by interface',
+      title: loc(context).trafficDistribution,
+      subtitle: loc(context).trafficDistributionSubtitle,
       chartHeight: 320,
       child: state.latest == null
           ? Center(
               child: AppText.bodyMedium(
-                'Waiting for data...',
+                loc(context).waitingForData,
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             )
@@ -47,11 +48,11 @@ class StatsTrafficDistributionSection extends ConsumerWidget {
               sections: [
                 AppPieSection(
                     value: wanTotal.toDouble(),
-                    label: 'WAN',
+                    label: loc(context).wan,
                     color: colorScheme.primary),
                 AppPieSection(
                     value: lanTotal.toDouble(),
-                    label: 'LAN',
+                    label: loc(context).lan,
                     color: colorScheme.secondary),
               ],
               defaultCenter: Column(
@@ -77,11 +78,13 @@ class StatsTrafficDistributionSection extends ConsumerWidget {
           children: [
             StatsLegendDot(color: colorScheme.primary),
             AppGap.xs(),
-            AppText.labelSmall('WAN: ${UspFormatters.formatBytes(wanTotal)}'),
+            AppText.labelSmall(
+                loc(context).wanSpeed(UspFormatters.formatBytes(wanTotal))),
             AppGap.lg(),
             StatsLegendDot(color: colorScheme.secondary),
             AppGap.xs(),
-            AppText.labelSmall('LAN: ${UspFormatters.formatBytes(lanTotal)}'),
+            AppText.labelSmall(
+                loc(context).lanSpeed(UspFormatters.formatBytes(lanTotal))),
           ],
         ),
       ],
@@ -100,7 +103,7 @@ class _InterfaceBreakdownBars extends StatelessWidget {
     final entries = <(String, int, int, Color)>[];
     if (wan != null) {
       entries.add((
-        'WAN',
+        loc(context).wan,
         wan!.totalBytesSent,
         wan!.totalBytesReceived,
         colorScheme.primary
@@ -108,7 +111,7 @@ class _InterfaceBreakdownBars extends StatelessWidget {
     }
     if (lan != null) {
       entries.add((
-        'LAN',
+        loc(context).lan,
         lan!.totalBytesSent,
         lan!.totalBytesReceived,
         colorScheme.secondary

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/models/system_monitor_state.dart';
 import 'package:privacy_gui/page/_shared/models/traffic_analysis_state.dart';
 import 'package:privacy_gui/page/_shared/providers/usp_system_monitor_notifier.dart';
@@ -17,8 +18,8 @@ class StatsCorrelationSection extends ConsumerWidget {
     final trafficState = ref.watch(uspTrafficAnalysisProvider);
 
     return StatsSectionCard(
-      title: 'CPU-Traffic Correlation',
-      subtitle: 'CPU usage vs WAN traffic rate',
+      title: loc(context).cpuTrafficCorrelation,
+      subtitle: loc(context).cpuUsageVsWanTrafficRate,
       chartHeight: 280,
       child: _buildContent(context, monitorState, trafficState),
     );
@@ -31,7 +32,7 @@ class StatsCorrelationSection extends ConsumerWidget {
     if (monitorState.history.isEmpty) {
       return Center(
         child: AppText.bodyMedium(
-          'Waiting for data...',
+          loc(context).waitingForData,
           color: colorScheme.onSurfaceVariant,
         ),
       );
@@ -40,7 +41,7 @@ class StatsCorrelationSection extends ConsumerWidget {
     if (trafficState.history.isEmpty) {
       return Center(
         child: AppText.bodyMedium(
-          'Enable traffic monitor for correlation data',
+          loc(context).enableTrafficMonitorForCorrelation,
           color: colorScheme.onSurfaceVariant,
         ),
       );
@@ -62,13 +63,13 @@ class StatsCorrelationSection extends ConsumerWidget {
             child: AppLineChart(
               series: [
                 AppChartSeries(
-                  label: 'CPU',
+                  label: loc(context).cpu,
                   data: cpuData,
                   filled: true,
                   color: colorScheme.primary,
                 ),
                 AppChartSeries(
-                  label: 'Traffic',
+                  label: loc(context).trafficRate,
                   data: trafficData,
                   dashed: true,
                   color: colorScheme.tertiary,
@@ -93,11 +94,11 @@ class StatsCorrelationSection extends ConsumerWidget {
           children: [
             StatsLegendDot(color: colorScheme.primary),
             AppGap.xs(),
-            AppText.labelSmall('CPU %'),
+            AppText.labelSmall(loc(context).cpuPercentLabel),
             AppGap.lg(),
             StatsLegendDot(color: colorScheme.tertiary),
             AppGap.xs(),
-            AppText.labelSmall('Traffic rate'),
+            AppText.labelSmall(loc(context).trafficRate),
           ],
         ),
       ],

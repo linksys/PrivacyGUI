@@ -81,7 +81,7 @@ class UspDashboardView extends ConsumerWidget {
           ),
           AppGap.md(),
           AppButton.text(
-            label: 'Logout',
+            label: loc(context).logout,
             onTap: () => _logout(context, ref),
           ),
         ],

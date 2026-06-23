@@ -6,6 +6,7 @@ import 'package:privacy_gui/core/connection/models/app_connection_state.dart';
 import 'package:privacy_gui/core/connection/providers/app_connection_state_provider.dart';
 import 'package:privacy_gui/core/connection/services/recovery_probe_service.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Default reboot baseline observed on dev routers (1.0.16): full SSE
@@ -112,21 +113,21 @@ class _FirmwareRecoveryDialogState
 
     final remaining = _remaining;
     final countdownText = remaining > Duration.zero
-        ? 'Estimated time remaining: ${_formatRemaining(remaining)}'
-        : 'Still waiting — this can take a little longer than expected';
+        ? loc(context).estimatedTimeRemaining(_formatRemaining(remaining))
+        : loc(context).stillWaitingLongerThanExpected;
 
     final probeIndicator = switch (lastResult) {
-      ProbeResult.recovered => 'Connection restored',
+      ProbeResult.recovered => loc(context).connectionRestored,
       ProbeResult.unreachable =>
-        'Last check: router not yet responding (attempt ${consecutive + 0})',
-      ProbeResult.serialMismatch => 'Router identity mismatch',
-      null => 'Waiting for first connection check',
+        loc(context).routerNotYetResponding(consecutive),
+      ProbeResult.serialMismatch => loc(context).routerIdentityMismatch,
+      null => loc(context).waitingForFirstConnectionCheck,
     };
 
     return AppDialog(
       title: SizedBox(
         width: 360,
-        child: AppText.titleLarge('Router is rebooting'),
+        child: AppText.titleLarge(loc(context).routerIsRebooting),
       ),
       content: SizedBox(
         width: 360,
@@ -141,24 +142,21 @@ class _FirmwareRecoveryDialogState
             AppText.bodySmall(probeIndicator),
             if (wifiSwitchWarning) ...[
               AppGap.lg(),
-              AppText.bodyMedium(
-                'No response from your router. Please confirm your '
-                'computer is still connected to the router\'s Wi-Fi, then '
-                'tap Retry now.',
-              ),
+              AppText.bodyMedium(loc(context).wifiSwitchWarning),
             ],
           ],
         ),
       ),
       actions: [
         AppButton.text(
-          label: 'Return to login page',
+          label: loc(context).returnToLoginPage,
           onTap: () {
             notifier.exitToLogout();
           },
         ),
         AppButton.primary(
-          label: _retrying ? 'Checking…' : 'Retry now',
+          label:
+              _retrying ? loc(context).checkingEllipsis : loc(context).retryNow,
           onTap: _retrying
               ? null
               : () async {

@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/models/network_health_helpers.dart';
 import 'package:privacy_gui/page/_shared/models/traffic_analysis_state.dart';
 import 'package:privacy_gui/page/_shared/providers/usp_traffic_analysis_notifier.dart';
@@ -17,13 +18,13 @@ class StatsHealthScoreSection extends ConsumerWidget {
     final state = ref.watch(uspTrafficAnalysisProvider);
 
     return StatsSectionCard(
-      title: 'Network Health Score',
-      subtitle: 'Overall network health based on error/loss metrics',
+      title: loc(context).networkHealthScore,
+      subtitle: loc(context).networkHealthSubtitle,
       chartHeight: 240,
       child: state.history.isEmpty
           ? Center(
               child: AppText.bodyMedium(
-                'Enable traffic monitor for health data',
+                loc(context).enableTrafficMonitorForHealthData,
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             )
@@ -77,10 +78,14 @@ class StatsHealthScoreSection extends ConsumerWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             _TrafficLight(
-                label: 'WAN', tier: wanTier, colorScheme: colorScheme),
+                label: loc(context).wan,
+                tier: wanTier,
+                colorScheme: colorScheme),
             AppGap.xl(),
             _TrafficLight(
-                label: 'LAN', tier: lanTier, colorScheme: colorScheme),
+                label: loc(context).lan,
+                tier: lanTier,
+                colorScheme: colorScheme),
           ],
         ),
         AppGap.md(),
@@ -88,13 +93,14 @@ class StatsHealthScoreSection extends ConsumerWidget {
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
             _MetricChip(
-                label: 'Errors',
+                label: loc(context).errors,
                 value: NetworkHealthHelpers.formatFaultRate(errorRate)),
             _MetricChip(
-                label: 'Discards',
+                label: loc(context).discards,
                 value: NetworkHealthHelpers.formatFaultRate(discardRate)),
             _MetricChip(
-                label: 'Loss', value: '${lossPercent.toStringAsFixed(2)}%'),
+                label: loc(context).loss,
+                value: '${lossPercent.toStringAsFixed(2)}%'),
           ],
         ),
       ],

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/components/detail_widgets.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/port_forwarding/models/port_triggering_rule_ui_model.dart';
@@ -28,7 +29,7 @@ class UspPortTriggeringTab extends ConsumerWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            AppText.titleMedium('Port Triggering'),
+            AppText.titleMedium(loc(context).portTriggering),
             AppIconButton(
               icon: AppIcon.font(Icons.add, size: 20),
               onTap: isSaving ? null : () => _showAddDialog(context, ref),
@@ -37,9 +38,9 @@ class UspPortTriggeringTab extends ConsumerWidget {
         ),
         AppGap.lg(),
         if (rules.isEmpty)
-          const DetailEmptyBlock(
+          DetailEmptyBlock(
             icon: Icons.swap_horiz,
-            message: 'No port triggering rules configured',
+            message: loc(context).noPortTriggeringRules,
           )
         else
           ...rules.map((r) => _buildRuleRow(context, ref, r)),
@@ -140,15 +141,15 @@ class UspPortTriggeringTab extends ConsumerWidget {
       PortTriggeringRuleUIModel rule) async {
     final confirmed = await showSimpleAppDialog<bool>(
       context,
-      title: 'Delete Rule',
-      content: AppText.bodyMedium('Delete "${rule.displayName}"?'),
+      title: loc(context).deleteRule,
+      content: AppText.bodyMedium(loc(context).deleteConfirm(rule.displayName)),
       actions: [
         AppButton.text(
-          label: 'Cancel',
+          label: loc(context).cancel,
           onTap: () => context.pop(),
         ),
         AppButton.dangerText(
-          label: 'Delete',
+          label: loc(context).delete,
           onTap: () => context.pop(true),
         ),
       ],

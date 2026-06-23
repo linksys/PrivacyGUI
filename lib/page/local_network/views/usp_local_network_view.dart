@@ -6,6 +6,7 @@ import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/components/views/service_error_view.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/local_network/models/local_network_feature_state.dart';
@@ -90,7 +91,7 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
 
     return UiKitPageView.withSliver(
       scrollable: true,
-      title: 'Local Network',
+      title: loc(context).localNetwork,
       topbar: const PreferredSize(
         preferredSize: Size.fromHeight(64),
         child: UspTopBar(),
@@ -129,7 +130,7 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
   ) {
     if (!state.isDirty) return null;
     return UiKitBottomBarConfig(
-      positiveLabel: 'Save',
+      positiveLabel: loc(context).save,
       isPositiveEnabled:
           !state.status.isSaving && !state.status.hasValidationErrors,
       onPositiveTap: () => _onSave(context, ref, state),
@@ -175,7 +176,7 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AppText.titleSmall('Router'),
+          AppText.titleSmall(loc(context).router),
           AppGap.md(),
           LayoutBlock(
             padding: const EdgeInsets.all(AppSpacing.md),
@@ -183,7 +184,7 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
               children: [
                 AppTextFormField(
                   controller: _hostNameController,
-                  label: 'Hostname',
+                  label: loc(context).hostname,
                   onChanged: (v) =>
                       notifier.updateSetting((m) => m.copyWith(hostName: v)),
                   externalErrorText: errors['hostName'],
@@ -192,7 +193,7 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
                 AppGap.md(),
                 AppIpv4TextField(
                   controller: _ipAddressController,
-                  label: 'IP Address',
+                  label: loc(context).ipAddress,
                   onChanged: (v) =>
                       notifier.updateSetting((m) => m.copyWith(ipAddress: v)),
                   errorText: errors['ipAddress'],
@@ -201,7 +202,7 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
                 AppGap.md(),
                 AppIpv4TextField(
                   controller: _subnetMaskController,
-                  label: 'Subnet Mask',
+                  label: loc(context).subnetMask,
                   onChanged: (v) =>
                       notifier.updateSetting((m) => m.copyWith(subnetMask: v)),
                   errorText: errors['subnetMask'],
@@ -242,7 +243,7 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                AppText.titleSmall('DHCP Server'),
+                AppText.titleSmall(loc(context).dhcpServer),
                 AppSwitch(
                   value: pending.dhcpEnabled,
                   onChanged: disabled
@@ -262,11 +263,11 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  AppText.labelMedium('Address Pool'),
+                  AppText.labelMedium(loc(context).addressPool),
                   AppGap.md(),
                   AppIpv4TextField(
                     controller: _minAddressController,
-                    label: 'Pool Start',
+                    label: loc(context).poolStart,
                     onChanged: (v) => notifier
                         .updateSetting((m) => m.copyWith(minAddress: v)),
                     errorText: errors['minAddress'],
@@ -276,7 +277,7 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
                   AppGap.md(),
                   AppIpv4TextField(
                     controller: _maxAddressController,
-                    label: 'Pool End',
+                    label: loc(context).poolEnd,
                     onChanged: (v) => notifier
                         .updateSetting((m) => m.copyWith(maxAddress: v)),
                     errorText: errors['maxAddress'],
@@ -286,7 +287,7 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
                   AppGap.md(),
                   AppTextFormField(
                     controller: _leaseTimeController,
-                    label: 'Lease Time (minutes)',
+                    label: loc(context).leaseTimeMinutes,
                     keyboardType: TextInputType.number,
                     onChanged: (v) {
                       final minutes = int.tryParse(v) ?? 0;
@@ -306,11 +307,11 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  AppText.labelMedium('DNS Servers'),
+                  AppText.labelMedium(loc(context).dnsServers),
                   AppGap.md(),
                   AppIpv4TextField(
                     controller: _dns1Controller,
-                    label: 'DNS Server 1',
+                    label: loc(context).dnsServer1,
                     onChanged: (v) => notifier
                         .updateSetting((m) => m.copyWith(dnsServer1: v)),
                     errorText: errors['dnsServer1'],
@@ -319,7 +320,7 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
                   AppGap.md(),
                   AppIpv4TextField(
                     controller: _dns2Controller,
-                    label: 'DNS Server 2',
+                    label: loc(context).dnsServer2,
                     onChanged: (v) => notifier
                         .updateSetting((m) => m.copyWith(dnsServer2: v)),
                     errorText: errors['dnsServer2'],
@@ -328,7 +329,7 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
                   AppGap.md(),
                   AppIpv4TextField(
                     controller: _dns3Controller,
-                    label: 'DNS Server 3',
+                    label: loc(context).dnsServer3,
                     onChanged: (v) => notifier
                         .updateSetting((m) => m.copyWith(dnsServer3: v)),
                     errorText: errors['dnsServer3'],
@@ -345,7 +346,7 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  AppText.bodyMedium('View DHCP Reservations'),
+                  AppText.bodyMedium(loc(context).viewDhcpReservations),
                   AppIcon.font(Icons.chevron_right, size: 20),
                 ],
               ),
@@ -377,7 +378,7 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
         ref.read(uspLocalNetworkProvider.notifier).save(),
       );
       if (context.mounted) {
-        showSuccessSnackBar(context, 'Local network settings saved');
+        showSuccessSnackBar(context, loc(context).localNetworkSettingsSaved);
       }
     } catch (e) {
       if (context.mounted) {
@@ -390,20 +391,16 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
     return showAppDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Change Network Settings?'),
-        content: const Text(
-          'Changing the router IP address or subnet mask may cause a temporary '
-          'loss of connection. DHCP reservations may also become invalid.\n\n'
-          'Do you want to continue?',
-        ),
+        title: Text(loc(context).changeNetworkSettingsTitle),
+        content: Text(loc(context).changeNetworkSettingsDesc),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancel'),
+            child: Text(loc(context).cancel),
           ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Continue'),
+            child: Text(loc(context).textContinue),
           ),
         ],
       ),

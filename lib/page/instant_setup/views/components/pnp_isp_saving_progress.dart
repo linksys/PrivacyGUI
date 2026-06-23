@@ -20,7 +20,7 @@ class PnpIspSavingProgress extends StatelessWidget {
       (IspSaveStep.checkingSettings, loc(context).pnpIspSaveStepVerifying),
       (
         IspSaveStep.checkingInternet,
-        loc(context).pnpIspSaveStepCheckingInternet,
+        loc(context).checkingForInternet,
       ),
     ];
     final currentIdx = IspSaveStep.values.indexOf(phase.step);

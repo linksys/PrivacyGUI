@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/devices/providers/device_filter_provider.dart';
 import 'package:privacy_gui/page/devices/providers/device_filter_state.dart';
 import 'package:privacy_gui/page/_shared/components/wifi_ui.dart';
 import 'package:ui_kit_library/ui_kit.dart';
-
-const _kNotApplicableEthernet = 'Not applicable for Ethernet devices';
-const _kAllLabel = 'All';
 
 /// Sentinel value used in String-typed dropdowns to represent "All". Avoids
 /// passing `null` as the value, which `AppDropdown` renders at 50% opacity
@@ -15,14 +13,14 @@ const _kAllLabel = 'All';
 /// `null` before updating filter state.
 const _kAllSentinel = '__ALL__';
 
-String _connectionLabel(DeviceConnectionFilter v) {
+String _connectionLabel(BuildContext context, DeviceConnectionFilter v) {
   switch (v) {
     case DeviceConnectionFilter.all:
-      return _kAllLabel;
+      return loc(context).all;
     case DeviceConnectionFilter.wifi:
-      return 'WiFi';
+      return loc(context).wifi;
     case DeviceConnectionFilter.ethernet:
-      return 'Ethernet';
+      return loc(context).ethernet;
   }
 }
 
@@ -30,20 +28,20 @@ String _connectionLabel(DeviceConnectionFilter v) {
 /// localized and consistent with the node/topology pages. `all` and `unknown`
 /// have no matching NodeSignalLevel and fall back to literal strings.
 String _signalLabel(BuildContext context, DeviceSignalFilter v) {
-  if (v == DeviceSignalFilter.all) return _kAllLabel;
+  if (v == DeviceSignalFilter.all) return loc(context).all;
   if (v == DeviceSignalFilter.unknown) return '--';
   final level = nodeLevelOf(v);
-  return level?.resolveLabel(context) ?? _kAllLabel;
+  return level?.resolveLabel(context) ?? loc(context).all;
 }
 
-String _statusLabel(DeviceStatusFilter v) {
+String _statusLabel(BuildContext context, DeviceStatusFilter v) {
   switch (v) {
     case DeviceStatusFilter.all:
-      return _kAllLabel;
+      return loc(context).all;
     case DeviceStatusFilter.online:
-      return 'Online';
+      return loc(context).online;
     case DeviceStatusFilter.offline:
-      return 'Offline';
+      return loc(context).offline;
   }
 }
 
@@ -77,7 +75,7 @@ class UspDeviceStatusSegmented extends ConsumerWidget {
 
     return AppTabs(
       tabs: values
-          .map((v) => TabItem(label: _statusLabel(v)))
+          .map((v) => TabItem(label: _statusLabel(context, v)))
           .toList(growable: false),
       initialIndex: selectedIndex,
       displayMode: TabDisplayMode.segmented,
@@ -126,8 +124,7 @@ class UspDeviceFilterPanel extends ConsumerWidget {
               LayoutBlock(
                 padding: const EdgeInsets.all(AppSpacing.md),
                 child: _InfoNote(
-                  text: 'Additional filters are only available for '
-                      'online devices.',
+                  text: loc(context).additionalFiltersOnlineOnly,
                 ),
               ),
             ],
@@ -157,25 +154,26 @@ class UspDeviceFilterPanel extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _SectionHeader(title: 'Connection'),
+                  _SectionHeader(title: loc(context).connection),
                   AppGap.sm(),
                   _DropdownRow<DeviceConnectionFilter>(
-                    label: 'Type',
+                    label: loc(context).type,
                     value: filter.connection,
                     items: DeviceConnectionFilter.values,
-                    labelOf: _connectionLabel,
+                    labelOf: (v) => _connectionLabel(context, v),
                     onChanged: (v) => ref
                         .read(deviceFilterConfigProvider.notifier)
                         .setConnection(v ?? DeviceConnectionFilter.all),
                   ),
                   AppGap.sm(),
                   _DropdownRow<DeviceSignalFilter>(
-                    label: 'Signal',
+                    label: loc(context).signal,
                     value: filter.signal,
                     items: _signalOptions(options),
                     labelOf: (v) => _signalLabel(context, v),
                     disabled: isEthernet,
-                    disabledTooltip: _kNotApplicableEthernet,
+                    disabledTooltip:
+                        loc(context).notApplicableForEthernetDevices,
                     onChanged: (v) => ref
                         .read(deviceFilterConfigProvider.notifier)
                         .setSignal(v ?? DeviceSignalFilter.all),
@@ -194,16 +192,18 @@ class UspDeviceFilterPanel extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _SectionHeader(title: 'Wi-Fi'),
+                    _SectionHeader(title: loc(context).wifi),
                     AppGap.sm(),
                     if (options.ssids.isNotEmpty)
                       _DropdownRow<String>(
-                        label: 'SSID',
+                        label: loc(context).ssid,
                         value: filter.ssidName ?? _kAllSentinel,
                         items: [_kAllSentinel, ...options.ssids],
-                        labelOf: (v) => v == _kAllSentinel ? _kAllLabel : v,
+                        labelOf: (v) =>
+                            v == _kAllSentinel ? loc(context).all : v,
                         disabled: isEthernet,
-                        disabledTooltip: _kNotApplicableEthernet,
+                        disabledTooltip:
+                            loc(context).notApplicableForEthernetDevices,
                         onChanged: (v) => ref
                             .read(deviceFilterConfigProvider.notifier)
                             .setSsidName(v == _kAllSentinel ? null : v),
@@ -212,12 +212,14 @@ class UspDeviceFilterPanel extends ConsumerWidget {
                       AppGap.sm(),
                     if (options.bands.isNotEmpty)
                       _DropdownRow<String>(
-                        label: 'Band',
+                        label: loc(context).band,
                         value: filter.band ?? _kAllSentinel,
                         items: [_kAllSentinel, ...options.bands],
-                        labelOf: (v) => v == _kAllSentinel ? _kAllLabel : v,
+                        labelOf: (v) =>
+                            v == _kAllSentinel ? loc(context).all : v,
                         disabled: isEthernet,
-                        disabledTooltip: _kNotApplicableEthernet,
+                        disabledTooltip:
+                            loc(context).notApplicableForEthernetDevices,
                         onChanged: (v) => ref
                             .read(deviceFilterConfigProvider.notifier)
                             .setBand(v == _kAllSentinel ? null : v),
@@ -235,17 +237,17 @@ class UspDeviceFilterPanel extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _SectionHeader(title: 'Location'),
+                    _SectionHeader(title: loc(context).location),
                     AppGap.sm(),
                     _DropdownRow<String>(
-                      label: 'Connected via',
+                      label: loc(context).connectedVia,
                       value: filter.nodeId ?? _kAllSentinel,
                       items: [
                         _kAllSentinel,
                         ...options.nodes.map((n) => n.deviceId),
                       ],
                       labelOf: (id) {
-                        if (id == _kAllSentinel) return _kAllLabel;
+                        if (id == _kAllSentinel) return loc(context).all;
                         final node = options.nodes
                             .where((n) => n.deviceId == id)
                             .firstOrNull;
@@ -276,13 +278,13 @@ class _FilterHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        AppText.titleMedium('Filters'),
+        AppText.titleMedium(loc(context).filters),
         const Spacer(),
         if (activeCount > 0) ...[
           AppBadge(label: '$activeCount'),
           AppGap.xs(),
           AppButton.text(
-            label: 'Clear',
+            label: loc(context).clear,
             onTap: onClear,
           ),
         ],
@@ -425,27 +427,27 @@ class UspDeviceFilterChipBar extends ConsumerWidget {
     final chips = <Widget>[
       _Chip(
         label: filter.connection == DeviceConnectionFilter.all
-            ? 'Connection'
-            : _connectionLabel(filter.connection),
+            ? loc(context).connection
+            : _connectionLabel(context, filter.connection),
         isActive: filter.connection != DeviceConnectionFilter.all,
         onTap: () => _showPicker<DeviceConnectionFilter>(
           context,
-          title: 'Connection',
+          title: loc(context).connection,
           items: DeviceConnectionFilter.values,
           selected: filter.connection,
-          labelOf: _connectionLabel,
+          labelOf: (v) => _connectionLabel(context, v),
           onSelected: notifier.setConnection,
         ),
       ),
       _Chip(
         label: filter.signal == DeviceSignalFilter.all
-            ? 'Signal'
+            ? loc(context).signal
             : _signalLabel(context, filter.signal),
         isActive: filter.signal != DeviceSignalFilter.all,
         disabled: isEthernet,
         onTap: () => _showPicker<DeviceSignalFilter>(
           context,
-          title: 'Signal',
+          title: loc(context).signal,
           items: _signalOptions(options),
           selected: filter.signal,
           labelOf: (v) => _signalLabel(context, v),
@@ -454,29 +456,29 @@ class UspDeviceFilterChipBar extends ConsumerWidget {
       ),
       if (options.ssids.isNotEmpty)
         _Chip(
-          label: filter.ssidName ?? 'SSID',
+          label: filter.ssidName ?? loc(context).ssid,
           isActive: filter.ssidName != null,
           disabled: isEthernet,
           onTap: () => _showPicker<String?>(
             context,
-            title: 'SSID',
+            title: loc(context).ssid,
             items: [null, ...options.ssids],
             selected: filter.ssidName,
-            labelOf: (v) => v ?? 'All',
+            labelOf: (v) => v ?? loc(context).all,
             onSelected: notifier.setSsidName,
           ),
         ),
       if (options.bands.isNotEmpty)
         _Chip(
-          label: filter.band ?? 'Band',
+          label: filter.band ?? loc(context).band,
           isActive: filter.band != null,
           disabled: isEthernet,
           onTap: () => _showPicker<String?>(
             context,
-            title: 'Band',
+            title: loc(context).band,
             items: [null, ...options.bands],
             selected: filter.band,
-            labelOf: (v) => v ?? 'All',
+            labelOf: (v) => v ?? loc(context).all,
             onSelected: notifier.setBand,
           ),
         ),
@@ -488,15 +490,15 @@ class UspDeviceFilterChipBar extends ConsumerWidget {
                       .firstOrNull
                       ?.model ??
                   filter.nodeId!)
-              : 'Node',
+              : loc(context).node,
           isActive: filter.nodeId != null,
           onTap: () => _showPicker<String?>(
             context,
-            title: 'Node',
+            title: loc(context).node,
             items: [null, ...options.nodes.map((n) => n.deviceId)],
             selected: filter.nodeId,
             labelOf: (id) {
-              if (id == null) return 'All';
+              if (id == null) return loc(context).all;
               return options.nodes
                       .where((n) => n.deviceId == id)
                       .firstOrNull
@@ -510,7 +512,7 @@ class UspDeviceFilterChipBar extends ConsumerWidget {
 
     if (filter.activeCountExcludingStatus > 0) {
       chips.add(_Chip(
-        label: 'Clear',
+        label: loc(context).clear,
         isActive: false,
         onTap: notifier.clearAll,
       ));

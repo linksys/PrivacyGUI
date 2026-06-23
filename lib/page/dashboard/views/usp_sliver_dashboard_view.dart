@@ -218,8 +218,8 @@ class _UspSliverDashboardViewState
                       .saveLayout();
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Layout optimized'),
+                      SnackBar(
+                        content: Text(loc(context).layoutOptimized),
                         duration: Duration(seconds: 1),
                       ),
                     );
@@ -453,7 +453,9 @@ class _UspSliverDashboardViewState
             ),
             AppGap.sm(),
             AppText.bodyMedium(
-              isActive ? 'Release to Remove' : 'Drag Here to Remove',
+              isActive
+                  ? loc(context).releaseToRemove
+                  : loc(context).dragHereToRemove,
             ),
           ],
         ),
@@ -501,7 +503,7 @@ class _UspSliverDashboardViewState
     if (violated && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Widget "${item.id}" resized to fit constraints'),
+          content: Text(loc(context).widgetResized(item.id)),
           duration: const Duration(seconds: 2),
           backgroundColor: Theme.of(context).colorScheme.error,
         ),
@@ -520,11 +522,11 @@ class _UspSliverDashboardViewState
     final result = await showAppDialog<String>(
       context: context,
       builder: (context) => AppDialog(
-        title: AppText.titleMedium('Dashboard Settings'),
+        title: AppText.titleMedium(loc(context).dashboardSettings),
         content: const UspLayoutSettingsPanel(),
         actions: [
           AppButton(
-            label: 'Close',
+            label: loc(context).close,
             onTap: () => Navigator.pop(context),
           ),
         ],
@@ -562,7 +564,7 @@ class _UspSliverDashboardViewState
 
     resolvedWidget ??= AppCard(
       child: Center(
-        child: AppText.bodyMedium('Unknown widget: ${item.id}'),
+        child: AppText.bodyMedium(loc(context).unknownWidget(item.id)),
       ),
     );
 
