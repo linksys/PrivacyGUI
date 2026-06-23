@@ -209,7 +209,7 @@ class _UspSliverDashboardViewState
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        AppText.headlineSmall('USP Dashboard'),
+        AppText.headlineSmall(loc(context).uspDashboard),
         Row(
           children: [
             if (_isEditMode) ...[

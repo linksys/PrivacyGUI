@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/route/constants.dart';
 
 import '../health_dimension.dart';
@@ -77,13 +78,13 @@ class InternetHealthDimension extends HealthDimension {
     return [
       HealthAction(
         id: 'diagnose_internet',
-        label: 'Run Diagnostics',
+        label: loc(context).runDiagnosticsTitle,
         icon: Icons.network_check,
         routeName: RouteNamed.uspUnifiedDiagnostics,
       ),
       HealthAction(
         id: 'internet_settings',
-        label: 'Internet Settings',
+        label: loc(context).internetSettings,
         icon: Icons.settings,
         routeName: RouteNamed.uspInternetSettings,
       ),

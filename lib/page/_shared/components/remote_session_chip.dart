@@ -7,6 +7,7 @@ import 'package:privacy_gui/core/utils/device_image_helper.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/cloud/services/remote_assistance_service.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/providers/remote_access/remote_access_provider.dart';
 import 'package:privacy_gui/providers/remote_access/remote_access_state.dart';
@@ -318,7 +319,8 @@ class _SessionPopup extends StatelessWidget {
                           color: colorScheme.primary, size: 20),
                       AppGap.sm(),
                       Expanded(
-                        child: AppText.titleSmall('Remote Assistance'),
+                        child:
+                            AppText.titleSmall(loc(context).remoteAssistance),
                       ),
                       InkWell(
                         onTap: onClose,
@@ -388,7 +390,7 @@ class _SessionPopup extends StatelessWidget {
                   SizedBox(
                     width: double.infinity,
                     child: AppButton.dangerOutline(
-                      label: 'End Session',
+                      label: loc(context).endSession,
                       size: AppButtonSize.small,
                       onTap: onDisconnect,
                     ),

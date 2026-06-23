@@ -142,7 +142,7 @@ class _BannerContent extends ConsumerWidget {
     final confirmed = await showAppDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: AppText.titleMedium('End Session?'),
+        title: AppText.titleMedium(loc(context).endSessionQuestion),
         content: AppText.bodyMedium(
           'Are you sure you want to end the Remote Assistance session?',
         ),
@@ -152,7 +152,7 @@ class _BannerContent extends ConsumerWidget {
             onTap: () => Navigator.of(context).pop(false),
           ),
           AppButton.danger(
-            label: 'End Session',
+            label: loc(context).endSession,
             size: AppButtonSize.small,
             onTap: () => Navigator.of(context).pop(true),
           ),
@@ -227,10 +227,10 @@ class _CopyButton extends StatelessWidget {
       onPressed: () {
         Clipboard.setData(ClipboardData(text: pin));
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('PIN copied'),
+          SnackBar(
+            content: Text(loc(context).pinCopied),
             behavior: SnackBarBehavior.floating,
-            duration: Duration(seconds: 1),
+            duration: const Duration(seconds: 1),
           ),
         );
       },
@@ -302,14 +302,14 @@ class _ExistingSessionDialog extends ConsumerWidget {
             else if (status == GRASessionStatus.active)
               _ActiveDialogContent(state: state)
             else
-              AppText.bodyMedium('Session not found'),
+              AppText.bodyMedium(loc(context).sessionNotFound),
             AppGap.xl(),
             // Actions
             if (status == GRASessionStatus.active)
               SizedBox(
                 width: double.infinity,
                 child: AppButton.danger(
-                  label: 'End Session',
+                  label: loc(context).endSession,
                   onTap: () async {
                     await ref
                         .read(remoteClientProvider.notifier)
@@ -455,7 +455,8 @@ class _ActiveDialogContent extends StatelessWidget {
           textAlign: TextAlign.center,
         ),
         AppGap.lg(),
-        _CountdownChip(seconds: countdown, label: 'Session expires in'),
+        _CountdownChip(
+            seconds: countdown, label: loc(context).sessionExpiresIn),
       ],
     );
   }

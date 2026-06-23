@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/models/wan_status_ui_model.dart';
 import 'package:privacy_gui/page/_shared/components/dashboard_card_template.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
@@ -23,7 +24,7 @@ class UspNetworkStatusCard extends ConsumerWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     return DashboardCardTemplate(
-      title: 'Network Status',
+      title: loc(context).networkStatus,
       trailing: wan.addressingType.toLowerCase() == 'dhcp'
           ? AppButton.text(
               label: isRenewing ? 'Renewing...' : 'Renew Lease',
@@ -74,7 +75,7 @@ class UspNetworkStatusCard extends ConsumerWidget {
               Expanded(
                 child: MetricTile(
                   icon: Icons.router,
-                  label: 'Gateway',
+                  label: loc(context).gateway,
                   value: wan.gateway.isNotEmpty ? wan.gateway : '-',
                   color: colorScheme.primary,
                 ),
@@ -94,7 +95,7 @@ class UspNetworkStatusCard extends ConsumerWidget {
           // Subnet & IPv6 info using InfoGrid
           InfoGrid(
             items: [
-              InfoGridItem(label: 'Subnet', value: wan.subnetMask),
+              InfoGridItem(label: loc(context).subnet, value: wan.subnetMask),
               if (wan.ipv6Addresses.isNotEmpty)
                 InfoGridItem(
                   label: 'IPv6',

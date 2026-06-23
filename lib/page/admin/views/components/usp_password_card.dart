@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/admin/models/admin_ui_models.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -23,7 +24,7 @@ class UspPasswordCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            AppText.titleMedium('Router Password'),
+            AppText.titleMedium(loc(context).routerPassword),
             AppGap.md(),
             LayoutBlock(
               padding: const EdgeInsets.all(AppSpacing.md),
@@ -42,7 +43,7 @@ class UspPasswordCard extends StatelessWidget {
                     ),
                   ),
                   AppButton.text(
-                    label: 'Change',
+                    label: loc(context).change,
                     onTap: onChangePassword,
                   ),
                 ],

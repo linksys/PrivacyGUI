@@ -43,7 +43,7 @@ class _UspTrafficAnalysisCardState
     final selectedTab = ref.watch(cardTabIndexProvider(_cardId));
 
     return DashboardCardTemplate.tabbed(
-      title: 'Traffic Monitor',
+      title: loc(context).trafficMonitor,
       titleBadge: analysisState.isFetching
           ? SizedBox(
               width: 14,
@@ -71,19 +71,19 @@ class _UspTrafficAnalysisCardState
           ref.read(cardTabIndexProvider(_cardId).notifier).state = index,
       tabs: [
         CardTab(
-          label: 'Monitor',
+          label: loc(context).monitor,
           content: _buildChartView(context, analysisState, 0),
         ),
         CardTab(
-          label: 'Comparison',
+          label: loc(context).comparison,
           content: _buildChartView(context, analysisState, 1),
         ),
         CardTab(
-          label: 'Distribution',
+          label: loc(context).distribution,
           content: _buildChartView(context, analysisState, 2),
         ),
         CardTab(
-          label: 'Trends',
+          label: loc(context).trends,
           content: _buildChartView(context, analysisState, 3),
         ),
       ],
@@ -161,7 +161,7 @@ class _MonitorView extends StatelessWidget {
           children: [
             Expanded(
               child: _SpeedTile(
-                label: 'Upload',
+                label: loc(context).upload,
                 icon: Icons.arrow_upward,
                 bytesPerSec: upload,
                 color: colorScheme.primary,
@@ -170,7 +170,7 @@ class _MonitorView extends StatelessWidget {
             AppGap.md(),
             Expanded(
               child: _SpeedTile(
-                label: 'Download',
+                label: loc(context).download,
                 icon: Icons.arrow_downward,
                 bytesPerSec: download,
                 color: colorScheme.secondary,
@@ -184,7 +184,7 @@ class _MonitorView extends StatelessWidget {
           child: AppLineChart(
             series: [
               AppChartSeries(
-                label: 'Upload',
+                label: loc(context).upload,
                 data: history
                     .map((s) =>
                         s.interfaces[TrafficInterface.wan]?.uploadBytesPerSec ??
@@ -194,7 +194,7 @@ class _MonitorView extends StatelessWidget {
                 color: colorScheme.primary,
               ),
               AppChartSeries(
-                label: 'Download',
+                label: loc(context).download,
                 data: history
                     .map((s) =>
                         s.interfaces[TrafficInterface.wan]

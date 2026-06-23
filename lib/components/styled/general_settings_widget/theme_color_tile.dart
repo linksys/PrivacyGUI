@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/providers/app_settings/app_settings_provider.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -45,7 +46,7 @@ class _ThemeColorTileState extends ConsumerState<ThemeColorTile> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        AppText.labelMedium('Theme Color'),
+        AppText.labelMedium(loc(context).themeColor),
         AppGap.lg(),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,

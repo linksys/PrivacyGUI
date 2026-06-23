@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 import '../health/health_dimension.dart';
@@ -25,9 +26,9 @@ class DimensionActionsBuilder {
               label: action.label,
               icon: action.icon,
             )),
-        const MascotDialogOption(
+        MascotDialogOption(
           id: 'back_to_cloud',
-          label: 'Back',
+          label: loc(context).back,
           icon: Icons.arrow_back,
         ),
       ],

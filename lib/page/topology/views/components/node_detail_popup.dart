@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/util/network_utils.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -97,7 +98,7 @@ class NodeDetailPopup extends StatelessWidget {
             child: Align(
               alignment: Alignment.centerRight,
               child: AppButton.text(
-                label: 'Details',
+                label: loc(context).details,
                 onTap: onDetailsTap,
               ),
             ),

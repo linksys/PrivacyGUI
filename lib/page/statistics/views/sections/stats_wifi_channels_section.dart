@@ -194,7 +194,8 @@ class _BandDistributionDonut extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             AppText.titleMedium('$totalClients'),
-            AppText.labelSmall('clients', color: colorScheme.onSurfaceVariant),
+            AppText.labelSmall(loc(context).clients,
+                color: colorScheme.onSurfaceVariant),
           ],
         ),
         touchedCenterLabel: (section, _) => '${section.value.toInt()}',

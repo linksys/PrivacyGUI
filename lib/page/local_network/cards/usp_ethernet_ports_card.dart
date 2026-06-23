@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/models/ethernet_port_ui_model.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/local_network/providers/ethernet_data_provider.dart';
@@ -28,7 +29,7 @@ class UspEthernetPortsCard extends ConsumerWidget {
     final wanConnected = wanPorts.where((p) => p.isUp).length;
 
     return DashboardCardTemplate(
-      title: 'Ethernet Ports',
+      title: loc(context).ethernetPorts,
       detailRoute: RouteNamed.uspLocalNetwork,
       content: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

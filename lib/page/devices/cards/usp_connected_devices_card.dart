@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/utils/device_classifier.dart';
 import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
@@ -33,7 +34,7 @@ class UspConnectedDevicesCard extends ConsumerWidget {
     final displayDevices = activeDevices.take(_maxDisplayCount).toList();
 
     return DashboardCardTemplate(
-      title: 'Connected Devices',
+      title: loc(context).connectedDevices,
       titleBadge: Row(
         mainAxisSize: MainAxisSize.min,
         children: [

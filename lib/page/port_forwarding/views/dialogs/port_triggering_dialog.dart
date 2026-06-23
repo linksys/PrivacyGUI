@@ -129,10 +129,11 @@ class _PortTriggeringDialogState extends State<PortTriggeringDialog> {
               children: [
                 AppText.bodyMedium(loc(context).protocol),
                 SegmentedButton<String>(
-                  segments: const [
-                    ButtonSegment(value: 'TCP', label: Text('TCP')),
-                    ButtonSegment(value: 'UDP', label: Text('UDP')),
-                    ButtonSegment(value: 'Both', label: Text('Both')),
+                  segments: [
+                    const ButtonSegment(value: 'TCP', label: Text('TCP')),
+                    const ButtonSegment(value: 'UDP', label: Text('UDP')),
+                    ButtonSegment(
+                        value: 'Both', label: Text(loc(context).both)),
                   ],
                   selected: {_triggerProtocol},
                   onSelectionChanged: (v) =>
@@ -168,10 +169,11 @@ class _PortTriggeringDialogState extends State<PortTriggeringDialog> {
               children: [
                 AppText.bodyMedium(loc(context).protocol),
                 SegmentedButton<String>(
-                  segments: const [
-                    ButtonSegment(value: 'TCP', label: Text('TCP')),
-                    ButtonSegment(value: 'UDP', label: Text('UDP')),
-                    ButtonSegment(value: 'Both', label: Text('Both')),
+                  segments: [
+                    const ButtonSegment(value: 'TCP', label: Text('TCP')),
+                    const ButtonSegment(value: 'UDP', label: Text('UDP')),
+                    ButtonSegment(
+                        value: 'Both', label: Text(loc(context).both)),
                   ],
                   selected: {_forwardProtocol},
                   onSelectionChanged: (v) =>

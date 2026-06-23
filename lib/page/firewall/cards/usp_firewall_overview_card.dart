@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/providers/card_tab_state_provider.dart';
 import 'package:privacy_gui/page/_shared/components/usp_status_dot.dart';
 import 'package:privacy_gui/page/_shared/components/dashboard_card_template.dart';
@@ -29,14 +30,14 @@ class UspFirewallOverviewCard extends ConsumerWidget {
     final selectedTab = ref.watch(cardTabIndexProvider(_cardId));
 
     return DashboardCardTemplate.tabbed(
-      title: 'Firewall Overview',
+      title: loc(context).firewallOverview,
       detailRoute: RouteNamed.uspFirewall,
       selectedTabIndex: selectedTab,
       onTabChanged: (index) =>
           ref.read(cardTabIndexProvider(_cardId).notifier).state = index,
       tabs: [
         CardTab(
-          label: 'Rules',
+          label: loc(context).rules,
           content: _RulesTab(
             ruleSummaries: firewallData.ruleSummaries,
             portForwardingCount: pfData?.ruleModels.length ?? 0,
@@ -44,7 +45,7 @@ class UspFirewallOverviewCard extends ConsumerWidget {
           ),
         ),
         CardTab(
-          label: 'Ports',
+          label: loc(context).ports,
           content: _PortsTab(
             portForwardingRules: pfData?.ruleModels ?? [],
             dmzSummaries: firewallData.dmzSummaries,
@@ -115,9 +116,10 @@ class _RulesTab extends StatelessWidget {
         InfoGrid(
           items: [
             InfoGridItem(
-                label: 'FW Rules',
+                label: loc(context).fwRules,
                 value: '$activeCount/${ruleSummaries.length}'),
-            InfoGridItem(label: 'Port Fwd', value: '$portForwardingCount'),
+            InfoGridItem(
+                label: loc(context).portFwd, value: '$portForwardingCount'),
             InfoGridItem(label: 'DMZ', value: '$dmzCount'),
           ],
           crossAxisCount: 3,
@@ -133,7 +135,7 @@ class _RulesTab extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   AppText.titleMedium('${ruleSummaries.length}'),
-                  AppText.labelSmall('Rules',
+                  AppText.labelSmall(loc(context).rules,
                       color: colorScheme.onSurfaceVariant),
                 ],
               ),
@@ -214,7 +216,8 @@ class _PortsTab extends StatelessWidget {
       children: [
         // Port forwarding list (top 5)
         if (portForwardingRules.isNotEmpty) ...[
-          AppText.labelLarge('Port Forwarding (${portForwardingRules.length})'),
+          AppText.labelLarge(
+              loc(context).portForwardingWithCount(portForwardingRules.length)),
           AppGap.sm(),
           ...portForwardingRules.take(5).map((rule) => Padding(
                 padding: const EdgeInsets.only(bottom: 4),
@@ -242,7 +245,7 @@ class _PortsTab extends StatelessWidget {
                 children: [
                   UspStatusDot(isActive: true),
                   AppGap.sm(),
-                  AppText.bodySmall('Target: ${d.destIp}'),
+                  AppText.bodySmall(loc(context).targetIp(d.destIp)),
                 ],
               )),
         ],
@@ -253,7 +256,7 @@ class _PortsTab extends StatelessWidget {
             child: AppBarChart(
               series: [
                 AppChartSeries(
-                  label: 'Rules',
+                  label: loc(context).rules,
                   data: protocolCounts.values.map((v) => v.toDouble()).toList(),
                   color: colorScheme.primary,
                 ),

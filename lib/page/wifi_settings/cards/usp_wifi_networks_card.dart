@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/models/client_connection_detail.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_radio_ui_model.dart';
 import 'package:privacy_gui/page/_shared/components/card_skeleton.dart';
@@ -58,7 +59,7 @@ class UspWifiNetworksCard extends ConsumerWidget {
     );
 
     return DashboardCardTemplate(
-      title: 'WiFi Networks',
+      title: loc(context).wifiNetworks,
       detailRoute: RouteNamed.uspWifiSettings,
       itemCount: networks.length,
       detailLabel: 'View all',
@@ -257,13 +258,13 @@ class UspWifiNetworksCard extends ConsumerWidget {
     final action = enable ? 'Enable' : 'Disable';
     final confirmed = await showSimpleAppDialog<bool>(
       context,
-      title: '$action WiFi Network',
+      title: loc(context).editWifiNetworkAction(action),
       content: AppText.bodyMedium(
         '$action "${network.ssidName}" on all bands?',
       ),
       actions: [
         AppButton.text(
-          label: 'Cancel',
+          label: loc(context).cancel,
           onTap: () => context.pop(),
         ),
         AppButton.primary(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/models/dhcp_client_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/dhcp_reservation_ui_model.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
@@ -36,7 +37,7 @@ class UspDhcpReservationsCard extends ConsumerWidget {
       itemCount: reservations.length + activeClients.length,
       sections: [
         CardSection(
-          title: 'Reservations',
+          title: loc(context).reservations,
           titleBadge: AppText.labelMedium('${reservations.length}'),
           isEmpty: reservations.isEmpty,
           emptyMessage: 'No DHCP reservations configured',
@@ -50,7 +51,7 @@ class UspDhcpReservationsCard extends ConsumerWidget {
           ),
         ),
         CardSection(
-          title: 'Active Leases',
+          title: loc(context).activeLeases,
           titleBadge: AppText.labelMedium('${activeClients.length}'),
           isEmpty: clients.isEmpty,
           emptyMessage: 'No DHCP clients',
@@ -172,15 +173,16 @@ class UspDhcpReservationsCard extends ConsumerWidget {
       DhcpReservationUIModel reservation) async {
     final confirmed = await showSimpleAppDialog<bool>(
       context,
-      title: 'Delete Reservation',
-      content: AppText.bodyMedium('Delete reservation for ${reservation.mac}?'),
+      title: loc(context).deleteReservation,
+      content: AppText.bodyMedium(
+          loc(context).deleteReservationConfirm(reservation.mac)),
       actions: [
         AppButton.text(
-          label: 'Cancel',
+          label: loc(context).cancel,
           onTap: () => context.pop(),
         ),
         AppButton.dangerText(
-          label: 'Delete',
+          label: loc(context).delete,
           onTap: () => context.pop(true),
         ),
       ],
