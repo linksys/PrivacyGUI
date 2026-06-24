@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
+import 'package:privacy_gui/core/jnap/models/auto_master_status.dart';
 import 'package:privacy_gui/core/jnap/models/device_info.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/di.dart';
@@ -633,5 +634,49 @@ void main() async {
     final btnFinder3 = find.byType(FilledButton);
     await tester.tap(btnFinder3.first);
     await tester.pump(const Duration(seconds: 1));
+  });
+
+  testLocalizations('Instant Setup - PnP: Auto Master running before save',
+      (tester, locale) async {
+    when(mockPnpNotifier.checkAutoMasterStatus()).thenAnswer((_) async {
+      return AutoMasterStatus.running;
+    });
+    when(mockPnpNotifier.pollAutoMasterStatus()).thenAnswer((_) {
+      return Stream.fromFuture(
+          Future.delayed(const Duration(seconds: 5), () => AutoMasterStatus.running));
+    });
+    when(mockPnpNotifier.save()).thenAnswer((_) async {
+      await Future.delayed(const Duration(seconds: 2));
+    });
+
+    await tester.pumpWidget(
+      testableSingleRoute(
+        child: const PnpSetupView(),
+        config: LinksysRouteConfig(
+            column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
+        locale: locale,
+        overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
+      ),
+    );
+    await tester.pump(const Duration(seconds: 6));
+    // Trick - setState to trigger build
+    final state = tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
+    state.setState(() {});
+    await tester.pumpAndSettle();
+    final ssidEditFinder = find.byType(TextField).first;
+    final passwordEditFinder = find.byType(TextField).last;
+    await tester.enterText(ssidEditFinder, 'MyAwesomeWiFiName');
+    await tester.pumpAndSettle();
+    await tester.enterText(passwordEditFinder, 'MyAwesomeWiFiPassword!');
+    await tester.pumpAndSettle();
+    final btnFinder = find.byType(FilledButton);
+    await tester.tap(btnFinder.first);
+    await tester.pumpAndSettle(); // Guest Wifi
+    final btnFinder2 = find.byType(FilledButton);
+    await tester.tap(btnFinder2.first);
+    await tester.pumpAndSettle(); // Night mode
+    final btnFinder3 = find.byType(FilledButton);
+    await tester.tap(btnFinder3.first);
+    await tester.pump(const Duration(seconds: 2));
   });
 }

@@ -11,6 +11,7 @@ import 'package:mockito/src/dummies.dart' as _i12;
 import 'package:privacy_gui/core/jnap/actions/better_action.dart' as _i14;
 import 'package:privacy_gui/core/jnap/models/auto_configuration_settings.dart'
     as _i11;
+import 'package:privacy_gui/core/jnap/models/auto_master_status.dart' as _i15;
 import 'package:privacy_gui/page/instant_setup/data/pnp_provider.dart' as _i8;
 import 'package:privacy_gui/page/instant_setup/data/pnp_state.dart' as _i3;
 import 'package:privacy_gui/page/instant_setup/data/pnp_step_state.dart' as _i5;
@@ -417,4 +418,31 @@ class MockPnpNotifier extends _i2.Notifier<_i3.PnpState>
             ),
           )
           as _i9.Future<_i7.AvailabilityInfo>);
+
+  @override
+  _i9.Future<_i15.AutoMasterStatus?> checkAutoMasterStatus() =>
+      (super.noSuchMethod(
+            Invocation.method(#checkAutoMasterStatus, []),
+            returnValue: _i9.Future<_i15.AutoMasterStatus?>.value(),
+            returnValueForMissingStub:
+                _i9.Future<_i15.AutoMasterStatus?>.value(),
+          )
+          as _i9.Future<_i15.AutoMasterStatus?>);
+
+  @override
+  _i9.Stream<_i15.AutoMasterStatus?> pollAutoMasterStatus() =>
+      (super.noSuchMethod(
+            Invocation.method(#pollAutoMasterStatus, []),
+            returnValue: _i9.Stream<_i15.AutoMasterStatus?>.empty(),
+            returnValueForMissingStub:
+                _i9.Stream<_i15.AutoMasterStatus?>.empty(),
+          )
+          as _i9.Stream<_i15.AutoMasterStatus?>);
+
+  @override
+  void setAutoMasterStatusOnEntry(_i15.AutoMasterStatus? status) =>
+      super.noSuchMethod(
+        Invocation.method(#setAutoMasterStatusOnEntry, [status]),
+        returnValueForMissingStub: null,
+      );
 }

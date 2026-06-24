@@ -9,8 +9,10 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
+import 'package:privacy_gui/core/jnap/models/auto_master_status.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_exception.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_provider.dart';
+import 'package:privacy_gui/page/instant_setup/widgets/pnp_auto_master_waiting_view.dart';
 import 'package:privacy_gui/page/instant_setup/troubleshooter/providers/pnp_troubleshooter_provider.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
@@ -49,6 +51,8 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
   Object? _error;
   String? _password;
   bool _isFetchingDeviceInfo = false;
+  bool _isWaitingForAutoMaster = false;
+  bool _showAutoMasterConnectionError = false;
   @override
   void initState() {
     super.initState();
@@ -77,6 +81,7 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
             return _examineAdminPassword(_password);
           }
         })
+        .then((_) => _checkAutoMasterStatus())
         .then((_) => _checkInternetConnection())
         .then((_) {
           final routeFrom = ref.read(pnpTroubleshooterProvider).enterRouteName;
@@ -161,6 +166,11 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
     // this has a higher priority when both showInternetConnected and isCheckingInternet are true
     if (_isFetchingDeviceInfo) {
       return _checkDeviceInfoView();
+    } else if (_isWaitingForAutoMaster) {
+      return PnpAutoMasterWaitingView(
+        showConnectionError: _showAutoMasterConnectionError,
+        onRetry: _retryAutoMasterCheck,
+      );
     } else if (_showInternetConnected) {
       return _internetConnectedView();
     } else {
@@ -493,6 +503,69 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
 
   Future _examineAdminPassword(String? password) {
     return pnp.checkAdminPassword(password);
+  }
+
+  Future _checkAutoMasterStatus() async {
+    final status = await pnp.checkAutoMasterStatus();
+    logger.i('[PnP]: Auto Master status check result: $status');
+
+    if (status == AutoMasterStatus.running) {
+      setState(() {
+        _isWaitingForAutoMaster = true;
+        _showAutoMasterConnectionError = false;
+      });
+
+      int consecutiveFailures = 0;
+      const maxConsecutiveFailures = 3;
+
+      await for (final pollStatus in pnp.pollAutoMasterStatus()) {
+        logger.d('[PnP]: Auto Master polling status: $pollStatus');
+
+        if (pollStatus == null) {
+          consecutiveFailures++;
+          logger.w(
+              '[PnP]: Auto Master polling failed, consecutive failures: $consecutiveFailures');
+
+          if (consecutiveFailures >= maxConsecutiveFailures) {
+            logger.e(
+                '[PnP]: Auto Master polling failed $maxConsecutiveFailures times, showing connection error');
+            setState(() {
+              _showAutoMasterConnectionError = true;
+            });
+            return;
+          }
+        } else {
+          consecutiveFailures = 0;
+
+          if (pollStatus == AutoMasterStatus.complete ||
+              pollStatus == AutoMasterStatus.idle) {
+            setState(() {
+              _isWaitingForAutoMaster = false;
+            });
+            throw ExceptionInterruptAndExit(
+                route: RouteNamed.localLoginPassword);
+          }
+        }
+      }
+    }
+  }
+
+  void _retryAutoMasterCheck() {
+    setState(() {
+      _showAutoMasterConnectionError = false;
+    });
+    _checkAutoMasterStatus().then((_) => _checkInternetConnection()).then((_) {
+      logger.i('[PnP]: Retry Auto Master check succeeded, go to Setup page');
+      if (mounted) {
+        context.goNamed(RouteNamed.pnpConfig);
+      }
+    }).catchError((error, stackTrace) {
+      final route = (error as ExceptionInterruptAndExit).route;
+      logger.e('[PnP]: Retry interrupted, go to: $route');
+      if (mounted) {
+        context.goNamed(route);
+      }
+    }, test: (error) => error is ExceptionInterruptAndExit);
   }
 
   _showRouterPasswordModal() {

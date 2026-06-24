@@ -44,3 +44,7 @@ class ExceptionInterruptAndExit extends PnpException {
   ExceptionInterruptAndExit({required this.route})
       : super(message: 'Interrupted and exit to $route');
 }
+
+class ExceptionAutoMasterRunning extends PnpException {
+  ExceptionAutoMasterRunning() : super(message: 'Auto Master is running');
+}

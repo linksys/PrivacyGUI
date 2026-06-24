@@ -738,6 +738,9 @@ void initBetterActions() {
   _betterActionMap[JNAPAction.setTunneledUser] =
       _JNAPActionValue.setTunneledUser.value;
   _betterActionMap[JNAPAction.setVPNApply] = _JNAPActionValue.setVPNApply.value;
+  // auto master
+  _betterActionMap[JNAPAction.getAutoMasterStatus] =
+      _JNAPActionValue.getAutoMasterStatus.value;
 }
 
 void buildBetterActions(List<String> routerServices) {
