@@ -74,13 +74,15 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       });
       // AsyncValue.guard never throws — it converts errors to AsyncError.
       // Propagate error to concurrent waiters if the guard failed.
+      // Note: Do NOT rethrow here — callers (app.dart, router_provider.dart)
+      // use bare .then() without .catchError, so throwing would leave the
+      // splash screen stuck or break the redirect.
       if (state case AsyncError(:final error, :final stackTrace)) {
         _initInProgress!.completeError(error, stackTrace);
-        Error.throwWithStackTrace(error, stackTrace);
-      } else {
-        _initInProgress!.complete(state.value);
-        return state.value;
+        return null;
       }
+      _initInProgress!.complete(state.value);
+      return state.value;
     } finally {
       _initInProgress = null;
     }

@@ -193,7 +193,9 @@ void main() {
 
       final notifier = container.read(authProvider.notifier);
 
-      // Launch multiple concurrent init calls
+      // Launch multiple concurrent init calls.
+      // Dart's single-threaded event loop guarantees the first init() acquires
+      // _initInProgress before the others check it (no await before the guard).
       final futures = [
         notifier.init(),
         notifier.init(),
@@ -222,14 +224,16 @@ void main() {
 
       final notifier = container.read(authProvider.notifier);
 
-      // Track errors received by each caller
-      Object? error1, error2, error3;
+      // Track results/errors received by each caller.
+      // Dart's single-threaded event loop guarantees the first init() acquires
+      // _initInProgress before the others check it (no await before the guard).
+      AuthState? result1;
+      Object? error2, error3;
 
       await Future.wait([
-        notifier.init().catchError((e) {
-          error1 = e;
-          return null;
-        }),
+        // Primary caller: receives null (init never throws)
+        notifier.init().then((r) => result1 = r),
+        // Concurrent waiters: receive error via completeError
         notifier.init().catchError((e) {
           error2 = e;
           return null;
@@ -243,10 +247,10 @@ void main() {
       // getStoredLoginType should only be called once (coalescing works)
       expect(callCount, 1);
 
-      // All three callers should receive the error
-      // First caller: error caught by AsyncValue.guard, propagated via completeError
-      // Concurrent waiters: receive error via _initInProgress.future
-      expect(error1, isA<StateError>());
+      // Primary caller receives null (init never throws — callers use bare .then)
+      expect(result1, isNull);
+
+      // Concurrent waiters receive error via completeError
       expect(error2, isA<StateError>());
       expect(error3, isA<StateError>());
 
