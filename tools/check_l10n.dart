@@ -653,23 +653,11 @@ List<_HardcodedString> _findHardcodedStrings(String filePath) {
       }
     }
 
-    // A line is a variable assignment if it assigns a string to a name.
-    // Previously these were skipped wholesale, which missed display strings
-    // stored in a local before rendering (e.g.
-    // `final label = cond ? 'View all' : 'View details'`). Now we only skip
-    // when the assigned value looks like an internal identifier (single token,
-    // no spaces, snake_case / camelCase / dashed) and NOT a human phrase.
-    final assignMatch =
-        RegExp(r'''^\s*(?:final|var|const)?\s*\w+\s*=\s*['"]([^'"]+)['"]''')
-            .firstMatch(line);
-    if (assignMatch != null) {
-      final assigned = assignMatch.group(1)!;
-      final looksInternal = !assigned.contains(' ') &&
-          (assigned.contains('_') ||
-              RegExp(r'^[a-z0-9-]+$').hasMatch(assigned) ||
-              RegExp(r'^[a-z]+[A-Z]').hasMatch(assigned));
-      if (looksInternal) continue;
-    }
+    // NOTE: strings stored in a plain variable before rendering
+    // (e.g. `final label = cond ? 'View all' : 'View details'`) are NOT
+    // detected — the patterns below only match the Text()/AppText()/named-param
+    // forms. This is a deliberate known recall gap (precision over recall);
+    // such cases are expected to be caught by manual review of the running app.
 
     // Check Text/AppText widgets (same-line)
     for (final match in uiContextPattern.allMatches(line)) {
