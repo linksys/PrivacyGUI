@@ -10,9 +10,6 @@ import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacy_gui/core/cloud/model/guardians_remote_assistance.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-/// Total duration (in seconds) of the PENDING session window (45 minutes).
-const int kPendingSessionDurationSec = 2700;
-
 Future<void> showRemoteAssistanceDialog(BuildContext context, WidgetRef ref,
     {bool isPassive = false}) {
   // Mark a dialog as shown so the dashboard does not auto-open a second

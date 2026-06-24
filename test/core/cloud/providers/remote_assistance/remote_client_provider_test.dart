@@ -9,6 +9,7 @@ import 'package:privacy_gui/core/jnap/models/device.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
 
+import '../../../../mocks/device_manager_notifier_mocks.dart';
 import 'remote_client_provider_test.mocks.dart';
 
 @GenerateNiceMocks([
@@ -51,13 +52,38 @@ void main() {
     currentTime: 1748316924838,
   );
 
+  const deviceManagerState = DeviceManagerState(
+    deviceList: [
+      LinksysDevice(
+        connections: [],
+        properties: [],
+        unit: RawDeviceUnit(serialNumber: 'TEST123'),
+        deviceID: 'device-uuid-1',
+        maxAllowedProperties: 10,
+        model: RawDeviceModel(deviceType: 'Infrastructure'),
+        isAuthority: true,
+        lastChangeRevision: 1,
+        nodeType: 'Master',
+        knownInterfaces: [
+          RawDeviceKnownInterface(
+            macAddress: 'AA:BB:CC:DD:EE:FF',
+            interfaceType: 'Wireless',
+          ),
+        ],
+      ),
+    ],
+  );
+
   setUp(() {
     mockCloudService = MockDeviceCloudService();
+
+    final mockDeviceManagerNotifier = MockDeviceManagerNotifier();
+    when(mockDeviceManagerNotifier.build()).thenReturn(deviceManagerState);
 
     container = ProviderContainer(
       overrides: [
         deviceCloudServiceProvider.overrideWithValue(mockCloudService),
-        deviceManagerProvider.overrideWith(() => _FakeDeviceManagerNotifier()),
+        deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
       ],
     );
   });
@@ -136,17 +162,22 @@ void main() {
     });
 
     test('pending widget calculation with kPendingSessionDurationSec', () {
-      const pendingDuration = 2700;
       const expiredIn = -100;
-      final initialSeconds = (pendingDuration + expiredIn).abs();
-      expect(initialSeconds, 2600);
+      final initialSeconds = (kPendingSessionDurationSec + expiredIn).abs();
+      expect(initialSeconds, kPendingSessionDurationSec - 100);
     });
 
     test('pending widget calculation handles zero expiredIn', () {
-      const pendingDuration = 2700;
       const expiredIn = 0;
-      final initialSeconds = (pendingDuration + expiredIn).abs();
-      expect(initialSeconds, 2700);
+      final initialSeconds = (kPendingSessionDurationSec + expiredIn).abs();
+      expect(initialSeconds, kPendingSessionDurationSec);
+    });
+
+    test('pending widget calculation matches full formula for testSessionInfo',
+        () {
+      final initialSeconds =
+          (kPendingSessionDurationSec + testSessionInfo.expiredIn).abs();
+      expect(initialSeconds, kPendingSessionDurationSec - 748);
     });
   });
 
@@ -356,31 +387,4 @@ void main() {
       expect(container.read(remoteClientProvider).isDialogShown, false);
     });
   });
-}
-
-class _FakeDeviceManagerNotifier extends DeviceManagerNotifier {
-  @override
-  DeviceManagerState build() {
-    return const DeviceManagerState(
-      deviceList: [
-        LinksysDevice(
-          connections: [],
-          properties: [],
-          unit: RawDeviceUnit(serialNumber: 'TEST123'),
-          deviceID: 'device-uuid-1',
-          maxAllowedProperties: 10,
-          model: RawDeviceModel(deviceType: 'Infrastructure'),
-          isAuthority: true,
-          lastChangeRevision: 1,
-          nodeType: 'Master',
-          knownInterfaces: [
-            RawDeviceKnownInterface(
-              macAddress: 'AA:BB:CC:DD:EE:FF',
-              interfaceType: 'Wireless',
-            ),
-          ],
-        ),
-      ],
-    );
-  }
 }
