@@ -158,6 +158,7 @@ class PnpNotifier extends Notifier<PnpState> {
     state = state.copyWith(
       phase: WizardConfiguring(
         wifiConfig: phase.wifiConfig.copyWith(guestSsid: ssid),
+        meshNodes: phase.meshNodes,
       ),
     );
   }

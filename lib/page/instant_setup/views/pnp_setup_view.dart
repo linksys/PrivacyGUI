@@ -778,6 +778,10 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
   }
 
   Widget _buildCompleteSplitMode(BuildContext context, PnpWifiConfig config) {
+    // Guard: fall back to unified mode if mainBands is unexpectedly empty
+    if (config.mainBands.isEmpty) {
+      return _buildCompleteUnifiedMode(context, config.ssid, config.password);
+    }
     // Use first band for title display
     final firstBand = config.mainBands.first;
 

@@ -99,9 +99,10 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
 
   @override
   Widget build(BuildContext context) {
-    // Navigate via '/' after successful login to let router handle post-login
-    // flow (PnP check, dashboard routing). The authProvider.init() deduplication
-    // prevents the rebuild loops that previously required direct uspDashboard nav.
+    // Navigate to dashboard after successful login.
+    // Go directly to uspDashboard (not '/') to avoid autoConfigurationLogic
+    // calling init() which toggles auth state and triggers routerProvider
+    // rebuild loops via _ref.watch(authProvider) in redirectLogic.
     ref.listen(authProvider, (previous, next) {
       if (previous != null &&
           previous.isLoading &&
@@ -110,7 +111,7 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
         final loginType = next.value?.loginType;
         if (loginType != null && loginType != LoginType.none) {
           if (!context.mounted) return;
-          context.go('/');
+          context.goNamed(RouteNamed.uspDashboard);
         }
       }
     });
