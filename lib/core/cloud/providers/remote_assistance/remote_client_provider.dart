@@ -359,10 +359,10 @@ class RemoteClientNotifier extends Notifier<RemoteClientState> {
       return;
     }
 
-    // Poll while session is valid (not INVALID) and not expired (expiredIn <= 0 means time remaining)
+    // Poll while session is valid (not INVALID) and not expired (expiredIn > 0 means time remaining)
     while (state.sessionInfo != null &&
         state.sessionInfo!.status != GRASessionStatus.invalid &&
-        state.sessionInfo!.expiredIn <= 0) {
+        state.sessionInfo!.expiredIn > 0) {
       try {
         final sessionInfo = await _svc.fetchSessionInfo(
           sessionId: sessionId,
