@@ -205,6 +205,7 @@ void main() {
       verify(() => mockUspCoordinator.restoreSession()).called(1);
       container.dispose();
     });
+
   });
 
   // ---------------------------------------------------------------------------

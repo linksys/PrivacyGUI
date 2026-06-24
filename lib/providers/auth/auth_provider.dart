@@ -74,9 +74,8 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       });
       // AsyncValue.guard never throws — it converts errors to AsyncError.
       // Propagate error to concurrent waiters if the guard failed.
-      if (state is AsyncError) {
-        final err = state as AsyncError;
-        _initInProgress!.completeError(err.error, err.stackTrace);
+      if (state case AsyncError(:final error, :final stackTrace)) {
+        _initInProgress!.completeError(error, stackTrace);
       } else {
         _initInProgress!.complete(state.value);
       }
