@@ -460,6 +460,12 @@ final _ignorePatterns = [
   RegExp(r'^\[.*\]$'), // Log tags like [USP]
   RegExp(r'^[\d.]+$'), // Pure numbers
   RegExp(r'^[a-z]{2}(_[A-Z]{2})?$'), // Locale codes: en, zh_TW
+  RegExp(r'\be\.g\.', caseSensitive: false), // Example hints: "e.g. ..."
+  RegExp(r'\bAA:BB:CC', caseSensitive: false), // Placeholder MAC example
+  RegExp(r'\bAKIA'), // AWS key example token
+  RegExp(r'^\d+\.\d+\.\d+\.\d+'), // IP-address example literals
+  RegExp(r'^[0-9a-fA-F]{0,4}:[0-9a-fA-F:]*:'), // IPv6 example literals
+  RegExp(r'\\u[0-9a-fA-F]{4}'), // Unicode escape like •
   RegExp(r'^\w+\.\w+$'), // File names: foo.dart
   RegExp(r'^/[\w/]+$'), // Route paths: /settings/wifi
   RegExp(r'^[A-Z][a-z]+\.[A-Z]'), // Enum-like: RouteNamed.xxx
@@ -477,6 +483,10 @@ final _skipFilePatterns = [
   RegExp(r'_test\.dart$'), // Test files
   RegExp(r'/generated/'), // Generated directory
   RegExp(r'/l10n/'), // Localization directory
+  // USP Console: a developer-only diagnostics page gated behind kDebugMode /
+  // GlobalConfig.feature.enableTestConsole — never shown to end users, so its
+  // strings are intentionally not localized (same rationale as lib/demo/).
+  RegExp(r'/test_console/'),
 ];
 
 CheckResult _checkHardcodedStrings() {
@@ -499,11 +509,28 @@ CheckResult _checkHardcodedStrings() {
   issues.add('| `lib/theme/` | ❌ | Theme config |');
   issues.add('| `lib/ai/` | ❌ | No hardcoded strings |');
   issues.add('| `lib/demo/` | ❌ | Dev-only, no translation needed |');
+  issues.add(
+      '| `lib/page/test_console/` | ❌ | USP Console — dev-only (debug/flag gated) |');
   issues.add('');
 
   // Placeholder for issue count - will be replaced after scanning
   final issueCountIndex = issues.length;
   issues.add(''); // placeholder
+
+  // Reviewer note: this list is a starting point, not a to-do list.
+  issues.add('> **Note for reviewers:** Each entry below is a real hardcoded '
+      'string, but not all of them should be translated. The list mixes:');
+  issues.add('>');
+  issues.add('> - **User-facing copy** that genuinely needs `loc()` '
+      '(e.g. "View all", "No devices online", dialog/notification text).');
+  issues.add('> - **Technical terms / acronyms** that are conventionally kept '
+      'in English (e.g. WAN, LAN, DNS, DHCP, MTU, IPv6, TCP/UDP, Mbps, DST).');
+  issues.add('>');
+  issues.add('> Deciding which is which is a **developer/product call** — the '
+      'tool only flags candidates and deliberately stays conservative '
+      '(near-zero false positives), so a few cross-line cases may be missed '
+      'and should be caught by manual review.');
+  issues.add('');
 
   for (final dir in _hardcodedScanDirs) {
     final dirPath = Directory(dir);
@@ -564,16 +591,26 @@ List<_HardcodedString> _findHardcodedStrings(String filePath) {
   final lines = content.split('\n');
   final findings = <_HardcodedString>[];
 
+  // DESIGN: precision over recall. This detector must produce (near-)zero
+  // false positives so the report stays trustworthy. We therefore only match
+  // high-confidence, SAME-LINE display contexts. Strings split across lines by
+  // `dart format` (e.g. `AppText.bodySmall(\n  'Online',\n)`) are deliberately
+  // NOT chased — cross-line look-ahead reliably mis-fires on const data tables
+  // and multi-line Semantics labels. Those few misses are expected to be
+  // caught by human review instead.
+
   // Pattern to match string literals in UI contexts
   // Match: Text('...'), AppText.xxx('...'), title: '...', label: '...', etc.
   final uiContextPattern = RegExp(
     r'''(?:Text|AppText\.\w+)\s*\(\s*['"]([^'"]+)['"]''',
   );
 
-  // Match named parameters commonly used for user-facing text
+  // Match named parameters commonly used for user-facing text.
+  // Only names that are (verified) UI-text-only — NOT generic data fields like
+  // `name`/`status`/`description` which also appear in models/const tables.
   // Exclude: semanticLabel, identifier (accessibility/testing, not user-visible)
   final namedParamPattern = RegExp(
-    r'''(?:title|hintText|errorText|helperText)\s*:\s*['"]([^'"]+)['"]''',
+    r'''(?:title|hintText|errorText|helperText|detailLabel|message|tooltip)\s*:\s*['"]([^'"]+)['"]''',
   );
 
   // Match label: but exclude semanticLabel and Semantics context
@@ -585,48 +622,72 @@ List<_HardcodedString> _findHardcodedStrings(String filePath) {
   for (var i = 0; i < lines.length; i++) {
     final line = lines[i];
     final lineNum = i + 1;
+    final trimmed = line.trimLeft();
 
     // Skip comment lines
-    if (line.trimLeft().startsWith('//')) continue;
+    if (trimmed.startsWith('//')) continue;
 
     // Skip lines that already use loc()
     if (line.contains('loc(')) continue;
 
-    // Skip lines that are variable assignments (internal logic)
-    if (RegExp(r'''^\s*(?:final|var|const)?\s*\w+\s*=\s*['"]''').hasMatch(line))
-      continue;
-
-    // Skip Semantics labels (accessibility, not user-visible text)
+    // Skip Semantics labels (accessibility, not user-visible text).
+    // The `label:`/`identifier:` may sit a few lines below the `Semantics(`
+    // opener after `dart format`, so look back a small window too.
     if (line.contains('Semantics(') || line.contains('identifier:')) continue;
+    var inSemantics = false;
+    for (var b = i - 1; b >= 0 && b >= i - 4; b--) {
+      final bl = lines[b];
+      if (bl.contains('Semantics(') || bl.contains('identifier:')) {
+        inSemantics = true;
+        break;
+      }
+      // a closing/child boundary means we're no longer in the opener's args
+      if (bl.contains('child:') || RegExp(r'^\s*\)').hasMatch(bl)) break;
+    }
+    if (inSemantics) continue;
 
-    // Check Text/AppText widgets
+    void addIfReportable(String value) {
+      if (findings.any((f) => f.line == lineNum && f.value == value)) return;
+      if (_shouldReport(value)) {
+        findings.add(_HardcodedString(lineNum, value));
+      }
+    }
+
+    // A line is a variable assignment if it assigns a string to a name.
+    // Previously these were skipped wholesale, which missed display strings
+    // stored in a local before rendering (e.g.
+    // `final label = cond ? 'View all' : 'View details'`). Now we only skip
+    // when the assigned value looks like an internal identifier (single token,
+    // no spaces, snake_case / camelCase / dashed) and NOT a human phrase.
+    final assignMatch =
+        RegExp(r'''^\s*(?:final|var|const)?\s*\w+\s*=\s*['"]([^'"]+)['"]''')
+            .firstMatch(line);
+    if (assignMatch != null) {
+      final assigned = assignMatch.group(1)!;
+      final looksInternal = !assigned.contains(' ') &&
+          (assigned.contains('_') ||
+              RegExp(r'^[a-z0-9-]+$').hasMatch(assigned) ||
+              RegExp(r'^[a-z]+[A-Z]').hasMatch(assigned));
+      if (looksInternal) continue;
+    }
+
+    // Check Text/AppText widgets (same-line)
     for (final match in uiContextPattern.allMatches(line)) {
-      final value = match.group(1)!;
-      if (_shouldReport(value)) {
-        findings.add(_HardcodedString(lineNum, value));
-      }
+      addIfReportable(match.group(1)!);
     }
 
-    // Check named parameters
+    // Check named parameters (same-line)
     for (final match in namedParamPattern.allMatches(line)) {
-      final value = match.group(1)!;
-      // Avoid duplicates
-      if (findings.any((f) => f.line == lineNum && f.value == value)) continue;
-      if (_shouldReport(value)) {
-        findings.add(_HardcodedString(lineNum, value));
-      }
+      addIfReportable(match.group(1)!);
     }
 
-    // Check label: (but not semanticLabel: or Semantics label:)
+    // Check label: (same-line; not semanticLabel:)
     for (final match in labelPattern.allMatches(line)) {
       final value = match.group(1)!;
-      if (findings.any((f) => f.line == lineNum && f.value == value)) continue;
-      // Skip if it looks like an identifier (no spaces, lowercase with dashes)
-      if (!value.contains(' ') && RegExp(r'^[a-z0-9-]+$').hasMatch(value))
+      if (!value.contains(' ') && RegExp(r'^[a-z0-9-]+$').hasMatch(value)) {
         continue;
-      if (_shouldReport(value)) {
-        findings.add(_HardcodedString(lineNum, value));
       }
+      addIfReportable(value);
     }
   }
 
@@ -636,6 +697,12 @@ List<_HardcodedString> _findHardcodedStrings(String filePath) {
 bool _shouldReport(String value) {
   // Too short
   if (value.length < _minStringLength) return false;
+
+  // Pure interpolation with no translatable static text, e.g. '$e', '$count',
+  // '${foo.bar}'. Strip Dart interpolations and any leftover punctuation; if
+  // nothing alphabetic remains, there is nothing to translate.
+  final withoutInterp = value.replaceAll(RegExp(r'\$\{[^}]*\}|\$\w+'), '');
+  if (!RegExp(r'[a-zA-Z]').hasMatch(withoutInterp)) return false;
 
   // Matches ignore pattern
   if (_ignorePatterns.any((p) => p.hasMatch(value))) return false;
