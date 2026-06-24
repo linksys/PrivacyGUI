@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/_shared/components/wifi_ui.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 import '../health/health_dimension.dart';
@@ -14,7 +15,8 @@ class DimensionActionsBuilder {
     required BuildContext context,
   }) {
     final actions = dimension.getActions(context);
-    final tierLabel = score?.tierLabel ?? 'Unknown';
+    final tierLabel =
+        score != null ? score.tier.resolveLabel(context) : loc(context).unknown;
     final scoreValue = score?.score ?? 100;
 
     return MascotDialogNode(

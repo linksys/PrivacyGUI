@@ -1650,5 +1650,24 @@
   "viewAll": "View all",
   "noDevicesOnline": "No devices online",
   "copyPin": "Copy PIN",
-  "noDevicesConnectedToNode": "No devices connected to this node"
+  "noDevicesConnectedToNode": "No devices connected to this node",
+  "viewDetails": "View details",
+  "renewLease": "Renew Lease",
+  "renewing": "Renewing...",
+  "connected": "Connected",
+  "lanConnected": "LAN Connected",
+  "critical": "Critical",
+  "unknown": "Unknown",
+  "accept": "Accept",
+  "drop": "Drop",
+  "synchronized": "Synchronized",
+  "noPortForwardingRulesConfigured": "No port forwarding rules configured",
+  "nItems": "{count, plural, one{{count} item} other{{count} items}}",
+  "@nItems": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

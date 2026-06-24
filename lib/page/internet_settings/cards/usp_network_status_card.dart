@@ -27,7 +27,8 @@ class UspNetworkStatusCard extends ConsumerWidget {
       title: loc(context).networkStatus,
       trailing: wan.addressingType.toLowerCase() == 'dhcp'
           ? AppButton.text(
-              label: isRenewing ? 'Renewing...' : 'Renew Lease',
+              label:
+                  isRenewing ? loc(context).renewing : loc(context).renewLease,
               onTap: isRenewing
                   ? null
                   : () => performUspMutation(
@@ -59,7 +60,7 @@ class UspNetworkStatusCard extends ConsumerWidget {
                       AppText.titleLarge(wan.ipAddress),
                       AppGap.xxs(),
                       AppText.bodyMedium(
-                        '${wan.isUp ? "Online" : "Offline"} - ${wan.addressingType}',
+                        '${wan.isUp ? loc(context).online : loc(context).offline} - ${wan.addressingType}',
                         color: colorScheme.onSurfaceVariant,
                       ),
                     ],

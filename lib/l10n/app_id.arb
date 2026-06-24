@@ -1080,5 +1080,17 @@
   "viewAll": "Lihat semua",
   "noDevicesOnline": "Tidak ada perangkat daring",
   "copyPin": "Salin PIN",
-  "noDevicesConnectedToNode": "Tidak ada perangkat yang terhubung ke node ini"
+  "noDevicesConnectedToNode": "Tidak ada perangkat yang terhubung ke node ini",
+  "viewDetails": "Lihat detail",
+  "renewLease": "Perbarui sewa",
+  "renewing": "Memperbarui...",
+  "connected": "Tersambung",
+  "lanConnected": "LAN tersambung",
+  "critical": "Kritis",
+  "unknown": "Tidak diketahui",
+  "accept": "Terima",
+  "drop": "Tolak",
+  "synchronized": "Tersinkronisasi",
+  "noPortForwardingRulesConfigured": "Tidak ada aturan penerusan port yang dikonfigurasi",
+  "nItems": "{count, plural, other{{count} item}}"
 }

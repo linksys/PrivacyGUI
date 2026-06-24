@@ -168,22 +168,22 @@ class _SignalTab extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            for (final entry in [
-              (SignalTier.excellent, 'Excellent'),
-              (SignalTier.good, 'Good'),
-              (SignalTier.fair, 'Fair'),
-              (SignalTier.weak, 'Weak'),
+            for (final tier in [
+              SignalTier.excellent,
+              SignalTier.good,
+              SignalTier.fair,
+              SignalTier.weak,
             ]) ...[
               Container(
                 width: 8,
                 height: 8,
                 decoration: BoxDecoration(
-                  color: entry.$1.resolveColor(colorScheme),
+                  color: tier.resolveColor(colorScheme),
                   shape: BoxShape.circle,
                 ),
               ),
               AppGap.xs(),
-              AppText.labelSmall(entry.$2),
+              AppText.labelSmall(tier.resolveLabel(context)),
               AppGap.md(),
             ],
           ],

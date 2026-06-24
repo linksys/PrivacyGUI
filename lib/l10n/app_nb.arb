@@ -1080,5 +1080,17 @@
   "viewAll": "Vis alle",
   "noDevicesOnline": "Ingen enheter tilkoblet",
   "copyPin": "Kopier PIN",
-  "noDevicesConnectedToNode": "Ingen enheter koblet til denne noden"
+  "noDevicesConnectedToNode": "Ingen enheter koblet til denne noden",
+  "viewDetails": "Vis detaljer",
+  "renewLease": "Forny leie",
+  "renewing": "Fornyer...",
+  "connected": "Tilkoblet",
+  "lanConnected": "LAN tilkoblet",
+  "critical": "Kritisk",
+  "unknown": "Ukjent",
+  "accept": "Godta",
+  "drop": "Forkast",
+  "synchronized": "Synkronisert",
+  "noPortForwardingRulesConfigured": "Ingen videresendingsregler for porter er konfigurert",
+  "nItems": "{count, plural, one{{count} element} other{{count} elementer}}"
 }

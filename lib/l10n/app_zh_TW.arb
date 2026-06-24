@@ -1080,5 +1080,17 @@
   "viewAll": "檢視全部",
   "noDevicesOnline": "沒有上線的裝置",
   "copyPin": "複製 PIN",
-  "noDevicesConnectedToNode": "沒有裝置連線到此節點"
+  "noDevicesConnectedToNode": "沒有裝置連線到此節點",
+  "viewDetails": "查看詳細資訊",
+  "renewLease": "續訂租約",
+  "renewing": "正在續訂...",
+  "connected": "已連線",
+  "lanConnected": "LAN 已連線",
+  "critical": "嚴重",
+  "unknown": "未知",
+  "accept": "接受",
+  "drop": "捨棄",
+  "synchronized": "已同步",
+  "noPortForwardingRulesConfigured": "未設定連接埠轉發規則",
+  "nItems": "{count, plural, other{{count} 個項目}}"
 }

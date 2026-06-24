@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/_shared/components/wifi_ui.dart';
 import 'package:privacy_gui/page/_shared/models/network_health_helpers.dart';
 import 'package:privacy_gui/page/_shared/models/traffic_analysis_state.dart';
 import 'package:privacy_gui/page/_shared/providers/usp_traffic_analysis_notifier.dart';
@@ -65,7 +66,7 @@ class StatsHealthScoreSection extends ConsumerWidget {
                 children: [
                   AppText.titleLarge('$overallScore'),
                   AppText.labelSmall(
-                    NetworkHealthHelpers.tierLabel(tier),
+                    tier.resolveLabel(ctx),
                     color: tierClr,
                   ),
                 ],
@@ -127,7 +128,7 @@ class _TrafficLight extends StatelessWidget {
           decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
         AppGap.xs(),
-        AppText.labelSmall('$label: ${NetworkHealthHelpers.tierLabel(tier)}'),
+        AppText.labelSmall('$label: ${tier.resolveLabel(context)}'),
       ],
     );
   }

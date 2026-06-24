@@ -1080,5 +1080,17 @@
   "viewAll": "Näytä kaikki",
   "noDevicesOnline": "Ei laitteita verkossa",
   "copyPin": "Kopioi PIN",
-  "noDevicesConnectedToNode": "Tähän solmuun ei ole yhdistetty laitteita"
+  "noDevicesConnectedToNode": "Tähän solmuun ei ole yhdistetty laitteita",
+  "viewDetails": "Näytä tiedot",
+  "renewLease": "Uusi varaus",
+  "renewing": "Uusitaan...",
+  "connected": "Yhdistetty",
+  "lanConnected": "LAN yhdistetty",
+  "critical": "Kriittinen",
+  "unknown": "Tuntematon",
+  "accept": "Hyväksy",
+  "drop": "Hylkää",
+  "synchronized": "Synkronoitu",
+  "noPortForwardingRulesConfigured": "Porttiohjaussääntöjä ei ole määritetty",
+  "nItems": "{count, plural, one{{count} kohde} other{{count} kohdetta}}"
 }

@@ -59,8 +59,9 @@ class UspEthernetPortsCard extends ConsumerWidget {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          AppText.titleSmall(
-                              wanConnected > 0 ? 'Connected' : 'Disconnected'),
+                          AppText.titleSmall(wanConnected > 0
+                              ? loc(context).connected
+                              : loc(context).disconnected),
                           AppText.bodySmall(
                             'WAN',
                             color: colorScheme.onSurfaceVariant,
@@ -98,7 +99,7 @@ class UspEthernetPortsCard extends ConsumerWidget {
                           AppText.titleSmall(
                               '$lanConnected / ${lanPorts.length}'),
                           AppText.bodySmall(
-                            'LAN Connected',
+                            loc(context).lanConnected,
                             color: colorScheme.onSurfaceVariant,
                           ),
                         ],

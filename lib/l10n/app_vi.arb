@@ -1080,5 +1080,17 @@
   "viewAll": "Xem tất cả",
   "noDevicesOnline": "Không có thiết bị trực tuyến",
   "copyPin": "Sao chép mã PIN",
-  "noDevicesConnectedToNode": "Không có thiết bị nào kết nối với nút này"
+  "noDevicesConnectedToNode": "Không có thiết bị nào kết nối với nút này",
+  "viewDetails": "Xem chi tiết",
+  "renewLease": "Gia hạn thuê",
+  "renewing": "Đang gia hạn...",
+  "connected": "Đã kết nối",
+  "lanConnected": "LAN đã kết nối",
+  "critical": "Nghiêm trọng",
+  "unknown": "Không xác định",
+  "accept": "Chấp nhận",
+  "drop": "Loại bỏ",
+  "synchronized": "Đã đồng bộ hóa",
+  "noPortForwardingRulesConfigured": "Chưa cấu hình quy tắc chuyển tiếp cổng nào",
+  "nItems": "{count, plural, other{{count} mục}}"
 }

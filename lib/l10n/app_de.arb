@@ -1080,5 +1080,17 @@
   "viewAll": "Alle anzeigen",
   "noDevicesOnline": "Keine Geräte online",
   "copyPin": "PIN kopieren",
-  "noDevicesConnectedToNode": "Keine Geräte mit diesem Node verbunden"
+  "noDevicesConnectedToNode": "Keine Geräte mit diesem Node verbunden",
+  "viewDetails": "Details anzeigen",
+  "renewLease": "Lease erneuern",
+  "renewing": "Wird erneuert...",
+  "connected": "Verbunden",
+  "lanConnected": "LAN verbunden",
+  "critical": "Kritisch",
+  "unknown": "Unbekannt",
+  "accept": "Annehmen",
+  "drop": "Verwerfen",
+  "synchronized": "Synchronisiert",
+  "noPortForwardingRulesConfigured": "Keine Portweiterleitungsregeln konfiguriert",
+  "nItems": "{count, plural, one{{count} Element} other{{count} Elemente}}"
 }

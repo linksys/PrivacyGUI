@@ -1080,5 +1080,17 @@
   "viewAll": "Vis alle",
   "noDevicesOnline": "Ingen enheder online",
   "copyPin": "Kopiér PIN",
-  "noDevicesConnectedToNode": "Ingen enheder forbundet til denne node"
+  "noDevicesConnectedToNode": "Ingen enheder forbundet til denne node",
+  "viewDetails": "Se detaljer",
+  "renewLease": "Forny lease",
+  "renewing": "Fornyer...",
+  "connected": "Tilsluttet",
+  "lanConnected": "LAN tilsluttet",
+  "critical": "Kritisk",
+  "unknown": "Ukendt",
+  "accept": "Accepter",
+  "drop": "Afvis",
+  "synchronized": "Synkroniseret",
+  "noPortForwardingRulesConfigured": "Ingen portvideresendelsesregler konfigureret",
+  "nItems": "{count, plural, one{{count} element} other{{count} elementer}}"
 }

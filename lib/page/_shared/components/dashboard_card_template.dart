@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// A section within a multi-section dashboard card.
@@ -354,8 +355,8 @@ class DashboardCardTemplate extends StatelessWidget {
   }
 
   Widget _buildDetailFooter(BuildContext context) {
-    final label =
-        detailLabel ?? (itemCount != null ? 'View all' : 'View details');
+    final label = detailLabel ??
+        (itemCount != null ? loc(context).viewAll : loc(context).viewDetails);
 
     return Padding(
       padding: const EdgeInsets.only(top: AppSpacing.md),
@@ -369,7 +370,7 @@ class DashboardCardTemplate extends StatelessWidget {
             children: [
               if (itemCount != null) ...[
                 AppText.labelSmall(
-                  '$itemCount ${itemCount == 1 ? 'item' : 'items'}',
+                  loc(context).nItems(itemCount!),
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
                 AppGap.sm(),

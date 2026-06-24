@@ -1080,5 +1080,17 @@
   "viewAll": "Mostra tutto",
   "noDevicesOnline": "Nessun dispositivo online",
   "copyPin": "Copia PIN",
-  "noDevicesConnectedToNode": "Nessun dispositivo connesso a questo nodo"
+  "noDevicesConnectedToNode": "Nessun dispositivo connesso a questo nodo",
+  "viewDetails": "Visualizza dettagli",
+  "renewLease": "Rinnova lease",
+  "renewing": "Rinnovo in corso...",
+  "connected": "Connesso",
+  "lanConnected": "LAN connessa",
+  "critical": "Critico",
+  "unknown": "Sconosciuto",
+  "accept": "Accetta",
+  "drop": "Scarta",
+  "synchronized": "Sincronizzato",
+  "noPortForwardingRulesConfigured": "Nessuna regola di port forwarding configurata",
+  "nItems": "{count, plural, one{{count} elemento} other{{count} elementi}}"
 }

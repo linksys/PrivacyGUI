@@ -1080,5 +1080,17 @@
   "viewAll": "عرض الكل",
   "noDevicesOnline": "لا توجد أجهزة متصلة",
   "copyPin": "نسخ رمز PIN",
-  "noDevicesConnectedToNode": "لا توجد أجهزة متصلة بهذه العقدة"
+  "noDevicesConnectedToNode": "لا توجد أجهزة متصلة بهذه العقدة",
+  "viewDetails": "عرض التفاصيل",
+  "renewLease": "تجديد الإيجار",
+  "renewing": "جارٍ التجديد...",
+  "connected": "متصل",
+  "lanConnected": "شبكة LAN متصلة",
+  "critical": "حرج",
+  "unknown": "غير معروف",
+  "accept": "قبول",
+  "drop": "إسقاط",
+  "synchronized": "متزامن",
+  "noPortForwardingRulesConfigured": "لم يتم تكوين أي قواعد لإعادة توجيه المنافذ",
+  "nItems": "{count, plural, zero{لا عناصر} one{عنصر واحد} two{عنصران} few{{count} عناصر} many{{count} عنصرًا} other{{count} عنصر}}"
 }

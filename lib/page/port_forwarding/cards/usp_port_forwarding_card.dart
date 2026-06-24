@@ -43,7 +43,7 @@ class UspPortForwardingCard extends ConsumerWidget {
           title: loc(context).portForwarding,
           titleBadge: AppText.labelMedium('${rules.length}'),
           isEmpty: rules.isEmpty,
-          emptyMessage: 'No port forwarding rules configured',
+          emptyMessage: loc(context).noPortForwardingRulesConfigured,
           content: Column(
             children: [
               for (var i = 0; i < rules.length; i++) ...[
@@ -57,7 +57,7 @@ class UspPortForwardingCard extends ConsumerWidget {
           title: loc(context).portTriggering,
           titleBadge: AppText.labelMedium('${triggers.length}'),
           isEmpty: triggers.isEmpty,
-          emptyMessage: 'No port triggering rules configured',
+          emptyMessage: loc(context).noPortTriggeringRules,
           content: Column(
             children: [
               for (var i = 0; i < triggers.length; i++) ...[

@@ -1080,5 +1080,17 @@
   "viewAll": "Tümünü görüntüle",
   "noDevicesOnline": "Çevrimiçi cihaz yok",
   "copyPin": "PIN'i Kopyala",
-  "noDevicesConnectedToNode": "Bu düğüme bağlı cihaz yok"
+  "noDevicesConnectedToNode": "Bu düğüme bağlı cihaz yok",
+  "viewDetails": "Ayrıntıları görüntüle",
+  "renewLease": "Kirayı yenile",
+  "renewing": "Yenileniyor...",
+  "connected": "Bağlandı",
+  "lanConnected": "LAN bağlandı",
+  "critical": "Kritik",
+  "unknown": "Bilinmiyor",
+  "accept": "Kabul et",
+  "drop": "Bırak",
+  "synchronized": "Eşitlendi",
+  "noPortForwardingRulesConfigured": "Yapılandırılmış bağlantı noktası yönlendirme kuralı yok",
+  "nItems": "{count, plural, one{{count} öğe} other{{count} öğe}}"
 }

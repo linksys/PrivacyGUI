@@ -1080,5 +1080,17 @@
   "viewAll": "すべて表示",
   "noDevicesOnline": "オンラインのデバイスはありません",
   "copyPin": "PIN をコピー",
-  "noDevicesConnectedToNode": "このノードに接続されているデバイスはありません"
+  "noDevicesConnectedToNode": "このノードに接続されているデバイスはありません",
+  "viewDetails": "詳細を表示",
+  "renewLease": "リースを更新",
+  "renewing": "更新しています...",
+  "connected": "接続済み",
+  "lanConnected": "LAN接続済み",
+  "critical": "重大",
+  "unknown": "不明",
+  "accept": "許可",
+  "drop": "破棄",
+  "synchronized": "同期済み",
+  "noPortForwardingRulesConfigured": "ポート転送ルールが設定されていません",
+  "nItems": "{count, plural, other{{count} 個の項目}}"
 }

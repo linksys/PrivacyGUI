@@ -1080,5 +1080,17 @@
   "viewAll": "모두 보기",
   "noDevicesOnline": "온라인 상태인 기기 없음",
   "copyPin": "PIN 복사",
-  "noDevicesConnectedToNode": "이 노드에 연결된 기기 없음"
+  "noDevicesConnectedToNode": "이 노드에 연결된 기기 없음",
+  "viewDetails": "세부 정보 보기",
+  "renewLease": "임대 갱신",
+  "renewing": "갱신 중...",
+  "connected": "연결됨",
+  "lanConnected": "LAN 연결됨",
+  "critical": "심각",
+  "unknown": "알 수 없음",
+  "accept": "허용",
+  "drop": "삭제",
+  "synchronized": "동기화됨",
+  "noPortForwardingRulesConfigured": "구성된 포트 포워딩 규칙이 없습니다",
+  "nItems": "{count, plural, other{{count}개 항목}}"
 }

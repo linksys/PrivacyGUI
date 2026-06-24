@@ -1080,5 +1080,17 @@
   "viewAll": "ดูทั้งหมด",
   "noDevicesOnline": "ไม่มีอุปกรณ์ออนไลน์",
   "copyPin": "คัดลอก PIN",
-  "noDevicesConnectedToNode": "ไม่มีอุปกรณ์ที่เชื่อมต่อกับโหนดนี้"
+  "noDevicesConnectedToNode": "ไม่มีอุปกรณ์ที่เชื่อมต่อกับโหนดนี้",
+  "viewDetails": "ดูรายละเอียด",
+  "renewLease": "ต่ออายุการเช่า",
+  "renewing": "กำลังต่ออายุ...",
+  "connected": "เชื่อมต่อแล้ว",
+  "lanConnected": "เชื่อมต่อ LAN แล้ว",
+  "critical": "วิกฤต",
+  "unknown": "ไม่ทราบ",
+  "accept": "ยอมรับ",
+  "drop": "ปฏิเสธ",
+  "synchronized": "ซิงโครไนซ์แล้ว",
+  "noPortForwardingRulesConfigured": "ไม่มีการกำหนดค่ากฎการส่งต่อพอร์ต",
+  "nItems": "{count, plural, other{{count} รายการ}}"
 }

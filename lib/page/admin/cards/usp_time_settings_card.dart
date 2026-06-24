@@ -108,7 +108,9 @@ class _UspTimeSettingsCardState extends ConsumerState<UspTimeSettingsCard>
                       Row(
                         children: [
                           AppBadge(
-                            label: time.status,
+                            label: time.isSynchronized
+                                ? loc(context).synchronized
+                                : time.status,
                             color: time.isSynchronized
                                 ? appColors?.semanticSuccess
                                 : appColors?.semanticWarning,

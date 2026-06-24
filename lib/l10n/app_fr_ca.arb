@@ -1080,5 +1080,17 @@
   "viewAll": "Tout afficher",
   "noDevicesOnline": "Aucun appareil en ligne",
   "copyPin": "Copier le NIP",
-  "noDevicesConnectedToNode": "Aucun appareil connecté à ce nœud"
+  "noDevicesConnectedToNode": "Aucun appareil connecté à ce nœud",
+  "viewDetails": "Voir les détails",
+  "renewLease": "Renouveler le bail",
+  "renewing": "Renouvellement...",
+  "connected": "Connecté",
+  "lanConnected": "LAN connecté",
+  "critical": "Critique",
+  "unknown": "Inconnu",
+  "accept": "Accepter",
+  "drop": "Rejeter",
+  "synchronized": "Synchronisé",
+  "noPortForwardingRulesConfigured": "Aucune règle de redirection de port configurée",
+  "nItems": "{count, plural, one{{count} élément} many{{count} d'éléments} other{{count} éléments}}"
 }

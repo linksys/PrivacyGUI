@@ -1080,5 +1080,17 @@
   "viewAll": "Προβολή όλων",
   "noDevicesOnline": "Καμία συσκευή σε σύνδεση",
   "copyPin": "Αντιγραφή PIN",
-  "noDevicesConnectedToNode": "Καμία συσκευή συνδεδεμένη σε αυτόν τον κόμβο"
+  "noDevicesConnectedToNode": "Καμία συσκευή συνδεδεμένη σε αυτόν τον κόμβο",
+  "viewDetails": "Προβολή λεπτομερειών",
+  "renewLease": "Ανανέωση μίσθωσης",
+  "renewing": "Ανανέωση...",
+  "connected": "Συνδεδεμένο",
+  "lanConnected": "Συνδεδεμένο LAN",
+  "critical": "Κρίσιμο",
+  "unknown": "Άγνωστο",
+  "accept": "Αποδοχή",
+  "drop": "Απόρριψη",
+  "synchronized": "Συγχρονισμένο",
+  "noPortForwardingRulesConfigured": "Δεν έχουν διαμορφωθεί κανόνες προώθησης θυρών",
+  "nItems": "{count, plural, one{{count} στοιχείο} other{{count} στοιχεία}}"
 }

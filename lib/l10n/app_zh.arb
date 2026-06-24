@@ -1080,5 +1080,17 @@
   "viewAll": "查看全部",
   "noDevicesOnline": "没有在线设备",
   "copyPin": "复制 PIN",
-  "noDevicesConnectedToNode": "没有设备连接到此节点"
+  "noDevicesConnectedToNode": "没有设备连接到此节点",
+  "viewDetails": "查看详情",
+  "renewLease": "续订租约",
+  "renewing": "正在续订...",
+  "connected": "已连接",
+  "lanConnected": "LAN 已连接",
+  "critical": "严重",
+  "unknown": "未知",
+  "accept": "接受",
+  "drop": "丢弃",
+  "synchronized": "已同步",
+  "noPortForwardingRulesConfigured": "未配置端口转发规则",
+  "nItems": "{count, plural, other{{count} 个项目}}"
 }

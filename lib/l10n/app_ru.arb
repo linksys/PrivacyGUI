@@ -1080,5 +1080,17 @@
   "viewAll": "Показать все",
   "noDevicesOnline": "Нет устройств в сети",
   "copyPin": "Копировать PIN",
-  "noDevicesConnectedToNode": "К этому узлу не подключено ни одного устройства"
+  "noDevicesConnectedToNode": "К этому узлу не подключено ни одного устройства",
+  "viewDetails": "Просмотреть сведения",
+  "renewLease": "Обновить аренду",
+  "renewing": "Обновление...",
+  "connected": "Подключено",
+  "lanConnected": "LAN подключено",
+  "critical": "Критический",
+  "unknown": "Неизвестно",
+  "accept": "Принять",
+  "drop": "Отклонить",
+  "synchronized": "Синхронизировано",
+  "noPortForwardingRulesConfigured": "Правила переадресации портов не настроены",
+  "nItems": "{count, plural, one{{count} элемент} few{{count} элемента} many{{count} элементов} other{{count} элемента}}"
 }

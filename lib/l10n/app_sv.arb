@@ -1080,5 +1080,17 @@
   "viewAll": "Visa alla",
   "noDevicesOnline": "Inga enheter online",
   "copyPin": "Kopiera PIN",
-  "noDevicesConnectedToNode": "Inga enheter anslutna till den här noden"
+  "noDevicesConnectedToNode": "Inga enheter anslutna till den här noden",
+  "viewDetails": "Visa information",
+  "renewLease": "Förnya lease",
+  "renewing": "Förnyar...",
+  "connected": "Ansluten",
+  "lanConnected": "LAN anslutet",
+  "critical": "Kritisk",
+  "unknown": "Okänd",
+  "accept": "Acceptera",
+  "drop": "Släng",
+  "synchronized": "Synkroniserad",
+  "noPortForwardingRulesConfigured": "Inga regler för portvidarebefordran har konfigurerats",
+  "nItems": "{count, plural, one{{count} objekt} other{{count} objekt}}"
 }

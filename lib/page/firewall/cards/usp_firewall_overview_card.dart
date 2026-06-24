@@ -60,6 +60,22 @@ class UspFirewallOverviewCard extends ConsumerWidget {
 // Tab 1: Rules — target distribution donut + summary
 // =============================================================================
 
+/// Localizes a firewall rule target value for display. The raw value (from the
+/// device) is still used as the aggregation map key; only the legend label is
+/// translated. Unknown targets (e.g. vendor-specific) fall back to the raw value.
+String _localizeTarget(BuildContext context, String target) {
+  switch (target) {
+    case 'Accept':
+      return loc(context).accept;
+    case 'Drop':
+      return loc(context).drop;
+    case 'Other':
+      return loc(context).other;
+    default:
+      return target;
+  }
+}
+
 class _RulesTab extends StatelessWidget {
   final List<FirewallRuleSummary> ruleSummaries;
   final int portForwardingCount;
@@ -164,7 +180,7 @@ class _RulesTab extends StatelessWidget {
                   ),
                   AppGap.xs(),
                   AppText.labelSmall(
-                    '${targetCounts.keys.elementAt(i)}: ${targetCounts.values.elementAt(i)}',
+                    '${_localizeTarget(context, targetCounts.keys.elementAt(i))}: ${targetCounts.values.elementAt(i)}',
                   ),
                 ],
               ),
@@ -195,7 +211,7 @@ class _PortsTab extends StatelessWidget {
     if (portForwardingRules.isEmpty && dmzSummaries.isEmpty) {
       return Center(
         child: AppText.bodyMedium(
-          'No port mappings configured',
+          loc(context).noPortMappingsConfigured,
           color: colorScheme.onSurfaceVariant,
         ),
       );

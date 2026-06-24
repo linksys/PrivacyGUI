@@ -40,7 +40,7 @@ class UspDhcpReservationsCard extends ConsumerWidget {
           title: loc(context).reservations,
           titleBadge: AppText.labelMedium('${reservations.length}'),
           isEmpty: reservations.isEmpty,
-          emptyMessage: 'No DHCP reservations configured',
+          emptyMessage: loc(context).noDhcpReservations,
           content: Column(
             children: [
               for (var i = 0; i < reservations.length; i++) ...[
