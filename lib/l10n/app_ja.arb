@@ -151,7 +151,7 @@
   "localRouterRecoveryKeyErorr": "そのキーは機能しませんでした。確認して再試行してください。",
   "localRouterRecoveryKeyLastChance": "次の試行が不正解な場合、保護するためにアクセスがロックされます。",
   "localRouterRecoveryKeyLocked": "アクセスがロックされました。最大試行回数に達しました。",
-  "location": "WiFiの状態を確認するための場所です。位置情報は記録したり、他の目的で使用したりすることはありません。",
+  "location": "場所",
   "login": "ログイン",
   "logout": "ログアウト",
   "macAddress": "MAC アドレス",

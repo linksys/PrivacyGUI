@@ -151,7 +151,7 @@
   "localRouterRecoveryKeyErorr": "لم يعمل هذا المفتاح. تحقق منه وحاول مرة أخرى.",
   "localRouterRecoveryKeyLastChance": "سيتم قفل الوصول لحمايتك إذا كانت المحاولة التالية غير صحيحة.",
   "localRouterRecoveryKeyLocked": "الوصول مؤمّن. العديد من المحاولات الفاشلة.",
-  "location": "تحديد الموقع للتحقق من حالة شبكة الواي فاي الخاصة بك. لا نقوم بتسجيل أو استخدام بيانات الموقع لأغراض أخرى",
+  "location": "الموقع",
   "login": "تسجيل الدخول",
   "logout": "تسجيل الخروج",
   "macAddress": "MAC Address (عنوان MAC)",

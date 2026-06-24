@@ -151,7 +151,7 @@
   "localRouterRecoveryKeyErorr": "Den här nyckeln fungerade inte. Kontrollera den och försök igen.",
   "localRouterRecoveryKeyLastChance": "Åtkomst blockeras för skydd efter nästa misslyckade försök.",
   "localRouterRecoveryKeyLocked": "Åtkomst låst. För många misslyckade försök.",
-  "location": "Plats för att kontrollera din Wi-Fi-status. Vi registrerar inte platsdata och använder dem inte för något annat ändamål",
+  "location": "Plats",
   "login": "Logga in",
   "logout": "Logga ut",
   "macAddress": "MAC-adress",

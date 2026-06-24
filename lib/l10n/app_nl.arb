@@ -151,7 +151,7 @@
   "localRouterRecoveryKeyErorr": "Die sleutel werkte niet. Controleer het en probeer het opnieuw.",
   "localRouterRecoveryKeyLastChance": "De toegang wordt vergrendeld om u te beschermen als de volgende poging onjuist is.",
   "localRouterRecoveryKeyLocked": "Toegang geblokkeerd. Te veel mislukte inlogpogingen.",
-  "location": "Locatie om uw WiFi-status te controleren. Wij registreren of gebruiken geen locatiegegevens voor andere doeleinden",
+  "location": "Locatie",
   "login": "Inloggen",
   "logout": "Uitloggen",
   "macAddress": "MAC-adres",

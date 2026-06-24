@@ -151,7 +151,7 @@
   "localRouterRecoveryKeyErorr": "Questa password non funziona. Verificatela e riprovate.",
   "localRouterRecoveryKeyLastChance": "L'accesso sarà bloccato se il prossimo tentativo non è corretto.",
   "localRouterRecoveryKeyLocked": "Accesso bloccato. Troppi tentativi errati.",
-  "location": "Posizione per controllare lo stato del WiFi. Non registriamo né utilizziamo i dati sulla posizione per altri scopi",
+  "location": "Posizione",
   "login": "Accedi",
   "logout": "Esci",
   "macAddress": "Indirizzo MAC",

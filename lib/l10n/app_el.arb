@@ -57,7 +57,7 @@
   "enabled": "Ενεργοποιήθηκε",
   "endPort": "Θύρα λήξης",
   "endUserLicenseAgreement": "Άδεια χρήσης τελικού χρήστη",
-  "error": "&Sigma;&phi;ά&lambda;&mu;&alpha;",
+  "error": "Σφάλμα",
   "errorEmailAddressNotFound": "Η διεύθυνση email δεν βρέθηκε",
   "errorEnterAValidEmailFormat": "Εισαγάγετε έγκυρη μορφή email",
   "errorExpiredOtp": "Ο κωδικός έληξε μετά από 15 λεπτά. Στείλτε νέο κωδικό και δοκιμάστε ξανά",

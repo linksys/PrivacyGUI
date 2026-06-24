@@ -151,7 +151,7 @@
   "localRouterRecoveryKeyErorr": "該密鑰無效，請檢查後再試。",
   "localRouterRecoveryKeyLastChance": "若下次嘗試仍然錯誤，為保障您的安全，訪問權限將會被鎖定。",
   "localRouterRecoveryKeyLocked": "存取已鎖定。嘗試失敗次數過多。",
-  "location": "用於查看WiFi狀態的位置資訊，我們不會將其用於其他目的或作記錄",
+  "location": "位置",
   "login": "登入",
   "logout": "登出",
   "macAddress": "MAC 位址",
