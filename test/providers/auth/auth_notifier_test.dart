@@ -176,6 +176,35 @@ void main() {
       expect(state?.localPassword, isNull);
       container.dispose();
     });
+
+    test('concurrent init calls are coalesced — restoreSession called once',
+        () async {
+      when(() => mockAuthService.getStoredLoginType())
+          .thenAnswer((_) async => AuthSuccess(LoginType.local));
+      when(() => mockAuthService.getStoredLocalPassword())
+          .thenAnswer((_) async => AuthSuccess('storedPass'));
+      // Slow restoreSession to ensure concurrent calls overlap
+      when(() => mockUspCoordinator.restoreSession())
+          .thenAnswer((_) => Future.delayed(const Duration(milliseconds: 50)));
+
+      final container = createContainer();
+      container.read(authProvider);
+      await Future.delayed(Duration.zero);
+
+      final notifier = container.read(authProvider.notifier);
+
+      // Launch multiple concurrent init calls
+      final futures = [
+        notifier.init(),
+        notifier.init(),
+        notifier.init(),
+      ];
+      await Future.wait(futures);
+
+      // restoreSession should only be called once despite 3 concurrent inits
+      verify(() => mockUspCoordinator.restoreSession()).called(1);
+      container.dispose();
+    });
   });
 
   // ---------------------------------------------------------------------------

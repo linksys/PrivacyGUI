@@ -328,6 +328,42 @@ void main() {
       verifyNever(() => mockUsp.refreshToken());
       verify(() => mockUsp.login('storedPassword')).called(1);
     });
+
+    test('concurrent calls are coalesced — only one login attempt', () async {
+      when(() => mockUsp.isAuthenticated).thenReturn(false);
+      when(() => mockStorage.read(key: any(named: 'key')))
+          .thenAnswer((_) async => 'storedPassword');
+      // Slow login to ensure concurrent calls overlap
+      when(() => mockUsp.login(any()))
+          .thenAnswer((_) => Future.delayed(const Duration(milliseconds: 50)));
+
+      // Launch multiple concurrent calls
+      final futures = [
+        coordinator.restoreSession(),
+        coordinator.restoreSession(),
+        coordinator.restoreSession(),
+      ];
+      await Future.wait(futures);
+
+      // login should only be called once despite 3 concurrent calls
+      verify(() => mockUsp.login('storedPassword')).called(1);
+    });
+
+    test('cooldown skips login within 5 seconds after failure', () async {
+      when(() => mockUsp.isAuthenticated).thenReturn(false);
+      when(() => mockStorage.read(key: any(named: 'key')))
+          .thenAnswer((_) async => 'storedPassword');
+      when(() => mockUsp.login(any()))
+          .thenThrow(Exception('Connection refused'));
+
+      // First call — fails
+      await coordinator.restoreSession();
+      verify(() => mockUsp.login('storedPassword')).called(1);
+
+      // Second call within cooldown — should be skipped
+      await coordinator.restoreSession();
+      verifyNever(() => mockUsp.login(any())); // No additional login call
+    });
   });
 
   // ---------------------------------------------------------------------------

@@ -72,11 +72,15 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
           localPassword: localPassword,
         );
       });
-      _initInProgress!.complete(state.value);
+      // AsyncValue.guard never throws — it converts errors to AsyncError.
+      // Propagate error to concurrent waiters if the guard failed.
+      if (state is AsyncError) {
+        final err = state as AsyncError;
+        _initInProgress!.completeError(err.error, err.stackTrace);
+      } else {
+        _initInProgress!.complete(state.value);
+      }
       return state.value;
-    } catch (e) {
-      _initInProgress!.completeError(e);
-      rethrow;
     } finally {
       _initInProgress = null;
     }
