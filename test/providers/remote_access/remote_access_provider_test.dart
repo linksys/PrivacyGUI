@@ -15,7 +15,7 @@ GRASessionInfo createTestSessionInfo({
   String serialNumber = '65G10M27E03053',
   String modelNumber = 'LN16-EU',
   GRASessionStatus status = GRASessionStatus.active,
-  int expiredIn = -600, // 600 seconds remaining
+  int expiredIn = 600, // 600 seconds remaining (positive = time left)
   int createdAt = 1748315872000,
   int statusChangedAt = 1748315989000,
   int currentTime = 1748316924838,
@@ -161,7 +161,7 @@ void main() {
           container.read(remoteAccessProvider).sessionToken, 'initial-token');
 
       // Update without providing token - token should be preserved via copyWith
-      final updatedInfo = createTestSessionInfo(expiredIn: -500);
+      final updatedInfo = createTestSessionInfo(expiredIn: 500);
       notifier.updateSessionInfo(updatedInfo, 500);
 
       final state = container.read(remoteAccessProvider);
@@ -307,7 +307,7 @@ void main() {
         when(() => mockService.fetchSessionInfoForCA(
               sessionToken: any(named: 'sessionToken'),
               sessionId: any(named: 'sessionId'),
-            )).thenAnswer((_) async => createTestSessionInfo(expiredIn: -500));
+            )).thenAnswer((_) async => createTestSessionInfo(expiredIn: 500));
 
         final container = createContainer();
         final notifier = container.read(remoteAccessProvider.notifier);
@@ -351,7 +351,7 @@ void main() {
     test('polling updates state with fetched session info', () {
       fakeAsync((async) {
         final updatedInfo = createTestSessionInfo(
-          expiredIn: -400, // 400 seconds remaining
+          expiredIn: 400, // 400 seconds remaining (positive = time left)
           status: GRASessionStatus.active,
         );
         when(() => mockService.fetchSessionInfoForCA(
