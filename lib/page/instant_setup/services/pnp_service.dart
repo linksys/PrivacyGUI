@@ -166,7 +166,9 @@ class PnpService {
 
     // Primary SSID = first enabled main SSID
     if (mainSsids.isEmpty) {
-      throw StateError('No main WiFi SSIDs found on router');
+      logger.e('[PnP] No main WiFi SSIDs found on router');
+      throw mapUspErrorToServiceError(
+          StateError('No main WiFi SSIDs found on router'));
     }
     final primarySsid = mainSsids.firstWhere(
       (s) => s.enable,

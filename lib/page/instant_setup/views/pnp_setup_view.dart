@@ -7,6 +7,7 @@ import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/core/utils/device_image_helper.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_state.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_wifi_config.dart';
@@ -780,6 +781,8 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
   Widget _buildCompleteSplitMode(BuildContext context, PnpWifiConfig config) {
     // Guard: fall back to unified mode if mainBands is unexpectedly empty
     if (config.mainBands.isEmpty) {
+      logger.w(
+          '[PnP] mainBands unexpectedly empty — falling back to unified mode');
       return _buildCompleteUnifiedMode(context, config.ssid, config.password);
     }
     // Use first band for title display
