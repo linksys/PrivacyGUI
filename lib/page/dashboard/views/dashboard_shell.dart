@@ -49,9 +49,19 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
             '[DashboardShell]: session status changed: $prevStatus -> $nextStatus');
         final loginType = ref.read(authProvider).value?.loginType;
         if (loginType != LoginType.local) return;
+        // Do not auto-open a passive dialog if a remote assistance dialog
+        // (e.g. the active one launched from the top bar) is already open.
+        final isDialogAlreadyShown =
+            ref.read(remoteClientProvider).isDialogShown;
+        // _isRemoteSessionDialogShown is a synchronous local guard against this
+        // listener firing twice in a row before the provider's isDialogShown
+        // has propagated (set synchronously below, before showDialog). It
+        // complements isDialogShown, which guards against a cross-widget dialog
+        // (the active one) already being open.
         if (prevStatus != GRASessionStatus.active &&
             nextStatus == GRASessionStatus.active &&
-            !_isRemoteSessionDialogShown) {
+            !_isRemoteSessionDialogShown &&
+            !isDialogAlreadyShown) {
           logger.i('[DashboardShell]: showing remote assistance dialog');
           _isRemoteSessionDialogShown = true;
           showRemoteAssistanceDialog(context, ref, isPassive: true).then((_) {

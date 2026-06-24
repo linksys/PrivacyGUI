@@ -15,11 +15,18 @@ const int kPendingSessionDurationSec = 2700;
 
 Future<void> showRemoteAssistanceDialog(BuildContext context, WidgetRef ref,
     {bool isPassive = false}) {
+  // Mark a dialog as shown so the dashboard does not auto-open a second
+  // (passive) dialog while this one is open. Cleared when the dialog closes.
+  ref.read(remoteClientProvider.notifier).setDialogShown(true);
   return showDialog(
     context: context,
     barrierDismissible: false,
     builder: (context) {
       bool isReady = isPassive;
+      // One-time guard so the initialization side effect runs only on the
+      // first build. The Consumer/StatefulBuilder below rebuild multiple times
+      // (e.g. on setState and provider state changes); without this flag the
+      // session would be initiated/streamed again on every rebuild.
       bool hasInitialized = false;
       return Consumer(
         builder: (context, ref, child) {
@@ -66,7 +73,11 @@ Future<void> showRemoteAssistanceDialog(BuildContext context, WidgetRef ref,
         },
       );
     },
-  );
+  ).then((_) {
+    // Dialog dismissed (Close button or barrier) - clear the shown flag so a
+    // future session can auto-open a dialog again.
+    ref.read(remoteClientProvider.notifier).setDialogShown(false);
+  });
 }
 
 Widget _buildRemoteAssistanceDialog(WidgetRef ref, BuildContext context) {
@@ -78,10 +89,10 @@ Widget _buildRemoteAssistanceDialog(WidgetRef ref, BuildContext context) {
     ref.read(pollingProvider.notifier).paused = true;
   }
   return switch (sessionInfo?.status ?? GRASessionStatus.initiate) {
+    GRASessionStatus.initiate => _buildInitiateWidget(context),
     GRASessionStatus.pending => _buildPendingWidget(state, context),
     GRASessionStatus.active => _buildCountingWidget(state, context),
     GRASessionStatus.invalid => _buildInvalidWidget(context),
-    GRASessionStatus.initiate => _buildInitiateWidget(context),
   };
 }
 
