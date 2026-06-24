@@ -9,14 +9,28 @@ import 'package:privacy_gui/core/usp/services/network_diagnostics_executor.dart'
 import 'package:privacy_gui/core/usp/services/sse_connection_manager.dart';
 import 'package:privacy_gui/core/usp/services/sse_manager.dart';
 import 'package:privacy_gui/core/usp/services/sse_operation_awaiter.dart';
+import 'package:privacy_gui/core/usp/providers/remote_assistance_provider.dart';
+import 'package:privacy_gui/core/usp/services/bridge_endpoints.dart';
 import 'package:privacy_gui/core/usp/services/usp_bridge_client.dart';
 import 'package:privacy_gui/config/global_config.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 
 /// Provides [UspBridgeClient] instance — depends on [UspClient].
+///
+/// In Remote Assistance mode, uses Guardian proxy endpoints.
+/// In local mode, uses on-router usp-bridge endpoints.
 final uspBridgeClientProvider = Provider<UspBridgeClient?>((ref) {
   final usp = ref.watch(uspClientProvider);
   if (usp == null) return null;
+
+  if (GlobalConfig.remote.isActive) {
+    final raState = ref.watch(remoteAssistanceProvider);
+    final config = raState.config;
+    if (config == null) return null;
+    final endpoints = BridgeEndpoints.remote(config.sessionId);
+    return UspBridgeClient(usp, endpoints: endpoints);
+  }
+
   return UspBridgeClient(usp);
 });
 
@@ -112,12 +126,6 @@ final networkDiagnosticsExecutorProvider =
 /// Watch this from the app shell to trigger SSE connection after login.
 /// Core subscriptions are "always-on" while the app is connected.
 final sseBootstrapProvider = FutureProvider<void>((ref) async {
-  // Skip SSE in Remote Assistance mode — Guardian proxy does not support SSE
-  if (GlobalConfig.remote.isActive) {
-    logger.d('[USP][SSE][Bootstrap]: Skipping in Remote Assistance mode');
-    return;
-  }
-
   final manager = ref.watch(sseManagerProvider);
   if (manager == null) return;
 
@@ -127,15 +135,18 @@ final sseBootstrapProvider = FutureProvider<void>((ref) async {
   final bridge = ref.watch(uspBridgeClientProvider);
   if (bridge == null) return;
 
-  // Step 0: Health check — best-effort, non-fatal.
+  // Step 0: Health check — best-effort, non-fatal (local mode only).
   // If the bridge is busy (504) or slow, we still attempt SSE connection
   // because SseConnectionManager has its own retry/backoff logic.
-  try {
-    await bridge.health().timeout(const Duration(seconds: 5));
-    logger.d('[USP][SSE][Bootstrap]: Bridge health check passed');
-  } catch (e) {
-    logger.w(
-        '[USP][SSE][Bootstrap]: Bridge health check failed: $e — continuing');
+  // Skip in Remote mode — Guardian proxy has no health endpoint.
+  if (!GlobalConfig.remote.isActive) {
+    try {
+      await bridge.health().timeout(const Duration(seconds: 5));
+      logger.d('[USP][SSE][Bootstrap]: Bridge health check passed');
+    } catch (e) {
+      logger.w(
+          '[USP][SSE][Bootstrap]: Bridge health check failed: $e — continuing');
+    }
   }
 
   // Connect SSE only — core subscriptions are registered by the dashboard

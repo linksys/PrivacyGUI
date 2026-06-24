@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:web/web.dart' as web;
 
+import 'bridge_endpoints.dart';
 import 'usp_client.dart';
 
 /// Global JS property to persist SSE AbortController across hot restarts.
@@ -24,8 +25,10 @@ external set _jsSseAbort(JSAny? value);
 /// re-authentication to [UspClient.reauth].
 class UspBridgeClient {
   final UspClient _usp;
+  final BridgeEndpoints _endpoints;
 
-  UspBridgeClient(this._usp);
+  UspBridgeClient(this._usp, {BridgeEndpoints? endpoints})
+      : _endpoints = endpoints ?? BridgeEndpoints.local;
 
   /// Active SSE AbortController — stored so [abortSse] can cancel
   /// synchronously from a `beforeunload` handler.
@@ -70,11 +73,11 @@ class UspBridgeClient {
   // Health
   // ══════════════════════════════════════════════════════════════════════════
 
-  /// Calls GET /api/v1/health.
+  /// Calls GET health endpoint.
   Future<Map<String, dynamic>> health() async {
     return _withAuthRetry(
-      () =>
-          http.get(Uri.parse('$_baseUrl/api/v1/health'), headers: _authHeaders),
+      () => http.get(Uri.parse('$_baseUrl${_endpoints.health}'),
+          headers: _authHeaders),
       (r) => jsonDecode(r.body) as Map<String, dynamic>,
     );
   }
@@ -141,7 +144,7 @@ class UspBridgeClient {
   Future<Map<String, String>> notificationsProbe() async {
     final response = await http
         .get(
-      Uri.parse('$_baseUrl/api/v1/notifications'),
+      Uri.parse('$_baseUrl${_endpoints.notifications}'),
       headers: _authHeaders,
     )
         .timeout(const Duration(seconds: 5), onTimeout: () {
@@ -169,7 +172,7 @@ class UspBridgeClient {
     }
 
     try {
-      final url = '$_baseUrl/api/v1/notifications';
+      final url = '$_baseUrl${_endpoints.notifications}';
       debug('Fetching $url ...');
 
       final token = _token;
@@ -337,7 +340,7 @@ class UspBridgeClient {
     };
     return _withAuthRetry(
       () => http.post(
-        Uri.parse('$_baseUrl/api/v1/subscription'),
+        Uri.parse('$_baseUrl${_endpoints.subscription}'),
         headers: _authHeaders,
         body: jsonEncode({
           'action': 'register',
@@ -356,7 +359,7 @@ class UspBridgeClient {
   }) async {
     return _withAuthRetry(
       () => http.post(
-        Uri.parse('$_baseUrl/api/v1/subscription'),
+        Uri.parse('$_baseUrl${_endpoints.subscription}'),
         headers: _authHeaders,
         body: jsonEncode({
           'action': 'unregister',
@@ -384,7 +387,7 @@ class UspBridgeClient {
   /// Gets the current turbo channel status.
   Future<Map<String, dynamic>> turboStatus() async {
     return _withAuthRetry(
-      () => http.get(Uri.parse('$_baseUrl/api/v1/turbo/status'),
+      () => http.get(Uri.parse('$_baseUrl${_endpoints.turboPrefix}/status'),
           headers: _authHeaders),
       (r) => jsonDecode(r.body) as Map<String, dynamic>,
     );
@@ -401,7 +404,7 @@ class UspBridgeClient {
         sessionId != null ? jsonEncode({'session_id': sessionId}) : null;
     return _withAuthRetry(
       () => http.post(
-        Uri.parse('$_baseUrl/api/v1/turbo/$action'),
+        Uri.parse('$_baseUrl${_endpoints.turboPrefix}/$action'),
         headers: {
           ..._authHeaders,
           'Content-Type': 'application/json',
