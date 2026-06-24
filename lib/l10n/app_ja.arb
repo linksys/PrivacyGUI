@@ -1071,5 +1071,14 @@
   "wiredCount": "有線: {count}",
   "wirelessClients": "ワイヤレスクライアント",
   "wirelessDevices": "ワイヤレスデバイス",
-  "withIssues": "問題あり"
+  "withIssues": "問題あり",
+  "utcOffset": "UTC オフセット",
+  "printReport": "レポートを印刷",
+  "themeStudio": "テーマスタジオ",
+  "faq": "よくある質問",
+  "aiAssistant": "AI アシスタント",
+  "viewAll": "すべて表示",
+  "noDevicesOnline": "オンラインのデバイスはありません",
+  "copyPin": "PIN をコピー",
+  "noDevicesConnectedToNode": "このノードに接続されているデバイスはありません"
 }

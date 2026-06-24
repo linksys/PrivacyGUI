@@ -1071,5 +1071,14 @@
   "wiredCount": "Kablolu: {count}",
   "wirelessClients": "Kablosuz İstemciler",
   "wirelessDevices": "Kablosuz Cihazlar",
-  "withIssues": "Sorunlu"
+  "withIssues": "Sorunlu",
+  "utcOffset": "UTC Farkı",
+  "printReport": "Raporu Yazdır",
+  "themeStudio": "Tema Stüdyosu",
+  "faq": "SSS",
+  "aiAssistant": "AI Asistanı",
+  "viewAll": "Tümünü görüntüle",
+  "noDevicesOnline": "Çevrimiçi cihaz yok",
+  "copyPin": "PIN'i Kopyala",
+  "noDevicesConnectedToNode": "Bu düğüme bağlı cihaz yok"
 }

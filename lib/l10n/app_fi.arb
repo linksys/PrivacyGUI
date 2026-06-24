@@ -1071,5 +1071,14 @@
   "wiredCount": "Langallinen: {count}",
   "wirelessClients": "Langattomat asiakaslaitteet",
   "wirelessDevices": "Langattomat laitteet",
-  "withIssues": "Ongelmia sisältävät"
+  "withIssues": "Ongelmia sisältävät",
+  "utcOffset": "UTC-poikkeama",
+  "printReport": "Tulosta raportti",
+  "themeStudio": "Teemastudio",
+  "faq": "Usein kysytyt kysymykset",
+  "aiAssistant": "Tekoälyavustaja",
+  "viewAll": "Näytä kaikki",
+  "noDevicesOnline": "Ei laitteita verkossa",
+  "copyPin": "Kopioi PIN",
+  "noDevicesConnectedToNode": "Tähän solmuun ei ole yhdistetty laitteita"
 }

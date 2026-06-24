@@ -37,7 +37,7 @@ class UspPortForwardingCard extends ConsumerWidget {
       ),
       detailRoute: RouteNamed.uspPortForwardingDetail,
       itemCount: rules.length + triggers.length,
-      detailLabel: 'View all',
+      detailLabel: loc(context).viewAll,
       sections: [
         CardSection(
           title: loc(context).portForwarding,

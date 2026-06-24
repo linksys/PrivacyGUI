@@ -1071,5 +1071,14 @@
   "wiredCount": "Por cable: {count}",
   "wirelessClients": "Clientes inalámbricos",
   "wirelessDevices": "Dispositivos inalámbricos",
-  "withIssues": "Con problemas"
+  "withIssues": "Con problemas",
+  "utcOffset": "Desfase UTC",
+  "printReport": "Imprimir informe",
+  "themeStudio": "Estudio de temas",
+  "faq": "Preguntas frecuentes",
+  "aiAssistant": "Asistente de IA",
+  "viewAll": "Ver todo",
+  "noDevicesOnline": "No hay dispositivos en línea",
+  "copyPin": "Copiar PIN",
+  "noDevicesConnectedToNode": "No hay dispositivos conectados a este nodo"
 }

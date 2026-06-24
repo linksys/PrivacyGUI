@@ -1071,5 +1071,14 @@
   "wiredCount": "Przewodowe: {count}",
   "wirelessClients": "Klienci bezprzewodowi",
   "wirelessDevices": "Urządzenia bezprzewodowe",
-  "withIssues": "Z problemami"
+  "withIssues": "Z problemami",
+  "utcOffset": "Przesunięcie UTC",
+  "printReport": "Drukuj raport",
+  "themeStudio": "Studio motywów",
+  "faq": "Najczęściej zadawane pytania",
+  "aiAssistant": "Asystent AI",
+  "viewAll": "Pokaż wszystko",
+  "noDevicesOnline": "Brak urządzeń online",
+  "copyPin": "Kopiuj PIN",
+  "noDevicesConnectedToNode": "Brak urządzeń podłączonych do tego węzła"
 }

@@ -1071,5 +1071,14 @@
   "wiredCount": "Kabel: {count}",
   "wirelessClients": "Klien Nirkabel",
   "wirelessDevices": "Perangkat Nirkabel",
-  "withIssues": "Dengan Masalah"
+  "withIssues": "Dengan Masalah",
+  "utcOffset": "Offset UTC",
+  "printReport": "Cetak Laporan",
+  "themeStudio": "Studio Tema",
+  "faq": "FAQ",
+  "aiAssistant": "Asisten AI",
+  "viewAll": "Lihat semua",
+  "noDevicesOnline": "Tidak ada perangkat daring",
+  "copyPin": "Salin PIN",
+  "noDevicesConnectedToNode": "Tidak ada perangkat yang terhubung ke node ini"
 }

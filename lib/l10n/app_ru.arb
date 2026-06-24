@@ -1071,5 +1071,14 @@
   "wiredCount": "Проводные: {count}",
   "wirelessClients": "Беспроводные клиенты",
   "wirelessDevices": "Беспроводные устройства",
-  "withIssues": "С проблемами"
+  "withIssues": "С проблемами",
+  "utcOffset": "Смещение UTC",
+  "printReport": "Печать отчета",
+  "themeStudio": "Студия тем",
+  "faq": "Часто задаваемые вопросы",
+  "aiAssistant": "ИИ-ассистент",
+  "viewAll": "Показать все",
+  "noDevicesOnline": "Нет устройств в сети",
+  "copyPin": "Копировать PIN",
+  "noDevicesConnectedToNode": "К этому узлу не подключено ни одного устройства"
 }

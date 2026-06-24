@@ -1071,5 +1071,14 @@
   "wiredCount": "有線：{count}",
   "wirelessClients": "無線用戶端",
   "wirelessDevices": "無線裝置",
-  "withIssues": "有問題"
+  "withIssues": "有問題",
+  "utcOffset": "UTC 偏移",
+  "printReport": "列印報告",
+  "themeStudio": "主題工作室",
+  "faq": "常見問題解答",
+  "aiAssistant": "AI 助理",
+  "viewAll": "檢視全部",
+  "noDevicesOnline": "沒有上線的裝置",
+  "copyPin": "複製 PIN",
+  "noDevicesConnectedToNode": "沒有裝置連線到此節點"
 }

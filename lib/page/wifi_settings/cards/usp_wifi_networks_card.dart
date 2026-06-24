@@ -62,7 +62,7 @@ class UspWifiNetworksCard extends ConsumerWidget {
       title: loc(context).wifiNetworks,
       detailRoute: RouteNamed.uspWifiSettings,
       itemCount: networks.length,
-      detailLabel: 'View all',
+      detailLabel: loc(context).viewAll,
       content: networks.isEmpty
           ? _buildEmptyState(context)
           : Column(

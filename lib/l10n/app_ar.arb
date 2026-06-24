@@ -1071,5 +1071,14 @@
   "wiredCount": "السلكي: {count}",
   "wirelessClients": "العملاء اللاسلكيون",
   "wirelessDevices": "الأجهزة اللاسلكية",
-  "withIssues": "مع مشكلات"
+  "withIssues": "مع مشكلات",
+  "utcOffset": "‏إزاحة UTC",
+  "printReport": "طباعة التقرير",
+  "themeStudio": "استوديو السمات",
+  "faq": "الأسئلة الشائعة",
+  "aiAssistant": "مساعد الذكاء الاصطناعي",
+  "viewAll": "عرض الكل",
+  "noDevicesOnline": "لا توجد أجهزة متصلة",
+  "copyPin": "نسخ رمز PIN",
+  "noDevicesConnectedToNode": "لا توجد أجهزة متصلة بهذه العقدة"
 }

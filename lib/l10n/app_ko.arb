@@ -1071,5 +1071,14 @@
   "wiredCount": "유선: {count}",
   "wirelessClients": "무선 클라이언트",
   "wirelessDevices": "무선 장치",
-  "withIssues": "문제 있음"
+  "withIssues": "문제 있음",
+  "utcOffset": "UTC 오프셋",
+  "printReport": "보고서 인쇄",
+  "themeStudio": "테마 스튜디오",
+  "faq": "자주 묻는 질문",
+  "aiAssistant": "AI 어시스턴트",
+  "viewAll": "모두 보기",
+  "noDevicesOnline": "온라인 상태인 기기 없음",
+  "copyPin": "PIN 복사",
+  "noDevicesConnectedToNode": "이 노드에 연결된 기기 없음"
 }

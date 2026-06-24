@@ -1071,5 +1071,14 @@
   "wiredCount": "Ενσύρματο: {count}",
   "wirelessClients": "Ασύρματοι πελάτες",
   "wirelessDevices": "Ασύρματες συσκευές",
-  "withIssues": "Με προβλήματα"
+  "withIssues": "Με προβλήματα",
+  "utcOffset": "Μετατόπιση UTC",
+  "printReport": "Εκτύπωση αναφοράς",
+  "themeStudio": "Στούντιο θεμάτων",
+  "faq": "Συχνές ερωτήσεις",
+  "aiAssistant": "Βοηθός AI",
+  "viewAll": "Προβολή όλων",
+  "noDevicesOnline": "Καμία συσκευή σε σύνδεση",
+  "copyPin": "Αντιγραφή PIN",
+  "noDevicesConnectedToNode": "Καμία συσκευή συνδεδεμένη σε αυτόν τον κόμβο"
 }

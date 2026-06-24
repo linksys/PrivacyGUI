@@ -49,7 +49,7 @@ class UspConnectedDevicesCard extends ConsumerWidget {
       ),
       detailRoute: RouteNamed.uspDeviceList,
       itemCount: devices.length,
-      detailLabel: 'View all',
+      detailLabel: loc(context).viewAll,
       content: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -96,9 +96,9 @@ class UspConnectedDevicesCard extends ConsumerWidget {
           AppGap.md(),
           // Device list - only online devices, max 5
           if (activeDevices.isEmpty)
-            const EmptyState(
+            EmptyState(
               icon: Icons.devices,
-              message: 'No devices online',
+              message: loc(context).noDevicesOnline,
             )
           else
             for (var i = 0; i < displayDevices.length; i++) ...[

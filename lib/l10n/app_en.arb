@@ -1641,5 +1641,14 @@
   "wifiStatus": "WiFi Status",
   "clients": "clients",
   "atLeastOneNumber": "At least one number",
-  "daylightSavingsTimeLabel": "Daylight Savings Time"
+  "daylightSavingsTimeLabel": "Daylight Savings Time",
+  "utcOffset": "UTC Offset",
+  "printReport": "Print Report",
+  "themeStudio": "Theme Studio",
+  "faq": "FAQ",
+  "aiAssistant": "AI Assistant",
+  "viewAll": "View all",
+  "noDevicesOnline": "No devices online",
+  "copyPin": "Copy PIN",
+  "noDevicesConnectedToNode": "No devices connected to this node"
 }

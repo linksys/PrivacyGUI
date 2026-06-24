@@ -127,7 +127,8 @@ class _UspTimeSettingsCardState extends ConsumerState<UspTimeSettingsCard>
             items: [
               InfoGridItem(label: loc(context).timezone, value: tzDisplay),
               if (offsetDisplay.isNotEmpty)
-                InfoGridItem(label: 'UTC Offset', value: offsetDisplay),
+                InfoGridItem(
+                    label: loc(context).utcOffset, value: offsetDisplay),
               if (tzInfo != null && tzInfo.observesDST)
                 InfoGridItem(
                   label: 'DST',

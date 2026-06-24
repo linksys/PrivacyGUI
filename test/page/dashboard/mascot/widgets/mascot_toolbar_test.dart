@@ -1,15 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/page/dashboard/mascot/widgets/mascot_toolbar.dart';
+
+/// Wraps [child] with localization delegates so widgets that call loc(context)
+/// can resolve AppLocalizations in tests.
+Widget _wrap(Widget child) => MaterialApp(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: Scaffold(body: child),
+    );
 
 void main() {
   group('MascotToolbar', () {
     testWidgets('renders all default buttons', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: MascotToolbar(iconColor: Colors.black),
-          ),
+        _wrap(
+          const MascotToolbar(iconColor: Colors.black),
         ),
       );
 
@@ -22,12 +29,10 @@ void main() {
 
     testWidgets('shows theme studio when enabled', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: MascotToolbar(
-              iconColor: Colors.black,
-              showThemeStudio: true,
-            ),
+        _wrap(
+          const MascotToolbar(
+            iconColor: Colors.black,
+            showThemeStudio: true,
           ),
         ),
       );
@@ -39,12 +44,10 @@ void main() {
       MascotToolbarAction? tappedAction;
 
       await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: MascotToolbar(
-              iconColor: Colors.black,
-              onAction: (action) => tappedAction = action,
-            ),
+        _wrap(
+          MascotToolbar(
+            iconColor: Colors.black,
+            onAction: (action) => tappedAction = action,
           ),
         ),
       );
@@ -59,12 +62,10 @@ void main() {
       MascotToolbarAction? tappedAction;
 
       await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: MascotToolbar(
-              iconColor: Colors.black,
-              onAction: (action) => tappedAction = action,
-            ),
+        _wrap(
+          MascotToolbar(
+            iconColor: Colors.black,
+            onAction: (action) => tappedAction = action,
           ),
         ),
       );
@@ -79,12 +80,10 @@ void main() {
       MascotToolbarAction? tappedAction;
 
       await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: MascotToolbar(
-              iconColor: Colors.black,
-              onAction: (action) => tappedAction = action,
-            ),
+        _wrap(
+          MascotToolbar(
+            iconColor: Colors.black,
+            onAction: (action) => tappedAction = action,
           ),
         ),
       );

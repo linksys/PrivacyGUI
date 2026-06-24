@@ -1071,5 +1071,14 @@
   "wiredCount": "Câblé : {count}",
   "wirelessClients": "Clients sans fil",
   "wirelessDevices": "Appareils sans fil",
-  "withIssues": "Avec problèmes"
+  "withIssues": "Avec problèmes",
+  "utcOffset": "Décalage UTC",
+  "printReport": "Imprimer le rapport",
+  "themeStudio": "Studio de thèmes",
+  "faq": "FAQ",
+  "aiAssistant": "Assistant IA",
+  "viewAll": "Tout afficher",
+  "noDevicesOnline": "Aucun appareil en ligne",
+  "copyPin": "Copier le NIP",
+  "noDevicesConnectedToNode": "Aucun appareil connecté à ce nœud"
 }

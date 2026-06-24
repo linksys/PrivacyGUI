@@ -1071,5 +1071,14 @@
   "wiredCount": "Cablati: {count}",
   "wirelessClients": "Client wireless",
   "wirelessDevices": "Dispositivi wireless",
-  "withIssues": "Con problemi"
+  "withIssues": "Con problemi",
+  "utcOffset": "Offset UTC",
+  "printReport": "Stampa rapporto",
+  "themeStudio": "Studio temi",
+  "faq": "FAQ",
+  "aiAssistant": "Assistente IA",
+  "viewAll": "Mostra tutto",
+  "noDevicesOnline": "Nessun dispositivo online",
+  "copyPin": "Copia PIN",
+  "noDevicesConnectedToNode": "Nessun dispositivo connesso a questo nodo"
 }

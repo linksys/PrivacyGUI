@@ -239,7 +239,7 @@ class _CopyButton extends StatelessWidget {
         size: 20,
         color: colorScheme.onPrimaryContainer,
       ),
-      tooltip: 'Copy PIN',
+      tooltip: loc(context).copyPin,
       style: IconButton.styleFrom(
         backgroundColor: colorScheme.primary.withValues(alpha: 0.1),
       ),
@@ -262,7 +262,7 @@ class _EndSessionButton extends StatelessWidget {
         size: 20,
         color: colorScheme.error,
       ),
-      tooltip: 'End Session',
+      tooltip: loc(context).endSession,
       style: IconButton.styleFrom(
         backgroundColor: colorScheme.error.withValues(alpha: 0.1),
       ),

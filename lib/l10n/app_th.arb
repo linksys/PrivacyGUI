@@ -1071,5 +1071,14 @@
   "wiredCount": "แบบมีสาย: {count}",
   "wirelessClients": "ไคลเอนต์ไร้สาย",
   "wirelessDevices": "อุปกรณ์ไร้สาย",
-  "withIssues": "มีปัญหา"
+  "withIssues": "มีปัญหา",
+  "utcOffset": "ออฟเซ็ต UTC",
+  "printReport": "พิมพ์รายงาน",
+  "themeStudio": "สตูดิโอธีม",
+  "faq": "คำถามที่พบบ่อย",
+  "aiAssistant": "ผู้ช่วย AI",
+  "viewAll": "ดูทั้งหมด",
+  "noDevicesOnline": "ไม่มีอุปกรณ์ออนไลน์",
+  "copyPin": "คัดลอก PIN",
+  "noDevicesConnectedToNode": "ไม่มีอุปกรณ์ที่เชื่อมต่อกับโหนดนี้"
 }

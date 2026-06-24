@@ -1071,5 +1071,14 @@
   "wiredCount": "Kabelgebunden: {count}",
   "wirelessClients": "Drahtlose Clients",
   "wirelessDevices": "Drahtlose Geräte",
-  "withIssues": "Mit Problemen"
+  "withIssues": "Mit Problemen",
+  "utcOffset": "UTC-Abweichung",
+  "printReport": "Bericht drucken",
+  "themeStudio": "Theme Studio",
+  "faq": "FAQ",
+  "aiAssistant": "KI-Assistent",
+  "viewAll": "Alle anzeigen",
+  "noDevicesOnline": "Keine Geräte online",
+  "copyPin": "PIN kopieren",
+  "noDevicesConnectedToNode": "Keine Geräte mit diesem Node verbunden"
 }

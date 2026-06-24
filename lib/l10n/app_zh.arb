@@ -1071,5 +1071,14 @@
   "wiredCount": "有线：{count}",
   "wirelessClients": "无线客户端",
   "wirelessDevices": "无线设备",
-  "withIssues": "有问题"
+  "withIssues": "有问题",
+  "utcOffset": "UTC 偏移",
+  "printReport": "打印报告",
+  "themeStudio": "主题工作室",
+  "faq": "常见问题解答",
+  "aiAssistant": "AI 助手",
+  "viewAll": "查看全部",
+  "noDevicesOnline": "没有在线设备",
+  "copyPin": "复制 PIN",
+  "noDevicesConnectedToNode": "没有设备连接到此节点"
 }

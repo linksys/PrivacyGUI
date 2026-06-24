@@ -57,7 +57,7 @@ class UspTopBar extends ConsumerWidget {
                     IconButton(
                       icon: AppIcon.font(Icons.apps,
                           color: colorScheme.onSurface),
-                      tooltip: 'Apps',
+                      tooltip: loc(context).apps,
                       onPressed: () => context.goNamed(RouteNamed.uspApps),
                     ),
                   const Padding(

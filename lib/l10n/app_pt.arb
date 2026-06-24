@@ -1071,5 +1071,14 @@
   "wiredCount": "Com fio: {count}",
   "wirelessClients": "Clientes sem fio",
   "wirelessDevices": "Dispositivos sem fio",
-  "withIssues": "Com problemas"
+  "withIssues": "Com problemas",
+  "utcOffset": "Deslocamento UTC",
+  "printReport": "Imprimir relatório",
+  "themeStudio": "Estúdio de temas",
+  "faq": "Perguntas frequentes",
+  "aiAssistant": "Assistente de IA",
+  "viewAll": "Ver tudo",
+  "noDevicesOnline": "Nenhum dispositivo on-line",
+  "copyPin": "Copiar PIN",
+  "noDevicesConnectedToNode": "Nenhum dispositivo conectado a este nó"
 }

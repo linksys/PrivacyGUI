@@ -1071,5 +1071,14 @@
   "wiredCount": "Bekabeld: {count}",
   "wirelessClients": "Draadloze clients",
   "wirelessDevices": "Draadloze apparaten",
-  "withIssues": "Met problemen"
+  "withIssues": "Met problemen",
+  "utcOffset": "UTC-verschuiving",
+  "printReport": "Rapport afdrukken",
+  "themeStudio": "Themastudio",
+  "faq": "Veelgestelde vragen",
+  "aiAssistant": "AI-assistent",
+  "viewAll": "Alles weergeven",
+  "noDevicesOnline": "Geen apparaten online",
+  "copyPin": "PIN kopiëren",
+  "noDevicesConnectedToNode": "Geen apparaten verbonden met dit knooppunt"
 }

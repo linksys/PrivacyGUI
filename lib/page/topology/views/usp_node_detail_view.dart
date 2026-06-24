@@ -485,8 +485,8 @@ class UspNodeDetailView extends ConsumerWidget {
           ),
           AppGap.md(),
           if (devices.isEmpty)
-            const DetailEmptyBlock(
-              message: 'No devices connected to this node',
+            DetailEmptyBlock(
+              message: loc(context).noDevicesConnectedToNode,
             )
           else
             Column(

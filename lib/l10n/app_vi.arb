@@ -1071,5 +1071,14 @@
   "wiredCount": "Có dây: {count}",
   "wirelessClients": "Máy khách không dây",
   "wirelessDevices": "Thiết bị không dây",
-  "withIssues": "Có sự cố"
+  "withIssues": "Có sự cố",
+  "utcOffset": "Độ lệch UTC",
+  "printReport": "In báo cáo",
+  "themeStudio": "Xưởng giao diện",
+  "faq": "Câu hỏi thường gặp",
+  "aiAssistant": "Trợ lý AI",
+  "viewAll": "Xem tất cả",
+  "noDevicesOnline": "Không có thiết bị trực tuyến",
+  "copyPin": "Sao chép mã PIN",
+  "noDevicesConnectedToNode": "Không có thiết bị nào kết nối với nút này"
 }

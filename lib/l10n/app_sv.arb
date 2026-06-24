@@ -1071,5 +1071,14 @@
   "wiredCount": "Trådbundet: {count}",
   "wirelessClients": "Trådlösa klienter",
   "wirelessDevices": "Trådlösa enheter",
-  "withIssues": "Med problem"
+  "withIssues": "Med problem",
+  "utcOffset": "UTC-förskjutning",
+  "printReport": "Skriv ut rapport",
+  "themeStudio": "Temastudio",
+  "faq": "Vanliga frågor",
+  "aiAssistant": "AI-assistent",
+  "viewAll": "Visa alla",
+  "noDevicesOnline": "Inga enheter online",
+  "copyPin": "Kopiera PIN",
+  "noDevicesConnectedToNode": "Inga enheter anslutna till den här noden"
 }

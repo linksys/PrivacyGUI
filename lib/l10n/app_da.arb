@@ -1071,5 +1071,14 @@
   "wiredCount": "Kabel: {count}",
   "wirelessClients": "Trådløse klienter",
   "wirelessDevices": "Trådløse enheder",
-  "withIssues": "Med problemer"
+  "withIssues": "Med problemer",
+  "utcOffset": "UTC-forskydning",
+  "printReport": "Udskriv rapport",
+  "themeStudio": "Temastudie",
+  "faq": "Ofte stillede spørgsmål",
+  "aiAssistant": "AI-assistent",
+  "viewAll": "Vis alle",
+  "noDevicesOnline": "Ingen enheder online",
+  "copyPin": "Kopiér PIN",
+  "noDevicesConnectedToNode": "Ingen enheder forbundet til denne node"
 }
