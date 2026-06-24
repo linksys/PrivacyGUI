@@ -206,6 +206,56 @@ void main() {
       container.dispose();
     });
 
+    test('concurrent init waiters receive error via completeError', () async {
+      var callCount = 0;
+      // First call succeeds slowly, subsequent calls will wait on Completer
+      // Then we make it throw to trigger completeError path
+      when(() => mockAuthService.getStoredLoginType()).thenAnswer((_) async {
+        callCount++;
+        await Future.delayed(const Duration(milliseconds: 50));
+        throw StateError('Simulated storage failure');
+      });
+
+      final container = createContainer();
+      container.read(authProvider);
+      await Future.delayed(Duration.zero);
+
+      final notifier = container.read(authProvider.notifier);
+
+      // Track errors received by each caller
+      Object? error1, error2, error3;
+
+      await Future.wait([
+        notifier.init().catchError((e) {
+          error1 = e;
+          return null;
+        }),
+        notifier.init().catchError((e) {
+          error2 = e;
+          return null;
+        }),
+        notifier.init().catchError((e) {
+          error3 = e;
+          return null;
+        }),
+      ]);
+
+      // getStoredLoginType should only be called once (coalescing works)
+      expect(callCount, 1);
+
+      // All three callers should receive the error
+      // First caller: error caught by AsyncValue.guard, propagated via completeError
+      // Concurrent waiters: receive error via _initInProgress.future
+      expect(error1, isA<StateError>());
+      expect(error2, isA<StateError>());
+      expect(error3, isA<StateError>());
+
+      // State should be AsyncError
+      final state = container.read(authProvider);
+      expect(state.hasError, isTrue);
+
+      container.dispose();
+    });
   });
 
   // ---------------------------------------------------------------------------
