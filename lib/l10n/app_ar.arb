@@ -517,7 +517,7 @@
   "diagnosticsComplete": "اكتمل التشخيص",
   "diagnosticsRecBandwidthHogDesc": "تستخدم بعض الأجهزة قدرًا كبيرًا من عرض النطاق الترددي.",
   "diagnosticsRecBandwidthHogTitle": "أجهزة عالية استهلاك النطاق",
-  "diagnosticsRecBottleneckDesc": "تم اكتشاف زمن استجابة للشبكة عند نقطة وثوب محددة.",
+  "diagnosticsRecBottleneckDesc": "تم اكتشاف زمن استجابة للشبكة عند وثبة محددة.",
   "diagnosticsRecBottleneckTitle": "تم اكتشاف عنق زجاجة في الشبكة",
   "diagnosticsRecDhcpFailDesc": "جدّد عقد إيجار DHCP أو تحقق من إعدادات مزود خدمة الإنترنت.",
   "diagnosticsRecDhcpFailTitle": "فشل DHCP",

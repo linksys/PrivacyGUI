@@ -703,7 +703,7 @@
   "lowDataRate": "Niedrige Datenrate",
   "macAddressHint": "MAC-Adresse (z. B. AA:BB:CC:DD:EE:FF)",
   "macLabel": "MAC: {mac}",
-  "main": "Haupt",
+  "main": "Hauptnetzwerk",
   "manageIpv6PortRules": "Eingehende IPv6-Portzugriffsregeln verwalten",
   "manualTools": "Manuelle Tools",
   "manualToolsDesc": "Führen Sie Ping, Traceroute oder NS-Lookup gegen einen beliebigen Host aus.",

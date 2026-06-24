@@ -649,7 +649,7 @@
   "inactive": "Etkin Değil",
   "installingFirmware": "Bellenim yükleniyor",
   "instantPrivacyCannotBeEnabled": "En az bir cihaz bağlanana kadar Anında Gizlilik etkinleştirilemez.",
-  "instantPrivacyPageDesc": "Ağınızı yalnızca şu anda bağlı olan cihazlarla sınırlandırın. Anında Gizlilik'i devre dışı bırakana kadar yeni hiçbir cihaz engellenecek.",
+  "instantPrivacyPageDesc": "Ağınızı yalnızca şu anda bağlı olan cihazlarla sınırlandırın. Anında Gizlilik'i devre dışı bırakana kadar yeni cihazlar engellenecek.",
   "instantSafetyPageDesc": "Tek bir dokunuşla ailenizi koruyun ve önceden belirlenmiş yetişkin, yasa dışı ve kötü amaçlı içerikleri engelleyin. Güvenli tarama ağınızdaki tüm cihazlara uygulanır.",
   "intermittentConnection": "Aralıklı Bağlantı",
   "intermittentConnectionDiagnostics": "Aralıklı Bağlantı Tanılaması",
