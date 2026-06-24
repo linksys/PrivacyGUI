@@ -1502,14 +1502,6 @@
       }
     }
   },
-  "interfaceLabelColon": "{label} Interface:",
-  "@interfaceLabelColon": {
-    "placeholders": {
-      "label": {
-        "type": "String"
-      }
-    }
-  },
   "nOnlineOfTotal": "{online} / {total} online",
   "@nOnlineOfTotal": {
     "placeholders": {
@@ -1545,26 +1537,10 @@
       }
     }
   },
-  "lanPortIndex": "LAN {index}",
-  "@lanPortIndex": {
-    "placeholders": {
-      "index": {
-        "type": "String"
-      }
-    }
-  },
   "radioBand": "Radio: {band}",
   "@radioBand": {
     "placeholders": {
       "band": {
-        "type": "String"
-      }
-    }
-  },
-  "logExportedFilename": "Log exported - {filename}",
-  "@logExportedFilename": {
-    "placeholders": {
-      "filename": {
         "type": "String"
       }
     }
@@ -1585,22 +1561,17 @@
       }
     }
   },
-  "aiAssistant": "AI Assistant",
   "accessPoints": "Access Points",
-  "accessPointsColon": "Access Points:",
   "apps": "Apps",
   "routerPasswordRuleOneSpecial": "At least one special character",
-  "badgeBeta": "BETA",
   "backToTopology": "Back to Topology",
   "backhaulConnection": "Backhaul Connection",
-  "bandDistribution": "Band Distribution",
   "bandwidth": "Bandwidth",
   "bitRate": "Bit Rate",
   "changeRouterPassword": "Change Router Password",
   "channels": "Channels",
   "comparison": "Comparison",
   "confirmPassword": "Confirm Password",
-  "connectionTypeDistribution": "Connection Type Distribution",
   "connectionLost": "Connection lost",
   "dmzSettings": "DMZ Settings",
   "deviceInformation": "Device Information",
@@ -1616,45 +1587,35 @@
   "firmware": "Firmware",
   "gateway": "Gateway",
   "guestNetwork": "Guest Network",
-  "intermittentIssues": "Intermittent issues",
-  "internetConnection": "Internet connection",
   "lanIp": "LAN IP",
   "lanIpv6": "LAN IPv6",
   "lanInformation": "LAN Information",
   "lastContact": "Last Contact",
   "loadingEllipsis": "Loading...",
   "localTime": "Local Time",
-  "mainMenu": "Main menu",
   "badgeNew": "NEW",
   "networkStatus": "Network Status",
   "networkTopology": "Network Topology",
   "newPassword": "New Password",
-  "noQrData": "No QR data",
   "noAppsInstalled": "No apps installed on this router",
   "routerPasswordRuleNoConsecutive": "No consecutive identical characters",
   "noDimensions": "No dimensions",
   "noLogFilesAvailable": "No log files available on this router",
   "nodeDetail": "Node Detail",
   "nodeNotFound": "Node not found",
-  "offlineDevices": "Offline Devices",
-  "badgeOn": "On",
   "pinCopied": "PIN copied",
   "pinCopiedToClipboard": "PIN copied to clipboard",
   "ports": "Ports",
-  "printReport": "Print report",
   "reboot": "Reboot",
   "remoteAssistanceSessionEnded": "Remote assistance session has ended",
   "reservations": "Reservations",
   "runDiagnosticsTitle": "Run Diagnostics",
-  "runAnotherTest": "Run another test",
-  "runDiagnostics": "Run diagnostics",
   "searchHelpTopics": "Search for help topics...",
   "serial": "Serial",
   "serialNumberLabel": "Serial Number",
   "sessionExpiresIn": "Session expires in",
   "sessionNotFound": "Session not found",
   "showMascot": "Show Mascot",
-  "signalQualityByBand": "Signal Quality by Band:",
   "standards": "Standards",
   "store": "Store",
   "subnet": "Subnet",
@@ -1662,7 +1623,6 @@
   "systemInformation": "System Information",
   "systemLogs": "System Logs",
   "themeColor": "Theme Color",
-  "themeStudio": "Theme Studio",
   "timeSettings": "Time Settings",
   "timezone": "Timezone",
   "txPower": "Tx Power",
@@ -1676,8 +1636,6 @@
   "viewDevices": "View Devices",
   "wanIp": "WAN IP",
   "wanIpv6": "WAN IPv6",
-  "wanTrafficTrend": "WAN Traffic Trend",
-  "wanVsLanThroughput": "WAN vs LAN Throughput",
   "wifiNetworks": "WiFi Networks",
   "wifiPerformance": "WiFi Performance",
   "wifiStatus": "WiFi Status",

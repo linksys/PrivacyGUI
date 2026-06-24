@@ -33,12 +33,23 @@ const String arbDir = 'lib/l10n';
 const String templateFile = 'app_en.arb';
 const String dartSourceDir = 'lib';
 
-// Keys that are known to be unused but kept intentionally
+// False-positive suppressions for the unused-keys check ONLY.
+//
+// This list is NOT a place to park keys you don't want to deal with. A key
+// belongs here if and only if BOTH hold:
+//   1. It IS used in Dart code (flutter analyze would error otherwise), and
+//   2. The usage is a cross-line call — `loc(context)` on one line and
+//      `.keyName(...)` on the next — which the single-line usage regex below
+//      cannot detect, so it is wrongly reported as unused.
+//
+// A key that is genuinely unreferenced must be DELETED from the ARB files,
+// not added here. Each entry notes the file that contains the real usage.
 const Set<String> allowedUnusedKeys = {
-  // Accessed via a cross-line `loc(context)\n.keyName(...)` call that the
-  // single-line usage regex below cannot detect (false positive, but in use).
   'avgValue', // usp_network_health_card.dart
   'copyRight', // bottom_bar.dart
+  'addedWidgetNamed', // usp_layout_settings_panel.dart
+  'nOnlineOfTotal', // usp_network_topology_card.dart
+  'nRadios', // usp_wifi_status_card.dart
 };
 
 // =============================================================================
