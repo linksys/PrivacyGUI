@@ -138,8 +138,8 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
   void _onWiFiReadyDone() {
     // Check router connected proper, then go to dashboard
     testConnection(success: () {
-      logger.i(
-          '[PnP]: The customized WiFi is well connected, go to dashboard!');
+      logger
+          .i('[PnP]: The customized WiFi is well connected, go to dashboard!');
       context.goNamed(RouteNamed.prepareDashboard);
     });
   }
@@ -399,7 +399,8 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
                   const AppGap.large5(),
                   if (isSplitMode)
                     ...bands.map((b) => Padding(
-                          padding: const EdgeInsets.only(bottom: Spacing.small2),
+                          padding:
+                              const EdgeInsets.only(bottom: Spacing.small2),
                           child: _splitBandCard(b.band, b.ssid, b.password),
                         ))
                   else
