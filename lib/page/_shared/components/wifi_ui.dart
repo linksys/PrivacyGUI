@@ -102,6 +102,23 @@ extension SignalTierExt on SignalTier {
 Color rssiColor(int rssi, ColorScheme cs) =>
     getSignalTier(rssi).resolveColor(cs);
 
+/// Localizes device/firmware WiFi values that are plain UI words, for DISPLAY
+/// only. The original value is still used as the stored value / map key by
+/// callers; technical tokens (WPA2-Personal, 20MHz, 802.11..., channel numbers)
+/// are returned unchanged.
+String wifiDisplayValue(BuildContext context, String value) {
+  switch (value) {
+    case 'Auto':
+      return loc(context).auto;
+    case 'None':
+      return loc(context).none;
+    case 'Mixed':
+      return loc(context).mixed;
+    default:
+      return value;
+  }
+}
+
 extension HealthTierExt on HealthTier {
   /// Localized tier label for display in the View layer.
   /// (The model keeps [NetworkHealthHelpers.tierLabel] for non-View, e.g. PDF.)

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/_shared/components/wifi_ui.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_radio_ui_model.dart';
 import 'package:privacy_gui/page/_shared/components/usp_info_row.dart';
 import 'package:privacy_gui/page/_shared/components/usp_mutation_helper.dart';
@@ -95,7 +96,8 @@ class UspWifiStatusCard extends ConsumerWidget {
                 child: AppText.labelLarge(loc(context).channel),
               ),
               Expanded(
-                child: AppText.bodyMedium(radio.channelDisplay),
+                child: AppText.bodyMedium(
+                    wifiDisplayValue(context, radio.channelDisplay)),
               ),
               AppIconButton(
                 icon: AppIcon.font(Icons.edit, size: 18),
@@ -106,7 +108,8 @@ class UspWifiStatusCard extends ConsumerWidget {
             ],
           ),
           UspInfoRow(
-              label: loc(context).bandwidth, value: radio.channelBandwidth),
+              label: loc(context).bandwidth,
+              value: wifiDisplayValue(context, radio.channelBandwidth)),
           UspInfoRow(
               label: loc(context).standards, value: radio.supportedStandards),
           // Access Points on this radio
@@ -180,7 +183,7 @@ class UspWifiStatusCard extends ConsumerWidget {
           SizedBox(
             width: context.colWidth(2),
             child: AppText.bodySmall(
-              ap.securityMode,
+              wifiDisplayValue(context, ap.securityMode),
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
