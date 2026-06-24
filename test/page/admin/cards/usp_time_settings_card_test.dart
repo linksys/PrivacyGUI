@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ui_kit_library/ui_kit.dart';
+import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/page/_shared/models/time_settings_ui_model.dart';
 import 'package:privacy_gui/page/admin/providers/time_data_provider.dart';
 import 'package:privacy_gui/page/admin/cards/usp_time_settings_card.dart';
@@ -59,6 +60,8 @@ Widget _buildTestWidget(TimeSettingsUIModel time) {
     ],
     child: MaterialApp(
       theme: _testTheme,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(
         body: SizedBox(
           width: 800,
@@ -96,14 +99,14 @@ void main() {
       await tester.pumpWidget(_buildTestWidget(_gmt8Time));
       await tester.pumpAndSettle();
 
-      expect(find.text('Daylight Savings Time'), findsNothing);
+      expect(find.text('DST'), findsNothing);
     });
 
     testWidgets('shows DST On for DST-enabled timezone', (tester) async {
       await tester.pumpWidget(_buildTestWidget(_dstTime));
       await tester.pumpAndSettle();
 
-      expect(find.text('Daylight Savings Time'), findsOneWidget);
+      expect(find.text('DST'), findsOneWidget);
       expect(find.text('On'), findsOneWidget);
     });
 
@@ -132,6 +135,8 @@ void main() {
           ],
           child: MaterialApp(
             theme: _testTheme,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: SizedBox(width: 800, child: UspTimeSettingsCard()),
             ),
