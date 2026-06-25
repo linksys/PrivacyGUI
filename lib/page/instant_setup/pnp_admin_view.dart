@@ -329,13 +329,23 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
         AppFilledButton(
           loc(context).textContinue,
           onTap: () {
-            _examineAdminPassword(_password).then((_) {
-              return _checkInternetConnection();
-            }).then((_) {
+            _examineAdminPassword(_password)
+                .then((_) => _checkAutoMasterStatus())
+                .then((_) => _checkInternetConnection())
+                .then((_) {
               logger.i(
                   '[PnP]: Logged in successfully by given password, go to Setup page');
-              context.goNamed(RouteNamed.pnpConfig);
-            }).onError((error, stackTrace) {
+              if (mounted) {
+                context.goNamed(RouteNamed.pnpConfig);
+              }
+            }).catchError((error, stackTrace) {
+              final route = (error as ExceptionInterruptAndExit).route;
+              logger.e('[PnP]: Interrupted, go to: $route');
+              if (mounted) {
+                context.goNamed(route);
+              }
+            }, test: (error) => error is ExceptionInterruptAndExit).onError(
+                    (error, stackTrace) {
               logger.e(
                 '[PnP]: ${_password == null ? 'There is no admin password, bring up the input view' : 'The given password is invalid'}',
               );
@@ -546,6 +556,22 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
                 route: RouteNamed.localLoginPassword);
           }
         }
+      }
+
+      // Polling exceeded max retry (timeout)
+      logger.w('[PnP]: Auto Master polling timeout, checking router connection');
+      try {
+        await pnp.testConnectionReconnected();
+        logger.i('[PnP]: Router connected after timeout, proceed to next step');
+        setState(() {
+          _isWaitingForAutoMaster = false;
+        });
+        // Continue normal flow
+      } catch (e) {
+        logger.e('[PnP]: Router not connected after timeout');
+        setState(() {
+          _showAutoMasterConnectionError = true;
+        });
       }
     }
   }

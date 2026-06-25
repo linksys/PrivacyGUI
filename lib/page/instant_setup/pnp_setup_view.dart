@@ -700,7 +700,24 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
           }
         }
       }
-      return;
+
+      // Polling exceeded max retry (timeout)
+      logger.w('[PnP]: Auto Master polling timeout, checking router connection');
+      try {
+        await ref.read(pnpProvider.notifier).testConnectionReconnected();
+        logger.i('[PnP]: Router connected after timeout, proceed to save');
+        setState(() {
+          _setupStep = _PnpSetupStep.config;
+        });
+        // Continue to save - call _saveChanges again but status should be different now
+        return _saveChanges();
+      } catch (e) {
+        logger.e('[PnP]: Router not connected after timeout');
+        setState(() {
+          _showAutoMasterConnectionError = true;
+        });
+        return;
+      }
     }
 
     // Edge case: Was Idle on entry but now Complete

@@ -731,6 +731,7 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
     try {
       final result = await ref.read(routerRepositoryProvider).send(
             JNAPAction.getAutoMasterStatus,
+            auth: true,
             fetchRemote: true,
             cacheLevel: CacheLevel.noCache,
             retries: 0,
@@ -751,6 +752,7 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
         .read(routerRepositoryProvider)
         .scheduledCommand(
           action: JNAPAction.getAutoMasterStatus,
+          auth: true,
           maxRetry: 60,
           retryDelayInMilliSec: 5000,
           firstDelayInMilliSec: 1000,
