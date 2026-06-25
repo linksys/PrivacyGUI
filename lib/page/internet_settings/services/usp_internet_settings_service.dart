@@ -147,9 +147,11 @@ class UspInternetSettingsService {
   ///
   /// Orchestration order:
   /// 1. Handle PPP instance lifecycle (Add if needed)
-  /// 2. Set PPP LowerLayers (tunnel type selection)
-  /// 3. Set tunnel RemoteEndpoints (server address)
-  /// 4. Save singleton WAN fields (mode switch or field edit)
+  /// 2. Save singleton WAN fields (mode switch or field edit) — must precede
+  ///    tunnel writes so the firmware syncs `proto` and the GRE/L2TPv2 tunnel
+  ///    instance becomes valid (per Architecture issue #119)
+  /// 3. Set PPP LowerLayers (tunnel type selection)
+  /// 4. Set tunnel RemoteEndpoints (server address)
   /// 5. Save PPP instance fields (credentials, connection mode)
   /// 6. Save VLAN instance fields (if instance exists)
   /// 7. Save IPv6 fields
@@ -166,19 +168,21 @@ class UspInternetSettingsService {
         currentInstancePath: pppInstancePath,
       );
 
-      // Step 2: Set LowerLayers on PPP instance (tunnel type selection)
-      if (pppPath != null && edited.connectionType.isPppBased) {
-        await _savePppLowerLayers(original, edited, pppPath);
-      }
-
-      // Step 3: Set tunnel RemoteEndpoints (server address)
-      await _saveTunnelRemoteEndpoints(original, edited);
-
-      // Step 4: WAN mode switch or field edit (per-mode dispatch)
+      // Step 2: WAN mode switch or field edit (per-mode dispatch). Setting
+      // AddressingType=IPCP first lets the firmware sync proto=pptp/l2tp so the
+      // tunnel instance becomes valid before its RemoteEndpoints is written.
       final typeChanged = original.connectionType != edited.connectionType;
       final switchingToPppBased =
           typeChanged && edited.connectionType.isPppBased;
       await _saveWanSettings(original, edited);
+
+      // Step 3: Set LowerLayers on PPP instance (tunnel type selection)
+      if (pppPath != null && edited.connectionType.isPppBased) {
+        await _savePppLowerLayers(original, edited, pppPath);
+      }
+
+      // Step 4: Set tunnel RemoteEndpoints (server address)
+      await _saveTunnelRemoteEndpoints(original, edited);
 
       // Step 5: PPP instance fields (skip username/password if already sent
       // in the ordered Set above)
