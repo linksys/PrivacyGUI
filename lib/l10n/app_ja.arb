@@ -535,7 +535,6 @@
   "pnpFactoryResetTitle": "このルーターは工場出荷時設定にリセットされました。",
   "pnpFwUpdateDesc": "デバイスのダウンロードと再起動が完了するまでお待ちください。プロセスが完了すると、LEDが明るい白色に変わります。ルーターのWiFiが一時的にオフになり、その後再びオンになる場合があります。接続が切断された場合は、インターネットにアクセスするためにルーターのWiFiに再接続してください。",
   "pnpFwUpdateTitle": "設定を保存し、ソフトウェアの更新を確認しています...",
-  "pnpGuestWiFiDesc": "ゲスト用ネットワークをオンにして、ゲスト用の別のWiFiネットワークを作成し、メインネットワークのプライバシーを維持します。",
   "pnpIspTypeSelectionDhcpConfirm": "DHCPモードに切り替えてもよろしいですか？",
   "pnpIspTypeSelectionDhcpDesc": "動的ホスト構成プロトコル（DHCP）は、ネットワークに接続されたデバイスに自動的にIPアドレスを割り当てます。",
   "pnpIspTypeSelectionPppoeDesc": "Point-to-Point Protocol over Ethernet (PPPoE) は、イーサネットのローカル エリア ネットワーク上の複数のコンピューター ユーザーをリモート サイトに接続する仕様です。",

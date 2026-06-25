@@ -534,7 +534,6 @@
   "pnpFactoryResetTitle": "Dieser Router wurde auf Werkseinstellungen zurückgesetzt",
   "pnpFwUpdateDesc": "Bitte warten Sie, während wir Ihr Gerät herunterladen und neu starten. Die LED leuchtet hellweiß, wenn der Vorgang abgeschlossen ist. Das WLAN Ihres Routers kann kurz aus- und wieder eingeschaltet werden. Bei Verbindungsverlust verbinden Sie sich erneut mit dem WLAN Ihres Routers, um auf das Internet zuzugreifen.",
   "pnpFwUpdateTitle": "Ihre Konfiguration speichern und nach Software-Aktualisierungen suchen...",
-  "pnpGuestWiFiDesc": "Aktivieren Sie das Gastnetzwerk, um ein getrenntes WLAN-Netzwerk für Gäste zu erstellen und die Privatsphäre Ihres Hauptnetzwerks zu bewahren.",
   "pnpIspTypeSelectionDhcpConfirm": "Sind Sie sicher, dass Sie auf DHCP-Modus umschalten möchten?",
   "pnpIspTypeSelectionDhcpDesc": "Das Dynamic Host Configuration Protocol (DHCP) weist den an das Netzwerk verbundenen Geräten automatisch IP-Adressen zu.",
   "pnpIspTypeSelectionPppoeDesc": "Point-to-Point Protocol over Ethernet wird zur Verbindung mehrerer Computer-Nutzer eines lokalen LAN-Netzwerks mit einem entfernten Standort verwendet.",

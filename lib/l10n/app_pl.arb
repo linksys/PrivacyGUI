@@ -503,7 +503,6 @@
   "pnpFactoryResetTitle": "Ten router został przywrócony do ustawień fabrycznych",
   "pnpFwUpdateDesc": "Poczekaj na pobranie i ponowne uruchomienie urządzenia. Kontrolka LED zaświeci jasnym białym światłem po zakończeniu procesu. WiFi routera może na krótko wyłączyć się i włączyć ponownie. Jeśli utracisz połączenie, połącz się ponownie z WiFi routera, aby uzyskać dostęp do Internetu.",
   "pnpFwUpdateTitle": "Zapisywanie konfiguracji i sprawdzanie aktualizacji oprogramowania...",
-  "pnpGuestWiFiDesc": "Włącz sieć gościnną, aby utworzyć oddzielną sieć WiFi dla gości i zachować prywatność swojej głównej sieci.",
   "pnpIspTypeSelectionDhcpConfirm": "Czy na pewno chcesz przełączyć się na tryb DHCP?",
   "pnpIspTypeSelectionDhcpDesc": "Protokół dynamicznej konfiguracji hosta (DHCP) automatycznie przypisuje adresy IP urządzeniom podłączonym do sieci.",
   "pnpIspTypeSelectionPppoeDesc": "Point-to-Point Protocol over Ethernet to protokół używany przy łączeniu wielu użytkowników w lokalnej sieci Ethernet z lokalizacją zewnętrzną.",

@@ -503,7 +503,6 @@
   "pnpFactoryResetTitle": "Bu yönlendirici fabrika ayarlarına sıfırlandı",
   "pnpFwUpdateDesc": "Cihazınızı indirip yeniden başlatırken lütfen bekleyin. İşlem tamamlandığında LED parlak beyaz renkte yanacaktır. Yönlendiricinizin WiFi'ı kısa süreliğine kapanıp tekrar açılabilir. Bağlantıyı kaybederseniz internete erişmek için Yönlendiricinizin WiFi'ına yeniden bağlanın.",
   "pnpFwUpdateTitle": "Yapılandırmanız kaydediliyor ve yazılım güncellemeleri kontrol ediliyor...",
-  "pnpGuestWiFiDesc": "Konuklar için ayrı bir WiFi ağı oluşturmak ve ana ağınızın gizliliğini korumak için konuk ağını açın.",
   "pnpIspTypeSelectionDhcpConfirm": "DHCP moduna geçmek istediğinizden emin misiniz?",
   "pnpIspTypeSelectionDhcpDesc": "Dinamik Ana Bilgisayar Yapılandırma Protokolü (DHCP) ağa bağlı cihazlara otomatik olarak IP adresleri atar.",
   "pnpIspTypeSelectionPppoeDesc": "Ethernet Üzerinden Noktadan Noktaya Protokolü bir ethernet yerel alan ağı üzerindeki birden fazla bilgisayar kullanıcısını uzak bir siteye bağlamak için kullanılan bir özelliktir.",

@@ -535,7 +535,6 @@
   "pnpFactoryResetTitle": "此路由器已恢复出厂设置",
   "pnpFwUpdateDesc": "请等待我们下载更新并重启您的设备。完成后，指示灯将变为亮白色。",
   "pnpFwUpdateTitle": "正在保存您的配置并检查软件更新...",
-  "pnpGuestWiFiDesc": "开启访客网络，为访客创建单独的WiFi网络，同时维护主网络的隐私。",
   "pnpIspTypeSelectionDhcpConfirm": "您确定要切换到DHCP模式吗？",
   "pnpIspTypeSelectionDhcpDesc": "动态主机配置协议（DHCP）会自动为连接到网络的设备分配IP地址。",
   "pnpIspTypeSelectionPppoeDesc": "以太网点对点协议（PPPoE）是用于将一个以太网局域网中多个计算机用户连接至远程站点的协议规范。",

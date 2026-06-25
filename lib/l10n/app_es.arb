@@ -534,7 +534,6 @@
   "pnpFactoryResetTitle": "Este router ha sido restablecido de fábrica",
   "pnpFwUpdateDesc": "Por favor espere mientras descargamos y reiniciamos su dispositivo. El LED se volverá blanco brillante cuando el proceso se complete. El WiFi de su Router puede apagarse brevemente y luego volver a encenderse. Si pierde la conexión, vuelva a conectarse al WiFi de su Router para acceder a Internet.",
   "pnpFwUpdateTitle": "Guardando su configuración y buscando actualizaciones de software...",
-  "pnpGuestWiFiDesc": "Active la red de invitados para crear una red WiFi independiente para los invitados y mantener la privacidad de su red principal.",
   "pnpIspTypeSelectionDhcpConfirm": "¿Está seguro de que desea cambiar al modo DHCP?",
   "pnpIspTypeSelectionDhcpDesc": "El protocolo de configuración dinámica de host (DHCP) asigna automáticamente direcciones IP a los dispositivos conectados a la red.",
   "pnpIspTypeSelectionPppoeDesc": "Point-to-Point Protocol over Ethernet es una especificación para conectar múltiples usuarios de ordenador en una red de área local con un sitio remoto.",

@@ -534,7 +534,6 @@
   "pnpFactoryResetTitle": "Este router ha sido restablecido de fábrica",
   "pnpFwUpdateDesc": "Por favor, espere mientras descargamos la actualización y reiniciamos su dispositivo. El indicador LED se volverá blanco brillante cuando el proceso haya finalizado.",
   "pnpFwUpdateTitle": "Guardando su configuración y buscando actualizaciones de software...",
-  "pnpGuestWiFiDesc": "Active la red de invitados para crear una red WiFi independiente para los invitados y mantener la privacidad de su red principal.",
   "pnpIspTypeSelectionDhcpConfirm": "¿Está seguro de que desea cambiar al modo DHCP?",
   "pnpIspTypeSelectionDhcpDesc": "El protocolo de configuración dinámica de host (DHCP) asigna automáticamente direcciones IP a los dispositivos conectados a la red.",
   "pnpIspTypeSelectionPppoeDesc": "Protocolo punto a punto por ethernet es una especificación para conectar varios usuarios informáticos en una red ethernet de área local a un sitio remoto.",

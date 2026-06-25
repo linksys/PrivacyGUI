@@ -534,7 +534,6 @@
   "pnpFactoryResetTitle": "Ce routeur a été réinitialisé en usine",
   "pnpFwUpdateDesc": "Veuillez patienter pendant le téléchargement de la mise à jour et le redémarrage de votre appareil. Le voyant lumineux deviendra blanc lorsque le processus sera terminé.",
   "pnpFwUpdateTitle": "Enregistrement de votre configuration et vérification des mises à jour logicielles...",
-  "pnpGuestWiFiDesc": "Activez le réseau invité pour créer un réseau WiFi distinct pour les invités et préserver la confidentialité de votre réseau principal.",
   "pnpIspTypeSelectionDhcpConfirm": "Êtes-vous sûr de vouloir passer en mode DHCP ?",
   "pnpIspTypeSelectionDhcpDesc": "Le protocole de configuration dynamique des hôtes (DHCP) attribue automatiquement des adresses IP aux appareils connectés au réseau.",
   "pnpIspTypeSelectionPppoeDesc": "Le protocole PPPoE est une spécification permettant de connecter plusieurs utilisateurs d'ordinateurs sur un réseau local Ethernet à un site distant.",

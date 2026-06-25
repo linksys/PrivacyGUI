@@ -534,7 +534,6 @@
   "pnpFactoryResetTitle": "Deze router is teruggezet naar de fabrieksinstellingen",
   "pnpFwUpdateDesc": "Wacht even terwijl we de update downloaden en start uw apparaat opnieuw op. De led wordt helderwit wanneer het proces is voltooid.",
   "pnpFwUpdateTitle": "Uw configuratie opslaan en controleren op software-updates...",
-  "pnpGuestWiFiDesc": "Schakel gastnetwerk in om een ​​apart WiFi-netwerk voor gasten te maken en de privacy van uw hoofdnetwerk te behouden.",
   "pnpIspTypeSelectionDhcpConfirm": "Weet u zeker dat u wilt overschakelen naar de DHCP-modus?",
   "pnpIspTypeSelectionDhcpDesc": "Dynamic Host Configuration Protocol (DHCP) wijst automatisch IP-adressen toe aan apparaten die zijn aangesloten op het netwerk.",
   "pnpIspTypeSelectionPppoeDesc": "Point-to-Point Protocol over Ethernet wordt gebruikt om meerdere computergebruikers op een lokaal LAN-netwerk te verbinden met een externe site.",

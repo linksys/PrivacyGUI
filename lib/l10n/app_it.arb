@@ -534,7 +534,6 @@
   "pnpFactoryResetTitle": "Questo router è stato resettato in fabbrica",
   "pnpFwUpdateDesc": "Attendere mentre scarichiamo e riavviamo il dispositivo. Il LED diventerà bianco brillante quando il processo sarà completato. Il WiFi del Router potrebbe spegnersi brevemente e poi riaccendersi. Se perdi la connessione, riconnettiti al WiFi del Router per accedere a Internet.",
   "pnpFwUpdateTitle": "Salvataggio della configurazione e verifica degli aggiornamenti software...",
-  "pnpGuestWiFiDesc": "Attivare la rete ospite per creare una rete WiFi separata per gli ospiti e mantenere la privacy della rete principale.",
   "pnpIspTypeSelectionDhcpConfirm": "Siete sicuri di voler passare alla modalità DHCP?",
   "pnpIspTypeSelectionDhcpDesc": "Il Dynamic Host Configuration Protocol (DHCP) assegna automaticamente gli indirizzi IP ai dispositivi collegati alla rete.",
   "pnpIspTypeSelectionPppoeDesc": "Il protocollo Point-to-Point Protocol over Ethernet (PPPoE) è una specifica per la connessione di più utenti a un sito remoto mediante una LAN Ethernet.",

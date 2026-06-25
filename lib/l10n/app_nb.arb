@@ -534,7 +534,6 @@
   "pnpFactoryResetTitle": "Denne ruteren er tilbakestilt til fabrikkinnstillinger",
   "pnpFwUpdateDesc": "Vent mens vi laster ned oppdateringen, og start deretter enheten på nytt. LED-lampen lyser hvitt når prosessen er fullført.",
   "pnpFwUpdateTitle": "Lagre konfigurasjonen og se etter programvareoppdateringer...",
-  "pnpGuestWiFiDesc": "Aktiver gjestenettverket for å opprette et eget WiFi-nettverk for gjester og opprettholde personvernet til hovednettverket ditt.",
   "pnpIspTypeSelectionDhcpConfirm": "Er du sikker på at du vil bytte til DHCP-modus?",
   "pnpIspTypeSelectionDhcpDesc": "DHCP (Dynamic Host Configuration Protocol) tildeler automatisk IP-adresser til enheter som er koblet til nettverket.",
   "pnpIspTypeSelectionPppoeDesc": "Punkt til punkt-protokoll over Ethernet er en spesifikasjon for tilkobling av flere datamaskinbrukere på et Ethernet-lokalnett til et eksternt område.",

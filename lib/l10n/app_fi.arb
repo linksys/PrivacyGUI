@@ -503,7 +503,6 @@
   "pnpFactoryResetTitle": "Tämän reitittimen tehdasasetukset on palautettu",
   "pnpFwUpdateDesc": "Odota, kun lataamme ja käynnistämme laitteesi uudelleen. LED muuttuu kirkkaanvalkoiseksi, kun prosessi on valmis. Reitittimesi WiFi saattaa sammua hetkeksi ja käynnistyä sitten uudelleen. Jos yhteys katkeaa, yhdistä uudelleen reitittimesi WiFiin käyttääksesi Internetiä.",
   "pnpFwUpdateTitle": "Tallennetaan määrityksiäsi ja tarkistetaan ohjelmistopäivityksiä...",
-  "pnpGuestWiFiDesc": "Ota vierasverkko käyttöön luodaksesi erillisen WiFi-verkon vieraille ja säilyttääksesi pääverkkosi yksityisyyden.",
   "pnpIspTypeSelectionDhcpConfirm": "Haluatko varmasti vaihtaa DHCP-tilaan?",
   "pnpIspTypeSelectionDhcpDesc": "Dynamic Host Configuration Protocol (DHCP) määrittää IP-osoitteet automaattisesti verkkoon yhdistetyille laitteille.",
   "pnpIspTypeSelectionPppoeDesc": "Point-to-Point Protocol over Ethernet (PPPoE) on konfiguraatio, jossa useita tietokoneita kytketään Ethernet-lähiverkosta etäsijaintiin.",

@@ -534,7 +534,6 @@
   "pnpFactoryResetTitle": "Denna router har återställts till fabriksinställningarna",
   "pnpFwUpdateDesc": "Vänta medan vi laddar ner uppdateringen och startar om din enhet. När processen är klar kommer LED-lampan att lysa upp med ett vitt sken.",
   "pnpFwUpdateTitle": "Spara din konfiguration och leta efter programuppdateringar...",
-  "pnpGuestWiFiDesc": "Aktivera gästnätverket för att skapa ett separat Wi-Fi-nätverk för gäster och bibehålla integriteten i ditt huvudnätverk.",
   "pnpIspTypeSelectionDhcpConfirm": "Är du säker på att du vill byta till DHCP-läge?",
   "pnpIspTypeSelectionDhcpDesc": "DHCP (Dynamic Host Configuration Protocol) tilldelar automatiskt IP-adresser till enheter som är anslutna till nätverket.",
   "pnpIspTypeSelectionPppoeDesc": "Point-to-Point Protocol over ethernet (PPPoE eller punkt till punkt-protokoll över Ethernet) är en specifikation för att ansluta flera datoranvändare i ett lokalt Ethernet-nätverk till en plats på distans.",

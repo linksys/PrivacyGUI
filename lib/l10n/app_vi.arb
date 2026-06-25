@@ -503,7 +503,6 @@
   "pnpFactoryResetTitle": "Khôi phục cài đặt gốc",
   "pnpFwUpdateDesc": "Cập nhật phần mềm điều khiển của bạn lên phiên bản mới nhất",
   "pnpFwUpdateTitle": "Cập nhật phần mềm điều khiển",
-  "pnpGuestWiFiDesc": "Tạo mạng WiFi khách riêng biệt cho khách truy cập",
   "pnpIspTypeSelectionDhcpConfirm": "Bạn có chắc chắn rằng ISP của bạn sử dụng DHCP không?",
   "pnpIspTypeSelectionDhcpDesc": "DHCP là phương thức phổ biến nhất để kết nối với Internet. Nếu bạn không chắc chắn, hãy chọn tùy chọn này.",
   "pnpIspTypeSelectionPppoeDesc": "Giao thức Điểm nối Điểm qua Ethernet là tiêu chuẩn cho kết nối nhiều người dùng máy tính trên mạng cục bộ Ethernet tới một trang từ xa.",

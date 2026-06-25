@@ -488,17 +488,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
           child: Row(
             children: [
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    AppText.labelLarge(loc(context).guestNetwork),
-                    AppGap.xxs(),
-                    AppText.bodySmall(
-                      loc(context).pnpGuestWiFiDesc,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                  ],
-                ),
+                child: AppText.labelLarge(loc(context).guestNetwork),
               ),
               AppGap.md(),
               AppSwitch(

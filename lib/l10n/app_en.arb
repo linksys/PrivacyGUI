@@ -776,7 +776,6 @@
   "pnpFactoryResetTitle": "This router has been factory reset",
   "pnpFwUpdateDesc": "Please wait as we download and reboot your device. The LED will turn bright white when the process is complete. Your Router's WiFi might briefly turn off and then on again. If you lose connection, reconnect to your Router's WiFi to access Internet.",
   "pnpFwUpdateTitle": "Saving your configuration and checking for software updates...",
-  "pnpGuestWiFiDesc": "Turn on guest network to create separate WiFi network for guests and maintain the privacy of your main network.",
   "checkingForInternet": "Checking for internet...",
   "pnpIspSaveStepSaving": "Saving settings...",
   "pnpIspSaveStepVerifying": "Verifying settings...",

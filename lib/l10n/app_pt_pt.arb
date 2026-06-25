@@ -534,7 +534,6 @@
   "pnpFactoryResetTitle": "Este roteador foi redefinido para os padrões de fábrica",
   "pnpFwUpdateDesc": "Aguarde enquanto baixamos a atualização e reiniciamos o dispositivo. O indicador LED ficará branco brilhante quando o processo for concluído.",
   "pnpFwUpdateTitle": "Salvando sua configuração e verificando se há atualizações de software...",
-  "pnpGuestWiFiDesc": "Ative a rede de convidados para criar uma rede WiFi separada para convidados e manter a privacidade de sua rede principal.",
   "pnpIspTypeSelectionDhcpConfirm": "Tem certeza de que deseja alternar para o modo DHCP?",
   "pnpIspTypeSelectionDhcpDesc": "O Dynamic Host Configuration Protocol (DHCP) atribui automaticamente endereços IP aos dispositivos conectados à rede.",
   "pnpIspTypeSelectionPppoeDesc": "O Protocolo Ponto a Ponto (PPP) sobre ethernet é uma especificação para ligar vários utilizadores de computadores de uma rede ethernet local a um local remoto.",

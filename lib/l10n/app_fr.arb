@@ -534,7 +534,6 @@
   "pnpFactoryResetTitle": "Ce routeur a été réinitialisé en usine",
   "pnpFwUpdateDesc": "La mise à jour du micrologiciel améliore les performances et la sécurité de votre réseau. Nous vous recommandons de mettre à jour votre micrologiciel dès que possible.",
   "pnpFwUpdateTitle": "Enregistrement de votre configuration et vérification des mises à jour logicielles...",
-  "pnpGuestWiFiDesc": "Activez le réseau invité pour créer un réseau WiFi distinct pour les invités et préserver la confidentialité de votre réseau principal.",
   "pnpIspTypeSelectionDhcpConfirm": "Êtes-vous sûr de vouloir passer en mode DHCP ?",
   "pnpIspTypeSelectionDhcpDesc": "Le protocole de configuration dynamique des hôtes (DHCP) attribue automatiquement des adresses IP aux appareils connectés au réseau.",
   "pnpIspTypeSelectionPppoeDesc": "Le protocole Point-to-Point Protocol over Ethernet est une spécification permettant de connecter plusieurs utilisateurs d'ordinateurs sur un réseau local Ethernet à un site distant.",

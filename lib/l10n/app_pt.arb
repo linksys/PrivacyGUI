@@ -534,7 +534,6 @@
   "pnpFactoryResetTitle": "Este roteador foi redefinido para os padrões de fábrica",
   "pnpFwUpdateDesc": "Aguarde enquanto baixamos e reiniciamos seu dispositivo. O LED ficará branco brilhante quando o processo estiver concluído. O WiFi do seu Roteador pode desligar brevemente e depois ligar novamente. Se você perder a conexão, reconecte-se ao WiFi do Roteador para acessar a Internet.",
   "pnpFwUpdateTitle": "Salvando sua configuração e verificando se há atualizações de software...",
-  "pnpGuestWiFiDesc": "Ative a rede de convidados para criar uma rede WiFi separada para convidados e manter a privacidade de sua rede principal.",
   "pnpIspTypeSelectionDhcpConfirm": "Tem certeza de que deseja alternar para o modo DHCP?",
   "pnpIspTypeSelectionDhcpDesc": "O Dynamic Host Configuration Protocol (DHCP) atribui automaticamente endereços IP aos dispositivos conectados à rede.",
   "pnpIspTypeSelectionPppoeDesc": "Protocolo de ponto a ponto pela ethernet é uma especificação para a conexão de vários usuários de computador em uma rede local de ethernet para um local remoto.",

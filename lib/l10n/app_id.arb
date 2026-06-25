@@ -503,7 +503,6 @@
   "pnpFactoryResetTitle": "Router ini telah direset ke pengaturan pabrik",
   "pnpFwUpdateDesc": "Harap tunggu saat kami mengunduh dan memulai ulang perangkat Anda. LED akan menjadi putih terang ketika proses selesai. WiFi Router Anda mungkin akan mati sebentar dan kemudian hidup lagi. Jika Anda kehilangan koneksi, sambungkan kembali ke WiFi Router Anda untuk mengakses Internet.",
   "pnpFwUpdateTitle": "Menyimpan konfigurasi Anda dan memeriksa pembaruan perangkat lunak...",
-  "pnpGuestWiFiDesc": "Aktifkan jaringan tamu untuk membuat jaringan WiFi terpisah untuk tamu dan menjaga privasi jaringan utama Anda.",
   "pnpIspTypeSelectionDhcpConfirm": "Apakah Anda yakin ingin beralih ke mode DHCP?",
   "pnpIspTypeSelectionDhcpDesc": "Dynamic Host Configuration Protocol (DHCP) secara otomatis menetapkan alamat IP ke perangkat yang tersambung ke jaringan.",
   "pnpIspTypeSelectionPppoeDesc": "Point-to-Point Protocol over Ethernet adalah spesifikasi untuk menyambungkan beberapa pengguna komputer pada jaringan area lokal ethernet ke situs jarak jauh.",
