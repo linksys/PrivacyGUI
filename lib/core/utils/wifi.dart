@@ -40,6 +40,15 @@ int rssiToRcpi(int? rssiDbm) {
 
 // ─── Signal Level ───────────────────────────────────────────────────────────
 
+/// WiFi signal level for **device/node connection display** (icon bars + label).
+///
+/// Derived from RSSI (dBm) or SNR by [getWifiSignalLevel]. This is the only
+/// tier enum that models physical-link states: [wired] (no WiFi, Ethernet) and
+/// [none] (no signal at all) — neither exists in [SignalTier] or `HealthTier`.
+///
+/// Sibling enums (similar names, different domains — do NOT merge):
+/// - [SignalTier]: RSSI → performance analytics tier (no wired/none).
+/// - `HealthTier` (network_health_helpers.dart): packet-loss → health score.
 enum NodeSignalLevel {
   wired(displayTitle: 'Wired'),
   none(displayTitle: 'No signal'),
@@ -81,7 +90,15 @@ NodeSignalLevel getWifiSignalLevel(int? signalStrength) {
 
 // ─── Signal Tier (for performance analytics) ────────────────────────────────
 
-/// Signal quality tiers derived from RSSI (dBm).
+/// Signal quality tier for **performance analytics** (charts, summaries).
+///
+/// Derived purely from RSSI (dBm) by [getSignalTier]. A coarser 4-level scale
+/// than [NodeSignalLevel]: no physical-link states (wired/none), and the bottom
+/// level is [weak] (not `poor`).
+///
+/// Sibling enums (similar names, different domains — do NOT merge):
+/// - [NodeSignalLevel]: RSSI/SNR → connection display with icon bars.
+/// - `HealthTier` (network_health_helpers.dart): packet-loss → health score.
 enum SignalTier { excellent, good, fair, weak }
 
 /// Map RSSI (dBm) to a signal tier.
