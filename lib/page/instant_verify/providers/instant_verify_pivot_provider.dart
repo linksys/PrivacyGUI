@@ -1506,6 +1506,23 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
     return map;
   }
 
+  /// The user-assigned name from a GetDevices3 entry's `properties` array —
+  /// the custom name set in the Linksys app. This is the authoritative source
+  /// (mirrors core/utils/devices.dart `getDeviceName`). `friendlyName` is only
+  /// a router auto-label (e.g. "Child Node 1"), so it must be the fallback.
+  static String? _userDeviceName(Map<String, dynamic> d) {
+    final props = d['properties'] as List?;
+    if (props == null) return null;
+    for (final p in props) {
+      if (p is Map &&
+          p['name'] == 'userDeviceName' &&
+          (p['value'] as String?)?.isNotEmpty == true) {
+        return p['value'] as String;
+      }
+    }
+    return null;
+  }
+
   Map<String, Map<String, String?>> _buildDeviceMap(
       Map<String, dynamic> data) {
     final map = <String, Map<String, String?>>{};
@@ -1514,7 +1531,8 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
       final connections = d['connections'] as List? ?? [];
       final friendlyName = d['friendlyName'] as String?;
       final hostname = d['hostname'] as String?;
-      final name = friendlyName ?? hostname;
+      // Prefer the user-assigned name over the router auto-label / hostname.
+      final name = _userDeviceName(d) ?? friendlyName ?? hostname;
       final deviceType =
           (d['model'] as Map<String, dynamic>?)?['deviceType'] as String?;
       for (final conn in connections) {
@@ -1655,7 +1673,10 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
 
       nodes.add(MeshNodeInfo(
         deviceId: deviceId,
-        name: friendlyName ?? model?['modelNumber'] as String? ?? 'Node',
+        name: _userDeviceName(d) ??
+            friendlyName ??
+            model?['modelNumber'] as String? ??
+            'Node',
         model: model?['modelNumber'] as String?,
         firmware: unit?['firmwareVersion'] as String?,
         serialNumber: unit?['serialNumber'] as String?,
