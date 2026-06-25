@@ -62,7 +62,7 @@ class MyNetworkTab extends ConsumerWidget {
           if (state.guestNetwork != null &&
               state.guestNetwork!['isGuestNetworkEnabled'] == true) ...[
             const SizedBox(height: 12),
-            _GuestNetworkCard(state: state, ref: ref),
+            _GuestNetworkCard(state: state),
           ],
         ],
       ),
@@ -475,13 +475,15 @@ class _WifiOverviewCard extends StatelessWidget {
 
 class _GuestNetworkCard extends StatelessWidget {
   final InstantVerifyPivotState state;
-  final WidgetRef ref;
-  const _GuestNetworkCard({required this.state, required this.ref});
+  const _GuestNetworkCard({required this.state});
 
   @override
   Widget build(BuildContext context) {
-    final guestEnabled = _isGuestEnabled();
-
+    // Read-only by design: this customer diagnostic tool does not change
+    // router settings, so there is no guest on/off control (the card only
+    // renders when guest WiFi is already enabled). Editing guest WiFi may be
+    // added later as an explicit feature, but it's out of scope here.
+    final count = _guestDeviceCount();
     return AppCard(
       padding: EdgeInsets.zero,
       child: Padding(
@@ -502,36 +504,26 @@ class _GuestNetworkCard extends StatelessWidget {
                         ?.copyWith(fontWeight: FontWeight.w600),
                   ),
                 ),
-                Switch(
-                  value: guestEnabled,
-                  onChanged: (value) {
-                    if (!value) {
-                      _showDisableConfirmation(context);
-                    } else {
-                      ref.read(instantVerifyPivotProvider.notifier).setGuestNetworkEnabled(true);
-                    }
-                  },
+                Text(
+                  'On',
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                        color: Colors.green,
+                        fontWeight: FontWeight.w600,
+                      ),
                 ),
               ],
             ),
-            if (guestEnabled) ...[
-              const SizedBox(height: 4),
-              Text(
-                '${_guestDeviceCount()} guest device${_guestDeviceCount() == 1 ? '' : 's'} connected',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-              ),
-            ],
+            const SizedBox(height: 4),
+            Text(
+              '$count guest device${count == 1 ? '' : 's'} connected',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+            ),
           ],
         ),
       ),
     );
-  }
-
-  bool _isGuestEnabled() {
-    if (state.guestNetwork == null) return false;
-    return state.guestNetwork!['isGuestNetworkEnabled'] == true;
   }
 
   int _guestDeviceCount() {
@@ -546,33 +538,6 @@ class _GuestNetworkCard extends StatelessWidget {
       return state.clients.where((c) => !mapped.contains(c.macAddress)).length;
     }
     return 0;
-  }
-
-  void _showDisableConfirmation(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Turn off guest network?'),
-        content: const Text('This will disconnect your guests. Continue?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.of(ctx).pop();
-              _disableGuestNetwork();
-            },
-            child: const Text('Turn Off'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _disableGuestNetwork() {
-    ref.read(instantVerifyPivotProvider.notifier).setGuestNetworkEnabled(false);
   }
 }
 

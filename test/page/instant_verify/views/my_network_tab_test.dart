@@ -305,12 +305,15 @@ void main() {
   });
 
   group('MyNetworkTab — Guest Network', () {
-    testWidgets('shows guest toggle enabled with device count',
+    testWidgets('shows guest network status read-only (no toggle)',
         (tester) async {
       await tester.pumpWidget(_buildTab(_guestEnabledState()));
       await tester.pumpAndSettle();
       expect(find.text('Guest Network'), findsOneWidget);
       expect(find.text('3 guest devices connected'), findsOneWidget);
+      expect(find.text('On'), findsOneWidget);
+      // Read-only by design: this customer tool has no guest on/off control.
+      expect(find.byType(Switch), findsNothing);
     });
 
     testWidgets('guest card hidden when disabled', (tester) async {
@@ -318,29 +321,6 @@ void main() {
       await tester.pumpAndSettle();
       // When guest network is disabled, the entire card is hidden
       expect(find.text('Guest Network'), findsNothing);
-    });
-
-    testWidgets('shows confirmation dialog when disabling', (tester) async {
-      await tester.pumpWidget(_buildTab(_guestEnabledState()));
-      await tester.pumpAndSettle();
-      // Find the Switch and tap it to disable
-      final switchFinder = find.byType(Switch);
-      expect(switchFinder, findsOneWidget);
-      await tester.tap(switchFinder);
-      await tester.pumpAndSettle();
-      expect(find.text('Turn off guest network?'), findsOneWidget);
-      expect(find.text('Cancel'), findsOneWidget);
-      expect(find.text('Turn Off'), findsOneWidget);
-    });
-
-    testWidgets('cancel dismisses dialog without change', (tester) async {
-      await tester.pumpWidget(_buildTab(_guestEnabledState()));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byType(Switch));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Cancel'));
-      await tester.pumpAndSettle();
-      expect(find.text('Turn off guest network?'), findsNothing);
     });
   });
 }
