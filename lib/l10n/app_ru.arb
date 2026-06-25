@@ -210,6 +210,8 @@
   "faqListWhatLightsMean": "Что означают индикаторы на моем узле?",
   "faqLookingFor": "Не нашли то, что искали?",
   "faqVisitLinksysSupport": "Посетить службу поддержки Linksys",
+  "faqWebInterfaceGuideTitle": "Руководство по веб-интерфейсу",
+  "faqWebInterfaceGuideDesc": "Полное руководство по маршрутизаторам Linksys Pinnacle Mesh",
   "faqs": "Часто задаваемые вопросы",
   "featureUnavailableInRemoteMode": "Эта функция недоступна в удаленном режиме",
   "filterAnonymous": "Фильтрация анонимных интернет-запросов",

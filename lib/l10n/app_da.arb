@@ -228,6 +228,8 @@
   "faqListWhatLightsMean": "Hvad betyder lysene på min node?",
   "faqLookingFor": "Kan du ikke finde det, du leder efter?",
   "faqVisitLinksysSupport": "Besøg Linksys Support",
+  "faqWebInterfaceGuideTitle": "Webgrænsefladevejledning",
+  "faqWebInterfaceGuideDesc": "Komplet vejledning til Linksys Pinnacle Mesh-routere",
   "faqs": "Ofte stillede spørgsmål",
   "featureUnavailableInRemoteMode": "Denne funktion er ikke tilgængelig i fjernbetjeningsfunktionen",
   "filterAnonymous": "Filtrer anonyme internetanmodninger",

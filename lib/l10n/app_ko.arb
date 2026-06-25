@@ -210,6 +210,8 @@
   "faqListWhatLightsMean": "제 노드의 표시등은 무엇을 의미합니까?",
   "faqLookingFor": "찾고 계신 것이 없습니까?",
   "faqVisitLinksysSupport": "Linksys 지원 방문",
+  "faqWebInterfaceGuideTitle": "웹 인터페이스 가이드",
+  "faqWebInterfaceGuideDesc": "Linksys Pinnacle Mesh 라우터 전체 가이드",
   "faqs": "FAQ",
   "featureUnavailableInRemoteMode": "이 기능은 원격 모드에서 사용할 수 없습니다",
   "filterAnonymous": "익명의 인터넷 요청 필터링",

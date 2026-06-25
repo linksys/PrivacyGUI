@@ -228,6 +228,8 @@
   "faqListWhatLightsMean": "Vad betyder lamporna på min nod?",
   "faqLookingFor": "Hittar du inte vad du letar efter?",
   "faqVisitLinksysSupport": "Besök Linksys Support",
+  "faqWebInterfaceGuideTitle": "Webbgränssnittsguide",
+  "faqWebInterfaceGuideDesc": "Komplett guide för Linksys Pinnacle Mesh-routrar",
   "faqs": "Vanliga frågor",
   "featureUnavailableInRemoteMode": "Den här funktionen är inte tillgänglig i fjärrläge",
   "filterAnonymous": "Filtrera anonyma internetbegäran",
