@@ -652,13 +652,6 @@ class _FakeWifiDataNotifier extends AsyncNotifier<WifiData>
 
   @override
   Future<WifiData> build() async => _data;
-
-  @override
-  Future<void> toggleWifiRadio(String instancePath, bool enable) async {}
-
-  @override
-  Future<void> updateWifiRadioChannel(
-      String instancePath, int channel, bool autoChannel) async {}
 }
 
 // ---------------------------------------------------------------------------
@@ -672,11 +665,4 @@ class _ErrorWifiDataNotifier extends AsyncNotifier<WifiData>
 
   @override
   Future<WifiData> build() async => throw _error;
-
-  @override
-  Future<void> toggleWifiRadio(String instancePath, bool enable) async {}
-
-  @override
-  Future<void> updateWifiRadioChannel(
-      String instancePath, int channel, bool autoChannel) async {}
 }
