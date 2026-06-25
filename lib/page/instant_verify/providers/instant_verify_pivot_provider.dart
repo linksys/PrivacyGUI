@@ -230,8 +230,11 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
           m.isNotEmpty ? m : null;
 
       final firmwareData = orNull(supplementary[2]);
-      final firmwareAvailable = firmwareData != null &&
-          firmwareData['firmwareUpdateStatus'] == 'UpdateAvailable';
+      // An update exists when the response includes an `availableUpdate` object.
+      // (The old `firmwareUpdateStatus == 'UpdateAvailable'` check never matched
+      // the real GetFirmwareUpdateStatus shape — updates went undetected.)
+      final firmwareAvailable =
+          firmwareData != null && firmwareData['availableUpdate'] != null;
       final firmwareVersion =
           firmwareData?['availableUpdate']?['firmwareVersion'] as String?;
 
@@ -1643,6 +1646,12 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
       final friendlyName = d['friendlyName'] as String?;
       final unit = d['unit'] as Map<String, dynamic>?;
       final model = d['model'] as Map<String, dynamic>?;
+      final isController = (d['isAuthority'] as bool?) ?? false;
+      // A satellite with no active connection is offline. The controller is
+      // always "online" (it's the node we're talking to). When `connections`
+      // is absent we default to online to avoid false offlines.
+      final connections = d['connections'] as List?;
+      final isOnline = isController || (connections?.isNotEmpty ?? true);
 
       nodes.add(MeshNodeInfo(
         deviceId: deviceId,
@@ -1650,7 +1659,8 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
         model: model?['modelNumber'] as String?,
         firmware: unit?['firmwareVersion'] as String?,
         serialNumber: unit?['serialNumber'] as String?,
-        isController: (d['isAuthority'] as bool?) ?? false,
+        isController: isController,
+        isOnline: isOnline,
       ));
     }
     // Sort: controller first
@@ -1690,6 +1700,8 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
         firmware: node.firmware,
         serialNumber: node.serialNumber,
         isController: node.isController,
+        // Having backhaul telemetry proves the node is reachable.
+        isOnline: true,
         backhaulType: backhaul['connectionType'] as String?,
         backhaulRssi: apRssi,
         // HW-1: firmware returns speedMbps as a numeric String, not int

@@ -9,6 +9,12 @@ class MeshNodeInfo extends Equatable {
   final String? serialNumber;
   final bool isController; // isAuthority: true = main router
 
+  /// Whether this node currently has an active link to the mesh.
+  /// Derived from the GetDevices3 `connections` list (empty = offline).
+  /// Defaults to true so nodes on firmware that omits `connections` — or
+  /// any node we have backhaul evidence for — are never falsely shown offline.
+  final bool isOnline;
+
   /// "Wireless" or "Wired" — how this node connects back to the controller.
   /// Null for the controller node itself.
   final String? backhaulType;
@@ -38,6 +44,7 @@ class MeshNodeInfo extends Equatable {
     this.firmware,
     this.serialNumber,
     required this.isController,
+    this.isOnline = true,
     this.backhaulType,
     this.backhaulRssi,
     this.backhaulSpeedMbps,
@@ -46,6 +53,14 @@ class MeshNodeInfo extends Equatable {
     this.backhaulChannel,
     this.backhaulRadioId,
   });
+
+  /// True when we have any backhaul measurement for this node — proof it is
+  /// reachable, so its connection can be classified rather than guessed.
+  bool get hasBackhaulData =>
+      backhaulType != null ||
+      backhaulSpeedMbps != null ||
+      backhaulApRssi != null ||
+      backhaulRssi != null;
 
   /// Signal quality of the worst direction (parent→child or child→parent).
   /// Uses [backhaulApRssi] when available, falls back to [backhaulRssi].
@@ -94,6 +109,7 @@ class MeshNodeInfo extends Equatable {
         firmware,
         serialNumber,
         isController,
+        isOnline,
         backhaulType,
         backhaulRssi,
         backhaulSpeedMbps,

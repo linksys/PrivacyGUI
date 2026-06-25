@@ -537,7 +537,7 @@ void main() {
 
       // Detail text should not be visible yet
       expect(
-          find.textContaining('We connected to your router at 192.168.1.1'),
+          find.textContaining('We connected to your router'),
           findsNothing);
 
       // Tap "Router reached" row
@@ -546,7 +546,7 @@ void main() {
 
       // Expanded detail should now be visible
       expect(
-          find.textContaining('We connected to your router at 192.168.1.1'),
+          find.textContaining('We connected to your router'),
           findsOneWidget);
     });
   });

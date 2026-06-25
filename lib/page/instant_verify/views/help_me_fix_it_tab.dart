@@ -990,6 +990,10 @@ class _Flow2State extends ConsumerState<_Flow2> {
 
   Future<void> _runSpeedTest() async {
     setState(() {
+      // Return to the run view so the existing "Running speed test…" spinner
+      // shows immediately — re-running from the result view previously flashed
+      // a blank page before results reappeared (Q-21).
+      _step = 0;
       _isRunning = true;
       _speedResult = null;
       _postRestartResult = null;
@@ -3167,7 +3171,13 @@ class _Flow5State extends ConsumerState<_Flow5> {
 
   void _stepBack() {
     if (_stepHistory.isNotEmpty) {
-      setState(() => _step = _stepHistory.removeLast());
+      // Stepping back out of the live monitor must stop it — otherwise the
+      // periodic timer keeps firing and re-runs the 2-minute test (Q-18).
+      _monitorTimer?.cancel();
+      setState(() {
+        _isMonitoring = false;
+        _step = _stepHistory.removeLast();
+      });
       _syncStepBackNotifier();
     }
   }
@@ -3619,7 +3629,7 @@ class _SessionSummaryCard extends ConsumerWidget {
       rows.add(_summaryRow(context, 'Speed', '${state.speedTest!.downloadMbps.toStringAsFixed(0)} Mbps down'));
 
     if (state.routerFirmware != null)
-      rows.add(_summaryRow(context, 'Software', state.routerFirmware!));
+      rows.add(_summaryRow(context, 'Firmware', state.routerFirmware!));
 
     if (rows.isEmpty) return const SizedBox.shrink();
 

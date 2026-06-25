@@ -12,6 +12,10 @@ import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_p
 Future<void> confirmAndRestart(BuildContext context, WidgetRef ref,
     {VoidCallback? onRestarted}) async {
   final state = ref.read(instantVerifyPivotProvider);
+  // The address to return to is the one the browser reached the router at —
+  // not a hardcoded 192.168.1.1 (Q-02).
+  final returnAddress =
+      Uri.base.host.isNotEmpty ? Uri.base.host : 'your router';
   if (state.hasRestartedThisSession) {
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
@@ -26,10 +30,10 @@ Future<void> confirmAndRestart(BuildContext context, WidgetRef ref,
     context: context,
     builder: (ctx) => AlertDialog(
       title: const Text('Restart your router?'),
-      content: const Text(
+      content: Text(
           'All devices will disconnect for about 2 minutes.\n\n'
           'If you\'re on WiFi, this page will go blank. '
-          'Wait 2 minutes, reconnect to your WiFi, then return to 192.168.1.1.'),
+          'Wait 2 minutes, reconnect to your WiFi, then return to $returnAddress.'),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(ctx).pop(false),
@@ -43,6 +47,13 @@ Future<void> confirmAndRestart(BuildContext context, WidgetRef ref,
     ),
   );
   if (confirmed == true && context.mounted) {
+    // Immediate feedback so the user sees the restart actually started
+    // (Q-22/Q-23 — previously nothing visible happened on press).
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+      content: Text('Restarting your router — this takes about 2 minutes…'),
+      behavior: SnackBarBehavior.floating,
+      duration: Duration(seconds: 6),
+    ));
     await ref.read(instantVerifyPivotProvider.notifier).restartRouter();
     onRestarted?.call();
   }

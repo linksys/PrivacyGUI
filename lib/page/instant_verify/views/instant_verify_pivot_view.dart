@@ -175,8 +175,10 @@ class _InstantVerifyPivotViewState
           controller: _tabController,
           isScrollable: true,
           onTap: (index) {
-            // Re-tapping Help Me Fix It while already on it resets to landing
-            if (index == 3 && _tabController.index == 3) {
+            // Tapping Help Me Fix It always resets to the landing selection —
+            // including when arriving from another tab mid-flow (was previously
+            // gated on already being on tab 3, so the reset never fired).
+            if (index == 3) {
               _helpMeFlowNotifier.value = -1;
             }
           },

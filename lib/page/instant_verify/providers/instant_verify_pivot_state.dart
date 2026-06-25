@@ -279,8 +279,11 @@ class InstantVerifyPivotState extends Equatable {
 
   bool get firmwareUpdateAvailable {
     if (firmwareUpdate == null) return false;
-    final status = firmwareUpdate!['firmwareUpdateStatus'] as String?;
-    return status == 'UpdateAvailable';
+    // The response carries an `availableUpdate` object when an update exists
+    // (mirrors `availableFirmwareVersion` below). The older
+    // `firmwareUpdateStatus == 'UpdateAvailable'` check never matched the
+    // actual GetFirmwareUpdateStatus shape, so updates were never detected.
+    return firmwareUpdate!['availableUpdate'] != null;
   }
 
   String? get availableFirmwareVersion =>

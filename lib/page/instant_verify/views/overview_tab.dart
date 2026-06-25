@@ -1358,12 +1358,24 @@ class _ChecklistSummaryState extends State<_ChecklistSummary> {
     // Firmware 3-state (PRD v0.7): pass / update available / not a failure
     final bool fwUpToDate = !state.firmwareUpdateAvailable;
     final String fwLabel = state.firmwareUpdateAvailable
-        ? 'Software update available'
-        : 'Software is up to date';
+        ? 'Firmware update available'
+        : 'Firmware is up to date';
     // Use a special "available" state icon — not pass, not fail
     final _CheckDisplayState fwState = state.firmwareUpdateAvailable
         ? _CheckDisplayState.available
         : _CheckDisplayState.pass;
+
+    // "Internet connected" must reflect real reachability, not just the JNAP
+    // WAN status — which can report Connected even with the WAN cable unplugged
+    // (Q-04). Prefer the actual internet reachability test (DNS lookup, or the
+    // public-DNS fallback that distinguishes ISP-DNS-down from internet-down).
+    // Fall back to the JNAP signal only before the reachability test has run.
+    final bool internetReachable = state.dnsCheck == null
+        ? state.wanConnected
+        : (state.dnsCheck!.resolved || (state.publicDnsCheck?.resolved ?? false));
+
+    // The router's real address is the one the browser reached it at.
+    final String routerAddress = Uri.base.host;
 
     final rows = <_SummaryRow>[
       _SummaryRow(
@@ -1371,14 +1383,14 @@ class _ChecklistSummaryState extends State<_ChecklistSummary> {
         state: _CheckDisplayState.pass,
         detail: state.routerModel ?? '',
         expandedDetail:
-            'We connected to your router at 192.168.1.1. '
+            'We connected to your router${routerAddress.isNotEmpty ? ' at $routerAddress' : ''}. '
             'This means your device can communicate with your router over WiFi or Ethernet.',
       ),
       _SummaryRow(
         label: 'Internet connected',
-        state: state.wanConnected ? _CheckDisplayState.pass : _CheckDisplayState.fail,
-        detail: state.wanConnected ? 'Connected' : 'No internet service',
-        expandedDetail: state.wanConnected
+        state: internetReachable ? _CheckDisplayState.pass : _CheckDisplayState.fail,
+        detail: internetReachable ? 'Connected' : 'No internet service',
+        expandedDetail: internetReachable
             ? 'Your router has an active connection to your internet provider. '
               'Data can flow between your home and the internet.'
             : 'Your router is not receiving a signal from your internet provider. '
@@ -1455,9 +1467,9 @@ class _ChecklistSummaryState extends State<_ChecklistSummary> {
         state: fwState,
         detail: fwUpToDate ? '' : state.availableFirmwareVersion ?? '',
         expandedDetail: fwUpToDate
-            ? 'Your router is running the latest software. '
+            ? 'Your router is running the latest firmware. '
               'Updates improve performance and security.'
-            : 'A newer version of your router\'s software is available. '
+            : 'A newer version of your router\'s firmware is available. '
               'Updates improve performance, fix bugs, and improve security.',
       ),
     ];

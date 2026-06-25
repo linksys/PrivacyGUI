@@ -264,9 +264,8 @@ class _MeshGroupedList extends StatelessWidget {
                   .where((c) => state.clientToNodeId[c.macAddress] == allNodes[i].deviceId)
                   .toList(),
             ),
-            label: allNodes[i].isController
-                ? 'Main Router'
-                : 'Child Node ${satellites.indexOf(allNodes[i]) + 1}',
+            // Show the user-assigned node name (was hardcoded, ignoring it).
+            label: allNodes[i].name,
             state: state,
             onNavigateToFlow: onNavigateToFlow,
           ),

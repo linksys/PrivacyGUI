@@ -193,9 +193,10 @@ void main() {
     testWidgets('shows node groups', (tester) async {
       await tester.pumpWidget(_buildTab(_meshState()));
       await tester.pumpAndSettle();
-      expect(find.text('Main Router'), findsOneWidget);
-      expect(find.text('Child Node 1'), findsOneWidget);
-      expect(find.text('Child Node 2'), findsOneWidget);
+      // Node groups now show user-assigned names, not hardcoded labels.
+      expect(find.text('Router'), findsOneWidget);
+      expect(find.text('Living Room'), findsOneWidget);
+      expect(find.text('Bedroom'), findsOneWidget);
     });
 
     testWidgets('shows device count per node', (tester) async {

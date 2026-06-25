@@ -169,7 +169,10 @@ class _YourRouterCard extends StatelessWidget {
                 Icon(Icons.router, color: Theme.of(context).colorScheme.primary),
                 const SizedBox(width: 8),
                 Text(
-                  'Your Router',
+                  // Show the controller's custom name when available.
+                  state.meshNodes.any((n) => n.isController)
+                      ? state.meshNodes.firstWhere((n) => n.isController).name
+                      : 'Your Router',
                   style: Theme.of(context)
                       .textTheme
                       .titleMedium
@@ -182,7 +185,7 @@ class _YourRouterCard extends StatelessWidget {
               _infoRow(context, 'Model', state.routerModel!),
             _infoRow(
               context,
-              'Software',
+              'Firmware',
               state.firmwareUpdateAvailable
                   ? 'Update available'
                   : 'Up to date',
@@ -292,18 +295,27 @@ class _SatelliteNodeCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isWeak = node.hasWeakBackhaul;
     final isWired = node.hasWiredBackhaul;
+    // A node with backhaul telemetry is provably reachable; otherwise trust the
+    // online flag derived from GetDevices3 `connections`.
+    final isOnline = node.isOnline || node.hasBackhaulData;
 
     final speedSuffix = node.backhaulSpeedMbps != null ? ' (${node.backhaulSpeedMbps} Mbps)' : '';
     String backhaulLabel;
     Color? backhaulColor;
-    if (isWired) {
+    if (!isOnline) {
+      backhaulLabel = 'Offline — not responding';
+      backhaulColor = Colors.red;
+    } else if (isWired) {
       backhaulLabel = 'Connected by Ethernet$speedSuffix';
     } else if (isWeak) {
       backhaulLabel = 'Connected wirelessly — Weak$speedSuffix';
       backhaulColor = Colors.orange;
-    } else {
+    } else if (node.hasBackhaulData) {
       backhaulLabel = 'Connected wirelessly — Good$speedSuffix';
       backhaulColor = Colors.green;
+    } else {
+      // Online but no backhaul health data — don't assert "Good".
+      backhaulLabel = 'Connected wirelessly';
     }
 
     return AppCard(
@@ -318,20 +330,27 @@ class _SatelliteNodeCard extends StatelessWidget {
               children: [
                 Icon(
                   Icons.sensors,
-                  color: isWeak ? Colors.orange : Theme.of(context).colorScheme.primary,
+                  color: !isOnline
+                      ? Colors.red
+                      : isWeak
+                          ? Colors.orange
+                          : Theme.of(context).colorScheme.primary,
                   size: 20,
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Child Node $index',
+                    // Show the node's custom name (was hardcoded "Child Node N").
+                    node.name,
                     style: Theme.of(context)
                         .textTheme
                         .titleSmall
                         ?.copyWith(fontWeight: FontWeight.w600),
                   ),
                 ),
-                if (isWeak)
+                if (!isOnline)
+                  const Icon(Icons.error_outline, color: Colors.red, size: 18)
+                else if (isWeak)
                   const Icon(Icons.warning_amber, color: Colors.orange, size: 18),
               ],
             ),

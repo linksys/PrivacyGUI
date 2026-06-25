@@ -239,9 +239,10 @@ void main() {
       await tester.pumpWidget(_buildTab(_meshState()));
       await tester.pumpAndSettle();
       expect(find.text('Your Child Nodes'), findsOneWidget);
-      expect(find.text('Child Node 1'), findsOneWidget);
-      expect(find.text('Child Node 2'), findsOneWidget);
-      expect(find.text('Child Node 3'), findsOneWidget);
+      // Nodes now show their user-assigned names, not hardcoded "Child Node N".
+      expect(find.text('Living Room'), findsOneWidget);
+      expect(find.text('Bedroom'), findsOneWidget);
+      expect(find.text('Office'), findsOneWidget);
     });
 
     testWidgets('shows backhaul quality labels', (tester) async {
