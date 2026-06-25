@@ -134,6 +134,7 @@ class _FaqListViewState extends ConsumerState<FaqListView> {
 
   Widget _buildWebInterfaceGuideCard(BuildContext context) {
     return AppCard(
+      identifier: 'now-faq-web-interface-guide',
       onTap: () {
         gotoOfficialWebUrl(linkWebInterfaceGuide,
             locale: ref.read(appSettingsProvider).locale);
