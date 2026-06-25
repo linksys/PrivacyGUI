@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/validator_rules/_validator_rules.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -17,31 +18,31 @@ Future<bool?> showChangePasswordDialog(
 
   List<AppPasswordRule> rules(TextEditingController confirm) => [
         AppPasswordRule(
-          label: 'At least 10 characters',
+          label: loc(context).routerPasswordRuleTenChars,
           validate: (text) => LengthRule().validate(text),
         ),
         AppPasswordRule(
-          label: 'Upper and lower case letters',
+          label: loc(context).routerPasswordRuleUpperLower,
           validate: (text) => HybridCaseRule().validate(text),
         ),
         AppPasswordRule(
-          label: 'At least one number',
+          label: loc(context).atLeastOneNumber,
           validate: (text) => DigitalCheckRule().validate(text),
         ),
         AppPasswordRule(
-          label: 'At least one special character',
+          label: loc(context).routerPasswordRuleOneSpecial,
           validate: (text) => SpecialCharCheckRule().validate(text),
         ),
         AppPasswordRule(
-          label: 'No leading or trailing spaces',
+          label: loc(context).noLeadingTrailingSpaces,
           validate: (text) => NoSurroundWhitespaceRule().validate(text),
         ),
         AppPasswordRule(
-          label: 'No consecutive identical characters',
+          label: loc(context).routerPasswordRuleNoConsecutive,
           validate: (text) => !ConsecutiveCharRule().validate(text),
         ),
         AppPasswordRule(
-          label: 'Passwords must match',
+          label: loc(context).passwordsMustMatch,
           validate: (text) => confirm.text == text,
         ),
       ];
@@ -50,7 +51,7 @@ Future<bool?> showChangePasswordDialog(
     context,
     scrollable: true,
     useRootNavigator: false,
-    title: 'Change Router Password',
+    title: loc(context).changeRouterPassword,
     contentBuilder: (context, setState, onSubmit) {
       final passwordRules = rules(confirmController);
       return Column(
@@ -59,7 +60,7 @@ Future<bool?> showChangePasswordDialog(
           AppPasswordInput(
             key: const Key('newPasswordField'),
             controller: controller,
-            label: 'New Password',
+            label: loc(context).newPassword,
             rules: passwordRules,
             onChanged: (value) {
               setState(() {
@@ -72,7 +73,7 @@ Future<bool?> showChangePasswordDialog(
           AppPasswordInput(
             key: const Key('confirmPasswordField'),
             controller: confirmController,
-            label: 'Confirm Password',
+            label: loc(context).confirmPassword,
             onChanged: (value) {
               setState(() {
                 isPasswordValid = !rules(confirmController)

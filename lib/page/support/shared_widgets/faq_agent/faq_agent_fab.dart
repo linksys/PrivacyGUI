@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:generative_ui/generative_ui.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/support/shared_widgets/faq_agent/components/faq_component_registry.dart';
 import 'package:privacy_gui/page/support/shared_widgets/faq_agent/constants.dart';
 import 'package:privacy_gui/page/support/shared_widgets/faq_agent/generators/bedrock_faq_generator.dart';
@@ -191,7 +192,7 @@ class _FAQAgentFabState extends State<FAQAgentFab> {
           Expanded(
             child: AppTextField(
               controller: _inputController,
-              hintText: 'Search for help topics...',
+              hintText: loc(context).searchHelpTopics,
               onSubmitted: (_) => _ask(),
             ),
           ),

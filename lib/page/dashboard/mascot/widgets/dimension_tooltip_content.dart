@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:privacy_gui/page/_shared/components/wifi_ui.dart';
 import 'package:privacy_gui/page/_shared/models/network_health_helpers.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -23,7 +24,7 @@ class DimensionTooltipContent extends StatelessWidget {
     final effectiveSummary = summary ??
         const DimensionSummary(status: 'Unknown', hint: 'Tap for actions');
     final tier = score?.tier ?? HealthTier.excellent;
-    final tierLabel = NetworkHealthHelpers.tierLabel(tier);
+    final tierLabel = tier.resolveLabel(context);
     final cs = Theme.of(context).colorScheme;
     final tierColor = NetworkHealthHelpers.tierColor(tier, cs);
 

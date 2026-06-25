@@ -26,7 +26,7 @@ class _HomeViewState extends ConsumerState<HomeView> {
       pageFooter: _footer(context),
       child: (context, constraints) => _isLoading
           ? AppFullScreenLoader(
-              title: 'Loading...',
+              title: loc(context).loadingEllipsis,
             )
           : _content(context),
     );

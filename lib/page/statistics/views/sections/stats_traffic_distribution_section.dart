@@ -59,7 +59,7 @@ class StatsTrafficDistributionSection extends ConsumerWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   AppText.titleSmall(UspFormatters.formatBytes(grandTotal)),
-                  AppText.labelSmall('total',
+                  AppText.labelSmall(loc(context).total,
                       color: colorScheme.onSurfaceVariant),
                 ],
               ),

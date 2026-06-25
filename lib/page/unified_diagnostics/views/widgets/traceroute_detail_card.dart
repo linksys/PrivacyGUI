@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../models/diagnostic_result.dart';
@@ -27,7 +28,8 @@ class TracerouteDetailCard extends StatelessWidget {
                 children: [
                   Icon(Icons.route, size: 20, color: colorScheme.primary),
                   AppGap.sm(),
-                  AppText.labelLarge('Traceroute to ${result.targetHost}'),
+                  AppText.labelLarge(
+                      loc(context).tracerouteTo(result.targetHost)),
                 ],
               ),
               AppGap.md(),
@@ -41,7 +43,7 @@ class TracerouteDetailCard extends StatelessWidget {
                   ),
                   Expanded(
                     flex: 2,
-                    child: AppText.labelSmall('Host',
+                    child: AppText.labelSmall(loc(context).host,
                         color: colorScheme.onSurfaceVariant),
                   ),
                   SizedBox(

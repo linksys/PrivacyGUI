@@ -140,7 +140,7 @@ class StepResultTile extends StatelessWidget {
       DiagnosticStep.checkingWifiSignal => loc(context).wifiSignal,
       DiagnosticStep.checkingConnectedDevices => loc(context).connectedDevices,
       DiagnosticStep.runningTraceroute => loc(context).traceroute,
-      DiagnosticStep.checkingMeshBackhaul => loc(context).meshBackhaulStep,
+      DiagnosticStep.checkingMeshBackhaul => loc(context).meshBackhaul,
       _ => step.name,
     };
   }

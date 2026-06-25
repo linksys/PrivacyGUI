@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/_shared/components/wifi_ui.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_radio_ui_model.dart';
 import 'package:privacy_gui/page/_shared/components/usp_info_row.dart';
 import 'package:privacy_gui/page/_shared/components/usp_mutation_helper.dart';
@@ -25,8 +27,10 @@ class UspWifiStatusCard extends ConsumerWidget {
     final enabledRadios = radios.where((r) => r.enable).length;
 
     return DashboardCardTemplate(
-      title: 'WiFi Status',
-      titleBadge: AppBadge(label: '$enabledRadios / ${radios.length} radios'),
+      title: loc(context).wifiStatus,
+      titleBadge: AppBadge(
+          label: loc(context)
+              .nRadios(enabledRadios.toString(), radios.length.toString())),
       detailRoute: RouteNamed.uspWifiSettings,
       content: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -53,7 +57,7 @@ class UspWifiStatusCard extends ConsumerWidget {
             children: [
               UspStatusDot(isActive: radio.enable),
               AppGap.sm(),
-              AppText.labelLarge('Radio: ${radio.band}'),
+              AppText.labelLarge(loc(context).radioBand(radio.band)),
               const Spacer(),
               AppSwitch(
                 value: radio.enable,
@@ -73,14 +77,14 @@ class UspWifiStatusCard extends ConsumerWidget {
           AppGap.sm(),
           _buildLinearBar(
             context,
-            label: 'Tx Power',
+            label: loc(context).txPower,
             value: radio.txPowerPercent / 100,
             display: radio.txPowerDisplay,
           ),
           AppGap.sm(),
           _buildLinearBar(
             context,
-            label: 'Bit Rate',
+            label: loc(context).bitRate,
             value: radio.bitRateNormalized / 100,
             display: '${radio.maxBitRate} Mbps',
           ),
@@ -89,10 +93,11 @@ class UspWifiStatusCard extends ConsumerWidget {
             children: [
               SizedBox(
                 width: context.colWidth(2),
-                child: AppText.labelLarge('Channel'),
+                child: AppText.labelLarge(loc(context).channel),
               ),
               Expanded(
-                child: AppText.bodyMedium(radio.channelDisplay),
+                child: AppText.bodyMedium(
+                    wifiDisplayValue(context, radio.channelDisplay)),
               ),
               AppIconButton(
                 icon: AppIcon.font(Icons.edit, size: 18),
@@ -102,12 +107,15 @@ class UspWifiStatusCard extends ConsumerWidget {
               ),
             ],
           ),
-          UspInfoRow(label: 'Bandwidth', value: radio.channelBandwidth),
-          UspInfoRow(label: 'Standards', value: radio.supportedStandards),
+          UspInfoRow(
+              label: loc(context).bandwidth,
+              value: wifiDisplayValue(context, radio.channelBandwidth)),
+          UspInfoRow(
+              label: loc(context).standards, value: radio.supportedStandards),
           // Access Points on this radio
           if (radio.accessPoints.isNotEmpty) ...[
             AppGap.md(),
-            AppText.labelLarge('Access Points'),
+            AppText.labelLarge(loc(context).accessPoints),
             AppGap.sm(),
             ...radio.accessPoints.map((ap) => _buildApRow(context, ap)),
           ],
@@ -175,7 +183,7 @@ class UspWifiStatusCard extends ConsumerWidget {
           SizedBox(
             width: context.colWidth(2),
             child: AppText.bodySmall(
-              ap.securityMode,
+              wifiDisplayValue(context, ap.securityMode),
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),

@@ -5,6 +5,7 @@ import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/core/connection/models/app_connection_state.dart';
 import 'package:privacy_gui/core/connection/providers/app_connection_state_provider.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Enters recovery mode, shows a spinner dialog while probing the router,
@@ -58,7 +59,7 @@ Future<void> showRecoveryDialog(
     ],
     actions: [
       AppButton.text(
-        label: 'Return to login page',
+        label: loc(context).returnToLoginPage,
         onTap: () {
           logger.d('[Recovery] User tapped Return to login');
           ref.read(appConnectionStateProvider.notifier).exitToLogout();

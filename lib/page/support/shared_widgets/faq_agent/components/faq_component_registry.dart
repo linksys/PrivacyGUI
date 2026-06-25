@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:generative_ui/generative_ui.dart';
 import 'package:privacy_gui/constants/url_links.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/support/shared_widgets/faq_agent/constants.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -44,7 +45,7 @@ ComponentRegistry createFaqComponentRegistry({
           ),
           AppGap.md(),
           AppButton.text(
-            label: 'Visit Linksys Support',
+            label: loc(context).faqVisitLinksysSupport,
             onTap: () => gotoOfficialWebUrl(kLinksysSearchApiBase),
           ),
         ],
@@ -67,7 +68,7 @@ ComponentRegistry createFaqComponentRegistry({
           ),
           AppGap.md(),
           AppButton.text(
-            label: 'Try Again',
+            label: loc(context).tryAgain,
             onTap: onRetry,
           ),
         ],

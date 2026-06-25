@@ -172,7 +172,7 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
           const Icon(Icons.pets, size: 20),
           AppGap.lg(),
           Expanded(
-            child: AppText.labelMedium('Show Mascot'),
+            child: AppText.labelMedium(loc(context).showMascot),
           ),
           AppSwitch(
             value: showMascot,

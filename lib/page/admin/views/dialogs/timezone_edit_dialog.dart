@@ -212,7 +212,7 @@ class _AdvancedSection extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Semantics(
-          label: 'Advanced settings',
+          label: loc(context).advancedSettings,
           expanded: expanded,
           button: true,
           child: InkWell(
