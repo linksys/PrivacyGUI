@@ -187,16 +187,25 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
       List<DiagnosticClient> clients;
       if (wirelessData.isNotEmpty) {
         clients = _parseClients(wirelessData, deviceMap);
+        final wirelessMacs = clients.map((c) => c.macAddress).toSet();
         if (netConns.isNotEmpty) {
-          final wirelessMacs = clients.map((c) => c.macAddress).toSet();
           final wiredClients = _parseClientsFromNetConns(netConns)
               .where(
                   (c) => !c.isWireless && !wirelessMacs.contains(c.macAddress))
               .toList();
           clients.addAll(wiredClients);
+        } else if (dhcpData.isNotEmpty) {
+          // GetNetworkConnections unavailable — recover wired clients from
+          // DHCP leases so they still show up (Q-06).
+          clients.addAll(
+              _parseWiredClientsFromDhcp(dhcpData, deviceMap, wirelessMacs));
         }
       } else if (netConns.isNotEmpty) {
         clients = _parseClientsFromNetConns(netConns);
+      } else if (dhcpData.isNotEmpty) {
+        // No wireless data and no GetNetworkConnections — fall back to DHCP
+        // leases so wired (and any leased) devices are not lost entirely.
+        clients = _parseWiredClientsFromDhcp(dhcpData, deviceMap, {});
       } else {
         clients = [];
       }
@@ -1469,6 +1478,42 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
         deviceMap[mac] = {'ipAddress': ip, 'hostname': hostname};
       }
     }
+  }
+
+  /// Fallback wired-client source for when GetNetworkConnections is
+  /// unavailable (Q-06). DHCP leases list every leased device (MAC/IP/host);
+  /// any lease not already seen as a wireless client is treated as a wired
+  /// client so wired devices still appear. Prefers the friendly name from
+  /// [deviceMap]. No signal/rate data is available from a lease.
+  List<DiagnosticClient> _parseWiredClientsFromDhcp(
+    Map<String, dynamic> dhcpData,
+    Map<String, Map<String, String?>> deviceMap,
+    Set<String> excludeMacs,
+  ) {
+    final leases = dhcpData['leases'] as List?
+        ?? dhcpData['clientLeases'] as List?
+        ?? dhcpData['dhcpLeases'] as List?
+        ?? dhcpData['dhcpClientLeases'] as List?
+        ?? [];
+    final clients = <DiagnosticClient>[];
+    for (final lease in leases) {
+      final mac = (lease['macAddress'] as String?)?.toUpperCase();
+      if (mac == null || excludeMacs.contains(mac)) continue;
+      final info = deviceMap[mac];
+      clients.add(DiagnosticClient(
+        macAddress: mac,
+        hostname: info?['hostname'] ??
+            (lease['hostName'] as String?) ??
+            (lease['hostname'] as String?),
+        ipAddress: info?['ipAddress'] ?? lease['ipAddress'] as String?,
+        band: 'Wired',
+        signalDecibels: null,
+        txRateMbps: null,
+        rxRateMbps: null,
+        isWireless: false,
+      ));
+    }
+    return clients;
   }
 
   /// HW-5: GetNetworkConnections returns rates in Kbps; convert to Mbps.
