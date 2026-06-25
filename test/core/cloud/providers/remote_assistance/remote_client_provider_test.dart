@@ -436,7 +436,7 @@ void main() {
         await Future.delayed(const Duration(milliseconds: 1100));
 
         final state = container.read(remoteClientProvider);
-        // expiredIn is -600 (600 seconds remaining), countdown starts at 600
+        // expiredIn is 600 (600 seconds remaining), countdown starts at 600
         // After ~1 second, should be around 599
         expect(state.expiredCountdown, isNotNull);
         expect(state.expiredCountdown, lessThan(600));

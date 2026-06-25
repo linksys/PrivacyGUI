@@ -46,7 +46,7 @@ class RemoteAssistanceTestData {
     String serialNumber = testSerialNumber,
     String modelNumber = testModelNumber,
     GRASessionStatus status = GRASessionStatus.active,
-    int expiredIn = -600, // 10 minutes remaining (negative = time left)
+    int expiredIn = 600, // 10 minutes remaining (positive = time left)
     int createdAt = 1748315872000,
     int statusChangedAt = 1748315989000,
     int currentTime = 1748316924838,
@@ -66,7 +66,7 @@ class RemoteAssistanceTestData {
   static GRASessionInfo sessionWithStatus(
     GRASessionStatus status, {
     String id = testSessionId,
-    int expiredIn = -600,
+    int expiredIn = 600,
   }) =>
       sessionInfo(id: id, status: status, expiredIn: expiredIn);
 
@@ -86,9 +86,9 @@ class RemoteAssistanceTestData {
   static GRASessionInfo invalidSession() =>
       sessionWithStatus(GRASessionStatus.invalid);
 
-  /// Creates an expired session (expiredIn > 0).
+  /// Creates an expired session (expiredIn <= 0).
   static GRASessionInfo expiredSession() =>
-      sessionWithStatus(GRASessionStatus.pending, expiredIn: 1);
+      sessionWithStatus(GRASessionStatus.pending, expiredIn: 0);
 
   /// Creates a list of sessions with different statuses.
   static List<GRASessionInfo> sessionList({int count = 2}) => [
