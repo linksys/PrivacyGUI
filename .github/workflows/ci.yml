@@ -62,7 +62,12 @@ jobs:
 
       # Generate l10n files (ignored by .gitignore, must be generated before analyze)
       - name: 🌐 Generate L10n
-        run: flutter gen-l10n
+        run: |
+          mkdir -p lib/l10n/gen
+          flutter gen-l10n
+          echo "=== L10n files generated ==="
+          ls -la lib/l10n/gen/ | head -5
+          grep "pnpGuestWiFiDesc" lib/l10n/gen/app_localizations.dart || echo "WARNING: pnpGuestWiFiDesc NOT FOUND"
 
       # 1. Static Analysis (Linter)
       - name: 🔍 Flutter Analyze
