@@ -14,9 +14,7 @@ const portRangeTriggerListTestState = {
 };
 
 const portRangeTriggerEmptyListTestState = {
-  "rules": [
-    
-  ],
+  "rules": [],
   "maxRules": 25,
   "maxDescriptionLength": 32
 };

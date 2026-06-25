@@ -50,7 +50,9 @@ class _FakePnpTroubleshooterState_1 extends _i1.SmartFake
 /// A class which mocks [PnpTroubleshooterNotifier].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockPnpTroubleshooterNotifier extends _i2.Notifier<_i3.PnpTroubleshooterState> with _i1.Mock
+class MockPnpTroubleshooterNotifier
+    extends _i2.Notifier<_i3.PnpTroubleshooterState>
+    with _i1.Mock
     implements _i3.PnpTroubleshooterNotifier {
   @override
   _i2.NotifierProviderRef<_i3.PnpTroubleshooterState> get ref =>

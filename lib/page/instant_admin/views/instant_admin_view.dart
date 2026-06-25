@@ -206,7 +206,7 @@ class _InstantAdminViewState extends ConsumerState<InstantAdminView> {
         child: AppTextButton.noPadding(
           loc(context).manualUpdate,
           key: const Key('manualUpdateButton'),
-        onTap: BuildConfig.isRemote()
+          onTap: BuildConfig.isRemote()
               ? null
               : () {
                   context.goNamed(RouteNamed.manualFirmwareUpdate);

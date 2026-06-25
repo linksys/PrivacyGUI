@@ -47,8 +47,8 @@ class _FakeWifiAdvancedSettingsState_1 extends _i1.SmartFake
 /// A class which mocks [WifiAdvancedSettingsNotifier].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockWifiAdvancedSettingsNotifier extends _i2.Notifier<
-        _i3.WifiAdvancedSettingsState>
+class MockWifiAdvancedSettingsNotifier
+    extends _i2.Notifier<_i3.WifiAdvancedSettingsState>
     with _i1.Mock
     implements _i3.WifiAdvancedSettingsNotifier {
   @override

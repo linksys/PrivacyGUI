@@ -74,5 +74,4 @@ class TestPrepairPnpSetupActions extends CommonBaseActions {
     await tester.tap(doneBtnFinder);
     await tester.pumpFrames(app(), Duration(seconds: seconds));
   }
-
 }

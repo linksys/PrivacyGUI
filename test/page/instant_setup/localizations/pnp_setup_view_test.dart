@@ -106,7 +106,8 @@ void main() async {
     await tester.pumpWidget(view);
     await tester.pump(const Duration(seconds: 3));
     // Trick - setState to trigger build
-    final state = tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
+    final state =
+        tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
     state.setState(() {});
     await tester.pumpAndSettle();
   });
@@ -156,7 +157,8 @@ void main() async {
     await tester.pumpWidget(view);
     await tester.pump(const Duration(seconds: 3));
     // Trick - setState to trigger build
-    final state = tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
+    final state =
+        tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
     state.setState(() {});
     await tester.pumpAndSettle();
   });
@@ -177,7 +179,8 @@ void main() async {
     );
     await tester.pump(const Duration(seconds: 6));
     // Trick - setState to trigger build
-    final state = tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
+    final state =
+        tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
     state.setState(() {});
     await tester.pumpAndSettle();
     final btnFinder = find.byIcon(LinksysIcons.infoCircle);
@@ -198,7 +201,8 @@ void main() async {
     );
     await tester.pump(const Duration(seconds: 6));
     // Trick - setState to trigger build
-    final state = tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
+    final state =
+        tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
     state.setState(() {});
     await tester.pumpAndSettle();
     final ssidEditFinder = find.byType(TextField).first;
@@ -226,7 +230,8 @@ void main() async {
     await tester.pump(const Duration(seconds: 6));
 
     // Trick - setState to trigger build
-    final state = tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
+    final state =
+        tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
     state.setState(() {});
     await tester.pumpAndSettle();
     final ssidEditFinder = find.byType(TextField).first;
@@ -256,7 +261,8 @@ void main() async {
     );
     await tester.pump(const Duration(seconds: 6));
     // Trick - setState to trigger build
-    final state = tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
+    final state =
+        tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
     state.setState(() {});
     await tester.pumpAndSettle();
     final ssidEditFinder = find.byType(TextField).first;
@@ -285,7 +291,8 @@ void main() async {
     );
     await tester.pump(const Duration(seconds: 6));
     // Trick - setState to trigger build
-    final state = tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
+    final state =
+        tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
     state.setState(() {});
     await tester.pumpAndSettle();
     final ssidEditFinder = find.byType(TextField).first;
@@ -322,7 +329,8 @@ void main() async {
     );
     await tester.pump(const Duration(seconds: 6));
     // Trick - setState to trigger build
-    final state = tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
+    final state =
+        tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
     state.setState(() {});
     await tester.pumpAndSettle();
     final ssidEditFinder = find.byType(TextField).first;
@@ -368,7 +376,8 @@ void main() async {
     );
     await tester.pump(const Duration(seconds: 6));
     // Trick - setState to trigger build
-    final state = tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
+    final state =
+        tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
     state.setState(() {});
     await tester.pumpAndSettle();
     final ssidEditFinder = find.byType(TextField).first;
@@ -404,7 +413,8 @@ void main() async {
     );
     await tester.pump(const Duration(seconds: 6));
     // Trick - setState to trigger build
-    final state = tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
+    final state =
+        tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
     state.setState(() {});
     await tester.pumpAndSettle();
     final ssidEditFinder = find.byType(TextField).first;
@@ -449,7 +459,8 @@ void main() async {
     );
     await tester.pump(const Duration(seconds: 6));
     // Trick - setState to trigger build
-    final state = tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
+    final state =
+        tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
     state.setState(() {});
     await tester.pumpAndSettle();
     final ssidEditFinder = find.byType(TextField).first;
@@ -500,7 +511,8 @@ void main() async {
     );
     await tester.pump(const Duration(seconds: 6));
     // Trick - setState to trigger build
-    final state = tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
+    final state =
+        tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
     state.setState(() {});
     await tester.pumpAndSettle();
     final ssidEditFinder = find.byType(TextField).first;
@@ -537,14 +549,8 @@ void main() async {
                 "ssid": "DULinksys12294-2.4GHz",
                 "password": "8kRnxa257@"
               },
-              "5GHz": {
-                "ssid": "DULinksys12294-5GHz",
-                "password": "8kRnxa257@"
-              },
-              "6GHz": {
-                "ssid": "DULinksys12294-6GHz",
-                "password": "8kRnxa257@"
-              },
+              "5GHz": {"ssid": "DULinksys12294-5GHz", "password": "8kRnxa257@"},
+              "6GHz": {"ssid": "DULinksys12294-6GHz", "password": "8kRnxa257@"},
             },
             "ssid": "DULinksys12294-2.4GHz",
             "password": "8kRnxa257@",
@@ -570,8 +576,8 @@ void main() async {
     );
     await tester.pump(const Duration(seconds: 6));
     // Trick - setState to trigger build
-    final state = tester
-        .state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
+    final state =
+        tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
     state.setState(() {});
     await tester.pumpAndSettle();
     final btnFinder = find.byType(FilledButton);
@@ -615,7 +621,8 @@ void main() async {
     );
     await tester.pump(const Duration(seconds: 6));
     // Trick - setState to trigger build
-    final state = tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
+    final state =
+        tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
     state.setState(() {});
     await tester.pumpAndSettle();
     final ssidEditFinder = find.byType(TextField).first;

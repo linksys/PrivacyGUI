@@ -37,7 +37,8 @@ class PnpWiFiRadio extends Equatable {
   }
 
   @override
-  List<Object?> get props => [radioId, band, ssid, password, security, isEnabled];
+  List<Object?> get props =>
+      [radioId, band, ssid, password, security, isEnabled];
 }
 
 class PnpWiFiSettings extends Equatable {

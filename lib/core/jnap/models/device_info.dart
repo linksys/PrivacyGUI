@@ -71,12 +71,12 @@ class NodeDeviceInfo extends Equatable {
 
   @override
   List<Object?> get props => [
-    modelNumber,
-    firmwareVersion,
-    description,
-    firmwareDate,
-    manufacturer,
-    serialNumber,
-    hardwareVersion,
-  ];
+        modelNumber,
+        firmwareVersion,
+        description,
+        firmwareDate,
+        manufacturer,
+        serialNumber,
+        hardwareVersion,
+      ];
 }

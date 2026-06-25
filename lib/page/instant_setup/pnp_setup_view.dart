@@ -138,8 +138,8 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
   void _onWiFiReadyDone() {
     // Check router connected proper, then go to dashboard
     testConnection(success: () {
-      logger.i(
-          '[PnP]: The customized WiFi is well connected, go to dashboard!');
+      logger
+          .i('[PnP]: The customized WiFi is well connected, go to dashboard!');
       context.goNamed(RouteNamed.prepareDashboard);
     });
   }
@@ -181,9 +181,13 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
     final isLastBeforeYourNetwork =
         !isGuestWiFiSupport && !isNightModeSupport && !showYourNetwork;
     // Log PnP state for debugging
-    final autoConfigData = ref.read(pnpProvider.notifier).getData(JNAPAction.getAutoConfigurationSettings);
+    final autoConfigData = ref
+        .read(pnpProvider.notifier)
+        .getData(JNAPAction.getAutoConfigurationSettings);
     final autoConfigMethod = autoConfigData != null
-        ? AutoConfigurationSettings.fromMap(autoConfigData).autoConfigurationMethod?.name
+        ? AutoConfigurationSettings.fromMap(autoConfigData)
+            .autoConfigurationMethod
+            ?.name
         : 'unknown';
     logger.d('[PnP]: buildSteps state - '
         'isUnconfigured=$_isUnconfigured, '
@@ -208,9 +212,8 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
         ],
       (false, false, true) => [
           PersonalWiFiStep(
-              saveChanges: !isGuestWiFiSupport && !isNightModeSupport
-                  ? null
-                  : null),
+              saveChanges:
+                  !isGuestWiFiSupport && !isNightModeSupport ? null : null),
           if (isGuestWiFiSupport)
             GuestWiFiStep(saveChanges: !isNightModeSupport ? null : null),
           if (isNightModeSupport) NightModeStep(saveChanges: null),
@@ -224,9 +227,15 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
           YourNetworkStep(saveChanges: _confirmAddedNodes),
         ],
       _ => [
-          PersonalWiFiStep(saveChanges: isLastBeforeYourNetwork ? _saveChanges : null),
-          if (isGuestWiFiSupport) GuestWiFiStep(saveChanges: !isNightModeSupport && !showYourNetwork ? _saveChanges : null),
-          if (isNightModeSupport) NightModeStep(saveChanges: !showYourNetwork ? _saveChanges : null),
+          PersonalWiFiStep(
+              saveChanges: isLastBeforeYourNetwork ? _saveChanges : null),
+          if (isGuestWiFiSupport)
+            GuestWiFiStep(
+                saveChanges: !isNightModeSupport && !showYourNetwork
+                    ? _saveChanges
+                    : null),
+          if (isNightModeSupport)
+            NightModeStep(saveChanges: !showYourNetwork ? _saveChanges : null),
         ],
     };
   }
@@ -390,7 +399,8 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
                   const AppGap.large5(),
                   if (isSplitMode)
                     ...bands.map((b) => Padding(
-                          padding: const EdgeInsets.only(bottom: Spacing.small2),
+                          padding:
+                              const EdgeInsets.only(bottom: Spacing.small2),
                           child: _splitBandCard(b.band, b.ssid, b.password),
                         ))
                   else

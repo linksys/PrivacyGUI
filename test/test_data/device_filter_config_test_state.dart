@@ -5,4 +5,3 @@ final deviceFilterConfigTestState = {
   "bandFilter": ["2.4GHz", "5GHz", "Ethernet"],
   "showOrphanNodes": false
 };
-

@@ -195,7 +195,7 @@ class TestDashboardHomeActions extends CommonBaseActions {
 
   Finder speedTestGoButtonFinder() {
     final speedTestFinder = speedTestWidgetFinder();
-    
+
     final goButtonFinder = find.descendant(
       of: speedTestFinder,
       matching: find.byKey(ValueKey('goBtn')),
@@ -525,12 +525,12 @@ class TestDashboardHomeActions extends CommonBaseActions {
     final dateTimeWidget = tester.widget<AppText>(dateTimeFinder);
     expect(dateTimeWidget.text, isNot('--'));
     final downloadBandWidthFinder = speedTestDownloadBandWidthFinder();
-    final downloadBandWidthWidget = tester.widget<AppText>(downloadBandWidthFinder);
+    final downloadBandWidthWidget =
+        tester.widget<AppText>(downloadBandWidthFinder);
     expect(downloadBandWidthWidget.text, isNot('-'));
     final uploadBandWidthFinder = speedTestUploadBandWidthFinder();
     final uploadBandWidthWidget = tester.widget<AppText>(uploadBandWidthFinder);
     expect(uploadBandWidthWidget.text, isNot('-'));
     speedTestTryAgainFinder();
-    
   }
 }

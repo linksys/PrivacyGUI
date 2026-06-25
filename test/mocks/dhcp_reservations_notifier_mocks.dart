@@ -50,8 +50,8 @@ class _FakeDHCPReservationState_1 extends _i1.SmartFake
 /// A class which mocks [DHCPReservationsNotifier].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockDHCPReservationsNotifier extends _i2.AutoDisposeNotifier<
-        _i3.DHCPReservationState>
+class MockDHCPReservationsNotifier
+    extends _i2.AutoDisposeNotifier<_i3.DHCPReservationState>
     with _i1.Mock
     implements _i4.DHCPReservationsNotifier {
   @override

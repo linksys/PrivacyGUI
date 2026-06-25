@@ -21,7 +21,8 @@ void main() {
     BuildConfig.load();
   });
 
-  Future<TestDHCPReservationActions> enterDHCPReservationPage(WidgetTester tester) async {
+  Future<TestDHCPReservationActions> enterDHCPReservationPage(
+      WidgetTester tester) async {
     await tester.pumpFrames(app(), const Duration(seconds: 5));
     final topbarActions = TestTopbarActions(tester);
     await topbarActions.tapMenuButton();
@@ -55,19 +56,22 @@ void main() {
       await actions.inputIPAddress('192.168.1.21');
       await actions.inputDeviceName('TestDevice1');
       await actions.tapAlertSaveButton();
-      await actions.verifyReservationInList('TestDevice1', '192.168.1.21', 'AA:BB:CC:DD:EE:01');
+      await actions.verifyReservationInList(
+          'TestDevice1', '192.168.1.21', 'AA:BB:CC:DD:EE:01');
 
       // Edit reservation
       await actions.tapEditReservation('TestDevice1');
       await actions.inputDeviceName('TestDevice1Edit');
       await actions.tapAlertUpdateButton();
-      await actions.verifyReservationInList('TestDevice1Edit', '192.168.1.21', 'AA:BB:CC:DD:EE:01');
+      await actions.verifyReservationInList(
+          'TestDevice1Edit', '192.168.1.21', 'AA:BB:CC:DD:EE:01');
 
       // Save and check again
       await actions.tapSaveButton();
       await actions.tapBackButton();
       await actions.tapDHCPReservationEnterance();
-      await actions.verifyReservationInList('TestDevice1Edit', '192.168.1.21', 'AA:BB:CC:DD:EE:01');
+      await actions.verifyReservationInList(
+          'TestDevice1Edit', '192.168.1.21', 'AA:BB:CC:DD:EE:01');
       await actions.verifyHasOneReservation();
       await actions.tapReservation('TestDevice1Edit');
       await actions.verifyNoReservation();
@@ -83,4 +87,4 @@ void main() {
       await actions.verifyIPAddressError();
     });
   });
-} 
+}

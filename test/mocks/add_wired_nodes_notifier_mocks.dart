@@ -52,7 +52,9 @@ class _FakeAddWiredNodesState_1 extends _i1.SmartFake
 /// A class which mocks [AddWiredNodesNotifier].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockAddWiredNodesNotifier extends _i2.AutoDisposeNotifier<_i3.AddWiredNodesState> with _i1.Mock
+class MockAddWiredNodesNotifier
+    extends _i2.AutoDisposeNotifier<_i3.AddWiredNodesState>
+    with _i1.Mock
     implements _i4.AddWiredNodesNotifier {
   @override
   _i2.AutoDisposeNotifierProviderRef<_i3.AddWiredNodesState> get ref =>

@@ -41,7 +41,8 @@ class Ipv6PortServiceRuleState extends Equatable {
 
   factory Ipv6PortServiceRuleState.fromMap(Map<String, dynamic> map) {
     return Ipv6PortServiceRuleState(
-      rules: List<IPv6FirewallRule>.from(map['rules']?.map((x) => IPv6FirewallRule.fromMap(x))),
+      rules: List<IPv6FirewallRule>.from(
+          map['rules']?.map((x) => IPv6FirewallRule.fromMap(x))),
       rule: map['rule'] != null ? IPv6FirewallRule.fromMap(map['rule']) : null,
       editIndex: map['editIndex']?.toInt(),
     );
@@ -49,8 +50,10 @@ class Ipv6PortServiceRuleState extends Equatable {
 
   String toJson() => json.encode(toMap());
 
-  factory Ipv6PortServiceRuleState.fromJson(String source) => Ipv6PortServiceRuleState.fromMap(json.decode(source));
+  factory Ipv6PortServiceRuleState.fromJson(String source) =>
+      Ipv6PortServiceRuleState.fromMap(json.decode(source));
 
   @override
-  String toString() => 'Ipv6PortServiceRuleState(rules: $rules, rule: $rule, editIndex: $editIndex)';
+  String toString() =>
+      'Ipv6PortServiceRuleState(rules: $rules, rule: $rule, editIndex: $editIndex)';
 }

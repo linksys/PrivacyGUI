@@ -25,8 +25,7 @@ class AdvancedRoutingRule extends Equatable {
   final String description;
 
   @override
-  List<Object> get props =>
-      [
+  List<Object> get props => [
         isEnabled,
         externalPort,
         protocol,

@@ -50,9 +50,9 @@ class _FirmwareUpdateTableViewState
                       child: Image(
                         semanticLabel: 'device image',
                         image: CustomTheme.of(context).getRouterImage(
-                              routerIconTestByModel(
-                                  modelNumber: child.$1.modelNumber ?? ''),
-                            ),
+                          routerIconTestByModel(
+                              modelNumber: child.$1.modelNumber ?? ''),
+                        ),
                         fit: BoxFit.cover,
                         width: 72,
                         height: 72,

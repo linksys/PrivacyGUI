@@ -22,9 +22,7 @@ const ipv6PortServiceListTestState = {
 };
 
 const ipv6PortServiceEmptyListTestState = {
-  "rules": [
-    
-  ],
+  "rules": [],
   "maxRules": 15,
   "maxDescriptionLength": 64
 };

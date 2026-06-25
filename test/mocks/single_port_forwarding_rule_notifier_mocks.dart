@@ -48,8 +48,8 @@ class _FakeSinglePortForwardingRuleState_1 extends _i1.SmartFake
 /// A class which mocks [SinglePortForwardingRuleNotifier].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockSinglePortForwardingRuleNotifier extends _i2.Notifier<
-        _i3.SinglePortForwardingRuleState>
+class MockSinglePortForwardingRuleNotifier
+    extends _i2.Notifier<_i3.SinglePortForwardingRuleState>
     with _i1.Mock
     implements _i3.SinglePortForwardingRuleNotifier {
   @override

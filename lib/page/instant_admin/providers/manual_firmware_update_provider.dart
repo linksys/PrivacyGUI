@@ -8,7 +8,8 @@ final manualFirmwareUpdateProvider = NotifierProvider.autoDispose<
   () => ManualFirmwareUpdateNotifier(),
 );
 
-class ManualFirmwareUpdateNotifier extends AutoDisposeNotifier<ManualFirmwareUpdateState> {
+class ManualFirmwareUpdateNotifier
+    extends AutoDisposeNotifier<ManualFirmwareUpdateState> {
   @override
   ManualFirmwareUpdateState build() {
     return ManualFirmwareUpdateState();

@@ -9,7 +9,8 @@ class AnimatedRefreshContainer extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  State<AnimatedRefreshContainer> createState() => _AnimatedRefreshContainerState();
+  State<AnimatedRefreshContainer> createState() =>
+      _AnimatedRefreshContainerState();
 }
 
 class _AnimatedRefreshContainerState extends State<AnimatedRefreshContainer>

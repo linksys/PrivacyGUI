@@ -12,7 +12,6 @@ class FirewallState extends Equatable {
 
   final FirewallSettings settings;
 
-
   FirewallState copyWith({
     FirewallSettings? settings,
   }) {
@@ -29,13 +28,15 @@ class FirewallState extends Equatable {
 
   factory FirewallState.fromMap(Map<String, dynamic> map) {
     return FirewallState(
-      settings: FirewallSettings.fromMap(map['settings'] as Map<String,dynamic>),
+      settings:
+          FirewallSettings.fromMap(map['settings'] as Map<String, dynamic>),
     );
   }
 
   String toJson() => json.encode(toMap());
 
-  factory FirewallState.fromJson(String source) => FirewallState.fromMap(json.decode(source) as Map<String, dynamic>);
+  factory FirewallState.fromJson(String source) =>
+      FirewallState.fromMap(json.decode(source) as Map<String, dynamic>);
 
   @override
   bool get stringify => true;

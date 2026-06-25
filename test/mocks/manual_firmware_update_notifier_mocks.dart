@@ -50,8 +50,8 @@ class _FakeManualFirmwareUpdateState_1 extends _i1.SmartFake
 /// A class which mocks [ManualFirmwareUpdateNotifier].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockManualFirmwareUpdateNotifier extends _i2.AutoDisposeNotifier<
-        _i3.ManualFirmwareUpdateState>
+class MockManualFirmwareUpdateNotifier
+    extends _i2.AutoDisposeNotifier<_i3.ManualFirmwareUpdateState>
     with _i1.Mock
     implements _i4.ManualFirmwareUpdateNotifier {
   @override

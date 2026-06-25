@@ -6,6 +6,8 @@ import 'theme_data.dart';
 
 void mockDependencyRegister() {
   getIt.registerSingleton<ServiceHelper>(MockServiceHelper());
-  getIt.registerSingleton<ThemeData>(mockLightThemeData, instanceName: 'lightThemeData');
-  getIt.registerSingleton<ThemeData>(mockDarkThemeData, instanceName: 'darkThemeData');
+  getIt.registerSingleton<ThemeData>(mockLightThemeData,
+      instanceName: 'lightThemeData');
+  getIt.registerSingleton<ThemeData>(mockDarkThemeData,
+      instanceName: 'darkThemeData');
 }

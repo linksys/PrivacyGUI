@@ -28,7 +28,8 @@ class FernetManager {
     try {
       Uint8List rawBytes = Uint8List.fromList(utf8.encode(rawKeyString));
       if (rawBytes.length != 32) {
-        logger.e('Fernet Key must be 32 bytes long! Current length: ${rawBytes.length}');
+        logger.e(
+            'Fernet Key must be 32 bytes long! Current length: ${rawBytes.length}');
         _encrypter = null;
         return;
       }
@@ -62,7 +63,7 @@ class FernetManager {
       return null;
     }
   }
-  
+
   String? decrypt(String cipherTextBase64) {
     if (_encrypter == null) {
       logger.w('Fernet encrypter not initialized, cannot decrypt.');

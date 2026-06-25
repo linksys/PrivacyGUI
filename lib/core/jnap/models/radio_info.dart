@@ -124,30 +124,29 @@ class RouterRadio extends Equatable {
   }
 
   factory RouterRadio.fromMap(Map<String, dynamic> map) {
-      final supportedChannelsForChannelWidths =
-          List.from(map['supportedChannelsForChannelWidths'])
-              .map(
-                (x) => SupportedChannelsForChannelWidths.fromMap(x),
-              )
-              .toList();
-      return RouterRadio(
-        radioID: map['radioID'] as String,
-        physicalRadioID: map['physicalRadioID'] as String,
-        bssid: map['bssid'] as String,
-        band: map['band'] as String,
-        supportedModes: List<String>.from(map['supportedModes']),
-        defaultMixedMode: map['defaultMixedMode'] != null
-            ? map['defaultMixedMode'] as String
-            : null,
-        supportedChannelsForChannelWidths: supportedChannelsForChannelWidths,
-        supportedSecurityTypes: List<String>.from(
-          (map['supportedSecurityTypes'] as List<dynamic>),
-        ),
-        maxRadiusSharedKeyLength: map['maxRADIUSSharedKeyLength'] as int,
-        settings: RouterRadioSettings.fromMap(
-            map['settings'] as Map<String, dynamic>),
-      );
-    
+    final supportedChannelsForChannelWidths =
+        List.from(map['supportedChannelsForChannelWidths'])
+            .map(
+              (x) => SupportedChannelsForChannelWidths.fromMap(x),
+            )
+            .toList();
+    return RouterRadio(
+      radioID: map['radioID'] as String,
+      physicalRadioID: map['physicalRadioID'] as String,
+      bssid: map['bssid'] as String,
+      band: map['band'] as String,
+      supportedModes: List<String>.from(map['supportedModes']),
+      defaultMixedMode: map['defaultMixedMode'] != null
+          ? map['defaultMixedMode'] as String
+          : null,
+      supportedChannelsForChannelWidths: supportedChannelsForChannelWidths,
+      supportedSecurityTypes: List<String>.from(
+        (map['supportedSecurityTypes'] as List<dynamic>),
+      ),
+      maxRadiusSharedKeyLength: map['maxRADIUSSharedKeyLength'] as int,
+      settings:
+          RouterRadioSettings.fromMap(map['settings'] as Map<String, dynamic>),
+    );
   }
 
   String toJson() => json.encode(toMap());
