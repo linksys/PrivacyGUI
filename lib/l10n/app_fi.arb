@@ -1090,6 +1090,9 @@
   "unknown": "Tuntematon",
   "accept": "Hyväksy",
   "drop": "Hylkää",
+  "reject": "Hylkää",
+  "returnTarget": "Palauta",
+  "targetChain": "Kohdeketju",
   "synchronized": "Synkronoitu",
   "noPortForwardingRulesConfigured": "Porttiohjaussääntöjä ei ole määritetty",
   "nItems": "{count, plural, one{{count} kohde} other{{count} kohdetta}}"

@@ -1090,6 +1090,9 @@
   "unknown": "Άγνωστο",
   "accept": "Αποδοχή",
   "drop": "Απόρριψη",
+  "reject": "Απόρριψη",
+  "returnTarget": "Επιστροφή",
+  "targetChain": "Αλυσίδα προορισμού",
   "synchronized": "Συγχρονισμένο",
   "noPortForwardingRulesConfigured": "Δεν έχουν διαμορφωθεί κανόνες προώθησης θυρών",
   "nItems": "{count, plural, one{{count} στοιχείο} other{{count} στοιχεία}}"

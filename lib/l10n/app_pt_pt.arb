@@ -1090,6 +1090,9 @@
   "unknown": "Desconhecido",
   "accept": "Aceitar",
   "drop": "Descartar",
+  "reject": "Rejeitar",
+  "returnTarget": "Retornar",
+  "targetChain": "Cadeia de destino",
   "synchronized": "Sincronizado",
   "noPortForwardingRulesConfigured": "Nenhuma regra de reencaminhamento de portas configurada",
   "nItems": "{count, plural, one{{count} item} other{{count} itens}}"

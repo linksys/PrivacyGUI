@@ -1090,6 +1090,9 @@
   "unknown": "알 수 없음",
   "accept": "허용",
   "drop": "삭제",
+  "reject": "거부",
+  "returnTarget": "반환",
+  "targetChain": "대상 체인",
   "synchronized": "동기화됨",
   "noPortForwardingRulesConfigured": "구성된 포트 포워딩 규칙이 없습니다",
   "nItems": "{count, plural, other{{count}개 항목}}"

@@ -72,14 +72,6 @@ extension NodeSignalLevelExt on NodeSignalLevel {
 
 /// UI extensions for [SignalTier] (performance analytics).
 extension SignalTierExt on SignalTier {
-  /// Human-readable tier label.
-  String get label => switch (this) {
-        SignalTier.excellent => 'Excellent',
-        SignalTier.good => 'Good',
-        SignalTier.fair => 'Fair',
-        SignalTier.weak => 'Weak',
-      };
-
   /// Localized tier label for display in the View layer.
   String resolveLabel(BuildContext context) => switch (this) {
         SignalTier.excellent => loc(context).excellent,

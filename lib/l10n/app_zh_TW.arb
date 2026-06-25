@@ -1090,6 +1090,9 @@
   "unknown": "未知",
   "accept": "接受",
   "drop": "捨棄",
+  "reject": "拒絕",
+  "returnTarget": "返回",
+  "targetChain": "目標鏈",
   "synchronized": "已同步",
   "noPortForwardingRulesConfigured": "未設定連接埠轉發規則",
   "nItems": "{count, plural, other{{count} 個項目}}"

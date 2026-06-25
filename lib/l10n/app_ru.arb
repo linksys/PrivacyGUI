@@ -1090,6 +1090,9 @@
   "unknown": "Неизвестно",
   "accept": "Принять",
   "drop": "Отклонить",
+  "reject": "Отклонить",
+  "returnTarget": "Возврат",
+  "targetChain": "Целевая цепочка",
   "synchronized": "Синхронизировано",
   "noPortForwardingRulesConfigured": "Правила переадресации портов не настроены",
   "nItems": "{count, plural, one{{count} элемент} few{{count} элемента} many{{count} элементов} other{{count} элемента}}"

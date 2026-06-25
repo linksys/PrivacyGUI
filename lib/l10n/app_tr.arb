@@ -1090,6 +1090,9 @@
   "unknown": "Bilinmiyor",
   "accept": "Kabul et",
   "drop": "Bırak",
+  "reject": "Reddet",
+  "returnTarget": "Geri Dön",
+  "targetChain": "Hedef Zinciri",
   "synchronized": "Eşitlendi",
   "noPortForwardingRulesConfigured": "Yapılandırılmış bağlantı noktası yönlendirme kuralı yok",
   "nItems": "{count, plural, one{{count} öğe} other{{count} öğe}}"

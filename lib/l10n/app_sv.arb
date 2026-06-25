@@ -1090,6 +1090,9 @@
   "unknown": "Okänd",
   "accept": "Acceptera",
   "drop": "Släng",
+  "reject": "Avvisa",
+  "returnTarget": "Retur",
+  "targetChain": "Målkedja",
   "synchronized": "Synkroniserad",
   "noPortForwardingRulesConfigured": "Inga regler för portvidarebefordran har konfigurerats",
   "nItems": "{count, plural, one{{count} objekt} other{{count} objekt}}"

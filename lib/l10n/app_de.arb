@@ -1090,6 +1090,9 @@
   "unknown": "Unbekannt",
   "accept": "Annehmen",
   "drop": "Verwerfen",
+  "reject": "Ablehnen",
+  "returnTarget": "Zurück",
+  "targetChain": "Zielkette",
   "synchronized": "Synchronisiert",
   "noPortForwardingRulesConfigured": "Keine Portweiterleitungsregeln konfiguriert",
   "nItems": "{count, plural, one{{count} Element} other{{count} Elemente}}"

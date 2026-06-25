@@ -1090,6 +1090,9 @@
   "unknown": "Không xác định",
   "accept": "Chấp nhận",
   "drop": "Loại bỏ",
+  "reject": "Từ chối",
+  "returnTarget": "Trả về",
+  "targetChain": "Chuỗi đích",
   "synchronized": "Đã đồng bộ hóa",
   "noPortForwardingRulesConfigured": "Chưa cấu hình quy tắc chuyển tiếp cổng nào",
   "nItems": "{count, plural, other{{count} mục}}"

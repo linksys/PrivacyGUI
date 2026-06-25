@@ -1090,6 +1090,9 @@
   "unknown": "Ukendt",
   "accept": "Accepter",
   "drop": "Afvis",
+  "reject": "Afvis",
+  "returnTarget": "Retur",
+  "targetChain": "Målkæde",
   "synchronized": "Synkroniseret",
   "noPortForwardingRulesConfigured": "Ingen portvideresendelsesregler konfigureret",
   "nItems": "{count, plural, one{{count} element} other{{count} elementer}}"

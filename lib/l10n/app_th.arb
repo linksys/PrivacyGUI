@@ -1090,6 +1090,9 @@
   "unknown": "ไม่ทราบ",
   "accept": "ยอมรับ",
   "drop": "ปฏิเสธ",
+  "reject": "ปฏิเสธ",
+  "returnTarget": "ส่งกลับ",
+  "targetChain": "เชนเป้าหมาย",
   "synchronized": "ซิงโครไนซ์แล้ว",
   "noPortForwardingRulesConfigured": "ไม่มีการกำหนดค่ากฎการส่งต่อพอร์ต",
   "nItems": "{count, plural, other{{count} รายการ}}"
