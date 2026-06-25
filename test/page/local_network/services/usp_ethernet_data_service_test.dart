@@ -182,11 +182,11 @@ void main() {
   // LAN port entries
   // ---------------------------------------------------------------------------
   group('LAN port entries', () {
-    test('no wired devices — single LAN entry', () async {
+    test('no wired devices — single LAN entry with isUp=false', () async {
       stubResponses(
         ethernet: {
           'Device.Ethernet.Interface.1.Name': 'eth1',
-          'Device.Ethernet.Interface.1.Status': 'Up',
+          'Device.Ethernet.Interface.1.Status': 'Up', // interface reports Up
           'Device.Ethernet.Interface.1.Upstream': false,
           'Device.Ethernet.Interface.1.CurrentBitRate': '1000',
         },
@@ -199,6 +199,8 @@ void main() {
       expect(result.portModels.first.label, 'LAN');
       expect(result.portModels.first.isWan, isFalse);
       expect(result.portModels.first.connectedDevices, isEmpty);
+      // No wired devices = disconnected, regardless of interface status
+      expect(result.portModels.first.isUp, isFalse);
     });
 
     test('one wired device — LAN 1 with device info', () async {
@@ -291,6 +293,7 @@ void main() {
       expect(result.portModels.length, 1);
       expect(result.portModels.first.label, 'LAN');
       expect(result.portModels.first.connectedDevices, isEmpty);
+      expect(result.portModels.first.isUp, isFalse);
     });
   });
 

@@ -94,8 +94,7 @@ class UspEthernetPortsCard extends ConsumerWidget {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          AppText.titleSmall(
-                              '$lanConnected / ${lanPorts.length}'),
+                          AppText.titleSmall('$lanConnected'),
                           AppText.bodySmall(
                             'LAN Connected',
                             color: colorScheme.onSurfaceVariant,
