@@ -2,7 +2,6 @@ part of 'combine_results.dart';
 
 String generateHTMLReport(Map<String, dynamic> result, String version) {
   final timestamp = result['timestamp'] ?? DateTime.now().toIso8601String();
-  final embedImages = result['embedImages'] ?? false;
 
   return '''
 <!DOCTYPE html>
