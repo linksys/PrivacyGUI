@@ -67,7 +67,11 @@ void main() {
     }
   });
 
-  SseManager createManager() => SseManager(usp: mockUsp, bridge: mockBridge);
+  SseManager createManager() => SseManager(
+        usp: mockUsp,
+        bridge: mockBridge,
+        strategy: FakeSseOperationStrategy(mockBridge),
+      );
 
   // ---------------------------------------------------------------------------
   // Construction / wiring
@@ -105,20 +109,42 @@ void main() {
       await manager.dispose();
     });
 
-    test('connection.onConnected triggers subscription registration', () async {
+    test('connection.onConnected triggers resubscribe of existing records',
+        () async {
       final manager = createManager();
 
-      // Set core subscriptions
+      // First register subscriptions via registerCoreSubscriptions
       manager.setCoreSubscriptions([
         ('wifi-vc', 'ValueChange', 'Device.WiFi.SSID.'),
       ]);
+      await manager.registerCoreSubscriptions();
+      expect(manager.registry.activeIds, contains('wifi-vc'));
 
+      // Reset mock to track resubscribe calls
+      reset(mockBridge);
+      when(() => mockBridge.notifications())
+          .thenAnswer((_) => streamController.stream);
+      when(() => mockBridge.subscribe(
+            subscriptionId: any(named: 'subscriptionId'),
+            path: any(named: 'path'),
+            notifType: any(named: 'notifType'),
+          )).thenAnswer((_) async => {});
+      when(() => mockBridge.unsubscribe(
+            subscriptionId: any(named: 'subscriptionId'),
+          )).thenAnswer((_) async => {});
+      when(() => mockBridge.abortSse()).thenReturn(null);
+
+      // Connect triggers onSseConnected which resubscribes existing records
       await manager.connect();
       streamController.add(heartbeatEvent());
       await Future.delayed(const Duration(milliseconds: 100));
 
-      // Core subscription should have been registered
-      expect(manager.registry.activeIds, contains('wifi-vc'));
+      // Should have resubscribed
+      verify(() => mockBridge.subscribe(
+            subscriptionId: 'wifi-vc',
+            path: 'Device.WiFi.SSID.',
+            notifType: 1,
+          )).called(1);
 
       await manager.dispose();
     });
@@ -276,7 +302,7 @@ void main() {
       manager.dispose();
     });
 
-    test('first connect registers core subs', () async {
+    test('registerCoreSubscriptions registers core subs', () async {
       final manager = createManager();
 
       manager.setCoreSubscriptions([
@@ -284,9 +310,8 @@ void main() {
         ('sub-2', 'ObjectCreation', 'Device.Hosts.Host.'),
       ]);
 
-      await manager.connect();
-      streamController.add(heartbeatEvent());
-      await Future.delayed(const Duration(milliseconds: 200));
+      // In new architecture, orchestrator calls registerCoreSubscriptions
+      await manager.registerCoreSubscriptions();
 
       expect(manager.registry.activeIds, containsAll(['sub-1', 'sub-2']));
 
@@ -334,19 +359,16 @@ void main() {
       await manager.dispose();
     });
 
-    test(
-        'registerDeferredSubscriptions with force=false and not deferred is no-op',
-        () async {
+    test('registerCoreSubscriptions registers all subscriptions', () async {
       final manager = createManager();
 
       manager.setCoreSubscriptions([
         ('sub-1', 'ValueChange', 'Device.Test.'),
       ]);
 
-      // force=false and _coreSubsDeferred=false → should not register
-      await manager.registerDeferredSubscriptions();
+      await manager.registerCoreSubscriptions();
 
-      expect(manager.registry.activeIds, isEmpty);
+      expect(manager.registry.activeIds, contains('sub-1'));
 
       manager.dispose();
     });
@@ -441,7 +463,11 @@ void main() {
 
     setUp(() {
       capturingUsp = _CapturingUspClient();
-      manager = SseManager(usp: capturingUsp, bridge: mockBridge);
+      manager = SseManager(
+        usp: capturingUsp,
+        bridge: mockBridge,
+        strategy: FakeSseOperationStrategy(mockBridge),
+      );
     });
 
     tearDown(() async {
@@ -655,7 +681,11 @@ void main() {
   group('onTokenRefreshed callback', () {
     test('forces disconnect then reconnect', () async {
       final capturingUsp = _CapturingUspClient();
-      final manager = SseManager(usp: capturingUsp, bridge: mockBridge);
+      final manager = SseManager(
+        usp: capturingUsp,
+        bridge: mockBridge,
+        strategy: FakeSseOperationStrategy(mockBridge),
+      );
 
       await manager.connect();
       streamController.add(heartbeatEvent());
@@ -681,9 +711,9 @@ void main() {
   });
 
   // ---------------------------------------------------------------------------
-  // registerDeferredSubscriptions error handling
+  // registerCoreSubscriptions error handling
   // ---------------------------------------------------------------------------
-  group('registerDeferredSubscriptions error handling', () {
+  group('registerCoreSubscriptions error handling', () {
     test('logs and continues when registration fails', () async {
       // Make bridge.subscribe throw for specific subscription
       when(() => mockBridge.subscribe(
@@ -699,9 +729,8 @@ void main() {
         ('ok-sub', 'ValueChange', 'Device.OK.'),
       ]);
 
-      await manager.connect();
-      streamController.add(heartbeatEvent());
-      await Future.delayed(const Duration(milliseconds: 300));
+      // In new architecture, orchestrator calls registerCoreSubscriptions
+      await manager.registerCoreSubscriptions();
 
       // ok-sub should still be registered despite fail-sub throwing
       expect(manager.registry.activeIds, contains('ok-sub'));

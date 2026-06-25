@@ -89,7 +89,8 @@ class RemoteAssistanceNotifier extends Notifier<RemoteAssistanceState> {
     }
 
     final jsClient = builder.build();
-    final raClient = UspClient.fromBuilder(jsClient);
+    final guardianUrl = 'https://${config.guardianBaseUrl}';
+    final raClient = UspClient.fromBuilder(jsClient, baseUrl: guardianUrl);
 
     // Swap UspClient atomically with mutation lock to prevent races
     await ref.read(uspMutationLockProvider).withLock(() async {

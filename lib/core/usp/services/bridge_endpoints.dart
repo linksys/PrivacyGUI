@@ -26,10 +26,12 @@ class BridgeEndpoints {
   /// Remote Guardian proxy endpoints.
   static BridgeEndpoints remote(String sessionId) => BridgeEndpoints(
         notifications:
-            '/remote-assistances/sessions/$sessionId/usp/notifications',
+            '/v1/guardians/remote-assistances/sessions/$sessionId/usp/notifications',
         subscription:
-            '/remote-assistances/sessions/$sessionId/usp/subscriptions',
-        health: '/remote-assistances/sessions/$sessionId/usp/health',
-        turboPrefix: '/remote-assistances/sessions/$sessionId/usp/turbo',
+            '/v1/guardians/remote-assistances/sessions/$sessionId/usp/subscriptions',
+        health:
+            '/v1/guardians/remote-assistances/sessions/$sessionId/usp/health',
+        turboPrefix:
+            '/v1/guardians/remote-assistances/sessions/$sessionId/usp/turbo',
       );
 }

@@ -7,8 +7,11 @@ import 'package:privacy_gui/core/usp/providers/usp_auth_coordinator.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/network_diagnostics_executor.dart';
 import 'package:privacy_gui/core/usp/services/sse_connection_manager.dart';
+import 'package:privacy_gui/core/usp/services/sse_local_strategy.dart';
 import 'package:privacy_gui/core/usp/services/sse_manager.dart';
 import 'package:privacy_gui/core/usp/services/sse_operation_awaiter.dart';
+import 'package:privacy_gui/core/usp/services/sse_operation_strategy.dart';
+import 'package:privacy_gui/core/usp/services/sse_remote_strategy.dart';
 import 'package:privacy_gui/core/usp/providers/remote_assistance_provider.dart';
 import 'package:privacy_gui/core/usp/services/bridge_endpoints.dart';
 import 'package:privacy_gui/core/usp/services/usp_bridge_client.dart';
@@ -28,7 +31,12 @@ final uspBridgeClientProvider = Provider<UspBridgeClient?>((ref) {
     final config = raState.config;
     if (config == null) return null;
     final endpoints = BridgeEndpoints.remote(config.sessionId);
-    return UspBridgeClient(usp, endpoints: endpoints);
+    return UspBridgeClient(
+      usp,
+      endpoints: endpoints,
+      authToken: config.temporaryAccessToken,
+      clientTypeId: config.clientTypeId,
+    );
   }
 
   return UspBridgeClient(usp);
@@ -40,14 +48,22 @@ final uspBridgeClientProvider = Provider<UspBridgeClient?>((ref) {
 /// - [SseConnectionManager] — SSE stream lifecycle
 /// - [SseSubscriptionRegistry] — OBUSPA + bridge subscription tracking
 /// - [SseEventRouter] — event demux by subscription_id
+///
+/// Uses [LocalSseStrategy] or [RemoteSseStrategy] based on mode.
 final sseManagerProvider = Provider<SseManager?>((ref) {
   final usp = ref.watch(uspClientProvider);
   final bridge = ref.watch(uspBridgeClientProvider);
   if (usp == null || bridge == null) return null;
 
-  final manager = SseManager(usp: usp, bridge: bridge);
+  // Select strategy based on mode
+  final SseOperationStrategy strategy = GlobalConfig.remote.isActive
+      ? RemoteSseStrategy(bridge)
+      : LocalSseStrategy(bridge);
 
-  // Wire proactive token refresh on SSE heartbeat
+  final manager = SseManager(usp: usp, bridge: bridge, strategy: strategy);
+
+  // Wire proactive token refresh on SSE heartbeat (Local mode only)
+  // Strategy's heartbeatConfig.authCheckEnabled controls whether this runs
   final authCoordinator = ref.read(uspAuthCoordinatorProvider);
   manager.onHeartbeatAuth = () => authCoordinator.ensureAuth();
 

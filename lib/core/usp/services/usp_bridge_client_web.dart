@@ -26,9 +26,17 @@ external set _jsSseAbort(JSAny? value);
 class UspBridgeClient {
   final UspClient _usp;
   final BridgeEndpoints _endpoints;
+  final String? _overrideToken;
+  final String? _clientTypeId;
 
-  UspBridgeClient(this._usp, {BridgeEndpoints? endpoints})
-      : _endpoints = endpoints ?? BridgeEndpoints.local;
+  UspBridgeClient(
+    this._usp, {
+    BridgeEndpoints? endpoints,
+    String? authToken,
+    String? clientTypeId,
+  })  : _endpoints = endpoints ?? BridgeEndpoints.local,
+        _overrideToken = authToken,
+        _clientTypeId = clientTypeId;
 
   /// Active SSE AbortController — stored so [abortSse] can cancel
   /// synchronously from a `beforeunload` handler.
@@ -37,6 +45,10 @@ class UspBridgeClient {
   String get _baseUrl => _usp.baseUrl;
 
   String get _token {
+    // Remote mode: use override token (temporaryAccessToken from Guardian)
+    if (_overrideToken != null) return _overrideToken;
+
+    // Local mode: use session token from WASM client
     final token = _usp.sessionToken;
     if (token == null) {
       throw StateError('Session token not available. '
@@ -48,6 +60,7 @@ class UspBridgeClient {
   Map<String, String> get _authHeaders => {
         'Authorization': 'Bearer $_token',
         'Content-Type': 'application/json',
+        if (_clientTypeId != null) 'X-Linksys-Client-Type-Id': _clientTypeId,
       };
 
   // ══════════════════════════════════════════════════════════════════════════
@@ -175,12 +188,9 @@ class UspBridgeClient {
       final url = '$_baseUrl${_endpoints.notifications}';
       debug('Fetching $url ...');
 
-      final token = _token;
-      debug('Token: ${token.substring(0, 20)}...(${token.length} chars)');
-
       final headers = web.Headers();
-      headers.append('Authorization', 'Bearer $token');
-      headers.append('Accept', 'text/event-stream');
+      _authHeaders.forEach((k, v) => headers.append(k, v));
+      headers.set('Accept', 'text/event-stream'); // override Content-Type
 
       final init = web.RequestInit(
         method: 'GET',
@@ -368,6 +378,26 @@ class UspBridgeClient {
       ),
       (r) => jsonDecode(r.body) as Map<String, dynamic>,
     );
+  }
+
+  /// Lists all active subscriptions (Remote mode only).
+  Future<List<String>> listSubscriptions() async {
+    final response = await _withAuthRetry(
+      () => http.get(
+        Uri.parse('$_baseUrl${_endpoints.subscription}'),
+        headers: _authHeaders,
+      ),
+      (r) => jsonDecode(r.body),
+    );
+    // Format: { "subscriptions": [{"subscription_id": "...", ...}, ...] }
+    if (response is Map && response['subscriptions'] is List) {
+      final subs = response['subscriptions'] as List;
+      return subs
+          .map((s) => s is Map ? s['subscription_id'] as String? : null)
+          .whereType<String>()
+          .toList();
+    }
+    return [];
   }
 
   // ══════════════════════════════════════════════════════════════════════════

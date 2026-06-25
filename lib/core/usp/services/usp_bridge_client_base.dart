@@ -7,7 +7,12 @@ import 'usp_client.dart';
 /// All methods throw [UnsupportedError] since SSE/bridge functionality
 /// requires the browser Fetch API.
 class UspBridgeClient {
-  UspBridgeClient(UspClient usp, {BridgeEndpoints? endpoints});
+  UspBridgeClient(
+    UspClient usp, {
+    BridgeEndpoints? endpoints,
+    String? authToken,
+    String? clientTypeId,
+  });
 
   Future<Map<String, dynamic>> health() =>
       throw UnsupportedError('UspBridgeClient is only available on Web');
@@ -28,6 +33,9 @@ class UspBridgeClient {
   Future<Map<String, dynamic>> unsubscribe({
     required String subscriptionId,
   }) =>
+      throw UnsupportedError('UspBridgeClient is only available on Web');
+
+  Future<List<String>> listSubscriptions() =>
       throw UnsupportedError('UspBridgeClient is only available on Web');
 
   Future<Map<String, dynamic>> turboStart() =>

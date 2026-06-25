@@ -196,14 +196,10 @@ class DashboardOrchestrator extends AsyncNotifier<DashboardOrchestratorState> {
   /// competing with data GET requests on the bridge, which causes 503
   /// errors due to the single-threaded OBUSPA backend.
   ///
-  /// Skipped for Remote Assistance mode — Guardian proxy does not support SSE.
+  /// Strategy handles the registration logic:
+  /// - Local: direct register (bridge is idempotent)
+  /// - Remote: unregister → delay → register (to avoid ID conflicts)
   Future<void> _registerSSEAfterDomainReady() async {
-    final loginType = ref.read(authProvider).value?.loginType;
-    if (loginType == LoginType.remote) {
-      logger.d('[USP][Orchestrator]: Skipping SSE in Remote Assistance mode');
-      return;
-    }
-
     await ref.read(dashboardDomainReadyProvider.future);
 
     // Wait for throttler to fully drain (WAN, LAN, DHCP, firewall, etc.)
@@ -221,7 +217,7 @@ class DashboardOrchestrator extends AsyncNotifier<DashboardOrchestratorState> {
     }
 
     manager.setCoreSubscriptions(coreSubscriptions);
-    await manager.registerDeferredSubscriptions(force: true);
+    await manager.registerCoreSubscriptions();
     logger.d(
         '[USP][Orchestrator]: SSE subscriptions registered after domain ready');
   }
