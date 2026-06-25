@@ -261,8 +261,8 @@ class PnpNotifier extends Notifier<PnpState> {
         // Main WiFi changed → connection will drop, user must reconnect
         state = state.copyWith(
           phase: WizardNeedsReconnect(
-            newSsid: phase.wifiConfig.ssid,
-            newPassword: phase.wifiConfig.password,
+            newSsid: phase.wifiConfig.reconnectSsid,
+            newPassword: phase.wifiConfig.reconnectPassword,
             wifiConfig: phase.wifiConfig,
           ),
         );
@@ -270,8 +270,8 @@ class PnpNotifier extends Notifier<PnpState> {
         // No main WiFi change → skip reconnect, go to firmware check
         state = state.copyWith(phase: const WizardSaved());
         await _checkFirmware(
-          ssid: phase.wifiConfig.ssid,
-          password: phase.wifiConfig.password,
+          ssid: phase.wifiConfig.reconnectSsid,
+          password: phase.wifiConfig.reconnectPassword,
           wifiConfig: phase.wifiConfig,
         );
       }

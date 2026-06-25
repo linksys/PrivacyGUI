@@ -106,6 +106,32 @@ class PnpWifiConfig extends Equatable {
   /// True if anything changed (main or guest).
   bool get isDirty => isMainDirty || isGuestDirty;
 
+  // ─── Reconnect Display Helpers ─────────────────────────────
+
+  /// Returns the SSID to display on the reconnect screen.
+  ///
+  /// In split mode: returns the first dirty band's SSID (or first band if none dirty).
+  /// In unified mode: returns [ssid].
+  String get reconnectSsid {
+    if (isSplitMode && mainBands.isNotEmpty) {
+      final dirtyBand = mainBands.where((b) => b.isDirty).firstOrNull;
+      return dirtyBand?.ssid ?? mainBands.first.ssid;
+    }
+    return ssid;
+  }
+
+  /// Returns the password to display on the reconnect screen.
+  ///
+  /// In split mode: returns the first dirty band's password (or first band if none dirty).
+  /// In unified mode: returns [password].
+  String get reconnectPassword {
+    if (isSplitMode && mainBands.isNotEmpty) {
+      final dirtyBand = mainBands.where((b) => b.isDirty).firstOrNull;
+      return dirtyBand?.password ?? mainBands.first.password;
+    }
+    return password;
+  }
+
   // ─── Copy With ─────────────────────────────────────────────
 
   PnpWifiConfig copyWith({
