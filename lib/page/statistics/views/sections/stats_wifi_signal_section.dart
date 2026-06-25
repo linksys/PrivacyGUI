@@ -89,7 +89,8 @@ class StatsWifiSignalSection extends ConsumerWidget {
                   AppGap.sm(),
                   SizedBox(
                     width: 60,
-                    child: AppText.bodySmall('$rssi dBm',
+                    child: AppText.bodySmall(
+                        loc(context).signalStrengthDbm(rssi.toString()),
                         textAlign: TextAlign.end),
                   ),
                 ],

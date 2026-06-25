@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:privacy_gui/page/_shared/components/wifi_ui.dart';
 import 'package:privacy_gui/page/_shared/models/network_health_helpers.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -34,7 +35,7 @@ class DimensionDetailView extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final tier = score?.tier ?? HealthTier.excellent;
     final tierColor = NetworkHealthHelpers.tierColor(tier, cs);
-    final tierLabel = NetworkHealthHelpers.tierLabel(tier);
+    final tierLabel = tier.resolveLabel(context);
     final actions = dimension.getActions(context);
 
     return Column(

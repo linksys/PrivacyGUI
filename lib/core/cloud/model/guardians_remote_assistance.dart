@@ -44,7 +44,7 @@ enum GRASessionStatus {
 ///   "serialNumber": "65G10M27E03053",
 ///   "modelNumber": "LN16-EU",
 ///   "status": "ACTIVE",
-///   "expiredIn": -748,
+///   "expiredIn": 748,
 ///   "createdAt": 1748315872000,
 ///   "statusChangedAt": 1748315989000,
 ///   "currentTime": 1748316924838
@@ -56,7 +56,7 @@ class GRASessionInfo extends Equatable {
   final String modelNumber;
   final GRASessionStatus status;
 
-  /// Seconds until expiry. Negative value means time remaining.
+  /// Seconds until expiry. Positive value means time remaining.
   final int expiredIn;
   final int createdAt;
   final int statusChangedAt;

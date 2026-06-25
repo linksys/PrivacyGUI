@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/route/constants.dart';
 
 import '../health_dimension.dart';
@@ -92,13 +93,13 @@ class SecurityHealthDimension extends HealthDimension {
     return [
       HealthAction(
         id: 'firewall_settings',
-        label: 'Firewall Settings',
+        label: loc(context).firewallSettings,
         icon: Icons.shield,
         routeName: RouteNamed.uspFirewall,
       ),
       HealthAction(
         id: 'dmz_settings',
-        label: 'DMZ Settings',
+        label: loc(context).dmzSettings,
         icon: Icons.public_off,
         routeName: RouteNamed.uspDmz,
       ),

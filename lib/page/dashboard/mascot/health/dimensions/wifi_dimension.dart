@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/route/constants.dart';
 
 import '../health_dimension.dart';
@@ -98,13 +99,13 @@ class WifiHealthDimension extends HealthDimension {
     return [
       HealthAction(
         id: 'wifi_settings',
-        label: 'WiFi Settings',
+        label: loc(context).menuWifiSettings,
         icon: Icons.wifi,
         routeName: RouteNamed.uspWifiSettings,
       ),
       HealthAction(
         id: 'wifi_guest',
-        label: 'Guest Network',
+        label: loc(context).guestNetwork,
         icon: Icons.people,
         routeName: RouteNamed.uspWifiSettings,
       ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_dashboard_preset.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -74,12 +75,12 @@ class _PresetSelectionDialogState extends State<_PresetSelectionDialog> {
       actions: [
         AppButton(
           semanticLabel: 'preset-cancel',
-          label: 'Cancel',
+          label: loc(context).cancel,
           onTap: () => Navigator.pop(context),
         ),
         AppButton.primary(
           semanticLabel: 'preset-apply',
-          label: 'Apply',
+          label: loc(context).apply,
           onTap: _selected != null
               ? () => Navigator.pop(context, _selected)
               : null,

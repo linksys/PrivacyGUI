@@ -93,8 +93,8 @@ class _RemoteAssistanceDialogState
           nextStatus == GRASessionStatus.invalid) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Remote assistance session has ended'),
+            SnackBar(
+              content: Text(loc(context).remoteAssistanceSessionEnded),
               behavior: SnackBarBehavior.floating,
             ),
           );
@@ -174,7 +174,7 @@ class _RemoteAssistanceDialogState
       return SizedBox(
         width: double.infinity,
         child: AppButton.danger(
-          label: 'End Session',
+          label: loc(context).endSession,
           onTap: _endSession,
         ),
       );
@@ -547,10 +547,10 @@ class _PinDisplay extends StatelessWidget {
   void _copyPin(BuildContext context) {
     Clipboard.setData(ClipboardData(text: pin));
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('PIN copied to clipboard'),
+      SnackBar(
+        content: Text(loc(context).pinCopiedToClipboard),
         behavior: SnackBarBehavior.floating,
-        duration: Duration(seconds: 2),
+        duration: const Duration(seconds: 2),
       ),
     );
   }
@@ -606,7 +606,8 @@ class _ActiveContent extends StatelessWidget {
           textAlign: TextAlign.center,
         ),
         AppGap.lg(),
-        _CountdownChip(seconds: countdown, label: 'Session expires in'),
+        _CountdownChip(
+            seconds: countdown, label: loc(context).sessionExpiresIn),
       ],
     );
   }
@@ -721,8 +722,8 @@ class RemoteAssistanceActiveDialog extends ConsumerWidget {
         // Show snackbar and close dialog
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Remote assistance session has ended'),
+            SnackBar(
+              content: Text(loc(context).remoteAssistanceSessionEnded),
               behavior: SnackBarBehavior.floating,
             ),
           );
@@ -768,7 +769,7 @@ class RemoteAssistanceActiveDialog extends ConsumerWidget {
                       onTap: () => Navigator.of(context).pop(),
                     )
                   : AppButton.danger(
-                      label: 'End Session',
+                      label: loc(context).endSession,
                       onTap: () async {
                         await ref
                             .read(remoteClientProvider.notifier)

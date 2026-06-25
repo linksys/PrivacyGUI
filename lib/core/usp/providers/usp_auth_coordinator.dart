@@ -30,6 +30,12 @@ class UspAuthCoordinator {
 
   DateTime? _lastTokenRefresh;
   Completer<void>? _refreshInProgress;
+  Completer<bool>? _restoreInProgress;
+  DateTime? _lastRestoreAttempt;
+  bool? _lastRestoreResult;
+
+  /// Cooldown period after a failed restore attempt to prevent rapid retries.
+  static const Duration _restoreCooldown = Duration(seconds: 5);
 
   /// Called when proactive refresh gets 401 — session externally terminated.
   VoidCallback? onForceLogout;
@@ -96,28 +102,81 @@ class UspAuthCoordinator {
     }
   }
 
-  /// Re-authenticates USP using the stored local password.
+  /// Re-authenticates USP using token refresh or stored password.
   ///
-  /// Used in three scenarios:
-  /// - **Page reload (Web)**: WASM in-memory state is lost, `isAuthenticated`
-  ///   reads false, login restores the session.
-  /// - **401 reauth Stage 2** (`UspClient.onReauthRequired`): the WASM client
-  ///   still reports `isAuthenticated=true` because the token exists in
-  ///   memory, but it has been revoked server-side.
-  /// - **Recovery probe after router reboot/firmware flash**: the WASM client
-  ///   reports `isAuthenticated=true` carrying a token that the rebooted
-  ///   router signed with a previous key, so it now 401s.
+  /// Strategy (token-first):
+  /// 1. If `isAuthenticated` is true → try `refreshToken()` first
+  ///    - Success → done, no login needed
+  ///    - 401 → fall through to password login
+  /// 2. If no token or refresh failed → login with stored password
   ///
-  /// `login()` is idempotent — calling it on a still-valid session simply
-  /// mints a new token, so we do not gate on `isAuthenticated`. Gating here
-  /// previously caused recovery probes after firmware reboot to repeatedly
-  /// 401 because the stale-but-`true` flag short-circuited the re-login.
+  /// This avoids unnecessary login calls when the session is still valid,
+  /// reducing account-lock risk from repeated password attempts.
+  ///
+  /// Multiple concurrent calls are coalesced — only the first triggers an
+  /// actual restore; subsequent callers await the same result.
+  ///
+  /// Failed login attempts have a cooldown period to prevent rapid retries
+  /// that could lock the account.
   Future<void> restoreSession() async {
     if (_usp == null) {
       logger.w('[USP][Auth]: restoreSession skipped: UspClient is null');
       return;
     }
-    await _loginWithStoredPassword();
+
+    // Coalesce concurrent calls — return in-flight result if one exists
+    if (_restoreInProgress != null) {
+      logger.d('[USP][Auth]: restoreSession already in progress, awaiting...');
+      await _restoreInProgress!.future;
+      return;
+    }
+
+    _restoreInProgress = Completer<bool>();
+    try {
+      final result = await _restoreSessionImpl();
+      _restoreInProgress!.complete(result);
+    } catch (e) {
+      _restoreInProgress!.completeError(e);
+    } finally {
+      _restoreInProgress = null;
+    }
+  }
+
+  /// Implementation of session restore with token-first strategy.
+  Future<bool> _restoreSessionImpl() async {
+    // Step 1: If we have a token, try refreshing it first
+    if (_usp!.isAuthenticated) {
+      try {
+        await _usp.refreshToken();
+        _lastTokenRefresh = DateTime.now();
+        logger.d('[USP][Auth]: restoreSession via refreshToken succeeded');
+        return true;
+      } catch (e) {
+        if (_isAuthError(e)) {
+          logger.d('[USP][Auth]: refreshToken got 401, falling back to login');
+          // Fall through to password login
+        } else {
+          logger.w('[USP][Auth]: refreshToken failed (non-auth): $e');
+          // Non-auth error (network, etc.) — still try password login as fallback
+        }
+      }
+    }
+
+    // Step 2: Fall back to password login
+    // Check cooldown to prevent account lock from rapid retries
+    final lastAttempt = _lastRestoreAttempt;
+    if (lastAttempt != null &&
+        _lastRestoreResult == false &&
+        DateTime.now().difference(lastAttempt) < _restoreCooldown) {
+      logger.d(
+          '[USP][Auth]: restoreSession skipped: cooldown after failed login');
+      return false;
+    }
+
+    final result = await _loginWithStoredPassword();
+    _lastRestoreAttempt = DateTime.now();
+    _lastRestoreResult = result;
+    return result;
   }
 
   /// Shared login logic — reads stored password and calls [UspClient.login].

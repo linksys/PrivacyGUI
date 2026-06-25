@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/components/wifi_ui.dart';
 import 'package:privacy_gui/page/devices/views/components/usp_signal_strength_indicator.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -40,7 +41,8 @@ class BackhaulSignalIndicator extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                AppText.titleMedium('$rssi dBm'),
+                AppText.titleMedium(
+                    loc(context).signalStrengthDbm(rssi.toString())),
                 AppText.labelSmall(label, color: color),
               ],
             ),

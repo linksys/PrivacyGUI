@@ -27,7 +27,7 @@ class UspRenewActionCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              AppText.bodySmall('$protocolLabel DHCP'),
+              AppText.bodySmall(loc(context).protocolDhcp(protocolLabel)),
               AppGap.xs(),
               AppText.labelLarge(
                 ipAddress?.isNotEmpty == true ? ipAddress! : '--',

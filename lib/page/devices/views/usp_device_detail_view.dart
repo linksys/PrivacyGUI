@@ -580,7 +580,8 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                AppText.titleMedium('${device.signalStrength} dBm'),
+                AppText.titleMedium(loc(context)
+                    .signalStrengthDbm(device.signalStrength.toString())),
                 AppText.labelSmall(
                   getWifiSignalLevel(device.signalStrength)
                       .resolveLabel(context),

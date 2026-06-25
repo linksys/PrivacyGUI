@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Dialog for adding a new DHCP reservation.
@@ -26,7 +27,7 @@ class _DhcpReservationDialogState extends State<DhcpReservationDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Add DHCP Reservation'),
+      title: Text(loc(context).addDhcpReservation),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -43,7 +44,7 @@ class _DhcpReservationDialogState extends State<DhcpReservationDialog> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              AppText.bodyMedium('Enabled'),
+              AppText.bodyMedium(loc(context).enabled),
               AppSwitch(
                 value: _enabled,
                 onChanged: (value) => setState(() => _enabled = value),
@@ -55,7 +56,7 @@ class _DhcpReservationDialogState extends State<DhcpReservationDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+          child: Text(loc(context).cancel),
         ),
         FilledButton(
           onPressed: () {
@@ -64,7 +65,7 @@ class _DhcpReservationDialogState extends State<DhcpReservationDialog> {
             if (mac.isEmpty || ip.isEmpty) return;
             Navigator.of(context).pop((mac: mac, ip: ip, enable: _enabled));
           },
-          child: const Text('Add'),
+          child: Text(loc(context).add),
         ),
       ],
     );

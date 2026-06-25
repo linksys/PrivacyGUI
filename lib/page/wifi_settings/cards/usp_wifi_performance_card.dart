@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/components/card_skeleton.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/_shared/components/wifi_ui.dart';
@@ -50,20 +51,21 @@ class UspWifiPerformanceCard extends ConsumerWidget {
     }
 
     return DashboardCardTemplate.tabbed(
-      title: 'WiFi Performance',
-      titleBadge: AppBadge(label: '${activeClients.length} clients'),
+      title: loc(context).wifiPerformance,
+      titleBadge:
+          AppBadge(label: loc(context).clientsCount(activeClients.length)),
       detailRoute: RouteNamed.uspWifiSettings,
       tabs: [
         CardTab(
-          label: 'Signal',
+          label: loc(context).signal,
           content: _SignalTab(clients: activeClients),
         ),
         CardTab(
-          label: 'Speed',
+          label: loc(context).speed,
           content: _SpeedTab(clients: activeClients),
         ),
         CardTab(
-          label: 'Channels',
+          label: loc(context).channels,
           content: _ChannelsTab(
             radios: wifiData.radioModels,
             clients: activeClients,
@@ -146,7 +148,8 @@ class _SignalTab extends StatelessWidget {
                           ),
                         ),
                         AppGap.sm(),
-                        AppText.bodySmall('$rssi dBm'),
+                        AppText.bodySmall(
+                            loc(context).signalStrengthDbm(rssi.toString())),
                       ],
                     ),
                     AppGap.xs(),
@@ -165,22 +168,22 @@ class _SignalTab extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            for (final entry in [
-              (SignalTier.excellent, 'Excellent'),
-              (SignalTier.good, 'Good'),
-              (SignalTier.fair, 'Fair'),
-              (SignalTier.weak, 'Weak'),
+            for (final tier in [
+              SignalTier.excellent,
+              SignalTier.good,
+              SignalTier.fair,
+              SignalTier.weak,
             ]) ...[
               Container(
                 width: 8,
                 height: 8,
                 decoration: BoxDecoration(
-                  color: entry.$1.resolveColor(colorScheme),
+                  color: tier.resolveColor(colorScheme),
                   shape: BoxShape.circle,
                 ),
               ),
               AppGap.xs(),
-              AppText.labelSmall(entry.$2),
+              AppText.labelSmall(tier.resolveLabel(context)),
               AppGap.md(),
             ],
           ],
@@ -224,12 +227,12 @@ class _SpeedTab extends StatelessWidget {
           child: AppBarChart(
             series: [
               AppChartSeries(
-                label: 'Downlink',
+                label: loc(context).downlink,
                 data: dlData,
                 color: colorScheme.primary,
               ),
               AppChartSeries(
-                label: 'Uplink',
+                label: loc(context).uplink,
                 data: ulData,
                 color: colorScheme.secondary,
               ),
@@ -254,7 +257,7 @@ class _SpeedTab extends StatelessWidget {
               ),
             ),
             AppGap.xs(),
-            AppText.labelSmall('Downlink'),
+            AppText.labelSmall(loc(context).downlink),
             AppGap.lg(),
             Container(
               width: 8,
@@ -265,7 +268,7 @@ class _SpeedTab extends StatelessWidget {
               ),
             ),
             AppGap.xs(),
-            AppText.labelSmall('Uplink'),
+            AppText.labelSmall(loc(context).uplink),
           ],
         ),
       ],
@@ -352,9 +355,9 @@ class _ChannelsTab extends StatelessWidget {
                   AppGap.xs(),
                   Row(
                     children: [
-                      AppText.bodySmall('$clientCount clients'),
+                      AppText.bodySmall(loc(context).clientsCount(clientCount)),
                       AppGap.md(),
-                      AppText.bodySmall('SNR: ${snr.toInt()} dB'),
+                      AppText.bodySmall(loc(context).snrValue(snr.toInt())),
                       AppGap.sm(),
                       Expanded(
                         child: AppLoader(
@@ -427,7 +430,8 @@ class _BandDistributionDonut extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             AppText.titleMedium('$totalClients'),
-            AppText.labelSmall('clients', color: colorScheme.onSurfaceVariant),
+            AppText.labelSmall(loc(context).clients,
+                color: colorScheme.onSurfaceVariant),
           ],
         ),
         size: 120,

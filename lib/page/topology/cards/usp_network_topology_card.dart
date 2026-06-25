@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
 import 'package:privacy_gui/page/_shared/components/dashboard_card_template.dart';
@@ -50,8 +51,10 @@ class UspNetworkTopologyCard extends ConsumerWidget {
     final useRing = totalCount >= 8;
 
     return DashboardCardTemplate(
-      title: 'Network Topology',
-      titleBadge: AppBadge(label: '$onlineCount / $totalCount online'),
+      title: loc(context).networkTopology,
+      titleBadge: AppBadge(
+          label: loc(context)
+              .nOnlineOfTotal(onlineCount.toString(), totalCount.toString())),
       detailRoute: RouteNamed.uspDeviceList,
       scrollable: false,
       content: ClipRect(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
 import 'package:privacy_gui/page/_shared/models/wan_status_ui_model.dart';
 import 'package:privacy_gui/page/dashboard/mascot/health/dimensions/internet_dimension.dart';
@@ -121,7 +122,13 @@ void main() {
 
     group('getActions', () {
       testWidgets('returns diagnose and settings actions', (tester) async {
-        await tester.pumpWidget(const SizedBox());
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: const SizedBox(),
+          ),
+        );
         final context = tester.element(find.byType(SizedBox));
 
         final actions = dimension.getActions(context);

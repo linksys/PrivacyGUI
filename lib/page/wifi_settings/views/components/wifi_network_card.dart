@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
+import 'package:privacy_gui/page/_shared/components/wifi_ui.dart';
 import 'package:privacy_gui/validator_rules/_validator_rules.dart';
 import 'package:privacy_gui/page/wifi_settings/models/wifi_network_ui_model.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_settings_provider.dart';
@@ -115,7 +116,7 @@ class WifiNetworkCard extends ConsumerWidget {
               SettingBlock(
                 title: loc(context).channelWidth,
                 value: n.channelBandwidth.isNotEmpty
-                    ? n.channelBandwidth
+                    ? wifiDisplayValue(context, n.channelBandwidth)
                     : loc(context).auto,
                 trailing: n.radioInstancePath != null
                     ? const AppIcon.font(AppFontIcons.edit)
@@ -126,7 +127,7 @@ class WifiNetworkCard extends ConsumerWidget {
               ),
               SettingBlock(
                 title: loc(context).channel,
-                value: n.channelDisplay,
+                value: wifiDisplayValue(context, n.channelDisplay),
                 trailing: n.radioInstancePath != null
                     ? const AppIcon.font(AppFontIcons.edit)
                     : null,
@@ -219,7 +220,8 @@ class WifiNetworkCard extends ConsumerWidget {
         builder: (ctx, setState) => AppRadioList<String>(
           selected: selected,
           items: n.supportedSecurityModes
-              .map((e) => AppRadioListItem<String>(title: e, value: e))
+              .map((e) => AppRadioListItem<String>(
+                  title: wifiDisplayValue(ctx, e), value: e))
               .toList(),
           onChanged: (_, value) {
             if (value != null) setState(() => selected = value);
@@ -320,7 +322,8 @@ class WifiNetworkCard extends ConsumerWidget {
 
   String _wifiModeDisplayName(BuildContext context, String value) {
     if (value.isEmpty) return loc(context).mixed;
-    return _wifiModeLabels[_toFirmwareMode(value)] ?? value;
+    return wifiDisplayValue(
+        context, _wifiModeLabels[_toFirmwareMode(value)] ?? value);
   }
 
   Future<void> _editWifiMode(
@@ -350,7 +353,8 @@ class WifiNetworkCard extends ConsumerWidget {
           selected: selected,
           items: options
               .map((value) => AppRadioListItem<String>(
-                    title: _wifiModeLabels[value] ?? value,
+                    title:
+                        wifiDisplayValue(ctx, _wifiModeLabels[value] ?? value),
                     value: value,
                   ))
               .toList(),
@@ -407,7 +411,7 @@ class WifiNetworkCard extends ConsumerWidget {
           items: options.map((bw) {
             final chCount = n.availableChannelsPerBandwidth[bw]?.length;
             return AppRadioListItem<String>(
-              title: bw,
+              title: wifiDisplayValue(ctx, bw),
               value: bw,
               descriptionWidget: chCount != null
                   ? AppText.bodySmall(loc(context).nChannelsAvailable(chCount))
@@ -446,7 +450,8 @@ class WifiNetworkCard extends ConsumerWidget {
             : n.possibleChannels;
 
     final channelItems = [
-      AppRadioListItem<String>(title: autoLabel, value: autoLabel),
+      AppRadioListItem<String>(
+          title: wifiDisplayValue(context, autoLabel), value: autoLabel),
       ...effectiveChannels.map(
         (ch) => AppRadioListItem<String>(
           title: ch.toString(),

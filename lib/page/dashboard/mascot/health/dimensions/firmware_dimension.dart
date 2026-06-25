@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/route/constants.dart';
 
 import '../health_dimension.dart';
@@ -81,7 +82,7 @@ class FirmwareHealthDimension extends HealthDimension {
     return [
       HealthAction(
         id: 'firmware_update',
-        label: 'Firmware Update',
+        label: loc(context).firmwareUpdate,
         icon: Icons.system_update,
         routeName: RouteNamed.uspFirmwareUpdate,
       ),

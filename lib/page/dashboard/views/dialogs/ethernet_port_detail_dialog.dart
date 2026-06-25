@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/models/ethernet_port_ui_model.dart';
 import 'package:privacy_gui/page/_shared/components/usp_info_row.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -15,7 +16,7 @@ Future<void> showEthernetPortDetailDialog(
     content: _EthernetPortDetailContent(port: port),
     actions: [
       AppButton.text(
-        label: 'Close',
+        label: loc(context).close,
         onTap: () => context.pop(),
       ),
     ],
@@ -36,12 +37,13 @@ class _EthernetPortDetailContent extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        UspInfoRow(label: 'Interface', value: port.name),
-        UspInfoRow(label: 'Status', value: port.isUp ? 'Up' : 'Down'),
-        UspInfoRow(label: 'Speed', value: port.speedLabel),
+        UspInfoRow(label: loc(context).labelInterface, value: port.name),
+        UspInfoRow(
+            label: loc(context).status, value: port.isUp ? 'Up' : 'Down'),
+        UspInfoRow(label: loc(context).speed, value: port.speedLabel),
         if (port.connectedDevices.isNotEmpty) ...[
           AppGap.md(),
-          AppText.labelLarge('Connected Devices'),
+          AppText.labelLarge(loc(context).connectedDevices),
           AppGap.sm(),
           ...port.connectedDevices.map((d) => Padding(
                 padding: const EdgeInsets.only(bottom: AppSpacing.md),

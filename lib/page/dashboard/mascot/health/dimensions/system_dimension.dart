@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/route/constants.dart';
 
 import '../../mascot_config.dart';
@@ -93,13 +94,13 @@ class SystemHealthDimension extends HealthDimension {
     return [
       HealthAction(
         id: 'reboot_router',
-        label: 'Reboot Router',
+        label: loc(context).rebootRouter,
         icon: Icons.restart_alt,
         routeName: RouteNamed.uspAdmin,
       ),
       HealthAction(
         id: 'system_info',
-        label: 'System Information',
+        label: loc(context).systemInformation,
         icon: Icons.info_outline,
         routeName: RouteNamed.uspAdmin,
       ),

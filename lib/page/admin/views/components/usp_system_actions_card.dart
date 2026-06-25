@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -22,7 +23,7 @@ class UspSystemActionsCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            AppText.titleMedium('System Actions'),
+            AppText.titleMedium(loc(context).systemActions),
             AppGap.md(),
             Row(
               children: [
@@ -35,7 +36,7 @@ class UspSystemActionsCard extends StatelessWidget {
                             size: 40, color: colorScheme.primary),
                         AppGap.md(),
                         AppButton.primaryOutline(
-                          label: 'Reboot',
+                          label: loc(context).reboot,
                           onTap: onReboot,
                         ),
                       ],
@@ -52,7 +53,7 @@ class UspSystemActionsCard extends StatelessWidget {
                             size: 40, color: colorScheme.error),
                         AppGap.md(),
                         AppButton.primaryOutline(
-                          label: 'Factory Reset',
+                          label: loc(context).factoryReset,
                           onTap: onFactoryReset,
                         ),
                       ],

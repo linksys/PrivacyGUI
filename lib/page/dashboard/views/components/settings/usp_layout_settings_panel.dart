@@ -224,7 +224,8 @@ class UspLayoutSettingsPanel extends ConsumerWidget {
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('Added ${spec.displayName}'),
+                                content: Text(loc(context)
+                                    .addedWidgetNamed(spec.displayName)),
                                 duration: const Duration(seconds: 1),
                               ),
                             );
@@ -248,7 +249,8 @@ class UspLayoutSettingsPanel extends ConsumerWidget {
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text('Added ${spec.displayName}'),
+                            content: Text(loc(context)
+                                .addedWidgetNamed(spec.displayName)),
                             duration: const Duration(seconds: 1),
                           ),
                         );

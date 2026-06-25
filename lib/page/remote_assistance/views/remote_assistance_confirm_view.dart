@@ -405,7 +405,7 @@ class _RemoteAssistanceConfirmViewState
                       children: [
                         const CircularProgressIndicator(),
                         AppGap.md(),
-                        AppText.bodyMedium('Validating session...'),
+                        AppText.bodyMedium(loc(context).validatingSession),
                       ],
                     ),
                   ),
@@ -433,7 +433,7 @@ class _RemoteAssistanceConfirmViewState
                   ),
                   AppGap.md(),
                   AppButton(
-                    label: 'Retry',
+                    label: loc(context).retry,
                     variant: SurfaceVariant.tonal,
                     size: AppButtonSize.small,
                     onTap: _validateToken,

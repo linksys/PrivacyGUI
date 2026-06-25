@@ -11,6 +11,7 @@ import 'package:privacy_gui/demo/theme_studio/theme_studio_panel.dart';
 import 'package:privacy_gui/components/styled/menus/menu_consts.dart';
 import 'package:privacy_gui/components/styled/menus/widgets/menu_holder.dart';
 import 'package:privacy_gui/config/global_config.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/providers/app_settings/app_settings_provider.dart';
 import 'package:privacy_gui/providers/theme_config_provider.dart';
 import 'package:privacy_gui/route/router_provider.dart';
@@ -90,7 +91,7 @@ class _UspDashboardShellState extends ConsumerState<UspDashboardShell> {
         trigger: RecoveryTrigger.natural,
         cooldown: Duration.zero,
         skipEnterWaiting: true,
-        title: 'Connection lost',
+        title: loc(context).connectionLost,
         message:
             'Lost connection to the router. Attempting to reconnect automatically...',
         successMessage: 'Reconnected to router',
