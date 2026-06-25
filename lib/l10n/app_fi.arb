@@ -210,6 +210,8 @@
   "faqListWhatLightsMean": "Mitä solmun valot tarkoittavat?",
   "faqLookingFor": "Etkö löydä etsimääsi?",
   "faqVisitLinksysSupport": "Käy Linksys-tuessa",
+  "faqWebInterfaceGuideTitle": "Verkkokäyttöliittymän opas",
+  "faqWebInterfaceGuideDesc": "Täydellinen opas Linksys Pinnacle Mesh -reitittimille",
   "faqs": "UKK",
   "featureUnavailableInRemoteMode": "Tämä ominaisuus ei ole käytettävissä etätilassa",
   "filterAnonymous": "Suodata anonyymit Internet-pyynnöt",

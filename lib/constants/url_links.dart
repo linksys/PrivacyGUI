@@ -41,6 +41,8 @@ const linkHardwareNodeNotTureOn = '$officialSupportHost/kb/article/6807-en';
 const linkHardwareEthernetPortNotWorking =
     '$officialSupportHost/kb/article/8185-en';
 const linkCheckIfAutoFirmwareOn = '$officialSupportHost/kb/article/6810-en';
+// Web Interface Guide
+const linkWebInterfaceGuide = '$officialSupportHost/kb/article/9921-en';
 // Explanation
 const linksysCertExplanation =
     '$officialWebHost/support-article?articleNum=318835';

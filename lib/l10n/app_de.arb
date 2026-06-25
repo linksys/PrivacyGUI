@@ -228,6 +228,8 @@
   "faqListWhatLightsMean": "Was bedeuten die Leuchten auf meinem Node?",
   "faqLookingFor": "Finden Sie nicht, was Sie suchen?",
   "faqVisitLinksysSupport": "Linksys Support besuchen",
+  "faqWebInterfaceGuideTitle": "Web-Interface-Handbuch",
+  "faqWebInterfaceGuideDesc": "Vollständige Anleitung für Linksys Pinnacle Mesh-Router",
   "faqs": "FAQs",
   "featureUnavailableInRemoteMode": "Diese Funktion ist im Fernzugriffsmodus nicht verfügbar",
   "filterAnonymous": "Anonyme Internetanfragen filtern",

@@ -228,6 +228,8 @@
   "faqListWhatLightsMean": "ノードのライトは何を意味しますか？",
   "faqLookingFor": "探しているものが見つかりませんか？",
   "faqVisitLinksysSupport": "Linksysサポートへ",
+  "faqWebInterfaceGuideTitle": "Webインターフェースガイド",
+  "faqWebInterfaceGuideDesc": "Linksys Pinnacle Meshルーターの完全ガイド",
   "faqs": "よくある質問",
   "featureUnavailableInRemoteMode": "この機能はリモートモードでは利用できません",
   "filterAnonymous": "匿名インターネットリクエストをフィルター処理します",

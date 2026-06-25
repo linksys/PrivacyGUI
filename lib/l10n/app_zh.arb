@@ -228,6 +228,8 @@
   "faqListWhatLightsMean": "节点上的指示灯代表什么意思？",
   "faqLookingFor": "找不到您要找的内容？",
   "faqVisitLinksysSupport": "访问Linksys支持网站",
+  "faqWebInterfaceGuideTitle": "Web界面指南",
+  "faqWebInterfaceGuideDesc": "Linksys Pinnacle Mesh路由器完整指南",
   "faqs": "常见问题解答",
   "featureUnavailableInRemoteMode": "此功能在远程模式下不可用",
   "filterAnonymous": "过滤匿名Internet请求",

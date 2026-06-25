@@ -228,6 +228,8 @@
   "faqListWhatLightsMean": "ما الذي تشير إليه المصابيح الموجودة على العقدة لديّ؟",
   "faqLookingFor": "لم تتمكن من العثور على ما تبحث عنه؟",
   "faqVisitLinksysSupport": "قم بزيارة دعم Linksys",
+  "faqWebInterfaceGuideTitle": "دليل واجهة الويب",
+  "faqWebInterfaceGuideDesc": "دليل شامل لأجهزة راوتر Linksys Pinnacle Mesh",
   "faqs": "الأسئلة الشائعة",
   "featureUnavailableInRemoteMode": "هذه الميزة غير متوفرة في وضع التحكم عن بُعد",
   "filterAnonymous": "تصفية طلبات إنترنت المجهولة",

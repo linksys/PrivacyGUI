@@ -228,6 +228,8 @@
   "faqListWhatLightsMean": "À quoi correspondent les voyants sur ma borne ?",
   "faqLookingFor": "Vous ne trouvez pas ce que vous cherchez ?",
   "faqVisitLinksysSupport": "Visiter le support Linksys",
+  "faqWebInterfaceGuideTitle": "Guide de l'interface Web",
+  "faqWebInterfaceGuideDesc": "Guide complet pour les routeurs Linksys Pinnacle Mesh",
   "faqs": "FAQ",
   "featureUnavailableInRemoteMode": "Cette fonctionnalité n'est pas disponible en mode distant",
   "filterAnonymous": "Filtrage des requêtes Internet anonymes",

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/page/components/widgets/brand_asset_widget.dart';
 import 'package:privacy_gui/providers/global_model_number_provider.dart';
 import 'package:privacy_gui/constants/url_links.dart';
+import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/styled/menus/menu_consts.dart';
@@ -98,6 +99,8 @@ class _FaqListViewState extends ConsumerState<FaqListView> {
             children: [
               // LinksysSearchComponent(),
               // const AppGap.medium(),
+              _buildWebInterfaceGuideCard(context),
+              const AppGap.medium(),
               ...categories.map((category) => Column(
                     children: [
                       _buildExpansionCard(
@@ -126,6 +129,34 @@ class _FaqListViewState extends ConsumerState<FaqListView> {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildWebInterfaceGuideCard(BuildContext context) {
+    return AppCard(
+      onTap: () {
+        gotoOfficialWebUrl(linkWebInterfaceGuide,
+            locale: ref.read(appSettingsProvider).locale);
+      },
+      child: Row(
+        children: [
+          Icon(LinksysIcons.infoCircle,
+              color: Theme.of(context).colorScheme.primary),
+          const AppGap.medium(),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AppText.labelLarge(loc(context).faqWebInterfaceGuideTitle),
+                const AppGap.small3(),
+                AppText.bodySmall(loc(context).faqWebInterfaceGuideDesc),
+              ],
+            ),
+          ),
+          Icon(LinksysIcons.openInNew,
+              color: Theme.of(context).colorScheme.primary),
+        ],
+      ),
     );
   }
 
