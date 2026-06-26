@@ -23,6 +23,9 @@ class FakeSseOperationStrategy implements SseOperationStrategy {
   HeartbeatConfig get heartbeatConfig => HeartbeatConfig.local;
 
   @override
+  AuthBehavior get authBehavior => AuthBehavior.local;
+
+  @override
   Future<List<SseSubscriptionRecord>> registerSubscriptions(
     List<SubscriptionDef> subscriptions,
   ) async {

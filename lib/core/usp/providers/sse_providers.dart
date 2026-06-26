@@ -26,20 +26,36 @@ final uspBridgeClientProvider = Provider<UspBridgeClient?>((ref) {
   final usp = ref.watch(uspClientProvider);
   if (usp == null) return null;
 
+  final UspBridgeClient bridge;
+
   if (GlobalConfig.remote.isActive) {
-    final raState = ref.watch(remoteAssistanceProvider);
-    final config = raState.config;
+    // W-4 fix: use select to avoid rebuilds on unrelated state changes
+    final config = ref.watch(
+      remoteAssistanceProvider.select((s) => s.config),
+    );
     if (config == null) return null;
-    final endpoints = BridgeEndpoints.remote(config.sessionId);
-    return UspBridgeClient(
+
+    bridge = UspBridgeClient(
       usp,
-      endpoints: endpoints,
+      endpoints: BridgeEndpoints.remote(config.sessionId),
       authToken: config.temporaryAccessToken,
       clientTypeId: config.clientTypeId,
+      authBehavior: AuthBehavior.remote,
+    );
+  } else {
+    bridge = UspBridgeClient(
+      usp,
+      authBehavior: AuthBehavior.local,
     );
   }
 
-  return UspBridgeClient(usp);
+  // W-1 fix: wire auth failure to logout (both modes)
+  bridge.onAuthFailed = () {
+    logger.w('[USP][Auth]: Session expired — triggering logout');
+    ref.read(authProvider.notifier).logout();
+  };
+
+  return bridge;
 });
 
 /// Singleton [SseManager] provider — NOT autoDispose.

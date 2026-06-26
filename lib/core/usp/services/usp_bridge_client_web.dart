@@ -7,7 +7,19 @@ import 'package:http/http.dart' as http;
 import 'package:web/web.dart' as web;
 
 import 'bridge_endpoints.dart';
+import 'sse_operation_strategy.dart';
 import 'usp_client.dart';
+
+export 'sse_operation_strategy.dart' show AuthBehavior;
+
+/// Exception thrown when session expires and cannot be recovered.
+class SessionExpiredException implements Exception {
+  final String message;
+  SessionExpiredException(this.message);
+
+  @override
+  String toString() => 'SessionExpiredException: $message';
+}
 
 /// Global JS property to persist SSE AbortController across hot restarts.
 @JS('_sseAbort')
@@ -28,15 +40,21 @@ class UspBridgeClient {
   final BridgeEndpoints _endpoints;
   final String? _overrideToken;
   final String? _clientTypeId;
+  final AuthBehavior _authBehavior;
+
+  /// Called when auth fails and cannot be recovered (session expired).
+  void Function()? onAuthFailed;
 
   UspBridgeClient(
     this._usp, {
     BridgeEndpoints? endpoints,
     String? authToken,
     String? clientTypeId,
+    AuthBehavior authBehavior = AuthBehavior.local,
   })  : _endpoints = endpoints ?? BridgeEndpoints.local,
         _overrideToken = authToken,
-        _clientTypeId = clientTypeId;
+        _clientTypeId = clientTypeId,
+        _authBehavior = authBehavior;
 
   /// Active SSE AbortController — stored so [abortSse] can cancel
   /// synchronously from a `beforeunload` handler.
@@ -67,17 +85,33 @@ class UspBridgeClient {
   // 401 Auth Retry (REST path)
   // ══════════════════════════════════════════════════════════════════════════
 
-  /// Wraps a REST request with 401 retry. On 401, delegates to
-  /// [UspClient.reauth] (shared Completer lock) then retries once.
+  /// Wraps a REST request with 401 handling based on [AuthBehavior].
+  ///
+  /// Local mode: delegates to [UspClient.reauth] then retries once.
+  /// Remote mode: no retry (temporaryAccessToken cannot refresh), triggers
+  /// [onAuthFailed] and throws [SessionExpiredException].
   Future<T> _withAuthRetry<T>(
     Future<http.Response> Function() request,
     T Function(http.Response) parser,
   ) async {
     var response = await request();
     if (response.statusCode == 401) {
-      debugPrint('[UspBridgeClient] 401 detected, triggering reauth...');
-      await _usp.reauth();
-      response = await request();
+      if (_authBehavior.shouldRetryOnFailure) {
+        // Local mode: reauth + retry
+        debugPrint('[UspBridgeClient] 401 detected, attempting reauth...');
+        await _usp.reauth();
+        response = await request();
+        if (response.statusCode == 401) {
+          debugPrint('[UspBridgeClient] 401 after reauth — session expired');
+          onAuthFailed?.call();
+          throw SessionExpiredException('Local session expired after reauth');
+        }
+      } else {
+        // Remote mode: no retry, session is over
+        debugPrint('[UspBridgeClient] 401 in Remote mode — session expired');
+        onAuthFailed?.call();
+        throw SessionExpiredException('Remote session expired');
+      }
     }
     return parser(response);
   }
@@ -205,21 +239,35 @@ class UspBridgeClient {
 
       if (!response.ok) {
         if (response.status == 401) {
-          if (authRetryCount >= 1) {
-            debug('401 retry limit reached (max 1 retry)');
-            controller.addError('SSE 401 after reauth retry');
-            await controller.close();
-            return;
-          }
-          debug('401 detected, attempting reauth and reconnect...');
-          try {
-            await _usp.reauth();
-            debug('Reauth succeeded, reconnecting SSE...');
-            await _startSseStream(controller, abortController,
-                authRetryCount: authRetryCount + 1);
-          } catch (e) {
-            debug('Reauth failed: $e');
-            controller.addError('SSE 401 reauth failed: $e');
+          if (_authBehavior.shouldRetryOnFailure) {
+            // Local mode: attempt reauth and retry
+            if (authRetryCount >= 1) {
+              debug('401 retry limit reached (max 1 retry)');
+              onAuthFailed?.call();
+              controller.addError(SessionExpiredException(
+                  'Local session expired after reauth'));
+              await controller.close();
+              return;
+            }
+            debug('401 detected, attempting reauth and reconnect...');
+            try {
+              await _usp.reauth();
+              debug('Reauth succeeded, reconnecting SSE...');
+              await _startSseStream(controller, abortController,
+                  authRetryCount: authRetryCount + 1);
+            } catch (e) {
+              debug('Reauth failed: $e');
+              onAuthFailed?.call();
+              controller.addError(
+                  SessionExpiredException('SSE 401 reauth failed: $e'));
+              await controller.close();
+            }
+          } else {
+            // Remote mode: no retry, session is over
+            debug('401 in Remote mode — session expired, closing SSE');
+            onAuthFailed?.call();
+            controller
+                .addError(SessionExpiredException('Remote session expired'));
             await controller.close();
           }
           return;

@@ -1,5 +1,17 @@
 import 'bridge_endpoints.dart';
+import 'sse_operation_strategy.dart';
 import 'usp_client.dart';
+
+export 'sse_operation_strategy.dart' show AuthBehavior;
+
+/// Exception thrown when session expires and cannot be recovered.
+class SessionExpiredException implements Exception {
+  final String message;
+  SessionExpiredException(this.message);
+
+  @override
+  String toString() => 'SessionExpiredException: $message';
+}
 
 /// Stub implementation of [UspBridgeClient] for non-Web platforms (Dart VM / tests).
 ///
@@ -7,11 +19,15 @@ import 'usp_client.dart';
 /// All methods throw [UnsupportedError] since SSE/bridge functionality
 /// requires the browser Fetch API.
 class UspBridgeClient {
+  /// Called when auth fails and cannot be recovered (session expired).
+  void Function()? onAuthFailed;
+
   UspBridgeClient(
     UspClient usp, {
     BridgeEndpoints? endpoints,
     String? authToken,
     String? clientTypeId,
+    AuthBehavior authBehavior = AuthBehavior.local,
   });
 
   Future<Map<String, dynamic>> health() =>

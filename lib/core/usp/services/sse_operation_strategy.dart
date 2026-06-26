@@ -1,5 +1,19 @@
 import 'package:privacy_gui/core/usp/models/sse_subscription_record.dart';
 
+/// Configuration for auth failure handling on 401 responses.
+class AuthBehavior {
+  /// Whether to attempt reauth and retry on 401.
+  final bool shouldRetryOnFailure;
+
+  const AuthBehavior._({required this.shouldRetryOnFailure});
+
+  /// Local mode: attempt WASM reauth and retry once.
+  static const local = AuthBehavior._(shouldRetryOnFailure: true);
+
+  /// Remote mode: no retry (temporaryAccessToken cannot refresh).
+  static const remote = AuthBehavior._(shouldRetryOnFailure: false);
+}
+
 /// Configuration for SSE heartbeat monitoring.
 class HeartbeatConfig {
   final bool enabled;
@@ -45,6 +59,9 @@ class SubscriptionDef {
 abstract class SseOperationStrategy {
   /// Configuration for heartbeat monitoring.
   HeartbeatConfig get heartbeatConfig;
+
+  /// Configuration for auth failure handling.
+  AuthBehavior get authBehavior;
 
   /// Registers subscriptions on the backend.
   ///

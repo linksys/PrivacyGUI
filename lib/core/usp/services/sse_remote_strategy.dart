@@ -24,6 +24,9 @@ class RemoteSseStrategy implements SseOperationStrategy {
   HeartbeatConfig get heartbeatConfig => HeartbeatConfig.remote;
 
   @override
+  AuthBehavior get authBehavior => AuthBehavior.remote;
+
+  @override
   Future<List<SseSubscriptionRecord>> registerSubscriptions(
     List<SubscriptionDef> subscriptions,
   ) async {

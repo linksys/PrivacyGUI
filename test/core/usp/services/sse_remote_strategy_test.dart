@@ -33,6 +33,12 @@ void main() {
     });
   });
 
+  group('authBehavior', () {
+    test('returns remote config with shouldRetryOnFailure=false', () {
+      expect(strategy.authBehavior.shouldRetryOnFailure, isFalse);
+    });
+  });
+
   group('registerSubscriptions', () {
     test('calls unsubscribe before subscribe for each subscription', () async {
       await strategy.registerSubscriptions([
