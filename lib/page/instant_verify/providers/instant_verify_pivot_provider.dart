@@ -1643,6 +1643,7 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
             rxRateMbps: rxWireless ?? rxFromDevices ?? negotiatedMbps,
             isWireless: true,
             deviceType: devInfo?['deviceType'],
+            isGuest: wireless['isGuest'] as bool?,
           ));
         }
       }
@@ -1676,6 +1677,7 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
         txRateMbps: isWireless ? _kbpsToMbps(wireless['txRate']) : null,
         rxRateMbps: isWireless ? _kbpsToMbps(wireless['rxRate']) : null,
         isWireless: isWireless,
+        isGuest: isWireless ? wireless['isGuest'] as bool? : false,
       ));
     }
     return clients;

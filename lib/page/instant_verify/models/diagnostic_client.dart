@@ -13,6 +13,10 @@ class DiagnosticClient extends Equatable {
   final bool isWireless;
   final String? deviceType;
 
+  /// Whether the router reports this client as connected to the guest network
+  /// (from the JNAP `isGuest` flag). Null when the field is absent.
+  final bool? isGuest;
+
   const DiagnosticClient({
     required this.macAddress,
     this.hostname,
@@ -23,6 +27,7 @@ class DiagnosticClient extends Equatable {
     this.rxRateMbps,
     required this.isWireless,
     this.deviceType,
+    this.isGuest,
   });
 
   String get displayName => hostname ?? macAddress;
@@ -59,7 +64,7 @@ class DiagnosticClient extends Equatable {
   }
 
   @override
-  List<Object?> get props => [macAddress, hostname, ipAddress, band, signalDecibels, txRateMbps, rxRateMbps, isWireless, deviceType];
+  List<Object?> get props => [macAddress, hostname, ipAddress, band, signalDecibels, txRateMbps, rxRateMbps, isWireless, deviceType, isGuest];
 }
 
 /// Common OUI prefixes (MAC first 3 octets) → manufacturer.

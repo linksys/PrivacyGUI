@@ -20,6 +20,7 @@ DiagnosticClient _client({
   int? signal,
   int? txRate,
   bool wireless = true,
+  bool? isGuest,
 }) {
   return DiagnosticClient(
     macAddress: mac,
@@ -28,6 +29,7 @@ DiagnosticClient _client({
     signalDecibels: signal,
     txRateMbps: txRate,
     isWireless: wireless,
+    isGuest: isGuest,
   );
 }
 
@@ -105,7 +107,7 @@ InstantVerifyPivotState _guestDeviceState() {
     },
     clients: [
       _client(mac: '00:00:00:00:00:01', hostname: "Deven's iPhone", signal: -45, txRate: 866),
-      _client(mac: 'GG:GG:GG:GG:GG:01', hostname: 'Guest Phone', signal: -50, txRate: 200),
+      _client(mac: 'GG:GG:GG:GG:GG:01', hostname: 'Guest Phone', signal: -50, txRate: 200, isGuest: true),
     ],
   );
 }
@@ -230,7 +232,7 @@ void main() {
   });
 
   group('MyDevicesTab — guest devices', () {
-    testWidgets('unmapped clients grouped as Guest Devices', (tester) async {
+    testWidgets('isGuest clients grouped as Guest Devices', (tester) async {
       await tester.pumpWidget(_buildTab(_guestDeviceState()));
       await tester.pumpAndSettle();
       expect(find.text('Guest Devices'), findsOneWidget);

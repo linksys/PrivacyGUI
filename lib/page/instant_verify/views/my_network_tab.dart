@@ -527,12 +527,17 @@ class _GuestNetworkCard extends StatelessWidget {
   }
 
   int _guestDeviceCount() {
-    // Guest device count — clients not mapped to any node in mesh,
-    // or reported by guest network JNAP response
     if (state.guestNetwork == null) return 0;
+    // GetGuestNetworkSettings does not return a count on most firmware.
     final count = state.guestNetwork!['guestDeviceCount'] as int?;
     if (count != null) return count;
-    // Fallback: count unmapped clients in mesh mode
+    // Authoritative: the per-client `isGuest` flag (works on all network
+    // types, including non-mesh where the old unmapped heuristic returned 0).
+    // If any client carries the flag, trust it even when the count is zero.
+    if (state.clients.any((c) => c.isGuest != null)) {
+      return state.clients.where((c) => c.isGuest == true).length;
+    }
+    // Legacy fallback when the flag is absent: unmapped clients in mesh mode.
     if (state.isMeshNetwork) {
       final mapped = state.clientToNodeId.keys.toSet();
       return state.clients.where((c) => !mapped.contains(c.macAddress)).length;

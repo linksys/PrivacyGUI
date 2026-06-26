@@ -243,36 +243,42 @@ class _MeshGroupedList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Separate guest devices (identified by lack of node mapping + specific naming)
-    // For now, clients not mapped to any node are treated as potentially guest devices
-    final mappedMacs = state.clientToNodeId.keys.toSet();
-    final mainClients = state.clients.where((c) => mappedMacs.contains(c.macAddress)).toList();
-    final unmappedClients = state.clients.where((c) => !mappedMacs.contains(c.macAddress)).toList();
+    // Identify guests by the router's `isGuest` flag — not by lack of node
+    // mapping, which mislabeled mapped guests and un-mapped main clients (Q-08).
+    final guestClients = state.clients.where((c) => c.isGuest == true).toList();
+    final mainClients = state.clients.where((c) => c.isGuest != true).toList();
 
     // Group clients by node
     final controller = state.meshNodes.where((n) => n.isController).toList();
     final satellites = state.meshNodes.where((n) => !n.isController).toList();
     final allNodes = [...controller, ...satellites];
 
+    // Bucket main clients by their node; any without a mapping are attributed
+    // to the controller so they are never dropped.
+    final controllerId =
+        controller.isNotEmpty ? controller.first.deviceId : null;
+    final byNode = <String, List<DiagnosticClient>>{};
+    for (final c in mainClients) {
+      final nodeId = state.clientToNodeId[c.macAddress] ?? controllerId;
+      if (nodeId == null) continue;
+      byNode.putIfAbsent(nodeId, () => []).add(c);
+    }
+
     return Column(
       children: [
         for (int i = 0; i < allNodes.length; i++)
           _NodeGroup(
             node: allNodes[i],
-            clients: _sorted(
-              mainClients
-                  .where((c) => state.clientToNodeId[c.macAddress] == allNodes[i].deviceId)
-                  .toList(),
-            ),
+            clients: _sorted(byNode[allNodes[i].deviceId] ?? []),
             // Show the user-assigned node name (was hardcoded, ignoring it).
             label: allNodes[i].name,
             state: state,
             onNavigateToFlow: onNavigateToFlow,
           ),
-        if (unmappedClients.isNotEmpty)
+        if (guestClients.isNotEmpty)
           _NodeGroup(
             node: null,
-            clients: _sorted(unmappedClients),
+            clients: _sorted(guestClients),
             label: 'Guest Devices',
             state: state,
             onNavigateToFlow: onNavigateToFlow,
