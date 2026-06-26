@@ -57,7 +57,8 @@ const nodeDetailsCherry7TestState = {
   "lanIpAddress": "10.216.1.1",
   "wanIpAddress": "192.168.1.88",
   "blinkingStatus": "Blink Node",
-  "isMLO": false
+  "isMLO": false,
+  "macAddress": "80:69:1A:B0:30:41"
 };
 const fakeNodeDetailsState1 = {
   "deviceId": "ef07238c-4870-46fb-a524-80691a13160e",
@@ -856,7 +857,8 @@ const fakeNodeDetailsState1 = {
   "lanIpAddress": "192.168.1.1",
   "wanIpAddress": "192.168.2.103",
   "nodeLightSettings": null,
-  "blinkingStatus": "Blink Node"
+  "blinkingStatus": "Blink Node",
+  "macAddress": "80:69:1A:13:16:0E"
 };
 
 const fakeNodeDetailsState2 = {
@@ -1656,5 +1658,6 @@ const fakeNodeDetailsState2 = {
   "lanIpAddress": "192.168.2.144",
   "wanIpAddress": "192.168.2.103",
   "nodeLightSettings": null,
-  "blinkingStatus": "Blink Node"
+  "blinkingStatus": "Blink Node",
+  "macAddress": "80:69:1A:30:48:EF"
 };
