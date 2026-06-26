@@ -12,13 +12,20 @@ import 'usp_bridge_client.dart';
 /// - No auto resubscribe on reconnect (orchestrator controls)
 /// - Heartbeat watchdog disabled (Guardian doesn't send heartbeats)
 /// - No auth check (temporaryAccessToken cannot refresh)
+/// - Uses 'remote-' prefix for subscription IDs to avoid collision with Local
 class RemoteSseStrategy implements SseOperationStrategy {
   final UspBridgeClient _bridge;
+
+  /// Prefix for remote subscription IDs to avoid collision with Local mode.
+  static const _idPrefix = 'remote-';
 
   /// Delay between unregister and register to allow Guardian to process.
   static const _unregisterDelay = Duration(milliseconds: 100);
 
   RemoteSseStrategy(this._bridge);
+
+  String _toRemoteId(String id) => '$_idPrefix$id';
+  bool _isRemoteId(String id) => id.startsWith(_idPrefix);
 
   @override
   HeartbeatConfig get heartbeatConfig => HeartbeatConfig.remote;
@@ -33,23 +40,26 @@ class RemoteSseStrategy implements SseOperationStrategy {
     final records = <SseSubscriptionRecord>[];
 
     for (final sub in subscriptions) {
+      final remoteId = _toRemoteId(sub.subscriptionId);
       try {
-        logger.d('[SSE][Remote]: Registering ${sub.subscriptionId}');
+        logger
+            .d('[SSE][Remote]: Registering ${sub.subscriptionId} as $remoteId');
 
         // Unregister first to avoid ID conflict
         try {
-          await _bridge.unsubscribe(subscriptionId: sub.subscriptionId);
+          await _bridge.unsubscribe(subscriptionId: remoteId);
           await Future.delayed(_unregisterDelay);
         } catch (_) {
           // Ignore — subscription may not exist
         }
 
         await _bridge.subscribe(
-          subscriptionId: sub.subscriptionId,
+          subscriptionId: remoteId,
           path: sub.referenceList,
           notifType: _notifTypeToInt(sub.notifType),
         );
 
+        // Record uses original ID (transparent to Registry/Manager)
         records.add(SseSubscriptionRecord(
           subscriptionId: sub.subscriptionId,
           notifType: sub.notifType,
@@ -72,9 +82,10 @@ class RemoteSseStrategy implements SseOperationStrategy {
   @override
   Future<void> unregisterSubscriptions(List<String> subscriptionIds) async {
     for (final id in subscriptionIds) {
+      final remoteId = _toRemoteId(id);
       try {
-        await _bridge.unsubscribe(subscriptionId: id);
-        logger.d('[SSE][Remote]: Unregistered $id');
+        await _bridge.unsubscribe(subscriptionId: remoteId);
+        logger.d('[SSE][Remote]: Unregistered $id (as $remoteId)');
       } catch (e) {
         logger.w('[SSE][Remote]: Failed to unregister $id: $e');
       }
@@ -105,10 +116,12 @@ class RemoteSseStrategy implements SseOperationStrategy {
   }
 
   void _fireAndForgetCleanup() {
-    // Query existing subscriptions and unregister all (best-effort)
+    // Query existing subscriptions and unregister only remote ones (best-effort)
     _bridge.listSubscriptions().then((ids) {
       for (final id in ids) {
-        _bridge.unsubscribe(subscriptionId: id).ignore();
+        if (_isRemoteId(id)) {
+          _bridge.unsubscribe(subscriptionId: id).ignore();
+        }
       }
     }).ignore();
   }

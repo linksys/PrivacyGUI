@@ -49,10 +49,11 @@ void main() {
         ),
       ]);
 
+      // Bridge receives prefixed ID
       verifyInOrder([
-        () => mockBridge.unsubscribe(subscriptionId: 'sub-1'),
+        () => mockBridge.unsubscribe(subscriptionId: 'remote-sub-1'),
         () => mockBridge.subscribe(
-              subscriptionId: 'sub-1',
+              subscriptionId: 'remote-sub-1',
               path: 'Device.WiFi.',
               notifType: 1,
             ),
@@ -73,8 +74,9 @@ void main() {
       ]);
 
       expect(records.length, 1);
+      // Bridge receives prefixed ID
       verify(() => mockBridge.subscribe(
-            subscriptionId: 'sub-1',
+            subscriptionId: 'remote-sub-1',
             path: 'Device.WiFi.',
             notifType: 1,
           )).called(1);
@@ -94,8 +96,9 @@ void main() {
     });
 
     test('continues on subscribe failure', () async {
+      // Mock uses prefixed ID
       when(() => mockBridge.subscribe(
-            subscriptionId: 'fail-sub',
+            subscriptionId: 'remote-fail-sub',
             path: any(named: 'path'),
             notifType: any(named: 'notifType'),
           )).thenThrow(Exception('guardian error'));
@@ -114,25 +117,30 @@ void main() {
       ]);
 
       expect(records.length, 1);
+      // Record stores original ID (transparent to Registry/Manager)
       expect(records.first.subscriptionId, 'ok-sub');
     });
   });
 
   group('unregisterSubscriptions', () {
-    test('calls bridge.unsubscribe for each id', () async {
+    test('calls bridge.unsubscribe for each id with prefix', () async {
       await strategy.unregisterSubscriptions(['sub-1', 'sub-2']);
 
-      verify(() => mockBridge.unsubscribe(subscriptionId: 'sub-1')).called(1);
-      verify(() => mockBridge.unsubscribe(subscriptionId: 'sub-2')).called(1);
+      // Bridge receives prefixed IDs
+      verify(() => mockBridge.unsubscribe(subscriptionId: 'remote-sub-1'))
+          .called(1);
+      verify(() => mockBridge.unsubscribe(subscriptionId: 'remote-sub-2'))
+          .called(1);
     });
 
     test('continues on failure', () async {
-      when(() => mockBridge.unsubscribe(subscriptionId: 'fail'))
+      when(() => mockBridge.unsubscribe(subscriptionId: 'remote-fail'))
           .thenThrow(Exception('error'));
 
       await strategy.unregisterSubscriptions(['fail', 'ok']);
 
-      verify(() => mockBridge.unsubscribe(subscriptionId: 'ok')).called(1);
+      verify(() => mockBridge.unsubscribe(subscriptionId: 'remote-ok'))
+          .called(1);
     });
   });
 
@@ -161,7 +169,7 @@ void main() {
   group('onSseDisconnected', () {
     test('intentional disconnect triggers fire-and-forget cleanup', () async {
       when(() => mockBridge.listSubscriptions())
-          .thenAnswer((_) async => ['sub-1', 'sub-2']);
+          .thenAnswer((_) async => ['remote-sub-1', 'remote-sub-2']);
 
       await strategy.onSseDisconnected(intentional: true);
 
@@ -169,6 +177,22 @@ void main() {
       // The actual cleanup happens asynchronously
       await Future.delayed(const Duration(milliseconds: 50));
       verify(() => mockBridge.listSubscriptions()).called(1);
+    });
+
+    test('cleanup only removes remote-prefixed subscriptions', () async {
+      when(() => mockBridge.listSubscriptions()).thenAnswer(
+          (_) async => ['remote-sub-1', 'local-sub', 'ethernet-valuechange']);
+
+      await strategy.onSseDisconnected(intentional: true);
+      await Future.delayed(const Duration(milliseconds: 50));
+
+      // Only remote-prefixed subscription should be unsubscribed
+      verify(() => mockBridge.unsubscribe(subscriptionId: 'remote-sub-1'))
+          .called(1);
+      // Local subscriptions should NOT be touched
+      verifyNever(() => mockBridge.unsubscribe(subscriptionId: 'local-sub'));
+      verifyNever(
+          () => mockBridge.unsubscribe(subscriptionId: 'ethernet-valuechange'));
     });
 
     test('unintentional disconnect does not trigger cleanup', () async {
