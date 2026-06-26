@@ -44,3 +44,8 @@ class ExceptionAutoMasterUnauthorized extends PnpException {
   ExceptionAutoMasterUnauthorized()
       : super(message: 'Auto Master check unauthorized');
 }
+
+class ExceptionAutoMasterPollingFailed extends PnpException {
+  ExceptionAutoMasterPollingFailed()
+      : super(message: 'Auto Master polling failed');
+}

@@ -113,6 +113,10 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
             context.goNamed(RouteNamed.localLoginPassword);
           }
         }, test: (error) => error is ExceptionAutoMasterUnauthorized)
+        .catchError((error, stackTrace) {
+          logger.e('[PnP]: Auto Master polling failed, stay on error view');
+          // Do nothing - UI already showing error view with retry button
+        }, test: (error) => error is ExceptionAutoMasterPollingFailed)
         // .catchError((error, stackTrace) {
         //   logger.e(
         //       '[PnP Troubleshooter]: Internet connection failed - initiate the troubleshooter');
@@ -356,8 +360,12 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
               if (mounted) {
                 context.goNamed(RouteNamed.localLoginPassword);
               }
-            }, test: (error) => error is ExceptionAutoMasterUnauthorized).onError(
-                    (error, stackTrace) {
+            }, test: (error) => error is ExceptionAutoMasterUnauthorized)
+                .catchError((error, stackTrace) {
+              logger.e('[PnP]: Auto Master polling failed, stay on error view');
+              // Do nothing - UI already showing error view with retry button
+            }, test: (error) => error is ExceptionAutoMasterPollingFailed)
+                .onError((error, stackTrace) {
               logger.e(
                 '[PnP]: ${_password == null ? 'There is no admin password, bring up the input view' : 'The given password is invalid'}',
               );
@@ -554,7 +562,7 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
             setState(() {
               _showAutoMasterConnectionError = true;
             });
-            return;
+            throw ExceptionAutoMasterPollingFailed();
           }
         } else {
           consecutiveFailures = 0;
@@ -584,6 +592,7 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
         setState(() {
           _showAutoMasterConnectionError = true;
         });
+        throw ExceptionAutoMasterPollingFailed();
       }
     }
   }
@@ -609,7 +618,11 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
       if (mounted) {
         context.goNamed(RouteNamed.localLoginPassword);
       }
-    }, test: (error) => error is ExceptionAutoMasterUnauthorized);
+    }, test: (error) => error is ExceptionAutoMasterUnauthorized).catchError(
+        (error, stackTrace) {
+      logger.e('[PnP]: Auto Master polling failed, stay on error view');
+      // Do nothing - UI already showing error view with retry button
+    }, test: (error) => error is ExceptionAutoMasterPollingFailed);
   }
 
   _showRouterPasswordModal() {
