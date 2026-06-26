@@ -162,7 +162,7 @@ class _UspIpv4SectionState extends ConsumerState<UspIpv4Section> {
       case UspWanConnectionType.pppoe:
         return _buildPppoeFields(form, isEditing);
       case UspWanConnectionType.bridge:
-        return _buildBridgeFields();
+        return _buildBridgeFields(isEditing);
     }
   }
 
@@ -315,10 +315,21 @@ class _UspIpv4SectionState extends ConsumerState<UspIpv4Section> {
     ];
   }
 
-  List<Widget> _buildBridgeFields() {
+  List<Widget> _buildBridgeFields(bool isEditing) {
+    final l = loc(context);
+    final hostName = widget.state.readOnlyInfo.hostName;
+    final showHint = isEditing && hostName.isNotEmpty;
     return [
       AppGap.md(),
-      AppText.bodyMedium(loc(context).bridgeModeWarning),
+      AppText.bodyMedium(l.bridgeModeWarning),
+      if (showHint) ...[
+        AppGap.md(),
+        AppText(
+          l.bridgeReconnectHint('https://$hostName.local'),
+          variant: AppTextVariant.bodyMedium,
+          fontWeight: FontWeight.bold,
+        ),
+      ],
     ];
   }
 
