@@ -1,0 +1,35 @@
+name: Auto-add issues to version projects
+
+# 當 issue 被加上版本標籤時，自動加入對應的 GitHub Project:
+#   - 2.x  -> Linksys Now USP   (org project #46)
+#   - 1.x  -> Linksys Now 1.x   (org project #39)
+#
+# 需求: repo secret ADD_TO_PROJECT_PAT
+#   一個有 `project` (read/write) + `repo` scope 的 PAT，或同等權限的
+#   fine-grained token (org Projects: Read and write)。
+#   預設的 GITHUB_TOKEN 無法寫入 org 層級的 Projects v2。
+
+on:
+  issues:
+    types: [labeled]
+
+jobs:
+  add-to-usp-project:
+    name: Add 2.x issues to Linksys Now USP
+    if: github.event.label.name == '2.x'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/add-to-project@v1.0.2
+        with:
+          project-url: https://github.com/orgs/linksys/projects/46
+          github-token: ${{ secrets.ADD_TO_PROJECT_PAT }}
+
+  add-to-1x-project:
+    name: Add 1.x issues to Linksys Now 1.x
+    if: github.event.label.name == '1.x'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/add-to-project@v1.0.2
+        with:
+          project-url: https://github.com/orgs/linksys/projects/39
+          github-token: ${{ secrets.ADD_TO_PROJECT_PAT }}
