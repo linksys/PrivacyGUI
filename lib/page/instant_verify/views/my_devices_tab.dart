@@ -906,9 +906,13 @@ class _DeviceDetailSheetState extends ConsumerState<_DeviceDetailSheet> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.check_box_outline_blank, size: 20,
-              color: Theme.of(context).colorScheme.onSurfaceVariant),
-          const SizedBox(width: 8),
+          // Non-interactive bullet. Was Icons.check_box_outline_blank, which
+          // looked like a tappable checkbox but had no handler (J-09).
+          Padding(
+            padding: const EdgeInsets.only(top: 6, right: 8),
+            child: Icon(Icons.circle, size: 6,
+                color: Theme.of(context).colorScheme.onSurfaceVariant),
+          ),
           Expanded(child: Text(text, style: Theme.of(context).textTheme.bodyMedium)),
         ],
       ),

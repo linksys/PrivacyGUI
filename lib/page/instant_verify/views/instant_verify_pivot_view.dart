@@ -49,62 +49,82 @@ class _InstantVerifyPivotViewState
     super.dispose();
   }
 
-  void _showRouterInfo(BuildContext context, InstantVerifyPivotState state) {
+  void _showRouterInfo(BuildContext context) {
     showModalBottomSheet<void>(
       context: context,
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
       builder: (ctx) {
-        final scheme = Theme.of(ctx).colorScheme;
-        final upDays = state.uptimeSeconds > 0
-            ? '${state.uptimeSeconds ~/ 86400}d ${(state.uptimeSeconds % 86400) ~/ 3600}h'
-            : null;
-        final rows = <(String, String)>[
-          if (state.routerModel != null) ('Model', state.routerModel!),
-          if (state.routerFirmware != null) ('Firmware', state.routerFirmware!),
-          if (state.routerSerial != null) ('Serial', state.routerSerial!),
-          if (state.routerMac != null) ('MAC', state.routerMac!),
-          if (upDays != null) ('Uptime', upDays),
-          if (state.wanIpAddress != null) ('WAN IP', state.wanIpAddress!),
-          if (state.wanConnectionType != null)
-            ('Connection', state.wanConnectionType!),
-        ];
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(child: Container(
-                width: 40, height: 4,
-                margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              )),
-              Text('Router Details',
-                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16,
-                      color: scheme.onSurface)),
-              const SizedBox(height: 16),
-              for (final (label, value) in rows)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: Row(children: [
-                    SizedBox(width: 90,
-                        child: Text(label,
-                            style: TextStyle(
-                                fontSize: 12, color: scheme.onSurfaceVariant))),
-                    Expanded(
-                      child: Text(value,
-                          style: const TextStyle(
-                              fontSize: 12, fontWeight: FontWeight.w500)),
+        // Watch the provider live so the sheet fills in when a refresh
+        // finishes — opening it mid-refresh used to capture empty state and
+        // show a blank table that never populated (J-10).
+        return Consumer(builder: (ctx, ref, _) {
+          final state = ref.watch(instantVerifyPivotProvider);
+          final scheme = Theme.of(ctx).colorScheme;
+          final upDays = state.uptimeSeconds > 0
+              ? '${state.uptimeSeconds ~/ 86400}d ${(state.uptimeSeconds % 86400) ~/ 3600}h'
+              : null;
+          final rows = <(String, String)>[
+            if (state.routerModel != null) ('Model', state.routerModel!),
+            if (state.routerFirmware != null) ('Firmware', state.routerFirmware!),
+            if (state.routerSerial != null) ('Serial', state.routerSerial!),
+            if (state.routerMac != null) ('MAC', state.routerMac!),
+            if (upDays != null) ('Uptime', upDays),
+            if (state.wanIpAddress != null) ('WAN IP', state.wanIpAddress!),
+            if (state.wanConnectionType != null)
+              ('Connection', state.wanConnectionType!),
+          ];
+          return Padding(
+            padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(child: Container(
+                  width: 40, height: 4,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                )),
+                Text('Router Details',
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16,
+                        color: scheme.onSurface)),
+                const SizedBox(height: 16),
+                if (rows.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    child: Row(children: [
+                      const SizedBox(
+                          width: 16, height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2)),
+                      const SizedBox(width: 12),
+                      Text('Loading router details…',
+                          style: TextStyle(
+                              fontSize: 12, color: scheme.onSurfaceVariant)),
+                    ]),
+                  )
+                else
+                  for (final (label, value) in rows)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: Row(children: [
+                        SizedBox(width: 90,
+                            child: Text(label,
+                                style: TextStyle(
+                                    fontSize: 12, color: scheme.onSurfaceVariant))),
+                        Expanded(
+                          child: Text(value,
+                              style: const TextStyle(
+                                  fontSize: 12, fontWeight: FontWeight.w500)),
+                        ),
+                      ]),
                     ),
-                  ]),
-                ),
-            ],
-          ),
-        );
+              ],
+            ),
+          );
+        });
       },
     );
   }
@@ -131,7 +151,7 @@ class _InstantVerifyPivotViewState
               return IconButton(
                 icon: const Icon(Icons.info_outline, size: 20),
                 tooltip: 'Router info',
-                onPressed: () => _showRouterInfo(ctx, state),
+                onPressed: () => _showRouterInfo(ctx),
               );
             }
             // Stacked, labeled router identity — tap for full details.
@@ -147,7 +167,7 @@ class _InstantVerifyPivotViewState
                       color: colors.onSurface),
                 );
             return InkWell(
-              onTap: () => _showRouterInfo(ctx, state),
+              onTap: () => _showRouterInfo(ctx),
               borderRadius: BorderRadius.circular(8),
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
