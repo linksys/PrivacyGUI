@@ -134,7 +134,9 @@ class _UspTimeSettingsCardState extends ConsumerState<UspTimeSettingsCard>
               if (tzInfo != null && tzInfo.observesDST)
                 InfoGridItem(
                   label: 'DST',
-                  value: inferDstEnabled(time.localTimeZone) ? 'On' : 'Off',
+                  value: inferDstEnabled(time.localTimeZone)
+                      ? loc(context).on
+                      : loc(context).off,
                 ),
             ],
           ),
