@@ -49,15 +49,16 @@ class UspInternetSettingsNotifier
     with
         PreservableAutoDisposeNotifierMixin<InternetSettingsSettings,
             InternetSettingsStatus, InternetSettingsFeatureState> {
-  /// One-shot guard: set during [performSave] when connection type was NOT
-  /// changed, consumed by [performFetch] to prevent transient empty
-  /// `addressingType` from the device causing Bridge misdetection.
+  /// One-shot guard for a device-timing race (#759): immediately after a save
+  /// that did NOT change the connection type, the device can transiently report
+  /// an empty `addressingType`. Under the AddressingType-only detection rule
+  /// (see [UspWanConnectionType.fromRawFields]) that empty value would read as
+  /// Bridge. This guard is set in [performSave] when the type was unchanged and
+  /// consumed by the next [performFetch] to preserve the known type.
   ///
-  // TODO: Remove this guard once Bridge Mode is properly implemented via
-  // TR-181 `Device.Bridging.Bridge.{i}.Port.{i}` — see the tracking issue
-  // for details. The current Bridge detection relies on empty addressingType
-  // + bridgeEnabled, which is fragile because bridgeEnabled is always true
-  // on most routers (LAN-side L2 bridge).
+  /// This is independent of detection correctness and must NOT be removed:
+  /// detection keys on a real device value, while this protects against a
+  /// transient one during the save→refetch window.
   UspWanConnectionType? _preservedConnectionType;
 
   @override
