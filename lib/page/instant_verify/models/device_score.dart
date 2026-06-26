@@ -38,6 +38,16 @@ class DeviceScore {
     // Rate: 0=0, 100≈4, 400≈17, 866≈36, 1200+=50
     final rateScore = (txRate / 1200 * 50).clamp(0.0, 50.0).toInt();
 
-    return DeviceScore(client: client, score: signalScore + rateScore);
+    var score = signalScore + rateScore;
+
+    // Throughput floor: a device moving real data at a healthy link rate is
+    // NOT a "weak WiFi" problem, even if its signal is only fair. Without this,
+    // e.g. a device at -72 dBm pushing 520 Mbps scored ~36 → flagged "weak"
+    // despite a perfectly usable connection. Keep healthy-throughput devices
+    // out of the Issue bucket — never flag them as weak on signal alone.
+    // (Only rescues Issues; the At-Risk/Good boundary is untouched.)
+    if (txRate >= 200 && score < 40) score = 40;
+
+    return DeviceScore(client: client, score: score);
   }
 }

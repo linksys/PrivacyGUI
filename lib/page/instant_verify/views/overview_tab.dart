@@ -123,7 +123,8 @@ class _OverviewTabState extends ConsumerState<OverviewTab> {
           ],
           if (state.issueDevices.isNotEmpty) ...[
             const SizedBox(height: 16),
-            _DeviceIssuesCard(state: state),
+            _DeviceIssuesCard(
+                state: state, onNavigateToFlow: widget.onNavigateToFlow),
           ],
           if (state.isMeshNetwork) ...[
             const SizedBox(height: 16),
@@ -959,7 +960,8 @@ class _FindingRow extends StatelessWidget {
 
 class _DeviceIssuesCard extends StatelessWidget {
   final InstantVerifyPivotState state;
-  const _DeviceIssuesCard({required this.state});
+  final void Function(int flowIndex)? onNavigateToFlow;
+  const _DeviceIssuesCard({required this.state, this.onNavigateToFlow});
 
   @override
   Widget build(BuildContext context) {
@@ -997,6 +999,21 @@ class _DeviceIssuesCard extends StatelessWidget {
           Text(advice,
               style: TextStyle(
                   fontSize: 13, color: scheme.onSurfaceVariant)),
+          // Direct action into the fix flow instead of only telling the user
+          // to go to My Devices (on-device feedback).
+          if (onNavigateToFlow != null) ...[
+            const SizedBox(height: 4),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: () =>
+                    onNavigateToFlow!.call(2), // → Device connectivity flow
+                style: TextButton.styleFrom(padding: EdgeInsets.zero),
+                icon: const Icon(Icons.build_outlined, size: 18),
+                label: const Text('Troubleshoot these devices'),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -1755,11 +1772,42 @@ class _ChecklistProgressState extends State<_ChecklistProgress> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          _revealedJnapChecks == 0 ? 'Starting diagnostics…' : 'Checking your connection',
-          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+        // Prominent "test is running" banner — a small per-row circle wasn't
+        // enough of a signal that something is happening (on-device feedback).
+        Row(
+          children: [
+            SizedBox(
+              width: 28,
+              height: 28,
+              child: CircularProgressIndicator(
+                  strokeWidth: 3,
+                  color: Theme.of(context).colorScheme.primary),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _revealedJnapChecks == 0
+                        ? 'Starting diagnostics…'
+                        : 'Checking your connection',
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w700, fontSize: 18),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Running your network checks — this takes a few seconds.',
+                    style: TextStyle(
+                        fontSize: 13,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 20),
         _CheckRow(label: 'Router', status: routerStatus,
             detail: _revealedJnapChecks >= 1 ? (state.routerModel ?? '') : ''),
         _CheckRow(
