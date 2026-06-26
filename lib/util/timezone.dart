@@ -21,7 +21,7 @@ String getTimeZoneRegionName(BuildContext context, timezoneId) {
     case 'EST5-NO-DST':
       return loc(context).timezoneIndianaEastColombiaPanama;
     case 'AEST-10':
-      return loc(context).timezoneAustralia;
+      return loc(context).australia;
     case 'MST7-NO-DST':
       return loc(context).timezoneArizona;
     case 'PKT-5-NO-DST':
@@ -51,7 +51,7 @@ String getTimeZoneRegionName(BuildContext context, timezoneId) {
     case 'FJT-12-NO-DST':
       return loc(context).timezoneFiji;
     case 'NZST-12':
-      return loc(context).timezoneNewZealand;
+      return loc(context).newZealand;
     case 'SBT-11-NO-DST':
       return loc(context).timezoneSolomonIslands;
     case 'CET-1':
@@ -89,7 +89,7 @@ String getTimeZoneRegionName(BuildContext context, timezoneId) {
     case 'GST-10-NO-DST':
       return loc(context).timezoneGuamRussia;
     case 'CST6-NO-DST':
-      return loc(context).timezoneMexico;
+      return loc(context).mexico;
     case 'SGT-8':
     case 'SGT-8-NO-DST':
       return loc(context).timezoneSingaporeTaiwanRussia;

@@ -99,10 +99,9 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
 
   @override
   Widget build(BuildContext context) {
-    // Navigate to dashboard after successful login.
-    // Go directly to dashboardHome (not '/') to avoid autoConfigurationLogic
-    // calling init() which toggles auth state and triggers routerProvider
-    // rebuild loops via _ref.watch(authProvider) in redirectLogic.
+    // Navigate via '/' after successful login to let router handle post-login
+    // flow (PnP check, dashboard routing). Requires #976 auth coalescing to
+    // prevent rebuild loops from repeated init() calls.
     ref.listen(authProvider, (previous, next) {
       if (previous != null &&
           previous.isLoading &&
@@ -111,7 +110,7 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
         final loginType = next.value?.loginType;
         if (loginType != null && loginType != LoginType.none) {
           if (!context.mounted) return;
-          context.goNamed(RouteNamed.uspDashboard);
+          context.go('/');
         }
       }
     });
@@ -138,7 +137,7 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
 
   void setErrorMessage(UnexpectedError? error) {
     if (error != null) {
-      final errorCode = error.message ?? '';
+      final errorCode = error.detail ?? '';
       // Check if it's the invalid admin password error from CheckAdminPassword3
       if (errorCode == errorInvalidAdminPassword ||
           errorCode == errorPasswordCheckDelayed) {
@@ -170,6 +169,11 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
             // No need to count down
             setState(() {
               _errorMessage = loc(context).localLoginTooManyAttemptsTitle;
+            });
+          } else {
+            // Simple invalid password error (no delay/attempts data from USP)
+            setState(() {
+              _errorMessage = loc(context).localLoginIncorrectRouterPassword;
             });
           }
         }
@@ -318,7 +322,7 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
       if (result != null) {
         // Create the error and the countdown has yet to be triggered
         final loginError = UnexpectedError(
-          message: errorPasswordCheckDelayed,
+          detail: errorPasswordCheckDelayed,
           originalError: jsonEncode(result),
         );
         setErrorMessage(loginError);

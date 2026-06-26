@@ -187,11 +187,10 @@ class UspInstantPrivacyService {
               d.hostName.isNotEmpty ? d.hostName : normalizeMac(d.macAddress),
     };
 
+    // Allowed list shows all whitelisted MACs with hostname if known, else MAC
     final allowed = allowedDevices(macAps).map((d) {
-      final name = hostnameByMac[d.mac] ?? 'Unknown Device';
-      return name == d.displayName
-          ? d
-          : InstantPrivacyDeviceUIModel(mac: d.mac, displayName: name);
+      final name = hostnameByMac[d.mac] ?? d.mac;
+      return InstantPrivacyDeviceUIModel(mac: d.mac, displayName: name);
     }).toList();
 
     return InstantPrivacyFetchResult(
@@ -220,12 +219,12 @@ class UspInstantPrivacyService {
             throw UspPartialFailureError(
               summary: 'MAC filter enable partial failure: $errorSummary',
               successPaths: successes.map((s) => s.requestedPath).toList(),
-              failedPaths: failures.map((f) => f.requestedPath).toList(),
+              failures: failures,
             );
           case UspFailure(:final errorSummary, :final errors):
             throw UspCompleteFailureError(
               summary: 'MAC filter enable failed: $errorSummary',
-              failedPaths: errors.map((e) => e.requestedPath).toList(),
+              failures: errors,
             );
         }
       }
@@ -253,12 +252,12 @@ class UspInstantPrivacyService {
             throw UspPartialFailureError(
               summary: 'MAC filter disable partial failure: $errorSummary',
               successPaths: successes.map((s) => s.requestedPath).toList(),
-              failedPaths: failures.map((f) => f.requestedPath).toList(),
+              failures: failures,
             );
           case UspFailure(:final errorSummary, :final errors):
             throw UspCompleteFailureError(
               summary: 'MAC filter disable failed: $errorSummary',
-              failedPaths: errors.map((e) => e.requestedPath).toList(),
+              failures: errors,
             );
         }
       }
@@ -287,12 +286,12 @@ class UspInstantPrivacyService {
           throw UspPartialFailureError(
             summary: 'MAC filter add partial failure: $errorSummary',
             successPaths: successes.map((s) => s.requestedPath).toList(),
-            failedPaths: failures.map((f) => f.requestedPath).toList(),
+            failures: failures,
           );
         case UspFailure(:final errorSummary, :final errors):
           throw UspCompleteFailureError(
             summary: 'MAC filter add failed: $errorSummary',
-            failedPaths: errors.map((e) => e.requestedPath).toList(),
+            failures: errors,
           );
       }
     } catch (e) {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/models/port_forwarding_rule_ui_model.dart';
 import 'package:privacy_gui/validator_rules/rules.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -93,24 +94,24 @@ class _PortRangeForwardingDialogState extends State<PortRangeForwardingDialog> {
     final client = _intClientController.text.trim();
 
     if (desc.isNotEmpty && desc.length > 32) {
-      errors['description'] = 'Max 32 characters';
+      errors['description'] = 'max32Characters';
     }
 
     if (extStartText.isNotEmpty) {
       final port = int.tryParse(extStartText);
       if (port == null || port < 1 || port > 65535) {
-        errors['extStart'] = 'Port must be 1–65535';
+        errors['extStart'] = 'portMustBe1To65535';
       }
     }
 
     if (extEndText.isNotEmpty) {
       final port = int.tryParse(extEndText);
       if (port == null || port < 1 || port > 65535) {
-        errors['extEnd'] = 'Port must be 1–65535';
+        errors['extEnd'] = 'portMustBe1To65535';
       } else if (errors['extStart'] == null && extStartText.isNotEmpty) {
         final start = int.tryParse(extStartText);
         if (start != null && port <= start) {
-          errors['extEnd'] = 'Must be greater than start port';
+          errors['extEnd'] = 'mustBeGreaterThanStartPort';
         }
       }
     }
@@ -118,30 +119,42 @@ class _PortRangeForwardingDialogState extends State<PortRangeForwardingDialog> {
     if (intPortText.isNotEmpty) {
       final port = int.tryParse(intPortText);
       if (port == null || port < 1 || port > 65535) {
-        errors['intPort'] = 'Port must be 1–65535';
+        errors['intPort'] = 'portMustBe1To65535';
       }
     }
 
     if (client.isNotEmpty && !_ipRule.validate(client)) {
-      errors['client'] = 'Invalid IP address format';
+      errors['client'] = 'invalidIpv4Format';
     }
 
     setState(() => _errors = errors);
   }
 
+  String? _localizeError(String? key) {
+    if (key == null) return null;
+    return switch (key) {
+      'max32Characters' => loc(context).max32Characters,
+      'portMustBe1To65535' => loc(context).portMustBe1To65535,
+      'mustBeGreaterThanStartPort' => loc(context).mustBeGreaterThanStartPort,
+      'invalidIpv4Format' => loc(context).invalidIpv4Format,
+      _ => key,
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     return AppDialog(
-      title: AppText.titleLarge(
-          _isEdit ? 'Edit Port Range Forwarding' : 'Add Port Range Forwarding'),
+      title: AppText.titleLarge(_isEdit
+          ? loc(context).editPortRangeForwarding
+          : loc(context).addPortRangeForwarding),
       scrollable: true,
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           AppTextField(
             controller: _descController,
-            hintText: 'Description',
-            errorText: _errors['description'],
+            hintText: loc(context).description,
+            errorText: _localizeError(_errors['description']),
             onChanged: (_) => _validate(),
           ),
           AppGap.lg(),
@@ -150,9 +163,9 @@ class _PortRangeForwardingDialogState extends State<PortRangeForwardingDialog> {
               Expanded(
                 child: AppTextField(
                   controller: _extPortStartController,
-                  hintText: 'External Port Start',
+                  hintText: loc(context).externalPortStart,
                   keyboardType: TextInputType.number,
-                  errorText: _errors['extStart'],
+                  errorText: _localizeError(_errors['extStart']),
                   onChanged: (_) => _validate(),
                 ),
               ),
@@ -160,9 +173,9 @@ class _PortRangeForwardingDialogState extends State<PortRangeForwardingDialog> {
               Expanded(
                 child: AppTextField(
                   controller: _extPortEndController,
-                  hintText: 'External Port End',
+                  hintText: loc(context).externalPortEnd,
                   keyboardType: TextInputType.number,
-                  errorText: _errors['extEnd'],
+                  errorText: _localizeError(_errors['extEnd']),
                   onChanged: (_) => _validate(),
                 ),
               ),
@@ -171,28 +184,28 @@ class _PortRangeForwardingDialogState extends State<PortRangeForwardingDialog> {
           AppGap.lg(),
           AppTextField(
             controller: _intPortController,
-            hintText: 'Internal Port',
+            hintText: loc(context).internalPort,
             keyboardType: TextInputType.number,
-            errorText: _errors['intPort'],
+            errorText: _localizeError(_errors['intPort']),
             onChanged: (_) => _validate(),
           ),
           AppGap.lg(),
           AppTextField(
             controller: _intClientController,
-            hintText: 'Internal IP (e.g. 192.168.1.100)',
-            errorText: _errors['client'],
+            hintText: loc(context).internalIpHint,
+            errorText: _localizeError(_errors['client']),
             onChanged: (_) => _validate(),
           ),
           AppGap.lg(),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              AppText.bodyMedium('Protocol'),
+              AppText.bodyMedium(loc(context).protocol),
               SegmentedButton<String>(
-                segments: const [
-                  ButtonSegment(value: 'TCP', label: Text('TCP')),
-                  ButtonSegment(value: 'UDP', label: Text('UDP')),
-                  ButtonSegment(value: 'Both', label: Text('Both')),
+                segments: [
+                  const ButtonSegment(value: 'TCP', label: Text('TCP')),
+                  const ButtonSegment(value: 'UDP', label: Text('UDP')),
+                  ButtonSegment(value: 'Both', label: Text(loc(context).both)),
                 ],
                 selected: {_protocol},
                 onSelectionChanged: (v) => setState(() => _protocol = v.first),
@@ -203,7 +216,7 @@ class _PortRangeForwardingDialogState extends State<PortRangeForwardingDialog> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              AppText.bodyMedium('Enabled'),
+              AppText.bodyMedium(loc(context).enabled),
               AppSwitch(
                 value: _enabled,
                 onChanged: (value) => setState(() => _enabled = value),
@@ -214,11 +227,11 @@ class _PortRangeForwardingDialogState extends State<PortRangeForwardingDialog> {
       ),
       actions: [
         AppButton.text(
-          label: 'Cancel',
+          label: loc(context).cancel,
           onTap: () => context.pop(),
         ),
         AppButton.text(
-          label: _isEdit ? 'Save' : 'Add',
+          label: _isEdit ? loc(context).save : loc(context).add,
           onTap: _isFormValid ? _submit : null,
         ),
       ],

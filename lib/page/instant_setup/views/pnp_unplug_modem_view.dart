@@ -11,33 +11,33 @@ class PnpUnplugModemView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return UiKitPageView(
-      appBarStyle: UiKitAppBarStyle.none,
+    return UiKitPageView.withSliver(
       scrollable: true,
+      appBarStyle: UiKitAppBarStyle.none,
       onBackTap: () => context.pop(),
-      bottomBar: UiKitBottomBarConfig(
-        positiveLabel: loc(context).next,
-        onPositiveTap: () => context.goNamed(RouteNamed.pnpModemLightsOff),
-      ),
-      child: (context, constraints) => Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.lg,
-          vertical: AppSpacing.lg,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Center(child: Assets.images.modemPlugged.svg(width: 200)),
-            AppGap.xxxl(),
-
-            AppText.headlineSmall(loc(context).pnpUnplugModemTitle),
-            AppGap.md(),
-            AppText.bodyMedium(loc(context).pnpUnplugModemDesc),
-            AppGap.xxxl(),
-
-            // Tip: Not sure which device?
-            _buildTipCard(context),
-          ],
+      child: (context, constraints) => Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 480),
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.xl),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(child: Assets.images.modemPlugged.svg(width: 160)),
+                AppGap.xxxl(),
+                AppText.headlineSmall(loc(context).pnpUnplugModemTitle),
+                AppGap.md(),
+                AppText.bodyMedium(loc(context).pnpIspSettingsContactDesc),
+                AppGap.xxxl(),
+                _buildTipCard(context),
+                AppGap.xxxl(),
+                AppButton.primary(
+                  label: loc(context).next,
+                  onTap: () => context.goNamed(RouteNamed.pnpModemLightsOff),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );

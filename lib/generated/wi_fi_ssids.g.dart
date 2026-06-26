@@ -7,6 +7,7 @@ import 'package:privacy_gui/core/usp/services/usp_client.dart';
 /// Single instance from WiFiSsids
 class WiFiSsid {
   final String instancePath;
+  final String? alias;
   final String ssid;
   final bool enable;
   final String status;
@@ -15,6 +16,7 @@ class WiFiSsid {
 
   const WiFiSsid({
     required this.instancePath,
+    this.alias,
     required this.ssid,
     required this.enable,
     required this.status,
@@ -43,6 +45,7 @@ class WiFiSsids {
   const WiFiSsids({required this.items});
 
   static const _paths = [
+    'Device.WiFi.SSID.*.Alias',
     'Device.WiFi.SSID.*.SSID',
     'Device.WiFi.SSID.*.Enable',
     'Device.WiFi.SSID.*.Status',
@@ -72,6 +75,7 @@ class WiFiSsids {
     for (final id in sorted) {
       final p = '$basePath$id.';
       if ([
+        response['${p}Alias'],
         response['${p}SSID'],
         response['${p}Enable'],
         response['${p}Status'],
@@ -83,19 +87,33 @@ class WiFiSsids {
           v == '0' ||
           v == 0 ||
           v == false ||
-          v == 'false')) continue;
+          v == 'false')) {
+        continue;
+      }
       final missing = <String>[];
-      if (!response.containsKey('${p}SSID')) missing.add('${p}SSID');
-      if (!response.containsKey('${p}Enable')) missing.add('${p}Enable');
-      if (!response.containsKey('${p}Status')) missing.add('${p}Status');
-      if (!response.containsKey('${p}BSSID')) missing.add('${p}BSSID');
-      if (!response.containsKey('${p}LowerLayers'))
+      if (!response.containsKey('${p}SSID')) {
+        missing.add('${p}SSID');
+      }
+      if (!response.containsKey('${p}Enable')) {
+        missing.add('${p}Enable');
+      }
+      if (!response.containsKey('${p}Status')) {
+        missing.add('${p}Status');
+      }
+      if (!response.containsKey('${p}BSSID')) {
+        missing.add('${p}BSSID');
+      }
+      if (!response.containsKey('${p}LowerLayers')) {
         missing.add('${p}LowerLayers');
+      }
       if (missing.isNotEmpty) {
         throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
       }
       items.add(WiFiSsid(
         instancePath: p,
+        alias: response.containsKey('${p}Alias')
+            ? response['${p}Alias'] as String
+            : null,
         ssid: (response['${p}SSID'] ?? '') as String,
         enable: response['${p}Enable'] == true ||
             response['${p}Enable'] == 'true' ||
@@ -114,10 +132,12 @@ class WiFiSsids {
       {bool allowPartial = false}) async {
     final params = <String, dynamic>{};
     for (final update in updates) {
-      if (update.ssid != null)
+      if (update.ssid != null) {
         params['${update.instancePath}SSID'] = update.ssid;
-      if (update.enable != null)
+      }
+      if (update.enable != null) {
         params['${update.instancePath}Enable'] = update.enable;
+      }
     }
     if (params.isEmpty) {
       return {

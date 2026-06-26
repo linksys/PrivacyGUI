@@ -38,16 +38,34 @@ class UspTrafficAnalysisNotifier extends Notifier<TrafficAnalysisState> {
       }
     });
 
-    const defaultInterval = Duration(seconds: 5);
+    const defaultInterval = Duration(seconds: 10);
+
+    // Listen for future state changes
     ref.listen(dashboardDomainReadyProvider, (_, next) {
       if (next is AsyncData) {
-        setRefreshInterval(defaultInterval);
+        _startTimerIfAuthenticated(defaultInterval);
       }
     });
+
+    // ref.listen only fires on state CHANGES — if dashboardDomainReadyProvider
+    // already completed before this provider was first read, the listener above
+    // will never fire. Check current state and start timer if ready.
+    final domainReady = ref.read(dashboardDomainReadyProvider);
+    if (domainReady is AsyncData) {
+      Future.microtask(() => _startTimerIfAuthenticated(defaultInterval));
+    }
 
     return const TrafficAnalysisState(
       refreshInterval: defaultInterval,
     );
+  }
+
+  void _startTimerIfAuthenticated(Duration interval) {
+    final isAuthenticated = ref.read(appConnectionStateProvider) ==
+        AppConnectionState.authenticated;
+    if (isAuthenticated) {
+      setRefreshInterval(interval);
+    }
   }
 
   /// Set the auto-refresh interval. Pass null to stop.
@@ -73,7 +91,7 @@ class UspTrafficAnalysisNotifier extends Notifier<TrafficAnalysisState> {
     if (connectionState != AppConnectionState.authenticated) return;
 
     final svc = ref.read(uspTrafficAnalysisServiceProvider);
-    if (svc == null || !svc.isAuthenticated) return;
+    if (svc == null) return;
 
     state = state.copyWith(isFetching: true);
     try {

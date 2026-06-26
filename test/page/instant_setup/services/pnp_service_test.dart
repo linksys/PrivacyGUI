@@ -54,12 +54,32 @@ void main() {
     'Device.Ethernet.VLANTermination.1.VLANID': '100',
   };
 
+  // Alias resolution response for WanSettings and Ipv6Settings _resolveInstance()
+  const ipAliasResolutionResponse = <String, dynamic>{
+    'Device.IP.Interface.1.Alias': 'lan',
+    'Device.IP.Interface.2.Alias': 'wan',
+  };
+
+  // Alias resolution response for Ethernet.Link (used by various codegen)
+  const ethLinkAliasResolutionResponse = <String, dynamic>{
+    'Device.Ethernet.Link.1.Alias': 'eth-lan',
+    'Device.Ethernet.Link.2.Alias': 'eth-wan',
+  };
+
   void setupFetchMocks({
     Map<String, dynamic> pppResponse = pppEmptyResponse,
     Map<String, dynamic> vlanResponse = vlanEmptyResponse,
   }) {
     when(() => mockUsp.get(any())).thenAnswer((invocation) async {
       final paths = invocation.positionalArguments[0] as List<String>;
+      // Handle _resolveInstance() calls for Ethernet.Link
+      if (paths.any((p) => p.contains('Ethernet.Link.*.Alias'))) {
+        return ethLinkAliasResolutionResponse;
+      }
+      // Handle _resolveInstance() calls for WanSettings/Ipv6Settings (IP.Interface)
+      if (paths.any((p) => p.contains('IP.Interface.*.Alias'))) {
+        return ipAliasResolutionResponse;
+      }
       if (paths.any((p) => p.contains('AddressingType'))) {
         return wanResponse;
       }
@@ -108,13 +128,6 @@ void main() {
               ]
             }
           ]
-        });
-  }
-
-  void setupDeleteMock() {
-    when(() => mockUsp.delete(any())).thenAnswer((_) async => {
-          'success': true,
-          'result': {'data': <String, dynamic>{}},
         });
   }
 
@@ -172,8 +185,17 @@ void main() {
 
       await service.saveIspSettings(config);
 
-      // Verify fetchSettings was called (4 parallel fetches)
-      verify(() => mockUsp.get(any())).called(4);
+      // Verify fetchSettings + saveAll get calls:
+      // fetchSettings:
+      // - WanSettings._resolveInstance() + fetch() = 2 calls
+      // - Ipv6Settings._resolveInstance() + fetch() = 2 calls
+      // - PppInterface.fetch() = 1 call
+      // - VlanTermination.fetch() = 1 call
+      // saveAll:
+      // - WanStaticIp.updateOrdered() → _resolveInstance() = 1 call
+      // - Ipv6Settings.update() → _resolveInstance() = 1 call
+      // Total = 8 get calls
+      verify(() => mockUsp.get(any())).called(8);
 
       // Verify setOrdered was called for Static IP mode switch
       final capturedOrdered = verify(() => mockUsp.setOrdered(captureAny(),
@@ -209,8 +231,13 @@ void main() {
 
       await service.saveIspSettings(config);
 
-      // Verify fetchSettings was called
-      verify(() => mockUsp.get(any())).called(4);
+      // Verify fetchSettings + saveAll get calls:
+      // fetchSettings: 6 calls (WanSettings, Ipv6, PPP, VLAN)
+      // saveAll:
+      // - WanPppoe.update() → _resolveInstance() = 1 call
+      // - Ipv6Settings.update() → _resolveInstance() = 1 call
+      // Total = 8 get calls
+      verify(() => mockUsp.get(any())).called(8);
 
       // Verify PppInterface.add was called (new PPP instance created)
       final addCaptures = verify(() => mockUsp.add(captureAny())).captured;
@@ -236,7 +263,7 @@ void main() {
     });
 
     test(
-        'PPPoE+VLAN → PPPoE: calls VlanTermination.delete to remove VLAN instance',
+        'PPPoE+VLAN → PPPoE: disables VLAN via SET Enable=false on existing instance',
         () async {
       // Start with PPPoE+VLAN enabled
       final wanPppoeResponse = Map<String, dynamic>.from(wanResponse);
@@ -245,6 +272,12 @@ void main() {
 
       when(() => mockUsp.get(any())).thenAnswer((invocation) async {
         final paths = invocation.positionalArguments[0] as List<String>;
+        if (paths.any((p) => p.contains('Ethernet.Link.*.Alias'))) {
+          return ethLinkAliasResolutionResponse;
+        }
+        if (paths.any((p) => p.contains('IP.Interface.*.Alias'))) {
+          return ipAliasResolutionResponse;
+        }
         if (paths.any((p) => p.contains('AddressingType'))) {
           return wanPppoeResponse;
         }
@@ -260,9 +293,7 @@ void main() {
         return {};
       });
       setupSetMocks();
-      setupDeleteMock();
 
-      // PnpIspConfig with PPPoE (no VLAN) — this should trigger VLAN delete
       const config = PnpIspConfig(
         type: IspConnectionType.pppoe,
         pppUsername: 'existinguser',
@@ -273,25 +304,41 @@ void main() {
 
       await service.saveIspSettings(config);
 
-      // Verify fetchSettings was called
-      verify(() => mockUsp.get(any())).called(4);
+      // Verify SET was called with VLANTermination.Enable = false
+      final setCaptures = verify(() => mockUsp.set(captureAny())).captured;
+      final vlanSet = setCaptures.whereType<Map<String, dynamic>>().where(
+          (params) => params.keys.any((k) => k.contains('VLANTermination')));
+      expect(vlanSet, isNotEmpty);
+      expect(
+          vlanSet.first['Device.Ethernet.VLANTermination.1.Enable'], isFalse);
 
-      // Verify VlanTermination.delete was called
-      final deleteCaptures =
-          verify(() => mockUsp.delete(captureAny())).captured;
-      expect(deleteCaptures, isNotEmpty);
-      final deletePaths = deleteCaptures.first as List<String>;
-      expect(deletePaths, contains('Device.Ethernet.VLANTermination.1.'));
+      // Verify no DELETE was called
+      verifyNever(() => mockUsp.delete(any()));
     });
 
-    test('PPPoE+VLAN: creates VLAN instance when enabling VLAN', () async {
-      // Start with PPPoE (no VLAN)
+    test('PPPoE+VLAN: enables VLAN via SET on existing instance', () async {
+      // Start with PPPoE, VLAN instance exists but disabled
       final wanPppoeResponse = Map<String, dynamic>.from(wanResponse);
       wanPppoeResponse['Device.IP.Interface.2.IPv4Address.1.AddressingType'] =
           'IPCP';
 
+      // VLAN instance exists but is disabled — fetchSettings will find it
+      // and pass vlanInstancePath to saveAll.
+      // Note: codegen skips instances where ALL fields are zero/false/empty,
+      // so VLANID must be non-zero for the instance to be recognized.
+      const vlanDisabledResponse = <String, dynamic>{
+        'Device.Ethernet.VLANTermination.1.Enable': false,
+        'Device.Ethernet.VLANTermination.1.VLANID': '50',
+      };
+
       when(() => mockUsp.get(any())).thenAnswer((invocation) async {
         final paths = invocation.positionalArguments[0] as List<String>;
+        if (paths.any((p) => p.contains('Ethernet.Link.*.Alias'))) {
+          return ethLinkAliasResolutionResponse;
+        }
+        if (paths.any((p) => p.contains('IP.Interface.*.Alias'))) {
+          return ipAliasResolutionResponse;
+        }
         if (paths.any((p) => p.contains('AddressingType'))) {
           return wanPppoeResponse;
         }
@@ -302,12 +349,11 @@ void main() {
           return pppExistingResponse;
         }
         if (paths.any((p) => p.contains('VLANTermination'))) {
-          return vlanEmptyResponse; // No existing VLAN
+          return vlanDisabledResponse;
         }
         return {};
       });
       setupSetMocks();
-      setupAddMock(createdPath: 'Device.Ethernet.VLANTermination.1.');
 
       const config = PnpIspConfig(
         type: IspConnectionType.pppoeVlan,
@@ -319,9 +365,17 @@ void main() {
 
       await service.saveIspSettings(config);
 
-      // Verify VlanTermination.add was called
-      final addCaptures = verify(() => mockUsp.add(captureAny())).captured;
-      expect(addCaptures, isNotEmpty);
+      // Verify SET was called with VLANTermination.Enable = true
+      final setCaptures = verify(() => mockUsp.set(captureAny())).captured;
+      final vlanSet = setCaptures.whereType<Map<String, dynamic>>().where(
+          (params) => params.keys.any((k) => k.contains('VLANTermination')));
+      expect(vlanSet, isNotEmpty);
+      expect(vlanSet.first['Device.Ethernet.VLANTermination.1.Enable'], isTrue);
+      expect(vlanSet.first['Device.Ethernet.VLANTermination.1.VLANID'],
+          equals(100));
+
+      // Verify no ADD was called
+      verifyNever(() => mockUsp.add(any()));
     });
   });
 }

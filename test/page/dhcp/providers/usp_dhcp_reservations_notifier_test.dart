@@ -73,12 +73,12 @@ void main() {
 
     test('fetch error sets error status', () async {
       when(() => mockService.fetchReservations())
-          .thenThrow(const NetworkError(message: 'timeout'));
+          .thenThrow(const NetworkError(detail: 'timeout'));
       final container = createContainer();
       await Future.delayed(Duration.zero);
 
       final state = container.read(uspDhcpReservationsProvider);
-      expect(state.status.errorMessage, contains('timeout'));
+      expect(state.status.error, isA<NetworkError>());
       expect(state.settings.current.reservations, isEmpty);
       container.dispose();
     });
@@ -168,7 +168,7 @@ void main() {
       when(() => mockService.saveBatch(
             original: any(named: 'original'),
             current: any(named: 'current'),
-          )).thenThrow(const NetworkError(message: 'save failed'));
+          )).thenThrow(const NetworkError(detail: 'save failed'));
 
       final container = createContainer();
       await Future.delayed(Duration.zero);
@@ -304,7 +304,7 @@ void main() {
     test('immediateToggle rethrows ServiceError', () async {
       when(() => mockService.fetchReservations()).thenAnswer((_) async => [r1]);
       when(() => mockService.immediateToggle(any(), any()))
-          .thenThrow(const NetworkError(message: 'toggle failed'));
+          .thenThrow(const NetworkError(detail: 'toggle failed'));
 
       final container = createContainer();
       await Future.delayed(Duration.zero);
@@ -324,7 +324,7 @@ void main() {
             mac: any(named: 'mac'),
             ip: any(named: 'ip'),
             enable: any(named: 'enable'),
-          )).thenThrow(const NetworkError(message: 'add failed'));
+          )).thenThrow(const NetworkError(detail: 'add failed'));
 
       final container = createContainer();
       await Future.delayed(Duration.zero);
@@ -341,7 +341,7 @@ void main() {
     test('immediateDelete rethrows ServiceError', () async {
       when(() => mockService.fetchReservations()).thenAnswer((_) async => [r1]);
       when(() => mockService.immediateDelete(any()))
-          .thenThrow(const NetworkError(message: 'delete failed'));
+          .thenThrow(const NetworkError(detail: 'delete failed'));
 
       final container = createContainer();
       await Future.delayed(Duration.zero);

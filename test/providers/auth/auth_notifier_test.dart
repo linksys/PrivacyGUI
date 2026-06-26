@@ -2,6 +2,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:privacy_gui/constants/error_code.dart';
 import 'package:privacy_gui/core/connection/services/router_fingerprint_service.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/models/device_info.dart';
@@ -175,6 +176,90 @@ void main() {
       expect(state?.localPassword, isNull);
       container.dispose();
     });
+
+    test('concurrent init calls are coalesced — restoreSession called once',
+        () async {
+      when(() => mockAuthService.getStoredLoginType())
+          .thenAnswer((_) async => AuthSuccess(LoginType.local));
+      when(() => mockAuthService.getStoredLocalPassword())
+          .thenAnswer((_) async => AuthSuccess('storedPass'));
+      // Slow restoreSession to ensure concurrent calls overlap
+      when(() => mockUspCoordinator.restoreSession())
+          .thenAnswer((_) => Future.delayed(const Duration(milliseconds: 50)));
+
+      final container = createContainer();
+      container.read(authProvider);
+      await Future.delayed(Duration.zero);
+
+      final notifier = container.read(authProvider.notifier);
+
+      // Launch multiple concurrent init calls.
+      // Dart's single-threaded event loop guarantees the first init() acquires
+      // _initInProgress before the others check it (no await before the guard).
+      final futures = [
+        notifier.init(),
+        notifier.init(),
+        notifier.init(),
+      ];
+      await Future.wait(futures);
+
+      // restoreSession should only be called once despite 3 concurrent inits
+      verify(() => mockUspCoordinator.restoreSession()).called(1);
+      container.dispose();
+    });
+
+    test('concurrent init waiters receive error via completeError', () async {
+      var callCount = 0;
+      // First call succeeds slowly, subsequent calls will wait on Completer
+      // Then we make it throw to trigger completeError path
+      when(() => mockAuthService.getStoredLoginType()).thenAnswer((_) async {
+        callCount++;
+        await Future.delayed(const Duration(milliseconds: 50));
+        throw StateError('Simulated storage failure');
+      });
+
+      final container = createContainer();
+      container.read(authProvider);
+      await Future.delayed(Duration.zero);
+
+      final notifier = container.read(authProvider.notifier);
+
+      // Track results/errors received by each caller.
+      // Dart's single-threaded event loop guarantees the first init() acquires
+      // _initInProgress before the others check it (no await before the guard).
+      AuthState? result1;
+      Object? error2, error3;
+
+      await Future.wait([
+        // Primary caller: receives null (init never throws)
+        notifier.init().then((r) => result1 = r),
+        // Concurrent waiters: receive error via completeError
+        notifier.init().catchError((e) {
+          error2 = e;
+          return null;
+        }),
+        notifier.init().catchError((e) {
+          error3 = e;
+          return null;
+        }),
+      ]);
+
+      // getStoredLoginType should only be called once (coalescing works)
+      expect(callCount, 1);
+
+      // Primary caller receives null (init never throws — callers use bare .then)
+      expect(result1, isNull);
+
+      // Concurrent waiters receive error via completeError
+      expect(error2, isA<StateError>());
+      expect(error3, isA<StateError>());
+
+      // State should be AsyncError
+      final state = container.read(authProvider);
+      expect(state.hasError, isTrue);
+
+      container.dispose();
+    });
   });
 
   // ---------------------------------------------------------------------------
@@ -219,7 +304,7 @@ void main() {
 
     test('failed USP login sets error state when guardError is true', () async {
       when(() => mockUspCoordinator.tryUspLogin('wrong'))
-          .thenAnswer((_) async => false);
+          .thenThrow(const InvalidCredentialsError());
 
       final container = createContainer();
       container.read(authProvider);
@@ -230,12 +315,13 @@ void main() {
 
       final state = container.read(authProvider);
       expect(state.hasError, isTrue);
+      expect(state.error, isA<UnexpectedError>());
       container.dispose();
     });
 
     test('failed USP login throws when guardError is false', () async {
       when(() => mockUspCoordinator.tryUspLogin('wrong'))
-          .thenAnswer((_) async => false);
+          .thenThrow(const InvalidCredentialsError());
 
       final container = createContainer();
       container.read(authProvider);
@@ -244,14 +330,40 @@ void main() {
       final notifier = container.read(authProvider.notifier);
       expect(
         () => notifier.localLogin('wrong', guardError: false),
-        throwsException,
+        throwsA(isA<InvalidCredentialsError>()),
       );
+      container.dispose();
+    });
+
+    test(
+        'account-locked error is passed through to the view as '
+        'errorAdminAccountLocked (not overwritten to errorUnexpected)',
+        () async {
+      // The coordinator surfaces account-locked as an UnexpectedError carrying
+      // the error-code identifier in `detail`. _mapToViewError must keep it.
+      when(() => mockUspCoordinator.tryUspLogin('locked')).thenThrow(
+          UnexpectedError(
+              originalError: Exception('Account is locked'),
+              detail: errorAdminAccountLocked));
+
+      final container = createContainer();
+      container.read(authProvider);
+      await Future.delayed(Duration.zero);
+
+      final notifier = container.read(authProvider.notifier);
+      await notifier.localLogin('locked', guardError: true);
+
+      final state = container.read(authProvider);
+      expect(state.hasError, isTrue);
+      final error = state.error;
+      expect(error, isA<UnexpectedError>());
+      expect((error as UnexpectedError).detail, errorAdminAccountLocked);
       container.dispose();
     });
 
     test('login does not call fetchDeviceInfo if USP fails', () async {
       when(() => mockUspCoordinator.tryUspLogin('wrong'))
-          .thenAnswer((_) async => false);
+          .thenThrow(const InvalidCredentialsError());
 
       final container = createContainer();
       container.read(authProvider);

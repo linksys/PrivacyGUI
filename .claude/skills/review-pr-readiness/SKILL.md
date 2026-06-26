@@ -1,6 +1,6 @@
 ---
 name: review-pr-readiness
-description: Review current branch changes for PR readiness. Checks code quality (dart format, flutter analyze), UI Kit library usage in Views, and test file coverage. Use before creating a Pull Request. Trigger keywords (English) - review pr, check pr, pr ready, pre-pr check, review before pr. Trigger keywords (Chinese) - 檢查 PR, PR 檢查, 準備 PR, PR 審查, 發 PR 前檢查.
+description: Review current branch changes for PR readiness. Checks code quality (dart format, flutter analyze), UI Kit library usage in Views, runs affected tests, and verifies test coverage. Use before creating a Pull Request. Trigger keywords (English) - review pr, check pr, pr ready, pre-pr check, review before pr. Trigger keywords (Chinese) - 檢查 PR, PR 檢查, 準備 PR, PR 審查, 發 PR 前檢查.
 ---
 
 # Pre-PR Readiness Review
@@ -49,15 +49,17 @@ git diff --name-only <base>...HEAD -- '*.dart'
 
 **Step 1.1: Check Formatting**
 
-Run `dart format` in dry-run mode on ALL changed `.dart` files:
+Run `dart format` in dry-run mode on ALL changed `.dart` files. Use `fvm dart format` to ensure the correct SDK version is used:
 
 ```bash
-dart format --set-exit-if-changed --output=none <changed_dart_files>
+fvm dart format --set-exit-if-changed --output=none <changed_dart_files>
 ```
+
+If `fvm` is not available, fall back to `dart format`.
 
 - If exit code is non-zero, list the unformatted files
 - Severity: **ERROR**
-- Suggestion: "Run `dart format <file>` to fix"
+- Suggestion: "Run `fvm dart format <file>` to fix"
 
 **Step 1.2: Run Static Analysis**
 
@@ -249,6 +251,128 @@ If a source file was changed but its existing test file was NOT changed in this 
 - Severity: **INFO**
 - Suggestion: "Source `<name>.dart` was modified but its test was not updated. Verify tests still cover the changes."
 
+**Step 4.3: Run Affected Tests (MANDATORY)**
+
+This step is **not optional** — it MUST run before the gate stamp can be issued. Static checks cannot catch logic regressions (e.g., tests that verify behavior that was removed or changed).
+
+**Collect test files to run:**
+
+1. For each changed source file in `lib/`, find its **direct** test file:
+   - `lib/page/[feature]/services/[name].dart` → `test/page/[feature]/services/[name]_test.dart`
+   - `lib/page/[feature]/providers/[name].dart` → `test/page/[feature]/providers/[name]_test.dart`
+   - `lib/page/[feature]/models/[name].dart` → `test/page/[feature]/models/[name]_test.dart`
+
+2. For each changed source file, find **dependent** test files that import it:
+   ```bash
+   # Find tests that import the changed source file
+   grep -rl "import.*<changed_file_package_path>" test/ --include="*.dart"
+   ```
+
+3. Include any test files that were directly changed in the branch.
+
+4. Deduplicate the collected list.
+
+**Run the tests:**
+
+```bash
+flutter test <collected_test_files> 2>&1
+```
+
+- If ALL tests pass:
+  - Severity: **PASS**
+  - Report: "Affected tests: <count> files, <total_tests> tests passed"
+
+- If any tests FAIL:
+  - Severity: **ERROR** (blocks gate stamp)
+  - Report each failing test name and a one-line summary of the failure
+  - Suggestion: "Fix failing tests before creating PR. These tests verify behavior affected by your changes."
+
+**Important notes:**
+- If the collected test list is empty (no test files found for changed sources), report as INFO and move on
+- If `flutter test` times out (>5 minutes), report as WARNING with suggestion to run manually
+- This step catches the exact scenario where source behavior changed but tests still assert old behavior
+
+### Phase 4.5: Golden Test Coverage (Only If View Files Changed)
+
+**IMPORTANT**: This phase only runs if View files (`lib/page/**/views/**/*.dart`) are changed or added.
+
+**Step 4.5.1: Check Golden Test File Existence**
+
+For each changed/new View file, check if a corresponding golden test exists:
+
+| View File Pattern | Expected Golden Test Pattern |
+|---|---|
+| `lib/page/[feature]/views/usp_[name]_view.dart` | `test/usp_test/page/[feature]/localizations/usp_[name]_view_test.dart` OR `test/usp_test/page/[feature]/localizations/[name]_view_test.dart` |
+| `lib/page/[feature]/views/[name]_view.dart` | `test/usp_test/page/[feature]/localizations/[name]_view_test.dart` |
+| `lib/page/[feature]/views/dialogs/[name]_dialog.dart` | Included in parent view's golden test OR `test/usp_test/page/[feature]/localizations/[name]_dialog_test.dart` |
+
+For each missing golden test file:
+- Severity: **WARNING**
+- Suggestion: "No golden test found for `<view_file>`. Consider adding golden tests at `<expected_path>`. Use `/golden-test-review` skill for guidance."
+
+**Step 4.5.2: Check Golden Test File Was Updated**
+
+If a View file was changed but its existing golden test was NOT changed in this branch:
+- Severity: **INFO**
+- Suggestion: "View `<name>_view.dart` was modified but its golden test was not updated. If visual output changed, run `flutter test --update-goldens <test_file>`."
+
+**Step 4.5.3: Analyze View States Coverage (Deep Check)**
+
+For each changed View file that HAS a corresponding golden test, perform a coverage analysis:
+
+1. **Extract view conditionals**: Read the view file and identify all conditional branches that produce different visual output:
+   - `switch` statements on enums (e.g., `FirmwareUpdatePhase`)
+   - `if/else` on state properties (e.g., `state.isDirty`, `state.hasError`)
+   - Empty vs populated lists
+   - Tab views (each tab is a different visual state)
+   - Dialogs shown via `showDialog`, `showAppDialog`, etc.
+
+2. **Extract golden test states**: Read the golden test file and extract all state keys from `GoldenTestConfig.states` and `GoldenTestConfig.interactions`:
+   ```dart
+   // Look for patterns like:
+   states: {
+     'idle_no_file': (overrides) => ...,
+     'uploading': (overrides) => ...,
+   },
+   interactions: {
+     'dialog_recovery': Interaction(...),
+   },
+   ```
+
+3. **Compare coverage**: Check if all identified visual states have corresponding golden test entries.
+
+For each missing state/interaction:
+- Severity: **WARNING**
+- Suggestion: "View `<name>_view.dart` has visual state `<state>` (from `<condition>`) but no golden test covers it. Add state key `<suggested_key>` to the golden test."
+
+**Step 4.5.4: Check Mock and Fixture Files**
+
+For each golden test file, verify supporting files exist:
+
+```bash
+# Check mock file exists
+test -f test/usp_test/golden_framework/mocks/mock_[feature].dart
+
+# Check fixture file exists
+test -f test/usp_test/page/[feature]/fixtures/[feature]_test_data.dart
+```
+
+For missing files:
+- Severity: **INFO**
+- Suggestion: "Golden test for `[feature]` is missing mock file at `test/usp_test/golden_framework/mocks/mock_[feature].dart`."
+
+**Step 4.5.5: Run Golden Tests (Optional Verification)**
+
+If the user explicitly requests verification OR if there are concerns about test validity:
+
+```bash
+flutter test test/usp_test/page/[feature]/localizations/ 2>&1 | tail -20
+```
+
+- If tests fail:
+- Severity: **ERROR**
+- Suggestion: "Golden tests for `[feature]` are failing. Run `flutter test --update-goldens <path>` to regenerate baselines if visual changes are intentional."
+
 ### Phase 5: Report
 
 ```
@@ -278,6 +402,13 @@ Changed Dart files: <count>
 ### Test Coverage
 - [PASS/WARN] Test files: <summary>
 - [PASS/INFO] Test freshness: <summary>
+- [PASS/ERROR] Affected tests execution: <summary>
+
+### Golden Test Coverage (if View files changed)
+- [PASS/WARN/SKIP] Golden test existence: <summary>
+- [PASS/INFO] Golden test freshness: <summary>
+- [PASS/WARN] State coverage: <summary>
+- [PASS/INFO] Mock/fixture files: <summary>
 
 ### Issues Found: <total_count>
 - ERROR: <count>
@@ -310,7 +441,7 @@ This stamp file is consumed by the `pr_gate.py` hook to allow `gh pr create` thr
 - **One-shot**: deleted after a single successful `gh pr create`
 - **Time-limited**: expires after 10 minutes
 
-Do NOT create the stamp if there are unresolved ERROR-level issues.
+Do NOT create the stamp if there are unresolved ERROR-level issues (including test failures from Step 4.3).
 
 ## Important Notes
 

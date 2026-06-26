@@ -36,7 +36,7 @@ class UspFirmwareUpdateService {
       (b) => b.isActive,
       orElse: () => throw UspCompleteFailureError(
         summary: 'No active firmware bank found',
-        failedPaths: const [],
+        failures: const [],
       ),
     );
   }
@@ -47,7 +47,7 @@ class UspFirmwareUpdateService {
       (b) => b.available && !b.isActive,
       orElse: () => throw UspCompleteFailureError(
         summary: 'No available firmware bank found',
-        failedPaths: const [],
+        failures: const [],
       ),
     );
   }
@@ -71,6 +71,25 @@ class UspFirmwareUpdateService {
     }
   }
 
+  Future<void> triggerOtaDownload({
+    required int targetInstance,
+    required String firmwareUrl,
+    bool autoActivate = true,
+  }) async {
+    try {
+      await FirmwareOperations.download(
+        _usp,
+        targetInstance,
+        url: firmwareUrl,
+        autoActivate: autoActivate ? 'true' : 'false',
+      );
+    } on ServiceError {
+      rethrow;
+    } catch (e) {
+      throw mapUspErrorToServiceError(e);
+    }
+  }
+
   Future<String> pollStatus(int instance) async {
     try {
       final images = await FirmwareImages.fetch(_usp);
@@ -78,7 +97,7 @@ class UspFirmwareUpdateService {
         (i) => _instanceFromPath(i.instancePath) == instance,
         orElse: () => throw UspCompleteFailureError(
           summary: 'Firmware bank instance $instance not found',
-          failedPaths: const [],
+          failures: const [],
         ),
       );
       return match.status;
@@ -115,7 +134,7 @@ class UspFirmwareUpdateService {
         throw UspCompleteFailureError(
           summary:
               'Inconsistent firmware state: ${activeBanks.length} banks reported Active',
-          failedPaths: activeBanks.map((b) => b.instancePath).toList(),
+          failures: const [],
         );
       }
       final match = images.items.firstWhere(
@@ -123,14 +142,14 @@ class UspFirmwareUpdateService {
         orElse: () => throw UspCompleteFailureError(
           summary: 'Expected firmware bank instance $expectedActiveInstance '
               'not present after reboot',
-          failedPaths: const [],
+          failures: const [],
         ),
       );
       if (match.status != 'Active') {
         throw UspCompleteFailureError(
           summary: 'Router restarted but did not boot the new image (instance '
               '$expectedActiveInstance status=${match.status})',
-          failedPaths: [match.instancePath],
+          failures: const [],
         );
       }
       return match.version == expectedVersion;

@@ -16,12 +16,17 @@ import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_update_phase.dart';
 import 'package:privacy_gui/page/firmware_update/providers/firmware_banks_data_provider.dart';
 import 'package:privacy_gui/page/firmware_update/providers/firmware_update_notifier.dart';
+import 'package:privacy_gui/page/firmware_update/models/firmware_ota_info.dart';
 import 'package:privacy_gui/page/firmware_update/services/firmware_file_picker_service.dart';
 import 'package:privacy_gui/page/firmware_update/services/firmware_local_upload_service.dart';
+import 'package:privacy_gui/page/firmware_update/services/firmware_ota_check_service.dart';
 import 'package:privacy_gui/page/firmware_update/services/usp_firmware_update_service.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 
 import '../../../mocks/test_data/firmware_update_test_data.dart';
+
+class MockFirmwareOtaCheckService extends Mock
+    implements FirmwareOtaCheckService {}
 
 class MockUspClient extends Mock implements UspClient {}
 
@@ -74,15 +79,24 @@ void main() {
   late MockUspClient mockUsp;
   late MockUspFirmwareUpdateService mockService;
   late MockFirmwareLocalUploadService mockUploader;
+  late MockFirmwareOtaCheckService mockOtaChecker;
 
   setUpAll(() {
     registerFallbackValue(Uint8List(0));
+    registerFallbackValue(const FirmwareOtaCheckParams(
+      macAddress: '',
+      installedVersion: '',
+      modelNumber: '',
+      hardwareVersion: '',
+      ipAddress: '',
+    ));
   });
 
   setUp(() {
     mockUsp = MockUspClient();
     mockService = MockUspFirmwareUpdateService();
     mockUploader = MockFirmwareLocalUploadService();
+    mockOtaChecker = MockFirmwareOtaCheckService();
     when(() => mockUsp.isAuthenticated).thenReturn(true);
     when(() => mockUploader.totalFragmentsFor(any())).thenReturn(32);
   });
@@ -90,6 +104,7 @@ void main() {
   ProviderContainer createContainer({
     FirmwareFilePickerService? picker,
     FirmwareLocalUploadService? uploader,
+    FirmwareOtaCheckService? otaChecker,
     AsyncValue<FirmwareBanksData>? banksData,
   }) {
     final container = ProviderContainer(
@@ -99,6 +114,8 @@ void main() {
         uspMutationLockProvider.overrideWithValue(UspMutationLock()),
         firmwareLocalUploadServiceProvider
             .overrideWithValue(uploader ?? mockUploader),
+        firmwareOtaCheckServiceProvider
+            .overrideWithValue(otaChecker ?? mockOtaChecker),
         if (picker != null)
           firmwareFilePickerServiceProvider.overrideWithValue(picker),
         if (banksData != null)
@@ -154,7 +171,7 @@ void main() {
     test('loadBanks failure transitions to failed phase', () async {
       final container = createContainer(
         banksData: AsyncError(
-            const NetworkError(message: 'timeout'), StackTrace.current),
+            const NetworkError(detail: 'timeout'), StackTrace.current),
       );
       addTearDown(container.dispose);
 
@@ -329,7 +346,7 @@ void main() {
             commandKey: any(named: 'commandKey'),
             isCancelled: any(named: 'isCancelled'),
             onProgress: any(named: 'onProgress'),
-          )).thenThrow(const NetworkError(message: 'chunk timeout'));
+          )).thenThrow(const NetworkError(detail: 'chunk timeout'));
       final container = createContainer(
         picker: _StubPickerService(
           FirmwarePickedFile(name: 'fw.img', size: bytes.length, bytes: bytes),
@@ -550,6 +567,160 @@ void main() {
         AppConnectionState.waitingForRecovery,
       );
       verify(() => mockSseManager.disconnect()).called(1);
+    });
+
+    // ════════════════════════════════════════════════════════════════════════
+    // OTA Check Tests
+    // ════════════════════════════════════════════════════════════════════════
+
+    group('checkForOtaUpdate', () {
+      const testParams = FirmwareOtaCheckParams(
+        macAddress: '74-12-13-21-56-3A',
+        installedVersion: '1.2.1',
+        modelNumber: 'M60-US',
+        hardwareVersion: '1',
+        ipAddress: '192.168.1.1',
+      );
+
+      test(
+          'transitions idle → checkingOta → idle with otaInfo when update available',
+          () async {
+        final otaInfo = FirmwareOtaInfo(
+          version: '1.0.10.25092307',
+          releaseDate: DateTime.utc(2025, 9, 23),
+          downloadUrl: 'http://download.linksys.com/updates/firmware.img',
+          checksum: '1022217387',
+          checkInterval: 'daily',
+          checkTime: '06:00:00Z',
+        );
+        when(() => mockOtaChecker.checkForUpdate(any()))
+            .thenAnswer((_) async => otaInfo);
+
+        final container = createContainer();
+        addTearDown(container.dispose);
+        final notifier =
+            container.read(firmwareUpdateNotifierProvider.notifier);
+
+        final result = await notifier.checkForOtaUpdate(testParams);
+
+        expect(result, equals(otaInfo));
+        final state = container.read(firmwareUpdateNotifierProvider);
+        expect(state.phase, FirmwareUpdatePhase.idle);
+        expect(state.otaInfo, equals(otaInfo));
+        expect(state.otaUpToDate, isFalse);
+      });
+
+      test(
+          'transitions idle → checkingOta → idle with otaUpToDate when no update',
+          () async {
+        when(() => mockOtaChecker.checkForUpdate(any()))
+            .thenAnswer((_) async => null);
+
+        final container = createContainer();
+        addTearDown(container.dispose);
+        final notifier =
+            container.read(firmwareUpdateNotifierProvider.notifier);
+
+        final result = await notifier.checkForOtaUpdate(testParams);
+
+        expect(result, isNull);
+        final state = container.read(firmwareUpdateNotifierProvider);
+        expect(state.phase, FirmwareUpdatePhase.idle);
+        expect(state.otaInfo, isNull);
+        expect(state.otaUpToDate, isTrue);
+      });
+
+      test('rethrows FirmwareOtaCheckException and returns to idle', () async {
+        when(() => mockOtaChecker.checkForUpdate(any()))
+            .thenThrow(FirmwareOtaCheckException('API error'));
+
+        final container = createContainer();
+        addTearDown(container.dispose);
+        final notifier =
+            container.read(firmwareUpdateNotifierProvider.notifier);
+
+        await expectLater(
+          notifier.checkForOtaUpdate(testParams),
+          throwsA(isA<FirmwareOtaCheckException>()),
+        );
+
+        final state = container.read(firmwareUpdateNotifierProvider);
+        expect(state.phase, FirmwareUpdatePhase.idle);
+        expect(state.otaInfo, isNull);
+      });
+
+      test('clears previous otaInfo and error on new check', () async {
+        when(() => mockOtaChecker.checkForUpdate(any()))
+            .thenAnswer((_) async => null);
+
+        final container = createContainer();
+        addTearDown(container.dispose);
+        final notifier =
+            container.read(firmwareUpdateNotifierProvider.notifier);
+
+        // Simulate previous state with otaInfo
+        notifier.debugSeedBanks(
+          active: FirmwareUpdateTestData.activeBank(),
+        );
+
+        await notifier.checkForOtaUpdate(testParams);
+
+        final state = container.read(firmwareUpdateNotifierProvider);
+        expect(state.otaInfo, isNull);
+        expect(state.errorMessage, isNull);
+      });
+    });
+
+    group('triggerOtaInstall', () {
+      test('transitions triggering → installing on success', () async {
+        when(() => mockService.triggerOtaDownload(
+              targetInstance: any(named: 'targetInstance'),
+              firmwareUrl: any(named: 'firmwareUrl'),
+            )).thenAnswer((_) async {});
+
+        final container = createContainer();
+        addTearDown(container.dispose);
+        final notifier =
+            container.read(firmwareUpdateNotifierProvider.notifier);
+
+        await notifier.triggerOtaInstall(
+          targetInstance: 2,
+          firmwareUrl: 'http://example.com/fw.img',
+        );
+
+        expect(
+          container.read(firmwareUpdateNotifierProvider).phase,
+          FirmwareUpdatePhase.installing,
+        );
+        verify(() => mockService.triggerOtaDownload(
+              targetInstance: 2,
+              firmwareUrl: 'http://example.com/fw.img',
+            )).called(1);
+      });
+
+      test('transitions to failed on ServiceError', () async {
+        when(() => mockService.triggerOtaDownload(
+              targetInstance: any(named: 'targetInstance'),
+              firmwareUrl: any(named: 'firmwareUrl'),
+            )).thenThrow(const NetworkError(detail: 'Download failed'));
+
+        final container = createContainer();
+        addTearDown(container.dispose);
+        final notifier =
+            container.read(firmwareUpdateNotifierProvider.notifier);
+
+        await expectLater(
+          notifier.triggerOtaInstall(
+            targetInstance: 2,
+            firmwareUrl: 'http://example.com/fw.img',
+          ),
+          throwsA(isA<NetworkError>()),
+        );
+
+        final state = container.read(firmwareUpdateNotifierProvider);
+        expect(state.phase, FirmwareUpdatePhase.failed);
+        expect(state.errorMessage, contains('Network error'));
+      });
     });
   });
 }

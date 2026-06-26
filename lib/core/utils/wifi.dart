@@ -1,6 +1,54 @@
 const signalThresholdSNR = [40, 25, 10];
-const signalThresholdRSSI = [-65, -71, -78];
 
+/// RSSI threshold constants for signal quality classification.
+///
+/// These are the single source of truth for RSSI thresholds across the app.
+/// - Excellent: >= [rssiExcellent] (-65 dBm)
+/// - Good: >= [rssiGood] (-71 dBm)
+/// - Fair: >= [rssiFair] (-78 dBm)
+/// - Poor: < [rssiFair] (-78 dBm)
+const int rssiExcellent = -65;
+const int rssiGood = -71;
+const int rssiFair = -78;
+
+/// RSSI threshold array for signal level lookup (derived from constants above).
+const signalThresholdRSSI = [rssiExcellent, rssiGood, rssiFair];
+
+// ─── RCPI / RSSI Conversion ─────────────────────────────────────────────────
+
+/// Convert RCPI (Received Channel Power Indicator) to RSSI (dBm).
+///
+/// RCPI is defined in IEEE 802.11k and ranges from 0–220.
+/// Formula: RSSI (dBm) = (RCPI / 2) - 110
+///
+/// Returns null if [rcpi] is null or <= 0.
+int? rcpiToRssi(int? rcpi) {
+  if (rcpi == null || rcpi <= 0) return null;
+  return (rcpi ~/ 2) - 110;
+}
+
+/// Convert RSSI (dBm) to RCPI (Received Channel Power Indicator).
+///
+/// Inverse of [rcpiToRssi].
+/// Formula: RCPI = (RSSI + 110) * 2
+///
+/// Returns 0 if [rssiDbm] is null or 0.
+int rssiToRcpi(int? rssiDbm) {
+  if (rssiDbm == null || rssiDbm == 0) return 0;
+  return (rssiDbm + 110) * 2;
+}
+
+// ─── Signal Level ───────────────────────────────────────────────────────────
+
+/// WiFi signal level for **device/node connection display** (icon bars + label).
+///
+/// Derived from RSSI (dBm) or SNR by [getWifiSignalLevel]. This is the only
+/// tier enum that models physical-link states: [wired] (no WiFi, Ethernet) and
+/// [none] (no signal at all) — neither exists in [SignalTier] or `HealthTier`.
+///
+/// Sibling enums (similar names, different domains — do NOT merge):
+/// - [SignalTier]: RSSI → performance analytics tier (no wired/none).
+/// - `HealthTier` (network_health_helpers.dart): packet-loss → health score.
 enum NodeSignalLevel {
   wired(displayTitle: 'Wired'),
   none(displayTitle: 'No signal'),
@@ -39,3 +87,31 @@ NodeSignalLevel getWifiSignalLevel(int? signalStrength) {
     }
   }
 }
+
+// ─── Signal Tier (for performance analytics) ────────────────────────────────
+
+/// Signal quality tier for **performance analytics** (charts, summaries).
+///
+/// Derived purely from RSSI (dBm) by [getSignalTier]. A coarser 4-level scale
+/// than [NodeSignalLevel]: no physical-link states (wired/none), and the bottom
+/// level is [weak] (not `poor`).
+///
+/// Sibling enums (similar names, different domains — do NOT merge):
+/// - [NodeSignalLevel]: RSSI/SNR → connection display with icon bars.
+/// - `HealthTier` (network_health_helpers.dart): packet-loss → health score.
+enum SignalTier { excellent, good, fair, weak }
+
+/// Map RSSI (dBm) to a signal tier.
+SignalTier getSignalTier(int rssi) {
+  if (rssi >= rssiExcellent) return SignalTier.excellent;
+  if (rssi >= rssiGood) return SignalTier.good;
+  if (rssi >= rssiFair) return SignalTier.fair;
+  return SignalTier.weak;
+}
+
+/// Signal-to-Noise Ratio in dB.
+int computeSNR(int signal, int noise) => noise == 0 ? 0 : signal - noise;
+
+/// Normalize SNR to 0.0–1.0 for progress bar display.
+/// Typical WiFi SNR range: 0–50 dB.
+double normalizeSNR(int snr) => (snr / 50).clamp(0.0, 1.0);

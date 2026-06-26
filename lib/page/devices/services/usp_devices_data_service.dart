@@ -24,7 +24,7 @@ final uspDevicesDataServiceProvider = Provider<UspDevicesDataService>(
     final usp = ref.read(uspClientProvider);
     if (usp == null) {
       throw const ServiceNotInitializedError(
-          message: 'USP service not available');
+          detail: 'USP service not available');
     }
     return UspDevicesDataService(usp);
   },
@@ -391,6 +391,8 @@ class UspDevicesDataService {
           masterMeshInfo?.softwareVersion ?? systemInfo.softwareVersion,
       isMaster: true,
       connectedDeviceCount: masterConnectedCount,
+      ipAddress: master.ip.isNotEmpty ? master.ip : null,
+      ipv6Addresses: master.ipv6Addresses,
     ));
 
     // Slave nodes.
@@ -421,10 +423,17 @@ class UspDevicesDataService {
         softwareVersion: slaveMeshInfo?.softwareVersion ?? '',
         isMaster: false,
         connectedDeviceCount: slaveConnectedCount,
+        ipAddress: slave.ip.isNotEmpty ? slave.ip : null,
+        ipv6Addresses: slave.ipv6Addresses,
         backhaulMediaType: slaveMeshInfo?.backhaulMediaType ?? '',
         backhaulPhyRate: slaveMeshInfo?.backhaulPhyRate ?? 0,
         backhaulSignalStrength: slaveMeshInfo?.backhaulSignalStrength,
         backhaulUplinkRate: slaveMeshInfo?.backhaulUplinkRate,
+        backhaulLinkType: slaveMeshInfo?.backhaulLinkType,
+        backhaulDownlinkRate: slaveMeshInfo?.backhaulDownlinkRate,
+        backhaulParentDeviceId: slaveMeshInfo?.backhaulParentDeviceId,
+        backhaulParentBssid: slaveMeshInfo?.backhaulParentBssid,
+        lastContactTime: slaveMeshInfo?.lastContactTime,
       ));
     }
 

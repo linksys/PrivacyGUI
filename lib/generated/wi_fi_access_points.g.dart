@@ -7,6 +7,7 @@ import 'package:privacy_gui/core/usp/services/usp_client.dart';
 /// Single instance from WiFiAccessPoints
 class WiFiAccessPoint {
   final String instancePath;
+  final String? alias;
   final bool enable;
   final String status;
   final String modesSupported;
@@ -18,6 +19,7 @@ class WiFiAccessPoint {
 
   const WiFiAccessPoint({
     required this.instancePath,
+    this.alias,
     required this.enable,
     required this.status,
     required this.modesSupported,
@@ -51,6 +53,7 @@ class WiFiAccessPoints {
   const WiFiAccessPoints({required this.items});
 
   static const _paths = [
+    'Device.WiFi.AccessPoint.*.Alias',
     'Device.WiFi.AccessPoint.*.Enable',
     'Device.WiFi.AccessPoint.*.Status',
     'Device.WiFi.AccessPoint.*.Security.ModesSupported',
@@ -83,6 +86,7 @@ class WiFiAccessPoints {
     for (final id in sorted) {
       final p = '$basePath$id.';
       if ([
+        response['${p}Alias'],
         response['${p}Enable'],
         response['${p}Status'],
         response['${p}Security.ModesSupported'],
@@ -97,27 +101,42 @@ class WiFiAccessPoints {
           v == '0' ||
           v == 0 ||
           v == false ||
-          v == 'false')) continue;
+          v == 'false')) {
+        continue;
+      }
       final missing = <String>[];
-      if (!response.containsKey('${p}Enable')) missing.add('${p}Enable');
-      if (!response.containsKey('${p}Status')) missing.add('${p}Status');
-      if (!response.containsKey('${p}Security.ModesSupported'))
+      if (!response.containsKey('${p}Enable')) {
+        missing.add('${p}Enable');
+      }
+      if (!response.containsKey('${p}Status')) {
+        missing.add('${p}Status');
+      }
+      if (!response.containsKey('${p}Security.ModesSupported')) {
         missing.add('${p}Security.ModesSupported');
-      if (!response.containsKey('${p}Security.ModeEnabled'))
+      }
+      if (!response.containsKey('${p}Security.ModeEnabled')) {
         missing.add('${p}Security.ModeEnabled');
-      if (!response.containsKey('${p}Security.EncryptionMode'))
+      }
+      if (!response.containsKey('${p}Security.EncryptionMode')) {
         missing.add('${p}Security.EncryptionMode');
-      if (!response.containsKey('${p}Security.KeyPassphrase'))
+      }
+      if (!response.containsKey('${p}Security.KeyPassphrase')) {
         missing.add('${p}Security.KeyPassphrase');
-      if (!response.containsKey('${p}SSIDAdvertisementEnabled'))
+      }
+      if (!response.containsKey('${p}SSIDAdvertisementEnabled')) {
         missing.add('${p}SSIDAdvertisementEnabled');
-      if (!response.containsKey('${p}SSIDReference'))
+      }
+      if (!response.containsKey('${p}SSIDReference')) {
         missing.add('${p}SSIDReference');
+      }
       if (missing.isNotEmpty) {
         throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
       }
       items.add(WiFiAccessPoint(
         instancePath: p,
+        alias: response.containsKey('${p}Alias')
+            ? response['${p}Alias'] as String
+            : null,
         enable: response['${p}Enable'] == true ||
             response['${p}Enable'] == 'true' ||
             response['${p}Enable'] == '1',
@@ -145,15 +164,18 @@ class WiFiAccessPoints {
       {bool allowPartial = false}) async {
     final params = <String, dynamic>{};
     for (final update in updates) {
-      if (update.securityModeEnabled != null)
+      if (update.securityModeEnabled != null) {
         params['${update.instancePath}Security.ModeEnabled'] =
             update.securityModeEnabled;
-      if (update.keyPassphrase != null)
+      }
+      if (update.keyPassphrase != null) {
         params['${update.instancePath}Security.KeyPassphrase'] =
             update.keyPassphrase;
-      if (update.ssidAdvertisementEnabled != null)
+      }
+      if (update.ssidAdvertisementEnabled != null) {
         params['${update.instancePath}SSIDAdvertisementEnabled'] =
             update.ssidAdvertisementEnabled;
+      }
     }
     if (params.isEmpty) {
       return {

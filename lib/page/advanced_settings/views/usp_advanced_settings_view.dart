@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/route/navigation_extensions.dart';
-import 'package:privacy_gui/components/composed/app_list_card.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
+import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/models/app_section_item_data.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/shell/usp_top_bar.dart';
@@ -19,7 +19,7 @@ class UspAdvancedSettingsView extends StatelessWidget {
 
     return UiKitPageView.withSliver(
       scrollable: true,
-      title: 'Advanced Settings',
+      title: loc(context).advancedSettings,
       topbar: const PreferredSize(
         preferredSize: Size.fromHeight(64),
         child: UspTopBar(),
@@ -83,7 +83,7 @@ class UspAdvancedSettingsView extends StatelessWidget {
         onTap: () => context.pushNamed(RouteNamed.uspDmz),
       ),
       AppSectionItemData(
-        title: 'Port Forwarding',
+        title: loc(context).portForwarding,
         onTap: () => context.pushNamed(RouteNamed.uspPortForwardingDetail),
       ),
       AppSectionItemData(
@@ -94,13 +94,18 @@ class UspAdvancedSettingsView extends StatelessWidget {
   }
 
   Widget _buildCard(AppSectionItemData item) {
-    return AppListCard.setting(
-      title: item.title,
-      trailing: AppIcon.font(AppFontIcons.chevronRight),
+    return LayoutBlock(
       onTap: item.onTap,
-      padding: EdgeInsets.symmetric(
+      padding: const EdgeInsets.symmetric(
         vertical: AppSpacing.md,
-        horizontal: AppSpacing.xl,
+        horizontal: AppSpacing.lg,
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          AppText.bodyLarge(item.title),
+          AppIcon.font(AppFontIcons.chevronRight, size: 20),
+        ],
       ),
     );
   }

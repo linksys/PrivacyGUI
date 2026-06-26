@@ -42,144 +42,119 @@ class MultiInterfaceTrafficStats {
     required this.lanDiscardPacketsReceived,
   });
 
-  static const _paths = [
-    'Device.IP.Interface.2.Stats.BytesSent',
-    'Device.IP.Interface.2.Stats.BytesReceived',
-    'Device.IP.Interface.2.Stats.PacketsSent',
-    'Device.IP.Interface.2.Stats.PacketsReceived',
-    'Device.IP.Interface.2.Stats.ErrorsSent',
-    'Device.IP.Interface.2.Stats.ErrorsReceived',
-    'Device.IP.Interface.2.Stats.DiscardPacketsSent',
-    'Device.IP.Interface.2.Stats.DiscardPacketsReceived',
-    'Device.IP.Interface.1.Stats.BytesSent',
-    'Device.IP.Interface.1.Stats.BytesReceived',
-    'Device.IP.Interface.1.Stats.PacketsSent',
-    'Device.IP.Interface.1.Stats.PacketsReceived',
-    'Device.IP.Interface.1.Stats.ErrorsSent',
-    'Device.IP.Interface.1.Stats.ErrorsReceived',
-    'Device.IP.Interface.1.Stats.DiscardPacketsSent',
-    'Device.IP.Interface.1.Stats.DiscardPacketsReceived',
-  ];
+  /// Resolve wan interface index by searching for Alias='wan'
+  static Future<String> _resolveWanInstance(UspClient client) async {
+    final response = await client.get(['Device.IP.Interface.*.Alias']);
+    for (final entry in response.entries) {
+      if (entry.value == 'wan') {
+        final match =
+            RegExp(r'Device\.IP\.Interface\.(\d+)\.').firstMatch(entry.key);
+        if (match != null) {
+          return 'Device.IP.Interface.${match.group(1)}.';
+        }
+      }
+    }
+    // Fallback to hardcoded instance 2
+    return 'Device.IP.Interface.2.';
+  }
+
+  /// Resolve lan interface index by searching for Alias='lan'
+  static Future<String> _resolveLanInstance(UspClient client) async {
+    final response = await client.get(['Device.IP.Interface.*.Alias']);
+    for (final entry in response.entries) {
+      if (entry.value == 'lan') {
+        final match =
+            RegExp(r'Device\.IP\.Interface\.(\d+)\.').firstMatch(entry.key);
+        if (match != null) {
+          return 'Device.IP.Interface.${match.group(1)}.';
+        }
+      }
+    }
+    // Fallback to hardcoded instance 1
+    return 'Device.IP.Interface.1.';
+  }
+
+  /// Build parameter paths using resolved interface paths
+  static List<String> _buildPaths(String wanPath, String lanPath) => [
+        '${wanPath}Stats.BytesSent',
+        '${wanPath}Stats.BytesReceived',
+        '${wanPath}Stats.PacketsSent',
+        '${wanPath}Stats.PacketsReceived',
+        '${wanPath}Stats.ErrorsSent',
+        '${wanPath}Stats.ErrorsReceived',
+        '${wanPath}Stats.DiscardPacketsSent',
+        '${wanPath}Stats.DiscardPacketsReceived',
+        '${lanPath}Stats.BytesSent',
+        '${lanPath}Stats.BytesReceived',
+        '${lanPath}Stats.PacketsSent',
+        '${lanPath}Stats.PacketsReceived',
+        '${lanPath}Stats.ErrorsSent',
+        '${lanPath}Stats.ErrorsReceived',
+        '${lanPath}Stats.DiscardPacketsSent',
+        '${lanPath}Stats.DiscardPacketsReceived',
+      ];
 
   /// Fetch all parameters via USP Get message
   static Future<MultiInterfaceTrafficStats> fetch(UspClient client) async {
-    final response = await client.get(_paths);
-    return MultiInterfaceTrafficStats._fromResponse(response);
+    final wanPath = await _resolveWanInstance(client);
+    final lanPath = await _resolveLanInstance(client);
+    final response = await client.get(_buildPaths(wanPath, lanPath));
+    return MultiInterfaceTrafficStats._fromResponse(response, wanPath, lanPath);
   }
 
   factory MultiInterfaceTrafficStats._fromResponse(
-      Map<String, dynamic> response) {
-    final missing = <String>[];
-    if (!response.containsKey('Device.IP.Interface.2.Stats.BytesSent'))
-      missing.add('Device.IP.Interface.2.Stats.BytesSent');
-    if (!response.containsKey('Device.IP.Interface.2.Stats.BytesReceived'))
-      missing.add('Device.IP.Interface.2.Stats.BytesReceived');
-    if (!response.containsKey('Device.IP.Interface.2.Stats.PacketsSent'))
-      missing.add('Device.IP.Interface.2.Stats.PacketsSent');
-    if (!response.containsKey('Device.IP.Interface.2.Stats.PacketsReceived'))
-      missing.add('Device.IP.Interface.2.Stats.PacketsReceived');
-    if (!response.containsKey('Device.IP.Interface.2.Stats.ErrorsSent'))
-      missing.add('Device.IP.Interface.2.Stats.ErrorsSent');
-    if (!response.containsKey('Device.IP.Interface.2.Stats.ErrorsReceived'))
-      missing.add('Device.IP.Interface.2.Stats.ErrorsReceived');
-    if (!response.containsKey('Device.IP.Interface.2.Stats.DiscardPacketsSent'))
-      missing.add('Device.IP.Interface.2.Stats.DiscardPacketsSent');
-    if (!response
-        .containsKey('Device.IP.Interface.2.Stats.DiscardPacketsReceived'))
-      missing.add('Device.IP.Interface.2.Stats.DiscardPacketsReceived');
-    if (!response.containsKey('Device.IP.Interface.1.Stats.BytesSent'))
-      missing.add('Device.IP.Interface.1.Stats.BytesSent');
-    if (!response.containsKey('Device.IP.Interface.1.Stats.BytesReceived'))
-      missing.add('Device.IP.Interface.1.Stats.BytesReceived');
-    if (!response.containsKey('Device.IP.Interface.1.Stats.PacketsSent'))
-      missing.add('Device.IP.Interface.1.Stats.PacketsSent');
-    if (!response.containsKey('Device.IP.Interface.1.Stats.PacketsReceived'))
-      missing.add('Device.IP.Interface.1.Stats.PacketsReceived');
-    if (!response.containsKey('Device.IP.Interface.1.Stats.ErrorsSent'))
-      missing.add('Device.IP.Interface.1.Stats.ErrorsSent');
-    if (!response.containsKey('Device.IP.Interface.1.Stats.ErrorsReceived'))
-      missing.add('Device.IP.Interface.1.Stats.ErrorsReceived');
-    if (!response.containsKey('Device.IP.Interface.1.Stats.DiscardPacketsSent'))
-      missing.add('Device.IP.Interface.1.Stats.DiscardPacketsSent');
-    if (!response
-        .containsKey('Device.IP.Interface.1.Stats.DiscardPacketsReceived'))
-      missing.add('Device.IP.Interface.1.Stats.DiscardPacketsReceived');
-    if (missing.isNotEmpty) {
-      throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
-    }
+      Map<String, dynamic> response, String wanPath, String lanPath) {
     return MultiInterfaceTrafficStats(
       wanBytesSent: int.tryParse(
-              response['Device.IP.Interface.2.Stats.BytesSent']?.toString() ??
-                  '') ??
+              response['${wanPath}Stats.BytesSent']?.toString() ?? '') ??
           0,
       wanBytesReceived: int.tryParse(
-              response['Device.IP.Interface.2.Stats.BytesReceived']
-                      ?.toString() ??
-                  '') ??
+              response['${wanPath}Stats.BytesReceived']?.toString() ?? '') ??
           0,
       wanPacketsSent: int.tryParse(
-              response['Device.IP.Interface.2.Stats.PacketsSent']?.toString() ??
-                  '') ??
+              response['${wanPath}Stats.PacketsSent']?.toString() ?? '') ??
           0,
       wanPacketsReceived: int.tryParse(
-              response['Device.IP.Interface.2.Stats.PacketsReceived']
-                      ?.toString() ??
-                  '') ??
+              response['${wanPath}Stats.PacketsReceived']?.toString() ?? '') ??
           0,
       wanErrorsSent: int.tryParse(
-              response['Device.IP.Interface.2.Stats.ErrorsSent']?.toString() ??
-                  '') ??
+              response['${wanPath}Stats.ErrorsSent']?.toString() ?? '') ??
           0,
       wanErrorsReceived: int.tryParse(
-              response['Device.IP.Interface.2.Stats.ErrorsReceived']
-                      ?.toString() ??
-                  '') ??
+              response['${wanPath}Stats.ErrorsReceived']?.toString() ?? '') ??
           0,
       wanDiscardPacketsSent: int.tryParse(
-              response['Device.IP.Interface.2.Stats.DiscardPacketsSent']
-                      ?.toString() ??
+              response['${wanPath}Stats.DiscardPacketsSent']?.toString() ??
                   '') ??
           0,
       wanDiscardPacketsReceived: int.tryParse(
-              response['Device.IP.Interface.2.Stats.DiscardPacketsReceived']
-                      ?.toString() ??
+              response['${wanPath}Stats.DiscardPacketsReceived']?.toString() ??
                   '') ??
           0,
       lanBytesSent: int.tryParse(
-              response['Device.IP.Interface.1.Stats.BytesSent']?.toString() ??
-                  '') ??
+              response['${lanPath}Stats.BytesSent']?.toString() ?? '') ??
           0,
       lanBytesReceived: int.tryParse(
-              response['Device.IP.Interface.1.Stats.BytesReceived']
-                      ?.toString() ??
-                  '') ??
+              response['${lanPath}Stats.BytesReceived']?.toString() ?? '') ??
           0,
       lanPacketsSent: int.tryParse(
-              response['Device.IP.Interface.1.Stats.PacketsSent']?.toString() ??
-                  '') ??
+              response['${lanPath}Stats.PacketsSent']?.toString() ?? '') ??
           0,
       lanPacketsReceived: int.tryParse(
-              response['Device.IP.Interface.1.Stats.PacketsReceived']
-                      ?.toString() ??
-                  '') ??
+              response['${lanPath}Stats.PacketsReceived']?.toString() ?? '') ??
           0,
       lanErrorsSent: int.tryParse(
-              response['Device.IP.Interface.1.Stats.ErrorsSent']?.toString() ??
-                  '') ??
+              response['${lanPath}Stats.ErrorsSent']?.toString() ?? '') ??
           0,
       lanErrorsReceived: int.tryParse(
-              response['Device.IP.Interface.1.Stats.ErrorsReceived']
-                      ?.toString() ??
-                  '') ??
+              response['${lanPath}Stats.ErrorsReceived']?.toString() ?? '') ??
           0,
       lanDiscardPacketsSent: int.tryParse(
-              response['Device.IP.Interface.1.Stats.DiscardPacketsSent']
-                      ?.toString() ??
+              response['${lanPath}Stats.DiscardPacketsSent']?.toString() ??
                   '') ??
           0,
       lanDiscardPacketsReceived: int.tryParse(
-              response['Device.IP.Interface.1.Stats.DiscardPacketsReceived']
-                      ?.toString() ??
+              response['${lanPath}Stats.DiscardPacketsReceived']?.toString() ??
                   '') ??
           0,
     );

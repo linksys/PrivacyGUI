@@ -3,10 +3,12 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/utils/usp_formatters.dart';
 import 'package:privacy_gui/page/_shared/models/traffic_analysis_state.dart';
 import 'package:privacy_gui/page/_shared/providers/card_tab_state_provider.dart';
 import 'package:privacy_gui/page/_shared/providers/usp_traffic_analysis_notifier.dart';
+import 'package:privacy_gui/page/_shared/components/dashboard_card_template.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Unified traffic monitor card — real-time WAN speed + multi-interface
@@ -28,84 +30,72 @@ class _UspTrafficAnalysisCardState
     extends ConsumerState<UspTrafficAnalysisCard> {
   static const _cardId = 'traffic_analysis';
 
-  static const _tabs = [
-    TabItem(label: 'Monitor'),
-    TabItem(label: 'Comparison'),
-    TabItem(label: 'Distribution'),
-    TabItem(label: 'Trends'),
-  ];
-
-  static final _intervalOptions = <(Duration?, String)>[
-    (null, 'Off'),
-    (Duration(seconds: 2), '2s'),
-    (Duration(seconds: 5), '5s'),
-    (Duration(seconds: 10), '10s'),
-  ];
+  List<(Duration?, String)> _intervalOptions(BuildContext context) => [
+        (null, loc(context).off),
+        (Duration(seconds: 2), '2s'),
+        (Duration(seconds: 5), '5s'),
+        (Duration(seconds: 10), '10s'),
+      ];
 
   @override
   Widget build(BuildContext context) {
     final analysisState = ref.watch(uspTrafficAnalysisProvider);
     final selectedTab = ref.watch(cardTabIndexProvider(_cardId));
 
-    return AppCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header: title + spinner + interval selector
-          Row(
-            children: [
-              AppText.titleMedium('Traffic Monitor'),
-              if (analysisState.isFetching) ...[
-                AppGap.sm(),
-                SizedBox(
-                  width: 14,
-                  height: 14,
-                  child: AppLoader(strokeWidth: 2),
-                ),
-              ],
-              const Spacer(),
-              AppPopupMenu<Duration?>(
-                icon: Icons.timer_outlined,
-                iconSize: 20,
-                items: _intervalOptions
-                    .map((e) => AppPopupMenuItem<Duration?>(
-                          value: e.$1,
-                          label: e.$2,
-                        ))
-                    .toList(),
-                onSelected: (interval) {
-                  ref
-                      .read(uspTrafficAnalysisProvider.notifier)
-                      .setRefreshInterval(interval);
-                },
-              ),
-            ],
-          ),
-          AppGap.md(),
-          AppTabs(
-            tabs: _tabs,
-            initialIndex: selectedTab,
-            displayMode: TabDisplayMode.segmented,
-            isScrollable: true,
-            showBorder: false,
-            onTabChanged: (index) =>
-                ref.read(cardTabIndexProvider(_cardId).notifier).state = index,
-          ),
-          AppGap.md(),
-          Expanded(
-            child: _buildChartView(context, analysisState, selectedTab),
-          ),
-        ],
+    return DashboardCardTemplate.tabbed(
+      title: loc(context).trafficMonitor,
+      titleBadge: analysisState.isFetching
+          ? SizedBox(
+              width: 14,
+              height: 14,
+              child: AppLoader(strokeWidth: 2),
+            )
+          : null,
+      trailing: AppPopupMenu<Duration?>(
+        icon: Icons.timer_outlined,
+        iconSize: 20,
+        items: _intervalOptions(context)
+            .map((e) => AppPopupMenuItem<Duration?>(
+                  value: e.$1,
+                  label: e.$2,
+                ))
+            .toList(),
+        onSelected: (interval) {
+          ref
+              .read(uspTrafficAnalysisProvider.notifier)
+              .setRefreshInterval(interval);
+        },
       ),
+      selectedTabIndex: selectedTab,
+      onTabChanged: (index) =>
+          ref.read(cardTabIndexProvider(_cardId).notifier).state = index,
+      tabs: [
+        CardTab(
+          label: loc(context).monitor,
+          content: _buildChartView(context, analysisState, 0),
+        ),
+        CardTab(
+          label: loc(context).comparison,
+          content: _buildChartView(context, analysisState, 1),
+        ),
+        CardTab(
+          label: loc(context).distribution,
+          content: _buildChartView(context, analysisState, 2),
+        ),
+        CardTab(
+          label: loc(context).trends,
+          content: _buildChartView(context, analysisState, 3),
+        ),
+      ],
     );
   }
 
-  String _intervalLabel(Duration? interval) {
-    return _intervalOptions
+  String _intervalLabel(BuildContext context, Duration? interval) {
+    return _intervalOptions(context)
             .where((e) => e.$1 == interval)
             .map((e) => e.$2)
             .firstOrNull ??
-        'Off';
+        loc(context).off;
   }
 
   Widget _buildChartView(
@@ -120,18 +110,18 @@ class _UspTrafficAnalysisCardState
       0 => hasHistory
           ? _MonitorView(
               history: state.history,
-              intervalLabel: _intervalLabel(state.refreshInterval),
+              intervalLabel: _intervalLabel(context, state.refreshInterval),
             )
-          : _buildEmptyState(context, 'Waiting for data...'),
+          : _buildEmptyState(context, loc(context).waitingForData),
       1 => hasHistory
           ? _ComparisonView(history: state.history)
-          : _buildEmptyState(context, 'Collecting data...'),
+          : _buildEmptyState(context, loc(context).collectingActivityData),
       2 => latest != null
           ? _DistributionView(snapshot: latest)
-          : _buildEmptyState(context, 'Waiting for data...'),
+          : _buildEmptyState(context, loc(context).waitingForData),
       3 => hasHistory
           ? _TrendsView(history: state.history)
-          : _buildEmptyState(context, 'Collecting data...'),
+          : _buildEmptyState(context, loc(context).collectingActivityData),
       _ => const SizedBox.shrink(),
     };
   }
@@ -171,7 +161,7 @@ class _MonitorView extends StatelessWidget {
           children: [
             Expanded(
               child: _SpeedTile(
-                label: 'Upload',
+                label: loc(context).upload,
                 icon: Icons.arrow_upward,
                 bytesPerSec: upload,
                 color: colorScheme.primary,
@@ -180,7 +170,7 @@ class _MonitorView extends StatelessWidget {
             AppGap.md(),
             Expanded(
               child: _SpeedTile(
-                label: 'Download',
+                label: loc(context).download,
                 icon: Icons.arrow_downward,
                 bytesPerSec: download,
                 color: colorScheme.secondary,
@@ -194,7 +184,7 @@ class _MonitorView extends StatelessWidget {
           child: AppLineChart(
             series: [
               AppChartSeries(
-                label: 'Upload',
+                label: loc(context).upload,
                 data: history
                     .map((s) =>
                         s.interfaces[TrafficInterface.wan]?.uploadBytesPerSec ??
@@ -204,7 +194,7 @@ class _MonitorView extends StatelessWidget {
                 color: colorScheme.primary,
               ),
               AppChartSeries(
-                label: 'Download',
+                label: loc(context).download,
                 data: history
                     .map((s) =>
                         s.interfaces[TrafficInterface.wan]
@@ -224,11 +214,11 @@ class _MonitorView extends StatelessWidget {
           children: [
             _LegendDot(color: colorScheme.primary),
             AppGap.xs(),
-            AppText.labelSmall('Upload'),
+            AppText.labelSmall(loc(context).upload),
             AppGap.lg(),
             _LegendDot(color: colorScheme.secondary),
             AppGap.xs(),
-            AppText.labelSmall('Download'),
+            AppText.labelSmall(loc(context).download),
             const Spacer(),
             if (wan != null) ...[
               AppText.labelSmall(
@@ -343,11 +333,11 @@ class _ComparisonView extends StatelessWidget {
           children: [
             _LegendDot(color: colorScheme.primary),
             AppGap.xs(),
-            AppText.labelSmall('WAN: ${_formatSpeed(wanRate)}'),
+            AppText.labelSmall(loc(context).wanLabel(_formatSpeed(wanRate))),
             AppGap.lg(),
             _LegendDot(color: colorScheme.secondary),
             AppGap.xs(),
-            AppText.labelSmall('LAN: ${_formatSpeed(lanRate)}'),
+            AppText.labelSmall(loc(context).lanLabel(_formatSpeed(lanRate))),
           ],
         ),
       ],
@@ -392,7 +382,7 @@ class _DistributionView extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   AppText.titleSmall(UspFormatters.formatBytes(grandTotal)),
-                  AppText.labelSmall('total',
+                  AppText.labelSmall(loc(context).total,
                       color: colorScheme.onSurfaceVariant),
                 ],
               ),
@@ -410,11 +400,13 @@ class _DistributionView extends StatelessWidget {
           children: [
             _LegendDot(color: colorScheme.primary),
             AppGap.xs(),
-            AppText.labelSmall('WAN: ${UspFormatters.formatBytes(wanTotal)}'),
+            AppText.labelSmall(
+                loc(context).wanLabel(UspFormatters.formatBytes(wanTotal))),
             AppGap.lg(),
             _LegendDot(color: colorScheme.secondary),
             AppGap.xs(),
-            AppText.labelSmall('LAN: ${UspFormatters.formatBytes(lanTotal)}'),
+            AppText.labelSmall(
+                loc(context).lanLabel(UspFormatters.formatBytes(lanTotal))),
           ],
         ),
       ],
@@ -561,7 +553,7 @@ class _TrendsView extends StatelessWidget {
           children: [
             _LegendDot(color: colorScheme.primary),
             AppGap.xs(),
-            AppText.labelSmall('Bytes/s'),
+            AppText.labelSmall(loc(context).bytesPerSec),
             AppGap.lg(),
             Container(
               width: 16,
@@ -569,7 +561,7 @@ class _TrendsView extends StatelessWidget {
               color: colorScheme.tertiary,
             ),
             AppGap.xs(),
-            AppText.labelSmall('Pkts/s'),
+            AppText.labelSmall(loc(context).packetsPerSec),
           ],
         ),
       ],

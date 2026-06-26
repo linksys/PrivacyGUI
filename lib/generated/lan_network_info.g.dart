@@ -28,52 +28,80 @@ class LanNetworkInfo {
     required this.ipv6Enabled,
   });
 
-  static const _paths = [
-    'Device.IP.Interface.1.IPv4Address.1.IPAddress',
-    'Device.IP.Interface.1.IPv4Address.1.SubnetMask',
-    'Device.DHCPv4.Server.Pool.1.Enable',
-    'Device.DHCPv4.Server.Pool.1.MinAddress',
-    'Device.DHCPv4.Server.Pool.1.MaxAddress',
-    'Device.DHCPv4.Server.Pool.1.LeaseTime',
-    'Device.DHCPv4.Server.Pool.1.DNSServers',
-    'Device.DeviceInfo.HostName',
-    'Device.IP.Interface.1.IPv6Enable',
-  ];
+  /// Resolve the instance index by searching for Alias='lan'
+  static Future<String> _resolveInstance(UspClient client) async {
+    final response = await client.get(['Device.IP.Interface.*.Alias']);
+    for (final entry in response.entries) {
+      if (entry.value == 'lan') {
+        final match =
+            RegExp(r'Device\.IP\.Interface\.(\d+)\.').firstMatch(entry.key);
+        if (match != null) {
+          return 'Device.IP.Interface.${match.group(1)}.';
+        }
+      }
+    }
+    // Fallback to hardcoded instance 1
+    return 'Device.IP.Interface.1.';
+  }
+
+  /// Build parameter paths using the resolved instance path
+  static List<String> _buildPaths(String instancePath) => [
+        '${instancePath}IPv4Address.1.IPAddress',
+        '${instancePath}IPv4Address.1.SubnetMask',
+        'Device.DHCPv4.Server.Pool.1.Enable',
+        'Device.DHCPv4.Server.Pool.1.MinAddress',
+        'Device.DHCPv4.Server.Pool.1.MaxAddress',
+        'Device.DHCPv4.Server.Pool.1.LeaseTime',
+        'Device.DHCPv4.Server.Pool.1.DNSServers',
+        'Device.DeviceInfo.HostName',
+        '${instancePath}IPv6Enable',
+      ];
 
   /// Fetch all parameters via USP Get message
   static Future<LanNetworkInfo> fetch(UspClient client) async {
-    final response = await client.get(_paths);
-    return LanNetworkInfo._fromResponse(response);
+    final instancePath = await _resolveInstance(client);
+    final response = await client.get(_buildPaths(instancePath));
+    return LanNetworkInfo._fromResponse(response, instancePath);
   }
 
-  factory LanNetworkInfo._fromResponse(Map<String, dynamic> response) {
+  factory LanNetworkInfo._fromResponse(
+      Map<String, dynamic> response, String instancePath) {
     final missing = <String>[];
-    if (!response.containsKey('Device.IP.Interface.1.IPv4Address.1.IPAddress'))
-      missing.add('Device.IP.Interface.1.IPv4Address.1.IPAddress');
-    if (!response.containsKey('Device.IP.Interface.1.IPv4Address.1.SubnetMask'))
-      missing.add('Device.IP.Interface.1.IPv4Address.1.SubnetMask');
-    if (!response.containsKey('Device.DHCPv4.Server.Pool.1.Enable'))
+    if (!response.containsKey('${instancePath}IPv4Address.1.IPAddress')) {
+      missing.add('${instancePath}IPv4Address.1.IPAddress');
+    }
+    if (!response.containsKey('${instancePath}IPv4Address.1.SubnetMask')) {
+      missing.add('${instancePath}IPv4Address.1.SubnetMask');
+    }
+    if (!response.containsKey('Device.DHCPv4.Server.Pool.1.Enable')) {
       missing.add('Device.DHCPv4.Server.Pool.1.Enable');
-    if (!response.containsKey('Device.DHCPv4.Server.Pool.1.MinAddress'))
+    }
+    if (!response.containsKey('Device.DHCPv4.Server.Pool.1.MinAddress')) {
       missing.add('Device.DHCPv4.Server.Pool.1.MinAddress');
-    if (!response.containsKey('Device.DHCPv4.Server.Pool.1.MaxAddress'))
+    }
+    if (!response.containsKey('Device.DHCPv4.Server.Pool.1.MaxAddress')) {
       missing.add('Device.DHCPv4.Server.Pool.1.MaxAddress');
-    if (!response.containsKey('Device.DHCPv4.Server.Pool.1.LeaseTime'))
+    }
+    if (!response.containsKey('Device.DHCPv4.Server.Pool.1.LeaseTime')) {
       missing.add('Device.DHCPv4.Server.Pool.1.LeaseTime');
-    if (!response.containsKey('Device.DHCPv4.Server.Pool.1.DNSServers'))
+    }
+    if (!response.containsKey('Device.DHCPv4.Server.Pool.1.DNSServers')) {
       missing.add('Device.DHCPv4.Server.Pool.1.DNSServers');
-    if (!response.containsKey('Device.DeviceInfo.HostName'))
+    }
+    if (!response.containsKey('Device.DeviceInfo.HostName')) {
       missing.add('Device.DeviceInfo.HostName');
-    if (!response.containsKey('Device.IP.Interface.1.IPv6Enable'))
-      missing.add('Device.IP.Interface.1.IPv6Enable');
+    }
+    if (!response.containsKey('${instancePath}IPv6Enable')) {
+      missing.add('${instancePath}IPv6Enable');
+    }
     if (missing.isNotEmpty) {
       throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
     }
     return LanNetworkInfo(
-      ipAddress: (response['Device.IP.Interface.1.IPv4Address.1.IPAddress'] ??
-          '') as String,
-      subnetMask: (response['Device.IP.Interface.1.IPv4Address.1.SubnetMask'] ??
-          '') as String,
+      ipAddress:
+          (response['${instancePath}IPv4Address.1.IPAddress'] ?? '') as String,
+      subnetMask:
+          (response['${instancePath}IPv4Address.1.SubnetMask'] ?? '') as String,
       dhcpEnabled: response['Device.DHCPv4.Server.Pool.1.Enable'] == true ||
           response['Device.DHCPv4.Server.Pool.1.Enable'] == 'true' ||
           response['Device.DHCPv4.Server.Pool.1.Enable'] == '1',
@@ -88,9 +116,9 @@ class LanNetworkInfo {
       dnsServers:
           (response['Device.DHCPv4.Server.Pool.1.DNSServers'] ?? '') as String,
       hostName: (response['Device.DeviceInfo.HostName'] ?? '') as String,
-      ipv6Enabled: response['Device.IP.Interface.1.IPv6Enable'] == true ||
-          response['Device.IP.Interface.1.IPv6Enable'] == 'true' ||
-          response['Device.IP.Interface.1.IPv6Enable'] == '1',
+      ipv6Enabled: response['${instancePath}IPv6Enable'] == true ||
+          response['${instancePath}IPv6Enable'] == 'true' ||
+          response['${instancePath}IPv6Enable'] == '1',
     );
   }
 
@@ -108,21 +136,31 @@ class LanNetworkInfo {
     bool allowPartial = false,
   }) async {
     final params = <String, dynamic>{};
-    if (ipAddress != null)
-      params['Device.IP.Interface.1.IPv4Address.1.IPAddress'] = ipAddress;
-    if (subnetMask != null)
-      params['Device.IP.Interface.1.IPv4Address.1.SubnetMask'] = subnetMask;
-    if (dhcpEnabled != null)
+    final instancePath = await _resolveInstance(client);
+    if (ipAddress != null) {
+      params['${instancePath}IPv4Address.1.IPAddress'] = ipAddress;
+    }
+    if (subnetMask != null) {
+      params['${instancePath}IPv4Address.1.SubnetMask'] = subnetMask;
+    }
+    if (dhcpEnabled != null) {
       params['Device.DHCPv4.Server.Pool.1.Enable'] = dhcpEnabled;
-    if (minAddress != null)
+    }
+    if (minAddress != null) {
       params['Device.DHCPv4.Server.Pool.1.MinAddress'] = minAddress;
-    if (maxAddress != null)
+    }
+    if (maxAddress != null) {
       params['Device.DHCPv4.Server.Pool.1.MaxAddress'] = maxAddress;
-    if (leaseTime != null)
+    }
+    if (leaseTime != null) {
       params['Device.DHCPv4.Server.Pool.1.LeaseTime'] = leaseTime;
-    if (dnsServers != null)
+    }
+    if (dnsServers != null) {
       params['Device.DHCPv4.Server.Pool.1.DNSServers'] = dnsServers;
-    if (hostName != null) params['Device.DeviceInfo.HostName'] = hostName;
+    }
+    if (hostName != null) {
+      params['Device.DeviceInfo.HostName'] = hostName;
+    }
     if (params.isEmpty) {
       return {
         'success': true,

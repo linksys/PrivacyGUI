@@ -8,6 +8,7 @@ import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/_shared/models/mesh_topology_info.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_isp_config.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_state.dart';
+import 'package:privacy_gui/page/instant_setup/models/pnp_wifi_config.dart';
 import 'package:privacy_gui/page/instant_setup/services/pnp_service.dart';
 import 'package:privacy_gui/page/instant_setup/services/pnp_status_service.dart';
 import 'package:privacy_gui/page/internet_settings/models/usp_internet_settings_form.dart';
@@ -157,6 +158,7 @@ class PnpNotifier extends Notifier<PnpState> {
     state = state.copyWith(
       phase: WizardConfiguring(
         wifiConfig: phase.wifiConfig.copyWith(guestSsid: ssid),
+        meshNodes: phase.meshNodes,
       ),
     );
   }
@@ -167,6 +169,60 @@ class PnpNotifier extends Notifier<PnpState> {
     state = state.copyWith(
       phase: WizardConfiguring(
         wifiConfig: phase.wifiConfig.copyWith(guestPassword: password),
+        meshNodes: phase.meshNodes,
+      ),
+    );
+  }
+
+  // ─── Split Mode Updates ──────────────────────────────────
+
+  /// Update a specific band's SSID in split mode (main WiFi).
+  void updateMainBandSsid(String ssidInstancePath, String ssid) {
+    final phase = state.phase;
+    if (phase is! WizardConfiguring) return;
+    state = state.copyWith(
+      phase: WizardConfiguring(
+        wifiConfig:
+            phase.wifiConfig.updateMainBand(ssidInstancePath, ssid: ssid),
+        meshNodes: phase.meshNodes,
+      ),
+    );
+  }
+
+  /// Update a specific band's password in split mode (main WiFi).
+  void updateMainBandPassword(String ssidInstancePath, String password) {
+    final phase = state.phase;
+    if (phase is! WizardConfiguring) return;
+    state = state.copyWith(
+      phase: WizardConfiguring(
+        wifiConfig: phase.wifiConfig
+            .updateMainBand(ssidInstancePath, password: password),
+        meshNodes: phase.meshNodes,
+      ),
+    );
+  }
+
+  /// Update a specific band's SSID in split mode (guest WiFi).
+  void updateGuestBandSsid(String ssidInstancePath, String ssid) {
+    final phase = state.phase;
+    if (phase is! WizardConfiguring) return;
+    state = state.copyWith(
+      phase: WizardConfiguring(
+        wifiConfig:
+            phase.wifiConfig.updateGuestBand(ssidInstancePath, ssid: ssid),
+        meshNodes: phase.meshNodes,
+      ),
+    );
+  }
+
+  /// Update a specific band's password in split mode (guest WiFi).
+  void updateGuestBandPassword(String ssidInstancePath, String password) {
+    final phase = state.phase;
+    if (phase is! WizardConfiguring) return;
+    state = state.copyWith(
+      phase: WizardConfiguring(
+        wifiConfig: phase.wifiConfig
+            .updateGuestBand(ssidInstancePath, password: password),
         meshNodes: phase.meshNodes,
       ),
     );
@@ -205,16 +261,18 @@ class PnpNotifier extends Notifier<PnpState> {
         // Main WiFi changed → connection will drop, user must reconnect
         state = state.copyWith(
           phase: WizardNeedsReconnect(
-            newSsid: phase.wifiConfig.ssid,
-            newPassword: phase.wifiConfig.password,
+            newSsid: phase.wifiConfig.reconnectSsid,
+            newPassword: phase.wifiConfig.reconnectPassword,
+            wifiConfig: phase.wifiConfig,
           ),
         );
       } else {
         // No main WiFi change → skip reconnect, go to firmware check
         state = state.copyWith(phase: const WizardSaved());
         await _checkFirmware(
-          ssid: phase.wifiConfig.ssid,
-          password: phase.wifiConfig.password,
+          ssid: phase.wifiConfig.reconnectSsid,
+          password: phase.wifiConfig.reconnectPassword,
+          wifiConfig: phase.wifiConfig,
         );
       }
     } catch (e) {
@@ -237,10 +295,12 @@ class PnpNotifier extends Notifier<PnpState> {
     const maxAttempts = 5;
     String savedSsid = '';
     String savedPassword = '';
+    PnpWifiConfig? savedWifiConfig;
     if (state.phase is WizardNeedsReconnect) {
       final phase = state.phase as WizardNeedsReconnect;
       savedSsid = phase.newSsid;
       savedPassword = phase.newPassword;
+      savedWifiConfig = phase.wifiConfig;
     }
 
     for (int attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -272,7 +332,11 @@ class PnpNotifier extends Notifier<PnpState> {
 
         logger.i('[PnP] Router reconnected, SN=$sn');
         state = state.copyWith(phase: const WizardSaved());
-        await _checkFirmware(ssid: savedSsid, password: savedPassword);
+        await _checkFirmware(
+          ssid: savedSsid,
+          password: savedPassword,
+          wifiConfig: savedWifiConfig,
+        );
         return;
       } catch (e) {
         logger.d('[PnP] Reconnect attempt $attempt/$maxAttempts failed: $e');
@@ -284,6 +348,7 @@ class PnpNotifier extends Notifier<PnpState> {
       phase: WizardNeedsReconnect(
         newSsid: savedSsid,
         newPassword: savedPassword,
+        wifiConfig: savedWifiConfig,
       ),
     );
   }
@@ -293,6 +358,7 @@ class PnpNotifier extends Notifier<PnpState> {
   Future<void> _checkFirmware({
     required String ssid,
     required String password,
+    PnpWifiConfig? wifiConfig,
   }) async {
     state = state.copyWith(phase: const WizardCheckingFirmware());
 
@@ -301,7 +367,11 @@ class PnpNotifier extends Notifier<PnpState> {
     // TODO: Integrate FirmwareImages.fetch(usp) when firmware Operate is available.
 
     state = state.copyWith(
-      phase: WizardWifiReady(ssid: ssid, password: password),
+      phase: WizardWifiReady(
+        ssid: ssid,
+        password: password,
+        wifiConfig: wifiConfig,
+      ),
     );
   }
 

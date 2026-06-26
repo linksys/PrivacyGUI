@@ -41,6 +41,17 @@ JSAny? _buildOptions({bool allowPartial = false}) {
 
 const _tag = '[USPClient][WASM]:';
 
+// Bind to the UspClientBuilder class exported in usp_client.js
+@JS('UspClientBuilder')
+extension type UspClientBuilderJS._(JSObject _) implements JSObject {
+  external factory UspClientBuilderJS(String baseUrl);
+
+  external UspClientBuilderJS endpoint(String endpoint);
+  external UspClientBuilderJS authToken(String token);
+  external UspClientBuilderJS extraHeader(String name, String value);
+  external UspClientJS build();
+}
+
 // Bind to the UspClient class exported in usp_client.js (unified API)
 @JS('UspClient')
 extension type UspClientJS._(JSObject _) implements JSObject {
@@ -93,6 +104,12 @@ class UspClientWeb {
 
   UspClientWeb(String baseUrl) {
     _client = UspClientJS(baseUrl);
+  }
+
+  /// Factory constructor that accepts a pre-built JS client.
+  /// Used for Remote Assistance mode where the client is built via UspClientBuilder.
+  UspClientWeb.fromJsClient(UspClientJS jsClient) {
+    _client = jsClient;
   }
 
   bool get isAuthenticated {

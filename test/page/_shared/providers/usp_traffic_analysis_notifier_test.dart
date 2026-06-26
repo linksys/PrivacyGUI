@@ -7,12 +7,18 @@ import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/_shared/models/traffic_analysis_state.dart';
 import 'package:privacy_gui/page/_shared/providers/usp_traffic_analysis_notifier.dart';
+import 'package:privacy_gui/page/dashboard/providers/dashboard_domain_ready_provider.dart';
 
 class MockUspClient extends Mock implements UspClient {}
 
 class _AlwaysAuthenticatedNotifier extends AppConnectionStateNotifier {
   @override
   AppConnectionState build() => AppConnectionState.authenticated;
+}
+
+class _LoggedOutNotifier extends AppConnectionStateNotifier {
+  @override
+  AppConnectionState build() => AppConnectionState.loggedOut;
 }
 
 void main() {
@@ -74,11 +80,11 @@ void main() {
   }
 
   group('UspTrafficAnalysisNotifier', () {
-    test('build starts with 5s default interval', () async {
+    test('build starts with 10s default interval', () async {
       final container = await createAndWait();
 
       final state = container.read(uspTrafficAnalysisProvider);
-      expect(state.refreshInterval, const Duration(seconds: 5));
+      expect(state.refreshInterval, const Duration(seconds: 10));
       container.dispose();
     });
 
@@ -187,8 +193,19 @@ void main() {
 
     test('fetchNow returns early when not authenticated', () async {
       when(() => mockUsp.isAuthenticated).thenReturn(false);
-      final container = await createAndWait();
-      // Clear interactions from other providers triggered during setup
+      final container = ProviderContainer(
+        overrides: [
+          uspClientProvider.overrideWithValue(mockUsp),
+          appConnectionStateProvider.overrideWith(() {
+            return _LoggedOutNotifier();
+          }),
+        ],
+      );
+      // Trigger build + wait for microtask (auto-timer won't start since not authenticated)
+      container.read(uspTrafficAnalysisProvider);
+      await Future.delayed(Duration.zero);
+      await Future.delayed(Duration.zero);
+      // Clear any interactions from setup
       clearInteractions(mockUsp);
 
       final notifier = container.read(uspTrafficAnalysisProvider.notifier);
@@ -213,6 +230,61 @@ void main() {
 
       final state = container.read(uspTrafficAnalysisProvider);
       expect(state.isFetching, isFalse);
+      container.dispose();
+    });
+
+    test('starts timer when dashboardDomainReadyProvider already resolved',
+        () async {
+      when(() => mockUsp.get(any()))
+          .thenAnswer((_) async => makeTrafficResponse());
+      final container = ProviderContainer(
+        overrides: [
+          uspClientProvider.overrideWithValue(mockUsp),
+          appConnectionStateProvider.overrideWith(() {
+            return _AlwaysAuthenticatedNotifier();
+          }),
+          dashboardDomainReadyProvider.overrideWith((ref) async {}),
+        ],
+      );
+      // Wait for dashboardDomainReadyProvider to resolve BEFORE reading the provider.
+      await container.read(dashboardDomainReadyProvider.future);
+
+      // Now read the traffic provider — it should detect already-resolved state.
+      container.read(uspTrafficAnalysisProvider);
+      // Wait for microtask + initial fetch.
+      await Future.delayed(Duration.zero);
+      await Future.delayed(Duration.zero);
+
+      final state = container.read(uspTrafficAnalysisProvider);
+      expect(state.refreshInterval, const Duration(seconds: 10));
+      // Timer started and fetched data.
+      verify(() => mockUsp.get(any())).called(greaterThan(0));
+      container.dispose();
+    });
+
+    test(
+        'does not start timer when dashboardDomainReadyProvider resolved but not authenticated',
+        () async {
+      final container = ProviderContainer(
+        overrides: [
+          uspClientProvider.overrideWithValue(mockUsp),
+          appConnectionStateProvider.overrideWith(() {
+            return _LoggedOutNotifier();
+          }),
+          dashboardDomainReadyProvider.overrideWith((ref) async {}),
+        ],
+      );
+      // Wait for dashboardDomainReadyProvider to resolve BEFORE reading the provider.
+      await container.read(dashboardDomainReadyProvider.future);
+
+      // Now read the traffic provider.
+      container.read(uspTrafficAnalysisProvider);
+      // Wait for microtask.
+      await Future.delayed(Duration.zero);
+      await Future.delayed(Duration.zero);
+
+      // Timer should not have started (no fetch calls).
+      verifyNever(() => mockUsp.get(any()));
       container.dispose();
     });
   });

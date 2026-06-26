@@ -2,12 +2,11 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
-import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/core/usp/models/operate_result.dart';
-import 'package:privacy_gui/core/utils/logger.dart';
-import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
 import 'package:privacy_gui/core/usp/services/network_diagnostics_executor.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/unified_diagnostics/models/manual_tools_state.dart';
+import 'package:privacy_gui/page/unified_diagnostics/services/diagnostics_scope_service.dart';
 
 // ---------------------------------------------------------------------------
 // Provider
@@ -44,16 +43,20 @@ class ManualToolsNotifier
     return const NetworkDiagnosticsState();
   }
 
+  DiagnosticsScopeService get _svc {
+    final svc = ref.read(diagnosticsScopeServiceProvider);
+    if (svc == null) {
+      throw const ConnectivityError(
+          detail: 'DiagnosticsScopeService not available');
+    }
+    return svc;
+  }
+
   Future<DiagnosticScope> _ensureScope() async {
     final existing = _scope;
     if (existing != null && !existing.isReleased) return existing;
 
-    final executor = ref.read(networkDiagnosticsExecutorProvider);
-    if (executor == null) {
-      throw const ConnectivityError(
-          message: 'NetworkDiagnosticsExecutor not available');
-    }
-    final scope = await executor.acquireScope();
+    final scope = await _svc.acquireScope();
     _scope = scope;
     return scope;
   }
@@ -108,7 +111,8 @@ class ManualToolsNotifier
 
     try {
       final scope = await _ensureScope();
-      final result = await scope.ping(
+      final result = await _svc.ping(
+        scope,
         host: s.host,
         numberOfRepetitions: s.pingCount,
         timeout: const Duration(seconds: 30),
@@ -128,26 +132,15 @@ class ManualToolsNotifier
       logger.w('[USP][Diagnostics]: Ping timeout: $e');
       state = AsyncData(state.requireValue.copyWith(
         status: DiagnosticStatus.error,
-        errorMessage: 'Ping timed out — no response from ${s.host}',
+        error: TimeoutError(detail: e.toString()),
       ));
-    } catch (e) {
+    } on ServiceError catch (e) {
       logger.w('[USP][Diagnostics]: Ping failed: $e');
-      final mapped = e is ServiceError ? e : mapUspErrorToServiceError(e);
       state = AsyncData(state.requireValue.copyWith(
         status: DiagnosticStatus.error,
-        errorMessage: _pingErrorMessage(mapped, s.host),
+        error: e,
       ));
     }
-  }
-
-  String _pingErrorMessage(ServiceError e, String host) {
-    return switch (e) {
-      InvalidInputError(:final message) =>
-        message ?? 'Cannot ping $host — invalid host',
-      NetworkError() => 'Ping failed — router lost connection',
-      ConnectivityError() => 'Ping unavailable — diagnostics scope not ready',
-      _ => 'Ping failed — please try again',
-    };
   }
 
   // -------------------------------------------------------------------------
@@ -166,7 +159,8 @@ class ManualToolsNotifier
 
     try {
       final scope = await _ensureScope();
-      final result = await scope.traceRoute(
+      final result = await _svc.traceRoute(
+        scope,
         host: s.host,
         maxHopCount: s.maxHops,
         timeout: const Duration(seconds: 120),
@@ -185,27 +179,15 @@ class ManualToolsNotifier
       logger.w('[USP][Diagnostics]: Traceroute timeout: $e');
       state = AsyncData(state.requireValue.copyWith(
         status: DiagnosticStatus.error,
-        errorMessage: 'Traceroute timed out — route to ${s.host} incomplete',
+        error: TimeoutError(detail: e.toString()),
       ));
-    } catch (e) {
+    } on ServiceError catch (e) {
       logger.w('[USP][Diagnostics]: Traceroute failed: $e');
-      final mapped = e is ServiceError ? e : mapUspErrorToServiceError(e);
       state = AsyncData(state.requireValue.copyWith(
         status: DiagnosticStatus.error,
-        errorMessage: _tracerouteErrorMessage(mapped, s.host),
+        error: e,
       ));
     }
-  }
-
-  String _tracerouteErrorMessage(ServiceError e, String host) {
-    return switch (e) {
-      InvalidInputError(:final message) =>
-        message ?? 'Cannot trace $host — invalid host',
-      NetworkError() => 'Traceroute failed — router lost connection',
-      ConnectivityError() =>
-        'Traceroute unavailable — diagnostics scope not ready',
-      _ => 'Traceroute failed — please try again',
-    };
   }
 
   // -------------------------------------------------------------------------
@@ -225,7 +207,8 @@ class ManualToolsNotifier
     try {
       final scope = await _ensureScope();
       final dnsServer = s.dnsServer.trim();
-      final result = await scope.nsLookup(
+      final result = await _svc.nsLookup(
+        scope,
         hostName: s.host,
         dnsServer: dnsServer.isEmpty ? null : dnsServer,
         timeout: const Duration(seconds: 30),
@@ -245,27 +228,14 @@ class ManualToolsNotifier
       logger.w('[USP][Diagnostics]: NS Lookup timeout: $e');
       state = AsyncData(state.requireValue.copyWith(
         status: DiagnosticStatus.error,
-        errorMessage:
-            'NS Lookup timed out — no response while resolving ${s.host}',
+        error: TimeoutError(detail: e.toString()),
       ));
-    } catch (e) {
+    } on ServiceError catch (e) {
       logger.w('[USP][Diagnostics]: NS Lookup failed: $e');
-      final mapped = e is ServiceError ? e : mapUspErrorToServiceError(e);
       state = AsyncData(state.requireValue.copyWith(
         status: DiagnosticStatus.error,
-        errorMessage: _nsLookupErrorMessage(mapped, s.host),
+        error: e,
       ));
     }
-  }
-
-  String _nsLookupErrorMessage(ServiceError e, String host) {
-    return switch (e) {
-      InvalidInputError(:final message) =>
-        message ?? 'Cannot resolve $host — invalid host',
-      NetworkError() => 'NS Lookup failed — router lost connection',
-      ConnectivityError() =>
-        'NS Lookup unavailable — diagnostics scope not ready',
-      _ => 'NS Lookup failed — please try again',
-    };
   }
 }

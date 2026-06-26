@@ -5,6 +5,7 @@ import 'package:privacy_gui/core/utils/logger.dart';
 
 import 'sse_connection_manager.dart';
 import 'sse_event_router.dart';
+import 'sse_operation_strategy.dart';
 import 'sse_subscription_registry.dart';
 import 'sse_unload_handler.dart';
 import 'usp_bridge_client.dart';
@@ -17,7 +18,7 @@ import 'usp_client.dart';
 ///
 /// Usage:
 /// ```dart
-/// final manager = SseManager(usp: usp, bridge: bridge);
+/// final manager = SseManager(usp: usp, bridge: bridge, strategy: strategy);
 /// await manager.connect();
 ///
 /// // Register a subscription with handler
@@ -37,48 +38,61 @@ import 'usp_client.dart';
 class SseManager {
   final UspClient _usp;
   final UspBridgeClient _bridge;
+  final SseOperationStrategy _strategy;
   final SseConnectionManager connection;
   final SseSubscriptionRegistry registry;
   final SseEventRouter router;
   final SseUnloadHandler _unloadHandler = SseUnloadHandler();
-  List<(String id, String notifType, String referenceList)> _coreSubscriptions =
-      [];
-  bool _coreSubsDeferred = false;
+
+  List<SubscriptionDef> _coreSubscriptions = [];
+  bool _registrationInProgress = false;
 
   /// Delegate for proactive auth check on heartbeat. Set by provider layer
   /// to wire [UspAuthCoordinator.ensureAuth].
   Future<void> Function()? onHeartbeatAuth;
 
+  /// Delegate called on each reconnect failure with the attempt number.
+  /// Set by provider layer to enable early recovery detection.
+  set onReconnectFailed(void Function(int attempt)? callback) {
+    connection.onReconnectFailed = callback;
+  }
+
   SseManager({
     required UspClient usp,
     required UspBridgeClient bridge,
+    required SseOperationStrategy strategy,
   })  : _usp = usp,
         _bridge = bridge,
-        connection = SseConnectionManager(bridge),
-        registry = SseSubscriptionRegistry(bridge),
+        _strategy = strategy,
+        connection = SseConnectionManager(
+          bridge,
+          heartbeatConfig: strategy.heartbeatConfig,
+        ),
+        registry = SseSubscriptionRegistry(strategy),
         router = SseEventRouter() {
     // Wire connection events to router
     connection.onEvent = router.routeEvent;
 
     // Wire heartbeat → proactive auth check (fire-and-forget)
-    router.onHeartbeat = () {
-      final authCheck = onHeartbeatAuth;
-      if (authCheck != null) {
-        authCheck().catchError((e) {
-          logger.w('[USP][SSE]: Heartbeat auth check error: $e');
-        });
-      }
-    };
+    // Only if enabled by strategy (disabled in Remote mode)
+    if (strategy.heartbeatConfig.authCheckEnabled) {
+      router.onHeartbeat = () {
+        final authCheck = onHeartbeatAuth;
+        if (authCheck != null) {
+          authCheck().catchError((e) {
+            logger.w('[USP][SSE]: Heartbeat auth check error: $e');
+          });
+        }
+      };
+    }
 
-    // On connect (first or reconnect): register/re-register subscriptions.
-    // First connect: registers core subscriptions set via setCoreSubscriptions().
-    // Reconnect: re-registers existing subscriptions on the bridge.
+    // On connect: delegate to registry which uses strategy
     connection.onConnected = () {
-      logger.d('[USP][SSE]: Connected — registering/re-registering '
-          'subscriptions on bridge');
-      _registerOrResubscribe();
+      logger.d('[USP][SSE]: Connected');
+      _onSseConnected();
     };
 
+    // On disconnect: delegate to registry which uses strategy
     connection.onDisconnected = () {
       logger.d('[USP][SSE]: Disconnected');
     };
@@ -88,11 +102,14 @@ class SseManager {
 
     // Force SSE reconnect after full re-login to ensure the new session's
     // subscription routing is active (prevents silent notification failure).
-    _usp.onTokenRefreshed = () {
-      logger.d('[USP][SSE]: Token refreshed (full re-login) '
-          '— forcing SSE reconnect');
-      connection.disconnect().then((_) => connection.connect());
-    };
+    // Skip in Remote mode where token cannot refresh.
+    if (strategy.heartbeatConfig.authCheckEnabled) {
+      _usp.onTokenRefreshed = () {
+        logger.d('[USP][SSE]: Token refreshed (full re-login) '
+            '— forcing SSE reconnect');
+        connection.disconnect().then((_) => connection.connect());
+      };
+    }
 
     // Register browser unload handler to abort SSE on page refresh/close.
     // abortSse() is synchronous — critical because `beforeunload` does NOT
@@ -118,12 +135,14 @@ class SseManager {
     required String referenceList,
     required SseNotificationHandler onNotification,
   }) async {
-    // Register on both OBUSPA + bridge layers
-    await registry.register(
-      subscriptionId: subscriptionId,
-      notifType: notifType,
-      referenceList: referenceList,
-    );
+    // Register via strategy
+    await registry.registerAll([
+      SubscriptionDef(
+        subscriptionId: subscriptionId,
+        notifType: notifType,
+        referenceList: referenceList,
+      ),
+    ]);
 
     // Add handler to event router
     final removeHandler = router.addHandler(subscriptionId, onNotification);
@@ -155,12 +174,14 @@ class SseManager {
     required String referenceList,
     required void Function() onNotification,
   }) async {
-    // Register OBUSPA + bridge subscription
-    await registry.register(
-      subscriptionId: subscriptionId,
-      notifType: notifType,
-      referenceList: referenceList,
-    );
+    // Register via strategy
+    await registry.registerAll([
+      SubscriptionDef(
+        subscriptionId: subscriptionId,
+        notifType: notifType,
+        referenceList: referenceList,
+      ),
+    ]);
 
     // Wildcard handler: match by type + path prefix
     final removeHandler = router.addWildcardHandler((notification) {
@@ -195,65 +216,61 @@ class SseManager {
     }
   }
 
-  /// Sets the core subscriptions to register when SSE first connects.
+  /// Sets the core subscriptions to register.
   ///
-  /// Called once from [sseBootstrapProvider]. Subscriptions are registered
-  /// from the [onConnected] callback after the first heartbeat, rather than
-  /// during bootstrap, to reduce the HTTP request burst on the bridge.
+  /// Called by orchestrator. In Local mode, subscriptions may be auto-registered
+  /// on SSE connect. In Remote mode, orchestrator explicitly calls
+  /// [registerCoreSubscriptions].
   void setCoreSubscriptions(List<(String, String, String)> subscriptions) {
-    _coreSubscriptions = subscriptions;
+    _coreSubscriptions = subscriptions
+        .map((s) => SubscriptionDef(
+              subscriptionId: s.$1,
+              notifType: s.$2,
+              referenceList: s.$3,
+            ))
+        .toList();
   }
 
-  /// Handles subscription registration on SSE connect/reconnect.
-  ///
-  /// - Reconnect (registry has entries): re-registers immediately via bridge
-  /// - First connect (registry empty): registers core subscriptions directly.
-  ///   [onConnected] fires on the first real heartbeat (~30s after stream
-  ///   opens), by which time dashboard HTTP requests have already completed —
-  ///   no HTTP/1.1 connection pool contention.
-  Future<void> _registerOrResubscribe() async {
-    if (registry.activeIds.isNotEmpty) {
-      // Reconnect path: re-register existing subscriptions on bridge
-      await registry.resubscribeAll();
-    } else if (_coreSubscriptions.isNotEmpty) {
-      // First connect: register directly (no contention at heartbeat time)
-      await registerDeferredSubscriptions(force: true);
-    }
+  /// Called when SSE connects. Strategy decides behavior:
+  /// - Local: auto resubscribe existing records
+  /// - Remote: no-op (orchestrator controls)
+  Future<void> _onSseConnected() async {
+    await registry.onSseConnected();
   }
 
-  /// Registers core subscriptions on the bridge.
+  /// Registers core subscriptions.
   ///
-  /// In normal flow, called from [_registerOrResubscribe] when SSE first
-  /// connects (on heartbeat). In the post-reload path, the orchestrator
-  /// calls this with [force] = true to register before onConnected fires.
-  ///
-  /// Pass [force] = true to skip the deferral check and register immediately.
-  Future<void> registerDeferredSubscriptions({bool force = false}) async {
-    if (!force && !_coreSubsDeferred) return;
-    _coreSubsDeferred = false;
-
-    for (final (id, notifType, referenceList) in _coreSubscriptions) {
-      try {
-        await registry.register(
-          subscriptionId: id,
-          notifType: notifType,
-          referenceList: referenceList,
-        );
-        // Small breathing room for embedded router between requests
-        await Future.delayed(const Duration(milliseconds: 50));
-      } catch (e) {
-        logger.w('[USP][SSE]: Failed to register core sub $id: $e');
-      }
+  /// Called by orchestrator after domain providers are ready.
+  /// Strategy handles the actual registration logic.
+  Future<void> registerCoreSubscriptions() async {
+    if (_coreSubscriptions.isEmpty) {
+      logger.d('[USP][SSE]: No core subscriptions to register');
+      return;
     }
-    logger.d('[USP][SSE]: Registered ${registry.activeIds.length} '
-        'core subscriptions (deferred)');
+
+    if (_registrationInProgress) {
+      logger.d('[USP][SSE]: Registration already in progress, skipping');
+      return;
+    }
+    _registrationInProgress = true;
+
+    try {
+      await registry.registerAll(_coreSubscriptions);
+      logger.d('[USP][SSE]: Registered ${registry.activeIds.length} '
+          'core subscriptions');
+    } finally {
+      _registrationInProgress = false;
+    }
   }
 
   /// Starts the SSE connection.
   Future<void> connect() => connection.connect();
 
   /// Disconnects SSE (intentional, stops reconnection).
-  Future<void> disconnect() => connection.disconnect();
+  Future<void> disconnect() async {
+    await connection.disconnect();
+    await registry.onSseDisconnected(intentional: true);
+  }
 
   /// Attempts to reconnect from suspended/disconnected state.
   /// Returns `true` if a reconnect attempt was started.
@@ -274,6 +291,7 @@ class SseManager {
     _bridge.abortSse();
     await connection.disconnect();
     await registry.unregisterAll();
+    _strategy.dispose();
     router.dispose();
     connection.dispose();
   }

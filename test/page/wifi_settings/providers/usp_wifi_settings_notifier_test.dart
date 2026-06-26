@@ -133,7 +133,7 @@ void main() {
       await Future.delayed(Duration.zero);
 
       final state = container.read(uspWifiSettingsProvider);
-      expect(state.status.errorMessage, isNotNull);
+      expect(state.status.error, isA<ServiceNotInitializedError>());
       container.dispose();
     });
 
@@ -552,7 +552,7 @@ void main() {
           uspClientProvider.overrideWithValue(mockUsp),
           uspAuthCoordinatorProvider.overrideWithValue(mockAuthCoordinator),
           wifiDataProvider.overrideWith(() =>
-              _ErrorWifiDataNotifier(const NetworkError(message: 'timeout'))),
+              _ErrorWifiDataNotifier(const NetworkError(detail: 'timeout'))),
         ],
       );
       container.listen(uspWifiSettingsProvider, (_, __) {});
@@ -560,8 +560,7 @@ void main() {
       await Future.delayed(Duration.zero);
 
       final state = container.read(uspWifiSettingsProvider);
-      expect(state.status.errorMessage, isNotNull);
-      expect(state.status.errorMessage, contains('Network error'));
+      expect(state.status.error, isA<NetworkError>());
       expect(state.settings.current.networks, isEmpty);
       container.dispose();
     });
@@ -585,7 +584,7 @@ void main() {
       when(() => mockService.saveAdvanced(
             original: any(named: 'original'),
             current: any(named: 'current'),
-          )).thenThrow(const NetworkError(message: 'HTTP 504'));
+          )).thenThrow(const NetworkError(detail: 'HTTP 504'));
 
       final container = createContainer();
       await Future.delayed(Duration.zero);
@@ -616,7 +615,7 @@ void main() {
       when(() => mockService.saveAdvanced(
             original: any(named: 'original'),
             current: any(named: 'current'),
-          )).thenThrow(const NetworkError(message: 'HTTP 504'));
+          )).thenThrow(const NetworkError(detail: 'HTTP 504'));
 
       final container = createContainer();
       await Future.delayed(Duration.zero);
@@ -653,13 +652,6 @@ class _FakeWifiDataNotifier extends AsyncNotifier<WifiData>
 
   @override
   Future<WifiData> build() async => _data;
-
-  @override
-  Future<void> toggleWifiRadio(String instancePath, bool enable) async {}
-
-  @override
-  Future<void> updateWifiRadioChannel(
-      String instancePath, int channel, bool autoChannel) async {}
 }
 
 // ---------------------------------------------------------------------------
@@ -673,11 +665,4 @@ class _ErrorWifiDataNotifier extends AsyncNotifier<WifiData>
 
   @override
   Future<WifiData> build() async => throw _error;
-
-  @override
-  Future<void> toggleWifiRadio(String instancePath, bool enable) async {}
-
-  @override
-  Future<void> updateWifiRadioChannel(
-      String instancePath, int channel, bool autoChannel) async {}
 }

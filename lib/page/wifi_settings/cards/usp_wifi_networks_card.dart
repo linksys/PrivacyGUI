@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/models/client_connection_detail.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_radio_ui_model.dart';
 import 'package:privacy_gui/page/_shared/components/card_skeleton.dart';
+import 'package:privacy_gui/page/_shared/components/dashboard_card_template.dart';
 import 'package:privacy_gui/page/_shared/components/usp_mutation_helper.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_settings_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_data_provider.dart';
+import 'package:privacy_gui/route/constants.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// A WiFi network entry aggregated by SSID across all bands.
@@ -37,13 +40,11 @@ class _WifiNetworkEntry {
 /// - Toggle for enable/disable (future)
 class UspWifiNetworksCard extends ConsumerWidget {
   final WifiData? wifiData;
-  final VoidCallback? onViewAll;
   final void Function(String ssid)? onShareTap;
 
   const UspWifiNetworksCard({
     super.key,
     this.wifiData,
-    this.onViewAll,
     this.onShareTap,
   });
 
@@ -57,41 +58,21 @@ class UspWifiNetworksCard extends ConsumerWidget {
       data.connectionDetailMap,
     );
 
-    return AppCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(child: AppText.titleMedium('WiFi Networks')),
-              if (onViewAll != null)
-                AppButton.text(
-                  label: 'View All',
-                  onTap: onViewAll,
-                ),
-            ],
-          ),
-          AppGap.lg(),
-          // Network list
-          if (networks.isEmpty)
-            _buildEmptyState(context)
-          else
-            Expanded(
-              child: SingleChildScrollView(
-                child: Column(
-                  children: [
-                    for (var i = 0; i < networks.length; i++) ...[
-                      _buildNetworkRow(context, ref, networks[i]),
-                      if (i < networks.length - 1) AppGap.sm(),
-                    ],
-                  ],
-                ),
-              ),
+    return DashboardCardTemplate(
+      title: loc(context).wifiNetworks,
+      detailRoute: RouteNamed.uspWifiSettings,
+      itemCount: networks.length,
+      detailLabel: loc(context).viewAll,
+      content: networks.isEmpty
+          ? _buildEmptyState(context)
+          : Column(
+              children: [
+                for (var i = 0; i < networks.length; i++) ...[
+                  _buildNetworkRow(context, ref, networks[i]),
+                  if (i < networks.length - 1) AppGap.sm(),
+                ],
+              ],
             ),
-        ],
-      ),
     );
   }
 
@@ -277,13 +258,13 @@ class UspWifiNetworksCard extends ConsumerWidget {
     final action = enable ? 'Enable' : 'Disable';
     final confirmed = await showSimpleAppDialog<bool>(
       context,
-      title: '$action WiFi Network',
+      title: loc(context).editWifiNetworkAction(action),
       content: AppText.bodyMedium(
         '$action "${network.ssidName}" on all bands?',
       ),
       actions: [
         AppButton.text(
-          label: 'Cancel',
+          label: loc(context).cancel,
           onTap: () => context.pop(),
         ),
         AppButton.primary(

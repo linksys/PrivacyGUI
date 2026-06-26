@@ -9,6 +9,7 @@ void main() {
       test('always valid', () {
         final form = UspInternetSettingsForm(
           connectionType: UspWanConnectionType.dhcp,
+          mtu: 1500,
         );
         expect(validateForm(form), isTrue);
       });
@@ -22,6 +23,7 @@ void main() {
           subnetMask: '255.255.255.0',
           defaultGateway: '192.168.1.1',
           dnsServer1: '8.8.8.8',
+          mtu: 1500,
         );
         expect(validateForm(form), isTrue);
       });
@@ -35,6 +37,7 @@ void main() {
           dnsServer1: '8.8.8.8',
           dnsServer2: '8.8.4.4',
           dnsServer3: '1.1.1.1',
+          mtu: 1500,
         );
         expect(validateForm(form), isTrue);
       });
@@ -46,6 +49,7 @@ void main() {
           subnetMask: '255.255.255.0',
           defaultGateway: '192.168.1.1',
           dnsServer1: '8.8.8.8',
+          mtu: 1500,
         );
         expect(validateForm(form), isFalse);
       });
@@ -57,6 +61,7 @@ void main() {
           subnetMask: '',
           defaultGateway: '192.168.1.1',
           dnsServer1: '8.8.8.8',
+          mtu: 1500,
         );
         expect(validateForm(form), isFalse);
       });
@@ -68,6 +73,7 @@ void main() {
           subnetMask: '255.255.255.0',
           defaultGateway: '192.168.1.1',
           dnsServer1: '8.8.8.8',
+          mtu: 1500,
         );
         expect(validateForm(form), isFalse);
       });
@@ -79,6 +85,7 @@ void main() {
           subnetMask: '255.255.0.255', // non-contiguous
           defaultGateway: '192.168.1.1',
           dnsServer1: '8.8.8.8',
+          mtu: 1500,
         );
         expect(validateForm(form), isFalse);
       });
@@ -91,6 +98,7 @@ void main() {
           defaultGateway: '192.168.1.1',
           dnsServer1: '8.8.8.8',
           dnsServer2: 'bad',
+          mtu: 1500,
         );
         expect(validateForm(form), isFalse);
       });
@@ -102,6 +110,7 @@ void main() {
           connectionType: UspWanConnectionType.pppoe,
           pppUsername: 'user',
           pppPassword: 'pass',
+          mtu: 1492,
         );
         expect(validateForm(form), isTrue);
       });
@@ -111,6 +120,7 @@ void main() {
           connectionType: UspWanConnectionType.pppoe,
           pppUsername: '',
           pppPassword: 'pass',
+          mtu: 1492,
         );
         expect(validateForm(form), isFalse);
       });
@@ -120,6 +130,7 @@ void main() {
           connectionType: UspWanConnectionType.pppoe,
           pppUsername: 'user',
           pppPassword: '',
+          mtu: 1492,
         );
         expect(validateForm(form), isFalse);
       });
@@ -129,6 +140,7 @@ void main() {
       test('always valid', () {
         final form = UspInternetSettingsForm(
           connectionType: UspWanConnectionType.bridge,
+          mtu: 1500,
         );
         expect(validateForm(form), isTrue);
       });
@@ -139,6 +151,7 @@ void main() {
         final form = UspInternetSettingsForm(
           connectionType: UspWanConnectionType.dhcp,
           ipv6rdEnabled: false,
+          mtu: 1500,
         );
         expect(validateForm(form), isTrue);
       });
@@ -147,9 +160,10 @@ void main() {
         final form = UspInternetSettingsForm(
           connectionType: UspWanConnectionType.dhcp,
           ipv6rdEnabled: true,
-          ipv6rdPrefix: '2001:db8::',
+          ipv6rdPrefix: '2001:db8::/32',
           ipv6rdIpv4MaskLength: 16,
           ipv6rdBorderRelay: '192.0.2.1',
+          mtu: 1500,
         );
         expect(validateForm(form), isTrue);
       });
@@ -161,6 +175,31 @@ void main() {
           ipv6rdPrefix: '',
           ipv6rdIpv4MaskLength: 16,
           ipv6rdBorderRelay: '192.0.2.1',
+          mtu: 1500,
+        );
+        expect(validateForm(form), isFalse);
+      });
+
+      test('invalid when 6rd prefix is not CIDR format', () {
+        final form = UspInternetSettingsForm(
+          connectionType: UspWanConnectionType.dhcp,
+          ipv6rdEnabled: true,
+          ipv6rdPrefix: '2001:db8::', // missing /prefix
+          ipv6rdIpv4MaskLength: 16,
+          ipv6rdBorderRelay: '192.0.2.1',
+          mtu: 1500,
+        );
+        expect(validateForm(form), isFalse);
+      });
+
+      test('invalid when 6rd border relay is not valid IPv4', () {
+        final form = UspInternetSettingsForm(
+          connectionType: UspWanConnectionType.dhcp,
+          ipv6rdEnabled: true,
+          ipv6rdPrefix: '2001:db8::/32',
+          ipv6rdIpv4MaskLength: 16,
+          ipv6rdBorderRelay: '192.0.2', // incomplete
+          mtu: 1500,
         );
         expect(validateForm(form), isFalse);
       });
@@ -169,29 +208,106 @@ void main() {
         final form = UspInternetSettingsForm(
           connectionType: UspWanConnectionType.dhcp,
           ipv6rdEnabled: true,
-          ipv6rdPrefix: '2001:db8::',
+          ipv6rdPrefix: '2001:db8::/32',
           ipv6rdIpv4MaskLength: 33,
           ipv6rdBorderRelay: '192.0.2.1',
+          mtu: 1500,
+        );
+        expect(validateForm(form), isFalse);
+      });
+
+      test('invalid when 6rd prefix is loopback address', () {
+        final form = UspInternetSettingsForm(
+          connectionType: UspWanConnectionType.dhcp,
+          ipv6rdEnabled: true,
+          ipv6rdPrefix: '::1/128',
+          ipv6rdIpv4MaskLength: 0,
+          ipv6rdBorderRelay: '192.0.2.1',
+          mtu: 1500,
+        );
+        expect(validateForm(form), isFalse);
+      });
+
+      test('invalid when 6rd prefix is multicast address', () {
+        final form = UspInternetSettingsForm(
+          connectionType: UspWanConnectionType.dhcp,
+          ipv6rdEnabled: true,
+          ipv6rdPrefix: 'ff02::1/64',
+          ipv6rdIpv4MaskLength: 0,
+          ipv6rdBorderRelay: '192.0.2.1',
+          mtu: 1500,
+        );
+        expect(validateForm(form), isFalse);
+      });
+
+      test('invalid when 6rd prefix is unspecified address', () {
+        final form = UspInternetSettingsForm(
+          connectionType: UspWanConnectionType.dhcp,
+          ipv6rdEnabled: true,
+          ipv6rdPrefix: '::/0',
+          ipv6rdIpv4MaskLength: 0,
+          ipv6rdBorderRelay: '192.0.2.1',
+          mtu: 1500,
+        );
+        expect(validateForm(form), isFalse);
+      });
+
+      test('invalid when 6rd border relay is empty', () {
+        final form = UspInternetSettingsForm(
+          connectionType: UspWanConnectionType.dhcp,
+          ipv6rdEnabled: true,
+          ipv6rdPrefix: '2001:db8::/32',
+          ipv6rdIpv4MaskLength: 16,
+          ipv6rdBorderRelay: '',
+          mtu: 1500,
         );
         expect(validateForm(form), isFalse);
       });
     });
 
     group('MTU validation', () {
-      test('valid when auto (0)', () {
-        final form = UspInternetSettingsForm(
-          connectionType: UspWanConnectionType.dhcp,
-          mtu: 0,
-        );
-        expect(validateForm(form), isTrue);
-      });
-
       test('valid in range 576-1500', () {
         final form = UspInternetSettingsForm(
           connectionType: UspWanConnectionType.dhcp,
           mtu: 1400,
         );
         expect(validateForm(form), isTrue);
+      });
+
+      test('valid at minimum 576', () {
+        final form = UspInternetSettingsForm(
+          connectionType: UspWanConnectionType.dhcp,
+          mtu: 576,
+        );
+        expect(validateForm(form), isTrue);
+      });
+
+      test('valid at maximum 1500', () {
+        final form = UspInternetSettingsForm(
+          connectionType: UspWanConnectionType.dhcp,
+          mtu: 1500,
+        );
+        expect(validateForm(form), isTrue);
+      });
+
+      test('valid PPPoE at maximum 1492', () {
+        final form = UspInternetSettingsForm(
+          connectionType: UspWanConnectionType.pppoe,
+          pppUsername: 'user',
+          pppPassword: 'pass',
+          mtu: 1492,
+        );
+        expect(validateForm(form), isTrue);
+      });
+
+      test('invalid PPPoE above 1492', () {
+        final form = UspInternetSettingsForm(
+          connectionType: UspWanConnectionType.pppoe,
+          pppUsername: 'user',
+          pppPassword: 'pass',
+          mtu: 1500,
+        );
+        expect(validateForm(form), isFalse);
       });
 
       test('invalid when below 576', () {
@@ -216,6 +332,7 @@ void main() {
         final form = UspInternetSettingsForm(
           connectionType: UspWanConnectionType.dhcp,
           wanMacAddress: '',
+          mtu: 1500,
         );
         expect(validateForm(form), isTrue);
       });
@@ -224,6 +341,7 @@ void main() {
         final form = UspInternetSettingsForm(
           connectionType: UspWanConnectionType.dhcp,
           wanMacAddress: 'AA:BB:CC:DD:EE:FF',
+          mtu: 1500,
         );
         expect(validateForm(form), isTrue);
       });
@@ -232,6 +350,7 @@ void main() {
         final form = UspInternetSettingsForm(
           connectionType: UspWanConnectionType.dhcp,
           wanMacAddress: 'AA-BB-CC-DD-EE-FF',
+          mtu: 1500,
         );
         expect(validateForm(form), isTrue);
       });
@@ -240,6 +359,7 @@ void main() {
         final form = UspInternetSettingsForm(
           connectionType: UspWanConnectionType.dhcp,
           wanMacAddress: 'not-a-mac',
+          mtu: 1500,
         );
         expect(validateForm(form), isFalse);
       });

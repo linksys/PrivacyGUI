@@ -1,33 +1,38 @@
 import 'package:equatable/equatable.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 
 /// Transient (non-editable) status for the DMZ feature page.
 class DmzStatus extends Equatable {
   final bool isLoading;
   final bool isSaving;
-  final String? errorMessage;
+
+  /// Typed error from the last fetch. The View localizes it via
+  /// `localizeServiceError`; null means no error.
+  final ServiceError? error;
   final Map<String, String> fieldErrors;
 
   const DmzStatus({
     this.isLoading = true,
     this.isSaving = false,
-    this.errorMessage,
+    this.error,
     this.fieldErrors = const {},
   });
 
   DmzStatus copyWith({
     bool? isLoading,
     bool? isSaving,
-    String? errorMessage,
+    ServiceError? error,
+    bool clearError = false,
     Map<String, String>? fieldErrors,
   }) {
     return DmzStatus(
       isLoading: isLoading ?? this.isLoading,
       isSaving: isSaving ?? this.isSaving,
-      errorMessage: errorMessage,
+      error: clearError ? null : (error ?? this.error),
       fieldErrors: fieldErrors ?? this.fieldErrors,
     );
   }
 
   @override
-  List<Object?> get props => [isLoading, isSaving, errorMessage, fieldErrors];
+  List<Object?> get props => [isLoading, isSaving, error, fieldErrors];
 }

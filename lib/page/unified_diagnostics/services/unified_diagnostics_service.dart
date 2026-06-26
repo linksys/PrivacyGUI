@@ -18,6 +18,8 @@ import 'package:privacy_gui/generated/wi_fi_radios.g.dart';
 import 'package:privacy_gui/generated/wi_fi_ssids.g.dart';
 import 'package:privacy_gui/generated/wifi_clients.g.dart';
 import 'package:privacy_gui/page/unified_diagnostics/models/device_score.dart';
+import 'package:privacy_gui/page/unified_diagnostics/models/diagnostic_result.dart';
+import 'package:privacy_gui/page/_shared/components/wifi_ui.dart';
 
 final unifiedDiagnosticsServiceProvider =
     Provider<UnifiedDiagnosticsService?>((ref) {
@@ -117,7 +119,7 @@ class UnifiedDiagnosticsService {
     if (wan.ipAddress.isEmpty) {
       throw const InvalidInputError(
           field: 'wanIp',
-          message: 'No WAN IP address — cannot determine gateway');
+          detail: 'No WAN IP address — cannot determine gateway');
     }
     final gateway = _deriveGateway(wan.ipAddress, wan.subnetMask);
     return ping(gateway, repeatCount: repeatCount);
@@ -370,7 +372,7 @@ class UnifiedDiagnosticsService {
         .toList();
 
     final weakSignalDevices = wirelessDevices
-        .where((d) => d.signalStrength! < -70)
+        .where((d) => d.signalStrength! < rssiGood)
         .map((d) => DeviceSignalUIModel(
               name: d.hostName.isNotEmpty ? d.hostName : d.macAddress,
               macAddress: d.macAddress,
@@ -588,6 +590,16 @@ class UnifiedDiagnosticsService {
       return const [];
     }
 
+    // Build node ID → label map for parent resolution
+    final nodeLabels = <String, String>{};
+    for (final node in network.items) {
+      final normalizedId = node.id.toUpperCase().replaceAll(':', '');
+      final label = node.manufacturerModel.isNotEmpty
+          ? node.manufacturerModel
+          : (node.id.isNotEmpty ? node.id : node.instancePath);
+      nodeLabels[normalizedId] = label;
+    }
+
     final results = <MeshBackhaulNodeRecord>[];
     for (final node in network.items) {
       // Controller is the node WITHOUT its own backhaul. Detect by absence of
@@ -605,20 +617,46 @@ class UnifiedDiagnosticsService {
         continue;
       }
 
-      final wired = node.backhaulMediaType.contains('Ethernet') ||
-          node.backhaulMediaType.contains('MoCA') ||
-          node.backhaulMediaType.contains('G.hn');
+      // Use backhaulLinkType if available, fallback to mediaType parsing
+      final linkType = node.backhaulLinkType.isNotEmpty
+          ? node.backhaulLinkType
+          : (node.backhaulMediaType.contains('Ethernet')
+              ? 'Ethernet'
+              : 'Wi-Fi');
+      final wired = linkType == 'Ethernet';
 
       final phyRateMbps = node.backhaulPhyRate > 0 ? node.backhaulPhyRate : -1;
-      final lastUplinkRateMbps = node.backhaulStatsLastDataUplinkRate > 0
+      final lastUplinkRateKbps = node.backhaulStatsLastDataUplinkRate > 0
           ? node.backhaulStatsLastDataUplinkRate
           : -1;
-      final signalDbm = node.backhaulStatsSignalStrength;
+      final lastDownlinkRateKbps = node.backhaulStatsLastDataDownlinkRate > 0
+          ? node.backhaulStatsLastDataDownlinkRate
+          : -1;
+      final signalDbm = rcpiToRssi(node.backhaulStatsSignalStrength) ?? 0;
+
+      // Parent node resolution
+      final parentNodeId = node.backhaulBackhaulDeviceId.isNotEmpty
+          ? node.backhaulBackhaulDeviceId
+          : null;
+      String? parentLabel;
+      if (parentNodeId != null) {
+        final normalizedParentId =
+            parentNodeId.toUpperCase().replaceAll(':', '');
+        parentLabel = nodeLabels[normalizedParentId];
+      }
+
+      // Last contact time and stale detection
+      final lastContactTime = node.multiApLastContactTime.isNotEmpty
+          ? node.multiApLastContactTime
+          : null;
+      final isStale = _isNodeStale(lastContactTime);
 
       final severity = _gradeMeshBackhaul(
         wired: wired,
         phyRateMbps: phyRateMbps,
         signalDbm: signalDbm,
+        lastDownlinkRateKbps: lastDownlinkRateKbps,
+        isStale: isStale,
       );
 
       final label = node.manufacturerModel.isNotEmpty
@@ -630,37 +668,70 @@ class UnifiedDiagnosticsService {
         label: label,
         mediaType:
             node.backhaulMediaType.isEmpty ? 'Unknown' : node.backhaulMediaType,
+        linkType: linkType,
         phyRateMbps: phyRateMbps,
-        lastUplinkRateMbps: lastUplinkRateMbps,
+        lastUplinkRateKbps: lastUplinkRateKbps,
+        lastDownlinkRateKbps: lastDownlinkRateKbps,
         signalStrengthDbm: signalDbm,
         isController: isController,
         severity: severity,
+        parentNodeId: parentNodeId,
+        parentLabel: parentLabel,
+        lastContactTime: lastContactTime,
+        isStale: isStale,
       ));
     }
 
     return results;
   }
 
-  MeshBackhaulSeverityBucket _gradeMeshBackhaul({
+  /// Threshold for considering a mesh node "stale" (no TR-181 standard).
+  /// Mesh nodes typically report every 30s-60s; 10 minutes allows for
+  /// network congestion while still flagging truly unresponsive nodes.
+  static const _staleThresholdMinutes = 10;
+
+  /// Check if a node is stale (last contact > threshold).
+  bool _isNodeStale(String? lastContactTime) {
+    if (lastContactTime == null || lastContactTime.isEmpty) return false;
+    try {
+      final contactTime = DateTime.parse(lastContactTime);
+      final now = DateTime.now().toUtc();
+      return now.difference(contactTime).inMinutes > _staleThresholdMinutes;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  MeshBackhaulSeverity _gradeMeshBackhaul({
     required bool wired,
     required int phyRateMbps,
     required int signalDbm,
+    required int lastDownlinkRateKbps,
+    required bool isStale,
   }) {
-    if (wired) return MeshBackhaulSeverityBucket.healthy;
+    // Stale node is always at least a warning
+    if (isStale) return MeshBackhaulSeverity.weak;
 
-    // Wireless backhaul thresholds:
-    //   poor   — PHY < 100 Mbps OR RSSI < -75 dBm
-    //   weak   — PHY 100-400 Mbps OR RSSI -65 .. -75 dBm
-    //   healthy— PHY >= 400 Mbps AND RSSI >= -65 dBm
+    if (wired) return MeshBackhaulSeverity.healthy;
+
+    // Wireless backhaul thresholds (RSSI from wifi.dart):
+    //   poor   — PHY < 100 Mbps OR RSSI < rssiFair (-78) OR very low downlink
+    //   weak   — PHY 100-400 Mbps OR RSSI < rssiExcellent (-65) OR low downlink
+    //   healthy— PHY >= 400 Mbps AND RSSI >= rssiExcellent (-65)
     final lowPhy = phyRateMbps > 0 && phyRateMbps < 100;
-    final lowRssi = signalDbm != 0 && signalDbm < -75;
-    if (lowPhy || lowRssi) return MeshBackhaulSeverityBucket.poor;
+    final lowRssi = signalDbm != 0 && signalDbm < rssiFair;
+    final veryLowDownlink =
+        lastDownlinkRateKbps > 0 && lastDownlinkRateKbps < 50000; // < 50 Mbps
+    if (lowPhy || lowRssi || veryLowDownlink) return MeshBackhaulSeverity.poor;
 
     final marginalPhy = phyRateMbps > 0 && phyRateMbps < 400;
-    final marginalRssi = signalDbm != 0 && signalDbm < -65;
-    if (marginalPhy || marginalRssi) return MeshBackhaulSeverityBucket.weak;
+    final marginalRssi = signalDbm != 0 && signalDbm < rssiExcellent;
+    final lowDownlink =
+        lastDownlinkRateKbps > 0 && lastDownlinkRateKbps < 200000; // < 200 Mbps
+    if (marginalPhy || marginalRssi || lowDownlink)
+      return MeshBackhaulSeverity.weak;
 
-    return MeshBackhaulSeverityBucket.healthy;
+    return MeshBackhaulSeverity.healthy;
   }
 
   // ─── Helpers ─────────────────────────────────────────────
@@ -789,11 +860,10 @@ class DeviceSignalUIModel {
   });
 
   String get signalLabel {
-    if (rssiDbm >= -50) return 'Excellent';
-    if (rssiDbm >= -60) return 'Good';
-    if (rssiDbm >= -70) return 'Fair';
-    if (rssiDbm >= -80) return 'Weak';
-    return 'Very Weak';
+    if (rssiDbm >= rssiExcellent) return 'Excellent';
+    if (rssiDbm >= rssiGood) return 'Good';
+    if (rssiDbm >= rssiFair) return 'Fair';
+    return 'Weak';
   }
 }
 
@@ -843,7 +913,7 @@ class RadioSignalStatsUIModel {
 
   bool get hasClients => clientCount > 0;
   bool get isResolved => instancePath.isNotEmpty;
-  bool get isWeakAverage => hasClients && averageRssi < -70;
+  bool get isWeakAverage => hasClients && averageRssi < rssiGood;
 }
 
 /// Per-radio WiFi signal analysis result.
@@ -903,10 +973,6 @@ class _RadioBucket {
   }
 }
 
-/// Intermittent connection check result.
-/// Severity bucket emitted by [UnifiedDiagnosticsService.checkMeshBackhaul].
-enum MeshBackhaulSeverityBucket { healthy, weak, poor }
-
 /// Per-node backhaul snapshot returned by
 /// [UnifiedDiagnosticsService.checkMeshBackhaul]. Notifier maps this into the
 /// presentation-layer `MeshBackhaulCheckUIModel` / `MeshNodeBackhaulUIModel`.
@@ -914,21 +980,37 @@ class MeshBackhaulNodeRecord {
   final String nodeId;
   final String label;
   final String mediaType;
+  final String linkType; // "Wi-Fi" or "Ethernet" from codegen
   final int phyRateMbps;
-  final int lastUplinkRateMbps;
+  final int lastUplinkRateKbps;
+  final int lastDownlinkRateKbps;
   final int signalStrengthDbm;
   final bool isController;
-  final MeshBackhaulSeverityBucket severity;
+  final MeshBackhaulSeverity severity;
+
+  // Parent node tracking
+  final String? parentNodeId;
+  final String? parentLabel;
+
+  // Last contact time tracking
+  final String? lastContactTime;
+  final bool isStale; // > 5 minutes since last contact
 
   const MeshBackhaulNodeRecord({
     required this.nodeId,
     required this.label,
     required this.mediaType,
+    required this.linkType,
     required this.phyRateMbps,
-    required this.lastUplinkRateMbps,
+    required this.lastUplinkRateKbps,
+    required this.lastDownlinkRateKbps,
     required this.signalStrengthDbm,
     required this.isController,
     required this.severity,
+    this.parentNodeId,
+    this.parentLabel,
+    this.lastContactTime,
+    this.isStale = false,
   });
 }
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -49,7 +50,7 @@ class _UnifiedDiagnosticsViewState
 
     return UiKitPageView(
       appBarStyle: UiKitAppBarStyle.back,
-      title: 'Network Diagnostics',
+      title: loc(context).networkDiagnostics,
       scrollable: true,
       controller: _scrollController,
       onBackTap: () => _handleBack(context, ref, state),
@@ -87,10 +88,10 @@ class _UnifiedDiagnosticsViewState
             child: AppLoader(),
           ),
           AppGap.xl(),
-          AppText.titleMedium('Checking connection...'),
+          AppText.titleMedium(loc(context).checkingConnection),
           AppGap.md(),
           AppText.bodySmall(
-            'Running quick network check',
+            loc(context).runningQuickNetworkCheck,
             color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
         ],
@@ -109,10 +110,10 @@ class _UnifiedDiagnosticsViewState
             color: Theme.of(context).colorScheme.primary,
           ),
           AppGap.xl(),
-          AppText.headlineSmall('Diagnostics Complete'),
+          AppText.headlineSmall(loc(context).diagnosticsComplete),
           AppGap.xxxl(),
           AppButton(
-            label: 'Return to Dashboard',
+            label: loc(context).returnToDashboard,
             onTap: () => _returnToDashboard(context, ref),
           ),
         ],

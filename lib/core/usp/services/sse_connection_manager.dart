@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 
+import 'sse_operation_strategy.dart';
 import 'usp_bridge_client.dart';
 
 /// SSE connection lifecycle states.
@@ -31,13 +32,16 @@ enum SseConnectionState {
 /// [SseSubscriptionRegistry] and [SseEventRouter] respectively.
 class SseConnectionManager {
   final UspBridgeClient _bridge;
+  final HeartbeatConfig _heartbeatConfig;
 
   SseConnectionManager(
     this._bridge, {
+    HeartbeatConfig? heartbeatConfig,
     Duration? initialBackoff,
     Duration? maxBackoff,
     int? maxRetries,
-  })  : _initialBackoff = initialBackoff ?? _defaultInitialBackoff,
+  })  : _heartbeatConfig = heartbeatConfig ?? HeartbeatConfig.local,
+        _initialBackoff = initialBackoff ?? _defaultInitialBackoff,
         _maxBackoff = maxBackoff ?? _defaultMaxBackoff,
         _maxRetries = maxRetries ?? _defaultMaxRetries {
     assert(!_initialBackoff.isNegative, 'initialBackoff must not be negative');
@@ -48,8 +52,6 @@ class SseConnectionManager {
   // ══════════════════════════════════════════════════════════════════════════
   // Configuration
   // ══════════════════════════════════════════════════════════════════════════
-
-  static const Duration _heartbeatTimeout = Duration(seconds: 45);
   static const Duration _defaultInitialBackoff = Duration(seconds: 1);
   static const Duration _defaultMaxBackoff = Duration(seconds: 60);
   static const int _defaultMaxRetries = 5;
@@ -72,6 +74,10 @@ class SseConnectionManager {
   bool _disposed = false;
   bool _intentionalDisconnect = false;
 
+  /// Number of consecutive failed reconnect attempts since the last successful
+  /// connection. Resets to 0 on successful connect or intentional disconnect.
+  int get reconnectAttempt => _reconnectAttempt;
+
   /// Guards [_handleStreamEnd] against double-fire when both _onError and
   /// _onDone trigger for the same stream failure. Reset in [connect].
   bool _streamEndHandled = false;
@@ -89,6 +95,11 @@ class SseConnectionManager {
 
   /// Called when connection transitions away from [SseConnectionState.connected].
   VoidCallback? onDisconnected;
+
+  /// Called on each reconnect failure with the current attempt number.
+  /// Used by app-level recovery to detect sustained disconnection earlier
+  /// than waiting for [SseConnectionState.suspended].
+  void Function(int attempt)? onReconnectFailed;
 
   // ══════════════════════════════════════════════════════════════════════════
   // Connect / Disconnect
@@ -248,10 +259,14 @@ class SseConnectionManager {
 
   void _resetHeartbeatWatchdog() {
     _heartbeatWatchdog?.cancel();
-    _heartbeatWatchdog = Timer(_heartbeatTimeout, () {
-      logger
-          .w('[USP][SSE]: Heartbeat timeout (${_heartbeatTimeout.inSeconds}s) '
-              '— connection may be stale');
+
+    // Skip watchdog if heartbeat monitoring is disabled (e.g., Remote mode)
+    if (!_heartbeatConfig.enabled) return;
+
+    final timeout = _heartbeatConfig.timeout;
+    _heartbeatWatchdog = Timer(timeout, () {
+      logger.w('[USP][SSE]: Heartbeat timeout (${timeout.inSeconds}s) '
+          '— connection may be stale');
       _sseSubscription?.cancel();
       _handleStreamEnd();
     });
@@ -275,6 +290,10 @@ class SseConnectionManager {
     _reconnectTimer = null;
 
     _reconnectAttempt++;
+    onReconnectFailed?.call(_reconnectAttempt);
+
+    // Callback may have triggered disconnect(); bail out if so.
+    if (_disposed || _intentionalDisconnect) return;
 
     if (_reconnectAttempt > _maxRetries) {
       connectionState.value = SseConnectionState.suspended;

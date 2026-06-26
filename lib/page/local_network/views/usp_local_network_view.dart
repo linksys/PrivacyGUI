@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/components/localizations/service_error_localizations.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
+import 'package:privacy_gui/components/views/service_error_view.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/local_network/models/local_network_feature_state.dart';
 import 'package:privacy_gui/page/local_network/providers/usp_local_network_notifier.dart';
@@ -87,7 +91,7 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
 
     return UiKitPageView.withSliver(
       scrollable: true,
-      title: 'Local Network',
+      title: loc(context).localNetwork,
       topbar: const PreferredSize(
         preferredSize: Size.fromHeight(64),
         child: UspTopBar(),
@@ -101,8 +105,13 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
         if (status.isLoading) {
           return const Center(child: AppLoader());
         }
-        if (status.errorMessage != null) {
-          return _buildError(context, ref);
+        if (status.error != null) {
+          return ServiceErrorView(
+            error: status.error,
+            onRetry: () => ref
+                .read(uspLocalNetworkProvider.notifier)
+                .fetch(forceRemote: true),
+          );
         }
         _syncControllers(state);
         return _buildContent(context, ref, state);
@@ -121,36 +130,11 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
   ) {
     if (!state.isDirty) return null;
     return UiKitBottomBarConfig(
-      positiveLabel: 'Save',
+      positiveLabel: loc(context).save,
       isPositiveEnabled:
           !state.status.isSaving && !state.status.hasValidationErrors,
       onPositiveTap: () => _onSave(context, ref, state),
       onNegativeTap: () => ref.read(uspLocalNetworkProvider.notifier).revert(),
-    );
-  }
-
-  // ---------------------------------------------------------------------------
-  // Error
-  // ---------------------------------------------------------------------------
-
-  Widget _buildError(BuildContext context, WidgetRef ref) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          AppIcon.font(Icons.error_outline,
-              size: 48, color: Theme.of(context).colorScheme.error),
-          AppGap.xl(),
-          AppText.titleMedium('Unable to load local network settings'),
-          AppGap.md(),
-          AppButton(
-            label: 'Retry',
-            onTap: () => ref
-                .read(uspLocalNetworkProvider.notifier)
-                .fetch(forceRemote: true),
-          ),
-        ],
-      ),
     );
   }
 
@@ -188,36 +172,44 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
     final errors = state.status.validationErrors;
 
     return AppCard(
+      padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AppText.titleSmall('Router'),
-          AppGap.lg(),
-          AppTextFormField(
-            controller: _hostNameController,
-            label: 'Hostname',
-            onChanged: (v) =>
-                notifier.updateSetting((m) => m.copyWith(hostName: v)),
-            externalErrorText: errors['hostName'],
-            enabled: !disabled,
-          ),
+          AppText.titleSmall(loc(context).router),
           AppGap.md(),
-          AppIpv4TextField(
-            controller: _ipAddressController,
-            label: 'IP Address',
-            onChanged: (v) =>
-                notifier.updateSetting((m) => m.copyWith(ipAddress: v)),
-            errorText: errors['ipAddress'],
-            enabled: !disabled,
-          ),
-          AppGap.md(),
-          AppIpv4TextField(
-            controller: _subnetMaskController,
-            label: 'Subnet Mask',
-            onChanged: (v) =>
-                notifier.updateSetting((m) => m.copyWith(subnetMask: v)),
-            errorText: errors['subnetMask'],
-            enabled: !disabled,
+          LayoutBlock(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: Column(
+              children: [
+                AppTextFormField(
+                  controller: _hostNameController,
+                  label: loc(context).hostname,
+                  onChanged: (v) =>
+                      notifier.updateSetting((m) => m.copyWith(hostName: v)),
+                  externalErrorText: errors['hostName'],
+                  enabled: !disabled,
+                ),
+                AppGap.md(),
+                AppIpv4TextField(
+                  controller: _ipAddressController,
+                  label: loc(context).ipAddress,
+                  onChanged: (v) =>
+                      notifier.updateSetting((m) => m.copyWith(ipAddress: v)),
+                  errorText: errors['ipAddress'],
+                  enabled: !disabled,
+                ),
+                AppGap.md(),
+                AppIpv4TextField(
+                  controller: _subnetMaskController,
+                  label: loc(context).subnetMask,
+                  onChanged: (v) =>
+                      notifier.updateSetting((m) => m.copyWith(subnetMask: v)),
+                  errorText: errors['subnetMask'],
+                  enabled: !disabled,
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -241,92 +233,123 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
         SegmentReadOnly.lockPrefix(state.status.lockedOctetCount);
 
     return AppCard(
+      padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Header with toggle
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              AppText.titleSmall('DHCP Server'),
-              AppSwitch(
-                value: pending.dhcpEnabled,
-                onChanged: disabled
-                    ? null
-                    : (v) => notifier
-                        .updateSetting((m) => m.copyWith(dhcpEnabled: v)),
-              ),
-            ],
+          LayoutBlock(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                AppText.titleSmall(loc(context).dhcpServer),
+                AppSwitch(
+                  value: pending.dhcpEnabled,
+                  onChanged: disabled
+                      ? null
+                      : (v) => notifier
+                          .updateSetting((m) => m.copyWith(dhcpEnabled: v)),
+                ),
+              ],
+            ),
           ),
           // DHCP fields — only shown when enabled
           if (pending.dhcpEnabled) ...[
-            AppGap.lg(),
-            AppIpv4TextField(
-              controller: _minAddressController,
-              label: 'Pool Start',
-              onChanged: (v) =>
-                  notifier.updateSetting((m) => m.copyWith(minAddress: v)),
-              errorText: errors['minAddress'],
-              readOnly: poolReadOnly,
-              enabled: !disabled,
-            ),
-            AppGap.md(),
-            AppIpv4TextField(
-              controller: _maxAddressController,
-              label: 'Pool End',
-              onChanged: (v) =>
-                  notifier.updateSetting((m) => m.copyWith(maxAddress: v)),
-              errorText: errors['maxAddress'],
-              readOnly: poolReadOnly,
-              enabled: !disabled,
-            ),
-            AppGap.md(),
-            AppTextFormField(
-              controller: _leaseTimeController,
-              label: 'Lease Time (minutes)',
-              keyboardType: TextInputType.number,
-              onChanged: (v) {
-                final minutes = int.tryParse(v) ?? 0;
-                notifier.updateSetting(
-                    (m) => m.copyWith(leaseTimeMinutes: minutes));
-              },
-              externalErrorText: errors['leaseTime'],
-              enabled: !disabled,
-            ),
-            AppGap.lg(),
-            AppText.labelMedium('DNS Servers'),
             AppGap.sm(),
-            AppIpv4TextField(
-              controller: _dns1Controller,
-              label: 'DNS Server 1',
-              onChanged: (v) =>
-                  notifier.updateSetting((m) => m.copyWith(dnsServer1: v)),
-              errorText: errors['dnsServer1'],
-              enabled: !disabled,
+            // Pool Settings Block
+            LayoutBlock(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  AppText.labelMedium(loc(context).addressPool),
+                  AppGap.md(),
+                  AppIpv4TextField(
+                    controller: _minAddressController,
+                    label: loc(context).poolStart,
+                    onChanged: (v) => notifier
+                        .updateSetting((m) => m.copyWith(minAddress: v)),
+                    errorText: errors['minAddress'],
+                    readOnly: poolReadOnly,
+                    enabled: !disabled,
+                  ),
+                  AppGap.md(),
+                  AppIpv4TextField(
+                    controller: _maxAddressController,
+                    label: loc(context).poolEnd,
+                    onChanged: (v) => notifier
+                        .updateSetting((m) => m.copyWith(maxAddress: v)),
+                    errorText: errors['maxAddress'],
+                    readOnly: poolReadOnly,
+                    enabled: !disabled,
+                  ),
+                  AppGap.md(),
+                  AppTextFormField(
+                    controller: _leaseTimeController,
+                    label: loc(context).leaseTimeMinutes,
+                    keyboardType: TextInputType.number,
+                    onChanged: (v) {
+                      final minutes = int.tryParse(v) ?? 0;
+                      notifier.updateSetting(
+                          (m) => m.copyWith(leaseTimeMinutes: minutes));
+                    },
+                    externalErrorText: errors['leaseTime'],
+                    enabled: !disabled,
+                  ),
+                ],
+              ),
             ),
-            AppGap.md(),
-            AppIpv4TextField(
-              controller: _dns2Controller,
-              label: 'DNS Server 2',
-              onChanged: (v) =>
-                  notifier.updateSetting((m) => m.copyWith(dnsServer2: v)),
-              errorText: errors['dnsServer2'],
-              enabled: !disabled,
+            AppGap.sm(),
+            // DNS Servers Block
+            LayoutBlock(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  AppText.labelMedium(loc(context).dnsServers),
+                  AppGap.md(),
+                  AppIpv4TextField(
+                    controller: _dns1Controller,
+                    label: loc(context).dnsServer1,
+                    onChanged: (v) => notifier
+                        .updateSetting((m) => m.copyWith(dnsServer1: v)),
+                    errorText: errors['dnsServer1'],
+                    enabled: !disabled,
+                  ),
+                  AppGap.md(),
+                  AppIpv4TextField(
+                    controller: _dns2Controller,
+                    label: loc(context).dnsServer2,
+                    onChanged: (v) => notifier
+                        .updateSetting((m) => m.copyWith(dnsServer2: v)),
+                    errorText: errors['dnsServer2'],
+                    enabled: !disabled,
+                  ),
+                  AppGap.md(),
+                  AppIpv4TextField(
+                    controller: _dns3Controller,
+                    label: loc(context).dnsServer3,
+                    onChanged: (v) => notifier
+                        .updateSetting((m) => m.copyWith(dnsServer3: v)),
+                    errorText: errors['dnsServer3'],
+                    enabled: !disabled,
+                  ),
+                ],
+              ),
             ),
-            AppGap.md(),
-            AppIpv4TextField(
-              controller: _dns3Controller,
-              label: 'DNS Server 3',
-              onChanged: (v) =>
-                  notifier.updateSetting((m) => m.copyWith(dnsServer3: v)),
-              errorText: errors['dnsServer3'],
-              enabled: !disabled,
-            ),
-            AppGap.lg(),
-            AppButton.text(
-              label: 'View DHCP Reservations',
-              icon: AppIcon.font(Icons.arrow_forward, size: 16),
+            AppGap.sm(),
+            // Reservations Link Block
+            LayoutBlock(
               onTap: () => context.goNamed(RouteNamed.uspDhcpDetail),
+              padding: const EdgeInsets.all(AppSpacing.md),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  AppText.bodyMedium(loc(context).viewDhcpReservations),
+                  AppIcon.font(Icons.chevron_right, size: 20),
+                ],
+              ),
             ),
           ],
         ],
@@ -355,11 +378,11 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
         ref.read(uspLocalNetworkProvider.notifier).save(),
       );
       if (context.mounted) {
-        showSuccessSnackBar(context, 'Local network settings saved');
+        showSuccessSnackBar(context, loc(context).localNetworkSettingsSaved);
       }
     } catch (e) {
       if (context.mounted) {
-        showFailedSnackBar(context, 'Failed to save: $e');
+        showFailedSnackBar(context, localizeServiceError(context, e));
       }
     }
   }
@@ -368,20 +391,16 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
     return showAppDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Change Network Settings?'),
-        content: const Text(
-          'Changing the router IP address or subnet mask may cause a temporary '
-          'loss of connection. DHCP reservations may also become invalid.\n\n'
-          'Do you want to continue?',
-        ),
+        title: Text(loc(context).changeNetworkSettingsTitle),
+        content: Text(loc(context).changeNetworkSettingsDesc),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancel'),
+            child: Text(loc(context).cancel),
           ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Continue'),
+            child: Text(loc(context).textContinue),
           ),
         ],
       ),

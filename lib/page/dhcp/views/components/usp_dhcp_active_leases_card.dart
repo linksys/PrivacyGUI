@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/_shared/components/detail_widgets.dart';
+import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/_shared/models/dhcp_client_ui_model.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -21,19 +24,23 @@ class UspDhcpActiveLeasesCard extends StatelessWidget {
       });
 
     return AppCard(
+      padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              AppText.titleMedium('Active Leases'),
+              AppText.titleSmall(loc(context).activeLeases),
               AppText.labelLarge('$activeCount / ${clients.length}'),
             ],
           ),
-          AppGap.xl(),
+          AppGap.md(),
           if (sorted.isEmpty)
-            AppText.bodyMedium('No DHCP clients')
+            DetailEmptyBlock(
+              icon: Icons.devices,
+              message: loc(context).noDhcpClients,
+            )
           else
             ...sorted.map((c) => _buildClientRow(context, c)),
         ],
@@ -46,47 +53,50 @@ class UspDhcpActiveLeasesCard extends StatelessWidget {
     final lease = client.leaseTimeFormatted;
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-      child: Row(
-        children: [
-          Icon(
-            Icons.circle,
-            size: 8,
-            color: client.active ? Colors.green : colorScheme.outline,
-          ),
-          AppGap.sm(),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                AppText.bodyMedium(client.displayName),
-                AppText.bodySmall(
-                  [
-                    if (client.hostName.isNotEmpty) client.mac,
-                    if (client.leaseExpiryFormatted.isNotEmpty)
-                      'Lease: ${client.leaseExpiryFormatted}',
-                  ].join(' · '),
-                  color: colorScheme.onSurfaceVariant,
-                ),
-              ],
+      child: LayoutBlock(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Row(
+          children: [
+            Icon(
+              Icons.circle,
+              size: 8,
+              color: client.active ? Colors.green : colorScheme.outline,
             ),
-          ),
-          SizedBox(
-            width: context.colWidth(2),
-            child: AppText.bodySmall(
-              client.ip,
-              color: colorScheme.onSurfaceVariant,
-            ),
-          ),
-          if (lease.isNotEmpty)
-            SizedBox(
-              width: context.colWidth(1),
-              child: AppText.bodySmall(
-                lease,
-                color: colorScheme.onSurfaceVariant,
-                textAlign: TextAlign.end,
+            AppGap.sm(),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  AppText.bodyMedium(client.displayName),
+                  AppText.bodySmall(
+                    [
+                      if (client.hostName.isNotEmpty) client.mac,
+                      if (client.leaseExpiryFormatted.isNotEmpty)
+                        loc(context).leaseExpiry(client.leaseExpiryFormatted),
+                    ].join(' · '),
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ],
               ),
             ),
-        ],
+            SizedBox(
+              width: context.colWidth(2),
+              child: AppText.bodySmall(
+                client.ip,
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+            if (lease.isNotEmpty)
+              SizedBox(
+                width: context.colWidth(1),
+                child: AppText.bodySmall(
+                  lease,
+                  color: colorScheme.onSurfaceVariant,
+                  textAlign: TextAlign.end,
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/components/localizations/service_error_localizations.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_settings_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_settings_state.dart';
 import 'package:privacy_gui/page/wifi_settings/views/components/wifi_network_card.dart';
@@ -33,8 +36,8 @@ class UspWifiListTab extends ConsumerWidget {
     }
 
     // Error or empty state
-    if (state.status.errorMessage != null ||
-        state.settings.current.networks.isEmpty) {
+    if (state.status.error != null || state.settings.current.networks.isEmpty) {
+      final error = state.status.error;
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.xl),
@@ -45,8 +48,9 @@ class UspWifiListTab extends ConsumerWidget {
                   color: Theme.of(context).colorScheme.error),
               AppGap.md(),
               AppText.bodyMedium(
-                state.status.errorMessage ??
-                    'No WiFi networks found. Check router connection.',
+                error != null
+                    ? localizeServiceError(context, error)
+                    : loc(context).noWifiNetworksFound,
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ],
@@ -75,34 +79,41 @@ class UspWifiListTab extends ConsumerWidget {
         children: [
           // ── Quick Setup toggle card ──────────────────────────────
           AppCard(
-            child: Row(
-              children: [
-                AppIcon.font(
-                  Icons.bolt_outlined,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-                AppGap.md(),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      AppText.labelLarge('Quick Setup'),
-                      AppGap.xs(),
-                      AppText.bodySmall(
-                        'Apply the same WiFi settings to all bands at once',
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ],
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: LayoutBlock(
+              padding: const EdgeInsets.symmetric(
+                vertical: AppSpacing.sm,
+                horizontal: AppSpacing.md,
+              ),
+              child: Row(
+                children: [
+                  AppIcon.font(
+                    Icons.bolt_outlined,
+                    color: Theme.of(context).colorScheme.primary,
                   ),
-                ),
-                AppSwitch(
-                  value: quickSetupEnabled,
-                  onChanged: (v) => ref
-                      .read(uspWifiSettingsProvider.notifier)
-                      .setQuickSetupEnabled(v),
-                ),
-              ],
+                  AppGap.md(),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        AppText.labelLarge(loc(context).quickSetup),
+                        AppGap.xs(),
+                        AppText.bodySmall(
+                          loc(context).applyToAllBandsDesc,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ],
+                    ),
+                  ),
+                  AppSwitch(
+                    value: quickSetupEnabled,
+                    onChanged: (v) => ref
+                        .read(uspWifiSettingsProvider.notifier)
+                        .setQuickSetupEnabled(v),
+                  ),
+                ],
+              ),
             ),
           ),
           AppGap.lg(),
@@ -170,8 +181,7 @@ class UspWifiListTab extends ConsumerWidget {
           AppGap.sm(),
           Expanded(
             child: AppText.bodySmall(
-              'Quick Setup applies the same name, password, and security '
-              'mode to all bands. A password is required to save.',
+              loc(context).quickSetupNotice,
               color: colorScheme.onSurfaceVariant,
             ),
           ),

@@ -6,14 +6,20 @@ import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/core/usp/providers/bridge_request_throttler_provider.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
+import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_image_ui_model.dart';
+import 'package:privacy_gui/page/topology/models/node_ui_model.dart';
+import 'package:privacy_gui/page/firmware_update/models/firmware_ota_info.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_update_phase.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_update_state.dart';
 import 'package:privacy_gui/page/firmware_update/providers/firmware_banks_data_provider.dart';
 import 'package:privacy_gui/page/firmware_update/services/firmware_file_picker_service.dart';
 import 'package:privacy_gui/page/firmware_update/services/firmware_local_upload_service.dart';
+import 'package:privacy_gui/page/firmware_update/services/firmware_ota_check_service.dart';
 import 'package:privacy_gui/page/firmware_update/services/firmware_validation_service.dart';
 import 'package:privacy_gui/page/firmware_update/services/usp_firmware_update_service.dart';
+import 'package:privacy_gui/page/internet_settings/providers/wan_data_provider.dart';
 
 final firmwareUpdateNotifierProvider =
     AutoDisposeNotifierProvider<FirmwareUpdateNotifier, FirmwareUpdateState>(
@@ -38,6 +44,8 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
       ref.read(firmwareValidationServiceProvider);
   FirmwareLocalUploadService get _uploader =>
       ref.read(firmwareLocalUploadServiceProvider);
+  FirmwareOtaCheckService get _otaChecker =>
+      ref.read(firmwareOtaCheckServiceProvider);
 
   /// Holds the picked image bytes off-state. Kept off [FirmwareUpdateState]
   /// because a 70 MB Uint8List does not belong in an equatable comparison
@@ -75,6 +83,88 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
     } on ServiceError catch (e) {
       logger.e('[FirmwareUpdate] loadBanks failed', error: e);
       _fail(e.toString());
+      rethrow;
+    }
+  }
+
+  /// Build OTA check parameters from device data providers.
+  ///
+  /// Returns `null` if required data is unavailable (e.g., master node not found).
+  Future<FirmwareOtaCheckParams?> buildOtaCheckParams() async {
+    try {
+      final devicesData = await ref.read(devicesDataProvider.future);
+      final masterNode = devicesData.nodeModels.master;
+      if (masterNode == null) {
+        logger.w('[FirmwareUpdate] Master node not found');
+        return null;
+      }
+
+      final systemInfoData = await ref.read(systemInfoDataProvider.future);
+      final hardwareVersion =
+          _parseHardwareVersion(systemInfoData.model.hardwareVersion);
+
+      final wanData = await ref.read(wanDataProvider.future);
+      final ipAddress = wanData.model.ipAddress;
+
+      return FirmwareOtaCheckParams(
+        macAddress: _formatMacAddress(masterNode.deviceId),
+        installedVersion: masterNode.softwareVersion,
+        modelNumber: masterNode.model,
+        hardwareVersion: hardwareVersion,
+        ipAddress: ipAddress,
+      );
+    } catch (e) {
+      logger.e('[FirmwareUpdate] Failed to build OTA check params', error: e);
+      return null;
+    }
+  }
+
+  String _formatMacAddress(String mac) {
+    return mac.toUpperCase().replaceAll(':', '-');
+  }
+
+  String _parseHardwareVersion(String hwVersion) {
+    var version = hwVersion;
+    if (version.toUpperCase().startsWith('V')) {
+      version = version.substring(1);
+    }
+    final parsed = int.tryParse(version);
+    return parsed?.toString() ?? version;
+  }
+
+  /// Check for OTA firmware updates from the cloud.
+  ///
+  /// Returns the [FirmwareOtaInfo] if an update is available, or `null` if
+  /// the device is already on the latest version.
+  /// Throws [FirmwareOtaCheckException] on API errors.
+  Future<FirmwareOtaInfo?> checkForOtaUpdate(
+      FirmwareOtaCheckParams params) async {
+    _setState(state.copyWith(
+      phase: FirmwareUpdatePhase.checkingOta,
+      clearOtaInfo: true,
+      otaUpToDate: false,
+      errorMessage: null,
+    ));
+
+    try {
+      final info = await _otaChecker.checkForUpdate(params);
+      if (info != null) {
+        _setState(state.copyWith(
+          phase: FirmwareUpdatePhase.idle,
+          otaInfo: info,
+          otaUpToDate: false,
+        ));
+      } else {
+        _setState(state.copyWith(
+          phase: FirmwareUpdatePhase.idle,
+          clearOtaInfo: true,
+          otaUpToDate: true,
+        ));
+      }
+      return info;
+    } on FirmwareOtaCheckException catch (e) {
+      logger.e('[FirmwareUpdate] OTA check failed', error: e);
+      _setState(state.copyWith(phase: FirmwareUpdatePhase.idle));
       rethrow;
     }
   }
@@ -178,6 +268,26 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
       _setState(state.copyWith(phase: FirmwareUpdatePhase.installing));
     } on ServiceError catch (e) {
       logger.e('[FirmwareUpdate] triggerInstall failed', error: e);
+      _fail(e.toString());
+      rethrow;
+    }
+  }
+
+  Future<void> triggerOtaInstall({
+    required int targetInstance,
+    required String firmwareUrl,
+  }) async {
+    _setState(state.copyWith(phase: FirmwareUpdatePhase.triggering));
+    try {
+      await ref.read(uspMutationLockProvider).withLock(() async {
+        await _svc.triggerOtaDownload(
+          targetInstance: targetInstance,
+          firmwareUrl: firmwareUrl,
+        );
+      });
+      _setState(state.copyWith(phase: FirmwareUpdatePhase.installing));
+    } on ServiceError catch (e) {
+      logger.e('[FirmwareUpdate] triggerOtaInstall failed', error: e);
       _fail(e.toString());
       rethrow;
     }

@@ -1,12 +1,17 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ui_kit_library/ui_kit.dart';
+
+const _kThemeConfigKey = 'demo_theme_config';
 
 /// Provider for dynamic theme configuration in demo mode.
 final demoThemeConfigProvider =
     StateNotifierProvider<DemoThemeConfigNotifier, DemoThemeConfig>((ref) {
-  return DemoThemeConfigNotifier();
+  final notifier = DemoThemeConfigNotifier();
+  ref.keepAlive();
+  return notifier;
 });
 
 /// Demo theme configuration state.
@@ -177,16 +182,48 @@ class DemoThemeConfig {
 
 /// Notifier for demo theme configuration.
 class DemoThemeConfigNotifier extends StateNotifier<DemoThemeConfig> {
-  DemoThemeConfigNotifier() : super(const DemoThemeConfig());
+  DemoThemeConfigNotifier() : super(const DemoThemeConfig()) {
+    _loadFromStorage();
+  }
+
+  /// Load config from SharedPreferences on init.
+  Future<void> _loadFromStorage() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final jsonStr = prefs.getString(_kThemeConfigKey);
+      if (jsonStr != null) {
+        final json = jsonDecode(jsonStr);
+        state = DemoThemeConfig.fromJson(json);
+      }
+    } catch (e) {
+      debugPrint('Error loading theme config: $e');
+    }
+  }
+
+  /// Save current config to SharedPreferences.
+  Future<void> _saveToStorage() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final jsonStr = jsonEncode(state.toJson());
+      await prefs.setString(_kThemeConfigKey, jsonStr);
+    } catch (e) {
+      debugPrint('Error saving theme config: $e');
+    }
+  }
+
+  /// Update state and persist to storage.
+  void _updateState(DemoThemeConfig newState) {
+    state = newState;
+    _saveToStorage();
+  }
 
   // === Import / Export ===
 
   void importConfig(Map<String, dynamic> json) {
     try {
-      state = DemoThemeConfig.fromJson(json);
+      _updateState(DemoThemeConfig.fromJson(json));
     } catch (e) {
       debugPrint('Error importing theme config: $e');
-      // In a real app we might want to throw or return false
     }
   }
 
@@ -200,24 +237,24 @@ class DemoThemeConfigNotifier extends StateNotifier<DemoThemeConfig> {
   }
 
   void reset() {
-    state = const DemoThemeConfig();
+    _updateState(const DemoThemeConfig());
   }
 
   // === Basic ===
 
   void setStyle(String style) {
-    state = state.copyWith(style: style);
+    _updateState(state.copyWith(style: style));
   }
 
   void setGlobalOverlay(GlobalOverlayType? overlay) {
-    state = state.copyWith(
+    _updateState(state.copyWith(
       globalOverlay: overlay,
       clearOverlay: overlay == null,
-    );
+    ));
   }
 
   void setVisualEffects(int effects) {
-    state = state.copyWith(visualEffects: effects);
+    _updateState(state.copyWith(visualEffects: effects));
   }
 
   void toggleVisualEffect(int flag) {
@@ -225,58 +262,58 @@ class DemoThemeConfigNotifier extends StateNotifier<DemoThemeConfig> {
     final newEffects = (current & flag) != 0
         ? current & ~flag // Remove flag
         : current | flag; // Add flag
-    state = state.copyWith(visualEffects: newEffects);
+    _updateState(state.copyWith(visualEffects: newEffects));
   }
 
   void setSeedColor(Color? color) {
-    state = state.copyWith(
+    _updateState(state.copyWith(
       seedColor: color,
       clearSeedColor: color == null,
-    );
+    ));
   }
 
   // === Granular Colors ===
 
   void setPrimary(Color? color) {
-    state = state.copyWith(
+    _updateState(state.copyWith(
       primary: color,
       clearPrimary: color == null,
-    );
+    ));
   }
 
   void setSecondary(Color? color) {
-    state = state.copyWith(
+    _updateState(state.copyWith(
       secondary: color,
       clearSecondary: color == null,
-    );
+    ));
   }
 
   void setTertiary(Color? color) {
-    state = state.copyWith(
+    _updateState(state.copyWith(
       tertiary: color,
       clearTertiary: color == null,
-    );
+    ));
   }
 
   void setOutline(Color? color) {
-    state = state.copyWith(
+    _updateState(state.copyWith(
       outline: color,
       clearOutline: color == null,
-    );
+    ));
   }
 
   void setSurface(Color? color) {
-    state = state.copyWith(
+    _updateState(state.copyWith(
       surface: color,
       clearSurface: color == null,
-    );
+    ));
   }
 
   void setError(Color? color) {
-    state = state.copyWith(
+    _updateState(state.copyWith(
       error: color,
       clearError: color == null,
-    );
+    ));
   }
 
   // === Semantics ===
@@ -295,14 +332,14 @@ class DemoThemeConfigNotifier extends StateNotifier<DemoThemeConfig> {
       info: info ?? currentSemantics?.info,
     );
 
-    state = state.copyWith(
+    _updateState(state.copyWith(
       overrides: AppThemeOverrides(
         semantic: newSemantics,
         palette: state.overrides?.palette,
         surface: state.overrides?.surface,
         component: state.overrides?.component,
       ),
-    );
+    ));
   }
 
   // === Component Overrides ===
@@ -585,13 +622,13 @@ class DemoThemeConfigNotifier extends StateNotifier<DemoThemeConfig> {
 
   void _updateComponent(
       ComponentOverrides Function(ComponentOverrides? current) builder) {
-    state = state.copyWith(
+    _updateState(state.copyWith(
       overrides: AppThemeOverrides(
         semantic: state.overrides?.semantic,
         palette: state.overrides?.palette,
         surface: state.overrides?.surface,
         component: builder(state.overrides?.component),
       ),
-    );
+    ));
   }
 }

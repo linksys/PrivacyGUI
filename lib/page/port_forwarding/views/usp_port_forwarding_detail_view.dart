@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/components/localizations/service_error_localizations.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
+import 'package:privacy_gui/components/views/service_error_view.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/port_forwarding/models/port_forwarding_page_feature_state.dart';
 import 'package:privacy_gui/page/port_forwarding/models/port_forwarding_page_status.dart';
@@ -58,7 +61,7 @@ class _UspPortForwardingDetailViewState
 
     return LayoutBuilder(builder: (context, constraints) {
       return UiKitPageView.withSliver(
-        title: 'Port Forwarding',
+        title: loc(context).portForwarding,
         topbar: const PreferredSize(
           preferredSize: Size.fromHeight(64),
           child: UspTopBar(),
@@ -72,9 +75,9 @@ class _UspPortForwardingDetailViewState
             .fetch(forceRemote: true),
         bottomBar: _buildBottomBar(context, ref, pageState),
         tabs: [
-          Tab(text: 'Single Port (${singlePortRules.length})'),
-          Tab(text: 'Port Range (${portRangeRules.length})'),
-          Tab(text: 'Triggering (${triggeringRules.length})'),
+          Tab(text: loc(context).singlePortWithCount(singlePortRules.length)),
+          Tab(text: loc(context).portRangeWithCount(portRangeRules.length)),
+          Tab(text: loc(context).triggeringWithCount(triggeringRules.length)),
         ],
         tabContentViews: [
           _buildTabContent(
@@ -107,7 +110,7 @@ class _UspPortForwardingDetailViewState
   ) {
     if (!pageState.isDirty) return null;
     return UiKitBottomBarConfig(
-      positiveLabel: 'Save',
+      positiveLabel: loc(context).save,
       isPositiveEnabled: !pageState.status.isSaving,
       onPositiveTap: () => _onSave(context, ref),
       onNegativeTap: () =>
@@ -123,24 +126,12 @@ class _UspPortForwardingDetailViewState
     if (status.isLoading) {
       return const Center(child: AppLoader());
     }
-    if (status.errorMessage != null) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AppIcon.font(Icons.error_outline,
-                size: 48, color: Theme.of(context).colorScheme.error),
-            AppGap.xl(),
-            AppText.titleMedium('Unable to load data'),
-            AppGap.md(),
-            AppButton(
-              label: 'Retry',
-              onTap: () => ref
-                  .read(uspPortForwardingPageProvider.notifier)
-                  .fetch(forceRemote: true),
-            ),
-          ],
-        ),
+    if (status.error != null) {
+      return ServiceErrorView(
+        error: status.error,
+        onRetry: () => ref
+            .read(uspPortForwardingPageProvider.notifier)
+            .fetch(forceRemote: true),
       );
     }
     return CustomScrollView(
@@ -166,11 +157,11 @@ class _UspPortForwardingDetailViewState
         ref.read(uspPortForwardingPageProvider.notifier).save(),
       );
       if (context.mounted) {
-        showSuccessSnackBar(context, 'Port forwarding settings saved');
+        showSuccessSnackBar(context, loc(context).portForwardingSettingsSaved);
       }
     } catch (e) {
       if (context.mounted) {
-        showFailedSnackBar(context, 'Failed to save: $e');
+        showFailedSnackBar(context, localizeServiceError(context, e));
       }
     }
   }

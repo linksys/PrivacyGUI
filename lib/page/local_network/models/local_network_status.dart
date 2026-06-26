@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 
 /// Transient (non-editable) status for the local network feature page.
 ///
@@ -6,7 +7,10 @@ import 'package:equatable/equatable.dart';
 class LocalNetworkStatus extends Equatable {
   final bool isLoading;
   final bool isSaving;
-  final String? errorMessage;
+
+  /// Typed error from the last fetch. The View localizes it via
+  /// `localizeServiceError`; null means no error.
+  final ServiceError? error;
 
   /// Per-field validation errors (field key → error message).
   /// null value = no error for that field.
@@ -19,7 +23,7 @@ class LocalNetworkStatus extends Equatable {
   const LocalNetworkStatus({
     this.isLoading = true,
     this.isSaving = false,
-    this.errorMessage,
+    this.error,
     this.validationErrors = const {},
     this.lockedOctetCount = 0,
   });
@@ -29,14 +33,15 @@ class LocalNetworkStatus extends Equatable {
   LocalNetworkStatus copyWith({
     bool? isLoading,
     bool? isSaving,
-    String? errorMessage,
+    ServiceError? error,
+    bool clearError = false,
     Map<String, String?>? validationErrors,
     int? lockedOctetCount,
   }) {
     return LocalNetworkStatus(
       isLoading: isLoading ?? this.isLoading,
       isSaving: isSaving ?? this.isSaving,
-      errorMessage: errorMessage,
+      error: clearError ? null : (error ?? this.error),
       validationErrors: validationErrors ?? this.validationErrors,
       lockedOctetCount: lockedOctetCount ?? this.lockedOctetCount,
     );
@@ -44,5 +49,5 @@ class LocalNetworkStatus extends Equatable {
 
   @override
   List<Object?> get props =>
-      [isLoading, isSaving, errorMessage, validationErrors, lockedOctetCount];
+      [isLoading, isSaving, error, validationErrors, lockedOctetCount];
 }

@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/components/localizations/service_error_localizations.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/shell/usp_top_bar.dart';
 import 'package:privacy_gui/page/unified_diagnostics/models/speed_test_state.dart';
@@ -19,7 +22,7 @@ class SpeedTestView extends ConsumerWidget {
 
     return UiKitPageView.withSliver(
       scrollable: true,
-      title: 'Speed Test',
+      title: loc(context).speedTest,
       topbar: const PreferredSize(
         preferredSize: Size.fromHeight(64),
         child: UspTopBar(),
@@ -44,12 +47,12 @@ class SpeedTestView extends ConsumerWidget {
           AppIcon.font(Icons.error_outline,
               size: 48, color: Theme.of(context).colorScheme.error),
           AppGap.xl(),
-          AppText.titleMedium('Unable to load speed test'),
+          AppText.titleMedium(loc(context).unableToLoadSpeedTest),
           AppGap.md(),
           AppText.bodyMedium(error.toString()),
           AppGap.xxl(),
           AppButton(
-            label: 'Retry',
+            label: loc(context).retry,
             onTap: () => ref.invalidate(speedTestProvider),
           ),
         ],
@@ -94,10 +97,10 @@ class SpeedTestView extends ConsumerWidget {
             ),
           ),
           AppGap.xxxl(),
-          AppText.headlineSmall('Internet Speed Test'),
+          AppText.headlineSmall(loc(context).internetSpeedTest),
           AppGap.md(),
           AppText.bodyMedium(
-            'Test your connection speed from the router',
+            loc(context).testConnectionSpeedFromRouter,
             textAlign: TextAlign.center,
             color: colorScheme.onSurfaceVariant,
           ),
@@ -112,7 +115,7 @@ class SpeedTestView extends ConsumerWidget {
           SizedBox(
             width: 200,
             child: AppButton.primary(
-              label: 'Start Test',
+              label: loc(context).startTest,
               onTap: () => ref.read(speedTestProvider.notifier).runSpeedTest(),
             ),
           ),
@@ -128,7 +131,7 @@ class SpeedTestView extends ConsumerWidget {
   Widget _buildRunning(
       BuildContext context, WidgetRef ref, SpeedTestState state) {
     final colorScheme = Theme.of(context).colorScheme;
-    final stepLabel = _getStepLabel(state.step);
+    final stepLabel = _getStepLabel(context, state.step);
     final isSpeedTest = state.step == SpeedTestStep.testingDownload ||
         state.step == SpeedTestStep.testingUpload;
 
@@ -152,7 +155,7 @@ class SpeedTestView extends ConsumerWidget {
                   AppText.bodyMedium('Mbps'),
                   AppGap.sm(),
                   AppText.bodySmall(
-                    'Testing...',
+                    loc(context).testing,
                     color: colorScheme.onSurfaceVariant,
                   ),
                 ],
@@ -161,8 +164,8 @@ class SpeedTestView extends ConsumerWidget {
                 padding: const EdgeInsets.only(bottom: 8),
                 child: AppText.labelMedium(
                   state.step == SpeedTestStep.testingDownload
-                      ? 'Download'
-                      : 'Upload',
+                      ? loc(context).download
+                      : loc(context).upload,
                 ),
               ),
             )
@@ -185,7 +188,7 @@ class SpeedTestView extends ConsumerWidget {
           ],
 
           AppButton.text(
-            label: 'Cancel',
+            label: loc(context).cancel,
             onTap: () => ref.read(speedTestProvider.notifier).reset(),
           ),
         ],
@@ -230,14 +233,14 @@ class SpeedTestView extends ConsumerWidget {
         if (result.serverHost != null)
           _ResultRow(
             icon: Icons.dns,
-            label: 'Server',
+            label: loc(context).server,
             value: result.serverHost!,
             colorScheme: colorScheme,
           ),
         if (result.hasLatency)
           _ResultRow(
             icon: Icons.network_ping,
-            label: 'Latency',
+            label: loc(context).latency,
             value: '${result.latencyMs} ms',
             colorScheme: colorScheme,
           ),
@@ -245,12 +248,12 @@ class SpeedTestView extends ConsumerWidget {
     );
   }
 
-  String _getStepLabel(SpeedTestStep step) {
+  String _getStepLabel(BuildContext context, SpeedTestStep step) {
     return switch (step) {
-      SpeedTestStep.testingLatency => 'Testing Latency',
-      SpeedTestStep.testingDownload => 'Testing Download',
-      SpeedTestStep.testingUpload => 'Testing Upload',
-      _ => 'Running...',
+      SpeedTestStep.testingLatency => loc(context).testingLatency,
+      SpeedTestStep.testingDownload => loc(context).testingDownload,
+      SpeedTestStep.testingUpload => loc(context).testingUpload,
+      _ => loc(context).loading,
     };
   }
 
@@ -287,11 +290,11 @@ class SpeedTestView extends ConsumerWidget {
                     : colorScheme.tertiary,
               ),
               AppGap.md(),
-              AppText.headlineSmall('Speed Test Complete'),
+              AppText.headlineSmall(loc(context).speedTestComplete),
               if (result.serverHost != null) ...[
                 AppGap.xs(),
                 AppText.bodySmall(
-                  'Server: ${result.serverHost}',
+                  loc(context).serverLabel(result.serverHost!),
                   color: colorScheme.onSurfaceVariant,
                 ),
               ],
@@ -311,10 +314,10 @@ class SpeedTestView extends ConsumerWidget {
           children: [
             Expanded(
               child: _SpeedCard(
-                label: 'Download',
+                label: loc(context).download,
                 icon: Icons.download,
                 speedMbps: result.downloadMbps,
-                status: result.downloadStatus ?? 'Unknown',
+                status: result.downloadStatus ?? loc(context).unknownError,
                 color: colorScheme.primary,
                 colorScheme: colorScheme,
               ),
@@ -322,10 +325,10 @@ class SpeedTestView extends ConsumerWidget {
             AppGap.md(),
             Expanded(
               child: _SpeedCard(
-                label: 'Upload',
+                label: loc(context).upload,
                 icon: Icons.upload,
                 speedMbps: result.uploadMbps,
-                status: result.uploadStatus ?? 'Not run',
+                status: result.uploadStatus ?? loc(context).notRun,
                 color: colorScheme.tertiary,
                 colorScheme: colorScheme,
               ),
@@ -337,19 +340,20 @@ class SpeedTestView extends ConsumerWidget {
         // Details
         if (result.downloadDurationMs != null &&
             result.downloadDurationMs! > 0) ...[
-          AppCard(
+          LayoutBlock(
+            padding: const EdgeInsets.all(AppSpacing.md),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                AppText.labelLarge('Details'),
+                AppText.labelLarge(loc(context).details),
                 AppGap.md(),
                 _DetailRow(
-                  label: 'Downloaded',
+                  label: loc(context).downloaded,
                   value: _formatBytes(result.downloadBytes ?? 0),
                 ),
                 AppGap.xs(),
                 _DetailRow(
-                  label: 'Duration',
+                  label: loc(context).duration,
                   value:
                       '${(result.downloadDurationMs! / 1000).toStringAsFixed(1)}s',
                 ),
@@ -364,12 +368,12 @@ class SpeedTestView extends ConsumerWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             AppButton(
-              label: 'Test Again',
+              label: loc(context).testAgain,
               onTap: () => ref.read(speedTestProvider.notifier).runSpeedTest(),
             ),
             AppGap.lg(),
             AppButton.text(
-              label: 'Done',
+              label: loc(context).done,
               onTap: () => context.goNamed(RouteNamed.uspMenu),
             ),
           ],
@@ -392,17 +396,17 @@ class SpeedTestView extends ConsumerWidget {
         children: [
           Icon(Icons.error_outline, size: 64, color: colorScheme.error),
           AppGap.xl(),
-          AppText.titleMedium('Speed Test Failed'),
+          AppText.titleMedium(loc(context).speedTestFailed),
           AppGap.md(),
-          if (state.errorMessage != null)
+          if (state.error != null)
             AppText.bodyMedium(
-              state.errorMessage!,
+              localizeServiceError(context, state.error!),
               textAlign: TextAlign.center,
               color: colorScheme.onSurfaceVariant,
             ),
           AppGap.xxxl(),
           AppButton(
-            label: 'Try Again',
+            label: loc(context).tryAgain,
             onTap: () => ref.read(speedTestProvider.notifier).runSpeedTest(),
           ),
         ],
@@ -427,7 +431,7 @@ class SpeedTestView extends ConsumerWidget {
   ) async {
     final selected = await showListSelectionDialog<SpeedTestServer>(
       context: context,
-      title: 'Select Test Server',
+      title: loc(context).selectTestServer,
       items: SpeedTestServer.all,
       itemLabel: (server) => server.name,
       currentValue: currentServer,
@@ -485,19 +489,20 @@ class _LatencyCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final quality = latencyMs < 20
-        ? 'Excellent'
+        ? loc(context).excellent
         : latencyMs < 50
-            ? 'Good'
+            ? loc(context).good
             : latencyMs < 100
-                ? 'Fair'
-                : 'Poor';
+                ? loc(context).fair
+                : loc(context).poor;
     final qualityColor = latencyMs < 50
         ? colorScheme.primary
         : latencyMs < 100
             ? colorScheme.tertiary
             : colorScheme.error;
 
-    return AppCard(
+    return LayoutBlock(
+      padding: const EdgeInsets.all(AppSpacing.md),
       child: Row(
         children: [
           Container(
@@ -513,7 +518,7 @@ class _LatencyCard extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              AppText.labelSmall('Latency',
+              AppText.labelSmall(loc(context).latency,
                   color: colorScheme.onSurfaceVariant),
               Row(
                 children: [
@@ -562,7 +567,8 @@ class _SpeedCard extends StatelessWidget {
     final isComplete = status == 'Complete';
     final isNotSupported = status == 'NotSupported';
 
-    return AppCard(
+    return LayoutBlock(
+      padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
         children: [
           Icon(icon, color: color, size: 32),
@@ -575,7 +581,7 @@ class _SpeedCard extends StatelessWidget {
             AppText.bodySmall('Mbps'),
           ] else if (isNotSupported) ...[
             AppText.titleMedium('N/A', color: colorScheme.onSurfaceVariant),
-            AppText.bodySmall('Not supported',
+            AppText.bodySmall(loc(context).notSupported,
                 color: colorScheme.onSurfaceVariant),
           ] else ...[
             AppText.titleMedium('--', color: colorScheme.onSurfaceVariant),
@@ -640,7 +646,7 @@ class _ServerSelectionButton extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     AppText.labelSmall(
-                      'Test Server',
+                      loc(context).testServer,
                       color: colorScheme.onSurfaceVariant,
                     ),
                     AppGap.xs(),

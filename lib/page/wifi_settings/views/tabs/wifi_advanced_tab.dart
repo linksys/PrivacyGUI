@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/components/views/service_error_view.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/wifi_settings/models/wifi_advanced_feature_state.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_advanced_provider.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -28,30 +31,11 @@ class UspWifiAdvancedTab extends ConsumerWidget {
       );
     }
 
-    if (status.errorMessage != null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.xl),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              AppIcon.font(
-                Icons.error_outline,
-                size: 48,
-                color: Theme.of(context).colorScheme.error,
-              ),
-              AppGap.xl(),
-              AppText.titleMedium('Unable to load advanced settings'),
-              AppGap.md(),
-              AppButton(
-                label: 'Retry',
-                onTap: () => ref
-                    .read(uspWifiAdvancedProvider.notifier)
-                    .fetch(forceRemote: true),
-              ),
-            ],
-          ),
-        ),
+    if (status.error != null) {
+      return ServiceErrorView(
+        error: status.error,
+        onRetry: () =>
+            ref.read(uspWifiAdvancedProvider.notifier).fetch(forceRemote: true),
       );
     }
 
@@ -72,7 +56,7 @@ class UspWifiAdvancedTab extends ConsumerWidget {
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.xl),
           child: AppText.bodyMedium(
-            'No advanced WiFi settings available for this device.',
+            loc(context).noAdvancedWifiSettings,
             color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
         ),
@@ -86,34 +70,35 @@ class UspWifiAdvancedTab extends ConsumerWidget {
         children: [
           // ── DFS (IEEE 802.11h) ───────────────────────────────────────
           AppCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: AppText.labelLarge(
-                          'Dynamic Frequency Selection (DFS)'),
-                    ),
-                    AppSwitch(
-                      value: settings.isDfsEnabled,
-                      onChanged:
-                          disabled ? null : (v) => notifier.setDfsEnabled(v),
-                    ),
-                  ],
-                ),
-                AppGap.md(),
-                AppText.bodyMedium(
-                  'Enables IEEE 802.11h on 5 GHz radios, which activates '
-                  'both Dynamic Frequency Selection (DFS) and Transmit '
-                  'Power Control (TPC).\n\n'
-                  'DFS allows the router to use 5 GHz channels shared with '
-                  'radar systems. If a radar signal is detected, the router '
-                  'will automatically switch to an unoccupied channel, which '
-                  'may cause a brief interruption in connectivity.',
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ],
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: LayoutBlock(
+              padding: const EdgeInsets.symmetric(
+                vertical: AppSpacing.sm,
+                horizontal: AppSpacing.md,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: AppText.labelLarge(
+                            loc(context).dynamicFrequencySelection),
+                      ),
+                      AppSwitch(
+                        value: settings.isDfsEnabled,
+                        onChanged:
+                            disabled ? null : (v) => notifier.setDfsEnabled(v),
+                      ),
+                    ],
+                  ),
+                  AppGap.md(),
+                  AppText.bodyMedium(
+                    loc(context).dfsDescription,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ],
+              ),
             ),
           ),
         ],

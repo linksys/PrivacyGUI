@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/components/localizations/service_error_localizations.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
+import 'package:privacy_gui/components/views/service_error_view.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/firewall/models/firewall_feature_state.dart';
 import 'package:privacy_gui/page/firewall/models/firewall_ui_model.dart';
@@ -22,7 +26,7 @@ class UspFirewallView extends ConsumerWidget {
 
     return UiKitPageView.withSliver(
       scrollable: true,
-      title: 'Firewall',
+      title: loc(context).firewall,
       topbar: const PreferredSize(
         preferredSize: Size.fromHeight(64),
         child: UspTopBar(),
@@ -36,8 +40,12 @@ class UspFirewallView extends ConsumerWidget {
         if (status.isLoading) {
           return const Center(child: AppLoader());
         }
-        if (status.errorMessage != null) {
-          return _buildError(context, ref);
+        if (status.error != null) {
+          return ServiceErrorView(
+            error: status.error,
+            onRetry: () =>
+                ref.read(uspFirewallProvider.notifier).fetch(forceRemote: true),
+          );
         }
         return _buildContent(context, ref, state);
       },
@@ -55,34 +63,10 @@ class UspFirewallView extends ConsumerWidget {
   ) {
     if (!state.isDirty) return null;
     return UiKitBottomBarConfig(
-      positiveLabel: 'Save',
+      positiveLabel: loc(context).save,
       isPositiveEnabled: !state.status.isSaving,
       onPositiveTap: () => _onSave(context, ref),
       onNegativeTap: () => ref.read(uspFirewallProvider.notifier).revert(),
-    );
-  }
-
-  // ---------------------------------------------------------------------------
-  // Error
-  // ---------------------------------------------------------------------------
-
-  Widget _buildError(BuildContext context, WidgetRef ref) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          AppIcon.font(Icons.error_outline,
-              size: 48, color: Theme.of(context).colorScheme.error),
-          AppGap.xl(),
-          AppText.titleMedium('Unable to load firewall settings'),
-          AppGap.md(),
-          AppButton(
-            label: 'Retry',
-            onTap: () =>
-                ref.read(uspFirewallProvider.notifier).fetch(forceRemote: true),
-          ),
-        ],
-      ),
     );
   }
 
@@ -103,7 +87,7 @@ class UspFirewallView extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         AppText.bodyMedium(
-          'Configure firewall and VPN passthrough settings',
+          loc(context).configureFirewallDesc,
           color: Theme.of(context).colorScheme.onSurfaceVariant,
         ),
         AppGap.xl(),
@@ -129,29 +113,30 @@ class UspFirewallView extends ConsumerWidget {
     bool disabled,
   ) {
     return AppCard(
+      padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AppText.titleSmall('Firewall Protection'),
-          AppGap.lg(),
-          _switchRow(
-            context,
-            label: 'IPv4 SPI Firewall',
+          AppText.titleSmall(loc(context).firewallProtection),
+          AppGap.md(),
+          SwitchBlock(
+            label: loc(context).ipv4SpiFirewall,
             value: fw.isIPv4FirewallEnabled,
-            disabled: disabled,
-            onChanged: (v) => notifier.updateSetting(
-              (m) => m.copyWith(isIPv4FirewallEnabled: v),
-            ),
+            onChanged: disabled
+                ? null
+                : (v) => notifier.updateSetting(
+                      (m) => m.copyWith(isIPv4FirewallEnabled: v),
+                    ),
           ),
-          const Divider(height: 1),
-          _switchRow(
-            context,
-            label: 'IPv6 SPI Firewall',
+          AppGap.sm(),
+          SwitchBlock(
+            label: loc(context).ipv6SpiFirewall,
             value: fw.isIPv6FirewallEnabled,
-            disabled: disabled,
-            onChanged: (v) => notifier.updateSetting(
-              (m) => m.copyWith(isIPv6FirewallEnabled: v),
-            ),
+            onChanged: disabled
+                ? null
+                : (v) => notifier.updateSetting(
+                      (m) => m.copyWith(isIPv6FirewallEnabled: v),
+                    ),
           ),
         ],
       ),
@@ -169,39 +154,40 @@ class UspFirewallView extends ConsumerWidget {
     bool disabled,
   ) {
     return AppCard(
+      padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AppText.titleSmall('VPN Passthrough'),
-          AppGap.lg(),
-          _switchRow(
-            context,
-            label: 'IPSec Passthrough',
+          AppText.titleSmall(loc(context).vpnPassthrough),
+          AppGap.md(),
+          SwitchBlock(
+            label: loc(context).ipsecPassthrough,
             value: !fw.blockIPSec,
-            disabled: disabled,
-            onChanged: (v) => notifier.updateSetting(
-              (m) => m.copyWith(blockIPSec: !v),
-            ),
+            onChanged: disabled
+                ? null
+                : (v) => notifier.updateSetting(
+                      (m) => m.copyWith(blockIPSec: !v),
+                    ),
           ),
-          const Divider(height: 1),
-          _switchRow(
-            context,
-            label: 'PPTP Passthrough',
+          AppGap.sm(),
+          SwitchBlock(
+            label: loc(context).pptpPassthrough,
             value: !fw.blockPPTP,
-            disabled: disabled,
-            onChanged: (v) => notifier.updateSetting(
-              (m) => m.copyWith(blockPPTP: !v),
-            ),
+            onChanged: disabled
+                ? null
+                : (v) => notifier.updateSetting(
+                      (m) => m.copyWith(blockPPTP: !v),
+                    ),
           ),
-          const Divider(height: 1),
-          _switchRow(
-            context,
-            label: 'L2TP Passthrough',
+          AppGap.sm(),
+          SwitchBlock(
+            label: loc(context).l2tpPassthrough,
             value: !fw.blockL2TP,
-            disabled: disabled,
-            onChanged: (v) => notifier.updateSetting(
-              (m) => m.copyWith(blockL2TP: !v),
-            ),
+            onChanged: disabled
+                ? null
+                : (v) => notifier.updateSetting(
+                      (m) => m.copyWith(blockL2TP: !v),
+                    ),
           ),
         ],
       ),
@@ -219,65 +205,40 @@ class UspFirewallView extends ConsumerWidget {
     bool disabled,
   ) {
     return AppCard(
+      padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AppText.titleSmall('Internet Filters'),
-          AppGap.lg(),
-          _switchRow(
-            context,
-            label: 'Filter Anonymous Requests',
+          AppText.titleSmall(loc(context).internetFilters),
+          AppGap.md(),
+          SwitchBlock(
+            label: loc(context).filterAnonymous,
             value: fw.blockAnonymousRequests,
-            disabled: disabled,
-            onChanged: (v) => notifier.updateSetting(
-              (m) => m.copyWith(blockAnonymousRequests: v),
-            ),
+            onChanged: disabled
+                ? null
+                : (v) => notifier.updateSetting(
+                      (m) => m.copyWith(blockAnonymousRequests: v),
+                    ),
           ),
-          const Divider(height: 1),
-          _switchRow(
-            context,
-            label: 'Filter Multicast',
+          AppGap.sm(),
+          SwitchBlock(
+            label: loc(context).filterMulticast,
             value: fw.blockMulticast,
-            disabled: disabled,
-            onChanged: (v) => notifier.updateSetting(
-              (m) => m.copyWith(blockMulticast: v),
-            ),
+            onChanged: disabled
+                ? null
+                : (v) => notifier.updateSetting(
+                      (m) => m.copyWith(blockMulticast: v),
+                    ),
           ),
-          const Divider(height: 1),
-          _switchRow(
-            context,
-            label: 'Filter IDENT (Port 113)',
+          AppGap.sm(),
+          SwitchBlock(
+            label: loc(context).filterIdent,
             value: fw.blockIDENT,
-            disabled: disabled,
-            onChanged: (v) => notifier.updateSetting(
-              (m) => m.copyWith(blockIDENT: v),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ---------------------------------------------------------------------------
-  // Shared toggle row
-  // ---------------------------------------------------------------------------
-
-  Widget _switchRow(
-    BuildContext context, {
-    required String label,
-    required bool value,
-    required bool disabled,
-    required ValueChanged<bool> onChanged,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Expanded(child: AppText.labelLarge(label)),
-          AppSwitch(
-            value: value,
-            onChanged: disabled ? null : onChanged,
+            onChanged: disabled
+                ? null
+                : (v) => notifier.updateSetting(
+                      (m) => m.copyWith(blockIDENT: v),
+                    ),
           ),
         ],
       ),
@@ -289,29 +250,10 @@ class UspFirewallView extends ConsumerWidget {
   // ---------------------------------------------------------------------------
 
   Widget _buildIpv6PortServiceLink(BuildContext context) {
-    return AppCard(
-      child: InkWell(
-        onTap: () => context.goNamed(RouteNamed.uspIpv6PortService),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  AppText.titleSmall('IPv6 Port Service'),
-                  AppGap.xs(),
-                  AppText.bodySmall(
-                    'Manage IPv6 inbound port access rules',
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                ],
-              ),
-            ),
-            AppIcon.font(Icons.chevron_right),
-          ],
-        ),
-      ),
+    return NavLinkBlock(
+      title: loc(context).ipv6PortService,
+      description: loc(context).manageIpv6PortRules,
+      onTap: () => context.goNamed(RouteNamed.uspIpv6PortService),
     );
   }
 
@@ -326,11 +268,11 @@ class UspFirewallView extends ConsumerWidget {
         ref.read(uspFirewallProvider.notifier).save(),
       );
       if (context.mounted) {
-        showSuccessSnackBar(context, 'Firewall settings saved');
+        showSuccessSnackBar(context, loc(context).firewallSettingsSaved);
       }
     } catch (e) {
       if (context.mounted) {
-        showFailedSnackBar(context, 'Failed to save: $e');
+        showFailedSnackBar(context, localizeServiceError(context, e));
       }
     }
   }

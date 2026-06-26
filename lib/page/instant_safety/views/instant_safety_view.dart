@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/components/localizations/service_error_localizations.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
+import 'package:privacy_gui/components/views/service_error_view.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/instant_safety/models/instant_safety_feature_state.dart';
 import 'package:privacy_gui/page/instant_safety/providers/instant_safety_provider.dart';
 import 'package:privacy_gui/page/shell/usp_top_bar.dart';
@@ -19,7 +23,7 @@ class UspInstantSafetyView extends ConsumerWidget {
 
     return UiKitPageView.withSliver(
       scrollable: true,
-      title: 'Instant Safety',
+      title: loc(context).instantSafety,
       topbar: const PreferredSize(
         preferredSize: Size.fromHeight(64),
         child: UspTopBar(),
@@ -33,8 +37,11 @@ class UspInstantSafetyView extends ConsumerWidget {
         if (state.status.isLoading) {
           return const Center(child: AppLoader());
         }
-        if (state.status.errorMessage != null) {
-          return _buildError(context, ref, state.status.errorMessage!);
+        if (state.status.error != null) {
+          return ServiceErrorView(
+            error: state.status.error,
+            onRetry: () => ref.invalidate(uspInstantSafetyProvider),
+          );
         }
         return _buildContent(context, ref, state);
       },
@@ -52,35 +59,10 @@ class UspInstantSafetyView extends ConsumerWidget {
   ) {
     if (!state.isDirty) return null;
     return UiKitBottomBarConfig(
-      positiveLabel: 'Save',
+      positiveLabel: loc(context).save,
       isPositiveEnabled: !state.status.isSaving,
       onPositiveTap: () => _onSave(context, ref),
       onNegativeTap: () => ref.read(uspInstantSafetyProvider.notifier).revert(),
-    );
-  }
-
-  // ---------------------------------------------------------------------------
-  // Error
-  // ---------------------------------------------------------------------------
-
-  Widget _buildError(BuildContext context, WidgetRef ref, String error) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          AppIcon.font(Icons.error_outline,
-              size: 48, color: Theme.of(context).colorScheme.error),
-          AppGap.xl(),
-          AppText.titleMedium('Unable to load safe browsing settings'),
-          AppGap.md(),
-          AppText.bodyMedium(error),
-          AppGap.xxl(),
-          AppButton(
-            label: 'Retry',
-            onTap: () => ref.invalidate(uspInstantSafetyProvider),
-          ),
-        ],
-      ),
     );
   }
 
@@ -101,11 +83,9 @@ class UspInstantSafetyView extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         AppText.bodyMedium(
-          'Protect your family and block pre-determined adult, illegal and '
-          'malicious content with a single tap. Safe browsing applies to all '
-          'devices on your network.',
+          loc(context).instantSafetyPageDesc,
         ),
-        AppGap.xl(),
+        AppGap.lg(),
         _buildSafeBrowsingCard(context, isEnabled, isSaving, notifier),
       ],
     );
@@ -117,36 +97,48 @@ class UspInstantSafetyView extends ConsumerWidget {
     bool isSaving,
     UspInstantSafetyNotifier notifier,
   ) {
+    final colorScheme = Theme.of(context).colorScheme;
     return AppCard(
+      padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: AppText.labelLarge('Safe Browsing (OpenDNS)'),
-              ),
-              AppSwitch(
-                value: isEnabled,
-                onChanged:
-                    isSaving ? null : (value) => notifier.setEnabled(value),
-              ),
-            ],
+          // Toggle Block
+          LayoutBlock(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: AppText.labelLarge(loc(context).safeBrowsingOpenDns),
+                ),
+                AppSwitch(
+                  value: isEnabled,
+                  onChanged:
+                      isSaving ? null : (value) => notifier.setEnabled(value),
+                ),
+              ],
+            ),
           ),
           if (isEnabled) ...[
-            AppGap.lg(),
-            const Divider(height: 1),
-            AppGap.lg(),
-            AppText.bodySmall(
-              'DNS: 208.67.222.222, 208.67.220.220',
-              color: Colors.grey,
-            ),
-            AppGap.xs(),
-            AppText.bodySmall(
-              'All devices on your network will use OpenDNS Family Shield '
-              'for safer browsing.',
-              color: Colors.grey,
+            AppGap.sm(),
+            // Info Block
+            LayoutBlock(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  AppText.bodySmall(
+                    loc(context).openDnsServers,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                  AppGap.xs(),
+                  AppText.bodySmall(
+                    loc(context).openDnsFamilyShieldDesc,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ],
+              ),
             ),
           ],
         ],
@@ -165,11 +157,11 @@ class UspInstantSafetyView extends ConsumerWidget {
         ref.read(uspInstantSafetyProvider.notifier).save(),
       );
       if (context.mounted) {
-        showSuccessSnackBar(context, 'Safe browsing settings saved');
+        showSuccessSnackBar(context, loc(context).safeBrowsingSettingsSaved);
       }
     } catch (e) {
       if (context.mounted) {
-        showFailedSnackBar(context, 'Failed to save: $e');
+        showFailedSnackBar(context, localizeServiceError(context, e));
       }
     }
   }

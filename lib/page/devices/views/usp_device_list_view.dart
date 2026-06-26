@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/page/_shared/components/detail_widgets.dart';
+import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/devices/providers/device_filter_provider.dart';
 import 'package:privacy_gui/page/devices/providers/device_filter_state.dart';
@@ -36,7 +39,7 @@ class _UspDeviceListViewState extends ConsumerState<UspDeviceListView> {
 
     return UiKitPageView.withSliver(
       scrollable: true,
-      title: 'Devices',
+      title: loc(context).devices,
       topbar: const PreferredSize(
         preferredSize: Size.fromHeight(64),
         child: UspTopBar(),
@@ -47,7 +50,8 @@ class _UspDeviceListViewState extends ConsumerState<UspDeviceListView> {
       child: (childContext, constraints) {
         return asyncDevices.when(
           loading: () => const Center(child: AppLoader()),
-          error: (e, _) => Center(child: AppText.bodyMedium('Error: $e')),
+          error: (e, _) =>
+              Center(child: AppText.bodyMedium('${loc(context).error}: $e')),
           data: (state) {
             return AppResponsiveLayout(
               mobile: (_) =>
@@ -66,7 +70,7 @@ class _UspDeviceListViewState extends ConsumerState<UspDeviceListView> {
   Widget _buildSearchBar() {
     return AppTextFormField(
       controller: _searchController,
-      hintText: 'Search by name, MAC, or IP',
+      hintText: loc(context).searchByNameMacIp,
       prefixIcon: const Icon(Icons.search, size: 20),
       suffixIcon: _searchController.text.isNotEmpty
           ? IconButton(
@@ -97,21 +101,25 @@ class _UspDeviceListViewState extends ConsumerState<UspDeviceListView> {
 
   Widget _buildDeviceList(List devices) {
     if (devices.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxl),
-        child: Center(
-          child: AppText.bodyMedium('No devices match the current filters'),
-        ),
+      return DetailEmptyBlock(
+        message: loc(context).noDevicesMatchFilters,
       );
     }
     return Column(
       children: [
         for (final device in devices) ...[
-          UspDeviceListTile(
-            device: device,
-            onTap: () => context.goNamed(
-              RouteNamed.uspDeviceDetail,
-              queryParameters: {'mac': device.mac},
+          LayoutBlock(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md,
+              vertical: AppSpacing.sm,
+            ),
+            child: UspDeviceListTile(
+              device: device,
+              variant: DeviceListTileVariant.flatLast,
+              onTap: () => context.goNamed(
+                RouteNamed.uspDeviceDetail,
+                queryParameters: {'mac': device.mac},
+              ),
             ),
           ),
           AppGap.sm(),
@@ -122,35 +130,35 @@ class _UspDeviceListViewState extends ConsumerState<UspDeviceListView> {
 
   Widget _buildDesktopLayout(BuildContext context, List devices,
       DeviceFilterConfig filter, int totalCount) {
-    return Column(
+    return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const UspDeviceFilterPanel(),
-            AppGap.gutter(),
-            Expanded(
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      Expanded(child: _buildSearchBar()),
-                      AppGap.md(),
-                      const SizedBox(
-                        width: 240,
-                        child: UspDeviceStatusSegmented(),
-                      ),
-                    ],
-                  ),
-                  AppGap.sm(),
-                  _buildCountRow(devices, totalCount),
-                  AppGap.lg(),
-                  _buildDeviceList(devices),
-                ],
+        const UspDeviceFilterPanel(),
+        AppGap.gutter(),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Search + Status in one Block
+              LayoutBlock(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                child: Row(
+                  children: [
+                    Expanded(child: _buildSearchBar()),
+                    AppGap.md(),
+                    const SizedBox(
+                      width: 240,
+                      child: UspDeviceStatusSegmented(),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+              AppGap.md(),
+              _buildCountRow(devices, totalCount),
+              AppGap.md(),
+              _buildDeviceList(devices),
+            ],
+          ),
         ),
       ],
     );
@@ -161,14 +169,23 @@ class _UspDeviceListViewState extends ConsumerState<UspDeviceListView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSearchBar(),
-        AppGap.md(),
-        const UspDeviceStatusSegmented(),
-        AppGap.md(),
+        // Search Block
+        LayoutBlock(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          child: _buildSearchBar(),
+        ),
+        AppGap.sm(),
+        // Status Block
+        LayoutBlock(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          child: const UspDeviceStatusSegmented(),
+        ),
+        AppGap.sm(),
+        // Filter chips (no Block - chips have their own style)
         const UspDeviceFilterChipBar(),
         AppGap.sm(),
         _buildCountRow(devices, totalCount),
-        AppGap.lg(),
+        AppGap.md(),
         _buildDeviceList(devices),
       ],
     );

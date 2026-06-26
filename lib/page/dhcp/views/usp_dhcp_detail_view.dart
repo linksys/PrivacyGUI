@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/components/localizations/service_error_localizations.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
+import 'package:privacy_gui/components/views/service_error_view.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/_shared/models/dhcp_client_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/dhcp_reservation_ui_model.dart';
@@ -31,7 +35,7 @@ class UspDhcpDetailView extends ConsumerWidget {
 
     return UiKitPageView.withSliver(
       scrollable: true,
-      title: 'DHCP Settings',
+      title: loc(context).dhcpSettings,
       topbar: const PreferredSize(
         preferredSize: Size.fromHeight(64),
         child: UspTopBar(),
@@ -55,13 +59,29 @@ class UspDhcpDetailView extends ConsumerWidget {
           );
         }
 
-        if (reservationStatus.errorMessage != null) {
-          return _buildError(
-              childContext, ref, reservationStatus.errorMessage!);
+        if (reservationStatus.error != null) {
+          return ServiceErrorView(
+            error: reservationStatus.error,
+            onRetry: () {
+              ref.invalidate(dhcpDataProvider);
+              ref
+                  .read(uspDhcpReservationsProvider.notifier)
+                  .fetch(forceRemote: true);
+            },
+          );
         }
 
         if (asyncDhcp.hasError && asyncDhcp.valueOrNull == null) {
-          return _buildError(childContext, ref, asyncDhcp.error.toString());
+          final asyncError = asyncDhcp.error;
+          return ServiceErrorView(
+            error: asyncError is ServiceError ? asyncError : null,
+            onRetry: () {
+              ref.invalidate(dhcpDataProvider);
+              ref
+                  .read(uspDhcpReservationsProvider.notifier)
+                  .fetch(forceRemote: true);
+            },
+          );
         }
 
         return _buildContent(childContext, ref);
@@ -80,41 +100,11 @@ class UspDhcpDetailView extends ConsumerWidget {
   ) {
     if (!reservationState.isDirty) return null;
     return UiKitBottomBarConfig(
-      positiveLabel: 'Save',
+      positiveLabel: loc(context).save,
       isPositiveEnabled: !reservationState.status.isSaving,
       onPositiveTap: () => _onSave(context, ref),
       onNegativeTap: () =>
           ref.read(uspDhcpReservationsProvider.notifier).revert(),
-    );
-  }
-
-  // ---------------------------------------------------------------------------
-  // Error
-  // ---------------------------------------------------------------------------
-
-  Widget _buildError(BuildContext context, WidgetRef ref, Object error) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          AppIcon.font(Icons.error_outline,
-              size: 48, color: Theme.of(context).colorScheme.error),
-          AppGap.xl(),
-          AppText.titleMedium('Unable to load DHCP data'),
-          AppGap.md(),
-          AppText.bodyMedium(error.toString()),
-          AppGap.xxl(),
-          AppButton(
-            label: 'Retry',
-            onTap: () {
-              ref.invalidate(dhcpDataProvider);
-              ref
-                  .read(uspDhcpReservationsProvider.notifier)
-                  .fetch(forceRemote: true);
-            },
-          ),
-        ],
-      ),
     );
   }
 
@@ -212,11 +202,11 @@ class UspDhcpDetailView extends ConsumerWidget {
         ref.read(uspDhcpReservationsProvider.notifier).save(),
       );
       if (context.mounted) {
-        showSuccessSnackBar(context, 'DHCP reservations saved');
+        showSuccessSnackBar(context, loc(context).dhcpReservationsSaved);
       }
     } catch (e) {
       if (context.mounted) {
-        showFailedSnackBar(context, 'Failed to save: $e');
+        showFailedSnackBar(context, localizeServiceError(context, e));
       }
     }
   }

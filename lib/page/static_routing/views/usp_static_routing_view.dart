@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/components/localizations/service_error_localizations.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
+import 'package:privacy_gui/components/views/service_error_view.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/_shared/components/detail_widgets.dart';
+import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/static_routing/models/static_routing_feature_state.dart';
 import 'package:privacy_gui/page/static_routing/models/static_routing_ui_model.dart';
@@ -21,7 +26,7 @@ class UspStaticRoutingView extends ConsumerWidget {
 
     return UiKitPageView.withSliver(
       scrollable: true,
-      title: 'Static Routing',
+      title: loc(context).staticRouting,
       topbar: const PreferredSize(
         preferredSize: Size.fromHeight(64),
         child: UspTopBar(),
@@ -35,8 +40,13 @@ class UspStaticRoutingView extends ConsumerWidget {
         if (status.isLoading) {
           return const Center(child: AppLoader());
         }
-        if (status.errorMessage != null) {
-          return _buildError(context, ref);
+        if (status.error != null) {
+          return ServiceErrorView(
+            error: status.error,
+            onRetry: () => ref
+                .read(uspStaticRoutingProvider.notifier)
+                .fetch(forceRemote: true),
+          );
         }
         return _buildContent(context, ref, state);
       },
@@ -54,35 +64,10 @@ class UspStaticRoutingView extends ConsumerWidget {
   ) {
     if (!state.isDirty) return null;
     return UiKitBottomBarConfig(
-      positiveLabel: 'Save',
+      positiveLabel: loc(context).save,
       isPositiveEnabled: !state.status.isSaving,
       onPositiveTap: () => _onSave(context, ref),
       onNegativeTap: () => ref.read(uspStaticRoutingProvider.notifier).revert(),
-    );
-  }
-
-  // ---------------------------------------------------------------------------
-  // Error
-  // ---------------------------------------------------------------------------
-
-  Widget _buildError(BuildContext context, WidgetRef ref) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          AppIcon.font(Icons.error_outline,
-              size: 48, color: Theme.of(context).colorScheme.error),
-          AppGap.xl(),
-          AppText.titleMedium('Unable to load static routing'),
-          AppGap.md(),
-          AppButton(
-            label: 'Retry',
-            onTap: () => ref
-                .read(uspStaticRoutingProvider.notifier)
-                .fetch(forceRemote: true),
-          ),
-        ],
-      ),
     );
   }
 
@@ -102,14 +87,14 @@ class UspStaticRoutingView extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         AppText.bodyMedium(
-          'Manage static IPv4 routes on your network',
+          loc(context).staticRoutingPageDesc,
           color: Theme.of(context).colorScheme.onSurfaceVariant,
         ),
         AppGap.xl(),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            AppText.titleMedium('Static Routes'),
+            AppText.titleMedium(loc(context).staticRoutes),
             AppIconButton(
               icon: AppIcon.font(Icons.add, size: 20),
               onTap: isSaving ? null : () => _showAddDialog(context, ref),
@@ -118,7 +103,10 @@ class UspStaticRoutingView extends ConsumerWidget {
         ),
         AppGap.lg(),
         if (routes.isEmpty)
-          AppText.bodyMedium('No static routes configured')
+          DetailEmptyBlock(
+            icon: Icons.alt_route,
+            message: loc(context).noStaticRoutes,
+          )
         else
           ...routes.asMap().entries.map((entry) =>
               _buildRouteCard(context, ref, entry.key, entry.value, isSaving)),
@@ -139,7 +127,8 @@ class UspStaticRoutingView extends ConsumerWidget {
   ) {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-      child: AppCard(
+      child: LayoutBlock(
+        padding: const EdgeInsets.all(AppSpacing.md),
         child: Row(
           children: [
             AppSwitch(
@@ -151,20 +140,25 @@ class UspStaticRoutingView extends ConsumerWidget {
                       .read(uspStaticRoutingProvider.notifier)
                       .toggleRoute(index, value),
             ),
-            AppGap.sm(),
+            AppGap.md(),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   AppText.bodyMedium(
-                    route.name.isNotEmpty ? route.name : '(unnamed)',
+                    route.name.isNotEmpty ? route.name : loc(context).unnamed,
                   ),
                   AppText.bodySmall(
                     '${route.destIpAddress} / ${route.destSubnetMask}',
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                   AppText.bodySmall(
-                    'Gateway: ${route.gatewayIpAddress.isNotEmpty ? route.gatewayIpAddress : '-'}  ${route.interfaceName}',
+                    loc(context).gatewayLabel(
+                      route.gatewayIpAddress.isNotEmpty
+                          ? route.gatewayIpAddress
+                          : '-',
+                      route.interfaceName,
+                    ),
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ],
@@ -243,11 +237,11 @@ class UspStaticRoutingView extends ConsumerWidget {
         ref.read(uspStaticRoutingProvider.notifier).save(),
       );
       if (context.mounted) {
-        showSuccessSnackBar(context, 'Static routes saved');
+        showSuccessSnackBar(context, loc(context).staticRoutesSaved);
       }
     } catch (e) {
       if (context.mounted) {
-        showFailedSnackBar(context, 'Failed to save: $e');
+        showFailedSnackBar(context, localizeServiceError(context, e));
       }
     }
   }

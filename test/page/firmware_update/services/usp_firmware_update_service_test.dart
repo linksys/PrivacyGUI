@@ -136,6 +136,55 @@ void main() {
     });
   });
 
+  group('triggerOtaDownload', () {
+    test('invokes FirmwareImage.{i}.Download() with https:// URL', () async {
+      when(() => mockUsp.operate(any(), args: any(named: 'args')))
+          .thenAnswer((_) async => <String, dynamic>{'success': true});
+
+      await service.triggerOtaDownload(
+        targetInstance: 2,
+        firmwareUrl: 'https://download.linksys.com/updates/firmware.img',
+      );
+
+      final captured = verify(
+        () => mockUsp.operate(captureAny(), args: captureAny(named: 'args')),
+      ).captured;
+      expect(captured[0], 'Device.DeviceInfo.FirmwareImage.2.Download()');
+      final args = captured[1] as Map<String, String>;
+      expect(args['URL'], 'https://download.linksys.com/updates/firmware.img');
+      expect(args['AutoActivate'], 'true');
+    });
+
+    test('passes AutoActivate=false when requested', () async {
+      when(() => mockUsp.operate(any(), args: any(named: 'args')))
+          .thenAnswer((_) async => <String, dynamic>{'success': true});
+
+      await service.triggerOtaDownload(
+        targetInstance: 2,
+        firmwareUrl: 'https://example.com/fw.img',
+        autoActivate: false,
+      );
+
+      final captured = verify(
+        () => mockUsp.operate(any(), args: captureAny(named: 'args')),
+      ).captured;
+      expect((captured.first as Map<String, String>)['AutoActivate'], 'false');
+    });
+
+    test('maps USP error to ServiceError', () {
+      when(() => mockUsp.operate(any(), args: any(named: 'args')))
+          .thenThrow('Operate failed: Transport error: Request timeout');
+
+      expect(
+        () => service.triggerOtaDownload(
+          targetInstance: 2,
+          firmwareUrl: 'https://example.com/fw.img',
+        ),
+        throwsA(isA<NetworkError>()),
+      );
+    });
+  });
+
   group('pollStatus', () {
     test('returns the status field of the matching instance', () async {
       when(() => mockUsp.get(any()))

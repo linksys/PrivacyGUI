@@ -55,6 +55,47 @@ const _ipv6Response = <String, dynamic>{
   'Device.IPv6rd.InterfaceSetting.1.BorderRelayIPv4Addresses': '',
 };
 
+// Alias resolution responses
+const _ipAliasResponse = <String, dynamic>{
+  'Device.IP.Interface.1.Alias': 'lan',
+  'Device.IP.Interface.2.Alias': 'wan',
+};
+
+const _ethLinkAliasResponse = <String, dynamic>{
+  'Device.Ethernet.Link.1.Alias': 'eth-lan',
+  'Device.Ethernet.Link.2.Alias': 'eth-wan',
+};
+
+/// Helper to create a mock get handler that handles all codegen paths
+Map<String, dynamic> Function(List<String>) createFetchMockHandler({
+  Map<String, dynamic> pppResponse = _pppResponse,
+  Map<String, dynamic> vlanResponse = _vlanResponse,
+}) {
+  return (List<String> paths) {
+    // Alias resolution (must be checked first)
+    if (paths.any((p) => p.contains('Ethernet.Link.*.Alias'))) {
+      return _ethLinkAliasResponse;
+    }
+    if (paths.any((p) => p.contains('IP.Interface.*.Alias'))) {
+      return _ipAliasResponse;
+    }
+    // Other fetches
+    if (paths.any((p) => p.contains('AddressingType'))) {
+      return _wanResponse;
+    }
+    if (paths.any((p) => p.contains('IPv6Enable'))) {
+      return _ipv6Response;
+    }
+    if (paths.any((p) => p.contains('PPP.Interface'))) {
+      return pppResponse;
+    }
+    if (paths.any((p) => p.contains('VLANTermination'))) {
+      return vlanResponse;
+    }
+    return {};
+  };
+}
+
 void main() {
   late MockUspClient mockUsp;
   late UspInternetSettingsService service;
@@ -66,21 +107,10 @@ void main() {
 
   group('fetchSettings', () {
     test('fetches WAN, IPv6, PPP, and VLAN settings in parallel', () async {
+      final handler = createFetchMockHandler();
       when(() => mockUsp.get(any())).thenAnswer((invocation) async {
         final paths = invocation.positionalArguments[0] as List<String>;
-        if (paths.any((p) => p.contains('AddressingType'))) {
-          return _wanResponse;
-        }
-        if (paths.any((p) => p.contains('IPv6Enable'))) {
-          return _ipv6Response;
-        }
-        if (paths.any((p) => p.contains('PPP.Interface'))) {
-          return _pppResponse;
-        }
-        if (paths.any((p) => p.contains('VLANTermination'))) {
-          return _vlanResponse;
-        }
-        return {};
+        return handler(paths);
       });
 
       final result = await service.fetchSettings();
@@ -102,21 +132,13 @@ void main() {
     });
 
     test('handles empty PPP and VLAN instances gracefully', () async {
+      final handler = createFetchMockHandler(
+        pppResponse: _pppEmptyResponse,
+        vlanResponse: _vlanEmptyResponse,
+      );
       when(() => mockUsp.get(any())).thenAnswer((invocation) async {
         final paths = invocation.positionalArguments[0] as List<String>;
-        if (paths.any((p) => p.contains('AddressingType'))) {
-          return _wanResponse;
-        }
-        if (paths.any((p) => p.contains('IPv6Enable'))) {
-          return _ipv6Response;
-        }
-        if (paths.any((p) => p.contains('PPP.Interface'))) {
-          return _pppEmptyResponse;
-        }
-        if (paths.any((p) => p.contains('VLANTermination'))) {
-          return _vlanEmptyResponse;
-        }
-        return {};
+        return handler(paths);
       });
 
       final result = await service.fetchSettings();
@@ -136,12 +158,21 @@ void main() {
 
       when(() => mockUsp.get(any())).thenAnswer((invocation) async {
         final paths = invocation.positionalArguments[0] as List<String>;
+        // Alias resolution
+        if (paths.any((p) => p.contains('Ethernet.Link.*.Alias'))) {
+          return _ethLinkAliasResponse;
+        }
+        if (paths.any((p) => p.contains('IP.Interface.*.Alias'))) {
+          return _ipAliasResponse;
+        }
         if (paths.any((p) => p.contains('AddressingType'))) return wanWith3Dns;
         if (paths.any((p) => p.contains('IPv6Enable'))) return _ipv6Response;
-        if (paths.any((p) => p.contains('PPP.Interface')))
+        if (paths.any((p) => p.contains('PPP.Interface'))) {
           return _pppEmptyResponse;
-        if (paths.any((p) => p.contains('VLANTermination')))
+        }
+        if (paths.any((p) => p.contains('VLANTermination'))) {
           return _vlanEmptyResponse;
+        }
         return {};
       });
 
@@ -154,7 +185,16 @@ void main() {
   });
 
   group('saveAll', () {
+    // Mock for _resolveInstance() calls in codegen update methods
+    // UspClient.get() returns flat Map<String, dynamic>, not WASM format
+    final aliasResponse = <String, dynamic>{
+      'Device.IP.Interface.1.Alias': 'lan',
+      'Device.IP.Interface.2.Alias': 'wan',
+    };
+
     setUp(() {
+      // Default mock for _resolveInstance() get calls
+      when(() => mockUsp.get(any())).thenAnswer((_) async => aliasResponse);
       when(() => mockUsp.set(any())).thenAnswer((_) async => {
             'success': true,
             'result': {'data': <String, dynamic>{}}
@@ -250,26 +290,7 @@ void main() {
       verify(() => mockUsp.add(any())).called(1);
     });
 
-    test('adds VLAN instance when enabling VLAN without existing instance',
-        () async {
-      when(() => mockUsp.add(any())).thenAnswer((_) async => {
-            'overallSuccess': true,
-            'hasAnySuccess': true,
-            'hasErrors': false,
-            'results': [
-              {
-                'requestedPath': 'Device.Ethernet.VLANTermination.',
-                'success': true,
-                'createdInstances': [
-                  {
-                    'affectedPath': 'Device.Ethernet.VLANTermination.1.',
-                    'initialParams': {}
-                  }
-                ]
-              }
-            ]
-          });
-
+    test('enables VLAN via SET on existing instance', () async {
       final original = UspInternetSettingsForm(
         connectionType: UspWanConnectionType.pppoe,
         pppUsername: 'user',
@@ -282,18 +303,19 @@ void main() {
         original,
         edited,
         pppInstancePath: 'Device.PPP.Interface.1.',
+        vlanInstancePath: 'Device.Ethernet.VLANTermination.1.',
       );
 
-      verify(() => mockUsp.add(any())).called(1);
+      final captured = verify(() => mockUsp.set(captureAny())).captured;
+      final vlanSet = captured.lastWhere((params) => (params
+              as Map<String, dynamic>)
+          .keys
+          .any((k) => k.contains('VLANTermination'))) as Map<String, dynamic>;
+      expect(vlanSet['Device.Ethernet.VLANTermination.1.Enable'], isTrue);
+      expect(vlanSet['Device.Ethernet.VLANTermination.1.VLANID'], equals(100));
     });
 
-    test('deletes VLAN instance when disabling VLAN', () async {
-      // WASM v0.11.0 format for DELETE success
-      when(() => mockUsp.delete(any())).thenAnswer((_) async => {
-            'success': true,
-            'result': {'data': <String, dynamic>{}},
-          });
-
+    test('disables VLAN via SET on existing instance', () async {
       final original = UspInternetSettingsForm(
         connectionType: UspWanConnectionType.pppoe,
         pppUsername: 'user',
@@ -310,7 +332,37 @@ void main() {
         vlanInstancePath: 'Device.Ethernet.VLANTermination.1.',
       );
 
-      verify(() => mockUsp.delete(any())).called(1);
+      final captured = verify(() => mockUsp.set(captureAny())).captured;
+      final vlanSet = captured.lastWhere((params) => (params
+              as Map<String, dynamic>)
+          .keys
+          .any((k) => k.contains('VLANTermination'))) as Map<String, dynamic>;
+      expect(vlanSet['Device.Ethernet.VLANTermination.1.Enable'], isFalse);
+    });
+
+    test('skips VLAN SET when no vlanInstancePath provided', () async {
+      final original = UspInternetSettingsForm(
+        connectionType: UspWanConnectionType.pppoe,
+        pppUsername: 'user',
+        pppPassword: 'pass',
+        vlanEnabled: false,
+        mtu: 1492,
+      );
+      final edited =
+          original.copyWith(vlanEnabled: true, vlanId: 100, mtu: 1400);
+
+      await service.saveAll(
+        original,
+        edited,
+        pppInstancePath: 'Device.PPP.Interface.1.',
+      );
+
+      // MTU change triggers a set() call, but VLAN keys should not appear
+      final setInvocations = verify(() => mockUsp.set(captureAny())).captured;
+      for (final params in setInvocations) {
+        final map = params as Map<String, dynamic>;
+        expect(map.keys.any((k) => k.contains('VLANTermination')), isFalse);
+      }
     });
 
     test('switching to DHCP sends only AddressingType', () async {
@@ -583,7 +635,16 @@ void main() {
   // ---------------------------------------------------------------------------
 
   group('UspInternetSettingsService — UspResultParser failure handling', () {
+    // Mock for _resolveInstance() calls in codegen update methods
+    // UspClient.get() returns flat Map<String, dynamic>, not WASM format
+    final aliasResponse = <String, dynamic>{
+      'Device.IP.Interface.1.Alias': 'lan',
+      'Device.IP.Interface.2.Alias': 'wan',
+    };
+
     test('saveAll throws UspCompleteFailureError on SET failure', () async {
+      // Mock for _resolveInstance()
+      when(() => mockUsp.get(any())).thenAnswer((_) async => aliasResponse);
       // WASM v0.11.0 format: success=false
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
           .thenAnswer((_) async => {
@@ -613,6 +674,8 @@ void main() {
 
     test('saveAll throws UspPartialFailureError on SET partial failure',
         () async {
+      // Mock for _resolveInstance()
+      when(() => mockUsp.get(any())).thenAnswer((_) async => aliasResponse);
       // WASM v0.11.0 format: success=true but has error field
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
           .thenAnswer((_) async => {
@@ -642,42 +705,6 @@ void main() {
       );
     });
 
-    test('delete VLAN throws UspCompleteFailureError on DELETE failure',
-        () async {
-      // WASM v0.11.0 format: success=false for DELETE
-      when(() => mockUsp.delete(any())).thenAnswer((_) async => {
-            'success': false,
-            'result': {
-              'data': <String, dynamic>{},
-              'error': {
-                'Device.Ethernet.VLANTermination.1.': {
-                  'errorCode': 7003,
-                  'errorMessage': 'Invalid path',
-                },
-              },
-            },
-          });
-
-      final original = UspInternetSettingsForm(
-        connectionType: UspWanConnectionType.pppoe,
-        pppUsername: 'user',
-        pppPassword: 'pass',
-        vlanEnabled: true,
-        vlanId: 100,
-      );
-      final edited = original.copyWith(vlanEnabled: false);
-
-      expect(
-        () => service.saveAll(
-          original,
-          edited,
-          pppInstancePath: 'Device.PPP.Interface.1.',
-          vlanInstancePath: 'Device.Ethernet.VLANTermination.1.',
-        ),
-        throwsA(isA<UspCompleteFailureError>()),
-      );
-    });
-
     test('renewDhcpLease throws UspCompleteFailureError on OPERATE failure',
         () async {
       // WASM v0.11.0 format: success=false for OPERATE
@@ -701,6 +728,8 @@ void main() {
     });
 
     test('UspCompleteFailureError contains correct error message', () async {
+      // Mock for _resolveInstance()
+      when(() => mockUsp.get(any())).thenAnswer((_) async => aliasResponse);
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
           .thenAnswer((_) async => {
                 'success': false,
@@ -734,6 +763,8 @@ void main() {
     });
 
     test('UspPartialFailureError contains success and failure paths', () async {
+      // Mock for _resolveInstance()
+      when(() => mockUsp.get(any())).thenAnswer((_) async => aliasResponse);
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
           .thenAnswer((_) async => {
                 'success': true,

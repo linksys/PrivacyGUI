@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/providers/usp_system_monitor_notifier.dart';
 import 'package:privacy_gui/page/statistics/views/components/stats_section_card.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -13,13 +14,13 @@ class StatsCpuDistributionSection extends ConsumerWidget {
     final monitorState = ref.watch(uspSystemMonitorProvider);
 
     return StatsSectionCard(
-      title: 'CPU Distribution',
-      subtitle: 'CPU usage sample distribution',
+      title: loc(context).cpuDistribution,
+      subtitle: loc(context).cpuDistributionSubtitle,
       chartHeight: 260,
       child: monitorState.history.isEmpty
           ? Center(
               child: AppText.bodyMedium(
-                'Waiting for data...',
+                loc(context).waitingForData,
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             )
@@ -48,7 +49,7 @@ class StatsCpuDistributionSection extends ConsumerWidget {
             child: AppBarChart(
               series: [
                 AppChartSeries(
-                  label: 'CPU',
+                  label: loc(context).cpu,
                   data: buckets.map((b) => b.toDouble()).toList(),
                   color: colorScheme.primary,
                 ),
@@ -67,7 +68,7 @@ class StatsCpuDistributionSection extends ConsumerWidget {
           children: [
             StatsLegendDot(color: colorScheme.primary),
             AppGap.xs(),
-            AppText.labelSmall('CPU usage samples: ${history.length}'),
+            AppText.labelSmall(loc(context).cpuUsageSamples(history.length)),
           ],
         ),
       ],

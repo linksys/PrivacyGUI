@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
-import 'package:privacy_gui/core/usp/providers/usp_auth_coordinator.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/framework/preservable_contract.dart';
@@ -36,8 +35,7 @@ final uspInternetSettingsServiceProvider =
     Provider.autoDispose<UspInternetSettingsService>((ref) {
   final usp = ref.watch(uspClientProvider);
   if (usp == null) {
-    throw const ServiceNotInitializedError(
-        message: 'USP service not available');
+    throw const ServiceNotInitializedError(detail: 'USP service not available');
   }
   return UspInternetSettingsService(usp);
 });
@@ -82,16 +80,11 @@ class UspInternetSettingsNotifier
       final usp = ref.read(uspClientProvider);
       if (usp == null) {
         throw const ServiceNotInitializedError(
-            message: 'USP service not available');
+            detail: 'USP service not available');
       }
 
-      // Session restore on page reload (WASM state may be lost)
       if (!usp.isAuthenticated) {
-        await ref.read(uspAuthCoordinatorProvider).restoreSession();
-        if (!usp.isAuthenticated) {
-          throw const ConnectivityError(
-              message: 'USP not authenticated after restore attempt');
-        }
+        throw const ConnectivityError(detail: 'USP not authenticated');
       }
 
       final service = ref.read(uspInternetSettingsServiceProvider);
@@ -129,7 +122,7 @@ class UspInternetSettingsNotifier
       logger.e('[USP][Network][WAN]: Fetch failed', error: e);
       return (
         null,
-        InternetSettingsStatus(isLoading: false, errorMessage: '$e'),
+        InternetSettingsStatus(isLoading: false, error: e),
       );
     }
   }
@@ -162,6 +155,9 @@ class UspInternetSettingsNotifier
           vlanInstancePath: state.status.vlanInstancePath,
         );
         logger.d('[USP][Network][WAN]: Save complete');
+
+        // Invalidate L1 wanDataProvider so Dashboard card refreshes
+        ref.invalidate(wanDataProvider);
       });
 
       // After save, exit edit mode (status will be updated by re-fetch)

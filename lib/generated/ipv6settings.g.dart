@@ -24,47 +24,74 @@ class Ipv6Settings {
     required this.ipv6rdBorderRelay,
   });
 
-  static const _paths = [
-    'Device.IP.Interface.2.IPv6Enable',
-    'Device.DHCPv6.Client.1.Enable',
-    'Device.DHCPv6.Client.1.DUID',
-    'Device.IPv6rd.InterfaceSetting.1.Enable',
-    'Device.IPv6rd.InterfaceSetting.1.SPIPv6Prefix',
-    'Device.IPv6rd.InterfaceSetting.1.IPv4MaskLength',
-    'Device.IPv6rd.InterfaceSetting.1.BorderRelayIPv4Addresses',
-  ];
+  /// Resolve the instance index by searching for Alias='wan'
+  static Future<String> _resolveInstance(UspClient client) async {
+    final response = await client.get(['Device.IP.Interface.*.Alias']);
+    for (final entry in response.entries) {
+      if (entry.value == 'wan') {
+        final match =
+            RegExp(r'Device\.IP\.Interface\.(\d+)\.').firstMatch(entry.key);
+        if (match != null) {
+          return 'Device.IP.Interface.${match.group(1)}.';
+        }
+      }
+    }
+    // Fallback to hardcoded instance 2
+    return 'Device.IP.Interface.2.';
+  }
+
+  /// Build parameter paths using the resolved instance path
+  static List<String> _buildPaths(String instancePath) => [
+        '${instancePath}IPv6Enable',
+        'Device.DHCPv6.Client.1.Enable',
+        'Device.DHCPv6.Client.1.DUID',
+        'Device.IPv6rd.InterfaceSetting.1.Enable',
+        'Device.IPv6rd.InterfaceSetting.1.SPIPv6Prefix',
+        'Device.IPv6rd.InterfaceSetting.1.IPv4MaskLength',
+        'Device.IPv6rd.InterfaceSetting.1.BorderRelayIPv4Addresses',
+      ];
 
   /// Fetch all parameters via USP Get message
   static Future<Ipv6Settings> fetch(UspClient client) async {
-    final response = await client.get(_paths);
-    return Ipv6Settings._fromResponse(response);
+    final instancePath = await _resolveInstance(client);
+    final response = await client.get(_buildPaths(instancePath));
+    return Ipv6Settings._fromResponse(response, instancePath);
   }
 
-  factory Ipv6Settings._fromResponse(Map<String, dynamic> response) {
+  factory Ipv6Settings._fromResponse(
+      Map<String, dynamic> response, String instancePath) {
     final missing = <String>[];
-    if (!response.containsKey('Device.IP.Interface.2.IPv6Enable'))
-      missing.add('Device.IP.Interface.2.IPv6Enable');
-    if (!response.containsKey('Device.DHCPv6.Client.1.Enable'))
+    if (!response.containsKey('${instancePath}IPv6Enable')) {
+      missing.add('${instancePath}IPv6Enable');
+    }
+    if (!response.containsKey('Device.DHCPv6.Client.1.Enable')) {
       missing.add('Device.DHCPv6.Client.1.Enable');
-    if (!response.containsKey('Device.DHCPv6.Client.1.DUID'))
+    }
+    if (!response.containsKey('Device.DHCPv6.Client.1.DUID')) {
       missing.add('Device.DHCPv6.Client.1.DUID');
-    if (!response.containsKey('Device.IPv6rd.InterfaceSetting.1.Enable'))
+    }
+    if (!response.containsKey('Device.IPv6rd.InterfaceSetting.1.Enable')) {
       missing.add('Device.IPv6rd.InterfaceSetting.1.Enable');
-    if (!response.containsKey('Device.IPv6rd.InterfaceSetting.1.SPIPv6Prefix'))
-      missing.add('Device.IPv6rd.InterfaceSetting.1.SPIPv6Prefix');
+    }
     if (!response
-        .containsKey('Device.IPv6rd.InterfaceSetting.1.IPv4MaskLength'))
+        .containsKey('Device.IPv6rd.InterfaceSetting.1.SPIPv6Prefix')) {
+      missing.add('Device.IPv6rd.InterfaceSetting.1.SPIPv6Prefix');
+    }
+    if (!response
+        .containsKey('Device.IPv6rd.InterfaceSetting.1.IPv4MaskLength')) {
       missing.add('Device.IPv6rd.InterfaceSetting.1.IPv4MaskLength');
+    }
     if (!response.containsKey(
-        'Device.IPv6rd.InterfaceSetting.1.BorderRelayIPv4Addresses'))
+        'Device.IPv6rd.InterfaceSetting.1.BorderRelayIPv4Addresses')) {
       missing.add('Device.IPv6rd.InterfaceSetting.1.BorderRelayIPv4Addresses');
+    }
     if (missing.isNotEmpty) {
       throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
     }
     return Ipv6Settings(
-      ipv6Enabled: response['Device.IP.Interface.2.IPv6Enable'] == true ||
-          response['Device.IP.Interface.2.IPv6Enable'] == 'true' ||
-          response['Device.IP.Interface.2.IPv6Enable'] == '1',
+      ipv6Enabled: response['${instancePath}IPv6Enable'] == true ||
+          response['${instancePath}IPv6Enable'] == 'true' ||
+          response['${instancePath}IPv6Enable'] == '1',
       dhcpv6Enabled: response['Device.DHCPv6.Client.1.Enable'] == true ||
           response['Device.DHCPv6.Client.1.Enable'] == 'true' ||
           response['Device.DHCPv6.Client.1.Enable'] == '1',
@@ -99,20 +126,27 @@ class Ipv6Settings {
     bool allowPartial = false,
   }) async {
     final params = <String, dynamic>{};
-    if (ipv6Enabled != null)
-      params['Device.IP.Interface.2.IPv6Enable'] = ipv6Enabled;
-    if (dhcpv6Enabled != null)
+    final instancePath = await _resolveInstance(client);
+    if (ipv6Enabled != null) {
+      params['${instancePath}IPv6Enable'] = ipv6Enabled;
+    }
+    if (dhcpv6Enabled != null) {
       params['Device.DHCPv6.Client.1.Enable'] = dhcpv6Enabled;
-    if (ipv6rdEnabled != null)
+    }
+    if (ipv6rdEnabled != null) {
       params['Device.IPv6rd.InterfaceSetting.1.Enable'] = ipv6rdEnabled;
-    if (ipv6rdPrefix != null)
+    }
+    if (ipv6rdPrefix != null) {
       params['Device.IPv6rd.InterfaceSetting.1.SPIPv6Prefix'] = ipv6rdPrefix;
-    if (ipv6rdIpv4MaskLength != null)
+    }
+    if (ipv6rdIpv4MaskLength != null) {
       params['Device.IPv6rd.InterfaceSetting.1.IPv4MaskLength'] =
           ipv6rdIpv4MaskLength;
-    if (ipv6rdBorderRelay != null)
+    }
+    if (ipv6rdBorderRelay != null) {
       params['Device.IPv6rd.InterfaceSetting.1.BorderRelayIPv4Addresses'] =
           ipv6rdBorderRelay;
+    }
     if (params.isEmpty) {
       return {
         'success': true,

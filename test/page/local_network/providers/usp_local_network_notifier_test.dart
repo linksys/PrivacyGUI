@@ -183,7 +183,7 @@ void main() {
           uspMutationLockProvider.overrideWithValue(UspMutationLock()),
           lanDataProvider.overrideWith(() => _TestLanDataNotifier(
                 testLanData,
-                errorToThrow: const NetworkError(message: 'timeout'),
+                errorToThrow: const NetworkError(detail: 'timeout'),
               )),
         ],
       );
@@ -191,7 +191,7 @@ void main() {
       await Future.delayed(Duration.zero);
 
       final state = container.read(uspLocalNetworkProvider);
-      expect(state.status.errorMessage, contains('Network error'));
+      expect(state.status.error, isA<NetworkError>());
       container.dispose();
     });
 
@@ -218,7 +218,7 @@ void main() {
       when(() => mockService.save(
             original: any(named: 'original'),
             pending: any(named: 'pending'),
-          )).thenThrow(const NetworkError(message: 'save failed'));
+          )).thenThrow(const NetworkError(detail: 'save failed'));
       final container = createContainer();
       await Future.delayed(Duration.zero);
 

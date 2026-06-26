@@ -4,6 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:privacy_gui/constants/error_code.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/providers/usp_auth_coordinator.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 
@@ -209,6 +211,45 @@ void main() {
   });
 
   // ---------------------------------------------------------------------------
+  // tryUspLogin error mapping — WASM errors → typed ServiceError for the UI
+  // ---------------------------------------------------------------------------
+  group('tryUspLogin error mapping', () {
+    test(
+        'account-locked WASM error → UnexpectedError carrying '
+        'errorAdminAccountLocked (so the login view shows the lockout message)',
+        () async {
+      when(() => mockUsp.login(any()))
+          .thenThrow(Exception('Account is locked'));
+
+      await expectLater(
+        coordinator.tryUspLogin('password'),
+        throwsA(isA<UnexpectedError>()
+            .having((e) => e.detail, 'detail', errorAdminAccountLocked)),
+      );
+    });
+
+    test('invalid-credentials WASM error → InvalidCredentialsError', () async {
+      when(() => mockUsp.login(any())).thenThrow(
+          Exception('Login failed: Authentication error: Invalid credentials'));
+
+      await expectLater(
+        coordinator.tryUspLogin('password'),
+        throwsA(isA<InvalidCredentialsError>()),
+      );
+    });
+
+    test('authenticated=false after login → InvalidCredentialsError', () async {
+      when(() => mockUsp.login(any())).thenAnswer((_) async {});
+      when(() => mockUsp.isAuthenticated).thenReturn(false);
+
+      await expectLater(
+        coordinator.tryUspLogin('password'),
+        throwsA(isA<InvalidCredentialsError>()),
+      );
+    });
+  });
+
+  // ---------------------------------------------------------------------------
   // syncAfterLogout resets _lastTokenRefresh
   // ---------------------------------------------------------------------------
   group('syncAfterLogout', () {
@@ -228,14 +269,26 @@ void main() {
   });
 
   // ---------------------------------------------------------------------------
-  // restoreSession re-logs in unconditionally — covers reauth Stage 2 and the
-  // recovery probe after a router reboot, where the WASM client still reports
-  // isAuthenticated=true while carrying a stale token.
+  // restoreSession — token-first strategy: tries refreshToken() first, falls
+  // back to password login on 401. Covers reauth Stage 2 and recovery probe.
   // ---------------------------------------------------------------------------
   group('restoreSession (onReauthRequired / recovery probe)', () {
-    test('re-logs in even when isAuthenticated=true', () async {
-      // WASM client still reports authenticated (stale token in memory)
+    test('uses refreshToken when isAuthenticated=true and token is valid',
+        () async {
       when(() => mockUsp.isAuthenticated).thenReturn(true);
+      when(() => mockUsp.refreshToken()).thenAnswer((_) async {});
+
+      await coordinator.restoreSession();
+
+      verify(() => mockUsp.refreshToken()).called(1);
+      verifyNever(() => mockUsp.login(any()));
+    });
+
+    test('falls back to login when refreshToken returns 401', () async {
+      // WASM client reports authenticated (stale token in memory)
+      when(() => mockUsp.isAuthenticated).thenReturn(true);
+      when(() => mockUsp.refreshToken())
+          .thenThrow(Exception('HTTP 401 Unauthorized'));
       when(() => mockStorage.read(key: any(named: 'key')))
           .thenAnswer((_) async => 'storedPassword');
       when(() => mockUsp.login(any())).thenAnswer((_) async {});
@@ -245,18 +298,71 @@ void main() {
       expect(onReauth, isNotNull);
       await onReauth!();
 
+      verify(() => mockUsp.refreshToken()).called(1);
       verify(() => mockUsp.login('storedPassword')).called(1);
     });
 
-    test('re-logs in when called directly (recovery probe path)', () async {
+    test('falls back to login when called directly with stale token', () async {
       when(() => mockUsp.isAuthenticated).thenReturn(true);
+      when(() => mockUsp.refreshToken())
+          .thenThrow(Exception('HTTP 401 Unauthorized'));
       when(() => mockStorage.read(key: any(named: 'key')))
           .thenAnswer((_) async => 'storedPassword');
       when(() => mockUsp.login(any())).thenAnswer((_) async {});
 
       await coordinator.restoreSession();
 
+      verify(() => mockUsp.refreshToken()).called(1);
       verify(() => mockUsp.login('storedPassword')).called(1);
+    });
+
+    test('uses login directly when isAuthenticated=false (page reload)',
+        () async {
+      when(() => mockUsp.isAuthenticated).thenReturn(false);
+      when(() => mockStorage.read(key: any(named: 'key')))
+          .thenAnswer((_) async => 'storedPassword');
+      when(() => mockUsp.login(any())).thenAnswer((_) async {});
+
+      await coordinator.restoreSession();
+
+      verifyNever(() => mockUsp.refreshToken());
+      verify(() => mockUsp.login('storedPassword')).called(1);
+    });
+
+    test('concurrent calls are coalesced — only one login attempt', () async {
+      when(() => mockUsp.isAuthenticated).thenReturn(false);
+      when(() => mockStorage.read(key: any(named: 'key')))
+          .thenAnswer((_) async => 'storedPassword');
+      // Slow login to ensure concurrent calls overlap
+      when(() => mockUsp.login(any()))
+          .thenAnswer((_) => Future.delayed(const Duration(milliseconds: 50)));
+
+      // Launch multiple concurrent calls
+      final futures = [
+        coordinator.restoreSession(),
+        coordinator.restoreSession(),
+        coordinator.restoreSession(),
+      ];
+      await Future.wait(futures);
+
+      // login should only be called once despite 3 concurrent calls
+      verify(() => mockUsp.login('storedPassword')).called(1);
+    });
+
+    test('cooldown skips login within 5 seconds after failure', () async {
+      when(() => mockUsp.isAuthenticated).thenReturn(false);
+      when(() => mockStorage.read(key: any(named: 'key')))
+          .thenAnswer((_) async => 'storedPassword');
+      when(() => mockUsp.login(any()))
+          .thenThrow(Exception('Connection refused'));
+
+      // First call — fails
+      await coordinator.restoreSession();
+      verify(() => mockUsp.login('storedPassword')).called(1);
+
+      // Second call within cooldown — should be skipped
+      await coordinator.restoreSession();
+      verifyNever(() => mockUsp.login(any())); // No additional login call
     });
   });
 

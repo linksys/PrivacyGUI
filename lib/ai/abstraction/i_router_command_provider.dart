@@ -3,15 +3,8 @@ import 'router_resource.dart';
 
 /// Core abstraction for router command providers.
 ///
-/// This interface follows MCP (Model Context Protocol) patterns:
-/// - `listCommands()` ≈ MCP `tools/list`
-/// - `execute()` ≈ MCP `tools/call`
-/// - `listResources()` ≈ MCP `resources/list`
-/// - `readResource()` ≈ MCP `resources/read`
-///
 /// Implementations:
-/// - [JnapCommandProvider] - JNAP-based implementation
-/// - [UspCommandProvider] - USP-based implementation (future)
+/// - [UspCommandProvider] - USP-based implementation using dashboard providers
 abstract class IRouterCommandProvider {
   /// Returns the list of available commands.
   ///

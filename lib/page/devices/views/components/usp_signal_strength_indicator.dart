@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:privacy_gui/core/utils/wifi.dart';
-import 'package:privacy_gui/util/wifi_signal_utils.dart';
+import 'package:privacy_gui/page/_shared/components/wifi_ui.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Visual signal strength indicator using 4 vertical bars.

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/firewall/providers/firewall_data_provider.dart';
 import 'package:privacy_gui/page/port_forwarding/providers/port_forwarding_data_provider.dart';
 import 'package:privacy_gui/page/statistics/views/components/stats_section_card.dart';
@@ -17,13 +18,13 @@ class StatsFirewallRulesSection extends ConsumerWidget {
             0;
 
     return StatsSectionCard(
-      title: 'Firewall Rules',
-      subtitle: 'Rule target distribution and security overview',
+      title: loc(context).firewallRules,
+      subtitle: loc(context).firewallRulesSubtitle,
       chartHeight: 320,
       child: fwData == null
           ? Center(
               child: AppText.bodyMedium(
-                'Loading...',
+                loc(context).loading,
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             )
@@ -40,7 +41,7 @@ class StatsFirewallRulesSection extends ConsumerWidget {
     if (firewallRules.isEmpty) {
       return Center(
         child: AppText.bodyMedium(
-          'No firewall rules configured',
+          loc(context).noFirewallRulesConfigured,
           color: colorScheme.onSurfaceVariant,
         ),
       );
@@ -50,7 +51,7 @@ class StatsFirewallRulesSection extends ConsumerWidget {
     final targetCounts = <String, int>{};
     int activeCount = 0;
     for (final rule in firewallRules) {
-      final target = rule.target.isNotEmpty ? rule.target : 'Other';
+      final target = rule.target.isNotEmpty ? rule.target : loc(context).other;
       targetCounts[target] = (targetCounts[target] ?? 0) + 1;
       if (rule.enabled) activeCount++;
     }
@@ -79,10 +80,11 @@ class StatsFirewallRulesSection extends ConsumerWidget {
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
             _StatChip(
-                label: 'FW Rules',
+                label: loc(context).fwRules,
                 value: '$activeCount/${firewallRules.length}'),
-            _StatChip(label: 'Port Fwd', value: '$portForwardingCount'),
-            _StatChip(label: 'DMZ', value: '$dmzCount'),
+            _StatChip(
+                label: loc(context).portFwd, value: '$portForwardingCount'),
+            _StatChip(label: loc(context).dmz, value: '$dmzCount'),
           ],
         ),
         AppGap.md(),
@@ -94,7 +96,7 @@ class StatsFirewallRulesSection extends ConsumerWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   AppText.titleMedium('${firewallRules.length}'),
-                  AppText.labelSmall('Rules',
+                  AppText.labelSmall(loc(context).rules,
                       color: colorScheme.onSurfaceVariant),
                 ],
               ),

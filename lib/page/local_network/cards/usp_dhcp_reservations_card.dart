@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/models/dhcp_client_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/dhcp_reservation_ui_model.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/dhcp/providers/usp_dhcp_reservations_notifier.dart';
 import 'package:privacy_gui/page/local_network/providers/dhcp_data_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/_shared/components/usp_mutation_helper.dart';
 import 'package:privacy_gui/page/_shared/components/card_skeleton.dart';
+import 'package:privacy_gui/page/_shared/components/dashboard_card_template.dart';
 import 'package:privacy_gui/page/dashboard/views/dialogs/dhcp_reservation_dialog.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -21,67 +24,55 @@ class UspDhcpReservationsCard extends ConsumerWidget {
     if (dhcpData == null) return const CardSkeleton.list(rows: 3);
     final reservations = dhcpData.reservationModels;
     final clients = dhcpData.clientModels;
+    final activeClients = clients.where((c) => c.active).toList();
     final isLoading = ref.watch(uspMutationLoadingProvider) == 'dhcp';
 
-    return AppCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // ── Reservations section ──
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(child: AppText.titleMedium('DHCP Reservations')),
-              AppButton.text(
-                label: 'View All',
-                onTap: () => context.goNamed(RouteNamed.uspDhcpDetail),
-              ),
-              AppGap.md(),
-              Row(
-                children: [
-                  AppText.labelLarge('${reservations.length}'),
-                  AppGap.sm(),
-                  AppIconButton(
-                    icon: AppIcon.font(Icons.add, size: 20),
-                    onTap: isLoading
-                        ? null
-                        : () => _showAddDhcpDialog(context, ref),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          AppGap.xl(),
-          if (reservations.isEmpty)
-            AppText.bodyMedium('No DHCP reservations configured')
-          else
-            ...reservations
-                .map((r) => _buildReservationRow(context, ref, r, isLoading)),
-          // ── Client leases section ──
-          AppGap.xl(),
-          const Divider(),
-          AppGap.md(),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              AppText.titleMedium('Active Leases'),
-              AppText.labelLarge('${clients.where((c) => c.active).length}'),
-            ],
-          ),
-          AppGap.md(),
-          if (clients.isEmpty)
-            AppText.bodyMedium('No DHCP clients')
-          else
-            ...clients.map((c) => _buildClientRow(context, c)),
-        ],
+    return DashboardCardTemplate.multiSection(
+      title: 'DHCP',
+      trailing: AppIconButton(
+        icon: AppIcon.font(Icons.add, size: 20),
+        onTap: isLoading ? null : () => _showAddDhcpDialog(context, ref),
       ),
+      detailRoute: RouteNamed.uspDhcpDetail,
+      itemCount: reservations.length + activeClients.length,
+      sections: [
+        CardSection(
+          title: loc(context).reservations,
+          titleBadge: AppText.labelMedium('${reservations.length}'),
+          isEmpty: reservations.isEmpty,
+          emptyMessage: loc(context).noDhcpReservations,
+          content: Column(
+            children: [
+              for (var i = 0; i < reservations.length; i++) ...[
+                _buildReservationRow(context, ref, reservations[i], isLoading),
+                if (i < reservations.length - 1) AppGap.sm(),
+              ],
+            ],
+          ),
+        ),
+        CardSection(
+          title: loc(context).activeLeases,
+          titleBadge: AppText.labelMedium('${activeClients.length}'),
+          isEmpty: clients.isEmpty,
+          emptyMessage: 'No DHCP clients',
+          content: Column(
+            children: [
+              for (var i = 0; i < clients.length; i++) ...[
+                _buildClientRow(context, clients[i]),
+                if (i < clients.length - 1) AppGap.sm(),
+              ],
+            ],
+          ),
+        ),
+      ],
     );
   }
 
   Widget _buildReservationRow(BuildContext context, WidgetRef ref,
       DhcpReservationUIModel reservation, bool isLoading) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return LayoutBlock(
       child: Row(
         children: [
           AppSwitch(
@@ -100,13 +91,11 @@ class UspDhcpReservationsCard extends ConsumerWidget {
           ),
           AppGap.sm(),
           Expanded(child: AppText.bodyMedium(reservation.mac)),
-          SizedBox(
-            width: context.colWidth(2),
-            child: AppText.bodySmall(
-              reservation.ip,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
+          AppText.bodySmall(
+            reservation.ip,
+            color: colorScheme.onSurfaceVariant,
           ),
+          AppGap.sm(),
           AppIconButton(
             icon: AppIcon.font(Icons.delete_outline, size: 18),
             onTap: isLoading
@@ -120,15 +109,21 @@ class UspDhcpReservationsCard extends ConsumerWidget {
 
   Widget _buildClientRow(BuildContext context, DhcpClientUIModel client) {
     final colorScheme = Theme.of(context).colorScheme;
+    final appColors = Theme.of(context).extension<AppColorScheme>();
     final lease = client.leaseTimeFormatted;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+
+    return LayoutBlock(
       child: Row(
         children: [
-          Icon(
-            Icons.circle,
-            size: 8,
-            color: client.active ? Colors.green : colorScheme.outline,
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: client.active
+                  ? (appColors?.semanticSuccess ?? Colors.green)
+                  : colorScheme.outline,
+            ),
           ),
           AppGap.sm(),
           Expanded(
@@ -144,22 +139,11 @@ class UspDhcpReservationsCard extends ConsumerWidget {
               ],
             ),
           ),
-          SizedBox(
-            width: context.colWidth(2),
-            child: AppText.bodySmall(
-              client.ip,
-              color: colorScheme.onSurfaceVariant,
-            ),
-          ),
-          if (lease.isNotEmpty)
-            SizedBox(
-              width: context.colWidth(1),
-              child: AppText.bodySmall(
-                lease,
-                color: colorScheme.onSurfaceVariant,
-                textAlign: TextAlign.end,
-              ),
-            ),
+          AppText.bodySmall(client.ip, color: colorScheme.onSurfaceVariant),
+          if (lease.isNotEmpty) ...[
+            AppGap.md(),
+            AppText.bodySmall(lease, color: colorScheme.onSurfaceVariant),
+          ],
         ],
       ),
     );
@@ -189,15 +173,16 @@ class UspDhcpReservationsCard extends ConsumerWidget {
       DhcpReservationUIModel reservation) async {
     final confirmed = await showSimpleAppDialog<bool>(
       context,
-      title: 'Delete Reservation',
-      content: AppText.bodyMedium('Delete reservation for ${reservation.mac}?'),
+      title: loc(context).deleteReservation,
+      content: AppText.bodyMedium(
+          loc(context).deleteReservationConfirm(reservation.mac)),
       actions: [
         AppButton.text(
-          label: 'Cancel',
+          label: loc(context).cancel,
           onTap: () => context.pop(),
         ),
         AppButton.dangerText(
-          label: 'Delete',
+          label: loc(context).delete,
           onTap: () => context.pop(true),
         ),
       ],

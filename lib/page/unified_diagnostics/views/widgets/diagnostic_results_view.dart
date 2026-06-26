@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 import 'package:privacy_gui/route/constants.dart';
 
@@ -8,8 +9,9 @@ import '../../models/diagnostic_result.dart';
 import '../../models/diagnostic_state.dart';
 import '../../providers/unified_diagnostics_notifier.dart';
 import '../../services/diagnostic_report_service.dart';
+import 'diagnostic_result_card.dart';
+import 'diagnostic_results_grid.dart';
 import 'recommendation_card.dart';
-import 'step_result_tile.dart';
 import 'traceroute_detail_card.dart';
 
 class DiagnosticResultsView extends ConsumerWidget {
@@ -98,10 +100,11 @@ class _ResultsLayout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasIssues = errors.isNotEmpty || warnings.isNotEmpty;
     final hasRecs = state.recommendations.isNotEmpty;
     final tracerouteResults =
         state.results.whereType<TracerouteCheckUIModel>().toList();
+    final isSingleFlow = state.flow != null;
+    final allResults = [...errors, ...warnings, ...successful];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -116,58 +119,23 @@ class _ResultsLayout extends StatelessWidget {
               .length,
         ),
         AppGap.xl(),
-        if (sideBySide) ...[
-          IntrinsicHeight(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  flex: 7,
-                  child: _IssuesSection(
-                    errors: errors,
-                    warnings: warnings,
-                    colorScheme: colorScheme,
-                  ),
-                ),
-                AppGap.gutter(),
-                Expanded(
-                  flex: 5,
-                  child: _RecommendationsSection(
-                    recommendations: state.recommendations,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          AppGap.xl(),
-        ] else ...[
-          if (hasIssues) ...[
-            _IssuesSection(
-              errors: errors,
-              warnings: warnings,
-              colorScheme: colorScheme,
-            ),
-            AppGap.lg(),
-          ],
-          if (hasRecs) ...[
-            _RecommendationsSection(
-              recommendations: state.recommendations,
-            ),
-            AppGap.lg(),
-          ],
-        ],
-        if (successful.isNotEmpty) ...[
-          AppExpansionPanel.single(
-            headerTitle: 'Successful Checks (${successful.length})',
-            content: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children:
-                  successful.map((r) => StepResultTile(result: r)).toList(),
-            ),
-          ),
+        // Single flow: full-width cards stacked
+        // Full diagnostic: responsive grid
+        if (isSingleFlow)
+          ...allResults.map((r) => Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                child: DiagnosticResultCard(result: r),
+              ))
+        else
+          DiagnosticResultsGrid(results: allResults),
+        if (hasRecs) ...[
           AppGap.lg(),
+          _RecommendationsSection(recommendations: state.recommendations),
         ],
-        ...tracerouteResults.map((r) => TracerouteDetailCard(result: r)),
+        if (tracerouteResults.isNotEmpty) ...[
+          AppGap.lg(),
+          ...tracerouteResults.map((r) => TracerouteDetailCard(result: r)),
+        ],
         AppGap.xxxl(),
         _ActionBar(
           onRestart: onRestart,
@@ -182,46 +150,13 @@ class _ResultsLayout extends StatelessWidget {
 
 class _SectionHeader extends StatelessWidget {
   final String label;
-  final Color? color;
-  const _SectionHeader(this.label, {this.color});
+  const _SectionHeader(this.label);
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-      child: AppText.labelLarge(label, color: color),
-    );
-  }
-}
-
-class _IssuesSection extends StatelessWidget {
-  final List<DiagnosticStepUIModel> errors;
-  final List<DiagnosticStepUIModel> warnings;
-  final ColorScheme colorScheme;
-
-  const _IssuesSection({
-    required this.errors,
-    required this.warnings,
-    required this.colorScheme,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if (errors.isNotEmpty) ...[
-          _SectionHeader('Critical Issues', color: colorScheme.error),
-          ...errors
-              .map((r) => StepResultTile(result: r, initiallyExpanded: true)),
-          if (warnings.isNotEmpty) AppGap.lg(),
-        ],
-        if (warnings.isNotEmpty) ...[
-          _SectionHeader('Potential Issues', color: colorScheme.tertiary),
-          ...warnings
-              .map((r) => StepResultTile(result: r, initiallyExpanded: true)),
-        ],
-      ],
+      child: AppText.labelLarge(label),
     );
   }
 }
@@ -236,7 +171,7 @@ class _RecommendationsSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const _SectionHeader('Recommended Actions'),
+        _SectionHeader(loc(context).recommendedActions),
         ...recommendations.map((r) => RecommendationCard(rec: r)),
       ],
     );
@@ -266,16 +201,17 @@ class _ActionBar extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Expanded(
-          child: AppButton.secondary(label: 'Run Again', onTap: onRestart),
+          child: AppButton.secondary(
+              label: loc(context).runAgain, onTap: onRestart),
         ),
         AppGap.lg(),
         Expanded(
-          child: AppButton(label: 'Done', onTap: onDone),
+          child: AppButton(label: loc(context).done, onTap: onDone),
         ),
       ],
     );
     final exportLink = AppButton.text(
-      label: 'Export Diagnostics Report',
+      label: loc(context).exportDiagnosticsReport,
       onTap: () => const DiagnosticReportService().share(state),
     );
     final stack = Column(
@@ -317,10 +253,18 @@ class _SummaryCard extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     final (icon, color, title) = hasErrors
-        ? (Icons.error, colorScheme.error, 'Issues Found')
+        ? (Icons.error, colorScheme.error, loc(context).issuesFound)
         : hasWarnings
-            ? (Icons.warning, colorScheme.tertiary, 'Potential Issues')
-            : (Icons.check_circle, colorScheme.primary, 'All Systems OK');
+            ? (
+                Icons.warning,
+                colorScheme.tertiary,
+                loc(context).potentialIssues
+              )
+            : (
+                Icons.check_circle,
+                colorScheme.primary,
+                loc(context).allSystemsOk
+              );
 
     return AppCard(
       child: Padding(
@@ -331,15 +275,17 @@ class _SummaryCard extends StatelessWidget {
             AppGap.lg(),
             Expanded(child: AppText.titleLarge(title)),
             _StatusCount(
-                label: 'Failed', count: errorCount, color: colorScheme.error),
+                label: loc(context).failed,
+                count: errorCount,
+                color: colorScheme.error),
             AppGap.lg(),
             _StatusCount(
-                label: 'Warning',
+                label: loc(context).warning,
                 count: warningCount,
                 color: colorScheme.tertiary),
             AppGap.lg(),
             _StatusCount(
-                label: 'Passed',
+                label: loc(context).passed,
                 count: passedCount,
                 color: colorScheme.primary),
           ],

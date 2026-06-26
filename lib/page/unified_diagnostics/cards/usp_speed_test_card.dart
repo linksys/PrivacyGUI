@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/components/localizations/service_error_localizations.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/_shared/components/dashboard_card_template.dart';
 import 'package:privacy_gui/page/unified_diagnostics/models/speed_test_state.dart';
 import 'package:privacy_gui/page/unified_diagnostics/providers/speed_test_notifier.dart';
 import 'package:privacy_gui/page/unified_diagnostics/views/widgets/speed_gauge.dart';
@@ -19,11 +21,14 @@ class UspSpeedTestCard extends ConsumerWidget {
     final asyncState = ref.watch(speedTestProvider);
     final colorScheme = Theme.of(context).colorScheme;
 
-    return AppCard(
-      child: asyncState.when(
+    return DashboardCardTemplate(
+      leading: AppIcon.font(Icons.speed, size: 20, color: colorScheme.primary),
+      title: loc(context).speedTest,
+      detailRoute: RouteNamed.uspSpeedTest,
+      content: asyncState.when(
         loading: () => const Center(child: AppLoader()),
         error: (_, __) => _buildError(context, ref),
-        data: (state) => _buildContent(context, ref, state, colorScheme),
+        data: (state) => _buildBody(context, ref, state, colorScheme),
       ),
     );
   }
@@ -36,48 +41,14 @@ class UspSpeedTestCard extends ConsumerWidget {
           AppIcon.font(Icons.error_outline,
               size: 32, color: Theme.of(context).colorScheme.error),
           AppGap.sm(),
-          AppText.bodySmall('Error loading speed test'),
+          AppText.bodySmall(loc(context).errorLoadingSpeedTest),
           AppGap.md(),
           AppButton.text(
-            label: 'Retry',
+            label: loc(context).retry,
             onTap: () => ref.invalidate(speedTestProvider),
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildContent(
-    BuildContext context,
-    WidgetRef ref,
-    SpeedTestState state,
-    ColorScheme colorScheme,
-  ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Header
-        Row(
-          children: [
-            AppIcon.font(Icons.speed, size: 20, color: colorScheme.primary),
-            AppGap.sm(),
-            AppText.titleMedium('Speed Test'),
-            const Spacer(),
-            // Navigate to full page
-            AppIconButton(
-              icon: AppIcon.font(Icons.open_in_new,
-                  size: 16, color: colorScheme.onSurfaceVariant),
-              tooltip: 'Open Speed Test',
-              semanticLabel: 'Open Speed Test',
-              onTap: () => context.goNamed(RouteNamed.uspSpeedTest),
-            ),
-          ],
-        ),
-        AppGap.sm(),
-        Expanded(
-          child: _buildBody(context, ref, state, colorScheme),
-        ),
-      ],
     );
   }
 
@@ -136,7 +107,7 @@ class UspSpeedTestCard extends ConsumerWidget {
                     children: [
                       Icon(Icons.play_arrow,
                           size: 36, color: colorScheme.primary),
-                      AppText.labelSmall('START'),
+                      AppText.labelSmall(loc(context).start),
                     ],
                   ),
                 ),
@@ -160,7 +131,9 @@ class UspSpeedTestCard extends ConsumerWidget {
         AppIcon.font(Icons.error_outline, size: 32, color: colorScheme.error),
         AppGap.sm(),
         AppText.bodySmall(
-          state.errorMessage ?? 'Test failed',
+          state.error != null
+              ? localizeServiceError(context, state.error!)
+              : loc(context).testFailed,
           textAlign: TextAlign.center,
           color: colorScheme.onSurfaceVariant,
           maxLines: 2,
@@ -168,7 +141,7 @@ class UspSpeedTestCard extends ConsumerWidget {
         ),
         AppGap.md(),
         AppButton.text(
-          label: 'Try Again',
+          label: loc(context).tryAgain,
           onTap: () => ref.read(speedTestProvider.notifier).runSpeedTest(),
         ),
       ],
@@ -193,7 +166,7 @@ class UspSpeedTestCard extends ConsumerWidget {
             children: [
               _SpeedMetric(
                 icon: Icons.download,
-                label: 'Download',
+                label: loc(context).download,
                 value: result.isDownloadComplete
                     ? result.downloadMbps.toStringAsFixed(1)
                     : '--',
@@ -202,7 +175,7 @@ class UspSpeedTestCard extends ConsumerWidget {
               ),
               _SpeedMetric(
                 icon: Icons.upload,
-                label: 'Upload',
+                label: loc(context).upload,
                 value: result.hasUpload && result.isUploadComplete
                     ? result.uploadMbps.toStringAsFixed(1)
                     : 'N/A',
@@ -240,7 +213,7 @@ class UspSpeedTestCard extends ConsumerWidget {
               ),
               AppGap.md(),
               AppButton(
-                label: 'Test Again',
+                label: loc(context).testAgain,
                 onTap: () =>
                     ref.read(speedTestProvider.notifier).runSpeedTest(),
               ),
@@ -272,10 +245,10 @@ class _RunningView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final stepLabel = switch (state.step) {
-      SpeedTestStep.testingLatency => 'Latency',
-      SpeedTestStep.testingDownload => 'Download',
-      SpeedTestStep.testingUpload => 'Upload',
-      _ => 'Testing',
+      SpeedTestStep.testingLatency => loc(context).latency,
+      SpeedTestStep.testingDownload => loc(context).download,
+      SpeedTestStep.testingUpload => loc(context).upload,
+      _ => loc(context).testing,
     };
 
     if (_isSpeedTest) {
@@ -300,7 +273,7 @@ class _RunningView extends StatelessWidget {
             ),
             AppGap.md(),
             AppText.titleSmall(
-              'Testing $stepLabel...',
+              '${loc(context).testing} $stepLabel...',
               color: colorScheme.onSurfaceVariant,
             ),
           ],
@@ -322,7 +295,7 @@ class _RunningView extends StatelessWidget {
             ),
           ),
           AppGap.lg(),
-          AppText.titleMedium('Testing $stepLabel...'),
+          AppText.titleMedium('${loc(context).testing} $stepLabel...'),
           if (state.result?.latencyMs != null) ...[
             AppGap.sm(),
             AppText.bodyMedium(
@@ -437,7 +410,7 @@ Future<void> _showServerDialog(
 ) async {
   final selected = await showListSelectionDialog<SpeedTestServer>(
     context: context,
-    title: 'Select Test Server',
+    title: loc(context).selectTestServer,
     items: SpeedTestServer.all,
     itemLabel: (server) => server.name,
     currentValue: currentServer,

@@ -1,5 +1,6 @@
 enum FirmwareUpdatePhase {
   idle,
+  checkingOta,
   picking,
   validating,
   uploading,

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/components/localizations/service_error_localizations.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/shell/usp_top_bar.dart';
 import 'package:privacy_gui/page/system_log/models/log_file_ui_model.dart';
@@ -16,7 +18,7 @@ class UspSystemLogView extends ConsumerWidget {
 
     return UiKitPageView.withSliver(
       scrollable: true,
-      title: 'System Logs',
+      title: loc(context).systemLogs,
       topbar: const PreferredSize(
         preferredSize: Size.fromHeight(64),
         child: UspTopBar(),
@@ -42,12 +44,12 @@ class UspSystemLogView extends ConsumerWidget {
           AppIcon.font(Icons.error_outline,
               size: 48, color: Theme.of(context).colorScheme.error),
           AppGap.xl(),
-          AppText.titleMedium('Unable to load log files'),
+          AppText.titleMedium(loc(context).failedToLoadSettings),
           AppGap.md(),
-          AppText.bodyMedium(error.toString()),
+          AppText.bodyMedium(localizeServiceError(context, error)),
           AppGap.xxl(),
           AppButton(
-            label: 'Retry',
+            label: loc(context).retry,
             onTap: () => ref.invalidate(uspSystemLogProvider),
           ),
         ],
@@ -65,7 +67,7 @@ class UspSystemLogView extends ConsumerWidget {
                 size: 48,
                 color: Theme.of(context).colorScheme.onSurfaceVariant),
             AppGap.xl(),
-            AppText.bodyMedium('No log files available on this router'),
+            AppText.bodyMedium(loc(context).noLogFilesAvailable),
           ],
         ),
       );
@@ -121,7 +123,7 @@ class _LogFileCard extends StatelessWidget {
               _PersistentBadge(persistent: logFile.persistent),
               const Spacer(),
               AppButton.text(
-                label: 'Export',
+                label: loc(context).export,
                 icon: AppIcon.font(Icons.upload, size: 16),
                 onTap: null, // Upload() requires destination URL
               ),

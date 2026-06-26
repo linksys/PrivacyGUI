@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/components/localizations/service_error_localizations.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
+import 'package:privacy_gui/components/views/service_error_view.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/_shared/components/detail_widgets.dart';
+import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/ipv6_port_service/models/ipv6_port_service_feature_state.dart';
 import 'package:privacy_gui/page/ipv6_port_service/models/ipv6_port_service_ui_model.dart';
@@ -23,7 +28,7 @@ class UspIpv6PortServiceView extends ConsumerWidget {
 
     return UiKitPageView.withSliver(
       scrollable: true,
-      title: 'IPv6 Port Service',
+      title: loc(context).ipv6PortService,
       topbar: const PreferredSize(
         preferredSize: Size.fromHeight(64),
         child: UspTopBar(),
@@ -38,8 +43,13 @@ class UspIpv6PortServiceView extends ConsumerWidget {
         if (status.isLoading) {
           return const Center(child: AppLoader());
         }
-        if (status.errorMessage != null) {
-          return _buildError(context, ref);
+        if (status.error != null) {
+          return ServiceErrorView(
+            error: status.error,
+            onRetry: () => ref
+                .read(uspIpv6PortServiceProvider.notifier)
+                .fetch(forceRemote: true),
+          );
         }
         return _buildContent(context, ref, state);
       },
@@ -57,36 +67,11 @@ class UspIpv6PortServiceView extends ConsumerWidget {
   ) {
     if (!state.isDirty) return null;
     return UiKitBottomBarConfig(
-      positiveLabel: 'Save',
+      positiveLabel: loc(context).save,
       isPositiveEnabled: !state.status.isSaving,
       onPositiveTap: () => _onSave(context, ref),
       onNegativeTap: () =>
           ref.read(uspIpv6PortServiceProvider.notifier).revert(),
-    );
-  }
-
-  // ---------------------------------------------------------------------------
-  // Error
-  // ---------------------------------------------------------------------------
-
-  Widget _buildError(BuildContext context, WidgetRef ref) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          AppIcon.font(Icons.error_outline,
-              size: 48, color: Theme.of(context).colorScheme.error),
-          AppGap.xl(),
-          AppText.titleMedium('Unable to load IPv6 port service'),
-          AppGap.md(),
-          AppButton(
-            label: 'Retry',
-            onTap: () => ref
-                .read(uspIpv6PortServiceProvider.notifier)
-                .fetch(forceRemote: true),
-          ),
-        ],
-      ),
     );
   }
 
@@ -106,14 +91,14 @@ class UspIpv6PortServiceView extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         AppText.bodyMedium(
-          'Manage IPv6 inbound port access rules',
+          loc(context).manageIpv6PortRules,
           color: Theme.of(context).colorScheme.onSurfaceVariant,
         ),
         AppGap.xl(),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            AppText.titleMedium('Rules'),
+            AppText.titleMedium(loc(context).rules),
             AppIconButton(
               icon: AppIcon.font(Icons.add, size: 20),
               onTap: isSaving ? null : () => _showAddDialog(context, ref),
@@ -122,7 +107,10 @@ class UspIpv6PortServiceView extends ConsumerWidget {
         ),
         AppGap.lg(),
         if (rules.isEmpty)
-          AppText.bodyMedium('No IPv6 port service rules configured')
+          DetailEmptyBlock(
+            icon: Icons.security,
+            message: loc(context).noIpv6PortServiceRules,
+          )
         else
           ...rules.asMap().entries.map((entry) =>
               _buildRuleCard(context, ref, entry.key, entry.value, isSaving)),
@@ -143,7 +131,8 @@ class UspIpv6PortServiceView extends ConsumerWidget {
   ) {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-      child: AppCard(
+      child: LayoutBlock(
+        padding: const EdgeInsets.all(AppSpacing.md),
         child: Row(
           children: [
             AppSwitch(
@@ -155,7 +144,7 @@ class UspIpv6PortServiceView extends ConsumerWidget {
                       .read(uspIpv6PortServiceProvider.notifier)
                       .toggleRule(index, value),
             ),
-            AppGap.sm(),
+            AppGap.md(),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -163,7 +152,7 @@ class UspIpv6PortServiceView extends ConsumerWidget {
                   AppText.bodyMedium(
                     rule.description.isNotEmpty
                         ? rule.description
-                        : '(unnamed)',
+                        : loc(context).unnamed,
                   ),
                   AppText.bodySmall(
                     rule.ipv6Address,
@@ -265,11 +254,11 @@ class UspIpv6PortServiceView extends ConsumerWidget {
         ref.read(uspIpv6PortServiceProvider.notifier).save(),
       );
       if (context.mounted) {
-        showSuccessSnackBar(context, 'IPv6 port rules saved');
+        showSuccessSnackBar(context, loc(context).ipv6PortRulesSaved);
       }
     } catch (e) {
       if (context.mounted) {
-        showFailedSnackBar(context, 'Failed to save: $e');
+        showFailedSnackBar(context, localizeServiceError(context, e));
       }
     }
   }

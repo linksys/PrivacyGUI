@@ -5,6 +5,47 @@ import 'package:collection/collection.dart';
 import 'package:privacy_gui/util/uuid.dart';
 
 class NetworkUtils {
+  // ===========================================================================
+  // Speed Formatting (kbps input - TR-181 standard unit)
+  // ===========================================================================
+
+  /// Format kbps to human-readable speed string.
+  ///
+  /// - Gbps: 2 decimal places (e.g., "1.45 Gbps")
+  /// - Mbps: 0 decimal places (e.g., "850 Mbps")
+  /// - kbps: no decimal (e.g., "500 kbps")
+  ///
+  /// Used for: WiFi rates, backhaul throughput, speed test results, PHY rates.
+  static String formatSpeed(int kbps) {
+    final (:value, :unit) = formatSpeedWithUnit(kbps);
+    if (unit.isEmpty) return value;
+    return '$value $unit';
+  }
+
+  /// Format kbps and return value/unit separately for UI display.
+  ///
+  /// Used by DetailSpeedCard and other widgets that need separate value/unit.
+  static ({String value, String unit}) formatSpeedWithUnit(int kbps) {
+    if (kbps <= 0) return (value: '--', unit: '');
+    if (kbps >= 1000000) {
+      return (
+        value: (kbps / 1000000).toStringAsFixed(2),
+        unit: 'Gbps',
+      );
+    }
+    if (kbps >= 1000) {
+      return (
+        value: (kbps / 1000).toStringAsFixed(0),
+        unit: 'Mbps',
+      );
+    }
+    return (value: '$kbps', unit: 'kbps');
+  }
+
+  // ===========================================================================
+  // Bits Formatting (bps input - legacy, prefer formatSpeed for new code)
+  // ===========================================================================
+
   static String formatBits(int bits, {int decimals = 0}) {
     final result = formatBitsWithUnit(bits, decimals: decimals);
     return '${result.value} ${result.unit}';

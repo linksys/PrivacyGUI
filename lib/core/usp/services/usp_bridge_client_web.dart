@@ -6,7 +6,20 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:web/web.dart' as web;
 
+import 'bridge_endpoints.dart';
+import 'sse_operation_strategy.dart';
 import 'usp_client.dart';
+
+export 'sse_operation_strategy.dart' show AuthBehavior;
+
+/// Exception thrown when session expires and cannot be recovered.
+class SessionExpiredException implements Exception {
+  final String message;
+  SessionExpiredException(this.message);
+
+  @override
+  String toString() => 'SessionExpiredException: $message';
+}
 
 /// Global JS property to persist SSE AbortController across hot restarts.
 @JS('_sseAbort')
@@ -24,8 +37,24 @@ external set _jsSseAbort(JSAny? value);
 /// re-authentication to [UspClient.reauth].
 class UspBridgeClient {
   final UspClient _usp;
+  final BridgeEndpoints _endpoints;
+  final String? _overrideToken;
+  final String? _clientTypeId;
+  final AuthBehavior _authBehavior;
 
-  UspBridgeClient(this._usp);
+  /// Called when auth fails and cannot be recovered (session expired).
+  void Function()? onAuthFailed;
+
+  UspBridgeClient(
+    this._usp, {
+    BridgeEndpoints? endpoints,
+    String? authToken,
+    String? clientTypeId,
+    AuthBehavior authBehavior = AuthBehavior.local,
+  })  : _endpoints = endpoints ?? BridgeEndpoints.local,
+        _overrideToken = authToken,
+        _clientTypeId = clientTypeId,
+        _authBehavior = authBehavior;
 
   /// Active SSE AbortController — stored so [abortSse] can cancel
   /// synchronously from a `beforeunload` handler.
@@ -34,6 +63,10 @@ class UspBridgeClient {
   String get _baseUrl => _usp.baseUrl;
 
   String get _token {
+    // Remote mode: use override token (temporaryAccessToken from Guardian)
+    if (_overrideToken != null) return _overrideToken;
+
+    // Local mode: use session token from WASM client
     final token = _usp.sessionToken;
     if (token == null) {
       throw StateError('Session token not available. '
@@ -45,23 +78,40 @@ class UspBridgeClient {
   Map<String, String> get _authHeaders => {
         'Authorization': 'Bearer $_token',
         'Content-Type': 'application/json',
+        if (_clientTypeId != null) 'X-Linksys-Client-Type-Id': _clientTypeId,
       };
 
   // ══════════════════════════════════════════════════════════════════════════
   // 401 Auth Retry (REST path)
   // ══════════════════════════════════════════════════════════════════════════
 
-  /// Wraps a REST request with 401 retry. On 401, delegates to
-  /// [UspClient.reauth] (shared Completer lock) then retries once.
+  /// Wraps a REST request with 401 handling based on [AuthBehavior].
+  ///
+  /// Local mode: delegates to [UspClient.reauth] then retries once.
+  /// Remote mode: no retry (temporaryAccessToken cannot refresh), triggers
+  /// [onAuthFailed] and throws [SessionExpiredException].
   Future<T> _withAuthRetry<T>(
     Future<http.Response> Function() request,
     T Function(http.Response) parser,
   ) async {
     var response = await request();
     if (response.statusCode == 401) {
-      debugPrint('[UspBridgeClient] 401 detected, triggering reauth...');
-      await _usp.reauth();
-      response = await request();
+      if (_authBehavior.shouldRetryOnFailure) {
+        // Local mode: reauth + retry
+        debugPrint('[UspBridgeClient] 401 detected, attempting reauth...');
+        await _usp.reauth();
+        response = await request();
+        if (response.statusCode == 401) {
+          debugPrint('[UspBridgeClient] 401 after reauth — session expired');
+          onAuthFailed?.call();
+          throw SessionExpiredException('Local session expired after reauth');
+        }
+      } else {
+        // Remote mode: no retry, session is over
+        debugPrint('[UspBridgeClient] 401 in Remote mode — session expired');
+        onAuthFailed?.call();
+        throw SessionExpiredException('Remote session expired');
+      }
     }
     return parser(response);
   }
@@ -70,11 +120,11 @@ class UspBridgeClient {
   // Health
   // ══════════════════════════════════════════════════════════════════════════
 
-  /// Calls GET /api/v1/health.
+  /// Calls GET health endpoint.
   Future<Map<String, dynamic>> health() async {
     return _withAuthRetry(
-      () =>
-          http.get(Uri.parse('$_baseUrl/api/v1/health'), headers: _authHeaders),
+      () => http.get(Uri.parse('$_baseUrl${_endpoints.health}'),
+          headers: _authHeaders),
       (r) => jsonDecode(r.body) as Map<String, dynamic>,
     );
   }
@@ -141,7 +191,7 @@ class UspBridgeClient {
   Future<Map<String, String>> notificationsProbe() async {
     final response = await http
         .get(
-      Uri.parse('$_baseUrl/api/v1/notifications'),
+      Uri.parse('$_baseUrl${_endpoints.notifications}'),
       headers: _authHeaders,
     )
         .timeout(const Duration(seconds: 5), onTimeout: () {
@@ -169,15 +219,12 @@ class UspBridgeClient {
     }
 
     try {
-      final url = '$_baseUrl/api/v1/notifications';
+      final url = '$_baseUrl${_endpoints.notifications}';
       debug('Fetching $url ...');
 
-      final token = _token;
-      debug('Token: ${token.substring(0, 20)}...(${token.length} chars)');
-
       final headers = web.Headers();
-      headers.append('Authorization', 'Bearer $token');
-      headers.append('Accept', 'text/event-stream');
+      _authHeaders.forEach((k, v) => headers.append(k, v));
+      headers.set('Accept', 'text/event-stream'); // override Content-Type
 
       final init = web.RequestInit(
         method: 'GET',
@@ -192,21 +239,35 @@ class UspBridgeClient {
 
       if (!response.ok) {
         if (response.status == 401) {
-          if (authRetryCount >= 1) {
-            debug('401 retry limit reached (max 1 retry)');
-            controller.addError('SSE 401 after reauth retry');
-            await controller.close();
-            return;
-          }
-          debug('401 detected, attempting reauth and reconnect...');
-          try {
-            await _usp.reauth();
-            debug('Reauth succeeded, reconnecting SSE...');
-            await _startSseStream(controller, abortController,
-                authRetryCount: authRetryCount + 1);
-          } catch (e) {
-            debug('Reauth failed: $e');
-            controller.addError('SSE 401 reauth failed: $e');
+          if (_authBehavior.shouldRetryOnFailure) {
+            // Local mode: attempt reauth and retry
+            if (authRetryCount >= 1) {
+              debug('401 retry limit reached (max 1 retry)');
+              onAuthFailed?.call();
+              controller.addError(SessionExpiredException(
+                  'Local session expired after reauth'));
+              await controller.close();
+              return;
+            }
+            debug('401 detected, attempting reauth and reconnect...');
+            try {
+              await _usp.reauth();
+              debug('Reauth succeeded, reconnecting SSE...');
+              await _startSseStream(controller, abortController,
+                  authRetryCount: authRetryCount + 1);
+            } catch (e) {
+              debug('Reauth failed: $e');
+              onAuthFailed?.call();
+              controller.addError(
+                  SessionExpiredException('SSE 401 reauth failed: $e'));
+              await controller.close();
+            }
+          } else {
+            // Remote mode: no retry, session is over
+            debug('401 in Remote mode — session expired, closing SSE');
+            onAuthFailed?.call();
+            controller
+                .addError(SessionExpiredException('Remote session expired'));
             await controller.close();
           }
           return;
@@ -337,7 +398,7 @@ class UspBridgeClient {
     };
     return _withAuthRetry(
       () => http.post(
-        Uri.parse('$_baseUrl/api/v1/subscription'),
+        Uri.parse('$_baseUrl${_endpoints.subscription}'),
         headers: _authHeaders,
         body: jsonEncode({
           'action': 'register',
@@ -356,7 +417,7 @@ class UspBridgeClient {
   }) async {
     return _withAuthRetry(
       () => http.post(
-        Uri.parse('$_baseUrl/api/v1/subscription'),
+        Uri.parse('$_baseUrl${_endpoints.subscription}'),
         headers: _authHeaders,
         body: jsonEncode({
           'action': 'unregister',
@@ -365,6 +426,26 @@ class UspBridgeClient {
       ),
       (r) => jsonDecode(r.body) as Map<String, dynamic>,
     );
+  }
+
+  /// Lists all active subscriptions (Remote mode only).
+  Future<List<String>> listSubscriptions() async {
+    final response = await _withAuthRetry(
+      () => http.get(
+        Uri.parse('$_baseUrl${_endpoints.subscription}'),
+        headers: _authHeaders,
+      ),
+      (r) => jsonDecode(r.body),
+    );
+    // Format: { "subscriptions": [{"subscription_id": "...", ...}, ...] }
+    if (response is Map && response['subscriptions'] is List) {
+      final subs = response['subscriptions'] as List;
+      return subs
+          .map((s) => s is Map ? s['subscription_id'] as String? : null)
+          .whereType<String>()
+          .toList();
+    }
+    return [];
   }
 
   // ══════════════════════════════════════════════════════════════════════════
@@ -384,7 +465,7 @@ class UspBridgeClient {
   /// Gets the current turbo channel status.
   Future<Map<String, dynamic>> turboStatus() async {
     return _withAuthRetry(
-      () => http.get(Uri.parse('$_baseUrl/api/v1/turbo/status'),
+      () => http.get(Uri.parse('$_baseUrl${_endpoints.turboPrefix}/status'),
           headers: _authHeaders),
       (r) => jsonDecode(r.body) as Map<String, dynamic>,
     );
@@ -401,7 +482,7 @@ class UspBridgeClient {
         sessionId != null ? jsonEncode({'session_id': sessionId}) : null;
     return _withAuthRetry(
       () => http.post(
-        Uri.parse('$_baseUrl/api/v1/turbo/$action'),
+        Uri.parse('$_baseUrl${_endpoints.turboPrefix}/$action'),
         headers: {
           ..._authHeaders,
           'Content-Type': 'application/json',

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/components/usp_status_dot.dart';
 import 'package:privacy_gui/page/firewall/providers/firewall_data_provider.dart';
 import 'package:privacy_gui/page/port_forwarding/providers/port_forwarding_data_provider.dart';
@@ -16,13 +17,13 @@ class StatsPortMappingSection extends ConsumerWidget {
     final fwData = ref.watch(firewallDataProvider).valueOrNull;
 
     return StatsSectionCard(
-      title: 'Port Mapping',
-      subtitle: 'Port forwarding rules and DMZ configuration',
+      title: loc(context).portMapping,
+      subtitle: loc(context).portMappingSubtitle,
       chartHeight: 360,
       child: (pfData == null && fwData == null)
           ? Center(
               child: AppText.bodyMedium(
-                'Loading...',
+                loc(context).loading,
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             )
@@ -39,7 +40,7 @@ class StatsPortMappingSection extends ConsumerWidget {
     if (portForwardingRules.isEmpty && dmzEntries.isEmpty) {
       return Center(
         child: AppText.bodyMedium(
-          'No port mappings configured',
+          loc(context).noPortMappingsConfigured,
           color: colorScheme.onSurfaceVariant,
         ),
       );
@@ -59,7 +60,8 @@ class StatsPortMappingSection extends ConsumerWidget {
       children: [
         // Port forwarding list (top 5)
         if (portForwardingRules.isNotEmpty) ...[
-          AppText.labelLarge('Port Forwarding (${portForwardingRules.length})'),
+          AppText.labelLarge(
+              loc(context).portForwardingWithCount(portForwardingRules.length)),
           AppGap.sm(),
           ...portForwardingRules.take(5).map((rule) => Padding(
                 padding: const EdgeInsets.only(bottom: 4),
@@ -81,13 +83,13 @@ class StatsPortMappingSection extends ConsumerWidget {
         // DMZ section
         if (activeDmz.isNotEmpty) ...[
           AppGap.md(),
-          AppText.labelLarge('DMZ'),
+          AppText.labelLarge(loc(context).dmz),
           AppGap.sm(),
           ...activeDmz.map((d) => Row(
                 children: [
                   UspStatusDot(isActive: true),
                   AppGap.sm(),
-                  AppText.bodySmall('Target: ${d.destIp}'),
+                  AppText.bodySmall(loc(context).targetIp(d.destIp)),
                 ],
               )),
         ],
@@ -98,7 +100,7 @@ class StatsPortMappingSection extends ConsumerWidget {
             child: AppBarChart(
               series: [
                 AppChartSeries(
-                  label: 'Rules',
+                  label: loc(context).rules,
                   data: protocolCounts.values.map((v) => v.toDouble()).toList(),
                   color: colorScheme.primary,
                 ),

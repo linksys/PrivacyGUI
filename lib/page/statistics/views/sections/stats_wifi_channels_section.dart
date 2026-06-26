@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/_shared/components/wifi_ui.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_client_ui_model.dart';
-import 'package:privacy_gui/page/_shared/models/wifi_performance_helpers.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_radio_ui_model.dart';
 import 'package:privacy_gui/page/statistics/views/components/stats_section_card.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_data_provider.dart';
@@ -16,12 +17,12 @@ class StatsWifiChannelsSection extends ConsumerWidget {
     final wifiData = ref.watch(wifiDataProvider).valueOrNull;
     if (wifiData == null) {
       return StatsSectionCard(
-        title: 'WiFi Channels',
-        subtitle: 'Radio channel allocation and client distribution',
+        title: loc(context).wifiChannels,
+        subtitle: loc(context).wifiChannelsSubtitle,
         chartHeight: 320,
         child: Center(
           child: AppText.bodyMedium(
-            'Loading...',
+            loc(context).loading,
             color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
         ),
@@ -32,13 +33,13 @@ class StatsWifiChannelsSection extends ConsumerWidget {
     final activeClients = _buildClientList(wifiData);
 
     return StatsSectionCard(
-      title: 'WiFi Channels',
-      subtitle: 'Radio channel allocation and client distribution',
+      title: loc(context).wifiChannels,
+      subtitle: loc(context).wifiChannelsSubtitle,
       chartHeight: 320,
       child: radios.isEmpty
           ? Center(
               child: AppText.bodyMedium(
-                'No WiFi radios available',
+                loc(context).noWifiRadiosAvailable,
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             )
@@ -76,8 +77,7 @@ class StatsWifiChannelsSection extends ConsumerWidget {
       final radioIdx = bandToRadioIdx[c.band];
       if (radioIdx == null) continue;
       clientsPerRadio[radioIdx] = (clientsPerRadio[radioIdx] ?? 0) + 1;
-      final snr = WifiPerformanceHelpers.computeSNR(
-          c.client.signalStrength, c.client.noise);
+      final snr = computeSNR(c.client.signalStrength, c.client.noise);
       snrSumPerRadio[radioIdx] = (snrSumPerRadio[radioIdx] ?? 0) + snr;
       snrCountPerRadio[radioIdx] = (snrCountPerRadio[radioIdx] ?? 0) + 1;
     }
@@ -100,7 +100,7 @@ class StatsWifiChannelsSection extends ConsumerWidget {
           final radio = radios[i];
           final clientCount = clientsPerRadio[i] ?? 0;
           final snr = avgSnrPerRadio[i] ?? 0;
-          final snrNorm = WifiPerformanceHelpers.normalizeSNR(snr.toInt());
+          final snrNorm = normalizeSNR(snr.toInt());
 
           return Padding(
             padding: const EdgeInsets.only(bottom: AppSpacing.md),
@@ -120,9 +120,9 @@ class StatsWifiChannelsSection extends ConsumerWidget {
                 AppGap.xs(),
                 Row(
                   children: [
-                    AppText.bodySmall('$clientCount clients'),
+                    AppText.bodySmall(loc(context).clientsCount(clientCount)),
                     AppGap.md(),
-                    AppText.bodySmall('SNR: ${snr.toInt()} dB'),
+                    AppText.bodySmall(loc(context).snrValue(snr.toInt())),
                     AppGap.sm(),
                     Expanded(
                       child: AppLoader(
@@ -194,7 +194,8 @@ class _BandDistributionDonut extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             AppText.titleMedium('$totalClients'),
-            AppText.labelSmall('clients', color: colorScheme.onSurfaceVariant),
+            AppText.labelSmall(loc(context).clients,
+                color: colorScheme.onSurfaceVariant),
           ],
         ),
         touchedCenterLabel: (section, _) => '${section.value.toInt()}',

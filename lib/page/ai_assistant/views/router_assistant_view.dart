@@ -4,12 +4,32 @@ import 'package:generative_ui/generative_ui.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 import 'package:privacy_gui/ai/_ai.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/ai_assistant/providers/router_command_provider.dart';
+import 'package:privacy_gui/page/dashboard/mascot/mascot_hero_widget.dart';
+
+/// Available Bedrock model options.
+class BedrockModel {
+  final String id;
+  final String displayName;
+
+  const BedrockModel(this.id, this.displayName);
+
+  static const models = [
+    BedrockModel(
+        'us.anthropic.claude-haiku-4-5-20251001-v1:0', 'Haiku 4.5 (Fast)'),
+    BedrockModel('us.anthropic.claude-sonnet-4-6', 'Sonnet 4.6'),
+    BedrockModel('us.anthropic.claude-sonnet-4-5-20250929-v1:0', 'Sonnet 4.5'),
+    BedrockModel('us.anthropic.claude-opus-4-8', 'Opus 4.8 (Most Capable)'),
+    BedrockModel('us.anthropic.claude-opus-4-7', 'Opus 4.7'),
+  ];
+}
 
 /// Main view for the Router AI Assistant.
 ///
-/// This provides a chat interface for users to interact with their router
-/// using natural language.
+/// Shows configuration form if AWS credentials are not available,
+/// otherwise shows the chat interface.
 class RouterAssistantView extends ConsumerStatefulWidget {
   const RouterAssistantView({super.key});
 
@@ -20,101 +40,170 @@ class RouterAssistantView extends ConsumerStatefulWidget {
 
 class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
   late final IComponentRegistry _registry;
-  late final IConversationGenerator _generator;
+  RouterChatController? _controller;
   final _inputController = TextEditingController();
   final _scrollController = ScrollController();
 
-  final List<_ChatMessage> _messages = [];
-  bool _isLoading = false;
-  bool _isMock = false;
+  // Configuration state
+  bool _needsConfig = false;
+  String? _configError;
+  final _accessKeyController = TextEditingController();
+  final _secretKeyController = TextEditingController();
+  BedrockModel _selectedModel = BedrockModel.models.first;
+  bool _isConfiguring = false;
 
   @override
   void initState() {
     super.initState();
     _registry = RouterComponentRegistry.create();
-    _initGenerator();
+    _tryInitController();
   }
 
-  void _initGenerator() {
+  void _tryInitController() {
     final commandProvider = ref.read(routerCommandProviderProvider);
 
-    // Try to create AWS generator, fallback to mock
-    IConversationGenerator baseGenerator;
     try {
       final awsConfig = AWSConfig.fromEnvironment();
-      baseGenerator = AwsContentGenerator(config: awsConfig);
-      _isMock = false;
+      _controller = RouterChatController(
+        generator: AwsContentGenerator(config: awsConfig),
+        commandProvider: commandProvider,
+        routerContext: buildRouterContext(ref.read),
+      );
+      _controller!.addListener(_onControllerChanged);
+      _needsConfig = false;
+      _configError = null;
+    } on ConfigurationException catch (e) {
+      logger.d('RouterAssistantView: Config error: $e');
+      _needsConfig = true;
+      _configError = e.message;
     } catch (e) {
-      debugPrint('RouterAssistantView: Using mock generator: $e');
-      baseGenerator = _MockConversationGenerator();
-      _isMock = true;
+      logger.d('RouterAssistantView: Unexpected error: $e');
+      _needsConfig = true;
+      _configError = e.toString();
+    }
+  }
+
+  void _initControllerWithManualConfig() {
+    if (_accessKeyController.text.isEmpty ||
+        _secretKeyController.text.isEmpty) {
+      setState(() {
+        _configError = 'fillAllRequiredFields';
+      });
+      return;
     }
 
-    _generator = RouterAgentOrchestrator(
-      llmGenerator: baseGenerator,
-      commandProvider: commandProvider,
-      onConfirmationRequired: _handleConfirmationRequired,
-    );
+    setState(() {
+      _isConfiguring = true;
+      _configError = null;
+    });
+
+    try {
+      final commandProvider = ref.read(routerCommandProviderProvider);
+      final awsConfig = AWSConfig(
+        accessKeyId: _accessKeyController.text.trim(),
+        secretAccessKey: _secretKeyController.text.trim(),
+        region: 'us-west-2',
+        modelId: _selectedModel.id,
+      );
+
+      _controller = RouterChatController(
+        generator: AwsContentGenerator(config: awsConfig),
+        commandProvider: commandProvider,
+        routerContext: buildRouterContext(ref.read),
+      );
+      _controller!.addListener(_onControllerChanged);
+
+      setState(() {
+        _needsConfig = false;
+        _isConfiguring = false;
+      });
+    } catch (e) {
+      setState(() {
+        _configError = 'failedToInitialize:$e';
+        _isConfiguring = false;
+      });
+    }
   }
 
-  @override
-  void dispose() {
-    _inputController.dispose();
-    _scrollController.dispose();
-    super.dispose();
+  void _onControllerChanged() {
+    setState(() {});
+    _scrollToBottom();
+
+    if (_controller?.hasPendingConfirmation == true) {
+      _showConfirmationDialog();
+    }
   }
 
-  void _handleConfirmationRequired(
-      RouterCommand command, Map<String, dynamic> params) {
-    // Show confirmation dialog
+  void _showConfirmationDialog() {
+    final pending = _controller?.pendingConfirmation;
+    if (pending == null) return;
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Confirmation Required'),
-        content:
-            Text('Are you sure you want to execute "${command.description}"?'),
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: AppText.titleMedium(loc(context).confirmationRequired),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AppText.bodyMedium(loc(context).confirmExecuteOperation),
+            const SizedBox(height: 12),
+            AppSurface(
+              variant: SurfaceVariant.elevated,
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    AppText.labelMedium(pending.command.name),
+                    const SizedBox(height: 4),
+                    AppText.bodySmall(pending.command.description),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _executeConfirmedCommand(command.name, params);
+          AppButton.text(
+            label: loc(context).cancel,
+            onTap: () {
+              Navigator.pop(ctx);
+              _controller?.cancelPendingAction();
             },
-            child: const Text('Confirm'),
+          ),
+          AppButton.primary(
+            label: loc(context).confirm,
+            onTap: () {
+              Navigator.pop(ctx);
+              _controller?.confirmPendingAction();
+            },
           ),
         ],
       ),
     );
   }
 
-  Future<void> _executeConfirmedCommand(
-      String commandName, Map<String, dynamic> params) async {
-    final orchestrator = _generator as RouterAgentOrchestrator;
-    try {
-      final result =
-          await orchestrator.executeConfirmedCommand(commandName, params);
-      if (result.success) {
-        _addMessage('✅ Operation completed', isUser: false);
-      } else {
-        _addMessage('❌ Operation failed: ${result.error}', isUser: false);
-      }
-    } catch (e) {
-      _addMessage('❌ Execution error: $e', isUser: false);
-    }
+  @override
+  void dispose() {
+    _controller?.removeListener(_onControllerChanged);
+    _inputController.dispose();
+    _scrollController.dispose();
+    _accessKeyController.dispose();
+    _secretKeyController.dispose();
+    super.dispose();
   }
 
-  void _addMessage(String text, {required bool isUser, bool isA2UI = false}) {
-    setState(() {
-      _messages.add(_ChatMessage(
-        text: text,
-        isUser: isUser,
-        isA2UI: isA2UI,
-      ));
-    });
-    _scrollToBottom();
+  String _localizeConfigError(BuildContext context, String error) {
+    if (error == 'fillAllRequiredFields') {
+      return loc(context).fillAllRequiredFields;
+    }
+    if (error.startsWith('failedToInitialize:')) {
+      final detail = error.substring('failedToInitialize:'.length);
+      return loc(context).failedToInitialize(detail);
+    }
+    return error;
   }
 
   void _scrollToBottom() {
@@ -131,124 +220,306 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
 
   Future<void> _sendMessage() async {
     final text = _inputController.text.trim();
-    if (text.isEmpty || _isLoading) return;
+    if (text.isEmpty || _controller?.isLoading == true) return;
 
     _inputController.clear();
-    _addMessage(text, isUser: true);
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      final response = await _generator.generateWithHistory(
-        _messages
-            .map((m) => m.isUser
-                ? ChatMessage.user(m.text)
-                : ChatMessage.assistant(
-                    LLMResponse(
-                      id: 'history',
-                      model: 'history',
-                      content: [TextBlock(text: m.text)],
-                    ),
-                  )) // Use assistant role for history
-            .toList(),
-      );
-
-      // Process response content
-      for (final block in response.content) {
-        if (block is TextBlock) {
-          // Check for A2UI content
-          if (A2UIResponseRenderer.containsA2UI(block.text)) {
-            _addMessage(block.text, isUser: false, isA2UI: true);
-          } else {
-            _addMessage(block.text, isUser: false);
-          }
-        }
-      }
-    } catch (e) {
-      _addMessage('❌ Error occurred: $e', isUser: false);
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
-    }
+    await _controller?.sendMessage(text);
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_needsConfig) {
+      return _buildConfigScreen();
+    }
+    return _buildChatScreen();
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Configuration Screen
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  Widget _buildConfigScreen() {
+    final theme = Theme.of(context);
+
     return Scaffold(
       appBar: AppBar(
         title: Row(
           children: [
-            const Text('AI Router Assistant'),
+            Icon(Icons.auto_awesome, color: theme.colorScheme.primary),
             const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                color: _isMock ? Colors.orange : Colors.green,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                _isMock ? 'Mock' : 'Live',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
+            Text(loc(context).aiRouterAssistant),
+          ],
+        ),
+      ),
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 480),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Hero(
+                  tag: mascotHeroTag,
+                  child: const MascotHeroWidget(
+                    size: 80,
+                    animation: MascotAnimationKey.think,
+                  ),
                 ),
-              ),
+                const SizedBox(height: 24),
+                AppText.headline(
+                  loc(context).awsBedrockConfiguration,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                AppText.body(
+                  loc(context).enterAwsCredentials,
+                  textAlign: TextAlign.center,
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                ),
+                const SizedBox(height: 24),
+                if (_configError != null) ...[
+                  AppSurface(
+                    variant: SurfaceVariant.elevated,
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Row(
+                        children: [
+                          Icon(Icons.warning_amber,
+                              color: theme.colorScheme.error, size: 20),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: AppText.bodySmall(
+                              _localizeConfigError(context, _configError!),
+                              color: theme.colorScheme.error,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    AppText.labelMedium(loc(context).awsAccessKeyId),
+                    const SizedBox(height: 4),
+                    AppTextField(
+                      controller: _accessKeyController,
+                      hintText: 'AKIA...',
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    AppText.labelMedium(loc(context).awsSecretAccessKey),
+                    const SizedBox(height: 4),
+                    AppPasswordInput(
+                      controller: _secretKeyController,
+                      hintText: loc(context).enterSecretKey,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                _buildModelDropdown(),
+                const SizedBox(height: 8),
+                AppText.caption(
+                  loc(context).regionFixed,
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                ),
+                const SizedBox(height: 24),
+                AppButton(
+                  label: _isConfiguring
+                      ? loc(context).connecting
+                      : loc(context).connect,
+                  onTap:
+                      _isConfiguring ? null : _initControllerWithManualConfig,
+                  variant: SurfaceVariant.highlight,
+                ),
+              ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildModelDropdown() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        AppText.labelMedium(loc(context).model),
+        const SizedBox(height: 4),
+        AppDropdown<BedrockModel>(
+          value: _selectedModel,
+          items: BedrockModel.models,
+          itemAsString: (m) => m.displayName,
+          onChanged: (value) {
+            if (value != null) {
+              setState(() => _selectedModel = value);
+            }
+          },
+        ),
+      ],
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Chat Screen
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  Widget _buildChatScreen() {
+    return Scaffold(
+      appBar: AppBar(
+        title: Row(
+          children: [
+            Icon(
+              Icons.auto_awesome,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            const SizedBox(width: 8),
+            Text(loc(context).aiRouterAssistant),
+            const SizedBox(width: 8),
+            _buildStatusBadge(),
           ],
         ),
         actions: [
           IconButton(
+            icon: const Icon(Icons.settings),
+            onPressed: _showConfigDialog,
+            tooltip: loc(context).settings,
+          ),
+          IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: () {
-              setState(() {
-                _messages.clear();
-              });
-              if (_generator is RouterAgentOrchestrator) {
-                (_generator as RouterAgentOrchestrator).clearCache();
-              }
-            },
-            tooltip: 'Clear conversation',
+            onPressed: _controller?.clearConversation,
+            tooltip: loc(context).clearConversation,
           ),
         ],
       ),
       body: Column(
         children: [
-          Expanded(
-            child: _buildChatArea(),
-          ),
+          Expanded(child: _buildChatArea()),
+          if (_controller?.hasError == true) _buildErrorBanner(),
           _buildInputArea(),
         ],
       ),
     );
   }
 
+  void _showConfigDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: AppText.titleMedium(loc(context).changeConfiguration),
+        content: AppText.bodyMedium(loc(context).changeAwsCredentials),
+        actions: [
+          AppButton.text(
+            label: loc(context).cancel,
+            onTap: () => Navigator.pop(ctx),
+          ),
+          AppButton.primary(
+            label: loc(context).change,
+            onTap: () {
+              Navigator.pop(ctx);
+              setState(() {
+                _controller?.removeListener(_onControllerChanged);
+                _controller = null;
+                _needsConfig = true;
+                _configError = null;
+              });
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusBadge() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: Colors.green,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        loc(context).live,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
   Widget _buildChatArea() {
-    if (_messages.isEmpty) {
+    final messages = _controller?.messages ?? [];
+
+    if (messages.isEmpty ||
+        (messages.length == 1 && messages.first.role == ChatRole.system)) {
       return _buildWelcomeScreen();
     }
+
+    final displayMessages =
+        messages.where((m) => m.role != ChatRole.system).toList();
 
     return ListView.builder(
       controller: _scrollController,
       padding: const EdgeInsets.all(16),
-      itemCount: _messages.length + (_isLoading ? 1 : 0),
+      itemCount:
+          displayMessages.length + (_controller?.isLoading == true ? 1 : 0),
       itemBuilder: (context, index) {
-        if (index == _messages.length) {
+        if (index == displayMessages.length) {
           return _buildLoadingIndicator();
         }
-        return _buildMessageBubble(_messages[index]);
+        return _buildMessageBubble(displayMessages[index]);
       },
     );
   }
 
   Widget _buildLoadingIndicator() {
-    return const Padding(
-      padding: EdgeInsets.all(16),
-      child: Center(
-        child: AppLoader(),
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Flexible(
+            flex: 3,
+            child: ProcessingGlow.subtle(
+              isActive: true,
+              glowColor: theme.colorScheme.primary,
+              child: AppSurface(
+                variant: SurfaceVariant.elevated,
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.auto_awesome,
+                        size: 18,
+                        color: theme.colorScheme.primary,
+                      ),
+                      const SizedBox(width: 10),
+                      _AnimatedThinkingText(
+                        color:
+                            theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const Spacer(flex: 1),
+        ],
       ),
     );
   }
@@ -262,16 +533,18 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.router,
-              size: 64,
-              color: theme.colorScheme.primary.withValues(alpha: 0.5),
+            Hero(
+              tag: mascotHeroTag,
+              child: const MascotHeroWidget(
+                size: 80,
+                animation: MascotAnimationKey.greet,
+              ),
             ),
             const SizedBox(height: 16),
-            AppText.headline('AI Router Assistant'),
+            AppText.headline(loc(context).aiRouterAssistant),
             const SizedBox(height: 8),
             AppText.body(
-              'I can help you check network status, manage connected devices, or adjust WiFi settings.\nTry asking "Show all connected devices" or "What is my WiFi password?"',
+              loc(context).aiAssistantWelcome,
               textAlign: TextAlign.center,
               color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
             ),
@@ -281,42 +554,124 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
     );
   }
 
-  Widget _buildMessageBubble(_ChatMessage message) {
+  Widget _buildMessageBubble(ChatMessage message) {
+    final isUser = message.role == ChatRole.user;
+
+    if (message.isToolResult) {
+      logger.d('[AI] MessageBubble: skipping tool_result');
+      return const SizedBox.shrink();
+    }
+
+    String? textContent;
+    bool isA2UI = false;
+
+    if (message.isUser) {
+      textContent = message.content as String?;
+      logger.d('[AI] MessageBubble: user message, content=$textContent');
+    } else if (message.isAssistant && message.response != null) {
+      final textBlocks = message.response!.content.whereType<TextBlock>();
+      logger.d(
+          '[AI] MessageBubble: assistant message, textBlocks=${textBlocks.length}');
+      if (textBlocks.isNotEmpty) {
+        textContent = textBlocks.map((b) => b.text).join('\n');
+        isA2UI = A2UIResponseRenderer.containsA2UI(textContent);
+        logger.d(
+            '[AI] MessageBubble: textContent length=${textContent.length}, isA2UI=$isA2UI');
+        logger.d(
+            '[AI] MessageBubble: textContent preview=${textContent.substring(0, textContent.length.clamp(0, 200))}');
+      }
+    } else {
+      logger.d(
+          '[AI] MessageBubble: unknown message type, role=${message.role}, isAssistant=${message.isAssistant}, response=${message.response}');
+    }
+
+    if (textContent == null || textContent.isEmpty) {
+      logger.d('[AI] MessageBubble: no textContent, returning empty');
+      return const SizedBox.shrink();
+    }
+
+    logger.d('[AI] MessageBubble: rendering, isUser=$isUser, isA2UI=$isA2UI');
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         mainAxisAlignment:
-            message.isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+            isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
         children: [
-          // Add spacer on the left for USER messages (to push them right)
-          // For BOT messages, we want them on the left, so no left spacer (or maybe a small one if needed, but usually spacer is for the empty side)
-          if (message.isUser) const Spacer(flex: 1),
+          if (isUser) const Spacer(flex: 1),
           Flexible(
             flex: 3,
-            child: message.isA2UI
-                ? A2UIResponseRenderer(
-                    content: message.text,
-                    registry: _registry,
-                    onAction: (data) {
-                      debugPrint('A2UI Action: $data');
-                      final action = data['action'] as String?;
-                      if (action != null) {
-                        _addMessage('Executing action: $action', isUser: true);
-                      }
+            child: isA2UI
+                ? Builder(
+                    builder: (context) {
+                      logger.d('[AI] Rendering A2UIResponseRenderer');
+                      return A2UIResponseRenderer(
+                        content: textContent!,
+                        registry: _registry,
+                        onAction: _handleA2UIAction,
+                      );
                     },
                   )
                 : AppSurface(
-                    variant: message.isUser
+                    variant: isUser
                         ? SurfaceVariant.highlight
                         : SurfaceVariant.elevated,
                     child: Padding(
                       padding: const EdgeInsets.all(12),
-                      child: AppText.body(message.text),
+                      child: AppText.body(textContent),
                     ),
                   ),
           ),
-          // Add spacer on the right for BOT messages (to keep them left)
-          if (!message.isUser) const Spacer(flex: 1),
+          if (!isUser) const Spacer(flex: 1),
+        ],
+      ),
+    );
+  }
+
+  void _handleA2UIAction(Map<String, dynamic> data) {
+    logger.d('A2UI Action: $data');
+
+    final toolUseId = data['toolUseId'] as String?;
+    if (toolUseId == null) return;
+
+    final actionType = data['action'] as String? ?? 'unknown';
+    final actionData = Map<String, dynamic>.from(data)
+      ..remove('action')
+      ..remove('toolUseId');
+
+    final action = ToolActionOutput(
+      toolUseId: toolUseId,
+      componentName: data['component'] as String? ?? 'unknown',
+      actionType: actionType,
+      data: actionData,
+    );
+
+    _controller?.handleToolAction(action);
+  }
+
+  Widget _buildErrorBanner() {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.all(12),
+      color: theme.colorScheme.errorContainer,
+      child: Row(
+        children: [
+          Icon(
+            Icons.error_outline,
+            color: theme.colorScheme.onErrorContainer,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: AppText.bodyMedium(
+              _controller?.errorMessage ?? loc(context).anErrorOccurred,
+              color: theme.colorScheme.onErrorContainer,
+            ),
+          ),
+          if (_controller?.isRetryable == true)
+            AppButton.text(
+              label: loc(context).retry,
+              onTap: _controller?.retry,
+            ),
         ],
       ),
     );
@@ -339,7 +694,7 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
             Expanded(
               child: AppTextField(
                 controller: _inputController,
-                hintText: 'Type a message...',
+                hintText: loc(context).typeAMessage,
                 textInputAction: TextInputAction.send,
                 onSubmitted: (_) => _sendMessage(),
               ),
@@ -347,7 +702,7 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
             const SizedBox(width: 8),
             AppIconButton(
               icon: const Icon(Icons.send),
-              onTap: _isLoading ? null : _sendMessage,
+              onTap: _controller?.isLoading == true ? null : _sendMessage,
             ),
           ],
         ),
@@ -356,118 +711,72 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
   }
 }
 
-/// Simple chat message model.
-class _ChatMessage {
-  final String text;
-  final bool isUser;
-  final bool isA2UI;
+/// Animated thinking text with cycling phrases and dots.
+class _AnimatedThinkingText extends StatefulWidget {
+  final Color color;
 
-  _ChatMessage({
-    required this.text,
-    required this.isUser,
-    this.isA2UI = false,
-  });
+  const _AnimatedThinkingText({required this.color});
+
+  static const _phrases = [
+    'Thinking',
+    'Analyzing',
+    'Processing',
+    'Checking',
+    'Looking into this',
+    'Working on it',
+  ];
+
+  @override
+  State<_AnimatedThinkingText> createState() => _AnimatedThinkingTextState();
 }
 
-/// Mock conversation generator for demo without AWS credentials.
-class _MockConversationGenerator implements IConversationGenerator {
+class _AnimatedThinkingTextState extends State<_AnimatedThinkingText>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  int _dotCount = 0;
+  int _phraseIndex = 0;
+  int _cycleCount = 0;
+
   @override
-  Future<LLMResponse> generateWithHistory(
-    List<ChatMessage> messages, {
-    List<GenTool>? tools,
-    String? systemPrompt,
-    bool forceToolUse = false,
-  }) async {
-    await Future.delayed(const Duration(milliseconds: 500));
-
-    final lastMessage = messages.lastWhere(
-      (m) => m.role == ChatRole.user,
-      orElse: () => ChatMessage.user(''),
-    );
-
-    final userText = (lastMessage.content as String).toLowerCase();
-
-    // Simple keyword matching for demo
-    if (userText.contains('device')) {
-      return _createDeviceListResponse();
-    } else if (userText.contains('wifi') || userText.contains('password')) {
-      return _createWifiResponse();
-    } else if (userText.contains('network') || userText.contains('status')) {
-      return _createStatusResponse();
-    }
-
-    return LLMResponse(
-      id: 'mock-${DateTime.now().millisecondsSinceEpoch}',
-      model: 'mock',
-      content: [
-        TextBlock(
-            text:
-                'Hello! I am your AI Router Assistant. You can ask me about connected devices, WiFi settings, or network status.'),
-      ],
-    );
+  void initState() {
+    super.initState();
+    _phraseIndex =
+        DateTime.now().millisecond % _AnimatedThinkingText._phrases.length;
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 400),
+    )..addStatusListener((status) {
+        if (status == AnimationStatus.completed) {
+          setState(() {
+            _dotCount = (_dotCount + 1) % 4;
+            if (_dotCount == 0) {
+              _cycleCount++;
+              if (_cycleCount >= 2) {
+                _cycleCount = 0;
+                _phraseIndex =
+                    (_phraseIndex + 1) % _AnimatedThinkingText._phrases.length;
+              }
+            }
+          });
+          _controller.forward(from: 0);
+        }
+      });
+    _controller.forward();
   }
 
-  LLMResponse _createDeviceListResponse() {
-    const a2ui = '''
-{"surfaceUpdate":{"surfaceId":"main","components":[
-  {"id":"root","type":"Column","childIds":["header","list"]},
-  {"id":"header","type":"AppText","properties":{"text":"Connected Devices","variant":"headline"}},
-  {"id":"list","type":"DeviceListView","properties":{"devices":{"boundPath":"/data/devices"}}}
-]}}
-{"dataModelUpdate":{"surfaceId":"main","contents":[
-  {"path":"/data/devices","value":[
-    {"name":"iPhone 15 Pro","ip":"192.168.1.101","connectionType":"5GHz"},
-    {"name":"MacBook Pro","ip":"192.168.1.102","connectionType":"5GHz"},
-    {"name":"Smart TV","ip":"192.168.1.103","connectionType":"2.4GHz"}
-  ]}
-]}}
-{"beginRendering":{"surfaceId":"main","root":"root"}}
-''';
-
-    return LLMResponse(
-      id: 'mock-devices',
-      model: 'mock',
-      content: [TextBlock(text: a2ui)],
-    );
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
   }
 
-  LLMResponse _createWifiResponse() {
-    const a2ui = '''
-{"surfaceUpdate":{"surfaceId":"main","components":[
-  {"id":"root","type":"WifiSettingsCard","properties":{
-    "ssid":"MyNetwork",
-    "password":"12345678",
-    "securityMode":"WPA2-Personal",
-    "band":"2.4GHz + 5GHz"
-  }}
-]}}
-{"beginRendering":{"surfaceId":"main","root":"root"}}
-''';
-
-    return LLMResponse(
-      id: 'mock-wifi',
-      model: 'mock',
-      content: [TextBlock(text: a2ui)],
-    );
-  }
-
-  LLMResponse _createStatusResponse() {
-    const a2ui = '''
-{"surfaceUpdate":{"surfaceId":"main","components":[
-  {"id":"root","type":"NetworkStatusCard","properties":{
-    "wanStatus":"Connected",
-    "connectedDevices":8,
-    "uploadSpeed":"50 Mbps",
-    "downloadSpeed":"100 Mbps"
-  }}
-]}}
-{"beginRendering":{"surfaceId":"main","root":"root"}}
-''';
-
-    return LLMResponse(
-      id: 'mock-status',
-      model: 'mock',
-      content: [TextBlock(text: a2ui)],
+  @override
+  Widget build(BuildContext context) {
+    final phrase = _AnimatedThinkingText._phrases[_phraseIndex];
+    final dots = '.' * _dotCount;
+    return AppText.body(
+      '$phrase$dots',
+      color: widget.color,
     );
   }
 }

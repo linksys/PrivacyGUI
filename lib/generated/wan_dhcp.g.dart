@@ -12,27 +12,46 @@ class WanDhcp {
     required this.addressingType,
   });
 
-  static const _paths = [
-    'Device.IP.Interface.2.IPv4Address.1.AddressingType',
-  ];
+  /// Resolve the instance index by searching for Alias='wan'
+  static Future<String> _resolveInstance(UspClient client) async {
+    final response = await client.get(['Device.IP.Interface.*.Alias']);
+    for (final entry in response.entries) {
+      if (entry.value == 'wan') {
+        final match =
+            RegExp(r'Device\.IP\.Interface\.(\d+)\.').firstMatch(entry.key);
+        if (match != null) {
+          return 'Device.IP.Interface.${match.group(1)}.';
+        }
+      }
+    }
+    // Fallback to hardcoded instance 2
+    return 'Device.IP.Interface.2.';
+  }
+
+  /// Build parameter paths using the resolved instance path
+  static List<String> _buildPaths(String instancePath) => [
+        '${instancePath}IPv4Address.1.AddressingType',
+      ];
 
   /// Fetch all parameters via USP Get message
   static Future<WanDhcp> fetch(UspClient client) async {
-    final response = await client.get(_paths);
-    return WanDhcp._fromResponse(response);
+    final instancePath = await _resolveInstance(client);
+    final response = await client.get(_buildPaths(instancePath));
+    return WanDhcp._fromResponse(response, instancePath);
   }
 
-  factory WanDhcp._fromResponse(Map<String, dynamic> response) {
+  factory WanDhcp._fromResponse(
+      Map<String, dynamic> response, String instancePath) {
     final missing = <String>[];
-    if (!response
-        .containsKey('Device.IP.Interface.2.IPv4Address.1.AddressingType'))
-      missing.add('Device.IP.Interface.2.IPv4Address.1.AddressingType');
+    if (!response.containsKey('${instancePath}IPv4Address.1.AddressingType')) {
+      missing.add('${instancePath}IPv4Address.1.AddressingType');
+    }
     if (missing.isNotEmpty) {
       throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
     }
     return WanDhcp(
       addressingType:
-          (response['Device.IP.Interface.2.IPv4Address.1.AddressingType'] ?? '')
+          (response['${instancePath}IPv4Address.1.AddressingType'] ?? '')
               as String,
     );
   }
@@ -44,9 +63,10 @@ class WanDhcp {
     bool allowPartial = false,
   }) async {
     final params = <String, dynamic>{};
-    if (addressingType != null)
-      params['Device.IP.Interface.2.IPv4Address.1.AddressingType'] =
-          addressingType;
+    final instancePath = await _resolveInstance(client);
+    if (addressingType != null) {
+      params['${instancePath}IPv4Address.1.AddressingType'] = addressingType;
+    }
     if (params.isEmpty) {
       return {
         'success': true,

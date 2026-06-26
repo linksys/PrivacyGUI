@@ -17,7 +17,7 @@ final uspEthernetDataServiceProvider = Provider<UspEthernetDataService>(
     final usp = ref.read(uspClientProvider);
     if (usp == null) {
       throw const ServiceNotInitializedError(
-          message: 'USP service not available');
+          detail: 'USP service not available');
     }
     return UspEthernetDataService(usp);
   },
@@ -150,25 +150,50 @@ class UspEthernetDataService {
     }
 
     if (lanAggregate != null) {
-      // Filter wired client devices only (exclude mesh nodes: master/slave).
-      final wiredDevices = deviceModels
-          .where((d) => d.isActive && !d.isWifi && d.isClientDevice)
-          .toList();
-      final lanBitRate = lanAggregate.currentBitRate;
-      final lanIsUp = lanAggregate.status.toLowerCase() == 'up';
+      // Collect wired connections from client devices.
+      // A device may have multiple interfaces (WiFi + Ethernet); check both
+      // the primary interface and additionalInterfaces for Ethernet.
+      final wiredConnections =
+          <({String displayName, String mac, String ip})>[];
+      for (final d in deviceModels) {
+        if (!d.isClientDevice) continue;
+        // Check primary interface
+        if (d.isActive && !d.isWifi) {
+          wiredConnections.add((
+            displayName: d.displayName,
+            mac: d.mac,
+            ip: d.ip,
+          ));
+        }
+        // Check additional interfaces for Ethernet connections
+        for (final iface in d.additionalInterfaces) {
+          if (iface.isActive && !iface.isWifi) {
+            wiredConnections.add((
+              displayName: d.displayName,
+              mac: iface.mac,
+              ip: iface.ip,
+            ));
+          }
+        }
+      }
 
-      if (wiredDevices.isEmpty) {
+      final lanBitRate = lanAggregate.currentBitRate;
+
+      if (wiredConnections.isEmpty) {
+        // No wired devices → show single LAN port as disconnected.
+        // Note: lanAggregate.status reflects switch-chip link state, not
+        // whether a device is plugged in, so we use isUp=false here.
         result.add(EthernetPortUIModel(
           name: lanAggregate.name,
           label: 'LAN',
           isWan: false,
-          isUp: lanIsUp,
+          isUp: false,
           instancePath: lanAggregate.instancePath,
           currentBitRate: lanBitRate,
         ));
       } else {
-        for (var i = 0; i < wiredDevices.length; i++) {
-          final d = wiredDevices[i];
+        for (var i = 0; i < wiredConnections.length; i++) {
+          final conn = wiredConnections[i];
           result.add(EthernetPortUIModel(
             name: lanAggregate.name,
             label: 'LAN ${i + 1}',
@@ -178,9 +203,9 @@ class UspEthernetDataService {
             currentBitRate: lanBitRate,
             connectedDevices: [
               WiredDeviceInfo(
-                hostName: d.hostName,
-                macAddress: d.mac,
-                ipAddress: d.ip,
+                hostName: conn.displayName,
+                macAddress: conn.mac,
+                ipAddress: conn.ip,
               ),
             ],
           ));

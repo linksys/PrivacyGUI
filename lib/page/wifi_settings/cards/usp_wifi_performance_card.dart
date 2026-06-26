@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/_shared/components/card_skeleton.dart';
+import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
+import 'package:privacy_gui/page/_shared/components/wifi_ui.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_client_ui_model.dart';
-import 'package:privacy_gui/page/_shared/models/wifi_performance_helpers.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_radio_ui_model.dart';
 import 'package:privacy_gui/page/_shared/providers/card_tab_state_provider.dart';
+import 'package:privacy_gui/page/_shared/components/dashboard_card_template.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
-import 'package:privacy_gui/page/_shared/components/card_skeleton.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_data_provider.dart';
+import 'package:privacy_gui/route/constants.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// WiFi Performance Analytics card — 3-tab view.
@@ -18,12 +22,6 @@ class UspWifiPerformanceCard extends ConsumerWidget {
   const UspWifiPerformanceCard({super.key});
 
   static const _cardId = 'wifi_performance';
-
-  static const _tabs = [
-    TabItem(label: 'Signal'),
-    TabItem(label: 'Speed'),
-    TabItem(label: 'Channels'),
-  ];
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -41,9 +39,7 @@ class UspWifiPerformanceCard extends ConsumerWidget {
       final device = devicesData?.deviceModels
           .where((d) => d.mac.toUpperCase() == entry.key.toUpperCase())
           .firstOrNull;
-      final name = device?.hostName ?? entry.key;
-      final displayName =
-          name.length > 10 ? '${name.substring(0, 9)}\u2026' : name;
+      final displayName = device?.hostName ?? entry.key;
       // Resolve band from connectionDetailMap (AP → SSID → Radio chain)
       final detail = wifiData.connectionDetailMap[entry.key];
       activeClients.add(_ClientInfo(
@@ -54,40 +50,31 @@ class UspWifiPerformanceCard extends ConsumerWidget {
       ));
     }
 
-    return AppCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              AppText.titleMedium('WiFi Performance'),
-              AppText.labelLarge('${activeClients.length} clients'),
-            ],
+    return DashboardCardTemplate.tabbed(
+      title: loc(context).wifiPerformance,
+      titleBadge:
+          AppBadge(label: loc(context).clientsCount(activeClients.length)),
+      detailRoute: RouteNamed.uspWifiSettings,
+      tabs: [
+        CardTab(
+          label: loc(context).signal,
+          content: _SignalTab(clients: activeClients),
+        ),
+        CardTab(
+          label: loc(context).speed,
+          content: _SpeedTab(clients: activeClients),
+        ),
+        CardTab(
+          label: loc(context).channels,
+          content: _ChannelsTab(
+            radios: wifiData.radioModels,
+            clients: activeClients,
           ),
-          AppGap.md(),
-          AppTabs(
-            tabs: _tabs,
-            initialIndex: selectedTab,
-            displayMode: TabDisplayMode.segmented,
-            showBorder: false,
-            onTabChanged: (index) =>
-                ref.read(cardTabIndexProvider(_cardId).notifier).state = index,
-          ),
-          AppGap.md(),
-          Expanded(
-            child: switch (selectedTab) {
-              0 => _SignalTab(clients: activeClients),
-              1 => _SpeedTab(clients: activeClients),
-              2 => _ChannelsTab(
-                  radios: wifiData.radioModels,
-                  clients: activeClients,
-                ),
-              _ => const SizedBox.shrink(),
-            },
-          ),
-        ],
-      ),
+        ),
+      ],
+      selectedTabIndex: selectedTab,
+      onTabChanged: (index) =>
+          ref.read(cardTabIndexProvider(_cardId).notifier).state = index,
     );
   }
 }
@@ -137,34 +124,42 @@ class _SignalTab extends StatelessWidget {
         Expanded(
           child: ListView.separated(
             itemCount: clients.length,
-            separatorBuilder: (_, __) => AppGap.xs(),
+            separatorBuilder: (_, __) => AppGap.sm(),
             itemBuilder: (context, index) {
               final c = clients[index];
               final rssi = c.client.signalStrength;
-              final tier = WifiPerformanceHelpers.signalTier(rssi);
-              final color = WifiPerformanceHelpers.tierColor(tier, colorScheme);
+              final tier = getSignalTier(rssi);
+              final color = tier.resolveColor(colorScheme);
               // Normalize: -100 dBm → 0.0, -30 dBm → 1.0
               final norm = ((rssi + 100) / 70).clamp(0.0, 1.0);
 
-              return Row(
-                children: [
-                  SizedBox(
-                    width: 80,
-                    child: AppText.labelSmall(c.displayName),
-                  ),
-                  AppGap.sm(),
-                  Expanded(
-                    child: _ColoredLinearBar(value: norm, color: color),
-                  ),
-                  AppGap.sm(),
-                  SizedBox(
-                    width: 60,
-                    child: AppText.bodySmall(
-                      '$rssi dBm',
-                      textAlign: TextAlign.end,
+              return LayoutBlock(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: AppText.labelSmall(
+                            c.displayName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        AppGap.sm(),
+                        AppText.bodySmall(
+                            loc(context).signalStrengthDbm(rssi.toString())),
+                      ],
                     ),
-                  ),
-                ],
+                    AppGap.xs(),
+                    AppLoader(
+                      variant: LoaderVariant.linear,
+                      value: norm,
+                      color: color,
+                    ),
+                  ],
+                ),
               );
             },
           ),
@@ -173,60 +168,27 @@ class _SignalTab extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            for (final entry in [
-              (SignalTier.excellent, 'Excellent'),
-              (SignalTier.good, 'Good'),
-              (SignalTier.fair, 'Fair'),
-              (SignalTier.weak, 'Weak'),
+            for (final tier in [
+              SignalTier.excellent,
+              SignalTier.good,
+              SignalTier.fair,
+              SignalTier.weak,
             ]) ...[
               Container(
                 width: 8,
                 height: 8,
                 decoration: BoxDecoration(
-                  color:
-                      WifiPerformanceHelpers.tierColor(entry.$1, colorScheme),
+                  color: tier.resolveColor(colorScheme),
                   shape: BoxShape.circle,
                 ),
               ),
               AppGap.xs(),
-              AppText.labelSmall(entry.$2),
+              AppText.labelSmall(tier.resolveLabel(context)),
               AppGap.md(),
             ],
           ],
         ),
       ],
-    );
-  }
-}
-
-class _ColoredLinearBar extends StatelessWidget {
-  final double value;
-  final Color color;
-  const _ColoredLinearBar({required this.value, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return Container(
-          height: 12,
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(6),
-          ),
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: Container(
-              width: constraints.maxWidth * value,
-              height: 12,
-              decoration: BoxDecoration(
-                color: color,
-                borderRadius: BorderRadius.circular(6),
-              ),
-            ),
-          ),
-        );
-      },
     );
   }
 }
@@ -265,12 +227,12 @@ class _SpeedTab extends StatelessWidget {
           child: AppBarChart(
             series: [
               AppChartSeries(
-                label: 'Downlink',
+                label: loc(context).downlink,
                 data: dlData,
                 color: colorScheme.primary,
               ),
               AppChartSeries(
-                label: 'Uplink',
+                label: loc(context).uplink,
                 data: ulData,
                 color: colorScheme.secondary,
               ),
@@ -295,7 +257,7 @@ class _SpeedTab extends StatelessWidget {
               ),
             ),
             AppGap.xs(),
-            AppText.labelSmall('Downlink'),
+            AppText.labelSmall(loc(context).downlink),
             AppGap.lg(),
             Container(
               width: 8,
@@ -306,7 +268,7 @@ class _SpeedTab extends StatelessWidget {
               ),
             ),
             AppGap.xs(),
-            AppText.labelSmall('Uplink'),
+            AppText.labelSmall(loc(context).uplink),
           ],
         ),
       ],
@@ -355,8 +317,7 @@ class _ChannelsTab extends StatelessWidget {
       final radioIdx = bandToRadioIdx[c.band];
       if (radioIdx == null) continue;
       clientsPerRadio[radioIdx] = (clientsPerRadio[radioIdx] ?? 0) + 1;
-      final snr = WifiPerformanceHelpers.computeSNR(
-          c.client.signalStrength, c.client.noise);
+      final snr = computeSNR(c.client.signalStrength, c.client.noise);
       snrSumPerRadio[radioIdx] = (snrSumPerRadio[radioIdx] ?? 0) + snr;
       snrCountPerRadio[radioIdx] = (snrCountPerRadio[radioIdx] ?? 0) + 1;
     }
@@ -370,49 +331,51 @@ class _ChannelsTab extends StatelessWidget {
     return Column(
       children: [
         // Per-radio info rows
-        ...List.generate(radios.length, (i) {
-          final radio = radios[i];
-          final clientCount = clientsPerRadio[i] ?? 0;
-          final snr = avgSnrPerRadio[i] ?? 0;
-          final snrNorm = WifiPerformanceHelpers.normalizeSNR(snr.toInt());
+        for (var i = 0; i < radios.length; i++) ...[
+          Builder(builder: (context) {
+            final radio = radios[i];
+            final clientCount = clientsPerRadio[i] ?? 0;
+            final snr = avgSnrPerRadio[i] ?? 0;
+            final snrNorm = normalizeSNR(snr.toInt());
 
-          return Padding(
-            padding: const EdgeInsets.only(bottom: AppSpacing.md),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    AppText.labelLarge(radio.band),
-                    const Spacer(),
-                    AppText.bodySmall(
-                      'Ch ${radio.channelDisplay}  \u00b7  ${radio.channelBandwidth}',
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ],
-                ),
-                AppGap.xs(),
-                Row(
-                  children: [
-                    AppText.bodySmall('$clientCount clients'),
-                    AppGap.md(),
-                    AppText.bodySmall('SNR: ${snr.toInt()} dB'),
-                    AppGap.sm(),
-                    Expanded(
-                      child: AppLoader(
-                        variant: LoaderVariant.linear,
-                        value: snrNorm,
+            return LayoutBlock(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      AppText.labelLarge(radio.band),
+                      const Spacer(),
+                      AppText.bodySmall(
+                        'Ch ${radio.channelDisplay}  \u00b7  ${radio.channelBandwidth}',
+                        color: colorScheme.onSurfaceVariant,
                       ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          );
-        }),
+                    ],
+                  ),
+                  AppGap.xs(),
+                  Row(
+                    children: [
+                      AppText.bodySmall(loc(context).clientsCount(clientCount)),
+                      AppGap.md(),
+                      AppText.bodySmall(loc(context).snrValue(snr.toInt())),
+                      AppGap.sm(),
+                      Expanded(
+                        child: AppLoader(
+                          variant: LoaderVariant.linear,
+                          value: snrNorm,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          }),
+          if (i < radios.length - 1) AppGap.sm(),
+        ],
         // Band distribution donut (if we have data)
         if (clients.isNotEmpty) ...[
-          AppGap.sm(),
+          AppGap.md(),
           Expanded(
             child: _BandDistributionDonut(
               clientsPerRadio: clientsPerRadio,
@@ -467,7 +430,8 @@ class _BandDistributionDonut extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             AppText.titleMedium('$totalClients'),
-            AppText.labelSmall('clients', color: colorScheme.onSurfaceVariant),
+            AppText.labelSmall(loc(context).clients,
+                color: colorScheme.onSurfaceVariant),
           ],
         ),
         size: 120,

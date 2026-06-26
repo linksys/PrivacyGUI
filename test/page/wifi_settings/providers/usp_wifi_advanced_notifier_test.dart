@@ -41,7 +41,7 @@ void main() {
 
       final state = container.read(uspWifiAdvancedProvider);
       expect(state.status.isLoading, isFalse);
-      expect(state.status.errorMessage, isNull);
+      expect(state.status.error, isNull);
       expect(state.settings.current.ieee80211hByRadio, {
         'Device.WiFi.Radio.1.': true,
         'Device.WiFi.Radio.2.': false,
@@ -55,13 +55,13 @@ void main() {
 
     test('sets error status when service throws ServiceError', () async {
       when(() => mockService.fetchIeee80211h())
-          .thenThrow(const NetworkError(message: 'timeout'));
+          .thenThrow(const NetworkError(detail: 'timeout'));
 
       final container = createContainer();
       await Future.delayed(Duration.zero);
 
       final state = container.read(uspWifiAdvancedProvider);
-      expect(state.status.errorMessage, isNotNull);
+      expect(state.status.error, isA<NetworkError>());
       expect(state.settings.current.ieee80211hByRadio, isEmpty);
       container.dispose();
     });
@@ -243,7 +243,7 @@ void main() {
       when(() => mockService.setIeee80211hEnabled(
             radioPaths: any(named: 'radioPaths'),
             enabled: any(named: 'enabled'),
-          )).thenThrow(const InvalidInputError(message: 'read-only'));
+          )).thenThrow(const InvalidInputError(detail: 'read-only'));
 
       final container = createContainer();
       await Future.delayed(Duration.zero);

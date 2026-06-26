@@ -1,22 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
-import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/core/connection/models/app_connection_state.dart';
 import 'package:privacy_gui/core/connection/providers/app_connection_state_provider.dart';
 import 'package:privacy_gui/core/utils/device_image_helper.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart'
     hide FirmwareImageUIModel;
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
 import 'package:privacy_gui/page/admin/views/dialogs/confirm_action_dialog.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_image_ui_model.dart';
+import 'package:privacy_gui/page/firmware_update/models/firmware_ota_info.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_update_phase.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_update_state.dart';
 import 'package:privacy_gui/page/firmware_update/providers/firmware_banks_data_provider.dart';
 import 'package:privacy_gui/page/firmware_update/providers/firmware_update_notifier.dart';
 import 'package:privacy_gui/page/firmware_update/services/firmware_local_upload_service.dart';
+import 'package:privacy_gui/page/firmware_update/services/firmware_ota_check_service.dart';
 import 'package:privacy_gui/page/firmware_update/views/dialogs/firmware_update_recovery_dialog.dart';
 import 'package:privacy_gui/page/shell/usp_top_bar.dart';
 import 'package:privacy_gui/route/constants.dart';
@@ -35,9 +38,13 @@ class FirmwareUpdateView extends ConsumerStatefulWidget {
 }
 
 class _FirmwareUpdateViewState extends ConsumerState<FirmwareUpdateView> {
-  /// Delay after triggering install before showing recovery dialog.
+  /// Delay after triggering local install before showing recovery dialog.
   /// Router typically takes ~60-90 seconds to write firmware before reboot.
-  static const _installDelayBeforeReboot = Duration(seconds: 60);
+  static const _localInstallDelayBeforeReboot = Duration(seconds: 60);
+
+  /// Delay after triggering OTA install before showing recovery dialog.
+  /// Router needs to download (~50-100MB) + flash, typically ~120 seconds.
+  static const _otaInstallDelayBeforeReboot = Duration(seconds: 120);
 
   @override
   void initState() {
@@ -53,7 +60,7 @@ class _FirmwareUpdateViewState extends ConsumerState<FirmwareUpdateView> {
 
     return UiKitPageView.withSliver(
       scrollable: true,
-      title: 'Firmware Update',
+      title: loc(context).firmwareUpdate,
       topbar: const PreferredSize(
         preferredSize: Size.fromHeight(64),
         child: UspTopBar(),
@@ -85,6 +92,11 @@ class _FirmwareUpdateViewState extends ConsumerState<FirmwareUpdateView> {
           isLoadingBanks: isLoadingBanks,
         ),
         AppGap.xl(),
+        _OtaCheckCard(
+          state: state,
+          onCheck: () => _onCheckForUpdates(context),
+        ),
+        AppGap.xl(),
         _buildActionCard(context, state),
         AppGap.xl(),
         _buildWarningNote(context),
@@ -95,6 +107,7 @@ class _FirmwareUpdateViewState extends ConsumerState<FirmwareUpdateView> {
   Widget _buildActionCard(BuildContext context, FirmwareUpdateState state) {
     switch (state.phase) {
       case FirmwareUpdatePhase.idle:
+      case FirmwareUpdatePhase.checkingOta:
         return _buildIdleCard(context, state);
       case FirmwareUpdatePhase.picking:
       case FirmwareUpdatePhase.validating:
@@ -125,8 +138,7 @@ class _FirmwareUpdateViewState extends ConsumerState<FirmwareUpdateView> {
         AppGap.sm(),
         Expanded(
           child: AppText.bodySmall(
-            'The update will take approximately 5–8 minutes. '
-            'Do not power off or disconnect the router during the process.',
+            loc(context).firmwareUpdateWarning,
             color: scheme.outline,
           ),
         ),
@@ -140,13 +152,12 @@ class _FirmwareUpdateViewState extends ConsumerState<FirmwareUpdateView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AppText.titleMedium('Firmware Image'),
+          AppText.titleMedium(loc(context).firmwareImage),
           AppGap.md(),
           if (hasPickedFile)
             _buildSelectedFileDetails(context, state)
           else
-            AppText.bodyMedium(
-                'No firmware image selected. Choose a .img or .bin file to begin.'),
+            AppText.bodyMedium(loc(context).noFirmwareImageSelected),
           AppGap.xl(),
           Wrap(
             spacing: AppSpacing.md,
@@ -154,13 +165,13 @@ class _FirmwareUpdateViewState extends ConsumerState<FirmwareUpdateView> {
             children: [
               AppButton.primaryOutline(
                 label: hasPickedFile
-                    ? 'Choose another file'
-                    : 'Choose firmware file',
+                    ? loc(context).chooseAnotherFile
+                    : loc(context).chooseFirmwareFile,
                 onTap: () => _onPickFile(context),
               ),
               if (hasPickedFile)
                 AppButton(
-                  label: 'Update Firmware',
+                  label: loc(context).updateFirmware,
                   onTap: () => _onConfirmInstall(context, state),
                 ),
             ],
@@ -179,10 +190,10 @@ class _FirmwareUpdateViewState extends ConsumerState<FirmwareUpdateView> {
       children: [
         AppText.bodyMedium(state.selectedFileName ?? '—'),
         AppGap.sm(),
-        AppText.bodySmall('Size: $size bytes ($mib MiB)'),
+        AppText.bodySmall(loc(context).sizeBytes(size, mib)),
         if (state.selectedFileMd5 != null) ...[
           AppGap.sm(),
-          AppText.bodySmall('MD5: ${state.selectedFileMd5}'),
+          AppText.bodySmall(loc(context).md5Label(state.selectedFileMd5!)),
         ],
       ],
     );
@@ -191,8 +202,8 @@ class _FirmwareUpdateViewState extends ConsumerState<FirmwareUpdateView> {
   Widget _buildPickingOrValidatingCard(
       BuildContext context, FirmwareUpdateState state) {
     final title = state.phase == FirmwareUpdatePhase.picking
-        ? 'Selecting file…'
-        : 'Validating image…';
+        ? loc(context).selectingFile
+        : loc(context).validatingImage;
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -215,14 +226,14 @@ class _FirmwareUpdateViewState extends ConsumerState<FirmwareUpdateView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AppText.titleMedium('Uploading firmware'),
+          AppText.titleMedium(loc(context).uploadingFirmware),
           AppGap.md(),
-          AppText.bodyMedium('$percent% complete'),
+          AppText.bodyMedium(loc(context).percentComplete(percent)),
           AppGap.lg(),
-          LinearProgressIndicator(value: progress),
+          AppLoader(variant: LoaderVariant.linear, value: progress),
           AppGap.xl(),
           AppButton.primaryOutline(
-            label: 'Cancel',
+            label: loc(context).cancel,
             onTap: () =>
                 ref.read(firmwareUpdateNotifierProvider.notifier).cancel(),
           ),
@@ -236,9 +247,9 @@ class _FirmwareUpdateViewState extends ConsumerState<FirmwareUpdateView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AppText.titleMedium('Preparing to install'),
+          AppText.titleMedium(loc(context).preparingToInstall),
           AppGap.md(),
-          AppText.bodyMedium('Verifying firmware image and preparing flash…'),
+          AppText.bodyMedium(loc(context).verifyingFirmwareImage),
           AppGap.xl(),
           const AppLoader(variant: LoaderVariant.linear),
         ],
@@ -251,10 +262,9 @@ class _FirmwareUpdateViewState extends ConsumerState<FirmwareUpdateView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AppText.titleMedium('Installing firmware'),
+          AppText.titleMedium(loc(context).installingFirmware),
           AppGap.md(),
-          AppText.bodyMedium(
-              'The router is writing the new image. Do not power off.'),
+          AppText.bodyMedium(loc(context).routerWritingImage),
           AppGap.xl(),
           const AppLoader(variant: LoaderVariant.linear),
         ],
@@ -267,9 +277,9 @@ class _FirmwareUpdateViewState extends ConsumerState<FirmwareUpdateView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AppText.titleMedium('Rebooting router'),
+          AppText.titleMedium(loc(context).rebootingRouter),
           AppGap.md(),
-          AppText.bodyMedium('Waiting for the router to come back online…'),
+          AppText.bodyMedium(loc(context).waitingForRouterOnline),
           AppGap.xl(),
           const AppLoader(variant: LoaderVariant.linear),
         ],
@@ -282,9 +292,9 @@ class _FirmwareUpdateViewState extends ConsumerState<FirmwareUpdateView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AppText.titleMedium('Verifying firmware'),
+          AppText.titleMedium(loc(context).verifyingFirmware),
           AppGap.md(),
-          AppText.bodyMedium('Confirming the new firmware is running…'),
+          AppText.bodyMedium(loc(context).confirmingNewFirmware),
           AppGap.xl(),
           const AppLoader(variant: LoaderVariant.linear),
         ],
@@ -303,11 +313,11 @@ class _FirmwareUpdateViewState extends ConsumerState<FirmwareUpdateView> {
             children: [
               Icon(Icons.check_circle, color: scheme.primary, size: 24),
               AppGap.sm(),
-              AppText.titleMedium('Update complete'),
+              AppText.titleMedium(loc(context).updateComplete),
             ],
           ),
           AppGap.md(),
-          AppText.bodyMedium('Now running firmware version $newVersion.'),
+          AppText.bodyMedium(loc(context).nowRunningVersion(newVersion)),
         ],
       ),
     );
@@ -323,20 +333,111 @@ class _FirmwareUpdateViewState extends ConsumerState<FirmwareUpdateView> {
             children: [
               Icon(Icons.error_outline, color: scheme.error, size: 24),
               AppGap.sm(),
-              AppText.titleMedium('Update failed'),
+              AppText.titleMedium(loc(context).updateFailed),
             ],
           ),
           AppGap.md(),
-          AppText.bodyMedium(state.errorMessage ?? 'Unknown error'),
+          AppText.bodyMedium(state.errorMessage ?? loc(context).unknownError),
           AppGap.xl(),
           AppButton(
-            label: 'Try again',
+            label: loc(context).tryAgain,
             onTap: () =>
                 ref.read(firmwareUpdateNotifierProvider.notifier).cancel(),
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _onCheckForUpdates(BuildContext context) async {
+    final notifier = ref.read(firmwareUpdateNotifierProvider.notifier);
+
+    try {
+      final params = await notifier.buildOtaCheckParams();
+      if (params == null) {
+        if (context.mounted) {
+          showFailedSnackBar(context, loc(context).unableToGatherDeviceInfo);
+        }
+        return;
+      }
+
+      final info = await notifier.checkForOtaUpdate(params);
+
+      if (!context.mounted) return;
+
+      if (info != null) {
+        await _showOtaUpdateDialog(context, info);
+      }
+    } on FirmwareOtaCheckException catch (e) {
+      if (context.mounted) {
+        showFailedSnackBar(context, e.message);
+      }
+    }
+  }
+
+  Future<void> _showOtaUpdateDialog(
+      BuildContext context, FirmwareOtaInfo info) async {
+    final state = ref.read(firmwareUpdateNotifierProvider);
+    final currentVersion = state.activeBank?.version ?? '—';
+    final target = state.targetBank;
+
+    if (target == null) {
+      showFailedSnackBar(context, loc(context).noTargetBankAvailable);
+      return;
+    }
+
+    final confirmed = await showConfirmActionDialog(
+      context,
+      title: loc(context).updateAvailable,
+      message: '${loc(context).currentVersion(currentVersion)}\n'
+          '${loc(context).availableVersionLabel(info.version)}\n\n'
+          '${loc(context).doYouWantToUpdateNow}',
+      confirmLabel: loc(context).update,
+    );
+
+    if (confirmed != true || !context.mounted) return;
+
+    final notifier = ref.read(firmwareUpdateNotifierProvider.notifier);
+
+    try {
+      await notifier.triggerOtaInstall(
+        targetInstance: target.instance,
+        firmwareUrl: info.downloadUrl,
+      );
+    } catch (e, st) {
+      logger.e('[FirmwareUpdate] triggerOtaInstall error: $e',
+          error: e, stackTrace: st);
+      if (context.mounted) {
+        showFailedSnackBar(context, loc(context).failedToStartOtaUpdate);
+      }
+      return;
+    }
+
+    if (!context.mounted) return;
+
+    // Wait for OTA download + flash before entering recovery
+    await Future<void>.delayed(_otaInstallDelayBeforeReboot);
+    if (!context.mounted) return;
+
+    // Hand off to the shared recovery framework
+    final expectedVersion = info.version;
+    notifier.enterRecoveryWaiting();
+    await showFirmwareUpdateRecoveryDialog(context, ref);
+    if (!context.mounted) return;
+
+    final connState = ref.read(appConnectionStateProvider);
+    if (connState != AppConnectionState.authenticated) {
+      return;
+    }
+
+    try {
+      await notifier.verify(
+        expectedVersion: expectedVersion,
+        expectedActiveInstance: target.instance,
+      );
+    } catch (_) {
+      // Notifier already transitioned to `failed` and surfaced the message.
+    }
   }
 
   Future<void> _onPickFile(BuildContext context) async {
@@ -355,15 +456,14 @@ class _FirmwareUpdateViewState extends ConsumerState<FirmwareUpdateView> {
       BuildContext context, FirmwareUpdateState state) async {
     final target = state.targetBank;
     if (target == null) {
-      showFailedSnackBar(context, 'No target bank available');
+      showFailedSnackBar(context, loc(context).noTargetBankAvailable);
       return;
     }
     final confirmed = await showConfirmActionDialog(
       context,
-      title: 'Update Firmware',
-      message:
-          'The router will install the new firmware and reboot. Do not power off during the update.',
-      confirmLabel: 'Update',
+      title: loc(context).updateFirmware,
+      message: loc(context).firmwareInstallConfirmMessage,
+      confirmLabel: loc(context).update,
     );
     if (confirmed != true || !context.mounted) return;
     final notifier = ref.read(firmwareUpdateNotifierProvider.notifier);
@@ -393,7 +493,7 @@ class _FirmwareUpdateViewState extends ConsumerState<FirmwareUpdateView> {
     // reboot. The actual flash write is happening in the background on the
     // router; we have no status feedback (B2 blocker), so a fixed delay is
     // the best we can do.
-    await Future<void>.delayed(_installDelayBeforeReboot);
+    await Future<void>.delayed(_localInstallDelayBeforeReboot);
     if (!context.mounted) return;
 
     // Hand off to the shared recovery framework. The dialog blocks until the
@@ -422,6 +522,70 @@ class _FirmwareUpdateViewState extends ConsumerState<FirmwareUpdateView> {
   }
 }
 
+/// Card for checking OTA firmware updates.
+class _OtaCheckCard extends StatelessWidget {
+  const _OtaCheckCard({
+    required this.state,
+    required this.onCheck,
+  });
+
+  final FirmwareUpdateState state;
+  final VoidCallback onCheck;
+
+  @override
+  Widget build(BuildContext context) {
+    final isChecking = state.phase == FirmwareUpdatePhase.checkingOta;
+    final scheme = Theme.of(context).colorScheme;
+
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppText.titleMedium(loc(context).otaUpdate),
+          AppGap.md(),
+          Row(
+            children: [
+              if (isChecking)
+                AppButton.primaryOutline(
+                  label: loc(context).checking,
+                  onTap: null,
+                  icon: const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                )
+              else
+                AppButton.primaryOutline(
+                  label: loc(context).checkForUpdates,
+                  onTap: onCheck,
+                ),
+              if (state.otaUpToDate && !isChecking) ...[
+                AppGap.md(),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.check_circle,
+                      size: 18,
+                      color: scheme.primary,
+                    ),
+                    AppGap.sm(),
+                    AppText.bodyMedium(
+                      loc(context).firmwareUpToDate,
+                      color: scheme.primary,
+                    ),
+                  ],
+                ),
+              ],
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 /// Combined router info + firmware banks card.
 class _RouterStatusCard extends StatelessWidget {
   const _RouterStatusCard({
@@ -443,12 +607,12 @@ class _RouterStatusCard extends StatelessWidget {
         children: [
           _buildRouterHeader(context),
           Divider(height: AppSpacing.xl * 2, color: scheme.outlineVariant),
-          AppText.labelLarge('Firmware Banks'),
+          AppText.labelLarge(loc(context).firmwareBanks),
           AppGap.md(),
           if (isLoadingBanks)
-            _buildLoadingBanks()
+            _buildLoadingBanks(context)
           else if (banks.isEmpty)
-            AppText.bodyMedium('No firmware banks reported by router')
+            AppText.bodyMedium(loc(context).noFirmwareBanksReported)
           else
             _buildBanksList(context),
         ],
@@ -490,12 +654,12 @@ class _RouterStatusCard extends StatelessWidget {
     );
   }
 
-  Widget _buildLoadingBanks() {
+  Widget _buildLoadingBanks(BuildContext context) {
     return Row(
       children: [
         const SizedBox(width: 16, height: 16, child: AppLoader()),
         AppGap.md(),
-        AppText.bodyMedium('Loading…'),
+        AppText.bodyMedium(loc(context).loading),
       ],
     );
   }
@@ -604,7 +768,7 @@ class _StatusLabel extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final icon = isActive ? Icons.check_circle : Icons.circle_outlined;
     final color = isActive ? scheme.primary : scheme.outline;
-    final label = isActive ? 'Active' : 'Standby';
+    final label = isActive ? loc(context).active : loc(context).standby;
 
     return Row(
       mainAxisSize: MainAxisSize.min,

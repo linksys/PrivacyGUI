@@ -38,7 +38,11 @@ void main() {
     when(() => mockUsp.operate(any(), args: any(named: 'args')))
         .thenAnswer((_) async => {'commandKey': 'test-key-123'});
 
-    manager = SseManager(usp: mockUsp, bridge: mockBridge);
+    manager = SseManager(
+      usp: mockUsp,
+      bridge: mockBridge,
+      strategy: FakeSseOperationStrategy(mockBridge),
+    );
     awaiter = SseOperationAwaiter(manager, mockUsp);
   });
 

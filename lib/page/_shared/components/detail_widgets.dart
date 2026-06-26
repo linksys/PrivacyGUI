@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/_shared/components/usp_status_dot.dart';
 import 'package:privacy_gui/util/network_utils.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -72,7 +74,9 @@ class DetailStatusBadge extends StatelessWidget {
           UspStatusDot(isActive: isActive, size: 8),
           AppGap.xs(),
           AppText.labelMedium(
-            isActive ? (activeLabel ?? 'Online') : (inactiveLabel ?? 'Offline'),
+            isActive
+                ? (activeLabel ?? loc(context).online)
+                : (inactiveLabel ?? loc(context).offline),
             color: isActive
                 ? colorScheme.onPrimaryContainer
                 : colorScheme.onSurfaceVariant,
@@ -118,6 +122,57 @@ class DetailInfoTile extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Info tile with optional tap action and trailing widget.
+class DetailNavigableTile extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  final Widget? trailing;
+  final VoidCallback? onTap;
+
+  const DetailNavigableTile({
+    super.key,
+    required this.icon,
+    required this.label,
+    required this.value,
+    this.trailing,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final content = Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 16, color: colorScheme.onSurfaceVariant),
+        AppGap.sm(),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              AppText.labelSmall(label, color: colorScheme.onSurfaceVariant),
+              AppText.bodyMedium(value),
+            ],
+          ),
+        ),
+        if (trailing != null) trailing!,
+      ],
+    );
+
+    if (onTap == null) return content;
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppSpacing.xs),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxs),
+        child: content,
+      ),
     );
   }
 }
@@ -215,7 +270,7 @@ class DetailCopyableText extends StatelessWidget {
         Clipboard.setData(ClipboardData(text: text));
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Copied: $text'),
+            content: Text(loc(context).copiedValue(text)),
             duration: const Duration(seconds: 1),
           ),
         );
@@ -245,20 +300,20 @@ class DetailCopyableText extends StatelessWidget {
 class DetailSpeedCard extends StatelessWidget {
   final IconData icon;
   final String label;
-  final int speedBps;
+  final int speedKbps; // TR-181 rates are in kbps
   final Color color;
 
   const DetailSpeedCard({
     super.key,
     required this.icon,
     required this.label,
-    required this.speedBps,
+    required this.speedKbps,
     required this.color,
   });
 
   @override
   Widget build(BuildContext context) {
-    final (:value, :unit) = NetworkUtils.formatBitsWithUnit(speedBps);
+    final (:value, :unit) = NetworkUtils.formatSpeedWithUnit(speedKbps);
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
@@ -289,10 +344,99 @@ class DetailSpeedCard extends StatelessWidget {
 }
 
 // =============================================================================
+// Info Block — Groups multiple info tiles with Block pattern
+// =============================================================================
+
+/// Block wrapper for grouping related info tiles.
+///
+/// Use this to wrap multiple [DetailInfoTile], [DetailCopyableTile], etc.
+/// within an [AppCard] to create visual separation between info groups.
+class DetailInfoBlock extends StatelessWidget {
+  final List<Widget> children;
+
+  const DetailInfoBlock({
+    super.key,
+    required this.children,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBlock(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (var i = 0; i < children.length; i++) ...[
+            children[i],
+            if (i < children.length - 1) AppGap.md(),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+// =============================================================================
+// Empty State Block
+// =============================================================================
+
+/// A visual empty state block with icon and message.
+///
+/// Use for empty lists (devices, nodes, etc.) to provide clear feedback.
+class DetailEmptyBlock extends StatelessWidget {
+  final IconData icon;
+  final String message;
+  final String? subtitle;
+
+  const DetailEmptyBlock({
+    super.key,
+    this.icon = Icons.devices_other,
+    required this.message,
+    this.subtitle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return LayoutBlock(
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxl),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 100,
+              color: colorScheme.onSurfaceVariant,
+            ),
+            AppGap.lg(),
+            AppText.bodyMedium(
+              message,
+              color: colorScheme.onSurfaceVariant,
+            ),
+            if (subtitle != null) ...[
+              AppGap.xs(),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+                child: AppText.bodySmall(
+                  subtitle!,
+                  color: colorScheme.onSurfaceVariant,
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// =============================================================================
 // Grid Layout Helpers
 // =============================================================================
 
-/// A row of two equal-width cards (6+6 columns) with height alignment.
+/// A row of two equal-width cards with height alignment.
 class DetailGridRow extends StatelessWidget {
   final Widget left;
   final Widget right;
@@ -309,9 +453,9 @@ class DetailGridRow extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          SizedBox(width: context.colWidth(6), child: left),
+          Expanded(child: left),
           AppGap.gutter(),
-          SizedBox(width: context.colWidth(6), child: right),
+          Expanded(child: right),
         ],
       ),
     );

@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/components/localizations/service_error_localizations.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
+import 'package:privacy_gui/components/views/service_error_view.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/dmz/models/dmz_feature_state.dart';
 import 'package:privacy_gui/page/dmz/models/dmz_ui_model.dart';
@@ -55,7 +59,7 @@ class _UspDmzViewState extends ConsumerState<UspDmzView> {
 
     return UiKitPageView.withSliver(
       scrollable: true,
-      title: 'DMZ',
+      title: loc(context).dmz,
       topbar: const PreferredSize(
         preferredSize: Size.fromHeight(64),
         child: UspTopBar(),
@@ -69,8 +73,12 @@ class _UspDmzViewState extends ConsumerState<UspDmzView> {
         if (status.isLoading) {
           return const Center(child: AppLoader());
         }
-        if (status.errorMessage != null) {
-          return _buildError(context, ref);
+        if (status.error != null) {
+          return ServiceErrorView(
+            error: status.error,
+            onRetry: () =>
+                ref.read(uspDmzProvider.notifier).fetch(forceRemote: true),
+          );
         }
         _syncControllers(state);
         return _buildContent(context, ref, state);
@@ -89,35 +97,11 @@ class _UspDmzViewState extends ConsumerState<UspDmzView> {
   ) {
     if (!state.isDirty) return null;
     return UiKitBottomBarConfig(
-      positiveLabel: 'Save',
+      positiveLabel: loc(context).save,
       isPositiveEnabled:
           !state.status.isSaving && state.status.fieldErrors.isEmpty,
       onPositiveTap: () => _onSave(context, ref),
       onNegativeTap: () => ref.read(uspDmzProvider.notifier).revert(),
-    );
-  }
-
-  // ---------------------------------------------------------------------------
-  // Error
-  // ---------------------------------------------------------------------------
-
-  Widget _buildError(BuildContext context, WidgetRef ref) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          AppIcon.font(Icons.error_outline,
-              size: 48, color: Theme.of(context).colorScheme.error),
-          AppGap.xl(),
-          AppText.titleMedium('Unable to load DMZ settings'),
-          AppGap.md(),
-          AppButton(
-            label: 'Retry',
-            onTap: () =>
-                ref.read(uspDmzProvider.notifier).fetch(forceRemote: true),
-          ),
-        ],
-      ),
     );
   }
 
@@ -138,7 +122,7 @@ class _UspDmzViewState extends ConsumerState<UspDmzView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         AppText.bodyMedium(
-          'Route all incoming traffic to a specific host on your network',
+          loc(context).dmzPageDesc,
           color: Theme.of(context).colorScheme.onSurfaceVariant,
         ),
         AppGap.xl(),
@@ -164,31 +148,35 @@ class _UspDmzViewState extends ConsumerState<UspDmzView> {
     bool disabled,
   ) {
     return AppCard(
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                AppText.labelLarge('DMZ'),
-                AppGap.sm(),
-                AppText.bodyMedium(
-                  'Route all traffic to a host',
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ],
+      padding: const EdgeInsets.all(AppSpacing.md),
+      child: LayoutBlock(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  AppText.labelLarge(loc(context).dmz),
+                  AppGap.sm(),
+                  AppText.bodyMedium(
+                    loc(context).dmzRouteToHost,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ],
+              ),
             ),
-          ),
-          AppSwitch(
-            value: pending.isEnabled,
-            onChanged: disabled
-                ? null
-                : (v) => notifier.updateSetting(
-                      (m) => m.copyWith(isEnabled: v),
-                    ),
-          ),
-        ],
+            AppSwitch(
+              value: pending.isEnabled,
+              onChanged: disabled
+                  ? null
+                  : (v) => notifier.updateSetting(
+                        (m) => m.copyWith(isEnabled: v),
+                      ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -204,17 +192,21 @@ class _UspDmzViewState extends ConsumerState<UspDmzView> {
     bool disabled,
   ) {
     return AppCard(
+      padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AppText.titleSmall('Destination IP'),
-          AppGap.lg(),
-          AppIpv4TextField(
-            controller: _destIpController,
-            onChanged: (value) {
-              notifier.updateSetting((m) => m.copyWith(destIp: value));
-            },
-            errorText: ref.watch(uspDmzProvider).status.fieldErrors['destIp'],
+          AppText.titleSmall(loc(context).destinationIp),
+          AppGap.md(),
+          LayoutBlock(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: AppIpv4TextField(
+              controller: _destIpController,
+              onChanged: (value) {
+                notifier.updateSetting((m) => m.copyWith(destIp: value));
+              },
+              errorText: ref.watch(uspDmzProvider).status.fieldErrors['destIp'],
+            ),
           ),
         ],
       ),
@@ -232,41 +224,45 @@ class _UspDmzViewState extends ConsumerState<UspDmzView> {
     bool disabled,
   ) {
     return AppCard(
+      padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AppText.titleSmall('Source Restriction'),
-          AppGap.lg(),
-          AppRadioList(
-            selected: pending.sourceType,
-            itemHeight: 56,
-            items: [
-              AppRadioListItem(
-                title: 'Any (all sources)',
-                value: DmzSourceType.any,
-              ),
-              AppRadioListItem(
-                title: 'CIDR Range',
-                expandedWidget: pending.sourceType == DmzSourceType.cidr
-                    ? Container(
-                        constraints: const BoxConstraints(maxWidth: 429),
-                        child: AppTextFormField(
-                          controller: _cidrController,
-                          hintText: 'e.g. 192.168.1.0/24',
-                          onChanged: (value) {
-                            notifier.updateSetting(
-                                (m) => m.copyWith(sourcePrefix: value));
-                          },
-                        ),
-                      )
-                    : null,
-                value: DmzSourceType.cidr,
-              ),
-            ],
-            onChanged: (index, value) {
-              if (value == null || value == pending.sourceType) return;
-              notifier.updateSetting((m) => m.copyWith(sourceType: value));
-            },
+          AppText.titleSmall(loc(context).sourceRestriction),
+          AppGap.md(),
+          LayoutBlock(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: AppRadioList(
+              selected: pending.sourceType,
+              itemHeight: 56,
+              items: [
+                AppRadioListItem(
+                  title: loc(context).anyAllSources,
+                  value: DmzSourceType.any,
+                ),
+                AppRadioListItem(
+                  title: loc(context).cidrRange,
+                  expandedWidget: pending.sourceType == DmzSourceType.cidr
+                      ? Container(
+                          constraints: const BoxConstraints(maxWidth: 429),
+                          child: AppTextFormField(
+                            controller: _cidrController,
+                            hintText: 'e.g. 192.168.1.0/24',
+                            onChanged: (value) {
+                              notifier.updateSetting(
+                                  (m) => m.copyWith(sourcePrefix: value));
+                            },
+                          ),
+                        )
+                      : null,
+                  value: DmzSourceType.cidr,
+                ),
+              ],
+              onChanged: (index, value) {
+                if (value == null || value == pending.sourceType) return;
+                notifier.updateSetting((m) => m.copyWith(sourceType: value));
+              },
+            ),
           ),
         ],
       ),
@@ -284,11 +280,11 @@ class _UspDmzViewState extends ConsumerState<UspDmzView> {
         ref.read(uspDmzProvider.notifier).save(),
       );
       if (context.mounted) {
-        showSuccessSnackBar(context, 'DMZ settings saved');
+        showSuccessSnackBar(context, loc(context).dmzSettingsSaved);
       }
     } catch (e) {
       if (context.mounted) {
-        showFailedSnackBar(context, 'Failed to save: $e');
+        showFailedSnackBar(context, localizeServiceError(context, e));
       }
     }
   }

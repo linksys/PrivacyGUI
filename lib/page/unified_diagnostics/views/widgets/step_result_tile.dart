@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:privacy_gui/core/utils/wifi.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/util/network_utils.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../models/device_score.dart';
@@ -29,7 +32,7 @@ class StepResultTile extends StatelessWidget {
         ),
     };
 
-    final details = _getResultDetails(result);
+    final details = _getResultDetails(context, result);
     final scoredDevices = _getScoredDevicesForDisplay(result);
     final isSpeedTest = result.step == DiagnosticStep.runningSpeedTest;
 
@@ -37,7 +40,7 @@ class StepResultTile extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: AppSpacing.md),
       child: AppExpansionPanel.single(
         initiallyExpanded: initiallyExpanded,
-        headerTitle: _getStepTitle(result.step),
+        headerTitle: _getStepTitle(context, result.step),
         content: Padding(
           padding:
               const EdgeInsets.only(left: AppSpacing.md, bottom: AppSpacing.sm),
@@ -49,7 +52,7 @@ class StepResultTile extends StatelessWidget {
                   Icon(icon, size: 16, color: color),
                   AppGap.sm(),
                   AppText.bodySmall(
-                    _getSeverityText(result.severity),
+                    _getSeverityText(context, result.severity),
                     color: color,
                   ),
                 ],
@@ -82,13 +85,13 @@ class StepResultTile extends StatelessWidget {
                     ))
               else if (!isSpeedTest)
                 AppText.bodySmall(
-                  'No additional details available.',
+                  loc(context).noAdditionalDetailsAvailable,
                   color: colorScheme.onSurfaceVariant,
                 ),
               if (scoredDevices.isNotEmpty) ...[
                 AppGap.md(),
                 AppText.labelMedium(
-                  'Affected Devices',
+                  loc(context).affectedDevices,
                   color: colorScheme.onSurfaceVariant,
                 ),
                 AppGap.xs(),
@@ -115,178 +118,214 @@ class StepResultTile extends StatelessWidget {
     return issues.take(5).toList(growable: false);
   }
 
-  String _getSeverityText(DiagnosticSeverity severity) {
+  String _getSeverityText(BuildContext context, DiagnosticSeverity severity) {
     return switch (severity) {
-      DiagnosticSeverity.ok => 'Passed',
-      DiagnosticSeverity.warning => 'Warning',
-      DiagnosticSeverity.error => 'Issue Detected',
-      DiagnosticSeverity.skipped => 'Skipped',
+      DiagnosticSeverity.ok => loc(context).passed,
+      DiagnosticSeverity.warning => loc(context).warning,
+      DiagnosticSeverity.error => loc(context).issueDetected,
+      DiagnosticSeverity.skipped => loc(context).skipped,
     };
   }
 
-  String _getStepTitle(DiagnosticStep step) {
+  String _getStepTitle(BuildContext context, DiagnosticStep step) {
     return switch (step) {
-      DiagnosticStep.checkingWanStatus => 'WAN Status',
-      DiagnosticStep.checkingDhcp => 'DHCP',
-      DiagnosticStep.checkingDhcpPool => 'DHCP Pool',
-      DiagnosticStep.pingGateway => 'Gateway Ping',
-      DiagnosticStep.pingDns => 'DNS Ping',
-      DiagnosticStep.pingInternet => 'Internet Connectivity',
-      DiagnosticStep.dnsLookup => 'DNS Lookup',
-      DiagnosticStep.runningSpeedTest => 'Speed Test',
-      DiagnosticStep.checkingWifiSignal => 'WiFi Signal',
-      DiagnosticStep.checkingConnectedDevices => 'Connected Devices',
-      DiagnosticStep.runningTraceroute => 'Traceroute',
-      DiagnosticStep.checkingMeshBackhaul => 'Mesh Backhaul',
+      DiagnosticStep.checkingWanStatus => loc(context).wanStatus,
+      DiagnosticStep.checkingDhcp => loc(context).dhcp,
+      DiagnosticStep.checkingDhcpPool => loc(context).dhcpPool,
+      DiagnosticStep.pingGateway => loc(context).gatewayPing,
+      DiagnosticStep.pingDns => loc(context).dnsPing,
+      DiagnosticStep.pingInternet => loc(context).internetConnectivity,
+      DiagnosticStep.dnsLookup => loc(context).dnsLookupStep,
+      DiagnosticStep.runningSpeedTest => loc(context).speedTest,
+      DiagnosticStep.checkingWifiSignal => loc(context).wifiSignal,
+      DiagnosticStep.checkingConnectedDevices => loc(context).connectedDevices,
+      DiagnosticStep.runningTraceroute => loc(context).traceroute,
+      DiagnosticStep.checkingMeshBackhaul => loc(context).meshBackhaul,
       _ => step.name,
     };
   }
 
-  List<_ResultDetail> _getResultDetails(DiagnosticStepUIModel result) {
+  List<_ResultDetail> _getResultDetails(
+      BuildContext context, DiagnosticStepUIModel result) {
     return switch (result) {
       WanStatusCheckUIModel r => [
-          _ResultDetail('Status', r.status),
-          _ResultDetail(
-              'IP Address', r.ipAddress.isNotEmpty ? r.ipAddress : 'None'),
-          _ResultDetail('Type', r.addressingType),
+          _ResultDetail(loc(context).status, r.status),
+          _ResultDetail(loc(context).ipAddress,
+              r.ipAddress.isNotEmpty ? r.ipAddress : loc(context).none),
+          _ResultDetail(loc(context).type, r.addressingType),
         ],
       PingCheckUIModel r => [
-          _ResultDetail('Host', r.host),
+          _ResultDetail(loc(context).host, r.host),
+          _ResultDetail(loc(context).latency,
+              r.allFailed ? loc(context).failed : '${r.avgResponseTime} ms'),
           _ResultDetail(
-              'Latency', r.allFailed ? 'Failed' : '${r.avgResponseTime} ms'),
-          _ResultDetail('Success Rate', '${r.successCount}/${r.totalCount}'),
+              loc(context).successRate, '${r.successCount}/${r.totalCount}'),
         ],
       WifiSignalCheckUIModel r => [
-          _ResultDetail('Band', r.band),
-          _ResultDetail('Channel', '${r.channel}'),
-          _ResultDetail('Signal',
-              r.connectedDevices == 0 ? 'No clients' : '${r.rssi} dBm (avg)'),
+          _ResultDetail(loc(context).band, r.band),
+          _ResultDetail(loc(context).channel, '${r.channel}'),
+          _ResultDetail(
+              loc(context).signal,
+              r.connectedDevices == 0
+                  ? loc(context).noClients
+                  : '${r.rssi} dBm (avg)'),
           if (r.connectedDevices > 0)
-            _ResultDetail('Wireless Clients', '${r.connectedDevices}'),
+            _ResultDetail(
+                loc(context).wirelessClients, '${r.connectedDevices}'),
           for (final radio in r.radios.where((rd) => rd.hasClients))
             _ResultDetail(
               radio.isResolved
                   ? '${radio.band} Ch${radio.channel}'
-                  : 'Unresolved',
+                  : loc(context).unresolved,
               '${radio.averageRssi} dBm avg / min ${radio.minRssi} '
               '(${radio.clientCount} clients)',
             ),
         ],
       DhcpPoolCheckUIModel r => [
           if (!r.dhcpEnabled)
-            _ResultDetail('Status', 'DHCP disabled')
+            _ResultDetail(loc(context).status, loc(context).dhcpDisabled)
           else if (r.capacityUnknown)
-            _ResultDetail('Status', 'Pool range unavailable')
-          else ...[
-            _ResultDetail('Range', '${r.minAddress} – ${r.maxAddress}'),
-            _ResultDetail('Capacity', '${r.capacity}'),
             _ResultDetail(
-                'Used', '${r.usedLeases} (${(r.usageRatio * 100).toInt()}%)'),
+                loc(context).status, loc(context).poolRangeUnavailable)
+          else ...[
+            _ResultDetail(
+                loc(context).range, '${r.minAddress} – ${r.maxAddress}'),
+            _ResultDetail(loc(context).capacity, '${r.capacity}'),
+            _ResultDetail(loc(context).used,
+                '${r.usedLeases} (${(r.usageRatio * 100).toInt()}%)'),
           ],
         ],
       ConnectedDevicesCheckUIModel r => [
-          _ResultDetail('Total Devices', '${r.totalDevices}'),
-          _ResultDetail('Active', '${r.activeDevices}'),
+          _ResultDetail(loc(context).totalDevices, '${r.totalDevices}'),
+          _ResultDetail(loc(context).active, '${r.activeDevices}'),
           if (r.highBandwidthDevices.isNotEmpty)
-            _ResultDetail('High Bandwidth', r.highBandwidthDevices.join(', ')),
+            _ResultDetail(
+                loc(context).highBandwidth, r.highBandwidthDevices.join(', ')),
         ],
       DeviceIssuesCheckUIModel r => [
-          _ResultDetail('Total Devices', '${r.totalDevices}'),
-          _ResultDetail('With Issues', '${r.devicesWithIssues}'),
+          _ResultDetail(loc(context).totalDevices, '${r.totalDevices}'),
+          _ResultDetail(loc(context).withIssues, '${r.devicesWithIssues}'),
           if (r.weakSignalDevices.isNotEmpty)
-            _ResultDetail(
-                'Weak Signal', r.weakSignalDevices.take(3).join(', ')),
+            _ResultDetail(loc(context).weakSignal,
+                r.weakSignalDevices.take(3).join(', ')),
           if (r.lowDataRateDevices.isNotEmpty)
-            _ResultDetail(
-                'Low Data Rate', r.lowDataRateDevices.take(3).join(', ')),
+            _ResultDetail(loc(context).lowDataRate,
+                r.lowDataRateDevices.take(3).join(', ')),
         ],
       WifiCoverageCheckUIModel r => [
-          _ResultDetail('Wireless Devices', '${r.totalWirelessDevices}'),
-          _ResultDetail('Avg Signal', '${r.averageSignalStrength} dBm'),
-          _ResultDetail('Weak Signal Devices', '${r.weakSignalDevices.length}'),
+          _ResultDetail(
+              loc(context).wirelessDevices, '${r.totalWirelessDevices}'),
+          _ResultDetail(
+              loc(context).avgSignal, '${r.averageSignalStrength} dBm'),
+          _ResultDetail(
+              loc(context).weakSignalDevices, '${r.weakSignalDevices.length}'),
           if (r.weakSignalDevices.isNotEmpty)
-            _ResultDetail('Affected', r.weakSignalDevices.take(3).join(', ')),
+            _ResultDetail(loc(context).affectedDevices,
+                r.weakSignalDevices.take(3).join(', ')),
         ],
       DnsLookupCheckUIModel r => [
-          _ResultDetail('Host', r.hostName),
+          _ResultDetail(loc(context).host, r.hostName),
           _ResultDetail(
-            'Resolved',
-            r.resolvedIps.isEmpty ? 'Failed' : r.resolvedIps.take(2).join(', '),
+            loc(context).resolved,
+            r.resolvedIps.isEmpty
+                ? loc(context).failed
+                : r.resolvedIps.take(2).join(', '),
           ),
           if (r.dnsServerUsed.isNotEmpty)
-            _ResultDetail('DNS Server', r.dnsServerUsed),
+            _ResultDetail(loc(context).dnsServer, r.dnsServerUsed),
           if (r.responseTimeMs > 0)
-            _ResultDetail('Response Time', '${r.responseTimeMs} ms'),
+            _ResultDetail(loc(context).responseTime, '${r.responseTimeMs} ms'),
           if (r.configuredDnsServers.isNotEmpty)
             _ResultDetail(
-              'Configured DNS',
+              loc(context).configuredDns,
               r.configuredDnsServers.take(3).join(', '),
             ),
         ],
       IntermittentCheckUIModel r => [
-          _ResultDetail('Uptime', r.uptimeFormatted),
-          _ResultDetail(
-              'Ping Success', '${(r.pingSuccessRate * 100).toInt()}%'),
-          _ResultDetail('Avg Latency', '${r.averageLatencyMs} ms'),
-          _ResultDetail('Jitter', '${r.jitterMs} ms'),
-          if (r.recentReboot) _ResultDetail('Note', 'Recent reboot detected'),
+          _ResultDetail(loc(context).uptime, r.uptimeFormatted),
+          _ResultDetail(loc(context).pingSuccess,
+              '${(r.pingSuccessRate * 100).toInt()}%'),
+          _ResultDetail(loc(context).avgLatency, '${r.averageLatencyMs} ms'),
+          _ResultDetail(loc(context).jitter, '${r.jitterMs} ms'),
+          if (r.recentReboot)
+            _ResultDetail(loc(context).note, loc(context).recentRebootDetected),
         ],
       TracerouteCheckUIModel r => [
-          _ResultDetail('Target', r.targetHost),
-          _ResultDetail('Hops', '${r.hops.length}'),
+          _ResultDetail(loc(context).target, r.targetHost),
+          _ResultDetail(loc(context).hops, '${r.hops.length}'),
           if (r.slowHops.isNotEmpty)
-            _ResultDetail('Slow Hops', '${r.slowHops.length}'),
+            _ResultDetail(loc(context).slowHops, '${r.slowHops.length}'),
         ],
       MeshBackhaulCheckUIModel r => r.nodes.isEmpty
-          ? const [
-              _ResultDetail('Mesh', 'Single-router setup — no backhaul'),
+          ? [
+              _ResultDetail(
+                  loc(context).mesh, loc(context).singleRouterSetupNoBackhaul),
             ]
           : [
-              _ResultDetail('Nodes', '${r.nodes.length}'),
+              _ResultDetail(loc(context).nodes, '${r.nodes.length}'),
               if (r.poorCount > 0)
-                _ResultDetail('Poor backhaul', '${r.poorCount}'),
+                _ResultDetail(loc(context).poorBackhaul, '${r.poorCount}'),
               if (r.weakCount > 0)
-                _ResultDetail('Weak backhaul', '${r.weakCount}'),
-              for (final n in r.nodes)
-                _ResultDetail(
-                  n.label,
-                  _formatMeshNodeSummary(n),
-                ),
+                _ResultDetail(loc(context).weakBackhaul, '${r.weakCount}'),
+              ..._buildMeshNodeDetails(context, r.nodes),
             ],
       _ when result.step == DiagnosticStep.runningSpeedTest => [
           if (result.rawData['serverHost'] is String &&
               (result.rawData['serverHost'] as String).isNotEmpty)
-            _ResultDetail('Server', result.rawData['serverHost'] as String),
+            _ResultDetail(
+                loc(context).server, result.rawData['serverHost'] as String),
         ],
       _ when result.step == DiagnosticStep.checkingDhcp => [
           _ResultDetail(
-              'Status',
+              loc(context).status,
               result.isOk
-                  ? 'OK'
+                  ? loc(context).ok
                   : result.isSkipped
-                      ? 'Static IP'
-                      : 'Failed'),
+                      ? loc(context).staticIp
+                      : loc(context).failed),
         ],
       _ => [
           if (result.rawData.containsKey('error'))
-            _ResultDetail('Error', result.rawData['error'].toString()),
+            _ResultDetail(
+                loc(context).error, result.rawData['error'].toString()),
         ],
     };
   }
 
-  String _formatMeshNodeSummary(MeshNodeBackhaulUIModel n) {
-    final parts = <String>[];
-    parts.add(n.mediaType);
-    if (n.phyRateMbps > 0) parts.add('${n.phyRateMbps} Mbps');
-    if (!n.isWired && n.signalStrengthDbm != 0) {
-      parts.add('${n.signalStrengthDbm} dBm');
+  List<_ResultDetail> _buildMeshNodeDetails(
+      BuildContext context, List<MeshNodeBackhaulUIModel> nodes) {
+    final details = <_ResultDetail>[];
+    for (final n in nodes) {
+      final severityText = switch (n.severity) {
+        MeshBackhaulSeverity.healthy => loc(context).healthy,
+        MeshBackhaulSeverity.weak => loc(context).weak,
+        MeshBackhaulSeverity.poor => loc(context).poor,
+      };
+      final staleMarker = n.isStale ? ' ⚠️ ${loc(context).stale}' : '';
+      details.add(_ResultDetail(
+        n.label,
+        '${n.linkType} • $severityText$staleMarker',
+      ));
+      if (n.parentLabel != null && n.parentLabel!.isNotEmpty) {
+        details.add(
+            _ResultDetail('  ${loc(context).connectedTo}', n.parentLabel!));
+      }
+      if (!n.isWired && n.signalStrengthDbm != 0) {
+        final signalLevel = getWifiSignalLevel(n.signalStrengthDbm);
+        details.add(_ResultDetail('  ${loc(context).signal}',
+            '${n.signalStrengthDbm} dBm (${signalLevel.displayTitle})'));
+      }
+      if (n.lastUplinkRateKbps > 0 || n.lastDownlinkRateKbps > 0) {
+        final up = n.lastUplinkRateKbps > 0
+            ? '↑${NetworkUtils.formatSpeed(n.lastUplinkRateKbps)}'
+            : '--';
+        final down = n.lastDownlinkRateKbps > 0
+            ? '↓${NetworkUtils.formatSpeed(n.lastDownlinkRateKbps)}'
+            : '--';
+        details.add(_ResultDetail('  ${loc(context).speed}', '$down / $up'));
+      }
     }
-    parts.add(switch (n.severity) {
-      MeshBackhaulSeverity.healthy => 'Healthy',
-      MeshBackhaulSeverity.weak => 'Weak',
-      MeshBackhaulSeverity.poor => 'Poor',
-    });
-    return parts.join(' • ');
+    return details;
   }
 }
 
@@ -322,7 +361,7 @@ class _SpeedTestVisualization extends StatelessWidget {
                   size: 14, color: colorScheme.onSurfaceVariant),
               AppGap.xs(),
               AppText.bodySmall(
-                '$latencyMs ms latency',
+                loc(context).msLatency(latencyMs),
                 color: colorScheme.onSurfaceVariant,
               ),
             ],
@@ -333,7 +372,7 @@ class _SpeedTestVisualization extends StatelessWidget {
           children: [
             Expanded(
               child: SpeedGauge(
-                label: 'Download',
+                label: loc(context).download,
                 value: downloadMbps,
                 icon: Icons.download,
                 color: colorScheme.primary,
@@ -343,7 +382,7 @@ class _SpeedTestVisualization extends StatelessWidget {
             Expanded(
               child: hasUpload
                   ? SpeedGauge(
-                      label: 'Upload',
+                      label: loc(context).upload,
                       value: uploadMbps,
                       icon: Icons.upload,
                       color: colorScheme.tertiary,
@@ -354,11 +393,11 @@ class _SpeedTestVisualization extends StatelessWidget {
                             color: colorScheme.onSurfaceVariant, size: 32),
                         AppGap.sm(),
                         AppText.bodySmall(
-                          'N/A',
+                          loc(context).notAvailable,
                           color: colorScheme.onSurfaceVariant,
                         ),
                         AppGap.xs(),
-                        AppText.labelSmall('Upload'),
+                        AppText.labelSmall(loc(context).upload),
                       ],
                     ),
             ),
@@ -367,7 +406,7 @@ class _SpeedTestVisualization extends StatelessWidget {
         if (!hasUpload) ...[
           AppGap.sm(),
           AppText.bodySmall(
-            'Upload test not supported on this firmware.',
+            loc(context).uploadTestNotSupported,
             color: colorScheme.onSurfaceVariant,
           ),
         ],
@@ -433,13 +472,13 @@ class _DeviceScoreRow extends StatelessWidget {
                 ),
               ),
               AppText.labelMedium(
-                'Score ${device.overallScore}',
+                loc(context).scoreValue(device.overallScore),
                 color: scoreColor,
               ),
             ],
           ),
           AppText.bodySmall(
-            _formatSubtitle(device),
+            _formatSubtitle(context, device),
             color: colorScheme.onSurfaceVariant,
           ),
         ],
@@ -447,10 +486,10 @@ class _DeviceScoreRow extends StatelessWidget {
     );
   }
 
-  String _formatSubtitle(DeviceScoreUIModel d) {
+  String _formatSubtitle(BuildContext context, DeviceScoreUIModel d) {
     final parts = <String>[];
     if (!d.isWireless) {
-      parts.add('Wired');
+      parts.add(loc(context).wired);
     } else if (d.rssiDbm != null) {
       parts.add('${d.signalLabel} (${d.rssiDbm} dBm)');
     } else {

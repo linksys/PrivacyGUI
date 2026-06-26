@@ -20,12 +20,15 @@ enum CloudEnvironment {
 
 enum ForceCommand {
   local,
+  remote,
   none;
 
   static ForceCommand reslove(String type) {
     logger.d('[Config]: Force - $type');
     if (type == 'local') {
       return ForceCommand.local;
+    } else if (type == 'remote') {
+      return ForceCommand.remote;
     } else {
       return ForceCommand.none;
     }
@@ -123,6 +126,10 @@ class BuildConfig {
 
   static bool isLocal() {
     return forceCommandType == ForceCommand.local;
+  }
+
+  static bool isRemote() {
+    return forceCommandType == ForceCommand.remote;
   }
 }
 

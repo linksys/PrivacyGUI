@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:privacy_gui/page/_shared/components/detail_widgets.dart';
 import 'package:privacy_gui/page/_shared/models/time_settings_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/timezone_definitions.dart';
-import 'package:privacy_gui/page/_shared/components/usp_info_row.dart';
 import 'package:privacy_gui/page/_shared/utils/local_time_ticker.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 class UspTimezoneCard extends StatefulWidget {
@@ -70,7 +71,7 @@ class _UspTimezoneCardState extends State<UspTimezoneCard>
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                AppText.titleMedium('Timezone'),
+                AppText.titleMedium(loc(context).timezone),
                 Row(
                   children: [
                     AppBadge(
@@ -85,7 +86,7 @@ class _UspTimezoneCardState extends State<UspTimezoneCard>
                     ),
                     AppGap.sm(),
                     Semantics(
-                      label: 'Edit timezone settings',
+                      label: loc(context).editTimezoneSettings,
                       button: true,
                       child: AppIconButton(
                         icon: AppIcon.font(Icons.edit, size: 18),
@@ -96,25 +97,33 @@ class _UspTimezoneCardState extends State<UspTimezoneCard>
                 ),
               ],
             ),
-            AppGap.xl(),
-            UspInfoRow(
-              label: 'Timezone',
-              value: tzDisplay,
-            ),
-            if (tzInfo != null && tzInfo.observesDST)
-              UspInfoRow(
-                label: 'Daylight Savings Time',
-                value: dstEnabled ? 'On' : 'Off',
-              ),
-            UspInfoRow(
-              label: 'NTP Server',
-              value: widget.timeSettings.ntpServer1.isNotEmpty
-                  ? widget.timeSettings.ntpServer1
-                  : '—',
-            ),
-            UspInfoRow(
-              label: 'Local Time',
-              value: timeDisplay,
+            AppGap.md(),
+            DetailInfoBlock(
+              children: [
+                DetailInfoTile(
+                  icon: Icons.public,
+                  label: loc(context).timezone,
+                  value: tzDisplay,
+                ),
+                if (tzInfo != null && tzInfo.observesDST)
+                  DetailInfoTile(
+                    icon: Icons.wb_sunny,
+                    label: loc(context).daylightSavingsTimeLabel,
+                    value: dstEnabled ? 'On' : 'Off',
+                  ),
+                DetailInfoTile(
+                  icon: Icons.dns,
+                  label: loc(context).ntpServer,
+                  value: widget.timeSettings.ntpServer1.isNotEmpty
+                      ? widget.timeSettings.ntpServer1
+                      : '—',
+                ),
+                DetailInfoTile(
+                  icon: Icons.access_time,
+                  label: loc(context).localTime,
+                  value: timeDisplay,
+                ),
+              ],
             ),
           ],
         ),

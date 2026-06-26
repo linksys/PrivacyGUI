@@ -10,7 +10,15 @@ final uspDashboardRoute = ShellRoute(
     LinksysRoute(
       name: RouteNamed.uspDashboard,
       path: RoutePath.uspDashboard,
-      builder: (context, state) => const UspDashboardView(),
+      builder: (context, state) {
+        // Reset bars visibility on every route enter (including pop back)
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          final container = ProviderScope.containerOf(context);
+          container.read(uspBarsVisibleProvider.notifier).state = true;
+          container.read(uspMenuController).setMenuVisible(true);
+        });
+        return const UspDashboardView();
+      },
     ),
     LinksysRoute(
       name: RouteNamed.uspMenu,
@@ -153,7 +161,7 @@ final uspDashboardRoute = ShellRoute(
         ),
       ],
     ),
-    if (kDebugMode || BuildConfig.enableTestConsole)
+    if (kDebugMode || GlobalConfig.feature.enableTestConsole)
       LinksysRoute(
         name: RouteNamed.uspTestConsole,
         path: RoutePath.uspTestConsole,
@@ -180,6 +188,12 @@ final uspDashboardRoute = ShellRoute(
       name: RouteNamed.uspSpeedTest,
       path: RoutePath.uspSpeedTest,
       builder: (context, state) => const SpeedTestView(),
+    ),
+    LinksysRoute(
+      name: RouteNamed.uspAiAssistant,
+      path: RoutePath.uspAiAssistant,
+      config: const LinksysRouteConfig(noNaviRail: true),
+      builder: (context, state) => const RouterAssistantView(),
     ),
   ],
 );

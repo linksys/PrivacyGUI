@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/constants/build_config.dart';
-import 'package:privacy_gui/demo/providers/demo_ui_provider.dart';
-import 'package:privacy_gui/demo/theme_studio/theme_studio_fab.dart';
-import 'package:privacy_gui/demo/theme_studio/theme_studio_panel.dart';
+import 'package:privacy_gui/components/localizations/service_error_localizations.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/providers/usp_bars_visible_provider.dart';
 import 'package:privacy_gui/page/dashboard/orchestrator/dashboard_orchestrator.dart';
 import 'package:privacy_gui/page/dashboard/views/usp_sliver_dashboard_view.dart';
@@ -46,13 +44,7 @@ class UspDashboardView extends ConsumerWidget {
               if (isRefreshing)
                 Padding(
                   padding: const EdgeInsets.only(top: AppSpacing.md),
-                  child: LinearProgressIndicator(
-                    minHeight: 4,
-                    backgroundColor: Theme.of(context)
-                        .colorScheme
-                        .onSurface
-                        .withValues(alpha: 0.1),
-                  ),
+                  child: AppLoader(variant: LoaderVariant.linear),
                 ),
               Expanded(
                 child: asyncState.when(
@@ -66,34 +58,6 @@ class UspDashboardView extends ConsumerWidget {
             ],
           ),
         ),
-
-        // Theme Studio Panel (animated slide-in from right)
-        if (BuildConfig.enableThemeStudio)
-          Consumer(
-            builder: (context, ref, _) {
-              final isOpen = ref.watch(demoUIProvider).isThemePanelOpen;
-              return AnimatedPositioned(
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeInOutCubic,
-                top: 0,
-                bottom: 0,
-                right: isOpen ? 0 : -500,
-                width: 500,
-                child: const Material(
-                  elevation: 16,
-                  child: ThemeStudioPanel(),
-                ),
-              );
-            },
-          ),
-
-        // Theme Studio FAB
-        if (BuildConfig.enableThemeStudio)
-          const Positioned(
-            bottom: 16,
-            right: 16,
-            child: ThemeStudioFab(),
-          ),
       ],
     );
   }
@@ -106,18 +70,18 @@ class UspDashboardView extends ConsumerWidget {
           AppIcon.font(Icons.error_outline,
               size: 48, color: Theme.of(context).colorScheme.error),
           AppGap.xl(),
-          AppText.titleMedium('Unable to load USP data'),
+          AppText.titleMedium(loc(context).failedToLoadSettings),
           AppGap.md(),
-          AppText.bodyMedium(error.toString()),
+          AppText.bodyMedium(localizeServiceError(context, error)),
           AppGap.xxl(),
           AppButton(
-            label: 'Retry',
+            label: loc(context).retry,
             onTap: () =>
                 ref.read(dashboardOrchestratorProvider.notifier).refreshAll(),
           ),
           AppGap.md(),
           AppButton.text(
-            label: 'Logout',
+            label: loc(context).logout,
             onTap: () => _logout(context, ref),
           ),
         ],

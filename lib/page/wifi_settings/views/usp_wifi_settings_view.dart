@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/components/localizations/service_error_localizations.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
-import 'package:privacy_gui/core/connection/helpers/recovery_dialog_helper.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/_shared/helpers/recovery_dialog_helper.dart';
 import 'package:privacy_gui/core/connection/models/app_connection_state.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/route/constants.dart';
@@ -26,12 +28,12 @@ class _UspWifiSettingsViewState extends ConsumerState<UspWifiSettingsView>
   late TabController _tabController;
   late int _previousTabIndex;
 
-  static const _tabLabels = ['WiFi', 'Advanced'];
+  // Tab labels are now localized in the build method
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: _tabLabels.length, vsync: this);
+    _tabController = TabController(length: 2, vsync: this);
     _previousTabIndex = _tabController.index;
     _tabController.addListener(_handleTabChange);
   }
@@ -86,7 +88,7 @@ class _UspWifiSettingsViewState extends ConsumerState<UspWifiSettingsView>
     ref.watch(uspWifiAdvancedProvider);
 
     return UiKitPageView.withSliver(
-      title: 'WiFi Settings',
+      title: loc(context).menuWifiSettings,
       topbar: const PreferredSize(
         preferredSize: Size.fromHeight(64),
         child: UspTopBar(),
@@ -97,9 +99,9 @@ class _UspWifiSettingsViewState extends ConsumerState<UspWifiSettingsView>
       onRefresh: () => _onRefresh(),
       bottomBar: _buildBottomBar(context, ref),
       tabController: _tabController,
-      tabs: const [
-        Tab(text: 'WiFi'),
-        Tab(text: 'Advanced'),
+      tabs: [
+        Tab(text: loc(context).wifi),
+        Tab(text: loc(context).advanced),
       ],
       tabContentViews: const [
         UspWifiListTab(),
@@ -120,7 +122,7 @@ class _UspWifiSettingsViewState extends ConsumerState<UspWifiSettingsView>
         final state = ref.read(uspWifiSettingsProvider);
         if (!state.isDirty) return null;
         return UiKitBottomBarConfig(
-          positiveLabel: 'Save',
+          positiveLabel: loc(context).save,
           isPositiveEnabled: state.canSave && !state.status.isSaving,
           onPositiveTap: () => _onSave(context, ref),
           onNegativeTap: () =>
@@ -130,7 +132,7 @@ class _UspWifiSettingsViewState extends ConsumerState<UspWifiSettingsView>
         final state = ref.read(uspWifiAdvancedProvider);
         if (!state.isDirty) return null;
         return UiKitBottomBarConfig(
-          positiveLabel: 'Save',
+          positiveLabel: loc(context).save,
           isPositiveEnabled: !state.status.isSaving,
           onPositiveTap: () => _onSave(context, ref),
           onNegativeTap: () =>
@@ -183,12 +185,12 @@ class _UspWifiSettingsViewState extends ConsumerState<UspWifiSettingsView>
         context,
         ref,
         trigger: RecoveryTrigger.operationalWifiChange,
-        successMessage: 'WiFi settings saved',
+        successMessage: loc(context).wifiSettingsSaved,
       );
     } catch (e) {
       logger.d('[WiFi][Save] Error: $e');
       if (context.mounted) {
-        showFailedSnackBar(context, 'Failed to save: $e');
+        showFailedSnackBar(context, localizeServiceError(context, e));
       }
     }
   }

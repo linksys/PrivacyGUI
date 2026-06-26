@@ -1,14 +1,18 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:privacy_gui/constants/error_code.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
 import 'package:privacy_gui/core/connection/services/router_fingerprint_service.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/session/providers/session_provider.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
+import 'package:privacy_gui/core/usp/providers/usp_auth_coordinator.dart';
 import 'package:privacy_gui/providers/auth/auth_service.dart';
 import 'package:privacy_gui/providers/auth/auth_state.dart';
 import 'package:privacy_gui/providers/auth/auth_types.dart';
-import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
-import 'package:privacy_gui/core/usp/providers/usp_auth_coordinator.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 // Re-export AuthState and LoginType for backward compatibility with existing code
@@ -19,46 +23,69 @@ final authProvider =
     AsyncNotifierProvider<AuthNotifier, AuthState>(() => AuthNotifier());
 
 class AuthNotifier extends AsyncNotifier<AuthState> {
+  Completer<AuthState?>? _initInProgress;
+
   @override
   Future<AuthState> build() => Future.value(AuthState.empty());
 
   AuthService get _authService => ref.read(authServiceProvider);
 
   Future<AuthState?> init() async {
-    // Note: Do NOT set `state = AsyncValue.loading()` synchronously here.
-    // This method can be called during initState/widget mount, and a
-    // synchronous state change would trigger provider notifications that
-    // cause a !_dirty assertion in ProviderScope.
-    state = await AsyncValue.guard(() async {
-      // Determine login type from stored credentials
-      final loginTypeResult = await _authService.getStoredLoginType();
-      final loginType = loginTypeResult.when(
-        success: (type) => type,
-        failure: (_) => LoginType.none,
-      );
+    // Coalesce concurrent init calls — return in-flight result if one exists
+    if (_initInProgress != null) {
+      logger.d('[Auth]: init already in progress, awaiting...');
+      return _initInProgress!.future;
+    }
 
-      // Get stored local password
-      final passwordResult = await _authService.getStoredLocalPassword();
-      final localPassword = passwordResult.when(
-        success: (p) => p,
-        failure: (_) => null,
-      );
+    _initInProgress = Completer<AuthState?>();
+    try {
+      // Note: Do NOT set `state = AsyncValue.loading()` synchronously here.
+      // This method can be called during initState/widget mount, and a
+      // synchronous state change would trigger provider notifications that
+      // cause a !_dirty assertion in ProviderScope.
+      state = await AsyncValue.guard(() async {
+        // Determine login type from stored credentials
+        final loginTypeResult = await _authService.getStoredLoginType();
+        final loginType = loginTypeResult.when(
+          success: (type) => type,
+          failure: (_) => LoginType.none,
+        );
 
-      logger.d(
-          '[Auth]init: hasPassword=${localPassword != null}, loginType=$loginType');
+        // Get stored local password
+        final passwordResult = await _authService.getStoredLocalPassword();
+        final localPassword = passwordResult.when(
+          success: (p) => p,
+          failure: (_) => null,
+        );
 
-      // Restore USP session on page reload / app restart (local login only)
-      if (loginType == LoginType.local) {
-        await ref.read(uspAuthCoordinatorProvider).restoreSession();
+        logger.d(
+            '[Auth]init: hasPassword=${localPassword != null}, loginType=$loginType');
+
+        // Restore USP session on page reload / app restart (local login only)
+        if (loginType == LoginType.local) {
+          await ref.read(uspAuthCoordinatorProvider).restoreSession();
+        }
+
+        return AuthState(
+          localPasswordHint: state.value?.localPasswordHint,
+          loginType: loginType,
+          localPassword: localPassword,
+        );
+      });
+      // AsyncValue.guard never throws — it converts errors to AsyncError.
+      // Propagate error to concurrent waiters if the guard failed.
+      // Note: Do NOT rethrow here — callers (app.dart, router_provider.dart)
+      // use bare .then() without .catchError, so throwing would leave the
+      // splash screen stuck or break the redirect.
+      if (state case AsyncError(:final error, :final stackTrace)) {
+        _initInProgress!.completeError(error, stackTrace);
+        return null;
       }
-
-      return AuthState(
-        localPasswordHint: state.value?.localPasswordHint,
-        loginType: loginType,
-        localPassword: localPassword,
-      );
-    });
-    return state.value;
+      _initInProgress!.complete(state.value);
+      return state.value;
+    } finally {
+      _initInProgress = null;
+    }
   }
 
   /// Performs local login via USP.
@@ -70,8 +97,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     state = const AsyncValue.loading();
     try {
       final uspCoordinator = ref.read(uspAuthCoordinatorProvider);
-      final uspSuccess = await uspCoordinator.tryUspLogin(password);
-      if (!uspSuccess) throw Exception('USP login failed');
+      await uspCoordinator.tryUspLogin(password);
 
       await const FlutterSecureStorage()
           .write(key: pLocalPassword, value: password);
@@ -89,12 +115,53 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       ));
     } catch (e, st) {
       if (guardError) {
-        state = AsyncValue.error(e, st);
+        // Map ServiceError to UnexpectedError with error code for View layer
+        final viewError = _mapToViewError(e);
+        state = AsyncValue.error(viewError, st);
       } else {
         rethrow;
       }
     }
     logger.d('[Auth]: localLogin: done, state=$state');
+  }
+
+  /// Maps ServiceError to UnexpectedError with proper error code for View layer.
+  ServiceError _mapToViewError(Object error) {
+    // Passthrough: the coordinator may already have produced an UnexpectedError
+    // carrying an error-code identifier in `detail` (e.g. account-locked). Don't
+    // overwrite it with the generic errorUnexpected below — keep it so the login
+    // view's errorCodeHelper can resolve the specific message.
+    if (error is UnexpectedError && error.detail == errorAdminAccountLocked) {
+      return error;
+    }
+    if (error is InvalidCredentialsError) {
+      return UnexpectedError(
+        detail: errorInvalidAdminPassword,
+        originalError: error,
+      );
+    }
+    if (error is NetworkError) {
+      return UnexpectedError(
+        detail: errorUspNetworkError,
+        originalError: error,
+      );
+    }
+    if (error is ServiceNotInitializedError) {
+      return UnexpectedError(
+        detail: errorUspServiceNotInitialized,
+        originalError: error,
+      );
+    }
+    if (error is ServiceError) {
+      return UnexpectedError(
+        detail: errorUnexpected,
+        originalError: error,
+      );
+    }
+    return UnexpectedError(
+      detail: errorUnexpected,
+      originalError: error,
+    );
   }
 
   /// Persists local credentials without attempting USP login.
@@ -115,6 +182,14 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       );
     });
     logger.d('[Auth]: persistLocalCredentials: done, state=$state');
+  }
+
+  /// Sets the login type directly without performing login.
+  /// Used by Remote Assistance mode to set LoginType.remote.
+  void setLoginType(LoginType type) {
+    final previousState = state.value ?? AuthState.empty();
+    state = AsyncValue.data(previousState.copyWith(loginType: type));
+    logger.d('[Auth]: setLoginType: $type');
   }
 
   /// Retrieves password hint from the router.

@@ -31,14 +31,17 @@ class SetupState {
   factory SetupState._fromResponse(Map<String, dynamic> response) {
     final missing = <String>[];
     if (!response.containsKey(
-        'Device.DeviceInfo.X_LINKSYS_Setup.AutoConfigurationMethod'))
+        'Device.DeviceInfo.X_LINKSYS_Setup.AutoConfigurationMethod')) {
       missing.add('Device.DeviceInfo.X_LINKSYS_Setup.AutoConfigurationMethod');
+    }
     if (!response.containsKey(
-        'Device.DeviceInfo.X_LINKSYS_Setup.UserAcknowledgedAutoConfig'))
+        'Device.DeviceInfo.X_LINKSYS_Setup.UserAcknowledgedAutoConfig')) {
       missing
           .add('Device.DeviceInfo.X_LINKSYS_Setup.UserAcknowledgedAutoConfig');
-    if (!response.containsKey('Device.DeviceInfo.X_LINKSYS_Setup.Configured'))
+    }
+    if (!response.containsKey('Device.DeviceInfo.X_LINKSYS_Setup.Configured')) {
       missing.add('Device.DeviceInfo.X_LINKSYS_Setup.Configured');
+    }
     if (missing.isNotEmpty) {
       throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
     }

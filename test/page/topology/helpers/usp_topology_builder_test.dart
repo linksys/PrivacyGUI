@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:privacy_gui/core/utils/device_classifier.dart';
+import 'package:privacy_gui/page/_shared/utils/device_classifier.dart';
 import 'package:privacy_gui/core/utils/oui_lookup.dart';
 import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
@@ -579,6 +579,204 @@ void main() {
       expect(extender.metadata?['serialNumber'], 'SN456');
       expect(extender.metadata?['softwareVersion'], '1.5.0');
       expect(extender.metadata?['isMaster'], isFalse);
+    });
+
+    test('extender metadata includes backhaul fields', () {
+      const extenderWithBackhaul = NodeUIModel(
+        deviceId: 'AA:BB:CC:DD:EE:02',
+        model: 'MX5500',
+        isMaster: false,
+        backhaulLinkType: 'Wi-Fi',
+        backhaulParentDeviceId: 'AA:BB:CC:DD:EE:01',
+        backhaulSignalStrength: -45,
+        backhaulUplinkRate: 500000,
+        backhaulDownlinkRate: 600000,
+        lastContactTime: '2026-06-01T10:00:00Z',
+      );
+
+      final topo = UspTopologyBuilder.build(
+        info: sysInfo,
+        devices: [],
+        nodeModels: [meshGateway, extenderWithBackhaul],
+      );
+
+      final extender =
+          topo.nodes.firstWhere((n) => n.type == MeshNodeType.extender);
+      expect(extender.metadata?['backhaulLinkType'], 'Wi-Fi');
+      expect(extender.metadata?['backhaulParentDeviceId'], 'AA:BB:CC:DD:EE:01');
+      expect(extender.metadata?['backhaulSignalStrength'], -45);
+      expect(extender.metadata?['backhaulUplinkRate'], 500000);
+      expect(extender.metadata?['backhaulDownlinkRate'], 600000);
+      expect(extender.metadata?['lastContactTime'], '2026-06-01T10:00:00Z');
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Multi-layer mesh (Slave → Slave → Master)
+  // ---------------------------------------------------------------------------
+
+  group('UspTopologyBuilder - multi-layer mesh', () {
+    test(
+        'slave links to another slave when backhaulParentDeviceId points to slave',
+        () {
+      const slaveA = NodeUIModel(
+        deviceId: 'AA:BB:CC:DD:EE:02',
+        model: 'MX5500',
+        isMaster: false,
+        backhaulParentDeviceId: 'AA:BB:CC:DD:EE:01', // Points to master
+      );
+      const slaveB = NodeUIModel(
+        deviceId: 'AA:BB:CC:DD:EE:03',
+        model: 'MX5500',
+        isMaster: false,
+        backhaulParentDeviceId: 'AA:BB:CC:DD:EE:02', // Points to slaveA
+      );
+
+      final topo = UspTopologyBuilder.build(
+        info: sysInfo,
+        devices: [],
+        nodeModels: [meshGateway, slaveA, slaveB],
+      );
+
+      // SlaveA should link to gateway
+      final slaveALink = topo.links
+          .firstWhere((l) => l.targetId == 'extender-AA:BB:CC:DD:EE:02');
+      expect(slaveALink.sourceId, 'gateway');
+
+      // SlaveB should link to slaveA
+      final slaveBLink = topo.links
+          .firstWhere((l) => l.targetId == 'extender-AA:BB:CC:DD:EE:03');
+      expect(slaveBLink.sourceId, 'extender-AA:BB:CC:DD:EE:02');
+    });
+
+    test('slave links to gateway when backhaulParentDeviceId is null', () {
+      const slaveWithoutParent = NodeUIModel(
+        deviceId: 'AA:BB:CC:DD:EE:02',
+        model: 'MX5500',
+        isMaster: false,
+        backhaulParentDeviceId: null,
+      );
+
+      final topo = UspTopologyBuilder.build(
+        info: sysInfo,
+        devices: [],
+        nodeModels: [meshGateway, slaveWithoutParent],
+      );
+
+      final link = topo.links
+          .firstWhere((l) => l.targetId == 'extender-AA:BB:CC:DD:EE:02');
+      expect(link.sourceId, 'gateway');
+    });
+
+    test('slave links to gateway when backhaulParentDeviceId matches master',
+        () {
+      const slaveConnectedToMaster = NodeUIModel(
+        deviceId: 'AA:BB:CC:DD:EE:02',
+        model: 'MX5500',
+        isMaster: false,
+        backhaulParentDeviceId: 'AA:BB:CC:DD:EE:01', // Points to master
+      );
+
+      final topo = UspTopologyBuilder.build(
+        info: sysInfo,
+        devices: [],
+        nodeModels: [meshGateway, slaveConnectedToMaster],
+      );
+
+      final link = topo.links
+          .firstWhere((l) => l.targetId == 'extender-AA:BB:CC:DD:EE:02');
+      expect(link.sourceId, 'gateway');
+    });
+
+    test(
+        'slave links via dataElementsId when backhaulParentDeviceId uses DE ID',
+        () {
+      const slaveAWithDeId = NodeUIModel(
+        deviceId: 'AA:BB:CC:DD:EE:02',
+        dataElementsId: '11:11:11:22:22:22',
+        model: 'MX5500',
+        isMaster: false,
+        backhaulParentDeviceId: 'AA:BB:CC:DD:EE:01',
+      );
+      const slaveBPointingToDeId = NodeUIModel(
+        deviceId: 'AA:BB:CC:DD:EE:03',
+        model: 'MX5500',
+        isMaster: false,
+        backhaulParentDeviceId: '11:11:11:22:22:22', // Points to slaveA's DE ID
+      );
+
+      final topo = UspTopologyBuilder.build(
+        info: sysInfo,
+        devices: [],
+        nodeModels: [meshGateway, slaveAWithDeId, slaveBPointingToDeId],
+      );
+
+      final slaveBLink = topo.links
+          .firstWhere((l) => l.targetId == 'extender-AA:BB:CC:DD:EE:03');
+      expect(slaveBLink.sourceId, 'extender-AA:BB:CC:DD:EE:02');
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Backhaul link type
+  // ---------------------------------------------------------------------------
+
+  group('UspTopologyBuilder - backhaul link type', () {
+    test('Ethernet backhaul uses ethernet connection type', () {
+      const ethernetSlave = NodeUIModel(
+        deviceId: 'AA:BB:CC:DD:EE:02',
+        model: 'MX5500',
+        isMaster: false,
+        backhaulLinkType: 'Ethernet',
+      );
+
+      final topo = UspTopologyBuilder.build(
+        info: sysInfo,
+        devices: [],
+        nodeModels: [meshGateway, ethernetSlave],
+      );
+
+      final link = topo.links
+          .firstWhere((l) => l.targetId == 'extender-AA:BB:CC:DD:EE:02');
+      expect(link.connectionType, ConnectionType.ethernet);
+    });
+
+    test('Wi-Fi backhaul uses wifi connection type', () {
+      const wifiSlave = NodeUIModel(
+        deviceId: 'AA:BB:CC:DD:EE:02',
+        model: 'MX5500',
+        isMaster: false,
+        backhaulLinkType: 'Wi-Fi',
+      );
+
+      final topo = UspTopologyBuilder.build(
+        info: sysInfo,
+        devices: [],
+        nodeModels: [meshGateway, wifiSlave],
+      );
+
+      final link = topo.links
+          .firstWhere((l) => l.targetId == 'extender-AA:BB:CC:DD:EE:02');
+      expect(link.connectionType, ConnectionType.wifi);
+    });
+
+    test('null backhaul link type defaults to wifi connection type', () {
+      const slavWithoutLinkType = NodeUIModel(
+        deviceId: 'AA:BB:CC:DD:EE:02',
+        model: 'MX5500',
+        isMaster: false,
+        backhaulLinkType: null,
+      );
+
+      final topo = UspTopologyBuilder.build(
+        info: sysInfo,
+        devices: [],
+        nodeModels: [meshGateway, slavWithoutLinkType],
+      );
+
+      final link = topo.links
+          .firstWhere((l) => l.targetId == 'extender-AA:BB:CC:DD:EE:02');
+      expect(link.connectionType, ConnectionType.wifi);
     });
   });
 

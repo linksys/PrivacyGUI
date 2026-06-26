@@ -78,7 +78,7 @@ class UspFirewallNotifier extends AutoDisposeNotifier<FirewallFeatureState>
       logger.e('[USP][Firewall]: Fetch failed', error: e);
       return (
         null,
-        FirewallStatus(isLoading: false, errorMessage: '$e'),
+        FirewallStatus(isLoading: false, error: e),
       );
     }
   }

@@ -59,11 +59,12 @@ class MenuHolderState extends ConsumerState<MenuHolder> {
 
   @override
   Widget build(BuildContext context) {
-    final pageRoute = GoRouter.maybeOf(context)
+    final lastRoute = GoRouter.maybeOf(context)
         ?.routerDelegate
         .currentConfiguration
         .routes
-        .last as LinksysRoute?;
+        .last;
+    final pageRoute = lastRoute is LinksysRoute ? lastRoute : null;
 
     const autoHide = false; //LinksysRoute.autoHideNaviRail(context);
     final showNavi = LinksysRoute.isShowNaviRail(context, pageRoute?.config);

@@ -22,63 +22,88 @@ class WanStatus {
     required this.ipv6Enabled,
   });
 
-  static const _paths = [
-    'Device.IP.Interface.2.Status',
-    'Device.IP.Interface.2.IPv4Address.1.IPAddress',
-    'Device.IP.Interface.2.IPv4Address.1.SubnetMask',
-    'Device.IP.Interface.2.IPv4Address.1.AddressingType',
-    'Device.IP.Interface.2.MaxMTUSize',
-    'Device.IP.Interface.2.IPv6Enable',
-  ];
+  /// Resolve the instance index by searching for Alias='wan'
+  static Future<String> _resolveInstance(UspClient client) async {
+    final response = await client.get(['Device.IP.Interface.*.Alias']);
+    for (final entry in response.entries) {
+      if (entry.value == 'wan') {
+        final match =
+            RegExp(r'Device\.IP\.Interface\.(\d+)\.').firstMatch(entry.key);
+        if (match != null) {
+          return 'Device.IP.Interface.${match.group(1)}.';
+        }
+      }
+    }
+    // Fallback to hardcoded instance 2
+    return 'Device.IP.Interface.2.';
+  }
+
+  /// Build parameter paths using the resolved instance path
+  static List<String> _buildPaths(String instancePath) => [
+        '${instancePath}Status',
+        '${instancePath}IPv4Address.1.IPAddress',
+        '${instancePath}IPv4Address.1.SubnetMask',
+        '${instancePath}IPv4Address.1.AddressingType',
+        '${instancePath}MaxMTUSize',
+        '${instancePath}IPv6Enable',
+      ];
 
   /// Fetch all parameters via USP Get message
   static Future<WanStatus> fetch(UspClient client) async {
-    final response = await client.get(_paths);
-    return WanStatus._fromResponse(response);
+    final instancePath = await _resolveInstance(client);
+    final response = await client.get(_buildPaths(instancePath));
+    return WanStatus._fromResponse(response, instancePath);
   }
 
-  factory WanStatus._fromResponse(Map<String, dynamic> response) {
+  factory WanStatus._fromResponse(
+      Map<String, dynamic> response, String instancePath) {
     final missing = <String>[];
-    if (!response.containsKey('Device.IP.Interface.2.Status'))
-      missing.add('Device.IP.Interface.2.Status');
-    if (!response.containsKey('Device.IP.Interface.2.IPv4Address.1.IPAddress'))
-      missing.add('Device.IP.Interface.2.IPv4Address.1.IPAddress');
-    if (!response.containsKey('Device.IP.Interface.2.IPv4Address.1.SubnetMask'))
-      missing.add('Device.IP.Interface.2.IPv4Address.1.SubnetMask');
-    if (!response
-        .containsKey('Device.IP.Interface.2.IPv4Address.1.AddressingType'))
-      missing.add('Device.IP.Interface.2.IPv4Address.1.AddressingType');
-    if (!response.containsKey('Device.IP.Interface.2.MaxMTUSize'))
-      missing.add('Device.IP.Interface.2.MaxMTUSize');
-    if (!response.containsKey('Device.IP.Interface.2.IPv6Enable'))
-      missing.add('Device.IP.Interface.2.IPv6Enable');
+    if (!response.containsKey('${instancePath}Status')) {
+      missing.add('${instancePath}Status');
+    }
+    if (!response.containsKey('${instancePath}IPv4Address.1.IPAddress')) {
+      missing.add('${instancePath}IPv4Address.1.IPAddress');
+    }
+    if (!response.containsKey('${instancePath}IPv4Address.1.SubnetMask')) {
+      missing.add('${instancePath}IPv4Address.1.SubnetMask');
+    }
+    if (!response.containsKey('${instancePath}IPv4Address.1.AddressingType')) {
+      missing.add('${instancePath}IPv4Address.1.AddressingType');
+    }
+    if (!response.containsKey('${instancePath}MaxMTUSize')) {
+      missing.add('${instancePath}MaxMTUSize');
+    }
+    if (!response.containsKey('${instancePath}IPv6Enable')) {
+      missing.add('${instancePath}IPv6Enable');
+    }
     if (missing.isNotEmpty) {
       throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
     }
     return WanStatus(
-      status: (response['Device.IP.Interface.2.Status'] ?? '') as String,
-      ipAddress: (response['Device.IP.Interface.2.IPv4Address.1.IPAddress'] ??
-          '') as String,
-      subnetMask: (response['Device.IP.Interface.2.IPv4Address.1.SubnetMask'] ??
-          '') as String,
+      status: (response['${instancePath}Status'] ?? '') as String,
+      ipAddress:
+          (response['${instancePath}IPv4Address.1.IPAddress'] ?? '') as String,
+      subnetMask:
+          (response['${instancePath}IPv4Address.1.SubnetMask'] ?? '') as String,
       addressingType:
-          (response['Device.IP.Interface.2.IPv4Address.1.AddressingType'] ?? '')
+          (response['${instancePath}IPv4Address.1.AddressingType'] ?? '')
               as String,
       maxMtuSize: int.tryParse(
-              response['Device.IP.Interface.2.MaxMTUSize']?.toString() ?? '') ??
+              response['${instancePath}MaxMTUSize']?.toString() ?? '') ??
           0,
-      ipv6Enabled: response['Device.IP.Interface.2.IPv6Enable'] == true ||
-          response['Device.IP.Interface.2.IPv6Enable'] == 'true' ||
-          response['Device.IP.Interface.2.IPv6Enable'] == '1',
+      ipv6Enabled: response['${instancePath}IPv6Enable'] == true ||
+          response['${instancePath}IPv6Enable'] == 'true' ||
+          response['${instancePath}IPv6Enable'] == '1',
     );
   }
 
   static Future<Subscription<WanStatus>> subscribe(UspClient client) async {
+    final instancePath = await _resolveInstance(client);
     return client.subscribe<WanStatus>(
       id: 'wan-status-valuechange',
       notifType: NotifType.valueChange,
-      paths: ['Device.IP.Interface.2.'],
-      parser: WanStatus._fromResponse,
+      paths: [instancePath],
+      parser: (response) => WanStatus._fromResponse(response, instancePath),
     );
   }
 

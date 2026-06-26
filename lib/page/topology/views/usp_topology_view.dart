@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/shell/usp_top_bar.dart';
 import 'package:privacy_gui/page/topology/helpers/topology_node_content_builder.dart';
 import 'package:privacy_gui/page/topology/helpers/usp_topology_builder.dart';
+import 'package:privacy_gui/page/topology/views/components/node_detail_popup.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Full-page interactive topology view.
@@ -31,7 +33,7 @@ class _UspTopologyViewState extends ConsumerState<UspTopologyView> {
 
     return UiKitPageView.withSliver(
       scrollable: true,
-      title: 'Network Topology',
+      title: loc(context).networkTopology,
       topbar: const PreferredSize(
         preferredSize: Size.fromHeight(64),
         child: UspTopBar(),
@@ -46,10 +48,10 @@ class _UspTopologyViewState extends ConsumerState<UspTopologyView> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                AppText.titleMedium('Unable to load topology'),
+                AppText.titleMedium(loc(context).unableToLoadTopology),
                 AppGap.md(),
                 AppButton.text(
-                  label: 'Retry',
+                  label: loc(context).retry,
                   onTap: () => ref.invalidate(devicesDataProvider),
                 ),
               ],
@@ -125,61 +127,14 @@ class _UspTopologyViewState extends ConsumerState<UspTopologyView> {
               nodeDetailConfig: NodeDetailConfig(
                 trigger: NodeDetailTrigger.tap,
                 mode: NodeDetailMode.floatingPanel,
-                detailBuilder: (ctx, node, metadata) =>
-                    _buildDetailPanel(ctx, node, metadata, router),
+                detailBuilder: (ctx, node, metadata) => NodeDetailPopup.builder(
+                    ctx, node, metadata,
+                    showDetailsButton: true),
               ),
               nodeComparator: _nodeComparator,
             ),
           ),
         ),
-      ],
-    );
-  }
-
-  /// Detail panel content shown on router/extender tap (graph view).
-  Widget _buildDetailPanel(BuildContext context, MeshNode node,
-      Map<String, dynamic>? metadata, GoRouter router) {
-    final deviceId = metadata?['deviceId'] as String? ?? '';
-    final model = metadata?['model'] as String? ?? '';
-    final manufacturer = metadata?['manufacturer'] as String? ?? '';
-    final serialNumber = metadata?['serialNumber'] as String? ?? '';
-    final softwareVersion = metadata?['softwareVersion'] as String? ?? '';
-    final isMaster = metadata?['isMaster'] as bool? ?? false;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Role badge
-        _detailRow('Role', isMaster ? 'Master' : 'Slave'),
-        // MAC Address (skip synthetic 'gateway')
-        if (deviceId.isNotEmpty && deviceId.toUpperCase() != 'GATEWAY')
-          _detailRow('MAC', deviceId),
-        // Model
-        if (model.isNotEmpty) _detailRow('Model', model),
-        // Manufacturer
-        if (manufacturer.isNotEmpty) _detailRow('Manufacturer', manufacturer),
-        // Serial Number
-        if (serialNumber.isNotEmpty) _detailRow('S/N', serialNumber),
-        // Firmware
-        if (softwareVersion.isNotEmpty) _detailRow('Firmware', softwareVersion),
-        // Details button
-        if (node.status == MeshNodeStatus.online)
-          Padding(
-            padding: const EdgeInsets.only(top: AppSpacing.md),
-            child: Align(
-              alignment: Alignment.centerRight,
-              child: AppButton.text(
-                label: 'Details',
-                onTap: deviceId.isNotEmpty
-                    ? () => router.pushNamed(
-                          RouteNamed.uspNodeDetail,
-                          queryParameters: {'deviceId': deviceId},
-                        )
-                    : null,
-              ),
-            ),
-          ),
       ],
     );
   }
@@ -211,27 +166,6 @@ class _UspTopologyViewState extends ConsumerState<UspTopologyView> {
         );
       }
     }
-  }
-
-  Widget _detailRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.xxs),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 100,
-            child: AppText.bodySmall(label, color: Colors.grey),
-          ),
-          Expanded(
-            child: AppText.bodySmall(
-              value,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
-      ),
-    );
   }
 
   /// Comparator for sorting nodes: online first, then infra nodes before clients, then alphabetical.

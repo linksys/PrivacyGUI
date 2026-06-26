@@ -44,6 +44,7 @@ class RoutePath {
   static const uspUnifiedDiagnostics = '/uspUnifiedDiagnostics';
   static const uspSpeedTest = '/uspSpeedTest';
   static const uspFirmwareUpdate = '/uspFirmwareUpdate';
+  static const uspAiAssistant = '/uspAiAssistant';
 
   /// menu
   static const menuInstantVerify = 'menuInstantVerify';
@@ -119,6 +120,9 @@ class RoutePath {
 
   /// Ipv6 port service
   static const ipv6PortServiceList = 'ipv6PortServiceList';
+
+  /// Remote Assistance
+  static const remoteAssistanceConfirm = '/remoteAssistance';
 
   /// PnP
   static const pnp = '/pnp';
@@ -201,6 +205,7 @@ class RouteNamed {
   static const uspUnifiedDiagnostics = 'uspUnifiedDiagnostics';
   static const uspSpeedTest = 'uspSpeedTest';
   static const uspFirmwareUpdate = 'uspFirmwareUpdate';
+  static const uspAiAssistant = 'uspAiAssistant';
 
   static const menuInstantVerify = 'menuInstantVerify';
   static const menuInstantDevices = 'menuInstantDevices';
@@ -277,6 +282,9 @@ class RouteNamed {
 
   /// Ipv6 port service
   static const ipv6PortServiceList = 'ipv6PortServiceList';
+
+  /// Remote Assistance
+  static const remoteAssistanceConfirm = 'remoteAssistanceConfirm';
 
   /// PnP
   static const pnp = 'pnp';

@@ -13,7 +13,14 @@ import 'package:privacy_gui/providers/auth/auth_provider.dart';
 
 class MockRecoveryProbeService extends Mock implements RecoveryProbeService {}
 
-class MockSseManager extends Mock implements SseManager {}
+class MockSseManager extends Mock implements SseManager {
+  void Function(int)? capturedOnReconnectFailed;
+
+  @override
+  set onReconnectFailed(void Function(int)? callback) {
+    capturedOnReconnectFailed = callback;
+  }
+}
 
 class MockAuthNotifier extends AsyncNotifier<AuthState>
     with Mock
@@ -464,6 +471,186 @@ void main() {
 
       expect(notifier.consecutiveFailures, 0);
       expect(notifier.lastProbeResult, isNull);
+    });
+
+    test('onReconnectFailed triggers enterWaiting after threshold (2) failures',
+        () async {
+      when(() => mockSseManager.disconnect()).thenAnswer((_) async {});
+      when(() => mockProbe.probe())
+          .thenAnswer((_) async => ProbeResult.unreachable);
+
+      final container = createContainer();
+      addTearDown(container.dispose);
+
+      // Force build — this wires the callback
+      container.read(appConnectionStateProvider);
+      await Future.delayed(Duration.zero);
+
+      expect(mockSseManager.capturedOnReconnectFailed, isNotNull);
+      expect(
+        container.read(appConnectionStateProvider),
+        AppConnectionState.authenticated,
+      );
+
+      // Simulate 1st reconnect failure — below threshold, no trigger
+      mockSseManager.capturedOnReconnectFailed!(1);
+      expect(
+        container.read(appConnectionStateProvider),
+        AppConnectionState.authenticated,
+      );
+
+      // Simulate 2nd reconnect failure — reaches threshold, triggers recovery
+      mockSseManager.capturedOnReconnectFailed!(2);
+      expect(
+        container.read(appConnectionStateProvider),
+        AppConnectionState.waitingForRecovery,
+      );
+      expect(
+        container
+            .read(appConnectionStateProvider.notifier)
+            .recoveryContext
+            ?.trigger,
+        RecoveryTrigger.natural,
+      );
+      verify(() => mockSseManager.disconnect()).called(1);
+    });
+
+    test('onReconnectFailed does NOT trigger if already in waitingForRecovery',
+        () async {
+      when(() => mockSseManager.disconnect()).thenAnswer((_) async {});
+      when(() => mockProbe.probe())
+          .thenAnswer((_) async => ProbeResult.unreachable);
+
+      final container = createContainer();
+      addTearDown(container.dispose);
+
+      container.read(appConnectionStateProvider);
+      await Future.delayed(Duration.zero);
+
+      // Manually enter waiting with a user-initiated trigger
+      container.read(appConnectionStateProvider.notifier).enterWaiting(
+            context: RecoveryContext(
+              trigger: RecoveryTrigger.operationalWifiChange,
+              cooldown: Duration(seconds: 30),
+            ),
+          );
+
+      // SSE reconnect fails — should NOT overwrite existing recovery
+      mockSseManager.capturedOnReconnectFailed!(2);
+
+      expect(
+        container.read(appConnectionStateProvider),
+        AppConnectionState.waitingForRecovery,
+      );
+      // Original trigger preserved
+      expect(
+        container
+            .read(appConnectionStateProvider.notifier)
+            .recoveryContext
+            ?.trigger,
+        RecoveryTrigger.operationalWifiChange,
+      );
+      // disconnect called only once (from the manual enterWaiting)
+      verify(() => mockSseManager.disconnect()).called(1);
+    });
+
+    test('onReconnectFailed below threshold does NOT trigger recovery',
+        () async {
+      final container = createContainer();
+      addTearDown(container.dispose);
+
+      container.read(appConnectionStateProvider);
+      await Future.delayed(Duration.zero);
+
+      // Only 1 failure — below threshold
+      mockSseManager.capturedOnReconnectFailed!(1);
+
+      expect(
+        container.read(appConnectionStateProvider),
+        AppConnectionState.authenticated,
+      );
+      verifyNever(() => mockSseManager.disconnect());
+    });
+
+    test('recoveryContext is cleared after ProbeResult.recovered', () async {
+      when(() => mockSseManager.disconnect()).thenAnswer((_) async {});
+      when(() => mockSseManager.connect()).thenAnswer((_) async {});
+      when(() => mockProbe.probe(healthOnly: any(named: 'healthOnly')))
+          .thenAnswer((_) async => ProbeResult.recovered);
+
+      final container = createContainer();
+      addTearDown(container.dispose);
+
+      final notifier = container.read(appConnectionStateProvider.notifier);
+      notifier.enterWaiting(
+        context: RecoveryContext(
+          trigger: RecoveryTrigger.operationalReboot,
+          cooldown: Duration.zero,
+          healthOnly: true,
+        ),
+      );
+      expect(notifier.recoveryContext, isNotNull);
+
+      await Future.delayed(const Duration(milliseconds: 50));
+
+      expect(
+        container.read(appConnectionStateProvider),
+        AppConnectionState.authenticated,
+      );
+      expect(notifier.recoveryContext, isNull);
+    });
+
+    test('recoveryContext is cleared after ProbeResult.serialMismatch',
+        () async {
+      when(() => mockSseManager.disconnect()).thenAnswer((_) async {});
+      when(() => mockProbe.probe())
+          .thenAnswer((_) async => ProbeResult.serialMismatch);
+      when(() => mockAuthNotifier.logout()).thenAnswer((_) async {});
+
+      final container = createContainer();
+      addTearDown(container.dispose);
+
+      final notifier = container.read(appConnectionStateProvider.notifier);
+      notifier.enterWaiting(
+        context: RecoveryContext(
+          trigger: RecoveryTrigger.operationalWifiChange,
+          cooldown: Duration.zero,
+        ),
+      );
+      expect(notifier.recoveryContext, isNotNull);
+
+      await Future.delayed(const Duration(milliseconds: 50));
+
+      expect(
+        container.read(appConnectionStateProvider),
+        AppConnectionState.loggedOut,
+      );
+      expect(notifier.recoveryContext, isNull);
+    });
+
+    test('recoveryContext getter exposes current context', () {
+      when(() => mockSseManager.disconnect()).thenAnswer((_) async {});
+      when(() => mockProbe.probe())
+          .thenAnswer((_) async => ProbeResult.unreachable);
+
+      final container = createContainer();
+      addTearDown(container.dispose);
+
+      final notifier = container.read(appConnectionStateProvider.notifier);
+      expect(notifier.recoveryContext, isNull);
+
+      notifier.enterWaiting(
+        context: RecoveryContext(
+          trigger: RecoveryTrigger.operationalReboot,
+          cooldown: Duration(seconds: 60),
+          healthOnly: true,
+        ),
+      );
+
+      expect(notifier.recoveryContext, isNotNull);
+      expect(
+          notifier.recoveryContext?.trigger, RecoveryTrigger.operationalReboot);
+      expect(notifier.recoveryContext?.healthOnly, true);
     });
   });
 }

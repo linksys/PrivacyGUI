@@ -32,48 +32,57 @@ class PnpWaitingModemView extends ConsumerWidget {
       }
     });
 
-    return UiKitPageView(
-      appBarStyle: UiKitAppBarStyle.none,
+    // Status overlay phases (countdown, checking) — full-screen centered.
+    // Same pattern as IspSaving: plain box mode lets MainAxisAlignment.center
+    // actually center, instead of withSliver where the column collapses to
+    // intrinsic height.
+    if (phase is ModemRestartCountdown ||
+        phase is ModemRestartCheckingInternet) {
+      return UiKitPageView(
+        scrollable: false,
+        appBarStyle: UiKitAppBarStyle.none,
+        useMainPadding: false,
+        child: (context, constraints) => phase is ModemRestartCountdown
+            ? _buildCountdown(context, phase)
+            : _buildChecking(
+                context,
+                phase as ModemRestartCheckingInternet,
+              ),
+      );
+    }
+
+    // Default: plug back in instruction (a normal scrollable form-like page).
+    return UiKitPageView.withSliver(
       scrollable: true,
+      appBarStyle: UiKitAppBarStyle.none,
       onBackTap: () => context.go(RoutePath.pnpNoInternetConnection),
-      child: (context, constraints) => Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.lg,
-          vertical: AppSpacing.lg,
+      child: (context, constraints) => Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 480),
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.xl),
+            child: _buildPlugBackIn(context, ref),
+          ),
         ),
-        child: _buildContent(context, ref, phase),
       ),
     );
-  }
-
-  Widget _buildContent(BuildContext context, WidgetRef ref, PnpPhase phase) {
-    if (phase is ModemRestartCountdown) {
-      return _buildCountdown(context, phase);
-    }
-    if (phase is ModemRestartCheckingInternet) {
-      return _buildChecking(context, phase);
-    }
-    // Default: plug back in instruction
-    return _buildPlugBackIn(context, ref);
   }
 
   /// Initial: instruct user to plug modem back in.
   Widget _buildPlugBackIn(BuildContext context, WidgetRef ref) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Center(child: Assets.images.modemWaiting.svg(width: 200)),
+        Center(child: Assets.images.modemWaiting.svg(width: 160)),
         AppGap.xxxl(),
         AppText.headlineSmall(loc(context).pnpWaitingModemPlugBack),
         AppGap.md(),
         AppText.bodyMedium(loc(context).pnpWaitingModemDesc),
         AppGap.xxxl(),
-        Center(
-          child: AppButton(
-            label: loc(context).pnpWaitingModemPluggedIn,
-            onTap: () =>
-                ref.read(pnpProvider.notifier).startModemRestartCountdown(),
-          ),
+        AppButton.primary(
+          label: loc(context).pnpWaitingModemPluggedIn,
+          onTap: () =>
+              ref.read(pnpProvider.notifier).startModemRestartCountdown(),
         ),
       ],
     );
@@ -81,42 +90,50 @@ class PnpWaitingModemView extends ConsumerWidget {
 
   /// Countdown: circular timer showing remaining time.
   Widget _buildCountdown(BuildContext context, ModemRestartCountdown phase) {
-    return Column(
-      children: [
-        AppGap.xxxl(),
-        CircularCountdownWidget(
-          totalSeconds: phase.totalSeconds,
-          remainingSeconds: phase.remainingSeconds,
-          child: AppText.headlineMedium(
-            CircularCountdownWidget.formatTime(phase.remainingSeconds),
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          CircularCountdownWidget(
+            totalSeconds: phase.totalSeconds,
+            remainingSeconds: phase.remainingSeconds,
+            child: AppText.headlineMedium(
+              CircularCountdownWidget.formatTime(phase.remainingSeconds),
+            ),
           ),
-        ),
-        AppGap.xxxl(),
-        AppText.headlineSmall(loc(context).pnpWaitingModemWaitStartUp),
-        AppGap.md(),
-        AppText.bodyMedium(loc(context).pnpWaitingModemDesc),
-      ],
+          AppGap.xxxl(),
+          AppText.headlineSmall(loc(context).pnpWaitingModemWaitStartUp),
+          AppGap.md(),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+            child: AppText.bodyMedium(
+              loc(context).pnpWaitingModemDesc,
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   /// Checking: spinner with attempt counter.
   Widget _buildChecking(
       BuildContext context, ModemRestartCheckingInternet phase) {
-    return Column(
-      children: [
-        AppGap.xxxl(),
-        const SizedBox(
-          width: 80,
-          height: 80,
-          child: AppLoader(strokeWidth: 6),
-        ),
-        AppGap.xxxl(),
-        AppText.headlineSmall(loc(context).pnpWaitingModemCheckingInternet),
-        AppGap.md(),
-        AppText.bodySmall(
-          '${phase.attemptCount} / ${phase.maxAttempts}',
-        ),
-      ],
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(
+            width: 80,
+            height: 80,
+            child: AppLoader(strokeWidth: 6),
+          ),
+          AppGap.xxxl(),
+          AppText.headlineSmall(loc(context).checkingForInternet),
+          AppGap.md(),
+          AppText.bodySmall('${phase.attemptCount} / ${phase.maxAttempts}'),
+        ],
+      ),
     );
   }
 }

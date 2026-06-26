@@ -58,28 +58,6 @@ class UspWifiSettingsService {
         '${accessPoints.items.length} APs, '
         '${radios.items.length} radios');
 
-    // ── Guest detection: per-radio instance ordering ─────────────
-    // Group SSIDs by their radio (LowerLayers). Within each radio
-    // group, sort by SSID instance index. The lowest-index SSID per
-    // radio is Main; all subsequent are Guest. This mirrors the
-    // Linksys firmware convention (wl{n}_user_vap / wl{n}_guest_vap)
-    // and works for dual-band, tri-band, and quad-band devices.
-    final guestSsidPaths = <String>{};
-    {
-      final ssidsByRadio = <String, List<WiFiSsid>>{};
-      for (final ssid in ssids.items) {
-        final radioKey = _ensureTrailingDot(ssid.lowerLayers);
-        (ssidsByRadio[radioKey] ??= []).add(ssid);
-      }
-      for (final group in ssidsByRadio.values) {
-        group.sort((a, b) => _ssidInstanceIndex(a.instancePath)
-            .compareTo(_ssidInstanceIndex(b.instancePath)));
-        for (final ssid in group.skip(1)) {
-          guestSsidPaths.add(_ensureTrailingDot(ssid.instancePath));
-        }
-      }
-    }
-
     final networks = <WifiNetworkUIModel>[];
     for (final ssid in ssids.items) {
       final ssidPath = _ensureTrailingDot(ssid.instancePath);
@@ -93,9 +71,11 @@ class UspWifiSettingsService {
 
       logger.d('[USP][WiFi]: SSID ${ssid.ssid}: '
           'AP=${ap?.instancePath ?? "none"}, '
-          'radio=${radio?.operatingFrequencyBand ?? "none"}');
+          'radio=${radio?.operatingFrequencyBand ?? "none"}, '
+          'alias=${ssid.alias ?? "none"}');
 
-      final isGuest = guestSsidPaths.contains(ssidPath);
+      // Guest detection via alias (FW 1.2.1+ auto-provisions wifi-*-guest aliases)
+      final isGuest = ssid.alias?.endsWith('-guest') ?? false;
 
       // Parse Security.ModesSupported comma-separated string into a list.
       // e.g. "None, WPA2-Personal, WPA3-Personal" → ['None', 'WPA2-Personal', 'WPA3-Personal']
@@ -258,11 +238,11 @@ class UspWifiSettingsService {
             (ssidChanged || enabledChanged)) {
           if (ssidChanged) {
             if (pending.ssid.isEmpty) {
-              throw InvalidInputError(message: 'SSID name cannot be empty');
+              throw InvalidInputError(detail: 'SSID name cannot be empty');
             }
             if (pending.ssid.length > 32) {
               throw InvalidInputError(
-                  message: 'SSID name cannot exceed 32 characters');
+                  detail: 'SSID name cannot exceed 32 characters');
             }
           }
           for (final p in aggregate.ssidInstancePaths) {
@@ -282,12 +262,12 @@ class UspWifiSettingsService {
                   summary:
                       'WiFi SSID update partial failure: ${f.first.errorMessage}',
                   successPaths: [],
-                  failedPaths: f.map((e) => e.requestedPath).toList(),
+                  failures: f,
                 );
               case UspFailure(errors: final e):
                 throw UspCompleteFailureError(
                   summary: 'WiFi SSID update failed: ${e.first.errorMessage}',
-                  failedPaths: e.map((e) => e.requestedPath).toList(),
+                  failures: e,
                 );
             }
           }
@@ -336,12 +316,12 @@ class UspWifiSettingsService {
                   summary:
                       'WiFi AP update partial failure: ${f.first.errorMessage}',
                   successPaths: [],
-                  failedPaths: f.map((e) => e.requestedPath).toList(),
+                  failures: f,
                 );
               case UspFailure(errors: final e):
                 throw UspCompleteFailureError(
                   summary: 'WiFi AP update failed: ${e.first.errorMessage}',
-                  failedPaths: e.map((e) => e.requestedPath).toList(),
+                  failures: e,
                 );
             }
           }
@@ -393,12 +373,12 @@ class UspWifiSettingsService {
                 summary:
                     'WiFi SSID update partial failure: ${f.first.errorMessage}',
                 successPaths: [],
-                failedPaths: f.map((e) => e.requestedPath).toList(),
+                failures: f,
               );
             case UspFailure(errors: final e):
               throw UspCompleteFailureError(
                 summary: 'WiFi SSID update failed: ${e.first.errorMessage}',
-                failedPaths: e.map((e) => e.requestedPath).toList(),
+                failures: e,
               );
           }
         }
@@ -433,12 +413,12 @@ class UspWifiSettingsService {
                 summary:
                     'WiFi AP update partial failure: ${f.first.errorMessage}',
                 successPaths: [],
-                failedPaths: f.map((e) => e.requestedPath).toList(),
+                failures: f,
               );
             case UspFailure(errors: final e):
               throw UspCompleteFailureError(
                 summary: 'WiFi AP update failed: ${e.first.errorMessage}',
-                failedPaths: e.map((e) => e.requestedPath).toList(),
+                failures: e,
               );
           }
         }
@@ -476,12 +456,12 @@ class UspWifiSettingsService {
                 summary:
                     'WiFi Radio update partial failure: ${f.first.errorMessage}',
                 successPaths: [],
-                failedPaths: f.map((e) => e.requestedPath).toList(),
+                failures: f,
               );
             case UspFailure(errors: final e):
               throw UspCompleteFailureError(
                 summary: 'WiFi Radio update failed: ${e.first.errorMessage}',
-                failedPaths: e.map((e) => e.requestedPath).toList(),
+                failures: e,
               );
           }
         }
@@ -511,12 +491,12 @@ class UspWifiSettingsService {
           throw UspPartialFailureError(
             summary: 'Toggle radio partial failure: ${f.first.errorMessage}',
             successPaths: [],
-            failedPaths: f.map((e) => e.requestedPath).toList(),
+            failures: f,
           );
         case UspFailure(errors: final e):
           throw UspCompleteFailureError(
             summary: 'Toggle radio failed: ${e.first.errorMessage}',
-            failedPaths: e.map((e) => e.requestedPath).toList(),
+            failures: e,
           );
       }
     } catch (e) {
@@ -551,12 +531,12 @@ class UspWifiSettingsService {
             summary:
                 'Update radio channel partial failure: ${f.first.errorMessage}',
             successPaths: [],
-            failedPaths: f.map((e) => e.requestedPath).toList(),
+            failures: f,
           );
         case UspFailure(errors: final e):
           throw UspCompleteFailureError(
             summary: 'Update radio channel failed: ${e.first.errorMessage}',
-            failedPaths: e.map((e) => e.requestedPath).toList(),
+            failures: e,
           );
       }
     } catch (e) {
@@ -594,12 +574,12 @@ class UspWifiSettingsService {
           throw UspPartialFailureError(
             summary: 'Toggle SSIDs partial failure: ${f.first.errorMessage}',
             successPaths: [],
-            failedPaths: f.map((e) => e.requestedPath).toList(),
+            failures: f,
           );
         case UspFailure(errors: final e):
           throw UspCompleteFailureError(
             summary: 'Toggle SSIDs failed: ${e.first.errorMessage}',
-            failedPaths: e.map((e) => e.requestedPath).toList(),
+            failures: e,
           );
       }
     } catch (e) {
@@ -686,16 +666,4 @@ String _normalizeBand(String rawBand) {
   if (lower.contains('5g') || lower.contains('5 g')) return '5GHz';
   if (lower.contains('2.4') || lower.contains('2_4')) return '2.4GHz';
   return rawBand;
-}
-
-/// Extracts the numeric instance index from a TR-181 SSID path.
-/// e.g. "Device.WiFi.SSID.3." → 3
-int _ssidInstanceIndex(String instancePath) {
-  final match = RegExp(r'Device\.WiFi\.SSID\.(\d+)').firstMatch(instancePath);
-  if (match == null) {
-    logger.w('[USP][WiFi]: Unexpected SSID path format: $instancePath — '
-        'defaulting to index 0 (Main)');
-    return 0;
-  }
-  return int.parse(match.group(1)!);
 }

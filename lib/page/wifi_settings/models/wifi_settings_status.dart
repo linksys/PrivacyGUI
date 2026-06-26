@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/page/wifi_settings/models/wifi_quick_setup_network.dart';
 
 /// Read-only system state for the WiFi Settings page.
@@ -12,8 +13,9 @@ class WifiSettingsStatus extends Equatable {
   /// True while a save operation is in progress.
   final bool isSaving;
 
-  /// Non-null when the fetch failed.
-  final String? errorMessage;
+  /// Typed error from the last fetch. The View localizes it via
+  /// `localizeServiceError`; null means no error.
+  final ServiceError? error;
 
   /// Aggregated Quick Setup data for main (non-guest) networks.
   /// Contains [WifiQuickSetupNetwork.ssidInstancePaths] and
@@ -26,7 +28,7 @@ class WifiSettingsStatus extends Equatable {
   const WifiSettingsStatus({
     this.isLoading = false,
     this.isSaving = false,
-    this.errorMessage,
+    this.error,
     this.quickSetupMainAggregate,
     this.quickSetupGuestAggregate,
   });
@@ -34,21 +36,22 @@ class WifiSettingsStatus extends Equatable {
   const WifiSettingsStatus.loading()
       : isLoading = true,
         isSaving = false,
-        errorMessage = null,
+        error = null,
         quickSetupMainAggregate = null,
         quickSetupGuestAggregate = null;
 
   WifiSettingsStatus copyWith({
     bool? isLoading,
     bool? isSaving,
-    String? errorMessage,
+    ServiceError? error,
+    bool clearError = false,
     WifiQuickSetupNetwork? quickSetupMainAggregate,
     WifiQuickSetupNetwork? quickSetupGuestAggregate,
   }) {
     return WifiSettingsStatus(
       isLoading: isLoading ?? this.isLoading,
       isSaving: isSaving ?? this.isSaving,
-      errorMessage: errorMessage ?? this.errorMessage,
+      error: clearError ? null : (error ?? this.error),
       quickSetupMainAggregate:
           quickSetupMainAggregate ?? this.quickSetupMainAggregate,
       quickSetupGuestAggregate:
@@ -60,7 +63,7 @@ class WifiSettingsStatus extends Equatable {
   List<Object?> get props => [
         isLoading,
         isSaving,
-        errorMessage,
+        error,
         quickSetupMainAggregate,
         quickSetupGuestAggregate,
       ];

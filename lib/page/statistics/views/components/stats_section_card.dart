@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Shared wrapper for each chart section in the Statistics page.
 ///
 /// Displays a title row (with optional subtitle and trailing action)
-/// above a fixed-height chart area wrapped in an [AppCard].
+/// above a fixed-height chart area wrapped in an [AppCard] with Block.
 class StatsSectionCard extends StatelessWidget {
   final String title;
   final String? subtitle;
@@ -25,6 +26,7 @@ class StatsSectionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return AppCard(
+      padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -34,7 +36,7 @@ class StatsSectionCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    AppText.titleMedium(title),
+                    AppText.titleSmall(title),
                     if (subtitle != null)
                       AppText.bodySmall(
                         subtitle!,
@@ -47,9 +49,12 @@ class StatsSectionCard extends StatelessWidget {
             ],
           ),
           AppGap.md(),
-          SizedBox(
-            height: chartHeight,
-            child: child,
+          LayoutBlock(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: SizedBox(
+              height: chartHeight,
+              child: child,
+            ),
           ),
         ],
       ),

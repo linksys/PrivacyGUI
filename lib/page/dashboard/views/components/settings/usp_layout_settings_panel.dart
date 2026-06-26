@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_dashboard_preset.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_widget_specs.dart';
 import 'package:privacy_gui/page/dashboard/models/widget_spec.dart';
@@ -32,8 +33,7 @@ class UspLayoutSettingsPanel extends ConsumerWidget {
                 AppGap.md(),
                 Expanded(
                   child: AppText.bodySmall(
-                    'Drag and drop widgets to reorder. Use the resize handles to adjust size. '
-                    'Remove widgets with the close button — re-add them here.',
+                    loc(context).layoutSettingsDescription,
                   ),
                 ),
               ],
@@ -49,7 +49,7 @@ class UspLayoutSettingsPanel extends ConsumerWidget {
           Align(
             alignment: Alignment.centerRight,
             child: AppButton.text(
-              label: 'Reset Layout',
+              label: loc(context).resetLayout,
               onTap: () async {
                 await ref
                     .read(uspLayoutPreferencesProvider.notifier)
@@ -59,8 +59,8 @@ class UspLayoutSettingsPanel extends ConsumerWidget {
                   Navigator.pop(context, 'reset');
 
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Layout reset to defaults'),
+                    SnackBar(
+                      content: Text(loc(context).layoutResetToDefaults),
                       duration: Duration(seconds: 2),
                     ),
                   );
@@ -80,7 +80,7 @@ class UspLayoutSettingsPanel extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        AppText.labelLarge('Dashboard Style'),
+        AppText.labelLarge(loc(context).dashboardStyle),
         AppGap.sm(),
         AppCard(
           child: Row(
@@ -93,10 +93,10 @@ class UspLayoutSettingsPanel extends ConsumerWidget {
                 ),
               ] else
                 Expanded(
-                  child: AppText.bodyMedium('No preset selected'),
+                  child: AppText.bodyMedium(loc(context).noPresetSelected),
                 ),
               AppButton.text(
-                label: 'Change',
+                label: loc(context).change,
                 onTap: () async {
                   final result = await showPresetSelectionDialog(
                     context,
@@ -146,7 +146,7 @@ class UspLayoutSettingsPanel extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        AppText.labelLarge('Available Widgets'),
+        AppText.labelLarge(loc(context).availableWidgets),
         AppGap.sm(),
 
         // Built-in Widgets Section
@@ -154,7 +154,7 @@ class UspLayoutSettingsPanel extends ConsumerWidget {
           _buildWidgetSection(
             context,
             ref,
-            title: 'Built-in Widgets',
+            title: loc(context).builtInWidgets,
             specs: builtInSpecs,
           ),
           AppGap.md(),
@@ -165,7 +165,7 @@ class UspLayoutSettingsPanel extends ConsumerWidget {
           _buildWidgetSection(
             context,
             ref,
-            title: 'App Widget Cards',
+            title: loc(context).appWidgetCards,
             specs: appWidgetSpecs,
             isAppWidgetCard: true,
           ),
@@ -224,7 +224,8 @@ class UspLayoutSettingsPanel extends ConsumerWidget {
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('Added ${spec.displayName}'),
+                                content: Text(loc(context)
+                                    .addedWidgetNamed(spec.displayName)),
                                 duration: const Duration(seconds: 1),
                               ),
                             );
@@ -248,7 +249,8 @@ class UspLayoutSettingsPanel extends ConsumerWidget {
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text('Added ${spec.displayName}'),
+                            content: Text(loc(context)
+                                .addedWidgetNamed(spec.displayName)),
                             duration: const Duration(seconds: 1),
                           ),
                         );
