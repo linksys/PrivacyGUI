@@ -12,6 +12,8 @@ import 'package:privacy_gui/page/internet_settings/providers/usp_internet_settin
 import 'package:privacy_gui/page/internet_settings/views/components/usp_connection_status_banner.dart';
 import 'package:privacy_gui/page/internet_settings/views/sections/usp_ipv4_section.dart';
 import 'package:privacy_gui/page/internet_settings/views/sections/usp_ipv6_section.dart';
+import 'package:privacy_gui/page/internet_settings/models/usp_wan_connection_type.dart';
+import 'package:privacy_gui/page/internet_settings/views/helpers/bridge_redirect_dialog.dart';
 import 'package:privacy_gui/page/internet_settings/views/sections/usp_optional_section.dart';
 import 'package:privacy_gui/page/internet_settings/views/sections/usp_renew_section.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -183,12 +185,26 @@ class UspInternetSettingsView extends ConsumerWidget {
   }
 
   Future<void> _save(BuildContext context, WidgetRef ref) async {
+    final notifier = ref.read(uspInternetSettingsProvider.notifier);
+    final preSave = ref.read(uspInternetSettingsProvider);
+    // Read the submitted transition BEFORE saving: `original` is the baseline
+    // type, `edited` is what the user just chose. This is the unambiguous
+    // intent signal, independent of post-save device timing.
+    final previousType = preSave.original.connectionType;
+    final submittedType = preSave.edited.connectionType;
+    final hostName = preSave.readOnlyInfo.hostName;
+
     try {
-      await doSomethingWithSpinner(
-        context,
-        ref.read(uspInternetSettingsProvider.notifier).save(),
-      );
-      if (context.mounted) {
+      await doSomethingWithSpinner(context, notifier.save());
+      if (!context.mounted) return;
+
+      if (shouldRedirectToBridge(
+        previousType: previousType,
+        newType: submittedType,
+        hostName: hostName,
+      )) {
+        await showBridgeRedirectDialog(context, hostName: hostName);
+      } else {
         showSuccessSnackBar(context, loc(context).changesSaved);
       }
     } catch (e) {
@@ -197,4 +213,16 @@ class UspInternetSettingsView extends ConsumerWidget {
       }
     }
   }
+}
+
+/// Whether a save transition should trigger the Bridge Mode redirect dialog:
+/// the WAN entered bridge (was not bridge, now is) and a hostname is known.
+bool shouldRedirectToBridge({
+  required UspWanConnectionType previousType,
+  required UspWanConnectionType newType,
+  required String hostName,
+}) {
+  return previousType != UspWanConnectionType.bridge &&
+      newType == UspWanConnectionType.bridge &&
+      hostName.isNotEmpty;
 }
