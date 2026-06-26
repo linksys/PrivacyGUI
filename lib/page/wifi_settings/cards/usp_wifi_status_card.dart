@@ -79,7 +79,12 @@ class UspWifiStatusCard extends ConsumerWidget {
             context,
             label: loc(context).txPower,
             value: radio.txPowerPercent / 100,
-            display: radio.txPowerDisplay,
+            // -1 means max; mirrors WifiRadioUIModel.txPowerDisplay but
+            // localizes the "Max" label (the model getter stays raw for
+            // PDF/AI export callers).
+            display: radio.transmitPower == -1
+                ? loc(context).maxShort
+                : radio.txPowerDisplay,
           ),
           AppGap.sm(),
           _buildLinearBar(
@@ -190,7 +195,7 @@ class UspWifiStatusCard extends ConsumerWidget {
           SizedBox(
             width: context.colWidth(1),
             child: AppText.bodySmall(
-              ap.encryptionMode,
+              wifiDisplayValue(context, ap.encryptionMode),
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),

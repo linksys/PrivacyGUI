@@ -1,7 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/models/traffic_analysis_state.dart';
 
-/// Health quality tiers derived from packet loss percentage.
+/// Network health tier for the **health-score gauge** (F-022).
+///
+/// Derived from packet-loss percentage via [NetworkHealthHelpers.tierFromScore],
+/// NOT from WiFi signal. Unique bottom level is [critical]; it has no
+/// physical-link states (wired/none).
+///
+/// Sibling enums (similar names, different domains — do NOT merge):
+/// - `NodeSignalLevel` (core/utils/wifi.dart): RSSI/SNR → WiFi connection display.
+/// - `SignalTier` (core/utils/wifi.dart): RSSI → performance analytics tier.
 enum HealthTier { excellent, good, fair, poor, critical }
 
 /// Pure computation helpers for network health scoring (F-022).
@@ -74,4 +83,16 @@ class NetworkHealthHelpers {
     if (faultsPerSec < 100) return '${faultsPerSec.toStringAsFixed(1)}/s';
     return '${faultsPerSec.toStringAsFixed(0)}/s';
   }
+}
+
+extension HealthTierExt on HealthTier {
+  /// Localized tier label for display in the View layer.
+  /// (The model keeps [NetworkHealthHelpers.tierLabel] for non-View, e.g. PDF.)
+  String resolveLabel(BuildContext context) => switch (this) {
+        HealthTier.excellent => loc(context).excellent,
+        HealthTier.good => loc(context).good,
+        HealthTier.fair => loc(context).fair,
+        HealthTier.poor => loc(context).poor,
+        HealthTier.critical => loc(context).critical,
+      };
 }

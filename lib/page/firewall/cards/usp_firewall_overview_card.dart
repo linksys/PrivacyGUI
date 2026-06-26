@@ -64,11 +64,18 @@ class UspFirewallOverviewCard extends ConsumerWidget {
 /// device) is still used as the aggregation map key; only the legend label is
 /// translated. Unknown targets (e.g. vendor-specific) fall back to the raw value.
 String _localizeTarget(BuildContext context, String target) {
+  // TR-181 Device.Firewall.Chain.{i}.Rule.{i}.Target enum values.
   switch (target) {
     case 'Accept':
       return loc(context).accept;
     case 'Drop':
       return loc(context).drop;
+    case 'Reject':
+      return loc(context).reject;
+    case 'Return':
+      return loc(context).returnTarget;
+    case 'TargetChain':
+      return loc(context).targetChain;
     case 'Other':
       return loc(context).other;
     default:
@@ -121,7 +128,7 @@ class _RulesTab extends StatelessWidget {
       final (i, entry) = e;
       return AppPieSection(
         value: entry.value.toDouble(),
-        label: entry.key,
+        label: _localizeTarget(context, entry.key),
         color: seriesColors[i % seriesColors.length],
       );
     }).toList();

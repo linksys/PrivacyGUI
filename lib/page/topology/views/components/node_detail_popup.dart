@@ -66,13 +66,16 @@ class NodeDetailPopup extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _row('Role', isMaster ? 'Master' : 'Slave'),
+        _row(loc(context).role,
+            isMaster ? loc(context).master : loc(context).slave),
         if (deviceId.isNotEmpty && deviceId.toUpperCase() != 'GATEWAY')
           _row('MAC', deviceId),
-        if (model.isNotEmpty) _row('Model', model),
-        if (manufacturer.isNotEmpty) _row('Manufacturer', manufacturer),
+        if (model.isNotEmpty) _row(loc(context).model, model),
+        if (manufacturer.isNotEmpty)
+          _row(loc(context).manufacturer, manufacturer),
         if (serialNumber.isNotEmpty) _row('S/N', serialNumber),
-        if (softwareVersion.isNotEmpty) _row('Firmware', softwareVersion),
+        if (softwareVersion.isNotEmpty)
+          _row(loc(context).firmware, softwareVersion),
         // Backhaul info for Slave nodes
         if (!isMaster) ...[
           if (backhaulLinkType != null && backhaulLinkType.isNotEmpty)

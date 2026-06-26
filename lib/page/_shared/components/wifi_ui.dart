@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:privacy_gui/core/utils/wifi.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/page/_shared/models/network_health_helpers.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 // Re-export core wifi utilities for convenience
@@ -73,14 +72,6 @@ extension NodeSignalLevelExt on NodeSignalLevel {
 
 /// UI extensions for [SignalTier] (performance analytics).
 extension SignalTierExt on SignalTier {
-  /// Human-readable tier label.
-  String get label => switch (this) {
-        SignalTier.excellent => 'Excellent',
-        SignalTier.good => 'Good',
-        SignalTier.fair => 'Fair',
-        SignalTier.weak => 'Weak',
-      };
-
   /// Localized tier label for display in the View layer.
   String resolveLabel(BuildContext context) => switch (this) {
         SignalTier.excellent => loc(context).excellent,
@@ -117,16 +108,4 @@ String wifiDisplayValue(BuildContext context, String value) {
     default:
       return value;
   }
-}
-
-extension HealthTierExt on HealthTier {
-  /// Localized tier label for display in the View layer.
-  /// (The model keeps [NetworkHealthHelpers.tierLabel] for non-View, e.g. PDF.)
-  String resolveLabel(BuildContext context) => switch (this) {
-        HealthTier.excellent => loc(context).excellent,
-        HealthTier.good => loc(context).good,
-        HealthTier.fair => loc(context).fair,
-        HealthTier.poor => loc(context).poor,
-        HealthTier.critical => loc(context).critical,
-      };
 }

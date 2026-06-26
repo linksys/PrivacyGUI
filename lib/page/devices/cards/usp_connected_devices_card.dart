@@ -66,7 +66,7 @@ class UspConnectedDevicesCard extends ConsumerWidget {
                       AppText.titleSmall('${activeDevices.length}'),
                       AppGap.xs(),
                       AppText.bodySmall(
-                        'Online',
+                        loc(context).online,
                         color: colorScheme.onSurfaceVariant,
                       ),
                     ],
@@ -84,7 +84,7 @@ class UspConnectedDevicesCard extends ConsumerWidget {
                       AppText.titleSmall('${inactiveDevices.length}'),
                       AppGap.xs(),
                       AppText.bodySmall(
-                        'Offline',
+                        loc(context).offline,
                         color: colorScheme.onSurfaceVariant,
                       ),
                     ],
