@@ -92,6 +92,9 @@ Map<String, dynamic> Function(List<String>) createFetchMockHandler({
     if (paths.any((p) => p.contains('VLANTermination'))) {
       return vlanResponse;
     }
+    if (paths.any((p) => p.contains('DeviceInfo.HostName'))) {
+      return const {'Device.DeviceInfo.HostName': 'Community00080'};
+    }
     return {};
   };
 }
@@ -129,6 +132,18 @@ void main() {
       expect(result.form.dhcpv6Enabled, isTrue);
       expect(result.pppInstancePath, equals('Device.PPP.Interface.1.'));
       expect(result.readOnlyInfo.pppConnectionStatus, equals('Connected'));
+    });
+
+    test('fetches and exposes router hostName', () async {
+      final handler = createFetchMockHandler();
+      when(() => mockUsp.get(any())).thenAnswer((invocation) async {
+        final paths = invocation.positionalArguments[0] as List<String>;
+        return handler(paths);
+      });
+
+      final result = await service.fetchSettings();
+
+      expect(result.readOnlyInfo.hostName, equals('Community00080'));
     });
 
     test('handles empty PPP and VLAN instances gracefully', () async {

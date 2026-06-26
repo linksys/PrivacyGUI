@@ -37,18 +37,20 @@ class UspInternetSettingsService {
         Ipv6Settings.fetch(_usp),
         PppInterface.fetch(_usp),
         VlanTermination.fetch(_usp),
+        _fetchHostName(),
       ]);
       final wan = results[0] as WanSettings;
       final ipv6 = results[1] as Ipv6Settings;
       final ppp = results[2] as PppInterface;
       final vlan = results[3] as VlanTermination;
+      final hostName = results[4] as String;
 
       final pppInstance = ppp.items.isNotEmpty ? ppp.items.first : null;
       final vlanInstance = vlan.items.isNotEmpty ? vlan.items.first : null;
 
       return InternetSettingsFetchResult(
         form: _buildForm(wan, ipv6, pppInstance, vlanInstance),
-        readOnlyInfo: _buildReadOnlyInfo(wan, pppInstance),
+        readOnlyInfo: _buildReadOnlyInfo(wan, pppInstance, hostName),
         pppInstancePath: pppInstance?.instancePath,
         vlanInstancePath: vlanInstance?.instancePath,
         debugAddressingType: wan.addressingType,
@@ -59,6 +61,14 @@ class UspInternetSettingsService {
     } catch (e) {
       throw mapUspErrorToServiceError(e);
     }
+  }
+
+  /// Targeted GET of the router hostname. Returns '' on any missing value so a
+  /// hostname-less device degrades gracefully (no bridge redirect target).
+  Future<String> _fetchHostName() async {
+    const path = 'Device.DeviceInfo.HostName';
+    final response = await _usp.get([path]);
+    return (response[path] ?? '') as String;
   }
 
   // ---------------------------------------------------------------------------
@@ -81,7 +91,6 @@ class UspInternetSettingsService {
     return UspInternetSettingsForm(
       connectionType: UspWanConnectionType.fromRawFields(
         addressingType: wan.addressingType,
-        bridgeEnabled: wan.bridgeEnabled,
       ),
       staticIpAddress: wan.staticIpAddress,
       subnetMask: wan.subnetMask,
@@ -111,11 +120,13 @@ class UspInternetSettingsService {
   InternetSettingsReadOnlyInfo _buildReadOnlyInfo(
     WanSettings wan,
     PppInterfaceInstance? ppp,
+    String hostName,
   ) {
     return InternetSettingsReadOnlyInfo(
       currentMacAddress: '', // MAC Clone disabled
       pppConnectionStatus: ppp?.connectionStatus ?? '',
       staticIpAddress: wan.staticIpAddress,
+      hostName: hostName,
     );
   }
 
