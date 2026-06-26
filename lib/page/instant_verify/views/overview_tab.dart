@@ -545,13 +545,13 @@ class _HeaderBar extends StatelessWidget {
     if (state.dnsCheck != null) {
       return state.dnsCheck!.resolved
           ? 'Internet: Working'
-          : 'Connected to ISP \u2014 websites aren\'t loading';
+          : 'Connected, but websites aren\'t loading';
     }
     // WAN status from JNAP — router sees modem/ISP line
     if (state.wanStatus != null) {
       return state.wanConnected
-          ? 'Connected to ISP'   // WAN up, DNS not yet run
-          : 'Not connected to ISP';
+          ? 'Connected to the Internet'   // WAN up, DNS not yet run
+          : 'Not connected to the Internet';
     }
     return 'Checking...';
   }
@@ -1433,7 +1433,7 @@ class _ChecklistSummaryState extends State<_ChecklistSummary> {
                 ? 'Not completed'
                 : '\u2193 ${state.speedTest!.downloadMbps.toStringAsFixed(0)} Mbps  '
                     '\u2191 ${state.speedTest!.uploadMbps.toStringAsFixed(0)} Mbps  '
-                    '${state.speedTest!.latencyMs}ms delay'
+                    '${state.speedTest!.latencyMs} ms delay'
                     '${state.speedTest!.latencyMs > 100 ? ' \u2014 high lag' : ''}',
         expandedDetail: 'The speed test did not complete. Try running again.',
         expandedWidget: state.speedTest != null
@@ -1685,7 +1685,7 @@ class _ChecklistProgressState extends State<_ChecklistProgress> {
           state.gatewayPing!.reachable ? _CheckStatus.pass : _CheckStatus.fail;
       if (state.gatewayPing!.reachable &&
           state.gatewayPing!.latencyMs != null) {
-        gatewayDetail = '${state.gatewayPing!.latencyMs}ms';
+        gatewayDetail = '${state.gatewayPing!.latencyMs} ms';
       } else if (!state.gatewayPing!.reachable) {
         gatewayDetail = 'Could not reach router';
       }
@@ -2256,7 +2256,7 @@ class _SpeedGauge extends StatelessWidget {
             decoration: BoxDecoration(color: latColor, shape: BoxShape.circle),
           ),
           const SizedBox(width: 6),
-          Text('${latencyMs}ms — ${_latencyLabel(latencyMs)}',
+          Text('${latencyMs} ms — ${_latencyLabel(latencyMs)}',
               style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant)),
         ]),
         const SizedBox(height: 10),

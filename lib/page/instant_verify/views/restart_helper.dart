@@ -47,13 +47,30 @@ Future<void> confirmAndRestart(BuildContext context, WidgetRef ref,
     ),
   );
   if (confirmed == true && context.mounted) {
-    // Immediate feedback so the user sees the restart actually started
-    // (Q-22/Q-23 — previously nothing visible happened on press).
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-      content: Text('Restarting your router — this takes about 2 minutes…'),
-      behavior: SnackBarBehavior.floating,
-      duration: Duration(seconds: 6),
-    ));
+    // Prominent, centered progress while the router reboots (J-08 — a bottom
+    // SnackBar was too subtle; QA wanted a clear "it's happening" signal).
+    // On WiFi the page reloads on reconnect and clears this; the barrier is
+    // dismissible so a wired user is never stuck.
+    showDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      builder: (ctx) => const AlertDialog(
+        content: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(strokeWidth: 2)),
+            SizedBox(width: 18),
+            Expanded(
+              child: Text('Restarting your router…\n'
+                  'This takes about 2 minutes.'),
+            ),
+          ],
+        ),
+      ),
+    );
     await ref.read(instantVerifyPivotProvider.notifier).restartRouter();
     onRestarted?.call();
   }

@@ -380,7 +380,7 @@ void main() {
       await tester.pumpWidget(_buildOverviewTab(_wanDownState()));
       await tester.pump();
 
-      expect(find.text('Not connected to ISP'), findsOneWidget);
+      expect(find.text('Not connected to the Internet'), findsOneWidget);
     });
 
     testWidgets('shows WAN-down inline light guide callout', (tester) async {
@@ -583,7 +583,7 @@ void main() {
       await tester.pumpWidget(_buildOverviewTab(state));
       await tester.pump();
 
-      expect(find.text('Connected to ISP'), findsOneWidget);
+      expect(find.text('Connected to the Internet'), findsOneWidget);
     });
 
     testWidgets('WAN connected, DNS resolved → shows "Internet: Working"',
@@ -618,7 +618,7 @@ void main() {
       await tester.pumpWidget(_buildOverviewTab(state));
       await tester.pump();
 
-      expect(find.textContaining('Connected to ISP'), findsAtLeast(1));
+      expect(find.textContaining('Connected,'), findsAtLeast(1));
       expect(find.textContaining("websites aren't loading"), findsAtLeast(1));
     });
 
@@ -627,7 +627,7 @@ void main() {
       await tester.pumpWidget(_buildOverviewTab(_wanDownState()));
       await tester.pump();
 
-      expect(find.text('Not connected to ISP'), findsOneWidget);
+      expect(find.text('Not connected to the Internet'), findsOneWidget);
     });
   });
 
