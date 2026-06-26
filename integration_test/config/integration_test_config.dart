@@ -11,10 +11,13 @@ class IntegrationTestConfig {
       String.fromEnvironment('wifiBands', defaultValue: '2.4,5,guest');
   static const String newWifiName =
       String.fromEnvironment('newWifiName', defaultValue: 'TestNewWifiName');
-  static const String newWifiPassword =
-      String.fromEnvironment('newWifiPassword', defaultValue: 'TestNewWifiPassword@');
-  static const String newGuestWifiName =
-      String.fromEnvironment('newGuestWifiName', defaultValue: 'TestNewGuestWifiName');
-  static const String newGuestWifiPassword =
-      String.fromEnvironment('newGuestWifiPassword', defaultValue: 'TestNewGuestWifiPassword@');
+  static const String newWifiPassword = String.fromEnvironment(
+      'newWifiPassword',
+      defaultValue: 'TestNewWifiPassword@');
+  static const String newGuestWifiName = String.fromEnvironment(
+      'newGuestWifiName',
+      defaultValue: 'TestNewGuestWifiName');
+  static const String newGuestWifiPassword = String.fromEnvironment(
+      'newGuestWifiPassword',
+      defaultValue: 'TestNewGuestWifiPassword@');
 }

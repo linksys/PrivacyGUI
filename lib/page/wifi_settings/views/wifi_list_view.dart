@@ -226,9 +226,11 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
       if (radio.radioID == WifiRadioBand.radio_6) {
         // Handle security type for 6G band
         if (securityType.isOpenVariant) {
-          notifier.setWiFiSecurityType(WifiSecurityType.enhancedOpenOnly, radio.radioID);
+          notifier.setWiFiSecurityType(
+              WifiSecurityType.enhancedOpenOnly, radio.radioID);
         } else {
-          notifier.setWiFiSecurityType(WifiSecurityType.wpa3Personal, radio.radioID);
+          notifier.setWiFiSecurityType(
+              WifiSecurityType.wpa3Personal, radio.radioID);
         }
       } else {
         notifier.setWiFiSecurityType(securityType, radio.radioID);

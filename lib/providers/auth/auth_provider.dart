@@ -238,7 +238,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
               accessToken: token,
               tokenType: 'Bearer',
               expiresIn: DateTime.now()
-                  .add(Duration(seconds: sessionInfo.expiredIn * -1))
+                  .add(Duration(seconds: sessionInfo.expiredIn.abs()))
                   .millisecondsSinceEpoch));
     });
   }

@@ -1,5 +1,3 @@
-
-
 part of 'base_actions.dart';
 
 class TestLocalLoginActions extends CommonBaseActions {

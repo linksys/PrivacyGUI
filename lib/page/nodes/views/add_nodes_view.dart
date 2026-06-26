@@ -118,7 +118,8 @@ class _AddNodesViewState extends ConsumerState<AddNodesView> {
                       return AppNodeListCard(
                           leading: CustomTheme.of(context).getRouterImage(
                               routerIconTestByModel(
-                                  modelNumber: node.modelNumber ?? ''), false),
+                                  modelNumber: node.modelNumber ?? ''),
+                              false),
                           title: e.getDeviceLocation(),
                           trailing: SharedWidgets.resolveSignalStrengthIcon(
                             context,

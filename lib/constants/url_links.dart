@@ -9,7 +9,8 @@ const officialWebHost = 'https://store.linksys.com';
 const officialSupportHost = 'https://support.linksys.com';
 
 const linkEULA = 'https://www.linksys.com/pages/end-user-license-agreement';
-const linkTerms = 'https://www.linksys.com/pages/linksys-smart-wifi-terms-of-service';
+const linkTerms =
+    'https://www.linksys.com/pages/linksys-smart-wifi-terms-of-service';
 const linkPrivacy =
     'https://www.linksys.com/blogs/support-article/linksys-privacy-policy';
 const linkThirdParty = '$officialSupportHost/kb/article/943-en';
@@ -41,6 +42,8 @@ const linkHardwareNodeNotTureOn = '$officialSupportHost/kb/article/6807-en';
 const linkHardwareEthernetPortNotWorking =
     '$officialSupportHost/kb/article/8185-en';
 const linkCheckIfAutoFirmwareOn = '$officialSupportHost/kb/article/6810-en';
+// Web Interface Guide
+const linkWebInterfaceGuide = '$officialSupportHost/kb/article/9921-en';
 // Explanation
 const linksysCertExplanation =
     '$officialWebHost/support-article?articleNum=318835';

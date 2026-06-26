@@ -420,6 +420,8 @@
   "faqListWhatLightsMean": "What do the lights on my node mean?",
   "faqLookingFor": "Can't find what you're looking for?",
   "faqVisitLinksysSupport": "Visit Linksys Support",
+  "faqWebInterfaceGuideTitle": "Web Interface Guide",
+  "faqWebInterfaceGuideDesc": "Complete guide for Linksys Pinnacle Mesh routers",
   "faqs": "FAQs",
   "featureUnavailableInRemoteMode": "This feature is unavailable in remote mode",
   "filterAnonymous": "Filter anonymous Internet requests",

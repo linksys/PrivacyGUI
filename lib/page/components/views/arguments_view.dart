@@ -36,8 +36,10 @@ abstract class ArgumentsBaseConsumerStatefulView<T>
 
 abstract class ArgumentsConsumerStatefulView
     extends ArgumentsBaseConsumerStatefulView<dynamic> {
-  const ArgumentsConsumerStatefulView({Key? key, super.args,})
-      : super(key: key);
+  const ArgumentsConsumerStatefulView({
+    Key? key,
+    super.args,
+  }) : super(key: key);
 }
 
 abstract class ArgumentsBaseConsumerStatelessView<T> extends ConsumerWidget {
@@ -48,6 +50,8 @@ abstract class ArgumentsBaseConsumerStatelessView<T> extends ConsumerWidget {
 
 abstract class ArgumentsConsumerStatelessView
     extends ArgumentsBaseConsumerStatelessView<dynamic> {
-  const ArgumentsConsumerStatelessView({Key? key, super.args,})
-      : super(key: key);
+  const ArgumentsConsumerStatelessView({
+    Key? key,
+    super.args,
+  }) : super(key: key);
 }

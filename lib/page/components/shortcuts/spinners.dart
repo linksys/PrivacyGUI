@@ -15,7 +15,7 @@ OverlayEntry showFullScreenSpinner(
       title: title,
       messages: messages,
       period: period);
-  
+
   Overlay.of(context).insert(entry);
   return entry;
 }

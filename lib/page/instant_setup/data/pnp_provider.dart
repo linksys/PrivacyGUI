@@ -529,8 +529,9 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
       final primaryRadio = defaultWiFiSettings.primaryRadio;
       return (
         ssid: wifiStateData['ssid'] as String? ?? primaryRadio?.ssid ?? '',
-        password:
-            wifiStateData['password'] as String? ?? primaryRadio?.password ?? '',
+        password: wifiStateData['password'] as String? ??
+            primaryRadio?.password ??
+            '',
       );
     }
 
@@ -653,7 +654,8 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
         })
         .then((_) async => await Future.delayed(const Duration(seconds: 3)))
         .then((_) => testConnectionReconnected())
-        .then((_) => checkAdminPassword(defaultWiFiSettings.primaryRadio?.password))
+        .then((_) =>
+            checkAdminPassword(defaultWiFiSettings.primaryRadio?.password))
         .whenComplete(() => prefs.remove(pPnpConfiguredSN));
     // return Future.delayed(Duration(seconds: 5));
   }

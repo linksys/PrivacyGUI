@@ -119,7 +119,6 @@ class DDNSNotifier extends Notifier<DDNSState> {
   void setProviderSettings(dynamic settings) {
     final provider = state.provider.applySettings(settings);
     state = state.copyWith(provider: provider);
-
   }
 
   bool isDataValid() {
@@ -127,10 +126,10 @@ class DDNSNotifier extends Notifier<DDNSState> {
       final DynDNSSettings settings => settings.username.isNotEmpty &&
           settings.password.isNotEmpty &&
           settings.hostName.isNotEmpty,
-          final NoIPSettings settings => settings.username.isNotEmpty &&
+      final NoIPSettings settings => settings.username.isNotEmpty &&
           settings.password.isNotEmpty &&
           settings.hostName.isNotEmpty,
-          final TZOSettings settings => settings.username.isNotEmpty &&
+      final TZOSettings settings => settings.username.isNotEmpty &&
           settings.password.isNotEmpty &&
           settings.hostName.isNotEmpty,
       _ => true,

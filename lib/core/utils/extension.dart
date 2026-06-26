@@ -17,7 +17,8 @@ extension MapExt on Map {
 
 extension StringExt on String {
   /// Capitalize ONE word
-  String capitalize() => isNotEmpty ? '${this[0].toUpperCase()}${substring(1)}' : this;
+  String capitalize() =>
+      isNotEmpty ? '${this[0].toUpperCase()}${substring(1)}' : this;
 
   /// Camel capitalize words
   String camelCapitalize() {

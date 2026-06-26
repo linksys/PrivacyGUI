@@ -55,7 +55,8 @@ class DhcpLease extends Equatable {
 
   String toJson() => json.encode(toMap());
 
-  factory DhcpLease.fromJson(String source) => DhcpLease.fromMap(json.decode(source) as Map<String, dynamic>);
+  factory DhcpLease.fromJson(String source) =>
+      DhcpLease.fromMap(json.decode(source) as Map<String, dynamic>);
 
   @override
   bool get stringify => true;

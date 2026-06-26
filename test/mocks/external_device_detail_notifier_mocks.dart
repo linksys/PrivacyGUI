@@ -45,7 +45,9 @@ class _FakeExternalDeviceDetailState_1 extends _i1.SmartFake
 /// A class which mocks [ExternalDeviceDetailNotifier].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockExternalDeviceDetailNotifier extends _i2.Notifier<_i3.ExternalDeviceDetailState> with _i1.Mock
+class MockExternalDeviceDetailNotifier
+    extends _i2.Notifier<_i3.ExternalDeviceDetailState>
+    with _i1.Mock
     implements _i3.ExternalDeviceDetailNotifier {
   @override
   _i2.NotifierProviderRef<_i3.ExternalDeviceDetailState> get ref =>

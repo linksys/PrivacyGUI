@@ -49,7 +49,8 @@ enum PowerTableCountries {
         PowerTableCountries.twn => loc(context).asiaTaiwan,
         PowerTableCountries.tha => loc(context).asiaThailand,
         PowerTableCountries.xah => loc(context).asiaRest,
-        PowerTableCountries.aus => '${loc(context).australia}/${loc(context).newZealand}',
+        PowerTableCountries.aus =>
+          '${loc(context).australia}/${loc(context).newZealand}',
         PowerTableCountries.can => loc(context).canada,
         PowerTableCountries.eee => loc(context).europe,
         PowerTableCountries.lam => loc(context).latinAmerica,
@@ -62,7 +63,8 @@ enum PowerTableCountries {
         PowerTableCountries.tur => loc(context).middleEastTurkey,
         PowerTableCountries.are => loc(context).middleEastUnitedArabEmirates,
         PowerTableCountries.xme => loc(context).middleEast,
-        PowerTableCountries.nzl => '${loc(context).australia}/${loc(context).newZealand}',
+        PowerTableCountries.nzl =>
+          '${loc(context).australia}/${loc(context).newZealand}',
         PowerTableCountries.usa => loc(context).unitedState,
       };
 

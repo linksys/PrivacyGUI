@@ -42,19 +42,24 @@ class PortRangeTriggeringRuleState extends Equatable {
 
   factory PortRangeTriggeringRuleState.fromMap(Map<String, dynamic> map) {
     return PortRangeTriggeringRuleState(
-      rules: List<PortRangeTriggeringRule>.from(map['rules']?.map((x) => PortRangeTriggeringRule.fromMap(x))),
-      rule: map['rule'] != null ? PortRangeTriggeringRule.fromMap(map['rule']) : null,
+      rules: List<PortRangeTriggeringRule>.from(
+          map['rules']?.map((x) => PortRangeTriggeringRule.fromMap(x))),
+      rule: map['rule'] != null
+          ? PortRangeTriggeringRule.fromMap(map['rule'])
+          : null,
       editIndex: map['editIndex']?.toInt(),
     );
   }
 
   String toJson() => json.encode(toMap());
 
-  factory PortRangeTriggeringRuleState.fromJson(String source) => PortRangeTriggeringRuleState.fromMap(json.decode(source));
+  factory PortRangeTriggeringRuleState.fromJson(String source) =>
+      PortRangeTriggeringRuleState.fromMap(json.decode(source));
 
   @override
   bool get stringify => true;
 
   @override
-  String toString() => 'PortRangeTriggeringRuleState(rules: $rules, rule: $rule, editIndex: $editIndex)';
+  String toString() =>
+      'PortRangeTriggeringRuleState(rules: $rules, rule: $rule, editIndex: $editIndex)';
 }

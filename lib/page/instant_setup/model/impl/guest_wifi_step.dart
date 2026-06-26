@@ -15,7 +15,7 @@ class GuestWiFiStep extends PnpStep {
 
   GuestWiFiStep({
     super.saveChanges,
-  }): super(index: id);
+  }) : super(index: id);
 
   @override
   Future<void> onInit(WidgetRef ref) async {

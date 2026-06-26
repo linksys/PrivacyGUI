@@ -54,7 +54,7 @@ class DeviceStatusModel extends Equatable {
           ipAddress: ipAddress,
           connection: connection,
           type: DeviceStatusType.ipv6);
-          
+
   DeviceStatusModel copyWith({
     String? name,
     String? mac,

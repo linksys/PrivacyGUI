@@ -62,7 +62,7 @@ class LinksysRoute extends GoRoute {
           BuildContext context, LinksysRouteConfig? config) =>
       config == null ? true : config.noNaviRail != true;
 
-  // 
+  //
 
   static bool autoHideNaviRail(BuildContext context) =>
       (GoRouter.of(context)

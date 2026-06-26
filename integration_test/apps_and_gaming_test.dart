@@ -120,7 +120,7 @@ void main() {
       await advancedSettingsActions.enterAppsAndGamingPage();
       await appsGamingActions.tapPortForwardingTab();
       await appsGamingActions.checkSavedItems();
-    });  
+    });
 
     testWidgets('Apps and Gaming - Port range forwarding operations',
         (tester) async {

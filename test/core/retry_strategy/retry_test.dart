@@ -12,7 +12,7 @@ void main() {
     test('should retry until success', () async {
       int attempt = 0;
       final strategy = ExponentialBackoffRetryStrategy(maxRetries: 3);
-      
+
       final result = await strategy.execute(
         () async {
           if (attempt++ < 2) {
@@ -21,14 +21,15 @@ void main() {
           return 'success';
         },
       );
-      
+
       expect(result, 'success');
       expect(attempt, 3);
     });
 
-    test('should throw MaxRetriesExceededException when max retries reached', () async {
+    test('should throw MaxRetriesExceededException when max retries reached',
+        () async {
       final strategy = ExponentialBackoffRetryStrategy(maxRetries: 2);
-      
+
       expect(
         () => strategy.execute(
           () async => throw Exception('Permanent failure'),
@@ -40,14 +41,14 @@ void main() {
     test('should call onRetry callback for each retry', () async {
       int retryCount = 0;
       final strategy = ExponentialBackoffRetryStrategy(maxRetries: 3);
-      
+
       try {
         await strategy.execute(
           () async => throw Exception('Failure'),
           onRetry: (attempt) => retryCount++,
         );
       } catch (_) {}
-      
+
       expect(retryCount, 3);
     });
   });
@@ -59,10 +60,10 @@ void main() {
         maxDelay: const Duration(seconds: 30),
       );
 
-      expect(strategy.calculateDelay(0).inSeconds, 1);  // 1 * 2^0 = 1
-      expect(strategy.calculateDelay(1).inSeconds, 2);  // 1 * 2^1 = 2
-      expect(strategy.calculateDelay(2).inSeconds, 4);  // 1 * 2^2 = 4
-      expect(strategy.calculateDelay(3).inSeconds, 8);  // 1 * 2^3 = 8
+      expect(strategy.calculateDelay(0).inSeconds, 1); // 1 * 2^0 = 1
+      expect(strategy.calculateDelay(1).inSeconds, 2); // 1 * 2^1 = 2
+      expect(strategy.calculateDelay(2).inSeconds, 4); // 1 * 2^2 = 4
+      expect(strategy.calculateDelay(3).inSeconds, 8); // 1 * 2^3 = 8
     });
 
     test('should respect maxDelay', () {
@@ -71,9 +72,11 @@ void main() {
         maxDelay: const Duration(seconds: 15),
       );
 
-      expect(strategy.calculateDelay(0).inSeconds, 10);  // 10 * 2^0 = 10
-      expect(strategy.calculateDelay(1).inSeconds, 15);  // 10 * 2^1 = 20, but capped at 15
-      expect(strategy.calculateDelay(2).inSeconds, 15);  // 10 * 2^2 = 40, but capped at 15
+      expect(strategy.calculateDelay(0).inSeconds, 10); // 10 * 2^0 = 10
+      expect(strategy.calculateDelay(1).inSeconds,
+          15); // 10 * 2^1 = 20, but capped at 15
+      expect(strategy.calculateDelay(2).inSeconds,
+          15); // 10 * 2^2 = 40, but capped at 15
     });
   });
 
@@ -85,7 +88,8 @@ void main() {
       );
 
       for (int i = 0; i < 10; i++) {
-        final delay = strategy.calculateDelay(2);  // 1 * 2^2 = 4 seconds theoretical max
+        final delay =
+            strategy.calculateDelay(2); // 1 * 2^2 = 4 seconds theoretical max
         expect(delay.inSeconds, greaterThanOrEqualTo(0));
         expect(delay.inSeconds, lessThanOrEqualTo(4));
       }
@@ -100,9 +104,9 @@ void main() {
         maxDelay: const Duration(seconds: 10),
       );
 
-      expect(strategy.calculateDelay(0).inSeconds, 1);  // 1 + (2 * 0) = 1
-      expect(strategy.calculateDelay(1).inSeconds, 3);  // 1 + (2 * 1) = 3
-      expect(strategy.calculateDelay(2).inSeconds, 5);  // 1 + (2 * 2) = 5
+      expect(strategy.calculateDelay(0).inSeconds, 1); // 1 + (2 * 0) = 1
+      expect(strategy.calculateDelay(1).inSeconds, 3); // 1 + (2 * 1) = 3
+      expect(strategy.calculateDelay(2).inSeconds, 5); // 1 + (2 * 2) = 5
     });
   });
 
@@ -115,11 +119,11 @@ void main() {
 
       // Fibonacci sequence: 0, 1, 1, 2, 3, 5, 8, 13...
       // We use retryAttempt + 1 to get: 1, 1, 2, 3, 5, 8, 13...
-      expect(strategy.calculateDelay(0).inSeconds, 1);  // 1 * 1 = 1
-      expect(strategy.calculateDelay(1).inSeconds, 1);  // 1 * 1 = 1
-      expect(strategy.calculateDelay(2).inSeconds, 2);  // 1 * 2 = 2
-      expect(strategy.calculateDelay(3).inSeconds, 3);  // 1 * 3 = 3
-      expect(strategy.calculateDelay(4).inSeconds, 5);  // 1 * 5 = 5
+      expect(strategy.calculateDelay(0).inSeconds, 1); // 1 * 1 = 1
+      expect(strategy.calculateDelay(1).inSeconds, 1); // 1 * 1 = 1
+      expect(strategy.calculateDelay(2).inSeconds, 2); // 1 * 2 = 2
+      expect(strategy.calculateDelay(3).inSeconds, 3); // 1 * 3 = 3
+      expect(strategy.calculateDelay(4).inSeconds, 5); // 1 * 5 = 5
     });
   });
 
@@ -131,9 +135,9 @@ void main() {
         maxDelay: const Duration(seconds: 100),
       );
 
-      expect(strategy.calculateDelay(0).inSeconds, 1);  // 1 * (0+1)^2 = 1
-      expect(strategy.calculateDelay(1).inSeconds, 4);  // 1 * (1+1)^2 = 4
-      expect(strategy.calculateDelay(2).inSeconds, 9);  // 1 * (2+1)^2 = 9
+      expect(strategy.calculateDelay(0).inSeconds, 1); // 1 * (0+1)^2 = 1
+      expect(strategy.calculateDelay(1).inSeconds, 4); // 1 * (1+1)^2 = 4
+      expect(strategy.calculateDelay(2).inSeconds, 9); // 1 * (2+1)^2 = 9
       expect(strategy.calculateDelay(3).inSeconds, 16); // 1 * (3+1)^2 = 16
     });
 
@@ -144,28 +148,29 @@ void main() {
         maxDelay: const Duration(seconds: 100),
       );
 
-      expect(strategy.calculateDelay(0).inSeconds, 1);   // 1 * (0+1)^3 = 1
-      expect(strategy.calculateDelay(1).inSeconds, 8);   // 1 * (1+1)^3 = 8
-      expect(strategy.calculateDelay(2).inSeconds, 27);  // 1 * (2+1)^3 = 27
+      expect(strategy.calculateDelay(0).inSeconds, 1); // 1 * (0+1)^3 = 1
+      expect(strategy.calculateDelay(1).inSeconds, 8); // 1 * (1+1)^3 = 8
+      expect(strategy.calculateDelay(2).inSeconds, 27); // 1 * (2+1)^3 = 27
     });
   });
 
   test('should use shouldRetry callback to determine retry', () async {
     int attempt = 0;
     final strategy = ExponentialBackoffRetryStrategy(maxRetries: 3);
-    
+
     final result = await strategy.execute(
       () async => attempt++,
       shouldRetry: (result) => result < 2, // Retry if result is less than 2
     );
-    
+
     expect(result, 2); // Should stop when result is 2 (3rd attempt: 0, 1, 2)
     expect(attempt, 3);
   });
 
-  test('should throw ShouldRetryException when shouldRetry returns true', () async {
+  test('should throw ShouldRetryException when shouldRetry returns true',
+      () async {
     final strategy = ExponentialBackoffRetryStrategy(maxRetries: 0);
-    
+
     expect(
       () => strategy.execute(
         () async => 'retry',
@@ -189,7 +194,8 @@ void main() {
       }
     });
 
-    test('ExponentialBackoffWithJitterRetryStrategy should respect maxDelay', () {
+    test('ExponentialBackoffWithJitterRetryStrategy should respect maxDelay',
+        () {
       final strategy = ExponentialBackoffWithJitterRetryStrategy(
         initialDelay: const Duration(seconds: 10),
         maxDelay: const Duration(seconds: 15),
