@@ -653,13 +653,7 @@
       "url": { "type": "Object" }
     }
   },
-  "bridgeRedirectButton": "Go to {url}",
-  "@bridgeRedirectButton": {
-    "description": "Primary button that navigates the browser to the bridge management address. {url} is https://<hostname>.local",
-    "placeholders": {
-      "url": { "type": "Object" }
-    }
-  },
+  "bridgeRedirectButton": "Go to router",
   "currentMac": "Current MAC",
   "renew": "Renew",
   "leaseRenewed": "{protocol} lease renewed",

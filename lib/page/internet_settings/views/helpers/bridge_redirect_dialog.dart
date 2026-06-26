@@ -32,7 +32,7 @@ Future<void> showBridgeRedirectDialog(
         onTap: () => Navigator.of(context, rootNavigator: true).pop(),
       ),
       AppButton.primary(
-        label: l.bridgeRedirectButton(url),
+        label: l.bridgeRedirectButton,
         onTap: () => navigate(url),
       ),
     ],

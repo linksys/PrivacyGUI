@@ -12,26 +12,20 @@ final _testTheme = AppTheme.create(
   }),
 );
 
-Widget _harness({
-  required void Function(String) navigate,
-  required String hostName,
-}) {
-  return MediaQuery(
-    data: const MediaQueryData(size: Size(1024, 768)),
-    child: MaterialApp(
-      theme: _testTheme,
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
-      supportedLocales: AppLocalizations.supportedLocales,
-      home: Scaffold(
-        body: Builder(
-          builder: (context) => ElevatedButton(
-            onPressed: () => showBridgeRedirectDialog(
-              context,
-              hostName: hostName,
-              navigate: navigate,
-            ),
-            child: const Text('open'),
+Widget _harness({required void Function(String) navigate}) {
+  return MaterialApp(
+    theme: _testTheme,
+    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    supportedLocales: AppLocalizations.supportedLocales,
+    home: Scaffold(
+      body: Builder(
+        builder: (context) => ElevatedButton(
+          onPressed: () => showBridgeRedirectDialog(
+            context,
+            hostName: 'Community00080',
+            navigate: navigate,
           ),
+          child: const Text('open'),
         ),
       ),
     ),
@@ -40,48 +34,27 @@ Widget _harness({
 
 void main() {
   testWidgets('shows the .local management address', (tester) async {
-    // The long button label causes layout overflow in the 350px dialog; suppress
-    // the error to test functional behavior. Production dialogs have more space.
-    final oldOnError = FlutterError.onError;
-    FlutterError.onError = (details) {
-      if (!details.toString().contains('RenderFlex overflowed')) {
-        oldOnError?.call(details);
-      }
-    };
-
-    await tester.pumpWidget(_harness(navigate: (_) {}, hostName: 'MyRouter'));
+    await tester.pumpWidget(_harness(navigate: (_) {}));
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
 
     expect(
-      find.textContaining('https://MyRouter.local'),
+      find.textContaining('https://Community00080.local'),
       findsWidgets,
     );
-
-    FlutterError.onError = oldOnError;
   });
 
   testWidgets('go button navigates to the .local URL', (tester) async {
-    // Suppress layout overflow error (see test above).
-    final oldOnError = FlutterError.onError;
-    FlutterError.onError = (details) {
-      if (!details.toString().contains('RenderFlex overflowed')) {
-        oldOnError?.call(details);
-      }
-    };
-
     String? navigated;
-    await tester.pumpWidget(
-        _harness(navigate: (url) => navigated = url, hostName: 'MyRouter'));
+    await tester.pumpWidget(_harness(navigate: (url) => navigated = url));
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
 
-    // The primary button label contains the URL; tap it.
-    await tester.tap(find.textContaining('Go to'), warnIfMissed: false);
+    // The primary button carries the short "Go to router" label; the URL flows
+    // through onTap rather than the label.
+    await tester.tap(find.text('Go to router'));
     await tester.pumpAndSettle();
 
-    expect(navigated, 'https://MyRouter.local');
-
-    FlutterError.onError = oldOnError;
+    expect(navigated, 'https://Community00080.local');
   });
 }
