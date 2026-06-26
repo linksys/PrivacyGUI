@@ -1,16 +1,19 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:privacy_gui/core/usp/services/sse_operation_strategy.dart';
 import 'package:privacy_gui/core/usp/services/sse_subscription_registry.dart';
 
 import '../mocks.dart';
 
 void main() {
   late MockUspBridgeClient mockBridge;
+  late FakeSseOperationStrategy strategy;
   late SseSubscriptionRegistry registry;
 
   setUp(() {
     mockBridge = MockUspBridgeClient();
-    registry = SseSubscriptionRegistry(mockBridge);
+    strategy = FakeSseOperationStrategy(mockBridge);
+    registry = SseSubscriptionRegistry(strategy);
 
     // Default stubs
     when(() => mockBridge.subscribe(
@@ -24,15 +27,17 @@ void main() {
   });
 
   // ---------------------------------------------------------------------------
-  // register
+  // registerAll
   // ---------------------------------------------------------------------------
-  group('register', () {
-    test('calls bridge.subscribe with correct params', () async {
-      await registry.register(
-        subscriptionId: 'wifi-vc',
-        notifType: 'ValueChange',
-        referenceList: 'Device.WiFi.SSID.',
-      );
+  group('registerAll', () {
+    test('calls strategy.registerSubscriptions with correct params', () async {
+      await registry.registerAll([
+        SubscriptionDef(
+          subscriptionId: 'wifi-vc',
+          notifType: 'ValueChange',
+          referenceList: 'Device.WiFi.SSID.',
+        ),
+      ]);
 
       verify(() => mockBridge.subscribe(
             subscriptionId: 'wifi-vc',
@@ -41,40 +46,33 @@ void main() {
           )).called(1);
     });
 
-    test('returns SseSubscriptionRecord with correct fields', () async {
-      final record = await registry.register(
-        subscriptionId: 'hosts-oc',
-        notifType: 'ObjectCreation',
-        referenceList: 'Device.Hosts.Host.',
-      );
-
-      expect(record.subscriptionId, 'hosts-oc');
-      expect(record.notifType, 'ObjectCreation');
-      expect(record.referenceList, 'Device.Hosts.Host.');
-      expect(record.createdAt, isNotNull);
-    });
-
     test('adds to activeIds', () async {
-      await registry.register(
-        subscriptionId: 'test-sub',
-        notifType: 'ValueChange',
-        referenceList: 'Device.Test.',
-      );
+      await registry.registerAll([
+        SubscriptionDef(
+          subscriptionId: 'test-sub',
+          notifType: 'ValueChange',
+          referenceList: 'Device.Test.',
+        ),
+      ]);
 
       expect(registry.activeIds, contains('test-sub'));
     });
 
-    test('duplicate subscriptionId skips bridge call', () async {
-      await registry.register(
-        subscriptionId: 'dup-sub',
-        notifType: 'ValueChange',
-        referenceList: 'Device.Test.',
-      );
-      await registry.register(
-        subscriptionId: 'dup-sub',
-        notifType: 'ValueChange',
-        referenceList: 'Device.Test.',
-      );
+    test('duplicate subscriptionId skips strategy call', () async {
+      await registry.registerAll([
+        SubscriptionDef(
+          subscriptionId: 'dup-sub',
+          notifType: 'ValueChange',
+          referenceList: 'Device.Test.',
+        ),
+      ]);
+      await registry.registerAll([
+        SubscriptionDef(
+          subscriptionId: 'dup-sub',
+          notifType: 'ValueChange',
+          referenceList: 'Device.Test.',
+        ),
+      ]);
 
       verify(() => mockBridge.subscribe(
             subscriptionId: 'dup-sub',
@@ -83,47 +81,21 @@ void main() {
           )).called(1); // Only 1 call, not 2
     });
 
-    test('duplicate returns existing record', () async {
-      final first = await registry.register(
-        subscriptionId: 'dup-sub',
-        notifType: 'ValueChange',
-        referenceList: 'Device.Test.',
-      );
-      final second = await registry.register(
-        subscriptionId: 'dup-sub',
-        notifType: 'ValueChange',
-        referenceList: 'Device.Test.',
-      );
+    test('registers multiple subscriptions', () async {
+      await registry.registerAll([
+        SubscriptionDef(
+          subscriptionId: 'sub-1',
+          notifType: 'ValueChange',
+          referenceList: 'Device.Test.1.',
+        ),
+        SubscriptionDef(
+          subscriptionId: 'sub-2',
+          notifType: 'ObjectCreation',
+          referenceList: 'Device.Test.2.',
+        ),
+      ]);
 
-      expect(identical(first, second), isTrue);
-    });
-
-    test('notifType conversion: ValueChange→1', () async {
-      await registry.register(
-        subscriptionId: 'vc',
-        notifType: 'ValueChange',
-        referenceList: 'Device.Test.',
-      );
-
-      verify(() => mockBridge.subscribe(
-            subscriptionId: any(named: 'subscriptionId'),
-            path: any(named: 'path'),
-            notifType: 1,
-          )).called(1);
-    });
-
-    test('notifType conversion: OperationComplete→4', () async {
-      await registry.register(
-        subscriptionId: 'oc',
-        notifType: 'OperationComplete',
-        referenceList: 'Device.Test.',
-      );
-
-      verify(() => mockBridge.subscribe(
-            subscriptionId: any(named: 'subscriptionId'),
-            path: any(named: 'path'),
-            notifType: 4,
-          )).called(1);
+      expect(registry.activeIds, containsAll(['sub-1', 'sub-2']));
     });
   });
 
@@ -131,12 +103,14 @@ void main() {
   // unregister
   // ---------------------------------------------------------------------------
   group('unregister', () {
-    test('calls bridge.unsubscribe', () async {
-      await registry.register(
-        subscriptionId: 'to-remove',
-        notifType: 'ValueChange',
-        referenceList: 'Device.Test.',
-      );
+    test('calls strategy.unregisterSubscriptions', () async {
+      await registry.registerAll([
+        SubscriptionDef(
+          subscriptionId: 'to-remove',
+          notifType: 'ValueChange',
+          referenceList: 'Device.Test.',
+        ),
+      ]);
 
       await registry.unregister('to-remove');
 
@@ -146,116 +120,25 @@ void main() {
     });
 
     test('removes from activeIds', () async {
-      await registry.register(
-        subscriptionId: 'to-remove',
-        notifType: 'ValueChange',
-        referenceList: 'Device.Test.',
-      );
+      await registry.registerAll([
+        SubscriptionDef(
+          subscriptionId: 'to-remove',
+          notifType: 'ValueChange',
+          referenceList: 'Device.Test.',
+        ),
+      ]);
 
       await registry.unregister('to-remove');
 
       expect(registry.activeIds, isNot(contains('to-remove')));
     });
 
-    test('unknown subscriptionId has no bridge call', () async {
+    test('unknown subscriptionId has no strategy call', () async {
       await registry.unregister('nonexistent');
 
       verifyNever(() => mockBridge.unsubscribe(
             subscriptionId: any(named: 'subscriptionId'),
           ));
-    });
-
-    test('bridge.unsubscribe failure still removes from map', () async {
-      when(() => mockBridge.unsubscribe(
-            subscriptionId: any(named: 'subscriptionId'),
-          )).thenThrow(Exception('network error'));
-
-      await registry.register(
-        subscriptionId: 'fail-unsub',
-        notifType: 'ValueChange',
-        referenceList: 'Device.Test.',
-      );
-
-      await registry.unregister('fail-unsub');
-
-      expect(registry.activeIds, isNot(contains('fail-unsub')));
-    });
-  });
-
-  // ---------------------------------------------------------------------------
-  // resubscribeAll
-  // ---------------------------------------------------------------------------
-  group('resubscribeAll', () {
-    test('re-registers all tracked subscriptions', () async {
-      await registry.register(
-        subscriptionId: 'sub-1',
-        notifType: 'ValueChange',
-        referenceList: 'Device.WiFi.SSID.',
-      );
-      await registry.register(
-        subscriptionId: 'sub-2',
-        notifType: 'ObjectCreation',
-        referenceList: 'Device.Hosts.Host.',
-      );
-
-      reset(mockBridge);
-      when(() => mockBridge.subscribe(
-            subscriptionId: any(named: 'subscriptionId'),
-            path: any(named: 'path'),
-            notifType: any(named: 'notifType'),
-          )).thenAnswer((_) async => {});
-
-      await registry.resubscribeAll();
-
-      verify(() => mockBridge.subscribe(
-            subscriptionId: any(named: 'subscriptionId'),
-            path: any(named: 'path'),
-            notifType: any(named: 'notifType'),
-          )).called(2);
-    });
-
-    test('empty registry has no bridge calls', () async {
-      await registry.resubscribeAll();
-
-      verifyNever(() => mockBridge.subscribe(
-            subscriptionId: any(named: 'subscriptionId'),
-            path: any(named: 'path'),
-            notifType: any(named: 'notifType'),
-          ));
-    });
-
-    test('one failure does not stop others', () async {
-      await registry.register(
-        subscriptionId: 'sub-1',
-        notifType: 'ValueChange',
-        referenceList: 'Device.Test.',
-      );
-      await registry.register(
-        subscriptionId: 'sub-2',
-        notifType: 'ObjectCreation',
-        referenceList: 'Device.Test.',
-      );
-
-      reset(mockBridge);
-      var callCount = 0;
-      when(() => mockBridge.subscribe(
-            subscriptionId: any(named: 'subscriptionId'),
-            path: any(named: 'path'),
-            notifType: any(named: 'notifType'),
-          )).thenAnswer((_) async {
-        callCount++;
-        if (callCount == 1) throw Exception('first fails');
-        return {};
-      });
-
-      await registry.resubscribeAll();
-
-      // Both were attempted
-      verify(() => mockBridge.subscribe(
-            subscriptionId: any(named: 'subscriptionId'),
-            path: any(named: 'path'),
-            notifType: any(named: 'notifType'),
-          )).called(2);
     });
   });
 
@@ -264,16 +147,18 @@ void main() {
   // ---------------------------------------------------------------------------
   group('unregisterAll', () {
     test('unregisters each subscription', () async {
-      await registry.register(
-        subscriptionId: 'sub-1',
-        notifType: 'ValueChange',
-        referenceList: 'Device.Test.',
-      );
-      await registry.register(
-        subscriptionId: 'sub-2',
-        notifType: 'ObjectCreation',
-        referenceList: 'Device.Test.',
-      );
+      await registry.registerAll([
+        SubscriptionDef(
+          subscriptionId: 'sub-1',
+          notifType: 'ValueChange',
+          referenceList: 'Device.Test.',
+        ),
+        SubscriptionDef(
+          subscriptionId: 'sub-2',
+          notifType: 'ObjectCreation',
+          referenceList: 'Device.Test.',
+        ),
+      ]);
 
       await registry.unregisterAll();
 
@@ -286,11 +171,13 @@ void main() {
     });
 
     test('activeIds empty after', () async {
-      await registry.register(
-        subscriptionId: 'sub-1',
-        notifType: 'ValueChange',
-        referenceList: 'Device.Test.',
-      );
+      await registry.registerAll([
+        SubscriptionDef(
+          subscriptionId: 'sub-1',
+          notifType: 'ValueChange',
+          referenceList: 'Device.Test.',
+        ),
+      ]);
 
       await registry.unregisterAll();
 
@@ -299,63 +186,88 @@ void main() {
   });
 
   // ---------------------------------------------------------------------------
-  // _notifTypeToInt (tested indirectly via register)
+  // onSseConnected
   // ---------------------------------------------------------------------------
-  group('notifType conversion', () {
-    test('ObjectCreation → 2', () async {
-      await registry.register(
-        subscriptionId: 'oc',
-        notifType: 'ObjectCreation',
-        referenceList: 'Device.Test.',
-      );
+  group('onSseConnected', () {
+    test('delegates to strategy.onSseConnected', () async {
+      await registry.registerAll([
+        SubscriptionDef(
+          subscriptionId: 'sub-1',
+          notifType: 'ValueChange',
+          referenceList: 'Device.WiFi.SSID.',
+        ),
+      ]);
 
-      verify(() => mockBridge.subscribe(
+      reset(mockBridge);
+      when(() => mockBridge.subscribe(
             subscriptionId: any(named: 'subscriptionId'),
             path: any(named: 'path'),
-            notifType: 2,
-          )).called(1);
-    });
+            notifType: any(named: 'notifType'),
+          )).thenAnswer((_) async => {});
 
-    test('ObjectDeletion → 3', () async {
-      await registry.register(
-        subscriptionId: 'od',
-        notifType: 'ObjectDeletion',
-        referenceList: 'Device.Test.',
-      );
+      await registry.onSseConnected();
 
+      // FakeSseOperationStrategy resubscribes on connect
       verify(() => mockBridge.subscribe(
-            subscriptionId: any(named: 'subscriptionId'),
-            path: any(named: 'path'),
-            notifType: 3,
-          )).called(1);
-    });
-
-    test('Event → 5', () async {
-      await registry.register(
-        subscriptionId: 'ev',
-        notifType: 'Event',
-        referenceList: 'Device.Test.',
-      );
-
-      verify(() => mockBridge.subscribe(
-            subscriptionId: any(named: 'subscriptionId'),
-            path: any(named: 'path'),
-            notifType: 5,
-          )).called(1);
-    });
-
-    test('unknown type defaults to 1', () async {
-      await registry.register(
-        subscriptionId: 'unknown',
-        notifType: 'CustomType',
-        referenceList: 'Device.Test.',
-      );
-
-      verify(() => mockBridge.subscribe(
-            subscriptionId: any(named: 'subscriptionId'),
-            path: any(named: 'path'),
+            subscriptionId: 'sub-1',
+            path: 'Device.WiFi.SSID.',
             notifType: 1,
           )).called(1);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // onSseDisconnected
+  // ---------------------------------------------------------------------------
+  group('onSseDisconnected', () {
+    test('intentional disconnect clears local state', () async {
+      await registry.registerAll([
+        SubscriptionDef(
+          subscriptionId: 'sub-1',
+          notifType: 'ValueChange',
+          referenceList: 'Device.Test.',
+        ),
+      ]);
+
+      await registry.onSseDisconnected(intentional: true);
+
+      expect(registry.activeIds, isEmpty);
+    });
+
+    test('unintentional disconnect preserves local state', () async {
+      await registry.registerAll([
+        SubscriptionDef(
+          subscriptionId: 'sub-1',
+          notifType: 'ValueChange',
+          referenceList: 'Device.Test.',
+        ),
+      ]);
+
+      await registry.onSseDisconnected(intentional: false);
+
+      expect(registry.activeIds, contains('sub-1'));
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // clearLocal
+  // ---------------------------------------------------------------------------
+  group('clearLocal', () {
+    test('clears in-memory state without backend call', () async {
+      await registry.registerAll([
+        SubscriptionDef(
+          subscriptionId: 'sub-1',
+          notifType: 'ValueChange',
+          referenceList: 'Device.Test.',
+        ),
+      ]);
+
+      registry.clearLocal();
+
+      expect(registry.activeIds, isEmpty);
+      verifyNever(() => mockBridge.unsubscribe(
+            subscriptionId: any(named: 'subscriptionId'),
+          ));
     });
   });
 }

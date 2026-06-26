@@ -83,7 +83,8 @@ class UspClient {
   /// Creates a UspClient from a pre-built WASM client (via UspClientBuilder).
   /// Used for Remote Assistance mode where the client is configured with
   /// custom endpoint, auth token, and extra headers.
-  UspClient.fromBuilder(dynamic jsClient) : _baseUrl = '' {
+  UspClient.fromBuilder(dynamic jsClient, {required String baseUrl})
+      : _baseUrl = baseUrl {
     if (!kIsWeb) {
       throw UnsupportedError('This POC only supports Web platforms currently.');
     }
