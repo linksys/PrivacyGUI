@@ -5,18 +5,19 @@ enum UspWanConnectionType {
   pppoe,
   bridge;
 
-  /// Derive the connection type from raw WAN field values.
+  /// Derive the connection type from the WAN interface's `AddressingType`.
   ///
-  /// [addressingType] is the primary signal; [bridgeEnabled] alone is NOT
-  /// sufficient because `Device.Bridging.Bridge.1.Enable` is typically `true`
-  /// on most routers (it controls the LAN-side L2 bridge, not WAN bridge mode).
-  /// Bridge mode is only active when both `bridgeEnabled` is true AND
-  /// `addressingType` is `DHCP` (or empty/unknown) — i.e. the router has
-  /// explicitly been placed into bridge mode rather than a standard DHCP config.
-  static UspWanConnectionType fromRawFields({
-    required String addressingType,
-    required bool bridgeEnabled,
-  }) {
+  /// This is the single source of truth for WAN mode:
+  /// - `Static` → static IP
+  /// - `IPCP`   → PPPoE
+  /// - `DHCP`   → DHCP
+  /// - empty / anything else → bridge mode (firmware sets `AddressingType=""`
+  ///   when the WAN interface is placed into a transparent L2 bridge).
+  ///
+  /// `Device.Bridging.Bridge.{i}.Enable` is deliberately NOT consulted: it
+  /// controls the LAN-side L2 bridge and is `true` on most routers regardless
+  /// of WAN bridge mode.
+  static UspWanConnectionType fromRawFields({required String addressingType}) {
     switch (addressingType) {
       case 'Static':
         return staticIp;
@@ -25,14 +26,7 @@ enum UspWanConnectionType {
       case 'DHCP':
         return dhcp;
       default:
-        // Only treat as bridge when addressingType is absent/unknown AND
-        // bridgeEnabled is explicitly true.
-        // TODO: This detection is fragile — bridgeEnabled (Device.Bridging.
-        // Bridge.1.Enable) is typically always true on most routers (LAN-side
-        // L2 bridge). Proper detection should check whether the WAN interface
-        // is configured as a bridge port via Device.Bridging.Bridge.{i}.Port.
-        if (bridgeEnabled && addressingType.isEmpty) return bridge;
-        return dhcp;
+        return bridge;
     }
   }
 
