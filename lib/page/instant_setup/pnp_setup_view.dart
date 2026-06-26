@@ -649,7 +649,9 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
     );
   }
 
-  Future _saveChanges() async {
+  static const int _maxAutoMasterSaveAttempts = 2;
+
+  Future _saveChanges({int autoMasterSaveAttempt = 0}) async {
     final isUnconfigured = ref.read(pnpProvider).isRouterUnConfigured;
 
     // Check Auto Master status before save (Second Defense)
@@ -712,14 +714,24 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
 
       // Polling exceeded max retry (timeout)
       logger.w('[PnP]: Auto Master polling timeout, checking router connection');
+
+      if (autoMasterSaveAttempt >= _maxAutoMasterSaveAttempts) {
+        logger.e(
+            '[PnP]: Auto Master retry limit reached after $autoMasterSaveAttempt attempts');
+        setState(() {
+          _showAutoMasterConnectionError = true;
+        });
+        return;
+      }
+
       try {
         await ref.read(pnpProvider.notifier).testConnectionReconnected();
-        logger.i('[PnP]: Router connected after timeout, proceed to save');
+        logger.i(
+            '[PnP]: Router connected after timeout, attempt ${autoMasterSaveAttempt + 1}/$_maxAutoMasterSaveAttempts');
         setState(() {
           _setupStep = _PnpSetupStep.config;
         });
-        // Continue to save - call _saveChanges again but status should be different now
-        return _saveChanges();
+        return _saveChanges(autoMasterSaveAttempt: autoMasterSaveAttempt + 1);
       } catch (e) {
         logger.e('[PnP]: Router not connected after timeout');
         setState(() {

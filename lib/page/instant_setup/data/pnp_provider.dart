@@ -247,7 +247,7 @@ class MockPnpNotifier extends BasePnpNotifier {
 
   @override
   void setAutoMasterStatusOnEntry(AutoMasterStatus? status) {
-    state = state.copyWith(autoMasterStatusOnEntry: status);
+    state = state.copyWith(autoMasterStatusOnEntry: () => status);
   }
 }
 
@@ -790,6 +790,6 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
 
   @override
   void setAutoMasterStatusOnEntry(AutoMasterStatus? status) {
-    state = state.copyWith(autoMasterStatusOnEntry: status);
+    state = state.copyWith(autoMasterStatusOnEntry: () => status);
   }
 }

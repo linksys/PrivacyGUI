@@ -603,7 +603,13 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
       if (mounted) {
         context.goNamed(route);
       }
-    }, test: (error) => error is ExceptionInterruptAndExit);
+    }, test: (error) => error is ExceptionInterruptAndExit).catchError(
+        (error, stackTrace) {
+      logger.e('[PnP]: Auto Master check unauthorized, redirect to login');
+      if (mounted) {
+        context.goNamed(RouteNamed.localLoginPassword);
+      }
+    }, test: (error) => error is ExceptionAutoMasterUnauthorized);
   }
 
   _showRouterPasswordModal() {
