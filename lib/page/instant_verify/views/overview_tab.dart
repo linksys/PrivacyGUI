@@ -1772,42 +1772,42 @@ class _ChecklistProgressState extends State<_ChecklistProgress> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Prominent "test is running" banner — a small per-row circle wasn't
-        // enough of a signal that something is happening (on-device feedback).
-        Row(
-          children: [
-            SizedBox(
-              width: 28,
-              height: 28,
-              child: CircularProgressIndicator(
-                  strokeWidth: 3,
-                  color: Theme.of(context).colorScheme.primary),
+        // Centered "test is running" beachball — kept visually distinct from
+        // the small left-aligned per-check circles below, so it clearly reads
+        // as the overall progress, not just another check row (on-device
+        // feedback: the top circle looked like the check circles).
+        Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Column(
+              children: [
+                SizedBox(
+                  width: 44,
+                  height: 44,
+                  child: CircularProgressIndicator(
+                      strokeWidth: 4,
+                      color: Theme.of(context).colorScheme.primary),
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  _revealedJnapChecks == 0
+                      ? 'Starting diagnostics…'
+                      : 'Checking your connection',
+                  style:
+                      const TextStyle(fontWeight: FontWeight.w700, fontSize: 17),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Running your network checks…',
+                  style: TextStyle(
+                      fontSize: 13,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant),
+                ),
+              ],
             ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    _revealedJnapChecks == 0
-                        ? 'Starting diagnostics…'
-                        : 'Checking your connection',
-                    style: const TextStyle(
-                        fontWeight: FontWeight.w700, fontSize: 18),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'Running your network checks — this takes a few seconds.',
-                    style: TextStyle(
-                        fontSize: 13,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant),
-                  ),
-                ],
-              ),
-            ),
-          ],
+          ),
         ),
-        const SizedBox(height: 20),
+        const Divider(height: 28),
         _CheckRow(label: 'Router', status: routerStatus,
             detail: _revealedJnapChecks >= 1 ? (state.routerModel ?? '') : ''),
         _CheckRow(
