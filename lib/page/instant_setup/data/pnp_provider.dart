@@ -740,6 +740,13 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
       final response = GetAutoMasterStatusResponse.fromMap(result.output);
       logger.d('[PnP]: Auto Master status: ${response.autoMasterStatus}');
       return response.autoMasterStatus;
+    } on JNAPError catch (e) {
+      if (e.result == errorJNAPUnauthorized) {
+        logger.w('[PnP]: Auto Master status check unauthorized');
+        throw ExceptionAutoMasterUnauthorized();
+      }
+      logger.d('[PnP]: GetAutoMasterStatus not supported or failed: $e');
+      return null;
     } catch (e) {
       logger.d('[PnP]: GetAutoMasterStatus not supported or failed: $e');
       return null;

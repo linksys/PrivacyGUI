@@ -679,4 +679,42 @@ void main() async {
     await tester.tap(btnFinder3.first);
     await tester.pump(const Duration(seconds: 2));
   });
+
+  testLocalizations(
+      'Instant Setup - PnP: Auto Master check unauthorized redirects to login',
+      (tester, locale) async {
+    when(mockPnpNotifier.checkAutoMasterStatus())
+        .thenThrow(ExceptionAutoMasterUnauthorized());
+
+    await tester.pumpWidget(
+      testableSingleRoute(
+        child: const PnpSetupView(),
+        config: LinksysRouteConfig(
+            column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
+        locale: locale,
+        overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
+      ),
+    );
+    await tester.pump(const Duration(seconds: 6));
+    // Trick - setState to trigger build
+    final state =
+        tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
+    state.setState(() {});
+    await tester.pumpAndSettle();
+    final ssidEditFinder = find.byType(TextField).first;
+    final passwordEditFinder = find.byType(TextField).last;
+    await tester.enterText(ssidEditFinder, 'MyAwesomeWiFiName');
+    await tester.pumpAndSettle();
+    await tester.enterText(passwordEditFinder, 'MyAwesomeWiFiPassword!');
+    await tester.pumpAndSettle();
+    final btnFinder = find.byType(FilledButton);
+    await tester.tap(btnFinder.first);
+    await tester.pumpAndSettle();
+    final btnFinder2 = find.byType(FilledButton);
+    await tester.tap(btnFinder2.first);
+    await tester.pumpAndSettle();
+    final btnFinder3 = find.byType(FilledButton);
+    await tester.tap(btnFinder3.first);
+    await tester.pump(const Duration(seconds: 2));
+  });
 }

@@ -107,6 +107,12 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
             _password = null;
           });
         }, test: (error) => error is ExceptionInvalidAdminPassword)
+        .catchError((error, stackTrace) {
+          logger.e('[PnP]: Auto Master check unauthorized, redirect to login');
+          if (mounted) {
+            context.goNamed(RouteNamed.localLoginPassword);
+          }
+        }, test: (error) => error is ExceptionAutoMasterUnauthorized)
         // .catchError((error, stackTrace) {
         //   logger.e(
         //       '[PnP Troubleshooter]: Internet connection failed - initiate the troubleshooter');
@@ -344,7 +350,13 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
               if (mounted) {
                 context.goNamed(route);
               }
-            }, test: (error) => error is ExceptionInterruptAndExit).onError(
+            }, test: (error) => error is ExceptionInterruptAndExit).catchError(
+                    (error, stackTrace) {
+              logger.e('[PnP]: Auto Master check unauthorized, redirect to login');
+              if (mounted) {
+                context.goNamed(RouteNamed.localLoginPassword);
+              }
+            }, test: (error) => error is ExceptionAutoMasterUnauthorized).onError(
                     (error, stackTrace) {
               logger.e(
                 '[PnP]: ${_password == null ? 'There is no admin password, bring up the input view' : 'The given password is invalid'}',

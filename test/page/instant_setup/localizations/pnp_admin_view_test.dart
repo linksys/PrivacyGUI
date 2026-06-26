@@ -279,4 +279,35 @@ void main() async {
     await tester.pump(const Duration(seconds: 2));
     await tester.pumpAndSettle();
   });
+
+  testLocalizations(
+      'Instant Setup - PnP: Auto Master check unauthorized redirects to login',
+      (tester, locale) async {
+    when(mockPnpNotifier.build()).thenReturn(
+      PnpState(
+        deviceInfo: NodeDeviceInfo.fromJson(
+          jsonDecode(testDeviceInfo)['output'],
+        ),
+      ),
+    );
+    when(mockPnpNotifier.fetchDeviceInfo()).thenAnswer((_) async {});
+    when(mockPnpNotifier.checkRouterConfigured()).thenAnswer((_) async {});
+    when(mockPnpNotifier.checkAdminPassword(any)).thenAnswer((_) async {});
+    when(mockPnpNotifier.checkAutoMasterStatus())
+        .thenThrow(ExceptionAutoMasterUnauthorized());
+
+    await tester.pumpWidget(
+      testableSingleRoute(
+        config: LinksysRouteConfig(
+          column: ColumnGrid(column: 6, centered: true),
+          noNaviRail: true,
+        ),
+        child: const PnpAdminView(),
+        locale: locale,
+        overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
+      ),
+    );
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pumpAndSettle();
+  });
 }

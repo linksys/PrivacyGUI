@@ -48,3 +48,8 @@ class ExceptionInterruptAndExit extends PnpException {
 class ExceptionAutoMasterRunning extends PnpException {
   ExceptionAutoMasterRunning() : super(message: 'Auto Master is running');
 }
+
+class ExceptionAutoMasterUnauthorized extends PnpException {
+  ExceptionAutoMasterUnauthorized()
+      : super(message: 'Auto Master check unauthorized');
+}

@@ -654,8 +654,17 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
 
     // Check Auto Master status before save (Second Defense)
     final statusOnEntry = ref.read(pnpProvider).autoMasterStatusOnEntry;
-    final currentStatus =
-        await ref.read(pnpProvider.notifier).checkAutoMasterStatus();
+    final AutoMasterStatus? currentStatus;
+    try {
+      currentStatus =
+          await ref.read(pnpProvider.notifier).checkAutoMasterStatus();
+    } on ExceptionAutoMasterUnauthorized {
+      logger.e('[PnP]: Auto Master check unauthorized, redirect to login');
+      if (mounted) {
+        context.goNamed(RouteNamed.localLoginPassword);
+      }
+      return;
+    }
 
     logger.d('[PnP]: Auto Master check before save - '
         'entry status: $statusOnEntry, current: $currentStatus');
