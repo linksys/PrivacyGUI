@@ -17,11 +17,16 @@ class InternetSettingsReadOnlyInfo extends Equatable {
   /// Current static IP address — displayed in the status banner and renew section.
   final String staticIpAddress;
 
+  /// Router hostname (`Device.DeviceInfo.HostName`). Display-only; used to build
+  /// the `https://<hostName>.local` bridge-mode management address.
+  final String hostName;
+
   const InternetSettingsReadOnlyInfo({
     this.currentMacAddress = '',
     this.pppConnectionStatus = '',
     this.dhcpv6Duid = '',
     this.staticIpAddress = '',
+    this.hostName = '',
   });
 
   @override
@@ -30,5 +35,6 @@ class InternetSettingsReadOnlyInfo extends Equatable {
         pppConnectionStatus,
         dhcpv6Duid,
         staticIpAddress,
+        hostName,
       ];
 }
