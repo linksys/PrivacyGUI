@@ -63,6 +63,16 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.textContaining('https://Community00080.local'), findsOneWidget);
+
+    // Assert the hint is rendered bold. A textContaining check alone would not
+    // catch a regression back to the non-bold AppText.bodyMedium factory.
+    expect(
+      find.byWidgetPredicate((w) =>
+          w is AppText &&
+          w.data.contains('https://Community00080.local') &&
+          w.fontWeight == FontWeight.bold),
+      findsOneWidget,
+    );
   });
 
   testWidgets('hides the hint when not editing', (tester) async {
