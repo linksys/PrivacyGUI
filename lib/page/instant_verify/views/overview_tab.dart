@@ -74,8 +74,6 @@ class _OverviewTabState extends ConsumerState<OverviewTab> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _ConnectionChip(state: state),
-          const SizedBox(height: 8),
           // Router light guide link (PRD v0.7 S-1)
           _LightGuideLink(
             showInlineCallout: state.phase != PivotLoadPhase.idle &&
@@ -427,40 +425,9 @@ class _ScenarioItem {
   });
 }
 
-// ── Header bar ────────────────────────────────────────────────────────────────
-
-// ── Slim connection chip — replaces the full header bar on Tab 0 ──────────────
-// Metadata (model/FW/SN/uptime) moved to the AppBar ⓘ icon in the pivot view.
-
-class _ConnectionChip extends StatelessWidget {
-  final InstantVerifyPivotState state;
-  const _ConnectionChip({required this.state});
-
-  @override
-  Widget build(BuildContext context) {
-    final isLoading = state.phase == PivotLoadPhase.idle ||
-        state.phase == PivotLoadPhase.loading;
-    final label = isLoading ? 'Checking...' : _HeaderBar._connectionLabel(state);
-    final color = isLoading ? Colors.grey : _HeaderBar._connectionColor(state);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withValues(alpha: 0.25)),
-      ),
-      child: Row(mainAxisSize: MainAxisSize.min, children: [
-        Container(width: 8, height: 8,
-            decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
-        const SizedBox(width: 8),
-        Text(label,
-            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: color)),
-      ]),
-    );
-  }
-}
-
 // ── Header bar (preserved for backward compat — metadata now in AppBar ⓘ) ──────
+// (The standalone connection chip was folded into the top of _StatusCard so the
+//  status reads as one panel with the verdict instead of a detached pill.)
 
 class _HeaderBar extends StatelessWidget {
   final InstantVerifyPivotState state;
@@ -624,7 +591,14 @@ class _StatusCard extends StatelessWidget {
             state.verdictIsPreliminary)) {
       return _card(
         context,
-        child: _ChecklistProgress(state: state),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _statusRow(context),
+            const Divider(height: 20),
+            _ChecklistProgress(state: state),
+          ],
+        ),
       );
     }
 
@@ -643,6 +617,8 @@ class _StatusCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            _statusRow(context),
+            const Divider(height: 20),
             Row(children: [
               const Icon(Icons.check_circle, color: Colors.green, size: 22),
               const SizedBox(width: 10),
@@ -687,6 +663,8 @@ class _StatusCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          _statusRow(context),
+          const Divider(height: 20),
           // Headline
           Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
             _priorityIcon(primary.priority),
@@ -861,6 +839,27 @@ class _StatusCard extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  // Connection status, folded into the top of the card so it reads as one
+  // panel instead of a detached pill floating above everything (UX feedback).
+  Widget _statusRow(BuildContext context) {
+    final isLoading = state.phase == PivotLoadPhase.idle ||
+        state.phase == PivotLoadPhase.loading;
+    final label =
+        isLoading ? 'Checking...' : _HeaderBar._connectionLabel(state);
+    final color =
+        isLoading ? Colors.grey : _HeaderBar._connectionColor(state);
+    return Row(children: [
+      Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+      const SizedBox(width: 8),
+      Text(label,
+          style: TextStyle(
+              fontSize: 13, fontWeight: FontWeight.w600, color: color)),
+    ]);
   }
 
   Widget _card(BuildContext context,
