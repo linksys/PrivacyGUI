@@ -266,6 +266,18 @@ void main() {
       expect(navigatedFlow, 1);
     });
 
+    testWidgets('U-01: flow cards stay visible when findings are present',
+        (tester) async {
+      await tester.pumpWidget(_buildOverviewTab(_multipleFindingsState()));
+      await tester.pump();
+
+      // Regression: the Fix-flow entry cards previously vanished the moment a
+      // finding appeared. They must remain reachable in warning/issue states.
+      expect(find.text("My internet\nisn't working"), findsOneWidget);
+      expect(find.text('My connection\nkeeps cutting out'), findsOneWidget);
+      expect(find.textContaining('Something else?'), findsOneWidget);
+    });
+
     testWidgets('shows test details section always visible', (tester) async {
       await tester.pumpWidget(_buildOverviewTab(_allClearState()));
       await tester.pump();

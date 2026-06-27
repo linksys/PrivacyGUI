@@ -663,43 +663,8 @@ class _StatusCard extends StatelessWidget {
               ),
             ]),
             const SizedBox(height: 16),
-            Text(
-              'Still having a problem? Tell us what\'s happening and we\'ll help:',
-              style: TextStyle(color: scheme.onSurfaceVariant),
-            ),
-            const SizedBox(height: 12),
-            // Flow cards — 2x2 grid + 1 (PRD v0.7)
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                _FlowCard(
-                  icon: Icons.public_off,
-                  label: 'My internet\nisn\'t working',
-                  onTap: () => onNavigateToFlow?.call(0),
-                ),
-                _FlowCard(
-                  icon: Icons.slow_motion_video,
-                  label: 'My internet\nis slow',
-                  onTap: () => onNavigateToFlow?.call(1),
-                ),
-                _FlowCard(
-                  icon: Icons.wifi_off,
-                  label: 'A device won\'t\nconnect',
-                  onTap: () => onNavigateToFlow?.call(2),
-                ),
-                _FlowCard(
-                  icon: Icons.signal_wifi_bad,
-                  label: 'WiFi doesn\'t\nreach a room',
-                  onTap: () => onNavigateToFlow?.call(3),
-                ),
-                _FlowCard(
-                  icon: Icons.sync_problem,
-                  label: 'My connection\nkeeps cutting out',
-                  onTap: () => onNavigateToFlow?.call(4),
-                ),
-              ],
-            ),
+            _problemCards(context,
+                'Still having a problem? Tell us what\'s happening and we\'ll help:'),
             _CheckResultsExpand(
               state: state,
               expanded: checksExpanded,
@@ -834,6 +799,13 @@ class _StatusCard extends StatelessWidget {
                   )),
           ],
 
+          // U-01: keep the Fix-flow entry cards reachable even when a finding is
+          // shown — the customer's problem may differ from what we detected.
+          const Divider(height: 24),
+          _problemCards(context,
+              'Something else? Tell us what\'s happening and we\'ll help:'),
+          const SizedBox(height: 8),
+
           _CheckResultsExpand(
             state: state,
             expanded: checksExpanded,
@@ -841,6 +813,53 @@ class _StatusCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  // Shared "what's wrong?" entry cards (U-01). Reachable from BOTH the all-clear
+  // state AND any findings/warning state — previously they only rendered when
+  // all-clear, so the moment a finding appeared the customer lost the overview
+  // path into the other Fix flows.
+  Widget _problemCards(BuildContext context, String heading) {
+    final scheme = Theme.of(context).colorScheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(heading, style: TextStyle(color: scheme.onSurfaceVariant)),
+        const SizedBox(height: 12),
+        // Flow cards — 2x2 grid + 1 (PRD v0.7)
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            _FlowCard(
+              icon: Icons.public_off,
+              label: 'My internet\nisn\'t working',
+              onTap: () => onNavigateToFlow?.call(0),
+            ),
+            _FlowCard(
+              icon: Icons.slow_motion_video,
+              label: 'My internet\nis slow',
+              onTap: () => onNavigateToFlow?.call(1),
+            ),
+            _FlowCard(
+              icon: Icons.wifi_off,
+              label: 'A device won\'t\nconnect',
+              onTap: () => onNavigateToFlow?.call(2),
+            ),
+            _FlowCard(
+              icon: Icons.signal_wifi_bad,
+              label: 'WiFi doesn\'t\nreach a room',
+              onTap: () => onNavigateToFlow?.call(3),
+            ),
+            _FlowCard(
+              icon: Icons.sync_problem,
+              label: 'My connection\nkeeps cutting out',
+              onTap: () => onNavigateToFlow?.call(4),
+            ),
+          ],
+        ),
+      ],
     );
   }
 
