@@ -47,6 +47,22 @@ class DiagnosticClient extends Equatable {
         RegExp(r'\._[A-Za-z0-9-]+\._(?:tcp|udp)\.local\.?$'), '');
     // Drop a bare trailing ".local".
     n = n.replaceFirst(RegExp(r'\.local\.?$'), '');
+    // Some devices report "IP - Friendly Name - SERIAL" as the hostname, e.g.
+    // Sonos: "192.168.1.185 - Sonos One - RINCON_38420B6505D20140". When the
+    // name is " - "-delimited, drop the segments that are an IP address or a
+    // raw serial token and keep the human-readable remainder ("Sonos One").
+    // Names without such junk segments are left untouched.
+    if (n.contains(' - ')) {
+      final ip = RegExp(r'^\d{1,3}(?:\.\d{1,3}){3}$');
+      final serial = RegExp(r'^[A-Z0-9]+_[0-9A-Fa-f]{6,}$');
+      final parts = n.split(' - ').map((s) => s.trim()).toList();
+      final kept = parts
+          .where((p) => p.isNotEmpty && !ip.hasMatch(p) && !serial.hasMatch(p))
+          .toList();
+      if (kept.isNotEmpty && kept.length < parts.length) {
+        n = kept.join(' - ');
+      }
+    }
     n = n.trim();
     return n.isEmpty ? null : n;
   }

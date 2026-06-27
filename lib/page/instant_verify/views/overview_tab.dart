@@ -1997,45 +1997,43 @@ class _LightGuideLink extends StatelessWidget {
 
   static void _showLightGuide(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    showModalBottomSheet(
+    // Centered, content-sized modal (RM-8/J-07) — was a draggable bottom sheet
+    // that cut off rows and forced a scroll. A dialog shows the whole guide.
+    showDialog<void>(
       context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (ctx) => DraggableScrollableSheet(
-        initialChildSize: 0.6,
-        minChildSize: 0.4,
-        maxChildSize: 0.92,
-        expand: false,
-        builder: (_, scrollController) => SingleChildScrollView(
-          controller: scrollController,
-          padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Drag handle
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 20),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(2),
+      builder: (ctx) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 420),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 16, 12, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'What does my router light mean?',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 18,
+                        color: scheme.onSurface,
+                      ),
+                    ),
                   ),
-                ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    visualDensity: VisualDensity.compact,
+                    tooltip: 'Close',
+                    onPressed: () => Navigator.of(ctx).pop(),
+                  ),
+                ],
               ),
-              Text(
-                'What does my router light mean?',
-                style: TextStyle(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 18,
-                  color: scheme.onSurface,
-                ),
-              ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 8),
             // LED patterns from Pinnacle LED spec r20260109a
             _lightRow(Colors.white, 'Solid white',
                 'Everything is fine \u2014 connected to internet',
@@ -2061,8 +2059,9 @@ class _LightGuideLink extends StatelessWidget {
             _lightRow(Colors.black, 'Off',
                 'No power, or Night Mode is enabled',
                 animated: false),
-          ],
-        ),
+              ],
+            ),
+          ),
         ),
       ),
     );

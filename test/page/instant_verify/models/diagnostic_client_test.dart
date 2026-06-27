@@ -36,6 +36,21 @@ void main() {
       expect(_client('Android_CZHGJ17H').cleanHostname, 'Android_CZHGJ17H');
     });
 
+    test('strips IP prefix + serial suffix, keeps the friendly middle', () {
+      final c = _client('192.168.1.185 - Sonos One - RINCON_38420B6505D20140');
+      expect(c.cleanHostname, 'Sonos One');
+    });
+
+    test('strips a bare leading IP prefix', () {
+      expect(_client('192.168.1.50 - Living Room TV').cleanHostname,
+          'Living Room TV');
+    });
+
+    test('a legit " - " name with no IP/serial is left untouched', () {
+      expect(_client('Office - Conference Room').cleanHostname,
+          'Office - Conference Room');
+    });
+
     test('null hostname → null cleanHostname, name falls back to MAC', () {
       final c = _client(null);
       expect(c.cleanHostname, isNull);
