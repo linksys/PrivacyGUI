@@ -35,18 +35,28 @@ class DeviceScore {
     // Signal: -30dBm=50, -65=~29, -75=~20, -85=~4, -90+=0
     final signalScore = ((signal + 90) / 60 * 50).clamp(0.0, 50.0).toInt();
 
-    // Rate: 0=0, 100≈4, 400≈17, 866≈36, 1200+=50
-    final rateScore = (txRate / 1200 * 50).clamp(0.0, 50.0).toInt();
+    // Rate: band-aware ceiling. 2.4 GHz tops out far below 5/6 GHz (realistic
+    // max ~300 vs ~1200 Mbps), so scoring a healthy 2.4 GHz link against 1200
+    // dragged every 2.4 GHz device toward the Issue bucket even at fine signal —
+    // contradicting the My Devices badge. Scale 2.4 GHz to its own ceiling.
+    final rateCeiling = client.band.contains('2.4') ? 300.0 : 1200.0;
+    final rateScore = (txRate / rateCeiling * 50).clamp(0.0, 50.0).toInt();
 
     var score = signalScore + rateScore;
 
-    // Throughput floor: a device moving real data at a healthy link rate is
-    // NOT a "weak WiFi" problem, even if its signal is only fair. Without this,
-    // e.g. a device at -72 dBm pushing 520 Mbps scored ~36 → flagged "weak"
-    // despite a perfectly usable connection. Keep healthy-throughput devices
-    // out of the Issue bucket — never flag them as weak on signal alone.
-    // (Only rescues Issues; the At-Risk/Good boundary is untouched.)
-    if (txRate >= 200 && score < 40) score = 40;
+    // Issue-bucket parity with My Devices' _badgeFor (my_devices_tab.dart): a
+    // device the device list shows as "Good" — signal > -70 dBm AND rate >= 30
+    // Mbps, with null fields skipped exactly as _badgeFor skips them — must NOT
+    // land in the Issue bucket, or the Overview "weak WiFi" count contradicts
+    // the My Devices badge for the same device (notably 2.4 GHz clients). Also
+    // keep the original high-throughput rescue (>=200 Mbps regardless of signal,
+    // e.g. -72 dBm @ 520 Mbps). Only rescues Issues; the At-Risk/Good boundary
+    // is untouched. Keep this aligned with _badgeFor's thresholds.
+    final rawSignal = client.signalDecibels;
+    final rawRate = client.txRateMbps;
+    final badgeGood = (rawSignal == null || rawSignal > -70) &&
+        (rawRate == null || rawRate >= 30);
+    if (score < 40 && (txRate >= 200 || badgeGood)) score = 40;
 
     return DeviceScore(client: client, score: score);
   }

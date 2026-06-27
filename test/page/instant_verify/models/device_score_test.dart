@@ -49,10 +49,12 @@ void main() {
       final client = _client(signal: -65, txRate: 400);
       final score = DeviceScore.compute(client);
       // Signal: (-65 + 90) / 60 * 50 = 25/60*50 ≈ 20
-      // Rate: 400/1200*50 ≈ 16
-      // Total ≈ 36-37 → issue bucket (<40)
-      expect(score.score, greaterThan(30));
+      // Rate: 400/1200*50 ≈ 16 → raw total ≈ 36, but badge-parity rescue
+      // lifts it to 40 (signal > -70 AND rate >= 30 = badge "Good"), so it
+      // sits at the At-Risk floor, not the Issue bucket.
+      expect(score.score, greaterThanOrEqualTo(40));
       expect(score.score, lessThan(45));
+      expect(score.isIssue, isFalse);
     });
 
     test('borderline at-risk: -50 dBm + 866 Mbps → 69 (just under good)', () {
@@ -101,6 +103,58 @@ void main() {
       final score = DeviceScore.compute(client);
       // Signal: 0, Rate: 2400/1200*50 = 100 → clamp to 50
       expect(score.score, 50);
+    });
+  });
+
+  // Regression for N3 (live-pass bug): the Overview "weak WiFi" count
+  // (deviceScores.where(isIssue)) must agree with the My Devices badge
+  // (_badgeFor: Good = signal > -70 dBm AND rate >= 30 Mbps). 2.4 GHz clients
+  // top out far below 1200 Mbps, so without band-aware scoring + the parity
+  // rescue they scored < 40 (Issue) while the badge showed "Good".
+  group('DeviceScore — 2.4 GHz badge parity (N3)', () {
+    test('2.4 GHz fair-signal healthy-rate device is NOT an issue', () {
+      // -63 dBm / 35 Mbps: My Devices shows "Good" (>-70 AND >=30).
+      final client = _client(band: '2.4 GHz', signal: -63, txRate: 35);
+      final score = DeviceScore.compute(client);
+      expect(score.isIssue, isFalse,
+          reason: 'badge-Good 2.4 GHz device must not be flagged weak');
+      expect(score.score, greaterThanOrEqualTo(40));
+    });
+
+    test('2.4 GHz band-aware rate scores higher than the 1200 ceiling would', () {
+      // 150 Mbps on 2.4 GHz: 150/300*50 = 25 (vs 150/1200*50 ≈ 6 before).
+      final client = _client(band: '2.4 GHz', signal: -55, txRate: 150);
+      final score = DeviceScore.compute(client);
+      // signal (-55): (35/60*50)=29; rate: 25 → ~54 → at-risk, not issue.
+      expect(score.score, greaterThan(45));
+      expect(score.isIssue, isFalse);
+    });
+
+    test('2.4 GHz weak signal still flagged issue (parity with badge weak)', () {
+      // -72 dBm: badge = weak (<= -70); rescue must NOT apply.
+      final client = _client(band: '2.4 GHz', signal: -72, txRate: 20);
+      final score = DeviceScore.compute(client);
+      expect(score.isIssue, isTrue);
+    });
+
+    test('2.4 GHz low rate still flagged issue (parity with badge weak)', () {
+      // 25 Mbps: badge = weak (< 30); rescue must NOT apply.
+      final client = _client(band: '2.4 GHz', signal: -65, txRate: 25);
+      final score = DeviceScore.compute(client);
+      expect(score.isIssue, isTrue);
+    });
+
+    test('null signal with healthy rate is rescued (badge skips null signal)', () {
+      final client = _client(band: '2.4 GHz', signal: null, txRate: 50);
+      final score = DeviceScore.compute(client);
+      expect(score.isIssue, isFalse);
+    });
+
+    test('5 GHz high-throughput rescue still applies (>=200 Mbps)', () {
+      // -72 dBm @ 520 Mbps: signal weak but moving real data — not an issue.
+      final client = _client(band: '5GHz', signal: -72, txRate: 520);
+      final score = DeviceScore.compute(client);
+      expect(score.isIssue, isFalse);
     });
   });
 

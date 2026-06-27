@@ -879,6 +879,11 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
       deviceScores: scores,
       gatewayPing: const GatewayPingResult(reachable: true, latencyMs: 3),
       dnsCheck: const DnsCheckResult(resolved: false),
+      // Public DNS (DoH to 8.8.8.8) succeeds — the internet IS reachable, only
+      // the ISP's configured DNS is failing. Without this the "Internet
+      // connected" row computed "No internet service" (internetReachable=false)
+      // while the finding card said the internet works — a self-contradiction.
+      publicDnsCheck: const DnsCheckResult(resolved: true),
       browserTestStep: 'complete',
       verdict: verdict,
       verdictIsPreliminary: false,
