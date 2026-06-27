@@ -30,7 +30,26 @@ class DiagnosticClient extends Equatable {
     this.isGuest,
   });
 
-  String get displayName => hostname ?? macAddress;
+  String get displayName => cleanHostname ?? macAddress;
+
+  /// Hostname with mDNS/Bonjour service suffixes stripped, so a buried friendly
+  /// name surfaces cleanly. e.g. "Anita's MacBook Pro._device-info._tcp.local"
+  /// -> "Anita's MacBook Pro". Returns null when nothing usable remains. Raw
+  /// identifiers without a service suffix (RINCON_…, wiz_…, a UUID) pass through
+  /// unchanged — there's no better name to recover.
+  String? get cleanHostname => _cleanHostname(hostname);
+
+  static String? _cleanHostname(String? raw) {
+    if (raw == null) return null;
+    var n = raw.trim();
+    // Drop a DNS-SD service segment: "Name._device-info._tcp.local" (or _udp).
+    n = n.replaceFirst(
+        RegExp(r'\._[A-Za-z0-9-]+\._(?:tcp|udp)\.local\.?$'), '');
+    // Drop a bare trailing ".local".
+    n = n.replaceFirst(RegExp(r'\.local\.?$'), '');
+    n = n.trim();
+    return n.isEmpty ? null : n;
+  }
 
   /// OUI manufacturer lookup from the first 3 octets of MAC address.
   String? get manufacturer {
@@ -41,7 +60,8 @@ class DiagnosticClient extends Equatable {
 
   /// Display name with manufacturer hint when hostname is absent.
   String get displayNameWithOui {
-    if (hostname != null) return hostname!;
+    final clean = cleanHostname;
+    if (clean != null) return clean;
     final mfr = manufacturer;
     return mfr != null ? '$mfr ($macAddress)' : macAddress;
   }
