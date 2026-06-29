@@ -1,64 +1,64 @@
-# Error Handling 實作指南（USP Feature）
+# Error Handling Implementation Guide (USP Feature)
 
-> **這份文件回答「怎麼做」。** 新增一個 USP feature 頁面時，error handling 該照什麼 pattern 寫、該顯示什麼、不該顯示什麼、怎麼達成 localization。
-> **背景知識（「為什麼」）** —— 錯誤如何從 firmware 流到 UI、9999/7xxx/9xxx/9998 的差別、兩條路徑的成因 —— 見 [`usp-error-handling-reference.md`](usp-error-handling-reference.md)。本文只在需要時引用，不重述。
-> **現存做法的來源**：PR #953（`feat(l10n): centralize error message localization for USP features`）。本文所有 code 範例都對照當前 codebase，不是理想規劃。
-
----
-
-## 0. 一分鐘總覽（TL;DR）
-
-錯誤一條線從下往上流，**每層職責固定**：
-
-```
-Service  →  catch 任何錯誤，轉成 typed ServiceError 後拋出
-            （fetch：直接 map；save：先自拋 Usp*FailureError，再用守衛放行）
-   │  ServiceError 物件
-   ▼
-Provider →  只透傳，不加工、不碰 BuildContext、不轉字串
-            fetch：把 ServiceError 存進 state.error（或讓它流進 AsyncValue.error）
-            save ：rethrow
-   │  ServiceError 物件
-   ▼
-View     →  唯一做 localization 的地方
-            拿到 ServiceError → localizeServiceError(context, error) → 在地化字串
-            fetch 失敗：空狀態 widget；save 失敗：snackbar
-```
-
-**三條鐵則**：
-1. **Service 是錯誤轉換點**：往上流動的一律是 `ServiceError`，不是 raw 字串、不是 `Exception`。
-2. **Provider 只透傳型別**：絕不 `'$e'` 壓成字串（型別一遺失，View 就無法在地化）。
-3. **只有 View 做 localization**：透過唯一的中央 mapper `localizeServiceError()`。Service/Provider 沒有 `BuildContext`，也不該有。
+> **This document answers "how to do it".** When adding a USP feature page, what pattern should error handling follow, what should be displayed, what should not be displayed, and how to achieve localization.
+> **Background knowledge ("why")** — how errors flow from firmware up to the UI, the differences between 9999/7xxx/9xxx/9998, and the causes of the two paths — see [`usp-error-handling-reference.md`](usp-error-handling-reference.md). This document only references it when needed and does not restate it.
+> **Source of the existing approach**: PR #953 (`feat(l10n): centralize error message localization for USP features`). All code examples in this document match the current codebase, not an idealized plan.
 
 ---
 
-## 1. Service 層：把所有錯誤轉成 ServiceError
+## 0. One-Minute Overview (TL;DR)
 
-Service 是錯誤的「收斂點」。不管底層丟字串、envelope、還是 Dart 例外，離開 Service 時**一律是 `ServiceError`**。
+Errors flow up a single line, **with fixed responsibilities at each layer**:
 
-fetch 與 save 是**兩種不同 pattern**，差別只在一道守衛。
+```
+Service  →  catch any error, convert to typed ServiceError, then throw
+            (fetch: map directly; save: self-throw Usp*FailureError first, then let the guard pass it through)
+   │  ServiceError object
+   ▼
+Provider →  pass through only, no processing, no BuildContext, no string conversion
+            fetch: store ServiceError into state.error (or let it flow into AsyncValue.error)
+            save : rethrow
+   │  ServiceError object
+   ▼
+View     →  the only place that does localization
+            receive ServiceError → localizeServiceError(context, error) → localized string
+            fetch failure: empty-state widget; save failure: snackbar
+```
 
-### 1.1 fetch（GET）—— 無守衛
+**Three iron rules**:
+1. **Service is the error conversion point**: what flows up is always a `ServiceError`, not a raw string, not an `Exception`.
+2. **Provider only passes through the type**: never `'$e'` flattened into a string (once the type is lost, the View cannot localize).
+3. **Only the View does localization**: through the single central mapper `localizeServiceError()`. Service/Provider have no `BuildContext`, nor should they.
 
-範本：[`usp_dmz_service.dart`](../../lib/page/dmz/services/usp_dmz_service.dart) `fetch()`
+---
+
+## 1. Service Layer: Convert All Errors to ServiceError
+
+The Service is the error "convergence point". Whether the underlying layer throws a string, an envelope, or a Dart exception, when it leaves the Service it is **always a `ServiceError`**.
+
+fetch and save are **two different patterns**, differing only by one guard.
+
+### 1.1 fetch (GET) — no guard
+
+Reference: [`usp_dmz_service.dart`](../../lib/page/dmz/services/usp_dmz_service.dart) `fetch()`
 
 ```dart
 Future<(DmzSettings, DmzStatus)> fetch() async {
   try {
-    final dmzData = await Dmz.fetch(_usp);   // codegen / WASM 失敗 → 丟 raw 字串
-    final uiModel = buildUIModel(dmzData);   // 純資料組裝，不會丟 ServiceError
+    final dmzData = await Dmz.fetch(_usp);   // codegen / WASM failure → throws raw string
+    final uiModel = buildUIModel(dmzData);   // pure data assembly, never throws ServiceError
     return (DmzSettings(model: uiModel, ...), const DmzStatus(isLoading: false));
   } catch (e) {
-    throw mapUspErrorToServiceError(e);      // 直接 map，不需守衛
+    throw mapUspErrorToServiceError(e);      // map directly, no guard needed
   }
 }
 ```
 
-**為何不需要守衛**：fetch 的 try 區塊裡，唯一會丟的是 codegen / WASM 的 raw 字串，以及純資料組裝（不丟 ServiceError）。`catch` 收到的 `e` 不可能是 ServiceError，所以不必檢查。
+**Why no guard is needed**: in fetch's try block, the only things thrown are codegen / WASM raw strings, plus pure data assembly (which does not throw ServiceError). The `e` received by `catch` cannot be a ServiceError, so no check is necessary.
 
-### 1.2 save（SET / ADD / DELETE）—— 有 `is ServiceError` 守衛
+### 1.2 save (SET / ADD / DELETE) — has the `is ServiceError` guard
 
-範本：[`usp_dmz_service.dart`](../../lib/page/dmz/services/usp_dmz_service.dart) `update()` / `add()`
+Reference: [`usp_dmz_service.dart`](../../lib/page/dmz/services/usp_dmz_service.dart) `update()` / `add()`
 
 ```dart
 Future<void> update({required String instancePath, required DmzUIModel model}) async {
@@ -68,57 +68,57 @@ Future<void> update({required String instancePath, required DmzUIModel model}) a
       case UspSuccess():
         break;
       case UspPartialSuccess(:final errorSummary, :final successes, :final failures):
-        throw UspPartialFailureError(            // ← Service 自己丟 ServiceError
+        throw UspPartialFailureError(            // ← Service itself throws a ServiceError
           summary: 'DMZ update partial failure: $errorSummary',
           successPaths: successes.map((s) => s.requestedPath).toList(),
-          failures: failures,                    // 完整 List<UspErrorDetail>，不要只存 path
+          failures: failures,                    // full List<UspErrorDetail>, do not store only path
         );
       case UspFailure(:final errorSummary, :final errors):
-        throw UspCompleteFailureError(           // ← 同上
+        throw UspCompleteFailureError(           // ← same as above
           summary: 'DMZ update failed: $errorSummary',
           failures: errors,
         );
     }
   } catch (e) {
-    if (e is ServiceError) rethrow;              // 守衛：自拋的 ServiceError 原樣放行
-    throw mapUspErrorToServiceError(e);          // 其餘 raw 字串才 map
+    if (e is ServiceError) rethrow;              // guard: pass self-thrown ServiceError through as-is
+    throw mapUspErrorToServiceError(e);          // only the remaining raw strings get mapped
   }
 }
 ```
 
-**為何需要守衛**：save 會解析 batch envelope、**主動 `throw UspPartialFailureError` / `UspCompleteFailureError`（已是 ServiceError）**。沒有守衛的話，這些自拋的 ServiceError 會被外層 catch 接住、再丟進 `mapUspErrorToServiceError`，因不符 `"{Op} failed:"` 格式被誤包成 `UnexpectedError`，語意全失。守衛讓「自己丟的 ServiceError 原樣冒上去」。
+**Why the guard is needed**: save parses the batch envelope and **actively `throw UspPartialFailureError` / `UspCompleteFailureError` (already ServiceError)**. Without the guard, these self-thrown ServiceErrors would be caught by the outer catch and then passed into `mapUspErrorToServiceError`, where, not matching the `"{Op} failed:"` format, they would be mis-wrapped as `UnexpectedError`, losing all semantics. The guard lets "the ServiceError you threw yourself bubble up as-is".
 
-> **一句話**：守衛 =「try 區塊裡會不會自拋 ServiceError」的指標。會（save）→ 要守衛；不會（fetch）→ 不要。
+> **In one sentence**: the guard = the indicator of "whether the try block self-throws a ServiceError". If yes (save) → guard needed; if no (fetch) → not needed.
 
-### 1.3 batch 失敗一定要存完整 `failures`
+### 1.3 batch failures must always store the full `failures`
 
-`UspPartialFailureError` / `UspCompleteFailureError` 是**容器**，內含 `List<UspErrorDetail> failures`（完整 path + errorCode + errorMessage）。
+`UspPartialFailureError` / `UspCompleteFailureError` are **containers** holding `List<UspErrorDetail> failures` (full path + errorCode + errorMessage).
 
-- ✅ **存整個 `failures` list**（從 `UspPartialSuccess`/`UspFailure` 的 `failures`/`errors` 直接傳）。
-- ❌ **不要只存 path 字串**——那樣 errorCode 流失，View 就無法依 code 在地化。
-- `failedPaths` 是衍生 getter（`failures.map((f) => f.requestedPath)`），向後相容，不用自己組。
+- ✅ **Store the entire `failures` list** (pass it directly from the `failures`/`errors` of `UspPartialSuccess`/`UspFailure`).
+- ❌ **Do not store only the path string** — that loses the errorCode, and the View cannot localize by code.
+- `failedPaths` is a derived getter (`failures.map((f) => f.requestedPath)`), backward-compatible; you don't need to assemble it yourself.
 
-### 1.4 不要在 Service 寫死「使用者看的」錯誤訊息
+### 1.4 Do not hardcode "user-facing" error messages in the Service
 
-Service 沒有 `BuildContext`，**不該組任何要給使用者看的文案**。
-- `summary` 欄位是**給 log / debug 用**的英文摘要，不會顯示給使用者（View 不讀它）。
-- 唯一從 Service 流到 UI 的「文字」是 `UnexpectedError.detail`（fallback 時 View 會顯示它）——但那是診斷字串，不是你寫死的 UI 文案。
+The Service has no `BuildContext`, so it **should not assemble any copy meant for the user to see**.
+- The `summary` field is an English summary **for log / debug use**; it is never shown to the user (the View does not read it).
+- The only "text" that flows from the Service to the UI is `UnexpectedError.detail` (the View displays it as a fallback) — but that is a diagnostic string, not UI copy you hardcoded.
 
-> ⚠ **field-level 表單驗證是另一條線**，不要混淆。`validateForm()` 回的 `Map<String,String>`（如 `{'destIp': 'Invalid IP address'}`）是欄位級驗證，走 `status.fieldErrors`，**不是 ServiceError**。它的 localization 屬一般表單字串範圍，不在本文 error handling pipeline 內。
+> ⚠ **field-level form validation is a separate line**, do not confuse it. The `Map<String,String>` returned by `validateForm()` (e.g. `{'destIp': 'Invalid IP address'}`) is field-level validation that goes through `status.fieldErrors`, **not a ServiceError**. Its localization belongs to the general form string scope and is not part of this document's error handling pipeline.
 
 ---
 
-## 2. Provider 層：只透傳，不加工
+## 2. Provider Layer: Pass Through Only, No Processing
 
-Provider 的唯一職責是**把 Service 給的 `ServiceError` 原封不動往上送**。不碰 `BuildContext`、不轉字串、不組文案、不再呼叫 `mapUspErrorToServiceError`。
+The Provider's only responsibility is to **pass the `ServiceError` given by the Service up untouched**. No `BuildContext`, no string conversion, no copy assembly, no further calls to `mapUspErrorToServiceError`.
 
-依頁面架構分兩種寫法。
+There are two forms depending on the page architecture.
 
-### 2.1 Preservable / Notifier 頁面（state.error）
+### 2.1 Preservable / Notifier pages (state.error)
 
-範本：[`usp_dmz_notifier.dart`](../../lib/page/dmz/providers/usp_dmz_notifier.dart)
+Reference: [`usp_dmz_notifier.dart`](../../lib/page/dmz/providers/usp_dmz_notifier.dart)
 
-**fetch 失敗 → 存進 `state.error`（型別，不是字串）**：
+**fetch failure → store into `state.error` (typed, not a string)**:
 
 ```dart
 @override
@@ -126,26 +126,26 @@ Future<(DmzSettings?, DmzStatus?)> performFetch({...}) async {
   try {
     final (settings, status) = await _svc.fetch();
     return (settings, status);
-  } on ServiceError catch (e) {                 // 一定 catch ServiceError 型別
+  } on ServiceError catch (e) {                 // always catch the ServiceError type
     logger.e('[USP][...][DMZ]: Fetch failed', error: e);
-    return (null, DmzStatus(isLoading: false, error: e));  // 存物件，不是 '$e'
+    return (null, DmzStatus(isLoading: false, error: e));  // store the object, not '$e'
   }
 }
 ```
 
-**save 失敗 → rethrow**（framework 的 `save()` 透明不 catch，讓 ServiceError 直穿到 View）：
-save 路徑不用自己寫 catch；`PreservableAutoDisposeNotifierMixin.save()` 會讓 Service 拋的 ServiceError 直接往上。
+**save failure → rethrow** (the framework's `save()` is transparent and does not catch, letting the ServiceError pass straight through to the View):
+the save path does not need its own catch; `PreservableAutoDisposeNotifierMixin.save()` lets the ServiceError thrown by the Service propagate up directly.
 
-對應的 state model：
+The corresponding state model:
 
 ```dart
 class DmzStatus extends Equatable {
   /// Typed error from the last fetch. View localizes it via localizeServiceError.
-  final ServiceError? error;            // ✅ 不是 String? errorMessage
+  final ServiceError? error;            // ✅ not String? errorMessage
 
   DmzStatus copyWith({
     ServiceError? error,
-    bool clearError = false,            // ← 見下方陷阱
+    bool clearError = false,            // ← see the pitfall below
     ...
   }) => DmzStatus(
         error: clearError ? null : (error ?? this.error),
@@ -154,13 +154,13 @@ class DmzStatus extends Equatable {
 }
 ```
 
-> ⚠ **陷阱：`copyWith` 清空 error 要用 `clearError` flag**。Dart 的 `error ?? this.error` 無法區分「沒傳」和「傳 null」，所以清除錯誤狀態（例如重新 fetch 前）必須走顯式的 `clearError: true`，不能靠傳 `error: null`。
+> ⚠ **Pitfall: clearing the error in `copyWith` must use the `clearError` flag**. Dart's `error ?? this.error` cannot distinguish "not passed" from "passed null", so clearing the error state (e.g. before a re-fetch) must go through the explicit `clearError: true`, and cannot rely on passing `error: null`.
 
-### 2.2 AsyncNotifier 頁面（AsyncValue.error）
+### 2.2 AsyncNotifier pages (AsyncValue.error)
 
-範本：[`usp_admin_notifier.dart`](../../lib/page/admin/providers/usp_admin_notifier.dart)
+Reference: [`usp_admin_notifier.dart`](../../lib/page/admin/providers/usp_admin_notifier.dart)
 
-這類頁面用 `AsyncNotifier`，錯誤直接讓它流進 `AsyncValue.error`：
+These pages use `AsyncNotifier`, letting the error flow directly into `AsyncValue.error`:
 
 ```dart
 class UspAdminNotifier extends AutoDisposeAsyncNotifier<UspAdminState> {
@@ -171,26 +171,26 @@ class UspAdminNotifier extends AutoDisposeAsyncNotifier<UspAdminState> {
       return UspAdminState(...);
     } on ServiceError catch (e) {
       logger.e(...);
-      rethrow;                          // rethrow → 進 AsyncValue.error，View 用 .when(error:) 接
+      rethrow;                          // rethrow → into AsyncValue.error, View catches it with .when(error:)
     }
   }
 }
 ```
 
-> **怎麼選**：跟著頁面既有的 state 架構走，不要為了 error handling 改架構。
-> - 用 `FeatureState` / `Preservable` 的 → 2.1（state.error）。
-> - 用 `AsyncNotifier` 的 → 2.2（AsyncValue.error）。
-> 兩者最終都在 View 走同一個 `localizeServiceError`，只是「錯誤存哪」與「View 怎麼顯示」不同（見 §3）。
+> **How to choose**: follow the page's existing state architecture; do not change the architecture for the sake of error handling.
+> - Pages using `FeatureState` / `Preservable` → 2.1 (state.error).
+> - Pages using `AsyncNotifier` → 2.2 (AsyncValue.error).
+> Both ultimately go through the same `localizeServiceError` in the View; only "where the error is stored" and "how the View displays it" differ (see §3).
 
 ---
 
-## 3. View 層：唯一做 localization 的地方
+## 3. View Layer: The Only Place That Does Localization
 
-View 拿到 `ServiceError`，丟給中央 mapper [`localizeServiceError(context, error)`](../../lib/components/localizations/service_error_localizations.dart) 取得在地化字串。**這是全 codebase 唯一把 error 型別變成顯示字串的地方。**
+The View receives the `ServiceError` and passes it to the central mapper [`localizeServiceError(context, error)`](../../lib/components/localizations/service_error_localizations.dart) to get the localized string. **This is the only place in the entire codebase that turns an error type into a display string.**
 
-### 3.1 fetch 失敗的顯示（兩種，對應 §2 兩種 provider）
+### 3.1 Displaying fetch failures (two ways, corresponding to the two providers in §2)
 
-**(A) state.error 頁面 → 用共用 widget [`ServiceErrorView`](../../lib/components/views/service_error_view.dart)**：
+**(A) state.error pages → use the shared widget [`ServiceErrorView`](../../lib/components/views/service_error_view.dart)**:
 
 ```dart
 if (status.error != null) {
@@ -201,14 +201,14 @@ if (status.error != null) {
 }
 ```
 
-`ServiceErrorView` 內部已經呼叫 `localizeServiceError`，你不用自己譯。它顯示：error 圖示 + `loc(ctx).failedToLoadSettings` 標題 + 在地化細節 + retry 按鈕。
+`ServiceErrorView` already calls `localizeServiceError` internally; you don't need to translate it yourself. It displays: an error icon + the `loc(ctx).failedToLoadSettings` title + the localized detail + a retry button.
 
-**(B) AsyncValue 頁面 → 在 `.when(error:)` 裡呼叫 `localizeServiceError`**：
+**(B) AsyncValue pages → call `localizeServiceError` inside `.when(error:)`**:
 
 ```dart
 asyncState.when(
   loading: () => const Center(child: AppLoader()),
-  error: (error, stack) => _buildError(context, ref, error),  // error 是 Object
+  error: (error, stack) => _buildError(context, ref, error),  // error is Object
   data: (state) => _buildContent(context, ref, state),
 );
 
@@ -216,20 +216,20 @@ Widget _buildError(BuildContext context, WidgetRef ref, Object error) {
   return Center(child: Column(children: [
     AppIcon.font(Icons.error_outline, size: 48, color: ...error),
     AppText.titleMedium(loc(context).failedToLoadSettings),
-    AppText.bodyMedium(localizeServiceError(context, error)),  // ← 在地化
+    AppText.bodyMedium(localizeServiceError(context, error)),  // ← localize
     AppButton(label: loc(context).retry, onTap: () => ref.invalidate(uspAdminProvider)),
   ]));
 }
 ```
 
-> **為什麼有兩種？** `ServiceErrorView` 吃 `ServiceError?` 並由 `state.error` 驅動；`AsyncValue.when(error:)` 給的是 `Object error`（且 retry 用 `ref.invalidate` 而非 `fetch(forceRemote)`）。所以 AsyncValue 頁面保留各自的小 `_buildError`，但**內容必須照上面這段、一律走 `localizeServiceError`**——不要自己寫死英文。
-> `localizeServiceError` 第二個參數收 `Object`（防御式）：非 ServiceError 會 fallback 到 `errorUnexpected`，所以 AsyncValue 直接把 `Object error` 丟進去是安全的。
+> **Why two ways?** `ServiceErrorView` takes a `ServiceError?` and is driven by `state.error`; `AsyncValue.when(error:)` gives an `Object error` (and retry uses `ref.invalidate` rather than `fetch(forceRemote)`). So AsyncValue pages keep their own small `_buildError`, but **the content must follow the snippet above and always go through `localizeServiceError`** — do not hardcode English yourself.
+> `localizeServiceError`'s second parameter takes `Object` (defensively): a non-ServiceError falls back to `errorUnexpected`, so it is safe for AsyncValue to pass the `Object error` straight in.
 
-### 3.2 save 失敗的顯示 → snackbar
+### 3.2 Displaying save failures → snackbar
 
-範本：[`usp_dmz_view.dart`](../../lib/page/dmz/views/usp_dmz_view.dart) `_onSave`
+Reference: [`usp_dmz_view.dart`](../../lib/page/dmz/views/usp_dmz_view.dart) `_onSave`
 
-主流寫法是 **try/catch 包 `notifier.save()`**：
+The common form is **try/catch wrapping `notifier.save()`**:
 
 ```dart
 Future<void> _onSave(BuildContext context, WidgetRef ref) async {
@@ -240,65 +240,65 @@ Future<void> _onSave(BuildContext context, WidgetRef ref) async {
     }
   } catch (e) {
     if (context.mounted) {
-      showFailedSnackBar(context, localizeServiceError(context, e));  // ← 在地化
+      showFailedSnackBar(context, localizeServiceError(context, e));  // ← localize
     }
   }
 }
 ```
 
 - ✅ `showFailedSnackBar(context, localizeServiceError(context, e))`
-- ❌ `showFailedSnackBar(context, 'Failed to save: $e')`（直接攤平字串，不在地化）
+- ❌ `showFailedSnackBar(context, 'Failed to save: $e')` (flattening the string directly, not localized)
 
-`showFailedSnackBar` / `showSuccessSnackBar` 簽名是 `(BuildContext, String)`——它們吃已經譯好的字串，不負責翻譯。
+`showFailedSnackBar` / `showSuccessSnackBar` have the signature `(BuildContext, String)` — they take an already-translated string and are not responsible for translation.
 
-> **重點是「字串一律經 `localizeServiceError`」，用哪個 snackbar API 是次要的。** 多數頁面用共用的 `showFailedSnackBar`（建議照此），少數頁面（如 [`instant_privacy_view.dart`](../../lib/page/instant_privacy/views/instant_privacy_view.dart)）直接用 `ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(localizeServiceError(context, e))))`。兩種都正確——關鍵不變：**顯示的字串來自 `localizeServiceError`，不是 raw `'$e'`**。
+> **The point is "the string always goes through `localizeServiceError`"; which snackbar API you use is secondary.** Most pages use the shared `showFailedSnackBar` (recommended); a few pages (such as [`instant_privacy_view.dart`](../../lib/page/instant_privacy/views/instant_privacy_view.dart)) directly use `ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(localizeServiceError(context, e))))`. Both are correct — the key invariant: **the displayed string comes from `localizeServiceError`, not raw `'$e'`**.
 
-### 3.3 dashboard card 的 mutation → 用共用 helper `performUspMutation`
+### 3.3 dashboard card mutation → use the shared helper `performUspMutation`
 
-dashboard card（網路狀態、WiFi、port forwarding…）上的 inline 動作按鈕（如「續訂租約」、「新增保留」）**不是**自己寫 try/catch，而是呼叫共用 helper [`performUspMutation`](../../lib/page/_shared/components/usp_mutation_helper.dart)。它把「設 loading 狀態 → 跑 mutation → 成功/失敗 snackbar」包成一個入口：
+The inline action buttons on a dashboard card (network status, WiFi, port forwarding…) — such as "renew lease" or "add reservation" — do **not** write their own try/catch, but call the shared helper [`performUspMutation`](../../lib/page/_shared/components/usp_mutation_helper.dart). It wraps "set loading state → run mutation → success/failure snackbar" into a single entry point:
 
 ```dart
-// 範本：usp_network_status_card.dart 的「續訂租約」按鈕
+// Reference: the "renew lease" button in usp_network_status_card.dart
 onTap: () => performUspMutation(
   context,
   ref,
-  loadingKey: 'wanRenew',                                   // 對應 uspMutationLoadingProvider
+  loadingKey: 'wanRenew',                                   // corresponds to uspMutationLoadingProvider
   mutation: () => ref.read(uspInternetSettingsProvider.notifier).renewDhcpLease(),
-  successMessage: loc(context).xxx,                         // 傳「已 loc() 的字串」
+  successMessage: loc(context).xxx,                         // pass an "already loc()'d string"
 ),
 ```
 
-**這不是「第三種在地化策略」——它只是 card 觸發 mutation 的便利入口。** 失敗時 helper 內部已經呼叫 `localizeServiceError`，所以：
+**This is not a "third localization strategy" — it is just a convenience entry point for the card to trigger a mutation.** On failure the helper already calls `localizeServiceError` internally, so:
 
-- ✅ **你不用自己 localize 失敗訊息**——傳 `mutation` 即可，helper 會把拋出的 `ServiceError` 在地化後顯示。
-- ⚠ **`successMessage` 是 as-is 顯示**（helper 不翻譯它）——所以**呼叫端要傳已經 `loc()` 過的字串**，不要傳寫死英文。
-- 適用場景：dashboard card 上的單一 inline 動作（非整頁 form save）。整頁 form save 仍走 §3.2 的 view try/catch。
+- ✅ **You don't need to localize the failure message yourself** — just pass `mutation`, and the helper will localize the thrown `ServiceError` before displaying it.
+- ⚠ **`successMessage` is displayed as-is** (the helper does not translate it) — so **the caller must pass an already-`loc()`'d string**, not hardcoded English.
+- Applicable scenario: a single inline action on a dashboard card (not a full-page form save). A full-page form save still goes through the view try/catch in §3.2.
 
-> 這個 helper 是 §0 那條「Service → Provider → View」主線在 card 場景的封裝：mutation 內部一樣經過 Service（拋 ServiceError）→ Provider（rethrow）→ helper 的 catch（`localizeServiceError`）。
+> This helper is the encapsulation, in the card scenario, of the "Service → Provider → View" main line in §0: inside the mutation it still passes through the Service (throws ServiceError) → Provider (rethrow) → the helper's catch (`localizeServiceError`).
 
 ---
 
-## 4. 該顯示什麼／不該顯示什麼
+## 4. What to Display / What Not to Display
 
-這是本文最重要的原則。錯誤資訊分兩種用途，**永遠分開**：
+This is the most important principle in this document. Error information serves two purposes, **always kept separate**:
 
-| | 給使用者看（UI） | 給工程師看（log/debug） |
+| | For the user (UI) | For the engineer (log/debug) |
 |---|---|---|
-| 內容 | 由 **ServiceError 型別** 決定的一句 l10n 句 | `code`（fault code）、`detail`（firmware 原文 / WASM 技術字串） |
-| 怎麼來 | `localizeServiceError(context, error)` | `logger.e(..., error: e)`、`'$e'`（toString） |
-| 在地化 | ✅ 一定（26 locale） | ❌ 不在地化（firmware 英文技術字串，無從翻） |
+| Content | a single l10n sentence determined by the **ServiceError type** | `code` (fault code), `detail` (firmware original text / WASM technical string) |
+| How it arrives | `localizeServiceError(context, error)` | `logger.e(..., error: e)`, `'$e'` (toString) |
+| Localization | ✅ always (26 locales) | ❌ not localized (firmware English technical string, untranslatable) |
 
-**規則**：
-1. **UI 顯示的訊息由型別決定**，不顯示 `detail` / `code`。使用者看到「找不到此設定」，不是 `'Unexpected error: ...(code: 7026)'`。
-2. **`detail` / `code` 只進 log**。它們是診斷原料，是 firmware 英文技術字串，給使用者看既看不懂也無法在地化。
-3. **唯一例外：`UnexpectedError`**。它是 fallback，沒有型別語意，所以 `localizeServiceError` 會顯示它的 `detail`（若有），否則退到 `errorUnexpected`。這是刻意的妥協——unmapped 的錯誤至少給點線索。
+**Rules**:
+1. **The message shown in the UI is determined by the type**, not the `detail` / `code`. The user sees "this setting could not be found", not `'Unexpected error: ...(code: 7026)'`.
+2. **`detail` / `code` go only into the log**. They are diagnostic raw material, firmware English technical strings; shown to the user they are neither understandable nor localizable.
+3. **The only exception: `UnexpectedError`**. It is the fallback, with no type semantics, so `localizeServiceError` displays its `detail` (if any), otherwise falling back to `errorUnexpected`. This is a deliberate compromise — an unmapped error gives at least some clue.
 
-### 4.1 中央 mapper 長怎樣（`localizeServiceError`）
+### 4.1 What the central mapper looks like (`localizeServiceError`)
 
 ```dart
 String localizeServiceError(BuildContext context, Object error) {
   final l = loc(context);
-  if (error is! ServiceError) return l.errorUnexpected;   // 防御
+  if (error is! ServiceError) return l.errorUnexpected;   // defensive
   return switch (error) {
     NotAuthenticatedError()      => l.errorNotAuthenticated,
     InvalidCredentialsError()    => l.errorInvalidCredentials,
@@ -311,25 +311,25 @@ String localizeServiceError(BuildContext context, Object error) {
     ConnectivityError()          => l.errorConnectivity,
     TimeoutError()               => l.errorTimeout,
     ServiceNotInitializedError() => l.errorServiceNotReady,
-    // batch：顯示第一筆的具體錯誤（見 §4.2）
+    // batch: display the specific error of the first entry (see §4.2)
     UspPartialFailureError(:final failures)  => _localizeBatch(context, failures),
     UspCompleteFailureError(:final failures) => _localizeBatch(context, failures),
-    // fallback：唯一顯示 detail 的型別
+    // fallback: the only type that displays detail
     UnexpectedError(:final detail) => detail ?? l.errorUnexpected,
-    StorageError()               => l.errorUnexpected,   // 不會到 UI（session/auth 層攔下）
-    SerialNumberMismatchError()  => l.errorUnexpected,   // 同上
+    StorageError()               => l.errorUnexpected,   // never reaches UI (intercepted at session/auth layer)
+    SerialNumberMismatchError()  => l.errorUnexpected,   // same as above
   };
 }
 ```
 
-`switch` 對 sealed `ServiceError` **窮舉**——這是設計重點：新增子類時編譯器會警告這裡少一個 case，**強制你補 l10n**，不會漏。
+The `switch` is **exhaustive** over the sealed `ServiceError` — this is a design point: when a subclass is added, the compiler warns that a case is missing here, **forcing you to add the l10n**, so nothing is missed.
 
-### 4.2 batch 錯誤：顯示第一筆的具體訊息
+### 4.2 batch errors: display the specific message of the first entry
 
-`Usp*FailureError` 內含多筆 `failures`。**策略：一律顯示 `failures.first` 的具體錯誤**（依其 `errorCode` 譯成對應 l10n 句）。
+`Usp*FailureError` holds multiple `failures`. **Strategy: always display the specific error of `failures.first`** (translated into the corresponding l10n sentence by its `errorCode`).
 
-- ❌ 不用「N 項設定失敗」——籠統、使用者無從修起。
-- ✅ 顯示第一筆的具體錯誤；使用者修掉後若還有第二筆，下次 save 會再顯示下一筆——仍有跡可循。
+- ❌ Do not use "N settings failed" — vague, and the user has no way to fix it.
+- ✅ Display the specific error of the first entry; if there is still a second entry after the user fixes it, the next save will display the next one — still traceable.
 
 ```dart
 String _localizeFaultCode(BuildContext context, int code) => switch (code) {
@@ -337,93 +337,93 @@ String _localizeFaultCode(BuildContext context, int code) => switch (code) {
   7026 || 7027 || 9005 || 9007 => loc(context).errorResourceNotFound,
   9001                         => loc(context).errorUnauthorized,
   9999                         => loc(context).errorNetwork,
-  _                            => loc(context).errorUnexpected,   // 未知 vendor code 不洩漏原文
+  _                            => loc(context).errorUnexpected,   // unknown vendor code does not leak the original text
 };
 ```
 
 ---
 
-## 5. 達成 Localization
+## 5. Achieving Localization
 
-1. **框架**：專案用 `flutter_localizations`（`loc(context).xxx`），**不用 slang**。（曾評估遷移 slang，因「無 context 翻譯」需求實測為 0、遷移成本高，ROI 為負 → 維持現狀。所有 error 文案都在 View 層用 context 翻譯。）
-2. **ARB key**：error 訊息的 key 在 `lib/l10n/app_en.arb`，命名 `errorXxx`（camelCase）。現有的 12 個通用 key：
+1. **Framework**: the project uses `flutter_localizations` (`loc(context).xxx`), **not slang**. (Migrating to slang was evaluated once; because the "translation without context" need was measured at 0 in practice and the migration cost was high, the ROI was negative → keep the status quo. All error copy is translated in the View layer with context.)
+2. **ARB key**: the key for error messages is in `lib/l10n/app_en.arb`, named `errorXxx` (camelCase). The existing 12 generic keys:
    ```
    errorNotAuthenticated, errorInvalidCredentials, errorSessionExpired,
    errorInvalidSessionToken, errorUnauthorized, errorResourceNotFound,
    errorInvalidInput, errorNetwork, errorConnectivity, errorTimeout,
    errorServiceNotReady, errorUnexpected
    ```
-   外加共用：`failedToLoadSettings`、`retry`。
-3. **多語**：英文 key 補進 `app_en.arb` 後，其餘 25 個 locale（`app_es.arb` / `app_ja.arb` …）一併補翻譯。
+   Plus the shared: `failedToLoadSettings`, `retry`.
+3. **Multi-language**: after adding the English key to `app_en.arb`, also add translations for the other 25 locales (`app_es.arb` / `app_ja.arb` …).
 
-**多數情況你不用新增 error key** —— 既有 12 個型別已涵蓋常見錯誤。只有在新增 ServiceError 子類時才需要（見 §6）。
-
----
-
-## 6. 新增一個 ServiceError 子類（少見）
-
-只有當既有型別都無法表達某種錯誤語意時才做。步驟：
-
-1. 在 [`service_error.dart`](../../lib/core/errors/service_error.dart) 新增 `final class XxxError extends ServiceError`，帶 `{super.code, super.detail}`。
-2. **編譯**：`localizeServiceError` 的 `switch` 會立刻警告少一個 case（sealed 強制）。
-3. 在 `app_en.arb` 新增對應的 `errorXxx` key（+ 其餘 locale 翻譯）。
-4. 在 `switch` 補上 `XxxError() => l.errorXxx`。
-5. 在 Service 層適當處 `throw XxxError(...)` 或在 `mapUspErrorToServiceError` 補映射。
-
-> ⚠ 新增前先想清楚：是「真的需要新型別」還是「既有型別 + 不同 l10n 句」就夠？型別是給「整個 app 一致對待」用的，不是給單一頁面客製文案用的。
+**In most cases you don't need to add an error key** — the existing 12 types already cover common errors. You only need to when adding a ServiceError subclass (see §6).
 
 ---
 
-## 7. 重要注意事項與陷阱（Do & Don't）
+## 6. Adding a ServiceError Subclass (Rare)
+
+Only do this when none of the existing types can express a certain error semantic. Steps:
+
+1. In [`service_error.dart`](../../lib/core/errors/service_error.dart) add `final class XxxError extends ServiceError`, with `{super.code, super.detail}`.
+2. **Compile**: the `switch` in `localizeServiceError` will immediately warn that a case is missing (sealed enforcement).
+3. In `app_en.arb` add the corresponding `errorXxx` key (+ translations for the other locales).
+4. In the `switch` add `XxxError() => l.errorXxx`.
+5. At the appropriate place in the Service layer `throw XxxError(...)`, or add the mapping in `mapUspErrorToServiceError`.
+
+> ⚠ Before adding, think it through: do you "really need a new type" or is "an existing type + a different l10n sentence" enough? A type is for "the whole app treating it consistently", not for customizing copy for a single page.
+
+---
+
+## 7. Important Notes and Pitfalls (Do & Don't)
 
 | Do ✅ | Don't ❌ |
 |---|---|
-| Service `catch → throw mapUspErrorToServiceError(e)`（fetch） | Service 把 raw 字串／`Exception` 往上拋 |
-| Service save 用 `if (e is ServiceError) rethrow` 守衛 | save 漏守衛 → 自拋的 ServiceError 被誤包成 UnexpectedError |
-| batch 存完整 `failures` list | 只存 `failedPaths` 字串（errorCode 流失） |
-| Provider fetch 存 `state.error = e`（型別） | Provider `errorMessage: '$e'`（型別遺失，無法在地化） |
-| `copyWith` 清 error 用 `clearError: true` | 傳 `error: null` 想清空（被 `?? this.error` 吃掉，清不掉） |
-| View 一律 `localizeServiceError(context, e)` | View 寫死 `'Failed to save: $e'` / `'Unable to load X'` |
-| `detail`/`code` 只進 `logger.e(..., error: e)` | 把 `detail`/`code` 顯示給使用者（firmware 英文技術字串） |
-| 跟著頁面既有 state 架構選 §3.1 (A) 或 (B) | 為了 error handling 改頁面架構 |
+| Service `catch → throw mapUspErrorToServiceError(e)` (fetch) | Service throws a raw string / `Exception` up |
+| Service save uses the `if (e is ServiceError) rethrow` guard | save misses the guard → the self-thrown ServiceError is mis-wrapped as UnexpectedError |
+| batch stores the full `failures` list | stores only the `failedPaths` string (errorCode lost) |
+| Provider fetch stores `state.error = e` (typed) | Provider `errorMessage: '$e'` (type lost, cannot localize) |
+| `copyWith` clears error with `clearError: true` | passing `error: null` to clear it (eaten by `?? this.error`, not cleared) |
+| View always `localizeServiceError(context, e)` | View hardcodes `'Failed to save: $e'` / `'Unable to load X'` |
+| `detail`/`code` go only into `logger.e(..., error: e)` | showing `detail`/`code` to the user (firmware English technical string) |
+| follow the page's existing state architecture to choose §3.1 (A) or (B) | change the page architecture for the sake of error handling |
 
-### 已知限制
+### Known Limitations
 
-- **GET 9999→9998 bug（未修）**：GET 連線失敗（9999，應為「網路錯誤」）在傳輸層第 5 層被偽裝成 9998 → 最終被在地化成「輸入錯誤」（`errorInvalidInput`）。這是 transport 層 bug，與 localization 獨立。在它修掉前，**GET 失敗的「輸入錯誤」訊息可能其實是連線問題**。根因見 [`usp-error-handling-reference.md`](usp-error-handling-reference.md) §2.5。
-- **`_localizeFaultCode` 與 `_mapProtocolError` 必須同步**：fetch 路徑（字串 → `mapUspErrorToServiceError` 的 `_mapProtocolError`）與 save batch 路徑（envelope → `localizeServiceError` 裡的 `_localizeFaultCode`）對同一個 firmware code 必須給一致結果。改其中一個，另一個要一起改。`_localizeFaultCode` 的 doc comment 已標明「Mirrors `_mapProtocolError` … MUST stay in sync」；反向（`usp_error.dart` 那側）目前**沒有**回指的提醒，改 `_mapProtocolError` 時要自己記得回頭同步 `_localizeFaultCode`。
+- **GET 9999→9998 bug (unfixed)**: a GET connection failure (9999, which should be "network error") is disguised as 9998 at the transport layer's 5th layer → ultimately localized as "input error" (`errorInvalidInput`). This is a transport layer bug, independent of localization. Until it is fixed, **a GET failure's "input error" message may actually be a connection issue**. For the root cause see [`usp-error-handling-reference.md`](usp-error-handling-reference.md) §2.5.
+- **`_localizeFaultCode` and `_mapProtocolError` must stay in sync**: the fetch path (string → `_mapProtocolError` in `mapUspErrorToServiceError`) and the save batch path (envelope → `_localizeFaultCode` in `localizeServiceError`) must give consistent results for the same firmware code. Change one and the other must change too. `_localizeFaultCode`'s doc comment already states "Mirrors `_mapProtocolError` … MUST stay in sync"; the reverse direction (the `usp_error.dart` side) currently **has no** back-pointing reminder, so when changing `_mapProtocolError` you must remember to go back and sync `_localizeFaultCode` yourself.
 
-### 不在此 pipeline 範圍
+### Out of This Pipeline's Scope
 
-- **firmware_update**：流程文案多，有自己的 exception + state-driven 錯誤顯示，另開 scope。
-- **SSE subscription errors**：另一條 error path（伺服器推播），不走此 pipeline。
-- **instant_setup（pnp_* wizard）**：仍用各自的 `errorMessage` + `ref.listen` 顯示，未納入。
-- **field-level 表單驗證**：`validateForm` 的 `Map<String,String>` 走 `fieldErrors`，不是 ServiceError（見 §1.4）。
-
----
-
-## 8. PR 前 Checklist
-
-- [ ] Service 的 fetch `catch → throw mapUspErrorToServiceError(e)`；save 有 `is ServiceError` 守衛。
-- [ ] batch 失敗存完整 `failures` list（不是只存 path）。
-- [ ] state model 用 `ServiceError? error`，不是 `String? errorMessage`；`copyWith` 有 `clearError`。
-- [ ] Provider 不出現 `'$e'` / `errorMessage: '...'`；fetch 存型別、save rethrow。
-- [ ] View 的 fetch 失敗走 `ServiceErrorView`（state.error）或 `_buildError + localizeServiceError`（AsyncValue）。
-- [ ] View 的 save 失敗走 `showFailedSnackBar(context, localizeServiceError(context, e))`。
-- [ ] dashboard card 的 inline 動作用 `performUspMutation`（失敗它已自動 localize），`successMessage` 傳已 `loc()` 的字串。
-- [ ] 沒有任何寫死的英文錯誤字串（`'Unable to load...'`、`'Failed to save: $e'`、`'Error: $e'`）。
-- [ ] 若新增 ServiceError 子類：補 ARB key（含其餘 locale）+ `switch` case。
-- [ ] `flutter analyze` 無 warning（特別是 sealed switch 的 exhaustiveness）。
+- **firmware_update**: has a lot of flow copy, with its own exception + state-driven error display; a separate scope.
+- **SSE subscription errors**: a separate error path (server push), does not go through this pipeline.
+- **instant_setup (pnp_* wizard)**: still uses its own `errorMessage` + `ref.listen` display, not incorporated.
+- **field-level form validation**: `validateForm`'s `Map<String,String>` goes through `fieldErrors`, not ServiceError (see §1.4).
 
 ---
 
-## 附錄：關鍵檔案
+## 8. Pre-PR Checklist
 
-| 檔案 | 角色 |
+- [ ] Service fetch `catch → throw mapUspErrorToServiceError(e)`; save has the `is ServiceError` guard.
+- [ ] batch failure stores the full `failures` list (not only the path).
+- [ ] state model uses `ServiceError? error`, not `String? errorMessage`; `copyWith` has `clearError`.
+- [ ] Provider has no `'$e'` / `errorMessage: '...'`; fetch stores the type, save rethrows.
+- [ ] View's fetch failure goes through `ServiceErrorView` (state.error) or `_buildError + localizeServiceError` (AsyncValue).
+- [ ] View's save failure goes through `showFailedSnackBar(context, localizeServiceError(context, e))`.
+- [ ] dashboard card inline actions use `performUspMutation` (it already localizes failures automatically), with `successMessage` passing an already-`loc()`'d string.
+- [ ] No hardcoded English error strings (`'Unable to load...'`, `'Failed to save: $e'`, `'Error: $e'`).
+- [ ] If adding a ServiceError subclass: add the ARB key (including the other locales) + the `switch` case.
+- [ ] `flutter analyze` has no warnings (especially the sealed switch's exhaustiveness).
+
+---
+
+## Appendix: Key Files
+
+| File | Role |
 |---|---|
-| [`lib/core/errors/service_error.dart`](../../lib/core/errors/service_error.dart) | sealed `ServiceError` 型別定義 |
-| [`lib/core/usp/errors/usp_error.dart`](../../lib/core/usp/errors/usp_error.dart) | `mapUspErrorToServiceError`（字串 → ServiceError） |
-| [`lib/components/localizations/service_error_localizations.dart`](../../lib/components/localizations/service_error_localizations.dart) | `localizeServiceError`（中央 mapper，唯一在地化點） |
-| [`lib/components/views/service_error_view.dart`](../../lib/components/views/service_error_view.dart) | `ServiceErrorView`（fetch 失敗共用空狀態 widget） |
-| [`lib/page/dmz/`](../../lib/page/dmz/) | Type A（state.error）完整範本：service / notifier / view |
-| [`lib/page/admin/`](../../lib/page/admin/) | AsyncValue（AsyncValue.error）範本 |
-| `lib/l10n/app_en.arb` | error 訊息 ARB key（`errorXxx`） |
+| [`lib/core/errors/service_error.dart`](../../lib/core/errors/service_error.dart) | sealed `ServiceError` type definition |
+| [`lib/core/usp/errors/usp_error.dart`](../../lib/core/usp/errors/usp_error.dart) | `mapUspErrorToServiceError` (string → ServiceError) |
+| [`lib/components/localizations/service_error_localizations.dart`](../../lib/components/localizations/service_error_localizations.dart) | `localizeServiceError` (central mapper, the only localization point) |
+| [`lib/components/views/service_error_view.dart`](../../lib/components/views/service_error_view.dart) | `ServiceErrorView` (shared empty-state widget for fetch failures) |
+| [`lib/page/dmz/`](../../lib/page/dmz/) | Type A (state.error) full reference: service / notifier / view |
+| [`lib/page/admin/`](../../lib/page/admin/) | AsyncValue (AsyncValue.error) reference |
+| `lib/l10n/app_en.arb` | error message ARB key (`errorXxx`) |
