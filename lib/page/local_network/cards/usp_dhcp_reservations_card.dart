@@ -165,7 +165,7 @@ class UspDhcpReservationsCard extends ConsumerWidget {
                 ip: result.ip,
                 enable: result.enable,
               ),
-      successMessage: 'Reservation added',
+      successMessage: loc(context).reservationAdded,
     );
   }
 
@@ -195,7 +195,7 @@ class UspDhcpReservationsCard extends ConsumerWidget {
       mutation: () => ref
           .read(uspDhcpReservationsProvider.notifier)
           .immediateDelete(reservation.instancePath!),
-      successMessage: 'Reservation deleted',
+      successMessage: loc(context).reservationDeleted,
     );
   }
 }

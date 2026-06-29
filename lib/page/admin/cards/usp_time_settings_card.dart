@@ -160,7 +160,7 @@ class _UspTimeSettingsCardState extends ConsumerState<UspTimeSettingsCard>
             localTimeZone: result.localTimeZone,
             ntpServer1: result.ntpServer1,
           ),
-      successMessage: 'Time settings saved',
+      successMessage: loc(context).timeSettingsSaved,
     );
   }
 }

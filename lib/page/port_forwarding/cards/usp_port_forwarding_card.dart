@@ -165,7 +165,7 @@ class UspPortForwardingCard extends ConsumerWidget {
             description: result.description,
             enabled: result.enabled,
           ),
-      successMessage: 'Rule added',
+      successMessage: loc(context).ruleAdded,
     );
   }
 }
