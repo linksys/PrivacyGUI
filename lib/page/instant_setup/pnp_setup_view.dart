@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/models/auto_configuration_settings.dart';
+import 'package:privacy_gui/core/jnap/models/auto_master_status.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -18,6 +19,7 @@ import 'package:privacy_gui/page/instant_setup/model/impl/night_mode_step.dart';
 import 'package:privacy_gui/page/instant_setup/model/impl/personal_wifi_step.dart';
 import 'package:privacy_gui/page/instant_setup/model/impl/your_network_step.dart';
 import 'package:privacy_gui/page/instant_setup/model/pnp_step.dart';
+import 'package:privacy_gui/page/instant_setup/widgets/pnp_auto_master_waiting_view.dart';
 import 'package:privacy_gui/page/instant_setup/widgets/pnp_stepper.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/util/qr_code.dart';
@@ -39,6 +41,7 @@ import 'package:privacy_gui/util/export_selector/export_base.dart'
 enum _PnpSetupStep {
   init,
   config,
+  waitingAutoMaster,
   saving,
   saved,
   fwCheck,
@@ -66,6 +69,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
   bool _hasNewFW = false;
   bool _forceLogin = false;
   bool _fetchError = false;
+  bool _showAutoMasterConnectionError = false;
   PnpStep? _currentStep;
   ({void Function() stepCancel, void Function() stepContinue})? _stepController;
 
@@ -80,6 +84,12 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
         logger.d('[PnP]: Fetching data. Setup step = init');
       });
       await ref.read(pnpProvider.notifier).fetchData();
+    }).then((_) async {
+      // Record Auto Master status on entry for edge case detection
+      final status =
+          await ref.read(pnpProvider.notifier).checkAutoMasterStatus();
+      ref.read(pnpProvider.notifier).setAutoMasterStatusOnEntry(status);
+      logger.d('[PnP]: Auto Master status on entry: $status');
     }).then((_) {
       _isUnconfigured = ref.read(pnpProvider).isRouterUnConfigured;
       _isPrePaired = ref.read(pnpProvider).isPrePaired;
@@ -243,9 +253,14 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
   Widget _buildPnpSetupView(BoxConstraints constraints) {
     final showConfig = _setupStep != _PnpSetupStep.saving &&
         _setupStep != _PnpSetupStep.saved &&
-        _setupStep != _PnpSetupStep.needReconnect;
+        _setupStep != _PnpSetupStep.needReconnect &&
+        _setupStep != _PnpSetupStep.waitingAutoMaster;
     return switch (_setupStep) {
       _PnpSetupStep.init => _loadingSpinner(),
+      _PnpSetupStep.waitingAutoMaster => PnpAutoMasterWaitingView(
+          showConnectionError: _showAutoMasterConnectionError,
+          onRetry: _retryAutoMasterSave,
+        ),
       _PnpSetupStep.wifiReady => _showWiFi(constraints),
       _PnpSetupStep.fwCheck => _fwUpdateCheck(),
       _ => Stack(
@@ -644,8 +659,110 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
     );
   }
 
-  Future _saveChanges() async {
+  static const int _maxAutoMasterSaveAttempts = 2;
+
+  Future _saveChanges({int autoMasterSaveAttempt = 0}) async {
     final isUnconfigured = ref.read(pnpProvider).isRouterUnConfigured;
+
+    // Check Auto Master status before save (Second Defense)
+    final statusOnEntry = ref.read(pnpProvider).autoMasterStatusOnEntry;
+    final AutoMasterStatus? currentStatus;
+    try {
+      currentStatus =
+          await ref.read(pnpProvider.notifier).checkAutoMasterStatus();
+    } on ExceptionAutoMasterUnauthorized {
+      logger.e('[PnP]: Auto Master check unauthorized, redirect to login');
+      if (mounted) {
+        context.goNamed(RouteNamed.localLoginPassword);
+      }
+      return;
+    }
+
+    logger.d('[PnP]: Auto Master check before save - '
+        'entry status: $statusOnEntry, current: $currentStatus');
+
+    if (currentStatus == AutoMasterStatus.running) {
+      // Show waiting view and poll
+      setState(() {
+        _setupStep = _PnpSetupStep.waitingAutoMaster;
+        _showAutoMasterConnectionError = false;
+      });
+
+      int consecutiveFailures = 0;
+      const maxConsecutiveFailures = 3;
+
+      await for (final pollStatus
+          in ref.read(pnpProvider.notifier).pollAutoMasterStatus()) {
+        logger.d('[PnP]: Auto Master polling status: $pollStatus');
+
+        if (pollStatus == null) {
+          consecutiveFailures++;
+          logger.w(
+              '[PnP]: Auto Master polling failed, consecutive failures: $consecutiveFailures');
+
+          if (consecutiveFailures >= maxConsecutiveFailures) {
+            logger.e(
+                '[PnP]: Auto Master polling failed $maxConsecutiveFailures times, showing connection error');
+            setState(() {
+              _showAutoMasterConnectionError = true;
+            });
+            return;
+          }
+        } else {
+          consecutiveFailures = 0;
+
+          if (pollStatus == AutoMasterStatus.complete ||
+              pollStatus == AutoMasterStatus.idle) {
+            // Redirect to login page - password changed
+            if (mounted) {
+              context.goNamed(RouteNamed.localLoginPassword);
+            }
+            return;
+          }
+        }
+      }
+
+      // Polling exceeded max retry (timeout)
+      logger.w('[PnP]: Auto Master polling timeout, checking router connection');
+
+      if (autoMasterSaveAttempt >= _maxAutoMasterSaveAttempts) {
+        logger.e(
+            '[PnP]: Auto Master retry limit reached after $autoMasterSaveAttempt attempts');
+        setState(() {
+          _showAutoMasterConnectionError = true;
+        });
+        return;
+      }
+
+      try {
+        await ref.read(pnpProvider.notifier).testConnectionReconnected();
+        logger.i(
+            '[PnP]: Router connected after timeout, attempt ${autoMasterSaveAttempt + 1}/$_maxAutoMasterSaveAttempts');
+        setState(() {
+          _setupStep = _PnpSetupStep.config;
+        });
+        return _saveChanges(autoMasterSaveAttempt: autoMasterSaveAttempt + 1);
+      } catch (e) {
+        logger.e('[PnP]: Router not connected after timeout');
+        setState(() {
+          _showAutoMasterConnectionError = true;
+        });
+        return;
+      }
+    }
+
+    // Edge case: Was Idle on entry but now Complete
+    if (statusOnEntry == AutoMasterStatus.idle &&
+        currentStatus == AutoMasterStatus.complete) {
+      logger
+          .w('[PnP]: Auto Master completed during PnP config - password changed');
+      if (mounted) {
+        context.goNamed(RouteNamed.localLoginPassword);
+      }
+      return;
+    }
+
+    // Continue with existing save logic
     setState(() {
       _loadingMessage = loc(context).savingChanges;
       _loadingMessageSub = loc(context).pnpSavingChangesDesc;
@@ -763,5 +880,12 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
       showSimpleSnackBar(context, loc(context).pnpReconnectWiFi);
       failed?.call();
     });
+  }
+
+  void _retryAutoMasterSave() {
+    setState(() {
+      _showAutoMasterConnectionError = false;
+    });
+    _saveChanges();
   }
 }

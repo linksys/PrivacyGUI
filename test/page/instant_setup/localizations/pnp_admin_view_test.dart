@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
+import 'package:privacy_gui/core/jnap/models/auto_master_status.dart';
 import 'package:privacy_gui/core/jnap/models/device_info.dart';
 import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_exception.dart';
@@ -207,6 +208,106 @@ void main() async {
     await tester.pump(const Duration(seconds: 1));
     final btnFinder = find.byType(TextButton);
     await tester.tap(btnFinder);
+    await tester.pumpAndSettle();
+  });
+
+  testLocalizations('Instant Setup - PnP: Auto Master running',
+      (tester, locale) async {
+    when(mockPnpNotifier.build()).thenReturn(
+      PnpState(
+        deviceInfo: NodeDeviceInfo.fromJson(
+          jsonDecode(testDeviceInfo)['output'],
+        ),
+      ),
+    );
+    when(mockPnpNotifier.fetchDeviceInfo()).thenAnswer((_) async {});
+    when(mockPnpNotifier.checkRouterConfigured()).thenAnswer((_) async {});
+    when(mockPnpNotifier.checkAdminPassword(any)).thenAnswer((_) async {});
+    when(mockPnpNotifier.checkAutoMasterStatus()).thenAnswer((_) async {
+      return AutoMasterStatus.running;
+    });
+    when(mockPnpNotifier.pollAutoMasterStatus()).thenAnswer((_) {
+      return Stream.fromFuture(
+          Future.delayed(const Duration(seconds: 5), () => AutoMasterStatus.running));
+    });
+
+    await tester.pumpWidget(
+      testableSingleRoute(
+        config: LinksysRouteConfig(
+          column: ColumnGrid(column: 6, centered: true),
+          noNaviRail: true,
+        ),
+        child: const PnpAdminView(),
+        locale: locale,
+        overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
+      ),
+    );
+    await tester.pump(const Duration(seconds: 2));
+  });
+
+  testLocalizations('Instant Setup - PnP: Auto Master connection error',
+      (tester, locale) async {
+    when(mockPnpNotifier.build()).thenReturn(
+      PnpState(
+        deviceInfo: NodeDeviceInfo.fromJson(
+          jsonDecode(testDeviceInfo)['output'],
+        ),
+      ),
+    );
+    when(mockPnpNotifier.fetchDeviceInfo()).thenAnswer((_) async {});
+    when(mockPnpNotifier.checkRouterConfigured()).thenAnswer((_) async {});
+    when(mockPnpNotifier.checkAdminPassword(any)).thenAnswer((_) async {});
+    when(mockPnpNotifier.checkAutoMasterStatus()).thenAnswer((_) async {
+      return AutoMasterStatus.running;
+    });
+    // Return null 3 times to trigger connection error
+    when(mockPnpNotifier.pollAutoMasterStatus()).thenAnswer((_) {
+      return Stream.fromIterable([null, null, null]);
+    });
+
+    await tester.pumpWidget(
+      testableSingleRoute(
+        config: LinksysRouteConfig(
+          column: ColumnGrid(column: 6, centered: true),
+          noNaviRail: true,
+        ),
+        child: const PnpAdminView(),
+        locale: locale,
+        overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
+      ),
+    );
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pumpAndSettle();
+  });
+
+  testLocalizations(
+      'Instant Setup - PnP: Auto Master check unauthorized redirects to login',
+      (tester, locale) async {
+    when(mockPnpNotifier.build()).thenReturn(
+      PnpState(
+        deviceInfo: NodeDeviceInfo.fromJson(
+          jsonDecode(testDeviceInfo)['output'],
+        ),
+      ),
+    );
+    when(mockPnpNotifier.fetchDeviceInfo()).thenAnswer((_) async {});
+    when(mockPnpNotifier.checkRouterConfigured()).thenAnswer((_) async {});
+    when(mockPnpNotifier.checkAdminPassword(any)).thenAnswer((_) async {});
+    when(mockPnpNotifier.checkAutoMasterStatus())
+        .thenThrow(ExceptionAutoMasterUnauthorized());
+
+    await tester.pumpWidget(
+      testableSingleRoute(
+        config: LinksysRouteConfig(
+          column: ColumnGrid(column: 6, centered: true),
+          noNaviRail: true,
+        ),
+        child: const PnpAdminView(),
+        locale: locale,
+        overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
+      ),
+    );
+    await tester.pump(const Duration(seconds: 2));
     await tester.pumpAndSettle();
   });
 }

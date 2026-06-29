@@ -749,6 +749,8 @@
   "pnpPppoeDesc": "These settings are provided by your Internet Service Provider (ISP). If you aren't sure about yours, we recommend contacting your ISP.",
   "pnpPppoeRemoveVlan": "Remove VLAN ID",
   "pnpPppoeTitle": "Enter ISP settings",
+  "pnpAutoMasterWaitingTitle": "Setting up your network",
+  "pnpAutoMasterWaitingDesc": "Please wait while your router completes its initial setup. This may take a few minutes.",
   "pnpReconnectWiFi": "Reconnect to your router's WiFi to continue setup",
   "pnpRouterLoginDesc": "Enter your router's password to proceed",
   "pnpRouterLoginWhereIsIt": "Where is it?",

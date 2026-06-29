@@ -8,6 +8,7 @@ import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_transaction.dart';
 import 'package:privacy_gui/core/jnap/command/base_command.dart';
 import 'package:privacy_gui/core/jnap/models/auto_configuration_settings.dart';
+import 'package:privacy_gui/core/jnap/models/auto_master_status.dart';
 import 'package:privacy_gui/core/jnap/models/device_info.dart';
 import 'package:privacy_gui/core/jnap/models/firmware_update_settings.dart';
 import 'package:privacy_gui/core/jnap/models/guest_radio_settings.dart';
@@ -103,6 +104,10 @@ abstract class BasePnpNotifier extends Notifier<PnpState> {
   PnpWiFiSettings getDefaultWiFiSettings();
   // Guest WiFi
   ({String name, String password}) getDefaultGuestWiFiNameAndPassPhrase();
+  // Auto Master
+  Future<AutoMasterStatus?> checkAutoMasterStatus();
+  Stream<AutoMasterStatus?> pollAutoMasterStatus();
+  void setAutoMasterStatusOnEntry(AutoMasterStatus? status);
 }
 
 class MockPnpNotifier extends BasePnpNotifier {
@@ -228,6 +233,21 @@ class MockPnpNotifier extends BasePnpNotifier {
   @override
   void setForceLogin(bool force) {
     state = state.copyWith(forceLogin: force);
+  }
+
+  @override
+  Future<AutoMasterStatus?> checkAutoMasterStatus() {
+    return Future.value(AutoMasterStatus.idle);
+  }
+
+  @override
+  Stream<AutoMasterStatus?> pollAutoMasterStatus() async* {
+    yield AutoMasterStatus.idle;
+  }
+
+  @override
+  void setAutoMasterStatusOnEntry(AutoMasterStatus? status) {
+    state = state.copyWith(autoMasterStatusOnEntry: () => status);
   }
 }
 
@@ -706,5 +726,72 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
   @override
   void setForceLogin(bool force) {
     state = state.copyWith(forceLogin: force);
+  }
+
+  @override
+  Future<AutoMasterStatus?> checkAutoMasterStatus() async {
+    try {
+      final result = await ref.read(routerRepositoryProvider).send(
+            JNAPAction.getAutoMasterStatus,
+            auth: true,
+            fetchRemote: true,
+            cacheLevel: CacheLevel.noCache,
+            retries: 0,
+            timeoutMs: 5000,
+          );
+      final response = GetAutoMasterStatusResponse.fromMap(result.output);
+      logger.d('[PnP]: Auto Master status: ${response.autoMasterStatus}');
+      return response.autoMasterStatus;
+    } on JNAPError catch (e) {
+      if (e.result == errorJNAPUnauthorized) {
+        logger.w('[PnP]: Auto Master status check unauthorized');
+        throw ExceptionAutoMasterUnauthorized();
+      }
+      logger.d('[PnP]: GetAutoMasterStatus not supported or failed: $e');
+      return null;
+    } catch (e) {
+      logger.d('[PnP]: GetAutoMasterStatus not supported or failed: $e');
+      return null;
+    }
+  }
+
+  @override
+  Stream<AutoMasterStatus?> pollAutoMasterStatus() {
+    return ref
+        .read(routerRepositoryProvider)
+        .scheduledCommand(
+          action: JNAPAction.getAutoMasterStatus,
+          auth: true,
+          maxRetry: 60,
+          retryDelayInMilliSec: 5000,
+          firstDelayInMilliSec: 1000,
+          condition: (result) {
+            if (result is JNAPSuccess) {
+              final status = AutoMasterStatus.fromValue(
+                  result.output['autoMasterStatus'] as String?);
+              return status == AutoMasterStatus.complete ||
+                  status == AutoMasterStatus.idle;
+            }
+            return false;
+          },
+          onCompleted: (exceedMaxRetry) {
+            logger.d(
+                '[PnP]: Auto Master polling done, exceeded max: $exceedMaxRetry');
+          },
+        )
+        .map((result) {
+      if (result is JNAPSuccess) {
+        final status = AutoMasterStatus.fromValue(
+            result.output['autoMasterStatus'] as String?);
+        logger.d('[PnP]: Auto Master polling status: $status');
+        return status;
+      }
+      return null;
+    });
+  }
+
+  @override
+  void setAutoMasterStatusOnEntry(AutoMasterStatus? status) {
+    state = state.copyWith(autoMasterStatusOnEntry: () => status);
   }
 }

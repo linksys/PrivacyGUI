@@ -422,6 +422,9 @@ enum _JNAPActionValue {
   getTunneledUser(value: 'http://linksys.com/jnap/vpn/GetTunneledUser'),
   setTunneledUser(value: 'http://linksys.com/jnap/vpn/SetTunneledUser'),
   setVPNApply(value: 'http://linksys.com/jnap/vpn/SetVPNApply'),
+  // auto master
+  getAutoMasterStatus(
+      value: 'http://linksys.com/jnap/nodes/setup/GetAutoMasterStatus'),
   ;
 
   const _JNAPActionValue({required this.value});

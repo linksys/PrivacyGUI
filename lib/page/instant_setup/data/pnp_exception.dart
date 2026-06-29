@@ -39,3 +39,13 @@ class ExceptionInterruptAndExit extends PnpException {
   ExceptionInterruptAndExit({required this.route})
       : super(message: 'Interrupted and exit to $route');
 }
+
+class ExceptionAutoMasterUnauthorized extends PnpException {
+  ExceptionAutoMasterUnauthorized()
+      : super(message: 'Auto Master check unauthorized');
+}
+
+class ExceptionAutoMasterPollingFailed extends PnpException {
+  ExceptionAutoMasterPollingFailed()
+      : super(message: 'Auto Master polling failed');
+}
