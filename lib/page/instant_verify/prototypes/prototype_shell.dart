@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/page/dashboard/views/dashboard_navigation_rail.dart';
 import 'package:privacy_gui/page/instant_verify/models/diagnostic_client.dart';
 import 'package:privacy_gui/page/instant_verify/prototypes/mock_pivot_notifier.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_provider.dart';
@@ -33,7 +32,7 @@ class PrototypeRoot extends StatelessWidget {
 
 enum _Layout {
   protoA('A · 2-tab + glance'),
-  protoB('B · Verify side-nav'),
+  protoB('B · Verify top-tab'),
   current('Current · 4-tab');
 
   const _Layout(this.label);
@@ -230,13 +229,15 @@ class _ProtoB extends StatefulWidget {
   State<_ProtoB> createState() => _ProtoBState();
 }
 
-class _ProtoBState extends State<_ProtoB> {
-  int _index = 0;
+class _ProtoBState extends State<_ProtoB>
+    with SingleTickerProviderStateMixin {
+  late final TabController _tab = TabController(length: 5, vsync: this);
   final _flow = ValueNotifier<int?>(null);
   final _flowDevice = ValueNotifier<DiagnosticClient?>(null);
 
   @override
   void dispose() {
+    _tab.dispose();
     _flow.dispose();
     _flowDevice.dispose();
     super.dispose();
@@ -244,54 +245,37 @@ class _ProtoBState extends State<_ProtoB> {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    // Top-tab nav (PrivacyGUI's native pattern) with Instant-Test first and
+    // the technician Verify depth integrated as a tab.
+    return Column(
       children: [
-        // Native styled rail (Linksys logo, theming, responsive) instead of a
-        // raw Material NavigationRail.
-        DashboardNavigationRail(
-          selected: _index,
-          onItemTapped: (i) => setState(() => _index = i),
-          items: const [
-            NavigationRailDestination(
-                icon: Icon(Icons.speed_outlined),
-                selectedIcon: Icon(Icons.speed),
-                label: Text('Instant-Test')),
-            NavigationRailDestination(
-                icon: Icon(Icons.devices_outlined),
-                selectedIcon: Icon(Icons.devices),
-                label: Text('Devices')),
-            NavigationRailDestination(
-                icon: Icon(Icons.lan_outlined),
-                selectedIcon: Icon(Icons.lan),
-                label: Text('Network')),
-            NavigationRailDestination(
-                icon: Icon(Icons.build_outlined),
-                selectedIcon: Icon(Icons.build),
-                label: Text('Verify')),
-            NavigationRailDestination(
-                icon: Icon(Icons.help_outline),
-                selectedIcon: Icon(Icons.help),
-                label: Text('Help Me')),
+        TabBar(
+          controller: _tab,
+          isScrollable: true,
+          tabs: const [
+            Tab(text: 'Instant-Test'),
+            Tab(text: 'Devices'),
+            Tab(text: 'Network'),
+            Tab(text: 'Verify'),
+            Tab(text: 'Help Me'),
           ],
         ),
-        const VerticalDivider(width: 1),
         Expanded(
-          child: IndexedStack(
-            index: _index,
+          child: TabBarView(
+            controller: _tab,
             children: [
-              // 0 — Instant-Test is the primary/top destination.
               OverviewTab(
-                onViewClients: () => setState(() => _index = 1),
+                onViewClients: () => _tab.animateTo(1),
                 onNavigateToFlow: (flowIndex) {
                   _flow.value = flowIndex + 1;
-                  setState(() => _index = 4);
+                  _tab.animateTo(4);
                 },
               ),
               MyDevicesTab(
                 onNavigateToFlow: (flowIndex, {DiagnosticClient? device}) {
                   _flowDevice.value = device;
                   _flow.value = flowIndex;
-                  setState(() => _index = 4);
+                  _tab.animateTo(4);
                 },
               ),
               const MyNetworkTab(),
@@ -299,7 +283,7 @@ class _ProtoBState extends State<_ProtoB> {
               HelpMeFixItTab(
                 pendingFlowNotifier: _flow,
                 pendingFlowDeviceNotifier: _flowDevice,
-                onNavigateToMyDevices: () => setState(() => _index = 1),
+                onNavigateToMyDevices: () => _tab.animateTo(1),
               ),
             ],
           ),
