@@ -69,7 +69,11 @@ class _WifiAdvancedSettingsViewState
       bottomBar: PageBottomBar(
           isPositiveEnabled: isPositiveEnabled,
           onPositiveTap: () {
-            if (ref.read(wifiAdvancedProvider).isDFSEnabled == true) {
+            final currentState = ref.read(wifiAdvancedProvider);
+            // Only show DFS confirmation when DFS is being turned ON (was off, now on)
+            final isDFSBeingEnabled = _preservedState?.isDFSEnabled != true &&
+                currentState.isDFSEnabled == true;
+            if (isDFSBeingEnabled) {
               _showConfirmDFSModal().then((value) {
                 if (value == true) {
                   save();
