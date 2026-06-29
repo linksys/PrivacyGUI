@@ -247,7 +247,7 @@ Future<void> _onSave(BuildContext context, WidgetRef ref) async {
 ```
 
 - ✅ `showFailedSnackBar(context, localizeServiceError(context, e))`
-- ❌ `showFailedSnackBar(context, 'Failed to save: $e')`（舊寫法，已全數移除）
+- ❌ `showFailedSnackBar(context, 'Failed to save: $e')`（直接攤平字串，不在地化）
 
 `showFailedSnackBar` / `showSuccessSnackBar` 簽名是 `(BuildContext, String)`——它們吃已經譯好的字串，不負責翻譯。
 

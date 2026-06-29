@@ -1,13 +1,13 @@
-# USP 全鏈路參考：資料格式、錯誤窮舉、Error Handling 現況
+# USP 全鏈路參考：資料格式、錯誤窮舉、Error Handling 機制
 
 > 源碼：`PrivacyGUI`(Dart) + `usp_framework/usp-client`(Rust/WASM)。firmware 內的 `usp-bridge` / `OBUSPA` 讀不到，為黑箱。
 > 本文三件事（背景知識，回答「為什麼」）：**(1) request 每層長什麼樣 (2) WASM 能丟出的所有 error 窮舉 (3) 現有 error handling pattern 的成因**。
 > 「怎麼照著實作」見 [實作指南](error-handling-implementation-guide.md)。
 
-> **實作進度**
-> - ✅ **診斷欄位重構（已完成）**：`ServiceError` 基類加 `code` / `detail`；移除 5 子類各自的 `message`、統一用 `detail`；`mapUspErrorToServiceError` 各 `_mapXxx` 補傳 `code`+`detail`；`UspCompleteFailureError`/`UspPartialFailureError` 改存 `List<UspErrorDetail> failures`（`failedPaths` 變衍生 getter）。**結果：fault code / 原始訊息不再流失到 ServiceError**，UI/log 兩用。
-> - ✅ **localization（已完成，PR #953）**：View 依 ServiceError 型別產出在地化友好訊息（中央 mapper `localizeServiceError`）。**怎麼實作見 [實作指南](error-handling-implementation-guide.md)。**
-> - 🔲 **§2.5 GET bug（未修）**：9999 GET 失敗被偽裝成 9998。
+> **在 codebase 的哪裡**
+> - **診斷欄位**：`ServiceError` 基類帶 `code` / `detail`；5 子類用統一的 `detail`（不再各自 `message`）；`mapUspErrorToServiceError` 各 `_mapXxx` 會帶 `code`+`detail`；`UspCompleteFailureError`/`UspPartialFailureError` 存 `List<UspErrorDetail> failures`（`failedPaths` 是衍生 getter）。fault code / 原始訊息因此不會流失到 ServiceError，UI/log 兩用。
+> - **localization**：View 依 ServiceError 型別產出在地化訊息（中央 mapper `localizeServiceError`），實作在 PR #953。怎麼照著寫見 [實作指南](error-handling-implementation-guide.md)。
+> - **§2.5 GET bug（已知，尚未修）**：9999 GET 失敗被偽裝成 9998。
 
 ---
 
@@ -279,18 +279,18 @@ Dart 錯誤映射**只需處理這 7 個**（主線，日常 USP 請求路徑）
 
 > 一句話：envelope 類（9999/firmware/9998）的 **欄位**都保證存在（Dart 層再加 `-1`/`'Unknown error'` 兜底）；唯二不保證的是——**生命週期字串常缺 code**（auth 錯誤無 code），以及 **firmware message 的值可能是空字串**（欄位仍在）。
 
-### 2.4 Dart 映射現況（`usp_error.dart` 的 `mapUspErrorToServiceError`）對照
+### 2.4 Dart 映射規則（`usp_error.dart` 的 `mapUspErrorToServiceError`）對照
 
 現有 fault-code map（`usp_error.dart` 的 `_mapProtocolError`）：
 `7004/7005/7006→InvalidInput`、`7026/7027→ResourceNotFound`、`9001→Unauthorized`、`9005/9007→ResourceNotFound`、`9008→InvalidInput`。
 此時與 `UspErrorDetail`（`usp_operation_result.dart`，認得 7004/7005/7006/7026/7027）的語意已對齊。
 
-> ✅ **診斷欄位已保留**：各 `_mapXxx` 在產出 ServiceError 時會帶上 `code`（faultCode / httpStatus）+ `detail`（原始訊息）。即使型別資訊較粗（如 `ResourceNotFoundError`），底層 code/detail 仍在 ServiceError 上供 log 與日後 View 取用。
+> **診斷欄位**：各 `_mapXxx` 在產出 ServiceError 時會帶上 `code`（faultCode / httpStatus）+ `detail`（原始訊息）。即使型別資訊較粗（如 `ResourceNotFoundError`），底層 code/detail 仍在 ServiceError 上供 log 與 View 取用。
 
-已知缺口：
-1. **envelope 路徑的語意化留待 View 消費**（資訊流失部分已修）：batch SET/ADD/DELETE 失敗走 `UspResultParser` → service 拋 `Usp{Partial,Complete}FailureError`。
-   - ✅ **已修**：這兩個型別現在存 `List<UspErrorDetail> failures`（完整 path+code+message），fault code **不再流失**；`UspErrorDetail` 的 `isObjectNotFound`/`isInvalidParameterValue` 等 helper 隨時可用。
-   - ⚠ **剩餘**：路徑 2 仍只產出 `UspPartial/CompleteFailureError` 這兩個**容器型別**，不像路徑 1 會依 code 細分成 `ResourceNotFoundError`/`InvalidInputError`。這是**設計使然**——batch 可能多筆、各有不同 code，無法塞進單一語意型別。真正的語意化時機在 **View**：遍歷 `failures`、對每筆用 helper 判 code 決定顯示。**原料已備齊，差 View 消費 → 併入 localization scope。**
+行為特性與限制：
+1. **envelope 路徑的語意化在 View 消費**：batch SET/ADD/DELETE 失敗走 `UspResultParser` → service 拋 `Usp{Partial,Complete}FailureError`。
+   - 這兩個型別存 `List<UspErrorDetail> failures`（完整 path+code+message），fault code 不會流失；`UspErrorDetail` 的 `isObjectNotFound`/`isInvalidParameterValue` 等 helper 可用。
+   - 路徑 2 只產出 `UspPartial/CompleteFailureError` 這兩個**容器型別**，不像路徑 1 會依 code 細分成 `ResourceNotFoundError`/`InvalidInputError`。這是**設計使然**——batch 可能多筆、各有不同 code，無法塞進單一語意型別。語意化發生在 **View**：遍歷 `failures`、對每筆用 helper 判 code 決定顯示（做法見 [實作指南](error-handling-implementation-guide.md) §4.2）。
 2. **9999 沒有專門映射**：它是 client 端最常見 code，但映射只看 message 內的 category 字串、不看 code 9999 本身（目前可正常運作，因字串夠用）。
 3. **WS / SSE 的 `StateError`**（如 `'WebSocket connection timeout'`）不符 `"{Op} failed:"` 格式，落到 `mapUspErrorToServiceError` 只會變泛用 `UnexpectedError`。
 4. **字串契約脆弱**（`usp_error.dart` 開頭「Error Contract」自註表）：transport/auth/protocol 的映射靠對 Rust 字串 substring/regex；**Rust 端字串一改就無聲失效**。§2.1/§2.2 是當前 Rust 的完整 client-side 輸出契約，可做成 contract test 固定它（注意：透傳的 7xxx/9xxx 不在此契約內，由 firmware 決定）。
@@ -379,12 +379,12 @@ data = {}                                                 ← 失敗 envelope �
                                   ▼   throw ServiceError
                           ┌──────────────┐
                           │   provider    │  save : rethrow
-                          │               │  fetch: status.errorMessage = '$e'
+                          │               │  fetch: state.error = e（型別透傳，不壓字串）
                           └──────────────┘
                                   │
-                                  ▼
+                                  ▼   ServiceError（型別保留）
                           ┌──────────────┐
-                          │     View      │  showFailedSnackBar(...)
+                          │     View      │  localizeServiceError(ctx, e) → 在地化訊息
                           └──────────────┘
 ```
 
@@ -406,17 +406,16 @@ data = {}                                                 ← 失敗 envelope �
 
 > ⚠ 注意 9999 的歸屬：它是 WASM 產的、代表「沒到 firmware」（§2.3），但**形式上是 envelope 裡的 errorCode**，所以走**路徑 2**（parser），不是路徑 1。「誰產生」與「走哪條路」是兩回事。
 
-> 一句話：**字串走 `mapUspErrorToServiceError`，envelope 走 `UspResultParser`，兩條都在 service `catch` 收斂成 `ServiceError`**；之後 provider（save rethrow / fetch 存 `'$e'`）與 view（`showFailedSnackBar`）的處理見 §3。
+> 一句話：**字串走 `mapUspErrorToServiceError`，envelope 走 `UspResultParser`，兩條都在 service `catch` 收斂成 `ServiceError`**；之後 provider 透傳型別（save rethrow / fetch 存 `state.error`）、view 用 `localizeServiceError` 在地化的做法見 §3 與 [實作指南](error-handling-implementation-guide.md)。
 
 ---
 
-# 3. 現有 Error Handling Pattern（Service / Provider / View）
+# 3. Error Handling Pattern 的成因（Service 層機制）
 
-| 層 | 主流 pattern | 中央 helper？ | 型別保真度 |
-|---|---|---|---|
-| **Service** | fetch：`catch (e) → throw mapUspErrorToServiceError(e)`；save：解析 batch 結果 → throw `Usp{Partial,Complete}FailureError`，外層 `if (e is ServiceError) rethrow` 守衛 | ✅ `mapUspErrorToServiceError` + `UspResultParser` | 保留為 typed `ServiceError`，**且帶 `code`/`detail`（路徑1）或 `failures` list（路徑2）診斷資訊** |
-| **Provider** | save：`on ServiceError catch { log; rethrow; }`（包在 `uspMutationLockProvider.withLock` 內）；fetch：`catch → status.errorMessage = '$e'` | ❌ 每個 notifier 手寫複製 | save 保留再 rethrow；**fetch 被壓成 `'$e'` 字串，型別遺失** |
-| **View** | save：`try { save() } catch (e) { showFailedSnackBar(ctx, 'Failed to save: $e') }`；wizard：`ref.listen → showFailedSnackBar(ctx, errorMessage!)` | ❌ **完全沒有 ServiceError→訊息 mapper** | **完全遺失**：raw `toString()`，幾乎不 localize |
+> 本節解釋**為什麼** Service 層的 fetch 與 save 寫法不同（fetch 無守衛、save 有守衛）——這是整個 pipeline 最容易誤解、且不會隨時間改變的核心機制。
+> Provider / View 兩層的**現行做法**（型別怎麼透傳、怎麼在地化顯示）見 [實作指南](error-handling-implementation-guide.md)；本節末尾只說明 PR #953 之前的痛點，作為「為何要做那次重構」的背景。
+
+Service 層的錯誤收斂（fetch / save 都把錯誤轉成 `ServiceError`，靠 `mapUspErrorToServiceError` + `UspResultParser`），保留 typed `ServiceError`，且帶 `code`/`detail`（路徑1）或 `failures` list（路徑2）診斷資訊。
 
 ### Service 層細節：fetch 與 save 是兩種不同 pattern —— 差別在「有沒有自拋 ServiceError」
 
@@ -451,25 +450,26 @@ try {
 
 > **一句話**：守衛 = 「try 區塊裡會不會自拋 ServiceError」的指標。會（save）→ 需要守衛；不會（fetch）→ 不需要。
 
-**全 codebase 36 處 `is ServiceError` 守衛，全部在寫入/operate 方法**（update/save/add/delete/enable/disable/ping/traceRoute…）。規則無例外：**只有寫入/operate 操作才有守衛，fetch 一律沒有。**
+`is ServiceError` 守衛**只出現在寫入/operate 方法**（update/save/add/delete/enable/disable/ping/traceRoute…），fetch 一律沒有。這是規則，無例外。
 
-- ⚠ **不映射的例外**（破壞契約）：`apps` service 丟 raw `Exception`（`usp_apps_service.dart`，因是 lighttpd 靜態 JSON 非 USP）；`_shared` 的 polling / PDF service 故意 swallow（有註解說明）。
+- ⚠ **不走此映射的例外**：`apps` service 丟 raw `Exception`（`usp_apps_service.dart`，因是 lighttpd 靜態 JSON 非 USP）；`_shared` 的 polling / PDF service 故意 swallow（有註解說明）。這些不符合上述 ServiceError 契約。
 
-### Provider 層細節
-- framework `save()`（`preservable_notifier_mixin.dart`）**透明不 catch**，讓 `ServiceError` 直穿到 UI。framework 完全不 import `ServiceError`。
-- save 一律 `rethrow`、**不存進 state**；fetch 一律 `status.errorMessage = '$e'`、**型別在此遺失**。沒有共用 helper，全靠複製貼上一致。沒有任何 notifier 讀 `UspPartialFailureError.failedPaths` 進 state。
+### Provider 層的固定機制
+- framework `save()`（`preservable_notifier_mixin.dart`）**透明不 catch**，讓 `ServiceError` 直穿到 View。framework 完全不 import `ServiceError`。這是 save 路徑「Provider 只 rethrow、View 用 try/catch 接」能成立的底層原因。
 
-### View 層細節
-- **零個 view** 參考 `ServiceError`/`UspPartialFailureError`/`UspCompleteFailureError`——精心建立的 typed error 在 UI 全被 `'$e'` 攤平。
-- `showFailedSnackBar(ctx, 'Failed to save: $e')` 這串在 ~10 個 view 逐字重複（firewall、dhcp_detail、ipv6…）。
-- **l10n 幾乎不存在**：所有 save 錯誤訊息中只有 1 個有 localize（`usp_renew_section.dart`）。
-- 例外：`firmware_update` 有自己較完整的 exception + state-driven 錯誤顯示。
+### PR #953 之前的痛點（為何要做那次重構）
 
-### 標準化機會（已落實／剩餘）
-1. ✅ **View 中央 `ServiceError → localized message` mapper（已完成，PR #953）**：`localizeServiceError()`（`lib/components/localizations/service_error_localizations.dart`）。實作做法見 [實作指南](error-handling-implementation-guide.md)。
-2. ✅ **Provider fetch 保留 `ServiceError` 型別進 state（已完成，PR #953）**：feature state model 由 `String? errorMessage` 改為 `ServiceError? error`，不再 `'$e'`。
-3. ✅ **診斷資訊保留（已完成）**：`Usp{Partial,Complete}FailureError` 已改存 `List<UspErrorDetail> failures`（完整 path+code+message）；路徑 1 的 ServiceError 帶 `code`/`detail`。
-4. 🔲 **contract test（剩餘）**：用 §2.1/§2.2 固定 Rust client-side 字串契約（透傳的 7xxx/9xxx 不在此契約，由 firmware 決定，需另向 firmware 團隊索取 vendor fault code 表）。
+重構前，Service 層雖然已經產出 typed `ServiceError`，但這個型別在上層被丟棄，導致 UI 無法依型別在地化：
+
+- **Provider fetch** 把 `ServiceError` 壓成 `status.errorMessage = '$e'`（型別在此遺失），每個 notifier 手寫複製、無共用 helper。
+- **View** 沒有任何 `ServiceError → 訊息` 的 mapper；`showFailedSnackBar(ctx, 'Failed to save: $e')` 在 ~10 個 view 逐字重複，錯誤訊息幾乎不 localize（save 錯誤訊息中只有 1 個有在地化）。
+
+PR #953 把這條線打通：Provider 透傳型別（`ServiceError? error`，不再 `'$e'`）、新增中央 mapper `localizeServiceError()`（`lib/components/localizations/service_error_localizations.dart`）+ 共用空狀態 widget `ServiceErrorView`，View 一律走它們在地化。**怎麼照著寫見 [實作指南](error-handling-implementation-guide.md)。**
+
+### 尚未做的事
+
+- **contract test（TODO）**：用 §2.1/§2.2 固定 Rust client-side 字串契約（transport/auth/protocol 的映射靠對 Rust 字串 substring/regex，Rust 端字串一改就無聲失效）。透傳的 7xxx/9xxx 不在此契約內，由 firmware 決定，需另向 firmware 團隊索取 vendor fault code 表。
+- **§2.5 GET 9999→9998 bug（已知，尚未修）**：見該節。
 
 > **本文是「背景知識／全鏈路參考」（回答「為什麼」）。** 實際「怎麼跟著現存 pattern 實作 error handling」（Service／Provider／View 三層寫法、該顯示什麼、注意事項、checklist）見 [實作指南](error-handling-implementation-guide.md)。
 > §2.5 的 GET 9999→9998 bug 仍未修——實作 localization 時的已知限制（GET 連線失敗會被在地化成「輸入錯誤」），也記在實作指南 §7。
