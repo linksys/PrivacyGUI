@@ -66,6 +66,7 @@ class HealthDialogProvider extends MascotDialogProvider {
     return MascotDialogNode.custom(
       id: 'health_dashboard',
       text: greeting,
+      barrier: MascotDialogBarrier.dismissible,
       contentBuilder: (ctx, textColor) =>
           _buildHealthDashboard(textColor, greeting),
     );
@@ -167,6 +168,7 @@ class HealthDialogProvider extends MascotDialogProvider {
     controller.showDialog(MascotDialogNode.custom(
       id: 'dimension_${dimensionType.name}',
       text: dimension.displayName,
+      barrier: MascotDialogBarrier.dismissible,
       contentBuilder: (ctx, textColor) => DimensionDetailView(
         dimension: dimension,
         score: score,
@@ -261,6 +263,7 @@ class HealthDialogProvider extends MascotDialogProvider {
     return const MascotDialogNode(
       id: 'diagnostics_menu',
       text: 'What would you like to check?',
+      barrier: MascotDialogBarrier.dismissible,
       options: [
         MascotDialogOption(
           id: 'full',
@@ -338,6 +341,7 @@ class HealthDialogProvider extends MascotDialogProvider {
       text: result.message,
       type: type,
       suggestedAnimation: animation,
+      barrier: MascotDialogBarrier.dismissible,
       options: const [
         MascotDialogOption(
           id: 'back',
@@ -371,6 +375,7 @@ class HealthDialogProvider extends MascotDialogProvider {
     return MascotDialogNode(
       id: 'faq_categories',
       text: 'What do you need help with?',
+      barrier: MascotDialogBarrier.dismissible,
       options: [
         ..._faqCategories.asMap().entries.map((entry) => MascotDialogOption(
               id: 'cat_${entry.key}',
@@ -391,6 +396,7 @@ class HealthDialogProvider extends MascotDialogProvider {
     return MascotDialogNode(
       id: 'faq_items_$catIndex',
       text: getFaqCategoryTitle(category),
+      barrier: MascotDialogBarrier.dismissible,
       options: [
         ...category.items.asMap().entries.map((entry) => MascotDialogOption(
               id: 'item_${catIndex}_${entry.key}',
