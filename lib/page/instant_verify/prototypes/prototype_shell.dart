@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/page/dashboard/views/dashboard_navigation_rail.dart';
 import 'package:privacy_gui/page/instant_verify/models/diagnostic_client.dart';
 import 'package:privacy_gui/page/instant_verify/prototypes/mock_pivot_notifier.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_provider.dart';
@@ -245,15 +246,12 @@ class _ProtoBState extends State<_ProtoB> {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        NavigationRail(
-          selectedIndex: _index,
-          onDestinationSelected: (i) => setState(() => _index = i),
-          labelType: NavigationRailLabelType.all,
-          leading: const Padding(
-            padding: EdgeInsets.symmetric(vertical: 8),
-            child: Icon(Icons.bolt, size: 28),
-          ),
-          destinations: const [
+        // Native styled rail (Linksys logo, theming, responsive) instead of a
+        // raw Material NavigationRail.
+        DashboardNavigationRail(
+          selected: _index,
+          onItemTapped: (i) => setState(() => _index = i),
+          items: const [
             NavigationRailDestination(
                 icon: Icon(Icons.speed_outlined),
                 selectedIcon: Icon(Icons.speed),
