@@ -137,7 +137,6 @@ errorServiceNotReady, errorUnexpected
 
 ## 6. 不在本次（error 線）範圍
 
-- 非 error 的 hard-coded 字串（section 標題、表單 label、流程文案）→ 之後「以 feature 為單位」處理（見 `03-i18n-localization-overview.md`）。
 - **§2.5 的 GET 9999→9998 bug → 已決定本次先不修**（使用者尚未理解該 bug，待釐清後另議）。⚠ **已知風險**：在修掉前，GET 連線失敗(9999)會被 localize 成「輸入錯誤」(InvalidInputError)，l10n 做得再好仍是錯訊息。執行 localization 時須知此限制。
 - 26 locale 的翻譯 → 英文 key 補齊後另行翻譯。
 
@@ -193,4 +192,3 @@ All USP requests (Get/Set/Add/Operate) across feature pages now flow through a u
 - **firmware_update**: 流程文案多，另開 scope 處理
 - **SSE subscription errors**: 另一條 error path，不在此次範圍
 - **UnexpectedError**: 最終 fallback，直接顯示 `detail` 原始字串（可能是英文 firmware 技術訊息，非 localized）
-- **非 error 的 hard-coded 字串**: section 標題、表單 label、流程文案 → 之後「以 feature 為單位」處理
