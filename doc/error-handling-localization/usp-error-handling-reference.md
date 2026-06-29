@@ -1,11 +1,12 @@
 # USP 全鏈路參考：資料格式、錯誤窮舉、Error Handling 現況
 
 > 源碼：`PrivacyGUI`(Dart) + `usp_framework/usp-client`(Rust/WASM)。firmware 內的 `usp-bridge` / `OBUSPA` 讀不到，為黑箱。
-> 本文四件事：**(1) request 每層長什麼樣 (2) WASM 能丟出的所有 error 窮舉 (3) 現有 error handling pattern (4) 接下來的 localization 工作**。
+> 本文三件事（背景知識，回答「為什麼」）：**(1) request 每層長什麼樣 (2) WASM 能丟出的所有 error 窮舉 (3) 現有 error handling pattern 的成因**。
+> 「怎麼照著實作」見 [實作指南](error-handling-implementation-guide.md)。
 
 > **實作進度**
 > - ✅ **診斷欄位重構（已完成）**：`ServiceError` 基類加 `code` / `detail`；移除 5 子類各自的 `message`、統一用 `detail`；`mapUspErrorToServiceError` 各 `_mapXxx` 補傳 `code`+`detail`；`UspCompleteFailureError`/`UspPartialFailureError` 改存 `List<UspErrorDetail> failures`（`failedPaths` 變衍生 getter）。**結果：fault code / 原始訊息不再流失到 ServiceError**，UI/log 兩用。
-> - 🔲 **localization（未做，§4）**：View 依 ServiceError 型別產出在地化友好訊息。
+> - ✅ **localization（已完成，PR #953）**：View 依 ServiceError 型別產出在地化友好訊息（中央 mapper `localizeServiceError`）。**怎麼實作見 [實作指南](error-handling-implementation-guide.md)。**
 > - 🔲 **§2.5 GET bug（未修）**：9999 GET 失敗被偽裝成 9998。
 
 ---
@@ -464,59 +465,14 @@ try {
 - **l10n 幾乎不存在**：所有 save 錯誤訊息中只有 1 個有 localize（`usp_renew_section.dart`）。
 - 例外：`firmware_update` 有自己較完整的 exception + state-driven 錯誤顯示。
 
-### 標準化機會（剩餘待辦）
-1. 🔲 **View 缺一個 `ServiceError → localized message` 中央 mapper** → 詳見 §4，這是接下來的主要工作。
-2. 🔲 **Provider fetch 不該用 `'$e'`**——應保留 `ServiceError` 型別進 state（型別才能餵給 §4 的 mapper）。
-3. ✅ **診斷資訊保留（已完成）**：`Usp{Partial,Complete}FailureError` 已改存 `List<UspErrorDetail> failures`（完整 path+code+message）；路徑 1 的 ServiceError 帶 `code`/`detail`。**剩下的「依 code 細分顯示」屬 View 層工作，併入 §4。**
-4. 🔲 **contract test**：用 §2.1/§2.2 固定 Rust client-side 字串契約（透傳的 7xxx/9xxx 不在此契約，由 firmware 決定，需另向 firmware 團隊索取 vendor fault code 表）。
+### 標準化機會（已落實／剩餘）
+1. ✅ **View 中央 `ServiceError → localized message` mapper（已完成，PR #953）**：`localizeServiceError()`（`lib/components/localizations/service_error_localizations.dart`）。實作做法見 [實作指南](error-handling-implementation-guide.md)。
+2. ✅ **Provider fetch 保留 `ServiceError` 型別進 state（已完成，PR #953）**：feature state model 由 `String? errorMessage` 改為 `ServiceError? error`，不再 `'$e'`。
+3. ✅ **診斷資訊保留（已完成）**：`Usp{Partial,Complete}FailureError` 已改存 `List<UspErrorDetail> failures`（完整 path+code+message）；路徑 1 的 ServiceError 帶 `code`/`detail`。
+4. 🔲 **contract test（剩餘）**：用 §2.1/§2.2 固定 Rust client-side 字串契約（透傳的 7xxx/9xxx 不在此契約，由 firmware 決定，需另向 firmware 團隊索取 vendor fault code 表）。
 
----
-
-# 4. 接下來：Localization 大方向（未做）
-
-診斷欄位重構已把**原料**（型別 + code + detail + failures list）備齊。接下來要做的是 **UI 友好訊息的在地化**——讓使用者看到「找不到此設定」而非 `'Failed to save: Unexpected error: ...(code: 7026)'`。
-
-## 4.1 核心原則：UI 訊息由「ServiceError 型別」決定，不顯示 `detail`
-
-- `detail` / `code` 是**診斷用**（log / debug），**不直接給使用者看**（它是 firmware 英文技術字串，不可在地化）。
-- UI 要顯示什麼，**由 ServiceError 的 sealed 子類型別決定** → 對應到一句 l10n 字串。
-- 唯一例外：`UnexpectedError`（fallback，無型別語意），UI 可退而顯示 `detail`。
-
-## 4.2 兩段工作（由下而上）
-
-**① View 層：中央 `ServiceError → localized message` mapper**（主工作）
-一個 `switch` on sealed subtypes 的 helper，吃 `BuildContext` + `ServiceError`，回在地化字串：
-```dart
-String localizeServiceError(BuildContext ctx, ServiceError e) => switch (e) {
-  NotAuthenticatedError()   => loc(ctx).errorNotAuthenticated,
-  ResourceNotFoundError()   => loc(ctx).errorResourceNotFound,
-  InvalidInputError()       => loc(ctx).errorInvalidInput,
-  NetworkError()            => loc(ctx).errorNetwork,
-  // batch：遍歷 failures、用 UspErrorDetail 的 isObjectNotFound 等 helper 判 code
-  UspPartialFailureError(:final failures) => _summarizeBatch(ctx, failures),
-  UspCompleteFailureError(:final failures) => _summarizeBatch(ctx, failures),
-  UnexpectedError(:final detail) => detail ?? loc(ctx).errorUnexpected, // fallback 可用 detail
-  _ => loc(ctx).errorUnexpected,
-};
-```
-取代目前 ~10 個 view 逐字重複的 `showFailedSnackBar(ctx, 'Failed to save: $e')`。
-sealed class 的好處：新增子類時 `switch` 會編譯警告，強制補 l10n。
-
-**② Provider 層：fetch 別把 ServiceError 壓成 `'$e'`**
-目前 fetch catch 後 `status.errorMessage = '$e'`（型別遺失，String）。
-改成在 state 保留 `ServiceError` 型別（或它的型別標識），View 才有型別可餵給 ① 的 mapper。
-save 路徑已經是 rethrow ServiceError，不受影響。
-
-## 4.3 batch（路徑 2）的特殊處理
-
-`UspPartial/CompleteFailureError` 不是單一語意型別，而是**容器**（內含 `List<UspErrorDetail>`）。View 對它要「往裡看」：
-- 遍歷 `failures`，用 `UspErrorDetail` 的 `isObjectNotFound` / `isInvalidParameterValue` / `isParameterNotWritable` 等 helper 判每筆 code。
-- 決定要逐筆列出、挑最嚴重的一筆、或給一句聚合訊息——這是 UX 決策，屬本工作範圍。
-
-## 4.4 不在此工作內
-
-- **firmware vendor fault code 表**：7xxx/9xxx 是 firmware 開放集合，要完整對應需向 firmware 團隊索取（§2.3）。l10n 先涵蓋已知的 7004/7005/7006/7026/7027/9001/9005/9008，其餘落 fallback。
-- **§2.5 GET 9999→9998 bug**：是 transport 層 bug，與 l10n 獨立，應另外修（否則 GET 連線失敗會被在地化成「輸入錯誤」）。
+> **本文是「背景知識／全鏈路參考」（回答「為什麼」）。** 實際「怎麼跟著現存 pattern 實作 error handling」（Service／Provider／View 三層寫法、該顯示什麼、注意事項、checklist）見 [實作指南](error-handling-implementation-guide.md)。
+> §2.5 的 GET 9999→9998 bug 仍未修——實作 localization 時的已知限制（GET 連線失敗會被在地化成「輸入錯誤」），也記在實作指南 §7。
 
 ---
 
