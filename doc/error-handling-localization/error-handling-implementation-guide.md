@@ -251,6 +251,31 @@ Future<void> _onSave(BuildContext context, WidgetRef ref) async {
 
 `showFailedSnackBar` / `showSuccessSnackBar` 簽名是 `(BuildContext, String)`——它們吃已經譯好的字串，不負責翻譯。
 
+> **重點是「字串一律經 `localizeServiceError`」，用哪個 snackbar API 是次要的。** 多數頁面用共用的 `showFailedSnackBar`（建議照此），少數頁面（如 [`instant_privacy_view.dart`](../../lib/page/instant_privacy/views/instant_privacy_view.dart)）直接用 `ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(localizeServiceError(context, e))))`。兩種都正確——關鍵不變：**顯示的字串來自 `localizeServiceError`，不是 raw `'$e'`**。
+
+### 3.3 dashboard card 的 mutation → 用共用 helper `performUspMutation`
+
+dashboard card（網路狀態、WiFi、port forwarding…）上的 inline 動作按鈕（如「續訂租約」、「新增保留」）**不是**自己寫 try/catch，而是呼叫共用 helper [`performUspMutation`](../../lib/page/_shared/components/usp_mutation_helper.dart)。它把「設 loading 狀態 → 跑 mutation → 成功/失敗 snackbar」包成一個入口：
+
+```dart
+// 範本：usp_network_status_card.dart 的「續訂租約」按鈕
+onTap: () => performUspMutation(
+  context,
+  ref,
+  loadingKey: 'wanRenew',                                   // 對應 uspMutationLoadingProvider
+  mutation: () => ref.read(uspInternetSettingsProvider.notifier).renewDhcpLease(),
+  successMessage: loc(context).xxx,                         // 傳「已 loc() 的字串」
+),
+```
+
+**這不是「第三種在地化策略」——它只是 card 觸發 mutation 的便利入口。** 失敗時 helper 內部已經呼叫 `localizeServiceError`，所以：
+
+- ✅ **你不用自己 localize 失敗訊息**——傳 `mutation` 即可，helper 會把拋出的 `ServiceError` 在地化後顯示。
+- ⚠ **`successMessage` 是 as-is 顯示**（helper 不翻譯它）——所以**呼叫端要傳已經 `loc()` 過的字串**，不要傳寫死英文。
+- 適用場景：dashboard card 上的單一 inline 動作（非整頁 form save）。整頁 form save 仍走 §3.2 的 view try/catch。
+
+> 這個 helper 是 §0 那條「Service → Provider → View」主線在 card 場景的封裝：mutation 內部一樣經過 Service（拋 ServiceError）→ Provider（rethrow）→ helper 的 catch（`localizeServiceError`）。
+
 ---
 
 ## 4. 該顯示什麼／不該顯示什麼
@@ -365,7 +390,7 @@ String _localizeFaultCode(BuildContext context, int code) => switch (code) {
 ### 已知限制
 
 - **GET 9999→9998 bug（未修）**：GET 連線失敗（9999，應為「網路錯誤」）在傳輸層第 5 層被偽裝成 9998 → 最終被在地化成「輸入錯誤」（`errorInvalidInput`）。這是 transport 層 bug，與 localization 獨立。在它修掉前，**GET 失敗的「輸入錯誤」訊息可能其實是連線問題**。根因見 [`usp-error-handling-reference.md`](usp-error-handling-reference.md) §2.5。
-- **`_localizeFaultCode` 與 `_mapProtocolError` 必須同步**：fetch 路徑（字串 → `mapUspErrorToServiceError` 的 `_mapProtocolError`）與 save batch 路徑（envelope → `_localizeFaultCode`）對同一個 firmware code 必須給一致結果。改其中一個，另一個要一起改（兩處都在註解標明）。
+- **`_localizeFaultCode` 與 `_mapProtocolError` 必須同步**：fetch 路徑（字串 → `mapUspErrorToServiceError` 的 `_mapProtocolError`）與 save batch 路徑（envelope → `localizeServiceError` 裡的 `_localizeFaultCode`）對同一個 firmware code 必須給一致結果。改其中一個，另一個要一起改。`_localizeFaultCode` 的 doc comment 已標明「Mirrors `_mapProtocolError` … MUST stay in sync」；反向（`usp_error.dart` 那側）目前**沒有**回指的提醒，改 `_mapProtocolError` 時要自己記得回頭同步 `_localizeFaultCode`。
 
 ### 不在此 pipeline 範圍
 
@@ -384,7 +409,8 @@ String _localizeFaultCode(BuildContext context, int code) => switch (code) {
 - [ ] Provider 不出現 `'$e'` / `errorMessage: '...'`；fetch 存型別、save rethrow。
 - [ ] View 的 fetch 失敗走 `ServiceErrorView`（state.error）或 `_buildError + localizeServiceError`（AsyncValue）。
 - [ ] View 的 save 失敗走 `showFailedSnackBar(context, localizeServiceError(context, e))`。
-- [ ] 沒有任何寫死的英文錯誤字串（`'Unable to load...'`、`'Failed to save: $e'`）。
+- [ ] dashboard card 的 inline 動作用 `performUspMutation`（失敗它已自動 localize），`successMessage` 傳已 `loc()` 的字串。
+- [ ] 沒有任何寫死的英文錯誤字串（`'Unable to load...'`、`'Failed to save: $e'`、`'Error: $e'`）。
 - [ ] 若新增 ServiceError 子類：補 ARB key（含其餘 locale）+ `switch` case。
 - [ ] `flutter analyze` 無 warning（特別是 sealed switch 的 exhaustiveness）。
 
