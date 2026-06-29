@@ -24,6 +24,8 @@ class RoutePath {
   /// menu
   static const menuInstantVerify = 'menuInstantVerify';
   static const menuInstantTest = 'menuInstantTest';
+  // PROTOTYPE-ONLY: top-level path for the front-end exploration shell.
+  static const instantPrototype = '/instant-prototype';
   static const menuInstantDevices = 'menuInstantDevices';
   static const menuIncredibleWiFi = 'menuIncredibleWiFi';
   static const menuInstantTopology = 'menuInstantTopology';
@@ -167,6 +169,8 @@ class RouteNamed {
 
   static const menuInstantVerify = 'menuInstantVerify';
   static const menuInstantTest = 'menuInstantTest';
+  // PROTOTYPE-ONLY: front-end exploration shell.
+  static const instantPrototype = 'instantPrototype';
   static const menuInstantDevices = 'menuInstantDevices';
   static const menuIncredibleWiFi = 'menuIncredibleWiFi';
   static const menuInstantTopology = 'menuInstantTopology';

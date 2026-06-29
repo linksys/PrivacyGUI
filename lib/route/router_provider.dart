@@ -53,6 +53,7 @@ import 'package:privacy_gui/page/instant_setup/troubleshooter/views/pnp_no_inter
 import 'package:privacy_gui/page/select_network/_select_network.dart';
 import 'package:privacy_gui/page/instant_verify/views/instant_verify_pivot_view.dart';
 import 'package:privacy_gui/page/instant_verify/views/instant_verify_view.dart';
+import 'package:privacy_gui/page/instant_verify/prototypes/prototype_shell.dart';
 import 'package:privacy_gui/page/support/faq_list_view.dart';
 import 'package:privacy_gui/page/instant_topology/views/instant_topology_view.dart';
 import 'package:privacy_gui/page/troubleshooting/_troubleshooting.dart';
@@ -123,6 +124,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       pnpRoute,
       pnpTroubleshootingRoute,
       addNodesRoute,
+      // PROTOTYPE-ONLY (proto/instant-test-frontend-explore branch): mocked
+      // front-end exploration, reachable unauthenticated at /instant-prototype.
+      LinksysRoute(
+        name: RouteNamed.instantPrototype,
+        path: RoutePath.instantPrototype,
+        config: const LinksysRouteConfig(noNaviRail: true),
+        builder: (context, state) => const PrototypeRoot(),
+      ),
     ],
     redirect: (context, state) {
       if (state.matchedLocation == '/') {
@@ -134,6 +143,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         return router._goPnpPath(state);
       } else if (state.matchedLocation.startsWith('/autoParentFirstLogin')) {
         // bypass auto parent first login page
+        return state.uri.toString();
+      } else if (state.matchedLocation.startsWith('/instant-prototype')) {
+        // PROTOTYPE-ONLY: reachable without auth (mock data, no router calls).
         return state.uri.toString();
       }
       return router._redirectLogic(state);
