@@ -645,12 +645,15 @@ void main() async {
 
   testLocalizations('Instant Setup - PnP: Auto Master running before save',
       (tester, locale) async {
+    // First call returns idle (for initState), subsequent calls return running (for save)
+    var callCount = 0;
     when(mockPnpNotifier.checkAutoMasterStatus()).thenAnswer((_) async {
-      return AutoMasterStatus.running;
+      callCount++;
+      return callCount == 1 ? AutoMasterStatus.idle : AutoMasterStatus.running;
     });
+    // Use Stream.value for immediate emit to avoid pending timer
     when(mockPnpNotifier.pollAutoMasterStatus()).thenAnswer((_) {
-      return Stream.fromFuture(
-          Future.delayed(const Duration(seconds: 5), () => AutoMasterStatus.running));
+      return Stream.value(AutoMasterStatus.running);
     });
     when(mockPnpNotifier.save()).thenAnswer((_) async {
       await Future.delayed(const Duration(seconds: 2));
@@ -688,10 +691,18 @@ void main() async {
   });
 
   testLocalizations(
-      'Instant Setup - PnP: Auto Master check unauthorized redirects to login',
+      'Instant Setup - PnP: Auto Master connection error',
       (tester, locale) async {
-    when(mockPnpNotifier.checkAutoMasterStatus())
-        .thenThrow(ExceptionAutoMasterUnauthorized());
+    // First call returns idle (for initState), subsequent calls return running (for save)
+    var callCount = 0;
+    when(mockPnpNotifier.checkAutoMasterStatus()).thenAnswer((_) async {
+      callCount++;
+      return callCount == 1 ? AutoMasterStatus.idle : AutoMasterStatus.running;
+    });
+    // Return null to simulate connection failure during polling (3 consecutive failures)
+    when(mockPnpNotifier.pollAutoMasterStatus()).thenAnswer((_) {
+      return Stream<AutoMasterStatus?>.fromIterable([null, null, null]);
+    });
 
     await tester.pumpWidget(
       testableSingleRoute(
