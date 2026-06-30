@@ -1017,7 +1017,6 @@
   "unableToLoadApps": "Det gick inte att läsa in appar",
   "unableToLoadDiagnostics": "Det gick inte att läsa in diagnostik",
   "unableToLoadSpeedTest": "Det gick inte att läsa in hastighetstestet",
-  "unableToLoadTopology": "Det gick inte att läsa in topologin",
   "unchangedLabel": "(Oförändrad)",
   "unknownWidget": "Okänd widget: {id}",
   "unnamed": "(namnlös)",

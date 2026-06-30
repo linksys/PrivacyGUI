@@ -1017,7 +1017,6 @@
   "unableToLoadApps": "Kan ikke laste inn apper",
   "unableToLoadDiagnostics": "Kan ikke laste inn diagnostikk",
   "unableToLoadSpeedTest": "Kan ikke laste inn hastighetstest",
-  "unableToLoadTopology": "Kan ikke laste inn topologi",
   "unchangedLabel": "(Uendret)",
   "unknownWidget": "Ukjent widget: {id}",
   "unnamed": "(uten navn)",

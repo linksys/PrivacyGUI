@@ -1017,7 +1017,6 @@
   "unableToLoadApps": "Kan apps niet laden",
   "unableToLoadDiagnostics": "Kan diagnostiek niet laden",
   "unableToLoadSpeedTest": "Kan snelheidstest niet laden",
-  "unableToLoadTopology": "Kan topologie niet laden",
   "unchangedLabel": "(Ongewijzigd)",
   "unknownWidget": "Onbekende widget: {id}",
   "unnamed": "(naamloos)",

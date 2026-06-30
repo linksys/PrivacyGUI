@@ -1017,7 +1017,6 @@
   "unableToLoadApps": "Δεν είναι δυνατή η φόρτωση των εφαρμογών",
   "unableToLoadDiagnostics": "Δεν είναι δυνατή η φόρτωση των διαγνωστικών",
   "unableToLoadSpeedTest": "Δεν είναι δυνατή η φόρτωση του τεστ ταχύτητας",
-  "unableToLoadTopology": "Δεν είναι δυνατή η φόρτωση της τοπολογίας",
   "unchangedLabel": "(Αμετάβλητο)",
   "unknownWidget": "Άγνωστο widget: {id}",
   "unnamed": "(χωρίς όνομα)",

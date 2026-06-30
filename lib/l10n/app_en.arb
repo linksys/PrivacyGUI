@@ -1640,7 +1640,6 @@
   "uspConsole": "USP Console",
   "uspDashboard": "USP Dashboard",
   "unableToLoadApps": "Unable to load apps",
-  "unableToLoadTopology": "Unable to load topology",
   "routerPasswordRuleUpperLower": "Upper and lower case letters",
   "validatingSession": "Validating session...",
   "viewDevices": "View Devices",

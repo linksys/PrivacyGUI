@@ -1017,7 +1017,6 @@
   "unableToLoadApps": "앱을 로드할 수 없습니다",
   "unableToLoadDiagnostics": "진단을 로드할 수 없습니다",
   "unableToLoadSpeedTest": "속도 테스트를 로드할 수 없습니다",
-  "unableToLoadTopology": "토폴로지를 로드할 수 없습니다",
   "unchangedLabel": "(변경되지 않음)",
   "unknownWidget": "알 수 없는 위젯: {id}",
   "unnamed": "(이름 없음)",

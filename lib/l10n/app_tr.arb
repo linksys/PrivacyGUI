@@ -1017,7 +1017,6 @@
   "unableToLoadApps": "Uygulamalar yüklenemedi",
   "unableToLoadDiagnostics": "Tanılama yüklenemedi",
   "unableToLoadSpeedTest": "Hız testi yüklenemedi",
-  "unableToLoadTopology": "Topoloji yüklenemedi",
   "unchangedLabel": "(Değişmedi)",
   "unknownWidget": "Bilinmeyen widget: {id}",
   "unnamed": "(adsız)",

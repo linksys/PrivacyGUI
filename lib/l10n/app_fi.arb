@@ -1017,7 +1017,6 @@
   "unableToLoadApps": "Sovelluksia ei voitu ladata",
   "unableToLoadDiagnostics": "Diagnostiikkaa ei voitu ladata",
   "unableToLoadSpeedTest": "Nopeustestiä ei voitu ladata",
-  "unableToLoadTopology": "Topologiaa ei voitu ladata",
   "unchangedLabel": "(Muuttumaton)",
   "unknownWidget": "Tuntematon widget: {id}",
   "unnamed": "(nimetön)",

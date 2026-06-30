@@ -1017,7 +1017,6 @@
   "unableToLoadApps": "アプリを読み込めません",
   "unableToLoadDiagnostics": "診断を読み込めません",
   "unableToLoadSpeedTest": "速度テストを読み込めません",
-  "unableToLoadTopology": "トポロジーを読み込めません",
   "unchangedLabel": "(変更なし)",
   "unknownWidget": "不明なウィジェット: {id}",
   "unnamed": "(名前なし)",

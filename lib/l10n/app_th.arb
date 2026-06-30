@@ -1017,7 +1017,6 @@
   "unableToLoadApps": "ไม่สามารถโหลดแอปได้",
   "unableToLoadDiagnostics": "ไม่สามารถโหลดการวินิจฉัยได้",
   "unableToLoadSpeedTest": "ไม่สามารถโหลดการทดสอบความเร็วได้",
-  "unableToLoadTopology": "ไม่สามารถโหลดโทโพโลยีได้",
   "unchangedLabel": "(ไม่เปลี่ยนแปลง)",
   "unknownWidget": "วิดเจ็ตที่ไม่รู้จัก: {id}",
   "unnamed": "(ไม่มีชื่อ)",

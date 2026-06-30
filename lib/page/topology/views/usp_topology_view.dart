@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
+import 'package:privacy_gui/components/views/service_error_view.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
@@ -44,18 +46,9 @@ class _UspTopologyViewState extends ConsumerState<UspTopologyView> {
       child: (childContext, constraints) {
         return asyncDevices.when(
           loading: () => const Center(child: AppLoader()),
-          error: (error, _) => Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                AppText.titleMedium(loc(context).unableToLoadTopology),
-                AppGap.md(),
-                AppButton.text(
-                  label: loc(context).retry,
-                  onTap: () => ref.invalidate(devicesDataProvider),
-                ),
-              ],
-            ),
+          error: (error, _) => ServiceErrorView(
+            error: error is ServiceError ? error : null,
+            onRetry: () => ref.invalidate(devicesDataProvider),
           ),
           data: (data) {
             final sysInfo = ref.read(systemInfoDataProvider).valueOrNull?.model;

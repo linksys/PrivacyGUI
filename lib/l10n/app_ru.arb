@@ -1017,7 +1017,6 @@
   "unableToLoadApps": "Не удалось загрузить приложения",
   "unableToLoadDiagnostics": "Не удалось загрузить диагностику",
   "unableToLoadSpeedTest": "Не удалось загрузить тест скорости",
-  "unableToLoadTopology": "Не удалось загрузить топологию",
   "unchangedLabel": "(Без изменений)",
   "unknownWidget": "Неизвестный виджет: {id}",
   "unnamed": "(без имени)",

@@ -1017,7 +1017,6 @@
   "unableToLoadApps": "无法加载应用",
   "unableToLoadDiagnostics": "无法加载诊断",
   "unableToLoadSpeedTest": "无法加载速度测试",
-  "unableToLoadTopology": "无法加载拓扑",
   "unchangedLabel": "（未更改）",
   "unknownWidget": "未知小组件：{id}",
   "unnamed": "（未命名）",
