@@ -1017,7 +1017,6 @@
   "unableToLoadApps": "Apps konnten nicht geladen werden",
   "unableToLoadDiagnostics": "Diagnose konnte nicht geladen werden",
   "unableToLoadSpeedTest": "Geschwindigkeitstest konnte nicht geladen werden",
-  "unableToLoadTopology": "Topologie konnte nicht geladen werden",
   "unchangedLabel": "(Unverändert)",
   "unknownWidget": "Unbekanntes Widget: {id}",
   "unnamed": "(unbenannt)",

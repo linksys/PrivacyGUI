@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/components/localizations/service_error_localizations.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
+import 'package:privacy_gui/components/views/service_error_view.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -45,31 +47,13 @@ class UspAdminView extends ConsumerWidget {
               child: AppLoader(),
             ),
           ),
-          error: (error, stack) => _buildError(childContext, ref, error),
+          error: (error, stack) => ServiceErrorView(
+            error: error is ServiceError ? error : null,
+            onRetry: () => ref.invalidate(uspAdminProvider),
+          ),
           data: (state) => _buildContent(childContext, ref, state),
         );
       },
-    );
-  }
-
-  Widget _buildError(BuildContext context, WidgetRef ref, Object error) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          AppIcon.font(Icons.error_outline,
-              size: 48, color: Theme.of(context).colorScheme.error),
-          AppGap.xl(),
-          AppText.titleMedium(loc(context).failedToLoadSettings),
-          AppGap.md(),
-          AppText.bodyMedium(localizeServiceError(context, error)),
-          AppGap.xxl(),
-          AppButton(
-            label: loc(context).retry,
-            onTap: () => ref.invalidate(uspAdminProvider),
-          ),
-        ],
-      ),
     );
   }
 

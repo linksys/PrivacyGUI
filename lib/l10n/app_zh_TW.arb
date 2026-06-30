@@ -1017,7 +1017,6 @@
   "unableToLoadApps": "無法載入 App",
   "unableToLoadDiagnostics": "無法載入診斷",
   "unableToLoadSpeedTest": "無法載入速度測試",
-  "unableToLoadTopology": "無法載入拓撲",
   "unchangedLabel": "（未變更）",
   "unknownWidget": "未知的小工具：{id}",
   "unnamed": "（未命名）",

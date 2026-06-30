@@ -1017,7 +1017,6 @@
   "unableToLoadApps": "Nie można załadować aplikacji",
   "unableToLoadDiagnostics": "Nie można załadować diagnostyki",
   "unableToLoadSpeedTest": "Nie można załadować testu szybkości",
-  "unableToLoadTopology": "Nie można załadować topologii",
   "unchangedLabel": "(Bez zmian)",
   "unknownWidget": "Nieznany widżet: {id}",
   "unnamed": "(bez nazwy)",

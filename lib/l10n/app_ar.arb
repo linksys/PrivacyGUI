@@ -1017,7 +1017,6 @@
   "unableToLoadApps": "تعذّر تحميل التطبيقات",
   "unableToLoadDiagnostics": "تعذّر تحميل التشخيص",
   "unableToLoadSpeedTest": "تعذّر تحميل اختبار السرعة",
-  "unableToLoadTopology": "تعذّر تحميل الطوبولوجيا",
   "unchangedLabel": "(لم يتغير)",
   "unknownWidget": "أداة غير معروفة: {id}",
   "unnamed": "(بدون اسم)",

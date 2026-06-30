@@ -1017,7 +1017,6 @@
   "unableToLoadApps": "Không thể tải ứng dụng",
   "unableToLoadDiagnostics": "Không thể tải chẩn đoán",
   "unableToLoadSpeedTest": "Không thể tải kiểm tra tốc độ",
-  "unableToLoadTopology": "Không thể tải cấu trúc mạng",
   "unchangedLabel": "(Không thay đổi)",
   "unknownWidget": "Tiện ích không xác định: {id}",
   "unnamed": "(chưa đặt tên)",
