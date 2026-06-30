@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/components/localizations/service_error_localizations.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
+import 'package:privacy_gui/components/views/service_error_view.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/components/dashboard_card_template.dart';
 import 'package:privacy_gui/page/unified_diagnostics/models/speed_test_state.dart';
@@ -27,27 +29,11 @@ class UspSpeedTestCard extends ConsumerWidget {
       detailRoute: RouteNamed.uspSpeedTest,
       content: asyncState.when(
         loading: () => const Center(child: AppLoader()),
-        error: (_, __) => _buildError(context, ref),
+        error: (error, _) => ServiceErrorView(
+          error: error is ServiceError ? error : null,
+          onRetry: () => ref.invalidate(speedTestProvider),
+        ),
         data: (state) => _buildBody(context, ref, state, colorScheme),
-      ),
-    );
-  }
-
-  Widget _buildError(BuildContext context, WidgetRef ref) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          AppIcon.font(Icons.error_outline,
-              size: 32, color: Theme.of(context).colorScheme.error),
-          AppGap.sm(),
-          AppText.bodySmall(loc(context).errorLoadingSpeedTest),
-          AppGap.md(),
-          AppButton.text(
-            label: loc(context).retry,
-            onTap: () => ref.invalidate(speedTestProvider),
-          ),
-        ],
       ),
     );
   }

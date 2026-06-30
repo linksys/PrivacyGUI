@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/components/localizations/service_error_localizations.dart';
+import 'package:privacy_gui/components/views/service_error_view.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/models/operate_result.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
@@ -49,29 +51,11 @@ class _DiagnosticManualToolsViewState
 
     return asyncState.when(
       loading: () => const Center(child: AppLoader()),
-      error: (error, _) => _buildPageError(context, error),
-      data: (state) => _buildContent(context, state),
-    );
-  }
-
-  Widget _buildPageError(BuildContext context, Object error) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          AppIcon.font(Icons.error_outline,
-              size: 48, color: Theme.of(context).colorScheme.error),
-          AppGap.xl(),
-          AppText.titleMedium(loc(context).unableToLoadDiagnostics),
-          AppGap.md(),
-          AppText.bodyMedium(error.toString()),
-          AppGap.xxl(),
-          AppButton(
-            label: loc(context).retry,
-            onTap: () => ref.invalidate(manualToolsProvider),
-          ),
-        ],
+      error: (error, _) => ServiceErrorView(
+        error: error is ServiceError ? error : null,
+        onRetry: () => ref.invalidate(manualToolsProvider),
       ),
+      data: (state) => _buildContent(context, state),
     );
   }
 
