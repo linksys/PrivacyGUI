@@ -153,18 +153,14 @@ class _SinglePageState extends ConsumerState<_SinglePage> {
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
-      builder: (ctx) => DraggableScrollableSheet(
-        expand: false,
-        initialChildSize: 0.88,
-        minChildSize: 0.5,
-        maxChildSize: 0.95,
-        builder: (c, scroll) => SingleChildScrollView(
-          controller: scroll,
-          child: HelpMeFixItTab(
-            pendingFlowNotifier: sheetFlow,
-            pendingFlowDeviceNotifier: _flowDevice,
-            onExitToHome: () => Navigator.of(ctx).pop(),
-          ),
+      // Bounded height — _FlowShell is a Column with an Expanded scroll view,
+      // so it must NOT be wrapped in another scrollable. It scrolls itself.
+      builder: (ctx) => SizedBox(
+        height: MediaQuery.of(ctx).size.height * 0.9,
+        child: HelpMeFixItTab(
+          pendingFlowNotifier: sheetFlow,
+          pendingFlowDeviceNotifier: _flowDevice,
+          onExitToHome: () => Navigator.of(ctx).pop(),
         ),
       ),
     ).then((_) => sheetFlow.dispose());
