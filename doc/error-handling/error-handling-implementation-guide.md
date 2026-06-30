@@ -180,7 +180,7 @@ class UspAdminNotifier extends AutoDisposeAsyncNotifier<UspAdminState> {
 > **How to choose**: follow the page's existing state architecture; do not change the architecture for the sake of error handling.
 > - Pages using `FeatureState` / `Preservable` → 2.1 (state.error).
 > - Pages using `AsyncNotifier` → 2.2 (AsyncValue.error).
-> Both ultimately go through the same `localizeServiceError` in the View; only "where the error is stored" and "how the View displays it" differ (see §3).
+> Both render fetch failures with the same `ServiceErrorView` in the View (see §3.1); only "where the error is stored" and "how retry is triggered" differ.
 
 ---
 
@@ -188,9 +188,17 @@ class UspAdminNotifier extends AutoDisposeAsyncNotifier<UspAdminState> {
 
 The View receives the `ServiceError` and passes it to the central mapper [`localizeServiceError(context, error)`](../../lib/components/localizations/service_error_localizations.dart) to get the localized string. **This is the only place in the entire codebase that turns an error type into a display string.**
 
-### 3.1 Displaying fetch failures (two ways, corresponding to the two providers in §2)
+### 3.1 Displaying fetch failures → always `ServiceErrorView`
 
-**(A) state.error pages → use the shared widget [`ServiceErrorView`](../../lib/components/views/service_error_view.dart)**:
+Both page architectures render fetch failures with the **same** shared widget
+[`ServiceErrorView`](../../lib/components/views/service_error_view.dart). Only two things
+differ between them: where the error comes from, and how retry is triggered.
+
+`ServiceErrorView` already calls `localizeServiceError` internally; you don't translate it
+yourself. It shows: an error icon + the `loc(ctx).failedToLoadSettings` title + the
+localized detail + a retry button (and an optional secondary action — see below).
+
+**(A) state.error pages** — pass `status.error` directly (it is already a `ServiceError?`):
 
 ```dart
 if (status.error != null) {
@@ -201,29 +209,38 @@ if (status.error != null) {
 }
 ```
 
-`ServiceErrorView` already calls `localizeServiceError` internally; you don't need to translate it yourself. It displays: an error icon + the `loc(ctx).failedToLoadSettings` title + the localized detail + a retry button.
-
-**(B) AsyncValue pages → call `localizeServiceError` inside `.when(error:)`**:
+**(B) AsyncValue pages** — inside `.when(error:)`, the callback hands you an `Object error`,
+so narrow it with `error is ServiceError ? error : null`; retry re-runs `build()` via
+`ref.invalidate`:
 
 ```dart
 asyncState.when(
   loading: () => const Center(child: AppLoader()),
-  error: (error, stack) => _buildError(context, ref, error),  // error is Object
+  error: (error, stack) => ServiceErrorView(
+    error: error is ServiceError ? error : null,
+    onRetry: () => ref.invalidate(uspAdminProvider),
+  ),
   data: (state) => _buildContent(context, ref, state),
 );
-
-Widget _buildError(BuildContext context, WidgetRef ref, Object error) {
-  return Center(child: Column(children: [
-    AppIcon.font(Icons.error_outline, size: 48, color: ...error),
-    AppText.titleMedium(loc(context).failedToLoadSettings),
-    AppText.bodyMedium(localizeServiceError(context, error)),  // ← localize
-    AppButton(label: loc(context).retry, onTap: () => ref.invalidate(uspAdminProvider)),
-  ]));
-}
 ```
 
-> **Why two ways?** `ServiceErrorView` takes a `ServiceError?` and is driven by `state.error`; `AsyncValue.when(error:)` gives an `Object error` (and retry uses `ref.invalidate` rather than `fetch(forceRemote)`). So AsyncValue pages keep their own small `_buildError`, but **the content must follow the snippet above and always go through `localizeServiceError`** — do not hardcode English yourself.
-> `localizeServiceError`'s second parameter takes `Object` (defensively): a non-ServiceError falls back to `errorUnexpected`, so it is safe for AsyncValue to pass the `Object error` straight in.
+> **Why the narrow?** `ServiceErrorView.error` is `ServiceError?`, but `AsyncValue.when(error:)`
+> gives `Object`. `ServiceErrorView` accepts `null` (it then shows just the generic title), so
+> a non-ServiceError degrades safely. (One known case: the `apps` page fetches lighttpd static
+> JSON and throws plain `Exception`, not `ServiceError` — it deliberately keeps its own error
+> widget instead of `ServiceErrorView`. See §7.)
+
+**Optional secondary action.** When a page needs an escape hatch (e.g. the dashboard's
+"Log out" when it cannot load at all), pass `secondaryLabel` + `onSecondary`:
+
+```dart
+ServiceErrorView(
+  error: error is ServiceError ? error : null,
+  onRetry: () => ref.read(dashboardOrchestratorProvider.notifier).refreshAll(),
+  secondaryLabel: loc(context).logout,
+  onSecondary: () => _logout(context, ref),
+);
+```
 
 ### 3.2 Displaying save failures → snackbar
 
@@ -397,6 +414,7 @@ Only do this when none of the existing types can express a certain error semanti
 - **firmware_update**: has a lot of flow copy, with its own exception + state-driven error display; a separate scope.
 - **SSE subscription errors**: a separate error path (server push), does not go through this pipeline.
 - **instant_setup (pnp_* wizard)**: still uses its own `errorMessage` + `ref.listen` display, not incorporated.
+- **apps page**: fetches lighttpd static JSON (not USP/TR-181) and throws plain `Exception`, not `ServiceError`. It deliberately keeps its own error widget (showing a localized `unableToLoadApps`, not the raw exception) rather than `ServiceErrorView`.
 - **field-level form validation**: `validateForm`'s `Map<String,String>` goes through `fieldErrors`, not ServiceError (see §1.4).
 
 ---
@@ -407,7 +425,7 @@ Only do this when none of the existing types can express a certain error semanti
 - [ ] batch failure stores the full `failures` list (not only the path).
 - [ ] state model uses `ServiceError? error`, not `String? errorMessage`; `copyWith` has `clearError`.
 - [ ] Provider has no `'$e'` / `errorMessage: '...'`; fetch stores the type, save rethrows.
-- [ ] View's fetch failure goes through `ServiceErrorView` (state.error) or `_buildError + localizeServiceError` (AsyncValue).
+- [ ] View's fetch failure renders `ServiceErrorView` (state.error pages pass `status.error`; AsyncValue pages pass `error is ServiceError ? error : null` inside `.when(error:)`).
 - [ ] View's save failure goes through `showFailedSnackBar(context, localizeServiceError(context, e))`.
 - [ ] dashboard card inline actions use `performUspMutation` (it already localizes failures automatically), with `successMessage` passing an already-`loc()`'d string.
 - [ ] No hardcoded English error strings (`'Unable to load...'`, `'Failed to save: $e'`, `'Error: $e'`).
