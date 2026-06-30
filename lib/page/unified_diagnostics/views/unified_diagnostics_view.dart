@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/route/constants.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 import '../models/diagnostic_state.dart';
@@ -114,7 +113,7 @@ class _UnifiedDiagnosticsViewState
           AppGap.xxxl(),
           AppButton(
             label: loc(context).returnToDashboard,
-            onTap: () => _returnToDashboard(context, ref),
+            onTap: () => _returnToMenu(context, ref),
           ),
         ],
       ),
@@ -129,12 +128,12 @@ class _UnifiedDiagnosticsViewState
     final notifier = ref.read(unifiedDiagnosticsProvider.notifier);
     final handledInternally = notifier.goBack();
     if (!handledInternally) {
-      _returnToDashboard(context, ref);
+      _returnToMenu(context, ref);
     }
   }
 
-  void _returnToDashboard(BuildContext context, WidgetRef ref) {
+  void _returnToMenu(BuildContext context, WidgetRef ref) {
     ref.read(unifiedDiagnosticsProvider.notifier).cancel();
-    context.goNamed(RouteNamed.uspDashboard);
+    context.pop();
   }
 }

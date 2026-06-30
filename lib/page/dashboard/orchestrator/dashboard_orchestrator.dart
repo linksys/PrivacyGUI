@@ -175,6 +175,7 @@ class DashboardOrchestrator extends AsyncNotifier<DashboardOrchestratorState> {
                 memoryPercent: model.memoryPercent,
                 totalMemoryKb: model.totalMemory,
                 freeMemoryKb: model.freeMemory,
+                uptimeSeconds: model.uptime,
               ),
             );
       }).catchError((e) {

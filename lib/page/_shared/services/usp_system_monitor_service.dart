@@ -46,6 +46,7 @@ class UspSystemMonitorService {
       memoryPercent: memPercent,
       totalMemoryKb: info.totalMemory,
       freeMemoryKb: info.freeMemory,
+      uptimeSeconds: info.uptime,
     );
   }
 }

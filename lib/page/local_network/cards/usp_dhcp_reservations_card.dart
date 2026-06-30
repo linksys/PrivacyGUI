@@ -70,39 +70,25 @@ class UspDhcpReservationsCard extends ConsumerWidget {
 
   Widget _buildReservationRow(BuildContext context, WidgetRef ref,
       DhcpReservationUIModel reservation, bool isLoading) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return LayoutBlock(
-      child: Row(
-        children: [
-          AppSwitch(
-            value: reservation.enable,
-            scale: 0.8,
-            onChanged: isLoading
-                ? null
-                : (value) => performUspMutation(
-                      context,
-                      ref,
-                      loadingKey: 'dhcp',
-                      mutation: () => ref
-                          .read(uspDhcpReservationsProvider.notifier)
-                          .immediateToggle(reservation.instancePath!, value),
-                    ),
-          ),
-          AppGap.sm(),
-          Expanded(child: AppText.bodyMedium(reservation.mac)),
-          AppText.bodySmall(
-            reservation.ip,
-            color: colorScheme.onSurfaceVariant,
-          ),
-          AppGap.sm(),
-          AppIconButton(
-            icon: AppIcon.font(Icons.delete_outline, size: 18),
-            onTap: isLoading
-                ? null
-                : () => _confirmDeleteDhcp(context, ref, reservation),
-          ),
-        ],
+    return ToggleRow(
+      value: reservation.enable,
+      onChanged: isLoading
+          ? null
+          : (value) => performUspMutation(
+                context,
+                ref,
+                loadingKey: 'dhcp',
+                mutation: () => ref
+                    .read(uspDhcpReservationsProvider.notifier)
+                    .immediateToggle(reservation.instancePath!, value),
+              ),
+      title: reservation.mac,
+      subtitle: reservation.ip,
+      trailing: AppIconButton(
+        icon: AppIcon.font(Icons.delete_outline, size: 18),
+        onTap: isLoading
+            ? null
+            : () => _confirmDeleteDhcp(context, ref, reservation),
       ),
     );
   }
@@ -112,33 +98,22 @@ class UspDhcpReservationsCard extends ConsumerWidget {
     final appColors = Theme.of(context).extension<AppColorScheme>();
     final lease = client.leaseTimeFormatted;
 
-    return LayoutBlock(
-      child: Row(
+    return DeviceRow(
+      icon: Container(
+        width: 8,
+        height: 8,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: client.active
+              ? (appColors?.semanticSuccess ?? Colors.green)
+              : colorScheme.outline,
+        ),
+      ),
+      title: client.displayName,
+      subtitle: client.hostName.isNotEmpty ? client.mac : null,
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: client.active
-                  ? (appColors?.semanticSuccess ?? Colors.green)
-                  : colorScheme.outline,
-            ),
-          ),
-          AppGap.sm(),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                AppText.bodyMedium(client.displayName),
-                if (client.hostName.isNotEmpty)
-                  AppText.bodySmall(
-                    client.mac,
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-              ],
-            ),
-          ),
           AppText.bodySmall(client.ip, color: colorScheme.onSurfaceVariant),
           if (lease.isNotEmpty) ...[
             AppGap.md(),
