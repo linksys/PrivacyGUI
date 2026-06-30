@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/page/instant_verify/models/diagnostic_client.dart';
+import 'package:privacy_gui/page/instant_verify/prototypes/instant_test_card.dart';
 import 'package:privacy_gui/page/instant_verify/prototypes/mock_pivot_notifier.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_provider.dart';
 import 'package:privacy_gui/page/instant_verify/views/help_me_fix_it_tab.dart';
@@ -32,6 +33,7 @@ class PrototypeRoot extends StatelessWidget {
 
 enum _Layout {
   single('Single page'),
+  homeCard('Home card'),
   protoA('A · 2-tab + glance'),
   protoB('B · Verify top-tab'),
   current('Current · 4-tab');
@@ -96,6 +98,8 @@ class _PrototypeShellState extends ConsumerState<_PrototypeShell> {
       ),
       body: switch (_layout) {
         _Layout.single => const _SinglePage(),
+        _Layout.homeCard => _HomeCardPreview(
+            onEnter: () => setState(() => _layout = _Layout.single)),
         _Layout.protoA => const _ProtoA(),
         _Layout.protoB => const _ProtoB(),
         // Current shipping shell — now reading the same mock data.
@@ -221,6 +225,44 @@ class _SinglePageState extends ConsumerState<_SinglePage> {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Preview of the Instant-Test home-page entry card among the dashboard tiles.
+/// Tapping the card "enters" Instant-Test (here: switches to the single page).
+class _HomeCardPreview extends StatelessWidget {
+  const _HomeCardPreview({required this.onEnter});
+  final VoidCallback onEnter;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      color: scheme.surfaceContainerLow,
+      padding: const EdgeInsets.all(24),
+      child: Align(
+        alignment: Alignment.topLeft,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 440),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Dashboard home',
+                  style: Theme.of(context).textTheme.titleLarge),
+              const SizedBox(height: 4),
+              Text(
+                'The Instant-Test entry card as it would sit among the home '
+                'tiles. Tap it to enter.',
+                style: TextStyle(color: scheme.onSurfaceVariant),
+              ),
+              const SizedBox(height: 16),
+              InstantTestCard(onTap: onEnter),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
