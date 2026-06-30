@@ -43,7 +43,7 @@ class RecoveryProbeService {
     }
 
     try {
-      await authCoordinator.restoreSession();
+      await authCoordinator.restoreSession(isRecovering: true);
       logger.d('[Recovery] Session restored');
     } catch (e) {
       logger.d('[Recovery] Session restore failed: $e');

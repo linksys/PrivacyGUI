@@ -19,8 +19,9 @@ class MockAuthNotifier extends AsyncNotifier<AuthState>
     with Mock
     implements AuthNotifier {
   @override
-  Future<AuthState> build() async =>
-      AuthState(loginType: LoginType.local, localPassword: 'test');
+  Future<AuthState> build() async => AuthState(
+        loginType: LoginType.local,
+      );
 }
 
 void main() {

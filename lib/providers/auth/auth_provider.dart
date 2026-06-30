@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:privacy_gui/constants/error_code.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
 import 'package:privacy_gui/core/connection/services/router_fingerprint_service.dart';
@@ -10,6 +9,7 @@ import 'package:privacy_gui/core/session/providers/session_provider.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
 import 'package:privacy_gui/core/usp/providers/usp_auth_coordinator.dart';
+import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/providers/auth/auth_service.dart';
 import 'package:privacy_gui/providers/auth/auth_state.dart';
 import 'package:privacy_gui/providers/auth/auth_types.dart';
@@ -44,32 +44,21 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       // synchronous state change would trigger provider notifications that
       // cause a !_dirty assertion in ProviderScope.
       state = await AsyncValue.guard(() async {
-        // Determine login type from stored credentials
-        final loginTypeResult = await _authService.getStoredLoginType();
-        final loginType = loginTypeResult.when(
-          success: (type) => type,
-          failure: (_) => LoginType.none,
-        );
+        // Try to restore USP session from stored token (sessionStorage)
+        final coordinator = ref.read(uspAuthCoordinatorProvider);
+        await coordinator.restoreSession();
 
-        // Get stored local password
-        final passwordResult = await _authService.getStoredLocalPassword();
-        final localPassword = passwordResult.when(
-          success: (p) => p,
-          failure: (_) => null,
-        );
+        // Determine login type based on whether session was restored
+        final isAuthenticated =
+            ref.read(uspClientProvider)?.isAuthenticated ?? false;
+        final loginType = isAuthenticated ? LoginType.local : LoginType.none;
 
-        logger.d(
-            '[Auth]init: hasPassword=${localPassword != null}, loginType=$loginType');
-
-        // Restore USP session on page reload / app restart (local login only)
-        if (loginType == LoginType.local) {
-          await ref.read(uspAuthCoordinatorProvider).restoreSession();
-        }
+        logger.d('[Auth]init: isAuthenticated=$isAuthenticated, '
+            'loginType=$loginType');
 
         return AuthState(
           localPasswordHint: state.value?.localPasswordHint,
           loginType: loginType,
-          localPassword: localPassword,
         );
       });
       // AsyncValue.guard never throws — it converts errors to AsyncError.
@@ -89,6 +78,9 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   }
 
   /// Performs local login via USP.
+  ///
+  /// Password is used for authentication only — never stored.
+  /// Session token is persisted by [UspAuthCoordinator] for page reload recovery.
   Future localLogin(
     String password, {
     bool guardError = true,
@@ -98,9 +90,6 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     try {
       final uspCoordinator = ref.read(uspAuthCoordinatorProvider);
       await uspCoordinator.tryUspLogin(password);
-
-      await const FlutterSecureStorage()
-          .write(key: pLocalPassword, value: password);
       logger.d('[Auth]: localLogin: USP login succeeded');
 
       // Fetch device info and store fingerprint while auth stays in loading —
@@ -110,7 +99,6 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
           .fetchDeviceInfoAndInitializeServices();
 
       state = AsyncValue.data(previousState.copyWith(
-        localPassword: password,
         loginType: LoginType.local,
       ));
     } catch (e, st) {
@@ -164,24 +152,16 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     );
   }
 
-  /// Persists local credentials without attempting USP login.
+  /// Sets auth state to local login without attempting USP login.
   ///
-  /// Use this when the USP session is already established (e.g., PnP flow)
-  /// and you only need to save credentials for future session restore.
-  Future<void> persistLocalCredentials(String password) async {
+  /// Use this when the USP session is already established (e.g., PnP flow).
+  /// Token persistence is handled by [UspAuthCoordinator] automatically.
+  void markAsLocalLogin() {
     final previousState = state.value ?? AuthState.empty();
-    state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() async {
-      // Store password for session restore
-      await const FlutterSecureStorage()
-          .write(key: pLocalPassword, value: password);
-      logger.d('[Auth]: persistLocalCredentials: credentials saved');
-      return previousState.copyWith(
-        localPassword: password,
-        loginType: LoginType.local,
-      );
-    });
-    logger.d('[Auth]: persistLocalCredentials: done, state=$state');
+    state = AsyncValue.data(previousState.copyWith(
+      loginType: LoginType.local,
+    ));
+    logger.d('[Auth]: markAsLocalLogin: done');
   }
 
   /// Sets the login type directly without performing login.

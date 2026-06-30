@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/core/usp/providers/usp_auth_coordinator.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/page/admin/providers/time_data_provider.dart';
 import 'package:privacy_gui/page/admin/providers/usp_admin_state.dart';
@@ -43,6 +44,12 @@ class UspAdminNotifier extends AutoDisposeAsyncNotifier<UspAdminState> {
           newPassword: newPassword,
         );
       });
+
+      // Re-authenticate with new password to get a fresh token.
+      // The old token may be invalidated by the router after password change.
+      await ref
+          .read(uspAuthCoordinatorProvider)
+          .reloginWithNewPassword(newPassword);
     } on ServiceError catch (e) {
       logger.e('[USP][Admin]: Password update failed', error: e);
       rethrow;

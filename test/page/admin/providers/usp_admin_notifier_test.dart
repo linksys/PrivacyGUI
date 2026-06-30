@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
+import 'package:privacy_gui/core/usp/providers/usp_auth_coordinator.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
@@ -15,6 +16,8 @@ class MockUspClient extends Mock implements UspClient {}
 
 class MockUspAdminService extends Mock implements UspAdminService {}
 
+class MockUspAuthCoordinator extends Mock implements UspAuthCoordinator {}
+
 /// Test-only time data notifier returning canned data.
 class _TestTimeDataNotifier extends TimeDataNotifier {
   final TimeData _data;
@@ -27,6 +30,7 @@ class _TestTimeDataNotifier extends TimeDataNotifier {
 void main() {
   late MockUspClient mockUsp;
   late MockUspAdminService mockAdminService;
+  late MockUspAuthCoordinator mockAuthCoordinator;
   late _TestTimeDataNotifier testTimeNotifier;
 
   const testAdmin = AdminUserUIModel(
@@ -49,9 +53,12 @@ void main() {
   setUp(() {
     mockUsp = MockUspClient();
     mockAdminService = MockUspAdminService();
+    mockAuthCoordinator = MockUspAuthCoordinator();
     testTimeNotifier = _TestTimeDataNotifier(testTimeData);
 
     when(() => mockUsp.isAuthenticated).thenReturn(true);
+    when(() => mockAuthCoordinator.reloginWithNewPassword(any()))
+        .thenAnswer((_) async {});
   });
 
   ProviderContainer createContainer() {
@@ -61,6 +68,7 @@ void main() {
         uspAdminServiceProvider.overrideWithValue(mockAdminService),
         uspMutationLockProvider.overrideWithValue(UspMutationLock()),
         timeDataProvider.overrideWith(() => testTimeNotifier),
+        uspAuthCoordinatorProvider.overrideWithValue(mockAuthCoordinator),
       ],
     );
     return container;
