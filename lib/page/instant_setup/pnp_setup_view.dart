@@ -187,9 +187,6 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
     final isNightModeSupport = serviceHelper.isSupportLedMode(services);
     // Show YourNetworkStep when unconfigured OR not pre-paired (AutoParent case)
     final showYourNetwork = _isUnconfigured || !_isPrePaired;
-    // Determine if this is the last step before YourNetworkStep
-    final isLastBeforeYourNetwork =
-        !isGuestWiFiSupport && !isNightModeSupport && !showYourNetwork;
     // Log PnP state for debugging
     final autoConfigData = ref
         .read(pnpProvider.notifier)
@@ -221,13 +218,17 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
           YourNetworkStep(saveChanges: _confirmAddedNodes),
         ],
       (false, false, true) => [
+          // AutoParent case: configured but not pre-paired, show YourNetwork
+          // Must save before YourNetwork to ensure smart mode = master
           PersonalWiFiStep(
-              saveChanges:
-                  !isGuestWiFiSupport && !isNightModeSupport ? null : null),
+              saveChanges: !isGuestWiFiSupport && !isNightModeSupport
+                  ? _saveChanges
+                  : null),
           if (isGuestWiFiSupport)
-            GuestWiFiStep(saveChanges: !isNightModeSupport ? null : null),
-          if (isNightModeSupport) NightModeStep(saveChanges: null),
-          YourNetworkStep(saveChanges: _saveChanges),
+            GuestWiFiStep(
+                saveChanges: !isNightModeSupport ? _saveChanges : null),
+          if (isNightModeSupport) NightModeStep(saveChanges: _saveChanges),
+          YourNetworkStep(saveChanges: _confirmAddedNodes),
         ],
       (true, false, _) => [
           PersonalWiFiStep(),
@@ -237,15 +238,11 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
           YourNetworkStep(saveChanges: _confirmAddedNodes),
         ],
       _ => [
-          PersonalWiFiStep(
-              saveChanges: isLastBeforeYourNetwork ? _saveChanges : null),
-          if (isGuestWiFiSupport)
-            GuestWiFiStep(
-                saveChanges: !isNightModeSupport && !showYourNetwork
-                    ? _saveChanges
-                    : null),
-          if (isNightModeSupport)
-            NightModeStep(saveChanges: !showYourNetwork ? _saveChanges : null),
+          // Configured + PrePaired: no YourNetwork step
+          // WiFi steps have no saveChanges - saving is handled by onLastStep
+          PersonalWiFiStep(),
+          if (isGuestWiFiSupport) GuestWiFiStep(),
+          if (isNightModeSupport) NightModeStep(),
         ],
     };
   }
