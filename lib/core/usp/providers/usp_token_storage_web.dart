@@ -2,6 +2,8 @@
 import 'dart:js_interop';
 import 'dart:js_interop_unsafe';
 
+import 'package:privacy_gui/core/utils/logger.dart';
+
 import 'usp_token_storage.dart';
 
 /// Creates a Web-based token storage using sessionStorage.
@@ -16,7 +18,8 @@ class _WebTokenStorage implements UspTokenStorage {
     try {
       _sessionStorage?.setItem(_key, token);
     } catch (e) {
-      // sessionStorage may be unavailable (private browsing, etc.)
+      // sessionStorage may be unavailable (private browsing, quota exceeded, etc.)
+      logger.w('[UspTokenStorage]: save failed: $e');
     }
   }
 
@@ -25,6 +28,7 @@ class _WebTokenStorage implements UspTokenStorage {
     try {
       return _sessionStorage?.getItem(_key);
     } catch (e) {
+      logger.w('[UspTokenStorage]: load failed: $e');
       return null;
     }
   }
@@ -34,7 +38,7 @@ class _WebTokenStorage implements UspTokenStorage {
     try {
       _sessionStorage?.removeItem(_key);
     } catch (e) {
-      // Ignore errors
+      logger.w('[UspTokenStorage]: clear failed: $e');
     }
   }
 
