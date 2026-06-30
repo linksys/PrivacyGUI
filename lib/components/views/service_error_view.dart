@@ -16,10 +16,18 @@ class ServiceErrorView extends StatelessWidget {
   /// Called when the user taps retry (e.g. re-fetch with forceRemote).
   final VoidCallback onRetry;
 
+  /// Optional secondary action shown as a text button below retry
+  /// (e.g. "Log out" as an escape hatch when a page cannot load).
+  /// Both [secondaryLabel] and [onSecondary] must be provided to show it.
+  final String? secondaryLabel;
+  final VoidCallback? onSecondary;
+
   const ServiceErrorView({
     super.key,
     required this.error,
     required this.onRetry,
+    this.secondaryLabel,
+    this.onSecondary,
   });
 
   @override
@@ -43,6 +51,13 @@ class ServiceErrorView extends StatelessWidget {
             label: loc(context).retry,
             onTap: onRetry,
           ),
+          if (secondaryLabel != null && onSecondary != null) ...[
+            AppGap.md(),
+            AppButton.text(
+              label: secondaryLabel!,
+              onTap: onSecondary,
+            ),
+          ],
         ],
       ),
     );

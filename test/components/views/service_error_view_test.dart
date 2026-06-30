@@ -73,5 +73,35 @@ void main() {
 
       expect(tapped, 1);
     });
+
+    testWidgets('does not show a secondary action by default', (tester) async {
+      await tester.pumpWidget(_wrap(ServiceErrorView(
+        error: const NetworkError(),
+        onRetry: () {},
+      )));
+      await tester.pumpAndSettle();
+
+      final en = lookupAppLocalizations(const Locale('en'));
+      expect(find.text(en.logout), findsNothing);
+    });
+
+    testWidgets('shows and invokes the secondary action when provided',
+        (tester) async {
+      var secondary = 0;
+      await tester.pumpWidget(_wrap(ServiceErrorView(
+        error: const NetworkError(),
+        onRetry: () {},
+        secondaryLabel: lookupAppLocalizations(const Locale('en')).logout,
+        onSecondary: () => secondary++,
+      )));
+      await tester.pumpAndSettle();
+
+      final en = lookupAppLocalizations(const Locale('en'));
+      expect(find.text(en.logout), findsOneWidget);
+      await tester.tap(find.text(en.logout));
+      await tester.pumpAndSettle();
+
+      expect(secondary, 1);
+    });
   });
 }
