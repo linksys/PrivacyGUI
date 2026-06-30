@@ -15,7 +15,15 @@ import 'package:privacygui_widgets/widgets/card/card.dart';
 class OverviewTab extends ConsumerStatefulWidget {
   final VoidCallback? onViewClients;
   final void Function(int flowIndex)? onNavigateToFlow;
-  const OverviewTab({super.key, this.onViewClients, this.onNavigateToFlow});
+  /// When false, the in-body "Something else?" symptom cards are hidden — the
+  /// single-page host renders them as a top nav strip instead.
+  final bool showProblemCards;
+  const OverviewTab({
+    super.key,
+    this.onViewClients,
+    this.onNavigateToFlow,
+    this.showProblemCards = true,
+  });
 
   @override
   ConsumerState<OverviewTab> createState() => _OverviewTabState();
@@ -92,6 +100,7 @@ class _OverviewTabState extends ConsumerState<OverviewTab> {
             onAction: _handleAction,
             onViewClients: widget.onViewClients,
             onNavigateToFlow: widget.onNavigateToFlow,
+            showProblemCards: widget.showProblemCards,
             hasRestarted: state.hasRestartedThisSession,
           ),
           if (state.recentPriorRestart &&
@@ -566,6 +575,7 @@ class _StatusCard extends StatelessWidget {
   final Future<void> Function(String actionKey) onAction;
   final VoidCallback? onViewClients;
   final void Function(int flowIndex)? onNavigateToFlow;
+  final bool showProblemCards;
   final bool hasRestarted;
 
   const _StatusCard({
@@ -577,6 +587,7 @@ class _StatusCard extends StatelessWidget {
     required this.onAction,
     this.onViewClients,
     this.onNavigateToFlow,
+    this.showProblemCards = true,
     this.hasRestarted = false,
   });
 
@@ -639,8 +650,9 @@ class _StatusCard extends StatelessWidget {
               ),
             ]),
             const SizedBox(height: 16),
-            _problemCards(context,
-                'Still having a problem? Tell us what\'s happening and we\'ll help:'),
+            if (showProblemCards)
+              _problemCards(context,
+                  'Still having a problem? Tell us what\'s happening and we\'ll help:'),
             _CheckResultsExpand(
               state: state,
               expanded: checksExpanded,
@@ -779,10 +791,12 @@ class _StatusCard extends StatelessWidget {
 
           // U-01: keep the Fix-flow entry cards reachable even when a finding is
           // shown — the customer's problem may differ from what we detected.
-          const Divider(height: 24),
-          _problemCards(context,
-              'Something else? Tell us what\'s happening and we\'ll help:'),
-          const SizedBox(height: 8),
+          if (showProblemCards) ...[
+            const Divider(height: 24),
+            _problemCards(context,
+                'Something else? Tell us what\'s happening and we\'ll help:'),
+            const SizedBox(height: 8),
+          ],
 
           _CheckResultsExpand(
             state: state,

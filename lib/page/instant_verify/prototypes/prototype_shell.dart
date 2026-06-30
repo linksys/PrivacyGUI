@@ -176,6 +176,8 @@ class _SinglePageState extends ConsumerState<_SinglePage> {
     final page = OverviewTab(
       onViewClients: () {},
       onNavigateToFlow: _launch,
+      // Cards now live in the top nav strip — hide the in-body duplicates.
+      showProblemCards: false,
     );
 
     return Column(
@@ -201,6 +203,9 @@ class _SinglePageState extends ConsumerState<_SinglePage> {
             ],
           ),
         ),
+        // Picker cards as a top nav strip — "almost like navigation", but
+        // tapping one launches the workflow over this same page.
+        _PickerStrip(onLaunch: _launch),
         Expanded(
           child: Stack(
             children: [
@@ -220,6 +225,70 @@ class _SinglePageState extends ConsumerState<_SinglePage> {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Top "navigation" strip of symptom pickers. Each launches its workflow over
+/// the same single page (via [onLaunch] with the 0-indexed flow).
+class _PickerStrip extends StatelessWidget {
+  const _PickerStrip({required this.onLaunch});
+  final void Function(int flowIndex) onLaunch;
+
+  static const _items = <(IconData, String)>[
+    (Icons.wifi_off, "Internet\nisn't working"),
+    (Icons.speed, 'Internet\nis slow'),
+    (Icons.device_unknown, "Device won't\nconnect"),
+    (Icons.meeting_room_outlined, "Doesn't reach\na room"),
+    (Icons.sync_problem, 'Keeps\ncutting out'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Material(
+      color: scheme.surface,
+      elevation: 1,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              for (var i = 0; i < _items.length; i++)
+                Padding(
+                  padding: const EdgeInsets.only(right: 10),
+                  child: InkWell(
+                    onTap: () => onLaunch(i),
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      width: 132,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 10),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: scheme.outlineVariant),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(_items[i].$1, size: 20, color: scheme.primary),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(_items[i].$2,
+                                style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    height: 1.15)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
