@@ -136,7 +136,9 @@ class DashboardOrchestrator extends AsyncNotifier<DashboardOrchestratorState> {
     // Use isRecovering: true because we handle auth failure via NotAuthenticatedError
     // below — don't let restoreSession trigger onForceLogout (double navigation).
     if (!isRemoteAssistance && !usp.isAuthenticated) {
-      await ref.read(uspAuthCoordinatorProvider).restoreSession(isRecovering: true);
+      await ref
+          .read(uspAuthCoordinatorProvider)
+          .restoreSession(isRecovering: true);
       if (!usp.isAuthenticated) {
         throw const NotAuthenticatedError();
       }
