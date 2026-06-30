@@ -31,11 +31,21 @@ class PrototypeRoot extends StatelessWidget {
 }
 
 enum _Layout {
+  single('Single page'),
   protoA('A · 2-tab + glance'),
   protoB('B · Verify top-tab'),
   current('Current · 4-tab');
 
   const _Layout(this.label);
+  final String label;
+}
+
+/// How a fix workflow is presented when launched from a card on the single page.
+enum _LaunchMode {
+  overlay('Full-screen'),
+  sheet('Bottom sheet');
+
+  const _LaunchMode(this.label);
   final String label;
 }
 
@@ -47,7 +57,7 @@ class _PrototypeShell extends ConsumerStatefulWidget {
 }
 
 class _PrototypeShellState extends ConsumerState<_PrototypeShell> {
-  _Layout _layout = _Layout.protoA;
+  _Layout _layout = _Layout.single;
 
   @override
   void initState() {
@@ -85,11 +95,131 @@ class _PrototypeShellState extends ConsumerState<_PrototypeShell> {
         ),
       ),
       body: switch (_layout) {
+        _Layout.single => const _SinglePage(),
         _Layout.protoA => const _ProtoA(),
         _Layout.protoB => const _ProtoB(),
         // Current shipping shell — now reading the same mock data.
         _Layout.current => const InstantVerifyPivotView(),
       },
+    );
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════════
+// SINGLE PAGE — one Instant-Test page; fix workflows launch from its cards.
+// No Help tab. The page (OverviewTab) is home; a tapped card opens the
+// matching live workflow as an overlay or a bottom sheet, returning here when
+// done. Simplicity for the customer is the target: one page, shortest fix.
+// ════════════════════════════════════════════════════════════════════════
+
+class _SinglePage extends ConsumerStatefulWidget {
+  const _SinglePage();
+
+  @override
+  ConsumerState<_SinglePage> createState() => _SinglePageState();
+}
+
+class _SinglePageState extends ConsumerState<_SinglePage> {
+  _LaunchMode _mode = _LaunchMode.overlay;
+  // Active flow id (1-6) for the full-screen overlay; null = page only.
+  int? _overlayFlow;
+  final _overlayNotifier = ValueNotifier<int?>(null);
+  final _flowDevice = ValueNotifier<DiagnosticClient?>(null);
+
+  @override
+  void dispose() {
+    _overlayNotifier.dispose();
+    _flowDevice.dispose();
+    super.dispose();
+  }
+
+  /// OverviewTab hands us a 0-indexed symptom; flows are 1-indexed.
+  void _launch(int flowIndex) {
+    final flowId = flowIndex + 1;
+    switch (_mode) {
+      case _LaunchMode.overlay:
+        _overlayNotifier.value = flowId;
+        setState(() => _overlayFlow = flowId);
+      case _LaunchMode.sheet:
+        _openSheet(flowId);
+    }
+  }
+
+  void _closeOverlay() => setState(() => _overlayFlow = null);
+
+  void _openSheet(int flowId) {
+    final sheetFlow = ValueNotifier<int?>(flowId);
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (ctx) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.88,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        builder: (c, scroll) => SingleChildScrollView(
+          controller: scroll,
+          child: HelpMeFixItTab(
+            pendingFlowNotifier: sheetFlow,
+            pendingFlowDeviceNotifier: _flowDevice,
+            onExitToHome: () => Navigator.of(ctx).pop(),
+          ),
+        ),
+      ),
+    ).then((_) => sheetFlow.dispose());
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final page = OverviewTab(
+      onViewClients: () {},
+      onNavigateToFlow: _launch,
+    );
+
+    return Column(
+      children: [
+        // Our comparison control (prototype only) — how a workflow appears.
+        Container(
+          width: double.infinity,
+          color: scheme.surfaceContainerHighest,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: Row(
+            children: [
+              Text('Workflow opens as:',
+                  style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant)),
+              const SizedBox(width: 12),
+              SegmentedButton<_LaunchMode>(
+                segments: _LaunchMode.values
+                    .map((m) => ButtonSegment(value: m, label: Text(m.label)))
+                    .toList(),
+                selected: {_mode},
+                showSelectedIcon: false,
+                onSelectionChanged: (s) => setState(() => _mode = s.first),
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: Stack(
+            children: [
+              page,
+              if (_overlayFlow != null)
+                Positioned.fill(
+                  child: Material(
+                    color: scheme.surface,
+                    child: HelpMeFixItTab(
+                      pendingFlowNotifier: _overlayNotifier,
+                      pendingFlowDeviceNotifier: _flowDevice,
+                      onExitToHome: _closeOverlay,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

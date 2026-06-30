@@ -29,11 +29,17 @@ class HelpMeFixItTab extends ConsumerStatefulWidget {
   /// Carries the specific device selected in My Devices into the flow.
   final ValueNotifier<DiagnosticClient?>? pendingFlowDeviceNotifier;
 
+  /// Single-page mode: when set, finishing/backing out of a flow calls this
+  /// (return to the Instant-Test page) instead of falling back to the 6-card
+  /// menu. The host owns the menu; this widget only renders the active flow.
+  final VoidCallback? onExitToHome;
+
   const HelpMeFixItTab({
     super.key,
     this.pendingFlowNotifier,
     this.pendingFlowDeviceNotifier,
     this.onNavigateToMyDevices,
+    this.onExitToHome,
   });
 
   @override
@@ -86,6 +92,8 @@ class _HelpMeFixItTabState extends ConsumerState<HelpMeFixItTab> {
     _flowStepBackNotifier.value = null;
     _stepIndicatorNotifier.value = null;
     setState(() => _activeFlow = null);
+    // Single-page mode: hand control back to the host (the Instant-Test page).
+    widget.onExitToHome?.call();
   }
 
   void _handleShellBack() {
@@ -100,6 +108,8 @@ class _HelpMeFixItTabState extends ConsumerState<HelpMeFixItTab> {
   @override
   Widget build(BuildContext context) {
     if (_activeFlow == null) {
+      // Single-page host owns the menu — render nothing while idle.
+      if (widget.onExitToHome != null) return const SizedBox.shrink();
       return _FlowMenu(onSelect: _launchFlow);
     }
 
