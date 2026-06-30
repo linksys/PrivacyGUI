@@ -291,7 +291,8 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
           child: PnpStepper(
             steps: steps,
             stepperType: StepperType.horizontal,
-            onLastStep: _isUnconfigured ? null : _saveChanges,
+            // When showYourNetwork=true, saving is handled by step's saveChanges, not onLastStep
+            onLastStep: (_isUnconfigured || !_isPrePaired) ? null : _saveChanges,
             onStepChanged: ((index, step, controller) {
               _currentStep = step;
               _stepController = controller;
@@ -621,10 +622,10 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
                 onTap: () async {
                   logger.d('[PnP]: Tap Next to check the WiFi reconnection');
                   await testConnection(success: () async {
-                    final isUnconfigured =
-                        ref.read(pnpProvider).isRouterUnConfigured;
+                    // Use showYourNetwork to handle both Unconfigured and AutoParent
+                    final showYourNetwork = _isUnconfigured || !_isPrePaired;
                     logger.i(
-                        '[PnP]: The customized WiFi has been reconnected - $isUnconfigured');
+                        '[PnP]: The customized WiFi has been reconnected - isUnconfigured=$_isUnconfigured, isPrePaired=$_isPrePaired, showYourNetwork=$showYourNetwork');
                     final password = ref
                         .read(pnpProvider.notifier)
                         .getDefaultWiFiSettings()
@@ -633,17 +634,17 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
                     await ref
                         .read(pnpProvider.notifier)
                         .checkAdminPassword(password)
-                        .then((value) => isUnconfigured
+                        .then((value) => showYourNetwork
                             ? _stepController?.stepContinue()
                             : null);
-                    if (isUnconfigured) {
+                    if (showYourNetwork) {
                       setState(() {
                         _setupStep = _PnpSetupStep.config;
                         logger
-                            .d('[PnP]: WiFi reconnected. Setup step = config');
+                            .d('[PnP]: WiFi reconnected, showYourNetwork=true. Setup step = config');
                       });
                     } else {
-                      logger.d('[PnP]: WiFi reconnected. Setup step = fwCheck');
+                      logger.d('[PnP]: WiFi reconnected, showYourNetwork=false. Setup step = fwCheck');
                       _doFwUpdateCheck();
                     }
                   });
@@ -787,32 +788,34 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
       final err = error is ExceptionSavingChanges ? error.error : error;
       showSimpleSnackBar(context, 'Unexceped error! <$err}>');
     }, test: (error) => error is ExceptionSavingChanges).whenComplete(() async {
+      // Use showYourNetwork logic to handle both Unconfigured and AutoParent scenarios
+      final showYourNetwork = isUnconfigured || !_isPrePaired;
       logger.d(
-          '[PnP]: Save completed. isUnconfigured = $isUnconfigured, SetupStep = $_setupStep');
-      if (isUnconfigured) {
-        // if is unconfigured scenario and no need to reconnect to the router, continue add nodes flow
+          '[PnP]: Save completed. isUnconfigured = $isUnconfigured, isPrePaired = $_isPrePaired, showYourNetwork = $showYourNetwork, SetupStep = $_setupStep');
+      if (showYourNetwork) {
+        // Unconfigured or AutoParent: continue to YourNetwork step
         if (_setupStep != _PnpSetupStep.needReconnect) {
           _stepController?.stepContinue();
           setState(() {
             logger.d(
-                '[PnP]: The router is unconfigured and no need to reconnect. Setup step = config');
+                '[PnP]: showYourNetwork=true, no need to reconnect. Setup step = config');
             _setupStep = _PnpSetupStep.config;
           });
         }
       } else {
+        // Configured + PrePaired: go to WiFi ready page
         if (_setupStep != _PnpSetupStep.needReconnect) {
-          // if is configured scenario, go display WiFi page
           setState(() {
-            logger.d('[PnP]: The router is configured. Setup step = saved');
+            logger.d('[PnP]: showYourNetwork=false. Setup step = saved');
             _setupStep = _PnpSetupStep.saved;
           });
           await Future.delayed(const Duration(seconds: 3));
-          logger.d('[PnP]: The router is configured. Setup step = fwCheck');
+          logger.d('[PnP]: showYourNetwork=false. Setup step = fwCheck');
           _doFwUpdateCheck();
         } else {
           setState(() {
             logger.d(
-                '[PnP]: The router is configured but need to reconnect. Setup step = saved');
+                '[PnP]: showYourNetwork=false but need to reconnect. Setup step = saved');
             _setupStep = _PnpSetupStep.saved;
           });
           await Future.delayed(const Duration(seconds: 3));
