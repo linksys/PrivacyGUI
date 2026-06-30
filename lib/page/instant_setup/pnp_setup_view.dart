@@ -291,8 +291,9 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
           child: PnpStepper(
             steps: steps,
             stepperType: StepperType.horizontal,
-            // When showYourNetwork=true, saving is handled by step's saveChanges, not onLastStep
-            onLastStep: (_isUnconfigured || !_isPrePaired) ? null : _saveChanges,
+            // When showYourNetwork=true (except forceLogin), saving is handled by step's saveChanges, not onLastStep
+            // forceLogin + configured + !isPrePaired still needs onLastStep since no YourNetwork step
+            onLastStep: (_isUnconfigured || (!_forceLogin && !_isPrePaired)) ? null : _saveChanges,
             onStepChanged: ((index, step, controller) {
               _currentStep = step;
               _stepController = controller;
