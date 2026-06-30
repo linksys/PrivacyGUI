@@ -4,7 +4,7 @@
 **Status:** Active
 **Context:** Source of Truth for Architectural Discipline
 **Ratified:** 2025-12-09
-**Last Amended:** 2026-06-29
+**Last Amended:** 2026-06-30
 
 ## Preamble
 This document establishes the immutable principles governing the development process of the Linksys Flutter application. It serves as the architectural DNA of the system, ensuring consistency, simplicity, and quality across all implementations.
@@ -1258,8 +1258,7 @@ string, and it does so through one central mapper — never by stringifying the 
 - **Localize via `localizeServiceError(context, error)`** — the single mapper that
   switches on the sealed `ServiceError` and returns a localized message. Never show
   `'$e'`, `error.toString()`, `code`, or `detail` to the user (those are diagnostic).
-- **Fetch failure** → render the shared `ServiceErrorView` (state-based pages) or
-  call `localizeServiceError` inside `AsyncValue.when(error:)` (AsyncNotifier pages).
+- **Fetch failure** → render the shared `ServiceErrorView` (it localizes internally).
 - **Save failure** → `showFailedSnackBar(context, localizeServiceError(context, e))`.
 - **Adding a subtype** requires adding its localization to the mapper (the `sealed`
   switch enforces this at compile time) plus an ARB key.
@@ -1269,7 +1268,7 @@ string, and it does so through one central mapper — never by stringifying the 
 
 > **Full implementation guidance** — per-layer patterns, what to show vs. hide,
 > batch-failure handling, and a pre-PR checklist — lives in
-> `doc/error-handling-localization/error-handling-implementation-guide.md`.
+> `doc/error-handling/error-handling-implementation-guide.md`.
 > This Constitution states the principle; that guide is the how-to.
 
 ---
