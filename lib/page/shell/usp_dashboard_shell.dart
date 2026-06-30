@@ -94,7 +94,7 @@ class _UspDashboardShellState extends ConsumerState<UspDashboardShell> {
         title: loc(context).connectionLost,
         message:
             'Lost connection to the router. Attempting to reconnect automatically...',
-        successMessage: 'Reconnected to router',
+        successMessage: loc(context).reconnectedToRouter,
       );
     } finally {
       _recoveryDialogShowing = false;

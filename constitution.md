@@ -4,7 +4,7 @@
 **Status:** Active
 **Context:** Source of Truth for Architectural Discipline
 **Ratified:** 2025-12-09
-**Last Amended:** 2026-03-20
+**Last Amended:** 2026-06-29
 
 ## Preamble
 This document establishes the immutable principles governing the development process of the Linksys Flutter application. It serves as the architectural DNA of the system, ensuring consistency, simplicity, and quality across all implementations.
@@ -233,12 +233,11 @@ class DeviceInfo { ... }    // generated from Device.DeviceInfo.
 
 **3.3.5: Error Classes**
 ```dart
-// Naming pattern: [Type]Error (final class extending sealed base)
-sealed class AuthError { ... }
-
-final class InvalidCredentialsError extends AuthError { ... }
-final class NetworkError extends AuthError { ... }
-final class StorageError extends AuthError { ... }
+// Naming pattern: [Type]Error (final class extending the sealed ServiceError)
+// See Article XIII for the unified error hierarchy.
+final class InvalidCredentialsError extends ServiceError { ... }
+final class NetworkError extends ServiceError { ... }
+final class StorageError extends ServiceError { ... }
 ```
 
 **3.3.6: Result/Response Classes**
@@ -1028,7 +1027,7 @@ class WifiNotifier extends AsyncNotifier<WifiState> {
 |-------|------|------|
 | **Service layer** | Any underlying exception (for conversion) | The only place allowed to `catch (e)` |
 | **Provider layer** | `ServiceError` only | MUST NOT import or catch underlying exceptions |
-| **UI layer** | `ServiceError` only | Displays messages mapped from `ServiceError` types |
+| **UI layer** | `ServiceError` only | Localizes via the central `localizeServiceError` mapper (Section 13.6) |
 
 **Purpose**:
 - **Isolate data layer implementation**: When the underlying protocol changes (e.g., USP → something else), only the Service layer's conversion logic needs updating — Provider and UI layers are unaffected
@@ -1044,27 +1043,44 @@ class WifiNotifier extends AsyncNotifier<WifiState> {
 **Structure**:
 ```dart
 sealed class ServiceError implements Exception {
-  const ServiceError();
+  /// Diagnostic raw fault code (firmware 7xxx/9xxx, WASM 9999, codegen 9998…).
+  /// For logging/debugging only — `null` when there is no code.
+  final int? code;
+
+  /// Raw technical message (firmware text / WASM string). For logging/debugging.
+  /// Most subtypes derive their UI message from the type alone and ignore this;
+  /// fallback types like `UnexpectedError` may surface it.
+  final String? detail;
+
+  const ServiceError({this.code, this.detail});
 }
 
-// All error types extend ServiceError
-final class InvalidAdminPasswordError extends ServiceError {
-  const InvalidAdminPasswordError();
+// All error types extend ServiceError. Most carry no extra fields — the type
+// itself is the semantic. They pass code/detail through to the base.
+final class ResourceNotFoundError extends ServiceError {
+  const ResourceNotFoundError({super.code, super.detail});
 }
 
-final class InvalidResetCodeError extends ServiceError {
-  final int? attemptsRemaining;  // Can carry additional information
-  const InvalidResetCodeError({this.attemptsRemaining});
+final class NetworkError extends ServiceError {
+  const NetworkError({super.code, super.detail});
 }
 
+// Fallback for unmapped errors — the one type whose UI message can't be derived
+// from the type alone, so it may surface `detail`.
 final class UnexpectedError extends ServiceError {
   final Object? originalError;
-  final String? message;
-  const UnexpectedError({this.originalError, this.message});
+  const UnexpectedError({this.originalError, super.code, super.detail});
 }
 ```
 
-**Adding Error Types**: To add new error types, define them in `service_error.dart` following the `[ErrorType]Error` naming convention.
+**`code` / `detail` are diagnostic only**: they carry firmware/WASM technical
+context for logging and are NOT shown to users — the UI derives a localized
+message from the subtype (Section 13.6). `UnexpectedError` is the sole exception.
+
+**Adding Error Types**: define them in `service_error.dart` following the
+`[ErrorType]Error` naming convention. Because `ServiceError` is `sealed`, the
+central UI mapper (Section 13.6) emits a compile-time warning until the new
+subtype is given a localization.
 
 ---
 
@@ -1136,9 +1152,9 @@ Future<void> updatePassword(String newPassword) async {
   try {
     final svc = ref.read(wifiServiceProvider);
     await svc.updatePassword(newPassword);
-  } on InvalidAdminPasswordError {
-    // ✅ Handle known ServiceError subtype
-    state = AsyncError(const InvalidAdminPasswordError(), StackTrace.current);
+  } on InvalidInputError {
+    // ✅ Handle a known ServiceError subtype specially
+    state = AsyncError(const InvalidInputError(), StackTrace.current);
   } on ServiceError catch (e) {
     // ✅ Handle other ServiceErrors
     state = AsyncError(e, StackTrace.current);
@@ -1156,6 +1172,7 @@ import 'package:privacy_gui/core/errors/service_error.dart';
 
 // performFetch: catch ServiceError → return (null, errorStatus)
 // Do NOT rethrow — the mixin's fetch() handles null settings gracefully.
+// Store the TYPED ServiceError in state (NOT '$e') so the View can localize it.
 @override
 Future<(DmzSettings?, DmzStatus?)> performFetch({
   bool forceRemote = false,
@@ -1166,7 +1183,7 @@ Future<(DmzSettings?, DmzStatus?)> performFetch({
     return (settings, status);
   } on ServiceError catch (e) {
     logger.e('[USP][DMZ] Fetch failed', error: e);
-    return (null, DmzStatus(isLoading: false, errorMessage: '$e'));
+    return (null, DmzStatus(isLoading: false, error: e));  // typed, not '$e'
   }
 }
 
@@ -1229,6 +1246,31 @@ All USP error parsing and `ServiceError` mapping is centralized in a single util
 | Unrecognized | `UnexpectedError` |
 
 **Reference implementation**: `lib/page/dmz/services/usp_dmz_service.dart`
+
+---
+
+**Section 13.6: UI Layer Error Display**
+
+The UI layer is the **only** place that turns a `ServiceError` into a user-facing
+string, and it does so through one central mapper — never by stringifying the error.
+
+**Rules**:
+- **Localize via `localizeServiceError(context, error)`** — the single mapper that
+  switches on the sealed `ServiceError` and returns a localized message. Never show
+  `'$e'`, `error.toString()`, `code`, or `detail` to the user (those are diagnostic).
+- **Fetch failure** → render the shared `ServiceErrorView` (state-based pages) or
+  call `localizeServiceError` inside `AsyncValue.when(error:)` (AsyncNotifier pages).
+- **Save failure** → `showFailedSnackBar(context, localizeServiceError(context, e))`.
+- **Adding a subtype** requires adding its localization to the mapper (the `sealed`
+  switch enforces this at compile time) plus an ARB key.
+
+**Files**: `lib/components/localizations/service_error_localizations.dart` (mapper),
+`lib/components/views/service_error_view.dart` (shared fetch-failure widget).
+
+> **Full implementation guidance** — per-layer patterns, what to show vs. hide,
+> batch-failure handling, and a pre-PR checklist — lives in
+> `doc/error-handling-localization/error-handling-implementation-guide.md`.
+> This Constitution states the principle; that guide is the how-to.
 
 ---
 
