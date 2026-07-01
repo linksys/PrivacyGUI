@@ -435,6 +435,17 @@
   "changeNetworkSettingsTitle": "更改网络设置？",
   "changeRouterPassword": "更改路由器密码",
   "channelNumber": "信道编号",
+  "channelAutoRecommended": "Auto (recommended)",
+  "channelCurrentlyUsing": "Currently using: {channel}",
+  "@channelCurrentlyUsing": {
+    "placeholders": {
+      "channel": {
+        "type": "int"
+      }
+    }
+  },
+  "channelDfsSuffix": "· DFS",
+  "channelNoManualOptions": "No manual channels available for this band.",
   "channels": "信道",
   "checkConnectivityAndSpeed": "检查连接和速度",
   "checkForUpdates": "检查更新",

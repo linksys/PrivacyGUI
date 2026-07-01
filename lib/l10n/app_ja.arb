@@ -435,6 +435,17 @@
   "changeNetworkSettingsTitle": "ネットワーク設定を変更しますか？",
   "changeRouterPassword": "ルーターのパスワードを変更",
   "channelNumber": "チャンネル番号",
+  "channelAutoRecommended": "Auto (recommended)",
+  "channelCurrentlyUsing": "Currently using: {channel}",
+  "@channelCurrentlyUsing": {
+    "placeholders": {
+      "channel": {
+        "type": "int"
+      }
+    }
+  },
+  "channelDfsSuffix": "· DFS",
+  "channelNoManualOptions": "No manual channels available for this band.",
   "channels": "チャンネル",
   "checkConnectivityAndSpeed": "接続と速度を確認",
   "checkForUpdates": "更新を確認",

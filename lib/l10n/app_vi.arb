@@ -432,6 +432,17 @@
   "changeNetworkSettingsTitle": "Thay đổi cài đặt mạng?",
   "changeRouterPassword": "Đổi mật khẩu router",
   "channelNumber": "Số kênh",
+  "channelAutoRecommended": "Auto (recommended)",
+  "channelCurrentlyUsing": "Currently using: {channel}",
+  "@channelCurrentlyUsing": {
+    "placeholders": {
+      "channel": {
+        "type": "int"
+      }
+    }
+  },
+  "channelDfsSuffix": "· DFS",
+  "channelNoManualOptions": "No manual channels available for this band.",
   "channels": "Kênh",
   "checkConnectivityAndSpeed": "Kiểm tra kết nối và tốc độ",
   "checkForUpdates": "Kiểm tra cập nhật",

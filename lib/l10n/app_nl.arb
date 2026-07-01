@@ -434,6 +434,17 @@
   "changeNetworkSettingsTitle": "Netwerkinstellingen wijzigen?",
   "changeRouterPassword": "Routerwachtwoord wijzigen",
   "channelNumber": "Kanaalnummer",
+  "channelAutoRecommended": "Auto (recommended)",
+  "channelCurrentlyUsing": "Currently using: {channel}",
+  "@channelCurrentlyUsing": {
+    "placeholders": {
+      "channel": {
+        "type": "int"
+      }
+    }
+  },
+  "channelDfsSuffix": "· DFS",
+  "channelNoManualOptions": "No manual channels available for this band.",
   "channels": "Kanalen",
   "checkConnectivityAndSpeed": "Connectiviteit en snelheid controleren",
   "checkForUpdates": "Controleren op updates",

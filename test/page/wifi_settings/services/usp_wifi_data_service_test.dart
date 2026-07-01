@@ -193,6 +193,17 @@ void main() {
       expect(radio2.maxBitRate, 2400);
     });
 
+    test('AC7: enriches possibleChannels from PossibleChannels at fetch time',
+        () async {
+      _stubAllFetches(mockUsp);
+
+      final result = await svc.fetch();
+
+      // Radio 1 stub PossibleChannels = "1,6,11"; Radio 2 = "36,40,44,48".
+      expect(result.radioModels[0].possibleChannels, [1, 6, 11]);
+      expect(result.radioModels[1].possibleChannels, [36, 40, 44, 48]);
+    });
+
     test('handles empty collections', () async {
       when(() => mockUsp.get(any(), priority: any(named: 'priority')))
           .thenAnswer((_) async => <String, dynamic>{});

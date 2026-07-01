@@ -432,6 +432,17 @@
   "changeNetworkSettingsTitle": "Αλλαγή ρυθμίσεων δικτύου;",
   "changeRouterPassword": "Αλλαγή κωδικού πρόσβασης δρομολογητή",
   "channelNumber": "Αριθμός καναλιού",
+  "channelAutoRecommended": "Auto (recommended)",
+  "channelCurrentlyUsing": "Currently using: {channel}",
+  "@channelCurrentlyUsing": {
+    "placeholders": {
+      "channel": {
+        "type": "int"
+      }
+    }
+  },
+  "channelDfsSuffix": "· DFS",
+  "channelNoManualOptions": "No manual channels available for this band.",
   "channels": "Κανάλια",
   "checkConnectivityAndSpeed": "Έλεγχος συνδεσιμότητας και ταχύτητας",
   "checkForUpdates": "Έλεγχος για ενημερώσεις",

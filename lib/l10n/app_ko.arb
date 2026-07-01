@@ -432,6 +432,17 @@
   "changeNetworkSettingsTitle": "네트워크 설정을 변경하시겠습니까?",
   "changeRouterPassword": "라우터 암호 변경",
   "channelNumber": "채널 번호",
+  "channelAutoRecommended": "Auto (recommended)",
+  "channelCurrentlyUsing": "Currently using: {channel}",
+  "@channelCurrentlyUsing": {
+    "placeholders": {
+      "channel": {
+        "type": "int"
+      }
+    }
+  },
+  "channelDfsSuffix": "· DFS",
+  "channelNoManualOptions": "No manual channels available for this band.",
   "channels": "채널",
   "checkConnectivityAndSpeed": "연결 및 속도 확인",
   "checkForUpdates": "업데이트 확인",

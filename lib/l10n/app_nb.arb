@@ -434,6 +434,17 @@
   "changeNetworkSettingsTitle": "Endre nettverksinnstillinger?",
   "changeRouterPassword": "Endre ruterpassord",
   "channelNumber": "Kanalnummer",
+  "channelAutoRecommended": "Auto (recommended)",
+  "channelCurrentlyUsing": "Currently using: {channel}",
+  "@channelCurrentlyUsing": {
+    "placeholders": {
+      "channel": {
+        "type": "int"
+      }
+    }
+  },
+  "channelDfsSuffix": "· DFS",
+  "channelNoManualOptions": "No manual channels available for this band.",
   "channels": "Kanaler",
   "checkConnectivityAndSpeed": "Sjekk tilkobling og hastighet",
   "checkForUpdates": "Se etter oppdateringer",

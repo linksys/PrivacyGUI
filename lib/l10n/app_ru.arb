@@ -432,6 +432,17 @@
   "changeNetworkSettingsTitle": "Изменить сетевые настройки?",
   "changeRouterPassword": "Изменить пароль маршрутизатора",
   "channelNumber": "Номер канала",
+  "channelAutoRecommended": "Auto (recommended)",
+  "channelCurrentlyUsing": "Currently using: {channel}",
+  "@channelCurrentlyUsing": {
+    "placeholders": {
+      "channel": {
+        "type": "int"
+      }
+    }
+  },
+  "channelDfsSuffix": "· DFS",
+  "channelNoManualOptions": "No manual channels available for this band.",
   "channels": "Каналы",
   "checkConnectivityAndSpeed": "Проверить подключение и скорость",
   "checkForUpdates": "Проверить обновления",

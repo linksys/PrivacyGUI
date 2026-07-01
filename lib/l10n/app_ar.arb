@@ -435,6 +435,17 @@
   "changeNetworkSettingsTitle": "تغيير إعدادات الشبكة؟",
   "changeRouterPassword": "تغيير كلمة مرور جهاز التوجيه",
   "channelNumber": "رقم القناة",
+  "channelAutoRecommended": "Auto (recommended)",
+  "channelCurrentlyUsing": "Currently using: {channel}",
+  "@channelCurrentlyUsing": {
+    "placeholders": {
+      "channel": {
+        "type": "int"
+      }
+    }
+  },
+  "channelDfsSuffix": "· DFS",
+  "channelNoManualOptions": "No manual channels available for this band.",
   "channels": "القنوات",
   "checkConnectivityAndSpeed": "فحص الاتصال والسرعة",
   "checkForUpdates": "التحقق من التحديثات",
