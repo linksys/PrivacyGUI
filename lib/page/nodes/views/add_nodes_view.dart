@@ -24,9 +24,11 @@ import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
+import 'package:privacy_gui/page/nodes/providers/add_nodes_exception.dart';
 import 'package:privacy_gui/page/nodes/providers/add_nodes_provider.dart';
 import 'package:privacy_gui/page/nodes/views/light_different_color_modal.dart';
 import 'package:privacy_gui/page/nodes/views/light_info_tile.dart';
+import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 
 class AddNodesView extends ArgumentsConsumerStatefulView {
   const AddNodesView({
@@ -71,10 +73,13 @@ class _AddNodesViewState extends ConsumerState<AddNodesView> {
     }
   }
 
+  bool get _isFromPnp => widget.args['callback'] != null;
+
   Widget _resultView(AddNodesState state) {
     return StyledAppPageView(
       scrollable: true,
       title: loc(context).addNodes,
+      hideTopbar: _isFromPnp,
       child: (context, constraints) => AppBasicLayout(
           content: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -165,6 +170,7 @@ class _AddNodesViewState extends ConsumerState<AddNodesView> {
     return StyledAppPageView(
       scrollable: true,
       title: loc(context).addNodes,
+      hideTopbar: _isFromPnp,
       child: (context, constraints) => AppBasicLayout(
           content: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -192,11 +198,17 @@ class _AddNodesViewState extends ConsumerState<AddNodesView> {
             },
           ),
           const AppGap.large3(),
-          AppFilledButton(
+          AppFilledButtonWithLoading(
             loc(context).next,
-            onTap: () {
+            onTap: () async {
               logger.d('[AddNodes]: Start to search for more nodes');
-              ref.read(addNodesProvider.notifier).startAutoOnboarding();
+              try {
+                await ref.read(addNodesProvider.notifier).startAutoOnboarding();
+              } on ExceptionSmartConnectTimeout {
+                if (context.mounted) {
+                  showSimpleSnackBar(context, loc(context).generalError);
+                }
+              }
             },
           )
         ],

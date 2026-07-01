@@ -11,6 +11,7 @@ import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/bench_mark.dart';
 import 'package:privacy_gui/core/utils/devices.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/page/nodes/providers/add_nodes_exception.dart';
 import 'package:privacy_gui/page/nodes/providers/add_nodes_state.dart';
 
 final addNodesProvider =
@@ -70,13 +71,32 @@ class AddNodesNotifier extends AutoDisposeNotifier<AddNodesState> {
 
     ref.read(pollingProvider.notifier).stopPolling();
 
-    // final nodeSnapshot =
-    //     List<LinksysDevice>.from(ref.read(deviceManagerProvider).deviceList)
-    //         .toList();
-
-    // Commence the auto-onboarding process
+    // Commence the auto-onboarding process with retry logic for SmartConnect not ready
     final repo = ref.read(routerRepositoryProvider);
-    await repo.send(JNAPAction.startBlueboothAutoOnboarding, auth: true);
+    const maxRetries = 20;
+    const retryDelay = Duration(seconds: 3);
+
+    for (var attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        await repo.send(JNAPAction.startBlueboothAutoOnboarding, auth: true);
+        logger.d(
+            '[AddNodes]: StartBluetoothAutoOnboarding succeeded on attempt $attempt');
+        break;
+      } on JNAPError catch (e) {
+        if (e.result == 'ErrorSmartConnectNotReady') {
+          logger.d(
+              '[AddNodes]: SmartConnect not ready, attempt $attempt/$maxRetries');
+          if (attempt == maxRetries) {
+            logger.e(
+                '[AddNodes]: SmartConnect not ready after $maxRetries attempts');
+            throw ExceptionSmartConnectTimeout();
+          }
+          await Future.delayed(retryDelay);
+        } else {
+          rethrow;
+        }
+      }
+    }
 
     bool onboardingProceed = false;
     // For AutoOnboarding 2 service, there has no deviceOnboardingStatus
