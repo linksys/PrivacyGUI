@@ -279,22 +279,9 @@ class NetworkRow extends StatelessWidget {
 class _GuestBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.sm,
-        vertical: 2,
-      ),
-      decoration: BoxDecoration(
-        color: colorScheme.secondary
-            .withValues(alpha: BlockConstants.badgeBackgroundAlpha),
-        borderRadius: BorderRadius.circular(AppSpacing.xs),
-      ),
-      child: AppText.labelSmall(
-        'Guest',
-        color: colorScheme.secondary,
-      ),
+    return AppBadge(
+      label: 'Guest',
+      color: Theme.of(context).colorScheme.secondary,
     );
   }
 }
@@ -306,29 +293,9 @@ class _ShareButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(AppSpacing.sm),
-        child: Container(
-          padding: const EdgeInsets.all(AppSpacing.sm),
-          decoration: BoxDecoration(
-            color: colorScheme.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(AppSpacing.sm),
-            border: Border.all(
-                color: colorScheme.outline
-                    .withValues(alpha: BlockConstants.borderAlpha)),
-          ),
-          child: Icon(
-            Icons.qr_code_2,
-            size: 24,
-            color: colorScheme.onSurface,
-          ),
-        ),
-      ),
+    return AppIconButton(
+      icon: AppIcon.font(Icons.qr_code_2, size: 24),
+      onTap: onTap,
     );
   }
 }
@@ -345,18 +312,9 @@ class ProtocolBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: colorScheme.primaryContainer,
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: AppText.labelSmall(
-        protocol,
-        color: colorScheme.onPrimaryContainer,
-      ),
+    return AppBadge(
+      label: protocol,
+      color: Theme.of(context).colorScheme.primary,
     );
   }
 }

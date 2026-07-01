@@ -39,7 +39,7 @@ class UspDeviceInfoCard extends ConsumerWidget {
 
     return DashboardCardTemplate(
       title: loc(context).deviceInformation,
-      footer: masterNode != null
+      footer: masterNode != null && masterNode.deviceId.isNotEmpty
           ? _buildNodeDetailFooter(context, masterNode.deviceId)
           : null,
       content: Column(

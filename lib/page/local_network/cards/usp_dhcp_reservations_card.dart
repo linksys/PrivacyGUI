@@ -72,7 +72,7 @@ class UspDhcpReservationsCard extends ConsumerWidget {
       DhcpReservationUIModel reservation, bool isLoading) {
     return ToggleRow(
       value: reservation.enable,
-      onChanged: isLoading
+      onChanged: isLoading || reservation.instancePath == null
           ? null
           : (value) => performUspMutation(
                 context,
