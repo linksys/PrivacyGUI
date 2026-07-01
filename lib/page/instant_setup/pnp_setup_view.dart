@@ -206,20 +206,9 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
         'isNightModeSupport=$isNightModeSupport');
     // Need a common way to figure out which step to save changes
     return switch ((_forceLogin, _isUnconfigured, showYourNetwork)) {
-      (false, true, _) => [
-          PersonalWiFiStep(
-              saveChanges: !isGuestWiFiSupport && !isNightModeSupport
-                  ? _saveChanges
-                  : null),
-          if (isGuestWiFiSupport)
-            GuestWiFiStep(
-                saveChanges: !isNightModeSupport ? _saveChanges : null),
-          if (isNightModeSupport) NightModeStep(saveChanges: _saveChanges),
-          YourNetworkStep(saveChanges: _confirmAddedNodes),
-        ],
-      (false, false, true) => [
-          // AutoParent case: configured but not pre-paired, show YourNetwork
-          // Must save before YourNetwork to ensure smart mode = master
+      // Unconfigured and AutoParent share the same step assembly:
+      // save at last WiFi step before YourNetwork to ensure smart mode = master
+      (false, _, true) => [
           PersonalWiFiStep(
               saveChanges: !isGuestWiFiSupport && !isNightModeSupport
                   ? _saveChanges
