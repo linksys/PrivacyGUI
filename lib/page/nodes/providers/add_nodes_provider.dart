@@ -69,36 +69,38 @@ class AddNodesNotifier extends AutoDisposeNotifier<AddNodesState> {
     final benchMark = BenchMarkLogger(name: 'AutoOnboarding');
     benchMark.start();
 
-    ref.read(pollingProvider.notifier).stopPolling();
+    final polling = ref.read(pollingProvider.notifier);
+    polling.stopPolling();
 
-    // Commence the auto-onboarding process with retry logic for SmartConnect not ready
-    final repo = ref.read(routerRepositoryProvider);
-    const maxRetries = 20;
-    const retryDelay = Duration(seconds: 3);
+    try {
+      // Commence the auto-onboarding process with retry logic for SmartConnect not ready
+      final repo = ref.read(routerRepositoryProvider);
+      const maxRetries = 20;
+      const retryDelay = Duration(seconds: 3);
 
-    for (var attempt = 1; attempt <= maxRetries; attempt++) {
-      try {
-        await repo.send(JNAPAction.startBlueboothAutoOnboarding, auth: true);
-        logger.d(
-            '[AddNodes]: StartBluetoothAutoOnboarding succeeded on attempt $attempt');
-        break;
-      } on JNAPError catch (e) {
-        if (e.result == 'ErrorSmartConnectNotReady') {
+      for (var attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+          await repo.send(JNAPAction.startBlueboothAutoOnboarding, auth: true);
           logger.d(
-              '[AddNodes]: SmartConnect not ready, attempt $attempt/$maxRetries');
-          if (attempt == maxRetries) {
-            logger.e(
-                '[AddNodes]: SmartConnect not ready after $maxRetries attempts');
-            throw ExceptionSmartConnectTimeout();
+              '[AddNodes]: StartBluetoothAutoOnboarding succeeded on attempt $attempt');
+          break;
+        } on JNAPError catch (e) {
+          if (e.result == 'ErrorSmartConnectNotReady') {
+            logger.d(
+                '[AddNodes]: SmartConnect not ready, attempt $attempt/$maxRetries');
+            if (attempt == maxRetries) {
+              logger.e(
+                  '[AddNodes]: SmartConnect not ready after $maxRetries attempts');
+              throw ExceptionSmartConnectTimeout();
+            }
+            await Future.delayed(retryDelay);
+          } else {
+            rethrow;
           }
-          await Future.delayed(retryDelay);
-        } else {
-          rethrow;
         }
       }
-    }
 
-    bool onboardingProceed = false;
+      bool onboardingProceed = false;
     // For AutoOnboarding 2 service, there has no deviceOnboardingStatus
     // only AutoOnboarding 3 service has deviceOnboardingStatus.
     bool anyOnboarded = false;
@@ -155,25 +157,27 @@ class AddNodesNotifier extends AutoDisposeNotifier<AddNodesState> {
       await for (final result in pollNodesBackhaulInfo(childNodes)) {
         backhaulInfoList = result;
       }
-    }
-    childNodes.sort((a, b) => a.isAuthority ? -1 : 1);
-    final polling = ref.read(pollingProvider.notifier);
-    await polling.forcePolling().then((value) => polling.startPolling());
-    // logger.d('[AddNodes]: Update state: nodesSnapshot = $nodeSnapshot');
-    logger.d('[AddNodes]: Update state: addedDevices = $addedDevices');
-    logger.d(
-        '[AddNodes]: Update state: onboardingProceed = $onboardingProceed, anyOnboarded=$anyOnboarded');
-    benchMark.end();
+      }
+      childNodes.sort((a, b) => a.isAuthority ? -1 : 1);
+      await polling.forcePolling();
+      // logger.d('[AddNodes]: Update state: nodesSnapshot = $nodeSnapshot');
+      logger.d('[AddNodes]: Update state: addedDevices = $addedDevices');
+      logger.d(
+          '[AddNodes]: Update state: onboardingProceed = $onboardingProceed, anyOnboarded=$anyOnboarded');
+      benchMark.end();
 
-    state = state.copyWith(
-      // nodesSnapshot: nodeSnapshot,
-      onboardingProceed: onboardingProceed,
-      anyOnboarded: anyOnboarded,
-      addedNodes: addedDevices,
-      childNodes: collectChildNodeData(childNodes, backhaulInfoList),
-      isLoading: false,
-      onboardedMACList: onboardedMACList,
-    );
+      state = state.copyWith(
+        // nodesSnapshot: nodeSnapshot,
+        onboardingProceed: onboardingProceed,
+        anyOnboarded: anyOnboarded,
+        addedNodes: addedDevices,
+        childNodes: collectChildNodeData(childNodes, backhaulInfoList),
+        isLoading: false,
+        onboardedMACList: onboardedMACList,
+      );
+    } finally {
+      polling.startPolling();
+    }
   }
 
   Stream<List<LinksysDevice>> pollForNodesOnline(List<String> onboardedMACList,

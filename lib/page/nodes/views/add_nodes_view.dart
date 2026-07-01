@@ -143,9 +143,20 @@ class _AddNodesViewState extends ConsumerState<AddNodesView> {
           const AppGap.medium(),
           AppTextButton.noPadding(
             loc(context).tryAgain,
-            onTap: () {
+            onTap: () async {
               logger.d('[AddNodes]: Retry to search for more nodes');
-              ref.read(addNodesProvider.notifier).startAutoOnboarding();
+              try {
+                await ref.read(addNodesProvider.notifier).startAutoOnboarding();
+              } on ExceptionSmartConnectTimeout {
+                if (context.mounted) {
+                  showFailedSnackBar(context, loc(context).generalError);
+                }
+              } catch (e) {
+                logger.e('[AddNodes]: Retry failed with error: $e');
+                if (context.mounted) {
+                  showFailedSnackBar(context, loc(context).generalError);
+                }
+              }
             },
           ),
           const AppGap.large3(),
@@ -206,7 +217,12 @@ class _AddNodesViewState extends ConsumerState<AddNodesView> {
                 await ref.read(addNodesProvider.notifier).startAutoOnboarding();
               } on ExceptionSmartConnectTimeout {
                 if (context.mounted) {
-                  showSimpleSnackBar(context, loc(context).generalError);
+                  showFailedSnackBar(context, loc(context).generalError);
+                }
+              } catch (e) {
+                logger.e('[AddNodes]: Start auto onboarding failed with error: $e');
+                if (context.mounted) {
+                  showFailedSnackBar(context, loc(context).generalError);
                 }
               }
             },
