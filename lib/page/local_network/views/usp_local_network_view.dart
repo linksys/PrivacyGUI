@@ -108,6 +108,7 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
         if (status.error != null) {
           return ServiceErrorView(
             error: status.error,
+            title: loc(context).failedToLoadSettings,
             onRetry: () => ref
                 .read(uspLocalNetworkProvider.notifier)
                 .fetch(forceRemote: true),

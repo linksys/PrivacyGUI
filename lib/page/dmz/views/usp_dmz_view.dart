@@ -76,6 +76,7 @@ class _UspDmzViewState extends ConsumerState<UspDmzView> {
         if (status.error != null) {
           return ServiceErrorView(
             error: status.error,
+            title: loc(context).failedToLoadSettings,
             onRetry: () =>
                 ref.read(uspDmzProvider.notifier).fetch(forceRemote: true),
           );

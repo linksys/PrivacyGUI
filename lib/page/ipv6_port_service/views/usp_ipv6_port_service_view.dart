@@ -46,6 +46,7 @@ class UspIpv6PortServiceView extends ConsumerWidget {
         if (status.error != null) {
           return ServiceErrorView(
             error: status.error,
+            title: loc(context).failedToLoadSettings,
             onRetry: () => ref
                 .read(uspIpv6PortServiceProvider.notifier)
                 .fetch(forceRemote: true),

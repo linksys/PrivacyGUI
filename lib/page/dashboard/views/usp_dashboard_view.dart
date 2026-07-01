@@ -54,6 +54,7 @@ class UspDashboardView extends ConsumerWidget {
                   ),
                   error: (error, stack) => ServiceErrorView(
                     error: error is ServiceError ? error : null,
+                    title: loc(context).failedToLoadSettings,
                     onRetry: () => ref
                         .read(dashboardOrchestratorProvider.notifier)
                         .refreshAll(),

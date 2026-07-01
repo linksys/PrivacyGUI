@@ -48,6 +48,7 @@ class _UspTopologyViewState extends ConsumerState<UspTopologyView> {
           loading: () => const Center(child: AppLoader()),
           error: (error, _) => ServiceErrorView(
             error: error is ServiceError ? error : null,
+            title: loc(context).unableToLoadTopology,
             onRetry: () => ref.invalidate(devicesDataProvider),
           ),
           data: (data) {

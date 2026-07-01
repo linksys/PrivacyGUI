@@ -36,6 +36,7 @@ class SpeedTestView extends ConsumerWidget {
           loading: () => const Center(child: AppLoader()),
           error: (error, _) => ServiceErrorView(
             error: error is ServiceError ? error : null,
+            title: loc(context).unableToLoadSpeedTest,
             onRetry: () => ref.invalidate(speedTestProvider),
           ),
           data: (state) => _buildContent(context, ref, state),

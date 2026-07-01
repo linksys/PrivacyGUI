@@ -53,6 +53,7 @@ class _DiagnosticManualToolsViewState
       loading: () => const Center(child: AppLoader()),
       error: (error, _) => ServiceErrorView(
         error: error is ServiceError ? error : null,
+        title: loc(context).unableToLoadDiagnostics,
         onRetry: () => ref.invalidate(manualToolsProvider),
       ),
       data: (state) => _buildContent(context, state),

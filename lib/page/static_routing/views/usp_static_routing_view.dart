@@ -43,6 +43,7 @@ class UspStaticRoutingView extends ConsumerWidget {
         if (status.error != null) {
           return ServiceErrorView(
             error: status.error,
+            title: loc(context).failedToLoadSettings,
             onRetry: () => ref
                 .read(uspStaticRoutingProvider.notifier)
                 .fetch(forceRemote: true),

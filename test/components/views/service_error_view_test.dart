@@ -28,22 +28,24 @@ Widget _wrap(Widget child) => MaterialApp(
 
 void main() {
   group('ServiceErrorView', () {
-    testWidgets('shows title, localized error detail, and retry when error set',
+    testWidgets('uses the provided title and shows localized detail + retry',
         (tester) async {
+      final en = lookupAppLocalizations(const Locale('en'));
       await tester.pumpWidget(_wrap(ServiceErrorView(
         error: const NetworkError(),
+        title: en.failedToLoadSettings,
         onRetry: () {},
       )));
       await tester.pumpAndSettle();
 
-      final en = lookupAppLocalizations(const Locale('en'));
       expect(find.text(en.failedToLoadSettings), findsOneWidget);
       // NetworkError → errorNetwork (the localized detail line).
       expect(find.text(en.errorNetwork), findsOneWidget);
       expect(find.text(en.retry), findsOneWidget);
     });
 
-    testWidgets('hides the detail line when error is null', (tester) async {
+    testWidgets('falls back to a neutral title when none is provided',
+        (tester) async {
       await tester.pumpWidget(_wrap(ServiceErrorView(
         error: null,
         onRetry: () {},
@@ -51,11 +53,26 @@ void main() {
       await tester.pumpAndSettle();
 
       final en = lookupAppLocalizations(const Locale('en'));
+      // Default title is the neutral errorUnexpected; retry still renders.
+      expect(find.text(en.errorUnexpected), findsOneWidget);
+      expect(find.text(en.retry), findsOneWidget);
+      // No error object → no separate detail line.
+      expect(find.text(en.errorNetwork), findsNothing);
+    });
+
+    testWidgets('hides the detail line when error is null', (tester) async {
+      final en = lookupAppLocalizations(const Locale('en'));
+      await tester.pumpWidget(_wrap(ServiceErrorView(
+        error: null,
+        title: en.failedToLoadSettings,
+        onRetry: () {},
+      )));
+      await tester.pumpAndSettle();
+
       // Title + retry still render; no error-detail strings present.
       expect(find.text(en.failedToLoadSettings), findsOneWidget);
       expect(find.text(en.retry), findsOneWidget);
       expect(find.text(en.errorNetwork), findsNothing);
-      expect(find.text(en.errorUnexpected), findsNothing);
     });
 
     testWidgets('invokes onRetry when the retry button is tapped',
