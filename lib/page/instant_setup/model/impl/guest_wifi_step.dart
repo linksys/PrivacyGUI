@@ -20,6 +20,9 @@ class GuestWiFiStep extends PnpStep {
   @override
   Future<void> onInit(WidgetRef ref) async {
     await super.onInit(ref);
+    // Disable default step advance when this step handles saveChanges,
+    // letting _saveChanges.whenComplete control the flow instead
+    canGoNext(saveChanges == null);
 
     _ssidEditController = TextEditingController();
     _passwordEditController = TextEditingController();
