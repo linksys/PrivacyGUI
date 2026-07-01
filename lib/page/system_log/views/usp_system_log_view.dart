@@ -32,6 +32,7 @@ class UspSystemLogView extends ConsumerWidget {
           loading: () => const Center(child: AppLoader()),
           error: (error, stack) => ServiceErrorView(
             error: error is ServiceError ? error : null,
+            title: loc(context).failedToLoadSettings,
             onRetry: () => ref.invalidate(uspSystemLogProvider),
           ),
           data: (logFiles) => _buildContent(context, logFiles),

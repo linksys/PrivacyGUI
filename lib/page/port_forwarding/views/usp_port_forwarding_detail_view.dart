@@ -129,6 +129,7 @@ class _UspPortForwardingDetailViewState
     if (status.error != null) {
       return ServiceErrorView(
         error: status.error,
+        title: loc(context).failedToLoadSettings,
         onRetry: () => ref
             .read(uspPortForwardingPageProvider.notifier)
             .fetch(forceRemote: true),

@@ -39,6 +39,7 @@ class InstantPrivacyView extends ConsumerWidget {
           loading: () => const Center(child: AppLoader()),
           error: (error, _) => ServiceErrorView(
             error: error is ServiceError ? error : null,
+            title: loc(context).failedToLoadSettings,
             onRetry: () => ref.invalidate(uspInstantPrivacyProvider),
           ),
           data: (state) => _buildContent(context, ref, state),

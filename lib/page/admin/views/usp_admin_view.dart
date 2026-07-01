@@ -49,6 +49,7 @@ class UspAdminView extends ConsumerWidget {
           ),
           error: (error, stack) => ServiceErrorView(
             error: error is ServiceError ? error : null,
+            title: loc(context).failedToLoadSettings,
             onRetry: () => ref.invalidate(uspAdminProvider),
           ),
           data: (state) => _buildContent(childContext, ref, state),

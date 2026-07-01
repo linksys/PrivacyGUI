@@ -47,6 +47,7 @@ class UspInternetSettingsView extends ConsumerWidget {
         if (state.status.error != null) {
           return ServiceErrorView(
             error: state.status.error,
+            title: loc(context).failedToLoadSettings,
             onRetry: () =>
                 ref.read(uspInternetSettingsProvider.notifier).fetch(),
           );
