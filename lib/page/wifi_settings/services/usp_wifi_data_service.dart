@@ -211,7 +211,7 @@ class UspWifiDataService {
       }).toList();
       return WifiRadioUIModel(
         instancePath: radio.instancePath,
-        band: radio.operatingFrequencyBand,
+        band: _normalizeBand(radio.operatingFrequencyBand),
         enable: radio.enable,
         transmitPower: radio.transmitPower,
         maxBitRate: radio.maxBitRate,
@@ -428,9 +428,12 @@ class UspWifiDataService {
       final trimmed = part.trim();
       if (trimmed.contains('-')) {
         final bounds = trimmed.split('-');
+        // Skip malformed range tokens (e.g. "1-2-3").
+        if (bounds.length != 2) continue;
         final start = int.tryParse(bounds[0].trim());
         final end = int.tryParse(bounds[1].trim());
         if (start != null && end != null) {
+          // Inverted ranges (start > end) naturally yield nothing.
           for (var i = start; i <= end; i++) {
             result.add(i);
           }
@@ -440,6 +443,10 @@ class UspWifiDataService {
         if (ch != null) result.add(ch);
       }
     }
+    // Drop non-positive channels: TR-181 PossibleChannels "0" is an
+    // auto/any sentinel, not a real channel, and channel 0 must never
+    // reach the dropdown or be sent to firmware.
+    result.removeWhere((ch) => ch <= 0);
     result.sort();
     return result;
   }
