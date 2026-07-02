@@ -102,25 +102,17 @@ class _WifiChannelDialogState extends State<WifiChannelDialog> {
             ],
           ),
           AppGap.lg(),
-          // The UI-kit AppDropdown only marks itself Semantics(enabled:false)
-          // when onChanged is null — its tap gesture stays wired, so the menu
-          // still opens (upstream bug linksys/privacyGUI-UI-kit#2). Wrap it in
-          // an IgnorePointer to truly block interaction when disabled, while
-          // keeping onChanged null for correct semantics.
-          IgnorePointer(
-            ignoring: !dropdownEnabled,
-            child: AppDropdown<int>(
-              items: items,
-              value: _selected,
-              label: loc(context).channel,
-              itemAsString: _labelFor,
-              // AC3: selecting Auto in the dropdown flips the switch back ON.
-              onChanged: dropdownEnabled
-                  ? (value) {
-                      if (value != null) setState(() => _selected = value);
-                    }
-                  : null,
-            ),
+          AppDropdown<int>(
+            items: items,
+            value: _selected,
+            label: loc(context).channel,
+            itemAsString: _labelFor,
+            // 2.26.1: onChanged==null disables the control (tap gesture gated). AC3.
+            onChanged: dropdownEnabled
+                ? (value) {
+                    if (value != null) setState(() => _selected = value);
+                  }
+                : null,
           ),
           AppGap.sm(),
           // Per mockup, always surface the channel the router is actually using

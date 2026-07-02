@@ -236,25 +236,12 @@ void main() {
       expect(dd.itemAsString!(36), '36');
     });
 
-    // Fix (#1023): the UI-kit AppDropdown leaves its tap gesture wired even
-    // when onChanged is null, so the consumer wraps it in an IgnorePointer to
-    // truly block interaction while Auto is ON. See upstream issue
-    // linksys/privacyGUI-UI-kit#2.
-    IgnorePointer dropdownGuard(WidgetTester t) {
-      // Our consumer-side guard is the closest IgnorePointer ancestor of the
-      // dropdown (Flutter may insert others higher up the tree).
-      return t
-          .widgetList<IgnorePointer>(
-            find.ancestor(
-              of: find.byType(AppDropdown<int>),
-              matching: find.byType(IgnorePointer),
-            ),
-          )
-          .first;
-    }
-
+    // Fix (#1023): UI-kit v2.26.1 gates the AppDropdown tap gesture when
+    // onChanged is null (app_dropdown.dart:138,183), so passing a null
+    // onChanged genuinely blocks interaction — no consumer-side IgnorePointer
+    // is needed. These tests prove the disabled *behavior*, not the widget tree.
     testWidgets(
-        'Fix#1: Auto ON => dropdown wrapped in IgnorePointer(ignoring:true)',
+        'Fix#1: Auto ON => dropdown disabled and its menu will not open',
         (t) async {
       await t.pumpWidget(host(
         _radio(channel: 36, autoChannelEnable: true),
@@ -262,18 +249,18 @@ void main() {
       ));
       await openDialog(t);
 
-      expect(dropdownGuard(t).ignoring, isTrue);
+      // Disabled: onChanged is null (2.26.1 gates the tap gesture on this).
+      final dd = t.widget<AppDropdown<int>>(find.byType(AppDropdown<int>));
+      expect(dd.onChanged, isNull);
 
       // The menu must not open when tapping the (disabled) dropdown.
       await t.tap(find.byType(AppDropdown<int>), warnIfMissed: false);
       await t.pumpAndSettle();
-      // Auto option label should not appear as an opened menu entry: value
-      // stays Auto and no manual channel option (e.g. '40') is tappable.
+      // No manual channel option (e.g. '40') becomes a tappable menu entry.
       expect(find.text('40'), findsNothing);
     });
 
-    testWidgets(
-        'Fix#1: Auto OFF => dropdown IgnorePointer(ignoring:false), interactive',
+    testWidgets('Fix#1: Auto OFF => dropdown is enabled and interactive',
         (t) async {
       await t.pumpWidget(host(
         _radio(channel: 36, autoChannelEnable: false),
@@ -281,11 +268,12 @@ void main() {
       ));
       await openDialog(t);
 
-      expect(dropdownGuard(t).ignoring, isFalse);
+      final dd = t.widget<AppDropdown<int>>(find.byType(AppDropdown<int>));
+      expect(dd.onChanged, isNotNull);
     });
 
     testWidgets(
-        'Fix#1: no manual channels => IgnorePointer(ignoring:true) locks dropdown',
+        'Fix#1: no manual channels => dropdown locked to Auto (disabled)',
         (t) async {
       await t.pumpWidget(host(
         _radio(
@@ -294,7 +282,8 @@ void main() {
       ));
       await openDialog(t);
 
-      expect(dropdownGuard(t).ignoring, isTrue);
+      final dd = t.widget<AppDropdown<int>>(find.byType(AppDropdown<int>));
+      expect(dd.onChanged, isNull);
     });
 
     testWidgets(
