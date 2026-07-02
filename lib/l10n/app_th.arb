@@ -432,6 +432,17 @@
   "changeNetworkSettingsTitle": "เปลี่ยนการตั้งค่าเครือข่ายหรือไม่",
   "changeRouterPassword": "เปลี่ยนรหัสผ่านเราเตอร์",
   "channelNumber": "หมายเลขช่องสัญญาณ",
+  "channelAutoRecommended": "Auto (recommended)",
+  "channelCurrentlyUsing": "Currently using: {channel}",
+  "@channelCurrentlyUsing": {
+    "placeholders": {
+      "channel": {
+        "type": "int"
+      }
+    }
+  },
+  "channelDfsSuffix": "· DFS",
+  "channelNoManualOptions": "No manual channels available for this band.",
   "channels": "ช่องสัญญาณ",
   "checkConnectivityAndSpeed": "ตรวจสอบการเชื่อมต่อและความเร็ว",
   "checkForUpdates": "ตรวจหาการอัปเดต",

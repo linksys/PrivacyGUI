@@ -434,6 +434,17 @@
   "changeNetworkSettingsTitle": "Ändra nätverksinställningar?",
   "changeRouterPassword": "Ändra routerlösenord",
   "channelNumber": "Kanalnummer",
+  "channelAutoRecommended": "Auto (recommended)",
+  "channelCurrentlyUsing": "Currently using: {channel}",
+  "@channelCurrentlyUsing": {
+    "placeholders": {
+      "channel": {
+        "type": "int"
+      }
+    }
+  },
+  "channelDfsSuffix": "· DFS",
+  "channelNoManualOptions": "No manual channels available for this band.",
   "channels": "Kanaler",
   "checkConnectivityAndSpeed": "Kontrollera anslutning och hastighet",
   "checkForUpdates": "Sök efter uppdateringar",

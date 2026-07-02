@@ -1186,6 +1186,17 @@
   "radios": "Radios",
   "portRules": "Port Rules",
   "channelNumber": "Channel number",
+  "channelAutoRecommended": "Auto (recommended)",
+  "channelCurrentlyUsing": "Currently using: {channel}",
+  "@channelCurrentlyUsing": {
+    "placeholders": {
+      "channel": {
+        "type": "int"
+      }
+    }
+  },
+  "channelDfsSuffix": "· DFS",
+  "channelNoManualOptions": "No manual channels available for this band.",
   "change": "Change",
   "builtInWidgets": "Built-in Widgets",
   "appWidgetCards": "App Widget Cards",

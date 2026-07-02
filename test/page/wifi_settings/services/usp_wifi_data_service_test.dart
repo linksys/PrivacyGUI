@@ -111,6 +111,39 @@ void _stubAllFetches(MockUspClient mockUsp) {
   });
 }
 
+/// Stubs fetches for a single 5 GHz radio whose `PossibleChannels` value is
+/// [possibleChannels]. Used to exercise `_parsePossibleChannels` (private) via
+/// the public `fetch()` entry point.
+void _stubRadioWithPossibleChannels(
+  MockUspClient mockUsp,
+  String possibleChannels,
+) {
+  when(() => mockUsp.get(any(), priority: any(named: 'priority')))
+      .thenAnswer((invocation) async {
+    final paths = invocation.positionalArguments[0] as List<String>;
+    final first = paths.isNotEmpty ? paths.first : '';
+    if (first.startsWith('Device.WiFi.Radio.')) {
+      return {
+        'Device.WiFi.Radio.1.Enable': true,
+        'Device.WiFi.Radio.1.Status': 'Up',
+        'Device.WiFi.Radio.1.Channel': 36,
+        'Device.WiFi.Radio.1.OperatingFrequencyBand': '5GHz',
+        'Device.WiFi.Radio.1.OperatingChannelBandwidth': '80MHz',
+        'Device.WiFi.Radio.1.PossibleChannels': possibleChannels,
+        'Device.WiFi.Radio.1.OperatingStandards': 'ax',
+        'Device.WiFi.Radio.1.SupportedStandards': 'a,n,ac,ax',
+        'Device.WiFi.Radio.1.TransmitPower': 100,
+        'Device.WiFi.Radio.1.MaxBitRate': 2400,
+        'Device.WiFi.Radio.1.AutoChannelEnable': false,
+        'Device.WiFi.Radio.1.IEEE80211hEnabled': false,
+        'Device.WiFi.Radio.1.SupportedOperatingChannelBandwidths':
+            'Auto,20MHz,40MHz,80MHz',
+      };
+    }
+    return <String, dynamic>{};
+  });
+}
+
 void main() {
   late MockUspClient mockUsp;
   late UspWifiDataService svc;
@@ -193,6 +226,17 @@ void main() {
       expect(radio2.maxBitRate, 2400);
     });
 
+    test('AC7: enriches possibleChannels from PossibleChannels at fetch time',
+        () async {
+      _stubAllFetches(mockUsp);
+
+      final result = await svc.fetch();
+
+      // Radio 1 stub PossibleChannels = "1,6,11"; Radio 2 = "36,40,44,48".
+      expect(result.radioModels[0].possibleChannels, [1, 6, 11]);
+      expect(result.radioModels[1].possibleChannels, [36, 40, 44, 48]);
+    });
+
     test('handles empty collections', () async {
       when(() => mockUsp.get(any(), priority: any(named: 'priority')))
           .thenAnswer((_) async => <String, dynamic>{});
@@ -202,6 +246,58 @@ void main() {
       expect(result.radioModels, isEmpty);
       expect(result.wifiClientMap, isEmpty);
       expect(result.connectionDetailMap, isEmpty);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // PossibleChannels parsing — range notation, sentinels, malformed tokens
+  // (W-3 / W-4). Exercises the private _parsePossibleChannels via fetch().
+  // -------------------------------------------------------------------------
+
+  group('PossibleChannels parsing', () {
+    test('expands mixed range + single notation ("1-3,6")', () async {
+      _stubRadioWithPossibleChannels(mockUsp, '1-3,6');
+
+      final result = await svc.fetch();
+
+      expect(result.radioModels.single.possibleChannels, [1, 2, 3, 6]);
+    });
+
+    test('expands full range notation ("1-13")', () async {
+      _stubRadioWithPossibleChannels(mockUsp, '1-13');
+
+      final result = await svc.fetch();
+
+      expect(
+        result.radioModels.single.possibleChannels,
+        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13],
+      );
+    });
+
+    test('inverted range ("11-1") degrades to empty without throwing',
+        () async {
+      _stubRadioWithPossibleChannels(mockUsp, '11-1');
+
+      final result = await svc.fetch();
+
+      expect(result.radioModels.single.possibleChannels, isEmpty);
+    });
+
+    test('filters out TR-181 "0" auto/any sentinel ("0,1,6,11")', () async {
+      _stubRadioWithPossibleChannels(mockUsp, '0,1,6,11');
+
+      final result = await svc.fetch();
+
+      expect(result.radioModels.single.possibleChannels, [1, 6, 11]);
+    });
+
+    test('skips malformed range token ("1-2-3") without throwing', () async {
+      _stubRadioWithPossibleChannels(mockUsp, '1-2-3');
+
+      final result = await svc.fetch();
+
+      // The malformed token yields nothing; parsing does not throw.
+      expect(result.radioModels.single.possibleChannels, isEmpty);
     });
   });
 }

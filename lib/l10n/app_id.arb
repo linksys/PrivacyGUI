@@ -432,6 +432,17 @@
   "changeNetworkSettingsTitle": "Ubah Setelan Jaringan?",
   "changeRouterPassword": "Ubah Kata Sandi Router",
   "channelNumber": "Nomor kanal",
+  "channelAutoRecommended": "Auto (recommended)",
+  "channelCurrentlyUsing": "Currently using: {channel}",
+  "@channelCurrentlyUsing": {
+    "placeholders": {
+      "channel": {
+        "type": "int"
+      }
+    }
+  },
+  "channelDfsSuffix": "· DFS",
+  "channelNoManualOptions": "No manual channels available for this band.",
   "channels": "Kanal",
   "checkConnectivityAndSpeed": "Periksa konektivitas dan kecepatan",
   "checkForUpdates": "Periksa Pembaruan",

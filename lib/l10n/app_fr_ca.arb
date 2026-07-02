@@ -434,6 +434,17 @@
   "changeNetworkSettingsTitle": "Modifier les paramètres réseau?",
   "changeRouterPassword": "Modifier le mot de passe du routeur",
   "channelNumber": "Numéro de canal",
+  "channelAutoRecommended": "Auto (recommended)",
+  "channelCurrentlyUsing": "Currently using: {channel}",
+  "@channelCurrentlyUsing": {
+    "placeholders": {
+      "channel": {
+        "type": "int"
+      }
+    }
+  },
+  "channelDfsSuffix": "· DFS",
+  "channelNoManualOptions": "No manual channels available for this band.",
   "channels": "Canaux",
   "checkConnectivityAndSpeed": "Vérifier la connectivité et la vitesse",
   "checkForUpdates": "Rechercher des mises à jour",
