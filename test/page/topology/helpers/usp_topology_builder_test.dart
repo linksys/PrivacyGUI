@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/page/_shared/utils/device_classifier.dart';
 import 'package:privacy_gui/core/utils/oui_lookup.dart';
+import 'package:privacy_gui/core/utils/wifi.dart';
 import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
 import 'package:privacy_gui/page/topology/models/node_ui_model.dart';
@@ -460,6 +461,56 @@ void main() {
           topo.nodes.firstWhere((n) => n.type == MeshNodeType.client);
       expect(client.level, 0.0);
       expect(client.linkQuality, LinkQuality.unknown);
+    });
+
+    test('LinkQuality mapping is consistent with getWifiSignalLevel SSoT', () {
+      // Defense test: ensures topology LinkQuality stays in sync with
+      // getWifiSignalLevel() from wifi.dart — the single source of truth.
+      // If this test fails, someone changed the mapping without updating
+      // both places, causing #1024-like inconsistencies.
+
+      // Test boundary RSSI values for each threshold
+      const testCases = [
+        // (rssi, expectedLevel, expectedLinkQuality)
+        (-64, NodeSignalLevel.excellent, LinkQuality.excellent), // >= -65
+        (-65, NodeSignalLevel.excellent, LinkQuality.excellent), // exactly -65
+        (-66, NodeSignalLevel.good, LinkQuality.good), // < -65, >= -71
+        (-71, NodeSignalLevel.good, LinkQuality.good), // exactly -71
+        (-72, NodeSignalLevel.fair, LinkQuality.fair), // < -71, >= -78
+        (-78, NodeSignalLevel.fair, LinkQuality.fair), // exactly -78
+        (-79, NodeSignalLevel.poor, LinkQuality.unknown), // < -78
+        (-90, NodeSignalLevel.poor, LinkQuality.unknown), // very weak
+      ];
+
+      for (final (rssi, expectedSignalLevel, expectedLinkQuality)
+          in testCases) {
+        // Verify getWifiSignalLevel returns expected level
+        final actualSignalLevel = getWifiSignalLevel(rssi);
+        expect(actualSignalLevel, expectedSignalLevel,
+            reason: 'getWifiSignalLevel($rssi) should be $expectedSignalLevel');
+
+        // Verify topology builder produces consistent LinkQuality
+        final device = DeviceUIModel(
+          mac: 'AA:AA:AA:AA:AA:AA',
+          ip: '192.168.1.1',
+          hostName: 'Test',
+          isActive: true,
+          isWifi: true,
+          signalStrength: rssi,
+        );
+
+        final topo = UspTopologyBuilder.build(
+          info: sysInfo,
+          devices: [device],
+          nodeModels: [],
+        );
+
+        final client =
+            topo.nodes.firstWhere((n) => n.type == MeshNodeType.client);
+        expect(client.linkQuality, expectedLinkQuality,
+            reason: 'RSSI $rssi (${actualSignalLevel.name}) should map to '
+                '$expectedLinkQuality, but got ${client.linkQuality}');
+      }
     });
   });
 
