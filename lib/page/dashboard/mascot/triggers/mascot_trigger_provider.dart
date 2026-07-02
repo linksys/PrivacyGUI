@@ -112,7 +112,7 @@ class MascotTriggerNotifier extends AutoDisposeNotifier<MascotTriggerState> {
 
     state = MascotTriggerState(
       previousWanUp: wan?.model.isUp,
-      previousDeviceCount: devices?.deviceModels.length,
+      previousDeviceCount: devices?.clientDevices.length,
       previousFirewallEnabled: firewall?.firewallModel.isIPv4FirewallEnabled,
       previousDisabledRadios: disabledRadios,
     );
@@ -203,7 +203,7 @@ class MascotTriggerNotifier extends AutoDisposeNotifier<MascotTriggerState> {
     final devices = ref.read(devicesDataProvider).valueOrNull;
     if (devices == null) return null;
 
-    final currentCount = devices.deviceModels.length;
+    final currentCount = devices.clientDevices.length;
     final previousCount = state.previousDeviceCount;
 
     // Update state for next comparison
@@ -214,10 +214,10 @@ class MascotTriggerNotifier extends AutoDisposeNotifier<MascotTriggerState> {
     if (currentCount <= previousCount) return null;
 
     // Find the newest device (last in list by convention)
-    final newDevice = devices.deviceModels.isNotEmpty
-        ? (devices.deviceModels.last.hostName.isNotEmpty
-            ? devices.deviceModels.last.hostName
-            : devices.deviceModels.last.mac)
+    final newDevice = devices.clientDevices.isNotEmpty
+        ? (devices.clientDevices.last.hostName.isNotEmpty
+            ? devices.clientDevices.last.hostName
+            : devices.clientDevices.last.mac)
         : 'Unknown device';
 
     debugPrint('[Mascot][Trigger]: New device joined — $newDevice');

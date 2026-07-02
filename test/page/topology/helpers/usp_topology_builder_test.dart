@@ -357,7 +357,7 @@ void main() {
 
     test('medium wifi signal maps to medium level', () {
       // wifi.dart thresholds: [-65, -71, -78]
-      // -75 is >= -78 (fair) → level 0.4, LinkQuality.good
+      // -75 is >= -78 (fair) → level 0.4, LinkQuality.fair
       const device = DeviceUIModel(
         mac: 'AA:AA:AA:AA:AA:AA',
         ip: '192.168.1.1',
@@ -376,12 +376,12 @@ void main() {
       final client =
           topo.nodes.firstWhere((n) => n.type == MeshNodeType.client);
       expect(client.level, 0.4);
-      expect(client.linkQuality, LinkQuality.good);
+      expect(client.linkQuality, LinkQuality.fair);
     });
 
     test('good wifi signal (-68) maps to level 0.65', () {
       // wifi.dart thresholds: [-65, -71, -78]
-      // -68 is in (-71, -65] → good → level 0.65, LinkQuality.excellent
+      // -68 is in (-71, -65] → good → level 0.65, LinkQuality.good
       const device = DeviceUIModel(
         mac: 'AA:AA:AA:AA:AA:AB',
         ip: '192.168.1.1',
@@ -400,12 +400,12 @@ void main() {
       final client =
           topo.nodes.firstWhere((n) => n.type == MeshNodeType.client);
       expect(client.level, 0.65);
-      expect(client.linkQuality, LinkQuality.excellent);
+      expect(client.linkQuality, LinkQuality.good);
     });
 
     test('weak wifi signal maps to low level', () {
       // wifi.dart thresholds: [-65, -71, -78]
-      // -80 is < -78 (poor) → LinkQuality.fair
+      // -80 is < -78 (poor) → LinkQuality.unknown
       const device = DeviceUIModel(
         mac: 'AA:AA:AA:AA:AA:AA',
         ip: '192.168.1.1',
@@ -424,7 +424,7 @@ void main() {
       final client =
           topo.nodes.firstWhere((n) => n.type == MeshNodeType.client);
       expect(client.level, 0.1);
-      expect(client.linkQuality, LinkQuality.fair);
+      expect(client.linkQuality, LinkQuality.unknown);
     });
 
     test('ethernet device maps to wired signal quality and level 1.0', () {

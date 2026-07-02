@@ -352,7 +352,11 @@ class UspPdfService {
   // ===========================================================================
 
   static List<pw.Widget> _buildDevices(PdfReportData data) {
-    final devices = data.deviceModels ?? [];
+    final allDevices = data.deviceModels ?? [];
+    // Exclude mesh nodes (routers) — only show client devices in report
+    final devices = allDevices
+        .where((d) => d.deviceRole != 'master' && d.deviceRole != 'slave')
+        .toList();
     final online = devices.where((d) => d.isActive).toList();
     final offline = devices.where((d) => !d.isActive).toList();
 

@@ -3,6 +3,7 @@ import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/_shared/models/device_analytics_state.dart';
 import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
 import 'package:privacy_gui/page/_shared/providers/device_analytics_persistence.dart';
+import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 
 /// Device connection analytics provider — computes distributions, hourly
@@ -16,24 +17,29 @@ final uspDeviceAnalyticsProvider =
 );
 
 class UspDeviceAnalyticsNotifier extends Notifier<DeviceAnalyticsState> {
+  /// Cached serial number for persistence key scoping.
+  String? _serialNumber;
+
+  /// Whether persisted history has been loaded.
+  bool _historyLoaded = false;
+
   @override
   DeviceAnalyticsState build() {
-    // Load persisted history on init
-    _loadPersistedHistory();
-
     // Listen to device data changes for future updates
     ref.listen(devicesDataProvider, (previous, next) {
       final data = next.valueOrNull;
       if (data == null) return;
-      _onDashboardUpdated(data.deviceModels);
+      _onDashboardUpdated(data.clientDevices);
     });
 
-    // Process current device data after build() completes
-    // (same pattern as UspTrafficMonitorNotifier)
-    Future.microtask(() {
+    // Wait for systemInfoDataProvider to load, then load persisted history
+    // and process current device data
+    Future.microtask(() async {
+      await _loadPersistedHistory();
+
       final data = ref.read(devicesDataProvider).valueOrNull;
       if (data != null) {
-        _onDashboardUpdated(data.deviceModels);
+        _onDashboardUpdated(data.clientDevices);
       }
     });
 
@@ -41,19 +47,69 @@ class UspDeviceAnalyticsNotifier extends Notifier<DeviceAnalyticsState> {
   }
 
   Future<void> _loadPersistedHistory() async {
+    if (_historyLoaded) return;
+
     try {
-      final persisted = await loadDeviceAnalytics();
+      // Wait for systemInfoDataProvider to have data
+      final sysInfo = ref.read(systemInfoDataProvider).valueOrNull;
+      if (sysInfo == null) {
+        // Try to wait for it
+        try {
+          await ref
+              .read(systemInfoDataProvider.future)
+              .timeout(const Duration(seconds: 3));
+        } catch (_) {
+          // Timeout or error — proceed without SN (uses legacy key)
+        }
+      }
+
+      _serialNumber =
+          ref.read(systemInfoDataProvider).valueOrNull?.model.serialNumber;
+
+      final persisted = await loadDeviceAnalytics(serialNumber: _serialNumber);
       if (persisted.hourlyHistory.isNotEmpty) {
+        // Get router MACs to filter out from persisted history
+        // (legacy data may contain mesh node MACs before the fix)
+        final routerMacs = _getRouterMacs();
+
+        // Clean router MACs from persisted data
+        final cleanedHistory = persisted.hourlyHistory
+            .map((h) => HourlyAggregate(
+                  hour: h.hour,
+                  wifiCount: h.wifiCount,
+                  wiredCount: h.wiredCount,
+                  activeMacs: h.activeMacs
+                      .where((m) => !routerMacs.contains(m))
+                      .toSet(),
+                ))
+            .toList();
+
+        final cleanedMacs = persisted.allKnownMacs
+            .where((m) => !routerMacs.contains(m))
+            .toSet();
+
         state = state.copyWith(
-          hourlyHistory: persisted.hourlyHistory,
-          allKnownMacs: persisted.allKnownMacs,
+          hourlyHistory: cleanedHistory,
+          allKnownMacs: cleanedMacs,
           macDisplayNames: persisted.macDisplayNames,
         );
       }
+
+      _historyLoaded = true;
     } catch (e) {
       logger
           .w('[USP][Monitor][Analytics]: Failed to load persisted history: $e');
     }
+  }
+
+  /// Returns the set of router MACs (master + slave nodes).
+  Set<String> _getRouterMacs() {
+    final allDeviceModels =
+        ref.read(devicesDataProvider).valueOrNull?.deviceModels ?? [];
+    return allDeviceModels
+        .where((d) => d.deviceRole == 'master' || d.deviceRole == 'slave')
+        .map((d) => d.mac)
+        .toSet();
   }
 
   void _onDashboardUpdated(List<DeviceUIModel> devices) {
@@ -97,10 +153,13 @@ class UspDeviceAnalyticsNotifier extends Notifier<DeviceAnalyticsState> {
     final cutoff = now.subtract(Duration(hours: DeviceAnalyticsState.maxHours));
     history = history.where((h) => h.hour.isAfter(cutoff)).toList();
 
-    // Rebuild allKnownMacs from history
+    // Get router MACs to filter out from history (mesh nodes should not appear)
+    final routerMacs = _getRouterMacs();
+
+    // Rebuild allKnownMacs from history, excluding router MACs
     final allMacs = <String>{};
     for (final h in history) {
-      allMacs.addAll(h.activeMacs);
+      allMacs.addAll(h.activeMacs.where((mac) => !routerMacs.contains(mac)));
     }
 
     state = state.copyWith(
@@ -165,7 +224,7 @@ class UspDeviceAnalyticsNotifier extends Notifier<DeviceAnalyticsState> {
 
   Future<void> _persistState() async {
     try {
-      await saveDeviceAnalytics(state);
+      await saveDeviceAnalytics(state, serialNumber: _serialNumber);
     } catch (e) {
       logger.w('[USP][Monitor][Analytics]: Failed to persist: $e');
     }
