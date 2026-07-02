@@ -236,6 +236,91 @@ void main() {
       expect(dd.itemAsString!(36), '36');
     });
 
+    // Fix (#1023): the UI-kit AppDropdown leaves its tap gesture wired even
+    // when onChanged is null, so the consumer wraps it in an IgnorePointer to
+    // truly block interaction while Auto is ON. See upstream issue
+    // linksys/privacyGUI-UI-kit#2.
+    IgnorePointer dropdownGuard(WidgetTester t) {
+      // Our consumer-side guard is the closest IgnorePointer ancestor of the
+      // dropdown (Flutter may insert others higher up the tree).
+      return t
+          .widgetList<IgnorePointer>(
+            find.ancestor(
+              of: find.byType(AppDropdown<int>),
+              matching: find.byType(IgnorePointer),
+            ),
+          )
+          .first;
+    }
+
+    testWidgets(
+        'Fix#1: Auto ON => dropdown wrapped in IgnorePointer(ignoring:true)',
+        (t) async {
+      await t.pumpWidget(host(
+        _radio(channel: 36, autoChannelEnable: true),
+        (_) {},
+      ));
+      await openDialog(t);
+
+      expect(dropdownGuard(t).ignoring, isTrue);
+
+      // The menu must not open when tapping the (disabled) dropdown.
+      await t.tap(find.byType(AppDropdown<int>), warnIfMissed: false);
+      await t.pumpAndSettle();
+      // Auto option label should not appear as an opened menu entry: value
+      // stays Auto and no manual channel option (e.g. '40') is tappable.
+      expect(find.text('40'), findsNothing);
+    });
+
+    testWidgets(
+        'Fix#1: Auto OFF => dropdown IgnorePointer(ignoring:false), interactive',
+        (t) async {
+      await t.pumpWidget(host(
+        _radio(channel: 36, autoChannelEnable: false),
+        (_) {},
+      ));
+      await openDialog(t);
+
+      expect(dropdownGuard(t).ignoring, isFalse);
+    });
+
+    testWidgets(
+        'Fix#1: no manual channels => IgnorePointer(ignoring:true) locks dropdown',
+        (t) async {
+      await t.pumpWidget(host(
+        _radio(
+            channel: 36, autoChannelEnable: true, possibleChannels: const []),
+        (_) {},
+      ));
+      await openDialog(t);
+
+      expect(dropdownGuard(t).ignoring, isTrue);
+    });
+
+    testWidgets(
+        'Fix#2: currently-using line is shown in Auto mode with the real channel',
+        (t) async {
+      await t.pumpWidget(host(
+        _radio(channel: 149, autoChannelEnable: true),
+        (_) {},
+      ));
+      await openDialog(t);
+
+      expect(find.text('Currently using: 149'), findsOneWidget);
+    });
+
+    testWidgets(
+        'Fix#2: currently-using line is shown in manual mode with the channel',
+        (t) async {
+      await t.pumpWidget(host(
+        _radio(channel: 44, autoChannelEnable: false),
+        (_) {},
+      ));
+      await openDialog(t);
+
+      expect(find.text('Currently using: 44'), findsOneWidget);
+    });
+
     testWidgets('AC2: dropdown items = Auto + possibleChannels', (t) async {
       await t.pumpWidget(host(
         _radio(
