@@ -192,7 +192,7 @@ class UspIpv6PortServiceView extends ConsumerWidget {
 
   List<AppAutoCompleteOption> _buildIpv6DeviceOptions(WidgetRef ref) {
     final devices =
-        ref.read(devicesDataProvider).valueOrNull?.deviceModels ?? [];
+        ref.read(devicesDataProvider).valueOrNull?.clientDevices ?? [];
     return devices
         .expand((d) => d.ipv6Addresses.map((addr) => AppAutoCompleteOption(
               label: d.displayName,

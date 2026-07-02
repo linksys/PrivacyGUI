@@ -108,7 +108,7 @@ class UspDhcpReservationsDetailCard extends ConsumerWidget {
   ({List<AppAutoCompleteOption> mac, List<AppAutoCompleteOption> ip})
       _buildDeviceOptions(WidgetRef ref) {
     final devices =
-        ref.read(devicesDataProvider).valueOrNull?.deviceModels ?? [];
+        ref.read(devicesDataProvider).valueOrNull?.clientDevices ?? [];
     final macOptions = devices
         .where((d) => d.mac.isNotEmpty)
         .map((d) => AppAutoCompleteOption(

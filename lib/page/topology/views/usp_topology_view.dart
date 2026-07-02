@@ -60,16 +60,14 @@ class _UspTopologyViewState extends ConsumerState<UspTopologyView> {
               nodeModels: data.nodeModels,
             );
 
-            return _buildTopologyCard(
-                context, topology, data.deviceModels.length);
+            return _buildTopologyCard(context, topology);
           },
         );
       },
     );
   }
 
-  Widget _buildTopologyCard(
-      BuildContext context, MeshTopology topology, int deviceCount) {
+  Widget _buildTopologyCard(BuildContext context, MeshTopology topology) {
     final router = GoRouter.of(context);
     final colorScheme = Theme.of(context).colorScheme;
 

@@ -3,7 +3,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:privacy_gui/page/_shared/models/device_analytics_state.dart';
 import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
+import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
 import 'package:privacy_gui/page/_shared/providers/usp_device_analytics_notifier.dart';
+import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 
 /// Test-only devices data notifier returning canned data.
@@ -16,6 +18,29 @@ class _TestDevicesDataNotifier extends DevicesDataNotifier {
   Future<DevicesData> build() async {
     if (shouldThrow) throw Exception('devices fetch failed');
     return _data;
+  }
+}
+
+/// Test-only system info notifier returning canned data.
+class _TestSystemInfoDataNotifier extends SystemInfoDataNotifier {
+  final String serialNumber;
+  _TestSystemInfoDataNotifier({this.serialNumber = 'TEST_SN_001'});
+
+  @override
+  Future<SystemInfoData> build() async {
+    return SystemInfoData(
+      model: SystemInfoUIModel(
+        modelName: 'TestRouter',
+        hardwareVersion: '1.0',
+        manufacturer: 'Test',
+        serialNumber: serialNumber,
+        softwareVersion: '1.0.0',
+        uptime: 3600,
+        totalMemory: 512000,
+        freeMemory: 256000,
+        cpuUsage: 25,
+      ),
+    );
   }
 }
 
@@ -65,13 +90,18 @@ void main() {
     SharedPreferences.setMockInitialValues({});
   });
 
-  ProviderContainer createContainer(
-      {DevicesData? data, bool shouldThrow = false}) {
+  ProviderContainer createContainer({
+    DevicesData? data,
+    bool shouldThrow = false,
+    String serialNumber = 'TEST_SN_001',
+  }) {
     final devicesData = data ?? testDevicesData;
     final container = ProviderContainer(
       overrides: [
         devicesDataProvider.overrideWith(() =>
             _TestDevicesDataNotifier(devicesData, shouldThrow: shouldThrow)),
+        systemInfoDataProvider.overrideWith(
+            () => _TestSystemInfoDataNotifier(serialNumber: serialNumber)),
       ],
     );
     return container;
@@ -244,6 +274,52 @@ void main() {
       container.dispose();
     });
 
+    test('excludes mesh nodes from distribution', () async {
+      // Add mesh nodes (master and slave routers) to the device list
+      const masterNode = DeviceUIModel(
+        mac: 'AA:BB:CC:DD:EE:05',
+        ip: '192.168.1.1',
+        hostName: 'Router',
+        isActive: true,
+        isWifi: false,
+        deviceRole: 'master',
+      );
+      const slaveNode = DeviceUIModel(
+        mac: 'AA:BB:CC:DD:EE:06',
+        ip: '192.168.1.2',
+        hostName: 'Extender',
+        isActive: true,
+        isWifi: true,
+        band: '5GHz',
+        signalStrength: -50,
+        deviceRole: 'slave',
+      );
+      // Include mesh nodes alongside regular client devices
+      final dataWithMesh = DevicesData(
+        deviceModels: [...testDevices, masterNode, slaveNode],
+      );
+      final container = createContainer(data: dataWithMesh);
+      await waitForAnalytics(container);
+
+      final state = container.read(uspDeviceAnalyticsProvider);
+      expect(state.current, isNotNull);
+
+      final dist = state.current!;
+      // Mesh nodes should NOT be counted — same as without them
+      // 2 wifi online + 1 wired online = 3 online, 1 offline (no mesh nodes)
+      expect(dist.onlineCount, 3);
+      expect(dist.offlineCount, 1);
+      expect(dist.wifiCount, 2);
+      expect(dist.wiredCount, 1);
+      expect(dist.totalCount, 4);
+
+      // Band distribution should NOT include the slave's 5GHz
+      expect(dist.bandDistribution['5GHz'], 1); // Only wifiDevice5g
+      expect(dist.bandDistribution['2.4GHz'], 1);
+      expect(dist.bandDistribution['Wired'], 1);
+      container.dispose();
+    });
+
     test('band signal quality computes average per band', () async {
       // Two 5GHz devices with different signal strengths
       const wifi5a = DeviceUIModel(
@@ -272,6 +348,95 @@ void main() {
       // Average quality for 5GHz = (1.0 + 0.0) / 2 = 0.5
       expect(dist.bandSignalQuality['5GHz'], closeTo(0.5, 0.01));
       container.dispose();
+    });
+
+    test('filters router MACs from persisted history on load', () async {
+      // Simulate legacy persisted data that includes router MACs
+      final now = DateTime.now();
+      final currentHour = DateTime(now.year, now.month, now.day, now.hour);
+      const routerMac = 'AA:BB:CC:DD:EE:05'; // Will be marked as master
+      const clientMac = 'AA:BB:CC:DD:EE:01'; // Regular client
+
+      final legacyState = DeviceAnalyticsState(
+        hourlyHistory: [
+          HourlyAggregate(
+            hour: currentHour.subtract(Duration(hours: 1)),
+            wifiCount: 2,
+            wiredCount: 0,
+            activeMacs: {routerMac, clientMac}, // Legacy: contains router MAC
+          ),
+        ],
+        allKnownMacs: {routerMac, clientMac},
+        macDisplayNames: {routerMac: 'Router', clientMac: 'Phone'},
+      );
+
+      // Pre-populate SharedPreferences with legacy data
+      SharedPreferences.setMockInitialValues({
+        'flutter.usp_device_analytics_LEGACY_SN': legacyState.toJsonString(),
+      });
+
+      // Create container with a mesh node that has the router MAC
+      const masterNode = DeviceUIModel(
+        mac: routerMac,
+        ip: '192.168.1.1',
+        hostName: 'Router',
+        isActive: true,
+        isWifi: false,
+        deviceRole: 'master',
+      );
+      final dataWithRouter = DevicesData(
+        deviceModels: [wifiDevice5g, masterNode],
+      );
+
+      final container = createContainer(
+        data: dataWithRouter,
+        serialNumber: 'LEGACY_SN',
+      );
+      await waitForAnalytics(container);
+
+      final state = container.read(uspDeviceAnalyticsProvider);
+
+      // Router MAC should be filtered out from allKnownMacs
+      expect(state.allKnownMacs, isNot(contains(routerMac)));
+      expect(state.allKnownMacs, contains(clientMac));
+
+      // Hourly history activeMacs should also exclude router MAC
+      for (final h in state.hourlyHistory) {
+        expect(h.activeMacs, isNot(contains(routerMac)));
+      }
+
+      container.dispose();
+    });
+
+    test('persistence is scoped by router serial number', () async {
+      // First router with SN "ROUTER_A"
+      final containerA = createContainer(serialNumber: 'ROUTER_A');
+      await waitForAnalytics(containerA);
+      final stateA = containerA.read(uspDeviceAnalyticsProvider);
+      expect(stateA.hourlyHistory, hasLength(1));
+      containerA.dispose();
+
+      // Second router with different SN "ROUTER_B"
+      final containerB = createContainer(
+        data: const DevicesData(deviceModels: []),
+        serialNumber: 'ROUTER_B',
+      );
+      await waitForAnalytics(containerB);
+      final stateB = containerB.read(uspDeviceAnalyticsProvider);
+      // Should NOT inherit history from Router A — different SN means different key
+      expect(stateB.hourlyHistory, hasLength(1)); // Only its own empty entry
+      expect(stateB.current!.onlineCount, 0); // Empty device list
+      containerB.dispose();
+
+      // Back to Router A — should still have its data
+      final containerA2 = createContainer(serialNumber: 'ROUTER_A');
+      await waitForAnalytics(containerA2);
+      final stateA2 = containerA2.read(uspDeviceAnalyticsProvider);
+      // Should have 2 entries now (original + this session's update)
+      expect(stateA2.hourlyHistory.isNotEmpty, isTrue);
+      expect(
+          stateA2.current!.onlineCount, 3); // Has devices from testDevicesData
+      containerA2.dispose();
     });
   });
 }
