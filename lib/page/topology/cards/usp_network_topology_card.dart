@@ -35,7 +35,8 @@ class UspNetworkTopologyCard extends ConsumerWidget {
     final info =
         this.info ?? ref.watch(systemInfoDataProvider).valueOrNull?.model;
     final meshNetwork = this.meshNetwork ?? devicesData?.meshNetwork;
-    if (info == null || meshNetwork == null) return const CardSkeleton.topology();
+    if (info == null || meshNetwork == null)
+      return const CardSkeleton.topology();
 
     final topology = UspTopologyBuilder.buildFromMeshNetwork(
       meshNetwork: meshNetwork,
