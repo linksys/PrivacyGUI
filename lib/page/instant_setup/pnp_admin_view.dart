@@ -569,11 +569,22 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
 
           if (pollStatus == AutoMasterStatus.complete ||
               pollStatus == AutoMasterStatus.idle) {
+            // Auto Master completed successfully, password may have changed
             setState(() {
               _isWaitingForAutoMaster = false;
             });
             throw ExceptionInterruptAndExit(
                 route: RouteNamed.localLoginPassword);
+          }
+
+          if (pollStatus == AutoMasterStatus.failed) {
+            // Auto Master failed (e.g., found another Master), password is still admin
+            // Continue normal PnP flow
+            logger.i('[PnP]: Auto Master failed, continuing PnP flow');
+            setState(() {
+              _isWaitingForAutoMaster = false;
+            });
+            return;
           }
         }
       }

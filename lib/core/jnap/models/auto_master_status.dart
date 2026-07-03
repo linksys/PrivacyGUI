@@ -1,13 +1,15 @@
 import 'package:equatable/equatable.dart';
 
 /// AutoMasterStatus represents the status of the Auto Master process.
-/// - idle: Auto Master is not running or failed
+/// - idle: Auto Master is not running
 /// - running: Auto Master is in progress
 /// - complete: Auto Master finished successfully (password changed to WiFi password)
+/// - failed: Auto Master failed (e.g., found another Master on network, password still admin)
 enum AutoMasterStatus {
   idle,
   running,
   complete,
+  failed,
   ;
 
   String toValue() {
@@ -15,6 +17,7 @@ enum AutoMasterStatus {
       AutoMasterStatus.idle => 'Idle',
       AutoMasterStatus.running => 'Running',
       AutoMasterStatus.complete => 'Complete',
+      AutoMasterStatus.failed => 'Failed',
     };
   }
 
@@ -23,6 +26,7 @@ enum AutoMasterStatus {
       'Idle' => AutoMasterStatus.idle,
       'Running' => AutoMasterStatus.running,
       'Complete' => AutoMasterStatus.complete,
+      'Failed' => AutoMasterStatus.failed,
       _ => null,
     };
   }
