@@ -7,6 +7,7 @@ class SystemSnapshot extends Equatable {
   final int memoryPercent;
   final int totalMemoryKb;
   final int freeMemoryKb;
+  final int uptimeSeconds;
 
   const SystemSnapshot({
     required this.timestamp,
@@ -14,9 +15,22 @@ class SystemSnapshot extends Equatable {
     required this.memoryPercent,
     required this.totalMemoryKb,
     required this.freeMemoryKb,
+    required this.uptimeSeconds,
   });
 
   int get usedMemoryKb => totalMemoryKb - freeMemoryKb;
+
+  /// Formatted uptime string (e.g. "2d 5h 30m").
+  String get formattedUptime {
+    final days = uptimeSeconds ~/ 86400;
+    final hours = (uptimeSeconds % 86400) ~/ 3600;
+    final minutes = (uptimeSeconds % 3600) ~/ 60;
+    final parts = <String>[];
+    if (days > 0) parts.add('${days}d');
+    if (hours > 0) parts.add('${hours}h');
+    if (minutes > 0 || parts.isEmpty) parts.add('${minutes}m');
+    return parts.join(' ');
+  }
 
   @override
   List<Object?> get props => [
@@ -25,6 +39,7 @@ class SystemSnapshot extends Equatable {
         memoryPercent,
         totalMemoryKb,
         freeMemoryKb,
+        uptimeSeconds,
       ];
 }
 

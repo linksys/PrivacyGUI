@@ -10,7 +10,6 @@ import 'package:privacy_gui/page/_shared/providers/card_tab_state_provider.dart'
 import 'package:privacy_gui/page/_shared/components/dashboard_card_template.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_data_provider.dart';
-import 'package:privacy_gui/route/constants.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// WiFi Performance Analytics card — 3-tab view.
@@ -54,7 +53,6 @@ class UspWifiPerformanceCard extends ConsumerWidget {
       title: loc(context).wifiPerformance,
       titleBadge:
           AppBadge(label: loc(context).clientsCount(activeClients.length)),
-      detailRoute: RouteNamed.uspWifiSettings,
       tabs: [
         CardTab(
           label: loc(context).signal,

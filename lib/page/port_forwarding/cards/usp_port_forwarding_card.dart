@@ -73,74 +73,41 @@ class UspPortForwardingCard extends ConsumerWidget {
 
   Widget _buildPortForwardingRow(BuildContext context, WidgetRef ref,
       PortForwardingRuleUIModel rule, bool isLoading) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return LayoutBlock(
-      child: Row(
-        children: [
-          AppSwitch(
-            value: rule.enabled,
-            scale: 0.8,
-            onChanged: isLoading
-                ? null
-                : (value) => performUspMutation(
-                      context,
-                      ref,
-                      loadingKey: 'portForwarding',
-                      mutation: () => ref
-                          .read(uspPortForwardingPageProvider.notifier)
-                          .immediateToggleForwarding(rule.instancePath!, value),
-                    ),
-          ),
-          AppGap.sm(),
-          Expanded(
-            child: AppText.bodyMedium(rule.displayName),
-          ),
-          AppText.bodySmall(
-            rule.portSummary,
-            color: colorScheme.onSurfaceVariant,
-          ),
-          AppGap.md(),
-          _ProtocolBadge(protocol: rule.protocol),
-        ],
-      ),
+    return ToggleRow(
+      value: rule.enabled,
+      onChanged: isLoading
+          ? null
+          : (value) => performUspMutation(
+                context,
+                ref,
+                loadingKey: 'portForwarding',
+                mutation: () => ref
+                    .read(uspPortForwardingPageProvider.notifier)
+                    .immediateToggleForwarding(rule.instancePath!, value),
+              ),
+      title: rule.displayName,
+      subtitle: rule.portSummary,
+      trailing: ProtocolBadge(protocol: rule.protocol),
     );
   }
 
   Widget _buildPortTriggeringRow(BuildContext context, WidgetRef ref,
       PortTriggeringRuleUIModel trigger, bool isLoading) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return LayoutBlock(
-      child: Row(
-        children: [
-          AppSwitch(
-            value: trigger.enabled,
-            scale: 0.8,
-            onChanged: isLoading
-                ? null
-                : (value) => performUspMutation(
-                      context,
-                      ref,
-                      loadingKey: 'portForwarding',
-                      mutation: () => ref
-                          .read(uspPortForwardingPageProvider.notifier)
-                          .immediateToggleTriggering(
-                              trigger.instancePath!, value),
-                    ),
-          ),
-          AppGap.sm(),
-          Expanded(
-            child: AppText.bodyMedium(trigger.displayName),
-          ),
-          AppText.bodySmall(
-            '${trigger.triggerPortDisplay} → ${trigger.forwardPortDisplay}',
-            color: colorScheme.onSurfaceVariant,
-          ),
-          AppGap.md(),
-          _ProtocolBadge(protocol: trigger.triggerProtocol),
-        ],
-      ),
+    return ToggleRow(
+      value: trigger.enabled,
+      onChanged: isLoading
+          ? null
+          : (value) => performUspMutation(
+                context,
+                ref,
+                loadingKey: 'portForwarding',
+                mutation: () => ref
+                    .read(uspPortForwardingPageProvider.notifier)
+                    .immediateToggleTriggering(trigger.instancePath!, value),
+              ),
+      title: trigger.displayName,
+      subtitle: '${trigger.triggerPortDisplay} → ${trigger.forwardPortDisplay}',
+      trailing: ProtocolBadge(protocol: trigger.triggerProtocol),
     );
   }
 
@@ -166,27 +133,6 @@ class UspPortForwardingCard extends ConsumerWidget {
             enabled: result.enabled,
           ),
       successMessage: loc(context).ruleAdded,
-    );
-  }
-}
-
-class _ProtocolBadge extends StatelessWidget {
-  final String protocol;
-  const _ProtocolBadge({required this.protocol});
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: colorScheme.primaryContainer,
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: AppText.labelSmall(
-        protocol,
-        color: colorScheme.onPrimaryContainer,
-      ),
     );
   }
 }

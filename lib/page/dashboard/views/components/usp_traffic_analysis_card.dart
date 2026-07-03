@@ -3,12 +3,14 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/utils/usp_formatters.dart';
 import 'package:privacy_gui/page/_shared/models/traffic_analysis_state.dart';
 import 'package:privacy_gui/page/_shared/providers/card_tab_state_provider.dart';
 import 'package:privacy_gui/page/_shared/providers/usp_traffic_analysis_notifier.dart';
 import 'package:privacy_gui/page/_shared/components/dashboard_card_template.dart';
+import 'package:privacy_gui/route/constants.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Unified traffic monitor card — real-time WAN speed + multi-interface
@@ -30,8 +32,7 @@ class _UspTrafficAnalysisCardState
     extends ConsumerState<UspTrafficAnalysisCard> {
   static const _cardId = 'traffic_analysis';
 
-  List<(Duration?, String)> _intervalOptions(BuildContext context) => [
-        (null, loc(context).off),
+  List<(Duration, String)> _intervalOptions(BuildContext context) => [
         (Duration(seconds: 2), '2s'),
         (Duration(seconds: 5), '5s'),
         (Duration(seconds: 10), '10s'),
@@ -44,6 +45,7 @@ class _UspTrafficAnalysisCardState
 
     return DashboardCardTemplate.tabbed(
       title: loc(context).trafficMonitor,
+      footer: _buildStatisticsFooter(context, 0),
       titleBadge: analysisState.isFetching
           ? SizedBox(
               width: 14,
@@ -91,11 +93,12 @@ class _UspTrafficAnalysisCardState
   }
 
   String _intervalLabel(BuildContext context, Duration? interval) {
+    if (interval == null) return '—';
     return _intervalOptions(context)
             .where((e) => e.$1 == interval)
             .map((e) => e.$2)
             .firstOrNull ??
-        loc(context).off;
+        '${interval.inSeconds}s';
   }
 
   Widget _buildChartView(
@@ -132,6 +135,48 @@ class _UspTrafficAnalysisCardState
         message,
         color: Theme.of(context).colorScheme.onSurfaceVariant,
       ),
+    );
+  }
+
+  Widget _buildStatisticsFooter(BuildContext context, int tabIndex) {
+    final label = loc(context).viewDetails;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        AppDivider(),
+        AppGap.md(),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            Semantics(
+              button: true,
+              label: label,
+              child: InkWell(
+                onTap: () => context.pushNamed(
+                  RouteNamed.uspStatistics,
+                  queryParameters: {'tab': tabIndex.toString()},
+                ),
+                borderRadius: BorderRadius.circular(4),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    AppText.labelMedium(
+                      label,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    AppGap.xs(),
+                    Icon(
+                      Icons.arrow_forward,
+                      size: 14,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }
