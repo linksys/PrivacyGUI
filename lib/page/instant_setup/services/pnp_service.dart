@@ -161,6 +161,15 @@ class PnpService {
       }
     }
 
+    // Diagnostic: multiple SSIDs but none matched the `-guest` alias rule
+    // usually means firmware did not provision guest aliases (see
+    // wifi_guest_detection). Guest/main split degrades silently otherwise.
+    if (guestSsids.isEmpty && ssids.items.length > 1) {
+      logger.w('[PnP] No SSID matched the "-guest" alias rule; '
+          'guest network will be treated as main. Aliases: '
+          '${ssids.items.map((s) => s.alias ?? "null").toList()}');
+    }
+
     // Primary SSID = first enabled main SSID
     if (mainSsids.isEmpty) {
       logger.e('[PnP] No main WiFi SSIDs found on router');

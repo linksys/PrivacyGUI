@@ -168,6 +168,14 @@ class UspWifiDataService {
         if (isGuestSsid(ssid)) _ensureTrailingDot(ssid.instancePath),
     };
     logger.d('[USP][WiFi] Total guest SSID paths: ${guestSsidPaths.length}');
+    // Diagnostic: multiple SSIDs but none matched the `-guest` alias rule
+    // usually means firmware did not provision guest aliases (see
+    // wifi_guest_detection). Guest/main grouping degrades silently otherwise.
+    if (guestSsidPaths.isEmpty && ssids.items.length > 1) {
+      logger.w('[USP][WiFi] No SSID matched the "-guest" alias rule; '
+          'guest networks will be treated as main. Aliases: '
+          '${ssids.items.map((s) => s.alias ?? "null").toList()}');
+    }
 
     // Group APs by radio: AP.ssidReference → SSID.lowerLayers → Radio
     final apsByRadioPath =
