@@ -110,10 +110,7 @@ class UspDeviceAnalyticsNotifier extends Notifier<DeviceAnalyticsState> {
   Set<String> _getRouterMacs() {
     final allDeviceModels =
         ref.read(devicesDataProvider).valueOrNull?.deviceModels ?? [];
-    return allDeviceModels
-        .where((d) => d.isMeshNode)
-        .map((d) => d.mac)
-        .toSet();
+    return allDeviceModels.where((d) => d.isMeshNode).map((d) => d.mac).toSet();
   }
 
   void _onDashboardUpdated(List<DeviceUIModel> devices) {
