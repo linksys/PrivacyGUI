@@ -25,6 +25,10 @@ class UspDeviceAnalyticsNotifier extends Notifier<DeviceAnalyticsState> {
 
   @override
   DeviceAnalyticsState build() {
+    // Reset instance state on rebuild (e.g., after invalidate)
+    _historyLoaded = false;
+    _serialNumber = null;
+
     // Listen to device data changes for future updates
     ref.listen(devicesDataProvider, (previous, next) {
       final data = next.valueOrNull;
@@ -107,7 +111,7 @@ class UspDeviceAnalyticsNotifier extends Notifier<DeviceAnalyticsState> {
     final allDeviceModels =
         ref.read(devicesDataProvider).valueOrNull?.deviceModels ?? [];
     return allDeviceModels
-        .where((d) => d.deviceRole == 'master' || d.deviceRole == 'slave')
+        .where((d) => d.isMeshNode)
         .map((d) => d.mac)
         .toSet();
   }
@@ -223,6 +227,9 @@ class UspDeviceAnalyticsNotifier extends Notifier<DeviceAnalyticsState> {
   }
 
   Future<void> _persistState() async {
+    // Don't persist before history is loaded — _serialNumber isn't set yet,
+    // and we'd write to the legacy key instead of the scoped key.
+    if (!_historyLoaded) return;
     try {
       await saveDeviceAnalytics(state, serialNumber: _serialNumber);
     } catch (e) {
