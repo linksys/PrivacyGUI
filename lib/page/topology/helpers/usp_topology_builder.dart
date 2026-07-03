@@ -3,7 +3,10 @@ import 'package:privacy_gui/core/utils/device_image_helper.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/utils/wifi.dart';
+import 'package:privacy_gui/page/_shared/models/client_device.dart'
+    hide ConnectionType;
 import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
+import 'package:privacy_gui/page/_shared/models/mesh_network.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
 import 'package:privacy_gui/page/topology/models/node_ui_model.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -14,6 +17,187 @@ import 'package:ui_kit_library/ui_kit.dart';
 class UspTopologyBuilder {
   UspTopologyBuilder._();
 
+  /// Builds topology from new [MeshNetwork] architecture.
+  ///
+  /// Preferred method — uses SSoT container with pre-organized nodes and clients.
+  static MeshTopology buildFromMeshNetwork({
+    required MeshNetwork meshNetwork,
+    required SystemInfoUIModel info,
+  }) {
+    final nodes = <MeshNode>[];
+    final links = <MeshLink>[];
+
+    final master = meshNetwork.master;
+
+    // Gateway node
+    const gatewayId = 'gateway';
+    final gatewayIconName = routerIconTestByModel(
+      modelNumber: master.model.isNotEmpty ? master.model : info.modelName,
+      hardwareVersion: info.hardwareVersion,
+    );
+    nodes.add(MeshNode(
+      id: gatewayId,
+      name: master.displayName.isNotEmpty ? master.displayName : info.gatewayName,
+      type: MeshNodeType.gateway,
+      status: MeshNodeStatus.online,
+      image: DeviceImageHelper.getRouterImage(gatewayIconName),
+      extra: master.manufacturer.isNotEmpty ? master.manufacturer : info.manufacturer,
+      level: 1.0,
+      metadata: {
+        'deviceId': master.deviceId,
+        'model': master.model.isNotEmpty ? master.model : info.modelName,
+        'manufacturer': master.manufacturer.isNotEmpty ? master.manufacturer : info.manufacturer,
+        'serialNumber': master.serialNumber.isNotEmpty ? master.serialNumber : info.serialNumber,
+        'softwareVersion': master.softwareVersion.isNotEmpty ? master.softwareVersion : info.softwareVersion,
+        'isMaster': true,
+      },
+    ));
+
+    // Build extender ID lookup maps
+    final extenderNodeIdsNormalized = <String>{};
+    final normalizedToOriginal = <String, String>{};
+    final deviceIdToExtenderId = <String, String>{};
+
+    for (final slave in meshNetwork.slaves) {
+      final extenderId = 'extender-${slave.deviceId}';
+      final normalizedHostsMac = slave.deviceId.toUpperCase().replaceAll(':', '');
+      extenderNodeIdsNormalized.add(normalizedHostsMac);
+      normalizedToOriginal[normalizedHostsMac] = slave.deviceId;
+      deviceIdToExtenderId[normalizedHostsMac] = extenderId;
+
+      if (slave.dataElementsId != null && slave.dataElementsId!.isNotEmpty) {
+        final normalizedDeMac = slave.dataElementsId!.toUpperCase().replaceAll(':', '');
+        if (normalizedDeMac != normalizedHostsMac) {
+          extenderNodeIdsNormalized.add(normalizedDeMac);
+          normalizedToOriginal[normalizedDeMac] = slave.deviceId;
+          deviceIdToExtenderId[normalizedDeMac] = extenderId;
+        }
+      }
+    }
+
+    // Slave nodes
+    for (final slave in meshNetwork.slaves) {
+      final extenderId = 'extender-${slave.deviceId}';
+
+      // Resolve parent
+      String parentId = gatewayId;
+      final parentDeviceId = slave.backhaul.parentNodeId;
+      if (parentDeviceId != null && parentDeviceId.isNotEmpty) {
+        final normalizedParentId = parentDeviceId.toUpperCase().replaceAll(':', '');
+        parentId = deviceIdToExtenderId[normalizedParentId] ?? gatewayId;
+      }
+
+      final extenderIconName = routerIconTestByModel(modelNumber: slave.model);
+      nodes.add(MeshNode(
+        id: extenderId,
+        name: slave.displayName,
+        type: MeshNodeType.extender,
+        status: MeshNodeStatus.online,
+        parentId: parentId,
+        image: DeviceImageHelper.getRouterImage(extenderIconName),
+        level: _backhaulRssiToLevel(slave.backhaul.signalStrength),
+        metadata: {
+          'deviceId': slave.deviceId,
+          'model': slave.model,
+          'manufacturer': slave.manufacturer,
+          'serialNumber': slave.serialNumber,
+          'softwareVersion': slave.softwareVersion,
+          'isMaster': false,
+          'backhaulLinkType': slave.backhaul.linkType,
+          'backhaulParentDeviceId': slave.backhaul.parentNodeId,
+          'backhaulSignalStrength': slave.backhaul.signalStrength,
+          'backhaulUplinkRate': slave.backhaul.uplinkRate,
+          'backhaulDownlinkRate': slave.backhaul.downlinkRate,
+          'lastContactTime': slave.backhaul.lastContactTime,
+        },
+      ));
+
+      links.add(MeshLink(
+        sourceId: parentId,
+        targetId: extenderId,
+        connectionType: slave.backhaul.isEthernet
+            ? ConnectionType.ethernet
+            : ConnectionType.wifi,
+        rssi: slave.backhaul.signalStrength,
+        linkQuality: _rssiToLinkQuality(slave.backhaul.signalStrength),
+        throughput: slave.backhaul.uplinkRate != null
+            ? slave.backhaul.uplinkRate! / 1000.0
+            : null,
+      ));
+    }
+
+    // Client devices — use allClients which includes master + slave clients
+    for (final client in meshNetwork.allClients) {
+      final clientId = 'client-${client.mac}';
+      final isEthernet = !client.isWifi;
+
+      // Determine parent node
+      String parentId = gatewayId;
+      if (meshNetwork.hasMesh && client.parentNodeId != null) {
+        final parentNormalized = client.parentNodeId!.toUpperCase().replaceAll(':', '');
+        if (extenderNodeIdsNormalized.contains(parentNormalized)) {
+          final originalDeviceId = normalizedToOriginal[parentNormalized]!;
+          parentId = 'extender-$originalDeviceId';
+        }
+      }
+
+      final category = DeviceClassifier.classify(
+        hostname: client.displayName,
+        mac: client.mac,
+      );
+
+      nodes.add(MeshNode(
+        id: clientId,
+        name: client.displayName,
+        type: MeshNodeType.client,
+        status: client.isOnline ? MeshNodeStatus.online : MeshNodeStatus.offline,
+        parentId: parentId,
+        iconData: category.icon,
+        extra: client.ip,
+        linkQuality: _resolveLinkQualityForClient(client),
+        level: _rssiToLevelForClient(client),
+        metadata: {
+          'mac': client.mac,
+          'hasMultipleInterfaces': client.hasMultipleInterfaces,
+          'interfaceCount': client.interfaceCount,
+          'allMacAddresses': client.allMacAddresses,
+        },
+      ));
+
+      links.add(MeshLink(
+        sourceId: parentId,
+        targetId: clientId,
+        connectionType: isEthernet ? ConnectionType.ethernet : ConnectionType.wifi,
+        rssi: client.signalStrength,
+        linkQuality: isEthernet
+            ? LinkQuality.stable
+            : _rssiToLinkQuality(client.signalStrength),
+        throughput: (client.downlinkRate ?? 0) + (client.uplinkRate ?? 0) > 0
+            ? ((client.downlinkRate ?? 0) + (client.uplinkRate ?? 0)) / 1000.0
+            : null,
+        distanceFactor: _rssiToDistanceFactor(client.signalStrength),
+      ));
+    }
+
+    return MeshTopology(
+      nodes: nodes,
+      links: links,
+      lastUpdated: DateTime.now(),
+    );
+  }
+
+  static double _rssiToLevelForClient(ClientDevice client) {
+    if (!client.isWifi) return 1.0;
+    return _rssiValueToLevel(client.signalStrength);
+  }
+
+  static LinkQuality _resolveLinkQualityForClient(ClientDevice client) {
+    if (!client.isWifi) return LinkQuality.stable;
+    return _rssiToLinkQuality(client.signalStrength);
+  }
+
+  /// Legacy method — use [buildFromMeshNetwork] for new code.
+  @Deprecated('Use buildFromMeshNetwork with MeshNetwork instead')
   static MeshTopology build({
     required SystemInfoUIModel info,
     required List<DeviceUIModel> devices,

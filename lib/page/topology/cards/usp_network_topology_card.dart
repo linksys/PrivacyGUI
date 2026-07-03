@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
+import 'package:privacy_gui/page/_shared/models/mesh_network.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
 import 'package:privacy_gui/page/_shared/components/dashboard_card_template.dart';
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
@@ -9,7 +9,6 @@ import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/_shared/components/card_skeleton.dart';
 import 'package:privacy_gui/page/topology/helpers/topology_node_content_builder.dart';
 import 'package:privacy_gui/page/topology/helpers/usp_topology_builder.dart';
-import 'package:privacy_gui/page/topology/models/node_ui_model.dart';
 import 'package:privacy_gui/page/topology/views/components/node_detail_popup.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -22,14 +21,12 @@ import 'package:ui_kit_library/ui_kit.dart';
 /// gateway and their connected clients.
 class UspNetworkTopologyCard extends ConsumerWidget {
   final SystemInfoUIModel? info;
-  final List<DeviceUIModel>? devices;
-  final List<NodeUIModel>? nodeModels;
+  final MeshNetwork? meshNetwork;
 
   const UspNetworkTopologyCard({
     super.key,
     this.info,
-    this.devices,
-    this.nodeModels,
+    this.meshNetwork,
   });
 
   @override
@@ -37,17 +34,15 @@ class UspNetworkTopologyCard extends ConsumerWidget {
     final devicesData = ref.watch(devicesDataProvider).valueOrNull;
     final info =
         this.info ?? ref.watch(systemInfoDataProvider).valueOrNull?.model;
-    if (info == null) return const CardSkeleton.topology();
-    final devices = this.devices ?? devicesData?.deviceModels ?? [];
-    final nodeModels = this.nodeModels ?? devicesData?.nodeModels ?? [];
-    final topology = UspTopologyBuilder.build(
+    final meshNetwork = this.meshNetwork ?? devicesData?.meshNetwork;
+    if (info == null || meshNetwork == null) return const CardSkeleton.topology();
+
+    final topology = UspTopologyBuilder.buildFromMeshNetwork(
+      meshNetwork: meshNetwork,
       info: info,
-      devices: devices,
-      nodeModels: nodeModels,
     );
-    final onlineCount = devicesData?.onlineClientCount ??
-        devices.where((d) => d.isActive).length;
-    final totalCount = devicesData?.totalClientCount ?? devices.length;
+    final onlineCount = meshNetwork.onlineClientCount;
+    final totalCount = meshNetwork.totalClientCount;
     final useRing = totalCount >= 8;
 
     return DashboardCardTemplate(
