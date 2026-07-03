@@ -103,6 +103,11 @@ class UspDeviceAnalyticsNotifier extends Notifier<DeviceAnalyticsState> {
     } catch (e) {
       logger
           .w('[USP][Monitor][Analytics]: Failed to load persisted history: $e');
+      // Mark as loaded even on failure so subsequent _persistState() calls are
+      // not permanently gated by `if (!_historyLoaded) return`. Otherwise a
+      // one-off load error (e.g. SharedPreferences cold-start race, corrupted
+      // JSON) would silently drop every future write for this provider's life.
+      _historyLoaded = true;
     }
   }
 
