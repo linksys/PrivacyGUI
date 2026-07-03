@@ -9,6 +9,8 @@ import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
+import 'package:privacy_gui/page/_shared/models/mesh_network.dart';
+import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/local_network/providers/dhcp_data_provider.dart';
 
@@ -90,7 +92,7 @@ void main() {
         uspClientProvider.overrideWithValue(mockUsp),
         uspMutationLockProvider.overrideWithValue(UspMutationLock()),
         devicesDataProvider.overrideWith(
-          () => _TestDevicesDataNotifier(devicesData ?? const DevicesData()),
+          () => _TestDevicesDataNotifier(devicesData ?? _emptyDevicesData()),
         ),
       ],
     );
@@ -119,7 +121,7 @@ void main() {
 
     test('hostname enrichment from devicesData', () async {
       final container = createContainer(
-        devicesData: const DevicesData(
+        devicesData: _emptyDevicesData(
           hostNameByMac: {'AA:BB:CC:DD:EE:01': 'MyLaptop'},
         ),
       );
@@ -139,7 +141,7 @@ void main() {
         overrides: [
           uspClientProvider.overrideWithValue(null),
           devicesDataProvider.overrideWith(
-            () => _TestDevicesDataNotifier(const DevicesData()),
+            () => _TestDevicesDataNotifier(_emptyDevicesData()),
           ),
         ],
       );
@@ -186,7 +188,7 @@ void main() {
             uspClientProvider.overrideWithValue(mockUsp),
             uspMutationLockProvider.overrideWithValue(UspMutationLock()),
             devicesDataProvider.overrideWith(
-              () => _TestDevicesDataNotifier(const DevicesData()),
+              () => _TestDevicesDataNotifier(_emptyDevicesData()),
             ),
             sseInvalidationProvider.overrideWith((ref) => sseController.stream),
           ],
@@ -223,7 +225,7 @@ void main() {
             uspClientProvider.overrideWithValue(mockUsp),
             uspMutationLockProvider.overrideWithValue(UspMutationLock()),
             devicesDataProvider.overrideWith(
-              () => _TestDevicesDataNotifier(const DevicesData()),
+              () => _TestDevicesDataNotifier(_emptyDevicesData()),
             ),
             sseInvalidationProvider.overrideWith((ref) => sseController.stream),
           ],
@@ -255,7 +257,7 @@ void main() {
             uspClientProvider.overrideWithValue(mockUsp),
             uspMutationLockProvider.overrideWithValue(UspMutationLock()),
             devicesDataProvider.overrideWith(
-              () => _TestDevicesDataNotifier(const DevicesData()),
+              () => _TestDevicesDataNotifier(_emptyDevicesData()),
             ),
             sseInvalidationProvider.overrideWith((ref) => sseController.stream),
           ],
@@ -287,4 +289,14 @@ class _TestDevicesDataNotifier extends DevicesDataNotifier {
 
   @override
   Future<DevicesData> build() async => _data;
+}
+
+/// Creates an empty DevicesData for testing.
+DevicesData _emptyDevicesData({Map<String, String>? hostNameByMac}) {
+  return DevicesData(
+    meshNetwork: MeshNetwork(
+      master: MasterNode(deviceId: 'GATEWAY', model: 'TestRouter'),
+    ),
+    hostNameByMac: hostNameByMac ?? const {},
+  );
 }

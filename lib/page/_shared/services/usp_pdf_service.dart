@@ -352,9 +352,9 @@ class UspPdfService {
   // ===========================================================================
 
   static List<pw.Widget> _buildDevices(PdfReportData data) {
-    final devices = data.deviceModels ?? [];
-    final online = devices.where((d) => d.isActive).toList();
-    final offline = devices.where((d) => !d.isActive).toList();
+    final devices = data.clientDevices ?? [];
+    final online = devices.where((d) => d.isOnline).toList();
+    final offline = devices.where((d) => !d.isOnline).toList();
 
     final widgets = <pw.Widget>[
       _sectionTitle('Connected Devices (${online.length} online / '
@@ -845,7 +845,7 @@ class UspPdfService {
   }
 
   static List<pw.Widget> _buildMeshTopology(PdfReportData data) {
-    final nodes = data.nodeModels ?? [];
+    final nodes = data.nodes ?? [];
     if (nodes.isEmpty) return [];
     return [
       _sectionTitle('Mesh Topology (${nodes.length} nodes)'),
@@ -859,10 +859,10 @@ class UspPdfService {
         data: nodes
             .map((n) => [
                   n.displayName,
-                  n.roleLabel,
+                  n.isMaster ? 'Master' : 'Extender',
                   n.model,
                   n.softwareVersion,
-                  '${n.connectedDeviceCount}',
+                  '${n.connectedClients.length}',
                 ])
             .toList(),
       ),

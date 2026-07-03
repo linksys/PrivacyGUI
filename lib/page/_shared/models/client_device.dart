@@ -1,9 +1,18 @@
 import 'package:equatable/equatable.dart';
+import 'package:flutter/material.dart';
 import 'package:privacy_gui/page/_shared/models/network_entity.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_connection_info.dart';
 
 /// Connection type for client devices.
 enum ConnectionType { wifi, wired }
+
+/// Extension for connection type icons.
+extension ConnectionTypeExt on ConnectionType {
+  IconData get icon => switch (this) {
+        ConnectionType.wifi => Icons.wifi,
+        ConnectionType.wired => Icons.settings_ethernet,
+      };
+}
 
 /// Network interface info for multi-interface devices.
 ///
@@ -40,6 +49,15 @@ class ClientInterfaceInfo with EquatableMixin {
 
   /// Whether this is a WiFi interface.
   bool get isWifi => connectionType == ConnectionType.wifi;
+
+  /// Signal strength in dBm (from WiFi info).
+  int? get signalStrength => wifi?.signalStrength;
+
+  /// WiFi band (2.4GHz, 5GHz, 6GHz).
+  String? get band => wifi?.band;
+
+  /// SSID name.
+  String? get ssidName => wifi?.ssidName;
 
   @override
   List<Object?> get props => [
@@ -191,6 +209,22 @@ final class ClientDevice extends NetworkEntity {
   /// Whether any interface is active.
   bool get hasAnyActiveInterface =>
       isActive || additionalInterfaces.any((i) => i.isActive);
+
+  /// Total throughput in kbps (uplink + downlink).
+  int get totalThroughput => (downlinkRate ?? 0) + (uplinkRate ?? 0);
+
+  /// Whether to display signal information (WiFi + online + has signal).
+  bool get hasSignalDisplay => isWifi && isActive && signalStrength != null;
+
+  /// Whether WiFi signal details should be shown in detail view.
+  bool get shouldShowWifiDetails =>
+      isWifi && isActive && (hasWifiData || signalStrength != null);
+
+  /// Whether this device is interactive (can be tapped for detail).
+  bool get isInteractive => isActive;
+
+  /// Display opacity for list items (dimmed when offline).
+  double get displayOpacity => isActive ? 1.0 : 0.5;
 
   /// Creates a copy with optional field overrides.
   ClientDevice copyWith({

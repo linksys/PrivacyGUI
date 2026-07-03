@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/utils/wifi.dart';
-import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
+import 'package:privacy_gui/page/_shared/models/client_device.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/devices/providers/device_filter_state.dart';
 
@@ -169,14 +169,14 @@ final deviceFilterOptionsProvider = Provider<DeviceFilterOptions>((ref) {
 });
 
 /// Filtered device list — applies every active dimension + search.
-final filteredDeviceListProvider = Provider<List<DeviceUIModel>>((ref) {
+final filteredDeviceListProvider = Provider<List<ClientDevice>>((ref) {
   final data = ref.watch(devicesDataProvider).valueOrNull;
   if (data == null) return [];
   final filter = ref.watch(deviceFilterConfigProvider);
   return data.clientDevices.where((d) => _matches(d, filter)).toList();
 });
 
-bool _matches(DeviceUIModel device, DeviceFilterConfig filter) {
+bool _matches(ClientDevice device, DeviceFilterConfig filter) {
   // Status.
   if (filter.status == DeviceStatusFilter.online && !device.isActive) {
     return false;

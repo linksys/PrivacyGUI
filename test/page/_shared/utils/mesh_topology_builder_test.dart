@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/generated/data_elements_network.g.dart';
+import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 import 'package:privacy_gui/page/_shared/utils/mesh_topology_builder.dart';
 
 void main() {
@@ -146,8 +147,9 @@ void main() {
 
       final result = MeshTopologyBuilder.build(network);
 
+      final slave = result.nodes[0] as SlaveNode;
       // RCPI = 180 → RSSI = (180/2) - 110 = -20 dBm
-      expect(result.nodes[0].backhaulSignalStrength, -20);
+      expect(slave.backhaul.signalStrength, -20);
     });
 
     test('includes backhaul uplink rate when available', () {
@@ -155,7 +157,8 @@ void main() {
 
       final result = MeshTopologyBuilder.build(network);
 
-      expect(result.nodes[0].backhaulUplinkRate, 500000);
+      final slave = result.nodes[0] as SlaveNode;
+      expect(slave.backhaul.uplinkRate, 500000);
     });
 
     test('excludes backhaul stats when includeBackhaulStats is false', () {
@@ -164,11 +167,12 @@ void main() {
       final result =
           MeshTopologyBuilder.build(network, includeBackhaulStats: false);
 
-      expect(result.nodes[0].backhaulSignalStrength, isNull);
-      expect(result.nodes[0].backhaulUplinkRate, isNull);
+      final slave = result.nodes[0] as SlaveNode;
+      expect(slave.backhaul.signalStrength, isNull);
+      expect(slave.backhaul.uplinkRate, isNull);
       // Other backhaul fields are still included
-      expect(result.nodes[0].backhaulMediaType, 'IEEE 802.11ax');
-      expect(result.nodes[0].backhaulPhyRate, 1200);
+      expect(slave.backhaul.mediaType, 'IEEE 802.11ax');
+      expect(slave.backhaul.phyRate, 1200);
     });
 
     test('normalizes MAC addresses to uppercase', () {
@@ -279,10 +283,10 @@ void main() {
 
       final result = MeshTopologyBuilder.build(network);
 
-      expect(result.nodes[0].instancePath,
-          'Device.WiFi.DataElements.Network.Device.2.');
-      expect(result.nodes[0].backhaulAlId, 'AA:BB:CC:DD:EE:01');
-      expect(result.nodes[0].backhaulMacAddress, 'AA:BB:CC:DD:EE:02');
+      final slave = result.nodes[0] as SlaveNode;
+      expect(slave.instancePath, 'Device.WiFi.DataElements.Network.Device.2.');
+      expect(slave.backhaul.backhaulAlId, 'AA:BB:CC:DD:EE:01');
+      expect(slave.backhaul.backhaulMacAddress, 'AA:BB:CC:DD:EE:02');
     });
 
     test('includes backhaulLinkType', () {
@@ -290,7 +294,8 @@ void main() {
 
       final result = MeshTopologyBuilder.build(network);
 
-      expect(result.nodes[0].backhaulLinkType, 'Wi-Fi');
+      final slave = result.nodes[0] as SlaveNode;
+      expect(slave.backhaul.linkType, 'Wi-Fi');
     });
 
     test('includes backhaulDownlinkRate', () {
@@ -298,7 +303,8 @@ void main() {
 
       final result = MeshTopologyBuilder.build(network);
 
-      expect(result.nodes[0].backhaulDownlinkRate, 600000);
+      final slave = result.nodes[0] as SlaveNode;
+      expect(slave.backhaul.downlinkRate, 600000);
     });
 
     test('includes backhaulParentDeviceId', () {
@@ -306,7 +312,8 @@ void main() {
 
       final result = MeshTopologyBuilder.build(network);
 
-      expect(result.nodes[0].backhaulParentDeviceId, 'AA:BB:CC:DD:EE:01');
+      final slave = result.nodes[0] as SlaveNode;
+      expect(slave.backhaul.parentNodeId, 'AA:BB:CC:DD:EE:01');
     });
 
     test('includes backhaulParentBssid', () {
@@ -314,7 +321,8 @@ void main() {
 
       final result = MeshTopologyBuilder.build(network);
 
-      expect(result.nodes[0].backhaulParentBssid, 'AA:BB:CC:DD:EE:01');
+      final slave = result.nodes[0] as SlaveNode;
+      expect(slave.backhaul.parentBssid, 'AA:BB:CC:DD:EE:01');
     });
 
     test('excludes backhaulDownlinkRate when includeBackhaulStats is false',
@@ -324,22 +332,20 @@ void main() {
       final result =
           MeshTopologyBuilder.build(network, includeBackhaulStats: false);
 
-      expect(result.nodes[0].backhaulDownlinkRate, isNull);
+      final slave = result.nodes[0] as SlaveNode;
+      expect(slave.backhaul.downlinkRate, isNull);
       // Non-stats fields are still included
-      expect(result.nodes[0].backhaulLinkType, 'Wi-Fi');
-      expect(result.nodes[0].backhaulParentDeviceId, 'AA:BB:CC:DD:EE:01');
+      expect(slave.backhaul.linkType, 'Wi-Fi');
+      expect(slave.backhaul.parentNodeId, 'AA:BB:CC:DD:EE:01');
     });
 
-    test('returns null for empty new backhaul fields', () {
+    test('master node has no backhaul fields', () {
       final network = DataElementsNetwork(items: [masterNode]);
 
       final result = MeshTopologyBuilder.build(network);
 
-      expect(result.nodes[0].backhaulLinkType, isNull);
-      expect(result.nodes[0].backhaulDownlinkRate, isNull);
-      expect(result.nodes[0].backhaulParentDeviceId, isNull);
-      expect(result.nodes[0].backhaulParentBssid, isNull);
-      expect(result.nodes[0].lastContactTime, isNull);
+      expect(result.nodes[0], isA<MasterNode>());
+      expect(result.nodes[0].isMaster, isTrue);
     });
   });
 }

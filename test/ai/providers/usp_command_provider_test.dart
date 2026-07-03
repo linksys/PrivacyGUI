@@ -2,9 +2,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/ai/abstraction/_abstraction.dart';
 import 'package:privacy_gui/ai/providers/usp_command_provider.dart';
-import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
+import 'package:privacy_gui/page/_shared/models/client_device.dart';
+import 'package:privacy_gui/page/_shared/models/mesh_network.dart';
+import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/wan_status_ui_model.dart';
+import 'package:privacy_gui/page/_shared/models/wifi_connection_info.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_radio_ui_model.dart';
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
@@ -425,26 +428,30 @@ final _testSystemInfoData = SystemInfoData(
 );
 
 final _testDevicesData = DevicesData(
-  deviceModels: const [
-    DeviceUIModel(
-      mac: 'AA:BB:CC:DD:EE:01',
-      ip: '192.168.1.100',
-      hostName: 'iPhone-15-Pro',
-      isActive: true,
-      isWifi: true,
-      signalStrength: -42,
-      band: '5GHz',
+  meshNetwork: MeshNetwork(
+    master: MasterNode(
+      deviceId: 'GATEWAY',
+      model: 'MR7500',
+      connectedClients: [
+        ClientDevice(
+          mac: 'AA:BB:CC:DD:EE:01',
+          ip: '192.168.1.100',
+          hostName: 'iPhone-15-Pro',
+          isActive: true,
+          connectionType: ConnectionType.wifi,
+          wifi: WifiConnectionInfo(signalStrength: -42, band: '5GHz'),
+        ),
+        ClientDevice(
+          mac: 'AA:BB:CC:DD:EE:02',
+          ip: '192.168.1.101',
+          hostName: 'MacBook-Air',
+          isActive: true,
+          connectionType: ConnectionType.wifi,
+          wifi: WifiConnectionInfo(signalStrength: -68, band: '5GHz'),
+        ),
+      ],
     ),
-    DeviceUIModel(
-      mac: 'AA:BB:CC:DD:EE:02',
-      ip: '192.168.1.101',
-      hostName: 'MacBook-Air',
-      isActive: true,
-      isWifi: true,
-      signalStrength: -68,
-      band: '5GHz',
-    ),
-  ],
+  ),
 );
 
 final _testWifiData = WifiData(

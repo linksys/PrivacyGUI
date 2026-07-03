@@ -20,9 +20,9 @@ class UspStatsPanel extends ConsumerWidget {
     final ethernetData = ref.watch(ethernetDataProvider).valueOrNull;
     if (devicesData == null) return const CardSkeleton.stats();
 
-    final devices = devicesData.deviceModels;
+    final devices = devicesData.clientDevices;
     final onlineCount = devices.where((d) => d.isActive).length;
-    final nodeCount = devicesData.nodeModels.length;
+    final nodeCount = devicesData.nodes.length;
     final wifiData = ref.watch(wifiDataProvider).valueOrNull;
     final radioCount = wifiData?.radioModels.length ?? 0;
     final enabledRadios =

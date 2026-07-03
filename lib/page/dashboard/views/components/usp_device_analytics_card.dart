@@ -5,6 +5,7 @@ import 'package:privacy_gui/page/_shared/models/device_analytics_state.dart';
 import 'package:privacy_gui/page/_shared/providers/card_tab_state_provider.dart';
 import 'package:privacy_gui/page/_shared/providers/usp_device_analytics_notifier.dart';
 import 'package:privacy_gui/page/_shared/components/dashboard_card_template.dart';
+import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Device Connection Analytics card — 4 chart views via tab selector.
@@ -141,68 +142,97 @@ class _OverviewView extends StatelessWidget {
           ),
         ),
         AppGap.md(),
-        // WiFi / Wired breakdown
+        // Connection type + status breakdown
         Row(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _StatItem(
-              icon: Icons.wifi,
-              label: loc(context).wifi,
-              value: distribution.wifiCount,
-              color: colorScheme.primary,
+            Expanded(
+              child: LayoutBlock(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+                child: Row(
+                  children: [
+                    Icon(Icons.wifi, color: colorScheme.primary, size: 20),
+                    AppGap.sm(),
+                    Expanded(
+                      child: AppText.bodyMedium(loc(context).wifi),
+                    ),
+                    AppText.titleSmall('${distribution.wifiCount}'),
+                  ],
+                ),
+              ),
             ),
-            AppGap.xl(),
-            _StatItem(
-              icon: Icons.cable,
-              label: loc(context).wired,
-              value: distribution.wiredCount,
-              color: colorScheme.secondary,
+            AppGap.sm(),
+            Expanded(
+              child: LayoutBlock(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+                child: Row(
+                  children: [
+                    Icon(Icons.settings_ethernet,
+                        color: colorScheme.secondary, size: 20),
+                    AppGap.sm(),
+                    Expanded(
+                      child: AppText.bodyMedium(loc(context).wired),
+                    ),
+                    AppText.titleSmall('${distribution.wiredCount}'),
+                  ],
+                ),
+              ),
             ),
           ],
         ),
         AppGap.sm(),
-        // Online / Offline legend
         Row(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _LegendDot(color: colorScheme.primary),
-            AppGap.xs(),
-            AppText.labelSmall('${loc(context).online}: $online'),
-            if (offline > 0) ...[
-              AppGap.lg(),
-              _LegendDot(color: colorScheme.outlineVariant),
-              AppGap.xs(),
-              AppText.labelSmall('${loc(context).offline}: $offline'),
-            ],
+            Expanded(
+              child: LayoutBlock(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 10,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        color: colorScheme.primary,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    AppGap.sm(),
+                    Expanded(
+                      child: AppText.bodyMedium(loc(context).online),
+                    ),
+                    AppText.titleSmall('$online'),
+                  ],
+                ),
+              ),
+            ),
+            AppGap.sm(),
+            Expanded(
+              child: LayoutBlock(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 10,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        color: colorScheme.outlineVariant,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    AppGap.sm(),
+                    Expanded(
+                      child: AppText.bodyMedium(loc(context).offline),
+                    ),
+                    AppText.titleSmall('$offline'),
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
-      ],
-    );
-  }
-}
-
-class _StatItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final int value;
-  final Color color;
-
-  const _StatItem({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Icon(icon, color: color, size: 24),
-        AppGap.xs(),
-        AppText.titleMedium('$value'),
-        AppText.labelSmall(label,
-            color: Theme.of(context).colorScheme.onSurfaceVariant),
       ],
     );
   }

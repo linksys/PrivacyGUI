@@ -1,13 +1,16 @@
 import 'package:equatable/equatable.dart';
-import 'package:privacy_gui/page/topology/models/node_ui_model.dart';
+import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 
 /// Result of mesh topology fetch from DataElements.
 ///
 /// Contains mesh nodes and client-to-node mapping for determining
 /// which mesh node each client device is connected to.
+///
+/// NOTE: The [nodes] list contains NodeEntity instances with empty
+/// [connectedClients] — client assignment happens in [MeshNetworkBuilder].
 class MeshTopologyInfo extends Equatable {
   /// Mesh nodes discovered via DataElements.
-  final List<NodeUIModel> nodes;
+  final List<NodeEntity> nodes;
 
   /// Client MAC (uppercase) → node device ID mapping.
   final Map<String, String> clientToNodeMap;

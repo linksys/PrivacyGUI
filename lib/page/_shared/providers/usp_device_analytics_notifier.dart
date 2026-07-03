@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/_shared/models/device_analytics_state.dart';
-import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
+import 'package:privacy_gui/page/_shared/models/client_device.dart';
 import 'package:privacy_gui/page/_shared/providers/device_analytics_persistence.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 
@@ -57,7 +57,7 @@ class UspDeviceAnalyticsNotifier extends Notifier<DeviceAnalyticsState> {
     }
   }
 
-  void _onDashboardUpdated(List<DeviceUIModel> devices) {
+  void _onDashboardUpdated(List<ClientDevice> devices) {
     // 1. Compute current distribution
     final distribution = _computeDistribution(devices);
 
@@ -115,7 +115,7 @@ class UspDeviceAnalyticsNotifier extends Notifier<DeviceAnalyticsState> {
     _persistState();
   }
 
-  DeviceDistribution _computeDistribution(List<DeviceUIModel> devices) {
+  DeviceDistribution _computeDistribution(List<ClientDevice> devices) {
     final online = devices.where((d) => d.isActive).toList();
     final offline = devices.where((d) => !d.isActive).toList();
 
@@ -173,7 +173,7 @@ class UspDeviceAnalyticsNotifier extends Notifier<DeviceAnalyticsState> {
   /// - Master WiFi with band: actual band (2.4GHz, 5GHz, 6GHz)
   /// - Child node client (WiFi or Wired): parentNodeName
   /// - Master Wired: "Wired"
-  String _getDeviceCategory(DeviceUIModel d) {
+  String _getDeviceCategory(ClientDevice d) {
     final isChildNodeClient = d.parentNodeName != null && d.band == null;
     if (isChildNodeClient) {
       return d.parentNodeName!;

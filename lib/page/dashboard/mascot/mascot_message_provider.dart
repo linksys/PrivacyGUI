@@ -99,8 +99,7 @@ class MascotMessageNotifier {
     final devicesData = _ref.read(devicesDataProvider).valueOrNull;
     final onlineDeviceCount = devicesData?.onlineClientCount;
     final totalDeviceCount = devicesData?.totalClientCount;
-    final meshNodeCount =
-        devicesData?.nodeModels.where((n) => !n.isMaster).length;
+    final meshNodeCount = devicesData?.nodes.where((n) => !n.isMaster).length;
 
     // WAN
     final wanData = _ref.read(wanDataProvider).valueOrNull;

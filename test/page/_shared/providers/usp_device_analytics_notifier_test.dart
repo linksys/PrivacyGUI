@@ -1,8 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:privacy_gui/page/_shared/models/client_device.dart';
 import 'package:privacy_gui/page/_shared/models/device_analytics_state.dart';
-import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
+import 'package:privacy_gui/page/_shared/models/mesh_network.dart';
+import 'package:privacy_gui/page/_shared/models/node_entity.dart';
+import 'package:privacy_gui/page/_shared/models/wifi_connection_info.dart';
 import 'package:privacy_gui/page/_shared/providers/usp_device_analytics_notifier.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 
@@ -20,46 +23,65 @@ class _TestDevicesDataNotifier extends DevicesDataNotifier {
 }
 
 void main() {
-  const wifiDevice5g = DeviceUIModel(
+  final wifiDevice5g = ClientDevice(
     mac: 'AA:BB:CC:DD:EE:01',
     ip: '192.168.1.100',
     hostName: 'Phone',
     isActive: true,
-    isWifi: true,
-    band: '5GHz',
-    signalStrength: -55, // level 3 (excellent, >= -65)
+    connectionType: ConnectionType.wifi,
+    wifi: const WifiConnectionInfo(
+      band: '5GHz',
+      signalStrength: -55, // level 3 (excellent, >= -65)
+    ),
   );
 
-  const wifiDevice24g = DeviceUIModel(
+  final wifiDevice24g = ClientDevice(
     mac: 'AA:BB:CC:DD:EE:02',
     ip: '192.168.1.101',
     hostName: 'Tablet',
     isActive: true,
-    isWifi: true,
-    band: '2.4GHz',
-    signalStrength: -75, // level 1 (fair, -71..-78)
+    connectionType: ConnectionType.wifi,
+    wifi: const WifiConnectionInfo(
+      band: '2.4GHz',
+      signalStrength: -75, // level 1 (fair, -71..-78)
+    ),
   );
 
-  const wiredDevice = DeviceUIModel(
+  final wiredDevice = ClientDevice(
     mac: 'AA:BB:CC:DD:EE:03',
     ip: '192.168.1.102',
     hostName: 'Desktop',
     isActive: true,
-    isWifi: false,
+    connectionType: ConnectionType.wired,
   );
 
-  const offlineDevice = DeviceUIModel(
+  final offlineDevice = ClientDevice(
     mac: 'AA:BB:CC:DD:EE:04',
     ip: '192.168.1.103',
     hostName: 'Printer',
     isActive: false,
-    isWifi: true,
-    band: '2.4GHz',
-    signalStrength: -85,
+    connectionType: ConnectionType.wifi,
+    wifi: const WifiConnectionInfo(
+      band: '2.4GHz',
+      signalStrength: -85,
+    ),
   );
 
   final testDevices = [wifiDevice5g, wifiDevice24g, wiredDevice, offlineDevice];
-  final testDevicesData = DevicesData(deviceModels: testDevices);
+
+  DevicesData createDevicesData(List<ClientDevice> clients) {
+    return DevicesData(
+      meshNetwork: MeshNetwork(
+        master: MasterNode(
+          deviceId: 'GATEWAY',
+          model: 'Router',
+          connectedClients: clients,
+        ),
+      ),
+    );
+  }
+
+  final testDevicesData = createDevicesData(testDevices);
 
   setUp(() {
     SharedPreferences.setMockInitialValues({});
@@ -176,7 +198,7 @@ void main() {
     });
 
     test('empty device list produces empty distribution', () async {
-      final container = createContainer(data: const DevicesData());
+      final container = createContainer(data: createDevicesData([]));
       await waitForAnalytics(container);
 
       final state = container.read(uspDeviceAnalyticsProvider);
@@ -246,25 +268,29 @@ void main() {
 
     test('band signal quality computes average per band', () async {
       // Two 5GHz devices with different signal strengths
-      const wifi5a = DeviceUIModel(
+      final wifi5a = ClientDevice(
         mac: 'FF:00:00:00:00:01',
         ip: '192.168.1.200',
         hostName: 'DeviceA',
         isActive: true,
-        isWifi: true,
-        band: '5GHz',
-        signalStrength: -30, // quality 1.0
+        connectionType: ConnectionType.wifi,
+        wifi: const WifiConnectionInfo(
+          band: '5GHz',
+          signalStrength: -30, // quality 1.0
+        ),
       );
-      const wifi5b = DeviceUIModel(
+      final wifi5b = ClientDevice(
         mac: 'FF:00:00:00:00:02',
         ip: '192.168.1.201',
         hostName: 'DeviceB',
         isActive: true,
-        isWifi: true,
-        band: '5GHz',
-        signalStrength: -90, // quality 0.0
+        connectionType: ConnectionType.wifi,
+        wifi: const WifiConnectionInfo(
+          band: '5GHz',
+          signalStrength: -90, // quality 0.0
+        ),
       );
-      const data = DevicesData(deviceModels: [wifi5a, wifi5b]);
+      final data = createDevicesData([wifi5a, wifi5b]);
       final container = createContainer(data: data);
       await waitForAnalytics(container);
 
@@ -276,47 +302,50 @@ void main() {
 
     test('child node clients use parentNodeName as category', () async {
       // Master WiFi with band
-      const masterWifi = DeviceUIModel(
+      final masterWifi = ClientDevice(
         mac: 'FF:00:00:00:00:01',
         ip: '192.168.1.200',
         hostName: 'MasterClient',
         isActive: true,
-        isWifi: true,
-        band: '5GHz',
-        signalStrength: -50,
+        connectionType: ConnectionType.wifi,
+        wifi: const WifiConnectionInfo(
+          band: '5GHz',
+          signalStrength: -50,
+        ),
       );
       // Child node WiFi client (no band, has parentNodeName)
-      const childWifi = DeviceUIModel(
+      final childWifi = ClientDevice(
         mac: 'FF:00:00:00:00:02',
         ip: '192.168.1.201',
         hostName: 'ChildClient',
         isActive: true,
-        isWifi: true,
+        connectionType: ConnectionType.wifi,
         parentNodeId: 'CHILD_NODE_ID',
         parentNodeName: 'Extender-1',
-        signalStrength: -60,
+        wifi: const WifiConnectionInfo(
+          signalStrength: -60,
+        ),
       );
       // Child node Wired client
-      const childWired = DeviceUIModel(
+      final childWired = ClientDevice(
         mac: 'FF:00:00:00:00:03',
         ip: '192.168.1.202',
         hostName: 'ChildWired',
         isActive: true,
-        isWifi: false,
+        connectionType: ConnectionType.wired,
         parentNodeId: 'CHILD_NODE_ID',
         parentNodeName: 'Extender-1',
       );
       // Master Wired client (no parentNodeName)
-      const masterWired = DeviceUIModel(
+      final masterWired = ClientDevice(
         mac: 'FF:00:00:00:00:04',
         ip: '192.168.1.203',
         hostName: 'MasterWired',
         isActive: true,
-        isWifi: false,
+        connectionType: ConnectionType.wired,
       );
-      const data = DevicesData(
-        deviceModels: [masterWifi, childWifi, childWired, masterWired],
-      );
+      final data =
+          createDevicesData([masterWifi, childWifi, childWired, masterWired]);
       final container = createContainer(data: data);
       await waitForAnalytics(container);
 

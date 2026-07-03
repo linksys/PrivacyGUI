@@ -35,8 +35,8 @@ class UspWifiPerformanceCard extends ConsumerWidget {
     for (final entry in wifiData.wifiClientMap.entries) {
       final client = entry.value;
       if (!client.active) continue;
-      // Resolve display name from deviceModels
-      final device = devicesData?.deviceModels
+      // Resolve display name from clientDevices
+      final device = devicesData?.clientDevices
           .where((d) => d.mac.toUpperCase() == entry.key.toUpperCase())
           .firstOrNull;
       final displayName = device?.hostName ?? entry.key;

@@ -1,4 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/page/_shared/models/mesh_network.dart';
+import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/topology/providers/node_detail_provider.dart';
@@ -40,6 +42,12 @@ List<Override> topologyViewOverrides({
 List<Override> nodeDetailOverrides(UspNodeDetailState state) => [
       uspNodeDetailProvider.overrideWith((ref, deviceId) => state),
       devicesDataProvider.overrideWith(
-        () => FixedDevicesDataNotifierForTopology(const DevicesData()),
+        () => FixedDevicesDataNotifierForTopology(
+          DevicesData(
+            meshNetwork: MeshNetwork(
+              master: MasterNode(deviceId: 'GATEWAY', model: 'Test Router'),
+            ),
+          ),
+        ),
       ),
     ];

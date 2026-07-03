@@ -1,11 +1,12 @@
 import 'package:privacy_gui/page/_shared/models/client_connection_detail.dart';
+import 'package:privacy_gui/page/_shared/models/client_device.dart';
 import 'package:privacy_gui/page/_shared/models/device_analytics_state.dart';
-import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/dhcp_client_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/dhcp_reservation_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/ethernet_port_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/lan_info_ui_model.dart';
-import 'package:privacy_gui/page/_shared/models/mesh_topology_info.dart';
+import 'package:privacy_gui/page/_shared/models/mesh_network.dart';
+import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 import 'package:privacy_gui/page/_shared/models/port_forwarding_rule_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/system_monitor_state.dart';
@@ -13,6 +14,7 @@ import 'package:privacy_gui/page/_shared/models/time_settings_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/traffic_analysis_state.dart';
 import 'package:privacy_gui/page/_shared/models/wan_status_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_client_ui_model.dart';
+import 'package:privacy_gui/page/_shared/models/wifi_connection_info.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_radio_ui_model.dart';
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
 import 'package:privacy_gui/page/admin/providers/time_data_provider.dart';
@@ -28,7 +30,6 @@ import 'package:privacy_gui/page/local_network/providers/lan_data_provider.dart'
 import 'package:privacy_gui/page/port_forwarding/models/port_triggering_rule_ui_model.dart';
 import 'package:privacy_gui/page/port_forwarding/providers/port_forwarding_data_provider.dart';
 import 'package:privacy_gui/page/port_forwarding/providers/port_triggering_data_provider.dart';
-import 'package:privacy_gui/page/topology/models/node_ui_model.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_data_provider.dart';
 
 // ---------------------------------------------------------------------------
@@ -206,88 +207,96 @@ final testEthernetData = EthernetData(ethernetPortModels: testEthernetPorts);
 // Connected Devices
 // ---------------------------------------------------------------------------
 
-const testDevices = [
-  DeviceUIModel(
+final testDevices = [
+  ClientDevice(
     mac: 'AA:BB:CC:DD:EE:01',
     ip: '192.168.1.101',
     hostName: 'Desktop-PC',
     isActive: true,
-    isWifi: false,
-    layer1Interface: 'Device.Ethernet.Interface.2.',
+    connectionType: ConnectionType.wired,
   ),
-  DeviceUIModel(
+  ClientDevice(
     mac: 'AA:BB:CC:DD:EE:02',
     ip: '192.168.1.102',
     hostName: 'iPhone-15',
     isActive: true,
-    isWifi: true,
-    signalStrength: -45,
-    band: '5GHz',
-    ssidName: 'HomeNetwork',
+    connectionType: ConnectionType.wifi,
+    wifi: WifiConnectionInfo(
+      signalStrength: -45,
+      band: '5GHz',
+      ssidName: 'HomeNetwork',
+    ),
     parentNodeName: 'MR7500',
   ),
-  DeviceUIModel(
+  ClientDevice(
     mac: 'AA:BB:CC:DD:EE:03',
     ip: '192.168.1.103',
     hostName: 'MacBook-Air',
     isActive: true,
-    isWifi: true,
-    signalStrength: -55,
-    band: '5GHz',
-    ssidName: 'HomeNetwork',
+    connectionType: ConnectionType.wifi,
+    wifi: WifiConnectionInfo(
+      signalStrength: -55,
+      band: '5GHz',
+      ssidName: 'HomeNetwork',
+    ),
     parentNodeName: 'MR7500',
   ),
-  DeviceUIModel(
+  ClientDevice(
     mac: 'AA:BB:CC:DD:EE:04',
     ip: '192.168.1.104',
     hostName: 'Smart-Speaker',
     isActive: true,
-    isWifi: true,
-    signalStrength: -65,
-    band: '2.4GHz',
-    ssidName: 'HomeNetwork',
+    connectionType: ConnectionType.wifi,
+    wifi: WifiConnectionInfo(
+      signalStrength: -65,
+      band: '2.4GHz',
+      ssidName: 'HomeNetwork',
+    ),
   ),
-  DeviceUIModel(
+  ClientDevice(
     mac: 'AA:BB:CC:DD:EE:05',
     ip: '192.168.1.105',
     hostName: 'Gaming-Console',
     isActive: true,
-    isWifi: false,
-    layer1Interface: 'Device.Ethernet.Interface.3.',
+    connectionType: ConnectionType.wired,
   ),
-  DeviceUIModel(
+  ClientDevice(
     mac: 'AA:BB:CC:DD:EE:06',
     ip: '192.168.1.106',
     hostName: 'Old-Tablet',
     isActive: false,
-    isWifi: true,
-    signalStrength: -80,
-    band: '2.4GHz',
+    connectionType: ConnectionType.wifi,
+    wifi: WifiConnectionInfo(
+      signalStrength: -80,
+      band: '2.4GHz',
+    ),
   ),
 ];
 
-const testNodes = [
-  NodeUIModel(
+final testMeshNetwork = MeshNetwork(
+  master: MasterNode(
     deviceId: 'GATEWAY',
     model: 'MR7500',
     manufacturer: 'Linksys',
     serialNumber: 'ABC123456789',
     softwareVersion: '1.0.16',
-    isMaster: true,
-    connectedDeviceCount: 5,
+    connectedClients: testDevices,
   ),
-];
-
-final testDevicesData = DevicesData(
-  deviceModels: testDevices,
-  nodeModels: testNodes,
-  meshTopology: MeshTopologyInfo.empty,
 );
 
+final testDevicesData = DevicesData(meshNetwork: testMeshNetwork);
+
 final testDevicesEmptyData = DevicesData(
-  deviceModels: const [],
-  nodeModels: testNodes,
-  meshTopology: MeshTopologyInfo.empty,
+  meshNetwork: MeshNetwork(
+    master: MasterNode(
+      deviceId: 'GATEWAY',
+      model: 'MR7500',
+      manufacturer: 'Linksys',
+      serialNumber: 'ABC123456789',
+      softwareVersion: '1.0.16',
+      connectedClients: [],
+    ),
+  ),
 );
 
 // ---------------------------------------------------------------------------

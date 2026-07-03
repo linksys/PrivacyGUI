@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/page/_shared/models/dhcp_client_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/lan_info_ui_model.dart';
+import 'package:privacy_gui/page/_shared/models/mesh_network.dart';
+import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/dhcp/models/dhcp_reservation_list.dart';
 import 'package:privacy_gui/page/dhcp/models/dhcp_reservations_feature_state.dart';
@@ -60,7 +62,11 @@ class FixedDhcpDataNotifier extends DhcpDataNotifier {
 
 class FixedDevicesDataNotifier extends DevicesDataNotifier {
   @override
-  Future<DevicesData> build() async => const DevicesData();
+  Future<DevicesData> build() async => DevicesData(
+        meshNetwork: MeshNetwork(
+          master: MasterNode(deviceId: 'GATEWAY', model: 'Test Router'),
+        ),
+      );
 }
 
 List<Override> dhcpDetailOverrides({

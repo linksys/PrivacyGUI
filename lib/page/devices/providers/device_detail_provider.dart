@@ -1,7 +1,7 @@
 import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
+import 'package:privacy_gui/page/_shared/models/client_device.dart';
 import 'package:privacy_gui/page/_shared/models/dhcp_reservation_ui_model.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/local_network/providers/dhcp_data_provider.dart';
@@ -11,7 +11,7 @@ final uspDeviceDetailProvider =
     Provider.family<DeviceDetailState, String>((ref, mac) {
   final data = ref.watch(devicesDataProvider).valueOrNull;
   if (data == null) return DeviceDetailState.empty();
-  final device = data.deviceModels.firstWhereOrNull(
+  final device = data.clientDevices.firstWhereOrNull(
     (d) => d.mac.toUpperCase() == mac.toUpperCase(),
   );
   final dhcpData = ref.watch(dhcpDataProvider).valueOrNull;
@@ -23,7 +23,7 @@ final uspDeviceDetailProvider =
 
 /// Aggregated state for a single device's detail page.
 class DeviceDetailState extends Equatable {
-  final DeviceUIModel? device;
+  final ClientDevice? device;
   final DhcpReservationUIModel? reservation;
 
   const DeviceDetailState({this.device, this.reservation});

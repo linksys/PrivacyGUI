@@ -9,7 +9,6 @@ import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_client_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_connection_info.dart';
 import 'package:privacy_gui/page/_shared/models/client_connection_detail.dart';
-import 'package:privacy_gui/page/topology/models/node_ui_model.dart';
 
 /// Builds [MeshNetwork] from raw data sources.
 ///
@@ -76,8 +75,7 @@ class MeshNetworkBuilder {
     // 6. Build MasterNode
     final masterDevice =
         meshDevices.where((d) => d.deviceRole == 'master').firstOrNull;
-    final masterMeshInfo =
-        meshTopology.nodes.isNotEmpty ? meshTopology.nodes.first : null;
+    final masterMeshInfo = meshTopology.nodes.master;
     final masterNodeId = masterDevice?.macAddress.trim().toUpperCase() ??
         masterMeshInfo?.deviceId ??
         'GATEWAY';
@@ -104,9 +102,31 @@ class MeshNetworkBuilder {
       connectedClients: masterClients,
     );
 
+    // Compute master displayName for patching clients
+    final masterDisplayName = master.displayName;
+
+    // Patch master's connected clients with parentNodeName
+    final patchedMasterClients = masterClients
+        .map((c) => c.copyWith(parentNodeName: masterDisplayName))
+        .toList();
+    final patchedMaster = MasterNode(
+      deviceId: master.deviceId,
+      dataElementsId: master.dataElementsId,
+      friendlyName: master.friendlyName,
+      hostName: master.hostName,
+      model: master.model,
+      manufacturer: master.manufacturer,
+      serialNumber: master.serialNumber,
+      softwareVersion: master.softwareVersion,
+      ipAddress: master.ipAddress,
+      ipv6Addresses: master.ipv6Addresses,
+      instancePath: master.instancePath,
+      connectedClients: patchedMasterClients,
+    );
+
     // 7. Build SlaveNodes
     final slaves = meshDevices.where((d) => d.deviceRole == 'slave').map((d) {
-      final slaveMeshInfo = _findMatchingMeshNode(d, meshTopology.nodes);
+      final slaveMeshInfo = _findMatchingMeshNode(d, meshTopology.nodes.slaves);
       final slaveNodeId = d.macAddress.trim().toUpperCase();
 
       // Clients for this slave
@@ -120,10 +140,31 @@ class MeshNetworkBuilder {
         slaveClients.addAll(clientsByNodeId[slaveMeshInfo.deviceId]!);
       }
 
-      return _buildSlaveNode(
+      final slave = _buildSlaveNode(
         slaveDevice: d,
         slaveMeshInfo: slaveMeshInfo,
         connectedClients: slaveClients,
+      );
+
+      // Patch slave's connected clients with parentNodeName
+      final slaveDisplayName = slave.displayName;
+      final patchedSlaveClients = slaveClients
+          .map((c) => c.copyWith(parentNodeName: slaveDisplayName))
+          .toList();
+      return SlaveNode(
+        deviceId: slave.deviceId,
+        dataElementsId: slave.dataElementsId,
+        friendlyName: slave.friendlyName,
+        hostName: slave.hostName,
+        model: slave.model,
+        manufacturer: slave.manufacturer,
+        serialNumber: slave.serialNumber,
+        softwareVersion: slave.softwareVersion,
+        ipAddress: slave.ipAddress,
+        ipv6Addresses: slave.ipv6Addresses,
+        instancePath: slave.instancePath,
+        connectedClients: patchedSlaveClients,
+        backhaul: slave.backhaul,
       );
     }).toList();
 
@@ -140,7 +181,7 @@ class MeshNetworkBuilder {
         .toList();
 
     return MeshNetwork(
-      master: master,
+      master: patchedMaster,
       slaves: slaves,
       unassignedClients: unassigned,
     );
@@ -156,7 +197,8 @@ class MeshNetworkBuilder {
   ) {
     final map = <String, String>{};
     for (final d in devices.items) {
-      if (d.deviceRole != 'slave') continue;
+      // Include both master and slave nodes
+      if (d.deviceRole != 'master' && d.deviceRole != 'slave') continue;
 
       final displayName = (d.friendlyName?.isNotEmpty == true)
           ? d.friendlyName!
@@ -174,6 +216,14 @@ class MeshNetworkBuilder {
             map[node.deviceId] = displayName;
             break;
           }
+        }
+      }
+
+      // For master, also try matching via MAC address directly
+      if (d.deviceRole == 'master') {
+        final masterMac = d.macAddress.trim().toUpperCase();
+        if (masterMac.isNotEmpty && !map.containsKey(masterMac)) {
+          map[masterMac] = displayName;
         }
       }
     }
@@ -207,24 +257,21 @@ class MeshNetworkBuilder {
     String? parentNodeId;
     String? parentNodeName;
     if (meshTopology.isEmpty) {
+      // Non-mesh: all active devices are on the gateway
       if (device.isActive) parentNodeName = gatewayName;
     } else {
       parentNodeId = meshTopology.clientToNodeMap[mac];
       if (parentNodeId != null) {
-        final isGateway = meshTopology.nodes.isNotEmpty &&
-            meshTopology.nodes.first.deviceId == parentNodeId;
-        if (isGateway) {
-          parentNodeName = null;
-        } else {
-          parentNodeName = nodeDisplayNameMap[parentNodeId];
-          if (parentNodeName == null) {
-            final matchingNode = meshTopology.nodes
-                .where((n) => n.deviceId == parentNodeId)
-                .firstOrNull;
-            parentNodeName = matchingNode?.model.isNotEmpty == true
-                ? matchingNode!.model
-                : parentNodeId;
-          }
+        // Try display name map first (friendlyName or hostName from Hosts)
+        parentNodeName = nodeDisplayNameMap[parentNodeId];
+        if (parentNodeName == null) {
+          // Fallback: use model name from DataElements
+          final matchingNode = meshTopology.nodes
+              .where((n) => n.deviceId == parentNodeId)
+              .firstOrNull;
+          parentNodeName = matchingNode?.model.isNotEmpty == true
+              ? matchingNode!.model
+              : gatewayName;
         }
       }
     }
@@ -339,7 +386,7 @@ class MeshNetworkBuilder {
 
   static MasterNode _buildMasterNode({
     required ConnectedDevice? masterDevice,
-    required NodeUIModel? masterMeshInfo,
+    required MasterNode? masterMeshInfo,
     required SystemInfoUIModel? systemInfo,
     required String gatewayName,
     required List<ClientDevice> connectedClients,
@@ -377,24 +424,13 @@ class MeshNetworkBuilder {
 
   static SlaveNode _buildSlaveNode({
     required ConnectedDevice slaveDevice,
-    required NodeUIModel? slaveMeshInfo,
+    required SlaveNode? slaveMeshInfo,
     required List<ClientDevice> connectedClients,
   }) {
     final deviceId = slaveDevice.macAddress.trim().toUpperCase();
 
-    final backhaul = BackhaulInfo(
-      mediaType: slaveMeshInfo?.backhaulMediaType ?? '',
-      linkType: slaveMeshInfo?.backhaulLinkType,
-      phyRate: slaveMeshInfo?.backhaulPhyRate ?? 0,
-      signalStrength: slaveMeshInfo?.backhaulSignalStrength,
-      uplinkRate: slaveMeshInfo?.backhaulUplinkRate,
-      downlinkRate: slaveMeshInfo?.backhaulDownlinkRate,
-      parentNodeId: slaveMeshInfo?.backhaulParentDeviceId,
-      parentBssid: slaveMeshInfo?.backhaulParentBssid,
-      lastContactTime: slaveMeshInfo?.lastContactTime,
-      backhaulAlId: slaveMeshInfo?.backhaulAlId,
-      backhaulMacAddress: slaveMeshInfo?.backhaulMacAddress,
-    );
+    final backhaul =
+        slaveMeshInfo?.backhaul ?? const BackhaulInfo(mediaType: '');
 
     return SlaveNode(
       deviceId: deviceId,
@@ -422,9 +458,9 @@ class MeshNetworkBuilder {
   // Private: Mesh node matching
   // ---------------------------------------------------------------------------
 
-  static NodeUIModel? _findMatchingMeshNode(
+  static SlaveNode? _findMatchingMeshNode(
     ConnectedDevice device,
-    List<NodeUIModel> meshNodes,
+    List<SlaveNode> meshSlaves,
   ) {
     final hostsDeviceId =
         device.deviceId?.toUpperCase().replaceAll('-', '') ?? '';
@@ -432,7 +468,7 @@ class MeshNetworkBuilder {
 
     final embeddedMac = hostsDeviceId.substring(hostsDeviceId.length - 12);
 
-    return meshNodes.where((n) {
+    return meshSlaves.where((n) {
       final nodeIdNormalized = n.deviceId.toUpperCase().replaceAll(':', '');
       return nodeIdNormalized == embeddedMac;
     }).firstOrNull;

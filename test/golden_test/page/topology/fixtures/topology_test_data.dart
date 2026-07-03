@@ -1,9 +1,11 @@
-import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
-import 'package:privacy_gui/page/_shared/models/mesh_topology_info.dart';
+import 'package:privacy_gui/page/_shared/models/backhaul_info.dart';
+import 'package:privacy_gui/page/_shared/models/client_device.dart';
+import 'package:privacy_gui/page/_shared/models/mesh_network.dart';
+import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
+import 'package:privacy_gui/page/_shared/models/wifi_connection_info.dart';
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
-import 'package:privacy_gui/page/topology/models/node_ui_model.dart';
 import 'package:privacy_gui/page/topology/providers/node_detail_provider.dart';
 
 // ---------------------------------------------------------------------------
@@ -28,64 +30,60 @@ final testSystemInfoData = SystemInfoData(model: _testSystemInfo);
 // Devices
 // ---------------------------------------------------------------------------
 
-const _testDevices = [
-  DeviceUIModel(
+final _testClients = [
+  ClientDevice(
     mac: 'AA:BB:CC:DD:EE:01',
     ip: '192.168.1.100',
     hostName: 'iPhone',
     isActive: true,
-    isWifi: true,
-    signalStrength: -45,
-    band: '5GHz',
-    parentNodeId: null,
+    connectionType: ConnectionType.wifi,
+    wifi: WifiConnectionInfo(signalStrength: -45, band: '5GHz'),
   ),
-  DeviceUIModel(
+  ClientDevice(
     mac: 'AA:BB:CC:DD:EE:02',
     ip: '192.168.1.101',
     hostName: 'MacBook Pro',
     isActive: true,
-    isWifi: true,
-    signalStrength: -55,
-    band: '5GHz',
-    parentNodeId: null,
+    connectionType: ConnectionType.wifi,
+    wifi: WifiConnectionInfo(signalStrength: -55, band: '5GHz'),
   ),
-  DeviceUIModel(
+  ClientDevice(
     mac: 'AA:BB:CC:DD:EE:03',
     ip: '192.168.1.102',
     hostName: 'Desktop PC',
     isActive: true,
-    isWifi: false,
-    parentNodeId: null,
+    connectionType: ConnectionType.wired,
   ),
 ];
 
-const _meshDevices = [
-  DeviceUIModel(
+final _meshMasterClients = [
+  ClientDevice(
     mac: 'AA:BB:CC:DD:EE:01',
     ip: '192.168.1.100',
     hostName: 'iPhone',
     isActive: true,
-    isWifi: true,
-    signalStrength: -45,
-    band: '5GHz',
+    connectionType: ConnectionType.wifi,
+    wifi: WifiConnectionInfo(signalStrength: -45, band: '5GHz'),
     parentNodeId: '11:22:33:44:55:66',
   ),
-  DeviceUIModel(
+  ClientDevice(
     mac: 'AA:BB:CC:DD:EE:02',
     ip: '192.168.1.101',
     hostName: 'MacBook Pro',
     isActive: true,
-    isWifi: true,
-    signalStrength: -55,
-    band: '5GHz',
+    connectionType: ConnectionType.wifi,
+    wifi: WifiConnectionInfo(signalStrength: -55, band: '5GHz'),
     parentNodeId: '11:22:33:44:55:66',
   ),
-  DeviceUIModel(
+];
+
+final _meshSlaveClients = [
+  ClientDevice(
     mac: 'AA:BB:CC:DD:EE:03',
     ip: '192.168.1.102',
     hostName: 'Desktop PC',
     isActive: true,
-    isWifi: false,
+    connectionType: ConnectionType.wired,
     parentNodeId: 'AA:BB:CC:DD:FF:01',
   ),
 ];
@@ -95,71 +93,39 @@ const _meshDevices = [
 // ---------------------------------------------------------------------------
 
 final singleNodeDevicesData = DevicesData(
-  deviceModels: _testDevices,
-  nodeModels: const [
-    NodeUIModel(
+  meshNetwork: MeshNetwork(
+    master: MasterNode(
       deviceId: 'gateway',
       model: 'MR7500',
       manufacturer: 'Linksys',
       serialNumber: 'ABC123456',
       softwareVersion: '1.0.16.215118',
-      isMaster: true,
-      connectedDeviceCount: 3,
+      connectedClients: _testClients,
     ),
-  ],
-  meshTopology: MeshTopologyInfo.empty,
+  ),
 );
 
 final meshNetworkDevicesData = DevicesData(
-  deviceModels: _meshDevices,
-  nodeModels: const [
-    NodeUIModel(
+  meshNetwork: MeshNetwork(
+    master: MasterNode(
       deviceId: '11:22:33:44:55:66',
       model: 'MR7500',
       manufacturer: 'Linksys',
       serialNumber: 'ABC123456',
       softwareVersion: '1.0.16.215118',
-      isMaster: true,
-      connectedDeviceCount: 2,
+      connectedClients: _meshMasterClients,
     ),
-    NodeUIModel(
-      deviceId: 'AA:BB:CC:DD:FF:01',
-      model: 'MX2000',
-      manufacturer: 'Linksys',
-      serialNumber: 'DEF789012',
-      softwareVersion: '1.0.10.200000',
-      isMaster: false,
-      connectedDeviceCount: 1,
-    ),
-  ],
-  meshTopology: const MeshTopologyInfo(
-    nodes: [
-      NodeUIModel(
-        deviceId: '11:22:33:44:55:66',
-        model: 'MR7500',
-        manufacturer: 'Linksys',
-        serialNumber: 'ABC123456',
-        softwareVersion: '1.0.16.215118',
-        isMaster: true,
-        connectedDeviceCount: 2,
-        instancePath: 'Device.DeviceInfo.1.',
-      ),
-      NodeUIModel(
+    slaves: [
+      SlaveNode(
         deviceId: 'AA:BB:CC:DD:FF:01',
         model: 'MX2000',
         manufacturer: 'Linksys',
         serialNumber: 'DEF789012',
         softwareVersion: '1.0.10.200000',
-        isMaster: false,
-        connectedDeviceCount: 1,
-        instancePath: 'Device.DeviceInfo.2.',
+        connectedClients: _meshSlaveClients,
+        backhaul: BackhaulInfo(mediaType: 'Wi-Fi', signalStrength: -50),
       ),
     ],
-    clientToNodeMap: {
-      'AA:BB:CC:DD:EE:01': '11:22:33:44:55:66',
-      'AA:BB:CC:DD:EE:02': '11:22:33:44:55:66',
-      'AA:BB:CC:DD:EE:03': 'AA:BB:CC:DD:FF:01',
-    },
   ),
 );
 
@@ -167,73 +133,41 @@ final meshNetworkDevicesData = DevicesData(
 // Node Detail States
 // ---------------------------------------------------------------------------
 
-const masterNodeWithDevices = UspNodeDetailState(
-  node: NodeUIModel(
+final masterNodeWithDevices = UspNodeDetailState(
+  node: MasterNode(
     deviceId: '11:22:33:44:55:66',
     model: 'MR7500',
     manufacturer: 'Linksys',
     serialNumber: 'ABC123456',
     softwareVersion: '1.0.16.215118',
-    isMaster: true,
-    connectedDeviceCount: 2,
+    connectedClients: _meshMasterClients,
   ),
-  connectedDevices: [
-    DeviceUIModel(
-      mac: 'AA:BB:CC:DD:EE:01',
-      ip: '192.168.1.100',
-      hostName: 'iPhone',
-      isActive: true,
-      isWifi: true,
-      signalStrength: -45,
-      band: '5GHz',
-    ),
-    DeviceUIModel(
-      mac: 'AA:BB:CC:DD:EE:02',
-      ip: '192.168.1.101',
-      hostName: 'MacBook Pro',
-      isActive: true,
-      isWifi: true,
-      signalStrength: -55,
-      band: '5GHz',
-    ),
-  ],
+  connectedClients: _meshMasterClients,
 );
 
-const slaveNodeWithDevices = UspNodeDetailState(
-  node: NodeUIModel(
+final slaveNodeWithDevices = UspNodeDetailState(
+  node: SlaveNode(
     deviceId: 'AA:BB:CC:DD:FF:01',
     model: 'MX2000',
     manufacturer: 'Linksys',
     serialNumber: 'DEF789012',
     softwareVersion: '1.0.10.200000',
-    isMaster: false,
-    connectedDeviceCount: 1,
+    connectedClients: _meshSlaveClients,
+    backhaul: BackhaulInfo(mediaType: 'Wi-Fi', signalStrength: -50),
   ),
-  connectedDevices: [
-    DeviceUIModel(
-      mac: 'AA:BB:CC:DD:EE:03',
-      ip: '192.168.1.102',
-      hostName: 'Desktop PC',
-      isActive: true,
-      isWifi: false,
-    ),
-  ],
+  connectedClients: _meshSlaveClients,
 );
 
-const masterNodeEmptyDevices = UspNodeDetailState(
-  node: NodeUIModel(
+final masterNodeEmptyDevices = UspNodeDetailState(
+  node: MasterNode(
     deviceId: '11:22:33:44:55:66',
     model: 'MR7500',
     manufacturer: 'Linksys',
     serialNumber: 'ABC123456',
     softwareVersion: '1.0.16.215118',
-    isMaster: true,
-    connectedDeviceCount: 0,
+    connectedClients: [],
   ),
-  connectedDevices: [],
+  connectedClients: [],
 );
 
-const nodeNotFoundState = UspNodeDetailState(
-  node: null,
-  connectedDevices: [],
-);
+const nodeNotFoundState = UspNodeDetailState();

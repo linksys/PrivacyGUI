@@ -25,8 +25,7 @@ class UspDeviceInfoCard extends ConsumerWidget {
 
     // Get MAC and hostname from master node
     final devicesData = ref.watch(devicesDataProvider).valueOrNull;
-    final masterNode =
-        devicesData?.nodeModels.where((n) => n.isMaster).firstOrNull;
+    final masterNode = devicesData?.nodes.where((n) => n.isMaster).firstOrNull;
     final macAddress = masterNode?.deviceId;
     final hostName = masterNode?.displayName;
 
