@@ -45,16 +45,19 @@ Map<String, dynamic> _buildSsidsResponse() => {
       'Device.WiFi.SSID.1.Status': 'Up',
       'Device.WiFi.SSID.1.BSSID': 'AA:BB:CC:DD:EE:01',
       'Device.WiFi.SSID.1.LowerLayers': 'Device.WiFi.Radio.1.',
+      'Device.WiFi.SSID.1.Alias': 'wifi-2g',
       'Device.WiFi.SSID.2.SSID': 'Home',
       'Device.WiFi.SSID.2.Enable': true,
       'Device.WiFi.SSID.2.Status': 'Up',
       'Device.WiFi.SSID.2.BSSID': 'AA:BB:CC:DD:EE:02',
       'Device.WiFi.SSID.2.LowerLayers': 'Device.WiFi.Radio.2.',
+      'Device.WiFi.SSID.2.Alias': 'wifi-5g',
       'Device.WiFi.SSID.3.SSID': 'Home-Guest',
       'Device.WiFi.SSID.3.Enable': true,
       'Device.WiFi.SSID.3.Status': 'Up',
       'Device.WiFi.SSID.3.BSSID': 'AA:BB:CC:DD:EE:03',
       'Device.WiFi.SSID.3.LowerLayers': 'Device.WiFi.Radio.1.',
+      'Device.WiFi.SSID.3.Alias': 'wifi-2g-guest',
     };
 
 /// Raw USP response map for 3 access points.
@@ -200,6 +203,9 @@ void main() {
       expect(radio1.accessPoints.length, 2);
       expect(radio1.accessPoints[0].ssidName, 'Home');
       expect(radio1.accessPoints[1].ssidName, 'Home-Guest');
+      // Guest detection via alias suffix (-guest), not instance ordering.
+      expect(radio1.accessPoints[0].isGuest, isFalse);
+      expect(radio1.accessPoints[1].isGuest, isTrue);
 
       // Radio 2 (5GHz): SSID.2 → AP.2
       final radio2 = result.radioModels[1];

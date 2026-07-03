@@ -10,6 +10,7 @@ import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/_shared/models/client_connection_detail.dart';
+import 'package:privacy_gui/page/_shared/utils/wifi_guest_detection.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_client_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_radio_ui_model.dart';
 
@@ -160,28 +161,12 @@ class UspWifiDataService {
       for (final s in ssids.items) _ensureTrailingDot(s.instancePath): s,
     };
 
-    // Determine guest SSIDs: per-radio, lowest instance index is Main
-    final guestSsidPaths = <String>{};
-    {
-      final ssidsByRadio = <String, List<WiFiSsid>>{};
-      for (final ssid in ssids.items) {
-        final radioKey = _ensureTrailingDot(ssid.lowerLayers);
-        (ssidsByRadio[radioKey] ??= []).add(ssid);
-      }
-      logger.d('[USP][WiFi] ssidsByRadio groups: ${ssidsByRadio.length}');
-      for (final entry in ssidsByRadio.entries) {
-        final group = entry.value;
-        group.sort((a, b) => _ssidInstanceIndex(a.instancePath)
-            .compareTo(_ssidInstanceIndex(b.instancePath)));
-        logger.d('[USP][WiFi] Radio ${entry.key}: '
-            '${group.map((s) => "${s.ssid}(${s.instancePath})").join(", ")}');
-        for (final ssid in group.skip(1)) {
-          guestSsidPaths.add(_ensureTrailingDot(ssid.instancePath));
-          logger.d(
-              '[USP][WiFi] Marked as guest: ${ssid.ssid} (${ssid.instancePath})');
-        }
-      }
-    }
+    // Determine guest SSIDs via the canonical alias rule (see
+    // wifi_guest_detection). Single source of truth shared across the app.
+    final guestSsidPaths = <String>{
+      for (final ssid in ssids.items)
+        if (isGuestSsid(ssid)) _ensureTrailingDot(ssid.instancePath),
+    };
     logger.d('[USP][WiFi] Total guest SSID paths: ${guestSsidPaths.length}');
 
     // Group APs by radio: AP.ssidReference → SSID.lowerLayers → Radio
@@ -223,12 +208,6 @@ class UspWifiDataService {
         accessPoints: apModels,
       );
     }).toList();
-  }
-
-  /// Extracts the numeric instance index from a TR-181 SSID path.
-  int _ssidInstanceIndex(String instancePath) {
-    final match = RegExp(r'Device\.WiFi\.SSID\.(\d+)').firstMatch(instancePath);
-    return match != null ? int.parse(match.group(1)!) : 0;
   }
 
   // ---------------------------------------------------------------------------

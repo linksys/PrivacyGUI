@@ -22,6 +22,7 @@ class WifiSettingsTestData {
     String ssid = 'TestNetwork',
     bool enable = true,
     String lowerLayers = 'Device.WiFi.Radio.1.',
+    String? alias,
   }) =>
       WiFiSsid(
         instancePath: instancePath,
@@ -30,6 +31,7 @@ class WifiSettingsTestData {
         status: enable ? 'Up' : 'Down',
         bssid: 'AA:BB:CC:DD:EE:FF',
         lowerLayers: lowerLayers,
+        alias: alias,
       );
 
   static WiFiAccessPoint createAccessPoint({
@@ -85,22 +87,28 @@ class WifiSettingsTestData {
   // Codegen collections
   // ---------------------------------------------------------------------------
 
-  /// Typical tri-band setup: 2.4 GHz + 5 GHz + guest.
+  /// Typical dual-band + guest setup: 2.4 GHz + 5 GHz + guest.
+  ///
+  /// Guest is identified by the canonical `-guest` alias suffix (see
+  /// wifi_guest_detection), matching firmware auto-provisioned aliases.
   static WiFiSsids createSsids() => WiFiSsids(items: [
         createSsid(
           instancePath: 'Device.WiFi.SSID.1.',
           ssid: 'Home',
           lowerLayers: 'Device.WiFi.Radio.1.',
+          alias: 'wifi-2g',
         ),
         createSsid(
           instancePath: 'Device.WiFi.SSID.2.',
           ssid: 'Home',
           lowerLayers: 'Device.WiFi.Radio.2.',
+          alias: 'wifi-5g',
         ),
         createSsid(
           instancePath: 'Device.WiFi.SSID.3.',
           ssid: 'Home-Guest',
           lowerLayers: 'Device.WiFi.Radio.1.',
+          alias: 'wifi-2g-guest',
         ),
       ]);
 
@@ -151,34 +159,40 @@ class WifiSettingsTestData {
           instancePath: 'Device.WiFi.SSID.1.',
           ssid: 'Home',
           lowerLayers: 'Device.WiFi.Radio.1.',
+          alias: 'wifi-2g',
         ),
         createSsid(
           instancePath: 'Device.WiFi.SSID.2.',
           ssid: 'Home',
           lowerLayers: 'Device.WiFi.Radio.2.',
+          alias: 'wifi-5g',
         ),
         createSsid(
           instancePath: 'Device.WiFi.SSID.3.',
           ssid: 'Home',
           lowerLayers: 'Device.WiFi.Radio.3.',
+          alias: 'wifi-6g',
         ),
         createSsid(
           instancePath: 'Device.WiFi.SSID.4.',
           ssid: 'Home-Guest',
           enable: false,
           lowerLayers: 'Device.WiFi.Radio.1.',
+          alias: 'wifi-2g-guest',
         ),
         createSsid(
           instancePath: 'Device.WiFi.SSID.5.',
           ssid: 'Home-Guest',
           enable: false,
           lowerLayers: 'Device.WiFi.Radio.2.',
+          alias: 'wifi-5g-guest',
         ),
         createSsid(
           instancePath: 'Device.WiFi.SSID.6.',
           ssid: 'Home-Guest',
           enable: false,
           lowerLayers: 'Device.WiFi.Radio.3.',
+          alias: 'wifi-6g-guest',
         ),
       ]);
 

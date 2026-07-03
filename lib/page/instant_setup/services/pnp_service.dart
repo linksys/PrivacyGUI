@@ -13,6 +13,7 @@ import 'package:privacy_gui/generated/wi_fi_access_points.g.dart';
 import 'package:privacy_gui/generated/wi_fi_ssids.g.dart';
 import 'package:privacy_gui/page/_shared/models/mesh_topology_info.dart';
 import 'package:privacy_gui/page/_shared/utils/mesh_topology_builder.dart';
+import 'package:privacy_gui/page/_shared/utils/wifi_guest_detection.dart';
 import 'package:privacy_gui/generated/wi_fi_radios.g.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_isp_config.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_wifi_band.dart';
@@ -107,9 +108,8 @@ class PnpService {
 
   /// Fetch current WiFi SSIDs + Access Points and return structured results.
   ///
-  /// Separates main vs guest SSIDs by detecting shared radios:
-  /// - First SSID per radio = main network
-  /// - Additional SSIDs sharing a radio = guest network
+  /// Separates main vs guest SSIDs via the canonical alias rule: an SSID whose
+  /// `Alias` ends with `-guest` is a guest network (see wifi_guest_detection).
   ///
   /// Supports both unified mode (all bands share SSID) and split mode
   /// (each band has different SSID, e.g. Du ISP routers).
@@ -148,18 +148,15 @@ class PnpService {
       return radios.items.where((r) => r.instancePath == radioPath).firstOrNull;
     }
 
-    // Separate main vs guest SSIDs by radio occupancy.
-    // First SSID per radio is "main", subsequent SSIDs on the same radio
-    // are "guest" (they share the radio via virtual AP).
-    final seenRadios = <String>{};
+    // Separate main vs guest SSIDs via the canonical alias rule (see
+    // wifi_guest_detection). Single source of truth shared across the app.
     final mainSsids = <WiFiSsid>[];
     final guestSsids = <WiFiSsid>[];
 
     for (final ssid in ssids.items) {
-      if (seenRadios.contains(ssid.lowerLayers)) {
+      if (isGuestSsid(ssid)) {
         guestSsids.add(ssid);
       } else {
-        seenRadios.add(ssid.lowerLayers);
         mainSsids.add(ssid);
       }
     }
