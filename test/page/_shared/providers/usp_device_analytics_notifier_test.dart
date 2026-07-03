@@ -273,5 +273,61 @@ void main() {
       expect(dist.bandSignalQuality['5GHz'], closeTo(0.5, 0.01));
       container.dispose();
     });
+
+    test('child node clients use parentNodeName as category', () async {
+      // Master WiFi with band
+      const masterWifi = DeviceUIModel(
+        mac: 'FF:00:00:00:00:01',
+        ip: '192.168.1.200',
+        hostName: 'MasterClient',
+        isActive: true,
+        isWifi: true,
+        band: '5GHz',
+        signalStrength: -50,
+      );
+      // Child node WiFi client (no band, has parentNodeName)
+      const childWifi = DeviceUIModel(
+        mac: 'FF:00:00:00:00:02',
+        ip: '192.168.1.201',
+        hostName: 'ChildClient',
+        isActive: true,
+        isWifi: true,
+        parentNodeId: 'CHILD_NODE_ID',
+        parentNodeName: 'Extender-1',
+        signalStrength: -60,
+      );
+      // Child node Wired client
+      const childWired = DeviceUIModel(
+        mac: 'FF:00:00:00:00:03',
+        ip: '192.168.1.202',
+        hostName: 'ChildWired',
+        isActive: true,
+        isWifi: false,
+        parentNodeId: 'CHILD_NODE_ID',
+        parentNodeName: 'Extender-1',
+      );
+      // Master Wired client (no parentNodeName)
+      const masterWired = DeviceUIModel(
+        mac: 'FF:00:00:00:00:04',
+        ip: '192.168.1.203',
+        hostName: 'MasterWired',
+        isActive: true,
+        isWifi: false,
+      );
+      const data = DevicesData(
+        deviceModels: [masterWifi, childWifi, childWired, masterWired],
+      );
+      final container = createContainer(data: data);
+      await waitForAnalytics(container);
+
+      final dist = container.read(uspDeviceAnalyticsProvider).current!;
+      // Master WiFi: uses band (5GHz)
+      expect(dist.bandDistribution['5GHz'], 1);
+      // Child node clients (WiFi + Wired): use parentNodeName
+      expect(dist.bandDistribution['Extender-1'], 2);
+      // Master Wired: uses "Wired"
+      expect(dist.bandDistribution['Wired'], 1);
+      container.dispose();
+    });
   });
 }

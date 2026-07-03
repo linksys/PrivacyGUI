@@ -9,6 +9,8 @@ import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
+import 'package:privacy_gui/page/_shared/models/mesh_network.dart';
+import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_client_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/mesh_topology_info.dart';
@@ -52,11 +54,19 @@ void main() {
     ),
   ];
 
+  final sampleMeshNetwork = MeshNetwork(
+    master: MasterNode(
+      deviceId: 'GATEWAY',
+      model: 'M60TB',
+    ),
+  );
+
   final sampleFetchResult = DevicesDataFetchResult(
     codegenContext: DevicesCodegenContext.empty,
     deviceModels: sampleDeviceModels,
     nodeModels: [],
     hostNameByMac: {'AA:BB:CC:DD:EE:01': 'MyLaptop'},
+    meshNetwork: sampleMeshNetwork,
   );
 
   setUp(() {
@@ -81,7 +91,26 @@ void main() {
           gatewayName: any(named: 'gatewayName'),
           systemInfo: any(named: 'systemInfo'),
         )).thenReturn(
-      (deviceModels: sampleDeviceModels, nodeModels: sampleNodeModels),
+      (
+        deviceModels: sampleDeviceModels,
+        nodeModels: sampleNodeModels,
+        meshNetwork: sampleMeshNetwork,
+      ),
+    );
+
+    when(() => mockDevicesSvc.rebuildWithMesh(
+          context: any(named: 'context'),
+          wifiClientMap: any(named: 'wifiClientMap'),
+          connectionDetailMap: any(named: 'connectionDetailMap'),
+          meshTopology: any(named: 'meshTopology'),
+          gatewayName: any(named: 'gatewayName'),
+          systemInfo: any(named: 'systemInfo'),
+        )).thenReturn(
+      (
+        deviceModels: sampleDeviceModels,
+        nodeModels: sampleNodeModels,
+        meshNetwork: sampleMeshNetwork,
+      ),
     );
   });
 

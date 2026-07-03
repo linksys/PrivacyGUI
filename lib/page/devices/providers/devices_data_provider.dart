@@ -6,6 +6,7 @@ import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
 import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
+import 'package:privacy_gui/page/_shared/models/mesh_network.dart';
 import 'package:privacy_gui/page/_shared/models/mesh_topology_info.dart';
 import 'package:privacy_gui/page/devices/services/usp_devices_data_service.dart';
 import 'package:privacy_gui/page/topology/models/node_ui_model.dart';
@@ -30,12 +31,20 @@ class DevicesData extends Equatable {
   /// Pre-computed MAC → hostname map for DHCP hostname enrichment.
   final Map<String, String> hostNameByMac;
 
+  /// New architecture: unified MeshNetwork container.
+  ///
+  /// Provides SSoT for nodes and clients. During migration, this coexists
+  /// with [deviceModels] and [nodeModels]. After Phase 4-5 migration,
+  /// consumers should use [meshNetwork] directly.
+  final MeshNetwork? meshNetwork;
+
   const DevicesData({
     this.codegenContext = DevicesCodegenContext.empty,
     this.meshTopology = MeshTopologyInfo.empty,
     this.deviceModels = const [],
     this.nodeModels = const [],
     this.hostNameByMac = const {},
+    this.meshNetwork,
   });
 
   /// Client devices only (excludes mesh nodes: master/slave).
@@ -55,6 +64,7 @@ class DevicesData extends Equatable {
     List<DeviceUIModel>? deviceModels,
     List<NodeUIModel>? nodeModels,
     Map<String, String>? hostNameByMac,
+    MeshNetwork? meshNetwork,
   }) {
     return DevicesData(
       codegenContext: codegenContext ?? this.codegenContext,
@@ -62,6 +72,7 @@ class DevicesData extends Equatable {
       deviceModels: deviceModels ?? this.deviceModels,
       nodeModels: nodeModels ?? this.nodeModels,
       hostNameByMac: hostNameByMac ?? this.hostNameByMac,
+      meshNetwork: meshNetwork ?? this.meshNetwork,
     );
   }
 
@@ -72,6 +83,7 @@ class DevicesData extends Equatable {
         deviceModels,
         nodeModels,
         hostNameByMac.length,
+        meshNetwork,
       ];
 }
 
@@ -125,6 +137,7 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
       state = AsyncData(cur.copyWith(
         deviceModels: rebuilt.deviceModels,
         nodeModels: rebuilt.nodeModels,
+        meshNetwork: rebuilt.meshNetwork,
       ));
     });
 
@@ -177,6 +190,7 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
       deviceModels: result.deviceModels,
       nodeModels: result.nodeModels,
       hostNameByMac: result.hostNameByMac,
+      meshNetwork: result.meshNetwork,
     );
   }
 
@@ -212,6 +226,7 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
       meshTopology: meshTopology,
       deviceModels: rebuilt.deviceModels,
       nodeModels: rebuilt.nodeModels,
+      meshNetwork: rebuilt.meshNetwork,
     ));
   }
 
@@ -258,7 +273,11 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
 
     // Rebuild with existing mesh to preserve slave node visibility.
     final rebuilt = existingMesh.isEmpty
-        ? (deviceModels: result.deviceModels, nodeModels: result.nodeModels)
+        ? (
+            deviceModels: result.deviceModels,
+            nodeModels: result.nodeModels,
+            meshNetwork: result.meshNetwork,
+          )
         : svc.rebuildWithMesh(
             context: result.codegenContext,
             wifiClientMap: wifiData.wifiClientMap,
@@ -280,6 +299,7 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
       deviceModels: rebuilt.deviceModels,
       nodeModels: rebuilt.nodeModels,
       hostNameByMac: result.hostNameByMac,
+      meshNetwork: rebuilt.meshNetwork,
     ));
 
     // Fire-and-forget: fetch mesh topology in background, then update state.

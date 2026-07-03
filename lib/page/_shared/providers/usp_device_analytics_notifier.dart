@@ -25,7 +25,8 @@ class UspDeviceAnalyticsNotifier extends Notifier<DeviceAnalyticsState> {
     ref.listen(devicesDataProvider, (previous, next) {
       final data = next.valueOrNull;
       if (data == null) return;
-      _onDashboardUpdated(data.deviceModels);
+      // Use clientDevices to exclude mesh nodes (master/slave)
+      _onDashboardUpdated(data.clientDevices);
     });
 
     // Process current device data after build() completes
@@ -33,7 +34,7 @@ class UspDeviceAnalyticsNotifier extends Notifier<DeviceAnalyticsState> {
     Future.microtask(() {
       final data = ref.read(devicesDataProvider).valueOrNull;
       if (data != null) {
-        _onDashboardUpdated(data.deviceModels);
+        _onDashboardUpdated(data.clientDevices);
       }
     });
 
@@ -122,14 +123,15 @@ class UspDeviceAnalyticsNotifier extends Notifier<DeviceAnalyticsState> {
     final wifiDevices = online.where((d) => d.isWifi).toList();
     final wiredDevices = online.where((d) => !d.isWifi).toList();
 
-    // Band distribution (online WiFi only + wired category)
-    final bandDist = <String, int>{};
-    for (final d in wifiDevices) {
-      final band = d.band ?? 'Unknown';
-      bandDist[band] = (bandDist[band] ?? 0) + 1;
-    }
-    if (wiredDevices.isNotEmpty) {
-      bandDist['Wired'] = wiredDevices.length;
+    // Category distribution (online only):
+    // - Master WiFi with band: show band (2.4GHz, 5GHz, 6GHz)
+    // - Child node WiFi: show parentNodeName (e.g., "Community00090")
+    // - Master Wired: show "Wired"
+    // - Child node Wired: show parentNodeName
+    final categoryDist = <String, int>{};
+    for (final d in online) {
+      final category = _getDeviceCategory(d);
+      categoryDist[category] = (categoryDist[category] ?? 0) + 1;
     }
 
     // Signal level distribution (online WiFi only)
@@ -139,17 +141,20 @@ class UspDeviceAnalyticsNotifier extends Notifier<DeviceAnalyticsState> {
       signalDist[level] = (signalDist[level] ?? 0) + 1;
     }
 
-    // Average signal quality per band (for radar chart)
-    final bandQualitySum = <String, double>{};
-    final bandQualityCount = <String, int>{};
+    // Average signal quality per category (WiFi devices only)
+    final categoryQualitySum = <String, double>{};
+    final categoryQualityCount = <String, int>{};
     for (final d in wifiDevices) {
-      final band = d.band ?? 'Unknown';
-      bandQualitySum[band] = (bandQualitySum[band] ?? 0) + d.signalQuality;
-      bandQualityCount[band] = (bandQualityCount[band] ?? 0) + 1;
+      final category = _getDeviceCategory(d);
+      categoryQualitySum[category] =
+          (categoryQualitySum[category] ?? 0) + d.signalQuality;
+      categoryQualityCount[category] =
+          (categoryQualityCount[category] ?? 0) + 1;
     }
     final bandSignalQuality = <String, double>{};
-    for (final band in bandQualitySum.keys) {
-      bandSignalQuality[band] = bandQualitySum[band]! / bandQualityCount[band]!;
+    for (final cat in categoryQualitySum.keys) {
+      bandSignalQuality[cat] =
+          categoryQualitySum[cat]! / categoryQualityCount[cat]!;
     }
 
     return DeviceDistribution(
@@ -157,10 +162,26 @@ class UspDeviceAnalyticsNotifier extends Notifier<DeviceAnalyticsState> {
       wiredCount: wiredDevices.length,
       onlineCount: online.length,
       offlineCount: offline.length,
-      bandDistribution: bandDist,
+      bandDistribution: categoryDist,
       signalLevelDistribution: signalDist,
       bandSignalQuality: bandSignalQuality,
     );
+  }
+
+  /// Determines the display category for a device.
+  ///
+  /// - Master WiFi with band: actual band (2.4GHz, 5GHz, 6GHz)
+  /// - Child node client (WiFi or Wired): parentNodeName
+  /// - Master Wired: "Wired"
+  String _getDeviceCategory(DeviceUIModel d) {
+    final isChildNodeClient = d.parentNodeName != null && d.band == null;
+    if (isChildNodeClient) {
+      return d.parentNodeName!;
+    }
+    if (d.isWifi) {
+      return d.band ?? 'WiFi';
+    }
+    return 'Wired';
   }
 
   Future<void> _persistState() async {

@@ -9,10 +9,10 @@ import 'package:ui_kit_library/ui_kit.dart';
 
 /// Device Connection Analytics card — 4 chart views via tab selector.
 ///
-/// - Distribution (Donut): WiFi vs Wired with band breakdown
-/// - Trend (Stacked Column): 24h hourly device count
+/// - Overview (Donut): Online/Offline with WiFi/Wired breakdown
+/// - Signal (Bar): WiFi signal quality distribution (Excellent/Good/Fair/Poor)
+/// - Trend (Line): 24h total device count
 /// - Activity (Heatmap): 24h per-device activity matrix
-/// - Signal (Radar): WiFi signal quality per band
 class UspDeviceAnalyticsCard extends ConsumerStatefulWidget {
   const UspDeviceAnalyticsCard({super.key});
 
@@ -41,15 +41,15 @@ class _UspDeviceAnalyticsCardState
           content: _buildChartView(context, analyticsState, 0),
         ),
         CardTab(
-          label: loc(context).trend,
+          label: loc(context).signal,
           content: _buildChartView(context, analyticsState, 1),
         ),
         CardTab(
-          label: loc(context).activity,
+          label: loc(context).trend,
           content: _buildChartView(context, analyticsState, 2),
         ),
         CardTab(
-          label: loc(context).signal,
+          label: loc(context).activity,
           content: _buildChartView(context, analyticsState, 3),
         ),
       ],
@@ -65,21 +65,21 @@ class _UspDeviceAnalyticsCardState
 
     return switch (selectedTab) {
       0 => current != null
-          ? _DistributionView(distribution: current)
+          ? _OverviewView(distribution: current)
           : _buildEmptyState(context, loc(context).waitingForDeviceData),
-      1 => state.hourlyHistory.isNotEmpty
+      1 => current != null && current.signalLevelDistribution.isNotEmpty
+          ? _SignalView(distribution: current)
+          : _buildEmptyState(context, loc(context).noWifiSignalData),
+      2 => state.hourlyHistory.isNotEmpty
           ? _TrendView(history: state.hourlyHistory)
           : _buildEmptyState(context, loc(context).collectingHourlyData),
-      2 => state.hourlyHistory.isNotEmpty
+      3 => state.hourlyHistory.isNotEmpty
           ? _ActivityView(
               history: state.hourlyHistory,
               allKnownMacs: state.allKnownMacs,
               macDisplayNames: state.macDisplayNames,
             )
           : _buildEmptyState(context, loc(context).collectingActivityData),
-      3 => current != null && current.bandSignalQuality.isNotEmpty
-          ? _SignalView(distribution: current)
-          : _buildEmptyState(context, loc(context).noWifiSignalData),
       _ => const SizedBox.shrink(),
     };
   }
@@ -95,16 +95,19 @@ class _UspDeviceAnalyticsCardState
 }
 
 // =============================================================================
-// Tab 1: Distribution (Donut + Band bars)
+// Tab 1: Overview (Online/Offline donut + WiFi/Wired breakdown)
 // =============================================================================
 
-class _DistributionView extends StatelessWidget {
+class _OverviewView extends StatelessWidget {
   final DeviceDistribution distribution;
-  const _DistributionView({required this.distribution});
+  const _OverviewView({required this.distribution});
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final online = distribution.onlineCount;
+    final offline = distribution.offlineCount;
+    final total = distribution.totalCount;
 
     return Column(
       children: [
@@ -113,20 +116,23 @@ class _DistributionView extends StatelessWidget {
             child: AppPieChart(
               sections: [
                 AppPieSection(
-                    value: distribution.wifiCount.toDouble(),
-                    label: loc(context).wifi,
-                    color: colorScheme.primary),
-                AppPieSection(
-                    value: distribution.wiredCount.toDouble(),
-                    label: loc(context).wired,
-                    color: colorScheme.secondary),
+                  value: online.toDouble(),
+                  label: loc(context).online,
+                  color: colorScheme.primary,
+                ),
+                if (offline > 0)
+                  AppPieSection(
+                    value: offline.toDouble(),
+                    label: loc(context).offline,
+                    color: colorScheme.outlineVariant,
+                  ),
               ],
               donut: true,
               centerWidget: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  AppText.titleMedium('${distribution.onlineCount}'),
-                  AppText.labelSmall(loc(context).online,
+                  AppText.titleMedium('$total'),
+                  AppText.labelSmall(loc(context).devices,
                       color: colorScheme.onSurfaceVariant),
                 ],
               ),
@@ -134,28 +140,40 @@ class _DistributionView extends StatelessWidget {
             ),
           ),
         ),
+        AppGap.md(),
+        // WiFi / Wired breakdown
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _StatItem(
+              icon: Icons.wifi,
+              label: loc(context).wifi,
+              value: distribution.wifiCount,
+              color: colorScheme.primary,
+            ),
+            AppGap.xl(),
+            _StatItem(
+              icon: Icons.cable,
+              label: loc(context).wired,
+              value: distribution.wiredCount,
+              color: colorScheme.secondary,
+            ),
+          ],
+        ),
         AppGap.sm(),
-        if (distribution.bandDistribution.isNotEmpty)
-          _BandDistributionBars(
-            bandDistribution: distribution.bandDistribution,
-          ),
-        AppGap.sm(),
+        // Online / Offline legend
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             _LegendDot(color: colorScheme.primary),
             AppGap.xs(),
-            AppText.labelSmall(loc(context).wifiCount(distribution.wifiCount)),
-            AppGap.lg(),
-            _LegendDot(color: colorScheme.secondary),
-            AppGap.xs(),
-            AppText.labelSmall(
-                loc(context).wiredCount(distribution.wiredCount)),
-            AppGap.lg(),
-            AppText.labelSmall(
-              loc(context).nOffline(distribution.offlineCount),
-              color: colorScheme.onSurfaceVariant,
-            ),
+            AppText.labelSmall('${loc(context).online}: $online'),
+            if (offline > 0) ...[
+              AppGap.lg(),
+              _LegendDot(color: colorScheme.outlineVariant),
+              AppGap.xs(),
+              AppText.labelSmall('${loc(context).offline}: $offline'),
+            ],
           ],
         ),
       ],
@@ -163,82 +181,109 @@ class _DistributionView extends StatelessWidget {
   }
 }
 
-class _BandDistributionBars extends StatelessWidget {
-  final Map<String, int> bandDistribution;
-
-  const _BandDistributionBars({required this.bandDistribution});
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final maxCount = bandDistribution.values.fold(0, (a, b) => a > b ? a : b);
-    final seriesColors = [
-      colorScheme.primary,
-      colorScheme.secondary,
-      colorScheme.tertiary,
-    ];
-
-    return Column(
-      children: [
-        for (var i = 0; i < bandDistribution.entries.length; i++)
-          Padding(
-            padding: EdgeInsets.only(bottom: 2),
-            child: Row(
-              children: [
-                SizedBox(
-                  width: 56,
-                  child: AppText.labelSmall(
-                    bandDistribution.entries.elementAt(i).key,
-                    textAlign: TextAlign.end,
-                  ),
-                ),
-                AppGap.sm(),
-                Expanded(
-                  child: _HorizontalBar(
-                    value: bandDistribution.entries.elementAt(i).value,
-                    maxValue: maxCount,
-                    color: seriesColors[i % seriesColors.length],
-                  ),
-                ),
-                AppGap.sm(),
-                SizedBox(
-                  width: 20,
-                  child: AppText.labelSmall(
-                    '${bandDistribution.entries.elementAt(i).value}',
-                  ),
-                ),
-              ],
-            ),
-          ),
-      ],
-    );
-  }
-}
-
-class _HorizontalBar extends StatelessWidget {
+class _StatItem extends StatelessWidget {
+  final IconData icon;
+  final String label;
   final int value;
-  final int maxValue;
   final Color color;
 
-  const _HorizontalBar({
+  const _StatItem({
+    required this.icon,
+    required this.label,
     required this.value,
-    required this.maxValue,
     required this.color,
   });
 
   @override
   Widget build(BuildContext context) {
-    final fraction = maxValue > 0 ? value / maxValue : 0.0;
-    return AppLoader(
-      variant: LoaderVariant.linear,
-      value: fraction,
-      color: color,
+    return Column(
+      children: [
+        Icon(icon, color: color, size: 24),
+        AppGap.xs(),
+        AppText.titleMedium('$value'),
+        AppText.labelSmall(label,
+            color: Theme.of(context).colorScheme.onSurfaceVariant),
+      ],
     );
   }
 }
 
 // =============================================================================
-// Tab 2: Trend (Stacked Column Chart)
+// Tab 2: Signal (Signal quality distribution)
+// =============================================================================
+
+class _SignalView extends StatelessWidget {
+  final DeviceDistribution distribution;
+  const _SignalView({required this.distribution});
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final signalDist = distribution.signalLevelDistribution;
+
+    // Signal levels: 3=Excellent, 2=Good, 1=Fair, 0=Poor
+    final levels = [
+      (3, loc(context).excellent, colorScheme.primary),
+      (2, loc(context).good, Colors.lightGreen),
+      (1, loc(context).fair, Colors.orange),
+      (0, loc(context).poor, colorScheme.error),
+    ];
+
+    final data = levels.map((l) => (signalDist[l.$1] ?? 0).toDouble()).toList();
+    final labels = levels.map((l) => l.$2).toList();
+    final colors = levels.map((l) => l.$3).toList();
+    final total = data.fold(0.0, (a, b) => a + b);
+
+    return Column(
+      children: [
+        Expanded(
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            child: AppBarChart(
+              series: [
+                for (var i = 0; i < levels.length; i++)
+                  AppChartSeries(
+                    label: labels[i],
+                    data: [data[i]],
+                    color: colors[i],
+                  ),
+              ],
+              xLabels: [''],
+              yAxis: AppChartAxis(
+                min: 0,
+                max: total > 0 ? total : 1,
+                interval: (total / 4).ceilToDouble().clamp(1, double.infinity),
+              ),
+              showTooltip: false,
+            ),
+          ),
+        ),
+        AppGap.sm(),
+        // Legend
+        Wrap(
+          alignment: WrapAlignment.center,
+          spacing: AppSpacing.md,
+          runSpacing: AppSpacing.xs,
+          children: [
+            for (var i = 0; i < levels.length; i++)
+              if (data[i] > 0)
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _LegendDot(color: colors[i]),
+                    AppGap.xs(),
+                    AppText.labelSmall('${labels[i]}: ${data[i].toInt()}'),
+                  ],
+                ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+// =============================================================================
+// Tab 3: Trend (Total device count line chart)
 // =============================================================================
 
 class _TrendView extends StatelessWidget {
@@ -255,51 +300,39 @@ class _TrendView extends StatelessWidget {
     final slots = List.generate(24, (i) {
       final hour = currentHour.subtract(Duration(hours: 23 - i));
       final match = history.where((h) => h.hour == hour).firstOrNull;
-      return (
-        hour: hour,
-        wifi: match?.wifiCount ?? 0,
-        wired: match?.wiredCount ?? 0,
-      );
+      final total = (match?.wifiCount ?? 0) + (match?.wiredCount ?? 0);
+      return (hour: hour, total: total);
     });
 
-    final wifiData = slots.map((s) => s.wifi.toDouble()).toList();
-    final wiredData = slots.map((s) => s.wired.toDouble()).toList();
-    final xLabels = slots
-        .map(
-            (s) => s.hour.hour % 3 == 0 ? '${s.hour.hour}'.padLeft(2, '0') : '')
-        .toList();
+    final totalData = slots.map((s) => s.total.toDouble()).toList();
+
+    // Calculate Y-axis bounds to avoid duplicate labels with small counts
+    final maxCount = slots.map((s) => s.total).reduce((a, b) => a > b ? a : b);
+    final yMax = maxCount < 2 ? 2.0 : (maxCount + 1).toDouble();
+    final yInterval = yMax <= 4 ? 1.0 : (yMax / 4).ceilToDouble();
 
     return Column(
       children: [
         Expanded(
-          child: AppBarChart(
-            series: [
-              AppChartSeries(
-                  label: loc(context).wifi,
-                  data: wifiData,
-                  color: colorScheme.primary),
-              AppChartSeries(
-                  label: loc(context).wired,
-                  data: wiredData,
-                  color: colorScheme.secondary),
-            ],
-            stacked: true,
-            xLabels: xLabels,
-            showTooltip: false,
+          child: Padding(
+            padding: EdgeInsets.only(top: 8),
+            child: AppLineChart(
+              series: [
+                AppChartSeries(
+                  label: loc(context).devices,
+                  data: totalData,
+                  color: colorScheme.primary,
+                ),
+              ],
+              yAxis: AppChartAxis(min: 0, max: yMax, interval: yInterval),
+              showTooltip: false,
+            ),
           ),
         ),
         AppGap.sm(),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            _LegendDot(color: colorScheme.primary),
-            AppGap.xs(),
-            AppText.labelSmall(loc(context).wifi),
-            AppGap.lg(),
-            _LegendDot(color: colorScheme.secondary),
-            AppGap.xs(),
-            AppText.labelSmall(loc(context).wired),
-          ],
+        AppText.labelSmall(
+          '24h',
+          color: colorScheme.onSurfaceVariant,
         ),
       ],
     );
@@ -374,85 +407,6 @@ class _ActivityView extends StatelessWidget {
       ),
       lowColor: colorScheme.surfaceContainerHighest,
       highColor: colorScheme.primary,
-    );
-  }
-}
-
-// =============================================================================
-// Tab 4: Signal (Radar / Bar fallback)
-// =============================================================================
-
-class _SignalView extends StatelessWidget {
-  final DeviceDistribution distribution;
-  const _SignalView({required this.distribution});
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final bands = distribution.bandSignalQuality;
-
-    // Radar chart needs >= 3 axes; fallback to bar comparison for fewer
-    final useRadar = bands.length >= 3;
-
-    return Column(
-      children: [
-        Expanded(
-          child: Padding(
-            padding: EdgeInsets.only(top: 16),
-            child: useRadar
-                ? AppRadarChart(
-                    series: [
-                      AppRadarSeries(
-                        label: loc(context).signalQuality,
-                        data: bands.values.map((v) => v * 100).toList(),
-                        color: colorScheme.primary,
-                        filled: true,
-                      ),
-                    ],
-                    axisLabels: bands.keys.toList(),
-                    tickCount: 4,
-                  )
-                : AppBarChart(
-                    series: [
-                      AppChartSeries(
-                        label: loc(context).signal,
-                        data: bands.values.map((v) => v * 100).toList(),
-                        color: colorScheme.primary,
-                      ),
-                    ],
-                    xLabels: bands.keys.toList(),
-                    yAxis: AppChartAxis(min: 0, max: 100, interval: 25),
-                    yLabelFormatter: (v) => '${v.toInt()}%',
-                    showValueLabels: true,
-                    valueLabelFormatter: (v) => '${v.toInt()}%',
-                    showTooltip: false,
-                  ),
-          ),
-        ),
-        AppGap.sm(),
-        if (distribution.signalLevelDistribution.isNotEmpty)
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              for (final entry in [
-                (3, loc(context).excellent, colorScheme.primary),
-                (2, loc(context).good, Colors.lightGreen),
-                (1, loc(context).fair, Colors.orange),
-                (0, loc(context).poor, colorScheme.error),
-              ]) ...[
-                if (distribution.signalLevelDistribution
-                    .containsKey(entry.$1)) ...[
-                  _LegendDot(color: entry.$3),
-                  AppGap.xs(),
-                  AppText.labelSmall(
-                    '${entry.$2}: ${distribution.signalLevelDistribution[entry.$1]}',
-                  ),
-                  AppGap.md(),
-                ],
-              ],
-            ],
-          ),
-      ],
     );
   }
 }

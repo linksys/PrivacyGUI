@@ -7,11 +7,13 @@ import 'package:privacy_gui/generated/connected_devices.g.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
+import 'package:privacy_gui/page/_shared/models/mesh_network.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/mesh_topology_info.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_client_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/client_connection_detail.dart';
 import 'package:privacy_gui/page/_shared/utils/mesh_topology_builder.dart';
+import 'package:privacy_gui/page/_shared/utils/mesh_network_builder.dart';
 import 'package:privacy_gui/generated/data_elements_network.g.dart';
 import 'package:privacy_gui/page/topology/models/node_ui_model.dart';
 
@@ -61,11 +63,15 @@ class DevicesDataFetchResult {
   final List<NodeUIModel> nodeModels;
   final Map<String, String> hostNameByMac;
 
+  /// New architecture: unified MeshNetwork container.
+  final MeshNetwork meshNetwork;
+
   const DevicesDataFetchResult({
     required this.codegenContext,
     required this.deviceModels,
     required this.nodeModels,
     required this.hostNameByMac,
+    required this.meshNetwork,
   });
 }
 
@@ -119,11 +125,22 @@ class UspDevicesDataService {
           )
         : <NodeUIModel>[];
 
+    // Build new MeshNetwork architecture
+    final meshNetwork = MeshNetworkBuilder.build(
+      connectedDevices: connectedDevices,
+      wifiClientMap: wifiClientMap,
+      connectionDetailMap: connectionDetailMap,
+      meshTopology: MeshTopologyInfo.empty,
+      gatewayName: gatewayName,
+      systemInfo: systemInfo,
+    );
+
     return DevicesDataFetchResult(
       codegenContext: context,
       deviceModels: deviceModels,
       nodeModels: nodeModels,
       hostNameByMac: hostNameByMac,
+      meshNetwork: meshNetwork,
     );
   }
 
@@ -163,8 +180,11 @@ class UspDevicesDataService {
   ///
   /// Called by the provider's WiFi listener for incremental rebuild
   /// without re-fetching ConnectedDevices.
-  ({List<DeviceUIModel> deviceModels, List<NodeUIModel> nodeModels})
-      rebuildWithWifiData({
+  ({
+    List<DeviceUIModel> deviceModels,
+    List<NodeUIModel> nodeModels,
+    MeshNetwork meshNetwork,
+  }) rebuildWithWifiData({
     required DevicesCodegenContext context,
     required Map<String, WifiClientUIModel> wifiClientMap,
     required Map<String, ClientConnectionDetail> connectionDetailMap,
@@ -188,12 +208,28 @@ class UspDevicesDataService {
           )
         : <NodeUIModel>[];
 
-    return (deviceModels: deviceModels, nodeModels: nodeModels);
+    final meshNetwork = MeshNetworkBuilder.build(
+      connectedDevices: context._connectedDevices,
+      wifiClientMap: wifiClientMap,
+      connectionDetailMap: connectionDetailMap,
+      meshTopology: meshTopology,
+      gatewayName: gatewayName,
+      systemInfo: systemInfo,
+    );
+
+    return (
+      deviceModels: deviceModels,
+      nodeModels: nodeModels,
+      meshNetwork: meshNetwork,
+    );
   }
 
   /// Rebuilds device + node UI models after mesh topology arrives.
-  ({List<DeviceUIModel> deviceModels, List<NodeUIModel> nodeModels})
-      rebuildWithMesh({
+  ({
+    List<DeviceUIModel> deviceModels,
+    List<NodeUIModel> nodeModels,
+    MeshNetwork meshNetwork,
+  }) rebuildWithMesh({
     required DevicesCodegenContext context,
     required Map<String, WifiClientUIModel> wifiClientMap,
     required Map<String, ClientConnectionDetail> connectionDetailMap,
@@ -236,6 +272,43 @@ class UspDevicesDataService {
   /// - "MacBook-Pro" → "macbook-pro"
   /// - "MacBook._tcp.local" → "macbook"
   /// - "iPhone._device-info._tcp.local" → "iphone"
+  /// Builds a map of DataElements node ID → display name from Hosts data.
+  ///
+  /// Mesh nodes in Hosts have hostname that should be used as the display name
+  /// for clients connected to that node (instead of model name like "M60-EU").
+  Map<String, String> _buildNodeDisplayNameMap(
+    ConnectedDevices devices,
+    MeshTopologyInfo meshTopology,
+  ) {
+    final map = <String, String>{};
+    for (final d in devices.items) {
+      // Only mesh nodes (slave) have deviceRole set
+      if (d.deviceRole != 'slave') continue;
+
+      final displayName = (d.friendlyName?.isNotEmpty == true)
+          ? d.friendlyName!
+          : (d.hostName.isNotEmpty ? d.hostName : null);
+      if (displayName == null) continue;
+
+      // Match Hosts device to DataElements node via embedded MAC in DeviceID
+      // DeviceID format: "0217B8A4-1082-4532-8345-80691ABB4694"
+      // Last 12 chars = MAC hex: "80691ABB4694" → matches "80:69:1A:BB:46:94"
+      final hostsDeviceId = d.deviceId?.toUpperCase().replaceAll('-', '') ?? '';
+      if (hostsDeviceId.length >= 12) {
+        final embeddedMac = hostsDeviceId.substring(hostsDeviceId.length - 12);
+        for (final node in meshTopology.nodes) {
+          final nodeIdNormalized =
+              node.deviceId.toUpperCase().replaceAll(':', '');
+          if (nodeIdNormalized == embeddedMac) {
+            map[node.deviceId] = displayName;
+            break;
+          }
+        }
+      }
+    }
+    return map;
+  }
+
   String _normalizeHostname(String hostname) {
     var normalized = hostname.trim().toLowerCase();
     if (normalized.isEmpty) return '';
@@ -255,11 +328,16 @@ class UspDevicesDataService {
     required MeshTopologyInfo meshTopology,
     required String gatewayName,
   }) {
+    // Build node display name map from Hosts (mesh nodes have hostname).
+    // This allows child node clients to show the node's hostname instead of model.
+    final nodeDisplayNameMap =
+        _buildNodeDisplayNameMap(connectedDevices, meshTopology);
+
     // Step 1: Build all DeviceUIModels (ungrouped)
     final allDevices = connectedDevices.items
         .where((d) => d.interface_.isNotEmpty || d.isActive)
-        .map((d) => _toDeviceUIModel(
-            d, wifiClientMap, connectionDetailMap, meshTopology, gatewayName))
+        .map((d) => _toDeviceUIModel(d, wifiClientMap, connectionDetailMap,
+            meshTopology, gatewayName, nodeDisplayNameMap))
         .toList();
 
     // Step 2: Group by hostname (empty hostname devices stay ungrouped)
@@ -446,6 +524,7 @@ class UspDevicesDataService {
     Map<String, ClientConnectionDetail> connectionDetailMap,
     MeshTopologyInfo meshTopology,
     String gatewayName,
+    Map<String, String> nodeDisplayNameMap,
   ) {
     final mac = device.macAddress.trim().toUpperCase();
     // Determine WiFi via Layer1Interface or InterfaceType (fallback for empty Layer1Interface).
@@ -466,18 +545,22 @@ class UspDevicesDataService {
         final isGateway = meshTopology.nodes.isNotEmpty &&
             meshTopology.nodes.first.deviceId == parentNodeId;
         if (isGateway) {
-          parentNodeName = gatewayName;
+          // Master node client — no parentNodeName (will use band in analytics)
+          parentNodeName = null;
         } else {
-          final matchingNode = meshTopology.nodes
-              .where((n) => n.deviceId == parentNodeId)
-              .firstOrNull;
-          parentNodeName = matchingNode?.model.isNotEmpty == true
-              ? matchingNode!.model
-              : parentNodeId;
+          // Child node client — use hostname from Hosts, fallback to model
+          parentNodeName = nodeDisplayNameMap[parentNodeId];
+          if (parentNodeName == null) {
+            final matchingNode = meshTopology.nodes
+                .where((n) => n.deviceId == parentNodeId)
+                .firstOrNull;
+            parentNodeName = matchingNode?.model.isNotEmpty == true
+                ? matchingNode!.model
+                : parentNodeId;
+          }
         }
-      } else {
-        parentNodeName = gatewayName;
       }
+      // No mapping found — master client without DataElements entry, leave null
     }
 
     return DeviceUIModel(
@@ -491,9 +574,14 @@ class UspDevicesDataService {
           .map((e) => e.address)
           .where((a) => a.isNotEmpty)
           .toList(),
-      // Prefer Hosts data, fallback to WiFi STA table data.
-      signalStrength:
-          isWifi ? (device.signalStrength ?? wifiClient?.signalStrength) : null,
+      // Prefer Hosts data, fallback to WiFi STA table, then DataElements.
+      // DataElements provides signal for clients on ALL nodes (including child nodes),
+      // while WifiClients only covers master node clients.
+      signalStrength: isWifi
+          ? (device.signalStrength ??
+              wifiClient?.signalStrength ??
+              meshTopology.clientSignalMap[mac])
+          : null,
       downlinkRate: isWifi
           ? (device.lastDataDownlinkRate ?? wifiClient?.lastDataDownlinkRate)
           : null,
