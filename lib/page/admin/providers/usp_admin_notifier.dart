@@ -6,6 +6,7 @@ import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/page/admin/providers/time_data_provider.dart';
 import 'package:privacy_gui/page/admin/providers/usp_admin_state.dart';
 import 'package:privacy_gui/page/admin/services/usp_admin_service.dart';
+import 'package:privacy_gui/providers/auth/auth_provider.dart';
 
 final uspAdminProvider =
     AsyncNotifierProvider.autoDispose<UspAdminNotifier, UspAdminState>(
@@ -44,15 +45,22 @@ class UspAdminNotifier extends AutoDisposeAsyncNotifier<UspAdminState> {
           newPassword: newPassword,
         );
       });
-
-      // Re-authenticate with new password to get a fresh token.
-      // The old token may be invalidated by the router after password change.
-      await ref
-          .read(uspAuthCoordinatorProvider)
-          .reloginWithNewPassword(newPassword);
     } on ServiceError catch (e) {
       logger.e('[USP][Admin]: Password update failed', error: e);
       rethrow;
+    }
+
+    // Re-authenticate with new password to get a fresh token.
+    // The old token may be invalidated by the router after password change.
+    // If relogin fails, logout to force user to re-enter password.
+    try {
+      await ref
+          .read(uspAuthCoordinatorProvider)
+          .reloginWithNewPassword(newPassword);
+    } catch (e) {
+      logger.w('[USP][Admin]: Relogin failed after password change, '
+          'triggering logout: $e');
+      await ref.read(authProvider.notifier).logout();
     }
   }
 
