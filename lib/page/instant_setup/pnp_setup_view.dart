@@ -678,6 +678,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
 
       int consecutiveFailures = 0;
       const maxConsecutiveFailures = 3;
+      bool autoMasterFailed = false;
 
       await for (final pollStatus
           in ref.read(pnpProvider.notifier).pollAutoMasterStatus()) {
@@ -707,35 +708,48 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
             }
             return;
           }
+
+          if (pollStatus == AutoMasterStatus.failed) {
+            // Auto Master failed (e.g., found another Master), password is still admin
+            // Continue normal save flow
+            logger.i('[PnP]: Auto Master failed, continuing save flow');
+            autoMasterFailed = true;
+            break;
+          }
         }
       }
 
-      // Polling exceeded max retry (timeout)
-      logger.w('[PnP]: Auto Master polling timeout, checking router connection');
+      // Skip timeout handling if Auto Master failed - continue to save logic
+      if (autoMasterFailed) {
+        logger.d('[PnP]: Auto Master failed, skipping timeout handling');
+      } else {
+        // Polling exceeded max retry (timeout)
+        logger.w('[PnP]: Auto Master polling timeout, checking router connection');
 
-      if (autoMasterSaveAttempt >= _maxAutoMasterSaveAttempts) {
-        logger.e(
-            '[PnP]: Auto Master retry limit reached after $autoMasterSaveAttempt attempts');
-        setState(() {
-          _showAutoMasterConnectionError = true;
-        });
-        return;
-      }
+        if (autoMasterSaveAttempt >= _maxAutoMasterSaveAttempts) {
+          logger.e(
+              '[PnP]: Auto Master retry limit reached after $autoMasterSaveAttempt attempts');
+          setState(() {
+            _showAutoMasterConnectionError = true;
+          });
+          return;
+        }
 
-      try {
-        await ref.read(pnpProvider.notifier).testConnectionReconnected();
-        logger.i(
-            '[PnP]: Router connected after timeout, attempt ${autoMasterSaveAttempt + 1}/$_maxAutoMasterSaveAttempts');
-        setState(() {
-          _setupStep = _PnpSetupStep.config;
-        });
-        return _saveChanges(autoMasterSaveAttempt: autoMasterSaveAttempt + 1);
-      } catch (e) {
-        logger.e('[PnP]: Router not connected after timeout');
-        setState(() {
-          _showAutoMasterConnectionError = true;
-        });
-        return;
+        try {
+          await ref.read(pnpProvider.notifier).testConnectionReconnected();
+          logger.i(
+              '[PnP]: Router connected after timeout, attempt ${autoMasterSaveAttempt + 1}/$_maxAutoMasterSaveAttempts');
+          setState(() {
+            _setupStep = _PnpSetupStep.config;
+          });
+          return _saveChanges(autoMasterSaveAttempt: autoMasterSaveAttempt + 1);
+        } catch (e) {
+          logger.e('[PnP]: Router not connected after timeout');
+          setState(() {
+            _showAutoMasterConnectionError = true;
+          });
+          return;
+        }
       }
     }
 

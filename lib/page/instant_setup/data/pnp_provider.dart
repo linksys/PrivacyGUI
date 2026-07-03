@@ -770,7 +770,8 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
               final status = AutoMasterStatus.fromValue(
                   result.output['autoMasterStatus'] as String?);
               return status == AutoMasterStatus.complete ||
-                  status == AutoMasterStatus.idle;
+                  status == AutoMasterStatus.idle ||
+                  status == AutoMasterStatus.failed;
             }
             return false;
           },
