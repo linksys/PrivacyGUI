@@ -3,7 +3,6 @@ import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/models/back_haul_info.dart';
-import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
@@ -73,6 +72,8 @@ class AddNodesNotifier extends AutoDisposeNotifier<AddNodesState> {
     polling.stopPolling();
 
     try {
+      state = state.copyWith(isLoading: true, loadingMessage: 'searching');
+
       // Commence the auto-onboarding process with retry logic for SmartConnect not ready
       final repo = ref.read(routerRepositoryProvider);
       const maxRetries = 20;
@@ -105,8 +106,6 @@ class AddNodesNotifier extends AutoDisposeNotifier<AddNodesState> {
     // only AutoOnboarding 3 service has deviceOnboardingStatus.
     bool anyOnboarded = false;
     var deviceOnboardingStatus = [];
-
-    state = state.copyWith(isLoading: true, loadingMessage: 'searching');
 
     await for (final result in pollAutoOnboardingStatus()) {
       logger.d('[AddNodes]: GetAutoOnboardingStatus result: $result');
