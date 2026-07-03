@@ -44,7 +44,12 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       // synchronous state change would trigger provider notifications that
       // cause a !_dirty assertion in ProviderScope.
       state = await AsyncValue.guard(() async {
-        // Try to restore USP session from stored token (sessionStorage)
+        // Try to restore USP session from stored token (sessionStorage).
+        // Note: restoreSession() may call onForceLogout on failure, but at this
+        // point sseManagerProvider hasn't been watched yet, so onForceLogout is
+        // null and the call is a no-op. This is safe but relies on init order —
+        // if SSE initialization ever moves earlier, consider passing
+        // isRecovering: true here to explicitly suppress force logout.
         final coordinator = ref.read(uspAuthCoordinatorProvider);
         await coordinator.restoreSession();
 
