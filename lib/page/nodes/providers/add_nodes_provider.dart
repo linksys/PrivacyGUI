@@ -176,6 +176,7 @@ class AddNodesNotifier extends AutoDisposeNotifier<AddNodesState> {
         onboardedMACList: onboardedMACList,
       );
     } finally {
+      state = state.copyWith(isLoading: false);
       polling.startPolling();
     }
   }
