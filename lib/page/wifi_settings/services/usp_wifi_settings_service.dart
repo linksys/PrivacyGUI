@@ -12,6 +12,7 @@ import 'package:privacy_gui/page/wifi_settings/models/wifi_quick_setup_network.d
 import 'package:privacy_gui/page/wifi_settings/models/wifi_settings_settings.dart';
 import 'package:privacy_gui/page/wifi_settings/models/wifi_settings_status.dart';
 import 'package:privacy_gui/page/wifi_settings/services/wifi_channel_bonding.dart';
+import 'package:privacy_gui/page/_shared/utils/wifi_guest_detection.dart';
 
 final uspWifiSettingsServiceProvider = Provider<UspWifiSettingsService>(
   (ref) => UspWifiSettingsService(ref.read(uspClientProvider)!),
@@ -74,8 +75,8 @@ class UspWifiSettingsService {
           'radio=${radio?.operatingFrequencyBand ?? "none"}, '
           'alias=${ssid.alias ?? "none"}');
 
-      // Guest detection via alias (FW 1.2.1+ auto-provisions wifi-*-guest aliases)
-      final isGuest = ssid.alias?.endsWith('-guest') ?? false;
+      // Guest detection via the canonical alias rule (see wifi_guest_detection).
+      final isGuest = isGuestSsid(ssid);
 
       // Parse Security.ModesSupported comma-separated string into a list.
       // e.g. "None, WPA2-Personal, WPA3-Personal" → ['None', 'WPA2-Personal', 'WPA3-Personal']
