@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:privacy_gui/framework/diagnostic_loggable.dart';
 
 /// How the source IP restriction is configured.
 enum DmzSourceType {
@@ -14,7 +15,7 @@ enum DmzSourceType {
 /// The router's TR-181 model is multi-instance (`Device.Firewall.DMZ.{i}.`)
 /// but DMZ is practically a single-entry feature: either 0 or 1 entry exists.
 /// This model abstracts that into a simple enable/disable + settings view.
-class DmzUIModel extends Equatable {
+class DmzUIModel extends Equatable with DiagnosticLoggable {
   /// Whether the DMZ entry exists and is enabled.
   final bool isEnabled;
 
@@ -56,5 +57,10 @@ class DmzUIModel extends Equatable {
   }
 
   @override
-  List<Object?> get props => [isEnabled, destIp, sourceType, sourcePrefix];
+  Map<String, Object?> get namedProps => {
+        'isEnabled': isEnabled,
+        'destIp': destIp,
+        'sourceType': sourceType.name,
+        'sourcePrefix': sourcePrefix,
+      };
 }

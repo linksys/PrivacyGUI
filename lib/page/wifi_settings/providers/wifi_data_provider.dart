@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
+import 'package:privacy_gui/framework/diagnostic_loggable.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_client_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_radio_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/client_connection_detail.dart';
@@ -17,7 +17,7 @@ export 'package:privacy_gui/page/wifi_settings/services/usp_wifi_data_service.da
 // Data Model (Layer 1 — UIModel only)
 // ---------------------------------------------------------------------------
 
-class WifiData extends Equatable {
+class WifiData extends Equatable with DiagnosticLoggable {
   /// Opaque codegen context for WiFi settings service consumption.
   final WifiCodegenContext codegenContext;
 
@@ -42,12 +42,11 @@ class WifiData extends Equatable {
         radioModels = const [];
 
   @override
-  List<Object?> get props => [
-        codegenContext,
-        wifiClientMap.length,
-        connectionDetailMap.length,
-        radioModels.length,
-      ];
+  Map<String, Object?> get namedProps => {
+        'wifiClientMap': wifiClientMap,
+        'connectionDetailMap': connectionDetailMap,
+        'radioModels': radioModels,
+      };
 }
 
 // ---------------------------------------------------------------------------
@@ -85,10 +84,6 @@ class WifiDataNotifier extends AsyncNotifier<WifiData> {
   Future<WifiData> _fetch() async {
     final svc = ref.read(uspWifiDataServiceProvider);
     final result = await svc.fetch();
-
-    logger.d('[USP][WifiData]: Fetched — '
-        'clients: ${result.wifiClientMap.length}, '
-        'radios: ${result.radioModels.length}');
 
     return WifiData(
       codegenContext: result.codegenContext,

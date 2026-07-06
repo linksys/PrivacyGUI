@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
+import 'package:privacy_gui/framework/diagnostic_loggable.dart';
 import 'package:privacy_gui/page/_shared/models/port_forwarding_rule_ui_model.dart';
 import 'package:privacy_gui/page/port_forwarding/services/usp_port_forwarding_data_service.dart';
 
@@ -15,7 +16,7 @@ final portForwardingDataProvider =
   PortForwardingDataNotifier.new,
 );
 
-class PortForwardingData extends Equatable {
+class PortForwardingData extends Equatable with DiagnosticLoggable {
   final List<PortForwardingRuleUIModel> ruleModels;
 
   const PortForwardingData({
@@ -23,7 +24,7 @@ class PortForwardingData extends Equatable {
   });
 
   @override
-  List<Object?> get props => [ruleModels.length];
+  Map<String, Object?> get namedProps => {'ruleModels': ruleModels};
 }
 
 class PortForwardingDataNotifier extends AsyncNotifier<PortForwardingData> {

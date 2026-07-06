@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/framework/diagnostic_loggable.dart';
 import 'package:privacy_gui/page/port_forwarding/models/port_triggering_rule_ui_model.dart';
 import 'package:privacy_gui/page/port_forwarding/services/usp_port_triggering_data_service.dart';
 
@@ -12,7 +13,7 @@ final portTriggeringDataProvider =
   PortTriggeringDataNotifier.new,
 );
 
-class PortTriggeringData extends Equatable {
+class PortTriggeringData extends Equatable with DiagnosticLoggable {
   final List<PortTriggeringRuleUIModel> ruleModels;
 
   const PortTriggeringData({
@@ -20,7 +21,7 @@ class PortTriggeringData extends Equatable {
   });
 
   @override
-  List<Object?> get props => [ruleModels.length];
+  Map<String, Object?> get namedProps => {'ruleModels': ruleModels};
 }
 
 class PortTriggeringDataNotifier extends AsyncNotifier<PortTriggeringData> {

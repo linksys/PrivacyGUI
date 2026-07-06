@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
+import 'package:privacy_gui/framework/diagnostic_loggable.dart';
 import 'package:privacy_gui/page/_shared/models/dhcp_client_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/dhcp_reservation_ui_model.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
@@ -11,7 +11,7 @@ import 'package:privacy_gui/page/local_network/services/usp_dhcp_data_service.da
 
 // ── Data Model ──
 
-class DhcpData extends Equatable {
+class DhcpData extends Equatable with DiagnosticLoggable {
   final List<DhcpClientUIModel> clientModels;
   final List<DhcpReservationUIModel> reservationModels;
 
@@ -21,10 +21,10 @@ class DhcpData extends Equatable {
   });
 
   @override
-  List<Object?> get props => [
-        clientModels.length,
-        reservationModels.length,
-      ];
+  Map<String, Object?> get namedProps => {
+        'clientModels': clientModels,
+        'reservationModels': reservationModels,
+      };
 }
 
 // ── Provider ──
@@ -58,10 +58,6 @@ class DhcpDataNotifier extends AsyncNotifier<DhcpData> {
     final hostNameByMac = devicesData?.hostNameByMac ?? const {};
 
     final result = await svc.fetch(hostNameByMac: hostNameByMac);
-
-    logger.d('[USP][DhcpData]: Fetched — '
-        'clients: ${result.clientModels.length}, '
-        'reservations: ${result.reservationModels.length}');
 
     return DhcpData(
       clientModels: result.clientModels,

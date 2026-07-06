@@ -1,19 +1,19 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/framework/diagnostic_loggable.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
 import 'package:privacy_gui/page/admin/services/usp_system_info_data_service.dart';
 import 'package:privacy_gui/page/firmware_update/providers/firmware_banks_data_provider.dart';
 
 // ── Data Model ──
 
-class SystemInfoData extends Equatable {
+class SystemInfoData extends Equatable with DiagnosticLoggable {
   final SystemInfoUIModel model;
 
   const SystemInfoData({required this.model});
 
   @override
-  List<Object?> get props => [model];
+  Map<String, Object?> get namedProps => {'model': model};
 }
 
 // ── Provider ──
@@ -48,10 +48,6 @@ class SystemInfoDataNotifier extends AsyncNotifier<SystemInfoData> {
 
     // Service fetches SystemInfo; firmwareBanks passed in externally
     final model = await svc.fetch(firmwareBanks: banksData?.banks);
-
-    logger.d('[USP][SystemInfoData]: Fetched — '
-        'model=${model.modelName}, '
-        'fw=${model.softwareVersion}');
 
     return SystemInfoData(model: model);
   }

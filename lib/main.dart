@@ -14,6 +14,7 @@ import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/providers/logger_observer.dart';
 
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/core/utils/state_log_observer.dart';
 import 'package:privacy_gui/core/utils/oui_lookup.dart';
 import 'package:privacy_gui/core/utils/storage.dart';
 import 'package:privacy_gui/core/usp/services/usp_bridge_client.dart';
@@ -134,6 +135,7 @@ Widget app() {
   return ProviderScope(
     observers: [
       ProviderLogger(),
+      StateLogObserver(),
     ],
     child: const LinksysApp(),
   );

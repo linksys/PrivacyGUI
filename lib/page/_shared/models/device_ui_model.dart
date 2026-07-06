@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:privacy_gui/core/utils/wifi.dart';
+import 'package:privacy_gui/framework/diagnostic_loggable.dart';
 
 // ---------------------------------------------------------------------------
 // Additional Interface Info (for multi-interface devices)
@@ -10,7 +11,7 @@ import 'package:privacy_gui/core/utils/wifi.dart';
 /// When a device connects via multiple interfaces (e.g., WiFi + Ethernet),
 /// the primary interface is stored in [DeviceUIModel] and additional
 /// interfaces are stored in [DeviceUIModel.additionalInterfaces].
-class DeviceInterfaceInfo extends Equatable {
+class DeviceInterfaceInfo extends Equatable with DiagnosticLoggable {
   final String mac;
   final String ip;
   final bool isWifi;
@@ -32,16 +33,16 @@ class DeviceInterfaceInfo extends Equatable {
   });
 
   @override
-  List<Object?> get props => [
-        mac,
-        ip,
-        isWifi,
-        isActive,
-        layer1Interface,
-        band,
-        ssidName,
-        signalStrength,
-      ];
+  Map<String, Object?> get namedProps => {
+        'mac': mac,
+        'ip': ip,
+        'isWifi': isWifi,
+        'isActive': isActive,
+        'layer1Interface': layer1Interface,
+        'band': band,
+        'ssidName': ssidName,
+        'signalStrength': signalStrength,
+      };
 }
 
 // ---------------------------------------------------------------------------
@@ -56,7 +57,7 @@ enum DeviceConnectionType { wifi, wired }
 /// UI widgets depend only on this class, never directly on codegen Data Models.
 /// Naming follows constitution Section 3.3.4 (class name ends with `UIModel`).
 /// Implements [Equatable] per Article XI.
-class DeviceUIModel extends Equatable {
+class DeviceUIModel extends Equatable with DiagnosticLoggable {
   // ─── Base info (from ConnectedDevice codegen) ───
   final String mac; // PhysAddress (uppercase, normalized)
   final String ip; // IPAddress
@@ -271,30 +272,30 @@ class DeviceUIModel extends Equatable {
   }
 
   @override
-  List<Object?> get props => [
-        mac,
-        ip,
-        hostName,
-        isActive,
-        isWifi,
-        layer1Interface,
-        ipv6Addresses,
-        signalStrength,
-        downlinkRate,
-        uplinkRate,
-        band,
-        ssidName,
-        parentNodeId,
-        parentNodeName,
-        deviceRole,
-        interfaceType,
-        friendlyName,
-        manufacturer,
-        modelName,
-        operatingSystem,
-        hostsDeviceId,
-        additionalInterfaces,
-      ];
+  Map<String, Object?> get namedProps => {
+        'mac': mac,
+        'ip': ip,
+        'hostName': hostName,
+        'isActive': isActive,
+        'isWifi': isWifi,
+        'layer1Interface': layer1Interface,
+        'ipv6Addresses': ipv6Addresses,
+        'signalStrength': signalStrength,
+        'downlinkRate': downlinkRate,
+        'uplinkRate': uplinkRate,
+        'band': band,
+        'ssidName': ssidName,
+        'parentNodeId': parentNodeId,
+        'parentNodeName': parentNodeName,
+        'deviceRole': deviceRole,
+        'interfaceType': interfaceType,
+        'friendlyName': friendlyName,
+        'manufacturer': manufacturer,
+        'modelName': modelName,
+        'operatingSystem': operatingSystem,
+        'hostsDeviceId': hostsDeviceId,
+        'additionalInterfaces': additionalInterfaces,
+      };
 }
 
 /// Extension methods for List<DeviceUIModel> to simplify common filtering.

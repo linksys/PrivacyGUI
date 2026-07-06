@@ -1,12 +1,13 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/framework/diagnostic_loggable.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_image_ui_model.dart';
 import 'package:privacy_gui/page/firmware_update/services/firmware_banks_data_service.dart';
 
 // ── Data Model ──
 
-class FirmwareBanksData extends Equatable {
+class FirmwareBanksData extends Equatable with DiagnosticLoggable {
   final List<FirmwareImageUIModel> banks;
 
   const FirmwareBanksData({required this.banks});
@@ -20,7 +21,7 @@ class FirmwareBanksData extends Equatable {
       banks.where((b) => b.available && !b.isActive).firstOrNull;
 
   @override
-  List<Object?> get props => [banks];
+  Map<String, Object?> get namedProps => {'banks': banks};
 }
 
 // ── Provider ──

@@ -1,7 +1,8 @@
 import 'package:equatable/equatable.dart';
+import 'package:privacy_gui/framework/diagnostic_loggable.dart';
 
 /// Presentation Layer Model for a WiFi radio with its access points.
-class WifiRadioUIModel extends Equatable {
+class WifiRadioUIModel extends Equatable with DiagnosticLoggable {
   final String instancePath;
   final String band; // "2.4GHz", "5GHz", "6GHz"
   final bool enable;
@@ -57,23 +58,23 @@ class WifiRadioUIModel extends Equatable {
   }
 
   @override
-  List<Object?> get props => [
-        instancePath,
-        band,
-        enable,
-        transmitPower,
-        maxBitRate,
-        channel,
-        autoChannelEnable,
-        channelBandwidth,
-        supportedStandards,
-        possibleChannels,
-        accessPoints,
-      ];
+  Map<String, Object?> get namedProps => {
+        'instancePath': instancePath,
+        'band': band,
+        'enable': enable,
+        'transmitPower': transmitPower,
+        'maxBitRate': maxBitRate,
+        'channel': channel,
+        'autoChannelEnable': autoChannelEnable,
+        'channelBandwidth': channelBandwidth,
+        'supportedStandards': supportedStandards,
+        'possibleChannels': possibleChannels,
+        'accessPoints': accessPoints,
+      };
 }
 
 /// Presentation Layer Model for a WiFi access point.
-class WifiAccessPointUIModel extends Equatable {
+class WifiAccessPointUIModel extends Equatable with DiagnosticLoggable {
   final bool enable;
   final String ssidName; // Resolved from SSID reference
   final String securityMode;
@@ -89,6 +90,11 @@ class WifiAccessPointUIModel extends Equatable {
   });
 
   @override
-  List<Object?> get props =>
-      [enable, ssidName, securityMode, encryptionMode, isGuest];
+  Map<String, Object?> get namedProps => {
+        'enable': enable,
+        'ssidName': ssidName,
+        'securityMode': securityMode,
+        'encryptionMode': encryptionMode,
+        'isGuest': isGuest,
+      };
 }

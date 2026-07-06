@@ -1,7 +1,8 @@
 import 'package:equatable/equatable.dart';
+import 'package:privacy_gui/framework/diagnostic_loggable.dart';
 
 /// Presentation Layer Model for an active DHCP client lease.
-class DhcpClientUIModel extends Equatable {
+class DhcpClientUIModel extends Equatable with DiagnosticLoggable {
   final String mac;
   final String ip;
   final bool active;
@@ -54,5 +55,11 @@ class DhcpClientUIModel extends Equatable {
   String get displayName => hostName.isNotEmpty ? hostName : mac;
 
   @override
-  List<Object?> get props => [mac, ip, active, hostName, leaseExpiry];
+  Map<String, Object?> get namedProps => {
+        'mac': mac,
+        'ip': ip,
+        'active': active,
+        'hostName': hostName,
+        'leaseExpiry': leaseExpiry,
+      };
 }

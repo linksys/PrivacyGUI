@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
+import 'package:privacy_gui/framework/diagnostic_loggable.dart';
 import 'package:privacy_gui/page/dmz/models/dmz_ui_model.dart';
 import 'package:privacy_gui/page/firewall/models/firewall_ui_model.dart';
 import 'package:privacy_gui/page/firewall/services/usp_firewall_data_service.dart';
@@ -39,7 +39,7 @@ class DmzEntrySummary extends Equatable {
 // Data Model (Layer 1 — UIModel only)
 // ---------------------------------------------------------------------------
 
-class FirewallData extends Equatable {
+class FirewallData extends Equatable with DiagnosticLoggable {
   /// Pre-built firewall toggle model.
   final FirewallUIModel firewallModel;
 
@@ -71,8 +71,11 @@ class FirewallData extends Equatable {
         dmzSummaries = const [];
 
   @override
-  List<Object?> get props =>
-      [firewallModel, ruleContext, ruleSummaries, dmzModel, dmzSummaries];
+  Map<String, Object?> get namedProps => {
+        'firewallModel': firewallModel,
+        'ruleCount': ruleSummaries.length,
+        'dmzModel': dmzModel,
+      };
 }
 
 // ---------------------------------------------------------------------------
@@ -109,10 +112,6 @@ class FirewallDataNotifier extends AsyncNotifier<FirewallData> {
   Future<FirewallData> _fetch() async {
     final svc = ref.read(uspFirewallDataServiceProvider);
     final result = await svc.fetch();
-
-    logger.d('[USP][FirewallData]: Fetched — '
-        'rules: ${result.ruleSummaries.length}, '
-        'dmz: ${result.dmzSummaries.length}');
 
     return FirewallData(
       firewallModel: result.firewallModel,

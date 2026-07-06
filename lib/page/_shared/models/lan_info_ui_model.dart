@@ -1,10 +1,11 @@
 import 'package:equatable/equatable.dart';
+import 'package:privacy_gui/framework/diagnostic_loggable.dart';
 
 /// Presentation Layer Model for LAN configuration info.
 ///
 /// Naming follows constitution Section 3.3.4 (class name ends with `UIModel`).
 /// Implements [Equatable] per Article XI.
-class LanInfoUIModel extends Equatable {
+class LanInfoUIModel extends Equatable with DiagnosticLoggable {
   final String hostName;
   final String ipAddress;
   final String subnetMask;
@@ -35,14 +36,16 @@ class LanInfoUIModel extends Equatable {
       : 'N/A';
 
   @override
-  List<Object?> get props => [
-        ipAddress,
-        subnetMask,
-        dhcpEnabled,
-        minAddress,
-        maxAddress,
-        dnsServers,
-        ipv6Enabled,
-        ipv6Addresses,
-      ];
+  Map<String, Object?> get namedProps => {
+        'hostName': hostName,
+        'ipAddress': ipAddress,
+        'subnetMask': subnetMask,
+        'dhcpEnabled': dhcpEnabled,
+        'minAddress': minAddress,
+        'maxAddress': maxAddress,
+        'leaseTimeMinutes': leaseTimeMinutes,
+        'dnsServers': dnsServers,
+        'ipv6Enabled': ipv6Enabled,
+        'ipv6Addresses': ipv6Addresses,
+      };
 }

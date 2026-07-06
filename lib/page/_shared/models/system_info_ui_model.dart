@@ -1,8 +1,9 @@
 import 'package:equatable/equatable.dart';
+import 'package:privacy_gui/framework/diagnostic_loggable.dart';
 import 'package:privacy_gui/page/_shared/utils/usp_formatters.dart';
 
 /// Presentation Layer Model for a firmware image partition.
-class FirmwareImageUIModel extends Equatable {
+class FirmwareImageUIModel extends Equatable with DiagnosticLoggable {
   final String instancePath;
   final String name;
   final String version;
@@ -22,19 +23,19 @@ class FirmwareImageUIModel extends Equatable {
   });
 
   @override
-  List<Object?> get props => [
-        instancePath,
-        name,
-        version,
-        status,
-        available,
-        isActive,
-        isBootTarget,
-      ];
+  Map<String, Object?> get namedProps => {
+        'instancePath': instancePath,
+        'name': name,
+        'version': version,
+        'status': status,
+        'available': available,
+        'isActive': isActive,
+        'isBootTarget': isBootTarget,
+      };
 }
 
 /// Presentation Layer Model for router system information.
-class SystemInfoUIModel extends Equatable {
+class SystemInfoUIModel extends Equatable with DiagnosticLoggable {
   final String manufacturer;
   final String modelName;
   final String serialNumber;
@@ -95,16 +96,16 @@ class SystemInfoUIModel extends Equatable {
   }
 
   @override
-  List<Object?> get props => [
-        manufacturer,
-        modelName,
-        serialNumber,
-        hardwareVersion,
-        softwareVersion,
-        uptime,
-        totalMemory,
-        freeMemory,
-        cpuUsage,
-        firmwareImages,
-      ];
+  Map<String, Object?> get namedProps => {
+        'manufacturer': manufacturer,
+        'modelName': modelName,
+        'serialNumber': serialNumber,
+        'hardwareVersion': hardwareVersion,
+        'softwareVersion': softwareVersion,
+        'uptime': uptime,
+        'totalMemory': totalMemory,
+        'freeMemory': freeMemory,
+        'cpuUsage': cpuUsage,
+        'firmwareImages': firmwareImages,
+      };
 }

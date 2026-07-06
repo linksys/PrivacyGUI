@@ -1,10 +1,11 @@
 import 'package:equatable/equatable.dart';
+import 'package:privacy_gui/framework/diagnostic_loggable.dart';
 
 /// Presentation Layer Model for a single forwarded-port rule
 /// within a port trigger entry (child of `Device.NAT.PortTrigger.{i}.Rule.{i}`).
 ///
 /// [instancePath] is `null` for locally-created forward rules not yet saved.
-class PortTriggerForwardRuleUIModel extends Equatable {
+class PortTriggerForwardRuleUIModel extends Equatable with DiagnosticLoggable {
   final String? instancePath;
   final int forwardPort;
   final int forwardPortEndRange;
@@ -24,12 +25,12 @@ class PortTriggerForwardRuleUIModel extends Equatable {
           : '$forwardPort-$forwardPortEndRange';
 
   @override
-  List<Object?> get props => [
-        instancePath,
-        forwardPort,
-        forwardPortEndRange,
-        forwardProtocol,
-      ];
+  Map<String, Object?> get namedProps => {
+        'instancePath': instancePath,
+        'forwardPort': forwardPort,
+        'forwardPortEndRange': forwardPortEndRange,
+        'forwardProtocol': forwardProtocol,
+      };
 }
 
 /// Presentation Layer Model for a port triggering rule.
@@ -38,7 +39,7 @@ class PortTriggerForwardRuleUIModel extends Equatable {
 /// `Rule.{i}` sub-table (children).
 ///
 /// [instancePath] is `null` for newly created (local-only) rules.
-class PortTriggeringRuleUIModel extends Equatable {
+class PortTriggeringRuleUIModel extends Equatable with DiagnosticLoggable {
   final String? instancePath;
   final bool enabled;
   final String description;
@@ -100,13 +101,13 @@ class PortTriggeringRuleUIModel extends Equatable {
       '\u2192 Forward: $forwardPortDisplay $forwardProtocolDisplay';
 
   @override
-  List<Object?> get props => [
-        instancePath,
-        enabled,
-        description,
-        triggerPort,
-        triggerPortEndRange,
-        triggerProtocol,
-        forwardRules,
-      ];
+  Map<String, Object?> get namedProps => {
+        'instancePath': instancePath,
+        'enabled': enabled,
+        'description': description,
+        'triggerPort': triggerPort,
+        'triggerPortEndRange': triggerPortEndRange,
+        'triggerProtocol': triggerProtocol,
+        'forwardRules': forwardRules,
+      };
 }

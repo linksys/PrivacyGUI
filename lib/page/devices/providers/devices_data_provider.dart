@@ -4,6 +4,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
+import 'package:privacy_gui/framework/diagnostic_loggable.dart';
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
 import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/mesh_topology_info.dart';
@@ -19,7 +20,7 @@ export 'package:privacy_gui/page/devices/services/usp_devices_data_service.dart'
 // Data Model (Layer 1 — UIModel only)
 // ---------------------------------------------------------------------------
 
-class DevicesData extends Equatable {
+class DevicesData extends Equatable with DiagnosticLoggable {
   final DevicesCodegenContext codegenContext;
   final MeshTopologyInfo meshTopology;
 
@@ -66,13 +67,12 @@ class DevicesData extends Equatable {
   }
 
   @override
-  List<Object?> get props => [
-        codegenContext,
-        meshTopology.nodes.length,
-        deviceModels,
-        nodeModels,
-        hostNameByMac.length,
-      ];
+  Map<String, Object?> get namedProps => {
+        'meshTopology': meshTopology,
+        'deviceModels': deviceModels,
+        'nodeModels': nodeModels,
+        'hostNameByMac': hostNameByMac,
+      };
 }
 
 // ---------------------------------------------------------------------------
@@ -159,10 +159,6 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
       systemInfo: sysData?.model,
     );
 
-    logger.d('[USP][DevicesData]: Fetched — '
-        'deviceModels: ${result.deviceModels.length}, '
-        'nodeModels: ${result.nodeModels.length}');
-
     // Preserve existing mesh topology during refetch to avoid UI flicker.
     // Fire-and-forget will update it shortly after.
     final existingMesh =
@@ -203,11 +199,6 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
       systemInfo: sysData?.model,
     );
 
-    logger.d('[USP][DevicesData]: Mesh update — '
-        'meshNodes: ${meshTopology.nodes.length}, '
-        'nodeModels: ${rebuilt.nodeModels.length}, '
-        'deviceModels: ${rebuilt.deviceModels.length}');
-
     state = AsyncData(cur.copyWith(
       meshTopology: meshTopology,
       deviceModels: rebuilt.deviceModels,
@@ -227,9 +218,6 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
   Future<void> _refetchPreservingMesh() async {
     final currentState = state.valueOrNull;
     final existingMesh = currentState?.meshTopology ?? MeshTopologyInfo.empty;
-    logger.d('[USP][DevicesData]: _refetchPreservingMesh — '
-        'currentState: ${currentState != null}, '
-        'existingMesh nodes: ${existingMesh.nodes.length}');
 
     final svc = ref.read(uspDevicesDataServiceProvider);
 
@@ -267,11 +255,6 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
             gatewayName: gatewayName,
             systemInfo: sysData?.model,
           );
-
-    logger.d('[USP][DevicesData]: Refetch (preserve mesh) — '
-        'deviceModels: ${rebuilt.deviceModels.length}, '
-        'nodeModels: ${rebuilt.nodeModels.length}, '
-        'existingMesh: ${existingMesh.nodes.length}');
 
     // Update state with new device data but preserve existing mesh topology.
     state = AsyncData(DevicesData(

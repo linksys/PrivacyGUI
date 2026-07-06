@@ -1,10 +1,11 @@
 import 'package:equatable/equatable.dart';
+import 'package:privacy_gui/framework/diagnostic_loggable.dart';
 
 /// Presentation Layer Model for WAN interface status.
 ///
 /// Naming follows constitution Section 3.3.4 (class name ends with `UIModel`).
 /// Implements [Equatable] per Article XI.
-class WanStatusUIModel extends Equatable {
+class WanStatusUIModel extends Equatable with DiagnosticLoggable {
   final bool isUp;
   final String ipAddress;
   final String subnetMask;
@@ -26,14 +27,14 @@ class WanStatusUIModel extends Equatable {
   });
 
   @override
-  List<Object?> get props => [
-        isUp,
-        ipAddress,
-        subnetMask,
-        addressingType,
-        mtu,
-        gateway,
-        ipv6Enabled,
-        ipv6Addresses,
-      ];
+  Map<String, Object?> get namedProps => {
+        'isUp': isUp,
+        'ipAddress': ipAddress,
+        'subnetMask': subnetMask,
+        'addressingType': addressingType,
+        'mtu': mtu,
+        'gateway': gateway,
+        'ipv6Enabled': ipv6Enabled,
+        'ipv6Addresses': ipv6Addresses,
+      };
 }

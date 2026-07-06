@@ -1,11 +1,12 @@
 import 'package:equatable/equatable.dart';
+import 'package:privacy_gui/framework/diagnostic_loggable.dart';
 import 'package:privacy_gui/page/topology/models/node_ui_model.dart';
 
 /// Result of mesh topology fetch from DataElements.
 ///
 /// Contains mesh nodes and client-to-node mapping for determining
 /// which mesh node each client device is connected to.
-class MeshTopologyInfo extends Equatable {
+class MeshTopologyInfo extends Equatable with DiagnosticLoggable {
   /// Mesh nodes discovered via DataElements.
   final List<NodeUIModel> nodes;
 
@@ -24,5 +25,8 @@ class MeshTopologyInfo extends Equatable {
   bool get isNotEmpty => nodes.isNotEmpty;
 
   @override
-  List<Object?> get props => [nodes, clientToNodeMap];
+  Map<String, Object?> get namedProps => {
+        'nodes': nodes,
+        'clientToNodeMap': clientToNodeMap,
+      };
 }

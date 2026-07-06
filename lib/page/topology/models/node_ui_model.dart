@@ -1,11 +1,12 @@
 import 'package:equatable/equatable.dart';
+import 'package:privacy_gui/framework/diagnostic_loggable.dart';
 
 /// Presentation Layer Model for a mesh node.
 ///
 /// UI widgets depend only on this class, never directly on codegen Data Models.
 /// Naming follows constitution Section 3.3.4 (class name ends with `UIModel`).
 /// Implements [Equatable] per Article XI.
-class NodeUIModel extends Equatable {
+class NodeUIModel extends Equatable with DiagnosticLoggable {
   final String deviceId; // MAC of the mesh node (from Hosts)
 
   // ─── DataElements ID (may differ from deviceId) ───
@@ -92,33 +93,33 @@ class NodeUIModel extends Equatable {
   bool get isEthernetBackhaul => backhaulLinkType == 'Ethernet';
 
   @override
-  List<Object?> get props => [
-        deviceId,
-        dataElementsId,
-        friendlyName,
-        hostName,
-        model,
-        manufacturer,
-        serialNumber,
-        softwareVersion,
-        isMaster,
-        connectedDeviceCount,
-        ipAddress,
-        ipv6Addresses,
-        wanIpAddress,
-        backhaulMediaType,
-        backhaulPhyRate,
-        backhaulSignalStrength,
-        backhaulUplinkRate,
-        instancePath,
-        backhaulAlId,
-        backhaulMacAddress,
-        backhaulLinkType,
-        backhaulDownlinkRate,
-        backhaulParentDeviceId,
-        backhaulParentBssid,
-        lastContactTime,
-      ];
+  Map<String, Object?> get namedProps => {
+        'deviceId': deviceId,
+        'dataElementsId': dataElementsId,
+        'friendlyName': friendlyName,
+        'hostName': hostName,
+        'model': model,
+        'manufacturer': manufacturer,
+        'serialNumber': serialNumber,
+        'softwareVersion': softwareVersion,
+        'isMaster': isMaster,
+        'connectedDeviceCount': connectedDeviceCount,
+        'ipAddress': ipAddress,
+        'ipv6Addresses': ipv6Addresses,
+        'wanIpAddress': wanIpAddress,
+        'backhaulMediaType': backhaulMediaType,
+        'backhaulPhyRate': backhaulPhyRate,
+        'backhaulSignalStrength': backhaulSignalStrength,
+        'backhaulUplinkRate': backhaulUplinkRate,
+        'instancePath': instancePath,
+        'backhaulAlId': backhaulAlId,
+        'backhaulMacAddress': backhaulMacAddress,
+        'backhaulLinkType': backhaulLinkType,
+        'backhaulDownlinkRate': backhaulDownlinkRate,
+        'backhaulParentDeviceId': backhaulParentDeviceId,
+        'backhaulParentBssid': backhaulParentBssid,
+        'lastContactTime': lastContactTime,
+      };
 }
 
 /// Extension methods for List<NodeUIModel> to simplify common filtering.

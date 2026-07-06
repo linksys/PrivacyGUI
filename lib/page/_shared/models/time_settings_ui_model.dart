@@ -1,8 +1,9 @@
 import 'package:equatable/equatable.dart';
+import 'package:privacy_gui/framework/diagnostic_loggable.dart';
 import 'package:privacy_gui/page/_shared/models/timezone_definitions.dart';
 
 /// Presentation Layer Model for time settings.
-class TimeSettingsUIModel extends Equatable {
+class TimeSettingsUIModel extends Equatable with DiagnosticLoggable {
   final bool enable;
   final String status;
   final String currentLocalTime;
@@ -71,12 +72,12 @@ class TimeSettingsUIModel extends Equatable {
   }
 
   @override
-  List<Object?> get props => [
-        enable,
-        status,
-        currentLocalTime,
-        localTimeZone,
-        ntpServer1,
-        ntpServer2,
-      ];
+  Map<String, Object?> get namedProps => {
+        'enable': enable,
+        'status': status,
+        'currentLocalTime': currentLocalTime,
+        'localTimeZone': localTimeZone,
+        'ntpServer1': ntpServer1,
+        'ntpServer2': ntpServer2,
+      };
 }
