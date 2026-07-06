@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/utils/usp_formatters.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
@@ -12,6 +13,7 @@ import 'package:privacy_gui/page/_shared/providers/usp_traffic_analysis_notifier
 import 'package:privacy_gui/page/_shared/components/card_skeleton.dart';
 import 'package:privacy_gui/page/_shared/components/dashboard_card_template.dart';
 import 'package:privacy_gui/page/_shared/components/usp_info_row.dart';
+import 'package:privacy_gui/route/constants.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// System Performance Dashboard — 4-tab card (F-021).
@@ -31,8 +33,7 @@ class UspSystemStatusCard extends ConsumerStatefulWidget {
 class _UspSystemStatusCardState extends ConsumerState<UspSystemStatusCard> {
   static const _cardId = 'system_status';
 
-  List<(Duration?, String)> _intervalOptions(BuildContext context) => [
-        (null, loc(context).off),
+  List<(Duration, String)> _intervalOptions(BuildContext context) => [
         (Duration(seconds: 10), '10s'),
         (Duration(seconds: 30), '30s'),
         (Duration(minutes: 1), '60s'),
@@ -47,6 +48,7 @@ class _UspSystemStatusCardState extends ConsumerState<UspSystemStatusCard> {
 
     return DashboardCardTemplate.tabbed(
       title: loc(context).systemStatus,
+      footer: _buildStatisticsFooter(context, 2),
       titleBadge: monitorState.isFetching
           ? SizedBox(
               width: 14,
@@ -105,6 +107,48 @@ class _UspSystemStatusCardState extends ConsumerState<UspSystemStatusCard> {
       ),
     );
   }
+
+  Widget _buildStatisticsFooter(BuildContext context, int tabIndex) {
+    final label = loc(context).viewDetails;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        AppDivider(),
+        AppGap.md(),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            Semantics(
+              button: true,
+              label: label,
+              child: InkWell(
+                onTap: () => context.pushNamed(
+                  RouteNamed.uspStatistics,
+                  queryParameters: {'tab': tabIndex.toString()},
+                ),
+                borderRadius: BorderRadius.circular(4),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    AppText.labelMedium(
+                      label,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    AppGap.xs(),
+                    Icon(
+                      Icons.arrow_forward,
+                      size: 14,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
 }
 
 // =============================================================================
@@ -118,11 +162,11 @@ class _MonitorView extends StatelessWidget {
   const _MonitorView({required this.info, required this.monitorState});
 
   String _formatIntervalLabel(BuildContext context, Duration? interval) {
-    if (interval == null) return loc(context).off;
+    if (interval == null) return '—';
     if (interval.inSeconds == 10) return '10s';
     if (interval.inSeconds == 30) return '30s';
     if (interval.inSeconds == 60) return '60s';
-    return loc(context).off;
+    return '${interval.inSeconds}s';
   }
 
   @override
@@ -143,7 +187,10 @@ class _MonitorView extends StatelessWidget {
 
     return Column(
       children: [
-        UspInfoRow(label: loc(context).uptime, value: info.formattedUptime),
+        UspInfoRow(
+          label: loc(context).uptime,
+          value: latest?.formattedUptime ?? info.formattedUptime,
+        ),
         AppGap.md(),
         Expanded(
           child: Row(

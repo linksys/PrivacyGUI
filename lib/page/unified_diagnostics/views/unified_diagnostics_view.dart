@@ -114,7 +114,7 @@ class _UnifiedDiagnosticsViewState
           AppGap.xxxl(),
           AppButton(
             label: loc(context).returnToDashboard,
-            onTap: () => _returnToDashboard(context, ref),
+            onTap: () => _returnToMenu(context, ref),
           ),
         ],
       ),
@@ -129,12 +129,16 @@ class _UnifiedDiagnosticsViewState
     final notifier = ref.read(unifiedDiagnosticsProvider.notifier);
     final handledInternally = notifier.goBack();
     if (!handledInternally) {
-      _returnToDashboard(context, ref);
+      _returnToMenu(context, ref);
     }
   }
 
-  void _returnToDashboard(BuildContext context, WidgetRef ref) {
+  void _returnToMenu(BuildContext context, WidgetRef ref) {
     ref.read(unifiedDiagnosticsProvider.notifier).cancel();
-    context.goNamed(RouteNamed.uspDashboard);
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.goNamed(RouteNamed.uspMenu);
+    }
   }
 }

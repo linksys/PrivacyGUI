@@ -51,7 +51,7 @@ class UspNetworkTopologyCard extends ConsumerWidget {
       titleBadge: AppBadge(
           label: loc(context)
               .nOnlineOfTotal(onlineCount.toString(), totalCount.toString())),
-      detailRoute: RouteNamed.uspDeviceList,
+      detailRoute: RouteNamed.uspTopology,
       scrollable: false,
       content: ClipRect(
         child: _withTopologyAnimation(

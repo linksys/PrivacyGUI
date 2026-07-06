@@ -24,7 +24,7 @@ class UspClientWeb {
   Future<void> logout() =>
       throw UnsupportedError('USP is only available on Web');
 
-  Future<void> refreshToken() =>
+  Future<void> refreshToken({String? token}) =>
       throw UnsupportedError('USP is only available on Web');
 
   Future<Map<String, String>> get(List<String> paths) =>

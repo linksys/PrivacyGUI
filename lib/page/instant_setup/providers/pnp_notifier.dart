@@ -316,7 +316,9 @@ class PnpNotifier extends Notifier<PnpState> {
 
       try {
         // Re-login (WASM state lost during WiFi change)
-        await ref.read(uspAuthCoordinatorProvider).restoreSession();
+        await ref.read(uspAuthCoordinatorProvider).restoreSession(
+              isRecovering: true,
+            );
 
         final sn = await _svc.checkRouterIsBack();
         final expectedSn = state.serialNumber;

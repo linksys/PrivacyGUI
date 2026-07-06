@@ -125,3 +125,196 @@ class NetworkBadgeWidget extends StatelessWidget {
     );
   }
 }
+
+// =============================================================================
+// ToggleRow - Row with leading switch toggle
+// =============================================================================
+
+/// Toggle row block with leading switch, title, subtitle, and optional trailing.
+///
+/// Uses [AppListTile] from UI Kit for consistent styling.
+/// Use for DHCP reservations, port forwarding rules, etc.
+class ToggleRow extends StatelessWidget {
+  final bool value;
+  final ValueChanged<bool>? onChanged;
+  final String title;
+  final String? subtitle;
+  final Widget? trailing;
+  final VoidCallback? onTap;
+
+  const ToggleRow({
+    super.key,
+    required this.value,
+    this.onChanged,
+    required this.title,
+    this.subtitle,
+    this.trailing,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return AppListTile(
+      backgroundColor: colorScheme.surfaceContainerHighest
+          .withValues(alpha: BlockConstants.backgroundAlpha),
+      leading: SizedBox(
+        width: 44,
+        child: Center(
+          child: AppSwitch(
+            value: value,
+            onChanged: onChanged,
+            scale: 0.8,
+          ),
+        ),
+      ),
+      title: AppText.bodyMedium(
+        title,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      subtitle: subtitle != null
+          ? AppText.bodySmall(
+              subtitle!,
+              color: colorScheme.onSurfaceVariant,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            )
+          : null,
+      trailing: trailing,
+      onTap: onTap,
+    );
+  }
+}
+
+// =============================================================================
+// NetworkRow - WiFi network row with badges and switch
+// =============================================================================
+
+/// Network row block for WiFi networks with band badges, client count, and toggle.
+///
+/// Uses [AppListTile] from UI Kit for consistent styling.
+class NetworkRow extends StatelessWidget {
+  final String ssidName;
+  final List<String> bands;
+  final bool isGuest;
+  final bool isEnabled;
+  final int clientCount;
+  final ValueChanged<bool>? onChanged;
+  final VoidCallback? onShareTap;
+
+  const NetworkRow({
+    super.key,
+    required this.ssidName,
+    required this.bands,
+    this.isGuest = false,
+    required this.isEnabled,
+    required this.clientCount,
+    this.onChanged,
+    this.onShareTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Opacity(
+      opacity: isEnabled ? 1.0 : BlockConstants.disabledAlpha,
+      child: AppListTile(
+        backgroundColor: colorScheme.surfaceContainerHighest
+            .withValues(alpha: BlockConstants.backgroundAlpha),
+        title: Row(
+          children: [
+            Flexible(
+              child: AppText.bodyLarge(
+                ssidName,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            if (isGuest) ...[
+              AppGap.sm(),
+              _GuestBadge(),
+            ],
+          ],
+        ),
+        subtitle: Row(
+          children: [
+            ...bands.map((band) => Padding(
+                  padding: const EdgeInsets.only(right: AppSpacing.xs),
+                  child: NetworkBadgeWidget(badge: NetworkBadge.fromBand(band)),
+                )),
+            AppGap.sm(),
+            Icon(
+              Icons.devices,
+              size: 14,
+              color: colorScheme.onSurfaceVariant,
+            ),
+            AppGap.xxs(),
+            AppText.labelSmall(
+              '$clientCount',
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ],
+        ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (isEnabled && onShareTap != null) ...[
+              _ShareButton(onTap: onShareTap!),
+              AppGap.sm(),
+            ],
+            AppSwitch(
+              value: isEnabled,
+              onChanged: onChanged,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _GuestBadge extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return AppBadge(
+      label: 'Guest',
+      color: Theme.of(context).colorScheme.secondary,
+    );
+  }
+}
+
+class _ShareButton extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _ShareButton({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return AppIconButton(
+      icon: AppIcon.font(Icons.qr_code_2, size: 24),
+      onTap: onTap,
+    );
+  }
+}
+
+// =============================================================================
+// ProtocolBadge - Protocol indicator badge (TCP/UDP/Both)
+// =============================================================================
+
+/// Protocol badge for port forwarding/triggering rules.
+class ProtocolBadge extends StatelessWidget {
+  final String protocol;
+
+  const ProtocolBadge({super.key, required this.protocol});
+
+  @override
+  Widget build(BuildContext context) {
+    return AppBadge(
+      label: protocol,
+      color: Theme.of(context).colorScheme.primary,
+    );
+  }
+}

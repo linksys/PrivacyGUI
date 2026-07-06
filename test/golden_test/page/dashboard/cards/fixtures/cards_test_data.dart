@@ -633,6 +633,7 @@ final testSystemMonitorWithHistory = SystemMonitorState(
       memoryPercent: 55 + (i * 2) % 20,
       totalMemoryKb: 524288,
       freeMemoryKb: 234288 - i * 5000,
+      uptimeSeconds: 86400 + i * 10,
     ),
   ),
   refreshInterval: Duration(seconds: 10),

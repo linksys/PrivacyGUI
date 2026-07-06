@@ -38,7 +38,7 @@ class DemoUspClient extends UspClient {
   Future<void> logout() async {}
 
   @override
-  Future<void> refreshToken() async {}
+  Future<void> refreshToken({String? token}) async {}
 
   @override
   Future<void> reauth() async {}

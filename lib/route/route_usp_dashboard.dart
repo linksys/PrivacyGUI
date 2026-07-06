@@ -24,6 +24,13 @@ final uspDashboardRoute = ShellRoute(
       name: RouteNamed.uspMenu,
       path: RoutePath.uspMenu,
       builder: (context, state) => const UspMenuView(),
+      routes: [
+        LinksysRoute(
+          name: RouteNamed.uspUnifiedDiagnostics,
+          path: RoutePath.uspUnifiedDiagnostics,
+          builder: (context, state) => const UnifiedDiagnosticsView(),
+        ),
+      ],
     ),
     LinksysRoute(
       name: RouteNamed.uspSupport,
@@ -102,7 +109,11 @@ final uspDashboardRoute = ShellRoute(
     LinksysRoute(
       name: RouteNamed.uspStatistics,
       path: RoutePath.uspStatistics,
-      builder: (context, state) => const UspStatisticsView(),
+      builder: (context, state) {
+        final tabParam = state.uri.queryParameters['tab'];
+        final initialTab = int.tryParse(tabParam ?? '') ?? 0;
+        return UspStatisticsView(initialTab: initialTab);
+      },
     ),
     LinksysRoute(
       name: RouteNamed.uspAdvancedSettings,
@@ -178,11 +189,6 @@ final uspDashboardRoute = ShellRoute(
       name: RouteNamed.uspApps,
       path: RoutePath.uspApps,
       builder: (context, state) => const UspAppsView(),
-    ),
-    LinksysRoute(
-      name: RouteNamed.uspUnifiedDiagnostics,
-      path: RoutePath.uspUnifiedDiagnostics,
-      builder: (context, state) => const UnifiedDiagnosticsView(),
     ),
     LinksysRoute(
       name: RouteNamed.uspSpeedTest,

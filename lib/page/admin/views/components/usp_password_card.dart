@@ -34,13 +34,7 @@ class UspPasswordCard extends StatelessWidget {
                       size: 20, color: colorScheme.onSurfaceVariant),
                   AppGap.md(),
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        AppText.bodyMedium(adminUser.username),
-                        AppText.labelLarge('\u2022' * 12),
-                      ],
-                    ),
+                    child: AppText.labelLarge('\u2022' * 12),
                   ),
                   AppButton.text(
                     label: loc(context).change,
