@@ -429,7 +429,7 @@ class UspPdfService {
                   c.displayName,
                   c.mac,
                   c.ip,
-                  c.isOnline == true ? 'Yes' : 'No',
+                  (c.isOnline ?? false) ? 'Yes' : 'No',
                   c.leaseTimeFormatted.isNotEmpty ? c.leaseTimeFormatted : '—',
                 ])
             .toList(),

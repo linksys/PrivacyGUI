@@ -505,7 +505,7 @@ class UspCommandProvider implements IRouterCommandProvider {
               'ip': c.ip,
               'hostName': c.hostName,
               'leaseActive': c.leaseActive,
-              'isOnline': c.isOnline,
+              'isOnline': c.isOnline ?? false,
               'leaseExpiry': c.leaseExpiryFormatted,
               'leaseRemaining': c.leaseTimeFormatted,
             })

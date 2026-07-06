@@ -21,10 +21,7 @@ class DhcpData extends Equatable {
   });
 
   @override
-  List<Object?> get props => [
-        clientModels.length,
-        reservationModels.length,
-      ];
+  List<Object?> get props => [clientModels, reservationModels];
 }
 
 // ── Provider ──

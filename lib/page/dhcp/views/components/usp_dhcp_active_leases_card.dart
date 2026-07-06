@@ -1,33 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/components/detail_widgets.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/_shared/models/dhcp_client_ui_model.dart';
+import 'package:privacy_gui/page/dhcp/providers/dhcp_client_filter_provider.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
-enum _DhcpClientFilter { all, onlineOnly }
-
 /// Read-only card displaying DHCP client leases with filter chips.
-class UspDhcpActiveLeasesCard extends StatefulWidget {
+class UspDhcpActiveLeasesCard extends ConsumerWidget {
   final List<DhcpClientUIModel> clients;
 
   const UspDhcpActiveLeasesCard({super.key, required this.clients});
 
   @override
-  State<UspDhcpActiveLeasesCard> createState() =>
-      _UspDhcpActiveLeasesCardState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final filter = ref.watch(dhcpClientFilterProvider);
+    final onlineCount = clients.where((c) => c.isOnline == true).length;
 
-class _UspDhcpActiveLeasesCardState extends State<UspDhcpActiveLeasesCard> {
-  _DhcpClientFilter _filter = _DhcpClientFilter.all;
-
-  @override
-  Widget build(BuildContext context) {
-    final onlineCount = widget.clients.where((c) => c.isOnline == true).length;
-
-    final filtered = _filter == _DhcpClientFilter.onlineOnly
-        ? widget.clients.where((c) => c.isOnline == true).toList()
-        : widget.clients;
+    final filtered = filter == DhcpClientFilter.onlineOnly
+        ? clients.where((c) => c.isOnline == true).toList()
+        : clients;
 
     final sorted = List<DhcpClientUIModel>.from(filtered)
       ..sort((a, b) {
@@ -49,11 +42,11 @@ class _UspDhcpActiveLeasesCardState extends State<UspDhcpActiveLeasesCard> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               AppText.titleSmall(loc(context).activeLeases),
-              AppText.labelLarge('$onlineCount / ${widget.clients.length}'),
+              AppText.labelLarge('$onlineCount / ${clients.length}'),
             ],
           ),
           AppGap.sm(),
-          _buildFilterChips(context),
+          _buildFilterChips(context, ref, filter),
           AppGap.md(),
           if (sorted.isEmpty)
             DetailEmptyBlock(
@@ -67,23 +60,35 @@ class _UspDhcpActiveLeasesCardState extends State<UspDhcpActiveLeasesCard> {
     );
   }
 
-  Widget _buildFilterChips(BuildContext context) {
-    return Row(
-      children: [
-        FilterChip(
-          label: Text(loc(context).all),
-          selected: _filter == _DhcpClientFilter.all,
-          onSelected: (_) => setState(() => _filter = _DhcpClientFilter.all),
-        ),
-        AppGap.sm(),
-        FilterChip(
-          label: Text(loc(context).online),
-          selected: _filter == _DhcpClientFilter.onlineOnly,
-          onSelected: (_) =>
-              setState(() => _filter = _DhcpClientFilter.onlineOnly),
-        ),
-      ],
+  Widget _buildFilterChips(
+    BuildContext context,
+    WidgetRef ref,
+    DhcpClientFilter filter,
+  ) {
+    const filters = DhcpClientFilter.values;
+    return AppChipGroup(
+      chips: filters
+          .map((f) => ChipItem(label: _filterLabel(context, f)))
+          .toList(),
+      selectedIndices: {filters.indexOf(filter)},
+      selectionMode: ChipSelectionMode.single,
+      onSelectionChanged: (indices) {
+        if (indices.isNotEmpty) {
+          ref.read(dhcpClientFilterProvider.notifier).state =
+              filters[indices.first];
+        }
+      },
+      wrap: false,
     );
+  }
+
+  String _filterLabel(BuildContext context, DhcpClientFilter filter) {
+    switch (filter) {
+      case DhcpClientFilter.all:
+        return loc(context).all;
+      case DhcpClientFilter.onlineOnly:
+        return loc(context).online;
+    }
   }
 
   Widget _buildClientRow(BuildContext context, DhcpClientUIModel client) {

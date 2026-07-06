@@ -217,13 +217,13 @@ void main() {
       container.dispose();
     });
 
-    test('DhcpData props uses lengths for equality', () async {
+    test('DhcpData props uses full lists for equality', () async {
       final container = createContainer();
       final data1 = await container.read(dhcpDataProvider.future);
       final data2 = await container.read(dhcpDataProvider.future);
 
       expect(data1, equals(data2));
-      expect(data1.props, [2, 1]); // 2 clients, 1 reservation
+      expect(data1.props, [data1.clientModels, data1.reservationModels]);
       container.dispose();
     });
 
