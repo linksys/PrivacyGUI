@@ -198,11 +198,22 @@ class UspStaticRoutingService {
   // ---------------------------------------------------------------------------
 
   /// Validate a route entry. Returns a map of field → error message.
+  ///
+  /// When editing an existing route, pass [interfaceName],
+  /// [originalInterfaceName] and [originalGateway] to enable the
+  /// interface↔gateway consistency check: changing the interface
+  /// (LAN↔Internet) without also updating the gateway is not allowed,
+  /// because the old gateway belongs to the previously selected interface's
+  /// subnet. These parameters are optional so that Add mode (no original
+  /// values) skips the check.
   static Map<String, String> validateRoute({
     required String name,
     required String destIp,
     required String subnetMask,
     required String gateway,
+    String? interfaceName,
+    String? originalInterfaceName,
+    String? originalGateway,
   }) {
     final errors = <String, String>{};
     if (name.isEmpty) {
@@ -222,6 +233,13 @@ class UspStaticRoutingService {
     }
     if (gateway.isNotEmpty && !NetworkUtils.isValidIpAddress(gateway)) {
       errors['gateway'] = 'Invalid IP address';
+    } else if (originalInterfaceName != null &&
+        interfaceName != null &&
+        originalGateway != null &&
+        interfaceName != originalInterfaceName &&
+        gateway == originalGateway) {
+      // Interface was changed but the gateway was left unchanged.
+      errors['gateway'] = 'Update the gateway to match the selected interface';
     }
     return errors;
   }

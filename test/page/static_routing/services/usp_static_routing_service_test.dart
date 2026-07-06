@@ -244,6 +244,73 @@ void main() {
       );
       expect(errors, hasLength(4));
     });
+
+    // --- interface↔gateway consistency (issue #1082) ---
+
+    test('editing: interface changed but gateway unchanged returns error', () {
+      final errors = UspStaticRoutingService.validateRoute(
+        name: 'Route1',
+        destIp: '10.0.0.0',
+        subnetMask: '255.255.255.0',
+        gateway: '192.168.187.1',
+        interfaceName: 'LAN',
+        originalInterfaceName: 'Internet',
+        originalGateway: '192.168.187.1',
+      );
+      expect(errors['gateway'],
+          'Update the gateway to match the selected interface');
+    });
+
+    test('editing: interface changed and gateway also changed is valid', () {
+      final errors = UspStaticRoutingService.validateRoute(
+        name: 'Route1',
+        destIp: '10.0.0.0',
+        subnetMask: '255.255.255.0',
+        gateway: '10.0.0.254',
+        interfaceName: 'LAN',
+        originalInterfaceName: 'Internet',
+        originalGateway: '192.168.187.1',
+      );
+      expect(errors.containsKey('gateway'), isFalse);
+    });
+
+    test('editing: interface unchanged and gateway unchanged is valid', () {
+      final errors = UspStaticRoutingService.validateRoute(
+        name: 'Route1',
+        destIp: '10.0.0.0',
+        subnetMask: '255.255.255.0',
+        gateway: '192.168.187.1',
+        interfaceName: 'Internet',
+        originalInterfaceName: 'Internet',
+        originalGateway: '192.168.187.1',
+      );
+      expect(errors.containsKey('gateway'), isFalse);
+    });
+
+    test('adding (no original values): consistency check is skipped', () {
+      final errors = UspStaticRoutingService.validateRoute(
+        name: 'Route1',
+        destIp: '10.0.0.0',
+        subnetMask: '255.255.255.0',
+        gateway: '192.168.187.1',
+        interfaceName: 'LAN',
+      );
+      expect(errors.containsKey('gateway'), isFalse);
+    });
+
+    test('editing: invalid gateway format takes precedence over consistency',
+        () {
+      final errors = UspStaticRoutingService.validateRoute(
+        name: 'Route1',
+        destIp: '10.0.0.0',
+        subnetMask: '255.255.255.0',
+        gateway: 'not-an-ip',
+        interfaceName: 'LAN',
+        originalInterfaceName: 'Internet',
+        originalGateway: 'not-an-ip',
+      );
+      expect(errors['gateway'], 'Invalid IP address');
+    });
   });
 
   // ---------------------------------------------------------------------------

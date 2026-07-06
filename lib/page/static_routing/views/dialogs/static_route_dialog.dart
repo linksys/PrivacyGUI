@@ -69,26 +69,25 @@ class _StaticRouteDialogState extends State<StaticRouteDialog> {
     super.dispose();
   }
 
-  void _validate() {
-    setState(() {
-      _errors = UspStaticRoutingService.validateRoute(
-        name: _nameController.text.trim(),
-        destIp: _destIpController.text.trim(),
-        subnetMask: _subnetMaskController.text.trim(),
-        gateway: _gatewayController.text.trim(),
-      );
-    });
-  }
-
-  bool get _isFormValid {
-    final errors = UspStaticRoutingService.validateRoute(
+  Map<String, String> _computeErrors() {
+    return UspStaticRoutingService.validateRoute(
       name: _nameController.text.trim(),
       destIp: _destIpController.text.trim(),
       subnetMask: _subnetMaskController.text.trim(),
       gateway: _gatewayController.text.trim(),
+      interfaceName: _interfaceName,
+      originalInterfaceName: widget.route?.interfaceName,
+      originalGateway: widget.route?.gatewayIpAddress,
     );
-    return errors.isEmpty;
   }
+
+  void _validate() {
+    setState(() {
+      _errors = _computeErrors();
+    });
+  }
+
+  bool get _isFormValid => _computeErrors().isEmpty;
 
   @override
   Widget build(BuildContext context) {
