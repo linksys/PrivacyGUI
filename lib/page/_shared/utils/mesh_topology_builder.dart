@@ -16,23 +16,34 @@ class MeshTopologyBuilder {
   /// Extracts mesh nodes and builds client MAC → node ID mapping
   /// for determining which mesh node each client device is connected to.
   ///
+  /// [bssidToBandMap] is optional mapping of BSSID (uppercase) → band string
+  /// (e.g., "2.4GHz", "5GHz"). When provided, allows extracting band info
+  /// for clients connected to any node (including slave nodes).
+  ///
   /// Set [includeBackhaulStats] to true to include backhaul signal strength
   /// and uplink rate (requires DataElements backhaul stats to be available).
   static MeshTopologyInfo build(
     DataElementsNetwork network, {
+    Map<String, String> bssidToBandMap = const {},
     bool includeBackhaulStats = true,
   }) {
     final nodes = <NodeEntity>[];
     final clientToNodeMap = <String, String>{};
     final clientSignalMap = <String, int>{};
+    final clientBandSsidMap = <String, ({String band, String ssid})>{};
 
     for (final node in network.items) {
       final rawId = node.id.trim().toUpperCase();
       final nodeDeviceId = rawId.isNotEmpty ? rawId : node.instancePath;
 
-      // Build client MAC → node ID mapping and signal strength from station list
+      // Build client MAC → node ID mapping, signal strength, and band/SSID
       for (final radio in node.radios) {
         for (final bss in radio.bssList) {
+          // Resolve band from BSSID → band mapping
+          final bssidUpper = bss.bssid.trim().toUpperCase();
+          final band = bssidToBandMap[bssidUpper] ?? '';
+          final ssid = bss.ssid.trim();
+
           for (final sta in bss.stations) {
             final mac = sta.macAddress.trim();
             if (mac.isNotEmpty && nodeDeviceId.isNotEmpty) {
@@ -42,6 +53,10 @@ class MeshTopologyBuilder {
               final rssi = rcpiToRssi(sta.signalStrength);
               if (rssi != null) {
                 clientSignalMap[upperMac] = rssi;
+              }
+              // Store band + SSID for this client
+              if (band.isNotEmpty || ssid.isNotEmpty) {
+                clientBandSsidMap[upperMac] = (band: band, ssid: ssid);
               }
             }
           }
@@ -110,6 +125,7 @@ class MeshTopologyBuilder {
       nodes: nodes,
       clientToNodeMap: clientToNodeMap,
       clientSignalMap: clientSignalMap,
+      clientBandSsidMap: clientBandSsidMap,
     );
   }
 }

@@ -4,7 +4,6 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/components/card_skeleton.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/_shared/components/wifi_ui.dart';
-import 'package:privacy_gui/page/_shared/models/wifi_client_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_radio_ui_model.dart';
 import 'package:privacy_gui/page/_shared/providers/card_tab_state_provider.dart';
 import 'package:privacy_gui/page/_shared/components/dashboard_card_template.dart';
@@ -25,27 +24,43 @@ class UspWifiPerformanceCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final wifiData = ref.watch(wifiDataProvider).valueOrNull;
-    if (wifiData == null) return const CardSkeleton.chart();
     final devicesData = ref.watch(devicesDataProvider).valueOrNull;
+    // Wait for both providers to load — devicesData contains meshNetwork with
+    // slave node clients, wifiData contains radioModels for Channels tab
+    if (wifiData == null || devicesData == null) {
+      return const CardSkeleton.chart();
+    }
     final selectedTab = ref.watch(cardTabIndexProvider(_cardId));
 
-    // Collect active WiFi clients with their device names and band info
+    // Collect backhaul MACs from slave nodes to filter out mesh node STAs
+    final backhaulMacs = <String>{};
+    for (final slave in devicesData.meshNetwork.slaves) {
+      final mac = slave.backhaul.backhaulMacAddress;
+      if (mac != null && mac.isNotEmpty) {
+        backhaulMacs.add(mac.toUpperCase());
+      }
+    }
+
+    // Collect active WiFi clients from MeshNetwork (includes slave node clients)
+    // Also enrich with master-only data (noise, rates) from wifiClientMap
     final activeClients = <_ClientInfo>[];
-    for (final entry in wifiData.wifiClientMap.entries) {
-      final client = entry.value;
-      if (!client.active) continue;
-      // Resolve display name from clientDevices
-      final device = devicesData?.clientDevices
-          .where((d) => d.mac.toUpperCase() == entry.key.toUpperCase())
-          .firstOrNull;
-      final displayName = device?.hostName ?? entry.key;
-      // Resolve band from connectionDetailMap (AP → SSID → Radio chain)
-      final detail = wifiData.connectionDetailMap[entry.key];
+    final allWifiClients = devicesData.meshNetwork.allClients
+        .where((c) => c.isWifi && c.isActive)
+        .where((c) => !backhaulMacs.contains(c.mac.toUpperCase()))
+        .toList();
+
+    for (final client in allWifiClients) {
+      // Get additional data from wifiClientMap (only available for master clients)
+      final masterData = wifiData.wifiClientMap[client.mac.toUpperCase()];
       activeClients.add(_ClientInfo(
-        mac: entry.key,
-        displayName: displayName,
-        client: client,
-        band: detail?.band ?? '',
+        mac: client.mac,
+        displayName: client.displayName,
+        signalStrength: client.signalStrength ?? -100,
+        noise: masterData?.noise ?? 0,
+        downlinkRate:
+            client.downlinkRate ?? masterData?.lastDataDownlinkRate ?? 0,
+        uplinkRate: client.uplinkRate ?? masterData?.lastDataUplinkRate ?? 0,
+        band: client.band ?? '',
       ));
     }
 
@@ -84,15 +99,24 @@ class UspWifiPerformanceCard extends ConsumerWidget {
 class _ClientInfo {
   final String mac;
   final String displayName;
-  final WifiClientUIModel client;
+  final int signalStrength;
+  final int noise;
+  final int downlinkRate; // kbps
+  final int uplinkRate; // kbps
   final String band; // "2.4GHz", "5GHz", "6GHz", or ""
 
   const _ClientInfo({
     required this.mac,
     required this.displayName,
-    required this.client,
+    required this.signalStrength,
+    this.noise = 0,
+    this.downlinkRate = 0,
+    this.uplinkRate = 0,
     this.band = '',
   });
+
+  /// Whether this client has rate data (master node clients have it, slaves don't).
+  bool get hasRateData => downlinkRate > 0 || uplinkRate > 0;
 }
 
 // =============================================================================
@@ -125,7 +149,7 @@ class _SignalTab extends StatelessWidget {
             separatorBuilder: (_, __) => AppGap.sm(),
             itemBuilder: (context, index) {
               final c = clients[index];
-              final rssi = c.client.signalStrength;
+              final rssi = c.signalStrength;
               final tier = getSignalTier(rssi);
               final color = tier.resolveColor(colorScheme);
               // Normalize: -100 dBm → 0.0, -30 dBm → 1.0
@@ -199,11 +223,17 @@ class _SpeedTab extends StatelessWidget {
   final List<_ClientInfo> clients;
   const _SpeedTab({required this.clients});
 
+  static String _truncateName(String name, [int maxLen = 10]) =>
+      name.length > maxLen ? '${name.substring(0, maxLen)}…' : name;
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    if (clients.isEmpty) {
+    // Filter to only clients with rate data (master node clients)
+    final clientsWithRates = clients.where((c) => c.hasRateData).toList();
+
+    if (clientsWithRates.isEmpty) {
       return Center(
         child: AppText.bodyMedium(
           'No WiFi clients connected',
@@ -213,11 +243,10 @@ class _SpeedTab extends StatelessWidget {
     }
 
     // Convert kbps to Mbps for chart display
-    final dlData =
-        clients.map((c) => c.client.lastDataDownlinkRate / 1000).toList();
-    final ulData =
-        clients.map((c) => c.client.lastDataUplinkRate / 1000).toList();
-    final xLabels = clients.map((c) => c.displayName).toList();
+    final dlData = clientsWithRates.map((c) => c.downlinkRate / 1000).toList();
+    final ulData = clientsWithRates.map((c) => c.uplinkRate / 1000).toList();
+    final xLabels =
+        clientsWithRates.map((c) => _truncateName(c.displayName)).toList();
 
     return Column(
       children: [
@@ -237,7 +266,7 @@ class _SpeedTab extends StatelessWidget {
             ],
             xLabels: xLabels,
             yLabelFormatter: (v) => '${v.toInt()} Mbps',
-            showValueLabels: clients.length <= 4,
+            showValueLabels: clientsWithRates.length <= 4,
             valueLabelFormatter: (v) => '${v.toInt()}',
             showTooltip: false,
           ),
@@ -315,7 +344,7 @@ class _ChannelsTab extends StatelessWidget {
       final radioIdx = bandToRadioIdx[c.band];
       if (radioIdx == null) continue;
       clientsPerRadio[radioIdx] = (clientsPerRadio[radioIdx] ?? 0) + 1;
-      final snr = computeSNR(c.client.signalStrength, c.client.noise);
+      final snr = computeSNR(c.signalStrength, c.noise);
       snrSumPerRadio[radioIdx] = (snrSumPerRadio[radioIdx] ?? 0) + snr;
       snrCountPerRadio[radioIdx] = (snrCountPerRadio[radioIdx] ?? 0) + 1;
     }

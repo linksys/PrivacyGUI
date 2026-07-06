@@ -22,10 +22,18 @@ class MeshTopologyInfo extends Equatable {
   /// signal data (WifiClients only covers master node clients).
   final Map<String, int> clientSignalMap;
 
+  /// Client MAC (uppercase) → (band, ssid) from DataElements BSS.
+  ///
+  /// Populated from DataElements BSS for clients on ALL nodes,
+  /// including child nodes. Used as fallback when connectionDetailMap
+  /// doesn't have band/SSID data (connectionDetailMap only covers master clients).
+  final Map<String, ({String band, String ssid})> clientBandSsidMap;
+
   const MeshTopologyInfo({
     required this.nodes,
     required this.clientToNodeMap,
     this.clientSignalMap = const {},
+    this.clientBandSsidMap = const {},
   });
 
   /// Empty result — used as fallback when DataElements is not supported.
@@ -33,11 +41,13 @@ class MeshTopologyInfo extends Equatable {
     nodes: [],
     clientToNodeMap: {},
     clientSignalMap: {},
+    clientBandSsidMap: {},
   );
 
   bool get isEmpty => nodes.isEmpty;
   bool get isNotEmpty => nodes.isNotEmpty;
 
   @override
-  List<Object?> get props => [nodes, clientToNodeMap, clientSignalMap];
+  List<Object?> get props =>
+      [nodes, clientToNodeMap, clientSignalMap, clientBandSsidMap];
 }

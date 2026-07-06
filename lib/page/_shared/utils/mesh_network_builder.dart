@@ -282,10 +282,12 @@ class MeshNetworkBuilder {
       final signalStrength = device.signalStrength ??
           wifiClient?.signalStrength ??
           meshTopology.clientSignalMap[mac];
+      // Fallback to DataElements band/SSID for slave node clients
+      final bandSsid = meshTopology.clientBandSsidMap[mac];
       wifi = WifiConnectionInfo(
         signalStrength: signalStrength,
-        band: detail?.band,
-        ssidName: detail?.ssidName,
+        band: detail?.band ?? bandSsid?.band,
+        ssidName: detail?.ssidName ?? bandSsid?.ssid,
         downlinkRate:
             device.lastDataDownlinkRate ?? wifiClient?.lastDataDownlinkRate,
         uplinkRate: device.lastDataUplinkRate ?? wifiClient?.lastDataUplinkRate,

@@ -347,5 +347,84 @@ void main() {
       expect(result.nodes[0], isA<MasterNode>());
       expect(result.nodes[0].isMaster, isTrue);
     });
+
+    test('populates clientBandSsidMap when bssidToBandMap is provided', () {
+      final nodeWithClient = MeshNode(
+        instancePath: 'Device.WiFi.DataElements.Network.Device.1.',
+        id: 'AA:BB:CC:DD:EE:01',
+        manufacturerModel: 'TestRouter',
+        manufacturer: 'Test',
+        serialNumber: 'SN123',
+        softwareVersion: '1.0.0',
+        backhaulAlId: '',
+        backhaulMacAddress: '',
+        backhaulMediaType: '',
+        backhaulPhyRate: 0,
+        multiApLastContactTime: '',
+        multiApAssocIEEE1905DeviceRef: '',
+        multiApEasyMeshAgentOperationMode: '',
+        backhaulBackhaulDeviceId: '',
+        backhaulBackhaulMacAddress: '',
+        backhaulLinkType: '',
+        backhaulMacAddressMultiAp: '',
+        backhaulStatsLastDataDownlinkRate: 0,
+        backhaulStatsPacketsSent: 0,
+        backhaulStatsPacketsReceived: 0,
+        backhaulStatsErrorsSent: 0,
+        backhaulStatsErrorsReceived: 0,
+        backhaulStatsTimeStamp: '',
+        backhaulStatsLastDataUplinkRate: 0,
+        backhaulStatsSignalStrength: 0,
+        radios: [
+          MeshRadio(
+            instancePath: 'Device.WiFi.DataElements.Network.Device.1.Radio.1.',
+            bssList: [
+              MeshBss(
+                instancePath:
+                    'Device.WiFi.DataElements.Network.Device.1.Radio.1.BSS.1.',
+                bssid: '11:22:33:44:55:01',
+                ssid: 'TestNetwork',
+                stations: [
+                  MeshStation(
+                    instancePath:
+                        'Device.WiFi.DataElements.Network.Device.1.Radio.1.BSS.1.STA.1.',
+                    macAddress: 'aa:bb:cc:dd:ee:ff',
+                    signalStrength: 140,
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
+      );
+
+      final network = DataElementsNetwork(items: [nodeWithClient]);
+      final bssidToBandMap = {'11:22:33:44:55:01': '5GHz'};
+
+      final result = MeshTopologyBuilder.build(
+        network,
+        bssidToBandMap: bssidToBandMap,
+      );
+
+      expect(result.clientBandSsidMap, isNotEmpty);
+      expect(result.clientBandSsidMap['AA:BB:CC:DD:EE:FF']?.band, '5GHz');
+      expect(
+          result.clientBandSsidMap['AA:BB:CC:DD:EE:FF']?.ssid, 'TestNetwork');
+    });
+
+    test('clientBandSsidMap has SSID but empty band without bssidToBandMap',
+        () {
+      final network = DataElementsNetwork(items: [masterNode]);
+
+      final result = MeshTopologyBuilder.build(network);
+
+      // Has SSID from BSS but no band since no bssidToBandMap provided
+      expect(result.clientBandSsidMap, isNotEmpty);
+      // Band should be empty string
+      for (final entry in result.clientBandSsidMap.values) {
+        expect(entry.band, isEmpty);
+        expect(entry.ssid, 'HomeNetwork');
+      }
+    });
   });
 }

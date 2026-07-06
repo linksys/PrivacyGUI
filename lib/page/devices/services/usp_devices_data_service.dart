@@ -127,9 +127,15 @@ class UspDevicesDataService {
   /// to codegen [DataElementsNetwork.fetch], then transforms the tree
   /// into a flat [MeshTopologyInfo] with client→node mapping.
   ///
+  /// [bssidToBandMap] is a BSSID → band mapping for resolving band info
+  /// for clients on slave nodes. Build it via
+  /// [UspWifiDataService.buildBssidToBandMap].
+  ///
   /// Returns [MeshTopologyInfo.empty] if the router doesn't support
   /// DataElements or the subtree is empty (non-mesh / single router).
-  Future<MeshTopologyInfo> fetchMeshTopology() async {
+  Future<MeshTopologyInfo> fetchMeshTopology({
+    Map<String, String> bssidToBandMap = const {},
+  }) async {
     try {
       final network = await DataElementsNetwork.fetch(_usp);
       if (network.items.isEmpty) {
@@ -137,7 +143,7 @@ class UspDevicesDataService {
             '[USP][Dashboard]: DataElements empty — not a mesh or unsupported');
         return MeshTopologyInfo.empty;
       }
-      return _buildTopologyInfo(network);
+      return _buildTopologyInfo(network, bssidToBandMap);
     } catch (e) {
       logger.d(
           '[USP][Dashboard]: DataElements not supported or fetch failed: $e');
@@ -145,10 +151,17 @@ class UspDevicesDataService {
     }
   }
 
-  MeshTopologyInfo _buildTopologyInfo(DataElementsNetwork network) {
-    final result = MeshTopologyBuilder.build(network);
+  MeshTopologyInfo _buildTopologyInfo(
+    DataElementsNetwork network,
+    Map<String, String> bssidToBandMap,
+  ) {
+    final result = MeshTopologyBuilder.build(
+      network,
+      bssidToBandMap: bssidToBandMap,
+    );
     logger.d('[USP][Dashboard]: Mesh nodes: ${result.nodes.length}, '
-        'client→node mappings: ${result.clientToNodeMap.length}');
+        'client→node mappings: ${result.clientToNodeMap.length}, '
+        'band/SSID mappings: ${result.clientBandSsidMap.length}');
     return result;
   }
 

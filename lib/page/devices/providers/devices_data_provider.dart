@@ -11,6 +11,7 @@ import 'package:privacy_gui/page/_shared/models/mesh_topology_info.dart';
 import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 import 'package:privacy_gui/page/devices/services/usp_devices_data_service.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_data_provider.dart';
+import 'package:privacy_gui/page/wifi_settings/services/usp_wifi_data_service.dart';
 
 // Re-export so existing consumers can still import DevicesCodegenContext from here.
 export 'package:privacy_gui/page/devices/services/usp_devices_data_service.dart'
@@ -190,7 +191,16 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
     SystemInfoData? sysData,
     DevicesDataFetchResult fetchResult,
   ) async {
-    final meshTopology = await svc.fetchMeshTopology();
+    // Build BSSID → band mapping for slave client band resolution
+    final wifiCodegen = wifiData.codegenContext.raw;
+    final bssidToBandMap = UspWifiDataService.buildBssidToBandMap(
+      ssids: wifiCodegen.ssids,
+      radios: wifiCodegen.radios,
+    );
+
+    final meshTopology = await svc.fetchMeshTopology(
+      bssidToBandMap: bssidToBandMap,
+    );
     if (meshTopology.isEmpty) return;
 
     final cur = state.valueOrNull;

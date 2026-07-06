@@ -450,4 +450,36 @@ class UspWifiDataService {
     result.sort();
     return result;
   }
+
+  /// Builds a BSSID → band mapping from WiFi SSID and Radio data.
+  ///
+  /// Used by [MeshTopologyBuilder] to determine band for clients on slave nodes
+  /// (via DataElements BSS.BSSID → this map → band).
+  ///
+  /// The mapping is: SSID.BSSID + SSID.LowerLayers → Radio.OperatingFrequencyBand
+  static Map<String, String> buildBssidToBandMap({
+    required WiFiSsids ssids,
+    required WiFiRadios radios,
+  }) {
+    // Build Radio path → band lookup
+    final bandByRadioPath = <String, String>{};
+    for (final radio in radios.items) {
+      final path = _ensureTrailingDot(radio.instancePath);
+      bandByRadioPath[path] = _normalizeBand(radio.operatingFrequencyBand);
+    }
+
+    // Build BSSID → band mapping via SSID.LowerLayers → Radio
+    final result = <String, String>{};
+    for (final ssid in ssids.items) {
+      final bssid = ssid.bssid.trim().toUpperCase();
+      if (bssid.isEmpty) continue;
+
+      final radioPath = _ensureTrailingDot(ssid.lowerLayers);
+      final band = bandByRadioPath[radioPath];
+      if (band != null && band.isNotEmpty) {
+        result[bssid] = band;
+      }
+    }
+    return result;
+  }
 }
