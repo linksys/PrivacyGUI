@@ -142,8 +142,8 @@ class UspClient {
     await _client.logout();
   }
 
-  Future<void> refreshToken() async {
-    await _client.refreshToken();
+  Future<void> refreshToken({String? token}) async {
+    await _client.refreshToken(token: token);
   }
 
   // ===========================================================================

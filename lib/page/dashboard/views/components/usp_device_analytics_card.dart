@@ -269,6 +269,12 @@ class _TrendView extends StatelessWidget {
             (s) => s.hour.hour % 3 == 0 ? '${s.hour.hour}'.padLeft(2, '0') : '')
         .toList();
 
+    // Calculate Y-axis bounds to avoid duplicate labels when count is small
+    final maxCount =
+        slots.map((s) => s.wifi + s.wired).reduce((a, b) => a > b ? a : b);
+    final yMax = maxCount < 2 ? 2.0 : (maxCount + 1).toDouble();
+    final yInterval = yMax <= 4 ? 1.0 : (yMax / 4).ceilToDouble();
+
     return Column(
       children: [
         Expanded(
@@ -285,6 +291,7 @@ class _TrendView extends StatelessWidget {
             ],
             stacked: true,
             xLabels: xLabels,
+            yAxis: AppChartAxis(min: 0, max: yMax, interval: yInterval),
             showTooltip: false,
           ),
         ),

@@ -13,20 +13,36 @@ class MeshTopologyInfo extends Equatable with DiagnosticLoggable {
   /// Client MAC (uppercase) → node device ID mapping.
   final Map<String, String> clientToNodeMap;
 
+  /// Client MAC (uppercase) → signal strength (RSSI dBm).
+  ///
+  /// Populated from DataElements STA.SignalStrength for clients on ALL nodes,
+  /// including child nodes. Used as fallback when WifiClients doesn't have
+  /// signal data (WifiClients only covers master node clients).
+  final Map<String, int> clientSignalMap;
+
   const MeshTopologyInfo({
     required this.nodes,
     required this.clientToNodeMap,
+    this.clientSignalMap = const {},
   });
 
   /// Empty result — used as fallback when DataElements is not supported.
-  static const empty = MeshTopologyInfo(nodes: [], clientToNodeMap: {});
+  static const empty = MeshTopologyInfo(
+    nodes: [],
+    clientToNodeMap: {},
+    clientSignalMap: {},
+  );
 
   bool get isEmpty => nodes.isEmpty;
   bool get isNotEmpty => nodes.isNotEmpty;
 
   @override
+  List<Object?> get props => [nodes, clientToNodeMap, clientSignalMap];
+
+  @override
   Map<String, Object?> get namedProps => {
         'nodes': nodes,
         'clientToNodeMap': clientToNodeMap,
+        'clientSignalMap': clientSignalMap,
       };
 }

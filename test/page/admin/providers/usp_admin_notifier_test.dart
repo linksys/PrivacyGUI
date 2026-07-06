@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
+import 'package:privacy_gui/core/usp/providers/usp_auth_coordinator.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
@@ -10,10 +11,27 @@ import 'package:privacy_gui/page/admin/models/admin_ui_models.dart';
 import 'package:privacy_gui/page/admin/providers/time_data_provider.dart';
 import 'package:privacy_gui/page/admin/providers/usp_admin_notifier.dart';
 import 'package:privacy_gui/page/admin/services/usp_admin_service.dart';
+import 'package:privacy_gui/providers/auth/auth_provider.dart';
 
 class MockUspClient extends Mock implements UspClient {}
 
 class MockUspAdminService extends Mock implements UspAdminService {}
+
+class MockUspAuthCoordinator extends Mock implements UspAuthCoordinator {}
+
+class MockAuthNotifier extends AsyncNotifier<AuthState>
+    with Mock
+    implements AuthNotifier {
+  int logoutCallCount = 0;
+
+  @override
+  Future<AuthState> build() async => AuthState(loginType: LoginType.local);
+
+  @override
+  Future<void> logout() async {
+    logoutCallCount++;
+  }
+}
 
 /// Test-only time data notifier returning canned data.
 class _TestTimeDataNotifier extends TimeDataNotifier {
@@ -27,6 +45,8 @@ class _TestTimeDataNotifier extends TimeDataNotifier {
 void main() {
   late MockUspClient mockUsp;
   late MockUspAdminService mockAdminService;
+  late MockUspAuthCoordinator mockAuthCoordinator;
+  late MockAuthNotifier mockAuthNotifier;
   late _TestTimeDataNotifier testTimeNotifier;
 
   const testAdmin = AdminUserUIModel(
@@ -49,9 +69,13 @@ void main() {
   setUp(() {
     mockUsp = MockUspClient();
     mockAdminService = MockUspAdminService();
+    mockAuthCoordinator = MockUspAuthCoordinator();
+    mockAuthNotifier = MockAuthNotifier();
     testTimeNotifier = _TestTimeDataNotifier(testTimeData);
 
     when(() => mockUsp.isAuthenticated).thenReturn(true);
+    when(() => mockAuthCoordinator.reloginWithNewPassword(any()))
+        .thenAnswer((_) async {});
   });
 
   ProviderContainer createContainer() {
@@ -61,6 +85,8 @@ void main() {
         uspAdminServiceProvider.overrideWithValue(mockAdminService),
         uspMutationLockProvider.overrideWithValue(UspMutationLock()),
         timeDataProvider.overrideWith(() => testTimeNotifier),
+        uspAuthCoordinatorProvider.overrideWithValue(mockAuthCoordinator),
+        authProvider.overrideWith(() => mockAuthNotifier),
       ],
     );
     return container;
@@ -174,7 +200,8 @@ void main() {
     // Error handling
     // -----------------------------------------------------------------------
 
-    test('setAdminPassword rethrows ServiceError', () async {
+    test('setAdminPassword rethrows ServiceError when updatePassword fails',
+        () async {
       when(() => mockAdminService.fetchAdmin())
           .thenAnswer((_) async => testAdmin);
       when(() => mockAdminService.updatePassword(
@@ -191,6 +218,38 @@ void main() {
             .setAdminPassword('new123'),
         throwsA(isA<NetworkError>()),
       );
+      container.dispose();
+    });
+
+    test(
+        'setAdminPassword triggers logout when relogin fails after password change',
+        () async {
+      when(() => mockAdminService.fetchAdmin())
+          .thenAnswer((_) async => testAdmin);
+      when(() => mockAdminService.updatePassword(
+            instancePath: any(named: 'instancePath'),
+            newPassword: any(named: 'newPassword'),
+          )).thenAnswer((_) async {});
+      when(() => mockAuthCoordinator.reloginWithNewPassword(any()))
+          .thenThrow(const NetworkError(detail: 'connection lost'));
+
+      final container = createContainer();
+      await container.read(uspAdminProvider.future);
+
+      // Should not throw — password was changed successfully
+      await container
+          .read(uspAdminProvider.notifier)
+          .setAdminPassword('new123');
+
+      // Verify updatePassword was called (password changed)
+      verify(() => mockAdminService.updatePassword(
+            instancePath: 'Device.Users.User.1.',
+            newPassword: 'new123',
+          )).called(1);
+
+      // Verify logout was triggered due to relogin failure
+      expect(mockAuthNotifier.logoutCallCount, 1);
+
       container.dispose();
     });
 
