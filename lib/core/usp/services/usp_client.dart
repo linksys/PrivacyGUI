@@ -259,14 +259,17 @@ class UspClient {
     _lastCallRetried = false;
     final sw = Stopwatch()..start();
 
-    logger.d('$_tag#$id GET →\n${_prettyList(paths)}');
+    logger.d('$_tag $_separator\n'
+        '$_tag #$id GET (Request) → ${paths.length} paths\n'
+        '${_prettyList(paths)}');
 
     try {
       final rawMap = await _withAuthRetry(() => _client.get(paths));
       sw.stop();
 
       final label = _idLabel(id);
-      logger.d('$_tag$label GET ← (${sw.elapsedMilliseconds}ms)\n'
+      logger.d('$_tag $_separator\n'
+          '$_tag $label GET (Response) ← ${sw.elapsedMilliseconds}ms\n'
           '${_prettyMap(rawMap)}');
 
       if (rawMap.isEmpty) {
@@ -982,6 +985,7 @@ class UspClient {
   // Log helpers
   // ===========================================================================
 
+  static const _separator = '════════════════════════════════════════';
   static const _jsonEncoder = JsonEncoder.withIndent('  ');
 
   static String _prettyList(List<String> list) {

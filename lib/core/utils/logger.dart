@@ -288,7 +288,8 @@ void updateStateLog(String providerName, String state) {
 
 /// Read-only view of the state log cache for testing.
 @visibleForTesting
-Map<String, String> get stateLogCacheForTest => Map.unmodifiable(_stateLogCache);
+Map<String, String> get stateLogCacheForTest =>
+    Map.unmodifiable(_stateLogCache);
 
 /// Clears the state log cache. For testing only.
 @visibleForTesting

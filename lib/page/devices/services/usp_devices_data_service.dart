@@ -153,10 +153,7 @@ class UspDevicesDataService {
   }
 
   MeshTopologyInfo _buildTopologyInfo(DataElementsNetwork network) {
-    final result = MeshTopologyBuilder.build(network);
-    logger.d('[USP][Dashboard]: Mesh nodes: ${result.nodes.length}, '
-        'client→node mappings: ${result.clientToNodeMap.length}');
-    return result;
+    return MeshTopologyBuilder.build(network);
   }
 
   /// Rebuilds device + node UI models with updated WiFi enrichment data.
@@ -398,9 +395,6 @@ class UspDevicesDataService {
     // Slave nodes.
     for (final slave in meshDevices.slaveNodes) {
       final slaveMeshInfo = _findMatchingMeshNode(slave, meshTopology.nodes);
-      logger.d('[USP][Topology]: Slave ${slave.mac} matched to meshInfo: '
-          '${slaveMeshInfo != null ? "yes (signalStrength=${slaveMeshInfo.backhaulSignalStrength})" : "no"}, '
-          'meshTopology.nodes.length=${meshTopology.nodes.length}');
 
       final slaveConnectedCount = clientDevices
           .where((d) =>

@@ -55,7 +55,7 @@ class UspTopologyBuilder {
     // Mesh extender nodes (slave nodes)
     final slaveNodes = nodeModels.slaves;
     final hasMesh = nodeModels.hasMesh;
-    logger.d('[USP][TopologyBuilder]: hasMesh=$hasMesh, '
+    logger.t('[USP][TopologyBuilder]: hasMesh=$hasMesh, '
         'slaveNodes=${slaveNodes.length}, '
         'slaveDeviceIds=${slaveNodes.map((n) => '${n.deviceId}|DE:${n.dataElementsId}').toList()}');
     // Normalized set (no colons, uppercase) for matching against parentNodeId
@@ -87,7 +87,7 @@ class UspTopologyBuilder {
           deviceIdToExtenderId[normalizedDeMac] = extenderId;
         }
       }
-      logger.d('[USP][TopologyBuilder]: Slave ${slaveNode.deviceId} '
+      logger.t('[USP][TopologyBuilder]: Slave ${slaveNode.deviceId} '
           '→ hostsMac: $normalizedHostsMac, '
           'dataElementsId: ${slaveNode.dataElementsId}, '
           'backhaulParentDeviceId: ${slaveNode.backhaulParentDeviceId}');
@@ -168,7 +168,7 @@ class UspTopologyBuilder {
       if (hasMesh && device.parentNodeId != null) {
         final parentNormalized =
             device.parentNodeId!.toUpperCase().replaceAll(':', '');
-        logger.d('[USP][TopologyBuilder]: Device ${device.displayName} '
+        logger.t('[USP][TopologyBuilder]: Device ${device.displayName} '
             'parentNodeId=${device.parentNodeId}, '
             'normalized=$parentNormalized, '
             'inExtenders=${extenderNodeIdsNormalized.contains(parentNormalized)}');
@@ -177,7 +177,7 @@ class UspTopologyBuilder {
           parentId = 'extender-$originalDeviceId';
         }
       } else {
-        logger.d('[USP][TopologyBuilder]: Device ${device.displayName} '
+        logger.t('[USP][TopologyBuilder]: Device ${device.displayName} '
             'hasMesh=$hasMesh, parentNodeId=${device.parentNodeId} → gateway');
       }
 

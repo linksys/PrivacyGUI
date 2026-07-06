@@ -168,21 +168,21 @@ class UspWifiDataService {
         final radioKey = _ensureTrailingDot(ssid.lowerLayers);
         (ssidsByRadio[radioKey] ??= []).add(ssid);
       }
-      logger.d('[USP][WiFi] ssidsByRadio groups: ${ssidsByRadio.length}');
+      logger.t('[USP][WiFi] ssidsByRadio groups: ${ssidsByRadio.length}');
       for (final entry in ssidsByRadio.entries) {
         final group = entry.value;
         group.sort((a, b) => _ssidInstanceIndex(a.instancePath)
             .compareTo(_ssidInstanceIndex(b.instancePath)));
-        logger.d('[USP][WiFi] Radio ${entry.key}: '
+        logger.t('[USP][WiFi] Radio ${entry.key}: '
             '${group.map((s) => "${s.ssid}(${s.instancePath})").join(", ")}');
         for (final ssid in group.skip(1)) {
           guestSsidPaths.add(_ensureTrailingDot(ssid.instancePath));
-          logger.d(
+          logger.t(
               '[USP][WiFi] Marked as guest: ${ssid.ssid} (${ssid.instancePath})');
         }
       }
     }
-    logger.d('[USP][WiFi] Total guest SSID paths: ${guestSsidPaths.length}');
+    logger.t('[USP][WiFi] Total guest SSID paths: ${guestSsidPaths.length}');
 
     // Group APs by radio: AP.ssidReference → SSID.lowerLayers → Radio
     final apsByRadioPath =
@@ -241,7 +241,6 @@ class UspWifiDataService {
   /// limitation), falls back to a broader parent-path fetch and manual parse.
   Future<Map<String, WifiClient>> _fetchWifiClients() async {
     final result = await WifiClients.fetch(_usp);
-    logger.d('[USP][Dashboard]: WifiClients raw: ${result.items.length} items');
 
     if (result.items.isNotEmpty) {
       return {
@@ -250,17 +249,9 @@ class UspWifiDataService {
       };
     }
 
-    logger.d(
-        '[USP][Dashboard]WifiClients selective-get empty, trying parent-path fallback');
     try {
-      final fallback = await _fetchWifiClientsFallback();
-      if (fallback.isNotEmpty) {
-        logger.d(
-            '[USP][Dashboard]WifiClients fallback: ${fallback.length} clients');
-      }
-      return fallback;
-    } catch (e) {
-      logger.d('[USP][Dashboard]: WifiClients fallback failed: $e');
+      return await _fetchWifiClientsFallback();
+    } catch (_) {
       return {};
     }
   }
@@ -353,9 +344,6 @@ class UspWifiDataService {
         _ensureTrailingDot(r.instancePath):
             _normalizeBand(r.operatingFrequencyBand),
     };
-
-    logger.d('[USP][Dashboard]: Connection detail: '
-        '${apByPath.length} APs, ${ssidByPath.length} SSIDs, ${bandByRadioPath.length} radios');
 
     final result = <String, ClientConnectionDetail>{};
     for (final entry in wifiClientMap.entries) {

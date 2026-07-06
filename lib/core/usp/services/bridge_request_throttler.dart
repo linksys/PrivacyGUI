@@ -148,7 +148,7 @@ class BridgeRequestThrottler {
   void _dispatch(_PendingRequest<dynamic> pending) {
     _active++;
     _inFlight[pending.cacheKey] = pending;
-    logger.d('[Throttler]: Dispatch (active=$_active, queue=${_queue.length}): '
+    logger.t('[Throttler]: Dispatch (active=$_active, queue=${_queue.length}): '
         '${pending.cacheKey}');
 
     Future<void>(() async {

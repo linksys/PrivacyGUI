@@ -31,7 +31,7 @@ class LocalSseStrategy implements SseOperationStrategy {
 
     for (final sub in subscriptions) {
       try {
-        logger.d('[SSE][Local]: Registering ${sub.subscriptionId}');
+        logger.d('[SSE]: Registering ${sub.subscriptionId}');
 
         await _bridge.subscribe(
           subscriptionId: sub.subscriptionId,
@@ -49,12 +49,12 @@ class LocalSseStrategy implements SseOperationStrategy {
         // Small breathing room for embedded router between requests
         await Future.delayed(const Duration(milliseconds: 50));
       } catch (e) {
-        logger.w('[SSE][Local]: Failed to register ${sub.subscriptionId}: $e');
+        logger.w('[SSE]: Failed to register ${sub.subscriptionId}: $e');
       }
     }
 
     logger.d(
-        '[SSE][Local]: Registered ${records.length}/${subscriptions.length} subscriptions');
+        '[SSE]: Registered ${records.length}/${subscriptions.length} subscriptions');
     return records;
   }
 
@@ -63,9 +63,9 @@ class LocalSseStrategy implements SseOperationStrategy {
     for (final id in subscriptionIds) {
       try {
         await _bridge.unsubscribe(subscriptionId: id);
-        logger.d('[SSE][Local]: Unregistered $id');
+        logger.d('[SSE]: Unregistered $id');
       } catch (e) {
-        logger.w('[SSE][Local]: Failed to unregister $id: $e');
+        logger.w('[SSE]: Failed to unregister $id: $e');
       }
     }
   }
@@ -74,13 +74,12 @@ class LocalSseStrategy implements SseOperationStrategy {
   Future<void> onSseConnected(
       List<SseSubscriptionRecord> existingRecords) async {
     if (existingRecords.isEmpty) {
-      logger.d(
-          '[SSE][Local]: onConnected — no existing subscriptions to resubscribe');
+      logger.d('[SSE]: onConnected — no existing subscriptions to resubscribe');
       return;
     }
 
     logger.d(
-        '[SSE][Local]: onConnected — resubscribing ${existingRecords.length} subscriptions');
+        '[SSE]: onConnected — resubscribing ${existingRecords.length} subscriptions');
 
     // Bridge is idempotent, safe to re-register directly
     for (final record in existingRecords) {
@@ -91,8 +90,7 @@ class LocalSseStrategy implements SseOperationStrategy {
           notifType: _notifTypeToInt(record.notifType),
         );
       } catch (e) {
-        logger.w(
-            '[SSE][Local]: Failed to resubscribe ${record.subscriptionId}: $e');
+        logger.w('[SSE]: Failed to resubscribe ${record.subscriptionId}: $e');
       }
     }
   }
@@ -100,7 +98,7 @@ class LocalSseStrategy implements SseOperationStrategy {
   @override
   Future<void> onSseDisconnected({required bool intentional}) async {
     // Local: Bridge handles cleanup, no action needed
-    logger.d('[SSE][Local]: onDisconnected (intentional=$intentional)');
+    logger.d('[SSE]: onDisconnected (intentional=$intentional)');
   }
 
   @override
