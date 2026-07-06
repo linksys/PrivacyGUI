@@ -177,5 +177,41 @@ void main() {
 
       expect(_macField().errorText, dupMac);
     });
+
+    testWidgets(
+        'editing own reservation is not a false-positive duplicate when its '
+        'non-key field drifts in existingReservations (SSE race)',
+        (tester) async {
+      // Reproduces the SSE-race false-positive: while the edit dialog is open,
+      // the Notifier re-fetches and toggles the edited reservation's `enable`
+      // flag in existingReservations. Because DhcpReservationUIModel uses
+      // value-equality (props include `enable`), a value-equality self-filter
+      // would fail to exclude self and flag the user's own MAC/IP as a
+      // duplicate. Self must be excluded by stable instancePath identity.
+      const frozen = DhcpReservationUIModel(
+        instancePath: 'Device.DHCPv4.Server.Pool.1.StaticAddress.1',
+        mac: 'AA:BB:CC:DD:EE:01',
+        ip: '192.168.1.10',
+        enable: true,
+      );
+      // Same instancePath, but enable drifted true -> false (SSE update).
+      const drifted = DhcpReservationUIModel(
+        instancePath: 'Device.DHCPv4.Server.Pool.1.StaticAddress.1',
+        mac: 'AA:BB:CC:DD:EE:01',
+        ip: '192.168.1.10',
+        enable: false,
+      );
+      await _pumpAndOpen(tester,
+          reservation: frozen, existing: const [drifted]);
+      // Change the value (so onChanged fires) then set it back to its own MAC,
+      // forcing _validate() to run against the drifted self-entry.
+      await _enterMac(tester, 'AA:BB:CC:DD:EE:09');
+      await _enterMac(tester, frozen.mac);
+      await _enterIp(tester, '192.168.1.99');
+      await _enterIp(tester, frozen.ip);
+
+      expect(_macField().errorText, isNull);
+      expect(_ipField().errorText, isNull);
+    });
   });
 }

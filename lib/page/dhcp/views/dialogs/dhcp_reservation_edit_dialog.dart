@@ -82,8 +82,22 @@ class _DhcpReservationEditDialogState extends State<DhcpReservationEditDialog> {
 
     // Reject duplicates against existing reservations (excluding the one being
     // edited). Comparison is case-insensitive for MAC addresses.
-    final others =
-        widget.existingReservations.where((r) => r != widget.reservation);
+    //
+    // Exclude "self" by stable identity (instancePath) rather than Equatable
+    // value-equality: the DHCP page listens to SSE invalidations, so a non-key
+    // field (e.g. `enable`) on the edited reservation can drift in
+    // existingReservations while the dialog is open. Value-equality would then
+    // fail to match self and flag the user's own unchanged MAC/IP as a
+    // duplicate. instancePath is the stable device-side identity (null only for
+    // not-yet-saved local reservations, which cannot be edited).
+    final self = widget.reservation;
+    final others = widget.existingReservations.where((r) {
+      if (self == null) return true;
+      if (self.instancePath != null && r.instancePath != null) {
+        return r.instancePath != self.instancePath;
+      }
+      return !identical(r, self);
+    });
     if (mac.isNotEmpty &&
         errors['mac'] == null &&
         others.any((r) => r.mac.toLowerCase() == mac.toLowerCase())) {
