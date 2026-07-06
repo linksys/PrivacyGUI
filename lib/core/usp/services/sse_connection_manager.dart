@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 
+import 'sse_operation_strategy.dart';
 import 'usp_bridge_client.dart';
 
 /// SSE connection lifecycle states.
@@ -31,13 +32,16 @@ enum SseConnectionState {
 /// [SseSubscriptionRegistry] and [SseEventRouter] respectively.
 class SseConnectionManager {
   final UspBridgeClient _bridge;
+  final HeartbeatConfig _heartbeatConfig;
 
   SseConnectionManager(
     this._bridge, {
+    HeartbeatConfig? heartbeatConfig,
     Duration? initialBackoff,
     Duration? maxBackoff,
     int? maxRetries,
-  })  : _initialBackoff = initialBackoff ?? _defaultInitialBackoff,
+  })  : _heartbeatConfig = heartbeatConfig ?? HeartbeatConfig.local,
+        _initialBackoff = initialBackoff ?? _defaultInitialBackoff,
         _maxBackoff = maxBackoff ?? _defaultMaxBackoff,
         _maxRetries = maxRetries ?? _defaultMaxRetries {
     assert(!_initialBackoff.isNegative, 'initialBackoff must not be negative');
@@ -48,8 +52,6 @@ class SseConnectionManager {
   // ══════════════════════════════════════════════════════════════════════════
   // Configuration
   // ══════════════════════════════════════════════════════════════════════════
-
-  static const Duration _heartbeatTimeout = Duration(seconds: 45);
   static const Duration _defaultInitialBackoff = Duration(seconds: 1);
   static const Duration _defaultMaxBackoff = Duration(seconds: 60);
   static const int _defaultMaxRetries = 5;
@@ -257,10 +259,14 @@ class SseConnectionManager {
 
   void _resetHeartbeatWatchdog() {
     _heartbeatWatchdog?.cancel();
-    _heartbeatWatchdog = Timer(_heartbeatTimeout, () {
-      logger
-          .w('[USP][SSE]: Heartbeat timeout (${_heartbeatTimeout.inSeconds}s) '
-              '— connection may be stale');
+
+    // Skip watchdog if heartbeat monitoring is disabled (e.g., Remote mode)
+    if (!_heartbeatConfig.enabled) return;
+
+    final timeout = _heartbeatConfig.timeout;
+    _heartbeatWatchdog = Timer(timeout, () {
+      logger.w('[USP][SSE]: Heartbeat timeout (${timeout.inSeconds}s) '
+          '— connection may be stale');
       _sseSubscription?.cancel();
       _handleStreamEnd();
     });

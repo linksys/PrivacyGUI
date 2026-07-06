@@ -57,7 +57,7 @@ class UspLanInfoCard extends ConsumerWidget {
                           UspStatusDot(isActive: info.dhcpEnabled, size: 8),
                           AppGap.xs(),
                           AppText.bodyMedium(
-                            'DHCP ${info.dhcpEnabled ? "Enabled" : "Disabled"}',
+                            '${loc(context).dhcp} ${info.dhcpEnabled ? loc(context).enabled : loc(context).disabled}',
                             color: colorScheme.onSurfaceVariant,
                           ),
                         ],
