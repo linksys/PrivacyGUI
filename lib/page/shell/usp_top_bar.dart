@@ -98,7 +98,7 @@ class _UspTopBarState extends ConsumerState<UspTopBar> with DebugObserver {
   }
 
   ThemeData _buildCurrentDarkTheme() {
-    final demoConfig = ref.watch(demoThemeConfigProvider.select((c) => c));
+    final demoConfig = ref.watch(demoThemeConfigProvider);
     final themeConfig =
         ref.watch(themeConfigProvider.select((v) => v.valueOrNull));
     final userThemeColor =

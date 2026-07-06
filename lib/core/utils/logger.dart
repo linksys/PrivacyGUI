@@ -193,8 +193,7 @@ void _setNestedValue(
 
 /// Adds a log message to the cache under a specific tag, managing size limits.
 ///
-/// If the `tag` is 'State', the message is parsed to update the [stateLogCache].
-/// Otherwise, the message is added to the corresponding list in [_webLogCache],
+/// The message is added to the corresponding list in [_webLogCache],
 /// removing the oldest entry if the list exceeds its maximum size.
 ///
 /// [message] The log message to add.

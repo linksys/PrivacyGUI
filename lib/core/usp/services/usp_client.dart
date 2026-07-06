@@ -96,14 +96,13 @@ class UspClient {
   static const _tag = '[USPClient]:';
   bool _lastCallRetried = false;
 
-  /// Generates a unique request ID: LNU{HEX-TIMESTAMP}{3-CHAR-RANDOM}
-  /// e.g., LNU668986E3A3F
+  /// Generates a unique request ID: LNU{HEX-MS-TIMESTAMP}{4-CHAR-RANDOM}
+  /// e.g., LNU18F3A2B4C5D6E7F8
   static String _genReqId() {
-    final ts = (DateTime.now().millisecondsSinceEpoch ~/ 1000)
-        .toRadixString(16)
-        .toUpperCase();
+    final ts =
+        DateTime.now().millisecondsSinceEpoch.toRadixString(16).toUpperCase();
     final rand =
-        _random.nextInt(0xFFF).toRadixString(16).padLeft(3, '0').toUpperCase();
+        _random.nextInt(0xFFFF).toRadixString(16).padLeft(4, '0').toUpperCase();
     return 'LNU$ts$rand';
   }
 
