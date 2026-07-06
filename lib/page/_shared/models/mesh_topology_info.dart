@@ -40,6 +40,9 @@ class MeshTopologyInfo extends Equatable with DiagnosticLoggable {
   List<Object?> get props => [nodes, clientToNodeMap, clientSignalMap];
 
   @override
+  String get diagnosticName => 'MeshTopologyInfo';
+
+  @override
   Map<String, Object?> get namedProps => {
         'nodes': nodes,
         'clientToNodeMap': clientToNodeMap,

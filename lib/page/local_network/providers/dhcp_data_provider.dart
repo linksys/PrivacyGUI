@@ -21,6 +21,9 @@ class DhcpData extends Equatable with DiagnosticLoggable {
   });
 
   @override
+  String get diagnosticName => 'DhcpData';
+
+  @override
   Map<String, Object?> get namedProps => {
         'clientModels': clientModels,
         'reservationModels': reservationModels,

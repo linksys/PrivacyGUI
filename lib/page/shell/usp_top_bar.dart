@@ -75,11 +75,13 @@ class _UspTopBarState extends ConsumerState<UspTopBar> with DebugObserver {
                             v.value?.loginType != LoginType.none)) &&
                         (ref.watch(appsCapabilityProvider).valueOrNull ??
                             false))
-                      IconButton(
-                        icon: AppIcon.font(Icons.apps,
-                            color: colorScheme.onSurface),
-                        tooltip: loc(context).apps,
-                        onPressed: () => context.goNamed(RouteNamed.uspApps),
+                      Tooltip(
+                        message: loc(context).apps,
+                        child: AppIconButton(
+                          icon: AppIcon.font(Icons.apps,
+                              color: colorScheme.onSurface),
+                          onTap: () => context.goNamed(RouteNamed.uspApps),
+                        ),
                       ),
                     const Padding(
                       padding: EdgeInsets.all(4.0),
@@ -96,8 +98,9 @@ class _UspTopBarState extends ConsumerState<UspTopBar> with DebugObserver {
   }
 
   ThemeData _buildCurrentDarkTheme() {
-    final demoConfig = ref.watch(demoThemeConfigProvider);
-    final themeConfig = ref.watch(themeConfigProvider).valueOrNull;
+    final demoConfig = ref.watch(demoThemeConfigProvider.select((c) => c));
+    final themeConfig =
+        ref.watch(themeConfigProvider.select((v) => v.valueOrNull));
     final userThemeColor =
         ref.watch(appSettingsProvider.select((s) => s.themeColor));
 

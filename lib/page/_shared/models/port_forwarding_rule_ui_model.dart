@@ -73,6 +73,9 @@ class PortForwardingRuleUIModel extends Equatable with DiagnosticLoggable {
       '$portRangeDisplay \u2192 $internalClient:$internalPort';
 
   @override
+  String get diagnosticName => 'PortForwardingRuleUIModel';
+
+  @override
   Map<String, Object?> get namedProps => {
         'instancePath': instancePath,
         'description': description,

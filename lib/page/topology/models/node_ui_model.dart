@@ -93,6 +93,9 @@ class NodeUIModel extends Equatable with DiagnosticLoggable {
   bool get isEthernetBackhaul => backhaulLinkType == 'Ethernet';
 
   @override
+  String get diagnosticName => 'NodeUIModel';
+
+  @override
   Map<String, Object?> get namedProps => {
         'deviceId': deviceId,
         'dataElementsId': dataElementsId,

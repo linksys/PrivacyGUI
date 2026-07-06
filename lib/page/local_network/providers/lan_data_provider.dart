@@ -21,6 +21,9 @@ class LanData extends Equatable with DiagnosticLoggable {
         );
 
   @override
+  String get diagnosticName => 'LanData';
+
+  @override
   Map<String, Object?> get namedProps => {'model': model};
 }
 

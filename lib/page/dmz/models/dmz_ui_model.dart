@@ -57,6 +57,9 @@ class DmzUIModel extends Equatable with DiagnosticLoggable {
   }
 
   @override
+  String get diagnosticName => 'DmzUIModel';
+
+  @override
   Map<String, Object?> get namedProps => {
         'isEnabled': isEnabled,
         'destIp': destIp,

@@ -23,6 +23,9 @@ class WifiClientUIModel extends Equatable with DiagnosticLoggable {
   });
 
   @override
+  String get diagnosticName => 'WifiClientUIModel';
+
+  @override
   Map<String, Object?> get namedProps => {
         'macAddress': macAddress,
         'signalStrength': signalStrength,

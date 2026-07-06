@@ -24,6 +24,9 @@ class PortForwardingData extends Equatable with DiagnosticLoggable {
   });
 
   @override
+  String get diagnosticName => 'PortForwardingData';
+
+  @override
   Map<String, Object?> get namedProps => {'ruleModels': ruleModels};
 }
 

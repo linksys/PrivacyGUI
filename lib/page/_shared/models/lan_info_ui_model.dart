@@ -36,6 +36,9 @@ class LanInfoUIModel extends Equatable with DiagnosticLoggable {
       : 'N/A';
 
   @override
+  String get diagnosticName => 'LanInfoUIModel';
+
+  @override
   Map<String, Object?> get namedProps => {
         'hostName': hostName,
         'ipAddress': ipAddress,

@@ -23,6 +23,9 @@ class FirmwareImageUIModel extends Equatable with DiagnosticLoggable {
   bool get isActive => status == 'Active';
 
   @override
+  String get diagnosticName => 'FirmwareImageUIModel';
+
+  @override
   Map<String, Object?> get namedProps => {
         'instance': instance,
         'instancePath': instancePath,

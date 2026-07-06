@@ -27,6 +27,9 @@ class WanStatusUIModel extends Equatable with DiagnosticLoggable {
   });
 
   @override
+  String get diagnosticName => 'WanStatusUIModel';
+
+  @override
   Map<String, Object?> get namedProps => {
         'isUp': isUp,
         'ipAddress': ipAddress,

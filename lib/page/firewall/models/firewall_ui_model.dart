@@ -68,6 +68,9 @@ class FirewallUIModel extends Equatable with DiagnosticLoggable {
   }
 
   @override
+  String get diagnosticName => 'FirewallUIModel';
+
+  @override
   Map<String, Object?> get namedProps => {
         'isIPv4FirewallEnabled': isIPv4FirewallEnabled,
         'isIPv6FirewallEnabled': isIPv6FirewallEnabled,

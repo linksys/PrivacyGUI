@@ -9,6 +9,9 @@ class ClientConnectionDetail extends Equatable with DiagnosticLoggable {
   const ClientConnectionDetail({required this.band, required this.ssidName});
 
   @override
+  String get diagnosticName => 'ClientConnectionDetail';
+
+  @override
   Map<String, Object?> get namedProps => {
         'band': band,
         'ssidName': ssidName,

@@ -21,6 +21,9 @@ class FirmwareBanksData extends Equatable with DiagnosticLoggable {
       banks.where((b) => b.available && !b.isActive).firstOrNull;
 
   @override
+  String get diagnosticName => 'FirmwareBanksData';
+
+  @override
   Map<String, Object?> get namedProps => {'banks': banks};
 }
 

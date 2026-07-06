@@ -251,7 +251,8 @@ class UspWifiDataService {
 
     try {
       return await _fetchWifiClientsFallback();
-    } catch (_) {
+    } catch (e) {
+      logger.w('[WiFi] Fallback fetch failed: $e');
       return {};
     }
   }

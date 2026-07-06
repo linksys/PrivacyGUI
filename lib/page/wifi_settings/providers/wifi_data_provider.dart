@@ -42,11 +42,24 @@ class WifiData extends Equatable with DiagnosticLoggable {
         radioModels = const [];
 
   @override
+  String get diagnosticName => 'WifiData';
+
+  @override
   Map<String, Object?> get namedProps => {
         'wifiClientMap': wifiClientMap,
         'connectionDetailMap': connectionDetailMap,
         'radioModels': radioModels,
       };
+
+  // Explicit props override for reliable equality comparison (includes codegenContext).
+  // namedProps is kept lean for diagnostic JSON output.
+  @override
+  List<Object?> get props => [
+        codegenContext,
+        wifiClientMap,
+        connectionDetailMap,
+        radioModels,
+      ];
 }
 
 // ---------------------------------------------------------------------------

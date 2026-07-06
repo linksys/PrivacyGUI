@@ -33,6 +33,9 @@ class DeviceInterfaceInfo extends Equatable with DiagnosticLoggable {
   });
 
   @override
+  String get diagnosticName => 'DeviceInterfaceInfo';
+
+  @override
   Map<String, Object?> get namedProps => {
         'mac': mac,
         'ip': ip,
@@ -270,6 +273,9 @@ class DeviceUIModel extends Equatable with DiagnosticLoggable {
       additionalInterfaces: additionalInterfaces ?? this.additionalInterfaces,
     );
   }
+
+  @override
+  String get diagnosticName => 'DeviceUIModel';
 
   @override
   Map<String, Object?> get namedProps => {

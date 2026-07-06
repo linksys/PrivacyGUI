@@ -21,6 +21,9 @@ class PortTriggeringData extends Equatable with DiagnosticLoggable {
   });
 
   @override
+  String get diagnosticName => 'PortTriggeringData';
+
+  @override
   Map<String, Object?> get namedProps => {'ruleModels': ruleModels};
 }
 

@@ -67,6 +67,9 @@ class DevicesData extends Equatable with DiagnosticLoggable {
   }
 
   @override
+  String get diagnosticName => 'DevicesData';
+
+  @override
   Map<String, Object?> get namedProps => {
         'meshTopology': meshTopology,
         'deviceModels': deviceModels,

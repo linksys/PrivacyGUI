@@ -71,6 +71,9 @@ class FirewallData extends Equatable with DiagnosticLoggable {
         dmzSummaries = const [];
 
   @override
+  String get diagnosticName => 'FirewallData';
+
+  @override
   Map<String, Object?> get namedProps => {
         'firewallModel': firewallModel,
         'ruleCount': ruleSummaries.length,

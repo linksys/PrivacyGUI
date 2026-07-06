@@ -99,7 +99,7 @@ class SseEventRouter {
       payload: json,
     );
 
-    logger.d('[SSE]: $subscriptionId ($type)\n'
+    logger.t('[SSE]: $subscriptionId ($type)\n'
         '  ${const JsonEncoder.withIndent('  ').convert(json).replaceAll('\n', '\n  ')}');
 
     // Route to subscription-specific handlers

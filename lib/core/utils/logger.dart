@@ -208,18 +208,11 @@ void _addLogWithTag(
   final maxSize =
       tag == routeLogTag ? _maxLogSizeOfRouteTag : _maxLogSizeOfGeneralTag;
 
-  if (tag == 'State') {
-    final stateMessage = _splitTagAndMessage(message);
-    if (stateMessage != null) {
-      _stateLogCache[stateMessage.$2] = stateMessage.$1;
-    }
-  } else {
-    if (logList.length + 1 > maxSize) {
-      logList.removeAt(0);
-    }
-    logList.add((DateTime.now().millisecondsSinceEpoch, message, level));
-    _webLogCache[tag] = logList;
+  if (logList.length + 1 > maxSize) {
+    logList.removeAt(0);
   }
+  logList.add((DateTime.now().millisecondsSinceEpoch, message, level));
+  _webLogCache[tag] = logList;
 }
 
 /// Splits a formatted log string into its message and tag components.

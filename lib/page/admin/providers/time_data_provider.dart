@@ -15,6 +15,9 @@ class TimeData extends Equatable with DiagnosticLoggable {
   TimeData({required this.model}) : fetchedAt = DateTime.now();
 
   @override
+  String get diagnosticName => 'TimeData';
+
+  @override
   Map<String, Object?> get namedProps => {
         'model': model,
         'fetchedAt': fetchedAt,

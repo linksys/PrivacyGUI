@@ -13,6 +13,9 @@ class SystemInfoData extends Equatable with DiagnosticLoggable {
   const SystemInfoData({required this.model});
 
   @override
+  String get diagnosticName => 'SystemInfoData';
+
+  @override
   Map<String, Object?> get namedProps => {'model': model};
 }
 

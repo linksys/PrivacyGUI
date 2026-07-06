@@ -33,6 +33,9 @@ class DhcpReservationUIModel extends Equatable with DiagnosticLoggable {
   }
 
   @override
+  String get diagnosticName => 'DhcpReservationUIModel';
+
+  @override
   Map<String, Object?> get namedProps => {
         'instancePath': instancePath,
         'mac': mac,

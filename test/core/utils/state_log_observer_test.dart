@@ -16,6 +16,25 @@ class TestLoggableState extends Equatable with DiagnosticLoggable {
   Map<String, Object?> get namedProps => {'value': value};
 }
 
+class TestSensitiveState extends Equatable with DiagnosticLoggable {
+  final String macAddress;
+  final String serialNumber;
+  final String password;
+
+  const TestSensitiveState({
+    required this.macAddress,
+    required this.serialNumber,
+    required this.password,
+  });
+
+  @override
+  Map<String, Object?> get namedProps => {
+        'macAddress': macAddress,
+        'serialNumber': serialNumber,
+        'password': password,
+      };
+}
+
 class TestNonLoggableState extends Equatable with DiagnosticLoggable {
   final String value;
 
@@ -264,6 +283,61 @@ void main() {
       container.dispose();
     });
   });
+
+  group('Sensitive data masking', () {
+    late StateLogObserver observer;
+    late ProviderContainer container;
+
+    setUp(() {
+      clearStateLogCacheForTest();
+      observer = StateLogObserver();
+      container = ProviderContainer(observers: [observer]);
+    });
+
+    tearDown(() {
+      container.dispose();
+      clearStateLogCacheForTest();
+    });
+
+    test('masks MAC addresses in state log cache', () async {
+      // Use async provider so initial build triggers didUpdateProvider
+      final sensitiveProvider =
+          AsyncNotifierProvider<AsyncSensitiveNotifier, TestSensitiveState>(
+        AsyncSensitiveNotifier.new,
+      );
+
+      // Await initial build — this triggers didUpdateProvider for async providers
+      await container.read(sensitiveProvider.future);
+
+      final cached = stateLogCacheForTest['TestSensitiveState'];
+      expect(cached, isNotNull);
+
+      // MAC address should be masked (XX:XX:XX:XX:EE:FF pattern)
+      expect(cached, contains('XX:XX:XX:XX'));
+      expect(cached, isNot(contains('AA:BB:CC:DD')));
+
+      // Serial number should be masked (only last 4 visible)
+      expect(cached, contains('****5678'));
+      expect(cached, isNot(contains('SN12345678')));
+
+      // Password should be masked
+      expect(cached, contains('***'));
+      expect(cached, isNot(contains('secret123')));
+    });
+  });
+}
+
+// --- Additional Test Notifiers ---
+
+class AsyncSensitiveNotifier extends AsyncNotifier<TestSensitiveState> {
+  @override
+  Future<TestSensitiveState> build() async {
+    return const TestSensitiveState(
+      macAddress: 'AA:BB:CC:DD:EE:FF',
+      serialNumber: 'SN12345678',
+      password: 'secret123',
+    );
+  }
 }
 
 // --- Additional Test Notifiers ---

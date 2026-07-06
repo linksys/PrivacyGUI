@@ -34,6 +34,18 @@ import 'package:equatable/equatable.dart';
 /// {"name":"value","count":42}
 /// ```
 mixin DiagnosticLoggable on Equatable {
+  /// Stable identifier for diagnostic logging.
+  ///
+  /// Used as the cache key in [StateLogObserver] instead of [runtimeType],
+  /// which can be mangled in dart2js minified builds.
+  ///
+  /// Default returns [runtimeType.toString()]. Override for web-safe stability:
+  /// ```dart
+  /// @override
+  /// String get diagnosticName => 'MyData';
+  /// ```
+  String get diagnosticName => runtimeType.toString();
+
   /// Named properties for both equality comparison and JSON serialization.
   ///
   /// Keys become JSON field names; values are used for both equality checks

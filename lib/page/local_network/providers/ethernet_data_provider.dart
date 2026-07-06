@@ -32,6 +32,9 @@ class EthernetData extends Equatable with DiagnosticLoggable {
   }
 
   @override
+  String get diagnosticName => 'EthernetData';
+
+  @override
   Map<String, Object?> get namedProps => {
         'ethernetPortModels': ethernetPortModels,
       };

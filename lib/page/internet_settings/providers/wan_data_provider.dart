@@ -13,6 +13,9 @@ class WanData extends Equatable with DiagnosticLoggable {
   const WanData({required this.model});
 
   @override
+  String get diagnosticName => 'WanData';
+
+  @override
   Map<String, Object?> get namedProps => {'model': model};
 }
 

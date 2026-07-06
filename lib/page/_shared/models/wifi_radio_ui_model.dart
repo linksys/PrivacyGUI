@@ -58,6 +58,9 @@ class WifiRadioUIModel extends Equatable with DiagnosticLoggable {
   }
 
   @override
+  String get diagnosticName => 'WifiRadioUIModel';
+
+  @override
   Map<String, Object?> get namedProps => {
         'instancePath': instancePath,
         'band': band,
@@ -88,6 +91,9 @@ class WifiAccessPointUIModel extends Equatable with DiagnosticLoggable {
     required this.encryptionMode,
     this.isGuest = false,
   });
+
+  @override
+  String get diagnosticName => 'WifiAccessPointUIModel';
 
   @override
   Map<String, Object?> get namedProps => {

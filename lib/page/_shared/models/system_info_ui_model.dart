@@ -23,6 +23,9 @@ class FirmwareImageUIModel extends Equatable with DiagnosticLoggable {
   });
 
   @override
+  String get diagnosticName => 'FirmwareImageUIModel';
+
+  @override
   Map<String, Object?> get namedProps => {
         'instancePath': instancePath,
         'name': name,
@@ -94,6 +97,9 @@ class SystemInfoUIModel extends Equatable with DiagnosticLoggable {
     if (hours > 0) return '${hours}h ${minutes}m';
     return '${minutes}m';
   }
+
+  @override
+  String get diagnosticName => 'SystemInfoUIModel';
 
   @override
   Map<String, Object?> get namedProps => {

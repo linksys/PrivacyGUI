@@ -55,6 +55,9 @@ class DhcpClientUIModel extends Equatable with DiagnosticLoggable {
   String get displayName => hostName.isNotEmpty ? hostName : mac;
 
   @override
+  String get diagnosticName => 'DhcpClientUIModel';
+
+  @override
   Map<String, Object?> get namedProps => {
         'mac': mac,
         'ip': ip,

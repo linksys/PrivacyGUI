@@ -72,6 +72,9 @@ class TimeSettingsUIModel extends Equatable with DiagnosticLoggable {
   }
 
   @override
+  String get diagnosticName => 'TimeSettingsUIModel';
+
+  @override
   Map<String, Object?> get namedProps => {
         'enable': enable,
         'status': status,

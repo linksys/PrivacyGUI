@@ -166,6 +166,55 @@ void main() {
         expect(model1, equals(model2));
         expect(model1, isNot(equals(model3)));
       });
+
+      test('Map props equality - same content different instances', () {
+        // Two MapModel instances with identical Map content but different
+        // Map instances should be equal (Equatable uses deep comparison)
+        final map1 = MapModel(itemMap: {
+          'a': const SimpleModel(name: 'first', count: 1, active: true),
+          'b': const SimpleModel(name: 'second', count: 2, active: false),
+        });
+        final map2 = MapModel(itemMap: {
+          'a': const SimpleModel(name: 'first', count: 1, active: true),
+          'b': const SimpleModel(name: 'second', count: 2, active: false),
+        });
+
+        // Verify maps are different instances
+        expect(identical(map1.itemMap, map2.itemMap), isFalse);
+
+        // But models should be equal (Equatable deep comparison)
+        expect(map1, equals(map2));
+        expect(map1.hashCode, equals(map2.hashCode));
+      });
+
+      test('Map props equality - different content', () {
+        final map1 = MapModel(itemMap: {
+          'a': const SimpleModel(name: 'first', count: 1, active: true),
+        });
+        final map2 = MapModel(itemMap: {
+          'a': const SimpleModel(name: 'different', count: 1, active: true),
+        });
+
+        expect(map1, isNot(equals(map2)));
+      });
+
+      test('Map props equality - different keys', () {
+        final map1 = MapModel(itemMap: {
+          'a': const SimpleModel(name: 'first', count: 1, active: true),
+        });
+        final map2 = MapModel(itemMap: {
+          'b': const SimpleModel(name: 'first', count: 1, active: true),
+        });
+
+        expect(map1, isNot(equals(map2)));
+      });
+
+      test('Map props equality - empty maps', () {
+        final map1 = MapModel(itemMap: {});
+        final map2 = MapModel(itemMap: {});
+
+        expect(map1, equals(map2));
+      });
     });
 
     group('toString JSON output', () {

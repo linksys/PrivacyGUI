@@ -16,6 +16,9 @@ class WiredDeviceInfo extends Equatable with DiagnosticLoggable {
   String get displayName => hostName.isNotEmpty ? hostName : macAddress;
 
   @override
+  String get diagnosticName => 'WiredDeviceInfo';
+
+  @override
   Map<String, Object?> get namedProps => {
         'hostName': hostName,
         'macAddress': macAddress,
@@ -53,6 +56,9 @@ class EthernetPortUIModel extends Equatable with DiagnosticLoggable {
     }
     return '$currentBitRate Mbps';
   }
+
+  @override
+  String get diagnosticName => 'EthernetPortUIModel';
 
   @override
   Map<String, Object?> get namedProps => {

@@ -25,6 +25,9 @@ class PortTriggerForwardRuleUIModel extends Equatable with DiagnosticLoggable {
           : '$forwardPort-$forwardPortEndRange';
 
   @override
+  String get diagnosticName => 'PortTriggerForwardRuleUIModel';
+
+  @override
   Map<String, Object?> get namedProps => {
         'instancePath': instancePath,
         'forwardPort': forwardPort,
@@ -90,15 +93,18 @@ class PortTriggeringRuleUIModel extends Equatable with DiagnosticLoggable {
 
   /// Forward port display (first rule): "1024-1030" or "—" if no rules.
   String get forwardPortDisplay =>
-      forwardRules.isNotEmpty ? forwardRules.first.portDisplay : '\u2014';
+      forwardRules.isNotEmpty ? forwardRules.first.portDisplay : '—';
 
   /// Forward protocol (first rule) or "—" if no rules.
   String get forwardProtocolDisplay =>
-      forwardRules.isNotEmpty ? forwardRules.first.forwardProtocol : '\u2014';
+      forwardRules.isNotEmpty ? forwardRules.first.forwardProtocol : '—';
 
   /// Summary: "Trigger: 21 TCP → Forward: 1024-1030 TCP".
   String get summary => 'Trigger: $triggerPortDisplay $triggerProtocol '
-      '\u2192 Forward: $forwardPortDisplay $forwardProtocolDisplay';
+      '→ Forward: $forwardPortDisplay $forwardProtocolDisplay';
+
+  @override
+  String get diagnosticName => 'PortTriggeringRuleUIModel';
 
   @override
   Map<String, Object?> get namedProps => {

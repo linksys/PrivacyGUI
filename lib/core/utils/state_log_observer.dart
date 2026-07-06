@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/framework/diagnostic_loggable.dart';
+import 'package:privacy_gui/util/masking_utils.dart';
 
 /// A [ProviderObserver] that records the latest state of watched providers
 /// into the state log cache for diagnostics.
@@ -35,10 +36,14 @@ class StateLogObserver extends ProviderObserver {
     if (value is! DiagnosticLoggable) return;
     if (!value.loggable) return;
 
-    final typeName = value.runtimeType.toString();
+    final typeName = value.diagnosticName;
     final jsonState = value.toString();
 
+    // Apply masking before caching — diagnostic reports are user-downloadable
+    final maskedState = MaskingUtils.maskSensitiveJsonValues(
+        MaskingUtils.maskSerialNumber(MaskingUtils.maskMacAddress(jsonState)));
+
     // Update cache — will be included in diagnostic report on download
-    updateStateLog(typeName, jsonState);
+    updateStateLog(typeName, maskedState);
   }
 }
