@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
@@ -537,6 +540,127 @@ void main() {
         equals(''),
       );
       expect(bridgeParams.first.length, equals(1));
+    });
+
+    test(
+        'entering bridge treats a transport error on the bridge SET as success',
+        () async {
+      // The firmware applies bridge mode and drops this connection ~2s after
+      // receiving the SET, so its response never arrives — the request fails
+      // with a transport error. That is the expected signature of success, so
+      // saveAll must complete normally (no throw), not surface a spurious error.
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenThrow('Set failed: Transport error: Request timeout');
+
+      final original = UspInternetSettingsForm(
+        connectionType: UspWanConnectionType.dhcp,
+      );
+      final edited = original.copyWith(
+        connectionType: UspWanConnectionType.bridge,
+      );
+
+      await expectLater(service.saveAll(original, edited), completes);
+    });
+
+    test('entering bridge swallows a Dart timeout on the bridge SET', () {
+      // When no transport error arrives first, the .timeout(4s) budget elapses
+      // and throws TimeoutException — also the disconnect signature. Drive the
+      // 4s with fake_async so the test does not actually wait.
+      fakeAsync((async) {
+        // Bridge SET never completes (connection gone); other SETs are no-ops.
+        when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+            .thenAnswer((_) => Completer<Map<String, dynamic>>().future);
+
+        final original = UspInternetSettingsForm(
+          connectionType: UspWanConnectionType.dhcp,
+        );
+        final edited = original.copyWith(
+          connectionType: UspWanConnectionType.bridge,
+        );
+
+        Object? error;
+        var done = false;
+        service.saveAll(original, edited).then(
+              (_) => done = true,
+              onError: (Object e) => error = e,
+            );
+
+        async.elapse(const Duration(seconds: 5));
+
+        expect(error, isNull,
+            reason: 'a bridge-apply timeout must be treated as success');
+        expect(done, isTrue);
+      });
+    });
+
+    test('entering bridge rethrows a real fault on the bridge SET', () async {
+      // A fault code means the router actively rejected the SET BEFORE any
+      // disconnect — a genuine config failure that must still reach the user,
+      // never swallowed by the fire-and-forget handling.
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => {
+                'success': false,
+                'result': {
+                  'data': <String, dynamic>{},
+                  'error': {
+                    'Device.IP.Interface.2.IPv4Address.1.AddressingType': {
+                      'errorCode': 7006,
+                      'errorMessage': 'Invalid value',
+                    },
+                  },
+                },
+              });
+
+      final original = UspInternetSettingsForm(
+        connectionType: UspWanConnectionType.dhcp,
+      );
+      final edited = original.copyWith(
+        connectionType: UspWanConnectionType.bridge,
+      );
+
+      await expectLater(
+        service.saveAll(original, edited),
+        throwsA(isA<ServiceError>()),
+      );
+    });
+
+    test('entering bridge sends the terminal bridge SET after the IPv6 SET',
+        () async {
+      // Part B: FW-spec SETs (here IPv6) must land on a live connection, so the
+      // terminal bridge SET is deferred to last even when both change at once.
+      final captureOrder = <Map<String, dynamic>>[];
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((invocation) async {
+        captureOrder
+            .add(invocation.positionalArguments[0] as Map<String, dynamic>);
+        return {
+          'success': true,
+          'result': {'data': <String, dynamic>{}}
+        };
+      });
+
+      final original = UspInternetSettingsForm(
+        connectionType: UspWanConnectionType.dhcp,
+        ipv6Enabled: true,
+      );
+      final edited = original.copyWith(
+        connectionType: UspWanConnectionType.bridge,
+        ipv6Enabled: false,
+      );
+
+      await service.saveAll(original, edited);
+
+      final ipv6Index = captureOrder.indexWhere(
+          (m) => m.keys.any((k) => k.contains('IPv6') || k.contains('DHCPv6')));
+      final bridgeIndex = captureOrder.indexWhere((m) =>
+          m.containsKey('Device.IP.Interface.2.IPv4Address.1.AddressingType'));
+
+      expect(ipv6Index, greaterThanOrEqualTo(0),
+          reason: 'IPv6 change should have produced a SET');
+      expect(bridgeIndex, greaterThanOrEqualTo(0),
+          reason: 'bridge switch should have produced a SET');
+      expect(bridgeIndex, greaterThan(ipv6Index),
+          reason: 'bridge SET must be sent after the IPv6 SET');
     });
 
     test('MTU change without type change sends only MTU param', () async {

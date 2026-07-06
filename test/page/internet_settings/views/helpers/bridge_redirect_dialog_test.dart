@@ -57,4 +57,16 @@ void main() {
 
     expect(navigated, 'https://Community00080.local');
   });
+
+  testWidgets('offers no dismiss/close action — redirect is the only path',
+      (tester) async {
+    await tester.pumpWidget(_harness(navigate: (_) {}));
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+
+    // Once bridge mode is applied the router is unreachable on this origin, so
+    // the dialog must not offer a way to stay on the (now-dead) page.
+    expect(find.text('Go to router'), findsOneWidget);
+    expect(find.text('Close'), findsNothing);
+  });
 }

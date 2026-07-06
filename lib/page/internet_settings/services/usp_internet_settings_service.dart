@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
@@ -24,6 +26,19 @@ class UspInternetSettingsService {
   final UspClient _usp;
 
   UspInternetSettingsService(this._usp);
+
+  /// Timeout for the terminal bridge-mode SET.
+  ///
+  /// Entering bridge is terminal-by-design: on receiving the
+  /// `AddressingType=""` SET the firmware applies bridge mode and bounces the
+  /// LAN link (fw >= 1.2.2.26070203) / reloads the network within ~2s, which
+  /// tears down the very connection carrying this request's response. Verified
+  /// on-device: obuspa applies the SET and returns a SET_RESP over its local
+  /// UDS (rc=0), but the app never receives the HTTP response because the
+  /// transport is already gone. 4s leaves headroom over the observed ~2s
+  /// disconnect without making the user wait the full 15s throttler timeout on
+  /// a SET that has already succeeded. See [_applyBridgeMode].
+  static const _bridgeSetTimeout = Duration(seconds: 4);
 
   // ---------------------------------------------------------------------------
   // Fetch
@@ -156,11 +171,17 @@ class UspInternetSettingsService {
         currentInstancePath: pppInstancePath,
       );
 
-      // Step 2: WAN mode switch or field edit (per-mode dispatch)
+      // Step 2: WAN mode switch or field edit (per-mode dispatch).
+      //
+      // Entering bridge is terminal: the bridge SET drops this connection (see
+      // _applyBridgeMode). Defer it so the FW-spec VLAN/IPv6 SETs below still
+      // land on a live connection; it is sent last, in Step 6.
       final typeChanged = original.connectionType != edited.connectionType;
       final switchingToPppoe =
           typeChanged && edited.connectionType == UspWanConnectionType.pppoe;
-      await _saveWanSettings(original, edited);
+      final enteringBridge =
+          typeChanged && edited.connectionType == UspWanConnectionType.bridge;
+      await _saveWanSettings(original, edited, deferBridge: enteringBridge);
 
       // Step 3: PPP instance fields (skip username/password if already sent
       // in the ordered Set above)
@@ -177,6 +198,11 @@ class UspInternetSettingsService {
 
       // Step 5: IPv6 fields
       await _saveIpv6Settings(original, edited);
+
+      // Step 6: terminal bridge SET — last, once every other SET has landed.
+      if (enteringBridge) {
+        await _applyBridgeMode();
+      }
     } catch (e) {
       if (e is ServiceError) rethrow;
       throw mapUspErrorToServiceError(e);
@@ -218,10 +244,16 @@ class UspInternetSettingsService {
   // WAN singleton save — DNS merge happens here
   // ---------------------------------------------------------------------------
 
+  /// Saves the WAN singleton fields for the target mode.
+  ///
+  /// When [deferBridge] is true and the edit is an entering-bridge transition,
+  /// the terminal bridge SET is skipped here so [saveAll] can send it last,
+  /// after the FW-spec VLAN/IPv6 SETs have landed on a still-live connection.
   Future<void> _saveWanSettings(
     UspInternetSettingsForm original,
-    UspInternetSettingsForm edited,
-  ) async {
+    UspInternetSettingsForm edited, {
+    bool deferBridge = false,
+  }) async {
     final typeChanged = original.connectionType != edited.connectionType;
 
     if (typeChanged) {
@@ -253,7 +285,9 @@ class UspInternetSettingsService {
           ));
 
         case UspWanConnectionType.bridge:
-          _handleSetResult(await WanBridge.update(_usp, addressingType: ''));
+          // When deferred, saveAll sends the terminal bridge SET last (after
+          // VLAN/IPv6) via _applyBridgeMode(); otherwise apply it here.
+          if (!deferBridge) await _applyBridgeMode();
       }
     } else {
       switch (edited.connectionType) {
@@ -285,6 +319,54 @@ class UspInternetSettingsService {
     final mtuDiff = _diff(original.mtu, edited.mtu);
     if (mtuDiff != null) {
       _handleSetResult(await WanSettings.update(_usp, mtu: mtuDiff));
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Bridge mode apply — terminal, fire-and-forget by design
+  // ---------------------------------------------------------------------------
+
+  /// Applies bridge mode via the WAN `AddressingType=""` SET.
+  ///
+  /// This SET is terminal-by-design (see [_bridgeSetTimeout]): the firmware
+  /// applies bridge mode and drops the connection carrying the response, so a
+  /// transport-level timeout/network error on THIS SET is the expected
+  /// signature of success — the SET was received and applied on-device before
+  /// the disconnect. Those two cases are swallowed.
+  ///
+  /// Any error the router actively returns BEFORE the disconnect — a fault code
+  /// mapped to a validation / resource / partial / auth / unexpected
+  /// [ServiceError] — means the SET was rejected. Those propagate so the user
+  /// still sees the failure; a real config failure is never hidden.
+  Future<void> _applyBridgeMode() async {
+    try {
+      _handleSetResult(
+        await WanBridge.update(_usp, addressingType: '')
+            .timeout(_bridgeSetTimeout),
+      );
+    } on TimeoutException {
+      // No response within the budget: the firmware applied bridge mode and
+      // dropped the connection, so the SET_RESP can never arrive. Expected
+      // success. (Future.timeout keeps an error listener on the underlying
+      // request, so its eventual late error is consumed, not left unhandled.)
+      logger.i(
+          '[USP][WAN]: bridge SET timed out after ${_bridgeSetTimeout.inSeconds}s '
+          '— treating as success (firmware dropped the connection applying bridge mode)');
+    } catch (e) {
+      // Reached when the request fails BEFORE the timeout. A transport /
+      // connectivity error is the same disconnect signature → success. But
+      // anything the router actively rejected — a fault code mapped to
+      // validation/resource/auth, or a partial/complete failure surfaced by
+      // _handleSetResult (already a ServiceError) — propagates, so a genuine
+      // config failure is never swallowed.
+      if (e is ServiceError) rethrow;
+      final mapped = mapUspErrorToServiceError(e);
+      if (mapped is NetworkError || mapped is ConnectivityError) {
+        logger.i('[USP][WAN]: bridge SET hit a transport error '
+            '— treating as success (firmware dropped the connection applying bridge mode)');
+        return;
+      }
+      throw mapped;
     }
   }
 

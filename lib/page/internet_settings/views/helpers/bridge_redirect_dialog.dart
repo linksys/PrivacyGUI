@@ -27,10 +27,9 @@ Future<void> showBridgeRedirectDialog(
       fontWeight: FontWeight.bold,
     ),
     actions: [
-      AppButton.text(
-        label: l.close,
-        onTap: () => Navigator.of(context, rootNavigator: true).pop(),
-      ),
+      // No dismiss/close action: once bridge mode is applied, the router is
+      // unreachable on this origin, so redirecting to https://<hostName>.local
+      // is the only valid next step. The dialog is non-dismissible (above).
       AppButton.primary(
         label: l.bridgeRedirectButton,
         onTap: () => navigate(url),
