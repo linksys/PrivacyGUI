@@ -46,6 +46,15 @@ class DhcpDataNotifier extends AsyncNotifier<DhcpData> {
         _debouncedInvalidate();
       }
     });
+
+    // Devices listener: device online status changes affect DHCP client
+    // isOnline enrichment. Re-fetch to get fresh data.
+    ref.listen(devicesDataProvider, (_, next) {
+      if (next.hasValue && state.hasValue) {
+        _debouncedInvalidate();
+      }
+    });
+
     ref.onDispose(() => _debounce?.cancel());
     return _fetch();
   }
@@ -53,11 +62,18 @@ class DhcpDataNotifier extends AsyncNotifier<DhcpData> {
   Future<DhcpData> _fetch() async {
     final svc = ref.read(uspDhcpDataServiceProvider);
 
-    // Hostname enrichment: read pre-computed map from devices provider.
+    // Enrichment: read pre-computed maps from devices provider.
     final devicesData = ref.read(devicesDataProvider).valueOrNull;
     final hostNameByMac = devicesData?.hostNameByMac ?? const {};
+    // Compute isOnlineByMac inline from deviceModels.
+    final isOnlineByMac = <String, bool>{
+      for (final d in devicesData?.deviceModels ?? []) d.mac: d.isActive,
+    };
 
-    final result = await svc.fetch(hostNameByMac: hostNameByMac);
+    final result = await svc.fetch(
+      hostNameByMac: hostNameByMac,
+      isOnlineByMac: isOnlineByMac,
+    );
 
     logger.d('[USP][DhcpData]: Fetched — '
         'clients: ${result.clientModels.length}, '
