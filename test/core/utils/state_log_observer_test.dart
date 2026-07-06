@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/utils/state_log_observer.dart';
 import 'package:privacy_gui/framework/diagnostic_loggable.dart';
 
@@ -126,54 +127,60 @@ void main() {
     late ProviderContainer container;
 
     setUp(() {
+      clearStateLogCacheForTest();
       observer = StateLogObserver();
       container = ProviderContainer(observers: [observer]);
     });
 
     tearDown(() {
       container.dispose();
+      clearStateLogCacheForTest();
     });
 
     group('AsyncValue providers', () {
       test('captures DiagnosticLoggable state with loggable=true', () async {
-        // Trigger build
-        final _ = container.read(asyncLoggableProvider);
-
-        // Wait for async build
+        // Trigger build and wait
         await container.read(asyncLoggableProvider.future);
+
+        // Verify initial state is cached
+        expect(stateLogCacheForTest['TestLoggableState'], isNotNull);
+        expect(
+          stateLogCacheForTest['TestLoggableState'],
+          equals('{"value":"initial"}'),
+        );
 
         // Update state
         container.read(asyncLoggableProvider.notifier).setValue('updated');
 
-        // The observer should have processed the state
-        // (actual cache verification would require accessing _stateLogCache)
-        expect(true, isTrue); // Observer ran without error
+        // Verify updated state is cached
+        expect(
+          stateLogCacheForTest['TestLoggableState'],
+          equals('{"value":"updated"}'),
+        );
       });
 
       test('skips DiagnosticLoggable state with loggable=false', () async {
-        final _ = container.read(asyncNonLoggableProvider);
         await container.read(asyncNonLoggableProvider.future);
-
         container.read(asyncNonLoggableProvider.notifier).setValue('updated');
 
-        // Observer should skip due to loggable=false
-        expect(true, isTrue);
+        // Observer should skip due to loggable=false — not in cache
+        expect(stateLogCacheForTest['TestNonLoggableState'], isNull);
       });
 
       test('skips non-DiagnosticLoggable state', () async {
-        final _ = container.read(asyncPlainProvider);
         await container.read(asyncPlainProvider.future);
 
         // Observer should skip because TestPlainState doesn't have mixin
-        expect(true, isTrue);
+        expect(stateLogCacheForTest['TestPlainState'], isNull);
       });
 
       test('skips AsyncLoading state', () async {
-        // Read provider while it's loading
-        final _ = container.read(asyncLoggableProvider);
+        // Read provider while it's loading (don't await)
+        container.read(asyncLoggableProvider);
 
-        // At this point state is AsyncLoading, observer should skip
-        expect(true, isTrue);
+        // At this point state is AsyncLoading — should not be cached yet
+        // (cache should be empty since loading state is skipped)
+        expect(stateLogCacheForTest['TestLoggableState'], isNull);
       });
 
       test('skips AsyncError state', () async {
@@ -190,28 +197,30 @@ void main() {
           // Expected
         }
 
-        // Observer should skip error states
-        expect(true, isTrue);
+        // Observer should skip error states — not in cache
+        expect(stateLogCacheForTest['TestLoggableState'], isNull);
 
         errorContainer.dispose();
       });
     });
 
     group('Sync providers', () {
-      test('captures sync DiagnosticLoggable state', () {
-        // Read triggers build
+      test('captures sync DiagnosticLoggable state on update', () {
+        // Read triggers build — but didUpdateProvider is NOT called on initial build
         final state = container.read(syncLoggableProvider);
-
         expect(state.value, equals('sync-initial'));
 
-        // Update
+        // Initial state is NOT cached (didUpdateProvider only fires on state changes)
+        expect(stateLogCacheForTest['TestLoggableState'], isNull);
+
+        // Update — this triggers didUpdateProvider
         container.read(syncLoggableProvider.notifier).setValue('sync-updated');
 
-        final updated = container.read(syncLoggableProvider);
-        expect(updated.value, equals('sync-updated'));
-
-        // Observer should have processed both states
-        expect(true, isTrue);
+        // Now updated state is cached
+        expect(
+          stateLogCacheForTest['TestLoggableState'],
+          equals('{"value":"sync-updated"}'),
+        );
       });
     });
 
@@ -233,8 +242,8 @@ void main() {
 
         await nullContainer.read(nullableProvider.future);
 
-        // Observer should skip null values
-        expect(true, isTrue);
+        // Observer should skip null values — cache should be empty
+        expect(stateLogCacheForTest.isEmpty, isTrue);
 
         nullContainer.dispose();
       });

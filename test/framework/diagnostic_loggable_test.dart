@@ -78,6 +78,39 @@ class DateTimeModel extends Equatable with DiagnosticLoggable {
   Map<String, Object?> get namedProps => {'timestamp': timestamp};
 }
 
+/// Model with Duration
+class DurationModel extends Equatable with DiagnosticLoggable {
+  final Duration duration;
+
+  const DurationModel({required this.duration});
+
+  @override
+  Map<String, Object?> get namedProps => {'duration': duration};
+}
+
+/// Test enum
+enum TestStatus { active, inactive, pending }
+
+/// Model with enum
+class EnumModel extends Equatable with DiagnosticLoggable {
+  final TestStatus status;
+
+  const EnumModel({required this.status});
+
+  @override
+  Map<String, Object?> get namedProps => {'status': status};
+}
+
+/// Model with Map<int, String> (non-string keys)
+class NonStringKeyMapModel extends Equatable with DiagnosticLoggable {
+  final Map<int, String> data;
+
+  const NonStringKeyMapModel({required this.data});
+
+  @override
+  Map<String, Object?> get namedProps => {'data': data};
+}
+
 /// Model with loggable = false
 class NonLoggableModel extends Equatable with DiagnosticLoggable {
   final String data;
@@ -218,6 +251,30 @@ void main() {
         final json = model.toString();
 
         expect(json, equals('{"timestamp":"2026-07-03T12:30:45.000Z"}'));
+      });
+
+      test('Duration outputs milliseconds', () {
+        const model = DurationModel(duration: Duration(seconds: 30));
+
+        final json = model.toString();
+
+        expect(json, equals('{"duration":30000}'));
+      });
+
+      test('enum outputs name string', () {
+        const model = EnumModel(status: TestStatus.active);
+
+        final json = model.toString();
+
+        expect(json, equals('{"status":"active"}'));
+      });
+
+      test('non-string map keys convert to string', () {
+        const model = NonStringKeyMapModel(data: {1: 'one', 2: 'two'});
+
+        final json = model.toString();
+
+        expect(json, equals('{"data":{"1":"one","2":"two"}}'));
       });
 
       test('Data wrapping UIModel pattern', () {

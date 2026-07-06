@@ -62,11 +62,14 @@ mixin DiagnosticLoggable on Equatable {
     if (value == null || value is bool || value is num || value is String) {
       return value;
     }
+    if (value is Enum) {
+      return value.name;
+    }
     if (value is DateTime) {
       return value.toIso8601String();
     }
-    if (value is Map<String, Object?>) {
-      return value.map((k, v) => MapEntry(k, _toJsonSafe(v)));
+    if (value is Duration) {
+      return value.inMilliseconds;
     }
     if (value is Map) {
       return value.map((k, v) => MapEntry(k.toString(), _toJsonSafe(v)));

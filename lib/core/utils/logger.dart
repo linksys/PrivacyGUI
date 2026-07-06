@@ -286,6 +286,14 @@ void updateStateLog(String providerName, String state) {
   _stateLogCache[providerName] = state;
 }
 
+/// Read-only view of the state log cache for testing.
+@visibleForTesting
+Map<String, String> get stateLogCacheForTest => Map.unmodifiable(_stateLogCache);
+
+/// Clears the state log cache. For testing only.
+@visibleForTesting
+void clearStateLogCacheForTest() => _stateLogCache.clear();
+
 /// Compiles a full diagnostic log report as a single string.
 ///
 /// This function is intended for debugging and support purposes. It gathers
