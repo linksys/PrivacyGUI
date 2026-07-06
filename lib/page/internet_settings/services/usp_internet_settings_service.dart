@@ -315,10 +315,19 @@ class UspInternetSettingsService {
       }
     }
 
-    // MTU is mode-independent — update via WanSettings if changed
-    final mtuDiff = _diff(original.mtu, edited.mtu);
-    if (mtuDiff != null) {
-      _handleSetResult(await WanSettings.update(_usp, mtu: mtuDiff));
+    // MTU is mode-independent — update via WanSettings if changed.
+    //
+    // Bridge is the exception: switching to bridge resets the form's mtu to 0
+    // as a sentinel, and the FW rejects MaxMTUSize=0 (valid range 64..65535,
+    // errorCode 7012) — confirmed with the FW team that 0 is NOT a valid "auto"
+    // value. Sending it would abort saveAll before the terminal bridge SET, so
+    // skip the MTU SET entirely when the target mode is bridge (MTU has no
+    // meaning once the WAN port joins br-lan).
+    if (edited.connectionType != UspWanConnectionType.bridge) {
+      final mtuDiff = _diff(original.mtu, edited.mtu);
+      if (mtuDiff != null) {
+        _handleSetResult(await WanSettings.update(_usp, mtu: mtuDiff));
+      }
     }
   }
 

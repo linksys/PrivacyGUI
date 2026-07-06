@@ -542,6 +542,33 @@ void main() {
       expect(bridgeParams.first.length, equals(1));
     });
 
+    test('switching to Bridge never sends MaxMTUSize (mtu=0 sentinel)',
+        () async {
+      // updateConnectionType resets the form's mtu to 0 when switching to
+      // bridge. MaxMTUSize=0 fails FW range validation (64..65535), so the MTU
+      // SET must be skipped entirely in bridge mode — otherwise saveAll aborts
+      // before the terminal bridge SET ever goes out.
+      final original = UspInternetSettingsForm(
+        connectionType: UspWanConnectionType.dhcp,
+        mtu: 1500,
+      );
+      final edited = original.copyWith(
+        connectionType: UspWanConnectionType.bridge,
+        mtu: 0,
+      );
+
+      await service.saveAll(original, edited);
+
+      final captured = verify(
+        () =>
+            mockUsp.set(captureAny(), allowPartial: any(named: 'allowPartial')),
+      ).captured;
+      for (final params in captured.whereType<Map<String, dynamic>>()) {
+        expect(params.containsKey('Device.IP.Interface.2.MaxMTUSize'), isFalse,
+            reason: 'bridge mode must not push MaxMTUSize');
+      }
+    });
+
     test(
         'entering bridge treats a transport error on the bridge SET as success',
         () async {
