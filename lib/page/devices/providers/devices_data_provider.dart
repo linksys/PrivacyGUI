@@ -75,8 +75,8 @@ class DevicesData extends Equatable {
   @override
   List<Object?> get props => [
         codegenContext,
-        meshTopology.nodes.length,
-        hostNameByMac.length,
+        meshTopology,
+        hostNameByMac,
         meshNetwork,
       ];
 }
