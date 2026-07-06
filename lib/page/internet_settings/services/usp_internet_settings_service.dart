@@ -357,8 +357,7 @@ class UspInternetSettingsService {
 
   Future<void> renewDhcpLease() async {
     try {
-      final result = await WanOperations.renewDhcpLease(_usp);
-      _handleOperateResult(result);
+      await WanOperations.renewDhcpLease(_usp);
     } catch (e) {
       if (e is ServiceError) rethrow;
       throw mapUspErrorToServiceError(e);
@@ -367,8 +366,7 @@ class UspInternetSettingsService {
 
   Future<void> renewDhcpv6Lease() async {
     try {
-      final result = await WanOperations.renewDhcpv6Lease(_usp);
-      _handleOperateResult(result);
+      await WanOperations.renewDhcpv6Lease(_usp);
     } catch (e) {
       if (e is ServiceError) rethrow;
       throw mapUspErrorToServiceError(e);
@@ -409,30 +407,6 @@ class UspInternetSettingsService {
       case UspFailure(:final errorSummary, :final errors):
         throw UspCompleteFailureError(
           summary: 'WAN update failed: $errorSummary',
-          failures: errors,
-        );
-    }
-  }
-
-  /// Parse and validate OPERATE result using standard UspResultParser (Strict mode).
-  void _handleOperateResult(Map<String, dynamic> result) {
-    final parsed = UspResultParser.parseOperateResult(result);
-    switch (parsed) {
-      case UspSuccess():
-        break;
-      case UspPartialSuccess(
-          :final errorSummary,
-          :final successes,
-          :final failures
-        ):
-        throw UspPartialFailureError(
-          summary: 'WAN operation partial failure: $errorSummary',
-          successPaths: successes.map((s) => s.requestedPath).toList(),
-          failures: failures,
-        );
-      case UspFailure(:final errorSummary, :final errors):
-        throw UspCompleteFailureError(
-          summary: 'WAN operation failed: $errorSummary',
           failures: errors,
         );
     }

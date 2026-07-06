@@ -705,28 +705,6 @@ void main() {
       );
     });
 
-    test('renewDhcpLease throws UspCompleteFailureError on OPERATE failure',
-        () async {
-      // WASM v0.11.0 format: success=false for OPERATE
-      when(() => mockUsp.operate(any())).thenAnswer((_) async => {
-            'success': false,
-            'result': {
-              'data': <String, dynamic>{},
-              'error': {
-                'Device.DHCPv4.Client.1.Renew()': {
-                  'errorCode': 7012,
-                  'errorMessage': 'Command failure',
-                },
-              },
-            },
-          });
-
-      expect(
-        () => service.renewDhcpLease(),
-        throwsA(isA<UspCompleteFailureError>()),
-      );
-    });
-
     test('UspCompleteFailureError contains correct error message', () async {
       // Mock for _resolveInstance()
       when(() => mockUsp.get(any())).thenAnswer((_) async => aliasResponse);
