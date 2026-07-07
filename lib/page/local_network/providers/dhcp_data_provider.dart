@@ -52,10 +52,11 @@ class DhcpDataNotifier extends AsyncNotifier<DhcpData> {
     ref.listen(devicesDataProvider, (prev, next) {
       if (!next.hasValue || !state.hasValue) return;
       final prevOnline = <String, bool>{
-        for (final d in prev?.valueOrNull?.deviceModels ?? []) d.mac: d.isActive
+        for (final d in prev?.valueOrNull?.clientDevices ?? [])
+          d.mac: d.isActive
       };
       final nextOnline = <String, bool>{
-        for (final d in next.value!.deviceModels) d.mac: d.isActive
+        for (final d in next.value!.clientDevices) d.mac: d.isActive
       };
       if (!const MapEquality<String, bool>().equals(prevOnline, nextOnline)) {
         _debouncedInvalidate();
@@ -72,9 +73,10 @@ class DhcpDataNotifier extends AsyncNotifier<DhcpData> {
     // Enrichment: read pre-computed maps from devices provider.
     final devicesData = ref.read(devicesDataProvider).valueOrNull;
     final hostNameByMac = devicesData?.hostNameByMac ?? const {};
-    // Compute isOnlineByMac inline from deviceModels.
+    // Compute isOnlineByMac inline from clientDevices (mesh nodes never hold
+    // DHCP leases, so their MACs cannot appear in DHCP client models).
     final isOnlineByMac = <String, bool>{
-      for (final d in devicesData?.deviceModels ?? []) d.mac: d.isActive,
+      for (final d in devicesData?.clientDevices ?? []) d.mac: d.isActive,
     };
 
     final result = await svc.fetch(
