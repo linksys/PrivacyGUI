@@ -34,12 +34,14 @@ class WiFiAccessPoint {
 /// Update descriptor for WiFiAccessPoint instances
 class WiFiAccessPointUpdate {
   final String instancePath;
+  final bool? enable;
   final String? securityModeEnabled;
   final String? keyPassphrase;
   final bool? ssidAdvertisementEnabled;
 
   const WiFiAccessPointUpdate({
     required this.instancePath,
+    this.enable,
     this.securityModeEnabled,
     this.keyPassphrase,
     this.ssidAdvertisementEnabled,
@@ -164,6 +166,9 @@ class WiFiAccessPoints {
       {bool allowPartial = false}) async {
     final params = <String, dynamic>{};
     for (final update in updates) {
+      if (update.enable != null) {
+        params['${update.instancePath}Enable'] = update.enable;
+      }
       if (update.securityModeEnabled != null) {
         params['${update.instancePath}Security.ModeEnabled'] =
             update.securityModeEnabled;

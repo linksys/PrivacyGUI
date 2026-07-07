@@ -325,19 +325,6 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
   // Dashboard quick actions — delegate to Service, then invalidate L1
   // ---------------------------------------------------------------------------
 
-  /// Toggles a WiFi radio on/off. Called from Dashboard card.
-  Future<void> toggleRadio(String instancePath, bool enable) async {
-    try {
-      await ref.read(uspMutationLockProvider).withLock(() async {
-        await _svc.toggleRadio(instancePath, enable);
-      });
-    } on ServiceError catch (e) {
-      logger.e('[USP][WiFi]: Toggle radio failed', error: e);
-      rethrow;
-    }
-    ref.invalidate(wifiDataProvider);
-  }
-
   /// Updates a WiFi radio's channel. Called from Dashboard card.
   Future<void> updateRadioChannel(
     String instancePath, {
@@ -364,10 +351,11 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
   Future<void> toggleSsidsByName(String ssidName, bool enable) async {
     final wifiData = await ref.read(wifiDataProvider.future);
     final ssids = wifiData.codegenContext.raw.ssids;
+    final accessPoints = wifiData.codegenContext.raw.accessPoints;
 
     try {
       final count = await ref.read(uspMutationLockProvider).withLock(() async {
-        return _svc.toggleSsidsByName(ssids, ssidName, enable);
+        return _svc.toggleSsidsByName(ssids, accessPoints, ssidName, enable);
       });
       if (count == 0) {
         logger.w('[USP][WiFi]: No SSIDs found matching the requested name');
