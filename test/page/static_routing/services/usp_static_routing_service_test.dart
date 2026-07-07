@@ -312,6 +312,26 @@ void main() {
       expect(errors.containsKey('gateway'), isFalse);
     });
 
+    test(
+        'empty-string lanIp/lanSubnetMask (LanData.empty fallback) skips subnet '
+        'check — no false-positive Internet error', () {
+      // Regression for W-NEW-1: LanData.empty() returns ipAddress:'' /
+      // subnetMask:'' (empty strings, not null). ipToNum('') == 0, so the LAN
+      // subnet rule would incorrectly report isInLan == true for ANY gateway,
+      // firing a permanent false-positive gatewayMustBeOutsideLanSubnet error
+      // on Internet-interface routes while LAN data is still loading.
+      final errors = UspStaticRoutingService.validateRoute(
+        name: 'Route1',
+        destIp: '10.0.0.0',
+        subnetMask: '255.255.255.0',
+        gateway: '8.8.8.8',
+        interfaceName: 'Internet',
+        lanIp: '',
+        lanSubnetMask: '',
+      );
+      expect(errors.containsKey('gateway'), isFalse);
+    });
+
     test('invalid gateway format takes precedence over subnet check', () {
       final errors = UspStaticRoutingService.validateRoute(
         name: 'Route1',

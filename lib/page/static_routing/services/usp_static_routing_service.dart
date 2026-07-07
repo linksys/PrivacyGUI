@@ -246,7 +246,11 @@ class UspStaticRoutingService {
     } else if (gateway.isNotEmpty &&
         interfaceName != null &&
         lanIp != null &&
-        lanSubnetMask != null) {
+        lanIp.isNotEmpty &&
+        lanSubnetMask != null &&
+        lanSubnetMask.isNotEmpty &&
+        NetworkUtils.isValidIpAddress(lanIp) &&
+        NetworkUtils.isValidSubnetMask(lanSubnetMask)) {
       // Validate gateway subnet based on interface selection.
       final lanSubnetRule = HostValidForGivenRouterIPAddressAndSubnetMaskRule(
         lanIp,
