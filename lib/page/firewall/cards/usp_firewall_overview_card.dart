@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/providers/card_tab_state_provider.dart';
 import 'package:privacy_gui/page/_shared/components/usp_status_dot.dart';
 import 'package:privacy_gui/page/_shared/components/dashboard_card_template.dart';
@@ -29,14 +30,14 @@ class UspFirewallOverviewCard extends ConsumerWidget {
     final selectedTab = ref.watch(cardTabIndexProvider(_cardId));
 
     return DashboardCardTemplate.tabbed(
-      title: 'Firewall Overview',
+      title: loc(context).firewallOverview,
       detailRoute: RouteNamed.uspFirewall,
       selectedTabIndex: selectedTab,
       onTabChanged: (index) =>
           ref.read(cardTabIndexProvider(_cardId).notifier).state = index,
       tabs: [
         CardTab(
-          label: 'Rules',
+          label: loc(context).rules,
           content: _RulesTab(
             ruleSummaries: firewallData.ruleSummaries,
             portForwardingCount: pfData?.ruleModels.length ?? 0,
@@ -44,7 +45,7 @@ class UspFirewallOverviewCard extends ConsumerWidget {
           ),
         ),
         CardTab(
-          label: 'Ports',
+          label: loc(context).ports,
           content: _PortsTab(
             portForwardingRules: pfData?.ruleModels ?? [],
             dmzSummaries: firewallData.dmzSummaries,
@@ -58,6 +59,29 @@ class UspFirewallOverviewCard extends ConsumerWidget {
 // =============================================================================
 // Tab 1: Rules — target distribution donut + summary
 // =============================================================================
+
+/// Localizes a firewall rule target value for display. The raw value (from the
+/// device) is still used as the aggregation map key; only the legend label is
+/// translated. Unknown targets (e.g. vendor-specific) fall back to the raw value.
+String _localizeTarget(BuildContext context, String target) {
+  // TR-181 Device.Firewall.Chain.{i}.Rule.{i}.Target enum values.
+  switch (target) {
+    case 'Accept':
+      return loc(context).accept;
+    case 'Drop':
+      return loc(context).drop;
+    case 'Reject':
+      return loc(context).reject;
+    case 'Return':
+      return loc(context).returnTarget;
+    case 'TargetChain':
+      return loc(context).targetChain;
+    case 'Other':
+      return loc(context).other;
+    default:
+      return target;
+  }
+}
 
 class _RulesTab extends StatelessWidget {
   final List<FirewallRuleSummary> ruleSummaries;
@@ -104,7 +128,7 @@ class _RulesTab extends StatelessWidget {
       final (i, entry) = e;
       return AppPieSection(
         value: entry.value.toDouble(),
-        label: entry.key,
+        label: _localizeTarget(context, entry.key),
         color: seriesColors[i % seriesColors.length],
       );
     }).toList();
@@ -115,9 +139,10 @@ class _RulesTab extends StatelessWidget {
         InfoGrid(
           items: [
             InfoGridItem(
-                label: 'FW Rules',
+                label: loc(context).fwRules,
                 value: '$activeCount/${ruleSummaries.length}'),
-            InfoGridItem(label: 'Port Fwd', value: '$portForwardingCount'),
+            InfoGridItem(
+                label: loc(context).portFwd, value: '$portForwardingCount'),
             InfoGridItem(label: 'DMZ', value: '$dmzCount'),
           ],
           crossAxisCount: 3,
@@ -133,7 +158,7 @@ class _RulesTab extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   AppText.titleMedium('${ruleSummaries.length}'),
-                  AppText.labelSmall('Rules',
+                  AppText.labelSmall(loc(context).rules,
                       color: colorScheme.onSurfaceVariant),
                 ],
               ),
@@ -162,7 +187,7 @@ class _RulesTab extends StatelessWidget {
                   ),
                   AppGap.xs(),
                   AppText.labelSmall(
-                    '${targetCounts.keys.elementAt(i)}: ${targetCounts.values.elementAt(i)}',
+                    '${_localizeTarget(context, targetCounts.keys.elementAt(i))}: ${targetCounts.values.elementAt(i)}',
                   ),
                 ],
               ),
@@ -193,7 +218,7 @@ class _PortsTab extends StatelessWidget {
     if (portForwardingRules.isEmpty && dmzSummaries.isEmpty) {
       return Center(
         child: AppText.bodyMedium(
-          'No port mappings configured',
+          loc(context).noPortMappingsConfigured,
           color: colorScheme.onSurfaceVariant,
         ),
       );
@@ -214,7 +239,8 @@ class _PortsTab extends StatelessWidget {
       children: [
         // Port forwarding list (top 5)
         if (portForwardingRules.isNotEmpty) ...[
-          AppText.labelLarge('Port Forwarding (${portForwardingRules.length})'),
+          AppText.labelLarge(
+              loc(context).portForwardingWithCount(portForwardingRules.length)),
           AppGap.sm(),
           ...portForwardingRules.take(5).map((rule) => Padding(
                 padding: const EdgeInsets.only(bottom: 4),
@@ -242,7 +268,7 @@ class _PortsTab extends StatelessWidget {
                 children: [
                   UspStatusDot(isActive: true),
                   AppGap.sm(),
-                  AppText.bodySmall('Target: ${d.destIp}'),
+                  AppText.bodySmall(loc(context).targetIp(d.destIp)),
                 ],
               )),
         ],
@@ -253,7 +279,7 @@ class _PortsTab extends StatelessWidget {
             child: AppBarChart(
               series: [
                 AppChartSeries(
-                  label: 'Rules',
+                  label: loc(context).rules,
                   data: protocolCounts.values.map((v) => v.toDouble()).toList(),
                   color: colorScheme.primary,
                 ),

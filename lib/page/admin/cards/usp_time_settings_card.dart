@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/admin/providers/time_data_provider.dart';
 import 'package:privacy_gui/page/admin/providers/usp_admin_notifier.dart';
 import 'package:privacy_gui/page/_shared/models/time_settings_ui_model.dart';
@@ -66,9 +67,9 @@ class _UspTimeSettingsCardState extends ConsumerState<UspTimeSettingsCard>
         : time.formattedDateTime;
 
     return DashboardCardTemplate(
-      title: 'Time Settings',
+      title: loc(context).timeSettings,
       trailing: Semantics(
-        label: 'Edit time settings',
+        label: loc(context).editTimeSettings,
         button: true,
         child: AppIconButton(
           icon: AppIcon.font(Icons.edit, size: 18),
@@ -107,7 +108,9 @@ class _UspTimeSettingsCardState extends ConsumerState<UspTimeSettingsCard>
                       Row(
                         children: [
                           AppBadge(
-                            label: time.status,
+                            label: time.isSynchronized
+                                ? loc(context).synchronized
+                                : time.status,
                             color: time.isSynchronized
                                 ? appColors?.semanticSuccess
                                 : appColors?.semanticWarning,
@@ -124,13 +127,16 @@ class _UspTimeSettingsCardState extends ConsumerState<UspTimeSettingsCard>
           // Timezone info
           InfoGrid(
             items: [
-              InfoGridItem(label: 'Timezone', value: tzDisplay),
+              InfoGridItem(label: loc(context).timezone, value: tzDisplay),
               if (offsetDisplay.isNotEmpty)
-                InfoGridItem(label: 'UTC Offset', value: offsetDisplay),
+                InfoGridItem(
+                    label: loc(context).utcOffset, value: offsetDisplay),
               if (tzInfo != null && tzInfo.observesDST)
                 InfoGridItem(
                   label: 'DST',
-                  value: inferDstEnabled(time.localTimeZone) ? 'On' : 'Off',
+                  value: inferDstEnabled(time.localTimeZone)
+                      ? loc(context).on
+                      : loc(context).off,
                 ),
             ],
           ),

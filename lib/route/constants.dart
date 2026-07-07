@@ -121,6 +121,9 @@ class RoutePath {
   /// Ipv6 port service
   static const ipv6PortServiceList = 'ipv6PortServiceList';
 
+  /// Remote Assistance
+  static const remoteAssistanceConfirm = '/remoteAssistance';
+
   /// PnP
   static const pnp = '/pnp';
   static const pnpConfig = 'pnpConfig';
@@ -279,6 +282,9 @@ class RouteNamed {
 
   /// Ipv6 port service
   static const ipv6PortServiceList = 'ipv6PortServiceList';
+
+  /// Remote Assistance
+  static const remoteAssistanceConfirm = 'remoteAssistanceConfirm';
 
   /// PnP
   static const pnp = 'pnp';

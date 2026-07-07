@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/models/traffic_analysis_state.dart';
 import 'package:privacy_gui/page/_shared/providers/usp_traffic_analysis_notifier.dart';
 import 'package:privacy_gui/page/statistics/views/components/stats_section_card.dart';
@@ -25,13 +26,13 @@ class StatsTrafficComparisonSection extends ConsumerWidget {
     final state = ref.watch(uspTrafficAnalysisProvider);
 
     return StatsSectionCard(
-      title: 'Traffic Comparison',
-      subtitle: 'WAN vs LAN throughput over time',
+      title: loc(context).trafficComparison,
+      subtitle: loc(context).trafficComparisonSubtitle,
       chartHeight: 260,
       child: state.history.isEmpty
           ? Center(
               child: AppText.bodyMedium(
-                'Collecting data...',
+                loc(context).collectingData,
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             )
@@ -54,7 +55,7 @@ class StatsTrafficComparisonSection extends ConsumerWidget {
           child: AppBarChart(
             series: [
               AppChartSeries(
-                label: 'WAN',
+                label: loc(context).wan,
                 data: history
                     .map((s) =>
                         s.interfaces[TrafficInterface.wan]?.totalBytesPerSec ??
@@ -63,7 +64,7 @@ class StatsTrafficComparisonSection extends ConsumerWidget {
                 color: colorScheme.primary,
               ),
               AppChartSeries(
-                label: 'LAN',
+                label: loc(context).lan,
                 data: history
                     .map((s) =>
                         s.interfaces[TrafficInterface.lan]?.totalBytesPerSec ??
@@ -83,11 +84,11 @@ class StatsTrafficComparisonSection extends ConsumerWidget {
           children: [
             StatsLegendDot(color: colorScheme.primary),
             AppGap.xs(),
-            AppText.labelSmall('WAN: ${_formatSpeed(wanRate)}'),
+            AppText.labelSmall(loc(context).wanSpeed(_formatSpeed(wanRate))),
             AppGap.lg(),
             StatsLegendDot(color: colorScheme.secondary),
             AppGap.xs(),
-            AppText.labelSmall('LAN: ${_formatSpeed(lanRate)}'),
+            AppText.labelSmall(loc(context).lanSpeed(_formatSpeed(lanRate))),
           ],
         ),
       ],

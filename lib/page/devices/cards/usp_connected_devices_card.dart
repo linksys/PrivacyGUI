@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/utils/device_classifier.dart';
 import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
@@ -33,7 +34,7 @@ class UspConnectedDevicesCard extends ConsumerWidget {
     final displayDevices = activeDevices.take(_maxDisplayCount).toList();
 
     return DashboardCardTemplate(
-      title: 'Connected Devices',
+      title: loc(context).connectedDevices,
       titleBadge: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -48,7 +49,7 @@ class UspConnectedDevicesCard extends ConsumerWidget {
       ),
       detailRoute: RouteNamed.uspDeviceList,
       itemCount: devices.length,
-      detailLabel: 'View all',
+      detailLabel: loc(context).viewAll,
       content: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -65,7 +66,7 @@ class UspConnectedDevicesCard extends ConsumerWidget {
                       AppText.titleSmall('${activeDevices.length}'),
                       AppGap.xs(),
                       AppText.bodySmall(
-                        'Online',
+                        loc(context).online,
                         color: colorScheme.onSurfaceVariant,
                       ),
                     ],
@@ -83,7 +84,7 @@ class UspConnectedDevicesCard extends ConsumerWidget {
                       AppText.titleSmall('${inactiveDevices.length}'),
                       AppGap.xs(),
                       AppText.bodySmall(
-                        'Offline',
+                        loc(context).offline,
                         color: colorScheme.onSurfaceVariant,
                       ),
                     ],
@@ -95,9 +96,9 @@ class UspConnectedDevicesCard extends ConsumerWidget {
           AppGap.md(),
           // Device list - only online devices, max 5
           if (activeDevices.isEmpty)
-            const EmptyState(
+            EmptyState(
               icon: Icons.devices,
-              message: 'No devices online',
+              message: loc(context).noDevicesOnline,
             )
           else
             for (var i = 0; i < displayDevices.length; i++) ...[

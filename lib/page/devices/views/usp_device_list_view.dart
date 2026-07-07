@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/_shared/components/detail_widgets.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
@@ -38,7 +39,7 @@ class _UspDeviceListViewState extends ConsumerState<UspDeviceListView> {
 
     return UiKitPageView.withSliver(
       scrollable: true,
-      title: 'Devices',
+      title: loc(context).devices,
       topbar: const PreferredSize(
         preferredSize: Size.fromHeight(64),
         child: UspTopBar(),
@@ -49,7 +50,8 @@ class _UspDeviceListViewState extends ConsumerState<UspDeviceListView> {
       child: (childContext, constraints) {
         return asyncDevices.when(
           loading: () => const Center(child: AppLoader()),
-          error: (e, _) => Center(child: AppText.bodyMedium('Error: $e')),
+          error: (e, _) =>
+              Center(child: AppText.bodyMedium('${loc(context).error}: $e')),
           data: (state) {
             return AppResponsiveLayout(
               mobile: (_) =>
@@ -68,7 +70,7 @@ class _UspDeviceListViewState extends ConsumerState<UspDeviceListView> {
   Widget _buildSearchBar() {
     return AppTextFormField(
       controller: _searchController,
-      hintText: 'Search by name, MAC, or IP',
+      hintText: loc(context).searchByNameMacIp,
       prefixIcon: const Icon(Icons.search, size: 20),
       suffixIcon: _searchController.text.isNotEmpty
           ? IconButton(
@@ -99,8 +101,8 @@ class _UspDeviceListViewState extends ConsumerState<UspDeviceListView> {
 
   Widget _buildDeviceList(List devices) {
     if (devices.isEmpty) {
-      return const DetailEmptyBlock(
-        message: 'No devices match the current filters',
+      return DetailEmptyBlock(
+        message: loc(context).noDevicesMatchFilters,
       );
     }
     return Column(

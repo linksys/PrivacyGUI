@@ -1,0 +1,56 @@
+{
+  "_comment": "App configuration template. Copy to app_config.json and customize.",
+
+  "feature": {
+    "_comment": "Feature flags. Omit or set to null to use BuildConfig defaults.",
+    "enableThemeStudio": false,
+    "enableTestConsole": false,
+    "enableBetaFeatures": false
+  },
+
+  "theme": {
+    "_comment": "Theme configuration. Omit entire section to use dart-define env vars.",
+
+    "source": "normal",
+    "_source_options": ["normal", "cicd", "network", "assets", "default"],
+    "_source_normal": "Resolve by priority: config > network > assets > default",
+    "_source_cicd": "Use inline object from 'config' field",
+    "_source_network": "Fetch from 'networkUrl'",
+    "_source_assets": "Load from 'assetPath'",
+    "_source_default": "Use built-in default theme",
+
+    "config": {
+      "_comment": "Inline theme config (used when source=cicd or source=normal)",
+      "style": "flat",
+      "_style_options": ["glass", "flat", "brutal", "neumorphic", "pixel", "aurora"],
+      "seedColor": "#6750A4",
+      "visualEffects": 0,
+      "globalOverlay": "none",
+      "_globalOverlay_options": ["none", "noiseOverlay", "crtShader", "auroraGlow", "snow", "hacker"],
+      "colors": {
+        "light": {
+          "primary": "#2196F3",
+          "secondary": "#FF9800"
+        },
+        "dark": {
+          "primary": "#90CAF9",
+          "secondary": "#FFB74D"
+        }
+      },
+      "overrides": {
+        "surfaceStyle": {
+          "base": { "borderRadius": 16.0 }
+        },
+        "componentStyle": {
+          "button": { "borderRadius": 12.0 }
+        }
+      }
+    },
+
+    "networkUrl": null,
+    "_networkUrl_example": "https://cdn.example.com/themes/v1/theme.json",
+
+    "assetPath": null,
+    "_assetPath_example": "assets/theme/custom.json"
+  }
+}

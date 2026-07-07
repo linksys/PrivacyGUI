@@ -43,9 +43,6 @@ class HealthScore extends Equatable {
   /// Get tier-appropriate color from color scheme.
   Color getColor(ColorScheme cs) => NetworkHealthHelpers.tierColor(tier, cs);
 
-  /// Human-readable tier label.
-  String get tierLabel => NetworkHealthHelpers.tierLabel(tier);
-
   @override
   List<Object?> get props => [dimension, score, evaluatedAt, issueMessage];
 }

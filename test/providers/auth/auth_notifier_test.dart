@@ -176,6 +176,90 @@ void main() {
       expect(state?.localPassword, isNull);
       container.dispose();
     });
+
+    test('concurrent init calls are coalesced — restoreSession called once',
+        () async {
+      when(() => mockAuthService.getStoredLoginType())
+          .thenAnswer((_) async => AuthSuccess(LoginType.local));
+      when(() => mockAuthService.getStoredLocalPassword())
+          .thenAnswer((_) async => AuthSuccess('storedPass'));
+      // Slow restoreSession to ensure concurrent calls overlap
+      when(() => mockUspCoordinator.restoreSession())
+          .thenAnswer((_) => Future.delayed(const Duration(milliseconds: 50)));
+
+      final container = createContainer();
+      container.read(authProvider);
+      await Future.delayed(Duration.zero);
+
+      final notifier = container.read(authProvider.notifier);
+
+      // Launch multiple concurrent init calls.
+      // Dart's single-threaded event loop guarantees the first init() acquires
+      // _initInProgress before the others check it (no await before the guard).
+      final futures = [
+        notifier.init(),
+        notifier.init(),
+        notifier.init(),
+      ];
+      await Future.wait(futures);
+
+      // restoreSession should only be called once despite 3 concurrent inits
+      verify(() => mockUspCoordinator.restoreSession()).called(1);
+      container.dispose();
+    });
+
+    test('concurrent init waiters receive error via completeError', () async {
+      var callCount = 0;
+      // First call succeeds slowly, subsequent calls will wait on Completer
+      // Then we make it throw to trigger completeError path
+      when(() => mockAuthService.getStoredLoginType()).thenAnswer((_) async {
+        callCount++;
+        await Future.delayed(const Duration(milliseconds: 50));
+        throw StateError('Simulated storage failure');
+      });
+
+      final container = createContainer();
+      container.read(authProvider);
+      await Future.delayed(Duration.zero);
+
+      final notifier = container.read(authProvider.notifier);
+
+      // Track results/errors received by each caller.
+      // Dart's single-threaded event loop guarantees the first init() acquires
+      // _initInProgress before the others check it (no await before the guard).
+      AuthState? result1;
+      Object? error2, error3;
+
+      await Future.wait([
+        // Primary caller: receives null (init never throws)
+        notifier.init().then((r) => result1 = r),
+        // Concurrent waiters: receive error via completeError
+        notifier.init().catchError((e) {
+          error2 = e;
+          return null;
+        }),
+        notifier.init().catchError((e) {
+          error3 = e;
+          return null;
+        }),
+      ]);
+
+      // getStoredLoginType should only be called once (coalescing works)
+      expect(callCount, 1);
+
+      // Primary caller receives null (init never throws — callers use bare .then)
+      expect(result1, isNull);
+
+      // Concurrent waiters receive error via completeError
+      expect(error2, isA<StateError>());
+      expect(error3, isA<StateError>());
+
+      // State should be AsyncError
+      final state = container.read(authProvider);
+      expect(state.hasError, isTrue);
+
+      container.dispose();
+    });
   });
 
   // ---------------------------------------------------------------------------

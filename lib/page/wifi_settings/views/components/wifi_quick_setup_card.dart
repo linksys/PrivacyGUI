@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/validator_rules/_validator_rules.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_settings_provider.dart';
@@ -51,7 +52,7 @@ class WifiQuickSetupCard extends ConsumerWidget {
           children: [
             // ── Header + enable toggle ────────────────────────────────────
             _SettingBlock(
-              title: isGuest ? 'Guest' : 'Main',
+              title: isGuest ? loc(context).guest : loc(context).main,
               trailing: AppSwitch(
                 value: pending.enabled,
                 onChanged: (v) => ref
@@ -61,18 +62,21 @@ class WifiQuickSetupCard extends ConsumerWidget {
             ),
             // ── Name ─────────────────────────────────────────────────────
             _SettingBlock(
-              title: 'Name',
-              description: pending.ssid.isNotEmpty ? pending.ssid : '(No SSID)',
+              title: loc(context).name,
+              description:
+                  pending.ssid.isNotEmpty ? pending.ssid : loc(context).noSsid,
               trailing: const AppIcon.font(AppFontIcons.edit),
               onTap: () => _editSsid(context, ref, pending.ssid),
             ),
             // ── Password & Security mode ─────────────────────────────────
             if (pending.supportedSecurityModes.isNotEmpty) ...[
               _SettingBlock(
-                title: 'Password',
+                title: loc(context).password,
                 description: passwordEntered
                     ? '•' * 12
-                    : (passwordRequired ? '(Required)' : '(Unchanged)'),
+                    : (passwordRequired
+                        ? loc(context).requiredLabel
+                        : loc(context).unchangedLabel),
                 descriptionColor: (passwordRequired && !passwordEntered)
                     ? Theme.of(context).colorScheme.error
                     : null,
@@ -80,7 +84,7 @@ class WifiQuickSetupCard extends ConsumerWidget {
                 onTap: () => _editPassword(context, ref, pending.password),
               ),
               _SettingBlock(
-                title: 'Security mode',
+                title: loc(context).securityMode,
                 description: pending.securityMode,
                 trailing: const AppIcon.font(AppFontIcons.edit),
                 onTap: () => _editSecurityMode(
@@ -106,13 +110,13 @@ class WifiQuickSetupCard extends ConsumerWidget {
     final controller = TextEditingController(text: currentSsid);
     final result = await showSubmitAppDialog<String>(
       context,
-      title: 'Name',
+      title: loc(context).name,
       contentBuilder: (ctx, setState, onSubmit) => AppTextFormField(
         controller: controller,
-        label: 'Name',
+        label: loc(context).name,
         onChanged: (_) => setState(() {}),
       ),
-      positiveLabel: 'OK',
+      positiveLabel: loc(context).ok,
       event: () async => controller.text,
       checkPositiveEnabled: () => controller.text.trim().isNotEmpty,
     );
@@ -131,21 +135,21 @@ class WifiQuickSetupCard extends ConsumerWidget {
 
     final passwordRules = [
       AppPasswordRule(
-        label: '8 to 63 characters',
+        label: loc(context).passwordLength8To63,
         validate: (text) => LengthRule(min: 8, max: 63).validate(text),
       ),
       AppPasswordRule(
-        label: 'Printable characters only, no leading or trailing spaces',
+        label: loc(context).printableCharsOnly,
         validate: (text) => WiFiPasswordRule(ignoreLength: true).validate(text),
       ),
     ];
 
     final result = await showSubmitAppDialog<String>(
       context,
-      title: 'Password',
+      title: loc(context).password,
       contentBuilder: (ctx, setState, onSubmit) => AppPasswordInput(
         controller: controller,
-        label: 'Password',
+        label: loc(context).password,
         rules: passwordRules,
         onChanged: (_) {
           setState(() {
@@ -153,7 +157,7 @@ class WifiQuickSetupCard extends ConsumerWidget {
           });
         },
       ),
-      positiveLabel: 'OK',
+      positiveLabel: loc(context).ok,
       event: () async => controller.text,
       checkPositiveEnabled: () => isValid,
     );
@@ -174,7 +178,7 @@ class WifiQuickSetupCard extends ConsumerWidget {
     String selected = currentMode;
     final result = await showSimpleAppDialog<String>(
       context,
-      title: 'Security mode',
+      title: loc(context).securityMode,
       content: StatefulBuilder(
         builder: (ctx, setState) => AppRadioList<String>(
           selected: selected,
@@ -187,8 +191,9 @@ class WifiQuickSetupCard extends ConsumerWidget {
         ),
       ),
       actions: [
-        AppButton.text(label: 'Cancel', onTap: () => context.pop()),
-        AppButton.text(label: 'OK', onTap: () => context.pop(selected)),
+        AppButton.text(label: loc(context).cancel, onTap: () => context.pop()),
+        AppButton.text(
+            label: loc(context).ok, onTap: () => context.pop(selected)),
       ],
     );
     if (result != null && result != currentMode && context.mounted) {

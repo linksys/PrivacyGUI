@@ -426,7 +426,7 @@ Future<bool?> showFactoryResetModal(
           ? loc(context).factoryResetParentTitle
           : type == 'Child'
               ? loc(context).factoryResetChildTitle
-              : loc(context).factoryResetTitle,
+              : loc(context).resetToFactoryDefault,
       actions: [
         AppButton.text(
           label: loc(context).cancel,

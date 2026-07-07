@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/config/global_config.dart';
 import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/demo/providers/demo_ui_provider.dart';
 import 'package:privacy_gui/page/_shared/services/usp_pdf_service.dart';
@@ -52,7 +53,7 @@ final mascotDialogProvider =
       getLocale: () => locale,
       getFaqCategoryTitle: (category) => category.displayString(context),
       getFaqItemTitle: (item) => item.displayString(context),
-      isThemeStudioEnabled: BuildConfig.enableThemeStudio,
+      isThemeStudioEnabled: GlobalConfig.feature.enableThemeStudio,
       getRouterTime: () => _getRouterTime(ref),
     );
   },

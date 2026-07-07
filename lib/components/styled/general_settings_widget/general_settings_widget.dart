@@ -10,6 +10,7 @@ import 'package:privacy_gui/components/styled/general_settings_widget/language_t
 import 'package:privacy_gui/components/styled/general_settings_widget/theme_mode_tile.dart';
 import 'package:privacy_gui/providers/app_settings/app_settings_provider.dart';
 import 'package:privacy_gui/providers/auth/_auth.dart';
+import 'package:privacy_gui/config/global_config.dart';
 
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -101,13 +102,16 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
                     ),
                   ),
 
-                  // Mascot toggle
-                  SizedBox(
-                    height: 44,
-                    child: _buildMascotToggle(showMascot),
-                  ),
+                  // Mascot toggle (hidden in remote mode)
+                  if (GlobalConfig.remote.showMascotSetting)
+                    SizedBox(
+                      height: 44,
+                      child: _buildMascotToggle(showMascot),
+                    ),
 
-                  if (loginType != LoginType.none) ...[
+                  // Legal links and logout (hidden in remote mode)
+                  if (!GlobalConfig.remote.isActive &&
+                      loginType != LoginType.none) ...[
                     AppGap.md(),
                     const AppDivider(),
                     AppGap.md(),
@@ -168,7 +172,7 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
           const Icon(Icons.pets, size: 20),
           AppGap.lg(),
           Expanded(
-            child: AppText.labelMedium('Show Mascot'),
+            child: AppText.labelMedium(loc(context).showMascot),
           ),
           AppSwitch(
             value: showMascot,

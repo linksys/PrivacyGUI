@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/components/wifi_ui.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_client_ui_model.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
@@ -16,12 +17,12 @@ class StatsWifiSignalSection extends ConsumerWidget {
     final wifiData = ref.watch(wifiDataProvider).valueOrNull;
     if (wifiData == null) {
       return StatsSectionCard(
-        title: 'WiFi Signal Strength',
-        subtitle: 'Per-client signal strength (RSSI)',
+        title: loc(context).wifiSignalStrength,
+        subtitle: loc(context).perClientSignalStrengthRssi,
         chartHeight: 300,
         child: Center(
           child: AppText.bodyMedium(
-            'Loading...',
+            loc(context).loading,
             color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
         ),
@@ -32,13 +33,13 @@ class StatsWifiSignalSection extends ConsumerWidget {
     final activeClients = _buildClientList(wifiData, devicesData);
 
     return StatsSectionCard(
-      title: 'WiFi Signal Strength',
-      subtitle: '${activeClients.length} active WiFi clients',
+      title: loc(context).wifiSignalStrength,
+      subtitle: loc(context).perClientSignalStrengthRssi,
       chartHeight: 300,
       child: activeClients.isEmpty
           ? Center(
               child: AppText.bodyMedium(
-                'No WiFi clients connected',
+                loc(context).noWifiClientsConnected,
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             )
@@ -88,7 +89,8 @@ class StatsWifiSignalSection extends ConsumerWidget {
                   AppGap.sm(),
                   SizedBox(
                     width: 60,
-                    child: AppText.bodySmall('$rssi dBm',
+                    child: AppText.bodySmall(
+                        loc(context).signalStrengthDbm(rssi.toString()),
                         textAlign: TextAlign.end),
                   ),
                 ],
@@ -101,10 +103,10 @@ class StatsWifiSignalSection extends ConsumerWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             for (final entry in [
-              (SignalTier.excellent, 'Excellent'),
-              (SignalTier.good, 'Good'),
-              (SignalTier.fair, 'Fair'),
-              (SignalTier.weak, 'Weak'),
+              (SignalTier.excellent, loc(context).excellent),
+              (SignalTier.good, loc(context).good),
+              (SignalTier.fair, loc(context).fair),
+              (SignalTier.weak, loc(context).weak),
             ]) ...[
               Container(
                 width: 8,

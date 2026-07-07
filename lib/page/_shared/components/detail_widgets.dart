@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/_shared/components/usp_status_dot.dart';
 import 'package:privacy_gui/util/network_utils.dart';
@@ -73,7 +74,9 @@ class DetailStatusBadge extends StatelessWidget {
           UspStatusDot(isActive: isActive, size: 8),
           AppGap.xs(),
           AppText.labelMedium(
-            isActive ? (activeLabel ?? 'Online') : (inactiveLabel ?? 'Offline'),
+            isActive
+                ? (activeLabel ?? loc(context).online)
+                : (inactiveLabel ?? loc(context).offline),
             color: isActive
                 ? colorScheme.onPrimaryContainer
                 : colorScheme.onSurfaceVariant,
@@ -267,7 +270,7 @@ class DetailCopyableText extends StatelessWidget {
         Clipboard.setData(ClipboardData(text: text));
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Copied: $text'),
+            content: Text(loc(context).copiedValue(text)),
             duration: const Duration(seconds: 1),
           ),
         );

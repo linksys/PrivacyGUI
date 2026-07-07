@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/route/navigation_extensions.dart';
 import 'package:privacy_gui/core/utils/device_image_helper.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
@@ -30,7 +31,7 @@ class UspNodeDetailView extends ConsumerWidget {
 
     return UiKitPageView.withSliver(
       scrollable: true,
-      title: 'Node Detail',
+      title: loc(context).nodeDetail,
       topbar: const PreferredSize(
         preferredSize: Size.fromHeight(64),
         child: UspTopBar(),
@@ -43,10 +44,10 @@ class UspNodeDetailView extends ConsumerWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                AppText.titleMedium('Node not found'),
+                AppText.titleMedium(loc(context).nodeNotFound),
                 AppGap.lg(),
                 AppButton.text(
-                  label: 'Back to Topology',
+                  label: loc(context).backToTopology,
                   onTap: () =>
                       context.navigateBack(fallback: RouteNamed.uspTopology),
                 ),
@@ -167,31 +168,31 @@ class UspNodeDetailView extends ConsumerWidget {
               if (node.deviceId.toUpperCase() != 'GATEWAY')
                 DetailCopyableTile(
                   icon: Icons.memory,
-                  label: 'MAC Address',
+                  label: loc(context).macAddress,
                   value: node.deviceId,
                 ),
               if (node.model.isNotEmpty)
                 DetailInfoTile(
                   icon: Icons.router,
-                  label: 'Model',
+                  label: loc(context).model,
                   value: node.model,
                 ),
               if (node.manufacturer.isNotEmpty)
                 DetailInfoTile(
                   icon: Icons.business,
-                  label: 'Manufacturer',
+                  label: loc(context).manufacturer,
                   value: node.manufacturer,
                 ),
               if (node.serialNumber.isNotEmpty)
                 DetailCopyableTile(
                   icon: Icons.tag,
-                  label: 'Serial Number',
+                  label: loc(context).serialNumberLabel,
                   value: node.serialNumber,
                 ),
               if (node.softwareVersion.isNotEmpty)
                 DetailInfoTile(
                   icon: Icons.system_update,
-                  label: 'Firmware',
+                  label: loc(context).firmware,
                   value: node.softwareVersion,
                 ),
             ],
@@ -219,7 +220,7 @@ class UspNodeDetailView extends ConsumerWidget {
         children: [
           DetailCardHeader(
             icon: Icons.lan,
-            title: 'Network',
+            title: loc(context).network,
           ),
           AppGap.md(),
           DetailInfoBlock(
@@ -228,28 +229,28 @@ class UspNodeDetailView extends ConsumerWidget {
               if (node.ipAddress != null && node.ipAddress!.isNotEmpty)
                 DetailCopyableTile(
                   icon: Icons.language,
-                  label: 'LAN IP',
+                  label: loc(context).lanIp,
                   value: node.ipAddress!,
                 ),
               // LAN IPv6 (from Hosts)
               for (final ipv6 in node.ipv6Addresses)
                 DetailCopyableTile(
                   icon: Icons.language,
-                  label: 'LAN IPv6',
+                  label: loc(context).lanIpv6,
                   value: ipv6,
                 ),
               // WAN IPv4 (master only)
               if (wanIp != null && wanIp.isNotEmpty)
                 DetailCopyableTile(
                   icon: Icons.public,
-                  label: 'WAN IP',
+                  label: loc(context).wanIp,
                   value: wanIp,
                 ),
               // WAN IPv6 (master only)
               for (final ipv6 in wanIpv6Addresses)
                 DetailCopyableTile(
                   icon: Icons.public,
-                  label: 'WAN IPv6',
+                  label: loc(context).wanIpv6,
                   value: ipv6,
                 ),
             ],
@@ -275,7 +276,7 @@ class UspNodeDetailView extends ConsumerWidget {
         children: [
           DetailCardHeader(
             icon: Icons.sync_alt,
-            title: 'Backhaul Connection',
+            title: loc(context).backhaulConnection,
           ),
           AppGap.md(),
           // Connected To Block
@@ -295,7 +296,7 @@ class UspNodeDetailView extends ConsumerWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        AppText.labelSmall('Connected To',
+                        AppText.labelSmall(loc(context).connectedTo,
                             color: colorScheme.onSurfaceVariant),
                         AppText.bodyMedium(
                             '${parentNode.roleLabel} (${parentNode.model})'),
@@ -324,7 +325,7 @@ class UspNodeDetailView extends ConsumerWidget {
                             Icon(Icons.wifi,
                                 size: 16, color: colorScheme.onSurfaceVariant),
                             AppGap.xs(),
-                            AppText.labelSmall('Interface',
+                            AppText.labelSmall(loc(context).labelInterface,
                                 color: colorScheme.onSurfaceVariant),
                           ],
                         ),
@@ -357,7 +358,7 @@ class UspNodeDetailView extends ConsumerWidget {
                       Icon(Icons.settings_ethernet,
                           size: 16, color: colorScheme.onSurfaceVariant),
                       AppGap.xs(),
-                      AppText.labelSmall('Interface',
+                      AppText.labelSmall(loc(context).labelInterface,
                           color: colorScheme.onSurfaceVariant),
                     ],
                   ),
@@ -378,7 +379,7 @@ class UspNodeDetailView extends ConsumerWidget {
                   Expanded(
                     child: DetailSpeedCard(
                       icon: Icons.upload,
-                      label: 'Upload',
+                      label: loc(context).upload,
                       speedKbps: node.backhaulUplinkRate!,
                       color: colorScheme.tertiary,
                     ),
@@ -390,7 +391,7 @@ class UspNodeDetailView extends ConsumerWidget {
                   Expanded(
                     child: DetailSpeedCard(
                       icon: Icons.download,
-                      label: 'Download',
+                      label: loc(context).download,
                       speedKbps: node.backhaulDownlinkRate!,
                       color: colorScheme.primary,
                     ),
@@ -442,7 +443,7 @@ class UspNodeDetailView extends ConsumerWidget {
                                   size: 16,
                                   color: colorScheme.onSurfaceVariant),
                               AppGap.xs(),
-                              AppText.labelSmall('Last Contact',
+                              AppText.labelSmall(loc(context).lastContact,
                                   color: colorScheme.onSurfaceVariant),
                             ],
                           ),
@@ -476,7 +477,7 @@ class UspNodeDetailView extends ConsumerWidget {
         children: [
           DetailCardHeader(
             icon: Icons.devices,
-            title: 'Connected Devices',
+            title: loc(context).connectedDevices,
             trailing: AppText.labelLarge(
               '$activeCount / ${devices.length}',
               color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -484,8 +485,8 @@ class UspNodeDetailView extends ConsumerWidget {
           ),
           AppGap.md(),
           if (devices.isEmpty)
-            const DetailEmptyBlock(
-              message: 'No devices connected to this node',
+            DetailEmptyBlock(
+              message: loc(context).noDevicesConnectedToNode,
             )
           else
             Column(

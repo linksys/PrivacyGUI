@@ -6,6 +6,7 @@ import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/components/views/service_error_view.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/_shared/models/dhcp_client_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/dhcp_reservation_ui_model.dart';
@@ -34,7 +35,7 @@ class UspDhcpDetailView extends ConsumerWidget {
 
     return UiKitPageView.withSliver(
       scrollable: true,
-      title: 'DHCP Settings',
+      title: loc(context).dhcpSettings,
       topbar: const PreferredSize(
         preferredSize: Size.fromHeight(64),
         child: UspTopBar(),
@@ -99,7 +100,7 @@ class UspDhcpDetailView extends ConsumerWidget {
   ) {
     if (!reservationState.isDirty) return null;
     return UiKitBottomBarConfig(
-      positiveLabel: 'Save',
+      positiveLabel: loc(context).save,
       isPositiveEnabled: !reservationState.status.isSaving,
       onPositiveTap: () => _onSave(context, ref),
       onNegativeTap: () =>
@@ -201,7 +202,7 @@ class UspDhcpDetailView extends ConsumerWidget {
         ref.read(uspDhcpReservationsProvider.notifier).save(),
       );
       if (context.mounted) {
-        showSuccessSnackBar(context, 'DHCP reservations saved');
+        showSuccessSnackBar(context, loc(context).dhcpReservationsSaved);
       }
     } catch (e) {
       if (context.mounted) {

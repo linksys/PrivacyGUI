@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/_shared/models/port_forwarding_rule_ui_model.dart';
 import 'package:privacy_gui/page/port_forwarding/models/port_triggering_rule_ui_model.dart';
@@ -28,7 +29,7 @@ class UspPortForwardingCard extends ConsumerWidget {
     final isLoading = ref.watch(uspMutationLoadingProvider) == 'portForwarding';
 
     return DashboardCardTemplate.multiSection(
-      title: 'Port Rules',
+      title: loc(context).portRules,
       trailing: AppIconButton(
         icon: AppIcon.font(Icons.add, size: 20),
         onTap:
@@ -36,13 +37,13 @@ class UspPortForwardingCard extends ConsumerWidget {
       ),
       detailRoute: RouteNamed.uspPortForwardingDetail,
       itemCount: rules.length + triggers.length,
-      detailLabel: 'View all',
+      detailLabel: loc(context).viewAll,
       sections: [
         CardSection(
-          title: 'Port Forwarding',
+          title: loc(context).portForwarding,
           titleBadge: AppText.labelMedium('${rules.length}'),
           isEmpty: rules.isEmpty,
-          emptyMessage: 'No port forwarding rules configured',
+          emptyMessage: loc(context).noPortForwardingRulesConfigured,
           content: Column(
             children: [
               for (var i = 0; i < rules.length; i++) ...[
@@ -53,10 +54,10 @@ class UspPortForwardingCard extends ConsumerWidget {
           ),
         ),
         CardSection(
-          title: 'Port Triggering',
+          title: loc(context).portTriggering,
           titleBadge: AppText.labelMedium('${triggers.length}'),
           isEmpty: triggers.isEmpty,
-          emptyMessage: 'No port triggering rules configured',
+          emptyMessage: loc(context).noPortTriggeringRules,
           content: Column(
             children: [
               for (var i = 0; i < triggers.length; i++) ...[

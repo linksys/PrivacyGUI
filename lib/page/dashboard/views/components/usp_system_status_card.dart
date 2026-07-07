@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/utils/usp_formatters.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/system_monitor_state.dart';
@@ -30,12 +31,12 @@ class UspSystemStatusCard extends ConsumerStatefulWidget {
 class _UspSystemStatusCardState extends ConsumerState<UspSystemStatusCard> {
   static const _cardId = 'system_status';
 
-  static final _intervalOptions = <(Duration?, String)>[
-    (null, 'Off'),
-    (Duration(seconds: 10), '10s'),
-    (Duration(seconds: 30), '30s'),
-    (Duration(minutes: 1), '60s'),
-  ];
+  List<(Duration?, String)> _intervalOptions(BuildContext context) => [
+        (null, loc(context).off),
+        (Duration(seconds: 10), '10s'),
+        (Duration(seconds: 30), '30s'),
+        (Duration(minutes: 1), '60s'),
+      ];
 
   @override
   Widget build(BuildContext context) {
@@ -45,7 +46,7 @@ class _UspSystemStatusCardState extends ConsumerState<UspSystemStatusCard> {
     final selectedTab = ref.watch(cardTabIndexProvider(_cardId));
 
     return DashboardCardTemplate.tabbed(
-      title: 'System Status',
+      title: loc(context).systemStatus,
       titleBadge: monitorState.isFetching
           ? SizedBox(
               width: 14,
@@ -56,7 +57,7 @@ class _UspSystemStatusCardState extends ConsumerState<UspSystemStatusCard> {
       trailing: AppPopupMenu<Duration?>(
         icon: Icons.timer_outlined,
         iconSize: 20,
-        items: _intervalOptions
+        items: _intervalOptions(context)
             .map((e) => AppPopupMenuItem<Duration?>(
                   value: e.$1,
                   label: e.$2,
@@ -73,23 +74,23 @@ class _UspSystemStatusCardState extends ConsumerState<UspSystemStatusCard> {
           ref.read(cardTabIndexProvider(_cardId).notifier).state = index,
       tabs: [
         CardTab(
-          label: 'Monitor',
+          label: loc(context).monitor,
           content: _MonitorView(info: info, monitorState: monitorState),
         ),
         CardTab(
-          label: 'Trends',
+          label: loc(context).trends,
           content: monitorState.history.isNotEmpty
               ? _TrendsView(monitorState: monitorState)
-              : _buildEmptyState(context, 'Waiting for data...'),
+              : _buildEmptyState(context, loc(context).waitingForData),
         ),
         CardTab(
-          label: 'Distribution',
+          label: loc(context).distribution,
           content: monitorState.history.isNotEmpty
               ? _DistributionView(monitorState: monitorState)
-              : _buildEmptyState(context, 'Waiting for data...'),
+              : _buildEmptyState(context, loc(context).waitingForData),
         ),
         CardTab(
-          label: 'Correlation',
+          label: loc(context).correlation,
           content: _CorrelationView(monitorState: monitorState, ref: ref),
         ),
       ],
@@ -116,6 +117,14 @@ class _MonitorView extends StatelessWidget {
 
   const _MonitorView({required this.info, required this.monitorState});
 
+  String _formatIntervalLabel(BuildContext context, Duration? interval) {
+    if (interval == null) return loc(context).off;
+    if (interval.inSeconds == 10) return '10s';
+    if (interval.inSeconds == 30) return '30s';
+    if (interval.inSeconds == 60) return '60s';
+    return loc(context).off;
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -129,15 +138,12 @@ class _MonitorView extends StatelessWidget {
         ? UspFormatters.formatBytes(latest.totalMemoryKb * 1024)
         : info.formattedTotalMemory;
 
-    final intervalLabel = _UspSystemStatusCardState._intervalOptions
-            .where((e) => e.$1 == monitorState.refreshInterval)
-            .map((e) => e.$2)
-            .firstOrNull ??
-        'Off';
+    final intervalLabel =
+        _formatIntervalLabel(context, monitorState.refreshInterval);
 
     return Column(
       children: [
-        UspInfoRow(label: 'Uptime', value: info.formattedUptime),
+        UspInfoRow(label: loc(context).uptime, value: info.formattedUptime),
         AppGap.md(),
         Expanded(
           child: Row(
@@ -145,11 +151,11 @@ class _MonitorView extends StatelessWidget {
             children: [
               _buildGauge(context,
                   value: cpuPercent.toDouble(),
-                  label: 'CPU',
+                  label: loc(context).cpu,
                   display: '$cpuPercent%'),
               _buildGauge(context,
                   value: memPercent.toDouble(),
-                  label: 'Memory',
+                  label: loc(context).memory,
                   display: '$memPercent%'),
             ],
           ),
@@ -157,7 +163,7 @@ class _MonitorView extends StatelessWidget {
         AppGap.sm(),
         Center(
           child: AppText.bodySmall(
-            '$memUsedStr / $memTotalStr used',
+            loc(context).memoryUsed(memUsedStr, memTotalStr),
             color: colorScheme.onSurfaceVariant,
           ),
         ),
@@ -166,11 +172,13 @@ class _MonitorView extends StatelessWidget {
           children: [
             _LegendDot(color: colorScheme.primary),
             AppGap.xs(),
-            AppText.labelSmall('CPU: ${latest?.cpuPercent ?? '--'}%'),
+            AppText.labelSmall(
+                loc(context).cpuPercent('${latest?.cpuPercent ?? '--'}')),
             AppGap.lg(),
             _LegendDot(color: colorScheme.secondary),
             AppGap.xs(),
-            AppText.labelSmall('Memory: ${latest?.memoryPercent ?? '--'}%'),
+            AppText.labelSmall(
+                loc(context).memoryPercent('${latest?.memoryPercent ?? '--'}')),
             const Spacer(),
             if (monitorState.refreshInterval != null) ...[
               AppIcon.font(Icons.autorenew,
@@ -238,13 +246,13 @@ class _TrendsView extends StatelessWidget {
             child: AppLineChart(
               series: [
                 AppChartSeries(
-                  label: 'CPU',
+                  label: loc(context).cpu,
                   data: cpuValues,
                   filled: true,
                   color: colorScheme.primary,
                 ),
                 AppChartSeries(
-                  label: 'Memory',
+                  label: loc(context).memory,
                   data: memValues,
                   color: colorScheme.secondary,
                 ),
@@ -261,11 +269,11 @@ class _TrendsView extends StatelessWidget {
           children: [
             _LegendDot(color: colorScheme.primary),
             AppGap.xs(),
-            AppText.labelSmall('Avg: $avgCpu%  Peak: $peakCpu%'),
+            AppText.labelSmall(loc(context).avgPeak(avgCpu, peakCpu)),
             AppGap.lg(),
             _LegendDot(color: colorScheme.secondary),
             AppGap.xs(),
-            AppText.labelSmall('Avg: $avgMem%'),
+            AppText.labelSmall(loc(context).avg(avgMem)),
           ],
         ),
       ],
@@ -325,7 +333,7 @@ class _DistributionView extends StatelessWidget {
           children: [
             _LegendDot(color: colorScheme.primary),
             AppGap.xs(),
-            AppText.labelSmall('CPU usage samples: ${history.length}'),
+            AppText.labelSmall(loc(context).cpuUsageSamples(history.length)),
           ],
         ),
       ],
@@ -352,7 +360,7 @@ class _CorrelationView extends StatelessWidget {
     if (sysHistory.isEmpty) {
       return Center(
         child: AppText.bodyMedium(
-          'Waiting for data...',
+          loc(context).waitingForData,
           color: colorScheme.onSurfaceVariant,
         ),
       );
@@ -362,7 +370,7 @@ class _CorrelationView extends StatelessWidget {
     if (trafficHistory.isEmpty) {
       return Center(
         child: AppText.bodyMedium(
-          'Enable traffic monitor for correlation data',
+          loc(context).enableTrafficMonitorForCorrelation,
           color: colorScheme.onSurfaceVariant,
         ),
       );
@@ -384,13 +392,13 @@ class _CorrelationView extends StatelessWidget {
             child: AppLineChart(
               series: [
                 AppChartSeries(
-                  label: 'CPU',
+                  label: loc(context).cpu,
                   data: cpuData,
                   filled: true,
                   color: colorScheme.primary,
                 ),
                 AppChartSeries(
-                  label: 'Traffic',
+                  label: loc(context).traffic,
                   data: trafficData,
                   dashed: true,
                   color: colorScheme.tertiary,
@@ -411,11 +419,11 @@ class _CorrelationView extends StatelessWidget {
           children: [
             _LegendDot(color: colorScheme.primary),
             AppGap.xs(),
-            AppText.labelSmall('CPU %'),
+            AppText.labelSmall(loc(context).cpu),
             AppGap.lg(),
             _LegendDot(color: colorScheme.tertiary),
             AppGap.xs(),
-            AppText.labelSmall('Traffic rate'),
+            AppText.labelSmall(loc(context).trafficRate),
           ],
         ),
       ],

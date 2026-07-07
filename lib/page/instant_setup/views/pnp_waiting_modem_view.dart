@@ -129,7 +129,7 @@ class PnpWaitingModemView extends ConsumerWidget {
             child: AppLoader(strokeWidth: 6),
           ),
           AppGap.xxxl(),
-          AppText.headlineSmall(loc(context).pnpWaitingModemCheckingInternet),
+          AppText.headlineSmall(loc(context).checkingForInternet),
           AppGap.md(),
           AppText.bodySmall('${phase.attemptCount} / ${phase.maxAttempts}'),
         ],

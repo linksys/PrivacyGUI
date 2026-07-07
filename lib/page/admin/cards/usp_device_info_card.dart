@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/utils/device_image_helper.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
@@ -36,7 +37,7 @@ class UspDeviceInfoCard extends ConsumerWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     return DashboardCardTemplate(
-      title: 'Device Information',
+      title: loc(context).deviceInformation,
       detailRoute: RouteNamed.uspAdmin,
       content: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -89,7 +90,7 @@ class UspDeviceInfoCard extends ConsumerWidget {
               Expanded(
                 child: MetricTile(
                   icon: Icons.system_update,
-                  label: 'Firmware',
+                  label: loc(context).firmware,
                   value: info.softwareVersion,
                   color: colorScheme.primary,
                 ),
@@ -98,7 +99,7 @@ class UspDeviceInfoCard extends ConsumerWidget {
               Expanded(
                 child: MetricTile(
                   icon: Icons.memory,
-                  label: 'Hardware',
+                  label: loc(context).hardware,
                   value: info.hardwareVersion,
                   color: colorScheme.secondary,
                 ),
@@ -110,7 +111,7 @@ class UspDeviceInfoCard extends ConsumerWidget {
           InfoGrid(
             items: [
               InfoGridItem(
-                label: 'Serial',
+                label: loc(context).serial,
                 value: info.serialNumber,
                 copyable: true,
               ),

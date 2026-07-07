@@ -7,6 +7,7 @@ window.__uspClientReady = (async function () {
     const module = await import('./usp_client.js');
     await module.default(); // init() — loads and instantiates the WASM binary
     window.UspClient = module.UspClient;
+    window.UspClientBuilder = module.UspClientBuilder;
     // WebSocket client and record builders for firmware upload (Method 2)
     window.UspWsClient = module.UspWsClient;
     window.buildGetRecord = module.buildGetRecord;

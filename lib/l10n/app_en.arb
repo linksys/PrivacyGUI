@@ -1,100 +1,76 @@
 {
   "@@locale": "en",
-  "accountName": "Account name",
-  "action": "Action",
+  "activity": "Activity",
+  "activityHeatmap": "Activity Heatmap",
+  "activityHeatmapSubtitle": "24-hour per-device activity matrix",
   "add": "Add",
-  "addDHCPReservation": "Add DHCP Reservation",
-  "addDns": "+ Add DNS",
-  "addNodes": "Add nodes",
-  "addNodesDesc": "<b>Plug Mesh Nodes into power within a few feet of your Mesh Router.</b> The closer the better for this step.",
-  "addNodesLightDifferentColor": "My light is a different color",
-  "addNodesNoNodesFound": "We didn't find any nodes. Try again or <l>troubleshoot</l>.",
-  "addNodesOnboardingNodes": "Onboarding nodes",
-  "addNodesOnboardingNodesDesc": "Bringing your nodes online",
-  "addNodesSearchingNodes": "Searching for nodes...",
-  "addNodesSearchingNodesDesc": "Watch for node lights to change",
-  "addNodesSolidBlueDesc": "Wait for nodes to finish starting up, indicated by a <b>solid blue light.</b>",
+  "additionalFiltersOnlineOnly": "Additional filters are only available for online devices.",
+  "all": "All",
+  "addPortForwarding": "Add Port Forwarding",
   "addRule": "Add rule",
+  "editRule": "Edit rule",
   "addStaticRoute": "Add static route",
   "administration": "Administration",
-  "administrationAllowLocalManagementWirelessly": "Allow local management wirelessly",
-  "administrationApplicationLayerGateway": "Application Layer Gateway (SIP)",
-  "administrationExpressForwarding": "Express Forwarding",
-  "administrationUPnPAllowUsersConfigure": "Allow users to configure",
-  "administrationUPnPAllowUsersDisableInternetAccess": "Allow users to disable internet access",
   "advanced": "Advanced",
-  "advancedRouting": "Advanced Routing",
   "advancedSettings": "Advanced Settings",
-  "alertExclamation": "Alert!",
-  "allDayOff": "All day off",
   "appTitle": "Linksys Now",
-  "applicationName": "Application Name",
-  "appsGaming": "Apps & Gaming",
-  "asiaChina": "Asia - China",
-  "asiaHongkong": "Asia - Hong Kong",
-  "asiaIndia": "Asia - India",
-  "asiaIndonesia": "Asia - Indonesia",
-  "asiaJapan": "Asia - Japan",
-  "asiaKorea": "Asia - Korea",
-  "asiaPacific": "Asia Pacific",
-  "asiaPhilippines": "Asia - Philippines",
-  "asiaRest": "Asia - Rest of Asia",
-  "asiaSingapore": "Asia - Singapore",
-  "asiaTaiwan": "Asia - Taiwan",
-  "asiaThailand": "Asia - Thailand",
-  "assignIpAddress": "Assign IP Address",
   "australia": "Australia",
   "auto": "Auto",
-  "autoFirmwareUpdate": "Automatic Firmware Update",
   "automatic": "Automatic",
+  "avg": "Avg: {value}%",
+  "@avg": {
+    "placeholders": {
+      "value": {
+        "type": "int"
+      }
+    }
+  },
+  "avgPeak": "Avg: {avg}%  Peak: {peak}%",
+  "@avgPeak": {
+    "placeholders": {
+      "avg": {
+        "type": "int"
+      },
+      "peak": {
+        "type": "int"
+      }
+    }
+  },
   "back": "Back",
-  "backupMX": "Backup MX",
-  "belgium": "Belgium",
-  "blinkDeviceLight": "Blink Device Light",
-  "blinkingBlue": "Blinking blue",
-  "blinkingRed": "Blinking red",
-  "blinkingWhite": "Blinking white",
-  "blinkingYellow": "Blinking yellow",
+  "band": "Band",
+  "both": "Both",
   "borderRelay": "Border relay",
-  "borderRelayLength": "Border relay length",
   "broadcastSSID": "Broadcast SSID",
-  "byConnection": "By connection",
-  "byWifi": "By WiFi",
-  "callSupportDetailDesc": "For prompt service, have your product type, model and serial # handy.",
-  "callSupportDetailDesc2": "(Located on bottom of router)",
-  "callSupportDetailTwentyFourSeven": "24 hours, 7 days a week",
-  "callSupportSelectionTitle": "Choose your region",
-  "canada": "Canada",
   "cancel": "Cancel",
-  "certificate": "Certificate",
   "changesSaved": "Changes saved",
   "channel": "Channel",
   "channelWidth": "Channel Width",
-  "china": "China",
-  "chooseFile": "Choose file",
-  "clientLeaseTime": "Client lease time",
-  "clientSteering": "Client Steering",
-  "clientSteeringDesc": "Let your network direct your wireless devices to the node with the strongest signal",
-  "cloneCurrentClientMac": "Clone current client's MAC",
+  "clientsCount": "{count} clients",
+  "@clientsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "clear": "Clear",
   "close": "Close",
+  "collectingActivityData": "Collecting activity data...",
   "collectingData": "Collecting data...",
+  "collectingHourlyData": "Collecting hourly data...",
   "connectOnDemand": "Connect on demand",
-  "connectTo": "Connected to",
-  "connectedSpeed": "Connected Speed",
   "connectedVia": "Connected via",
-  "connectedWithMLO": "Connected with MLO",
   "connection": "Connection",
+  "connectionTrends": "Connection Trends",
+  "connectionTrendsSubtitle": "24-hour device count by connection type",
   "connectionMode": "Connection Mode",
-  "connectionStatus": "Connection Status",
   "connectionType": "Connection Type",
-  "connectionTypeAutomatic": "Automatic",
   "connectionTypeBridge": "Bridge Mode",
   "connectionTypeDhcp": "Automatic Configuration - DHCP",
   "connectionTypeL2tp": "L2TP",
   "connectionTypePassThrough": "Pass-through",
   "connectionTypePppoe": "PPPoE",
   "connectionTypePptp": "PPTP",
-  "connectionTypeStatic": "Static IP",
   "connectivity": "Connectivity",
   "copyRight": "© {year} Linksys Holdings, Inc. and/or its affiliates. All rights reserved.",
   "@copyRight": {
@@ -106,113 +82,70 @@
       }
     }
   },
-  "cpuUtilization": "CPU Utilization",
-  "currentIPv6ConnectionTypeIsNotAutomatic": "The current WAN IPv6 connection type is not automatic.",
-  "currentVersion": "Current: {version}",
-  "currentWanTypeIsNotDhcp": "The current WAN type is not DHCP.",
-  "dashboardFirmwareUpdateToDate": "Firmware is <span>up-to-date</span>",
-  "dashboardSupportCallSupportDesc": "Wait times apply",
-  "dashboardSupportCallSupportTitle": "Call Support",
-  "dashboardSupportCallbackDesc": "Skip waiting. Send a message and a Linksys support agent will call you",
-  "dashboardSupportCallbackTitle": "Get a Callback",
-  "dashboardSupportFAQDesc": "Read most common help articles sorted by topic",
-  "dashboardSupportFAQTitle": "View FAQ",
-  "dashboardSettings": "Dashboard Settings",
-  "dashboardEnableCustomLayout": "Enable Custom Layout",
-  "dashboardAvailableWidgets": "Available Widgets",
-  "dashboardResetLayout": "Reset Layout",
-  "dashboardLayoutOptimized": "Layout optimized",
-  "dashboardLayoutResetToDefaults": "Layout reset to defaults",
-  "dashboardUnknownWidget": "Unknown: {widgetId}",
-  "@dashboardUnknownWidget": {
+  "cpu": "CPU",
+  "cpuAndMemory": "CPU & Memory",
+  "cpuDistribution": "CPU Distribution",
+  "cpuDistributionSubtitle": "CPU usage sample distribution",
+  "cpuPercent": "CPU: {percent}%",
+  "cpuPercentLabel": "CPU %",
+  "cpuTrafficCorrelation": "CPU-Traffic Correlation",
+  "cpuUsageVsWanTrafficRate": "CPU usage vs WAN traffic rate",
+  "@cpuPercent": {
     "placeholders": {
-      "widgetId": {
-        "type": "String",
-        "example": "widget_id"
+      "percent": {
+        "type": "String"
       }
     }
   },
-  "dashboardSpeedHistory": "Speed History ({count} runs)",
-  "@dashboardSpeedHistory": {
+  "cpuUsageSamples": "CPU usage samples: {count}",
+  "@cpuUsageSamples": {
     "placeholders": {
       "count": {
-        "type": "int",
-        "example": "5"
+        "type": "int"
       }
     }
   },
-  "dashboardStartSpeedTest": "Start Speed Test",
-  "dashboardChangeViewMode": "Change View Mode",
-  "beta": "BETA",
+  "correlation": "Correlation",
+  "currentResourceUtilization": "Current resource utilization",
+  "currentVersion": "Current: {version}",
+  "dashboardSettings": "Dashboard Settings",
   "topology": "Topology",
-  "noDevicesConnected": "No devices connected",
-  "dateAndTime": "Date & Time",
+  "noDeviceActivityRecorded": "No device activity recorded",
   "daylightSavingsTime": "Automatically adjust for Daylight Savings Time",
-  "ddns": "DDNS",
   "defaultGateway": "Default Gateway",
   "delete": "Delete",
-  "deleteDevice": "Delete device?",
   "deleteReservation": "Delete reservation?",
-  "denmark": "Denmark",
-  "denyAccessDesc": "Deny access to the MAC addresses on the list",
-  "deselectAll": "Deselect All",
-  "destinationIPAddress": "Destination IP address",
-  "device": "Device",
-  "deviceDeleted": "Device deleted.",
-  "deviceIP": "Device IP#",
-  "deviceInfo": "Device Info",
-  "deviceModel": "Device Model",
-  "deviceName": "Device Name",
-  "deviceNameAndIcon": "Device Name and Icon",
-  "deviceNameExceedMaxSize": "Name can be only less than 256",
+  "description": "Description",
+  "deviceAnalytics": "Device Analytics",
+  "deviceDistribution": "Device Distribution",
+  "deviceDistributionSubtitle": "WiFi vs Wired device breakdown",
   "devices": "Devices",
-  "dfs": "Dynamic Frequency Selection",
-  "dfsDesc": "If this feature is on, your router may use 5GHz channels that are shared with radar systems. When a radar is detected on your operating channel, the router will search for an unoccupied DFS channel.\n\nThis feature may cause temporary loss of WiFi connectivity\n<a>Learn more</a>",
-  "dhcpDefault": "DHCP (default)",
-  "dhcpReservationDescption": "Use DHCP reservations in order to ensure consistent network access and configuration by assigning the same IP address to a specific device.",
+  "distribution": "Distribution",
   "dhcpReservations": "DHCP Reservations",
   "dhcpServer": "DHCP Server",
-  "disableBandWarning": "Disabling the {radio} band will also disable the {radio} guest access",
-  "@disableBandWarning": {
-    "description": "radio",
-    "placeholders": {
-      "radio": {
-        "type": "String",
-        "example": "radio"
-      }
-    }
-  },
   "disabled": "Disabled",
   "discardChanges": "Discard changes",
-  "disconnect": "Disconnect",
-  "disconnectClient": "Disconnect client",
+  "discards": "Discards",
   "dmz": "DMZ",
-  "dmzDescription": "The De-Militarized Zone (DMZ) feature forwards all inbound traffic to a specified IP address on your network and removes your router's firewall protection for a device.",
-  "dmzDestinationIPAddress": "Destination IP Address:",
-  "dmzSourceIPAddress": "Source IP Address:",
-  "dmzSourceRangeError": "The end IP address must be larger or equal to the start IP address",
-  "dmzViewDHCP": "View DHCP Client Table",
   "dns": "DNS",
   "dns1": "DNS 1",
   "dns2Optional": "DNS 2 (optional)",
   "dns3Optional": "DNS 3 (optional)",
-  "doYouWantToContinue": "Do you want to Continue?",
-  "doYouWantToSaveTheLocalNetworkSettings": "Do you want to save the Local Network Settings?",
-  "domainName": "Domain name",
   "done": "Done",
-  "donePairing": "Done pairing",
   "download": "Download",
-  "downloadQR": "Download QR",
+  "downlink": "Downlink",
   "duid": "DUID",
-  "dynamicRouting": "Dynamic routing (RIP)",
-  "eap": "EAP",
-  "edit": "Edit",
-  "editDHCPReservation": "Edit DHCP Reservation",
-  "email": "Email",
+  "editPortForwarding": "Edit Port Forwarding",
+  "enableTrafficMonitorForCorrelation": "Enable traffic monitor for correlation data",
+  "enableTrafficMonitorForErrorData": "Enable traffic monitor for error data",
+  "enableTrafficMonitorForLossData": "Enable traffic monitor for loss data",
+  "enable": "Enable",
   "enabled": "Enabled",
+  "disable": "Disable",
   "endPort": "End port",
   "endUserLicenseAgreement": "End User License Agreement",
   "error": "Error",
+  "errors": "Errors",
   "errorEmailAddressNotFound": "Email address not found",
   "errorEnterAValidEmailFormat": "Enter a valid email format",
   "errorExpiredOtp": "Code expired after 15 minutes. Send a new code and try again",
@@ -221,29 +154,16 @@
   "errorInvalidOtp": "Incorrect code, please check your code and try again",
   "errorInvalidPhoneNumber": "Invalid phone number",
   "errorInvalidServer": "The specified server IP address is not valid.",
-  "errorManualUpdateFailed": "Error manual update failed!",
-  "errorManualUpdateSignatureCheckFailed": "Invalid firmware file!",
   "errorOtpExceedsThreshold": "You've entered an incorrect code too many times. Your account will be locked for 2 hours",
   "errorUsernameAlreadyExist": "It looks like you already have an account.",
-  "speedTestAbortedByUser": "You stopped the test.",
-  "speedTestDbError": "A system error occurred. Please try again later.",
-  "speedTestConfigurationError": "The speed test isn't set up correctly. Please contact support for help.",
-  "speedTestExecutionError": "The speed test couldn't start. Please try again.",
-  "speedTestLicenseError": "The speed test isn't available right now. Please contact support.",
-  "speedTestHistory": "Speed Test History",
-  "speedTestNoRecordsFound": "No Speed Test records found",
   "ethernet": "Ethernet",
-  "europe": "Europe",
   "excellent": "Excellent",
-  "execute": "Execute",
   "externalPort": "External Port",
-  "externalSpeedText": "External speed test",
   "factoryResetChildTitle": "Reset the node and all its child/s to Factory Default",
   "factoryResetDesc": "A factory reset restores your router's settings, including the Wi-Fi and router password, to the default shown on the label at the bottom of the unit (Wi-Fi Password).",
   "factoryResetOk": "Yes, Factory Reset All",
   "factoryResetOkSingle": "Yes, Factory Reset",
   "factoryResetParentTitle": "Reset Parent and all its child/s to Factory Default",
-  "factoryResetTitle": "Reset to Factory Default",
   "failedExclamation": "Failed!",
   "fair": "Fair",
   "faqListCannotAddChildNode": "Can't add child nodes to network",
@@ -266,411 +186,169 @@
   "faqs": "FAQs",
   "filterAnonymous": "Filter anonymous Internet requests",
   "filterIdent": "Filter ident (Port 113)",
-  "filterInternetNATRedirection": "Filter Internet NAT redirection",
   "filterMulticast": "Filter multicast",
-  "filteredDevices": "Filtered devices",
   "filters": "Filters",
-  "featureUnavailableInRemoteMode": "This feature is unavailable in remote mode",
-  "remoteViewModeActive": "Remote View Mode - Setting changes are disabled",
   "firewall": "Firewall",
-  "firmwareDownloadingMessage1": "You can use your WiFi during this update.",
-  "firmwareDownloadingMessage2": "But things might be slower than usual while we improve your system.",
-  "firmwareDownloadingMessage3": "This will take about 15 minutes, after which your WiFi will restart.",
-  "firmwareDownloadingTitle": "Downloading...",
-  "firmwareInstallingTitle": "Installing...",
-  "firmwareRebootingTitle": "Restarting...",
-  "firmwareRestartingMessage1": "Restarting your WiFi",
-  "firmwareRestartingMessage2": "Future updates will happen overnight - automatically - and only take a few minutes.",
-  "firmwareRestartingMessage3": "This takes 2-3 minutes.",
+  "firewallRules": "Firewall Rules",
+  "firewallRulesSubtitle": "Rule target distribution and security overview",
+  "fwRules": "FW Rules",
   "firmwareUpdate": "Firmware Update",
-  "firmwareUpdateCountdownMessage": "Firmware just updated, the page will be refreshed in {seconds} seconds",
-  "@firmwareUpdateCountdownMessage": {
-    "description": "Message shown in a dialog after firmware update, with a countdown before page refresh.",
-    "placeholders": {
-      "seconds": {
-        "type": "int",
-        "example": "3"
-      }
-    }
-  },
-  "firmwareUpdateDesc1": "Get the latest feature and fixed.",
-  "firmwareUpdateDesc2": "Your router will restart once the update is complete. Devices will briefly go offline before reconnecting.",
-  "firmwareUpdated": "Firmware updated!",
-  "firmwareVersion": "Firmware version",
   "forgotPassword": "Forgot password",
-  "formalDateTime": "{time} {date}",
-  "@formalDateTime": {
-    "description": "date and time",
-    "placeholders": {
-      "time": {
-        "type": "DateTime",
-        "format": "jm"
-      },
-      "date": {
-        "type": "DateTime",
-        "format": "yMMMd"
-      }
-    }
-  },
-  "fortinetSecureDns": "Fortinet Secure DNS",
-  "forwardedRange": "Forwarded range",
-  "foundNNodesOnline": "{count, plural, other{{count} child nodes have just come online.} one{1 child node has just come online.}}",
-  "fwVersion": "FW Version",
-  "gateway": "Gateway",
   "generalError": "Oops, something wrong here! Please try again later",
-  "go": "GO",
   "goBack": "Go back",
   "good": "Good",
-  "goodAfternoon": "Good afternoon!",
-  "goodEvening": "Good evening!",
-  "goodMorning": "Good morning!",
-  "goodNight": "Good night!",
   "guest": "Guest",
-  "guestNetwork": "Guest Network",
-  "guestWiFiName": "Guest WiFi Name",
-  "guestWiFiPassword": "Guest WiFi Password",
   "guestWifi": "Guest WiFi",
   "hardware": "Hardware",
   "hideHint": "Hide hint",
   "home": "Home",
-  "hongkong": "Hong Kong",
   "hostName": "Host name",
-  "hostNameCannotEmpty": "Host name can not be empty.",
-  "hostNameStartWithHyphen": "Host name cannot start with a hyphen.",
-  "hostNameEndWithHyphen": "Host name cannot end with a hyphen.",
-  "hostNameInvalidCharacters": "Host name contains invalid characters: {invalidChars}. Allowed characters are letters, numbers, and hyphens.",
-  "@hostNameInvalidCharacters": {
-    "description": "Error message for invalid characters in hostname",
-    "placeholders": {
-      "invalidChars": {
-        "type": "String",
-        "example": "!, @"
-      }
-    }
-  },
-  "hostNameLengthError": "Host name must be between 1 and 15 characters.",
-  "incorrectPassword": "Incorrect password",
-  "incredibleWiFi": "Incredible-WiFi",
-  "incredibleWiFiDesc": "Change WiFi name and password",
-  "indexedPort": "Port {index}",
-  "info": "Info",
-  "instantAction": "Instant-Actions",
-  "instantAdmin": "Instant-Admin",
-  "instantAdminDesc": "Router password, Firmware updates, Time zone, Warranty",
-  "instantDevices": "Instant-Devices",
+  "inactive": "Inactive",
   "instantDevicesDesc": "Manage connected devices",
-  "instantInfo": "Instant-Info",
-  "instantPair": "Instant Pair",
   "instantPrivacy": "Instant-Privacy",
-  "instantPrivacyDeleteDeviceDesc": "This will delete this currently connected device from the network. Are you sure you want to delete?",
   "instantPrivacyDesc": "Lock your network",
   "instantPrivacyDescription": "Instant-Privacy will stop any new devices from connecting to the network until the feature is disabled.",
-  "instantPrivacyDisableWarning": "Instant-Privacy will be turnned off once MAC filtering is enabled",
-  "instantPrivacyInfo": "Enabling Instant-Privacy prevents new devices from connecting to your network. To add a new device, disable Instant-Privacy, then re-enable it for enhanced security.",
-  "instantPrivacyNotAllowDeleteCurrent": "Not allow to delete the device you're current connecting.",
   "instantSafety": "Instant-Safety",
-  "instantSafetyDesc": "Block inappropriate web content",
-  "instantTopology": "Instant-Topology",
-  "instantTopologyDesc": "Node name and light settings",
-  "instantVerify": "Instant-Verify",
-  "instantVerifyDesc": "Designed for certified Network technician",
+  "internalIpHint": "Internal IP (e.g. 192.168.1.100)",
   "internalPort": "Internal Port",
   "internet": "Internet",
-  "internetConnectionType": "Internet connection type",
   "internetFilters": "Internet filters",
-  "internetIPAddress": "Internet IP Address",
-  "internetIpv4Address": "Internet IPv4 Address:",
-  "internetOffline": "Internet offline",
-  "internetOnline": "Internet Online",
   "internetSettings": "Internet settings",
   "invalidAdminPassword": "Invalid admin password",
-  "invalidCharacters": "Invalid characters",
   "invalidDestinationIpAddress": "Invalid destination IP address",
   "invalidDestinationMacAddress": "Invalid destination MAC address",
   "invalidDns": "Invalid DNS",
   "invalidGatewayIpAddress": "Invalid gateway IP address",
-  "invalidHostname": "Invalid host name",
-  "invalidIPAddressSubnet": "IP address not in valid subnet",
   "invalidInput": "Invalid input",
   "invalidIpAddress": "Invalid IP address",
-  "invalidIpOrSameAsHostIp": "Invalid IP address or the same as the Host IP address",
   "invalidMACAddress": "Invalid MAC address.",
-  "invalidNumber": "Invalid number",
-  "invalidPassword": "Invalid password",
-  "invalidSubnetMask": "Invalid subnet mask",
-  "invalidUsername": "Invalid username",
   "ipAddress": "IP address",
-  "ipAddressRange": "IP Address Range",
-  "ipOrMacAddressOverlap": "IP address or MAC address overlap",
+  "ipAddressRequired": "IP address is required",
   "ipsecPassthrough": "IPSec Passthrough",
   "ipv4": "IPv4",
   "@ipv4": {
     "description": "Do not translate"
   },
-  "ipv4SPIFirewallProtection": "IPv4 SPI firewall protection",
   "ipv6": "IPv6",
   "@ipv6": {
     "description": "Do not translate"
   },
   "ipv6Address": "IPv6 Address",
-  "ipv6Automatic": "IPv6 - Automatic",
-  "ipv6PortServices": "IPv6 port services",
-  "ipv6SPIFirewallProtection": "IPv6 SPI firewall protection",
-  "japan": "Japan",
   "keepAlive": "Keep alive",
   "l2tpPassthrough": "L2TP Passthrough",
   "labelInterface": "Interface",
-  "lanIPAddress": "LAN IP Address",
-  "lanWireless": "LAN/Wireless",
+  "lan": "LAN",
+  "lanSpeed": "LAN: {speed}",
+  "@lanSpeed": {
+    "placeholders": {
+      "speed": {
+        "type": "String"
+      }
+    }
+  },
   "latency": "Latency",
-  "latinAmerica": "Latin America",
-  "launchCheckInternet": "Checking your internet...",
-  "launchInternetConnected": "Internet connected",
-  "lightsOff": "Lights off",
   "localLoginIncorrectRouterPassword": "Incorrect Router Password",
   "localLoginRemainingAttempts": "Remaining attempts: {attemptsRemaining}",
   "localLoginTooManyAttemptsTitle": "Too many failed attempts",
   "localLoginTryAgainIn": "Try again in: {timeLeft}",
   "localNetwork": "Local Network",
+  "location": "Location",
+  "loss": "Loss",
   "localResetRouterPasswordDescription": "Pick something memorable, but secure.",
   "localResetRouterPasswordSuccessContent": "You've updated your router password.",
   "localResetRouterPasswordSuccessNext": "Go back to Login",
-  "localResetRouterPasswordTitle": "New router password",
   "localRouterRecoveryDescription": "To set a new router password, enter the 5-digit recovery key.",
   "localRouterRecoveryKeyErorr": "That key didn't work. Check it and try again.",
   "localRouterRecoveryKeyLastChance": "Acccess will be locked to pretect you if the next attempt is incorrect.",
   "localRouterRecoveryKeyLocked": "Access locked. Too many failed attempts.",
-  "logIntoRouter": "Log into router",
   "login": "Log in",
   "logout": "Log out",
-  "mac": "MAC",
   "macAddress": "MAC Address",
   "macAddressClone": "MAC address clone",
-  "macFiltering": "MAC Filtering",
-  "macFilteringDisableWarning": "MAC filtering will be turnned off once Instant-Privacy is enabled",
-  "mailExchangeOptional": "Mail Exchange (Optional)",
-  "manual": "Manual",
-  "manualFirmwareUpdate": "Manual firmware update",
-  "manualUpdate": "Manual update",
-  "manuallyAddDevice": "Manually add device",
-  "manuallyAddReservation": "Manually add reservation",
   "manufacturer": "Manufacturer",
   "maxIdleTime": "Max idle time",
-  "maximumNumberOfUsers": "Maximum number of users",
-  "memoryUtilization": "Memory Utilization",
+  "memory": "Memory",
+  "memoryPercent": "Memory: {percent}%",
+  "@memoryPercent": {
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "memoryUsed": "{used} / {total} used",
+  "@memoryUsed": {
+    "placeholders": {
+      "used": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
   "menu": "Menu",
   "menuRestartNetworkChildMessage": "Reboot Node and All Child Nodes Restarting the mesh WiFi system will temporarily disconnect it from the Internet. If you have multiple nodes, all will restart. Connected devices will also experience a temporary disconnection but will automatically reconnect once the system is back online.",
   "menuRestartNetworkLastMessage": "If you have more than one node, all will restart. Restarting mesh WiFi system temporarily disconnects it from the Internet. All nodes and connected devices will also be temporarily disconnected, but they will reconnect when mesh system is ready again.",
   "menuRestartNetworkMessage": "Reboot Parent and All Child Nodes Restarting the mesh WiFi system will temporarily disconnect it from the Internet. If you have multiple nodes, all will restart. Connected devices will also experience a temporary disconnection but will automatically reconnect once the system is back online.",
-  "menuSetupANewProduct": "Setup a New Product",
-  "meshHealth": "Mesh Health",
   "mexico": "Mexico",
-  "middleEast": "Middle East",
-  "middleEastAndAfrica": "Middle East and Africa",
-  "middleEastBahrain": "Middle East - Bahrain",
-  "middleEastEgypt": "Middle East - Egypt",
-  "middleEastKuwait": "Middle East - BahraKuwaitin",
-  "middleEastOman": "Middle East - Oman",
-  "middleEastQatar": "Middle East - Qatar",
-  "middleEastSaudiArabia": "Middle East - Saudi Arabia",
-  "middleEastTurkey": "Middle East - Turkey",
-  "middleEastUnitedArabEmirates": "Middle East - United Arab Emirates",
-  "minutes": "minutes",
   "mlo": "Multi-Link Operation",
-  "mloCapable": "MLO capable",
+  "monitor": "Monitor",
   "mloCapableModalDesc1": "Multi-Link Operation (MLO) allows devices to use multiple bands and frequency channels simultaneously.",
   "mloCapableModalDesc2": "This increases speed, reduces latency, and makes for a more reliable connection.",
-  "mloDesc": "Allow devices to use multiple bands and frequency channels simultaneously. This increases speed, reduces latency, and makes for a more reliable connection.",
-  "mloWarning": "Multi-Link Operation (MLO) requires Networks name to be identical across all bands. MLO will not work correctly in case they are different.\nFor MLO to function, the network security mode must be set to WPA2/WPA3 Mixed Mode or higher. These changes can be made under the \"Incredible WiFi\" page.",
-  "modalDFSDesc": "If your router needs to search for an unoccupied DFS channel, you may lose WiFi connectivity.\n\nSome devices do not support DFS channels. They will need to use your 2.4GHz network because they cannot detect the 5GHz network when the router is using a DFS channel.",
-  "modalLightDifferentDesc": "Depending on your Mesh Node's model, the light may be a different color.",
-  "modalLightDifferentSeeRedLight": "Seeing a red light?",
-  "modalLightDifferentSeeRedLightDesc": "This means the Node is attached to its old network. It needs to be factory reset before it can be added.",
-  "modalLightDifferentToFactoryReset": "To factory reset:",
-  "modalLightDifferentToFactoryResetStep1": "<b>Press and hold the Node's reset button for 10 seconds.</b> The light will turn red, fade until it's completely off, and turn red again.",
-  "modalLightDifferentToFactoryResetStep2": "<b>Afterwards, the node will restart.</b> The light will pulse as it starts up, and turn solid when it's ready.",
-  "modalMoveChildNodesDesc": "Keep the Router and Mesh Nodes 1-2 rooms apart and out in the open to receive good WiFi signals.",
-  "modalMoveChildNodesTitle": "Go ahead and move child nodes",
-  "modalOfflineNodeCheckDesc1": "If you recently moved any nodes, try moving them back or to a better location. Also remove any obstacles that may be blocking the signal.",
-  "modalOfflineNodeCheckDesc2": "Nodes may need a refresh",
-  "modalOfflineNodeCheckDesc3": "Unplug and plug them back in.",
-  "modalOfflineNodeCheckTitle1": "Power is on",
-  "modalOfflineNodeCheckTitle2": "Make sure the power cord is plugged in and the light is on. If you have Night Mode on, the node light will be off during certain hours.",
-  "modalOfflineNodeCheckTitle3": "Nodes are within range",
-  "modalOfflineNodeTitle": "Let's check a few things",
-  "modalOfflineRemoveNodeFromNetwork": "Remove node from network",
-  "modalPnpWiFiDefaultsInfoDesc1": "Your router comes with 3 defaults: the WiFi name, WiFi password, and router password.",
-  "modalPnpWiFiDefaultsInfoDesc2": "These are printed on the Quick Start Guide and on the bottom of your router.",
-  "modalPnpWiFiDefaultsInfoDesc3": "By default, the router password is the same as the WiFi password, but if you were to customize one they would be different.",
-  "modalPnpWiFiDefaultsInfoDesc4": "To reinstate these default settings, factory reset your router.",
-  "modalPnpWiFiDefaultsInfoTitle": "Personalize your WiFi name and password",
-  "modalRemoveNodeDesc": "Are you sure you want to remove {node} from your mesh network?",
-  "@modalRemoveNodeDesc": {
-    "description": "Node name",
-    "placeholders": {
-      "node": {
-        "type": "String",
-        "example": "Awesome Node Name"
-      }
-    }
-  },
-  "modalRouterPasswordLocation": "Your router password is the same as your default WiFi password, printed on the Quick Start Guide and on the bottom of your router.",
-  "modalTroubleshootNoNodesFound": "Let's check a few things",
-  "modalTroubleshootNoNodesFoundDesc1": "Make sure the Nodes you're adding are fully powered on, indicated by a solid blue light",
-  "modalTroubleshootNoNodesFoundDesc2": "Nodes are within range. Try moving them closer to the Router. Once added to your network, you can move them further away.",
   "model": "Model",
-  "modelNumber": "Model number",
   "mtu": "MTU",
-  "myNetwork": "My Network",
-  "nAdd": "Add ({count})",
-  "@nAdd": {
-    "description": "Number of item added",
-    "placeholders": {
-      "count": {
-        "type": "int",
-        "example": "1"
-      }
-    }
-  },
-  "nDNS": "{count, plural, other{DNS 1|2|3} one{DNS 1} two{DNS 1|2}}",
-  "@nDNS": {
-    "description": "DNS label with numbers",
-    "placeholders": {
-      "count": {
-        "type": "int",
-        "example": "1"
-      }
-    }
-  },
   "nDays": "{count, plural, one{{count} day} other{{count} days}}",
-  "nDevices": "{count, plural, other{{count} devices} zero{No devices} one{1 device}}",
-  "@nDevices": {
-    "description": "Number of devices",
+  "nOffline": "{count} offline",
+  "@nOffline": {
     "placeholders": {
       "count": {
-        "type": "int",
-        "example": "1"
+        "type": "int"
       }
     }
-  },
-  "nDevicesDeleteDevicesDescription": "{count, plural, other{Devices can reappear in the list if reconnected to your WiFi network.} one{Device can reappear in the list if reconnected to your WiFi network.}}",
-  "@nDevicesDeleteDevicesDescription": {
-    "description": "alert dialog delete device description plural"
-  },
-  "nDevicesDeleteDevicesTitle": "{count, plural, other{Delete devices} one{Delete device}}",
-  "@nDevicesDeleteDevicesTitle": {
-    "description": "alert dialog delete device title plural"
   },
   "nHours": "{count, plural, one{{count} hr} other{{count} hrs}}",
   "nMinutes": "{count, plural, one{{count} min} other{{count} mins}}",
-  "nReservedAddresses": "{count, plural, zero{You don't have any Reserved Address. Select devices below to start reserving.} one{{count} Reserved Address} other{{count} Reserved Addresses}}",
-  "@nReservedAddresses": {
-    "description": "number of reserved addresses",
-    "placeholders": {
-      "count": {
-        "type": "int",
-        "example": "1"
-      }
-    }
-  },
   "nSeconds": "{count, plural, one{{count} sec} other{{count} secs}}",
   "name": "Name",
-  "nat": "NAT",
-  "needHelp": "Need help?",
-  "netherlands": "Netherlands",
-  "newVersion": "New: {version}",
   "newZealand": "New Zealand",
   "next": "Next",
-  "nightMode": "Night mode",
-  "nightModeOffDesc": "Node lights are always on",
-  "nightModeOnDesc": "Enable Night Mode to turn off node lights automatically from 8PM - 8AM",
-  "nightModeTime": "8PM - 8AM",
-  "nightModeTips": "When enabled, the LED light will turn off between 8:00 PM and 8:00 AM.",
-  "noAdvancedRouting": "You have no Advanced Routing",
-  "noFileChosen": "No file chosen",
-  "noFilteredDevices": "You have no filtered devices",
-  "noIPv6PortService": "You have no IPv6 Port Service",
-  "noInternetConnectionDescription": "Your internet might be down because of a local power outage or issue with your ISP.",
+  "noFirewallRulesConfigured": "No firewall rules configured",
   "noInternetConnectionTitle": "No internet connection",
-  "noInternetConnectionWithSSIDTitle": "{ssid} has no internet connection",
-  "noPortRangeForwarding": "You have no Port Range Forwarding",
-  "noPortRangeTriggering": "You have no Port Range Triggering",
-  "noRules": "You have no Rule/s",
-  "noSinglePortForwarding": "You have no Single Port Forwarding",
+  "noPortMappingsConfigured": "No port mappings configured",
   "noStaticRoutes": "You have no static route/s",
+  "noWifiClientsConnected": "No WiFi clients connected",
+  "noWifiRadiosAvailable": "No WiFi radios available",
+  "noWifiSignalData": "No WiFi signal data...",
   "node": "Node",
-  "nodeBlinkBlueDesc": "Router is booting up",
-  "nodeBlinkRedDesc": "While pressing the reset button, blinking in a fading effect",
-  "nodeBlinkWhiteDesc": "Internet has been detected; setup is in progress or, Changes to WiFi settings",
-  "nodeBlinkYellowDesc": "The Pair button on the router was pressed and no child nodes were detected.",
-  "nodeDetailBlinkNodeLightBtn": "Blink node light",
-  "nodeDetailBlinkingCounting": "({count}s) Blinking... <u>Stop</u>",
-  "@nodeDetailBlinkingCounting": {
-    "description": "Blinking count down",
-    "placeholders": {
-      "count": {
-        "type": "int",
-        "example": "20"
-      }
-    }
-  },
-  "nodeDetailsLedNightMode": "Night mode (8PM - 8AM)",
-  "nodeLight": "Node light",
-  "nodeName": "Node name",
-  "nodeOffDesc": "Router is not powered ON or Night mode feature is enabled and the light has been turned OFF from 8pm to 8 am",
-  "nodeRemoved": "Node removed",
-  "nodeSolidBlueDesc": "Router is ready for setup",
-  "nodeSolidRedDesc": "Internet not detected; check your internet connection. You can <u>manually edit your internet settings if you have a PPPoE connection or any other internet type to re-establish the connection.</u>",
-  "nodeSolidWhiteDesc": "Node is set up and online",
-  "nodeSteering": "Node Steering",
-  "nodeSteeringDesc": "Allow your nodes to always connect to the node with the strongest signal. If you move a node or one goes offline any connected nodes will self-heal by connecting to the strongest signal avaialable",
   "nodes": "Nodes",
-  "norway": "Norway",
-  "notBeEmptyAndLessThanThirtyThree": "The name must not be empty and must be less than 33 characters.",
+  "notApplicableForEthernetDevices": "Not applicable for Ethernet devices",
   "notConnectedToRouter": "You are not connected to your router",
-  "obtainIPv4AddressAutomatically": "Obtain an IPv4 address automatically (DHCP)",
   "off": "Off",
-  "offline": "Offline",
-  "offlineDevices": "Offline devices",
-  "ok": "Ok",
-  "okay": "Okay",
   "on": "On",
+  "offline": "Offline",
+  "ok": "Ok",
+  "role": "Role",
+  "master": "Master",
+  "slave": "Slave",
   "online": "Online",
-  "onlineDevices": "Online devices",
-  "openDNS": "OpenDNS",
-  "optional": "Optional",
-  "otpAddPhoneNumber": "Add phone number",
-  "otpCodeResent": "Code resent!",
-  "otpEnterCodeEmailTitle": "Enter the code we sent to {email}",
-  "otpEnterCodeSmsTitle": "Enter the code we sent to {phone}",
-  "otpSendMethodChoiceTitle": "Where should we send your code?",
-  "pairWiredNode": "Pair wired node",
-  "pairWirelessNode": "Pair wireless node",
-  "pairingWiredChildNodeDesc": "To complete the pairing, make sure your child node is connected to the parent node via a wired connection.",
+  "other": "Other",
   "password": "Password",
   "passwordAndAccess": "Password & Access",
   "passwordsMustMatch": "Passwords must match",
   "passwwordUpdated": "Router password updated",
-  "phone": "Phone",
   "ping": "Ping",
-  "pingNetwork": "Ping Network",
-  "pnpErrorForPppoe": "Account name or password incorrect. Please try again.",
   "pnpErrorForStaticIpAndDhcp": "Couldn't establish a connection. Please check your info and try again.",
-  "pnpFactoryResetTitle": "This router has been factory reset",
   "pnpFwUpdateDesc": "Please wait as we download and reboot your device. The LED will turn bright white when the process is complete. Your Router's WiFi might briefly turn off and then on again. If you lose connection, reconnect to your Router's WiFi to access Internet.",
   "pnpFwUpdateTitle": "Saving your configuration and checking for software updates...",
-  "pnpGuestWiFiDesc": "Turn on guest network to create separate WiFi network for guests and maintain the privacy of your main network.",
-  "pnpIspSaveStepCheckingInternet": "Checking for internet...",
+  "checkingForInternet": "Checking for internet...",
   "pnpIspSaveStepSaving": "Saving settings...",
   "pnpIspSaveStepVerifying": "Verifying settings...",
-  "pnpIspSettingsAuthTitle": "Enter your router's password to proceed",
-  "pnpIspTypeSelectionDhcpConfirm": "Are you sure you want to switch to DHCP mode?",
   "pnpIspTypeSelectionDhcpDesc": "Dynamic Host Configuration Protocol (DHCP) automatically assigns IP addresses to devices connected to the network.",
   "pnpIspTypeSelectionPppoeDesc": "Point-to-Point Protocol over ethernet is a specification for connecting multiple computer users on an ethernet local area network to a remote site.",
-  "pnpIspTypeSelectionPppoeVlanDesc": "Sometimes your ISP may require you to have a PPPoE over VLAN to access the internet.",
   "pnpIspTypeSelectionStaticDesc": "A static Internet Protocol (IP) address (static IP address) is a permanent number assigned to a network by an internet service provider (ISP).",
   "pnpIspTypeSelectionTitle": "What type of ISP settings do you have?",
-  "pnpModemLightsOffDesc": "These settings are provided by your Internet Service Provider (ISP). If you aren't sure about yours, we recommend contacting your ISP.",
+  "pnpIspSettingsContactDesc": "These settings are provided by your Internet Service Provider (ISP). If you aren't sure about yours, we recommend contacting your ISP.",
   "pnpModemLightsOffTip": "Are the lights still on after unplugging?",
   "pnpModemLightsOffTipDesc": "Your modem may have a backup battery. To restart, DO NOT remove the battery. Follow these instructions:",
   "pnpModemLightsOffTipStep1": "Find the modem's power, reboot or restart button. Press and hold it. Do not press RESET as it may restore the modem to factory settings. If your modem does not have a power, reboot or restart button, contact your Internet Service Provider for guidance.",
@@ -678,7 +356,6 @@
   "pnpModemLightsOffTipStep3": "<b>Wait for the modem to completely start up and continue setup.</b>",
   "pnpModemLightsOffTipTitle": "You may have a battery-powered modem that requires extra steps",
   "pnpModemLightsOffTitle": "Make sure the lights are off",
-  "pnpNoInternetConnectionContactSupport": "Contact Linksys support",
   "pnpNoInternetConnectionEnterISP": "Enter ISP settings",
   "pnpNoInternetConnectionEnterISPDesc": "Enter Static IP or PPPoE settings provided by your ISP",
   "pnpNoInternetConnectionRestartModem": "Restart your modem",
@@ -686,26 +363,18 @@
   "pnpPersonalizeInfo": "Keep in mind that changing your WiFi name and password means that what's printed on the Quick Start Guide won't work.",
   "pnpPersonalizeWiFiTitle": "Personalize your WiFi name and password",
   "pnpPppoeAddVlan": "Add VLAN ID",
-  "pnpPppoeDesc": "These settings are provided by your Internet Service Provider (ISP). If you aren't sure about yours, we recommend contacting your ISP.",
   "pnpPppoeRemoveVlan": "Remove VLAN ID",
-  "pnpPppoeTitle": "Enter ISP settings",
   "pnpReconnectWiFi": "Reconnect to your router's WiFi to continue setup",
-  "pnpRouterLoginDesc": "Enter your router's password to proceed",
-  "pnpRouterLoginWhereIsIt": "Where is it?",
   "pnpSavingChangesDesc": "Your router's WiFi will briefly turn off and then on again. If you lose connection, reconnect to your router's WiFi to finish setup.",
-  "pnpScanQR": "Scan QR code or use password to connect",
   "pnpStaticIpDesc": "These settings are for users with a manually-assigned static IP address.",
-  "pnpUnplugModemDesc": "These settings are provided by your Internet Service Provider (ISP). If you aren't sure about yours, we recommend contacting your ISP.",
   "pnpUnplugModemTip": "Not sure which device is the modem?",
   "pnpUnplugModemTipDesc1": "Modems are usually connected to the internet via a coaxial cable or phone cable coming into your home.",
   "pnpUnplugModemTipDesc2": "Modems can be horizontal or vertical depending on the brand.",
   "pnpUnplugModemTipTitle": "Identifying your modem",
   "pnpUnplugModemTitle": "Unplug your modem",
-  "pnpWaitingModemCheckingInternet": "Checking for internet...",
   "pnpWaitingModemDesc": "Your ISP needs time to issue a new IP address to your router to connect to the internet",
   "pnpWaitingModemPlugBack": "Plug your modem back in",
   "pnpWaitingModemPluggedIn": "It's plugged in",
-  "pnpWaitingModemTitle": "Giving your modem time to contact your ISP",
   "pnpWaitingModemWaitStartUp": "Waiting for your modem to start up",
   "pnpWiFiReady": "{ssid} is ready",
   "@pnpWiFiReady": {
@@ -721,12 +390,6 @@
   "pnpYourNetworkDesc": "Confirm all Nodes are here",
   "pnpYourNetworkTitle": "Your network",
   "poor": "Poor",
-  "portRangeError": "The end port must be larger or equal to the start port.",
-  "portRangeForwarding": "Port range forwarding",
-  "portRangeForwardingDescription": "Continuously forward traffic from a range of ports to a specific device.",
-  "portRangeTriggering": "Port range triggering",
-  "ports": "Ports",
-  "pppoeVlan": "PPPoE over VLAN",
   "pptpPassthrough": "PPTP Passthrough",
   "prefix": "Prefix",
   "prefixLength": "Prefix length",
@@ -734,15 +397,11 @@
   "privacyAndSecurity": "Privacy & Security",
   "processing": "Processing...",
   "protocol": "Protocol",
-  "provider": "Provider",
-  "psk": "PSK",
-  "readyForSetup": "Ready for setup",
   "rebootChildTitle": "Reboot the node and all its child/s",
   "rebootOk": "Yes, Reboot All",
   "rebootOkSingle": "Yes, Reboot",
   "rebootParentTitle": "Reboot Parent and all its child/s",
   "rebootUnit": "Reboot Unit",
-  "redialPeriod": "Redial period",
   "redirect": "Redirect",
   "redirectDescription": "Please connect your device to the router before proceeding to {ip}.",
   "@redirectDescription": {
@@ -754,25 +413,11 @@
       }
     }
   },
-  "refresh": "Refresh",
   "releaseAndRenew": "Release & Renew",
-  "releaseAndRenewIpAddress": "Release and Renew IP address",
-  "releaseAndRenewIpAddressDescription": "When you release and renew your IP address, all connected devices will lose their connection to the internet. All devices will be reconnected when the process is complete.\n\nDo you want to continue?",
-  "releaseReservedIp": "Release Reserved IP",
-  "releaseReservedIpDescription": "Once IP reservation is released your device will obtain a different IP address upon reconnecting.",
-  "remove": "Remove",
-  "removeNode": "Remove node",
-  "resendCode": "Resend code",
-  "reserveIp": "Reserve IP",
-  "reservedIpDescription": "Reserving DHCP means your device will always be assigned to this specific IP address.",
-  "resetFilters": "Reset Filters",
   "resetToFactoryDefault": "Reset to Factory Default",
+  "resourceTrends": "Resource Trends",
+  "resourceTrendsSubtitle": "CPU and memory usage over time",
   "restart": "Restart",
-  "restartNetwork": "Restart Network",
-  "restartWifiAlertDesc": "Network devices will temporarily disconnect and reconnect",
-  "restartWifiAlertTitle": "These changes require restarting your WiFi",
-  "restarting": "Restarting...",
-  "restartingWifi": "Restarting WiFi...",
   "retypeRouterPassword": "Retype Router Password",
   "routeName": "Route name",
   "routerNotFound": "Router Not Found",
@@ -780,7 +425,6 @@
   "routerNotFoundDesc2": "If connected with a cable, make sure the cable between your computer or device and the router is securely connected.",
   "routerNotFoundDesc3": "If your wireless connection settings (wireless network name or password) have recently changed, reconnect the device using the new settings.",
   "routerPassword": "Router Password",
-  "routerPasswordHint": "Router Password Hint",
   "routerPasswordHintOptional": "Router password hint (Optional)",
   "routerPasswordNew": "New Router Password",
   "routerPasswordRuleConsecutiveChar": "Not have the same character twice in a row",
@@ -791,152 +435,56 @@
   "routerPasswordRuleStartEndWithSpace": "Not start with space or end with space",
   "routerPasswordRuleTenChars": "At least 10 characters",
   "routerPasswordRuleUnsupportSpecialChar": "Not use unsupported special characters",
-  "ruleEnabled": "Rule enabled",
   "ruleName": "Rule name",
+  "rules": "Rules",
   "rulesOverlapError": "The rules cannot be created because multiple rules were specified for a single port/protocol combination.",
-  "safeBrowsingDesc": "Protect your family and block pre-determined adult, illegal and malicious content with a single tap. Instant-Safety applies to all devices on your network.",
-  "saudiArabia": "Saudi Arabia",
   "save": "Save",
-  "saveChanges": "Save Changes",
-  "saveLocalNetworkChangesDesc1": "The Local Network settings have changed and must be saved before you can access DHCP Reservations.",
-  "saveLocalNetworkChangesDesc2": "Note: If there are current DHCP Reservations that will be invalid when the Local Network Settings are saved, those DHCP Reservations will be deleted.",
-  "saved": "Saved",
-  "savingChanges": "Saving changes...",
-  "seconds": "seconds",
   "securityMode": "Security mode",
-  "selectAProvider": "Select a provider",
-  "selectAll": "Select All",
-  "selectDevices": "Select devices",
-  "selectFromMyDeviceList": "Select from my device list",
-  "selectIcon": "Select icon",
-  "selectedCombinationNotValid": "Selected IPv4/IPv6 combination is not valid. Please select",
-  "selfTest": "Self Test",
-  "sendCode": "Send code",
-  "serialNo": "Serial#",
-  "serialNumber": "Serial number",
-  "selectServer": "Select Server",
-  "serverId": "Server ID",
-  "serverIpv4Address": "Server Ipv4 Address",
   "serviceNameOptional": "Service name (optional)",
-  "setOne": "Set one",
-  "settingsSaved": "Settings saved",
   "setup": "Setup",
-  "shareWiFi": "Share WiFi",
   "sharedCopied": "Copied to clipboard!",
   "showHint": "Show Hint",
-  "signalStrength": "Signal strength",
-  "singapore": "Singapore",
-  "singlePortForwarding": "Single port forwarding",
+  "signal": "Signal",
+  "signalQuality": "Signal Quality",
+  "signalQualitySubtitle": "WiFi signal quality by frequency band",
   "sixrdTunnel": "6rd tunnel",
-  "size": "Size",
-  "sku": "SKU",
-  "solidBlue": "Solid blue",
-  "solidPurple": "Solid purple",
-  "solidRed": "Solid red",
-  "solidWhite": "Solid white",
-  "specifiedRange": "Specified Range",
-  "specifyIPv4Address": "Specify an IPv4 address",
-  "speed": "Speed",
-  "speedCheckLatestTime": "As of {time} {date}",
-  "@speedCheckLatestTime": {
-    "description": "Speed check with time and date parameter",
+  "snrValue": "SNR: {value} dB",
+  "@snrValue": {
     "placeholders": {
-      "time": {
-        "type": "DateTime",
-        "format": "jm"
-      },
-      "date": {
-        "type": "DateTime",
-        "format": "yMMMd"
+      "value": {
+        "type": "int"
       }
     }
   },
-  "speedGood": "Speed: Good",
-  "speedGoodDescription": "At this speed, your WiFi can stream a few HD videos simultaneously and provide fast web browsing.",
-  "speedOkay": "Speed: Okay",
-  "speedOkayDescription": "At this speed, your WiFi can stream HD movies and play online games. If multiple devices are using the internet at the same time, you may run into slow speeds and buffering.",
-  "speedOptimal": "Speed: Optimal",
-  "speedOptimalDescription": "At this speed, your WiFi can handle various internet-based applications on multiple devices and reliably stream HD movies and play online games at the same time.",
+  "speed": "Speed",
   "speedTest": "Speed Test",
-  "speedTestDesc": "There are 2 ways to check your speeds",
-  "speedTestExternalCloudFlare": "Test with CloudFlare",
-  "speedTestExternalDesc": "Before testing your speed with a 3rd party:",
-  "speedTestExternalFast": "Test with Fast.com",
-  "speedTestExternalOthers": "Or test with your preferred speedtest service",
-  "speedTestExternalStep1": "Make sure you're connected to your WiFi network and not using cellular data",
-  "speedTestExternalStep2": "Remember you're testing the speed of this device, not your network to internet speed",
-  "speedTestExternalStep3": "Use a mobile device to test the WiFi in different areas of your home",
-  "speedTestExternalTileCloudFlare": "CloudFlare",
-  "speedTestExternalTileFast": "Fast.com",
-  "speedTestExternalTileLabel": "Understand your speed test results",
-  "speedTestInternetToDevice": "Internet to device",
-  "speedTestInternetToDeviceDesc": "Measure the speed from this device to your router. Useful for checking different areas of your home",
-  "speedTestInternetToRouter": "Internet to router",
-  "speedTestInternetToRouterDesc": "Measure the speeds you signed up for with your ISP",
-  "speedTextTileStart": "Start Speed Test",
-  "speedUltra": "Speed: Ultra",
-  "speedUltraDescription": "At this speed, you can stream multiple Ultra HD movies and hold video conferences with multiple users, simultaneously, on different devices.",
   "ssid": "SSID",
   "start": "Start",
-  "startEndPorts": "Start - End Ports",
-  "startIpAddress": "Start IP address",
   "startPort": "Start port",
-  "staticDns1": "Static DNS 1",
-  "staticDns2": "Static DNS 2",
-  "staticDns3": "Static DNS 3",
-  "staticIPAddress": "Static IP Address",
-  "staticRoute": "Static route/s",
   "staticRouting": "Static routing",
   "status": "Status",
   "subnetMask": "Subnet mask",
   "successExclamation": "Success!",
   "support": "Support",
-  "sweden": "Sweden",
   "system": "System",
-  "systemCustom": "Custom",
-  "systemDynamic": "Dynamic",
-  "systemStatic": "Static",
-  "systemTestDateFormat": "{date}",
-  "@systemTestDateFormat": {
-    "description": "System test date format",
+  "systemStatus": "System Status",
+  "targetIp": "Target: {ip}",
+  "@targetIp": {
     "placeholders": {
-      "date": {
-        "type": "DateTime",
-        "format": "yMd"
+      "ip": {
+        "type": "String"
       }
     }
   },
-  "systemTestDateTime": "{time}",
-  "@systemTestDateTime": {
-    "description": "System test time format",
-    "placeholders": {
-      "time": {
-        "type": "DateTime",
-        "format": "jms"
-      }
-    }
-  },
-  "taiwan": "Taiwan",
   "tcp": "TCP",
   "termsOfService": "Term of Service",
   "testAgain": "Test Again",
-  "testingDownloadSpeed": "Testing download speed...",
-  "testingDownloadSpeedDescription": "Download speed measures how quickly internet content is transferred to your home network.",
-  "testingPing": "Testing ping...",
-  "testingUploadSpeed": "Testing upload speed...",
-  "testingUploadSpeedDescription": "Upload speed represents how quickly you're able to upload content to the internet.",
   "textContinue": "Continue",
-  "textMessage": "Text message",
-  "theDevicesAllowedToConnect": "These are the only devices allowed to connect.",
-  "theNameMustNotBeEmpty": "The name must not be empty",
   "thirdPartyLicenses": "Third Party Licenses",
-  "thisActionCannotBeUndone": "This action cannot be undone.",
-  "timezone": "Time zone",
   "timezoneAlaska": "Alaska",
   "timezoneArizona": "Arizona",
   "timezoneArmenia": "Armenia",
   "timezoneAtlanticTimeCanadaGreenlandAtlanticIslands": "Atlantic Time (Canada, Greenland, Atlantic Islands)",
-  "timezoneAustralia": "Australia",
   "timezoneAzores": "Azores",
   "timezoneBangladeshRussia": "Bangladesh, Russia",
   "timezoneBoliviaVenezuela": "Bolivia, Venezuela",
@@ -956,12 +504,10 @@
   "timezoneIndianaEastColombiaPanama": "Indiana East, Colombia, Panama",
   "timezoneJapanKorea": "Japan, Korea",
   "timezoneKwajalein": "Kwajalein",
-  "timezoneMexico": "Mexico",
   "timezoneMidAtlantic": "Mid-Atlantic",
   "timezoneMidwayIslandSamoa": "Midway Island, Samoa",
   "timezoneMountainTimeUsaAndCanada": "Mountain Time (USA & Canada)",
   "timezoneMumbaiKolkataChennaiNewDelhi": "Mumbai, Kolkata, Chennai, New Delhi",
-  "timezoneNewZealand": "New Zealand",
   "timezoneNewfoundland": "Newfoundland",
   "timezonePacificTimeUsaAndCanada": "Pacific Time (USA & Canada)",
   "timezonePakistanRussia": "Pakistan, Russia",
@@ -971,15 +517,21 @@
   "timezoneThailandRussia": "Thailand, Russia",
   "timezoneTunisia": "Tunisia",
   "timezoneTurkeyIraqJordanKuwait": "Turkey, Iraq, Jordan, Kuwait",
-  "to": "to",
-  "toLogInLocallyWhileInBridgeMode": "<b>Note:</b> To log in locally, go to <span></span>",
   "traceroute": "Traceroute",
-  "transmitRegion": "Transmit Region",
-  "transmitRegionDesc": "WiFi transmission power is set by regional limits. You could be subject to fines and penalties if you choose a region other than where you will use the router.",
-  "triggeredRange": "Triggered range",
-  "troubleshoot": "Troubleshoot",
+  "trafficComparison": "Traffic Comparison",
+  "trafficComparisonSubtitle": "WAN vs LAN throughput over time",
+  "trafficDistribution": "Traffic Distribution",
+  "trafficDistributionSubtitle": "Cumulative traffic proportion by interface",
+  "trafficMonitor": "Traffic Monitor",
+  "trafficMonitorSubtitle": "Real-time WAN upload/download speeds",
+  "trafficRate": "Traffic rate",
+  "trafficTrends": "Traffic Trends",
+  "trafficTrendsSubtitle": "Bytes/s and Packets/s dual-axis view",
+  "trend": "Trend",
+  "trends": "Trends",
   "tryAgain": "Try again",
   "turnOff": "Turn Off",
+  "type": "Type",
   "turnOffInstantPrivacy": "Turn off Instant-Privacy?",
   "turnOffInstantPrivacyDesc": "This will allow new devices to connect to the network.",
   "turnOffMacFiltering": "Turn off MAC filtering?",
@@ -989,99 +541,66 @@
   "turnOnMacFiltering": "Turn on MAC filtering?",
   "turnOnMacFilteringDesc": "Listed MAC addresses will not be allowed to connect.",
   "udp": "UDP",
-  "udpAndTcp": "UDP and TCP",
-  "unitedArabEmirates": "United Arab Emirates",
-  "unitedKingdom": "United Kingdom",
-  "unitedState": "United States",
-  "unknown": "Unknown",
   "unknownError": "Unknown error",
   "unknownErrorCode": "Unknown error: {code}",
   "unsavedChangesDesc": "Navigating away from this page will discard any inputs.",
   "unsavedChangesTitle": "You have unsaved changes on this page",
   "upToDate": "Up to date",
   "update": "Update",
-  "updateAll": "Update all",
   "updateAvailable": "Update available",
   "updateFirmware": "Update Firmware",
+  "uplink": "Uplink",
   "upload": "Upload",
-  "upnp": "UPnP",
-  "upstream": "Upstream",
   "uptime": "Uptime",
   "username": "Username",
   "vlanIdOptional": "VLAN ID (optional)",
-  "vpn": "VPN",
-  "vpnActiveSAs": "Active SAs",
-  "vpnAuthMode": "Auth Mode",
-  "vpnAutoConnect": "Auto Connect",
-  "vpnBytesReceived": "Bytes Received",
-  "vpnBytesSent": "Bytes Sent",
-  "vpnConnected": "Connected",
-  "vpnConnecting": "Connecting",
-  "vpnCurrentBandwidth": "Current Bandwidth",
-  "vpnDesc": "Configure your VPN settings for secure remote access.",
-  "vpnDisconnected": "Disconnected",
-  "vpnEnabled": "Enabled",
   "vpnErrorVPNNotConnected": "VPN not connected",
   "vpnErrorVPNUserAlreadyExists": "VPN user already exists",
   "vpnErrorVPNUserNotFound": "VPN user not found",
-  "vpnEspProposal": "ESP Proposal",
-  "vpnFailed": "Failed",
-  "vpnIkeMode": "IKE Mode",
-  "vpnIkeProposal": "IKE Proposal",
-  "vpnPacketsReceived": "Packets Received",
-  "vpnPacketsSent": "Packets Sent",
   "vpnPassthrough": "VPN Passthrough",
-  "vpnRekeyCount": "Rekey Count",
-  "vpnSettingsTitle": "VPN Settings",
-  "vpnTunnelStatistics": "Tunnel Statistics",
-  "vpnTunneledUserSection": "Tunneled User",
-  "vpnUnknown": "Unknown",
-  "vpnUptime": "Uptime",
-  "vpnUserCredentialsSection": "User Credentials",
+  "waitingForData": "Waiting for data...",
+  "waitingForDeviceData": "Waiting for device data...",
+  "waitingForTrafficData": "Waiting for traffic data...",
   "wan": "WAN",
-  "wanIPAddress": "WAN IP Address",
-  "welcome": "Welcome",
+  "wanPacketLossOverTime": "WAN packet loss percentage over time",
+  "wanSpeed": "WAN: {speed}",
+  "@wanSpeed": {
+    "placeholders": {
+      "speed": {
+        "type": "String"
+      }
+    }
+  },
+  "weak": "Weak",
   "wifi": "WiFi",
-  "wifiBand": "{band} Band",
-  "@wifiBand": {
-    "description": "band",
+  "wifiChannels": "WiFi Channels",
+  "wifiChannelsSubtitle": "Radio channel allocation and client distribution",
+  "wifiClientSpeed": "WiFi Client Speed",
+  "wifiClientSpeedSubtitle": "Downlink/Uplink rates per client",
+  "wifiCount": "WiFi: {count}",
+  "@wifiCount": {
     "placeholders": {
-      "band": {
-        "type": "String",
-        "example": "2.4GHz"
+      "count": {
+        "type": "int"
       }
     }
   },
-  "wifiListDescription": "Easily customize your WiFi settings, including SSID, security mode, and channel options for {bands}, and guest networks. Save changes to apply them.",
-  "@wifiListDescription": {
-    "description": "bands",
-    "placeholders": {
-      "bands": {
-        "type": "String",
-        "example": "2.4GHz, 5GHz"
-      }
-    }
-  },
-  "wifiListSaveModalDesc": "Changing Wi-Fi settings will disconnect all devices, including this one, from the router. Simply reconnect the devices using the new wireless settings shown below. You may want to write them down before continuing.",
-  "wifiListSaveModalTitle": "You're updating WiFi settings",
-  "wifiMacFiltering": "WiFi MAC Filtering",
   "wifiMode": "WiFi Mode",
   "wifiName": "WiFi name",
   "wifiPassword": "WiFi password",
   "wifiPasswordLimit": "8 - 64 characters",
   "wifiPasswordRuleHex": "Hexadecimal PSK required (0–9, A–F, a–f)",
-  "wifiSSIDLengthLimit": "Must less than 32 character",
-  "wifiShareQRScan": "Scan the QR code to join this network",
-  "wildcard": "Wildcard",
-  "wins": "WINS",
+  "wifiSignalStrength": "WiFi Signal Strength",
   "wired": "Wired",
-  "wireless": "Wireless",
-  "wiredPairComplete": "Pairing is complete. The child node has been successfully paired with the parent node using a wired connection.",
-  "wiredPairCompleteNotFound": "No connected child node was found. Please make sure your child node is powered on and properly connected to the parent node via an Ethernet cable and try again.",
+  "wiredCount": "Wired: {count}",
+  "@wiredCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "remoteAssistance": "Remote Assistance",
-  "remoteAssistancePinCode": "Your pin code is:",
-  "remoteAssistanceInvalidSession": "Invalid session. Please contact a support agent.",
-  "remoteAssistanceSessionActive": "A Linksys support agent has remote access to your Linksys Smart Wi-Fi account and your home network.",
   "remoteAssistancePinCodeExpiresIn": "Pin code expires in {time}",
   "@remoteAssistancePinCodeExpiresIn": {
     "description": "time",
@@ -1104,33 +623,15 @@
     }
   },
   "remoteAssistanceSessionExpired": "Session expired",
-  "remoteAssistanceInitiateMessage": "To take advantage of Remote Assistance, you must first contact a phone support agent. Go to <a href=\"http://www.linksys.com/support\" target=\"_blank\">linksys.com/support</a> and click on Phone Call to get started.",
-  "selectEnv": "Select Environment",
-  "proceed": "Proceed",
-  "loginWithAccessTokenMessage": "You are log in with access token to manage {serialNumber}, do you want to proceed?",
-  "@loginWithAccessTokenMessage": {
-    "description": "Message shown when logging in with access token",
-    "placeholders": {
-      "serialNumber": {
-        "type": "String",
-        "example": "SN12345"
-      }
-    }
-  },
-  "notEnoughInfoToLogin": "Not enough information to login",
-  "endRemoteAssistance": "End Remote Assistance",
-  "endRemoteAssistanceDesc": "End remote assistance session?",
-  "wifiModeNotAvailable": "Mode change resets channel width to auto.",
   "quickSetup": "Quick Setup",
-  "quickSetupDescription": "Apply the same WiFi settings to all bands at once",
+  "applyToAllBandsDesc": "Apply the same WiFi settings to all bands at once",
   "pwaGetTheApp": "Get the App",
   "pwaInstallDescription": "Install for a better experience",
   "pwaInstallButton": "INSTALL",
-  "pwaIosInstallTitle": "Install Linksys Now",
+  "pwaInstallTitle": "Install Linksys Now",
   "pwaIosInstallDescription": "Install this app on your iPhone for a better experience.",
   "pwaIosStep1": "Tap the Share button in the browser menu bar.",
   "pwaIosStep2": "Scroll down and tap \"Add to Home Screen\".",
-  "pwaMacInstallTitle": "Install Linksys Now",
   "pwaMacInstallDescription": "Add this app to your Dock for quick access.",
   "pwaMacStep1": "Click the Share button in the Safari toolbar.",
   "pwaMacStep2": "Choose \"Add to Dock\".",
@@ -1142,9 +643,6 @@
   "lcpEchoInterval": "LCP Echo Interval (seconds)",
   "bridgeModeWarning": "Bridge mode will disable routing features. The device will act as a network bridge.",
   "currentMac": "Current MAC",
-  "cloneMac": "Clone MAC",
-  "ipv4DhcpLease": "IPv4 DHCP Lease",
-  "ipv6DhcpLease": "IPv6 DHCP Lease",
   "renew": "Renew",
   "leaseRenewed": "{protocol} lease renewed",
   "@leaseRenewed": {
@@ -1179,5 +677,1004 @@
   "errorConnectivity": "Cannot reach the router. Please check your connection.",
   "errorTimeout": "The operation timed out. Please try again.",
   "errorServiceNotReady": "The service is not ready yet. Please try again in a moment.",
-  "errorUnexpected": "Something went wrong. Please try again."
+  "errorUnexpected": "Something went wrong. Please try again.",
+  "menuWifiSettings": "WiFi Settings",
+  "menuWifiSettingsDesc": "Networks, security, MAC filtering",
+  "menuTopologyDesc": "View network topology and mesh nodes",
+  "menuInstantSafetyDesc": "Safe browsing with OpenDNS",
+  "menuAdministrationDesc": "Password, timezone, reboot",
+  "menuAdvancedSettingsDesc": "Firewall, local network, DMZ, port forwarding, routing",
+  "statistics": "Statistics",
+  "menuStatisticsDesc": "Network, device, and system analytics",
+  "menuSpeedTestDesc": "Test your internet connection speed",
+  "network": "Network",
+  "networkDiagnostics": "Network Diagnostics",
+  "networkErrorRates": "Network Error Rates",
+  "networkErrorRatesSubtitle": "WAN error and discard rates over time",
+  "networkHealthScore": "Network Health Score",
+  "networkHealthSubtitle": "Overall network health based on error/loss metrics",
+  "menuNetworkDiagnosticsDesc": "Run guided checks and manual ping/traceroute tools",
+  "rebootRouter": "Reboot Router",
+  "rebootRouterMessage": "The router will restart. All connected devices will be temporarily disconnected.",
+  "routerIsRebooting": "Router is rebooting",
+  "rebootWaitMessage": "All connected devices will be temporarily disconnected. Please wait.",
+  "routerRebootComplete": "Router reboot complete",
+  "reset": "Reset",
+  "factoryResetInProgress": "Factory reset in progress",
+  "factoryResetWaitMessage": "The router is restoring to factory defaults. You will need to set up and log in again.",
+  "timezoneUpdated": "Timezone updated",
+  "portFwd": "Port Fwd",
+  "portForwarding": "Port Forwarding",
+  "portForwardingWithCount": "Port Forwarding ({count})",
+  "@portForwardingWithCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "portMapping": "Port Mapping",
+  "portMappingSubtitle": "Port forwarding rules and DMZ configuration",
+  "editTimezone": "Edit Timezone",
+  "searchTimezone": "Search timezone...",
+  "noTimezonesFound": "No timezones found",
+  "ntpServer": "NTP Server",
+  "firmwareImage": "Firmware Image",
+  "noFirmwareImageSelected": "No firmware image selected. Choose a .img or .bin file to begin.",
+  "chooseAnotherFile": "Choose another file",
+  "chooseFirmwareFile": "Choose firmware file",
+  "selectingFile": "Selecting file…",
+  "validatingImage": "Validating image…",
+  "uploadingFirmware": "Uploading firmware",
+  "perClientSignalStrengthRssi": "Per-client signal strength (RSSI)",
+  "percentComplete": "{percent}% complete",
+  "@percentComplete": {
+    "placeholders": {
+      "percent": {
+        "type": "String",
+        "example": "50"
+      }
+    }
+  },
+  "preparingToInstall": "Preparing to install",
+  "verifyingFirmwareImage": "Verifying firmware image and preparing flash…",
+  "installingFirmware": "Installing firmware",
+  "routerWritingImage": "The router is writing the new image. Do not power off.",
+  "rebootingRouter": "Rebooting router",
+  "waitingForRouterOnline": "Waiting for the router to come back online…",
+  "verifyingFirmware": "Verifying firmware",
+  "confirmingNewFirmware": "Confirming the new firmware is running…",
+  "updateComplete": "Update complete",
+  "nowRunningVersion": "Now running firmware version {version}.",
+  "@nowRunningVersion": {
+    "placeholders": {
+      "version": {
+        "type": "String",
+        "example": "1.0.0"
+      }
+    }
+  },
+  "updateFailed": "Update failed",
+  "firmwareUpdateWarning": "The update will take approximately 5–8 minutes. Do not power off or disconnect the router during the process.",
+  "noTargetBankAvailable": "No target bank available",
+  "availableVersionLabel": "Available: {version}",
+  "@availableVersionLabel": {
+    "placeholders": {
+      "version": {
+        "type": "String",
+        "example": "2.0.0"
+      }
+    }
+  },
+  "doYouWantToUpdateNow": "Do you want to update now?",
+  "failedToStartOtaUpdate": "Failed to start OTA update",
+  "firmwareInstallConfirmMessage": "The router will install the new firmware and reboot. Do not power off during the update.",
+  "otaUpdate": "OTA Update",
+  "checking": "Checking...",
+  "checkForUpdates": "Check for Updates",
+  "firmwareUpToDate": "Your firmware is up to date",
+  "firmwareBanks": "Firmware Banks",
+  "noFirmwareBanksReported": "No firmware banks reported by router",
+  "loading": "Loading…",
+  "loadingFirmwareInfo": "Loading firmware info…",
+  "currentVersionShort": "Current Version",
+  "notAvailable": "Not available",
+  "active": "Active",
+  "standby": "Standby",
+  "unableToGatherDeviceInfo": "Unable to gather device information",
+  "sizeBytes": "Size: {size} bytes ({mib} MiB)",
+  "@sizeBytes": {
+    "placeholders": {
+      "size": {
+        "type": "int",
+        "example": "1024"
+      },
+      "mib": {
+        "type": "String",
+        "example": "1.0"
+      }
+    }
+  },
+  "md5Label": "MD5: {hash}",
+  "@md5Label": {
+    "placeholders": {
+      "hash": {
+        "type": "String",
+        "example": "abc123"
+      }
+    }
+  },
+  "estimatedTimeRemaining": "Estimated time remaining: {time}",
+  "@estimatedTimeRemaining": {
+    "placeholders": {
+      "time": {
+        "type": "String",
+        "example": "2m 30s"
+      }
+    }
+  },
+  "stillWaitingLongerThanExpected": "Still waiting — this can take a little longer than expected",
+  "connectionRestored": "Connection restored",
+  "routerNotYetResponding": "Last check: router not yet responding (attempt {attempt})",
+  "@routerNotYetResponding": {
+    "placeholders": {
+      "attempt": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "routerIdentityMismatch": "Router identity mismatch",
+  "waitingForFirstConnectionCheck": "Waiting for first connection check",
+  "wifiSwitchWarning": "No response from your router. Please confirm your computer is still connected to the router's Wi-Fi, then tap Retry now.",
+  "returnToLoginPage": "Return to login page",
+  "retryNow": "Retry now",
+  "checkingEllipsis": "Checking…",
+  "layoutOptimized": "Layout optimized",
+  "widgetResized": "Widget \"{id}\" resized to fit constraints",
+  "@widgetResized": {
+    "placeholders": {
+      "id": {
+        "type": "String",
+        "example": "widget_id"
+      }
+    }
+  },
+  "unknownWidget": "Unknown widget: {id}",
+  "@unknownWidget": {
+    "placeholders": {
+      "id": {
+        "type": "String",
+        "example": "widget_id"
+      }
+    }
+  },
+  "enableTrafficMonitorForHealthData": "Enable traffic monitor for health data",
+  "layoutSettingsDescription": "Drag and drop widgets to reorder. Use the resize handles to adjust size. Remove widgets with the close button — re-add them here.",
+  "layoutResetToDefaults": "Layout reset to defaults",
+  "resetLayout": "Reset Layout",
+  "dashboardStyle": "Dashboard Style",
+  "noPresetSelected": "No preset selected",
+  "availableWidgets": "Available Widgets",
+  "autoChannel": "Auto Channel",
+  "apply": "Apply",
+  "addDhcpReservation": "Add DHCP Reservation",
+  "descriptionRequired": "Description is required",
+  "noLeadingTrailingSpaces": "No leading or trailing spaces",
+  "mustBe32CharsOrLess": "Must be 32 characters or less",
+  "externalPortRequired": "External port is required",
+  "portMustBe1To65535": "Port must be 1-65535",
+  "internalPortRequired": "Internal port is required",
+  "invalidIpv4Format": "Invalid IPv4 address format",
+  "reservedIpNotAllowed": "Reserved IP address is not allowed",
+  "connectedDevices": "Connected Devices",
+  "deviceNotFound": "Device not found",
+  "networkConnections": "Network Connections ({count})",
+  "@networkConnections": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "primary": "Primary",
+  "signalDataNotAvailable": "Signal data not available for this device.",
+  "reserved": "Reserved",
+  "noReservationIpMayChange": "No reservation. IP may change on reconnect.",
+  "showLess": "Show less",
+  "wifiPlusEthernet": "WiFi + Ethernet",
+  "wanLabel": "WAN: {value}",
+  "@wanLabel": {
+    "placeholders": {
+      "value": {
+        "type": "String",
+        "example": "100 Mbps"
+      }
+    }
+  },
+  "lanLabel": "LAN: {value}",
+  "@lanLabel": {
+    "placeholders": {
+      "value": {
+        "type": "String",
+        "example": "50 Mbps"
+      }
+    }
+  },
+  "total": "total",
+  "bytesPerSec": "Bytes/s",
+  "packetLoss": "Packet Loss",
+  "packetsPerSec": "Pkts/s",
+  "runFullDiagnostic": "Run Full Diagnostic",
+  "runFullDiagnosticDesc": "Automatically check every component of your network to find and fix issues.",
+  "chooseSpecificIssue": "Choose Specific Issue",
+  "chooseSpecificIssueDesc": "Experiencing a specific problem? Select from common scenarios.",
+  "manualTools": "Manual Tools",
+  "manualToolsDesc": "Run ping, traceroute, or NS lookup against any host.",
+  "startNow": "Start Now",
+  "or": "OR",
+  "whatIssueExperiencing": "What issue are you experiencing?",
+  "networkIssueDetectedWanDown": "Network issue detected: WAN connection down",
+  "networkIssueDetectedDnsNotResponding": "Network issue detected: DNS not responding",
+  "highLatencyDetected": "High latency detected during connection check",
+  "checkConnectivityAndSpeed": "Check connectivity and speed",
+  "wifiCoverage": "WiFi Coverage",
+  "weakSignalInAreas": "Weak signal in certain areas",
+  "meshBackhaul": "Mesh / Backhaul",
+  "checkNodeLinkQuality": "Check node-to-node link quality",
+  "deviceIssues": "Device Issues",
+  "specificDeviceConnectionProblems": "Specific device has connection problems",
+  "intermittentConnection": "Intermittent Connection",
+  "connectionDropsOnOff": "Connection drops on and off",
+  "checkingConnection": "Checking connection...",
+  "runningQuickNetworkCheck": "Running quick network check",
+  "diagnosticsComplete": "Diagnostics Complete",
+  "returnToDashboard": "Return to Dashboard",
+  "runAgain": "Run Again",
+  "exportDiagnosticsReport": "Export Diagnostics Report",
+  "issuesFound": "Issues Found",
+  "potentialIssues": "Potential Issues",
+  "allSystemsOk": "All Systems OK",
+  "recommendedActions": "Recommended Actions",
+  "cancelDiagnostics": "Cancel Diagnostics",
+  "diagnosingNetworkPath": "Diagnosing your network path...",
+  "internetDiagnostics": "Internet Diagnostics",
+  "deviceIssuesDiagnostics": "Device Issues Diagnostics",
+  "wifiCoverageDiagnostics": "WiFi Coverage Diagnostics",
+  "meshBackhaulDiagnostics": "Mesh Backhaul Diagnostics",
+  "intermittentConnectionDiagnostics": "Intermittent Connection Diagnostics",
+  "fullDiagnostic": "Full Diagnostic",
+  "wanStatus": "WAN Status",
+  "dhcpLease": "DHCP Lease",
+  "dhcpPoolUsage": "DHCP Pool Usage",
+  "gatewayConnection": "Gateway Connection",
+  "dnsConnection": "DNS Connection",
+  "internetConnectivity": "Internet Connectivity",
+  "dnsResolution": "DNS Resolution",
+  "wifiSignalAnalysis": "WiFi Signal Analysis",
+  "networkPathAnalysis": "Network Path Analysis",
+  "analyzingResults": "Analyzing Results...",
+  "skipped": "Skipped",
+  "issueDetected": "Issue detected",
+  "passed": "Passed",
+  "failed": "Failed",
+  "warning": "Warning",
+  "completed": "Completed",
+  "server": "Server",
+  "runNetworkDiagnosticsDesc": "Run network diagnostics from your router to test connectivity",
+  "targetHost": "Target Host",
+  "targetHostHint": "e.g. 8.8.8.8 or google.com",
+  "hostNameHint": "e.g. google.com",
+  "nsLookup": "NS Lookup",
+  "runPing": "Run Ping",
+  "runTraceroute": "Run Traceroute",
+  "runNsLookup": "Run NS Lookup",
+  "pingingHost": "Pinging {host}...",
+  "@pingingHost": {
+    "placeholders": {
+      "host": {
+        "type": "String"
+      }
+    }
+  },
+  "tracingRouteTo": "Tracing route to {host}...",
+  "@tracingRouteTo": {
+    "placeholders": {
+      "host": {
+        "type": "String"
+      }
+    }
+  },
+  "resolvingHost": "Resolving {host}...",
+  "@resolvingHost": {
+    "placeholders": {
+      "host": {
+        "type": "String"
+      }
+    }
+  },
+  "packetCount": "Packet Count",
+  "maxHops": "Max Hops",
+  "avgShort": "Avg",
+  "minShort": "Min",
+  "maxShort": "Max",
+  "success": "Success",
+  "pingHost": "Ping {host}",
+  "@pingHost": {
+    "placeholders": {
+      "host": {
+        "type": "String"
+      }
+    }
+  },
+  "tracerouteTo": "Traceroute to {host}",
+  "@tracerouteTo": {
+    "placeholders": {
+      "host": {
+        "type": "String"
+      }
+    }
+  },
+  "nHops": "{count} hops",
+  "@nHops": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "ipColumn": "IP",
+  "avgRtt": "Avg RTT",
+  "dnsServerOptional": "DNS Server (optional)",
+  "dnsServerHint": "e.g. 8.8.8.8 — leave blank to use the system resolver",
+  "nsLookupHost": "NS Lookup {host}",
+  "@nsLookupHost": {
+    "placeholders": {
+      "host": {
+        "type": "String"
+      }
+    }
+  },
+  "noAnswersReturned": "No answers returned.",
+  "ipsColumn": "IPs",
+  "rtColumn": "RT",
+  "unableToLoadDiagnostics": "Unable to load diagnostics",
+  "unableToLoadSpeedTest": "Unable to load speed test",
+  "errorLoadingSpeedTest": "Error loading speed test",
+  "internetSpeedTest": "Internet Speed Test",
+  "testConnectionSpeedFromRouter": "Test your connection speed from the router",
+  "startTest": "Start Test",
+  "testing": "Testing...",
+  "testingLatency": "Testing Latency",
+  "testingDownload": "Testing Download",
+  "testingUpload": "Testing Upload",
+  "speedTestComplete": "Speed Test Complete",
+  "serverLabel": "Server: {server}",
+  "@serverLabel": {
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "details": "Details",
+  "downloaded": "Downloaded",
+  "duration": "Duration",
+  "speedTestFailed": "Speed Test Failed",
+  "selectTestServer": "Select Test Server",
+  "testServer": "Test Server",
+  "notSupported": "Not supported",
+  "notRun": "Not run",
+  "testFailed": "Test failed",
+  "noAdditionalDetailsAvailable": "No additional details available.",
+  "affectedDevices": "Affected Devices",
+  "scoreValue": "Score {score}",
+  "@scoreValue": {
+    "placeholders": {
+      "score": {
+        "type": "int"
+      }
+    }
+  },
+  "successRate": "Success Rate",
+  "wirelessClients": "Wireless Clients",
+  "dhcpDisabled": "DHCP disabled",
+  "poolRangeUnavailable": "Pool range unavailable",
+  "totalDevices": "Total Devices",
+  "highBandwidth": "High Bandwidth",
+  "withIssues": "With Issues",
+  "weakSignal": "Weak Signal",
+  "lowDataRate": "Low Data Rate",
+  "wirelessDevices": "Wireless Devices",
+  "avgSignal": "Avg Signal",
+  "weakSignalDevices": "Weak Signal Devices",
+  "resolved": "Resolved",
+  "responseTime": "Response Time",
+  "configuredDns": "Configured DNS",
+  "pingSuccess": "Ping Success",
+  "avgLatency": "Avg Latency",
+  "jitter": "Jitter",
+  "recentRebootDetected": "Recent reboot detected",
+  "slowHops": "Slow Hops",
+  "singleRouterSetupNoBackhaul": "Single-router setup — no backhaul",
+  "poorBackhaul": "Poor backhaul",
+  "weakBackhaul": "Weak backhaul",
+  "healthy": "Healthy",
+  "connectedTo": "Connected to",
+  "staticIp": "Static IP",
+  "uploadTestNotSupported": "Upload test not supported on this firmware.",
+  "dhcp": "DHCP",
+  "dhcpPool": "DHCP Pool",
+  "gatewayPing": "Gateway Ping",
+  "dnsPing": "DNS Ping",
+  "dnsLookupStep": "DNS Lookup",
+  "wifiSignal": "WiFi Signal",
+  "diagnosticsRecWanDownTitle": "WAN Connection Down",
+  "diagnosticsRecNoIpTitle": "No IP Address",
+  "diagnosticsRecDhcpFailTitle": "DHCP Failed",
+  "diagnosticsRecGatewayTitle": "Gateway Unreachable",
+  "diagnosticsRecDnsFailTitle": "DNS Not Responding",
+  "diagnosticsRecDnsLookupFailTitle": "DNS Resolution Failed",
+  "diagnosticsRecInternetTitle": "Internet Unreachable",
+  "diagnosticsRecSlowDownloadTitle": "Slow Download Speed",
+  "diagnosticsRecSlowUploadTitle": "Slow Upload Speed",
+  "diagnosticsRecWeakWifiTitle": "Weak WiFi Signal",
+  "diagnosticsRecManyDevicesTitle": "Too Many Devices",
+  "diagnosticsRecBandwidthHogTitle": "High Bandwidth Devices",
+  "diagnosticsRecBottleneckTitle": "Network Bottleneck Detected",
+  "diagnosticsRecWanDownDesc": "Check your modem connection and restart if needed.",
+  "diagnosticsRecNoIpDesc": "Try renewing DHCP lease or configure static IP.",
+  "diagnosticsRecDhcpFailDesc": "Renew DHCP lease or check ISP settings.",
+  "diagnosticsRecGatewayDesc": "Check cable connections between router and modem.",
+  "diagnosticsRecDnsFailDesc": "Try using alternate DNS servers like 8.8.8.8.",
+  "diagnosticsRecDnsLookupFailDesc": "DNS servers reachable but cannot resolve names. Try alternate DNS like 8.8.8.8 or 1.1.1.1.",
+  "diagnosticsRecInternetDesc": "Contact your ISP — the issue may be on their end.",
+  "diagnosticsRecSlowDownloadDesc": "Contact your ISP about download speed issues.",
+  "diagnosticsRecSlowUploadDesc": "Check for devices uploading large files.",
+  "diagnosticsRecWeakWifiDesc": "Move closer to router or add a mesh node.",
+  "diagnosticsRecManyDevicesDesc": "Consider enabling QoS or disconnecting unused devices.",
+  "diagnosticsRecBandwidthHogDesc": "Some devices are using a lot of bandwidth.",
+  "diagnosticsRecBottleneckDesc": "Network latency detected at a specific hop.",
+  "noClients": "No clients",
+  "stale": "Stale",
+  "note": "Note",
+  "none": "None",
+  "host": "Host",
+  "unresolved": "Unresolved",
+  "range": "Range",
+  "capacity": "Capacity",
+  "used": "Used",
+  "target": "Target",
+  "hops": "Hops",
+  "mesh": "Mesh",
+  "dnsServer": "DNS Server",
+  "msLatency": "{value} ms latency",
+  "@msLatency": {
+    "placeholders": {
+      "value": {
+        "type": "int"
+      }
+    }
+  },
+  "networkHealth": "Network Health",
+  "health": "Health",
+  "avgValuePeakValue": "Avg: {avg}  Peak: {peak}",
+  "@avgValuePeakValue": {
+    "placeholders": {
+      "avg": {
+        "type": "String"
+      },
+      "peak": {
+        "type": "String"
+      }
+    }
+  },
+  "avgValue": "Avg: {value}",
+  "@avgValue": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "releaseToRemove": "Release to Remove",
+  "dragHereToRemove": "Drag Here to Remove",
+  "traffic": "Traffic",
+  "router": "Router",
+  "lanPorts": "LAN Ports",
+  "radios": "Radios",
+  "portRules": "Port Rules",
+  "channelNumber": "Channel number",
+  "change": "Change",
+  "builtInWidgets": "Built-in Widgets",
+  "appWidgetCards": "App Widget Cards",
+  "wifiSettingsSaved": "WiFi settings saved",
+  "noWifiNetworksFound": "No WiFi networks found. Check router connection.",
+  "quickSetupNotice": "Quick Setup applies the same name, password, and security mode to all bands. A password is required to save.",
+  "noAdvancedWifiSettings": "No advanced WiFi settings available for this device.",
+  "dynamicFrequencySelection": "Dynamic Frequency Selection (DFS)",
+  "dfsDescription": "Enables IEEE 802.11h on 5 GHz radios, which activates both Dynamic Frequency Selection (DFS) and Transmit Power Control (TPC).\n\nDFS allows the router to use 5 GHz channels shared with radar systems. If a radar signal is detected, the router will automatically switch to an unoccupied channel, which may cause a brief interruption in connectivity.",
+  "main": "Main",
+  "noSsid": "(No SSID)",
+  "passwordLength8To63": "8 to 63 characters",
+  "printableCharsOnly": "Printable characters only, no leading or trailing spaces",
+  "mixed": "Mixed",
+  "nChannelsAvailable": "{count} channels available",
+  "@nChannelsAvailable": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "requiredLabel": "(Required)",
+  "unchangedLabel": "(Unchanged)",
+  "portForwardingSettingsSaved": "Port forwarding settings saved",
+  "singlePortForwarding": "Single Port Forwarding",
+  "noSinglePortRules": "No single port forwarding rules configured",
+  "portRangeForwarding": "Port Range Forwarding",
+  "noPortRangeRules": "No port range forwarding rules configured",
+  "portTriggering": "Port Triggering",
+  "noPortTriggeringRules": "No port triggering rules configured",
+  "deleteRule": "Delete Rule",
+  "deleteConfirm": "Delete \"{name}\"?",
+  "@deleteConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "editPortTriggering": "Edit Port Triggering",
+  "addPortTriggering": "Add Port Triggering",
+  "triggerPorts": "Trigger Ports",
+  "forwardedPorts": "Forwarded Ports",
+  "endPortOptional": "End Port (optional)",
+  "editPortRangeForwarding": "Edit Port Range Forwarding",
+  "addPortRangeForwarding": "Add Port Range Forwarding",
+  "externalPortStart": "External Port Start",
+  "externalPortEnd": "External Port End",
+  "max32Characters": "Max 32 characters",
+  "mustBeGreaterThanStartPort": "Must be greater than start port",
+  "singlePortWithCount": "Single Port ({count})",
+  "@singlePortWithCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "portRangeWithCount": "Port Range ({count})",
+  "@portRangeWithCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "triggeringWithCount": "Triggering ({count})",
+  "@triggeringWithCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "hostname": "Hostname",
+  "addressPool": "Address Pool",
+  "poolStart": "Pool Start",
+  "poolEnd": "Pool End",
+  "leaseTimeMinutes": "Lease Time (minutes)",
+  "dnsServers": "DNS Servers",
+  "dnsServer1": "DNS Server 1",
+  "dnsServer2": "DNS Server 2",
+  "dnsServer3": "DNS Server 3",
+  "viewDhcpReservations": "View DHCP Reservations",
+  "localNetworkSettingsSaved": "Local network settings saved",
+  "changeNetworkSettingsTitle": "Change Network Settings?",
+  "changeNetworkSettingsDesc": "Changing the router IP address or subnet mask may cause a temporary loss of network connectivity. Do you want to continue?",
+  "dhcpSettings": "DHCP Settings",
+  "dhcpReservationsSaved": "DHCP reservations saved",
+  "noDhcpReservations": "No DHCP reservations configured",
+  "deleteReservationConfirm": "Delete reservation for {mac}?",
+  "@deleteReservationConfirm": {
+    "placeholders": {
+      "mac": {
+        "type": "String"
+      }
+    }
+  },
+  "activeLeases": "Active Leases",
+  "noDhcpClients": "No DHCP clients",
+  "leaseExpiry": "Lease: {expiry}",
+  "@leaseExpiry": {
+    "placeholders": {
+      "expiry": {
+        "type": "String"
+      }
+    }
+  },
+  "routerIp": "Router IP",
+  "dhcpRange": "DHCP Range",
+  "invalidMacAddressFormat": "Invalid MAC address format (e.g. AA:BB:CC:DD:EE:FF)",
+  "editDhcpReservation": "Edit DHCP Reservation",
+  "macAddressHint": "MAC Address (e.g. AA:BB:CC:DD:EE:FF)",
+  "ipAddressHint": "IP Address (e.g. 192.168.1.100)",
+  "firewallSettingsSaved": "Firewall settings saved",
+  "configureFirewallDesc": "Configure firewall and VPN passthrough settings",
+  "firewallProtection": "Firewall Protection",
+  "ipv4SpiFirewall": "IPv4 SPI Firewall",
+  "ipv6SpiFirewall": "IPv6 SPI Firewall",
+  "ipv6PortService": "IPv6 Port Service",
+  "manageIpv6PortRules": "Manage IPv6 inbound port access rules",
+  "mtuMinError": "MTU must be at least {min} (IPv4 minimum)",
+  "@mtuMinError": {
+    "placeholders": {
+      "min": {
+        "type": "int"
+      }
+    }
+  },
+  "mtuMaxError": "MTU must not exceed {max}",
+  "@mtuMaxError": {
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "dmzSettingsSaved": "DMZ settings saved",
+  "dmzPageDesc": "Route all incoming traffic to a specific host on your network",
+  "dmzRouteToHost": "Route all traffic to a host",
+  "destinationIp": "Destination IP",
+  "sourceRestriction": "Source Restriction",
+  "anyAllSources": "Any (all sources)",
+  "cidrRange": "CIDR Range",
+  "staticRoutes": "Static Routes",
+  "staticRoutesSaved": "Static routes saved",
+  "staticRoutingPageDesc": "Manage static IPv4 routes on your network",
+  "gatewayLabel": "Gateway: {gateway}  {interface}",
+  "@gatewayLabel": {
+    "placeholders": {
+      "gateway": {
+        "type": "String"
+      },
+      "interface": {
+        "type": "String"
+      }
+    }
+  },
+  "unnamed": "(unnamed)",
+  "editStaticRoute": "Edit Static Route",
+  "gatewayIp": "Gateway IP",
+  "noIpv6PortServiceRules": "No IPv6 port service rules configured",
+  "ipv6PortRulesSaved": "IPv6 port rules saved",
+  "ipv6AddressSearchHint": "IPv6 Address (type to search devices)",
+  "instantPrivacyPageDesc": "Lock your network to only currently connected devices. Any new device will be blocked until you disable Instant Privacy.",
+  "onlyAllowedDevicesCanConnect": "Only allowed devices can connect",
+  "allDevicesCanConnectFreely": "All devices can connect freely",
+  "devicesWillBeAllowed": "Devices that will be allowed ({count})",
+  "@devicesWillBeAllowed": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "devicesWillBeAllowedDesc": "These devices are currently connected and will form the whitelist when you enable Instant Privacy.",
+  "noDevicesCurrentlyConnected": "No devices are currently connected.",
+  "instantPrivacyCannotBeEnabled": "Instant Privacy cannot be enabled until at least one device is connected.",
+  "allowedDevicesCount": "Allowed devices ({count})",
+  "@allowedDevicesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "addDevice": "Add device",
+  "noDevicesInAllowedList": "No devices in the allowed list.",
+  "enableInstantPrivacyTitle": "Enable Instant Privacy?",
+  "enableInstantPrivacyDesc": "Only the {count} currently connected device(s) will be allowed to connect. All other devices will be blocked.",
+  "@enableInstantPrivacyDesc": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "disableInstantPrivacyTitle": "Disable Instant Privacy?",
+  "disableInstantPrivacyDesc": "All devices will be able to connect freely to your network.",
+  "addDeviceManually": "Add device manually",
+  "enterMacAddressToAllow": "Enter the MAC address of the device to allow.",
+  "deviceAlreadyInAllowedList": "This device is already in the allowed list",
+  "adding": "Adding…",
+  "instantSafetyPageDesc": "Protect your family and block pre-determined adult, illegal and malicious content with a single tap. Safe browsing applies to all devices on your network.",
+  "safeBrowsingOpenDns": "Safe Browsing (OpenDNS)",
+  "openDnsServers": "DNS: 208.67.222.222, 208.67.220.220",
+  "openDnsFamilyShieldDesc": "All devices on your network will use OpenDNS Family Shield for safer browsing.",
+  "safeBrowsingSettingsSaved": "Safe browsing settings saved",
+  "aiRouterAssistant": "AI Router Assistant",
+  "awsBedrockConfiguration": "AWS Bedrock Configuration",
+  "enterAwsCredentials": "Enter your AWS credentials to connect to Claude.",
+  "awsAccessKeyId": "AWS Access Key ID",
+  "awsSecretAccessKey": "AWS Secret Access Key",
+  "enterSecretKey": "Enter secret key",
+  "regionFixed": "Region: us-west-2 (fixed)",
+  "connecting": "Connecting...",
+  "connect": "Connect",
+  "fillAllRequiredFields": "Please fill in all required fields",
+  "failedToInitialize": "Failed to initialize: {error}",
+  "@failedToInitialize": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "confirmationRequired": "Confirmation Required",
+  "confirmExecuteOperation": "Are you sure you want to execute this operation?",
+  "confirm": "Confirm",
+  "settings": "Settings",
+  "clearConversation": "Clear conversation",
+  "changeConfiguration": "Change Configuration",
+  "changeAwsCredentials": "Do you want to change AWS credentials?\nThis will clear the current conversation.",
+  "live": "Live",
+  "aiAssistantWelcome": "I can help you check network status, manage connected devices, or adjust WiFi settings.\nTry asking \"Show all connected devices\" or \"What is my network status?\"",
+  "anErrorOccurred": "An error occurred",
+  "typeAMessage": "Type a message...",
+  "searchByNameMacIp": "Search by name, MAC, or IP",
+  "noDevicesMatchFilters": "No devices match the current filters",
+  "deviceDetail": "Device Detail",
+  "backToDevices": "Back to Devices",
+  "operatingSystem": "Operating System",
+  "wifiConnection": "WiFi Connection",
+  "wiredConnection": "Wired Connection",
+  "ipLabel": "IP: {ip}",
+  "@ipLabel": {
+    "placeholders": {
+      "ip": {
+        "type": "String"
+      }
+    }
+  },
+  "macLabel": "MAC: {mac}",
+  "@macLabel": {
+    "placeholders": {
+      "mac": {
+        "type": "String"
+      }
+    }
+  },
+  "signalAndSpeed": "Signal & Speed",
+  "networkDetails": "Network Details",
+  "wifiWireless": "WiFi (Wireless)",
+  "ethernetWired": "Ethernet (Wired)",
+  "dhcpReservation": "DHCP Reservation",
+  "releaseReservation": "Release Reservation",
+  "noIpv4AddressDesc": "No IPv4 address. Cannot create reservation.",
+  "reserveIpAddress": "Reserve IP Address",
+  "ipv6Addresses": "IPv6 Addresses",
+  "nMore": "+{count} more",
+  "@nMore": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "ipAddressReserved": "IP address reserved",
+  "reservationReleased": "Reservation released",
+  "viaNode": "via {node}",
+  "@viaNode": {
+    "placeholders": {
+      "node": {
+        "type": "String"
+      }
+    }
+  },
+  "connectingToRouter": "Connecting to router...",
+  "reconnecting": "Reconnecting...",
+  "realTimeConnectionLost": "Real-time connection lost",
+  "disconnected": "Disconnected",
+  "reconnect": "Reconnect",
+  "copiedValue": "Copied: {value}",
+  "@copiedValue": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "editWifiNetworkAction": "{action} WiFi Network",
+  "@editWifiNetworkAction": {
+    "placeholders": {
+      "action": {
+        "type": "String"
+      }
+    }
+  },
+  "nRadios": "{enabled} / {total} radios",
+  "@nRadios": {
+    "placeholders": {
+      "enabled": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "nOnlineOfTotal": "{online} / {total} online",
+  "@nOnlineOfTotal": {
+    "placeholders": {
+      "online": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "protocolDhcp": "{protocol} DHCP",
+  "@protocolDhcp": {
+    "placeholders": {
+      "protocol": {
+        "type": "String"
+      }
+    }
+  },
+  "signalStrengthDbm": "{value} dBm",
+  "@signalStrengthDbm": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "addedWidgetNamed": "Added {name}",
+  "@addedWidgetNamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "radioBand": "Radio: {band}",
+  "@radioBand": {
+    "placeholders": {
+      "band": {
+        "type": "String"
+      }
+    }
+  },
+  "wifiSsidValue": "WiFi SSID: {ssid}",
+  "@wifiSsidValue": {
+    "placeholders": {
+      "ssid": {
+        "type": "String"
+      }
+    }
+  },
+  "wifiPasswordValue": "WiFi password: {password}",
+  "@wifiPasswordValue": {
+    "placeholders": {
+      "password": {
+        "type": "String"
+      }
+    }
+  },
+  "accessPoints": "Access Points",
+  "apps": "Apps",
+  "routerPasswordRuleOneSpecial": "At least one special character",
+  "backToTopology": "Back to Topology",
+  "backhaulConnection": "Backhaul Connection",
+  "bandwidth": "Bandwidth",
+  "bitRate": "Bit Rate",
+  "changeRouterPassword": "Change Router Password",
+  "channels": "Channels",
+  "comparison": "Comparison",
+  "confirmPassword": "Confirm Password",
+  "connectionLost": "Connection lost",
+  "dmzSettings": "DMZ Settings",
+  "deviceInformation": "Device Information",
+  "editTimeSettings": "Edit time settings",
+  "editTimezoneSettings": "Edit timezone settings",
+  "endSession": "End Session",
+  "endSessionQuestion": "End Session?",
+  "ethernetPorts": "Ethernet Ports",
+  "export": "Export",
+  "factoryReset": "Factory Reset",
+  "firewallOverview": "Firewall Overview",
+  "firewallSettings": "Firewall Settings",
+  "firmware": "Firmware",
+  "gateway": "Gateway",
+  "guestNetwork": "Guest Network",
+  "lanIp": "LAN IP",
+  "lanIpv6": "LAN IPv6",
+  "lanInformation": "LAN Information",
+  "lastContact": "Last Contact",
+  "loadingEllipsis": "Loading...",
+  "localTime": "Local Time",
+  "badgeNew": "NEW",
+  "networkStatus": "Network Status",
+  "networkTopology": "Network Topology",
+  "newPassword": "New Password",
+  "noAppsInstalled": "No apps installed on this router",
+  "routerPasswordRuleNoConsecutive": "No consecutive identical characters",
+  "noDimensions": "No dimensions",
+  "noLogFilesAvailable": "No log files available on this router",
+  "nodeDetail": "Node Detail",
+  "nodeNotFound": "Node not found",
+  "pinCopied": "PIN copied",
+  "pinCopiedToClipboard": "PIN copied to clipboard",
+  "ports": "Ports",
+  "reboot": "Reboot",
+  "remoteAssistanceSessionEnded": "Remote assistance session has ended",
+  "reservations": "Reservations",
+  "runDiagnosticsTitle": "Run Diagnostics",
+  "searchHelpTopics": "Search for help topics...",
+  "serial": "Serial",
+  "serialNumberLabel": "Serial Number",
+  "sessionExpiresIn": "Session expires in",
+  "sessionNotFound": "Session not found",
+  "showMascot": "Show Mascot",
+  "standards": "Standards",
+  "store": "Store",
+  "subnet": "Subnet",
+  "systemActions": "System Actions",
+  "systemInformation": "System Information",
+  "systemLogs": "System Logs",
+  "themeColor": "Theme Color",
+  "timeSettings": "Time Settings",
+  "timezone": "Timezone",
+  "txPower": "Tx Power",
+  "badgeUser": "USER",
+  "uspConsole": "USP Console",
+  "uspDashboard": "USP Dashboard",
+  "unableToLoadApps": "Unable to load apps",
+  "unableToLoadTopology": "Unable to load topology",
+  "routerPasswordRuleUpperLower": "Upper and lower case letters",
+  "validatingSession": "Validating session...",
+  "viewDevices": "View Devices",
+  "wanIp": "WAN IP",
+  "wanIpv6": "WAN IPv6",
+  "wifiNetworks": "WiFi Networks",
+  "wifiPerformance": "WiFi Performance",
+  "wifiStatus": "WiFi Status",
+  "clients": "clients",
+  "atLeastOneNumber": "At least one number",
+  "daylightSavingsTimeLabel": "Daylight Savings Time",
+  "utcOffset": "UTC Offset",
+  "printReport": "Print Report",
+  "themeStudio": "Theme Studio",
+  "faq": "FAQ",
+  "aiAssistant": "AI Assistant",
+  "viewAll": "View all",
+  "noDevicesOnline": "No devices online",
+  "copyPin": "Copy PIN",
+  "noDevicesConnectedToNode": "No devices connected to this node",
+  "viewDetails": "View details",
+  "renewLease": "Renew Lease",
+  "renewing": "Renewing...",
+  "connected": "Connected",
+  "lanConnected": "LAN Connected",
+  "critical": "Critical",
+  "unknown": "Unknown",
+  "accept": "Accept",
+  "drop": "Drop",
+  "reject": "Reject",
+  "returnTarget": "Return",
+  "targetChain": "Target Chain",
+  "synchronized": "Synchronized",
+  "noPortForwardingRulesConfigured": "No port forwarding rules configured",
+  "nItems": "{count, plural, one{{count} item} other{{count} items}}",
+  "@nItems": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

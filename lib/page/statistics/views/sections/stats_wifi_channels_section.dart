@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/components/wifi_ui.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_client_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_radio_ui_model.dart';
@@ -16,12 +17,12 @@ class StatsWifiChannelsSection extends ConsumerWidget {
     final wifiData = ref.watch(wifiDataProvider).valueOrNull;
     if (wifiData == null) {
       return StatsSectionCard(
-        title: 'WiFi Channels',
-        subtitle: 'Radio channel allocation and client distribution',
+        title: loc(context).wifiChannels,
+        subtitle: loc(context).wifiChannelsSubtitle,
         chartHeight: 320,
         child: Center(
           child: AppText.bodyMedium(
-            'Loading...',
+            loc(context).loading,
             color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
         ),
@@ -32,13 +33,13 @@ class StatsWifiChannelsSection extends ConsumerWidget {
     final activeClients = _buildClientList(wifiData);
 
     return StatsSectionCard(
-      title: 'WiFi Channels',
-      subtitle: 'Radio channel allocation and client distribution',
+      title: loc(context).wifiChannels,
+      subtitle: loc(context).wifiChannelsSubtitle,
       chartHeight: 320,
       child: radios.isEmpty
           ? Center(
               child: AppText.bodyMedium(
-                'No WiFi radios available',
+                loc(context).noWifiRadiosAvailable,
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             )
@@ -119,9 +120,9 @@ class StatsWifiChannelsSection extends ConsumerWidget {
                 AppGap.xs(),
                 Row(
                   children: [
-                    AppText.bodySmall('$clientCount clients'),
+                    AppText.bodySmall(loc(context).clientsCount(clientCount)),
                     AppGap.md(),
-                    AppText.bodySmall('SNR: ${snr.toInt()} dB'),
+                    AppText.bodySmall(loc(context).snrValue(snr.toInt())),
                     AppGap.sm(),
                     Expanded(
                       child: AppLoader(
@@ -193,7 +194,8 @@ class _BandDistributionDonut extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             AppText.titleMedium('$totalClients'),
-            AppText.labelSmall('clients', color: colorScheme.onSurfaceVariant),
+            AppText.labelSmall(loc(context).clients,
+                color: colorScheme.onSurfaceVariant),
           ],
         ),
         touchedCenterLabel: (section, _) => '${section.value.toInt()}',

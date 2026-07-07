@@ -5,6 +5,7 @@ import 'package:ui_kit_library/ui_kit.dart';
 
 import 'package:privacy_gui/ai/_ai.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/ai_assistant/providers/router_command_provider.dart';
 import 'package:privacy_gui/page/dashboard/mascot/mascot_hero_widget.dart';
 
@@ -86,7 +87,7 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
     if (_accessKeyController.text.isEmpty ||
         _secretKeyController.text.isEmpty) {
       setState(() {
-        _configError = 'Please fill in all required fields';
+        _configError = 'fillAllRequiredFields';
       });
       return;
     }
@@ -118,7 +119,7 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
       });
     } catch (e) {
       setState(() {
-        _configError = 'Failed to initialize: $e';
+        _configError = 'failedToInitialize:$e';
         _isConfiguring = false;
       });
     }
@@ -140,14 +141,13 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: AppText.titleMedium('Confirmation Required'),
+      builder: (ctx) => AlertDialog(
+        title: AppText.titleMedium(loc(context).confirmationRequired),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            AppText.bodyMedium(
-                'Are you sure you want to execute this operation?'),
+            AppText.bodyMedium(loc(context).confirmExecuteOperation),
             const SizedBox(height: 12),
             AppSurface(
               variant: SurfaceVariant.elevated,
@@ -167,16 +167,16 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
         ),
         actions: [
           AppButton.text(
-            label: 'Cancel',
+            label: loc(context).cancel,
             onTap: () {
-              Navigator.pop(context);
+              Navigator.pop(ctx);
               _controller?.cancelPendingAction();
             },
           ),
           AppButton.primary(
-            label: 'Confirm',
+            label: loc(context).confirm,
             onTap: () {
-              Navigator.pop(context);
+              Navigator.pop(ctx);
               _controller?.confirmPendingAction();
             },
           ),
@@ -193,6 +193,17 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
     _accessKeyController.dispose();
     _secretKeyController.dispose();
     super.dispose();
+  }
+
+  String _localizeConfigError(BuildContext context, String error) {
+    if (error == 'fillAllRequiredFields') {
+      return loc(context).fillAllRequiredFields;
+    }
+    if (error.startsWith('failedToInitialize:')) {
+      final detail = error.substring('failedToInitialize:'.length);
+      return loc(context).failedToInitialize(detail);
+    }
+    return error;
   }
 
   void _scrollToBottom() {
@@ -236,7 +247,7 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
           children: [
             Icon(Icons.auto_awesome, color: theme.colorScheme.primary),
             const SizedBox(width: 8),
-            const Text('AI Router Assistant'),
+            Text(loc(context).aiRouterAssistant),
           ],
         ),
       ),
@@ -258,12 +269,12 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
                 ),
                 const SizedBox(height: 24),
                 AppText.headline(
-                  'AWS Bedrock Configuration',
+                  loc(context).awsBedrockConfiguration,
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 8),
                 AppText.body(
-                  'Enter your AWS credentials to connect to Claude.',
+                  loc(context).enterAwsCredentials,
                   textAlign: TextAlign.center,
                   color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                 ),
@@ -280,7 +291,7 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
                           const SizedBox(width: 8),
                           Expanded(
                             child: AppText.bodySmall(
-                              _configError!,
+                              _localizeConfigError(context, _configError!),
                               color: theme.colorScheme.error,
                             ),
                           ),
@@ -293,7 +304,7 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    AppText.labelMedium('AWS Access Key ID'),
+                    AppText.labelMedium(loc(context).awsAccessKeyId),
                     const SizedBox(height: 4),
                     AppTextField(
                       controller: _accessKeyController,
@@ -305,11 +316,11 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    AppText.labelMedium('AWS Secret Access Key'),
+                    AppText.labelMedium(loc(context).awsSecretAccessKey),
                     const SizedBox(height: 4),
                     AppPasswordInput(
                       controller: _secretKeyController,
-                      hintText: 'Enter secret key',
+                      hintText: loc(context).enterSecretKey,
                     ),
                   ],
                 ),
@@ -317,12 +328,14 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
                 _buildModelDropdown(),
                 const SizedBox(height: 8),
                 AppText.caption(
-                  'Region: us-west-2 (fixed)',
+                  loc(context).regionFixed,
                   color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
                 ),
                 const SizedBox(height: 24),
                 AppButton(
-                  label: _isConfiguring ? 'Connecting...' : 'Connect',
+                  label: _isConfiguring
+                      ? loc(context).connecting
+                      : loc(context).connect,
                   onTap:
                       _isConfiguring ? null : _initControllerWithManualConfig,
                   variant: SurfaceVariant.highlight,
@@ -339,7 +352,7 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        AppText.labelMedium('Model'),
+        AppText.labelMedium(loc(context).model),
         const SizedBox(height: 4),
         AppDropdown<BedrockModel>(
           value: _selectedModel,
@@ -369,7 +382,7 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
               color: Theme.of(context).colorScheme.primary,
             ),
             const SizedBox(width: 8),
-            const Text('AI Router Assistant'),
+            Text(loc(context).aiRouterAssistant),
             const SizedBox(width: 8),
             _buildStatusBadge(),
           ],
@@ -378,12 +391,12 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
           IconButton(
             icon: const Icon(Icons.settings),
             onPressed: _showConfigDialog,
-            tooltip: 'Settings',
+            tooltip: loc(context).settings,
           ),
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _controller?.clearConversation,
-            tooltip: 'Clear conversation',
+            tooltip: loc(context).clearConversation,
           ),
         ],
       ),
@@ -400,20 +413,18 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
   void _showConfigDialog() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: AppText.titleMedium('Change Configuration'),
-        content: AppText.bodyMedium(
-          'Do you want to change AWS credentials?\nThis will clear the current conversation.',
-        ),
+      builder: (ctx) => AlertDialog(
+        title: AppText.titleMedium(loc(context).changeConfiguration),
+        content: AppText.bodyMedium(loc(context).changeAwsCredentials),
         actions: [
           AppButton.text(
-            label: 'Cancel',
-            onTap: () => Navigator.pop(context),
+            label: loc(context).cancel,
+            onTap: () => Navigator.pop(ctx),
           ),
           AppButton.primary(
-            label: 'Change',
+            label: loc(context).change,
             onTap: () {
-              Navigator.pop(context);
+              Navigator.pop(ctx);
               setState(() {
                 _controller?.removeListener(_onControllerChanged);
                 _controller = null;
@@ -434,9 +445,9 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
         color: Colors.green,
         borderRadius: BorderRadius.circular(12),
       ),
-      child: const Text(
-        'Live',
-        style: TextStyle(
+      child: Text(
+        loc(context).live,
+        style: const TextStyle(
           color: Colors.white,
           fontSize: 10,
           fontWeight: FontWeight.bold,
@@ -530,10 +541,10 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
               ),
             ),
             const SizedBox(height: 16),
-            AppText.headline('AI Router Assistant'),
+            AppText.headline(loc(context).aiRouterAssistant),
             const SizedBox(height: 8),
             AppText.body(
-              'I can help you check network status, manage connected devices, or adjust WiFi settings.\nTry asking "Show all connected devices" or "What is my network status?"',
+              loc(context).aiAssistantWelcome,
               textAlign: TextAlign.center,
               color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
             ),
@@ -652,13 +663,13 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
           const SizedBox(width: 8),
           Expanded(
             child: AppText.bodyMedium(
-              _controller?.errorMessage ?? 'An error occurred',
+              _controller?.errorMessage ?? loc(context).anErrorOccurred,
               color: theme.colorScheme.onErrorContainer,
             ),
           ),
           if (_controller?.isRetryable == true)
             AppButton.text(
-              label: 'Retry',
+              label: loc(context).retry,
               onTap: _controller?.retry,
             ),
         ],
@@ -683,7 +694,7 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
             Expanded(
               child: AppTextField(
                 controller: _inputController,
-                hintText: 'Type a message...',
+                hintText: loc(context).typeAMessage,
                 textInputAction: TextInputAction.send,
                 onSubmitted: (_) => _sendMessage(),
               ),

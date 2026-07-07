@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 import 'package:privacy_gui/route/constants.dart';
 
@@ -170,7 +171,7 @@ class _RecommendationsSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const _SectionHeader('Recommended Actions'),
+        _SectionHeader(loc(context).recommendedActions),
         ...recommendations.map((r) => RecommendationCard(rec: r)),
       ],
     );
@@ -200,16 +201,17 @@ class _ActionBar extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Expanded(
-          child: AppButton.secondary(label: 'Run Again', onTap: onRestart),
+          child: AppButton.secondary(
+              label: loc(context).runAgain, onTap: onRestart),
         ),
         AppGap.lg(),
         Expanded(
-          child: AppButton(label: 'Done', onTap: onDone),
+          child: AppButton(label: loc(context).done, onTap: onDone),
         ),
       ],
     );
     final exportLink = AppButton.text(
-      label: 'Export Diagnostics Report',
+      label: loc(context).exportDiagnosticsReport,
       onTap: () => const DiagnosticReportService().share(state),
     );
     final stack = Column(
@@ -251,10 +253,18 @@ class _SummaryCard extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     final (icon, color, title) = hasErrors
-        ? (Icons.error, colorScheme.error, 'Issues Found')
+        ? (Icons.error, colorScheme.error, loc(context).issuesFound)
         : hasWarnings
-            ? (Icons.warning, colorScheme.tertiary, 'Potential Issues')
-            : (Icons.check_circle, colorScheme.primary, 'All Systems OK');
+            ? (
+                Icons.warning,
+                colorScheme.tertiary,
+                loc(context).potentialIssues
+              )
+            : (
+                Icons.check_circle,
+                colorScheme.primary,
+                loc(context).allSystemsOk
+              );
 
     return AppCard(
       child: Padding(
@@ -265,15 +275,17 @@ class _SummaryCard extends StatelessWidget {
             AppGap.lg(),
             Expanded(child: AppText.titleLarge(title)),
             _StatusCount(
-                label: 'Failed', count: errorCount, color: colorScheme.error),
+                label: loc(context).failed,
+                count: errorCount,
+                color: colorScheme.error),
             AppGap.lg(),
             _StatusCount(
-                label: 'Warning',
+                label: loc(context).warning,
                 count: warningCount,
                 color: colorScheme.tertiary),
             AppGap.lg(),
             _StatusCount(
-                label: 'Passed',
+                label: loc(context).passed,
                 count: passedCount,
                 color: colorScheme.primary),
           ],

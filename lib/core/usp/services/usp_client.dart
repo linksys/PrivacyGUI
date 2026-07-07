@@ -16,6 +16,8 @@ export 'usp_response_helpers.dart';
 export 'bridge_request_throttler.dart' show RequestPriority;
 // Export USP operation result types for application layer use.
 export '../models/usp_operation_result.dart';
+// Export builder for Remote Assistance mode (platform-agnostic entry point).
+export '../web/usp_client_builder.dart';
 
 // ===========================================================================
 // USP Subscription types (used by codegen-generated subscribe methods)
@@ -76,6 +78,17 @@ class UspClient {
       throw UnsupportedError('This POC only supports Web platforms currently.');
     }
     _client = UspClientWeb(baseUrl);
+  }
+
+  /// Creates a UspClient from a pre-built WASM client (via UspClientBuilder).
+  /// Used for Remote Assistance mode where the client is configured with
+  /// custom endpoint, auth token, and extra headers.
+  UspClient.fromBuilder(dynamic jsClient, {required String baseUrl})
+      : _baseUrl = baseUrl {
+    if (!kIsWeb) {
+      throw UnsupportedError('This POC only supports Web platforms currently.');
+    }
+    _client = UspClientWeb.fromJsClient(jsClient);
   }
 
   static int _reqId = 0;

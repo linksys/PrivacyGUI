@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart' hide MenuController;
 import 'package:flutter/rendering.dart' show ScrollDirection;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/page/_shared/helpers/recovery_dialog_helper.dart';
 import 'package:privacy_gui/core/connection/models/app_connection_state.dart';
 import 'package:privacy_gui/core/connection/providers/app_connection_state_provider.dart';
@@ -11,11 +10,16 @@ import 'package:privacy_gui/demo/theme_studio/demo_theme_builder.dart';
 import 'package:privacy_gui/demo/theme_studio/theme_studio_panel.dart';
 import 'package:privacy_gui/components/styled/menus/menu_consts.dart';
 import 'package:privacy_gui/components/styled/menus/widgets/menu_holder.dart';
+import 'package:privacy_gui/config/global_config.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/providers/app_settings/app_settings_provider.dart';
 import 'package:privacy_gui/providers/theme_config_provider.dart';
 import 'package:privacy_gui/route/router_provider.dart';
 import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
+import 'package:privacy_gui/page/_shared/components/remote_session_chip.dart';
 import 'package:privacy_gui/page/_shared/components/sse_connection_banner.dart';
+import 'package:privacy_gui/page/remote_assistance/views/remote_assistance_banner.dart';
+import 'package:privacy_gui/page/remote_assistance/views/remote_assistance_session_guard.dart';
 import 'package:privacy_gui/page/_shared/providers/usp_bars_visible_provider.dart';
 import 'package:privacy_gui/page/dashboard/mascot/linksys_mascot_renderer.dart';
 import 'package:go_router/go_router.dart';
@@ -87,7 +91,7 @@ class _UspDashboardShellState extends ConsumerState<UspDashboardShell> {
         trigger: RecoveryTrigger.natural,
         cooldown: Duration.zero,
         skipEnterWaiting: true,
-        title: 'Connection lost',
+        title: loc(context).connectionLost,
         message:
             'Lost connection to the router. Attempting to reconnect automatically...',
         successMessage: 'Reconnected to router',
@@ -120,6 +124,7 @@ class _UspDashboardShellState extends ConsumerState<UspDashboardShell> {
     final showMascot =
         ref.watch(appSettingsProvider.select((s) => s.showMascot));
     final isDashboardReady = ref.watch(dashboardDomainReadyProvider).hasValue;
+    final isRemoteMode = GlobalConfig.remote.isActive;
     final mascotController = ref.watch(mascotControllerProvider);
     final dialogProvider = ref.watch(mascotHealthDialogProvider(
       HealthDialogProviderArgs(
@@ -134,7 +139,10 @@ class _UspDashboardShellState extends ConsumerState<UspDashboardShell> {
     ));
 
     // Activate mascot coordinator (manages random speech timer internally)
-    ref.watch(mascotCoordinatorProvider);
+    // Skip in remote mode to avoid unnecessary processing
+    if (!isRemoteMode) {
+      ref.watch(mascotCoordinatorProvider);
+    }
 
     final isThemePanelOpen = ref.watch(demoUIProvider).isThemePanelOpen;
 
@@ -143,6 +151,8 @@ class _UspDashboardShellState extends ConsumerState<UspDashboardShell> {
         Column(
           children: [
             const SseConnectionBanner(),
+            // Remote Assistance Banner (for PENDING status after refresh, client-side only)
+            if (!isRemoteMode) const RemoteAssistanceBanner(),
             Expanded(
               child: NotificationListener<UserScrollNotification>(
                 onNotification: (notification) {
@@ -163,8 +173,10 @@ class _UspDashboardShellState extends ConsumerState<UspDashboardShell> {
             ),
           ],
         ),
+        // Remote session chip (floating, top-right)
+        const RemoteSessionChip(),
         // Theme Studio Panel (shell-level so it works on all pages)
-        if (BuildConfig.enableThemeStudio)
+        if (GlobalConfig.feature.enableThemeStudio)
           AnimatedPositioned(
             duration: const Duration(milliseconds: 300),
             curve: Curves.easeInOutCubic,
@@ -180,8 +192,9 @@ class _UspDashboardShellState extends ConsumerState<UspDashboardShell> {
       ],
     );
 
-    // Wrap with MascotOverlay only if mascot is enabled and dashboard is ready
-    if (showMascot && isDashboardReady) {
+    // Wrap with MascotOverlay only if mascot is enabled, dashboard is ready,
+    // and NOT in remote mode (mascot hidden in remote assistance)
+    if (showMascot && isDashboardReady && !isRemoteMode) {
       content = MascotOverlay(
         controller: mascotController,
         dialogProvider: dialogProvider,
@@ -190,6 +203,12 @@ class _UspDashboardShellState extends ConsumerState<UspDashboardShell> {
         ),
         child: content,
       );
+    }
+
+    // Wrap with RemoteAssistanceSessionGuard for client-side session recovery
+    // (shows blocking dialog if ACTIVE session exists after page refresh)
+    if (!isRemoteMode) {
+      content = RemoteAssistanceSessionGuard(child: content);
     }
 
     return Scaffold(

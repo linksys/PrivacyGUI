@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/models/ethernet_port_ui_model.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/local_network/providers/ethernet_data_provider.dart';
@@ -28,7 +29,7 @@ class UspEthernetPortsCard extends ConsumerWidget {
     final wanConnected = wanPorts.where((p) => p.isUp).length;
 
     return DashboardCardTemplate(
-      title: 'Ethernet Ports',
+      title: loc(context).ethernetPorts,
       detailRoute: RouteNamed.uspLocalNetwork,
       content: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -58,8 +59,9 @@ class UspEthernetPortsCard extends ConsumerWidget {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          AppText.titleSmall(
-                              wanConnected > 0 ? 'Connected' : 'Disconnected'),
+                          AppText.titleSmall(wanConnected > 0
+                              ? loc(context).connected
+                              : loc(context).disconnected),
                           AppText.bodySmall(
                             'WAN',
                             color: colorScheme.onSurfaceVariant,
@@ -94,10 +96,9 @@ class UspEthernetPortsCard extends ConsumerWidget {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          AppText.titleSmall(
-                              '$lanConnected / ${lanPorts.length}'),
+                          AppText.titleSmall('$lanConnected'),
                           AppText.bodySmall(
-                            'LAN Connected',
+                            loc(context).lanConnected,
                             color: colorScheme.onSurfaceVariant,
                           ),
                         ],

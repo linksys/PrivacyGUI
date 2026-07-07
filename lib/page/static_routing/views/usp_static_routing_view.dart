@@ -5,6 +5,7 @@ import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/components/views/service_error_view.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/components/detail_widgets.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/route/constants.dart';
@@ -25,7 +26,7 @@ class UspStaticRoutingView extends ConsumerWidget {
 
     return UiKitPageView.withSliver(
       scrollable: true,
-      title: 'Static Routing',
+      title: loc(context).staticRouting,
       topbar: const PreferredSize(
         preferredSize: Size.fromHeight(64),
         child: UspTopBar(),
@@ -63,7 +64,7 @@ class UspStaticRoutingView extends ConsumerWidget {
   ) {
     if (!state.isDirty) return null;
     return UiKitBottomBarConfig(
-      positiveLabel: 'Save',
+      positiveLabel: loc(context).save,
       isPositiveEnabled: !state.status.isSaving,
       onPositiveTap: () => _onSave(context, ref),
       onNegativeTap: () => ref.read(uspStaticRoutingProvider.notifier).revert(),
@@ -86,14 +87,14 @@ class UspStaticRoutingView extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         AppText.bodyMedium(
-          'Manage static IPv4 routes on your network',
+          loc(context).staticRoutingPageDesc,
           color: Theme.of(context).colorScheme.onSurfaceVariant,
         ),
         AppGap.xl(),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            AppText.titleMedium('Static Routes'),
+            AppText.titleMedium(loc(context).staticRoutes),
             AppIconButton(
               icon: AppIcon.font(Icons.add, size: 20),
               onTap: isSaving ? null : () => _showAddDialog(context, ref),
@@ -102,9 +103,9 @@ class UspStaticRoutingView extends ConsumerWidget {
         ),
         AppGap.lg(),
         if (routes.isEmpty)
-          const DetailEmptyBlock(
+          DetailEmptyBlock(
             icon: Icons.alt_route,
-            message: 'No static routes configured',
+            message: loc(context).noStaticRoutes,
           )
         else
           ...routes.asMap().entries.map((entry) =>
@@ -145,14 +146,19 @@ class UspStaticRoutingView extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   AppText.bodyMedium(
-                    route.name.isNotEmpty ? route.name : '(unnamed)',
+                    route.name.isNotEmpty ? route.name : loc(context).unnamed,
                   ),
                   AppText.bodySmall(
                     '${route.destIpAddress} / ${route.destSubnetMask}',
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                   AppText.bodySmall(
-                    'Gateway: ${route.gatewayIpAddress.isNotEmpty ? route.gatewayIpAddress : '-'}  ${route.interfaceName}',
+                    loc(context).gatewayLabel(
+                      route.gatewayIpAddress.isNotEmpty
+                          ? route.gatewayIpAddress
+                          : '-',
+                      route.interfaceName,
+                    ),
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ],
@@ -231,7 +237,7 @@ class UspStaticRoutingView extends ConsumerWidget {
         ref.read(uspStaticRoutingProvider.notifier).save(),
       );
       if (context.mounted) {
-        showSuccessSnackBar(context, 'Static routes saved');
+        showSuccessSnackBar(context, loc(context).staticRoutesSaved);
       }
     } catch (e) {
       if (context.mounted) {

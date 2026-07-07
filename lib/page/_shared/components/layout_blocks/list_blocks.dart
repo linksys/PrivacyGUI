@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 import 'base_blocks.dart';
@@ -210,7 +211,7 @@ class _CopyableText extends StatelessWidget {
         Clipboard.setData(ClipboardData(text: text));
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Copied: $text'),
+            content: Text(loc(context).copiedValue(text)),
             duration: const Duration(seconds: 1),
           ),
         );

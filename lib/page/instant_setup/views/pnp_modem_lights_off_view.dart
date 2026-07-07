@@ -27,7 +27,7 @@ class PnpModemLightsOffView extends StatelessWidget {
                 AppGap.xxxl(),
                 AppText.headlineSmall(loc(context).pnpModemLightsOffTitle),
                 AppGap.md(),
-                AppText.bodyMedium(loc(context).pnpModemLightsOffDesc),
+                AppText.bodyMedium(loc(context).pnpIspSettingsContactDesc),
                 AppGap.xxxl(),
                 _buildTipCard(context),
                 AppGap.xxxl(),

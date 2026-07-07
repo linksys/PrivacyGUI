@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
@@ -29,7 +30,7 @@ class FirmwareUpdateCard extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            AppText.titleMedium('Firmware Update'),
+            AppText.titleMedium(loc(context).firmwareUpdate),
             AppGap.md(),
             LayoutBlock(
               padding: const EdgeInsets.all(AppSpacing.md),
@@ -42,19 +43,19 @@ class FirmwareUpdateCard extends ConsumerWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        AppText.labelSmall('Current Version',
+                        AppText.labelSmall(loc(context).currentVersionShort,
                             color: colorScheme.onSurfaceVariant),
                         if (isLoading)
                           const _CardSkeleton()
                         else if (activeVersion == null)
-                          AppText.bodyMedium('Not available')
+                          AppText.bodyMedium(loc(context).notAvailable)
                         else
                           AppText.bodyMedium(activeVersion),
                       ],
                     ),
                   ),
                   AppButton.text(
-                    label: 'Update',
+                    label: loc(context).update,
                     onTap: () =>
                         context.pushNamed(RouteNamed.uspFirmwareUpdate),
                   ),
@@ -77,7 +78,7 @@ class _CardSkeleton extends StatelessWidget {
       children: [
         const SizedBox(width: 16, height: 16, child: AppLoader()),
         AppGap.md(),
-        AppText.bodyMedium('Loading firmware info…'),
+        AppText.bodyMedium(loc(context).loadingFirmwareInfo),
       ],
     );
   }

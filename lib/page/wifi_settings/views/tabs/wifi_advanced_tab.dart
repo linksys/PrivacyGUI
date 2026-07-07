@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/components/views/service_error_view.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/wifi_settings/models/wifi_advanced_feature_state.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_advanced_provider.dart';
@@ -55,7 +56,7 @@ class UspWifiAdvancedTab extends ConsumerWidget {
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.xl),
           child: AppText.bodyMedium(
-            'No advanced WiFi settings available for this device.',
+            loc(context).noAdvancedWifiSettings,
             color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
         ),
@@ -82,7 +83,7 @@ class UspWifiAdvancedTab extends ConsumerWidget {
                     children: [
                       Expanded(
                         child: AppText.labelLarge(
-                            'Dynamic Frequency Selection (DFS)'),
+                            loc(context).dynamicFrequencySelection),
                       ),
                       AppSwitch(
                         value: settings.isDfsEnabled,
@@ -93,13 +94,7 @@ class UspWifiAdvancedTab extends ConsumerWidget {
                   ),
                   AppGap.md(),
                   AppText.bodyMedium(
-                    'Enables IEEE 802.11h on 5 GHz radios, which activates '
-                    'both Dynamic Frequency Selection (DFS) and Transmit '
-                    'Power Control (TPC).\n\n'
-                    'DFS allows the router to use 5 GHz channels shared with '
-                    'radar systems. If a radar signal is detected, the router '
-                    'will automatically switch to an unoccupied channel, which '
-                    'may cause a brief interruption in connectivity.',
+                    loc(context).dfsDescription,
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ],

@@ -126,8 +126,14 @@ class DashboardOrchestrator extends AsyncNotifier<DashboardOrchestratorState> {
       throw const ServiceNotInitializedError(
           detail: 'USP service not available');
     }
-    // On page reload WASM state is lost — attempt session restore
-    if (!usp.isAuthenticated) {
+
+    // Remote Assistance mode: client is pre-authenticated via authToken,
+    // skip local USP auth check.
+    final loginType = ref.read(authProvider).value?.loginType;
+    final isRemoteAssistance = loginType == LoginType.remote;
+
+    // On page reload WASM state is lost — attempt session restore (local only)
+    if (!isRemoteAssistance && !usp.isAuthenticated) {
       await ref.read(uspAuthCoordinatorProvider).restoreSession();
       if (!usp.isAuthenticated) {
         throw const NotAuthenticatedError();
@@ -181,7 +187,7 @@ class DashboardOrchestrator extends AsyncNotifier<DashboardOrchestratorState> {
     _scheduleProviderRetry();
 
     return DashboardOrchestratorState(
-      isAuthenticated: usp.isAuthenticated,
+      isAuthenticated: isRemoteAssistance || usp.isAuthenticated,
     );
   }
 
@@ -189,6 +195,10 @@ class DashboardOrchestrator extends AsyncNotifier<DashboardOrchestratorState> {
   /// their initial fetch. This prevents subscription POST requests from
   /// competing with data GET requests on the bridge, which causes 503
   /// errors due to the single-threaded OBUSPA backend.
+  ///
+  /// Strategy handles the registration logic:
+  /// - Local: direct register (bridge is idempotent)
+  /// - Remote: unregister → delay → register (to avoid ID conflicts)
   Future<void> _registerSSEAfterDomainReady() async {
     await ref.read(dashboardDomainReadyProvider.future);
 
@@ -207,7 +217,7 @@ class DashboardOrchestrator extends AsyncNotifier<DashboardOrchestratorState> {
     }
 
     manager.setCoreSubscriptions(coreSubscriptions);
-    await manager.registerDeferredSubscriptions(force: true);
+    await manager.registerCoreSubscriptions();
     logger.d(
         '[USP][Orchestrator]: SSE subscriptions registered after domain ready');
   }

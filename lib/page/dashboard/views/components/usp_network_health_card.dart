@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/_shared/models/network_health_helpers.dart';
 import 'package:privacy_gui/page/_shared/models/traffic_analysis_state.dart';
@@ -34,7 +35,7 @@ class _UspNetworkHealthCardState extends ConsumerState<UspNetworkHealthCard> {
     final selectedTab = ref.watch(cardTabIndexProvider(_cardId));
 
     return DashboardCardTemplate.tabbed(
-      title: 'Network Health',
+      title: loc(context).networkHealth,
       titleBadge: trafficState.isFetching
           ? SizedBox(
               width: 14,
@@ -47,15 +48,15 @@ class _UspNetworkHealthCardState extends ConsumerState<UspNetworkHealthCard> {
           ref.read(cardTabIndexProvider(_cardId).notifier).state = index,
       tabs: [
         CardTab(
-          label: 'Health',
+          label: loc(context).health,
           content: _buildTabContent(context, trafficState, 0),
         ),
         CardTab(
-          label: 'Errors',
+          label: loc(context).errors,
           content: _buildTabContent(context, trafficState, 1),
         ),
         CardTab(
-          label: 'Loss',
+          label: loc(context).loss,
           content: _buildTabContent(context, trafficState, 2),
         ),
       ],
@@ -70,16 +71,16 @@ class _UspNetworkHealthCardState extends ConsumerState<UspNetworkHealthCard> {
     if (state.history.isEmpty) {
       return Center(
         child: AppText.bodyMedium(
-          'Enable traffic monitor for health data',
+          loc(context).enableTrafficMonitorForHealthData,
           color: Theme.of(context).colorScheme.onSurfaceVariant,
         ),
       );
     }
 
     return switch (selectedTab) {
-      0 => _HealthOverview(state: state),
-      1 => _ErrorsChart(state: state),
-      2 => _LossChart(state: state),
+      0 => _HealthOverview(state: state, parentContext: context),
+      1 => _ErrorsChart(state: state, parentContext: context),
+      2 => _LossChart(state: state, parentContext: context),
       _ => const SizedBox.shrink(),
     };
   }
@@ -91,7 +92,8 @@ class _UspNetworkHealthCardState extends ConsumerState<UspNetworkHealthCard> {
 
 class _HealthOverview extends StatelessWidget {
   final TrafficAnalysisState state;
-  const _HealthOverview({required this.state});
+  final BuildContext parentContext;
+  const _HealthOverview({required this.state, required this.parentContext});
 
   @override
   Widget build(BuildContext context) {
@@ -128,7 +130,7 @@ class _HealthOverview extends StatelessWidget {
                 children: [
                   AppText.titleLarge('$overallScore'),
                   AppText.labelSmall(
-                    NetworkHealthHelpers.tierLabel(tier),
+                    tier.resolveLabel(ctx),
                     color: tierClr,
                   ),
                 ],
@@ -142,13 +144,13 @@ class _HealthOverview extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             _TrafficLight(
-              label: 'WAN',
+              label: loc(parentContext).wan,
               tier: wanTier,
               colorScheme: colorScheme,
             ),
             AppGap.xl(),
             _TrafficLight(
-              label: 'LAN',
+              label: loc(parentContext).lan,
               tier: lanTier,
               colorScheme: colorScheme,
             ),
@@ -160,21 +162,21 @@ class _HealthOverview extends StatelessWidget {
           children: [
             Expanded(
               child: _MetricChip(
-                label: 'Errors',
+                label: loc(parentContext).errors,
                 value: NetworkHealthHelpers.formatFaultRate(errorRate),
               ),
             ),
             AppGap.sm(),
             Expanded(
               child: _MetricChip(
-                label: 'Discards',
+                label: loc(parentContext).discards,
                 value: NetworkHealthHelpers.formatFaultRate(discardRate),
               ),
             ),
             AppGap.sm(),
             Expanded(
               child: _MetricChip(
-                label: 'Loss',
+                label: loc(parentContext).loss,
                 value: '${lossPercent.toStringAsFixed(2)}%',
               ),
             ),
@@ -208,7 +210,7 @@ class _TrafficLight extends StatelessWidget {
           decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
         AppGap.xs(),
-        AppText.labelSmall('$label: ${NetworkHealthHelpers.tierLabel(tier)}'),
+        AppText.labelSmall('$label: ${tier.resolveLabel(context)}'),
       ],
     );
   }
@@ -243,7 +245,8 @@ class _MetricChip extends StatelessWidget {
 
 class _ErrorsChart extends StatelessWidget {
   final TrafficAnalysisState state;
-  const _ErrorsChart({required this.state});
+  final BuildContext parentContext;
+  const _ErrorsChart({required this.state, required this.parentContext});
 
   @override
   Widget build(BuildContext context) {
@@ -281,13 +284,13 @@ class _ErrorsChart extends StatelessWidget {
             child: AppLineChart(
               series: [
                 AppChartSeries(
-                  label: 'Errors',
+                  label: loc(parentContext).errors,
                   data: errorData,
                   filled: true,
                   color: colorScheme.error,
                 ),
                 AppChartSeries(
-                  label: 'Discards',
+                  label: loc(parentContext).discards,
                   data: discardData,
                   color: Colors.orange,
                 ),
@@ -305,14 +308,17 @@ class _ErrorsChart extends StatelessWidget {
             _LegendDot(color: colorScheme.error),
             AppGap.xs(),
             AppText.labelSmall(
-              'Avg: ${NetworkHealthHelpers.formatFaultRate(avgErr)}'
-              '  Peak: ${NetworkHealthHelpers.formatFaultRate(peakErr)}',
+              loc(parentContext).avgValuePeakValue(
+                NetworkHealthHelpers.formatFaultRate(avgErr),
+                NetworkHealthHelpers.formatFaultRate(peakErr),
+              ),
             ),
             AppGap.lg(),
             _LegendDot(color: Colors.orange),
             AppGap.xs(),
             AppText.labelSmall(
-              'Avg: ${NetworkHealthHelpers.formatFaultRate(avgDisc)}',
+              loc(parentContext)
+                  .avgValue(NetworkHealthHelpers.formatFaultRate(avgDisc)),
             ),
           ],
         ),
@@ -327,7 +333,8 @@ class _ErrorsChart extends StatelessWidget {
 
 class _LossChart extends StatelessWidget {
   final TrafficAnalysisState state;
-  const _LossChart({required this.state});
+  final BuildContext parentContext;
+  const _LossChart({required this.state, required this.parentContext});
 
   @override
   Widget build(BuildContext context) {
@@ -355,7 +362,7 @@ class _LossChart extends StatelessWidget {
             child: AppLineChart(
               series: [
                 AppChartSeries(
-                  label: 'Loss',
+                  label: loc(parentContext).loss,
                   data: lossData,
                   filled: true,
                   color: colorScheme.error,
@@ -374,8 +381,10 @@ class _LossChart extends StatelessWidget {
             _LegendDot(color: colorScheme.error),
             AppGap.xs(),
             AppText.labelSmall(
-              'Avg: ${avgLoss.toStringAsFixed(3)}%'
-              '  Peak: ${peakLoss.toStringAsFixed(3)}%',
+              loc(parentContext).avgValuePeakValue(
+                '${avgLoss.toStringAsFixed(3)}%',
+                '${peakLoss.toStringAsFixed(3)}%',
+              ),
             ),
           ],
         ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/models/device_analytics_state.dart';
 import 'package:privacy_gui/page/_shared/providers/usp_device_analytics_notifier.dart';
 import 'package:privacy_gui/page/statistics/views/components/stats_section_card.dart';
@@ -24,13 +25,13 @@ class _StatsActivityHeatmapSectionState
     final state = ref.watch(uspDeviceAnalyticsProvider);
 
     return StatsSectionCard(
-      title: 'Activity Heatmap',
-      subtitle: '24-hour per-device activity matrix',
+      title: loc(context).activityHeatmap,
+      subtitle: loc(context).activityHeatmapSubtitle,
       chartHeight: 360,
       child: state.hourlyHistory.isEmpty
           ? Center(
               child: AppText.bodyMedium(
-                'Collecting activity data...',
+                loc(context).collectingActivityData,
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             )
@@ -56,7 +57,7 @@ class _StatsActivityHeatmapSectionState
     if (displayMacs.isEmpty) {
       return Center(
         child: AppText.bodyMedium(
-          'No device activity recorded',
+          loc(context).noDeviceActivityRecorded,
           color: colorScheme.onSurfaceVariant,
         ),
       );
@@ -98,7 +99,7 @@ class _StatsActivityHeatmapSectionState
       final hour = hourSlots[_touchedCol!];
       final active = values[_touchedRow!][_touchedCol!] == 1.0;
       tooltipText =
-          '$device @ ${hour.hour.toString().padLeft(2, '0')}:00 — ${active ? 'Active' : 'Inactive'}';
+          '$device @ ${hour.hour.toString().padLeft(2, '0')}:00 — ${active ? loc(context).active : loc(context).inactive}';
     }
 
     return Column(

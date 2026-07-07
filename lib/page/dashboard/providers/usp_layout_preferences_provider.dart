@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/config/global_config.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -32,6 +33,15 @@ class UspLayoutPreferencesNotifier extends Notifier<UspLayoutPreferences> {
 
   @override
   UspLayoutPreferences build() {
+    // In remote mode, always use remote preset (ignore persisted preferences)
+    final forcedPreset = GlobalConfig.remote.forcedPreset;
+    if (forcedPreset != null) {
+      if (!_initCompleter.isCompleted) {
+        _initCompleter.complete();
+      }
+      return UspLayoutPreferences(selectedPreset: forcedPreset);
+    }
+
     _loadFromPrefs();
     return const UspLayoutPreferences();
   }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/providers/usp_system_monitor_notifier.dart';
 import 'package:privacy_gui/page/statistics/views/components/stats_section_card.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -13,13 +14,13 @@ class StatsResourceTrendsSection extends ConsumerWidget {
     final monitorState = ref.watch(uspSystemMonitorProvider);
 
     return StatsSectionCard(
-      title: 'Resource Trends',
-      subtitle: 'CPU and memory usage over time',
+      title: loc(context).resourceTrends,
+      subtitle: loc(context).resourceTrendsSubtitle,
       chartHeight: 280,
       child: monitorState.history.isEmpty
           ? Center(
               child: AppText.bodyMedium(
-                'Waiting for data...',
+                loc(context).waitingForData,
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             )
@@ -53,13 +54,13 @@ class StatsResourceTrendsSection extends ConsumerWidget {
             child: AppLineChart(
               series: [
                 AppChartSeries(
-                  label: 'CPU',
+                  label: loc(context).cpu,
                   data: cpuValues,
                   filled: true,
                   color: colorScheme.primary,
                 ),
                 AppChartSeries(
-                  label: 'Memory',
+                  label: loc(context).memory,
                   data: memValues,
                   color: colorScheme.secondary,
                 ),
@@ -77,11 +78,11 @@ class StatsResourceTrendsSection extends ConsumerWidget {
           children: [
             StatsLegendDot(color: colorScheme.primary),
             AppGap.xs(),
-            AppText.labelSmall('Avg: $avgCpu%  Peak: $peakCpu%'),
+            AppText.labelSmall(loc(context).avgPeak(avgCpu, peakCpu)),
             AppGap.lg(),
             StatsLegendDot(color: colorScheme.secondary),
             AppGap.xs(),
-            AppText.labelSmall('Avg: $avgMem%'),
+            AppText.labelSmall(loc(context).avg(avgMem)),
           ],
         ),
       ],

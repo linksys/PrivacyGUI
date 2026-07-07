@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../models/diagnostic_state.dart';
@@ -20,7 +21,7 @@ class DiagnosticFlowMenu extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        AppText.headlineSmall('What issue are you experiencing?'),
+        AppText.headlineSmall(loc(context).whatIssueExperiencing),
         AppGap.md(),
 
         // Show pre-qualifier hint if relevant
@@ -39,8 +40,8 @@ class DiagnosticFlowMenu extends ConsumerWidget {
                 Expanded(
                   child: AppText.bodySmall(
                     preQualifier == PreQualifierResult.wanDownNoIp
-                        ? 'Network issue detected: WAN connection down'
-                        : 'Network issue detected: DNS not responding',
+                        ? loc(context).networkIssueDetectedWanDown
+                        : loc(context).networkIssueDetectedDnsNotResponding,
                     color: colorScheme.onErrorContainer,
                   ),
                 ),
@@ -61,7 +62,7 @@ class DiagnosticFlowMenu extends ConsumerWidget {
                 AppGap.md(),
                 Expanded(
                   child: AppText.bodySmall(
-                    'High latency detected during connection check',
+                    loc(context).highLatencyDetected,
                     color: colorScheme.onTertiaryContainer,
                   ),
                 ),
@@ -74,8 +75,8 @@ class DiagnosticFlowMenu extends ConsumerWidget {
         // Flow 1: Internet (combined connectivity + speed)
         FlowCard(
           icon: Icons.language,
-          title: 'Internet',
-          description: 'Check connectivity and speed',
+          title: loc(context).internet,
+          description: loc(context).checkConnectivityAndSpeed,
           color: colorScheme.primary,
           recommended: preQualifier == PreQualifierResult.wanDownNoIp ||
               preQualifier == PreQualifierResult.dnsFailure ||
@@ -87,8 +88,8 @@ class DiagnosticFlowMenu extends ConsumerWidget {
         // Flow 2: WiFi Coverage
         FlowCard(
           icon: Icons.wifi,
-          title: 'WiFi Coverage',
-          description: 'Weak signal in certain areas',
+          title: loc(context).wifiCoverage,
+          description: loc(context).weakSignalInAreas,
           color: colorScheme.tertiary,
           onTap: () => notifier.selectFlow(DiagnosticFlow.wifiCoverage),
         ),
@@ -97,8 +98,8 @@ class DiagnosticFlowMenu extends ConsumerWidget {
         // Flow 3: Mesh / Backhaul
         FlowCard(
           icon: Icons.hub,
-          title: 'Mesh / Backhaul',
-          description: 'Check node-to-node link quality',
+          title: loc(context).meshBackhaul,
+          description: loc(context).checkNodeLinkQuality,
           color: colorScheme.primary,
           onTap: () => notifier.selectFlow(DiagnosticFlow.meshBackhaul),
         ),
@@ -107,8 +108,8 @@ class DiagnosticFlowMenu extends ConsumerWidget {
         // Flow 4: Device Issues
         FlowCard(
           icon: Icons.devices,
-          title: 'Device Issues',
-          description: 'Specific device has connection problems',
+          title: loc(context).deviceIssues,
+          description: loc(context).specificDeviceConnectionProblems,
           color: colorScheme.secondary,
           onTap: () => notifier.selectFlow(DiagnosticFlow.deviceIssues),
         ),
@@ -117,8 +118,8 @@ class DiagnosticFlowMenu extends ConsumerWidget {
         // Flow 5: Intermittent
         FlowCard(
           icon: Icons.sync_problem,
-          title: 'Intermittent Connection',
-          description: 'Connection drops on and off',
+          title: loc(context).intermittentConnection,
+          description: loc(context).connectionDropsOnOff,
           color: colorScheme.outline,
           onTap: () => notifier.selectFlow(DiagnosticFlow.intermittent),
         ),
@@ -126,7 +127,7 @@ class DiagnosticFlowMenu extends ConsumerWidget {
 
         Center(
           child: AppButton.text(
-            label: 'Cancel',
+            label: loc(context).cancel,
             onTap: () => notifier.cancel(),
           ),
         ),

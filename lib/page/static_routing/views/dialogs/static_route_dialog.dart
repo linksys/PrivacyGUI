@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/static_routing/models/static_routing_ui_model.dart';
 import 'package:privacy_gui/page/static_routing/services/usp_static_routing_service.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -92,35 +93,36 @@ class _StaticRouteDialogState extends State<StaticRouteDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(_isEdit ? 'Edit Static Route' : 'Add Static Route'),
+      title: Text(
+          _isEdit ? loc(context).editStaticRoute : loc(context).addStaticRoute),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             AppTextField(
               controller: _nameController,
-              hintText: 'Route Name',
+              hintText: loc(context).routeName,
               errorText: _errors['name'],
               onChanged: (_) => _validate(),
             ),
             AppGap.lg(),
             AppIpv4TextField(
               controller: _destIpController,
-              label: 'Destination IP',
+              label: loc(context).destinationIp,
               errorText: _errors['destIp'],
               onChanged: (_) => _validate(),
             ),
             AppGap.lg(),
             AppIpv4TextField(
               controller: _subnetMaskController,
-              label: 'Subnet Mask',
+              label: loc(context).subnetMask,
               errorText: _errors['subnetMask'],
               onChanged: (_) => _validate(),
             ),
             AppGap.lg(),
             AppIpv4TextField(
               controller: _gatewayController,
-              label: 'Gateway IP',
+              label: loc(context).gatewayIp,
               errorText: _errors['gateway'],
               onChanged: (_) => _validate(),
             ),
@@ -128,7 +130,7 @@ class _StaticRouteDialogState extends State<StaticRouteDialog> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                AppText.bodyMedium('Interface'),
+                AppText.bodyMedium(loc(context).labelInterface),
                 SegmentedButton<String>(
                   segments: UspStaticRoutingService.interfaceOptions
                       .map((name) =>
@@ -144,7 +146,7 @@ class _StaticRouteDialogState extends State<StaticRouteDialog> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                AppText.bodyMedium('Enabled'),
+                AppText.bodyMedium(loc(context).enabled),
                 AppSwitch(
                   value: _enabled,
                   onChanged: (value) => setState(() => _enabled = value),
@@ -157,11 +159,11 @@ class _StaticRouteDialogState extends State<StaticRouteDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+          child: Text(loc(context).cancel),
         ),
         FilledButton(
           onPressed: _isFormValid ? _submit : null,
-          child: Text(_isEdit ? 'Save' : 'Add'),
+          child: Text(_isEdit ? loc(context).save : loc(context).add),
         ),
       ],
     );

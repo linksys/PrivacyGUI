@@ -23,7 +23,7 @@ class DimensionTooltipContent extends StatelessWidget {
     final effectiveSummary = summary ??
         const DimensionSummary(status: 'Unknown', hint: 'Tap for actions');
     final tier = score?.tier ?? HealthTier.excellent;
-    final tierLabel = NetworkHealthHelpers.tierLabel(tier);
+    final tierLabel = tier.resolveLabel(context);
     final cs = Theme.of(context).colorScheme;
     final tierColor = NetworkHealthHelpers.tierColor(tier, cs);
 

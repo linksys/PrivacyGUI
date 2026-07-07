@@ -5,6 +5,7 @@ import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/components/views/service_error_view.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/dmz/models/dmz_feature_state.dart';
@@ -58,7 +59,7 @@ class _UspDmzViewState extends ConsumerState<UspDmzView> {
 
     return UiKitPageView.withSliver(
       scrollable: true,
-      title: 'DMZ',
+      title: loc(context).dmz,
       topbar: const PreferredSize(
         preferredSize: Size.fromHeight(64),
         child: UspTopBar(),
@@ -96,7 +97,7 @@ class _UspDmzViewState extends ConsumerState<UspDmzView> {
   ) {
     if (!state.isDirty) return null;
     return UiKitBottomBarConfig(
-      positiveLabel: 'Save',
+      positiveLabel: loc(context).save,
       isPositiveEnabled:
           !state.status.isSaving && state.status.fieldErrors.isEmpty,
       onPositiveTap: () => _onSave(context, ref),
@@ -121,7 +122,7 @@ class _UspDmzViewState extends ConsumerState<UspDmzView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         AppText.bodyMedium(
-          'Route all incoming traffic to a specific host on your network',
+          loc(context).dmzPageDesc,
           color: Theme.of(context).colorScheme.onSurfaceVariant,
         ),
         AppGap.xl(),
@@ -157,10 +158,10 @@ class _UspDmzViewState extends ConsumerState<UspDmzView> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  AppText.labelLarge('DMZ'),
+                  AppText.labelLarge(loc(context).dmz),
                   AppGap.sm(),
                   AppText.bodyMedium(
-                    'Route all traffic to a host',
+                    loc(context).dmzRouteToHost,
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ],
@@ -195,7 +196,7 @@ class _UspDmzViewState extends ConsumerState<UspDmzView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AppText.titleSmall('Destination IP'),
+          AppText.titleSmall(loc(context).destinationIp),
           AppGap.md(),
           LayoutBlock(
             padding: const EdgeInsets.all(AppSpacing.md),
@@ -227,7 +228,7 @@ class _UspDmzViewState extends ConsumerState<UspDmzView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AppText.titleSmall('Source Restriction'),
+          AppText.titleSmall(loc(context).sourceRestriction),
           AppGap.md(),
           LayoutBlock(
             padding: const EdgeInsets.all(AppSpacing.md),
@@ -236,11 +237,11 @@ class _UspDmzViewState extends ConsumerState<UspDmzView> {
               itemHeight: 56,
               items: [
                 AppRadioListItem(
-                  title: 'Any (all sources)',
+                  title: loc(context).anyAllSources,
                   value: DmzSourceType.any,
                 ),
                 AppRadioListItem(
-                  title: 'CIDR Range',
+                  title: loc(context).cidrRange,
                   expandedWidget: pending.sourceType == DmzSourceType.cidr
                       ? Container(
                           constraints: const BoxConstraints(maxWidth: 429),
@@ -279,7 +280,7 @@ class _UspDmzViewState extends ConsumerState<UspDmzView> {
         ref.read(uspDmzProvider.notifier).save(),
       );
       if (context.mounted) {
-        showSuccessSnackBar(context, 'DMZ settings saved');
+        showSuccessSnackBar(context, loc(context).dmzSettingsSaved);
       }
     } catch (e) {
       if (context.mounted) {

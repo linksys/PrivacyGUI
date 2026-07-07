@@ -178,14 +178,16 @@ class UspEthernetDataService {
       }
 
       final lanBitRate = lanAggregate.currentBitRate;
-      final lanIsUp = lanAggregate.status.toLowerCase() == 'up';
 
       if (wiredConnections.isEmpty) {
+        // No wired devices → show single LAN port as disconnected.
+        // Note: lanAggregate.status reflects switch-chip link state, not
+        // whether a device is plugged in, so we use isUp=false here.
         result.add(EthernetPortUIModel(
           name: lanAggregate.name,
           label: 'LAN',
           isWan: false,
-          isUp: lanIsUp,
+          isUp: false,
           instancePath: lanAggregate.instancePath,
           currentBitRate: lanBitRate,
         ));

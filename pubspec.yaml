@@ -59,11 +59,11 @@ dependencies:
   ui_kit_library:
     git:
       url: https://github.com/linksys/privacyGUI-UI-kit.git
-      ref: v2.25.0
+      ref: v2.25.1
   generative_ui:
     git:
       url: https://github.com/linksys/privacyGUI-UI-kit.git
-      ref: v2.25.0
+      ref: v2.25.1
       path: generative_ui
   flutter_blue_plus: ^1.4.0
   crypto: ^3.0.2
@@ -124,6 +124,7 @@ flutter:
   # To add assets to your application, add an assets section, like this:
   assets:
     - assets/agents/
+    - assets/config/
     - assets/icons/
     - assets/resources/
     - assets/a2ui/widgets/

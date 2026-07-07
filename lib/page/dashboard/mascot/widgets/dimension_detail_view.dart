@@ -34,7 +34,7 @@ class DimensionDetailView extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final tier = score?.tier ?? HealthTier.excellent;
     final tierColor = NetworkHealthHelpers.tierColor(tier, cs);
-    final tierLabel = NetworkHealthHelpers.tierLabel(tier);
+    final tierLabel = tier.resolveLabel(context);
     final actions = dimension.getActions(context);
 
     return Column(

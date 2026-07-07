@@ -20,6 +20,7 @@ import 'package:privacy_gui/page/dashboard/providers/pdf_report_data_provider.da
 import 'package:privacy_gui/page/dashboard/providers/usp_layout_preferences_provider.dart';
 import 'package:privacy_gui/page/dashboard/views/components/settings/usp_layout_settings_panel.dart';
 import 'package:privacy_gui/page/dashboard/views/dialogs/preset_selection_dialog.dart';
+import 'package:privacy_gui/config/global_config.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sliver_dashboard/sliver_dashboard.dart';
@@ -57,6 +58,9 @@ class _UspSliverDashboardViewState
   Future<void> _showPresetDialogIfNeeded() async {
     if (_presetDialogShown) return;
     _presetDialogShown = true;
+
+    // Skip preset dialog in remote mode — uses fixed remote preset
+    if (!GlobalConfig.remote.showPresetDialog) return;
 
     final sharedPrefs = await SharedPreferences.getInstance();
     if (sharedPrefs.getBool(pUspPresetDialogSeen) == true) return;
@@ -200,10 +204,12 @@ class _UspSliverDashboardViewState
   // ---------------------------------------------------------------------------
 
   Widget _buildHeader(BuildContext context) {
+    final isRemoteMode = GlobalConfig.remote.isActive;
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        AppText.headlineSmall('USP Dashboard'),
+        AppText.headlineSmall(loc(context).uspDashboard),
         Row(
           children: [
             if (_isEditMode) ...[
@@ -218,8 +224,8 @@ class _UspSliverDashboardViewState
                       .saveLayout();
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Layout optimized'),
+                      SnackBar(
+                        content: Text(loc(context).layoutOptimized),
                         duration: Duration(seconds: 1),
                       ),
                     );
@@ -269,11 +275,14 @@ class _UspSliverDashboardViewState
                     .read(dashboardOrchestratorProvider.notifier)
                     .refreshAll(),
               ),
-              AppGap.sm(),
-              AppIconButton(
-                icon: AppIcon.font(Icons.edit),
-                onTap: _enterEditMode,
-              ),
+              // Hide edit button in remote mode
+              if (!isRemoteMode) ...[
+                AppGap.sm(),
+                AppIconButton(
+                  icon: AppIcon.font(Icons.edit),
+                  onTap: _enterEditMode,
+                ),
+              ],
             ],
           ],
         ),
@@ -453,7 +462,9 @@ class _UspSliverDashboardViewState
             ),
             AppGap.sm(),
             AppText.bodyMedium(
-              isActive ? 'Release to Remove' : 'Drag Here to Remove',
+              isActive
+                  ? loc(context).releaseToRemove
+                  : loc(context).dragHereToRemove,
             ),
           ],
         ),
@@ -501,7 +512,7 @@ class _UspSliverDashboardViewState
     if (violated && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Widget "${item.id}" resized to fit constraints'),
+          content: Text(loc(context).widgetResized(item.id)),
           duration: const Duration(seconds: 2),
           backgroundColor: Theme.of(context).colorScheme.error,
         ),
@@ -520,11 +531,11 @@ class _UspSliverDashboardViewState
     final result = await showAppDialog<String>(
       context: context,
       builder: (context) => AppDialog(
-        title: AppText.titleMedium('Dashboard Settings'),
+        title: AppText.titleMedium(loc(context).dashboardSettings),
         content: const UspLayoutSettingsPanel(),
         actions: [
           AppButton(
-            label: 'Close',
+            label: loc(context).close,
             onTap: () => Navigator.pop(context),
           ),
         ],
@@ -562,7 +573,7 @@ class _UspSliverDashboardViewState
 
     resolvedWidget ??= AppCard(
       child: Center(
-        child: AppText.bodyMedium('Unknown widget: ${item.id}'),
+        child: AppText.bodyMedium(loc(context).unknownWidget(item.id)),
       ),
     );
 

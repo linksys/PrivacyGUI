@@ -66,9 +66,9 @@ class _UspOptionalSectionState extends ConsumerState<UspOptionalSection> {
     };
   }
 
-  String? _getMtuError(int mtu) {
-    if (mtu < _mtuMin) return 'MTU must be at least $_mtuMin (IPv4 minimum)';
-    if (mtu > _mtuMax) return 'MTU must not exceed $_mtuMax';
+  String? _getMtuError(BuildContext context, int mtu) {
+    if (mtu < _mtuMin) return loc(context).mtuMinError(_mtuMin);
+    if (mtu > _mtuMax) return loc(context).mtuMaxError(_mtuMax);
     return null;
   }
 
@@ -103,10 +103,10 @@ class _UspOptionalSectionState extends ConsumerState<UspOptionalSection> {
                 }
               },
             ),
-            if (_getMtuError(form.mtu) != null) ...[
+            if (_getMtuError(context, form.mtu) != null) ...[
               AppGap.xs(),
               AppText.bodySmall(
-                _getMtuError(form.mtu)!,
+                _getMtuError(context, form.mtu)!,
                 color: Theme.of(context).colorScheme.error,
               ),
             ],

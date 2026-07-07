@@ -98,7 +98,7 @@ class _PnpPppoeViewState extends ConsumerState<PnpPppoeView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        AppText.bodyMedium(loc(context).pnpPppoeDesc),
+        AppText.bodyMedium(loc(context).pnpIspSettingsContactDesc),
         AppGap.xl(),
         AppText.labelMedium(loc(context).username),
         AppGap.xs(),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/apps/models/app_info_ui_model.dart';
 import 'package:privacy_gui/page/apps/providers/usp_apps_notifier.dart';
 import 'package:privacy_gui/page/shell/usp_top_bar.dart';
@@ -18,7 +19,7 @@ class UspAppsView extends ConsumerWidget {
 
     return UiKitPageView.withSliver(
       scrollable: true,
-      title: 'Apps',
+      title: loc(context).apps,
       topbar: const PreferredSize(
         preferredSize: Size.fromHeight(64),
         child: UspTopBar(),
@@ -44,12 +45,12 @@ class UspAppsView extends ConsumerWidget {
           AppIcon.font(Icons.error_outline,
               size: 48, color: Theme.of(context).colorScheme.error),
           AppGap.xl(),
-          AppText.titleMedium('Unable to load apps'),
+          AppText.titleMedium(loc(context).unableToLoadApps),
           AppGap.md(),
           AppText.bodyMedium(error.toString()),
           AppGap.xxl(),
           AppButton(
-            label: 'Retry',
+            label: loc(context).retry,
             onTap: () => ref.invalidate(uspAppsProvider),
           ),
         ],
@@ -69,7 +70,7 @@ class UspAppsView extends ConsumerWidget {
                 size: 48,
                 color: Theme.of(context).colorScheme.onSurfaceVariant),
             AppGap.xl(),
-            AppText.bodyMedium('No apps installed on this router'),
+            AppText.bodyMedium(loc(context).noAppsInstalled),
           ],
         ),
       );
@@ -87,9 +88,9 @@ class UspAppsView extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              AppText.headlineSmall('Apps'),
+              AppText.headlineSmall(loc(context).apps),
               AppButton(
-                label: 'Store',
+                label: loc(context).store,
                 icon: AppIcon.font(Icons.storefront),
                 onTap: () {
                   final token = ref.read(uspClientProvider)?.sessionToken ?? '';
@@ -169,7 +170,7 @@ class _AppGridCard extends ConsumerWidget {
               ),
               if (isNew)
                 AppBadge(
-                  label: 'NEW',
+                  label: loc(context).badgeNew,
                   color: Theme.of(context)
                           .extension<AppColorScheme>()
                           ?.semanticSuccess ??
@@ -177,7 +178,7 @@ class _AppGridCard extends ConsumerWidget {
                 ),
               if (app.category == AppCategory.user && !isNew)
                 AppBadge(
-                  label: 'USER',
+                  label: loc(context).badgeUser,
                   color: Theme.of(context).colorScheme.primary,
                 ),
             ],

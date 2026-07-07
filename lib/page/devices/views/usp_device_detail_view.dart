@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/route/navigation_extensions.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/utils/device_classifier.dart';
 import 'package:privacy_gui/core/utils/oui_lookup.dart';
 import 'package:privacy_gui/route/constants.dart';
@@ -38,7 +39,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
 
     return UiKitPageView.withSliver(
       scrollable: true,
-      title: 'Device Detail',
+      title: loc(context).deviceDetail,
       topbar: const PreferredSize(
         preferredSize: Size.fromHeight(64),
         child: UspTopBar(),
@@ -51,10 +52,10 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                AppText.titleMedium('Device not found'),
+                AppText.titleMedium(loc(context).deviceNotFound),
                 AppGap.lg(),
                 AppButton.text(
-                  label: 'Back to Devices',
+                  label: loc(context).backToDevices,
                   onTap: () =>
                       context.navigateBack(fallback: RouteNamed.uspDeviceList),
                 ),
@@ -175,31 +176,31 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
               if (vendor != null)
                 DetailInfoTile(
                   icon: Icons.business,
-                  label: 'Manufacturer',
+                  label: loc(context).manufacturer,
                   value: vendor,
                 ),
               DetailCopyableTile(
                 icon: Icons.memory,
-                label: 'MAC Address',
+                label: loc(context).macAddress,
                 value: device.mac,
               ),
               if (device.hostName.isNotEmpty &&
                   device.hostName != device.displayName)
                 DetailInfoTile(
                   icon: Icons.dns,
-                  label: 'Hostname',
+                  label: loc(context).hostname,
                   value: device.hostName,
                 ),
               if (device.modelName?.isNotEmpty == true)
                 DetailInfoTile(
                   icon: Icons.devices,
-                  label: 'Model',
+                  label: loc(context).model,
                   value: device.modelName!,
                 ),
               if (device.operatingSystem?.isNotEmpty == true)
                 DetailInfoTile(
                   icon: Icons.computer,
-                  label: 'Operating System',
+                  label: loc(context).operatingSystem,
                   value: device.operatingSystem!,
                 ),
             ],
@@ -226,8 +227,10 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
             icon:
                 hasMultipleInterfaces ? Icons.hub : device.connectionType.icon,
             title: hasMultipleInterfaces
-                ? 'Network Connections (${device.interfaceCount})'
-                : (device.isWifi ? 'WiFi Connection' : 'Wired Connection'),
+                ? loc(context).networkConnections(device.interfaceCount)
+                : (device.isWifi
+                    ? loc(context).wifiConnection
+                    : loc(context).wiredConnection),
           ),
           AppGap.md(),
           if (hasMultipleInterfaces) ...[
@@ -237,7 +240,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
               children: [
                 DetailCopyableTile(
                   icon: Icons.language,
-                  label: 'IP Address',
+                  label: loc(context).ipAddress,
                   value: device.ip,
                 ),
                 if (device.ipv6Addresses.isNotEmpty)
@@ -245,7 +248,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
                 if (device.parentNodeName != null)
                   DetailInfoTile(
                     icon: Icons.router,
-                    label: 'Connected to',
+                    label: loc(context).connectedTo,
                     value: device.parentNodeName!,
                   ),
               ],
@@ -299,7 +302,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
             padding: const EdgeInsets.all(AppSpacing.md),
             child: DetailInfoTile(
               icon: Icons.router,
-              label: 'Connected to',
+              label: loc(context).connectedTo,
               value: device.parentNodeName!,
             ),
           ),
@@ -337,7 +340,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
               ),
               AppGap.sm(),
               AppText.labelMedium(
-                isWifi ? 'WiFi' : 'Ethernet',
+                isWifi ? loc(context).wifi : loc(context).ethernet,
                 color: isActive
                     ? colorScheme.onSurface
                     : colorScheme.onSurfaceVariant,
@@ -354,7 +357,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
                     borderRadius: BorderRadius.circular(AppSpacing.xxs),
                   ),
                   child: AppText.labelSmall(
-                    'Primary',
+                    loc(context).primary,
                     color: colorScheme.onPrimary,
                   ),
                 ),
@@ -370,7 +373,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
               ),
               AppGap.xs(),
               AppText.labelSmall(
-                isActive ? 'Online' : 'Offline',
+                isActive ? loc(context).online : loc(context).offline,
                 color: colorScheme.onSurfaceVariant,
               ),
             ],
@@ -383,11 +386,11 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     AppText.bodySmall(
-                      'IP: $ip',
+                      loc(context).ipLabel(ip),
                       color: colorScheme.onSurfaceVariant,
                     ),
                     AppText.bodySmall(
-                      'MAC: $mac',
+                      loc(context).macLabel(mac),
                       color: colorScheme.onSurfaceVariant,
                     ),
                   ],
@@ -431,9 +434,9 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const DetailCardHeader(
+          DetailCardHeader(
             icon: Icons.signal_wifi_4_bar,
-            title: 'Signal & Speed',
+            title: loc(context).signalAndSpeed,
           ),
           AppGap.md(),
           if (!device.hasWifiData)
@@ -449,7 +452,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
                   AppGap.sm(),
                   Expanded(
                     child: AppText.bodyMedium(
-                      'Signal data not available for this device.',
+                      loc(context).signalDataNotAvailable,
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
@@ -482,7 +485,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
                                       .colorScheme
                                       .onSurfaceVariant),
                               AppGap.xs(),
-                              AppText.labelSmall('Interface',
+                              AppText.labelSmall(loc(context).labelInterface,
                                   color: Theme.of(context)
                                       .colorScheme
                                       .onSurfaceVariant),
@@ -512,7 +515,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
                                       .colorScheme
                                       .onSurfaceVariant),
                               AppGap.xs(),
-                              AppText.labelSmall('Band',
+                              AppText.labelSmall(loc(context).band,
                                   color: Theme.of(context)
                                       .colorScheme
                                       .onSurfaceVariant),
@@ -541,7 +544,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
                                       .colorScheme
                                       .onSurfaceVariant),
                               AppGap.xs(),
-                              AppText.labelSmall('Network',
+                              AppText.labelSmall(loc(context).network,
                                   color: Theme.of(context)
                                       .colorScheme
                                       .onSurfaceVariant),
@@ -577,7 +580,8 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                AppText.titleMedium('${device.signalStrength} dBm'),
+                AppText.titleMedium(loc(context)
+                    .signalStrengthDbm(device.signalStrength.toString())),
                 AppText.labelSmall(
                   getWifiSignalLevel(device.signalStrength)
                       .resolveLabel(context),
@@ -599,7 +603,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
           Expanded(
             child: DetailSpeedCard(
               icon: Icons.arrow_downward,
-              label: 'Download',
+              label: loc(context).download,
               speedKbps: device.downlinkRate!,
               color: colorScheme.primary,
             ),
@@ -610,7 +614,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
           Expanded(
             child: DetailSpeedCard(
               icon: Icons.arrow_upward,
-              label: 'Upload',
+              label: loc(context).upload,
               speedKbps: device.uplinkRate!,
               color: colorScheme.tertiary,
             ),
@@ -633,20 +637,22 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
         children: [
           DetailCardHeader(
             icon: isWifi ? Icons.wifi_off : Icons.cable,
-            title: 'Network Details',
+            title: loc(context).networkDetails,
           ),
           AppGap.md(),
           DetailInfoBlock(
             children: [
               DetailInfoTile(
                 icon: isWifi ? Icons.wifi : Icons.settings_ethernet,
-                label: 'Connection Type',
-                value: isWifi ? 'WiFi (Wireless)' : 'Ethernet (Wired)',
+                label: loc(context).connectionType,
+                value: isWifi
+                    ? loc(context).wifiWireless
+                    : loc(context).ethernetWired,
               ),
               if (device.parentNodeName != null)
                 DetailInfoTile(
                   icon: Icons.router,
-                  label: 'Connected to',
+                  label: loc(context).connectedTo,
                   value: device.parentNodeName!,
                 ),
             ],
@@ -670,9 +676,9 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const DetailCardHeader(
+          DetailCardHeader(
             icon: Icons.bookmark,
-            title: 'DHCP Reservation',
+            title: loc(context).dhcpReservation,
           ),
           AppGap.md(),
           if (detail.hasReservation) ...[
@@ -690,7 +696,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        AppText.labelMedium('Reserved'),
+                        AppText.labelMedium(loc(context).reserved),
                         AppText.bodyMedium(detail.reservation!.ip),
                       ],
                     ),
@@ -700,7 +706,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
             ),
             AppGap.md(),
             AppButton.primaryOutline(
-              label: 'Release Reservation',
+              label: loc(context).releaseReservation,
               isLoading: isLoading,
               onTap: isLoading
                   ? null
@@ -720,8 +726,8 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
                   Expanded(
                     child: AppText.bodyMedium(
                       hasValidIpv4
-                          ? 'No reservation. IP may change on reconnect.'
-                          : 'No IPv4 address. Cannot create reservation.',
+                          ? loc(context).noReservationIpMayChange
+                          : loc(context).noIpv4AddressDesc,
                       color: colorScheme.onSurfaceVariant,
                     ),
                   ),
@@ -730,7 +736,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
             ),
             AppGap.md(),
             AppButton.primary(
-              label: 'Reserve IP Address',
+              label: loc(context).reserveIpAddress,
               isLoading: isLoading,
               onTap: isLoading || !hasValidIpv4
                   ? null
@@ -762,7 +768,9 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
               Row(
                 children: [
                   AppText.labelSmall(
-                    'IPv6 Address${addresses.length > 1 ? 'es' : ''}',
+                    addresses.length > 1
+                        ? loc(context).ipv6Addresses
+                        : loc(context).ipv6Address,
                     color: colorScheme.onSurfaceVariant,
                   ),
                   if (addresses.length > 1) ...[
@@ -781,8 +789,8 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
                           children: [
                             AppText.labelSmall(
                               _ipv6Expanded
-                                  ? 'Show less'
-                                  : '+${addresses.length - 1} more',
+                                  ? loc(context).showLess
+                                  : loc(context).nMore(addresses.length - 1),
                               color: colorScheme.primary,
                             ),
                             Icon(
@@ -825,7 +833,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
       mutation: () => ref
           .read(uspDhcpReservationsProvider.notifier)
           .immediateAdd(mac: device.mac, ip: device.ip),
-      successMessage: 'IP address reserved',
+      successMessage: loc(context).ipAddressReserved,
     );
   }
 
@@ -838,7 +846,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
       mutation: () => ref
           .read(uspDhcpReservationsProvider.notifier)
           .immediateDelete(detail.reservation!.instancePath!),
-      successMessage: 'Reservation released',
+      successMessage: loc(context).reservationReleased,
     );
   }
 }

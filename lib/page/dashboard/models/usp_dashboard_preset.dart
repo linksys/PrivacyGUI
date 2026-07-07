@@ -14,6 +14,7 @@ enum UspDashboardPreset {
   standard,
   professional,
   monitoring,
+  remote,
 }
 
 extension UspDashboardPresetX on UspDashboardPreset {
@@ -22,6 +23,7 @@ extension UspDashboardPresetX on UspDashboardPreset {
         UspDashboardPreset.standard => 'Standard',
         UspDashboardPreset.professional => 'Professional',
         UspDashboardPreset.monitoring => 'Monitoring',
+        UspDashboardPreset.remote => 'Remote Support',
       };
 
   String get description => switch (this) {
@@ -33,6 +35,8 @@ extension UspDashboardPresetX on UspDashboardPreset {
           'All cards enabled — for power users',
         UspDashboardPreset.monitoring =>
           'Performance & analytics focused — for network admins',
+        UspDashboardPreset.remote =>
+          'View-only mode for remote assistance sessions',
       };
 
   IconData get icon => switch (this) {
@@ -40,6 +44,7 @@ extension UspDashboardPresetX on UspDashboardPreset {
         UspDashboardPreset.standard => Icons.grid_view,
         UspDashboardPreset.professional => Icons.tune,
         UspDashboardPreset.monitoring => Icons.monitor_heart,
+        UspDashboardPreset.remote => Icons.support_agent,
       };
 
   /// Card IDs included in this preset.
@@ -95,6 +100,16 @@ extension UspDashboardPresetX on UspDashboardPreset {
             'firewall_overview',
             'ethernet_ports',
           ],
+        UspDashboardPreset.remote => const [
+            'stats_panel',
+            'device_info',
+            'network_status',
+            'topology',
+            'system_status',
+            'connected_devices',
+            'wifi_status',
+            'ethernet_ports',
+          ],
       };
 
   /// Creates a hand-crafted layout optimised for this preset's use case.
@@ -103,6 +118,7 @@ extension UspDashboardPresetX on UspDashboardPreset {
         UspDashboardPreset.standard => _standardLayout(),
         UspDashboardPreset.professional => _professionalLayout(),
         UspDashboardPreset.monitoring => _monitoringLayout(),
+        UspDashboardPreset.remote => _remoteLayout(),
       };
 }
 
@@ -211,4 +227,24 @@ List<LayoutItem> _monitoringLayout() => [
       _item('wifi_performance', x: 6, y: 11, w: 6, h: 5),
       _item('firewall_overview', x: 0, y: 16, w: 6, h: 4),
       _item('ethernet_ports', x: 6, y: 16, w: 6, h: 3),
+    ];
+
+/// Remote: 8 cards — view-only mode for remote assistance.
+///
+/// ```
+/// y=0:  StatsPanel (12×1)
+/// y=1:  DeviceInfo (6×3)          | NetworkStatus (6×3)
+/// y=4:  Topology (12×5)
+/// y=9:  SystemStatus (6×5)        | ConnectedDevices (6×4)
+/// y=14: WiFiStatus (6×4)          | EthernetPorts (6×3)
+/// ```
+List<LayoutItem> _remoteLayout() => [
+      _item('stats_panel', x: 0, y: 0, w: 12, h: 1),
+      _item('device_info', x: 0, y: 1, w: 6, h: 3),
+      _item('network_status', x: 6, y: 1, w: 6, h: 3),
+      _item('topology', x: 0, y: 4, w: 12, h: 5),
+      _item('system_status', x: 0, y: 9, w: 6, h: 5),
+      _item('connected_devices', x: 6, y: 9, w: 6, h: 4),
+      _item('wifi_status', x: 0, y: 14, w: 6, h: 4),
+      _item('ethernet_ports', x: 6, y: 14, w: 6, h: 3),
     ];

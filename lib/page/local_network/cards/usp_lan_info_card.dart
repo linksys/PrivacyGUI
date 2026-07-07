@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/models/lan_info_ui_model.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/_shared/components/usp_status_dot.dart';
@@ -21,7 +22,7 @@ class UspLanInfoCard extends ConsumerWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     return DashboardCardTemplate(
-      title: 'LAN Information',
+      title: loc(context).lanInformation,
       detailRoute: RouteNamed.uspLocalNetwork,
       content: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -56,7 +57,7 @@ class UspLanInfoCard extends ConsumerWidget {
                           UspStatusDot(isActive: info.dhcpEnabled, size: 8),
                           AppGap.xs(),
                           AppText.bodyMedium(
-                            'DHCP ${info.dhcpEnabled ? "Enabled" : "Disabled"}',
+                            '${loc(context).dhcp} ${info.dhcpEnabled ? loc(context).enabled : loc(context).disabled}',
                             color: colorScheme.onSurfaceVariant,
                           ),
                         ],
@@ -74,7 +75,7 @@ class UspLanInfoCard extends ConsumerWidget {
               Expanded(
                 child: MetricTile(
                   icon: Icons.lan,
-                  label: 'Subnet Mask',
+                  label: loc(context).subnetMask,
                   value: info.subnetMask,
                   color: colorScheme.primary,
                 ),
@@ -98,7 +99,8 @@ class UspLanInfoCard extends ConsumerWidget {
             InfoGrid(
               items: [
                 if (info.dhcpEnabled && info.dhcpRange.isNotEmpty)
-                  InfoGridItem(label: 'DHCP Range', value: info.dhcpRange),
+                  InfoGridItem(
+                      label: loc(context).dhcpRange, value: info.dhcpRange),
                 if (info.ipv6Addresses.isNotEmpty)
                   InfoGridItem(
                     label: 'IPv6',

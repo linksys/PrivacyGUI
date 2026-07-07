@@ -72,12 +72,12 @@ extension NodeSignalLevelExt on NodeSignalLevel {
 
 /// UI extensions for [SignalTier] (performance analytics).
 extension SignalTierExt on SignalTier {
-  /// Human-readable tier label.
-  String get label => switch (this) {
-        SignalTier.excellent => 'Excellent',
-        SignalTier.good => 'Good',
-        SignalTier.fair => 'Fair',
-        SignalTier.weak => 'Weak',
+  /// Localized tier label for display in the View layer.
+  String resolveLabel(BuildContext context) => switch (this) {
+        SignalTier.excellent => loc(context).excellent,
+        SignalTier.good => loc(context).good,
+        SignalTier.fair => loc(context).fair,
+        SignalTier.weak => loc(context).weak,
       };
 
   /// Tier-appropriate color from the current color scheme.
@@ -92,3 +92,20 @@ extension SignalTierExt on SignalTier {
 /// Bar color based on RSSI value.
 Color rssiColor(int rssi, ColorScheme cs) =>
     getSignalTier(rssi).resolveColor(cs);
+
+/// Localizes device/firmware WiFi values that are plain UI words, for DISPLAY
+/// only. The original value is still used as the stored value / map key by
+/// callers; technical tokens (WPA2-Personal, 20MHz, 802.11..., channel numbers)
+/// are returned unchanged.
+String wifiDisplayValue(BuildContext context, String value) {
+  switch (value) {
+    case 'Auto':
+      return loc(context).auto;
+    case 'None':
+      return loc(context).none;
+    case 'Mixed':
+      return loc(context).mixed;
+    default:
+      return value;
+  }
+}

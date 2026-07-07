@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/route/constants.dart';
 
 import '../../mascot_config.dart';
@@ -94,13 +95,13 @@ class DevicesHealthDimension extends HealthDimension {
     return [
       HealthAction(
         id: 'view_devices',
-        label: 'View Devices',
+        label: loc(context).viewDevices,
         icon: Icons.devices,
         routeName: RouteNamed.uspDeviceList,
       ),
       HealthAction(
         id: 'network_topology',
-        label: 'Network Topology',
+        label: loc(context).networkTopology,
         icon: Icons.hub,
         routeName: RouteNamed.uspTopology,
       ),

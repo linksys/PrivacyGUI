@@ -24,7 +24,7 @@ class InstantPrivacyView extends ConsumerWidget {
 
     return UiKitPageView.withSliver(
       scrollable: true,
-      title: 'Instant Privacy',
+      title: loc(context).instantPrivacy,
       topbar: const PreferredSize(
         preferredSize: Size.fromHeight(64),
         child: UspTopBar(),
@@ -72,8 +72,7 @@ class InstantPrivacyView extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         AppText.bodyMedium(
-          'Lock your network to only currently connected devices. '
-          'Any new device will be blocked until you disable Instant Privacy.',
+          loc(context).instantPrivacyPageDesc,
         ),
         AppGap.lg(),
         _buildToggleCard(context, ref, state),
@@ -102,12 +101,12 @@ class InstantPrivacyView extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  AppText.labelLarge('Instant Privacy'),
+                  AppText.labelLarge(loc(context).instantPrivacy),
                   AppGap.xs(),
                   AppText.bodySmall(
                     state.isEnabled
-                        ? 'Only allowed devices can connect'
-                        : 'All devices can connect freely',
+                        ? loc(context).onlyAllowedDevicesCanConnect
+                        : loc(context).allDevicesCanConnectFreely,
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ],
@@ -142,10 +141,10 @@ class InstantPrivacyView extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         AppText.labelLarge(
-            'Devices that will be allowed (${state.connectedDevices.length})'),
+            loc(context).devicesWillBeAllowed(state.connectedDevices.length)),
         AppGap.sm(),
         AppText.bodySmall(
-          'These devices are currently connected and will form the whitelist when you enable Instant Privacy.',
+          loc(context).devicesWillBeAllowedDesc,
           color: Theme.of(context).colorScheme.onSurfaceVariant,
         ),
         AppGap.md(),
@@ -158,10 +157,9 @@ class InstantPrivacyView extends ConsumerWidget {
   }
 
   Widget _buildEmptyDevicesMessage(BuildContext context) {
-    return const DetailEmptyBlock(
-      message: 'No devices are currently connected.',
-      subtitle:
-          'Instant Privacy cannot be enabled until at least one device is connected.',
+    return DetailEmptyBlock(
+      message: loc(context).noDevicesCurrentlyConnected,
+      subtitle: loc(context).instantPrivacyCannotBeEnabled,
     );
   }
 
@@ -181,9 +179,9 @@ class InstantPrivacyView extends ConsumerWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             AppText.labelLarge(
-                'Allowed devices (${state.allowedDevices.length})'),
+                loc(context).allowedDevicesCount(state.allowedDevices.length)),
             AppButton.text(
-              label: 'Add device',
+              label: loc(context).addDevice,
               onTap: state.isToggleLocked
                   ? null
                   : () => _showAddMacDialog(context, ref, state),
@@ -193,7 +191,7 @@ class InstantPrivacyView extends ConsumerWidget {
         AppGap.sm(),
         if (state.allowedDevices.isEmpty)
           AppText.bodySmall(
-            'No devices in the allowed list.',
+            loc(context).noDevicesInAllowedList,
             color: Theme.of(context).colorScheme.onSurfaceVariant,
           )
         else
@@ -242,17 +240,24 @@ class InstantPrivacyView extends ConsumerWidget {
     final confirmed = await showAppDialog<bool>(
       context: context,
       builder: (ctx) => AppDialog(
-        titleText: 'Enable Instant Privacy?',
+        titleText: loc(context).enableInstantPrivacyTitle,
         content: AppText.bodyMedium(
-          'Only the ${ref.read(uspInstantPrivacyProvider).valueOrNull?.connectedDevices.length ?? 0} currently connected device(s) will be allowed to connect. All other devices will be blocked.',
+          loc(context).enableInstantPrivacyDesc(
+            ref
+                    .read(uspInstantPrivacyProvider)
+                    .valueOrNull
+                    ?.connectedDevices
+                    .length ??
+                0,
+          ),
         ),
         actions: [
           AppButton.text(
-            label: 'Cancel',
+            label: loc(context).cancel,
             onTap: () => Navigator.of(ctx).pop(false),
           ),
           AppButton.primary(
-            label: 'Enable',
+            label: loc(context).enable,
             onTap: () => Navigator.of(ctx).pop(true),
           ),
         ],
@@ -274,17 +279,17 @@ class InstantPrivacyView extends ConsumerWidget {
     final confirmed = await showAppDialog<bool>(
       context: context,
       builder: (ctx) => AppDialog(
-        titleText: 'Disable Instant Privacy?',
+        titleText: loc(context).disableInstantPrivacyTitle,
         content: AppText.bodyMedium(
-          'All devices will be able to connect freely to your network.',
+          loc(context).disableInstantPrivacyDesc,
         ),
         actions: [
           AppButton.text(
-            label: 'Cancel',
+            label: loc(context).cancel,
             onTap: () => Navigator.of(ctx).pop(false),
           ),
           AppButton.primary(
-            label: 'Disable',
+            label: loc(context).disable,
             onTap: () => Navigator.of(ctx).pop(true),
           ),
         ],
@@ -367,14 +372,13 @@ class _AddMacDialogState extends State<_AddMacDialog> {
         return;
       }
       if (!UspInstantPrivacyService.validateMac(value)) {
-        _errorText = 'Invalid MAC address format (e.g. AA:BB:CC:DD:EE:FF)';
+        _errorText = 'invalidMacFormat';
         return;
       }
       final normalized = UspInstantPrivacyService.normalizeMac(value);
       final isDuplicate =
           widget.existingDevices.any((d) => d.mac == normalized);
-      _errorText =
-          isDuplicate ? 'This device is already in the allowed list' : null;
+      _errorText = isDuplicate ? 'deviceAlreadyInAllowedList' : null;
     });
   }
 
@@ -390,31 +394,40 @@ class _AddMacDialogState extends State<_AddMacDialog> {
         .onConfirm(UspInstantPrivacyService.normalizeMac(_controller.text));
   }
 
+  String? _localizeError(String? key) {
+    if (key == null) return null;
+    return switch (key) {
+      'invalidMacFormat' => loc(context).invalidMacAddressFormat,
+      'deviceAlreadyInAllowedList' => loc(context).deviceAlreadyInAllowedList,
+      _ => key,
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     return AppDialog(
-      titleText: 'Add device manually',
+      titleText: loc(context).addDeviceManually,
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AppText.bodyMedium('Enter the MAC address of the device to allow.'),
+          AppText.bodyMedium(loc(context).enterMacAddressToAllow),
           AppGap.md(),
           AppTextFormField(
             controller: _controller,
             hintText: 'AA:BB:CC:DD:EE:FF',
             onChanged: _onChanged,
-            externalErrorText: _errorText,
+            externalErrorText: _localizeError(_errorText),
           ),
         ],
       ),
       actions: [
         AppButton.text(
-          label: 'Cancel',
+          label: loc(context).cancel,
           onTap: () => Navigator.of(context).pop(),
         ),
         AppButton.primary(
-          label: _isConfirming ? 'Adding…' : 'Add',
+          label: _isConfirming ? loc(context).adding : loc(context).add,
           onTap: (_canConfirm && !_isConfirming) ? _confirm : null,
         ),
       ],

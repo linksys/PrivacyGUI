@@ -6,6 +6,7 @@ import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/components/views/service_error_view.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/firewall/models/firewall_feature_state.dart';
@@ -25,7 +26,7 @@ class UspFirewallView extends ConsumerWidget {
 
     return UiKitPageView.withSliver(
       scrollable: true,
-      title: 'Firewall',
+      title: loc(context).firewall,
       topbar: const PreferredSize(
         preferredSize: Size.fromHeight(64),
         child: UspTopBar(),
@@ -62,7 +63,7 @@ class UspFirewallView extends ConsumerWidget {
   ) {
     if (!state.isDirty) return null;
     return UiKitBottomBarConfig(
-      positiveLabel: 'Save',
+      positiveLabel: loc(context).save,
       isPositiveEnabled: !state.status.isSaving,
       onPositiveTap: () => _onSave(context, ref),
       onNegativeTap: () => ref.read(uspFirewallProvider.notifier).revert(),
@@ -86,15 +87,15 @@ class UspFirewallView extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         AppText.bodyMedium(
-          'Configure firewall and VPN passthrough settings',
+          loc(context).configureFirewallDesc,
           color: Theme.of(context).colorScheme.onSurfaceVariant,
         ),
         AppGap.xl(),
-        _buildFirewallSection(fw, notifier, disabled),
+        _buildFirewallSection(context, fw, notifier, disabled),
         AppGap.md(),
-        _buildVpnSection(fw, notifier, disabled),
+        _buildVpnSection(context, fw, notifier, disabled),
         AppGap.md(),
-        _buildFiltersSection(fw, notifier, disabled),
+        _buildFiltersSection(context, fw, notifier, disabled),
         AppGap.md(),
         _buildIpv6PortServiceLink(context),
       ],
@@ -106,6 +107,7 @@ class UspFirewallView extends ConsumerWidget {
   // ---------------------------------------------------------------------------
 
   Widget _buildFirewallSection(
+    BuildContext context,
     FirewallUIModel fw,
     UspFirewallNotifier notifier,
     bool disabled,
@@ -115,10 +117,10 @@ class UspFirewallView extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AppText.titleSmall('Firewall Protection'),
+          AppText.titleSmall(loc(context).firewallProtection),
           AppGap.md(),
           SwitchBlock(
-            label: 'IPv4 SPI Firewall',
+            label: loc(context).ipv4SpiFirewall,
             value: fw.isIPv4FirewallEnabled,
             onChanged: disabled
                 ? null
@@ -128,7 +130,7 @@ class UspFirewallView extends ConsumerWidget {
           ),
           AppGap.sm(),
           SwitchBlock(
-            label: 'IPv6 SPI Firewall',
+            label: loc(context).ipv6SpiFirewall,
             value: fw.isIPv6FirewallEnabled,
             onChanged: disabled
                 ? null
@@ -146,6 +148,7 @@ class UspFirewallView extends ConsumerWidget {
   // ---------------------------------------------------------------------------
 
   Widget _buildVpnSection(
+    BuildContext context,
     FirewallUIModel fw,
     UspFirewallNotifier notifier,
     bool disabled,
@@ -155,10 +158,10 @@ class UspFirewallView extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AppText.titleSmall('VPN Passthrough'),
+          AppText.titleSmall(loc(context).vpnPassthrough),
           AppGap.md(),
           SwitchBlock(
-            label: 'IPSec Passthrough',
+            label: loc(context).ipsecPassthrough,
             value: !fw.blockIPSec,
             onChanged: disabled
                 ? null
@@ -168,7 +171,7 @@ class UspFirewallView extends ConsumerWidget {
           ),
           AppGap.sm(),
           SwitchBlock(
-            label: 'PPTP Passthrough',
+            label: loc(context).pptpPassthrough,
             value: !fw.blockPPTP,
             onChanged: disabled
                 ? null
@@ -178,7 +181,7 @@ class UspFirewallView extends ConsumerWidget {
           ),
           AppGap.sm(),
           SwitchBlock(
-            label: 'L2TP Passthrough',
+            label: loc(context).l2tpPassthrough,
             value: !fw.blockL2TP,
             onChanged: disabled
                 ? null
@@ -196,6 +199,7 @@ class UspFirewallView extends ConsumerWidget {
   // ---------------------------------------------------------------------------
 
   Widget _buildFiltersSection(
+    BuildContext context,
     FirewallUIModel fw,
     UspFirewallNotifier notifier,
     bool disabled,
@@ -205,10 +209,10 @@ class UspFirewallView extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AppText.titleSmall('Internet Filters'),
+          AppText.titleSmall(loc(context).internetFilters),
           AppGap.md(),
           SwitchBlock(
-            label: 'Filter Anonymous Requests',
+            label: loc(context).filterAnonymous,
             value: fw.blockAnonymousRequests,
             onChanged: disabled
                 ? null
@@ -218,7 +222,7 @@ class UspFirewallView extends ConsumerWidget {
           ),
           AppGap.sm(),
           SwitchBlock(
-            label: 'Filter Multicast',
+            label: loc(context).filterMulticast,
             value: fw.blockMulticast,
             onChanged: disabled
                 ? null
@@ -228,7 +232,7 @@ class UspFirewallView extends ConsumerWidget {
           ),
           AppGap.sm(),
           SwitchBlock(
-            label: 'Filter IDENT (Port 113)',
+            label: loc(context).filterIdent,
             value: fw.blockIDENT,
             onChanged: disabled
                 ? null
@@ -247,8 +251,8 @@ class UspFirewallView extends ConsumerWidget {
 
   Widget _buildIpv6PortServiceLink(BuildContext context) {
     return NavLinkBlock(
-      title: 'IPv6 Port Service',
-      description: 'Manage IPv6 inbound port access rules',
+      title: loc(context).ipv6PortService,
+      description: loc(context).manageIpv6PortRules,
       onTap: () => context.goNamed(RouteNamed.uspIpv6PortService),
     );
   }
@@ -264,7 +268,7 @@ class UspFirewallView extends ConsumerWidget {
         ref.read(uspFirewallProvider.notifier).save(),
       );
       if (context.mounted) {
-        showSuccessSnackBar(context, 'Firewall settings saved');
+        showSuccessSnackBar(context, loc(context).firewallSettingsSaved);
       }
     } catch (e) {
       if (context.mounted) {

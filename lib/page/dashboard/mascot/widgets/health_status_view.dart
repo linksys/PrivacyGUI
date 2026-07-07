@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/models/network_health_helpers.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -59,7 +60,7 @@ class HealthStatusView extends ConsumerWidget {
 
     final dimensions = HealthDimensions.all;
     if (dimensions.isEmpty) {
-      return AppText.bodyMedium('No dimensions', color: textColor);
+      return AppText.bodyMedium(loc(context).noDimensions, color: textColor);
     }
 
     // Separate healthy from problematic

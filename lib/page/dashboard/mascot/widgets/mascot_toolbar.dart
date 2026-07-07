@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 
 /// Toolbar action types.
 enum MascotToolbarAction {
@@ -43,26 +44,26 @@ class MascotToolbar extends StatelessWidget {
         children: [
           _ToolbarButton(
             icon: Icons.print,
-            tooltip: 'Print Report',
+            tooltip: loc(context).printReport,
             color: iconColor,
             onTap: () => onAction?.call(MascotToolbarAction.print),
           ),
           if (showThemeStudio)
             _ToolbarButton(
               icon: Icons.palette,
-              tooltip: 'Theme Studio',
+              tooltip: loc(context).themeStudio,
               color: iconColor,
               onTap: () => onAction?.call(MascotToolbarAction.themeStudio),
             ),
           _ToolbarButton(
             icon: Icons.help_outline,
-            tooltip: 'FAQ',
+            tooltip: loc(context).faq,
             color: iconColor,
             onTap: () => onAction?.call(MascotToolbarAction.faq),
           ),
           _ToolbarButton(
             icon: Icons.auto_awesome,
-            tooltip: 'AI Assistant',
+            tooltip: loc(context).aiAssistant,
             color: iconColor,
             onTap: () => onAction?.call(MascotToolbarAction.aiAssistant),
           ),

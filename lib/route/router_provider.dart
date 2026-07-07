@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/config/global_config.dart';
 import 'package:privacy_gui/constants/build_config.dart';
+import 'package:privacy_gui/providers/remote_access/remote_access_provider.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
 import 'package:privacy_gui/core/models/device_info.dart';
 import 'package:privacy_gui/core/session/providers/session_provider.dart';
@@ -21,6 +23,7 @@ import 'constants.dart';
 import 'navigation_extra.dart';
 
 // USP dashboard imports
+import 'package:privacy_gui/page/_shared/providers/usp_bars_visible_provider.dart';
 import 'package:privacy_gui/page/dashboard/views/usp_dashboard_view.dart';
 import 'package:privacy_gui/page/menu/views/usp_menu_view.dart';
 import 'package:privacy_gui/page/support/views/usp_support_view.dart';
@@ -75,10 +78,14 @@ import 'package:privacy_gui/page/instant_setup/views/pnp_waiting_modem_view.dart
 import 'package:privacy_gui/page/instant_setup/views/pnp_pppoe_view.dart';
 import 'package:privacy_gui/page/instant_setup/views/pnp_static_ip_view.dart';
 
+// Remote Assistance imports
+import 'package:privacy_gui/page/remote_assistance/views/remote_assistance_confirm_view.dart';
+
 part 'route_home.dart';
 part 'route_local_login.dart';
 part 'route_usp_dashboard.dart';
 part 'route_pnp.dart';
+part 'route_remote_assistance.dart';
 
 // init path enum
 enum LocalWhereToGo {
@@ -94,6 +101,7 @@ final appRoutes = [
   uspDashboardRoute,
   pnpRoute,
   pnpNoInternetRoute,
+  remoteAssistanceRoute,
 ];
 
 /// Navigator key for the old dashboard shell (kept for component compatibility).
@@ -123,8 +131,33 @@ final routerProvider = Provider<GoRouter>((ref) {
           state.matchedLocation.startsWith('/pnpNoInternetConnection')) {
         // PnP routes — no auth required, pass through.
         return state.uri.toString();
+      } else if (state.matchedLocation.startsWith('/remoteAssistance')) {
+        // Remote Assistance routes — no normal auth required, pass through.
+        return state.uri.toString();
       } else if (state.matchedLocation.startsWith('/usp')) {
         // USP routes — check auth, redirect to login when logged out.
+        // In Remote build mode, redirect to confirm page with restored session params.
+        if (GlobalConfig.remote.isActive) {
+          // If already connected (USP layer active), allow access
+          final loginType =
+              ref.read(authProvider.select((value) => value.value?.loginType));
+          if (loginType == LoginType.remote) {
+            return state.uri.toString();
+          }
+
+          // Not connected — check for restored session to re-connect
+          final raState = ref.read(remoteAccessProvider);
+          if (raState.sessionInfo != null && raState.sessionToken != null) {
+            // Redirect to confirm page to re-establish connection
+            logger
+                .i('[Route]: Remote mode refresh, redirecting to confirm page');
+            return '${RoutePath.remoteAssistanceConfirm}'
+                '?session=${raState.sessionInfo!.id}'
+                '&token=${raState.sessionToken}';
+          }
+          logger.i('[Route]: Remote mode no session, redirecting to RA page');
+          return RoutePath.remoteAssistanceConfirm;
+        }
         final loginType =
             ref.watch(authProvider.select((value) => value.value?.loginType));
         if (loginType == null || loginType == LoginType.none) {
@@ -159,6 +192,20 @@ class RouterNotifier extends ChangeNotifier {
   }
 
   Future<String?> autoConfigurationLogic(GoRouterState state) async {
+    // Check for Remote Assistance mode via URL parameter
+    final raSession = state.uri.queryParameters['session'];
+    if (raSession != null && raSession.isNotEmpty) {
+      final raToken = state.uri.queryParameters['token'] ?? '';
+      logger.i('[Route]: Detected Remote Assistance session: $raSession');
+      return '${RoutePath.remoteAssistanceConfirm}?session=$raSession&token=$raToken';
+    }
+
+    // Check for Remote build mode (force=remote)
+    if (BuildConfig.isRemote()) {
+      logger.i('[Route]: Remote build mode detected, redirecting to RA page');
+      return RoutePath.remoteAssistanceConfirm;
+    }
+
     final loginType = _ref.read(authProvider
         .select((value) => value.value?.loginType ?? LoginType.none));
 

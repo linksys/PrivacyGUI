@@ -60,6 +60,10 @@ jobs:
       - name: Install Dependencies
         run: flutter pub get
 
+      # Generate l10n files (ignored by .gitignore, must be generated before analyze)
+      - name: 🌐 Generate L10n
+        run: flutter gen-l10n
+
       # 1. Static Analysis (Linter)
       - name: 🔍 Flutter Analyze
         run: flutter analyze --no-fatal-warnings --no-fatal-infos
