@@ -12,6 +12,14 @@ class WifiRadioUIModel extends Equatable {
   final String channelBandwidth;
   final String supportedStandards;
 
+  /// Manually-selectable channels for this radio's band, sorted ascending.
+  ///
+  /// Sourced from `Device.WiFi.Radio.{i}.PossibleChannels` during the
+  /// dashboard data fetch ([UspWifiDataService.fetch]), so the edit-channel
+  /// dialog can render its dropdown synchronously with no per-dialog fetch.
+  /// Empty when the band exposes no manual channels.
+  final List<int> possibleChannels;
+
   /// Access points grouped under this radio.
   final List<WifiAccessPointUIModel> accessPoints;
 
@@ -25,6 +33,7 @@ class WifiRadioUIModel extends Equatable {
     required this.autoChannelEnable,
     required this.channelBandwidth,
     required this.supportedStandards,
+    this.possibleChannels = const [],
     this.accessPoints = const [],
   });
 
@@ -58,6 +67,7 @@ class WifiRadioUIModel extends Equatable {
         autoChannelEnable,
         channelBandwidth,
         supportedStandards,
+        possibleChannels,
         accessPoints,
       ];
 }

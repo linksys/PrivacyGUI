@@ -16,16 +16,34 @@ class ServiceErrorView extends StatelessWidget {
   /// Called when the user taps retry (e.g. re-fetch with forceRemote).
   final VoidCallback onRetry;
 
+  /// Page-appropriate title. Defaults to a neutral "something went wrong"
+  /// message; callers SHOULD pass a context-specific title (e.g.
+  /// `loc(context).failedToLoadSettings` on settings pages,
+  /// `loc(context).unableToLoadTopology` on the topology page).
+  final String? title;
+
+  /// Optional secondary action shown as a text button below retry
+  /// (e.g. "Log out" as an escape hatch when a page cannot load).
+  /// Both [secondaryLabel] and [onSecondary] must be provided (or neither).
+  final String? secondaryLabel;
+  final VoidCallback? onSecondary;
+
   const ServiceErrorView({
     super.key,
     required this.error,
     required this.onRetry,
-  });
+    this.title,
+    this.secondaryLabel,
+    this.onSecondary,
+  }) : assert((secondaryLabel == null) == (onSecondary == null),
+            'secondaryLabel and onSecondary must be provided together');
 
   @override
   Widget build(BuildContext context) {
     final message =
         error != null ? localizeServiceError(context, error!) : null;
+    final secondaryLabel = this.secondaryLabel;
+    final onSecondary = this.onSecondary;
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -33,7 +51,7 @@ class ServiceErrorView extends StatelessWidget {
           AppIcon.font(Icons.error_outline,
               size: 48, color: Theme.of(context).colorScheme.error),
           AppGap.xl(),
-          AppText.titleMedium(loc(context).failedToLoadSettings),
+          AppText.titleMedium(title ?? loc(context).errorUnexpected),
           if (message != null) ...[
             AppGap.sm(),
             AppText.bodyMedium(message),
@@ -43,6 +61,13 @@ class ServiceErrorView extends StatelessWidget {
             label: loc(context).retry,
             onTap: onRetry,
           ),
+          if (secondaryLabel != null && onSecondary != null) ...[
+            AppGap.md(),
+            AppButton.text(
+              label: secondaryLabel,
+              onTap: onSecondary,
+            ),
+          ],
         ],
       ),
     );

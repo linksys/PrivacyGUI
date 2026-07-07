@@ -260,19 +260,22 @@ class UspTopologyBuilder {
 
   /// Converts RSSI to LinkQuality using wifi.dart thresholds.
   ///
+  /// Maps [NodeSignalLevel] 1:1 to [LinkQuality] for consistency with
+  /// [UspSignalStrengthIndicator] and other signal displays.
+  ///
   /// Thresholds from [signalThresholdRSSI]: [-65, -71, -78]
-  /// - >= -65: excellent/strong
-  /// - >= -71: good/medium
-  /// - >= -78: fair/medium
-  /// - < -78: poor/weak
+  /// - >= -65: excellent
+  /// - >= -71: good
+  /// - >= -78: fair
+  /// - < -78: poor (unknown in LinkQuality)
   static LinkQuality _rssiToLinkQuality(int? rssi) {
     if (rssi == null) return LinkQuality.unknown;
     final level = getWifiSignalLevel(rssi);
     return switch (level) {
       NodeSignalLevel.excellent => LinkQuality.excellent,
-      NodeSignalLevel.good => LinkQuality.excellent,
-      NodeSignalLevel.fair => LinkQuality.good,
-      NodeSignalLevel.poor => LinkQuality.fair,
+      NodeSignalLevel.good => LinkQuality.good,
+      NodeSignalLevel.fair => LinkQuality.fair,
+      NodeSignalLevel.poor => LinkQuality.unknown,
       NodeSignalLevel.none => LinkQuality.unknown,
       NodeSignalLevel.wired => LinkQuality.stable,
     };

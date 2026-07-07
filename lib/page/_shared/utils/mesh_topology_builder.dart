@@ -23,18 +23,25 @@ class MeshTopologyBuilder {
   }) {
     final nodes = <NodeUIModel>[];
     final clientToNodeMap = <String, String>{};
+    final clientSignalMap = <String, int>{};
 
     for (final node in network.items) {
       final rawId = node.id.trim().toUpperCase();
       final nodeDeviceId = rawId.isNotEmpty ? rawId : node.instancePath;
 
-      // Build client MAC → node ID mapping from station list
+      // Build client MAC → node ID mapping and signal strength from station list
       for (final radio in node.radios) {
         for (final bss in radio.bssList) {
           for (final sta in bss.stations) {
             final mac = sta.macAddress.trim();
             if (mac.isNotEmpty && nodeDeviceId.isNotEmpty) {
-              clientToNodeMap[mac.toUpperCase()] = nodeDeviceId;
+              final upperMac = mac.toUpperCase();
+              clientToNodeMap[upperMac] = nodeDeviceId;
+              // DataElements STA.SignalStrength is RCPI (0-220), convert to RSSI
+              final rssi = rcpiToRssi(sta.signalStrength);
+              if (rssi != null) {
+                clientSignalMap[upperMac] = rssi;
+              }
             }
           }
         }
@@ -88,6 +95,10 @@ class MeshTopologyBuilder {
       ));
     }
 
-    return MeshTopologyInfo(nodes: nodes, clientToNodeMap: clientToNodeMap);
+    return MeshTopologyInfo(
+      nodes: nodes,
+      clientToNodeMap: clientToNodeMap,
+      clientSignalMap: clientSignalMap,
+    );
   }
 }

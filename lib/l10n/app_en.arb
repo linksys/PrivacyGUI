@@ -642,22 +642,6 @@
   "vlanTagging": "VLAN Tagging",
   "lcpEchoInterval": "LCP Echo Interval (seconds)",
   "bridgeModeWarning": "Bridge mode will disable routing features. The device will act as a network bridge.",
-  "bridgeReconnectHint": "After saving, reconnect to your router at {url}.",
-  "@bridgeReconnectHint": {
-    "description": "Bold inline hint shown while editing when Bridge Mode is selected. {url} is https://<hostname>.local",
-    "placeholders": {
-      "url": { "type": "Object" }
-    }
-  },
-  "bridgeRedirectTitle": "Reconnect to your router",
-  "bridgeRedirectMessage": "Your router is now a transparent bridge and no longer hands out local IP addresses. Reconnect to it at {url}.",
-  "@bridgeRedirectMessage": {
-    "description": "Body of the dialog shown after switching to Bridge Mode. {url} is https://<hostname>.local",
-    "placeholders": {
-      "url": { "type": "Object" }
-    }
-  },
-  "bridgeRedirectButton": "Go to router",
   "currentMac": "Current MAC",
   "renew": "Renew",
   "leaseRenewed": "{protocol} lease renewed",
@@ -719,6 +703,7 @@
   "factoryResetInProgress": "Factory reset in progress",
   "factoryResetWaitMessage": "The router is restoring to factory defaults. You will need to set up and log in again.",
   "timezoneUpdated": "Timezone updated",
+  "timeSettingsSaved": "Time settings saved",
   "portFwd": "Port Fwd",
   "portForwarding": "Port Forwarding",
   "portForwardingWithCount": "Port Forwarding ({count})",
@@ -1057,7 +1042,6 @@
   "rtColumn": "RT",
   "unableToLoadDiagnostics": "Unable to load diagnostics",
   "unableToLoadSpeedTest": "Unable to load speed test",
-  "errorLoadingSpeedTest": "Error loading speed test",
   "internetSpeedTest": "Internet Speed Test",
   "testConnectionSpeedFromRouter": "Test your connection speed from the router",
   "startTest": "Start Test",
@@ -1202,10 +1186,22 @@
   "radios": "Radios",
   "portRules": "Port Rules",
   "channelNumber": "Channel number",
+  "channelAutoRecommended": "Auto (recommended)",
+  "channelCurrentlyUsing": "Currently using: {channel}",
+  "@channelCurrentlyUsing": {
+    "placeholders": {
+      "channel": {
+        "type": "int"
+      }
+    }
+  },
+  "channelDfsSuffix": "· DFS",
+  "channelNoManualOptions": "No manual channels available for this band.",
   "change": "Change",
   "builtInWidgets": "Built-in Widgets",
   "appWidgetCards": "App Widget Cards",
   "wifiSettingsSaved": "WiFi settings saved",
+  "channelUpdated": "Channel updated",
   "noWifiNetworksFound": "No WiFi networks found. Check router connection.",
   "quickSetupNotice": "Quick Setup applies the same name, password, and security mode to all bands. A password is required to save.",
   "noAdvancedWifiSettings": "No advanced WiFi settings available for this device.",
@@ -1227,6 +1223,7 @@
   "requiredLabel": "(Required)",
   "unchangedLabel": "(Unchanged)",
   "portForwardingSettingsSaved": "Port forwarding settings saved",
+  "ruleAdded": "Rule added",
   "singlePortForwarding": "Single Port Forwarding",
   "noSinglePortRules": "No single port forwarding rules configured",
   "portRangeForwarding": "Port Range Forwarding",
@@ -1482,6 +1479,8 @@
   },
   "ipAddressReserved": "IP address reserved",
   "reservationReleased": "Reservation released",
+  "reservationAdded": "Reservation added",
+  "reservationDeleted": "Reservation deleted",
   "viaNode": "via {node}",
   "@viaNode": {
     "placeholders": {
@@ -1492,6 +1491,7 @@
   },
   "connectingToRouter": "Connecting to router...",
   "reconnecting": "Reconnecting...",
+  "reconnectedToRouter": "Reconnected to router",
   "realTimeConnectionLost": "Real-time connection lost",
   "disconnected": "Disconnected",
   "reconnect": "Reconnect",
@@ -1618,6 +1618,9 @@
   "networkTopology": "Network Topology",
   "newPassword": "New Password",
   "noAppsInstalled": "No apps installed on this router",
+  "unableToLoadApps": "Unable to load apps",
+  "unableToLoadHealthData": "Unable to load health data",
+  "unableToLoadTopology": "Unable to load topology",
   "routerPasswordRuleNoConsecutive": "No consecutive identical characters",
   "noDimensions": "No dimensions",
   "noLogFilesAvailable": "No log files available on this router",
@@ -1649,8 +1652,6 @@
   "badgeUser": "USER",
   "uspConsole": "USP Console",
   "uspDashboard": "USP Dashboard",
-  "unableToLoadApps": "Unable to load apps",
-  "unableToLoadTopology": "Unable to load topology",
   "routerPasswordRuleUpperLower": "Upper and lower case letters",
   "validatingSession": "Validating session...",
   "viewDevices": "View Devices",
@@ -1692,5 +1693,25 @@
         "type": "int"
       }
     }
-  }
+  },
+  "bridgeReconnectHint": "After saving, reconnect to your router at {url}.",
+  "@bridgeReconnectHint": {
+    "description": "Bold inline hint shown while editing when Bridge Mode is selected. {url} is https://<hostname>.local",
+    "placeholders": {
+      "url": {
+        "type": "Object"
+      }
+    }
+  },
+  "bridgeRedirectTitle": "Reconnect to your router",
+  "bridgeRedirectMessage": "Your router is now a transparent bridge and no longer hands out local IP addresses. Reconnect to it at {url}.",
+  "@bridgeRedirectMessage": {
+    "description": "Body of the dialog shown after switching to Bridge Mode. {url} is https://<hostname>.local",
+    "placeholders": {
+      "url": {
+        "type": "Object"
+      }
+    }
+  },
+  "bridgeRedirectButton": "Go to router"
 }

@@ -30,14 +30,18 @@ class UspAppsView extends ConsumerWidget {
       child: (childContext, constraints) {
         return asyncState.when(
           loading: () => const Center(child: AppLoader()),
-          error: (error, stack) => _buildError(context, ref, error),
+          error: (error, stack) => _buildError(context, ref),
           data: (appsState) => _buildContent(context, ref, appsState),
         );
       },
     );
   }
 
-  Widget _buildError(BuildContext context, WidgetRef ref, Object error) {
+  // Apps are served as static lighttpd JSON (NOT USP/TR-181), so failures are
+  // plain `Exception`s, not `ServiceError`s — this page keeps its own error
+  // widget rather than the ServiceError-based `ServiceErrorView`. We show a
+  // localized message instead of the raw exception text.
+  Widget _buildError(BuildContext context, WidgetRef ref) {
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -46,8 +50,6 @@ class UspAppsView extends ConsumerWidget {
               size: 48, color: Theme.of(context).colorScheme.error),
           AppGap.xl(),
           AppText.titleMedium(loc(context).unableToLoadApps),
-          AppGap.md(),
-          AppText.bodyMedium(error.toString()),
           AppGap.xxl(),
           AppButton(
             label: loc(context).retry,

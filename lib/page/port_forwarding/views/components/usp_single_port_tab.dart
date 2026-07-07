@@ -101,7 +101,7 @@ class UspSinglePortTab extends ConsumerWidget {
 
   List<AppAutoCompleteOption> _buildIpv4DeviceOptions(WidgetRef ref) {
     final devices =
-        ref.read(devicesDataProvider).valueOrNull?.deviceModels ?? [];
+        ref.read(devicesDataProvider).valueOrNull?.clientDevices ?? [];
     return devices
         .where((d) => d.ip.isNotEmpty)
         .map((d) => AppAutoCompleteOption(

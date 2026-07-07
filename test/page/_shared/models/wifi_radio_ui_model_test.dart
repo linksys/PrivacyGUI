@@ -28,6 +28,33 @@ void main() {
       expect(model.accessPoints, isEmpty);
     });
 
+    test('possibleChannels defaults to empty list', () {
+      final model = WifiRadioUIModel(
+        instancePath: 'Device.WiFi.Radio.1.',
+        band: '2.4GHz',
+        enable: true,
+        transmitPower: 80,
+        maxBitRate: 300,
+        channel: 6,
+        autoChannelEnable: true,
+        channelBandwidth: '20MHz',
+        supportedStandards: 'ax',
+      );
+
+      expect(model.possibleChannels, isA<List<int>>());
+      expect(model.possibleChannels, isEmpty);
+    });
+
+    test('possibleChannels is retained and included in equality', () {
+      final model1 = _createRadio(possibleChannels: const [1, 6, 11]);
+      final model2 = _createRadio(possibleChannels: const [1, 6, 11]);
+      final model3 = _createRadio(possibleChannels: const [1, 6]);
+
+      expect(model1.possibleChannels, [1, 6, 11]);
+      expect(model1, equals(model2));
+      expect(model1, isNot(equals(model3)));
+    });
+
     test('accessPoints defaults to empty list', () {
       final model = WifiRadioUIModel(
         instancePath: 'Device.WiFi.Radio.1.',
@@ -196,6 +223,7 @@ WifiRadioUIModel _createRadio({
   bool autoChannelEnable = true,
   String channelBandwidth = '20MHz',
   String supportedStandards = 'ax',
+  List<int> possibleChannels = const [],
   List<WifiAccessPointUIModel> accessPoints = const [],
 }) {
   return WifiRadioUIModel(
@@ -208,6 +236,7 @@ WifiRadioUIModel _createRadio({
     autoChannelEnable: autoChannelEnable,
     channelBandwidth: channelBandwidth,
     supportedStandards: supportedStandards,
+    possibleChannels: possibleChannels,
     accessPoints: accessPoints,
   );
 }

@@ -5,13 +5,12 @@ import 'package:privacy_gui/providers/auth/auth_types.dart';
 /// Represents the authentication state of the application.
 ///
 /// This immutable class holds local router authentication data.
+/// Password is never stored — only session tokens are persisted
+/// via sessionStorage for page reload recovery.
 ///
 /// Use [AuthState.empty] to create an initial unauthenticated state.
 /// Use [copyWith] to create modified copies with updated values.
 class AuthState extends Equatable {
-  /// Local router admin password.
-  final String? localPassword;
-
   /// Password hint for the local router admin password.
   final String? localPasswordHint;
 
@@ -19,7 +18,6 @@ class AuthState extends Equatable {
   final LoginType loginType;
 
   const AuthState({
-    this.localPassword,
     this.localPasswordHint,
     required this.loginType,
   });
@@ -35,7 +33,6 @@ class AuthState extends Equatable {
         LoginType.values.firstWhereOrNull((e) => e.name == json['loginType']) ??
             LoginType.none;
     return AuthState(
-      localPassword: json['localPassword'],
       localPasswordHint: json['localPasswordHint'],
       loginType: loginType,
     );
@@ -43,12 +40,10 @@ class AuthState extends Equatable {
 
   /// Creates a copy of this [AuthState] with the given fields replaced.
   AuthState copyWith({
-    String? localPassword,
     String? localPasswordHint,
     LoginType? loginType,
   }) {
     return AuthState(
-      localPassword: localPassword ?? this.localPassword,
       localPasswordHint: localPasswordHint ?? this.localPasswordHint,
       loginType: loginType ?? this.loginType,
     );
@@ -56,7 +51,6 @@ class AuthState extends Equatable {
 
   @override
   List<Object?> get props => [
-        localPassword,
         localPasswordHint,
         loginType,
       ];

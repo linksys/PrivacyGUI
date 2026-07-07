@@ -6,7 +6,6 @@ library;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:privacy_gui/core/cloud/providers/geolocation/geolocation_provider.dart';
 import 'package:privacy_gui/core/cloud/providers/geolocation/geolocation_state.dart';
 import 'package:privacy_gui/demo/usp/demo_usp_data_loader.dart';
@@ -15,6 +14,7 @@ import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/route/router_provider.dart';
 import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
 import 'package:privacy_gui/core/usp/providers/usp_auth_coordinator.dart';
+import 'package:privacy_gui/core/usp/providers/usp_token_storage.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/page/dashboard/providers/package_widget_loader.dart';
 import 'demo_router_provider.dart';
@@ -56,7 +56,7 @@ class DemoProviders {
 
       // 8. USP Auth Coordinator: Uses DemoUspClient (always authenticated)
       uspAuthCoordinatorProvider.overrideWith(
-          (ref) => UspAuthCoordinator(demoUsp, const FlutterSecureStorage())),
+          (ref) => UspAuthCoordinator(demoUsp, UspTokenStorage())),
 
       // 9. Package Widget Loader: Use demo templates from assets
       packageWidgetLoaderProvider.overrideWith(() => DemoPackageWidgetLoader()),
@@ -102,10 +102,8 @@ class _DemoAuthNotifier extends AuthNotifier {
     // the state assignment happens after a microtask boundary, avoiding the
     // "Tried to modify a provider while the widget tree was building" error
     // when init() is called from go_router redirect during build phase.
-    state = await AsyncValue.guard(() async => AuthState(
-          loginType: LoginType.local,
-          localPassword: 'demo-password',
-        ));
+    state = await AsyncValue.guard(
+        () async => AuthState(loginType: LoginType.local));
     return state.value;
   }
 
@@ -113,13 +111,9 @@ class _DemoAuthNotifier extends AuthNotifier {
   Future<dynamic> localLogin(
     String password, {
     bool guardError = true,
-    bool pnp = false,
   }) async {
     debugPrint('Demo: Local login called');
-    state = AsyncValue.data(AuthState(
-      loginType: LoginType.local,
-      localPassword: password,
-    ));
+    state = AsyncValue.data(AuthState(loginType: LoginType.local));
   }
 
   @override

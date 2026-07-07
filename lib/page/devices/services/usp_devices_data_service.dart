@@ -491,9 +491,14 @@ class UspDevicesDataService {
           .map((e) => e.address)
           .where((a) => a.isNotEmpty)
           .toList(),
-      // Prefer Hosts data, fallback to WiFi STA table data.
-      signalStrength:
-          isWifi ? (device.signalStrength ?? wifiClient?.signalStrength) : null,
+      // Prefer Hosts data, fallback to WiFi STA table, then DataElements.
+      // DataElements provides signal for clients on ALL nodes (including child nodes),
+      // while WifiClients only covers master node clients.
+      signalStrength: isWifi
+          ? (device.signalStrength ??
+              wifiClient?.signalStrength ??
+              meshTopology.clientSignalMap[mac])
+          : null,
       downlinkRate: isWifi
           ? (device.lastDataDownlinkRate ?? wifiClient?.lastDataDownlinkRate)
           : null,

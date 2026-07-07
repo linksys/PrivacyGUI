@@ -38,7 +38,7 @@ class UspNetworkStatusCard extends ConsumerWidget {
                         mutation: () => ref
                             .read(uspInternetSettingsProvider.notifier)
                             .renewDhcpLease(),
-                        successMessage: 'DHCP lease renewed',
+                        successMessage: loc(context).leaseRenewed('DHCP'),
                       ),
             )
           : null,

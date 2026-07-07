@@ -27,13 +27,17 @@ class UspSpeedTestCard extends ConsumerWidget {
       detailRoute: RouteNamed.uspSpeedTest,
       content: asyncState.when(
         loading: () => const Center(child: AppLoader()),
-        error: (_, __) => _buildError(context, ref),
+        error: (error, _) => _buildError(context, ref, error),
         data: (state) => _buildBody(context, ref, state, colorScheme),
       ),
     );
   }
 
-  Widget _buildError(BuildContext context, WidgetRef ref) {
+  /// Compact error state for the build() failure. Kept card-sized (not the
+  /// full-page [ServiceErrorView]) to fit the constrained DashboardCardTemplate
+  /// height — mirrors [_buildErrorState] below. Localizes via
+  /// [localizeServiceError].
+  Widget _buildError(BuildContext context, WidgetRef ref, Object error) {
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -41,7 +45,13 @@ class UspSpeedTestCard extends ConsumerWidget {
           AppIcon.font(Icons.error_outline,
               size: 32, color: Theme.of(context).colorScheme.error),
           AppGap.sm(),
-          AppText.bodySmall(loc(context).errorLoadingSpeedTest),
+          AppText.bodySmall(
+            localizeServiceError(context, error),
+            textAlign: TextAlign.center,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
           AppGap.md(),
           AppButton.text(
             label: loc(context).retry,

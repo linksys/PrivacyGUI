@@ -62,6 +62,7 @@ class UspDhcpDetailView extends ConsumerWidget {
         if (reservationStatus.error != null) {
           return ServiceErrorView(
             error: reservationStatus.error,
+            title: loc(context).failedToLoadSettings,
             onRetry: () {
               ref.invalidate(dhcpDataProvider);
               ref
@@ -75,6 +76,7 @@ class UspDhcpDetailView extends ConsumerWidget {
           final asyncError = asyncDhcp.error;
           return ServiceErrorView(
             error: asyncError is ServiceError ? asyncError : null,
+            title: loc(context).failedToLoadSettings,
             onRetry: () {
               ref.invalidate(dhcpDataProvider);
               ref

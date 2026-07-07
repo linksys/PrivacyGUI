@@ -578,9 +578,9 @@ class _UspSliverDashboardViewState
     );
 
     // SizedBox.expand ensures cards fill their grid cell.
-    // ClipRect prevents content from visually overflowing the cell boundary.
-    final displayedWidget =
-        SizedBox.expand(child: ClipRect(child: resolvedWidget));
+    // Note: ClipRect was removed because it clips shadows/borders causing
+    // visual truncation. Cards handle their own overflow via internal clipping.
+    final displayedWidget = SizedBox.expand(child: resolvedWidget);
 
     if (isEditMode) {
       // In edit mode: AbsorbPointer blocks content interactions while keeping

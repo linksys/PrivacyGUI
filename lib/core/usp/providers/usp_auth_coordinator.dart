@@ -2,13 +2,13 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:privacy_gui/constants/error_code.dart';
-import 'package:privacy_gui/constants/pref_key.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
+
+import 'usp_token_storage.dart';
 
 /// Coordinates USP authentication alongside JNAP authentication.
 ///
@@ -19,14 +19,17 @@ import 'package:privacy_gui/core/usp/services/usp_client.dart';
 /// Key behaviors:
 /// - [syncAfterLocalLogin]: Auto-login USP after successful JNAP local login
 /// - [syncAfterLogout]: Logout USP when JNAP logs out
-/// - [restoreSession]: Re-authenticate USP using stored password on page reload
+/// - [restoreSession]: Re-authenticate USP using stored token on page reload
 /// - [ensureAuth]: Proactive token refresh triggered by SSE heartbeat
+///
+/// Token persistence uses sessionStorage (cleared on browser close) for security.
+/// Password is never stored — only used for initial login.
 ///
 /// USP login failure never blocks JNAP operations — [ProtocolResolver] falls
 /// back to JNAP when `isAuthenticated` is false.
 class UspAuthCoordinator {
   final UspClient? _usp;
-  final FlutterSecureStorage _storage;
+  final UspTokenStorage _tokenStorage;
 
   DateTime? _lastTokenRefresh;
   Completer<void>? _refreshInProgress;
@@ -35,7 +38,8 @@ class UspAuthCoordinator {
   bool? _lastRestoreResult;
 
   /// Cooldown period after a failed restore attempt to prevent rapid retries.
-  static const Duration _restoreCooldown = Duration(seconds: 5);
+  /// Short (1s) since refreshToken doesn't risk account lockout like login does.
+  static const Duration _restoreCooldown = Duration(seconds: 1);
 
   /// Called when proactive refresh gets 401 — session externally terminated.
   VoidCallback? onForceLogout;
@@ -69,11 +73,21 @@ class UspAuthCoordinator {
     return _accountLockedPattern.hasMatch(error.toString());
   }
 
-  UspAuthCoordinator(this._usp, this._storage) {
-    _usp?.onReauthRequired = restoreSession;
+  UspAuthCoordinator(this._usp, this._tokenStorage) {
+    // 401 retry is not recovery — force logout on failure
+    _usp?.onReauthRequired = () => restoreSession(isRecovering: false);
     _usp?.onRefreshTokenSuccess = () {
       _lastTokenRefresh = DateTime.now();
+      _persistToken();
     };
+  }
+
+  /// Persists the current session token to storage for page reload recovery.
+  void _persistToken() {
+    final token = _usp?.sessionToken;
+    if (token != null && token.isNotEmpty) {
+      _tokenStorage.save(token);
+    }
   }
 
   /// Called after JNAP localLogin succeeds — auto-sync USP authentication.
@@ -82,6 +96,7 @@ class UspAuthCoordinator {
     try {
       await _usp.login(password);
       _lastTokenRefresh = DateTime.now();
+      _persistToken();
       logger.d('[USP][Auth]: USP login synced successfully');
     } catch (e) {
       // USP login failure does not affect JNAP — ProtocolResolver
@@ -93,6 +108,7 @@ class UspAuthCoordinator {
   /// Called during JNAP logout — sync logout USP.
   Future<void> syncAfterLogout() async {
     _lastTokenRefresh = null;
+    _tokenStorage.clear();
     if (_usp == null || !_usp.isAuthenticated) return;
     try {
       await _usp.logout();
@@ -102,23 +118,24 @@ class UspAuthCoordinator {
     }
   }
 
-  /// Re-authenticates USP using token refresh or stored password.
+  /// Re-authenticates USP using stored token from sessionStorage.
   ///
-  /// Strategy (token-first):
-  /// 1. If `isAuthenticated` is true → try `refreshToken()` first
-  ///    - Success → done, no login needed
-  ///    - 401 → fall through to password login
-  /// 2. If no token or refresh failed → login with stored password
+  /// Strategy (token-only):
+  /// 1. If WASM client has a token in memory → try `refreshToken()` first
+  /// 2. If no in-memory token → try restoring from sessionStorage via
+  ///    `refreshToken(storedToken)` which validates and restores the session
+  /// 3. If no stored token or refresh failed → trigger force logout
   ///
-  /// This avoids unnecessary login calls when the session is still valid,
-  /// reducing account-lock risk from repeated password attempts.
+  /// Password is never stored — this is intentional for security.
+  /// If the token expires, the user must enter their password again.
+  ///
+  /// Set [isRecovering] to true when the app is waiting for the router to
+  /// recover (e.g., after reboot). In this case, failure is expected and
+  /// force logout is suppressed — the recovery probe will retry later.
   ///
   /// Multiple concurrent calls are coalesced — only the first triggers an
   /// actual restore; subsequent callers await the same result.
-  ///
-  /// Failed login attempts have a cooldown period to prevent rapid retries
-  /// that could lock the account.
-  Future<void> restoreSession() async {
+  Future<void> restoreSession({bool isRecovering = false}) async {
     if (_usp == null) {
       logger.w('[USP][Auth]: restoreSession skipped: UspClient is null');
       return;
@@ -133,7 +150,7 @@ class UspAuthCoordinator {
 
     _restoreInProgress = Completer<bool>();
     try {
-      final result = await _restoreSessionImpl();
+      final result = await _restoreSessionImpl(isRecovering: isRecovering);
       _restoreInProgress!.complete(result);
     } catch (e) {
       _restoreInProgress!.completeError(e);
@@ -142,60 +159,123 @@ class UspAuthCoordinator {
     }
   }
 
-  /// Implementation of session restore with token-first strategy.
-  Future<bool> _restoreSessionImpl() async {
-    // Step 1: If we have a token, try refreshing it first
+  /// Implementation of session restore with token-only strategy.
+  Future<bool> _restoreSessionImpl({required bool isRecovering}) async {
+    // Step 1: If WASM client already has a token, try refreshing it
     if (_usp!.isAuthenticated) {
       try {
         await _usp.refreshToken();
         _lastTokenRefresh = DateTime.now();
-        logger.d('[USP][Auth]: restoreSession via refreshToken succeeded');
+        _persistToken();
+        logger.d('[USP][Auth]: restoreSession via in-memory token succeeded');
         return true;
       } catch (e) {
         if (_isAuthError(e)) {
-          logger.d('[USP][Auth]: refreshToken got 401, falling back to login');
-          // Fall through to password login
+          logger.d('[USP][Auth]: in-memory token refresh got 401, '
+              'trying stored token');
         } else {
-          logger.w('[USP][Auth]: refreshToken failed (non-auth): $e');
-          // Non-auth error (network, etc.) — still try password login as fallback
+          logger.w('[USP][Auth]: in-memory token refresh failed: $e');
         }
+        // Fall through to try stored token
       }
     }
 
-    // Step 2: Fall back to password login
-    // Check cooldown to prevent account lock from rapid retries
+    // Step 2: Try restoring from sessionStorage
+    final storedToken = _tokenStorage.load();
+    if (storedToken == null || storedToken.isEmpty) {
+      logger.d('[USP][Auth]: restoreSession skipped: no stored token');
+      _triggerForceLogoutIfNotRecovering(isRecovering);
+      return false;
+    }
+
+    // Check cooldown to prevent rapid retries
     final lastAttempt = _lastRestoreAttempt;
     if (lastAttempt != null &&
         _lastRestoreResult == false &&
         DateTime.now().difference(lastAttempt) < _restoreCooldown) {
-      logger.d(
-          '[USP][Auth]: restoreSession skipped: cooldown after failed login');
+      logger.d('[USP][Auth]: restoreSession skipped: cooldown after failure');
       return false;
     }
 
-    final result = await _loginWithStoredPassword();
     _lastRestoreAttempt = DateTime.now();
-    _lastRestoreResult = result;
-    return result;
-  }
 
-  /// Shared login logic — reads stored password and calls [UspClient.login].
-  /// Returns true if login succeeded, false otherwise. Never throws.
-  Future<bool> _loginWithStoredPassword() async {
-    final password = await _storage.read(key: pLocalPassword);
-    if (password == null || password.isEmpty) {
-      logger.w('[USP][Auth]: restoreSession skipped: no stored password');
-      return false;
-    }
     try {
-      await _usp!.login(password);
+      // refreshToken(token) validates the external token with the server
+      // and restores the session if valid
+      await _usp.refreshToken(token: storedToken);
       _lastTokenRefresh = DateTime.now();
-      logger.d(
-          '[USP][Auth]: restoreSession login done, isAuthenticated=${_usp.isAuthenticated}');
+      _persistToken();
+      _lastRestoreResult = true;
+      logger.d('[USP][Auth]: restoreSession via stored token succeeded');
       return true;
     } catch (e) {
-      logger.w('[USP][Auth]: restoreSession login failed: $e');
+      _lastRestoreResult = false;
+      if (_isAuthError(e)) {
+        logger.d('[USP][Auth]: stored token expired/invalid, clearing');
+        _tokenStorage.clear();
+        _triggerForceLogoutIfNotRecovering(isRecovering);
+      } else {
+        logger.w('[USP][Auth]: stored token refresh failed: $e');
+        // Network error — don't force logout, might recover
+      }
       return false;
+    }
+  }
+
+  /// Triggers force logout unless in recovery mode.
+  void _triggerForceLogoutIfNotRecovering(bool isRecovering) {
+    if (isRecovering) {
+      logger.d('[USP][Auth]: Suppressing force logout — in recovery mode');
+      return;
+    }
+    logger.w('[USP][Auth]: Triggering force logout');
+    onForceLogout?.call();
+  }
+
+  /// Re-authenticates with a new password after password change.
+  ///
+  /// Call this after successfully changing the admin password to:
+  /// 1. Logout the old session (old token becomes invalid)
+  /// 2. Login with the new password
+  /// 3. Persist the new token
+  ///
+  /// Throws [ServiceError] on failure — caller should handle gracefully
+  /// (e.g., redirect to login page).
+  Future<void> reloginWithNewPassword(String newPassword) async {
+    if (_usp == null) {
+      logger
+          .w('[USP][Auth]: reloginWithNewPassword skipped: UspClient is null');
+      throw const ServiceNotInitializedError(
+          detail: 'USP client not available');
+    }
+
+    logger.d('[USP][Auth]: Re-authenticating with new password');
+
+    // Clear old token first
+    _tokenStorage.clear();
+    _lastTokenRefresh = null;
+
+    try {
+      // Logout old session (best-effort, ignore errors)
+      try {
+        await _usp.logout();
+      } catch (e) {
+        logger.d('[USP][Auth]: Old session logout failed (expected): $e');
+      }
+
+      // Login with new password
+      await _usp.login(newPassword);
+      if (!_usp.isAuthenticated) {
+        throw const InvalidCredentialsError();
+      }
+
+      _lastTokenRefresh = DateTime.now();
+      _persistToken();
+      logger.d('[USP][Auth]: Re-authentication with new password succeeded');
+    } catch (e) {
+      logger.w('[USP][Auth]: Re-authentication failed: $e');
+      if (e is ServiceError) rethrow;
+      throw UnexpectedError(originalError: e, detail: e.toString());
     }
   }
 
@@ -215,6 +295,7 @@ class UspAuthCoordinator {
         throw const InvalidCredentialsError();
       }
       _lastTokenRefresh = DateTime.now();
+      _persistToken();
       logger.d('[USP][Auth]: USP standalone login succeeded');
     } catch (e) {
       logger.w('[USP][Auth]: USP standalone login failed: $e');
@@ -278,10 +359,12 @@ class UspAuthCoordinator {
     try {
       await _usp.refreshToken();
       _lastTokenRefresh = DateTime.now();
+      _persistToken();
       logger.d('[USP][Auth]: Proactive token refresh succeeded');
     } catch (e) {
       if (_isAuthError(e)) {
-        _lastTokenRefresh = null; // Allow immediate retry if logout is delayed
+        _lastTokenRefresh = null;
+        _tokenStorage.clear();
         logger.w('[USP][Auth]: Proactive refresh got 401 — forcing logout: $e');
         onForceLogout?.call();
       } else {
@@ -297,6 +380,6 @@ class UspAuthCoordinator {
 final uspAuthCoordinatorProvider = Provider<UspAuthCoordinator>((ref) {
   return UspAuthCoordinator(
     ref.watch(uspClientProvider),
-    const FlutterSecureStorage(),
+    UspTokenStorage(),
   );
 });

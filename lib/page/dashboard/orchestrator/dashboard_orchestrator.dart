@@ -132,9 +132,13 @@ class DashboardOrchestrator extends AsyncNotifier<DashboardOrchestratorState> {
     final loginType = ref.read(authProvider).value?.loginType;
     final isRemoteAssistance = loginType == LoginType.remote;
 
-    // On page reload WASM state is lost — attempt session restore (local only)
+    // On page reload WASM state is lost — attempt session restore (local only).
+    // Use isRecovering: true because we handle auth failure via NotAuthenticatedError
+    // below — don't let restoreSession trigger onForceLogout (double navigation).
     if (!isRemoteAssistance && !usp.isAuthenticated) {
-      await ref.read(uspAuthCoordinatorProvider).restoreSession();
+      await ref
+          .read(uspAuthCoordinatorProvider)
+          .restoreSession(isRecovering: true);
       if (!usp.isAuthenticated) {
         throw const NotAuthenticatedError();
       }
@@ -175,6 +179,7 @@ class DashboardOrchestrator extends AsyncNotifier<DashboardOrchestratorState> {
                 memoryPercent: model.memoryPercent,
                 totalMemoryKb: model.totalMemory,
                 freeMemoryKb: model.freeMemory,
+                uptimeSeconds: model.uptime,
               ),
             );
       }).catchError((e) {

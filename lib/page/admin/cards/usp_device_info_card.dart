@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/utils/device_image_helper.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
@@ -38,7 +39,9 @@ class UspDeviceInfoCard extends ConsumerWidget {
 
     return DashboardCardTemplate(
       title: loc(context).deviceInformation,
-      detailRoute: RouteNamed.uspAdmin,
+      footer: masterNode != null && masterNode.deviceId.isNotEmpty
+          ? _buildNodeDetailFooter(context, masterNode.deviceId)
+          : null,
       content: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -125,6 +128,48 @@ class UspDeviceInfoCard extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildNodeDetailFooter(BuildContext context, String deviceId) {
+    final label = loc(context).viewDetails;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        AppDivider(),
+        AppGap.md(),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            Semantics(
+              button: true,
+              label: label,
+              child: InkWell(
+                onTap: () => context.pushNamed(
+                  RouteNamed.uspNodeDetail,
+                  queryParameters: {'deviceId': deviceId},
+                ),
+                borderRadius: BorderRadius.circular(4),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    AppText.labelMedium(
+                      label,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    AppGap.xs(),
+                    Icon(
+                      Icons.arrow_forward,
+                      size: 14,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }
