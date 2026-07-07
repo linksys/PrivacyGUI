@@ -80,15 +80,32 @@ class WifiAccessPointUIModel extends Equatable {
   final String encryptionMode;
   final bool isGuest;
 
+  /// TR-181 instance path of the AccessPoint (e.g. Device.WiFi.AccessPoint.2.).
+  /// Needed by the Dashboard per-network toggle to mutate AccessPoint.Enable.
+  final String accessPointInstancePath;
+
+  /// TR-181 instance path of the SSID this AP serves (e.g. Device.WiFi.SSID.2.).
+  /// Needed by the Dashboard per-network toggle to mutate SSID.Enable.
+  final String ssidInstancePath;
+
   const WifiAccessPointUIModel({
     required this.enable,
     required this.ssidName,
     required this.securityMode,
     required this.encryptionMode,
     this.isGuest = false,
+    this.accessPointInstancePath = '',
+    this.ssidInstancePath = '',
   });
 
   @override
-  List<Object?> get props =>
-      [enable, ssidName, securityMode, encryptionMode, isGuest];
+  List<Object?> get props => [
+        enable,
+        ssidName,
+        securityMode,
+        encryptionMode,
+        isGuest,
+        accessPointInstancePath,
+        ssidInstancePath,
+      ];
 }

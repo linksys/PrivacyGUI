@@ -193,13 +193,17 @@ class UspWifiDataService {
       final apModels = radioAps.map((a) {
         final isGuest =
             guestSsidPaths.contains(_ensureTrailingDot(a.ssid.instancePath));
-        // Use SSID.enable as the canonical enabled state (matches toggle mutation)
+        // Per-network enabled state = SSID.Enable. The Dashboard toggle mutates
+        // both SSID.Enable and AccessPoint.Enable together, so either would do;
+        // we read SSID.Enable as the single source of truth for the UI.
         return WifiAccessPointUIModel(
           enable: a.ssid.enable,
           ssidName: a.ssid.ssid.isNotEmpty ? a.ssid.ssid : a.ap.ssidReference,
           securityMode: a.ap.securityModeEnabled,
           encryptionMode: a.ap.encryptionMode,
           isGuest: isGuest,
+          accessPointInstancePath: a.ap.instancePath,
+          ssidInstancePath: a.ssid.instancePath,
         );
       }).toList();
       return WifiRadioUIModel(

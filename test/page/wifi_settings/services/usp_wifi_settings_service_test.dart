@@ -774,10 +774,10 @@ void main() {
   });
 
   // -------------------------------------------------------------------------
-  // toggleRadio
+  // toggleSsidsByName — writes SSID.Enable + matched AccessPoint.Enable (#972)
   // -------------------------------------------------------------------------
 
-  group('toggleRadio', () {
+  group('toggleSsidsByName', () {
     late MockUspClient mockUsp;
     late UspWifiSettingsService writeSvc;
 
@@ -786,34 +786,79 @@ void main() {
       writeSvc = UspWifiSettingsService(mockUsp);
     });
 
-    test('succeeds on UspSuccess', () async {
+    WiFiSsid ssid(String path, String name, String radio) => WiFiSsid(
+          instancePath: path,
+          ssid: name,
+          enable: true,
+          status: 'Up',
+          bssid: '',
+          lowerLayers: radio,
+        );
+    WiFiAccessPoint ap(String path, String ssidRef) => WiFiAccessPoint(
+          instancePath: path,
+          alias: '',
+          enable: true,
+          status: 'Up',
+          modesSupported: '',
+          securityModeEnabled: '',
+          encryptionMode: '',
+          keyPassphrase: '',
+          ssidAdvertisementEnabled: true,
+          ssidReference: ssidRef,
+        );
+
+    Set<String> capturedKeys() {
+      final captured = verify(() => mockUsp.set(captureAny(),
+          allowPartial: any(named: 'allowPartial'))).captured;
+      final keys = <String>{};
+      for (final arg in captured) {
+        if (arg is Map) keys.addAll(arg.keys.cast<String>());
+      }
+      return keys;
+    }
+
+    test('toggles matched SSIDs and their AccessPoints across bands', () async {
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
           .thenAnswer((_) async => uspSuccess());
 
-      await writeSvc.toggleRadio('Device.WiFi.Radio.1.', true);
+      final ssids = WiFiSsids(items: [
+        ssid('Device.WiFi.SSID.1.', 'Home', 'Device.WiFi.Radio.1.'),
+        ssid('Device.WiFi.SSID.2.', 'Home', 'Device.WiFi.Radio.2.'),
+        ssid('Device.WiFi.SSID.3.', 'Home-Guest', 'Device.WiFi.Radio.1.'),
+      ]);
+      final aps = WiFiAccessPoints(items: [
+        ap('Device.WiFi.AccessPoint.1.', 'Device.WiFi.SSID.1.'),
+        ap('Device.WiFi.AccessPoint.2.', 'Device.WiFi.SSID.2.'),
+        ap('Device.WiFi.AccessPoint.3.', 'Device.WiFi.SSID.3.'),
+      ]);
 
-      verify(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
-          .called(1);
+      final count = await writeSvc.toggleSsidsByName(ssids, aps, 'Home', false);
+
+      expect(count, 2); // SSID.1 + SSID.2 (both named "Home")
+      final keys = capturedKeys();
+      expect(keys, contains('Device.WiFi.SSID.1.Enable'));
+      expect(keys, contains('Device.WiFi.SSID.2.Enable'));
+      expect(keys, contains('Device.WiFi.AccessPoint.1.Enable'));
+      expect(keys, contains('Device.WiFi.AccessPoint.2.Enable'));
+      // The guest network (SSID.3) must be untouched.
+      expect(keys, isNot(contains('Device.WiFi.SSID.3.Enable')));
+      expect(keys, isNot(contains('Device.WiFi.AccessPoint.3.Enable')));
     });
 
-    test('throws UspCompleteFailureError on UspFailure', () async {
-      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
-          .thenAnswer((_) async => uspFailure());
+    test('returns 0 and issues no writes when no SSID matches', () async {
+      final ssids = WiFiSsids(items: [
+        ssid('Device.WiFi.SSID.1.', 'Home', 'Device.WiFi.Radio.1.'),
+      ]);
+      final aps = WiFiAccessPoints(items: [
+        ap('Device.WiFi.AccessPoint.1.', 'Device.WiFi.SSID.1.'),
+      ]);
 
-      expect(
-        () => writeSvc.toggleRadio('Device.WiFi.Radio.1.', true),
-        throwsA(isA<UspCompleteFailureError>()),
-      );
-    });
+      final count =
+          await writeSvc.toggleSsidsByName(ssids, aps, 'Nonexistent', false);
 
-    test('maps transport error to ServiceError', () async {
-      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
-          .thenThrow('Set failed: Transport error: HTTP error: HTTP 504');
-
-      expect(
-        () => writeSvc.toggleRadio('Device.WiFi.Radio.1.', true),
-        throwsA(isA<NetworkError>()),
-      );
+      expect(count, 0);
+      verifyNever(
+          () => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')));
     });
   });
 
@@ -939,6 +984,37 @@ void main() {
       verifyNever(
           () => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')));
     });
+
+    test('enable-only toggle writes SSID.Enable + AP.Enable, not security',
+        () async {
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => uspSuccess());
+
+      final original = [makeNetwork(enabled: true)];
+      final current = [makeNetwork(enabled: false)];
+
+      await writeSvc.saveAdvanced(original: original, current: current);
+
+      final captured = verify(() => mockUsp.set(captureAny(),
+          allowPartial: any(named: 'allowPartial'))).captured;
+      final keys = <String>{};
+      for (final arg in captured) {
+        if (arg is Map) keys.addAll(arg.keys.cast<String>());
+      }
+      // Both enable layers are written…
+      expect(keys, contains('Device.WiFi.SSID.1.Enable'));
+      expect(keys, contains('Device.WiFi.AccessPoint.1.Enable'));
+      // …but the security/advertisement params are NOT re-sent on a pure
+      // enable toggle (mirrors saveQuickSetup gating).
+      expect(keys,
+          isNot(contains('Device.WiFi.AccessPoint.1.Security.KeyPassphrase')));
+      expect(keys,
+          isNot(contains('Device.WiFi.AccessPoint.1.Security.ModeEnabled')));
+      expect(
+          keys,
+          isNot(
+              contains('Device.WiFi.AccessPoint.1.SSIDAdvertisementEnabled')));
+    });
   });
 
   // -------------------------------------------------------------------------
@@ -993,7 +1069,8 @@ void main() {
       return keys;
     }
 
-    test('skips AP write when only guest enabled toggled', () async {
+    test('writes AP.Enable but not Security when only enabled toggled',
+        () async {
       // Guest group: only `enabled` changed. No SSID-name change, no AP change.
       final guestAgg = WifiQuickSetupNetwork(
         isGuest: true,
@@ -1038,7 +1115,10 @@ void main() {
       final keys = capturedKeys();
       // SSID enable write happens…
       expect(keys, contains('Device.WiFi.SSID.3.Enable'));
-      // …but AP layer (KeyPassphrase / Security.ModeEnabled) must NOT be touched.
+      // …and AP.Enable is mirrored so the AP actually stops broadcasting (#972)…
+      expect(keys, contains('Device.WiFi.AccessPoint.3.Enable'));
+      // …but the AP security layer (KeyPassphrase / Security.*) must NOT be
+      // touched when only the enabled flag changed.
       expect(
         keys.any((k) => k.startsWith('Device.WiFi.AccessPoint.3.Security.')),
         isFalse,
