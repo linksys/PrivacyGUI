@@ -1,4 +1,3 @@
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -15,7 +14,6 @@ import 'package:privacy_gui/core/usp/services/sse_manager.dart';
 import 'package:privacy_gui/core/usp/services/sse_subscription_registry.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
-import 'package:privacy_gui/providers/auth/auth_result.dart';
 import 'package:privacy_gui/providers/auth/auth_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -58,13 +56,6 @@ void main() {
 
   setUp(() {
     SharedPreferences.setMockInitialValues({});
-    // Mock FlutterSecureStorage platform channel used by hardcoded
-    // `const FlutterSecureStorage()` in localLogin.
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-        .setMockMethodCallHandler(
-      const MethodChannel('plugins.it_nomads.com/flutter_secure_storage'),
-      (call) async => null,
-    );
     mockAuthService = MockAuthService();
     mockUspCoordinator = MockUspAuthCoordinator();
     mockSseManager = MockSseManager();
@@ -80,13 +71,14 @@ void main() {
     when(() => mockUspCoordinator.restoreSession()).thenAnswer((_) async {});
     when(() => mockFingerprint.clear()).thenAnswer((_) async {});
     when(() => mockFingerprint.store(any())).thenAnswer((_) async {});
-    when(() => mockAuthService.clearAllCredentials())
-        .thenAnswer((_) async => const AuthSuccess(null));
+    when(() => mockAuthService.clearAllCredentials()).thenAnswer((_) async {});
     when(() => mockSessionService.fetchDeviceInfoAndInitializeServices())
         .thenAnswer((_) async => _testDeviceInfo);
+    when(() => mockUspClient.isAuthenticated).thenReturn(false);
   });
 
-  ProviderContainer createContainer() {
+  ProviderContainer createContainer({bool isAuthenticated = false}) {
+    when(() => mockUspClient.isAuthenticated).thenReturn(isAuthenticated);
     return ProviderContainer(
       overrides: [
         authServiceProvider.overrideWithValue(mockAuthService),
@@ -110,7 +102,6 @@ void main() {
       final state = await container.read(authProvider.future);
 
       expect(state.loginType, LoginType.none);
-      expect(state.localPassword, isNull);
       container.dispose();
     });
   });
@@ -120,13 +111,9 @@ void main() {
   // ---------------------------------------------------------------------------
 
   group('AuthNotifier — init', () {
-    test('restores local login type and password', () async {
-      when(() => mockAuthService.getStoredLoginType())
-          .thenAnswer((_) async => AuthSuccess(LoginType.local));
-      when(() => mockAuthService.getStoredLocalPassword())
-          .thenAnswer((_) async => AuthSuccess('storedPass'));
-
-      final container = createContainer();
+    test('restores session and sets LoginType.local when authenticated',
+        () async {
+      final container = createContainer(isAuthenticated: true);
       container.read(authProvider); // trigger build
       await Future.delayed(Duration.zero);
 
@@ -135,36 +122,12 @@ void main() {
 
       final state = container.read(authProvider).value;
       expect(state?.loginType, LoginType.local);
-      expect(state?.localPassword, 'storedPass');
       verify(() => mockUspCoordinator.restoreSession()).called(1);
       container.dispose();
     });
 
-    test('does not restore USP session for non-local login', () async {
-      when(() => mockAuthService.getStoredLoginType())
-          .thenAnswer((_) async => AuthSuccess(LoginType.none));
-      when(() => mockAuthService.getStoredLocalPassword())
-          .thenAnswer((_) async => AuthSuccess(null));
-
-      final container = createContainer();
-      container.read(authProvider);
-      await Future.delayed(Duration.zero);
-
-      final notifier = container.read(authProvider.notifier);
-      await notifier.init();
-
-      verifyNever(() => mockUspCoordinator.restoreSession());
-      container.dispose();
-    });
-
-    test('handles credential retrieval failure gracefully', () async {
-      when(() => mockAuthService.getStoredLoginType()).thenAnswer((_) async =>
-          AuthFailure(StorageError(originalError: Exception('storage error'))));
-      when(() => mockAuthService.getStoredLocalPassword()).thenAnswer(
-          (_) async => AuthFailure(
-              StorageError(originalError: Exception('storage error'))));
-
-      final container = createContainer();
+    test('sets LoginType.none when not authenticated', () async {
+      final container = createContainer(isAuthenticated: false);
       container.read(authProvider);
       await Future.delayed(Duration.zero);
 
@@ -173,29 +136,21 @@ void main() {
 
       final state = container.read(authProvider).value;
       expect(state?.loginType, LoginType.none);
-      expect(state?.localPassword, isNull);
       container.dispose();
     });
 
     test('concurrent init calls are coalesced — restoreSession called once',
         () async {
-      when(() => mockAuthService.getStoredLoginType())
-          .thenAnswer((_) async => AuthSuccess(LoginType.local));
-      when(() => mockAuthService.getStoredLocalPassword())
-          .thenAnswer((_) async => AuthSuccess('storedPass'));
       // Slow restoreSession to ensure concurrent calls overlap
       when(() => mockUspCoordinator.restoreSession())
           .thenAnswer((_) => Future.delayed(const Duration(milliseconds: 50)));
 
-      final container = createContainer();
+      final container = createContainer(isAuthenticated: true);
       container.read(authProvider);
       await Future.delayed(Duration.zero);
 
       final notifier = container.read(authProvider.notifier);
 
-      // Launch multiple concurrent init calls.
-      // Dart's single-threaded event loop guarantees the first init() acquires
-      // _initInProgress before the others check it (no await before the guard).
       final futures = [
         notifier.init(),
         notifier.init(),
@@ -207,59 +162,6 @@ void main() {
       verify(() => mockUspCoordinator.restoreSession()).called(1);
       container.dispose();
     });
-
-    test('concurrent init waiters receive error via completeError', () async {
-      var callCount = 0;
-      // First call succeeds slowly, subsequent calls will wait on Completer
-      // Then we make it throw to trigger completeError path
-      when(() => mockAuthService.getStoredLoginType()).thenAnswer((_) async {
-        callCount++;
-        await Future.delayed(const Duration(milliseconds: 50));
-        throw StateError('Simulated storage failure');
-      });
-
-      final container = createContainer();
-      container.read(authProvider);
-      await Future.delayed(Duration.zero);
-
-      final notifier = container.read(authProvider.notifier);
-
-      // Track results/errors received by each caller.
-      // Dart's single-threaded event loop guarantees the first init() acquires
-      // _initInProgress before the others check it (no await before the guard).
-      AuthState? result1;
-      Object? error2, error3;
-
-      await Future.wait([
-        // Primary caller: receives null (init never throws)
-        notifier.init().then((r) => result1 = r),
-        // Concurrent waiters: receive error via completeError
-        notifier.init().catchError((e) {
-          error2 = e;
-          return null;
-        }),
-        notifier.init().catchError((e) {
-          error3 = e;
-          return null;
-        }),
-      ]);
-
-      // getStoredLoginType should only be called once (coalescing works)
-      expect(callCount, 1);
-
-      // Primary caller receives null (init never throws — callers use bare .then)
-      expect(result1, isNull);
-
-      // Concurrent waiters receive error via completeError
-      expect(error2, isA<StateError>());
-      expect(error3, isA<StateError>());
-
-      // State should be AsyncError
-      final state = container.read(authProvider);
-      expect(state.hasError, isTrue);
-
-      container.dispose();
-    });
   });
 
   // ---------------------------------------------------------------------------
@@ -267,8 +169,7 @@ void main() {
   // ---------------------------------------------------------------------------
 
   group('AuthNotifier — localLogin', () {
-    test('successful login sets state with password and LoginType.local',
-        () async {
+    test('successful login sets state with LoginType.local', () async {
       when(() => mockUspCoordinator.tryUspLogin('pass123'))
           .thenAnswer((_) async => true);
 
@@ -281,7 +182,6 @@ void main() {
 
       final state = container.read(authProvider).value;
       expect(state?.loginType, LoginType.local);
-      expect(state?.localPassword, 'pass123');
       container.dispose();
     });
 
@@ -339,8 +239,6 @@ void main() {
         'account-locked error is passed through to the view as '
         'errorAdminAccountLocked (not overwritten to errorUnexpected)',
         () async {
-      // The coordinator surfaces account-locked as an UnexpectedError carrying
-      // the error-code identifier in `detail`. _mapToViewError must keep it.
       when(() => mockUspCoordinator.tryUspLogin('locked')).thenThrow(
           UnexpectedError(
               originalError: Exception('Account is locked'),
@@ -425,7 +323,6 @@ void main() {
 
       final state = container.read(authProvider).value;
       expect(state?.loginType, LoginType.none);
-      expect(state?.localPassword, isNull);
       container.dispose();
     });
 

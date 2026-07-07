@@ -173,7 +173,7 @@ class UspWifiStatusCard extends ConsumerWidget {
                 channel: result.channel,
                 autoChannel: result.autoChannel,
               ),
-      successMessage: 'Channel updated',
+      successMessage: loc(context).channelUpdated,
     );
   }
 

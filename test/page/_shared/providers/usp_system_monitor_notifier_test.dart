@@ -87,6 +87,7 @@ void main() {
         memoryPercent: 60,
         totalMemoryKb: 1000,
         freeMemoryKb: 400,
+        uptimeSeconds: 3600,
       );
       notifier.pushSnapshot(snapshot);
 
@@ -108,6 +109,7 @@ void main() {
           memoryPercent: i,
           totalMemoryKb: 1000,
           freeMemoryKb: 500,
+          uptimeSeconds: 3600 + i * 60,
         ));
       }
 

@@ -85,6 +85,7 @@ SystemMonitorState get testSystemMonitorState => SystemMonitorState(
           memoryPercent: 60 + (i * 2) % 20,
           totalMemoryKb: 524288,
           freeMemoryKb: 209715 - i * 5000,
+          uptimeSeconds: 86400 + i * 30,
         ),
       ),
       refreshInterval: const Duration(seconds: 30),

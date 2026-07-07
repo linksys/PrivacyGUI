@@ -73,7 +73,7 @@ extension type UspClientJS._(JSObject _) implements JSObject {
 
   external JSPromise<JSAny?> logout();
 
-  external JSPromise<JSAny?> refreshToken();
+  external JSPromise<JSAny?> refreshToken(String? token);
 
   // Unified set: accepts parameters object {path: value, ...} + optional options
   @JS('set')
@@ -151,8 +151,8 @@ class UspClientWeb {
     await _client.logout().toDart;
   }
 
-  Future<void> refreshToken() async {
-    await _client.refreshToken().toDart;
+  Future<void> refreshToken({String? token}) async {
+    await _client.refreshToken(token).toDart;
   }
 
   // ---------------------------------------------------------------------------

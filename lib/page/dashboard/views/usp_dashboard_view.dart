@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/components/localizations/service_error_localizations.dart';
+import 'package:privacy_gui/components/views/service_error_view.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/providers/usp_bars_visible_provider.dart';
 import 'package:privacy_gui/page/dashboard/orchestrator/dashboard_orchestrator.dart';
@@ -51,7 +52,15 @@ class UspDashboardView extends ConsumerWidget {
                   loading: () => const Center(
                     child: AppLoader(),
                   ),
-                  error: (error, stack) => _buildError(context, ref, error),
+                  error: (error, stack) => ServiceErrorView(
+                    error: error is ServiceError ? error : null,
+                    title: loc(context).failedToLoadSettings,
+                    onRetry: () => ref
+                        .read(dashboardOrchestratorProvider.notifier)
+                        .refreshAll(),
+                    secondaryLabel: loc(context).logout,
+                    onSecondary: () => _logout(context, ref),
+                  ),
                   data: (_) => const UspSliverDashboardView(),
                 ),
               ),
@@ -59,33 +68,6 @@ class UspDashboardView extends ConsumerWidget {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildError(BuildContext context, WidgetRef ref, Object error) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          AppIcon.font(Icons.error_outline,
-              size: 48, color: Theme.of(context).colorScheme.error),
-          AppGap.xl(),
-          AppText.titleMedium(loc(context).failedToLoadSettings),
-          AppGap.md(),
-          AppText.bodyMedium(localizeServiceError(context, error)),
-          AppGap.xxl(),
-          AppButton(
-            label: loc(context).retry,
-            onTap: () =>
-                ref.read(dashboardOrchestratorProvider.notifier).refreshAll(),
-          ),
-          AppGap.md(),
-          AppButton.text(
-            label: loc(context).logout,
-            onTap: () => _logout(context, ref),
-          ),
-        ],
-      ),
     );
   }
 

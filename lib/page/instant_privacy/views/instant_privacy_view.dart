@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/components/localizations/service_error_localizations.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
+import 'package:privacy_gui/components/views/service_error_view.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/_shared/components/detail_widgets.dart';
@@ -35,31 +37,14 @@ class InstantPrivacyView extends ConsumerWidget {
       child: (childContext, constraints) {
         return asyncState.when(
           loading: () => const Center(child: AppLoader()),
-          error: (error, _) => _buildError(context, ref, error),
+          error: (error, _) => ServiceErrorView(
+            error: error is ServiceError ? error : null,
+            title: loc(context).failedToLoadSettings,
+            onRetry: () => ref.invalidate(uspInstantPrivacyProvider),
+          ),
           data: (state) => _buildContent(context, ref, state),
         );
       },
-    );
-  }
-
-  Widget _buildError(BuildContext context, WidgetRef ref, Object error) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          AppIcon.font(Icons.error_outline,
-              size: 48, color: Theme.of(context).colorScheme.error),
-          AppGap.xl(),
-          AppText.titleMedium(loc(context).failedToLoadSettings),
-          AppGap.md(),
-          AppText.bodyMedium(localizeServiceError(context, error)),
-          AppGap.xxl(),
-          AppButton(
-            label: loc(context).retry,
-            onTap: () => ref.invalidate(uspInstantPrivacyProvider),
-          ),
-        ],
-      ),
     );
   }
 

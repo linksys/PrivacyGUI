@@ -43,6 +43,7 @@ class UspFirewallView extends ConsumerWidget {
         if (status.error != null) {
           return ServiceErrorView(
             error: status.error,
+            title: loc(context).failedToLoadSettings,
             onRetry: () =>
                 ref.read(uspFirewallProvider.notifier).fetch(forceRemote: true),
           );
