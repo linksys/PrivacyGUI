@@ -342,7 +342,7 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
             AppGap.sm(),
             // Reservations Link Block
             LayoutBlock(
-              onTap: () => context.goNamed(RouteNamed.uspDhcpDetail),
+              onTap: () => context.pushNamed(RouteNamed.uspDhcpDetail),
               padding: const EdgeInsets.all(AppSpacing.md),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,

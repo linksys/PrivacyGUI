@@ -254,7 +254,7 @@ class UspFirewallView extends ConsumerWidget {
     return NavLinkBlock(
       title: loc(context).ipv6PortService,
       description: loc(context).manageIpv6PortRules,
-      onTap: () => context.goNamed(RouteNamed.uspIpv6PortService),
+      onTap: () => context.pushNamed(RouteNamed.uspIpv6PortService),
     );
   }
 

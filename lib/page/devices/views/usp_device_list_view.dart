@@ -121,7 +121,7 @@ class _UspDeviceListViewState extends ConsumerState<UspDeviceListView> {
             child: UspDeviceListTile(
               device: device,
               variant: DeviceListTileVariant.flatLast,
-              onTap: () => context.goNamed(
+              onTap: () => context.pushNamed(
                 RouteNamed.uspDeviceDetail,
                 queryParameters: {'mac': device.mac},
               ),
