@@ -7,6 +7,7 @@ import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/static_routing/models/static_routing_ui_model.dart';
 import 'package:privacy_gui/util/network_utils.dart';
+import 'package:privacy_gui/validator_rules/rules.dart';
 
 final uspStaticRoutingServiceProvider = Provider<UspStaticRoutingService>(
   (ref) => UspStaticRoutingService(ref.read(uspClientProvider)!),
@@ -199,21 +200,17 @@ class UspStaticRoutingService {
 
   /// Validate a route entry. Returns a map of field → error message.
   ///
-  /// When editing an existing route, pass [interfaceName],
-  /// [originalInterfaceName] and [originalGateway] to enable the
-  /// interface↔gateway consistency check: changing the interface
-  /// (LAN↔Internet) without also updating the gateway is not allowed,
-  /// because the old gateway belongs to the previously selected interface's
-  /// subnet. These parameters are optional so that Add mode (no original
-  /// values) skips the check.
+  /// When [lanIp] and [lanSubnetMask] are provided, validates gateway subnet:
+  /// - LAN interface: gateway must be within LAN subnet
+  /// - Internet interface: gateway must be outside LAN subnet
   static Map<String, String> validateRoute({
     required String name,
     required String destIp,
     required String subnetMask,
     required String gateway,
     String? interfaceName,
-    String? originalInterfaceName,
-    String? originalGateway,
+    String? lanIp,
+    String? lanSubnetMask,
   }) {
     final errors = <String, String>{};
     if (name.isEmpty) {
@@ -233,13 +230,21 @@ class UspStaticRoutingService {
     }
     if (gateway.isNotEmpty && !NetworkUtils.isValidIpAddress(gateway)) {
       errors['gateway'] = 'Invalid IP address';
-    } else if (originalInterfaceName != null &&
+    } else if (gateway.isNotEmpty &&
         interfaceName != null &&
-        originalGateway != null &&
-        interfaceName != originalInterfaceName &&
-        gateway == originalGateway) {
-      // Interface was changed but the gateway was left unchanged.
-      errors['gateway'] = 'Update the gateway to match the selected interface';
+        lanIp != null &&
+        lanSubnetMask != null) {
+      // Validate gateway subnet based on interface selection.
+      final lanSubnetRule = HostValidForGivenRouterIPAddressAndSubnetMaskRule(
+        lanIp,
+        lanSubnetMask,
+      );
+      final isInLan = lanSubnetRule.validate(gateway);
+      if (interfaceName == 'LAN' && !isInLan) {
+        errors['gateway'] = 'Gateway must be within LAN subnet';
+      } else if (interfaceName == 'Internet' && isInLan) {
+        errors['gateway'] = 'Gateway must be outside LAN subnet';
+      }
     }
     return errors;
   }

@@ -245,69 +245,80 @@ void main() {
       expect(errors, hasLength(4));
     });
 
-    // --- interface↔gateway consistency (issue #1082) ---
+    // --- gateway subnet validation (issue #1082) ---
 
-    test('editing: interface changed but gateway unchanged returns error', () {
+    test('LAN interface: gateway within LAN subnet is valid', () {
       final errors = UspStaticRoutingService.validateRoute(
         name: 'Route1',
         destIp: '10.0.0.0',
         subnetMask: '255.255.255.0',
-        gateway: '192.168.187.1',
+        gateway: '192.168.1.100',
         interfaceName: 'LAN',
-        originalInterfaceName: 'Internet',
-        originalGateway: '192.168.187.1',
-      );
-      expect(errors['gateway'],
-          'Update the gateway to match the selected interface');
-    });
-
-    test('editing: interface changed and gateway also changed is valid', () {
-      final errors = UspStaticRoutingService.validateRoute(
-        name: 'Route1',
-        destIp: '10.0.0.0',
-        subnetMask: '255.255.255.0',
-        gateway: '10.0.0.254',
-        interfaceName: 'LAN',
-        originalInterfaceName: 'Internet',
-        originalGateway: '192.168.187.1',
+        lanIp: '192.168.1.1',
+        lanSubnetMask: '255.255.255.0',
       );
       expect(errors.containsKey('gateway'), isFalse);
     });
 
-    test('editing: interface unchanged and gateway unchanged is valid', () {
+    test('LAN interface: gateway outside LAN subnet returns error', () {
       final errors = UspStaticRoutingService.validateRoute(
         name: 'Route1',
         destIp: '10.0.0.0',
         subnetMask: '255.255.255.0',
-        gateway: '192.168.187.1',
+        gateway: '8.8.8.8',
+        interfaceName: 'LAN',
+        lanIp: '192.168.1.1',
+        lanSubnetMask: '255.255.255.0',
+      );
+      expect(errors['gateway'], 'Gateway must be within LAN subnet');
+    });
+
+    test('Internet interface: gateway outside LAN subnet is valid', () {
+      final errors = UspStaticRoutingService.validateRoute(
+        name: 'Route1',
+        destIp: '10.0.0.0',
+        subnetMask: '255.255.255.0',
+        gateway: '100.64.1.1',
         interfaceName: 'Internet',
-        originalInterfaceName: 'Internet',
-        originalGateway: '192.168.187.1',
+        lanIp: '192.168.1.1',
+        lanSubnetMask: '255.255.255.0',
       );
       expect(errors.containsKey('gateway'), isFalse);
     });
 
-    test('adding (no original values): consistency check is skipped', () {
+    test('Internet interface: gateway within LAN subnet returns error', () {
       final errors = UspStaticRoutingService.validateRoute(
         name: 'Route1',
         destIp: '10.0.0.0',
         subnetMask: '255.255.255.0',
-        gateway: '192.168.187.1',
+        gateway: '192.168.1.50',
+        interfaceName: 'Internet',
+        lanIp: '192.168.1.1',
+        lanSubnetMask: '255.255.255.0',
+      );
+      expect(errors['gateway'], 'Gateway must be outside LAN subnet');
+    });
+
+    test('subnet validation skipped when lanIp/lanSubnetMask not provided', () {
+      final errors = UspStaticRoutingService.validateRoute(
+        name: 'Route1',
+        destIp: '10.0.0.0',
+        subnetMask: '255.255.255.0',
+        gateway: '8.8.8.8',
         interfaceName: 'LAN',
       );
       expect(errors.containsKey('gateway'), isFalse);
     });
 
-    test('editing: invalid gateway format takes precedence over consistency',
-        () {
+    test('invalid gateway format takes precedence over subnet check', () {
       final errors = UspStaticRoutingService.validateRoute(
         name: 'Route1',
         destIp: '10.0.0.0',
         subnetMask: '255.255.255.0',
-        gateway: 'not-an-ip',
+        gateway: 'bad-ip',
         interfaceName: 'LAN',
-        originalInterfaceName: 'Internet',
-        originalGateway: 'not-an-ip',
+        lanIp: '192.168.1.1',
+        lanSubnetMask: '255.255.255.0',
       );
       expect(errors['gateway'], 'Invalid IP address');
     });

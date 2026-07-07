@@ -26,10 +26,18 @@ class StaticRouteDialogResult {
 /// Dialog for adding or editing a static route.
 ///
 /// Pass [route] to pre-fill for editing; omit for adding.
+/// Pass [lanIp] and [lanSubnetMask] to enable gateway subnet validation.
 class StaticRouteDialog extends StatefulWidget {
   final StaticRouteUIModel? route;
+  final String? lanIp;
+  final String? lanSubnetMask;
 
-  const StaticRouteDialog({super.key, this.route});
+  const StaticRouteDialog({
+    super.key,
+    this.route,
+    this.lanIp,
+    this.lanSubnetMask,
+  });
 
   @override
   State<StaticRouteDialog> createState() => _StaticRouteDialogState();
@@ -76,8 +84,8 @@ class _StaticRouteDialogState extends State<StaticRouteDialog> {
       subnetMask: _subnetMaskController.text.trim(),
       gateway: _gatewayController.text.trim(),
       interfaceName: _interfaceName,
-      originalInterfaceName: widget.route?.interfaceName,
-      originalGateway: widget.route?.gatewayIpAddress,
+      lanIp: widget.lanIp,
+      lanSubnetMask: widget.lanSubnetMask,
     );
   }
 
@@ -136,8 +144,10 @@ class _StaticRouteDialogState extends State<StaticRouteDialog> {
                           ButtonSegment(value: name, label: Text(name)))
                       .toList(),
                   selected: {_interfaceName},
-                  onSelectionChanged: (v) =>
-                      setState(() => _interfaceName = v.first),
+                  onSelectionChanged: (v) {
+                    setState(() => _interfaceName = v.first);
+                    _validate();
+                  },
                 ),
               ],
             ),

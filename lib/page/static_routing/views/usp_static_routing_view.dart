@@ -9,6 +9,7 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/components/detail_widgets.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/page/local_network/providers/lan_data_provider.dart';
 import 'package:privacy_gui/page/static_routing/models/static_routing_feature_state.dart';
 import 'package:privacy_gui/page/static_routing/models/static_routing_ui_model.dart';
 import 'package:privacy_gui/page/static_routing/providers/usp_static_routing_notifier.dart';
@@ -190,9 +191,13 @@ class UspStaticRoutingView extends ConsumerWidget {
   // ---------------------------------------------------------------------------
 
   Future<void> _showAddDialog(BuildContext context, WidgetRef ref) async {
+    final lanData = ref.read(lanDataProvider).valueOrNull;
     final result = await showAppDialog<StaticRouteDialogResult>(
       context: context,
-      builder: (_) => const StaticRouteDialog(),
+      builder: (_) => StaticRouteDialog(
+        lanIp: lanData?.model.ipAddress,
+        lanSubnetMask: lanData?.model.subnetMask,
+      ),
     );
     if (result == null || !context.mounted) return;
     ref.read(uspStaticRoutingProvider.notifier).addRoute(
@@ -209,9 +214,14 @@ class UspStaticRoutingView extends ConsumerWidget {
 
   Future<void> _showEditDialog(BuildContext context, WidgetRef ref, int index,
       StaticRouteUIModel route) async {
+    final lanData = ref.read(lanDataProvider).valueOrNull;
     final result = await showAppDialog<StaticRouteDialogResult>(
       context: context,
-      builder: (_) => StaticRouteDialog(route: route),
+      builder: (_) => StaticRouteDialog(
+        route: route,
+        lanIp: lanData?.model.ipAddress,
+        lanSubnetMask: lanData?.model.subnetMask,
+      ),
     );
     if (result == null || !context.mounted) return;
     ref.read(uspStaticRoutingProvider.notifier).editRoute(
