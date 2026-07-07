@@ -126,6 +126,8 @@
   "invalidDestinationMacAddress": "Adresse MAC de destination non valide",
   "invalidDns": "DNS non valide",
   "invalidGatewayIpAddress": "Adresse IP de la passerelle invalide",
+  "gatewayMustBeWithinLanSubnet": "La passerelle doit être dans le sous-réseau LAN",
+  "gatewayMustBeOutsideLanSubnet": "La passerelle doit être en dehors du sous-réseau LAN",
   "invalidInput": "Saisie incorrecte",
   "invalidIpAddress": "Adresse IP non valide",
   "invalidMACAddress": "Adresse MAC non valide.",

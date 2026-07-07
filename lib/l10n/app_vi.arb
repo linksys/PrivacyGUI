@@ -126,6 +126,8 @@
   "invalidDestinationMacAddress": "Địa chỉ MAC đích không hợp lệ",
   "invalidDns": "DNS không hợp lệ",
   "invalidGatewayIpAddress": "Địa chỉ IP cổng không hợp lệ",
+  "gatewayMustBeWithinLanSubnet": "Cổng phải nằm trong mạng con LAN",
+  "gatewayMustBeOutsideLanSubnet": "Cổng phải nằm ngoài mạng con LAN",
   "invalidInput": "Dữ liệu nhập không hợp lệ",
   "invalidIpAddress": "Địa chỉ IP không hợp lệ",
   "invalidMACAddress": "Địa chỉ MAC không hợp lệ.",

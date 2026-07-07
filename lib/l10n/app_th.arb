@@ -126,6 +126,8 @@
   "invalidDestinationMacAddress": "แอดเดรส MAC ปลายทางไม่ถูกต้อง",
   "invalidDns": "DNS ไม่ถูกต้อง",
   "invalidGatewayIpAddress": "IP แอดเดรสเกตเวย์ไม่ถูกต้อง",
+  "gatewayMustBeWithinLanSubnet": "เกตเวย์ต้องอยู่ภายในซับเน็ต LAN",
+  "gatewayMustBeOutsideLanSubnet": "เกตเวย์ต้องอยู่นอกซับเน็ต LAN",
   "invalidInput": "ป้อนข้อมูลไม่ถูกต้อง",
   "invalidIpAddress": "IP แอดเดรสไม่ถูกต้อง",
   "invalidMACAddress": "แอดเดรส MAC ไม่ถูกต้อง",

@@ -13,6 +13,19 @@ final uspStaticRoutingServiceProvider = Provider<UspStaticRoutingService>(
   (ref) => UspStaticRoutingService(ref.read(uspClientProvider)!),
 );
 
+/// Error keys returned by [UspStaticRoutingService.validateRoute].
+/// Use these to map to l10n strings in the View layer.
+class StaticRoutingErrorKeys {
+  static const nameRequired = 'nameRequired';
+  static const nameTooLong = 'nameTooLong';
+  static const destIpRequired = 'destIpRequired';
+  static const invalidIpAddress = 'invalidIpAddress';
+  static const subnetMaskRequired = 'subnetMaskRequired';
+  static const invalidSubnetMask = 'invalidSubnetMask';
+  static const gatewayMustBeWithinLanSubnet = 'gatewayMustBeWithinLanSubnet';
+  static const gatewayMustBeOutsideLanSubnet = 'gatewayMustBeOutsideLanSubnet';
+}
+
 /// Service layer for Static Routing — encapsulates codegen CRUD + transform + validation.
 class UspStaticRoutingService {
   final UspClient _usp;
@@ -214,22 +227,22 @@ class UspStaticRoutingService {
   }) {
     final errors = <String, String>{};
     if (name.isEmpty) {
-      errors['name'] = 'Name is required';
+      errors['name'] = StaticRoutingErrorKeys.nameRequired;
     } else if (name.length > 32) {
-      errors['name'] = 'Name must be 32 characters or less';
+      errors['name'] = StaticRoutingErrorKeys.nameTooLong;
     }
     if (destIp.isEmpty) {
-      errors['destIp'] = 'Destination IP is required';
+      errors['destIp'] = StaticRoutingErrorKeys.destIpRequired;
     } else if (!NetworkUtils.isValidIpAddress(destIp)) {
-      errors['destIp'] = 'Invalid IP address';
+      errors['destIp'] = StaticRoutingErrorKeys.invalidIpAddress;
     }
     if (subnetMask.isEmpty) {
-      errors['subnetMask'] = 'Subnet mask is required';
+      errors['subnetMask'] = StaticRoutingErrorKeys.subnetMaskRequired;
     } else if (!NetworkUtils.isValidSubnetMask(subnetMask)) {
-      errors['subnetMask'] = 'Invalid subnet mask';
+      errors['subnetMask'] = StaticRoutingErrorKeys.invalidSubnetMask;
     }
     if (gateway.isNotEmpty && !NetworkUtils.isValidIpAddress(gateway)) {
-      errors['gateway'] = 'Invalid IP address';
+      errors['gateway'] = StaticRoutingErrorKeys.invalidIpAddress;
     } else if (gateway.isNotEmpty &&
         interfaceName != null &&
         lanIp != null &&
@@ -241,9 +254,10 @@ class UspStaticRoutingService {
       );
       final isInLan = lanSubnetRule.validate(gateway);
       if (interfaceName == 'LAN' && !isInLan) {
-        errors['gateway'] = 'Gateway must be within LAN subnet';
+        errors['gateway'] = StaticRoutingErrorKeys.gatewayMustBeWithinLanSubnet;
       } else if (interfaceName == 'Internet' && isInLan) {
-        errors['gateway'] = 'Gateway must be outside LAN subnet';
+        errors['gateway'] =
+            StaticRoutingErrorKeys.gatewayMustBeOutsideLanSubnet;
       }
     }
     return errors;

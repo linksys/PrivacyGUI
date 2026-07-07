@@ -126,6 +126,8 @@
   "invalidDestinationMacAddress": "Alamat MAC tujuan tidak valid",
   "invalidDns": "DNS Tidak Valid",
   "invalidGatewayIpAddress": "Alamat IP gateway tidak valid",
+  "gatewayMustBeWithinLanSubnet": "Gateway harus berada dalam subnet LAN",
+  "gatewayMustBeOutsideLanSubnet": "Gateway harus berada di luar subnet LAN",
   "invalidInput": "Input tidak valid",
   "invalidIpAddress": "Alamat IP tidak valid",
   "invalidMACAddress": "Alamat MAC tidak valid.",

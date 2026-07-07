@@ -126,6 +126,8 @@
   "invalidDestinationMacAddress": "عنوان MAC الوجهة غير صالح",
   "invalidDns": "DNS غير صالح",
   "invalidGatewayIpAddress": "عنوان IP للبوابة غير صالح",
+  "gatewayMustBeWithinLanSubnet": "بوابة يجب أن تكون ضمن شبكة LAN الفرعية",
+  "gatewayMustBeOutsideLanSubnet": "بوابة يجب أن تكون خارج شبكة LAN الفرعية",
   "invalidInput": "إدخال غير صالح",
   "invalidIpAddress": "عنوان IP غير صالح",
   "invalidMACAddress": "عنوان MAC غير صالح.",

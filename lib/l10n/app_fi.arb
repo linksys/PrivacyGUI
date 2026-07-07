@@ -126,6 +126,8 @@
   "invalidDestinationMacAddress": "Virheellinen kohteen MAC-osoite",
   "invalidDns": "Virheellinen DNS",
   "invalidGatewayIpAddress": "Virheellinen yhdyskäytävän IP-osoite",
+  "gatewayMustBeWithinLanSubnet": "Yhdyskäytävän on oltava LAN-aliverkon sisällä",
+  "gatewayMustBeOutsideLanSubnet": "Yhdyskäytävän on oltava LAN-aliverkon ulkopuolella",
   "invalidInput": "Virheellinen syöte",
   "invalidIpAddress": "Virheellinen IP-osoite",
   "invalidMACAddress": "Virheellinen MAC-osoite.",

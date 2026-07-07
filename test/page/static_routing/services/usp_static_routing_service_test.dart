@@ -152,7 +152,7 @@ void main() {
         subnetMask: '255.255.255.0',
         gateway: '',
       );
-      expect(errors['name'], 'Name is required');
+      expect(errors['name'], StaticRoutingErrorKeys.nameRequired);
     });
 
     test('name over 32 chars returns error', () {
@@ -162,7 +162,7 @@ void main() {
         subnetMask: '255.255.255.0',
         gateway: '',
       );
-      expect(errors['name'], 'Name must be 32 characters or less');
+      expect(errors['name'], StaticRoutingErrorKeys.nameTooLong);
     });
 
     test('name exactly 32 chars is valid', () {
@@ -182,7 +182,7 @@ void main() {
         subnetMask: '255.255.255.0',
         gateway: '',
       );
-      expect(errors['destIp'], 'Destination IP is required');
+      expect(errors['destIp'], StaticRoutingErrorKeys.destIpRequired);
     });
 
     test('invalid destIp returns error', () {
@@ -192,7 +192,7 @@ void main() {
         subnetMask: '255.255.255.0',
         gateway: '',
       );
-      expect(errors['destIp'], 'Invalid IP address');
+      expect(errors['destIp'], StaticRoutingErrorKeys.invalidIpAddress);
     });
 
     test('empty subnetMask returns error', () {
@@ -202,7 +202,7 @@ void main() {
         subnetMask: '',
         gateway: '',
       );
-      expect(errors['subnetMask'], 'Subnet mask is required');
+      expect(errors['subnetMask'], StaticRoutingErrorKeys.subnetMaskRequired);
     });
 
     test('invalid subnetMask returns error', () {
@@ -212,7 +212,7 @@ void main() {
         subnetMask: '255.255.0.128',
         gateway: '',
       );
-      expect(errors['subnetMask'], 'Invalid subnet mask');
+      expect(errors['subnetMask'], StaticRoutingErrorKeys.invalidSubnetMask);
     });
 
     test('empty gateway is valid (optional)', () {
@@ -232,7 +232,7 @@ void main() {
         subnetMask: '255.255.255.0',
         gateway: 'not-an-ip',
       );
-      expect(errors['gateway'], 'Invalid IP address');
+      expect(errors['gateway'], StaticRoutingErrorKeys.invalidIpAddress);
     });
 
     test('multiple errors returned simultaneously', () {
@@ -270,7 +270,8 @@ void main() {
         lanIp: '192.168.1.1',
         lanSubnetMask: '255.255.255.0',
       );
-      expect(errors['gateway'], 'Gateway must be within LAN subnet');
+      expect(errors['gateway'],
+          StaticRoutingErrorKeys.gatewayMustBeWithinLanSubnet);
     });
 
     test('Internet interface: gateway outside LAN subnet is valid', () {
@@ -296,7 +297,8 @@ void main() {
         lanIp: '192.168.1.1',
         lanSubnetMask: '255.255.255.0',
       );
-      expect(errors['gateway'], 'Gateway must be outside LAN subnet');
+      expect(errors['gateway'],
+          StaticRoutingErrorKeys.gatewayMustBeOutsideLanSubnet);
     });
 
     test('subnet validation skipped when lanIp/lanSubnetMask not provided', () {
@@ -320,7 +322,7 @@ void main() {
         lanIp: '192.168.1.1',
         lanSubnetMask: '255.255.255.0',
       );
-      expect(errors['gateway'], 'Invalid IP address');
+      expect(errors['gateway'], StaticRoutingErrorKeys.invalidIpAddress);
     });
   });
 

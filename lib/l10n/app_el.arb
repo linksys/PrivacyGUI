@@ -126,6 +126,8 @@
   "invalidDestinationMacAddress": "Μη έγκυρη διεύθυνση MAC προορισμού",
   "invalidDns": "Μη έγκυρο DNS",
   "invalidGatewayIpAddress": "Μη έγκυρη διεύθυνση IP πύλης",
+  "gatewayMustBeWithinLanSubnet": "Η πύλη πρέπει να είναι εντός του υποδικτύου LAN",
+  "gatewayMustBeOutsideLanSubnet": "Η πύλη πρέπει να είναι εκτός του υποδικτύου LAN",
   "invalidInput": "Μη έγκυρη καταχώριση",
   "invalidIpAddress": "Μη έγκυρη διεύθυνση IP",
   "invalidMACAddress": "Μη έγκυρη διεύθυνση MAC.",

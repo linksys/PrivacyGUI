@@ -66,6 +66,7 @@ class _StaticRouteDialogState extends State<StaticRouteDialog> {
     _gatewayController = TextEditingController(text: r?.gatewayIpAddress ?? '');
     _interfaceName = r?.interfaceName ?? 'LAN';
     _enabled = r?.enabled ?? true;
+    _errors = _computeErrors();
   }
 
   @override
@@ -95,7 +96,26 @@ class _StaticRouteDialogState extends State<StaticRouteDialog> {
     });
   }
 
-  bool get _isFormValid => _computeErrors().isEmpty;
+  /// Convert error key to localized string.
+  String? _localizeError(String? key) {
+    if (key == null) return null;
+    final l = loc(context);
+    return switch (key) {
+      StaticRoutingErrorKeys.nameRequired => l.invalidInput,
+      StaticRoutingErrorKeys.nameTooLong => l.invalidInput,
+      StaticRoutingErrorKeys.destIpRequired => l.ipAddressRequired,
+      StaticRoutingErrorKeys.invalidIpAddress => l.invalidIpAddress,
+      StaticRoutingErrorKeys.subnetMaskRequired => l.invalidInput,
+      StaticRoutingErrorKeys.invalidSubnetMask => l.invalidInput,
+      StaticRoutingErrorKeys.gatewayMustBeWithinLanSubnet =>
+        l.gatewayMustBeWithinLanSubnet,
+      StaticRoutingErrorKeys.gatewayMustBeOutsideLanSubnet =>
+        l.gatewayMustBeOutsideLanSubnet,
+      _ => key,
+    };
+  }
+
+  bool get _isFormValid => _errors.isEmpty;
 
   @override
   Widget build(BuildContext context) {
@@ -109,28 +129,28 @@ class _StaticRouteDialogState extends State<StaticRouteDialog> {
             AppTextField(
               controller: _nameController,
               hintText: loc(context).routeName,
-              errorText: _errors['name'],
+              errorText: _localizeError(_errors['name']),
               onChanged: (_) => _validate(),
             ),
             AppGap.lg(),
             AppIpv4TextField(
               controller: _destIpController,
               label: loc(context).destinationIp,
-              errorText: _errors['destIp'],
+              errorText: _localizeError(_errors['destIp']),
               onChanged: (_) => _validate(),
             ),
             AppGap.lg(),
             AppIpv4TextField(
               controller: _subnetMaskController,
               label: loc(context).subnetMask,
-              errorText: _errors['subnetMask'],
+              errorText: _localizeError(_errors['subnetMask']),
               onChanged: (_) => _validate(),
             ),
             AppGap.lg(),
             AppIpv4TextField(
               controller: _gatewayController,
               label: loc(context).gatewayIp,
-              errorText: _errors['gateway'],
+              errorText: _localizeError(_errors['gateway']),
               onChanged: (_) => _validate(),
             ),
             AppGap.lg(),

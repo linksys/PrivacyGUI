@@ -126,6 +126,8 @@
   "invalidDestinationMacAddress": "Indirizzo MAC di destinazione non valido",
   "invalidDns": "DNS non valido",
   "invalidGatewayIpAddress": "Indirizzo IP del gateway non valido",
+  "gatewayMustBeWithinLanSubnet": "Il gateway deve essere all'interno della subnet LAN",
+  "gatewayMustBeOutsideLanSubnet": "Il gateway deve essere al di fuori della subnet LAN",
   "invalidInput": "Inserimento non valido",
   "invalidIpAddress": "Indirizzo IP non valido",
   "invalidMACAddress": "Indirizzo MAC non valido.",

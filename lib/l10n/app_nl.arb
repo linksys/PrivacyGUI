@@ -126,6 +126,8 @@
   "invalidDestinationMacAddress": "Ongeldig bestemmings-MAC-adres",
   "invalidDns": "Ongeldige DNS",
   "invalidGatewayIpAddress": "Ongeldig gateway-IP-adres",
+  "gatewayMustBeWithinLanSubnet": "Gateway moet binnen het LAN-subnet zijn",
+  "gatewayMustBeOutsideLanSubnet": "Gateway moet buiten het LAN-subnet zijn",
   "invalidInput": "Ongeldige invoer",
   "invalidIpAddress": "Ongeldig IP-adres",
   "invalidMACAddress": "Ongeldig MAC-adres.",

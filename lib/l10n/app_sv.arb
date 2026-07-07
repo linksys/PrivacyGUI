@@ -126,6 +126,8 @@
   "invalidDestinationMacAddress": "Ogiltig MAC-adress för destination",
   "invalidDns": "Ogiltig DNS",
   "invalidGatewayIpAddress": "Ogiltig IP-adress för gatewayen",
+  "gatewayMustBeWithinLanSubnet": "Gateway måste vara inom LAN-undernätet",
+  "gatewayMustBeOutsideLanSubnet": "Gateway måste vara utanför LAN-undernätet",
   "invalidInput": "Ogiltiga indata",
   "invalidIpAddress": "Ogiltig IP-adress",
   "invalidMACAddress": "Ogiltig MAC-adress.",

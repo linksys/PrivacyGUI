@@ -126,6 +126,8 @@
   "invalidDestinationMacAddress": "Geçersiz hedef MAC adresi",
   "invalidDns": "Geçersiz DNS",
   "invalidGatewayIpAddress": "Geçersiz ağ geçidi IP adresi",
+  "gatewayMustBeWithinLanSubnet": "Ağ geçidi LAN alt ağı içinde olmalıdır",
+  "gatewayMustBeOutsideLanSubnet": "Ağ geçidi LAN alt ağı dışında olmalıdır",
   "invalidInput": "Geçersiz giriş",
   "invalidIpAddress": "Geçersiz IP adresi",
   "invalidMACAddress": "Geçersiz MAC adresi.",

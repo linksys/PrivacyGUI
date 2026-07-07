@@ -126,6 +126,8 @@
   "invalidDestinationMacAddress": "Ugyldig destinations-MAC-adresse",
   "invalidDns": "Ugyldigt DNS",
   "invalidGatewayIpAddress": "Ugyldig IP-adresse på gatewayen",
+  "gatewayMustBeWithinLanSubnet": "Gateway skal være inden for LAN-subnet",
+  "gatewayMustBeOutsideLanSubnet": "Gateway skal være uden for LAN-subnet",
   "invalidInput": "Ugyldigt input",
   "invalidIpAddress": "Ugyldig IP-adresse",
   "invalidMACAddress": "Ugyldig MAC-adresse.",
