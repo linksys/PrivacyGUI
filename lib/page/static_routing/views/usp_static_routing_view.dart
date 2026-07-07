@@ -191,12 +191,17 @@ class UspStaticRoutingView extends ConsumerWidget {
   // ---------------------------------------------------------------------------
 
   Future<void> _showAddDialog(BuildContext context, WidgetRef ref) async {
-    final lanData = ref.read(lanDataProvider).valueOrNull;
+    // Await the LAN data so subnet validation is never bypassed by a fast tap
+    // while lanDataProvider is still AsyncLoading (cold start / network reset).
+    // valueOrNull would return null there and silently skip validateRoute's
+    // gateway-subnet block — the core #1082 fix.
+    final lanData = await ref.read(lanDataProvider.future);
+    if (!context.mounted) return;
     final result = await showAppDialog<StaticRouteDialogResult>(
       context: context,
       builder: (_) => StaticRouteDialog(
-        lanIp: lanData?.model.ipAddress,
-        lanSubnetMask: lanData?.model.subnetMask,
+        lanIp: lanData.model.ipAddress,
+        lanSubnetMask: lanData.model.subnetMask,
       ),
     );
     if (result == null || !context.mounted) return;
@@ -214,13 +219,16 @@ class UspStaticRoutingView extends ConsumerWidget {
 
   Future<void> _showEditDialog(BuildContext context, WidgetRef ref, int index,
       StaticRouteUIModel route) async {
-    final lanData = ref.read(lanDataProvider).valueOrNull;
+    // Await LAN data (see _showAddDialog) so edit-mode subnet validation is not
+    // bypassed while lanDataProvider is still loading.
+    final lanData = await ref.read(lanDataProvider.future);
+    if (!context.mounted) return;
     final result = await showAppDialog<StaticRouteDialogResult>(
       context: context,
       builder: (_) => StaticRouteDialog(
         route: route,
-        lanIp: lanData?.model.ipAddress,
-        lanSubnetMask: lanData?.model.subnetMask,
+        lanIp: lanData.model.ipAddress,
+        lanSubnetMask: lanData.model.subnetMask,
       ),
     );
     if (result == null || !context.mounted) return;

@@ -118,7 +118,12 @@ class _StaticRouteDialogState extends State<StaticRouteDialog> {
     };
   }
 
-  bool get _isFormValid => _errors.isEmpty;
+  // Compute validity from the live field values rather than the cached
+  // [_errors] map. In add mode [_errors] starts empty (errors are suppressed
+  // on open for UX), so relying on it would enable the Save button on a blank
+  // form and allow submitting an empty route. Recomputing here reflects the
+  // true form state without surfacing "required" errors before the user types.
+  bool get _isFormValid => _computeErrors().isEmpty;
 
   @override
   Widget build(BuildContext context) {
