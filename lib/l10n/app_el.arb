@@ -1116,5 +1116,9 @@
   "targetChain": "Αλυσίδα προορισμού",
   "synchronized": "Συγχρονισμένο",
   "noPortForwardingRulesConfigured": "Δεν έχουν διαμορφωθεί κανόνες προώθησης θυρών",
-  "nItems": "{count, plural, one{{count} στοιχείο} other{{count} στοιχεία}}"
+  "nItems": "{count, plural, one{{count} στοιχείο} other{{count} στοιχεία}}",
+  "bridgeReconnectHint": "Μετά την αποθήκευση, επανασυνδεθείτε στον δρομολογητή σας στη διεύθυνση {url}.",
+  "bridgeRedirectTitle": "Επανασύνδεση στον δρομολογητή σας",
+  "bridgeRedirectMessage": "Ο δρομολογητής σας λειτουργεί τώρα ως διαφανής γέφυρα και δεν εκχωρεί πλέον τοπικές διευθύνσεις IP. Επανασυνδεθείτε στη διεύθυνση {url}.",
+  "bridgeRedirectButton": "Μετάβαση στον δρομολογητή"
 }

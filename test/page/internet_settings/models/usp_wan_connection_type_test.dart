@@ -6,40 +6,21 @@ void main() {
     group('fromRawFields', () {
       test('returns dhcp for addressingType DHCP', () {
         expect(
-          UspWanConnectionType.fromRawFields(
-            addressingType: 'DHCP',
-            bridgeEnabled: false,
-          ),
-          UspWanConnectionType.dhcp,
-        );
-      });
-
-      test('returns dhcp for addressingType DHCP even when bridgeEnabled', () {
-        expect(
-          UspWanConnectionType.fromRawFields(
-            addressingType: 'DHCP',
-            bridgeEnabled: true,
-          ),
+          UspWanConnectionType.fromRawFields(addressingType: 'DHCP'),
           UspWanConnectionType.dhcp,
         );
       });
 
       test('returns staticIp for addressingType Static', () {
         expect(
-          UspWanConnectionType.fromRawFields(
-            addressingType: 'Static',
-            bridgeEnabled: false,
-          ),
+          UspWanConnectionType.fromRawFields(addressingType: 'Static'),
           UspWanConnectionType.staticIp,
         );
       });
 
       test('returns pppoe for addressingType IPCP with no lowerLayers', () {
         expect(
-          UspWanConnectionType.fromRawFields(
-            addressingType: 'IPCP',
-            bridgeEnabled: false,
-          ),
+          UspWanConnectionType.fromRawFields(addressingType: 'IPCP'),
           UspWanConnectionType.pppoe,
         );
       });
@@ -48,7 +29,6 @@ void main() {
         expect(
           UspWanConnectionType.fromRawFields(
             addressingType: 'IPCP',
-            bridgeEnabled: false,
             lowerLayers: 'Device.Ethernet.Link.2',
           ),
           UspWanConnectionType.pppoe,
@@ -59,7 +39,6 @@ void main() {
         expect(
           UspWanConnectionType.fromRawFields(
             addressingType: 'IPCP',
-            bridgeEnabled: false,
             lowerLayers: 'Device.GRE.Tunnel.1.Interface.1',
           ),
           UspWanConnectionType.pptp,
@@ -70,52 +49,23 @@ void main() {
         expect(
           UspWanConnectionType.fromRawFields(
             addressingType: 'IPCP',
-            bridgeEnabled: false,
             lowerLayers: 'Device.L2TPv2.Tunnel.1.Interface.1',
           ),
           UspWanConnectionType.l2tp,
         );
       });
 
-      test('returns bridge when addressingType is empty and bridgeEnabled', () {
+      test('returns bridge for empty addressingType', () {
         expect(
-          UspWanConnectionType.fromRawFields(
-            addressingType: '',
-            bridgeEnabled: true,
-          ),
+          UspWanConnectionType.fromRawFields(addressingType: ''),
           UspWanConnectionType.bridge,
         );
       });
 
-      test('returns dhcp when addressingType is empty and bridgeEnabled false',
-          () {
+      test('returns bridge for unknown addressingType', () {
         expect(
-          UspWanConnectionType.fromRawFields(
-            addressingType: '',
-            bridgeEnabled: false,
-          ),
-          UspWanConnectionType.dhcp,
-        );
-      });
-
-      test('returns dhcp for unknown addressingType without bridgeEnabled', () {
-        expect(
-          UspWanConnectionType.fromRawFields(
-            addressingType: 'Unknown',
-            bridgeEnabled: false,
-          ),
-          UspWanConnectionType.dhcp,
-        );
-      });
-
-      test('returns dhcp for unknown addressingType even with bridgeEnabled',
-          () {
-        expect(
-          UspWanConnectionType.fromRawFields(
-            addressingType: 'Unknown',
-            bridgeEnabled: true,
-          ),
-          UspWanConnectionType.dhcp,
+          UspWanConnectionType.fromRawFields(addressingType: 'Something'),
+          UspWanConnectionType.bridge,
         );
       });
     });

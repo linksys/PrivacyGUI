@@ -3,6 +3,7 @@ import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
+import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
 import 'package:privacy_gui/framework/preservable_contract.dart';
 import 'package:privacy_gui/framework/preservable_notifier_mixin.dart';
 import 'package:privacy_gui/page/internet_settings/models/internet_settings_feature_state.dart';
@@ -49,15 +50,16 @@ class UspInternetSettingsNotifier
     with
         PreservableAutoDisposeNotifierMixin<InternetSettingsSettings,
             InternetSettingsStatus, InternetSettingsFeatureState> {
-  /// One-shot guard: set during [performSave] when connection type was NOT
-  /// changed, consumed by [performFetch] to prevent transient empty
-  /// `addressingType` from the device causing Bridge misdetection.
+  /// One-shot guard for a device-timing race (#759): immediately after a save
+  /// that did NOT change the connection type, the device can transiently report
+  /// an empty `addressingType`. Under the AddressingType-only detection rule
+  /// (see [UspWanConnectionType.fromRawFields]) that empty value would read as
+  /// Bridge. This guard is set in [performSave] when the type was unchanged and
+  /// consumed by the next [performFetch] to preserve the known type.
   ///
-  // TODO: Remove this guard once Bridge Mode is properly implemented via
-  // TR-181 `Device.Bridging.Bridge.{i}.Port.{i}` — see the tracking issue
-  // for details. The current Bridge detection relies on empty addressingType
-  // + bridgeEnabled, which is fragile because bridgeEnabled is always true
-  // on most routers (LAN-side L2 bridge).
+  /// This is independent of detection correctness and must NOT be removed:
+  /// detection keys on a real device value, while this protects against a
+  /// transient one during the save→refetch window.
   UspWanConnectionType? _preservedConnectionType;
 
   @override
@@ -178,6 +180,45 @@ class UspInternetSettingsNotifier
         ),
       );
     }
+  }
+
+  // ---------------------------------------------------------------------------
+  // save — override the mixin's default (performSave -> markAsSaved -> refetch)
+  // to special-case the entering-bridge transition.
+  // ---------------------------------------------------------------------------
+
+  @override
+  Future<InternetSettingsFeatureState> save() async {
+    // Detect the entering-bridge transition BEFORE saving: `original` is the
+    // baseline type, `edited` is what the user just chose. markAsSaved() below
+    // collapses original into current, so this must be read up front.
+    final enteringBridge =
+        state.original.connectionType != UspWanConnectionType.bridge &&
+            state.edited.connectionType == UspWanConnectionType.bridge;
+
+    await performSave();
+    markAsSaved();
+
+    if (enteringBridge) {
+      // Entering bridge makes the router unreachable on this origin (the WAN
+      // port joins br-lan and the local DHCP server is disabled). Two effects
+      // are handled here, both specific to this terminal transition:
+      //
+      // 1. Drop SSE intentionally. disconnect() sets _intentionalDisconnect,
+      //    which stops the reconnect backoff and suppresses onReconnectFailed,
+      //    so the app-level recovery flow (2 reconnect failures ->
+      //    waitingForRecovery) never fires on top of the bridge redirect
+      //    dialog.
+      // 2. Skip the post-save re-fetch. The SET already succeeded; the device
+      //    is now gone from this origin, so fetch(forceRemote: true) would only
+      //    time out (~15s per GET) and surface a spurious "something went
+      //    wrong" error for an operation that actually succeeded. The redirect
+      //    dialog is the only valid next step from here.
+      await ref.read(sseManagerProvider)?.disconnect();
+      return state;
+    }
+
+    return fetch(forceRemote: true);
   }
 
   // ---------------------------------------------------------------------------

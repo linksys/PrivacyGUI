@@ -7,18 +7,23 @@ enum UspWanConnectionType {
   l2tp,
   bridge;
 
-  /// Derive the connection type from raw WAN field values.
+  /// Derive the connection type from the WAN interface's `AddressingType`.
   ///
-  /// [addressingType] is the primary signal; [lowerLayers] disambiguates
-  /// PPP-based protocols (PPPoE vs PPTP vs L2TP) by checking the tunnel
-  /// reference in PPP.Interface.LowerLayers.
+  /// [addressingType] is the single source of truth for WAN mode:
+  /// - `Static` → static IP
+  /// - `IPCP`   → PPP-based (PPPoE / PPTP / L2TP, disambiguated by [lowerLayers])
+  /// - `DHCP`   → DHCP
+  /// - empty / anything else → bridge mode (firmware sets `AddressingType=""`
+  ///   when the WAN interface is placed into a transparent L2 bridge).
   ///
-  /// [bridgeEnabled] alone is NOT sufficient because
-  /// `Device.Bridging.Bridge.1.Enable` is typically `true` on most routers
-  /// (it controls the LAN-side L2 bridge, not WAN bridge mode).
+  /// [lowerLayers] disambiguates PPP-based protocols by checking the tunnel
+  /// reference in `PPP.Interface.LowerLayers` (GRE → PPTP, L2TPv2 → L2TP).
+  ///
+  /// `Device.Bridging.Bridge.{i}.Enable` is deliberately NOT consulted: it
+  /// controls the LAN-side L2 bridge and is `true` on most routers regardless
+  /// of WAN bridge mode.
   static UspWanConnectionType fromRawFields({
     required String addressingType,
-    required bool bridgeEnabled,
     String lowerLayers = '',
   }) {
     switch (addressingType) {
@@ -31,14 +36,7 @@ enum UspWanConnectionType {
       case 'DHCP':
         return dhcp;
       default:
-        // Only treat as bridge when addressingType is absent/unknown AND
-        // bridgeEnabled is explicitly true.
-        // TODO: This detection is fragile — bridgeEnabled (Device.Bridging.
-        // Bridge.1.Enable) is typically always true on most routers (LAN-side
-        // L2 bridge). Proper detection should check whether the WAN interface
-        // is configured as a bridge port via Device.Bridging.Bridge.{i}.Port.
-        if (bridgeEnabled && addressingType.isEmpty) return bridge;
-        return dhcp;
+        return bridge;
     }
   }
 

@@ -204,11 +204,12 @@ void main() {
       // - VlanTermination.fetch() = 1 call
       // - GreTunnel.fetch() = 1 call
       // - L2tpTunnel.fetch() = 1 call
+      // - _fetchHostName() (Device.DeviceInfo.HostName) = 1 call
       // saveAll:
       // - WanStaticIp.updateOrdered() → _resolveInstance() = 1 call
       // - Ipv6Settings.update() → _resolveInstance() = 1 call
-      // Total = 10 get calls
-      verify(() => mockUsp.get(any())).called(10);
+      // Total = 11 get calls
+      verify(() => mockUsp.get(any())).called(11);
 
       // Verify setOrdered was called for Static IP mode switch
       final capturedOrdered = verify(() => mockUsp.setOrdered(captureAny(),
@@ -245,12 +246,13 @@ void main() {
       await service.saveIspSettings(config);
 
       // Verify fetchSettings + saveAll get calls:
-      // fetchSettings: 8 calls (WanSettings, Ipv6, PPP, VLAN, GRE, L2TP)
+      // fetchSettings: 9 calls (WanSettings x2, Ipv6 x2, PPP, VLAN, GRE, L2TP,
+      //   _fetchHostName = Device.DeviceInfo.HostName)
       // saveAll:
       // - WanPppoe.update() → _resolveInstance() = 1 call
       // - Ipv6Settings.update() → _resolveInstance() = 1 call
-      // Total = 10 get calls
-      verify(() => mockUsp.get(any())).called(10);
+      // Total = 11 get calls
+      verify(() => mockUsp.get(any())).called(11);
 
       // Verify PppInterface.add was called (new PPP instance created)
       final addCaptures = verify(() => mockUsp.add(captureAny())).captured;

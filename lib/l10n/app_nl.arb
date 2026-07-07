@@ -1116,5 +1116,9 @@
   "targetChain": "Doelketen",
   "synchronized": "Gesynchroniseerd",
   "noPortForwardingRulesConfigured": "Geen regels voor poortdoorschakeling geconfigureerd",
-  "nItems": "{count, plural, one{{count} item} other{{count} items}}"
+  "nItems": "{count, plural, one{{count} item} other{{count} items}}",
+  "bridgeReconnectHint": "Maak na het opslaan opnieuw verbinding met uw router via {url}.",
+  "bridgeRedirectTitle": "Opnieuw verbinden met uw router",
+  "bridgeRedirectMessage": "Uw router is nu een transparante bridge en wijst geen lokale IP-adressen meer toe. Maak opnieuw verbinding via {url}.",
+  "bridgeRedirectButton": "Naar router"
 }

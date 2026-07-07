@@ -1116,5 +1116,9 @@
   "targetChain": "Kohdeketju",
   "synchronized": "Synkronoitu",
   "noPortForwardingRulesConfigured": "Porttiohjaussääntöjä ei ole määritetty",
-  "nItems": "{count, plural, one{{count} kohde} other{{count} kohdetta}}"
+  "nItems": "{count, plural, one{{count} kohde} other{{count} kohdetta}}",
+  "bridgeReconnectHint": "Yhdistä tallennuksen jälkeen reitittimeesi uudelleen osoitteessa {url}.",
+  "bridgeRedirectTitle": "Yhdistä reitittimeesi uudelleen",
+  "bridgeRedirectMessage": "Reitittimesi toimii nyt läpinäkyvänä siltana eikä enää jaa paikallisia IP-osoitteita. Yhdistä uudelleen osoitteessa {url}.",
+  "bridgeRedirectButton": "Siirry reitittimeen"
 }

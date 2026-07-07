@@ -1116,5 +1116,9 @@
   "targetChain": "سلسلة الهدف",
   "synchronized": "متزامن",
   "noPortForwardingRulesConfigured": "لم يتم تكوين أي قواعد لإعادة توجيه المنافذ",
-  "nItems": "{count, plural, zero{لا عناصر} one{عنصر واحد} two{عنصران} few{{count} عناصر} many{{count} عنصرًا} other{{count} عنصر}}"
+  "nItems": "{count, plural, zero{لا عناصر} one{عنصر واحد} two{عنصران} few{{count} عناصر} many{{count} عنصرًا} other{{count} عنصر}}",
+  "bridgeReconnectHint": "بعد الحفظ، أعد الاتصال بجهاز التوجيه على {url}.",
+  "bridgeRedirectTitle": "إعادة الاتصال بجهاز التوجيه",
+  "bridgeRedirectMessage": "يعمل جهاز التوجيه الآن كجسر شفاف ولم يعد يوزّع عناوين IP محلية. أعد الاتصال على {url}.",
+  "bridgeRedirectButton": "الانتقال إلى جهاز التوجيه"
 }

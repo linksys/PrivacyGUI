@@ -1116,5 +1116,9 @@
   "targetChain": "ターゲットチェーン",
   "synchronized": "同期済み",
   "noPortForwardingRulesConfigured": "ポート転送ルールが設定されていません",
-  "nItems": "{count, plural, other{{count} 個の項目}}"
+  "nItems": "{count, plural, other{{count} 個の項目}}",
+  "bridgeReconnectHint": "保存後、{url} からルーターに再接続してください。",
+  "bridgeRedirectTitle": "ルーターに再接続",
+  "bridgeRedirectMessage": "ルーターは現在、透過的なブリッジとして動作しており、ローカル IP アドレスを割り当てません。{url} から再接続してください。",
+  "bridgeRedirectButton": "ルーターに移動"
 }

@@ -1116,5 +1116,9 @@
   "targetChain": "Catena di destinazione",
   "synchronized": "Sincronizzato",
   "noPortForwardingRulesConfigured": "Nessuna regola di port forwarding configurata",
-  "nItems": "{count, plural, one{{count} elemento} other{{count} elementi}}"
+  "nItems": "{count, plural, one{{count} elemento} other{{count} elementi}}",
+  "bridgeReconnectHint": "Dopo il salvataggio, riconnettiti al router all'indirizzo {url}.",
+  "bridgeRedirectTitle": "Riconnettiti al router",
+  "bridgeRedirectMessage": "Il router ora funziona come bridge trasparente e non assegna più indirizzi IP locali. Riconnettiti all'indirizzo {url}.",
+  "bridgeRedirectButton": "Vai al router"
 }

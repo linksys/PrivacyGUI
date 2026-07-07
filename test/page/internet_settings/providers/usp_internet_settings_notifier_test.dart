@@ -5,6 +5,8 @@ import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/providers/usp_auth_coordinator.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
+import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
+import 'package:privacy_gui/core/usp/services/sse_manager.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/internet_settings/models/internet_settings_read_only_info.dart';
 import 'package:privacy_gui/page/internet_settings/models/usp_internet_settings_form.dart';
@@ -19,10 +21,13 @@ class MockUspInternetSettingsService extends Mock
 
 class MockUspAuthCoordinator extends Mock implements UspAuthCoordinator {}
 
+class MockSseManager extends Mock implements SseManager {}
+
 void main() {
   late MockUspClient mockUsp;
   late MockUspInternetSettingsService mockService;
   late MockUspAuthCoordinator mockAuthCoordinator;
+  late MockSseManager mockSseManager;
 
   final testForm = UspInternetSettingsForm(
     connectionType: UspWanConnectionType.dhcp,
@@ -43,7 +48,9 @@ void main() {
     mockUsp = MockUspClient();
     mockService = MockUspInternetSettingsService();
     mockAuthCoordinator = MockUspAuthCoordinator();
+    mockSseManager = MockSseManager();
     when(() => mockUsp.isAuthenticated).thenReturn(true);
+    when(() => mockSseManager.disconnect()).thenAnswer((_) async {});
   });
 
   ProviderContainer createContainer() {
@@ -53,6 +60,7 @@ void main() {
         uspInternetSettingsServiceProvider.overrideWithValue(mockService),
         uspMutationLockProvider.overrideWithValue(UspMutationLock()),
         uspAuthCoordinatorProvider.overrideWithValue(mockAuthCoordinator),
+        sseManagerProvider.overrideWithValue(mockSseManager),
       ],
     );
     container.listen(uspInternetSettingsProvider, (_, __) {});
@@ -223,6 +231,58 @@ void main() {
       verify(() => mockService.saveAll(any(), any())).called(1);
       expect(container.read(uspInternetSettingsProvider).status.isEditing,
           isFalse);
+      container.dispose();
+    });
+
+    test(
+        'save entering bridge disconnects SSE and skips the post-save re-fetch',
+        () async {
+      when(() => mockService.fetchSettings())
+          .thenAnswer((_) async => testFetchResult);
+      when(() => mockService.saveAll(any(), any())).thenAnswer((_) async {});
+
+      final container = createContainer();
+      await Future.delayed(Duration.zero);
+
+      final notifier = container.read(uspInternetSettingsProvider.notifier);
+      notifier.enterEditMode();
+      // Baseline is DHCP; switching to bridge is an entering-bridge transition.
+      notifier.updateConnectionType(UspWanConnectionType.bridge);
+      await notifier.save();
+
+      // SSE is dropped so the recovery flow never fires on top of the dialog.
+      verify(() => mockSseManager.disconnect()).called(1);
+      // Only the initial build() fetch — save() must NOT re-fetch, because the
+      // router is now unreachable on this origin (a re-fetch would time out and
+      // surface a spurious error for a save that actually succeeded).
+      verify(() => mockService.fetchSettings()).called(1);
+      // Form still reflects the edited bridge value; state stays clean.
+      final state = container.read(uspInternetSettingsProvider);
+      expect(state.settings.current.form.connectionType,
+          UspWanConnectionType.bridge);
+      expect(state.status.isEditing, isFalse);
+      expect(notifier.isDirty(), isFalse);
+      container.dispose();
+    });
+
+    test('save for a non-bridge change re-fetches and does not disconnect SSE',
+        () async {
+      when(() => mockService.fetchSettings())
+          .thenAnswer((_) async => testFetchResult);
+      when(() => mockService.saveAll(any(), any())).thenAnswer((_) async {});
+
+      final container = createContainer();
+      await Future.delayed(Duration.zero);
+
+      final notifier = container.read(uspInternetSettingsProvider.notifier);
+      notifier.enterEditMode();
+      // Stays DHCP — only an unrelated field changes.
+      notifier.updateField((f) => f.copyWith(mtu: 9000));
+      await notifier.save();
+
+      verifyNever(() => mockSseManager.disconnect());
+      // build() fetch + post-save re-fetch = 2 fetchSettings calls.
+      verify(() => mockService.fetchSettings()).called(2);
       container.dispose();
     });
 

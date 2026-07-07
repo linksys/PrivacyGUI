@@ -1116,5 +1116,9 @@
   "targetChain": "Cadena de destino",
   "synchronized": "Sincronizado",
   "noPortForwardingRulesConfigured": "No hay reglas de reenvío de puertos configuradas",
-  "nItems": "{count, plural, one{{count} elemento} other{{count} elementos}}"
+  "nItems": "{count, plural, one{{count} elemento} other{{count} elementos}}",
+  "bridgeReconnectHint": "Después de guardar, volvé a conectarte a tu router en {url}.",
+  "bridgeRedirectTitle": "Volvé a conectarte a tu router",
+  "bridgeRedirectMessage": "Tu router ahora es un puente transparente y ya no asigna direcciones IP locales. Volvé a conectarte en {url}.",
+  "bridgeRedirectButton": "Ir al router"
 }

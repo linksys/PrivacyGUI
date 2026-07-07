@@ -1116,5 +1116,9 @@
   "targetChain": "Chaîne cible",
   "synchronized": "Synchronisé",
   "noPortForwardingRulesConfigured": "Aucune règle de redirection de port configurée",
-  "nItems": "{count, plural, one{{count} élément} many{{count} d'éléments} other{{count} éléments}}"
+  "nItems": "{count, plural, one{{count} élément} many{{count} d'éléments} other{{count} éléments}}",
+  "bridgeReconnectHint": "Après l'enregistrement, reconnectez-vous à votre routeur à l'adresse {url}.",
+  "bridgeRedirectTitle": "Se reconnecter à votre routeur",
+  "bridgeRedirectMessage": "Votre routeur fonctionne maintenant comme un pont transparent et n'attribue plus d'adresses IP locales. Reconnectez-vous à l'adresse {url}.",
+  "bridgeRedirectButton": "Accéder au routeur"
 }

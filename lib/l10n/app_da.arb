@@ -1116,5 +1116,9 @@
   "targetChain": "Målkæde",
   "synchronized": "Synkroniseret",
   "noPortForwardingRulesConfigured": "Ingen portvideresendelsesregler konfigureret",
-  "nItems": "{count, plural, one{{count} element} other{{count} elementer}}"
+  "nItems": "{count, plural, one{{count} element} other{{count} elementer}}",
+  "bridgeReconnectHint": "Efter du har gemt, skal du oprette forbindelse til din router igen på {url}.",
+  "bridgeRedirectTitle": "Opret forbindelse til din router igen",
+  "bridgeRedirectMessage": "Din router fungerer nu som en transparent bro og tildeler ikke længere lokale IP-adresser. Opret forbindelse igen på {url}.",
+  "bridgeRedirectButton": "Gå til routeren"
 }

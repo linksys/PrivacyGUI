@@ -1116,5 +1116,9 @@
   "targetChain": "Łańcuch docelowy",
   "synchronized": "Zsynchronizowano",
   "noPortForwardingRulesConfigured": "Nie skonfigurowano żadnych reguł przekierowania portów",
-  "nItems": "{count, plural, one{{count} element} few{{count} elementy} many{{count} elementów} other{{count} elementu}}"
+  "nItems": "{count, plural, one{{count} element} few{{count} elementy} many{{count} elementów} other{{count} elementu}}",
+  "bridgeReconnectHint": "Po zapisaniu połącz się ponownie z routerem pod adresem {url}.",
+  "bridgeRedirectTitle": "Połącz się ponownie z routerem",
+  "bridgeRedirectMessage": "Twój router działa teraz jako most przezroczysty i nie przydziela już lokalnych adresów IP. Połącz się ponownie pod adresem {url}.",
+  "bridgeRedirectButton": "Przejdź do routera"
 }

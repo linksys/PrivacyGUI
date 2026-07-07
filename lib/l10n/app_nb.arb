@@ -1116,5 +1116,9 @@
   "targetChain": "Målkjede",
   "synchronized": "Synkronisert",
   "noPortForwardingRulesConfigured": "Ingen videresendingsregler for porter er konfigurert",
-  "nItems": "{count, plural, one{{count} element} other{{count} elementer}}"
+  "nItems": "{count, plural, one{{count} element} other{{count} elementer}}",
+  "bridgeReconnectHint": "Etter lagring kobler du til ruteren din på nytt på {url}.",
+  "bridgeRedirectTitle": "Koble til ruteren på nytt",
+  "bridgeRedirectMessage": "Ruteren din fungerer nå som en transparent bro og tildeler ikke lenger lokale IP-adresser. Koble til på nytt på {url}.",
+  "bridgeRedirectButton": "Gå til ruteren"
 }
