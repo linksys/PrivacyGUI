@@ -195,7 +195,18 @@ class UspStaticRoutingView extends ConsumerWidget {
     // while lanDataProvider is still AsyncLoading (cold start / network reset).
     // valueOrNull would return null there and silently skip validateRoute's
     // gateway-subnet block — the core #1082 fix.
-    final lanData = await ref.read(lanDataProvider.future);
+    final LanData lanData;
+    try {
+      lanData = await ref.read(lanDataProvider.future);
+    } catch (e) {
+      // lanDataProvider can be in AsyncError (router offline, USP timeout,
+      // auth failure). Surface it like _onSave instead of letting the throw
+      // propagate through the onTap lambda and get swallowed silently.
+      if (context.mounted) {
+        showFailedSnackBar(context, localizeServiceError(context, e));
+      }
+      return;
+    }
     if (!context.mounted) return;
     final result = await showAppDialog<StaticRouteDialogResult>(
       context: context,
@@ -221,7 +232,16 @@ class UspStaticRoutingView extends ConsumerWidget {
       StaticRouteUIModel route) async {
     // Await LAN data (see _showAddDialog) so edit-mode subnet validation is not
     // bypassed while lanDataProvider is still loading.
-    final lanData = await ref.read(lanDataProvider.future);
+    final LanData lanData;
+    try {
+      lanData = await ref.read(lanDataProvider.future);
+    } catch (e) {
+      // See _showAddDialog: surface AsyncError instead of swallowing it.
+      if (context.mounted) {
+        showFailedSnackBar(context, localizeServiceError(context, e));
+      }
+      return;
+    }
     if (!context.mounted) return;
     final result = await showAppDialog<StaticRouteDialogResult>(
       context: context,
