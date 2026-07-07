@@ -6,7 +6,7 @@ import 'package:privacy_gui/page/dashboard/views/components/effects/jiggle_shake
 import 'package:privacy_gui/page/dashboard/factories/usp_widget_factory.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_dashboard_preset.dart';
-import 'package:privacy_gui/page/dashboard/models/usp_layout_preferences.dart';
+import 'package:privacy_gui/page/dashboard/providers/dashboard_edit_mode_provider.dart';
 import 'package:privacy_gui/page/dashboard/models/package_widget_template.dart';
 import 'package:privacy_gui/page/dashboard/providers/package_widget_loader.dart';
 import 'package:privacy_gui/page/dashboard/widgets/package_widget_renderer.dart';
@@ -42,9 +42,6 @@ class UspSliverDashboardView extends ConsumerStatefulWidget {
 
 class _UspSliverDashboardViewState
     extends ConsumerState<UspSliverDashboardView> {
-  bool _isEditMode = false;
-  List<dynamic>? _initialLayoutSnapshot;
-  UspLayoutPreferences? _initialPrefsSnapshot;
   bool _presetDialogShown = false;
 
   @override
@@ -112,45 +109,11 @@ class _UspSliverDashboardViewState
   }
 
   void _enterEditMode() async {
-    // Ensure preferences have been loaded from SharedPreferences before
-    // capturing the snapshot. Without this, the snapshot may capture the
-    // default state (preset = null) if _loadFromPrefs hasn't completed yet.
-    await ref.read(uspLayoutPreferencesProvider.notifier).initialized;
-
-    final controller = ref.read(uspSliverDashboardControllerProvider);
-    _initialLayoutSnapshot = controller.exportLayout();
-    _initialPrefsSnapshot = ref.read(uspLayoutPreferencesProvider);
-
-    if (!mounted) return;
-    setState(() {
-      _isEditMode = true;
-    });
-    controller.setEditMode(true);
+    await ref.read(dashboardEditModeProvider.notifier).enterEditMode();
   }
 
   void _exitEditMode({bool save = true}) async {
-    final controller = ref.read(uspSliverDashboardControllerProvider);
-
-    if (!save) {
-      if (_initialLayoutSnapshot != null) {
-        controller.importLayout(_initialLayoutSnapshot!);
-        await ref
-            .read(uspSliverDashboardControllerProvider.notifier)
-            .saveLayout();
-      }
-      if (_initialPrefsSnapshot != null) {
-        await ref
-            .read(uspLayoutPreferencesProvider.notifier)
-            .restoreSnapshot(_initialPrefsSnapshot!);
-      }
-    }
-
-    setState(() {
-      _isEditMode = false;
-      _initialLayoutSnapshot = null;
-      _initialPrefsSnapshot = null;
-    });
-    controller.setEditMode(false);
+    await ref.read(dashboardEditModeProvider.notifier).exitEditMode(save: save);
   }
 
   @override
@@ -205,6 +168,7 @@ class _UspSliverDashboardViewState
 
   Widget _buildHeader(BuildContext context) {
     final isRemoteMode = GlobalConfig.remote.isActive;
+    final isEditMode = ref.watch(dashboardEditModeProvider).isEditing;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -212,7 +176,7 @@ class _UspSliverDashboardViewState
         AppText.headlineSmall(loc(context).uspDashboard),
         Row(
           children: [
-            if (_isEditMode) ...[
+            if (isEditMode) ...[
               AppIconButton(
                 icon: AppIcon.font(Icons.auto_fix_high),
                 onTap: () {
@@ -339,6 +303,7 @@ class _UspSliverDashboardViewState
   Widget _buildSliverDashboard(BuildContext context) {
     final controller = ref.watch(uspSliverDashboardControllerProvider);
     final factory = ref.watch(uspWidgetFactoryProvider);
+    final isEditMode = ref.watch(dashboardEditModeProvider).isEditing;
     final uiKitColumns = context.currentMaxColumns;
     final scrollController = ScrollController();
 
@@ -360,18 +325,18 @@ class _UspSliverDashboardViewState
         controller: controller,
         scrollController: scrollController,
         itemBuilder: (context, item) {
-          return _buildItemWidget(context, item, _isEditMode, factory);
+          return _buildItemWidget(context, item, isEditMode, factory);
         },
         slotAspectRatio: ratio,
         mainAxisSpacing: AppSpacing.lg,
         crossAxisSpacing: AppSpacing.lg,
         padding: EdgeInsets.symmetric(horizontal: pageMargin),
-        gridStyle: _isEditMode ? editModeGridStyle : null,
+        gridStyle: isEditMode ? editModeGridStyle : null,
         onItemResizeEnd: (item) {
           _handleResizeEnd(context, item);
         },
         // Drag-to-trash for widget removal in edit mode.
-        trashBuilder: !_isEditMode
+        trashBuilder: !isEditMode
             ? null
             : (context, isHovered, isActive, activeItemId) {
                 return _buildTrashZone(context, isHovered, isActive);
@@ -388,13 +353,13 @@ class _UspSliverDashboardViewState
               padding: EdgeInsets.symmetric(horizontal: pageMargin),
               sliver: SliverDashboard(
                 itemBuilder: (context, item) {
-                  return _buildItemWidget(context, item, _isEditMode, factory);
+                  return _buildItemWidget(context, item, isEditMode, factory);
                 },
                 slotAspectRatio: ratio,
                 mainAxisSpacing: AppSpacing.lg,
                 crossAxisSpacing: AppSpacing.lg,
                 breakpoints: {0: uiKitColumns},
-                gridStyle: _isEditMode ? editModeGridStyle : null,
+                gridStyle: isEditMode ? editModeGridStyle : null,
               ),
             ),
             const SliverToBoxAdapter(
@@ -546,11 +511,11 @@ class _UspSliverDashboardViewState
             result == 'toggle_off' ||
             result == 'preset_changed') &&
         mounted) {
-      setState(() {
-        _isEditMode = false;
-        _initialLayoutSnapshot = null;
-        _initialPrefsSnapshot = null;
-      });
+      // Exit edit mode without saving — the settings panel already applied
+      // the reset/preset change directly.
+      await ref
+          .read(dashboardEditModeProvider.notifier)
+          .exitEditMode(save: false);
     }
   }
 

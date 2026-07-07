@@ -19,6 +19,18 @@ final uspDashboardRoute = ShellRoute(
         });
         return const UspDashboardView();
       },
+      onExit: (context, state) async {
+        // Cancel edit mode when navigating away from dashboard (e.g., tab switch).
+        // This reverts any unsaved layout changes.
+        final container = ProviderScope.containerOf(context);
+        final editState = container.read(dashboardEditModeProvider);
+        if (editState.isEditing) {
+          await container
+              .read(dashboardEditModeProvider.notifier)
+              .cancelEditMode();
+        }
+        return true;
+      },
     ),
     LinksysRoute(
       name: RouteNamed.uspMenu,
