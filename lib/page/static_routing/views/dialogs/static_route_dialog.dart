@@ -66,7 +66,10 @@ class _StaticRouteDialogState extends State<StaticRouteDialog> {
     _gatewayController = TextEditingController(text: r?.gatewayIpAddress ?? '');
     _interfaceName = r?.interfaceName ?? 'LAN';
     _enabled = r?.enabled ?? true;
-    _errors = _computeErrors();
+    // Pre-populate validation state only in edit mode. On add-dialog open all
+    // fields are empty, so computing errors immediately would show "required"
+    // errors before the user has typed anything (confusing, non-standard UX).
+    _errors = _isEdit ? _computeErrors() : {};
   }
 
   @override
