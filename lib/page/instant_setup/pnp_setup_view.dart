@@ -869,7 +869,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
         logger.w(
             '[PnP]: Caught unauthorized error during save - Auto Master may have completed');
         if (mounted) {
-          context.goNamed(RouteNamed.localLoginPassword);
+          context.goNamed(RouteNamed.pnp);
         }
         return;
       }
@@ -963,18 +963,17 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
   }
 
   Future<void> testConnection(
-      {required void Function() success, void Function()? failed}) {
+      {required FutureOr<void> Function() success,
+      void Function()? failed}) async {
     // Check router connected propor, then go to dashboard
-    return ref
-        .read(pnpProvider.notifier)
-        .testConnectionReconnected()
-        .then((value) {
-      success.call();
-    }).onError((error, stackTrace) {
+    try {
+      await ref.read(pnpProvider.notifier).testConnectionReconnected();
+      await success.call();
+    } catch (error) {
       logger.e('[PnP]: Cannot detect the expected WiFi connected!');
       showSimpleSnackBar(context, loc(context).pnpReconnectWiFi);
       failed?.call();
-    });
+    }
   }
 
   void _retryAutoMasterSave() {

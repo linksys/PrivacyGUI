@@ -244,7 +244,10 @@ class _PnpIspSaveSettingsViewState
       return PnpAutoMasterWaitingView(
         showConnectionError: _showAutoMasterConnectionError,
         onRetry: () {
-          setState(() => _showAutoMasterConnectionError = false);
+          setState(() {
+            _showAutoMasterConnectionError = false;
+            _waitingForAutoMaster = false;
+          });
           _saveNewSettings();
         },
       );
