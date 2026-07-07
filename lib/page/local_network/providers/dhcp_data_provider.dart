@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
@@ -45,9 +46,18 @@ class DhcpDataNotifier extends AsyncNotifier<DhcpData> {
     });
 
     // Devices listener: device online status changes affect DHCP client
-    // isOnline enrichment. Re-fetch to get fresh data.
-    ref.listen(devicesDataProvider, (_, next) {
-      if (next.hasValue && state.hasValue) {
+    // isOnline enrichment. Only re-fetch when the online-status map actually
+    // changed — DevicesData emits on any device field change (RSSI, band,
+    // SSID), so a naive listener would trigger needless DHCP re-fetches.
+    ref.listen(devicesDataProvider, (prev, next) {
+      if (!next.hasValue || !state.hasValue) return;
+      final prevOnline = <String, bool>{
+        for (final d in prev?.valueOrNull?.deviceModels ?? []) d.mac: d.isActive
+      };
+      final nextOnline = <String, bool>{
+        for (final d in next.value!.deviceModels) d.mac: d.isActive
+      };
+      if (!const MapEquality<String, bool>().equals(prevOnline, nextOnline)) {
         _debouncedInvalidate();
       }
     });
