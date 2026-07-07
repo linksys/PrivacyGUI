@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/core/jnap/models/auto_master_status.dart';
 import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
@@ -12,6 +13,7 @@ import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_exception.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_provider.dart';
 import 'package:privacy_gui/page/instant_setup/troubleshooter/providers/pnp_troubleshooter_provider.dart';
+import 'package:privacy_gui/page/instant_setup/widgets/pnp_auto_master_waiting_view.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/util/error_code_helper.dart';
 import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
@@ -34,6 +36,10 @@ class _PnpIspSaveSettingsViewState
   String? _spinnerText; //TODO: all spinner text is not confirmed
   StreamSubscription? subscription;
 
+  // Auto Master state
+  bool _waitingForAutoMaster = false;
+  bool _showAutoMasterConnectionError = false;
+
   @override
   void initState() {
     super.initState();
@@ -44,10 +50,96 @@ class _PnpIspSaveSettingsViewState
   @override
   void dispose() {
     _passwordController.dispose();
+    subscription?.cancel();
     super.dispose();
   }
 
-  Future<void> _saveNewSettings() {
+  /// Check Auto Master status before saving ISP settings.
+  /// Returns true if save should continue, false if redirected or waiting.
+  Future<bool> _checkAndWaitForAutoMaster() async {
+    AutoMasterStatus? status;
+    try {
+      status = await ref.read(pnpProvider.notifier).checkAutoMasterStatus();
+    } on ExceptionAutoMasterUnauthorized {
+      // Session expired, redirect to PnP entry
+      logger.w('[PnP]: Troubleshooter - Auto Master check unauthorized');
+      if (mounted) context.goNamed(RouteNamed.pnp);
+      return false;
+    }
+
+    // null means Auto Master not supported, continue save
+    if (status == null) {
+      logger.d(
+          '[PnP]: Troubleshooter - Auto Master not supported, continue save');
+      return true;
+    }
+
+    if (status == AutoMasterStatus.running) {
+      if (!mounted) return false;
+      setState(() {
+        _waitingForAutoMaster = true;
+        _showAutoMasterConnectionError = false;
+      });
+
+      int consecutiveFailures = 0;
+      const maxConsecutiveFailures = 3;
+
+      await for (final pollStatus
+          in ref.read(pnpProvider.notifier).pollAutoMasterStatus()) {
+        if (!mounted) return false;
+
+        if (pollStatus == null) {
+          consecutiveFailures++;
+          logger.w(
+              '[PnP]: Troubleshooter - Auto Master polling failed, consecutive: $consecutiveFailures');
+          if (consecutiveFailures >= maxConsecutiveFailures) {
+            setState(() => _showAutoMasterConnectionError = true);
+            return false;
+          }
+        } else {
+          consecutiveFailures = 0;
+          if (pollStatus == AutoMasterStatus.complete ||
+              pollStatus == AutoMasterStatus.idle) {
+            logger.i(
+                '[PnP]: Troubleshooter - Auto Master completed, redirect to PnP');
+            if (mounted) context.goNamed(RouteNamed.pnp);
+            return false;
+          }
+          if (pollStatus == AutoMasterStatus.failed) {
+            logger
+                .i('[PnP]: Troubleshooter - Auto Master failed, continue save');
+            if (mounted) setState(() => _waitingForAutoMaster = false);
+            return true;
+          }
+        }
+      }
+
+      // Polling timeout
+      logger.w('[PnP]: Troubleshooter - Auto Master polling timeout');
+      try {
+        await ref.read(pnpProvider.notifier).testConnectionReconnected();
+        if (mounted) setState(() => _waitingForAutoMaster = false);
+        return true;
+      } catch (e) {
+        if (mounted) setState(() => _showAutoMasterConnectionError = true);
+        return false;
+      }
+    }
+
+    if (status == AutoMasterStatus.complete) {
+      logger.i(
+          '[PnP]: Troubleshooter - Auto Master already completed, redirect to PnP');
+      if (mounted) context.goNamed(RouteNamed.pnp);
+      return false;
+    }
+
+    return true; // idle/failed → continue save
+  }
+
+  Future<void> _saveNewSettings() async {
+    // Check Auto Master status before saving
+    final shouldContinue = await _checkAndWaitForAutoMaster();
+    if (!shouldContinue) return;
     String? settingError;
     final wanType = WanType.resolve(
       newSettings.ipv4Setting.ipv4ConnectionType,
@@ -148,6 +240,15 @@ class _PnpIspSaveSettingsViewState
 
   @override
   Widget build(BuildContext context) {
+    if (_waitingForAutoMaster) {
+      return PnpAutoMasterWaitingView(
+        showConnectionError: _showAutoMasterConnectionError,
+        onRetry: () {
+          setState(() => _showAutoMasterConnectionError = false);
+          _saveNewSettings();
+        },
+      );
+    }
     return AppFullScreenSpinner(text: _spinnerText);
   }
 }
