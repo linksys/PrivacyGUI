@@ -557,6 +557,8 @@
   "diagnosticsRecWeakWifiTitle": "Sinyal WiFi Lemah",
   "disable": "Nonaktifkan",
   "disableInstantPrivacyDesc": "Semua perangkat akan dapat tersambung secara bebas ke jaringan Anda.",
+  "privateMacWarningTitle": "Beberapa perangkat menggunakan alamat Wi-Fi pribadi",
+  "privateMacWarningDesc": "Perangkat di bawah ini menggunakan alamat Wi-Fi pribadi (acak). Karena alamat ini berubah seiring waktu, perangkat tersebut mungkin diblokir setelah alamatnya berganti — bahkan perangkat yang sedang Anda gunakan sekarang. Agar tetap terhubung, nonaktifkan \"Alamat Wi-Fi Pribadi\" untuk perangkat ini sebelum mengaktifkan Privasi Instan.",
   "disableInstantPrivacyTitle": "Nonaktifkan Privasi Instan?",
   "discards": "Pembuangan",
   "distribution": "Distribusi",

@@ -557,6 +557,8 @@
   "diagnosticsRecWeakWifiTitle": "Tín hiệu WiFi yếu",
   "disable": "Tắt",
   "disableInstantPrivacyDesc": "Mọi thiết bị sẽ có thể kết nối tự do với mạng của bạn.",
+  "privateMacWarningTitle": "Một số thiết bị sử dụng địa chỉ Wi-Fi riêng tư",
+  "privateMacWarningDesc": "Các thiết bị bên dưới sử dụng địa chỉ Wi-Fi riêng tư (ngẫu nhiên). Vì địa chỉ này thay đổi theo thời gian, chúng có thể bị chặn sau khi địa chỉ thay đổi — kể cả thiết bị bạn đang dùng ngay bây giờ. Để duy trì kết nối, hãy tắt \"Địa chỉ Wi-Fi riêng\" cho các thiết bị này trước khi bật Quyền riêng tư tức thì.",
   "disableInstantPrivacyTitle": "Tắt Quyền riêng tư tức thì?",
   "discards": "Loại bỏ",
   "distribution": "Phân bố",

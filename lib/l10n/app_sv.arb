@@ -559,6 +559,8 @@
   "diagnosticsRecWeakWifiTitle": "Svag WiFi-signal",
   "disable": "Inaktivera",
   "disableInstantPrivacyDesc": "Alla enheter kommer att kunna ansluta fritt till ditt nätverk.",
+  "privateMacWarningTitle": "Vissa enheter använder en privat Wi-Fi-adress",
+  "privateMacWarningDesc": "Enheterna nedan använder en privat (slumpmässig) Wi-Fi-adress. Eftersom den här adressen ändras med tiden kan de blockeras efter att den roterar — även den du använder just nu. Stäng av \"Privat Wi-Fi-adress\" för dessa enheter innan du aktiverar Instant Privacy för att förbli ansluten.",
   "disableInstantPrivacyTitle": "Inaktivera Instant Privacy?",
   "discards": "Kasserade",
   "distribution": "Fördelning",

@@ -559,6 +559,8 @@
   "diagnosticsRecWeakWifiTitle": "Zwak WiFi-signaal",
   "disable": "Uitschakelen",
   "disableInstantPrivacyDesc": "Alle apparaten kunnen vrij verbinding maken met uw netwerk.",
+  "privateMacWarningTitle": "Sommige apparaten gebruiken een privé-wifi-adres",
+  "privateMacWarningDesc": "De onderstaande apparaten gebruiken een privé (willekeurig) wifi-adres. Omdat dit adres na verloop van tijd verandert, kunnen ze na een wisseling worden geblokkeerd — ook het apparaat dat u nu gebruikt. Schakel voor deze apparaten \"Privé-wifi-adres\" uit voordat u Instant Privacy inschakelt om verbonden te blijven.",
   "disableInstantPrivacyTitle": "Instant Privacy uitschakelen?",
   "discards": "Verworpen",
   "distribution": "Verdeling",

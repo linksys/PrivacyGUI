@@ -557,6 +557,8 @@
   "diagnosticsRecWeakWifiTitle": "Zayıf WiFi Sinyali",
   "disable": "Devre Dışı Bırak",
   "disableInstantPrivacyDesc": "Tüm cihazlar ağınıza serbestçe bağlanabilecek.",
+  "privateMacWarningTitle": "Bazı cihazlar özel bir Wi-Fi adresi kullanıyor",
+  "privateMacWarningDesc": "Aşağıdaki cihazlar özel (rastgele) bir Wi-Fi adresi kullanıyor. Bu adres zamanla değiştiğinden, adres değiştikten sonra engellenebilirler — şu anda kullandığınız cihaz da dahil. Bağlı kalmak için Anında Gizlilik’i etkinleştirmeden önce bu cihazlarda \"Özel Wi-Fi Adresi\" ayarını kapatın.",
   "disableInstantPrivacyTitle": "Anında Gizlilik Devre Dışı Bırakılsın mı?",
   "discards": "Atılanlar",
   "distribution": "Dağılım",

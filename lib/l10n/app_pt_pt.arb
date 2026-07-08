@@ -559,6 +559,8 @@
   "diagnosticsRecWeakWifiTitle": "Sinal WiFi fraco",
   "disable": "Desativar",
   "disableInstantPrivacyDesc": "Todos os dispositivos poderão ligar-se livremente à sua rede.",
+  "privateMacWarningTitle": "Alguns dispositivos utilizam um endereço Wi-Fi privado",
+  "privateMacWarningDesc": "Os dispositivos indicados abaixo utilizam um endereço Wi-Fi privado (aleatório). Uma vez que este endereço muda ao longo do tempo, podem ser bloqueados após a rotação — incluindo aquele que está a utilizar agora. Para se manter ligado, desative o \"Endereço Wi-Fi privado\" nestes dispositivos antes de ativar a Privacidade Instantânea.",
   "disableInstantPrivacyTitle": "Desativar Privacidade Instantânea?",
   "discards": "Descartes",
   "distribution": "Distribuição",

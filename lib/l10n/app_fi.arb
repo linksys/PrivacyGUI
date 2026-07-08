@@ -557,6 +557,8 @@
   "diagnosticsRecWeakWifiTitle": "Heikko WiFi-signaali",
   "disable": "Poista käytöstä",
   "disableInstantPrivacyDesc": "Kaikki laitteet voivat yhdistää vapaasti verkkoosi.",
+  "privateMacWarningTitle": "Jotkin laitteet käyttävät yksityistä Wi-Fi-osoitetta",
+  "privateMacWarningDesc": "Alla luetellut laitteet käyttävät yksityistä (satunnaistettua) Wi-Fi-osoitetta. Koska tämä osoite muuttuu ajan myötä, ne voidaan estää osoitteen vaihduttua — myös laite, jota käytät juuri nyt. Pysyäksesi yhteydessä poista näiden laitteiden \"Yksityinen Wi-Fi-osoite\" käytöstä ennen kuin otat Instant Privacyn käyttöön.",
   "disableInstantPrivacyTitle": "Poistetaanko Instant Privacy käytöstä?",
   "discards": "Hylätyt",
   "distribution": "Jakauma",
