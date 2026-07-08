@@ -663,6 +663,195 @@ void main() {
       expect(result.updated, 1);
     });
 
+    // -------------------------------------------------------------------------
+    // #1061 regression: editing the forwarded-port of an EXISTING trigger must
+    // persist. Before the fix, saveTriggeringBatch only patched parent-level
+    // fields and never touched the nested Rule.* sub-table, so the edit was
+    // silently dropped.
+    // -------------------------------------------------------------------------
+
+    test('#1061: editing forwarded-port of existing rule issues Set on Rule.*',
+        () async {
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => uspSuccess());
+
+      final original = [
+        PortTriggeringRuleUIModel(
+          instancePath: 'Device.NAT.PortTrigger.1.',
+          enabled: true,
+          description: 'FTP',
+          triggerPort: 21,
+          triggerProtocol: 'TCP',
+          forwardRules: const [
+            PortTriggerForwardRuleUIModel(
+              instancePath: 'Device.NAT.PortTrigger.1.Rule.1.',
+              forwardPort: 1024,
+              forwardPortEndRange: 1030,
+              forwardProtocol: 'TCP',
+            ),
+          ],
+        ),
+      ];
+      final current = [
+        PortTriggeringRuleUIModel(
+          instancePath: 'Device.NAT.PortTrigger.1.',
+          enabled: true,
+          description: 'FTP',
+          triggerPort: 21,
+          triggerProtocol: 'TCP',
+          forwardRules: const [
+            PortTriggerForwardRuleUIModel(
+              instancePath: 'Device.NAT.PortTrigger.1.Rule.1.',
+              forwardPort: 2048, // changed
+              forwardPortEndRange: 2050, // changed
+              forwardProtocol: 'UDP', // changed
+            ),
+          ],
+        ),
+      ];
+
+      await service.saveTriggeringBatch(original: original, current: current);
+
+      // The forward-rule edit is reconciled via an in-place Set carrying the
+      // Rule.{j} param paths with the NEW values.
+      final captured = verify(() => mockUsp.set(captureAny())).captured;
+      expect(captured, hasLength(1));
+      final params = captured.first as Map<String, dynamic>;
+      expect(params['Device.NAT.PortTrigger.1.Rule.1.Port'], 2048);
+      expect(params['Device.NAT.PortTrigger.1.Rule.1.PortEndRange'], 2050);
+      expect(params['Device.NAT.PortTrigger.1.Rule.1.Protocol'], 'UDP');
+    });
+
+    test('#1061: adding a forward rule to existing trigger calls add on Rule.',
+        () async {
+      when(() => mockUsp.add(any())).thenAnswer(
+          (_) async => uspAddSuccess(['Device.NAT.PortTrigger.1.Rule.2.']));
+
+      final original = [
+        PortTriggeringRuleUIModel(
+          instancePath: 'Device.NAT.PortTrigger.1.',
+          enabled: true,
+          description: 'FTP',
+          triggerPort: 21,
+          triggerProtocol: 'TCP',
+          forwardRules: const [
+            PortTriggerForwardRuleUIModel(
+              instancePath: 'Device.NAT.PortTrigger.1.Rule.1.',
+              forwardPort: 1024,
+              forwardProtocol: 'TCP',
+            ),
+          ],
+        ),
+      ];
+      final current = [
+        PortTriggeringRuleUIModel(
+          instancePath: 'Device.NAT.PortTrigger.1.',
+          enabled: true,
+          description: 'FTP',
+          triggerPort: 21,
+          triggerProtocol: 'TCP',
+          forwardRules: const [
+            PortTriggerForwardRuleUIModel(
+              instancePath: 'Device.NAT.PortTrigger.1.Rule.1.',
+              forwardPort: 1024,
+              forwardProtocol: 'TCP',
+            ),
+            PortTriggerForwardRuleUIModel(
+              // new local rule, no instancePath yet
+              forwardPort: 3000,
+              forwardProtocol: 'UDP',
+            ),
+          ],
+        ),
+      ];
+
+      await service.saveTriggeringBatch(original: original, current: current);
+
+      final captured = verify(() => mockUsp.add(captureAny())).captured;
+      expect(captured, hasLength(1));
+      final items = captured.first as List;
+      expect(items.first['path'], 'Device.NAT.PortTrigger.1.Rule.');
+      expect(items.first['params']['Port'], 3000);
+      expect(items.first['params']['Protocol'], 'UDP');
+    });
+
+    test('#1061: removing a forward rule from existing trigger calls delete',
+        () async {
+      when(() => mockUsp.delete(any())).thenAnswer((_) async => uspSuccess());
+
+      final original = [
+        PortTriggeringRuleUIModel(
+          instancePath: 'Device.NAT.PortTrigger.1.',
+          enabled: true,
+          description: 'FTP',
+          triggerPort: 21,
+          triggerProtocol: 'TCP',
+          forwardRules: const [
+            PortTriggerForwardRuleUIModel(
+              instancePath: 'Device.NAT.PortTrigger.1.Rule.1.',
+              forwardPort: 1024,
+              forwardProtocol: 'TCP',
+            ),
+            PortTriggerForwardRuleUIModel(
+              instancePath: 'Device.NAT.PortTrigger.1.Rule.2.',
+              forwardPort: 3000,
+              forwardProtocol: 'UDP',
+            ),
+          ],
+        ),
+      ];
+      final current = [
+        PortTriggeringRuleUIModel(
+          instancePath: 'Device.NAT.PortTrigger.1.',
+          enabled: true,
+          description: 'FTP',
+          triggerPort: 21,
+          triggerProtocol: 'TCP',
+          forwardRules: const [
+            PortTriggerForwardRuleUIModel(
+              instancePath: 'Device.NAT.PortTrigger.1.Rule.1.',
+              forwardPort: 1024,
+              forwardProtocol: 'TCP',
+            ),
+          ],
+        ),
+      ];
+
+      await service.saveTriggeringBatch(original: original, current: current);
+
+      final captured = verify(() => mockUsp.delete(captureAny())).captured;
+      expect(captured, hasLength(1));
+      expect(captured.first, ['Device.NAT.PortTrigger.1.Rule.2.']);
+    });
+
+    test('#1061: unchanged forward rules issue no Rule.* operations', () async {
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => uspSuccess());
+
+      final rule = PortTriggeringRuleUIModel(
+        instancePath: 'Device.NAT.PortTrigger.1.',
+        enabled: true,
+        description: 'FTP',
+        triggerPort: 21,
+        triggerProtocol: 'TCP',
+        forwardRules: const [
+          PortTriggerForwardRuleUIModel(
+            instancePath: 'Device.NAT.PortTrigger.1.Rule.1.',
+            forwardPort: 1024,
+            forwardProtocol: 'TCP',
+          ),
+        ],
+      );
+      // Only the parent-level field (enabled) changes; forward rules identical.
+      final current = [rule.copyWith(enabled: false)];
+
+      await service.saveTriggeringBatch(original: [rule], current: current);
+
+      // Parent Set fires once (Enable). No forward Set/add/delete.
+      verifyNever(() => mockUsp.add(any()));
+      verifyNever(() => mockUsp.delete(any()));
+    });
+
     test('mixed batch: delete + add + update', () async {
       when(() => mockUsp.delete(any())).thenAnswer((_) async => uspSuccess());
       when(() => mockUsp.add(any())).thenAnswer(
