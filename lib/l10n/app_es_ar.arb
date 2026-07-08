@@ -557,6 +557,8 @@
   "diagnosticsRecWeakWifiTitle": "Señal WiFi débil",
   "disable": "Desactivar",
   "disableInstantPrivacyDesc": "Todos los dispositivos podrán conectarse libremente a su red.",
+  "privateMacWarningTitle": "Algunos dispositivos usan una dirección Wi-Fi privada",
+  "privateMacWarningDesc": "Los dispositivos que se muestran abajo usan una dirección Wi-Fi privada (aleatoria). Como esta dirección cambia con el tiempo, pueden quedar bloqueados cuando rote —incluso el que estás usando ahora—. Para no perder la conexión, desactivá la \"Dirección Wi-Fi privada\" en estos dispositivos antes de activar la Privacidad instantánea.",
   "disableInstantPrivacyTitle": "¿Desactivar la Privacidad instantánea?",
   "discards": "Descartes",
   "distribution": "Distribución",

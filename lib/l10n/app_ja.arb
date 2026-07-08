@@ -558,6 +558,8 @@
   "diagnosticsRecWeakWifiTitle": "WiFi 信号が弱い",
   "disable": "無効にする",
   "disableInstantPrivacyDesc": "すべてのデバイスがネットワークに自由に接続できるようになります。",
+  "privateMacWarningTitle": "一部のデバイスはプライベート Wi-Fi アドレスを使用しています",
+  "privateMacWarningDesc": "以下のデバイスはプライベート（ランダム化された）Wi-Fi アドレスを使用しています。このアドレスは時間の経過とともに変化するため、切り替わった後にブロックされる可能性があります。現在使用しているデバイスも例外ではありません。接続を維持するには、Instant Privacy を有効にする前に、これらのデバイスの「プライベート Wi-Fi アドレス」をオフにしてください。",
   "disableInstantPrivacyTitle": "Instant Privacy を無効にしますか？",
   "discards": "破棄",
   "distribution": "分布",

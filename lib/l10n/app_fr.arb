@@ -557,6 +557,8 @@
   "diagnosticsRecWeakWifiTitle": "Signal WiFi faible",
   "disable": "Désactiver",
   "disableInstantPrivacyDesc": "Tous les périphériques pourront se connecter librement à votre réseau.",
+  "privateMacWarningTitle": "Certains appareils utilisent une adresse Wi-Fi privée",
+  "privateMacWarningDesc": "Les appareils ci-dessous utilisent une adresse Wi-Fi privée (aléatoire). Comme cette adresse change au fil du temps, ils risquent d’être bloqués après sa rotation — y compris celui que vous utilisez actuellement. Pour rester connecté, désactivez l’option « Adresse Wi-Fi privée » sur ces appareils avant d’activer Instant Privacy.",
   "disableInstantPrivacyTitle": "Désactiver Instant Privacy ?",
   "discards": "Rejets",
   "distribution": "Répartition",
