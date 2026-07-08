@@ -94,14 +94,15 @@ void main() {
       container.dispose();
     });
 
-    test('updateSetting triggers validation', () async {
+    test('updateSetting mutates model without validation', () async {
       final container = createContainer();
       await Future.delayed(Duration.zero);
 
       final notifier = container.read(uspLocalNetworkProvider.notifier);
       notifier.updateSetting((m) => m.copyWith(hostName: 'NewName'));
 
-      verify(() => mockService.validateAll(any())).called(1);
+      // updateSetting no longer calls validateAll — validation is separate
+      verifyNever(() => mockService.validateAll(any()));
       final state = container.read(uspLocalNetworkProvider);
       expect(state.settings.current.model.hostName, 'NewName');
       container.dispose();
@@ -124,7 +125,7 @@ void main() {
       container.dispose();
     });
 
-    test('updateSetting propagates validation errors to status', () async {
+    test('validate propagates validation errors to status', () async {
       when(() => mockService.validateAll(any()))
           .thenReturn({'hostName': 'Too long'});
       final container = createContainer();
@@ -132,6 +133,7 @@ void main() {
 
       final notifier = container.read(uspLocalNetworkProvider.notifier);
       notifier.updateSetting((m) => m.copyWith(hostName: 'VeryLongHostNameX'));
+      notifier.validate();
 
       final state = container.read(uspLocalNetworkProvider);
       expect(state.status.validationErrors['hostName'], 'Too long');
@@ -146,6 +148,7 @@ void main() {
 
       final notifier = container.read(uspLocalNetworkProvider.notifier);
       notifier.updateSetting((m) => m.copyWith(hostName: 'X'));
+      notifier.validate();
       expect(
           container
               .read(uspLocalNetworkProvider)

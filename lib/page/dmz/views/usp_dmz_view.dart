@@ -26,16 +26,33 @@ class UspDmzView extends ConsumerStatefulWidget {
 class _UspDmzViewState extends ConsumerState<UspDmzView> {
   late TextEditingController _destIpController;
   late TextEditingController _cidrController;
+  final _cidrFocus = FocusNode();
 
   @override
   void initState() {
     super.initState();
     _destIpController = TextEditingController();
     _cidrController = TextEditingController();
+    _cidrFocus.addListener(_onCidrFocusChange);
+  }
+
+  void _onCidrFocusChange() {
+    if (!_cidrFocus.hasFocus) {
+      ref.read(uspDmzProvider.notifier).validate();
+    }
+  }
+
+  void _onDestIpFocusChanged(int? index, bool hasFocus) {
+    // Only validate when focus leaves the entire IPv4 field
+    if (index == null && !hasFocus) {
+      ref.read(uspDmzProvider.notifier).validate();
+    }
   }
 
   @override
   void dispose() {
+    _cidrFocus.removeListener(_onCidrFocusChange);
+    _cidrFocus.dispose();
     _destIpController.dispose();
     _cidrController.dispose();
     super.dispose();
@@ -96,13 +113,19 @@ class _UspDmzViewState extends ConsumerState<UspDmzView> {
     WidgetRef ref,
     DmzFeatureState state,
   ) {
-    if (!state.isDirty) return null;
+    // Always return a config to keep widget tree stable.
+    // Returning null when !isDirty causes tree structure change,
+    // which triggers TextField unfocus on Flutter Web.
     return UiKitBottomBarConfig(
       positiveLabel: loc(context).save,
-      isPositiveEnabled:
-          !state.status.isSaving && state.status.fieldErrors.isEmpty,
-      onPositiveTap: () => _onSave(context, ref),
-      onNegativeTap: () => ref.read(uspDmzProvider.notifier).revert(),
+      isPositiveEnabled: state.isDirty &&
+          !state.status.isSaving &&
+          state.status.fieldErrors.isEmpty,
+      isNegativeEnabled: state.isDirty,
+      onPositiveTap: state.isDirty ? () => _onSave(context, ref) : null,
+      onNegativeTap: state.isDirty
+          ? () => ref.read(uspDmzProvider.notifier).revert()
+          : null,
     );
   }
 
@@ -206,6 +229,7 @@ class _UspDmzViewState extends ConsumerState<UspDmzView> {
               onChanged: (value) {
                 notifier.updateSetting((m) => m.copyWith(destIp: value));
               },
+              onFocusChanged: _onDestIpFocusChanged,
               errorText: ref.watch(uspDmzProvider).status.fieldErrors['destIp'],
             ),
           ),
@@ -248,6 +272,7 @@ class _UspDmzViewState extends ConsumerState<UspDmzView> {
                           constraints: const BoxConstraints(maxWidth: 429),
                           child: AppTextFormField(
                             controller: _cidrController,
+                            focusNode: _cidrFocus,
                             hintText: 'e.g. 192.168.1.0/24',
                             onChanged: (value) {
                               notifier.updateSetting(

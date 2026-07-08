@@ -301,10 +301,19 @@ class InstantPrivacyView extends ConsumerWidget {
     WidgetRef ref,
     UspInstantPrivacyState state,
   ) async {
+    // Build autocomplete options from connected devices
+    final deviceOptions = state.connectedDevices
+        .map((d) => AppAutoCompleteOption(
+              label: d.displayName,
+              value: d.mac,
+            ))
+        .toList();
+
     await showAppDialog<void>(
       context: context,
       builder: (ctx) => _AddMacDialog(
         existingDevices: state.allowedDevices,
+        deviceOptions: deviceOptions,
         onConfirm: (mac) async {
           Navigator.of(ctx).pop();
           try {
@@ -328,11 +337,13 @@ class InstantPrivacyView extends ConsumerWidget {
 
 class _AddMacDialog extends StatefulWidget {
   final List<InstantPrivacyDeviceUIModel> existingDevices;
+  final List<AppAutoCompleteOption> deviceOptions;
   final Future<void> Function(String mac) onConfirm;
 
   const _AddMacDialog({
     required this.existingDevices,
     required this.onConfirm,
+    this.deviceOptions = const [],
   });
 
   @override
@@ -341,17 +352,33 @@ class _AddMacDialog extends StatefulWidget {
 
 class _AddMacDialogState extends State<_AddMacDialog> {
   final _controller = TextEditingController();
+  final _focusNode = FocusNode();
   String? _errorText;
   bool _isConfirming = false;
 
   @override
+  void initState() {
+    super.initState();
+    _focusNode.addListener(_onFocusChange);
+  }
+
+  @override
   void dispose() {
+    _focusNode.removeListener(_onFocusChange);
+    _focusNode.dispose();
     _controller.dispose();
     super.dispose();
   }
 
-  void _onChanged(String value) {
+  void _onFocusChange() {
+    if (!_focusNode.hasFocus) {
+      _validate();
+    }
+  }
+
+  void _validate() {
     setState(() {
+      final value = _controller.text;
       if (value.isEmpty) {
         _errorText = null;
         return;
@@ -365,6 +392,11 @@ class _AddMacDialogState extends State<_AddMacDialog> {
           widget.existingDevices.any((d) => d.mac == normalized);
       _errorText = isDuplicate ? 'deviceAlreadyInAllowedList' : null;
     });
+  }
+
+  void _onChanged(String value) {
+    // Don't setState here - any state change causes focus loss on Web
+    // Validation happens on unfocus via _onFocusChange
   }
 
   bool get _canConfirm =>
@@ -398,11 +430,17 @@ class _AddMacDialogState extends State<_AddMacDialog> {
         children: [
           AppText.bodyMedium(loc(context).enterMacAddressToAllow),
           AppGap.md(),
-          AppTextFormField(
+          AppSelectAutoComplete(
+            options: widget.deviceOptions,
             controller: _controller,
-            hintText: 'AA:BB:CC:DD:EE:FF',
-            onChanged: _onChanged,
-            externalErrorText: _localizeError(_errorText),
+            onSelected: (_) => _validate(),
+            child: AppTextField(
+              controller: _controller,
+              focusNode: _focusNode,
+              hintText: 'AA:BB:CC:DD:EE:FF',
+              onChanged: _onChanged,
+              errorText: _localizeError(_errorText),
+            ),
           ),
         ],
       ),
