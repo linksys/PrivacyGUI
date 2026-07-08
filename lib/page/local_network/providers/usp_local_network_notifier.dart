@@ -143,7 +143,10 @@ class UspLocalNetworkNotifier
   // UI Mutation (synchronous — no network call)
   // ---------------------------------------------------------------------------
 
-  /// Update a single setting + trigger cascade validation.
+  /// Update a single setting WITHOUT triggering validation.
+  ///
+  /// Use this for onChange handlers to avoid TextField unfocus on Web.
+  /// Call [validate] separately on unfocus.
   ///
   /// When router IP changes, locked-prefix octets of pool IPs are
   /// automatically synced so the user doesn't have to retype them.
@@ -171,16 +174,24 @@ class UspLocalNetworkNotifier
       }
     }
 
-    final errors = _svc.validateAll(newModel);
-
     state = state.copyWith(
       settings: state.settings.update(
         current.copyWith(model: newModel),
       ),
       status: state.status.copyWith(
-        validationErrors: errors,
         lockedOctetCount: _svc.lockedOctetCount(newModel.subnetMask),
       ),
+    );
+  }
+
+  /// Trigger validation on current settings.
+  ///
+  /// Call this on TextField unfocus to avoid unfocus issues on Web.
+  void validate() {
+    final current = state.settings.current.model;
+    final errors = _svc.validateAll(current);
+    state = state.copyWith(
+      status: state.status.copyWith(validationErrors: errors),
     );
   }
 }

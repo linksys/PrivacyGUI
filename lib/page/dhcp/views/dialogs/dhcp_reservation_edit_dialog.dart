@@ -33,6 +33,8 @@ class _DhcpReservationEditDialogState extends State<DhcpReservationEditDialog> {
 
   late TextEditingController _macController;
   late TextEditingController _ipController;
+  final _macFocusNode = FocusNode();
+  final _ipFocusNode = FocusNode();
   late bool _enabled;
   Map<String, String> _errors = {};
 
@@ -49,13 +51,27 @@ class _DhcpReservationEditDialogState extends State<DhcpReservationEditDialog> {
     _macController = TextEditingController(text: r?.mac ?? '');
     _ipController = TextEditingController(text: r?.ip ?? '');
     _enabled = r?.enable ?? true;
+    _macFocusNode.addListener(_onMacFocusChange);
+    _ipFocusNode.addListener(_onIpFocusChange);
   }
 
   @override
   void dispose() {
+    _macFocusNode.removeListener(_onMacFocusChange);
+    _ipFocusNode.removeListener(_onIpFocusChange);
+    _macFocusNode.dispose();
+    _ipFocusNode.dispose();
     _macController.dispose();
     _ipController.dispose();
     super.dispose();
+  }
+
+  void _onMacFocusChange() {
+    if (!_macFocusNode.hasFocus) _validate();
+  }
+
+  void _onIpFocusChange() {
+    if (!_ipFocusNode.hasFocus) _validate();
   }
 
   void _validate() {
@@ -111,8 +127,8 @@ class _DhcpReservationEditDialogState extends State<DhcpReservationEditDialog> {
             },
             child: AppTextField(
               controller: _macController,
+              focusNode: _macFocusNode,
               hintText: loc(context).macAddressHint,
-              onChanged: (_) => _validate(),
               errorText: _localizeError(_errors['mac']),
             ),
           ),
@@ -131,8 +147,8 @@ class _DhcpReservationEditDialogState extends State<DhcpReservationEditDialog> {
             },
             child: AppTextField(
               controller: _ipController,
+              focusNode: _ipFocusNode,
               hintText: loc(context).ipAddressHint,
-              onChanged: (_) => _validate(),
               errorText: _localizeError(_errors['ip']),
             ),
           ),
@@ -163,6 +179,8 @@ class _DhcpReservationEditDialogState extends State<DhcpReservationEditDialog> {
   }
 
   void _submit() {
+    _validate();
+    if (!_isFormValid) return;
     final mac = _macController.text.trim();
     final ip = _ipController.text.trim();
     context.pop((mac: mac, ip: ip, enable: _enabled));
