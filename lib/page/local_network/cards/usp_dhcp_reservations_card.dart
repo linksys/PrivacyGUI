@@ -12,7 +12,7 @@ import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/_shared/components/usp_mutation_helper.dart';
 import 'package:privacy_gui/page/_shared/components/card_skeleton.dart';
 import 'package:privacy_gui/page/_shared/components/dashboard_card_template.dart';
-import 'package:privacy_gui/page/dashboard/views/dialogs/dhcp_reservation_dialog.dart';
+import 'package:privacy_gui/page/dhcp/views/dialogs/dhcp_reservation_edit_dialog.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 class UspDhcpReservationsCard extends ConsumerWidget {
@@ -127,7 +127,7 @@ class UspDhcpReservationsCard extends ConsumerWidget {
   Future<void> _showAddDhcpDialog(BuildContext context, WidgetRef ref) async {
     final result = await showAppDialog<({String mac, String ip, bool enable})>(
       context: context,
-      builder: (_) => const DhcpReservationDialog(),
+      builder: (_) => const DhcpReservationEditDialog(),
     );
     if (result == null || !context.mounted) return;
     await performUspMutation(
