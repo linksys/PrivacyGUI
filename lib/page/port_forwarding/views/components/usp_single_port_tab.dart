@@ -30,7 +30,8 @@ class UspSinglePortTab extends ConsumerWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            AppText.titleMedium(loc(context).singlePortForwarding),
+            AppText.titleMedium(
+                '${loc(context).singlePortForwarding} (${rules.length})'),
             AppIconButton(
               icon: AppIcon.font(Icons.add, size: 20),
               onTap: isSaving ? null : () => _showAddDialog(context, ref),

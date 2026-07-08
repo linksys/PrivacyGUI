@@ -1228,8 +1228,8 @@
   "noSinglePortRules": "No single port forwarding rules configured",
   "portRangeForwarding": "Port Range Forwarding",
   "noPortRangeRules": "No port range forwarding rules configured",
-  "portTriggering": "Port Triggering",
-  "noPortTriggeringRules": "No port triggering rules configured",
+  "portTriggering": "Port Range Triggering",
+  "noPortTriggeringRules": "No port range triggering rules configured",
   "deleteRule": "Delete Rule",
   "deleteConfirm": "Delete \"{name}\"?",
   "@deleteConfirm": {
@@ -1239,8 +1239,8 @@
       }
     }
   },
-  "editPortTriggering": "Edit Port Triggering",
-  "addPortTriggering": "Add Port Triggering",
+  "editPortTriggering": "Edit Port Range Triggering",
+  "addPortTriggering": "Add Port Range Triggering",
   "triggerPorts": "Trigger Ports",
   "forwardedPorts": "Forwarded Ports",
   "endPortOptional": "End Port (optional)",
@@ -1250,30 +1250,9 @@
   "externalPortEnd": "External Port End",
   "max32Characters": "Max 32 characters",
   "mustBeGreaterThanStartPort": "Must be greater than start port",
-  "singlePortWithCount": "Single Port ({count})",
-  "@singlePortWithCount": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "portRangeWithCount": "Port Range ({count})",
-  "@portRangeWithCount": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "triggeringWithCount": "Triggering ({count})",
-  "@triggeringWithCount": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
+  "singlePortForwardingTab": "Single Port Forwarding",
+  "portRangeForwardingTab": "Port Range Forwarding",
+  "portRangeTriggeringTab": "Port Range Triggering",
   "hostname": "Hostname",
   "addressPool": "Address Pool",
   "poolStart": "Pool Start",
