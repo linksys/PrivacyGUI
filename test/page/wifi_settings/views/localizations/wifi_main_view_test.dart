@@ -608,8 +608,7 @@ void main() {
       await tester.pumpAndSettle();
     });
 
-    testLocalizations(
-        'Incredible-WiFi - Advanced settings view - IPTV enabled',
+    testLocalizations('Incredible-WiFi - Advanced settings view - IPTV enabled',
         (tester, locale) async {
       when(mockWiFiAdvancedSettingsNotifier.build()).thenReturn(
           WifiAdvancedSettingsState.fromMap(

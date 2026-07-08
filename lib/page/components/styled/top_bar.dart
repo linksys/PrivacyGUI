@@ -146,7 +146,7 @@ class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
                           _sessionExpireCounter(sessionInfo, expiredCountdown),
                       ],
                     ),
-                    // TODO: Disable remote assistance for now
+                  // TODO: Disable remote assistance for now
                   // if (loginType == LoginType.local)
                   //   Padding(
                   //     padding: EdgeInsets.all(4.0),

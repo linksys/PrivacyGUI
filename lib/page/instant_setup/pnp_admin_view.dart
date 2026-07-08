@@ -356,16 +356,21 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
               }
             }, test: (error) => error is ExceptionInterruptAndExit).catchError(
                     (error, stackTrace) {
-              logger.e('[PnP]: Auto Master check unauthorized, redirect to login');
+              logger.e(
+                  '[PnP]: Auto Master check unauthorized, redirect to login');
               if (mounted) {
                 context.goNamed(RouteNamed.localLoginPassword);
               }
-            }, test: (error) => error is ExceptionAutoMasterUnauthorized)
-                .catchError((error, stackTrace) {
+            },
+                    test: (error) =>
+                        error is ExceptionAutoMasterUnauthorized).catchError(
+                    (error, stackTrace) {
               logger.e('[PnP]: Auto Master polling failed, stay on error view');
               // Do nothing - UI already showing error view with retry button
-            }, test: (error) => error is ExceptionAutoMasterPollingFailed)
-                .onError((error, stackTrace) {
+            },
+                    test: (error) =>
+                        error is ExceptionAutoMasterPollingFailed).onError(
+                    (error, stackTrace) {
               logger.e(
                 '[PnP]: ${_password == null ? 'There is no admin password, bring up the input view' : 'The given password is invalid'}',
               );
@@ -590,7 +595,8 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
       }
 
       // Polling exceeded max retry (timeout)
-      logger.w('[PnP]: Auto Master polling timeout, checking router connection');
+      logger
+          .w('[PnP]: Auto Master polling timeout, checking router connection');
       try {
         await pnp.testConnectionReconnected();
         logger.i('[PnP]: Router connected after timeout, proceed to next step');

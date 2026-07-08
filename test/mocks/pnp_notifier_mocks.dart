@@ -388,22 +388,18 @@ class MockPnpNotifier extends _i2.Notifier<_i3.PnpState>
   @override
   _i9.Future<_i15.AutoMasterStatus?> checkAutoMasterStatus() =>
       (super.noSuchMethod(
-            Invocation.method(#checkAutoMasterStatus, []),
-            returnValue: _i9.Future<_i15.AutoMasterStatus?>.value(),
-            returnValueForMissingStub:
-                _i9.Future<_i15.AutoMasterStatus?>.value(),
-          )
-          as _i9.Future<_i15.AutoMasterStatus?>);
+        Invocation.method(#checkAutoMasterStatus, []),
+        returnValue: _i9.Future<_i15.AutoMasterStatus?>.value(),
+        returnValueForMissingStub: _i9.Future<_i15.AutoMasterStatus?>.value(),
+      ) as _i9.Future<_i15.AutoMasterStatus?>);
 
   @override
   _i9.Stream<_i15.AutoMasterStatus?> pollAutoMasterStatus() =>
       (super.noSuchMethod(
-            Invocation.method(#pollAutoMasterStatus, []),
-            returnValue: _i9.Stream<_i15.AutoMasterStatus?>.empty(),
-            returnValueForMissingStub:
-                _i9.Stream<_i15.AutoMasterStatus?>.empty(),
-          )
-          as _i9.Stream<_i15.AutoMasterStatus?>);
+        Invocation.method(#pollAutoMasterStatus, []),
+        returnValue: _i9.Stream<_i15.AutoMasterStatus?>.empty(),
+        returnValueForMissingStub: _i9.Stream<_i15.AutoMasterStatus?>.empty(),
+      ) as _i9.Stream<_i15.AutoMasterStatus?>);
 
   @override
   void setAutoMasterStatusOnEntry(_i15.AutoMasterStatus? status) =>

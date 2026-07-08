@@ -670,7 +670,8 @@ void main() async {
     );
     await tester.pump(const Duration(seconds: 6));
     // Trick - setState to trigger build
-    final state = tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
+    final state =
+        tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
     state.setState(() {});
     await tester.pumpAndSettle();
     final ssidEditFinder = find.byType(TextField).first;
@@ -690,8 +691,7 @@ void main() async {
     await tester.pump(const Duration(seconds: 2));
   });
 
-  testLocalizations(
-      'Instant Setup - PnP: Auto Master connection error',
+  testLocalizations('Instant Setup - PnP: Auto Master connection error',
       (tester, locale) async {
     // First call returns idle (for initState), subsequent calls return running (for save)
     var callCount = 0;

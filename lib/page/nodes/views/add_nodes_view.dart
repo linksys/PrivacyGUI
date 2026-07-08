@@ -220,7 +220,8 @@ class _AddNodesViewState extends ConsumerState<AddNodesView> {
                   showFailedSnackBar(context, loc(context).generalError);
                 }
               } catch (e) {
-                logger.e('[AddNodes]: Start auto onboarding failed with error: $e');
+                logger.e(
+                    '[AddNodes]: Start auto onboarding failed with error: $e');
                 if (context.mounted) {
                   showFailedSnackBar(context, loc(context).generalError);
                 }
