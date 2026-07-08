@@ -175,26 +175,30 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
 
   @override
   Future<void> performSave() async {
-    await ref.read(uspMutationLockProvider).withLock(() async {
-      final current = state.settings.current;
-      if (current.quickSetupEnabled) {
-        await _svc.saveQuickSetup(
-          original: state.settings.original,
-          current: current,
-          status: state.status,
-        );
-      } else {
-        await _svc.saveAdvanced(
-          original: state.settings.original.networks,
-          current: current.networks,
-        );
-      }
-    });
-    // Refresh Layer 1 cache so post-save fetch() reads fresh data.
-    // Using refresh() instead of invalidate() because the latter only marks
-    // the provider dirty — without an active subscriber it won't rebuild,
-    // and the subsequent .future call would return stale data.
-    final _ = await ref.refresh(wifiDataProvider.future);
+    try {
+      await ref.read(uspMutationLockProvider).withLock(() async {
+        final current = state.settings.current;
+        if (current.quickSetupEnabled) {
+          await _svc.saveQuickSetup(
+            original: state.settings.original,
+            current: current,
+            status: state.status,
+          );
+        } else {
+          await _svc.saveAdvanced(
+            original: state.settings.original.networks,
+            current: current.networks,
+          );
+        }
+      });
+    } finally {
+      // Refresh Layer 1 cache so post-save fetch() reads fresh data.
+      // Using refresh() instead of invalidate() because the latter only marks
+      // the provider dirty — without an active subscriber it won't rebuild,
+      // and the subsequent .future call would return stale data.
+      // Wrapped in finally to ensure UI stays in sync even on partial failure.
+      final _ = await ref.refresh(wifiDataProvider.future);
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -342,20 +346,24 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
     } on ServiceError catch (e) {
       logger.e('[USP][WiFi]: Update radio channel failed', error: e);
       rethrow;
+    } finally {
+      ref.invalidate(wifiDataProvider);
     }
-    ref.invalidate(wifiDataProvider);
   }
 
   /// Toggles all SSIDs with a given name on/off across all bands.
   /// Called from Dashboard WiFi Networks card.
   Future<void> toggleSsidsByName(String ssidName, bool enable) async {
-    final wifiData = await ref.read(wifiDataProvider.future);
-    final ssids = wifiData.codegenContext.raw.ssids;
-    final accessPoints = wifiData.codegenContext.raw.accessPoints;
-
     try {
       final count = await ref.read(uspMutationLockProvider).withLock(() async {
-        return _svc.toggleSsidsByName(ssids, accessPoints, ssidName, enable);
+        // Read wifiData inside lock to avoid TOCTOU race with concurrent mutations
+        final wifiData = await ref.read(wifiDataProvider.future);
+        return _svc.toggleSsidsByName(
+          wifiData.codegenContext.raw.ssids,
+          wifiData.codegenContext.raw.accessPoints,
+          ssidName,
+          enable,
+        );
       });
       if (count == 0) {
         logger.w('[USP][WiFi]: No SSIDs found matching the requested name');
@@ -366,8 +374,9 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
     } on ServiceError catch (e) {
       logger.e('[USP][WiFi]: Toggle SSIDs by name failed', error: e);
       rethrow;
+    } finally {
+      ref.invalidate(wifiDataProvider);
     }
-    ref.invalidate(wifiDataProvider);
   }
 
   // ---------------------------------------------------------------------------
