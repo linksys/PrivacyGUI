@@ -868,6 +868,8 @@
   "internalPortRequired": "Internal port is required",
   "invalidIpv4Format": "Invalid IPv4 address format",
   "reservedIpNotAllowed": "Reserved IP address is not allowed",
+  "duplicateMacAddress": "This MAC address is already reserved",
+  "duplicateIpAddress": "This IP address is already reserved",
   "connectedDevices": "Connected Devices",
   "deviceNotFound": "Device not found",
   "networkConnections": "Network Connections ({count})",

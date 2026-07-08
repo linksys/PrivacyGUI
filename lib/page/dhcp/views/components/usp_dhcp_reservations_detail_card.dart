@@ -137,6 +137,7 @@ class UspDhcpReservationsDetailCard extends ConsumerWidget {
       builder: (_) => DhcpReservationEditDialog(
         macDeviceOptions: options.mac,
         ipDeviceOptions: options.ip,
+        existingReservations: reservations,
       ),
     );
     if (result == null || !context.mounted) return;
@@ -161,6 +162,7 @@ class UspDhcpReservationsDetailCard extends ConsumerWidget {
         reservation: reservation,
         macDeviceOptions: options.mac,
         ipDeviceOptions: options.ip,
+        existingReservations: reservations,
       ),
     );
     if (result == null || !context.mounted) return;
