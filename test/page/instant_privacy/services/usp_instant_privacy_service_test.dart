@@ -162,6 +162,28 @@ void main() {
       final result = service.activeDevices(ConnectedDevices(items: []));
       expect(result, isEmpty);
     });
+
+    test('flags locally-administered (private) MAC as isPrivateMac', () {
+      // Second hex digit 2/6/A/E → U/L bit set → private/randomized MAC.
+      final data = ConnectedDevices(items: [
+        _device(macAddress: '2E:52:AD:77:D0:F8'),
+      ]);
+
+      final result = service.activeDevices(data);
+
+      expect(result[0].isPrivateMac, isTrue);
+    });
+
+    test('does not flag a universally-administered (real) MAC', () {
+      // 74 → U/L bit clear → real hardware MAC.
+      final data = ConnectedDevices(items: [
+        _device(macAddress: '74:12:13:21:56:3B'),
+      ]);
+
+      final result = service.activeDevices(data);
+
+      expect(result[0].isPrivateMac, isFalse);
+    });
   });
 
   // ---------------------------------------------------------------------------

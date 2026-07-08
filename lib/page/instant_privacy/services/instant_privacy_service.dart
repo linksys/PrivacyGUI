@@ -4,6 +4,7 @@ import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
+import 'package:privacy_gui/core/utils/oui_lookup.dart';
 import 'package:privacy_gui/generated/connected_devices.g.dart';
 import 'package:privacy_gui/generated/mac_filter_access_points.g.dart';
 import 'package:privacy_gui/page/instant_privacy/models/instant_privacy_device_ui_model.dart';
@@ -64,6 +65,7 @@ class UspInstantPrivacyService {
       return InstantPrivacyDeviceUIModel(
         mac: mac,
         displayName: d.hostName.isNotEmpty ? d.hostName : mac,
+        isPrivateMac: OuiLookup.isRandomizedMac(mac),
       );
     }).toList();
   }

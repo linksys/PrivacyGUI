@@ -218,23 +218,90 @@ class InstantPrivacyView extends ConsumerWidget {
   }
 
   // ---------------------------------------------------------------------------
+  // Private (randomized) MAC warning
+  // ---------------------------------------------------------------------------
+
+  Widget _buildPrivateMacWarning(
+    BuildContext context,
+    List<InstantPrivacyDeviceUIModel> devices,
+  ) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.only(top: AppSpacing.md),
+      child: Container(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        decoration: BoxDecoration(
+          color: colorScheme.errorContainer,
+          borderRadius: BorderRadius.circular(AppSpacing.sm),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AppIcon.font(
+                  Icons.warning_amber_rounded,
+                  size: 20,
+                  color: colorScheme.onErrorContainer,
+                ),
+                AppGap.sm(),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      AppText.labelLarge(
+                        loc(context).privateMacWarningTitle,
+                        color: colorScheme.onErrorContainer,
+                      ),
+                      AppGap.xs(),
+                      AppText.bodySmall(
+                        loc(context).privateMacWarningDesc,
+                        color: colorScheme.onErrorContainer,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            AppGap.sm(),
+            for (final device in devices)
+              Padding(
+                padding: const EdgeInsets.only(top: AppSpacing.xs),
+                child: AppText.bodySmall(
+                  '• ${device.displayName} (${device.mac})',
+                  color: colorScheme.onErrorContainer,
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
   // Confirmation dialogs
   // ---------------------------------------------------------------------------
 
   Future<void> _onEnable(BuildContext context, WidgetRef ref) async {
+    final connected =
+        ref.read(uspInstantPrivacyProvider).valueOrNull?.connectedDevices ??
+            const [];
+    final privateMacDevices = connected.where((d) => d.isPrivateMac).toList();
     final confirmed = await showAppDialog<bool>(
       context: context,
       builder: (ctx) => AppDialog(
         titleText: loc(context).enableInstantPrivacyTitle,
-        content: AppText.bodyMedium(
-          loc(context).enableInstantPrivacyDesc(
-            ref
-                    .read(uspInstantPrivacyProvider)
-                    .valueOrNull
-                    ?.connectedDevices
-                    .length ??
-                0,
-          ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AppText.bodyMedium(
+              loc(context).enableInstantPrivacyDesc(connected.length),
+            ),
+            if (privateMacDevices.isNotEmpty)
+              _buildPrivateMacWarning(context, privateMacDevices),
+          ],
         ),
         actions: [
           AppButton.text(
