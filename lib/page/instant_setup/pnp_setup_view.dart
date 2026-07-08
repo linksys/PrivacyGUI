@@ -680,6 +680,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
                             logger.w(
                                 '[PnP]: WiFi settings mismatch - expected: $expectedSSIDs, current: $currentSSIDs. Re-saving...');
                             _wifiVerificationRetried = true;
+                            if (!mounted) return;
                             await _saveChanges();
                             return;
                           }
@@ -883,6 +884,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
       final errorMsg = innerError?.toString() ?? loc(context).generalError;
       showSimpleSnackBar(context, 'Unexpected error! <$errorMsg>');
     }, test: (error) => error is ExceptionSavingChanges).whenComplete(() async {
+      if (!mounted) return;
       // Use showYourNetwork logic to handle both Unconfigured and AutoParent scenarios
       final showYourNetwork = isUnconfigured || !_isPrePaired;
       logger.d(
