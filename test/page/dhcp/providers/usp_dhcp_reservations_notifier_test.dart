@@ -3,7 +3,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
+import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/dhcp_reservation_ui_model.dart';
+import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/dhcp/providers/usp_dhcp_reservations_notifier.dart';
 import 'package:privacy_gui/page/dhcp/services/usp_dhcp_service.dart';
 import 'package:privacy_gui/page/local_network/providers/dhcp_data_provider.dart';
@@ -354,7 +356,139 @@ void main() {
       );
       container.dispose();
     });
+
+    // -------------------------------------------------------------------------
+    // deviceOptions (autocomplete data source)
+    // -------------------------------------------------------------------------
+
+    ProviderContainer createContainerWithDevices(DevicesData devicesData) {
+      final container = ProviderContainer(
+        overrides: [
+          uspDhcpServiceProvider.overrideWithValue(mockService),
+          uspMutationLockProvider.overrideWithValue(UspMutationLock()),
+          devicesDataProvider
+              .overrideWith(() => _TestDevicesDataNotifier(devicesData)),
+        ],
+      );
+      container.listen(uspDhcpReservationsProvider, (_, __) {});
+      return container;
+    }
+
+    test('deviceOptions maps client devices to pure data', () async {
+      when(() => mockService.fetchReservations()).thenAnswer((_) async => []);
+      final container = createContainerWithDevices(DevicesData(
+        deviceModels: [
+          _device(
+            mac: 'AA:BB:CC:DD:EE:01',
+            ip: '192.168.1.10',
+            friendlyName: 'Laptop',
+            isActive: true,
+          ),
+        ],
+      ));
+      // Ensure devicesDataProvider resolves before reading.
+      await container.read(devicesDataProvider.future);
+      await Future.delayed(Duration.zero);
+
+      final options =
+          container.read(uspDhcpReservationsProvider.notifier).deviceOptions();
+
+      expect(options, hasLength(1));
+      expect(options[0].name, 'Laptop');
+      expect(options[0].mac, 'AA:BB:CC:DD:EE:01');
+      expect(options[0].ip, '192.168.1.10');
+      expect(options[0].isActive, isTrue);
+      container.dispose();
+    });
+
+    test('deviceOptions name falls back to hostName then mac', () async {
+      when(() => mockService.fetchReservations()).thenAnswer((_) async => []);
+      final container = createContainerWithDevices(DevicesData(
+        deviceModels: [
+          _device(mac: 'AA:BB:CC:DD:EE:01', ip: '192.168.1.10', hostName: 'pc'),
+          _device(mac: 'AA:BB:CC:DD:EE:02', ip: '192.168.1.11'),
+        ],
+      ));
+      await container.read(devicesDataProvider.future);
+      await Future.delayed(Duration.zero);
+
+      final options =
+          container.read(uspDhcpReservationsProvider.notifier).deviceOptions();
+
+      expect(options[0].name, 'pc');
+      expect(options[1].name, 'AA:BB:CC:DD:EE:02');
+      container.dispose();
+    });
+
+    test('deviceOptions excludes mesh nodes (master/slave)', () async {
+      when(() => mockService.fetchReservations()).thenAnswer((_) async => []);
+      final container = createContainerWithDevices(DevicesData(
+        deviceModels: [
+          _device(
+              mac: 'AA:BB:CC:DD:EE:01',
+              ip: '192.168.1.10',
+              deviceRole: 'client'),
+          _device(
+              mac: 'AA:BB:CC:DD:EE:02',
+              ip: '192.168.1.1',
+              deviceRole: 'master'),
+          _device(
+              mac: 'AA:BB:CC:DD:EE:03', ip: '192.168.1.2', deviceRole: 'slave'),
+        ],
+      ));
+      await container.read(devicesDataProvider.future);
+      await Future.delayed(Duration.zero);
+
+      final options =
+          container.read(uspDhcpReservationsProvider.notifier).deviceOptions();
+
+      expect(options, hasLength(1));
+      expect(options[0].mac, 'AA:BB:CC:DD:EE:01');
+      container.dispose();
+    });
+
+    test('deviceOptions returns empty when no devices', () async {
+      when(() => mockService.fetchReservations()).thenAnswer((_) async => []);
+      final container = createContainerWithDevices(const DevicesData());
+      await container.read(devicesDataProvider.future);
+      await Future.delayed(Duration.zero);
+
+      final options =
+          container.read(uspDhcpReservationsProvider.notifier).deviceOptions();
+
+      expect(options, isEmpty);
+      container.dispose();
+    });
   });
+}
+
+/// Test notifier that returns a fixed [DevicesData].
+class _TestDevicesDataNotifier extends DevicesDataNotifier {
+  final DevicesData _data;
+
+  _TestDevicesDataNotifier(this._data);
+
+  @override
+  Future<DevicesData> build() async => _data;
+}
+
+DeviceUIModel _device({
+  required String mac,
+  required String ip,
+  String hostName = '',
+  String? friendlyName,
+  bool isActive = true,
+  String? deviceRole,
+}) {
+  return DeviceUIModel(
+    mac: mac,
+    ip: ip,
+    hostName: hostName,
+    isActive: isActive,
+    isWifi: false,
+    friendlyName: friendlyName,
+    deviceRole: deviceRole,
+  );
 }
 
 /// Test notifier that tracks invalidation.

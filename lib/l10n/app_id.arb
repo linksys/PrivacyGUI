@@ -471,6 +471,8 @@
   "confirmationRequired": "Konfirmasi Diperlukan",
   "confirmingNewFirmware": "Mengonfirmasi firmware baru sedang berjalan…",
   "connect": "Sambungkan",
+  "duplicateMacAddress": "Alamat MAC ini sudah direservasi",
+  "duplicateIpAddress": "Alamat IP ini sudah direservasi",
   "connectedDevices": "Perangkat yang Tersambung",
   "connecting": "Menyambungkan...",
   "connectingToRouter": "Menyambungkan ke router...",

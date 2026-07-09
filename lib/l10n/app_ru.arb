@@ -471,6 +471,8 @@
   "confirmationRequired": "Требуется подтверждение",
   "confirmingNewFirmware": "Подтверждение запуска новой прошивки…",
   "connect": "Подключить",
+  "duplicateMacAddress": "Этот MAC-адрес уже зарезервирован",
+  "duplicateIpAddress": "Этот IP-адрес уже зарезервирован",
   "connectedDevices": "Подключенные устройства",
   "connecting": "Подключение...",
   "connectingToRouter": "Подключение к маршрутизатору...",

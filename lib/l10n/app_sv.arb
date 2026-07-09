@@ -473,6 +473,8 @@
   "confirmationRequired": "Bekräftelse krävs",
   "confirmingNewFirmware": "Bekräftar att den nya fasta programvaran körs…",
   "connect": "Anslut",
+  "duplicateMacAddress": "Den här MAC-adressen är redan reserverad",
+  "duplicateIpAddress": "Den här IP-adressen är redan reserverad",
   "connectedDevices": "Anslutna enheter",
   "connecting": "Ansluter...",
   "connectingToRouter": "Ansluter till router...",

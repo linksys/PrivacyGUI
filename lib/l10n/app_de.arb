@@ -473,6 +473,8 @@
   "confirmationRequired": "Bestätigung erforderlich",
   "confirmingNewFirmware": "Es wird bestätigt, dass die neue Firmware läuft…",
   "connect": "Verbinden",
+  "duplicateMacAddress": "Diese MAC-Adresse ist bereits reserviert",
+  "duplicateIpAddress": "Diese IP-Adresse ist bereits reserviert",
   "connectedDevices": "Verbundene Geräte",
   "connecting": "Verbindung wird hergestellt...",
   "connectingToRouter": "Verbindung zum Router wird hergestellt...",

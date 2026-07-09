@@ -471,6 +471,8 @@
   "confirmationRequired": "Wymagane potwierdzenie",
   "confirmingNewFirmware": "Potwierdzanie działania nowego oprogramowania układowego…",
   "connect": "Połącz",
+  "duplicateMacAddress": "Ten adres MAC jest już zarezerwowany",
+  "duplicateIpAddress": "Ten adres IP jest już zarezerwowany",
   "connectedDevices": "Podłączone urządzenia",
   "connecting": "Łączenie...",
   "connectingToRouter": "Łączenie z routerem...",

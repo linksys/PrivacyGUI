@@ -474,6 +474,8 @@
   "confirmationRequired": "確認が必要です",
   "confirmingNewFirmware": "新しいファームウェアが動作していることを確認中…",
   "connect": "接続",
+  "duplicateMacAddress": "この MAC アドレスはすでに予約されています",
+  "duplicateIpAddress": "この IP アドレスはすでに予約されています",
   "connectedDevices": "接続中のデバイス",
   "connecting": "接続中...",
   "connectingToRouter": "ルーターに接続中...",

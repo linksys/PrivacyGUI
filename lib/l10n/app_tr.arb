@@ -471,6 +471,8 @@
   "confirmationRequired": "Onay Gerekli",
   "confirmingNewFirmware": "Yeni bellenimin çalıştığı doğrulanıyor…",
   "connect": "Bağlan",
+  "duplicateMacAddress": "Bu MAC adresi zaten ayrılmış",
+  "duplicateIpAddress": "Bu IP adresi zaten ayrılmış",
   "connectedDevices": "Bağlı Cihazlar",
   "connecting": "Bağlanıyor...",
   "connectingToRouter": "Yönlendiriciye bağlanılıyor...",

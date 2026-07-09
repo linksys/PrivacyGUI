@@ -471,6 +471,8 @@
   "confirmationRequired": "Vahvistus vaaditaan",
   "confirmingNewFirmware": "Vahvistetaan, että uusi laiteohjelmisto on käynnissä…",
   "connect": "Yhdistä",
+  "duplicateMacAddress": "Tämä MAC-osoite on jo varattu",
+  "duplicateIpAddress": "Tämä IP-osoite on jo varattu",
   "connectedDevices": "Yhdistetyt laitteet",
   "connecting": "Yhdistetään...",
   "connectingToRouter": "Yhdistetään reitittimeen...",

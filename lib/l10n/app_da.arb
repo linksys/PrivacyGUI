@@ -473,6 +473,8 @@
   "confirmationRequired": "Bekræftelse påkrævet",
   "confirmingNewFirmware": "Bekræfter, at den nye firmware kører…",
   "connect": "Tilslut",
+  "duplicateMacAddress": "Denne MAC-adresse er allerede reserveret",
+  "duplicateIpAddress": "Denne IP-adresse er allerede reserveret",
   "connectedDevices": "Tilsluttede enheder",
   "connecting": "Tilslutter...",
   "connectingToRouter": "Tilslutter til router...",

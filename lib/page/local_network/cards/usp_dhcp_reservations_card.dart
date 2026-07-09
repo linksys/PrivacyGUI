@@ -125,9 +125,13 @@ class UspDhcpReservationsCard extends ConsumerWidget {
   }
 
   Future<void> _showAddDhcpDialog(BuildContext context, WidgetRef ref) async {
+    final options = _buildDeviceOptions(ref);
     final result = await showAppDialog<({String mac, String ip, bool enable})>(
       context: context,
-      builder: (_) => const DhcpReservationEditDialog(),
+      builder: (_) => DhcpReservationEditDialog(
+        macDeviceOptions: options.mac,
+        ipDeviceOptions: options.ip,
+      ),
     );
     if (result == null || !context.mounted) return;
     await performUspMutation(
@@ -142,6 +146,31 @@ class UspDhcpReservationsCard extends ConsumerWidget {
               ),
       successMessage: loc(context).reservationAdded,
     );
+  }
+
+  ({List<AppAutoCompleteOption> mac, List<AppAutoCompleteOption> ip})
+      _buildDeviceOptions(WidgetRef ref) {
+    final devices =
+        ref.read(uspDhcpReservationsProvider.notifier).deviceOptions();
+    final macOptions = devices
+        .where((d) => d.mac.isNotEmpty)
+        .map((d) => AppAutoCompleteOption(
+              label: d.name,
+              value: d.mac,
+              subtitle: d.ip,
+              isActive: d.isActive,
+            ))
+        .toList();
+    final ipOptions = devices
+        .where((d) => d.ip.isNotEmpty)
+        .map((d) => AppAutoCompleteOption(
+              label: d.name,
+              value: d.ip,
+              subtitle: d.mac,
+              isActive: d.isActive,
+            ))
+        .toList();
+    return (mac: macOptions, ip: ipOptions);
   }
 
   Future<void> _confirmDeleteDhcp(BuildContext context, WidgetRef ref,

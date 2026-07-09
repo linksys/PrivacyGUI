@@ -473,6 +473,8 @@
   "confirmationRequired": "Bekreftelse kreves",
   "confirmingNewFirmware": "Bekrefter at den nye fastvaren kjører…",
   "connect": "Koble til",
+  "duplicateMacAddress": "Denne MAC-adressen er allerede reservert",
+  "duplicateIpAddress": "Denne IP-adressen er allerede reservert",
   "connectedDevices": "Tilkoblede enheter",
   "connecting": "Kobler til...",
   "connectingToRouter": "Kobler til ruteren...",

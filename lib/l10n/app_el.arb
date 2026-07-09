@@ -471,6 +471,8 @@
   "confirmationRequired": "Απαιτείται επιβεβαίωση",
   "confirmingNewFirmware": "Επιβεβαίωση ότι εκτελείται το νέο firmware…",
   "connect": "Σύνδεση",
+  "duplicateMacAddress": "Αυτή η διεύθυνση MAC έχει ήδη δεσμευτεί",
+  "duplicateIpAddress": "Αυτή η διεύθυνση IP έχει ήδη δεσμευτεί",
   "connectedDevices": "Συνδεδεμένες συσκευές",
   "connecting": "Σύνδεση...",
   "connectingToRouter": "Σύνδεση με τον δρομολογητή...",

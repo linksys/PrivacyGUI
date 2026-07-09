@@ -473,6 +473,8 @@
   "confirmationRequired": "Confirmação necessária",
   "confirmingNewFirmware": "Confirmando se o novo firmware está em execução…",
   "connect": "Conectar",
+  "duplicateMacAddress": "Este endereço MAC já está reservado",
+  "duplicateIpAddress": "Este endereço IP já está reservado",
   "connectedDevices": "Dispositivos conectados",
   "connecting": "Conectando...",
   "connectingToRouter": "Conectando ao roteador...",

@@ -471,6 +471,8 @@
   "confirmationRequired": "확인 필요",
   "confirmingNewFirmware": "새 펌웨어가 실행 중인지 확인하는 중…",
   "connect": "연결",
+  "duplicateMacAddress": "이 MAC 주소는 이미 예약되어 있습니다",
+  "duplicateIpAddress": "이 IP 주소는 이미 예약되어 있습니다",
   "connectedDevices": "연결된 장치",
   "connecting": "연결 중...",
   "connectingToRouter": "라우터에 연결 중...",
