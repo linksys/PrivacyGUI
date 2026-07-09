@@ -268,9 +268,16 @@ class UspInternetSettingsNotifier
     final current = state.settings.current;
     var form = current.form.copyWith(connectionType: type);
 
-    // Reset type-specific fields when switching away
+    // Normalize MTU for the new type (issue #1083). Bridge always uses auto
+    // (mtu = 0). For every other type, keep the current MTU when it still fits
+    // the type's range, otherwise fall back to the type's max — this both
+    // clamps an over-limit value (e.g. 1500 → 1492 on PPPoE) and auto-fills a
+    // sensible default when the previous value was auto/empty (e.g. leaving
+    // bridge mode).
     if (type == UspWanConnectionType.bridge) {
       form = form.copyWith(mtu: 0);
+    } else {
+      form = form.copyWith(mtu: type.clampMtu(form.mtu));
     }
 
     state = state.copyWith(

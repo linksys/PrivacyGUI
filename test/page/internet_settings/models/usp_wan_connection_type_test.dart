@@ -172,5 +172,63 @@ void main() {
         expect(UspWanConnectionType.dhcp.pppLowerLayers, isNull);
       });
     });
+
+    group('mtuMax', () {
+      test('pppoe reserves 8 bytes (1492)', () {
+        expect(UspWanConnectionType.pppoe.mtuMax, 1492);
+      });
+
+      test('pptp reserves tunnel overhead (1460)', () {
+        expect(UspWanConnectionType.pptp.mtuMax, 1460);
+      });
+
+      test('l2tp reserves tunnel overhead (1460)', () {
+        expect(UspWanConnectionType.l2tp.mtuMax, 1460);
+      });
+
+      test('dhcp uses Ethernet standard (1500)', () {
+        expect(UspWanConnectionType.dhcp.mtuMax, 1500);
+      });
+
+      test('staticIp uses Ethernet standard (1500)', () {
+        expect(UspWanConnectionType.staticIp.mtuMax, 1500);
+      });
+
+      test('bridge uses Ethernet standard (1500)', () {
+        expect(UspWanConnectionType.bridge.mtuMax, 1500);
+      });
+    });
+
+    group('mtuMin', () {
+      test('is 576 for every type', () {
+        for (final type in UspWanConnectionType.values) {
+          expect(type.mtuMin, 576, reason: '${type.name} mtuMin');
+        }
+      });
+    });
+
+    group('clampMtu', () {
+      test('keeps an in-range value unchanged', () {
+        expect(UspWanConnectionType.pppoe.clampMtu(789), 789);
+        expect(UspWanConnectionType.dhcp.clampMtu(1500), 1500);
+        expect(UspWanConnectionType.pptp.clampMtu(1460), 1460);
+      });
+
+      test('resets an over-max value to the type max', () {
+        expect(UspWanConnectionType.pppoe.clampMtu(1500), 1492);
+        expect(UspWanConnectionType.pptp.clampMtu(1500), 1460);
+      });
+
+      test('resets a below-min value to the type max', () {
+        // 0 (auto, e.g. after leaving bridge) and any sub-576 value fall back
+        // to the max rather than an invalid low value.
+        expect(UspWanConnectionType.dhcp.clampMtu(0), 1500);
+        expect(UspWanConnectionType.pppoe.clampMtu(100), 1492);
+      });
+
+      test('keeps the min boundary value', () {
+        expect(UspWanConnectionType.dhcp.clampMtu(576), 576);
+      });
+    });
   });
 }

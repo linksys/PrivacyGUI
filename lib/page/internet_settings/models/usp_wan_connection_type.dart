@@ -66,6 +66,24 @@ enum UspWanConnectionType {
         bridge => '', // issue #14: empty string = proto=none
       };
 
+  /// Minimum MTU accepted for this connection type (protocol-independent).
+  int get mtuMin => 576;
+
+  /// Maximum MTU accepted for this connection type. Varies by protocol
+  /// overhead: PPPoE reserves 8 bytes (PPP header), PPTP/L2TP reserve 40 bytes
+  /// (tunnel overhead); the rest use the Ethernet standard 1500.
+  int get mtuMax => switch (this) {
+        pppoe => 1492, // 1500 - 8 (PPP header)
+        pptp || l2tp => 1460, // tunnel overhead
+        _ => 1500, // Ethernet standard (DHCP, Static, Bridge)
+      };
+
+  /// Clamp [mtu] into this type's valid range: values already within
+  /// `[mtuMin, mtuMax]` are kept; anything outside (too low or too high) falls
+  /// back to [mtuMax]. Used when switching connection types so a previously
+  /// valid MTU is preserved when it still fits, and reset to the max otherwise.
+  int clampMtu(int mtu) => (mtu >= mtuMin && mtu <= mtuMax) ? mtu : mtuMax;
+
   /// Whether this type uses a PPP.Interface (credentials, LowerLayers).
   bool get isPppBased => this == pppoe || this == pptp || this == l2tp;
 
