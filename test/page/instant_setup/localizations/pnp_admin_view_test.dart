@@ -227,8 +227,8 @@ void main() async {
       return AutoMasterStatus.running;
     });
     when(mockPnpNotifier.pollAutoMasterStatus()).thenAnswer((_) {
-      return Stream.fromFuture(
-          Future.delayed(const Duration(seconds: 5), () => AutoMasterStatus.running));
+      return Stream.fromFuture(Future.delayed(
+          const Duration(seconds: 5), () => AutoMasterStatus.running));
     });
 
     await tester.pumpWidget(

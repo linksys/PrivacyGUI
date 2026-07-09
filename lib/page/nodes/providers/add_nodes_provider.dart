@@ -102,60 +102,61 @@ class AddNodesNotifier extends AutoDisposeNotifier<AddNodesState> {
       }
 
       bool onboardingProceed = false;
-    // For AutoOnboarding 2 service, there has no deviceOnboardingStatus
-    // only AutoOnboarding 3 service has deviceOnboardingStatus.
-    bool anyOnboarded = false;
-    var deviceOnboardingStatus = [];
+      // For AutoOnboarding 2 service, there has no deviceOnboardingStatus
+      // only AutoOnboarding 3 service has deviceOnboardingStatus.
+      bool anyOnboarded = false;
+      var deviceOnboardingStatus = [];
 
-    await for (final result in pollAutoOnboardingStatus()) {
-      logger.d('[AddNodes]: GetAutoOnboardingStatus result: $result');
-      // Update onboarding status
-      if (result is JNAPSuccess) {
-        if (result.output['autoOnboardingStatus'] == 'Onboarding') {
-          onboardingProceed = true;
+      await for (final result in pollAutoOnboardingStatus()) {
+        logger.d('[AddNodes]: GetAutoOnboardingStatus result: $result');
+        // Update onboarding status
+        if (result is JNAPSuccess) {
+          if (result.output['autoOnboardingStatus'] == 'Onboarding') {
+            onboardingProceed = true;
+          }
+          // Set deviceOnboardingStatus data
+          deviceOnboardingStatus =
+              result.output['deviceOnboardingStatus'] ?? [];
         }
-        // Set deviceOnboardingStatus data
-        deviceOnboardingStatus = result.output['deviceOnboardingStatus'] ?? [];
       }
-    }
-    // Get onboarded device data
-    anyOnboarded = List.from(deviceOnboardingStatus)
-        .any((element) => element['onboardingStatus'] == 'Onboarded');
-    // Get the MAC address list of these onboarded devices
-    List<String> onboardedMACList = [];
-    if (anyOnboarded) {
-      onboardedMACList = List.from(deviceOnboardingStatus)
-          .where((element) => element['onboardingStatus'] == 'Onboarded')
-          .map((e) => e['btMACAddress'] as String?)
-          .nonNulls
-          .toList();
-    }
-    logger.d(
-        '[AddNodes]: Number of onboarded MAC addresses = ${onboardedMACList.length}');
-    List<LinksysDevice> addedDevices = [];
-    List<LinksysDevice> childNodes = [];
-    List<BackHaulInfoData> backhaulInfoList = [];
-    state = state.copyWith(isLoading: true, loadingMessage: 'onboarding');
-    if (onboardingProceed && anyOnboarded) {
-      await for (final result in pollForNodesOnline(onboardedMACList)) {
-        childNodes =
-            result.where((element) => element.nodeType != null).toList();
-        addedDevices = result
-            .where(
-              (element) =>
-                  element.nodeType == 'Slave' &&
-                  (element.knownInterfaces?.any((knownInterface) =>
-                          onboardedMACList
-                              .contains(knownInterface.macAddress)) ??
-                      false),
-            )
+      // Get onboarded device data
+      anyOnboarded = List.from(deviceOnboardingStatus)
+          .any((element) => element['onboardingStatus'] == 'Onboarded');
+      // Get the MAC address list of these onboarded devices
+      List<String> onboardedMACList = [];
+      if (anyOnboarded) {
+        onboardedMACList = List.from(deviceOnboardingStatus)
+            .where((element) => element['onboardingStatus'] == 'Onboarded')
+            .map((e) => e['btMACAddress'] as String?)
+            .nonNulls
             .toList();
-        logger.d(
-            '[AddNodes]: [pollForNodesOnline] added devices: ${addedDevices.map((d) => d.toJson()).join(', ')}');
       }
-      await for (final result in pollNodesBackhaulInfo(childNodes)) {
-        backhaulInfoList = result;
-      }
+      logger.d(
+          '[AddNodes]: Number of onboarded MAC addresses = ${onboardedMACList.length}');
+      List<LinksysDevice> addedDevices = [];
+      List<LinksysDevice> childNodes = [];
+      List<BackHaulInfoData> backhaulInfoList = [];
+      state = state.copyWith(isLoading: true, loadingMessage: 'onboarding');
+      if (onboardingProceed && anyOnboarded) {
+        await for (final result in pollForNodesOnline(onboardedMACList)) {
+          childNodes =
+              result.where((element) => element.nodeType != null).toList();
+          addedDevices = result
+              .where(
+                (element) =>
+                    element.nodeType == 'Slave' &&
+                    (element.knownInterfaces?.any((knownInterface) =>
+                            onboardedMACList
+                                .contains(knownInterface.macAddress)) ??
+                        false),
+              )
+              .toList();
+          logger.d(
+              '[AddNodes]: [pollForNodesOnline] added devices: ${addedDevices.map((d) => d.toJson()).join(', ')}');
+        }
+        await for (final result in pollNodesBackhaulInfo(childNodes)) {
+          backhaulInfoList = result;
+        }
       }
       childNodes.sort((a, b) => a.isAuthority ? -1 : 1);
       await polling.forcePolling();

@@ -282,7 +282,9 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
             stepperType: StepperType.horizontal,
             // When showYourNetwork=true (except forceLogin), saving is handled by step's saveChanges, not onLastStep
             // forceLogin + configured + !isPrePaired still needs onLastStep since no YourNetwork step
-            onLastStep: (_isUnconfigured || (!_forceLogin && !_isPrePaired)) ? null : _saveChanges,
+            onLastStep: (_isUnconfigured || (!_forceLogin && !_isPrePaired))
+                ? null
+                : _saveChanges,
             onStepChanged: ((index, step, controller) {
               _currentStep = step;
               _stepController = controller;
@@ -630,11 +632,12 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
                     if (showYourNetwork) {
                       setState(() {
                         _setupStep = _PnpSetupStep.config;
-                        logger
-                            .d('[PnP]: WiFi reconnected, showYourNetwork=true. Setup step = config');
+                        logger.d(
+                            '[PnP]: WiFi reconnected, showYourNetwork=true. Setup step = config');
                       });
                     } else {
-                      logger.d('[PnP]: WiFi reconnected, showYourNetwork=false. Setup step = fwCheck');
+                      logger.d(
+                          '[PnP]: WiFi reconnected, showYourNetwork=false. Setup step = fwCheck');
                       _doFwUpdateCheck();
                     }
                   });
@@ -724,7 +727,8 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
         logger.d('[PnP]: Auto Master failed, skipping timeout handling');
       } else {
         // Polling exceeded max retry (timeout)
-        logger.w('[PnP]: Auto Master polling timeout, checking router connection');
+        logger.w(
+            '[PnP]: Auto Master polling timeout, checking router connection');
 
         if (autoMasterSaveAttempt >= _maxAutoMasterSaveAttempts) {
           logger.e(
@@ -756,8 +760,8 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
     // Edge case: Was Idle on entry but now Complete
     if (statusOnEntry == AutoMasterStatus.idle &&
         currentStatus == AutoMasterStatus.complete) {
-      logger
-          .w('[PnP]: Auto Master completed during PnP config - password changed');
+      logger.w(
+          '[PnP]: Auto Master completed during PnP config - password changed');
       if (mounted) {
         context.goNamed(RouteNamed.localLoginPassword);
       }
