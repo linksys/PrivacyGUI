@@ -75,7 +75,7 @@ class PortRangeTriggeringRule extends Equatable {
       description: json['description'],
     );
   }
-    
+
   String toJson() => json.encode(toMap());
 
   factory PortRangeTriggeringRule.fromJson(String source) =>

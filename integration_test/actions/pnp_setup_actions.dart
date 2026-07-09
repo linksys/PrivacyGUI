@@ -57,7 +57,7 @@ class TestPnpSetupActions extends CommonBaseActions {
     await tester.pumpFrames(app(), Duration(seconds: seconds));
   }
 
-   Future<void> showPassword() async {
+  Future<void> showPassword() async {
     final visibleFinder = visibilityFinder();
     await tester.tap(visibleFinder);
     await tester.pumpAndSettle();

@@ -1,6 +1,5 @@
 part of 'router_provider.dart';
 
-
 final pnpRoute = LinksysRoute(
   name: RouteNamed.pnp,
   path: RoutePath.pnp,

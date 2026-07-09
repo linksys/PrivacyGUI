@@ -46,8 +46,7 @@ void main() {
     when(mockRouterPasswordNotifier.fetch()).thenAnswer((realInvocation) async {
       await Future.delayed(const Duration(seconds: 1));
     });
-    when(mockTimezoneNotifier.fetch()).thenAnswer((realInvocation) async {
-    });
+    when(mockTimezoneNotifier.fetch()).thenAnswer((realInvocation) async {});
     when(mockPowerTableNotifier.build()).thenReturn(
         PowerTableState.fromMap(powerTableTestState)
             .copyWith(isPowerTableSelectable: false));

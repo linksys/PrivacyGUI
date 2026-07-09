@@ -94,11 +94,14 @@ class RouterPasswordState extends Equatable {
       isSetByUser: map['isSetByUser'] as bool,
       hasEdited: map['hasEdited'] as bool,
       error: map['error'] != null ? map['error'] as String : null,
-      remainingErrorAttempts: map['remainingErrorAttempts'] != null ? map['remainingErrorAttempts'] as int : null,
+      remainingErrorAttempts: map['remainingErrorAttempts'] != null
+          ? map['remainingErrorAttempts'] as int
+          : null,
     );
   }
 
   String toJson() => json.encode(toMap());
 
-  factory RouterPasswordState.fromJson(String source) => RouterPasswordState.fromMap(json.decode(source) as Map<String, dynamic>);
+  factory RouterPasswordState.fromJson(String source) =>
+      RouterPasswordState.fromMap(json.decode(source) as Map<String, dynamic>);
 }

@@ -10,17 +10,24 @@ class RemoteClientState extends Equatable {
   final List<GRASessionInfo> sessions;
   final int? expiredCountdown;
 
+  /// Whether a remote assistance dialog is currently shown. Used so the
+  /// dashboard does not auto-open a second (passive) dialog while one is
+  /// already open.
+  final bool isDialogShown;
+
   const RemoteClientState(
       {this.sessionInfo,
       this.pin,
       this.sessions = const [],
-      this.expiredCountdown});
+      this.expiredCountdown,
+      this.isDialogShown = false});
 
   RemoteClientState copyWith({
     ValueGetter<GRASessionInfo?>? sessionInfo,
     ValueGetter<String?>? pin,
     ValueGetter<List<GRASessionInfo>>? sessions,
     ValueGetter<int?>? expiredCountdown,
+    ValueGetter<bool>? isDialogShown,
   }) =>
       RemoteClientState(
           sessionInfo: sessionInfo != null ? sessionInfo() : this.sessionInfo,
@@ -28,7 +35,9 @@ class RemoteClientState extends Equatable {
           sessions: sessions != null ? sessions() : this.sessions,
           expiredCountdown: expiredCountdown != null
               ? expiredCountdown()
-              : this.expiredCountdown);
+              : this.expiredCountdown,
+          isDialogShown:
+              isDialogShown != null ? isDialogShown() : this.isDialogShown);
 
   factory RemoteClientState.fromMap(Map<String, dynamic> map) =>
       RemoteClientState(
@@ -41,6 +50,7 @@ class RemoteClientState extends Equatable {
                 map['sessions'].map((x) => GRASessionInfo.fromMap(x)))
             : [],
         expiredCountdown: map['expiredCountdown'],
+        isDialogShown: map['isDialogShown'] ?? false,
       );
 
   Map<String, dynamic> toMap() => {
@@ -48,6 +58,7 @@ class RemoteClientState extends Equatable {
         'pin': pin,
         'sessions': sessions.map((x) => x.toMap()).toList(),
         'expiredCountdown': expiredCountdown,
+        'isDialogShown': isDialogShown,
       };
 
   factory RemoteClientState.fromJson(String source) =>
@@ -56,5 +67,6 @@ class RemoteClientState extends Equatable {
   String toJson() => jsonEncode(toMap());
 
   @override
-  List<Object?> get props => [sessionInfo, pin, sessions, expiredCountdown];
+  List<Object?> get props =>
+      [sessionInfo, pin, sessions, expiredCountdown, isDialogShown];
 }

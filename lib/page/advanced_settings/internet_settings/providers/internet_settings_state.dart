@@ -179,7 +179,8 @@ class InternetSettingsState extends Equatable {
       ipv4Setting: ipv4Setting ?? this.ipv4Setting,
       ipv6Setting: ipv6Setting ?? this.ipv6Setting,
       macClone: macClone ?? this.macClone,
-      macCloneAddress: macCloneAddress != null ? macCloneAddress() : this.macCloneAddress,
+      macCloneAddress:
+          macCloneAddress != null ? macCloneAddress() : this.macCloneAddress,
     );
   }
 }

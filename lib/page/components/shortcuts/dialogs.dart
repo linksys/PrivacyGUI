@@ -25,23 +25,21 @@ Future<T?> doSomethingWithSpinner<T>(
 }) async {
   NavigatorState? navigator;
   final completer = Completer();
-  Future.delayed(
-      Duration.zero,
-      () {
-        try {
-          navigator = Navigator.of(context, rootNavigator: true);
-          showAppSpinnerDialog(
-            context,
-            title: title,
-            icon: icon,
-            messages: messages ?? [loc(context).processing],
-            period: period,
-          );
-        } catch (e) {
-          logger.w('Could not show spinner dialog: $e');
-        }
-        completer.complete();
-      });
+  Future.delayed(Duration.zero, () {
+    try {
+      navigator = Navigator.of(context, rootNavigator: true);
+      showAppSpinnerDialog(
+        context,
+        title: title,
+        icon: icon,
+        messages: messages ?? [loc(context).processing],
+        period: period,
+      );
+    } catch (e) {
+      logger.w('Could not show spinner dialog: $e');
+    }
+    completer.complete();
+  });
 
   await completer.future;
   await Future.delayed(Duration(milliseconds: 100));

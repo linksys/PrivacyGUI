@@ -22,7 +22,7 @@ void main() async {
   late MockAddNodesNotifier mockAddNodesNotifier;
   mockDependencyRegister();
   ServiceHelper mockServiceHelper = getIt.get<ServiceHelper>();
-  
+
   setUp(() {
     mockAddNodesNotifier = MockAddNodesNotifier();
     when(mockAddNodesNotifier.build()).thenReturn(const AddNodesState());

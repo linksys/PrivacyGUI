@@ -57,7 +57,7 @@ class PortRangeForwardingListNotifier
       data: {'rules': rules.map((e) => e.toMap()).toList()},
       auth: true,
     );
-  
+
     await fetch(true);
     return state;
   }

@@ -3,9 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' as service;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/constants/error_code.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
+import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/models/auto_configuration_settings.dart';
+import 'package:privacy_gui/core/jnap/models/auto_master_status.dart';
+import 'package:privacy_gui/core/jnap/command/base_command.dart';
+import 'package:privacy_gui/core/jnap/models/radio_info.dart';
+import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -18,6 +24,7 @@ import 'package:privacy_gui/page/instant_setup/model/impl/night_mode_step.dart';
 import 'package:privacy_gui/page/instant_setup/model/impl/personal_wifi_step.dart';
 import 'package:privacy_gui/page/instant_setup/model/impl/your_network_step.dart';
 import 'package:privacy_gui/page/instant_setup/model/pnp_step.dart';
+import 'package:privacy_gui/page/instant_setup/widgets/pnp_auto_master_waiting_view.dart';
 import 'package:privacy_gui/page/instant_setup/widgets/pnp_stepper.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/util/qr_code.dart';
@@ -39,6 +46,7 @@ import 'package:privacy_gui/util/export_selector/export_base.dart'
 enum _PnpSetupStep {
   init,
   config,
+  waitingAutoMaster,
   saving,
   saved,
   fwCheck,
@@ -66,6 +74,8 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
   bool _hasNewFW = false;
   bool _forceLogin = false;
   bool _fetchError = false;
+  bool _showAutoMasterConnectionError = false;
+  bool _wifiVerificationRetried = false; // Prevent infinite loop in WiFi verification
   PnpStep? _currentStep;
   ({void Function() stepCancel, void Function() stepContinue})? _stepController;
 
@@ -80,6 +90,12 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
         logger.d('[PnP]: Fetching data. Setup step = init');
       });
       await ref.read(pnpProvider.notifier).fetchData();
+    }).then((_) async {
+      // Record Auto Master status on entry for edge case detection
+      final status =
+          await ref.read(pnpProvider.notifier).checkAutoMasterStatus();
+      ref.read(pnpProvider.notifier).setAutoMasterStatusOnEntry(status);
+      logger.d('[PnP]: Auto Master status on entry: $status');
     }).then((_) {
       _isUnconfigured = ref.read(pnpProvider).isRouterUnConfigured;
       _isPrePaired = ref.read(pnpProvider).isPrePaired;
@@ -138,8 +154,8 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
   void _onWiFiReadyDone() {
     // Check router connected proper, then go to dashboard
     testConnection(success: () {
-      logger.i(
-          '[PnP]: The customized WiFi is well connected, go to dashboard!');
+      logger
+          .i('[PnP]: The customized WiFi is well connected, go to dashboard!');
       context.goNamed(RouteNamed.prepareDashboard);
     });
   }
@@ -177,13 +193,14 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
     final isNightModeSupport = serviceHelper.isSupportLedMode(services);
     // Show YourNetworkStep when unconfigured OR not pre-paired (AutoParent case)
     final showYourNetwork = _isUnconfigured || !_isPrePaired;
-    // Determine if this is the last step before YourNetworkStep
-    final isLastBeforeYourNetwork =
-        !isGuestWiFiSupport && !isNightModeSupport && !showYourNetwork;
     // Log PnP state for debugging
-    final autoConfigData = ref.read(pnpProvider.notifier).getData(JNAPAction.getAutoConfigurationSettings);
+    final autoConfigData = ref
+        .read(pnpProvider.notifier)
+        .getData(JNAPAction.getAutoConfigurationSettings);
     final autoConfigMethod = autoConfigData != null
-        ? AutoConfigurationSettings.fromMap(autoConfigData).autoConfigurationMethod?.name
+        ? AutoConfigurationSettings.fromMap(autoConfigData)
+            .autoConfigurationMethod
+            ?.name
         : 'unknown';
     logger.d('[PnP]: buildSteps state - '
         'isUnconfigured=$_isUnconfigured, '
@@ -195,7 +212,9 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
         'isNightModeSupport=$isNightModeSupport');
     // Need a common way to figure out which step to save changes
     return switch ((_forceLogin, _isUnconfigured, showYourNetwork)) {
-      (false, true, _) => [
+      // Unconfigured and AutoParent share the same step assembly:
+      // save at last WiFi step before YourNetwork to ensure smart mode = master
+      (false, _, true) => [
           PersonalWiFiStep(
               saveChanges: !isGuestWiFiSupport && !isNightModeSupport
                   ? _saveChanges
@@ -206,16 +225,6 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
           if (isNightModeSupport) NightModeStep(saveChanges: _saveChanges),
           YourNetworkStep(saveChanges: _confirmAddedNodes),
         ],
-      (false, false, true) => [
-          PersonalWiFiStep(
-              saveChanges: !isGuestWiFiSupport && !isNightModeSupport
-                  ? null
-                  : null),
-          if (isGuestWiFiSupport)
-            GuestWiFiStep(saveChanges: !isNightModeSupport ? null : null),
-          if (isNightModeSupport) NightModeStep(saveChanges: null),
-          YourNetworkStep(saveChanges: _saveChanges),
-        ],
       (true, false, _) => [
           PersonalWiFiStep(),
         ],
@@ -224,9 +233,11 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
           YourNetworkStep(saveChanges: _confirmAddedNodes),
         ],
       _ => [
-          PersonalWiFiStep(saveChanges: isLastBeforeYourNetwork ? _saveChanges : null),
-          if (isGuestWiFiSupport) GuestWiFiStep(saveChanges: !isNightModeSupport && !showYourNetwork ? _saveChanges : null),
-          if (isNightModeSupport) NightModeStep(saveChanges: !showYourNetwork ? _saveChanges : null),
+          // Configured + PrePaired: no YourNetwork step
+          // WiFi steps have no saveChanges - saving is handled by onLastStep
+          PersonalWiFiStep(),
+          if (isGuestWiFiSupport) GuestWiFiStep(),
+          if (isNightModeSupport) NightModeStep(),
         ],
     };
   }
@@ -234,9 +245,14 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
   Widget _buildPnpSetupView(BoxConstraints constraints) {
     final showConfig = _setupStep != _PnpSetupStep.saving &&
         _setupStep != _PnpSetupStep.saved &&
-        _setupStep != _PnpSetupStep.needReconnect;
+        _setupStep != _PnpSetupStep.needReconnect &&
+        _setupStep != _PnpSetupStep.waitingAutoMaster;
     return switch (_setupStep) {
       _PnpSetupStep.init => _loadingSpinner(),
+      _PnpSetupStep.waitingAutoMaster => PnpAutoMasterWaitingView(
+          showConnectionError: _showAutoMasterConnectionError,
+          onRetry: _retryAutoMasterSave,
+        ),
       _PnpSetupStep.wifiReady => _showWiFi(constraints),
       _PnpSetupStep.fwCheck => _fwUpdateCheck(),
       _ => Stack(
@@ -270,7 +286,11 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
           child: PnpStepper(
             steps: steps,
             stepperType: StepperType.horizontal,
-            onLastStep: _isUnconfigured ? null : _saveChanges,
+            // When showYourNetwork=true (except forceLogin), saving is handled by step's saveChanges, not onLastStep
+            // forceLogin + configured + !isPrePaired still needs onLastStep since no YourNetwork step
+            onLastStep: (_isUnconfigured || (!_forceLogin && !_isPrePaired))
+                ? null
+                : _saveChanges,
             onStepChanged: ((index, step, controller) {
               _currentStep = step;
               _stepController = controller;
@@ -390,7 +410,8 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
                   const AppGap.large5(),
                   if (isSplitMode)
                     ...bands.map((b) => Padding(
-                          padding: const EdgeInsets.only(bottom: Spacing.small2),
+                          padding:
+                              const EdgeInsets.only(bottom: Spacing.small2),
                           child: _splitBandCard(b.band, b.ssid, b.password),
                         ))
                   else
@@ -599,10 +620,81 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
                 onTap: () async {
                   logger.d('[PnP]: Tap Next to check the WiFi reconnection');
                   await testConnection(success: () async {
-                    final isUnconfigured =
-                        ref.read(pnpProvider).isRouterUnConfigured;
+                    // Use showYourNetwork to handle both Unconfigured and AutoParent
+                    final showYourNetwork = _isUnconfigured || !_isPrePaired;
                     logger.i(
-                        '[PnP]: The customized WiFi has been reconnected - $isUnconfigured');
+                        '[PnP]: The customized WiFi has been reconnected - isUnconfigured=$_isUnconfigured, isPrePaired=$_isPrePaired, showYourNetwork=$showYourNetwork');
+
+                    // Verify WiFi settings were applied correctly (only retry once)
+                    if (!_wifiVerificationRetried) {
+                      final wifiData = ref
+                              .read(pnpProvider)
+                              .stepStateList[PersonalWiFiStep.id]
+                              ?.data ??
+                          {};
+                      final isSplitMode =
+                          wifiData['isSplitMode'] as bool? ?? false;
+
+                      // Collect expected SSIDs (support split mode)
+                      Set<String> expectedSSIDs = {};
+                      if (isSplitMode) {
+                        final perBandSettings = wifiData['perBandSettings']
+                                as Map<String, dynamic>? ??
+                            {};
+                        for (final entry in perBandSettings.entries) {
+                          final value =
+                              entry.value as Map<String, dynamic>? ?? {};
+                          final ssid = value['ssid'] as String?;
+                          if (ssid != null && ssid.isNotEmpty) {
+                            expectedSSIDs.add(ssid);
+                          }
+                        }
+                      } else {
+                        final ssid = wifiData['ssid'] as String?;
+                        if (ssid != null && ssid.isNotEmpty) {
+                          expectedSSIDs.add(ssid);
+                        }
+                      }
+
+                      // Only verify if user has set SSID
+                      if (expectedSSIDs.isNotEmpty) {
+                        try {
+                          // Fetch current WiFi settings from router
+                          final radioInfoResult = await ref
+                              .read(routerRepositoryProvider)
+                              .send(
+                                JNAPAction.getRadioInfo,
+                                auth: true,
+                                fetchRemote: true,
+                                cacheLevel: CacheLevel.noCache,
+                              );
+                          final radioInfo =
+                              GetRadioInfo.fromMap(radioInfoResult.output);
+                          final currentSSIDs = radioInfo.radios
+                              .map((r) => r.settings.ssid)
+                              .toSet();
+
+                          // Check if any expected SSID matches current settings
+                          final hasMatch = expectedSSIDs
+                              .any((ssid) => currentSSIDs.contains(ssid));
+
+                          if (!hasMatch) {
+                            logger.w(
+                                '[PnP]: WiFi settings mismatch - expected: $expectedSSIDs, current: $currentSSIDs. Re-saving...');
+                            _wifiVerificationRetried = true;
+                            if (!mounted) return;
+                            await _saveChanges();
+                            return;
+                          }
+                          logger.d('[PnP]: WiFi settings verified - SSID matches');
+                        } catch (e) {
+                          // API call failed, log warning but continue flow
+                          logger.w(
+                              '[PnP]: Failed to verify WiFi settings: $e. Continuing...');
+                        }
+                      }
+                    }
+
                     final password = ref
                         .read(pnpProvider.notifier)
                         .getDefaultWiFiSettings()
@@ -611,17 +703,18 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
                     await ref
                         .read(pnpProvider.notifier)
                         .checkAdminPassword(password)
-                        .then((value) => isUnconfigured
+                        .then((value) => showYourNetwork
                             ? _stepController?.stepContinue()
                             : null);
-                    if (isUnconfigured) {
+                    if (showYourNetwork) {
                       setState(() {
                         _setupStep = _PnpSetupStep.config;
-                        logger
-                            .d('[PnP]: WiFi reconnected. Setup step = config');
+                        logger.d(
+                            '[PnP]: WiFi reconnected, showYourNetwork=true. Setup step = config');
                       });
                     } else {
-                      logger.d('[PnP]: WiFi reconnected. Setup step = fwCheck');
+                      logger.d(
+                          '[PnP]: WiFi reconnected, showYourNetwork=false. Setup step = fwCheck');
                       _doFwUpdateCheck();
                     }
                   });
@@ -634,8 +727,125 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
     );
   }
 
-  Future _saveChanges() async {
+  static const int _maxAutoMasterSaveAttempts = 2;
+
+  Future _saveChanges({int autoMasterSaveAttempt = 0}) async {
     final isUnconfigured = ref.read(pnpProvider).isRouterUnConfigured;
+
+    // Check Auto Master status before save (Second Defense)
+    final statusOnEntry = ref.read(pnpProvider).autoMasterStatusOnEntry;
+    final AutoMasterStatus? currentStatus;
+    try {
+      currentStatus =
+          await ref.read(pnpProvider.notifier).checkAutoMasterStatus();
+    } on ExceptionAutoMasterUnauthorized {
+      logger.e('[PnP]: Auto Master check unauthorized, redirect to login');
+      if (mounted) {
+        context.goNamed(RouteNamed.localLoginPassword);
+      }
+      return;
+    }
+
+    logger.d('[PnP]: Auto Master check before save - '
+        'entry status: $statusOnEntry, current: $currentStatus');
+
+    if (currentStatus == AutoMasterStatus.running) {
+      // Show waiting view and poll
+      setState(() {
+        _setupStep = _PnpSetupStep.waitingAutoMaster;
+        _showAutoMasterConnectionError = false;
+      });
+
+      int consecutiveFailures = 0;
+      const maxConsecutiveFailures = 3;
+      bool autoMasterFailed = false;
+
+      await for (final pollStatus
+          in ref.read(pnpProvider.notifier).pollAutoMasterStatus()) {
+        logger.d('[PnP]: Auto Master polling status: $pollStatus');
+
+        if (pollStatus == null) {
+          consecutiveFailures++;
+          logger.w(
+              '[PnP]: Auto Master polling failed, consecutive failures: $consecutiveFailures');
+
+          if (consecutiveFailures >= maxConsecutiveFailures) {
+            logger.e(
+                '[PnP]: Auto Master polling failed $maxConsecutiveFailures times, showing connection error');
+            setState(() {
+              _showAutoMasterConnectionError = true;
+            });
+            return;
+          }
+        } else {
+          consecutiveFailures = 0;
+
+          if (pollStatus == AutoMasterStatus.complete ||
+              pollStatus == AutoMasterStatus.idle) {
+            // Redirect to login page - password changed
+            if (mounted) {
+              context.goNamed(RouteNamed.localLoginPassword);
+            }
+            return;
+          }
+
+          if (pollStatus == AutoMasterStatus.failed) {
+            // Auto Master failed (e.g., found another Master), password is still admin
+            // Continue normal save flow
+            logger.i('[PnP]: Auto Master failed, continuing save flow');
+            autoMasterFailed = true;
+            break;
+          }
+        }
+      }
+
+      // Skip timeout handling if Auto Master failed - continue to save logic
+      if (autoMasterFailed) {
+        logger.d('[PnP]: Auto Master failed, skipping timeout handling');
+      } else {
+        // Polling exceeded max retry (timeout)
+        logger.w(
+            '[PnP]: Auto Master polling timeout, checking router connection');
+
+        if (autoMasterSaveAttempt >= _maxAutoMasterSaveAttempts) {
+          logger.e(
+              '[PnP]: Auto Master retry limit reached after $autoMasterSaveAttempt attempts');
+          setState(() {
+            _showAutoMasterConnectionError = true;
+          });
+          return;
+        }
+
+        try {
+          await ref.read(pnpProvider.notifier).testConnectionReconnected();
+          logger.i(
+              '[PnP]: Router connected after timeout, attempt ${autoMasterSaveAttempt + 1}/$_maxAutoMasterSaveAttempts');
+          setState(() {
+            _setupStep = _PnpSetupStep.config;
+          });
+          return _saveChanges(autoMasterSaveAttempt: autoMasterSaveAttempt + 1);
+        } catch (e) {
+          logger.e('[PnP]: Router not connected after timeout');
+          setState(() {
+            _showAutoMasterConnectionError = true;
+          });
+          return;
+        }
+      }
+    }
+
+    // Edge case: Was Idle on entry but now Complete
+    if (statusOnEntry == AutoMasterStatus.idle &&
+        currentStatus == AutoMasterStatus.complete) {
+      logger.w(
+          '[PnP]: Auto Master completed during PnP config - password changed');
+      if (mounted) {
+        context.goNamed(RouteNamed.localLoginPassword);
+      }
+      return;
+    }
+
+    // Continue with existing save logic
     setState(() {
       _loadingMessage = loc(context).savingChanges;
       _loadingMessageSub = loc(context).pnpSavingChangesDesc;
@@ -656,39 +866,57 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
       });
       // }
     }, test: (error) => error is ExceptionNeedToReconnect).catchError((error) {
+      final innerError = error is ExceptionSavingChanges ? error.error : error;
+
+      // Check if this is an Unauthorized error (Auto Master completed during save)
+      if (innerError is JNAPError &&
+          innerError.result == errorJNAPUnauthorized) {
+        logger.w(
+            '[PnP]: Caught unauthorized error during save - Auto Master may have completed');
+        if (mounted) {
+          context.goNamed(RouteNamed.pnp);
+        }
+        return;
+      }
+
+      // Original error handling
+      if (!mounted) return;
       setState(() {
         logger.e('[PnP]: Caught a saving error: $error. Setup step = config');
         _setupStep = _PnpSetupStep.config;
       });
-      final err = error is ExceptionSavingChanges ? error.error : error;
-      showSimpleSnackBar(context, 'Unexceped error! <$err}>');
+      final errorMsg = innerError?.toString() ?? loc(context).generalError;
+      showSimpleSnackBar(context, 'Unexpected error! <$errorMsg>');
     }, test: (error) => error is ExceptionSavingChanges).whenComplete(() async {
+      if (!mounted) return;
+      // Use showYourNetwork logic to handle both Unconfigured and AutoParent scenarios
+      final showYourNetwork = isUnconfigured || !_isPrePaired;
       logger.d(
-          '[PnP]: Save completed. isUnconfigured = $isUnconfigured, SetupStep = $_setupStep');
-      if (isUnconfigured) {
-        // if is unconfigured scenario and no need to reconnect to the router, continue add nodes flow
+          '[PnP]: Save completed. isUnconfigured = $isUnconfigured, isPrePaired = $_isPrePaired, showYourNetwork = $showYourNetwork, SetupStep = $_setupStep');
+      if (showYourNetwork) {
+        // Unconfigured or AutoParent: continue to YourNetwork step
         if (_setupStep != _PnpSetupStep.needReconnect) {
           _stepController?.stepContinue();
           setState(() {
             logger.d(
-                '[PnP]: The router is unconfigured and no need to reconnect. Setup step = config');
+                '[PnP]: showYourNetwork=true, no need to reconnect. Setup step = config');
             _setupStep = _PnpSetupStep.config;
           });
         }
       } else {
+        // Configured + PrePaired: go to WiFi ready page
         if (_setupStep != _PnpSetupStep.needReconnect) {
-          // if is configured scenario, go display WiFi page
           setState(() {
-            logger.d('[PnP]: The router is configured. Setup step = saved');
+            logger.d('[PnP]: showYourNetwork=false. Setup step = saved');
             _setupStep = _PnpSetupStep.saved;
           });
           await Future.delayed(const Duration(seconds: 3));
-          logger.d('[PnP]: The router is configured. Setup step = fwCheck');
+          logger.d('[PnP]: showYourNetwork=false. Setup step = fwCheck');
           _doFwUpdateCheck();
         } else {
           setState(() {
             logger.d(
-                '[PnP]: The router is configured but need to reconnect. Setup step = saved');
+                '[PnP]: showYourNetwork=false but need to reconnect. Setup step = saved');
             _setupStep = _PnpSetupStep.saved;
           });
           await Future.delayed(const Duration(seconds: 3));
@@ -741,17 +969,23 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
   }
 
   Future<void> testConnection(
-      {required void Function() success, void Function()? failed}) {
+      {required FutureOr<void> Function() success,
+      void Function()? failed}) async {
     // Check router connected propor, then go to dashboard
-    return ref
-        .read(pnpProvider.notifier)
-        .testConnectionReconnected()
-        .then((value) {
-      success.call();
-    }).onError((error, stackTrace) {
+    try {
+      await ref.read(pnpProvider.notifier).testConnectionReconnected();
+      await success.call();
+    } catch (error) {
       logger.e('[PnP]: Cannot detect the expected WiFi connected!');
       showSimpleSnackBar(context, loc(context).pnpReconnectWiFi);
       failed?.call();
+    }
+  }
+
+  void _retryAutoMasterSave() {
+    setState(() {
+      _showAutoMasterConnectionError = false;
     });
+    _saveChanges();
   }
 }

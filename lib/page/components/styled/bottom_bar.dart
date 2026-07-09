@@ -41,8 +41,8 @@ class _BottomBarState extends ConsumerState<BottomBar> {
                           padding: const EdgeInsets.only(right: 8.0),
                           child: Semantics(
                               identifier: 'now-bottom-text-copyright',
-                              child: AppText.bodySmall(
-                                  loc(context).copyRight(BuildConfig.copyRightYear))),
+                              child: AppText.bodySmall(loc(context)
+                                  .copyRight(BuildConfig.copyRightYear))),
                         ),
                         AppTextButton.noPadding(
                           loc(context).endUserLicenseAgreement,

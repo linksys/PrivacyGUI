@@ -1,4 +1,3 @@
-
 @GenerateNiceMocks([
   MockSpec<RouterPasswordNotifier>(),
 ])

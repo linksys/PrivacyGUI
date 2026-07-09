@@ -48,7 +48,8 @@ class _FakeInstantTopologyState_1 extends _i1.SmartFake
 /// A class which mocks [InstantTopologyNotifier].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockInstantTopologyNotifier extends _i2.Notifier<_i3.InstantTopologyState> with _i1.Mock
+class MockInstantTopologyNotifier extends _i2.Notifier<_i3.InstantTopologyState>
+    with _i1.Mock
     implements _i3.InstantTopologyNotifier {
   @override
   _i2.NotifierProviderRef<_i3.InstantTopologyState> get ref =>

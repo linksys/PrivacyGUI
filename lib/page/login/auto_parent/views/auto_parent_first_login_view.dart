@@ -106,7 +106,8 @@ class _AutoParentFirstLoginViewState
     if (isNewFwAvailable) {
       logger.i('[FirstTime]: Firmware Updateing...');
     } else {
-      logger.i('[FirstTime]: ${failCheck ? 'Fw check failed' : 'No available FW'}, ready to go.');
+      logger.i(
+          '[FirstTime]: ${failCheck ? 'Fw check failed' : 'No available FW'}, ready to go.');
       _finishFirstTimeLogin(failCheck);
     }
   }

@@ -607,6 +607,40 @@ void main() {
       await tester.tap(saveButtonFinder);
       await tester.pumpAndSettle();
     });
+
+    testLocalizations('Incredible-WiFi - Advanced settings view - IPTV enabled',
+        (tester, locale) async {
+      when(mockWiFiAdvancedSettingsNotifier.build()).thenReturn(
+          WifiAdvancedSettingsState.fromMap(
+              wifiAdvancedSettingsIptvEnabledTestState));
+
+      when(mockWiFiAdvancedSettingsNotifier.fetch())
+          .thenAnswer((realInvocation) async {
+        await Future.delayed(Durations.extralong1);
+        return WifiAdvancedSettingsState.fromMap(
+            wifiAdvancedSettingsIptvEnabledTestState);
+      });
+      final widget = testableSingleRoute(
+        overrides: [
+          wifiViewProvider.overrideWith(() => mockWiFiViewNotifier),
+          wifiListProvider.overrideWith(() => mockWiFiListNotifier),
+          wifiAdvancedProvider
+              .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
+          instantPrivacyProvider.overrideWith(() => mockInstantPrivacyNotifier),
+        ],
+        locale: locale,
+        child: const WiFiMainView(),
+      );
+      await tester.pumpWidget(widget);
+      await tester.pumpAndSettle();
+
+      final tabFinder = find.byType(Tab);
+      await tester.tap(tabFinder.at(1));
+      await tester.pumpAndSettle();
+    }, screens: [
+      ...responsiveMobileScreens.map((e) => e.copyWith(height: 1280)).toList(),
+      ...responsiveDesktopScreens
+    ]);
   });
 
   group('Incredible-WiFi - MAC Filtering view', () {

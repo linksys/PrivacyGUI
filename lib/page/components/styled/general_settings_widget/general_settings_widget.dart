@@ -42,10 +42,7 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
         label: 'general settings',
         child: Icon(
           isRemote ? Icons.support_agent : LinksysIcons.person,
-          size: 20,
-          color: Color(
-            neutralTonal.get(100),
-          ),
+          color: Color(neutralTonal.get(100)),
         ),
       ),
       borderRadius: const BorderRadius.all(Radius.circular(10)),
@@ -118,7 +115,8 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
     );
   }
 
-  List<Widget> _displayAdditional(LoginType loginType, AppPopupButtonController controller) {
+  List<Widget> _displayAdditional(
+      LoginType loginType, AppPopupButtonController controller) {
     final isRemote = loginType == LoginType.remote;
     if (loginType != LoginType.none) {
       return [

@@ -42,7 +42,7 @@ void main() {
     testWidgets('Local Network Settings - Log in ', (tester) async {
       // Log in
       await tester.pumpFrames(app(), const Duration(seconds: 5));
-      
+
       final login = TestLocalLoginActions(tester);
       await login.inputPassword(IntegrationTestConfig.password);
       expect(
@@ -52,7 +52,8 @@ void main() {
       await login.tapLoginButton();
     });
 
-    testWidgets('Local Network Settings - Valid and invalid host name', (tester) async {
+    testWidgets('Local Network Settings - Valid and invalid host name',
+        (tester) async {
       final actions = await enterLocalNetworkSettings(tester);
       await actions.tapHostNameTab();
       // Invalid
@@ -71,7 +72,9 @@ void main() {
       await actions.verifyHostName('TestHostName');
     });
 
-    testWidgets('Local Network Settings - Valid and invalid IP address and subnet mask', (tester) async {
+    testWidgets(
+        'Local Network Settings - Valid and invalid IP address and subnet mask',
+        (tester) async {
       final actions = await enterLocalNetworkSettings(tester);
       await actions.tapLanIPAddressTab();
       // Invalid IP
@@ -97,14 +100,16 @@ void main() {
       await actions.verifySubnetMask('255.255.255.0');
     });
 
-    testWidgets('Local Network Settings - Valid and invalid DHCP Server settings', (tester) async {
+    testWidgets(
+        'Local Network Settings - Valid and invalid DHCP Server settings',
+        (tester) async {
       final actions = await enterLocalNetworkSettings(tester);
       await actions.tapDHCPServerTab();
       await actions.toggleDHCPServer(false);
       await actions.verifyDHCPServerDisable();
       await actions.toggleDHCPServer(true);
       await actions.verifyDHCPServerEnable();
-      // Invalid 
+      // Invalid
       await actions.inputStartIPAddress('192.168.1.0');
       await actions.verifyStartIPAddressNotInValidRange();
       await actions.inputStartIPAddress('192.168.1.1');

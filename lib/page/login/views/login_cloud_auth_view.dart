@@ -127,7 +127,7 @@ class _LoginCloudAuthViewState extends ConsumerState<LoginCloudAuthView> {
 
   Widget _mainView() {
     bool canProceed = _token != null && _sessionInfo != null;
-    final secondsLeft = (_sessionInfo?.expiredIn ?? 0) * -1;
+    final secondsLeft = (_sessionInfo?.expiredIn ?? 0).abs();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,

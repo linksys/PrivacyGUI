@@ -48,8 +48,7 @@ class _FakePowerTableState_1 extends _i1.SmartFake
 /// A class which mocks [PowerTableNotifier].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockPowerTableNotifier extends _i2.Notifier<
-    _i3.PowerTableState>
+class MockPowerTableNotifier extends _i2.Notifier<_i3.PowerTableState>
     with _i1.Mock
     implements _i3.PowerTableNotifier {
   @override

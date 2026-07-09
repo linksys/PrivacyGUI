@@ -29,13 +29,15 @@ class _WifiNameFieldState extends State<WifiNameField> {
   @override
   Widget build(BuildContext context) {
     return AppTextField(
-      semanticLabel: '${widget.semanticLabel} wifi name',
+      semanticLabel: widget.semanticLabel.isEmpty
+          ? 'wifi name'
+          : '${widget.semanticLabel} wifi name',
       controller: widget.controller,
       border: const OutlineInputBorder(),
       onChanged: widget.onChanged,
       errorText: () {
-        final errorKeys =
-            wifiSSIDValidator.validateDetail(widget.controller.text, onlyFailed: true);
+        final errorKeys = wifiSSIDValidator
+            .validateDetail(widget.controller.text, onlyFailed: true);
         if (errorKeys.isEmpty) {
           return null;
         } else if (errorKeys.keys.first == NoSurroundWhitespaceRule().name) {

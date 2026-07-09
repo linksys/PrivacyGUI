@@ -210,6 +210,8 @@
   "faqListWhatLightsMean": "Düğümümdeki ışıklar ne anlama geliyor?",
   "faqLookingFor": "Aradığınızı bulamıyor musunuz?",
   "faqVisitLinksysSupport": "Linksys Desteği'ni ziyaret edin",
+  "faqWebInterfaceGuideTitle": "Web Arayüzü Kılavuzu",
+  "faqWebInterfaceGuideDesc": "Linksys Pinnacle Mesh yönlendiricileri için eksiksiz kılavuz",
   "faqs": "SSS",
   "featureUnavailableInRemoteMode": "Bu özellik uzak modda kullanılamaz",
   "filterAnonymous": "Anonim İnternet isteklerini engelle",

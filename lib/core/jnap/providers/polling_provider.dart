@@ -15,6 +15,7 @@ import 'package:privacy_gui/page/vpn/providers/vpn_notifier.dart';
 import 'package:privacy_gui/providers/auth/_auth.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_provider.dart';
 import 'package:privacy_gui/core/utils/fernet_manager.dart';
+import 'package:privacy_gui/core/cloud/providers/remote_assistance/remote_client_provider.dart';
 
 const int pollFirstDelayInSec = 1;
 
@@ -178,6 +179,14 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
     }
 
     await ref.read(instantPrivacyProvider.notifier).fetch(statusOnly: true);
+
+    final loginType = ref.read(authProvider).value?.loginType;
+    // TODO: Disable remote assistance for now
+    // logger.i('[Polling]: _additionalPolling loginType: $loginType');
+    // if (loginType == LoginType.local) {
+    //   logger.i('[Polling]: checking active remote session');
+    //   await ref.read(remoteClientProvider.notifier).checkActiveSession();
+    // }
   }
 
   Future forcePolling() {

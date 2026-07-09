@@ -210,6 +210,8 @@
   "faqListWhatLightsMean": "ไฟบนโหนดของฉันหมายความว่าอย่างไร",
   "faqLookingFor": "หาสิ่งที่ต้องการไม่พบ?",
   "faqVisitLinksysSupport": "เยี่ยมชมฝ่ายสนับสนุน Linksys",
+  "faqWebInterfaceGuideTitle": "คู่มือเว็บอินเทอร์เฟซ",
+  "faqWebInterfaceGuideDesc": "คู่มือฉบับสมบูรณ์สำหรับเราเตอร์ Linksys Pinnacle Mesh",
   "faqs": "คำถามที่พบบ่อย",
   "featureUnavailableInRemoteMode": "คุณลักษณะนี้ไม่พร้อมใช้งานในโหมดระยะไกล",
   "filterAnonymous": "กรองการร้องขออินเทอร์เน็ตที่ไม่มีชื่อ",

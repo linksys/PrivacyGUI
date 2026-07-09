@@ -60,8 +60,11 @@ class PortRangeForwardingRuleState extends Equatable {
 
   factory PortRangeForwardingRuleState.fromMap(Map<String, dynamic> map) {
     return PortRangeForwardingRuleState(
-      rules: List<PortRangeForwardingRule>.from(map['rules']?.map((x) => PortRangeForwardingRule.fromMap(x))),
-      rule: map['rule'] != null ? PortRangeForwardingRule.fromMap(map['rule']) : null,
+      rules: List<PortRangeForwardingRule>.from(
+          map['rules']?.map((x) => PortRangeForwardingRule.fromMap(x))),
+      rule: map['rule'] != null
+          ? PortRangeForwardingRule.fromMap(map['rule'])
+          : null,
       editIndex: map['editIndex']?.toInt(),
       routerIp: map['routerIp'] ?? '',
       subnetMask: map['subnetMask'] ?? '',
@@ -70,7 +73,8 @@ class PortRangeForwardingRuleState extends Equatable {
 
   String toJson() => json.encode(toMap());
 
-  factory PortRangeForwardingRuleState.fromJson(String source) => PortRangeForwardingRuleState.fromMap(json.decode(source));
+  factory PortRangeForwardingRuleState.fromJson(String source) =>
+      PortRangeForwardingRuleState.fromMap(json.decode(source));
 
   @override
   bool get stringify => true;

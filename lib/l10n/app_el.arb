@@ -210,6 +210,8 @@
   "faqListWhatLightsMean": "Τι σημαίνουν οι λυχνίες στον κόμβο μου;",
   "faqLookingFor": "Δεν βρίσκετε αυτό που ψάχνετε;",
   "faqVisitLinksysSupport": "Επισκεφθείτε την Υποστήριξη Linksys",
+  "faqWebInterfaceGuideTitle": "Οδηγός διεπαφής Web",
+  "faqWebInterfaceGuideDesc": "Πλήρης οδηγός για δρομολογητές Linksys Pinnacle Mesh",
   "faqs": "Συχνές ερωτήσεις",
   "featureUnavailableInRemoteMode": "Αυτή η λειτουργία δεν είναι διαθέσιμη σε λειτουργία απομακρυσμένης πρόσβασης",
   "filterAnonymous": "Φιλτράρισμα ανώνυμων αιτημάτων Internet",

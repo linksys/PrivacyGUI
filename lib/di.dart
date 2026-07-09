@@ -7,6 +7,8 @@ final getIt = GetIt.instance;
 
 void dependencySetup() {
   getIt.registerSingleton<ServiceHelper>(ServiceHelper());
-  getIt.registerSingleton<ThemeData>(linksysLightThemeData, instanceName: 'lightThemeData');
-  getIt.registerSingleton<ThemeData>(linksysDarkThemeData, instanceName: 'darkThemeData');
+  getIt.registerSingleton<ThemeData>(linksysLightThemeData,
+      instanceName: 'lightThemeData');
+  getIt.registerSingleton<ThemeData>(linksysDarkThemeData,
+      instanceName: 'darkThemeData');
 }

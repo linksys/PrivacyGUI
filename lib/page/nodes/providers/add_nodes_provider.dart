@@ -3,7 +3,6 @@ import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/models/back_haul_info.dart';
-import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
@@ -11,6 +10,7 @@ import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/bench_mark.dart';
 import 'package:privacy_gui/core/utils/devices.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/page/nodes/providers/add_nodes_exception.dart';
 import 'package:privacy_gui/page/nodes/providers/add_nodes_state.dart';
 
 final addNodesProvider =
@@ -68,92 +68,117 @@ class AddNodesNotifier extends AutoDisposeNotifier<AddNodesState> {
     final benchMark = BenchMarkLogger(name: 'AutoOnboarding');
     benchMark.start();
 
-    ref.read(pollingProvider.notifier).stopPolling();
-
-    // final nodeSnapshot =
-    //     List<LinksysDevice>.from(ref.read(deviceManagerProvider).deviceList)
-    //         .toList();
-
-    // Commence the auto-onboarding process
-    final repo = ref.read(routerRepositoryProvider);
-    await repo.send(JNAPAction.startBlueboothAutoOnboarding, auth: true);
-
-    bool onboardingProceed = false;
-    // For AutoOnboarding 2 service, there has no deviceOnboardingStatus
-    // only AutoOnboarding 3 service has deviceOnboardingStatus.
-    bool anyOnboarded = false;
-    var deviceOnboardingStatus = [];
-
-    state = state.copyWith(isLoading: true, loadingMessage: 'searching');
-
-    await for (final result in pollAutoOnboardingStatus()) {
-      logger.d('[AddNodes]: GetAutoOnboardingStatus result: $result');
-      // Update onboarding status
-      if (result is JNAPSuccess) {
-        if (result.output['autoOnboardingStatus'] == 'Onboarding') {
-          onboardingProceed = true;
-        }
-        // Set deviceOnboardingStatus data
-        deviceOnboardingStatus = result.output['deviceOnboardingStatus'] ?? [];
-      }
-    }
-    // Get onboarded device data
-    anyOnboarded = List.from(deviceOnboardingStatus)
-        .any((element) => element['onboardingStatus'] == 'Onboarded');
-    // Get the MAC address list of these onboarded devices
-    List<String> onboardedMACList = [];
-    if (anyOnboarded) {
-      onboardedMACList = List.from(deviceOnboardingStatus)
-          .where((element) => element['onboardingStatus'] == 'Onboarded')
-          .map((e) => e['btMACAddress'] as String?)
-          .nonNulls
-          .toList();
-    }
-    logger.d(
-        '[AddNodes]: Number of onboarded MAC addresses = ${onboardedMACList.length}');
-    List<LinksysDevice> addedDevices = [];
-    List<LinksysDevice> childNodes = [];
-    List<BackHaulInfoData> backhaulInfoList = [];
-    state = state.copyWith(isLoading: true, loadingMessage: 'onboarding');
-    if (onboardingProceed && anyOnboarded) {
-      await for (final result in pollForNodesOnline(onboardedMACList)) {
-        childNodes =
-            result.where((element) => element.nodeType != null).toList();
-        addedDevices = result
-            .where(
-              (element) =>
-                  element.nodeType == 'Slave' &&
-                  (element.knownInterfaces?.any((knownInterface) =>
-                          onboardedMACList
-                              .contains(knownInterface.macAddress)) ??
-                      false),
-            )
-            .toList();
-        logger.d(
-            '[AddNodes]: [pollForNodesOnline] added devices: ${addedDevices.map((d) => d.toJson()).join(', ')}');
-      }
-      await for (final result in pollNodesBackhaulInfo(childNodes)) {
-        backhaulInfoList = result;
-      }
-    }
-    childNodes.sort((a, b) => a.isAuthority ? -1 : 1);
     final polling = ref.read(pollingProvider.notifier);
-    await polling.forcePolling().then((value) => polling.startPolling());
-    // logger.d('[AddNodes]: Update state: nodesSnapshot = $nodeSnapshot');
-    logger.d('[AddNodes]: Update state: addedDevices = $addedDevices');
-    logger.d(
-        '[AddNodes]: Update state: onboardingProceed = $onboardingProceed, anyOnboarded=$anyOnboarded');
-    benchMark.end();
+    polling.stopPolling();
 
-    state = state.copyWith(
-      // nodesSnapshot: nodeSnapshot,
-      onboardingProceed: onboardingProceed,
-      anyOnboarded: anyOnboarded,
-      addedNodes: addedDevices,
-      childNodes: collectChildNodeData(childNodes, backhaulInfoList),
-      isLoading: false,
-      onboardedMACList: onboardedMACList,
-    );
+    try {
+      state = state.copyWith(isLoading: true, loadingMessage: 'searching');
+
+      // Commence the auto-onboarding process with retry logic for SmartConnect not ready
+      final repo = ref.read(routerRepositoryProvider);
+      const maxRetries = 20;
+      const retryDelay = Duration(seconds: 3);
+
+      for (var attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+          await repo.send(JNAPAction.startBlueboothAutoOnboarding, auth: true);
+          logger.d(
+              '[AddNodes]: StartBluetoothAutoOnboarding succeeded on attempt $attempt');
+          break;
+        } on JNAPError catch (e) {
+          if (e.result == 'ErrorSmartConnectNotReady') {
+            logger.d(
+                '[AddNodes]: SmartConnect not ready, attempt $attempt/$maxRetries');
+            if (attempt == maxRetries) {
+              logger.e(
+                  '[AddNodes]: SmartConnect not ready after $maxRetries attempts');
+              throw ExceptionSmartConnectTimeout();
+            }
+            await Future.delayed(retryDelay);
+          } else {
+            rethrow;
+          }
+        }
+      }
+
+      bool onboardingProceed = false;
+      // For AutoOnboarding 2 service, there has no deviceOnboardingStatus
+      // only AutoOnboarding 3 service has deviceOnboardingStatus.
+      bool anyOnboarded = false;
+      var deviceOnboardingStatus = [];
+
+      await for (final result in pollAutoOnboardingStatus()) {
+        logger.d('[AddNodes]: GetAutoOnboardingStatus result: $result');
+        // Update onboarding status
+        if (result is JNAPSuccess) {
+          if (result.output['autoOnboardingStatus'] == 'Onboarding') {
+            onboardingProceed = true;
+          }
+          // Set deviceOnboardingStatus data
+          deviceOnboardingStatus =
+              result.output['deviceOnboardingStatus'] ?? [];
+        }
+      }
+      // Get onboarded device data
+      anyOnboarded = List.from(deviceOnboardingStatus)
+          .any((element) => element['onboardingStatus'] == 'Onboarded');
+      // Get the MAC address list of these onboarded devices
+      List<String> onboardedMACList = [];
+      if (anyOnboarded) {
+        onboardedMACList = List.from(deviceOnboardingStatus)
+            .where((element) => element['onboardingStatus'] == 'Onboarded')
+            .map((e) => e['btMACAddress'] as String?)
+            .nonNulls
+            .toList();
+      }
+      logger.d(
+          '[AddNodes]: Number of onboarded MAC addresses = ${onboardedMACList.length}');
+      List<LinksysDevice> addedDevices = [];
+      List<LinksysDevice> childNodes = [];
+      List<BackHaulInfoData> backhaulInfoList = [];
+      state = state.copyWith(isLoading: true, loadingMessage: 'onboarding');
+      if (onboardingProceed && anyOnboarded) {
+        await for (final result in pollForNodesOnline(onboardedMACList)) {
+          childNodes =
+              result.where((element) => element.nodeType != null).toList();
+          addedDevices = result
+              .where(
+                (element) =>
+                    element.nodeType == 'Slave' &&
+                    (element.knownInterfaces?.any((knownInterface) =>
+                            onboardedMACList
+                                .contains(knownInterface.macAddress)) ??
+                        false),
+              )
+              .toList();
+          logger.d(
+              '[AddNodes]: [pollForNodesOnline] added devices: ${addedDevices.map((d) => d.toJson()).join(', ')}');
+        }
+        await for (final result in pollNodesBackhaulInfo(childNodes)) {
+          backhaulInfoList = result;
+        }
+      }
+      childNodes.sort((a, b) => a.isAuthority ? -1 : 1);
+      await polling.forcePolling();
+      // logger.d('[AddNodes]: Update state: nodesSnapshot = $nodeSnapshot');
+      logger.d('[AddNodes]: Update state: addedDevices = $addedDevices');
+      logger.d(
+          '[AddNodes]: Update state: onboardingProceed = $onboardingProceed, anyOnboarded=$anyOnboarded');
+      benchMark.end();
+
+      state = state.copyWith(
+        // nodesSnapshot: nodeSnapshot,
+        onboardingProceed: onboardingProceed,
+        anyOnboarded: anyOnboarded,
+        addedNodes: addedDevices,
+        childNodes: collectChildNodeData(childNodes, backhaulInfoList),
+        isLoading: false,
+        onboardedMACList: onboardedMACList,
+      );
+    } finally {
+      state = state.copyWith(isLoading: false);
+      polling.startPolling();
+    }
   }
 
   Stream<List<LinksysDevice>> pollForNodesOnline(List<String> onboardedMACList,

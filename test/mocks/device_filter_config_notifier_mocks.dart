@@ -48,8 +48,8 @@ class _FakeDeviceFilterConfigState_1 extends _i1.SmartFake
 /// A class which mocks [DeviceFilterConfigNotifier].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockDeviceFilterConfigNotifier extends _i2.Notifier<
-    _i3.DeviceFilterConfigState>
+class MockDeviceFilterConfigNotifier
+    extends _i2.Notifier<_i3.DeviceFilterConfigState>
     with _i1.Mock
     implements _i4.DeviceFilterConfigNotifier {
   @override

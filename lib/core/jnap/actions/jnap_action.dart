@@ -229,6 +229,8 @@ enum JNAPAction {
   //channelFinder
   getSelectedChannels,
   startAutoChannelSelection,
+  // auto master
+  getAutoMasterStatus,
   ;
 
   String get actionValue {

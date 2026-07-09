@@ -9,6 +9,7 @@ import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/styled/menus/menu_consts.dart';
 import 'package:privacy_gui/page/components/styled/menus/widgets/menu_holder.dart';
+import 'package:privacy_gui/page/components/styled/remote_assistance/remote_assistance_dialog.dart';
 import 'package:privacy_gui/page/components/widgets/brand_asset_widget.dart';
 import 'package:privacy_gui/providers/brand_asset_provider.dart';
 import 'package:privacy_gui/providers/global_model_number_provider.dart';
@@ -55,7 +56,7 @@ class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
 
     // Get model number from global state
     final modelNumber = ref.watch(globalModelNumberProvider);
-    
+
     return SafeArea(
       bottom: false,
       child: GestureDetector(
@@ -145,12 +146,13 @@ class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
                           _sessionExpireCounter(sessionInfo, expiredCountdown),
                       ],
                     ),
-                  // TODO: Add the button back when remote assistance is ready
+                  // TODO: Disable remote assistance for now
                   // if (loginType == LoginType.local)
                   //   Padding(
-                  //     padding: EdgeInsets.symmetric(horizontal: 4.0),
+                  //     padding: EdgeInsets.all(4.0),
                   //     child: AppIconButton.noPadding(
                   //       icon: Icons.support_agent,
+                  //       color: Color(neutralTonal.get(100)),
                   //       onTap: () {
                   //         showRemoteAssistanceDialog(context, ref);
                   //       },
@@ -204,14 +206,20 @@ class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
       GRASessionInfo sessionInfo, int? expiredCountdown) {
     var display = loc(context).remoteAssistanceSessionExpired;
     if (sessionInfo.status != GRASessionStatus.active) {
-      return AppText.bodyMedium(display);
+      return AppText.bodyMedium(
+        display,
+        color: Color(neutralTonal.get(100)),
+      );
     }
     final count = expiredCountdown ?? sessionInfo.expiredIn;
     if (count > 0) {
       display = loc(context).remoteAssistanceSessionExpiresIn(
           DateFormatUtils.formatTimeMSS(count));
     }
-    return AppText.bodyMedium(display);
+    return AppText.bodyMedium(
+      display,
+      color: Color(neutralTonal.get(100)),
+    );
   }
 
   void _startRemoteAssistance(BuildContext context) {

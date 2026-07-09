@@ -3,6 +3,9 @@ import 'dart:convert';
 
 import 'package:equatable/equatable.dart';
 
+/// Total duration (in seconds) of the PENDING session window (45 minutes).
+const int kPendingSessionDurationSec = 2700;
+
 ///	remoteSessionStatus: string
 /// The status of the remote assistance session.
 /// Enum:

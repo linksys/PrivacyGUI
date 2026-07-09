@@ -58,7 +58,8 @@ class _FakeDeviceListItem_2 extends _i1.SmartFake
 /// A class which mocks [DeviceListNotifier].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockDeviceListNotifier extends _i2.Notifier<_i3.DeviceListState> with _i1.Mock
+class MockDeviceListNotifier extends _i2.Notifier<_i3.DeviceListState>
+    with _i1.Mock
     implements _i3.DeviceListNotifier {
   @override
   _i2.NotifierProviderRef<_i3.DeviceListState> get ref => (super.noSuchMethod(

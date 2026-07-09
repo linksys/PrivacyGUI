@@ -80,9 +80,15 @@ class DMZSettings extends Equatable {
   }) {
     return DMZSettings(
       isDMZEnabled: isDMZEnabled ?? this.isDMZEnabled,
-      sourceRestriction: sourceRestriction != null ? sourceRestriction() : this.sourceRestriction,
-      destinationIPAddress: destinationIPAddress != null ? destinationIPAddress() : this.destinationIPAddress,
-      destinationMACAddress: destinationMACAddress != null ? destinationMACAddress() : this.destinationMACAddress,
+      sourceRestriction: sourceRestriction != null
+          ? sourceRestriction()
+          : this.sourceRestriction,
+      destinationIPAddress: destinationIPAddress != null
+          ? destinationIPAddress()
+          : this.destinationIPAddress,
+      destinationMACAddress: destinationMACAddress != null
+          ? destinationMACAddress()
+          : this.destinationMACAddress,
     );
   }
 }

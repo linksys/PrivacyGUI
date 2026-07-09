@@ -111,7 +111,8 @@ class TestInstantAdminActions extends CommonBaseActions {
   }
 
   Finder singaporeTaiwanRussiaTimeZoneCardFinder() {
-    final textFinder = find.text(loc(getContext()).timezoneSingaporeTaiwanRussia);
+    final textFinder =
+        find.text(loc(getContext()).timezoneSingaporeTaiwanRussia);
     final cardFinder = find
         .ancestor(
           of: textFinder,
@@ -131,7 +132,8 @@ class TestInstantAdminActions extends CommonBaseActions {
         )
         .first;
     expect(textFinder, findsOneWidget);
-    final checkIconFinder = find.descendant(of: card, matching: find.byType(Icon));
+    final checkIconFinder =
+        find.descendant(of: card, matching: find.byType(Icon));
     return checkIconFinder;
   }
 

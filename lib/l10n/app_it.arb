@@ -228,6 +228,8 @@
   "faqListWhatLightsMean": "Cosa indicano le spie luminose sul nodo?",
   "faqLookingFor": "Non riesci a trovare quello che stai cercando?",
   "faqVisitLinksysSupport": "Visitate il supporto Linksys",
+  "faqWebInterfaceGuideTitle": "Guida all'interfaccia Web",
+  "faqWebInterfaceGuideDesc": "Guida completa per i router Linksys Pinnacle Mesh",
   "faqs": "Domande frequenti",
   "featureUnavailableInRemoteMode": "Questa funzione non è disponibile in modalità remota",
   "filterAnonymous": "Filtro richieste Internet anonime",

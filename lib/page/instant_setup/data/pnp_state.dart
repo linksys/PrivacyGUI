@@ -1,6 +1,8 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'package:equatable/equatable.dart';
+import 'package:flutter/foundation.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
+import 'package:privacy_gui/core/jnap/models/auto_master_status.dart';
 import 'package:privacy_gui/core/jnap/models/device.dart';
 
 import 'package:privacy_gui/core/jnap/models/device_info.dart';
@@ -16,6 +18,7 @@ class PnpState extends Equatable {
   final List<RawDevice> childNodes;
   final bool forceLogin;
   final bool isPrePaired;
+  final AutoMasterStatus? autoMasterStatusOnEntry;
 
   const PnpState({
     required this.deviceInfo,
@@ -26,6 +29,7 @@ class PnpState extends Equatable {
     this.childNodes = const [],
     this.forceLogin = false,
     this.isPrePaired = false,
+    this.autoMasterStatusOnEntry,
   });
 
   PnpState copyWith({
@@ -37,6 +41,7 @@ class PnpState extends Equatable {
     List<RawDevice>? childNodes,
     bool? forceLogin,
     bool? isPrePaired,
+    ValueGetter<AutoMasterStatus?>? autoMasterStatusOnEntry,
   }) {
     return PnpState(
       deviceInfo: deviceInfo ?? this.deviceInfo,
@@ -47,6 +52,9 @@ class PnpState extends Equatable {
       childNodes: childNodes ?? this.childNodes,
       forceLogin: forceLogin ?? this.forceLogin,
       isPrePaired: isPrePaired ?? this.isPrePaired,
+      autoMasterStatusOnEntry: autoMasterStatusOnEntry != null
+          ? autoMasterStatusOnEntry()
+          : this.autoMasterStatusOnEntry,
     );
   }
 
@@ -60,6 +68,7 @@ class PnpState extends Equatable {
         childNodes,
         forceLogin,
         isPrePaired,
+        autoMasterStatusOnEntry,
       ];
 
   bool get isRouterUnConfigured => isUnconfigured ?? false;

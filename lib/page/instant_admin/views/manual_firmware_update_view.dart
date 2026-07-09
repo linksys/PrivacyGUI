@@ -123,7 +123,10 @@ class _ManualFirmwareUpdateViewState
                               onComplete: () async {
                             handleSuccessUpdated();
                           });
-                        }, test: (error) => error is JNAPSideEffectError).catchError((error) {
+                        },
+                                test: (error) =>
+                                    error is JNAPSideEffectError).catchError(
+                                (error) {
                           setState(() {
                             status?.stop();
                             ref

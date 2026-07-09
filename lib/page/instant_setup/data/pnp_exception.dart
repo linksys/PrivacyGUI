@@ -5,29 +5,24 @@ sealed class PnpException {
 }
 
 class ExceptionFetchDeviceInfo extends PnpException {
-  ExceptionFetchDeviceInfo()
-      : super(message: 'Failed to fetch device info!');
+  ExceptionFetchDeviceInfo() : super(message: 'Failed to fetch device info!');
 }
 
 class ExceptionInvalidAdminPassword extends PnpException {
-  ExceptionInvalidAdminPassword()
-      : super(message: 'Invalid admin password');
+  ExceptionInvalidAdminPassword() : super(message: 'Invalid admin password');
 }
 
 class ExceptionNoInternetConnection extends PnpException {
-  ExceptionNoInternetConnection()
-      : super(message: 'No internet connection');
+  ExceptionNoInternetConnection() : super(message: 'No internet connection');
 }
 
 class ExceptionRouterUnconfigured extends PnpException {
-  ExceptionRouterUnconfigured()
-      : super(message: 'The router is unconfigured');
+  ExceptionRouterUnconfigured() : super(message: 'The router is unconfigured');
 }
 
 class ExceptionSavingChanges extends PnpException {
   final Object? error;
-  ExceptionSavingChanges(this.error)
-      : super(message: 'Saving changes error!');
+  ExceptionSavingChanges(this.error) : super(message: 'Saving changes error!');
 }
 
 class ExceptionNeedToReconnect extends PnpException {
@@ -43,4 +38,14 @@ class ExceptionInterruptAndExit extends PnpException {
   final String route;
   ExceptionInterruptAndExit({required this.route})
       : super(message: 'Interrupted and exit to $route');
+}
+
+class ExceptionAutoMasterUnauthorized extends PnpException {
+  ExceptionAutoMasterUnauthorized()
+      : super(message: 'Auto Master check unauthorized');
+}
+
+class ExceptionAutoMasterPollingFailed extends PnpException {
+  ExceptionAutoMasterPollingFailed()
+      : super(message: 'Auto Master polling failed');
 }

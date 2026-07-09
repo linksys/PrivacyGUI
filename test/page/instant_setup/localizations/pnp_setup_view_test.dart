@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
+import 'package:privacy_gui/core/jnap/models/auto_master_status.dart';
 import 'package:privacy_gui/core/jnap/models/device_info.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/di.dart';
@@ -106,7 +107,8 @@ void main() async {
     await tester.pumpWidget(view);
     await tester.pump(const Duration(seconds: 3));
     // Trick - setState to trigger build
-    final state = tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
+    final state =
+        tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
     state.setState(() {});
     await tester.pumpAndSettle();
   });
@@ -156,7 +158,8 @@ void main() async {
     await tester.pumpWidget(view);
     await tester.pump(const Duration(seconds: 3));
     // Trick - setState to trigger build
-    final state = tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
+    final state =
+        tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
     state.setState(() {});
     await tester.pumpAndSettle();
   });
@@ -177,7 +180,8 @@ void main() async {
     );
     await tester.pump(const Duration(seconds: 6));
     // Trick - setState to trigger build
-    final state = tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
+    final state =
+        tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
     state.setState(() {});
     await tester.pumpAndSettle();
     final btnFinder = find.byIcon(LinksysIcons.infoCircle);
@@ -198,7 +202,8 @@ void main() async {
     );
     await tester.pump(const Duration(seconds: 6));
     // Trick - setState to trigger build
-    final state = tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
+    final state =
+        tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
     state.setState(() {});
     await tester.pumpAndSettle();
     final ssidEditFinder = find.byType(TextField).first;
@@ -226,7 +231,8 @@ void main() async {
     await tester.pump(const Duration(seconds: 6));
 
     // Trick - setState to trigger build
-    final state = tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
+    final state =
+        tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
     state.setState(() {});
     await tester.pumpAndSettle();
     final ssidEditFinder = find.byType(TextField).first;
@@ -256,7 +262,8 @@ void main() async {
     );
     await tester.pump(const Duration(seconds: 6));
     // Trick - setState to trigger build
-    final state = tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
+    final state =
+        tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
     state.setState(() {});
     await tester.pumpAndSettle();
     final ssidEditFinder = find.byType(TextField).first;
@@ -285,7 +292,8 @@ void main() async {
     );
     await tester.pump(const Duration(seconds: 6));
     // Trick - setState to trigger build
-    final state = tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
+    final state =
+        tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
     state.setState(() {});
     await tester.pumpAndSettle();
     final ssidEditFinder = find.byType(TextField).first;
@@ -322,7 +330,8 @@ void main() async {
     );
     await tester.pump(const Duration(seconds: 6));
     // Trick - setState to trigger build
-    final state = tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
+    final state =
+        tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
     state.setState(() {});
     await tester.pumpAndSettle();
     final ssidEditFinder = find.byType(TextField).first;
@@ -368,7 +377,8 @@ void main() async {
     );
     await tester.pump(const Duration(seconds: 6));
     // Trick - setState to trigger build
-    final state = tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
+    final state =
+        tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
     state.setState(() {});
     await tester.pumpAndSettle();
     final ssidEditFinder = find.byType(TextField).first;
@@ -404,7 +414,8 @@ void main() async {
     );
     await tester.pump(const Duration(seconds: 6));
     // Trick - setState to trigger build
-    final state = tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
+    final state =
+        tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
     state.setState(() {});
     await tester.pumpAndSettle();
     final ssidEditFinder = find.byType(TextField).first;
@@ -449,7 +460,8 @@ void main() async {
     );
     await tester.pump(const Duration(seconds: 6));
     // Trick - setState to trigger build
-    final state = tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
+    final state =
+        tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
     state.setState(() {});
     await tester.pumpAndSettle();
     final ssidEditFinder = find.byType(TextField).first;
@@ -500,7 +512,8 @@ void main() async {
     );
     await tester.pump(const Duration(seconds: 6));
     // Trick - setState to trigger build
-    final state = tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
+    final state =
+        tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
     state.setState(() {});
     await tester.pumpAndSettle();
     final ssidEditFinder = find.byType(TextField).first;
@@ -537,14 +550,8 @@ void main() async {
                 "ssid": "DULinksys12294-2.4GHz",
                 "password": "8kRnxa257@"
               },
-              "5GHz": {
-                "ssid": "DULinksys12294-5GHz",
-                "password": "8kRnxa257@"
-              },
-              "6GHz": {
-                "ssid": "DULinksys12294-6GHz",
-                "password": "8kRnxa257@"
-              },
+              "5GHz": {"ssid": "DULinksys12294-5GHz", "password": "8kRnxa257@"},
+              "6GHz": {"ssid": "DULinksys12294-6GHz", "password": "8kRnxa257@"},
             },
             "ssid": "DULinksys12294-2.4GHz",
             "password": "8kRnxa257@",
@@ -570,8 +577,8 @@ void main() async {
     );
     await tester.pump(const Duration(seconds: 6));
     // Trick - setState to trigger build
-    final state = tester
-        .state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
+    final state =
+        tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
     state.setState(() {});
     await tester.pumpAndSettle();
     final btnFinder = find.byType(FilledButton);
@@ -615,7 +622,8 @@ void main() async {
     );
     await tester.pump(const Duration(seconds: 6));
     // Trick - setState to trigger build
-    final state = tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
+    final state =
+        tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
     state.setState(() {});
     await tester.pumpAndSettle();
     final ssidEditFinder = find.byType(TextField).first;
@@ -633,5 +641,98 @@ void main() async {
     final btnFinder3 = find.byType(FilledButton);
     await tester.tap(btnFinder3.first);
     await tester.pump(const Duration(seconds: 1));
+  });
+
+  testLocalizations('Instant Setup - PnP: Auto Master running before save',
+      (tester, locale) async {
+    // First call returns idle (for initState), subsequent calls return running (for save)
+    var callCount = 0;
+    when(mockPnpNotifier.checkAutoMasterStatus()).thenAnswer((_) async {
+      callCount++;
+      return callCount == 1 ? AutoMasterStatus.idle : AutoMasterStatus.running;
+    });
+    // Use Stream.value for immediate emit to avoid pending timer
+    when(mockPnpNotifier.pollAutoMasterStatus()).thenAnswer((_) {
+      return Stream.value(AutoMasterStatus.running);
+    });
+    when(mockPnpNotifier.save()).thenAnswer((_) async {
+      await Future.delayed(const Duration(seconds: 2));
+    });
+
+    await tester.pumpWidget(
+      testableSingleRoute(
+        child: const PnpSetupView(),
+        config: LinksysRouteConfig(
+            column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
+        locale: locale,
+        overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
+      ),
+    );
+    await tester.pump(const Duration(seconds: 6));
+    // Trick - setState to trigger build
+    final state =
+        tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
+    state.setState(() {});
+    await tester.pumpAndSettle();
+    final ssidEditFinder = find.byType(TextField).first;
+    final passwordEditFinder = find.byType(TextField).last;
+    await tester.enterText(ssidEditFinder, 'MyAwesomeWiFiName');
+    await tester.pumpAndSettle();
+    await tester.enterText(passwordEditFinder, 'MyAwesomeWiFiPassword!');
+    await tester.pumpAndSettle();
+    final btnFinder = find.byType(FilledButton);
+    await tester.tap(btnFinder.first);
+    await tester.pumpAndSettle(); // Guest Wifi
+    final btnFinder2 = find.byType(FilledButton);
+    await tester.tap(btnFinder2.first);
+    await tester.pumpAndSettle(); // Night mode
+    final btnFinder3 = find.byType(FilledButton);
+    await tester.tap(btnFinder3.first);
+    await tester.pump(const Duration(seconds: 2));
+  });
+
+  testLocalizations('Instant Setup - PnP: Auto Master connection error',
+      (tester, locale) async {
+    // First call returns idle (for initState), subsequent calls return running (for save)
+    var callCount = 0;
+    when(mockPnpNotifier.checkAutoMasterStatus()).thenAnswer((_) async {
+      callCount++;
+      return callCount == 1 ? AutoMasterStatus.idle : AutoMasterStatus.running;
+    });
+    // Return null to simulate connection failure during polling (3 consecutive failures)
+    when(mockPnpNotifier.pollAutoMasterStatus()).thenAnswer((_) {
+      return Stream<AutoMasterStatus?>.fromIterable([null, null, null]);
+    });
+
+    await tester.pumpWidget(
+      testableSingleRoute(
+        child: const PnpSetupView(),
+        config: LinksysRouteConfig(
+            column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
+        locale: locale,
+        overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
+      ),
+    );
+    await tester.pump(const Duration(seconds: 6));
+    // Trick - setState to trigger build
+    final state =
+        tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
+    state.setState(() {});
+    await tester.pumpAndSettle();
+    final ssidEditFinder = find.byType(TextField).first;
+    final passwordEditFinder = find.byType(TextField).last;
+    await tester.enterText(ssidEditFinder, 'MyAwesomeWiFiName');
+    await tester.pumpAndSettle();
+    await tester.enterText(passwordEditFinder, 'MyAwesomeWiFiPassword!');
+    await tester.pumpAndSettle();
+    final btnFinder = find.byType(FilledButton);
+    await tester.tap(btnFinder.first);
+    await tester.pumpAndSettle();
+    final btnFinder2 = find.byType(FilledButton);
+    await tester.tap(btnFinder2.first);
+    await tester.pumpAndSettle();
+    final btnFinder3 = find.byType(FilledButton);
+    await tester.tap(btnFinder3.first);
+    await tester.pump(const Duration(seconds: 2));
   });
 }

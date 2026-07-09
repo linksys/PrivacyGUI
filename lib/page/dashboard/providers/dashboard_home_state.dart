@@ -219,13 +219,18 @@ class DashboardHomeState extends Equatable {
       isHealthCheckSupported: map['isHealthCheckSupported'] ?? false,
       masterIcon: map['masterIcon'] ?? '',
       isAnyNodesOffline: map['isAnyNodesOffline'] ?? false,
-      uploadResult: map['uploadResult'] != null ? DashboardSpeedItem.fromMap(map['uploadResult']) : null,
-      downloadResult: map['downloadResult'] != null ? DashboardSpeedItem.fromMap(map['downloadResult']) : null,
+      uploadResult: map['uploadResult'] != null
+          ? DashboardSpeedItem.fromMap(map['uploadResult'])
+          : null,
+      downloadResult: map['downloadResult'] != null
+          ? DashboardSpeedItem.fromMap(map['downloadResult'])
+          : null,
       speedCheckTimestamp: map['speedCheckTimestamp']?.toInt(),
       uptime: map['uptime']?.toInt(),
       wanPortConnection: map['wanPortConnection'],
       lanPortConnections: List<String>.from(map['lanPortConnections']),
-      wifis: List<DashboardWiFiItem>.from(map['wifis']?.map((x) => DashboardWiFiItem.fromMap(x))),
+      wifis: List<DashboardWiFiItem>.from(
+          map['wifis']?.map((x) => DashboardWiFiItem.fromMap(x))),
       wanType: map['wanType'],
       detectedWANType: map['detectedWANType'],
       healthCheckModule: map['healthCheckModule'],
@@ -281,19 +286,28 @@ class DashboardHomeState extends Equatable {
     return DashboardHomeState(
       isFirstPolling: isFirstPolling ?? this.isFirstPolling,
       isHorizontalLayout: isHorizontalLayout ?? this.isHorizontalLayout,
-      isHealthCheckSupported: isHealthCheckSupported ?? this.isHealthCheckSupported,
+      isHealthCheckSupported:
+          isHealthCheckSupported ?? this.isHealthCheckSupported,
       masterIcon: masterIcon ?? this.masterIcon,
       isAnyNodesOffline: isAnyNodesOffline ?? this.isAnyNodesOffline,
       uploadResult: uploadResult != null ? uploadResult() : this.uploadResult,
-      downloadResult: downloadResult != null ? downloadResult() : this.downloadResult,
-      speedCheckTimestamp: speedCheckTimestamp != null ? speedCheckTimestamp() : this.speedCheckTimestamp,
+      downloadResult:
+          downloadResult != null ? downloadResult() : this.downloadResult,
+      speedCheckTimestamp: speedCheckTimestamp != null
+          ? speedCheckTimestamp()
+          : this.speedCheckTimestamp,
       uptime: uptime != null ? uptime() : this.uptime,
-      wanPortConnection: wanPortConnection != null ? wanPortConnection() : this.wanPortConnection,
+      wanPortConnection: wanPortConnection != null
+          ? wanPortConnection()
+          : this.wanPortConnection,
       lanPortConnections: lanPortConnections ?? this.lanPortConnections,
       wifis: wifis ?? this.wifis,
       wanType: wanType != null ? wanType() : this.wanType,
-      detectedWANType: detectedWANType != null ? detectedWANType() : this.detectedWANType,
-      healthCheckModule: healthCheckModule != null ? healthCheckModule() : this.healthCheckModule,
+      detectedWANType:
+          detectedWANType != null ? detectedWANType() : this.detectedWANType,
+      healthCheckModule: healthCheckModule != null
+          ? healthCheckModule()
+          : this.healthCheckModule,
     );
   }
 
