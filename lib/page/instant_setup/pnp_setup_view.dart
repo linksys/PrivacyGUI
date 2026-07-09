@@ -3,10 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' as service;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/constants/error_code.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
+import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/models/auto_configuration_settings.dart';
 import 'package:privacy_gui/core/jnap/models/auto_master_status.dart';
+import 'package:privacy_gui/core/jnap/command/base_command.dart';
+import 'package:privacy_gui/core/jnap/models/radio_info.dart';
+import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -70,6 +75,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
   bool _forceLogin = false;
   bool _fetchError = false;
   bool _showAutoMasterConnectionError = false;
+  bool _wifiVerificationRetried = false; // Prevent infinite loop in WiFi verification
   PnpStep? _currentStep;
   ({void Function() stepCancel, void Function() stepContinue})? _stepController;
 
@@ -618,6 +624,77 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
                     final showYourNetwork = _isUnconfigured || !_isPrePaired;
                     logger.i(
                         '[PnP]: The customized WiFi has been reconnected - isUnconfigured=$_isUnconfigured, isPrePaired=$_isPrePaired, showYourNetwork=$showYourNetwork');
+
+                    // Verify WiFi settings were applied correctly (only retry once)
+                    if (!_wifiVerificationRetried) {
+                      final wifiData = ref
+                              .read(pnpProvider)
+                              .stepStateList[PersonalWiFiStep.id]
+                              ?.data ??
+                          {};
+                      final isSplitMode =
+                          wifiData['isSplitMode'] as bool? ?? false;
+
+                      // Collect expected SSIDs (support split mode)
+                      Set<String> expectedSSIDs = {};
+                      if (isSplitMode) {
+                        final perBandSettings = wifiData['perBandSettings']
+                                as Map<String, dynamic>? ??
+                            {};
+                        for (final entry in perBandSettings.entries) {
+                          final value =
+                              entry.value as Map<String, dynamic>? ?? {};
+                          final ssid = value['ssid'] as String?;
+                          if (ssid != null && ssid.isNotEmpty) {
+                            expectedSSIDs.add(ssid);
+                          }
+                        }
+                      } else {
+                        final ssid = wifiData['ssid'] as String?;
+                        if (ssid != null && ssid.isNotEmpty) {
+                          expectedSSIDs.add(ssid);
+                        }
+                      }
+
+                      // Only verify if user has set SSID
+                      if (expectedSSIDs.isNotEmpty) {
+                        try {
+                          // Fetch current WiFi settings from router
+                          final radioInfoResult = await ref
+                              .read(routerRepositoryProvider)
+                              .send(
+                                JNAPAction.getRadioInfo,
+                                auth: true,
+                                fetchRemote: true,
+                                cacheLevel: CacheLevel.noCache,
+                              );
+                          final radioInfo =
+                              GetRadioInfo.fromMap(radioInfoResult.output);
+                          final currentSSIDs = radioInfo.radios
+                              .map((r) => r.settings.ssid)
+                              .toSet();
+
+                          // Check if any expected SSID matches current settings
+                          final hasMatch = expectedSSIDs
+                              .any((ssid) => currentSSIDs.contains(ssid));
+
+                          if (!hasMatch) {
+                            logger.w(
+                                '[PnP]: WiFi settings mismatch - expected: $expectedSSIDs, current: $currentSSIDs. Re-saving...');
+                            _wifiVerificationRetried = true;
+                            if (!mounted) return;
+                            await _saveChanges();
+                            return;
+                          }
+                          logger.d('[PnP]: WiFi settings verified - SSID matches');
+                        } catch (e) {
+                          // API call failed, log warning but continue flow
+                          logger.w(
+                              '[PnP]: Failed to verify WiFi settings: $e. Continuing...');
+                        }
+                      }
+                    }
+
                     final password = ref
                         .read(pnpProvider.notifier)
                         .getDefaultWiFiSettings()
@@ -789,13 +866,29 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
       });
       // }
     }, test: (error) => error is ExceptionNeedToReconnect).catchError((error) {
+      final innerError = error is ExceptionSavingChanges ? error.error : error;
+
+      // Check if this is an Unauthorized error (Auto Master completed during save)
+      if (innerError is JNAPError &&
+          innerError.result == errorJNAPUnauthorized) {
+        logger.w(
+            '[PnP]: Caught unauthorized error during save - Auto Master may have completed');
+        if (mounted) {
+          context.goNamed(RouteNamed.pnp);
+        }
+        return;
+      }
+
+      // Original error handling
+      if (!mounted) return;
       setState(() {
         logger.e('[PnP]: Caught a saving error: $error. Setup step = config');
         _setupStep = _PnpSetupStep.config;
       });
-      final err = error is ExceptionSavingChanges ? error.error : error;
-      showSimpleSnackBar(context, 'Unexceped error! <$err}>');
+      final errorMsg = innerError?.toString() ?? loc(context).generalError;
+      showSimpleSnackBar(context, 'Unexpected error! <$errorMsg>');
     }, test: (error) => error is ExceptionSavingChanges).whenComplete(() async {
+      if (!mounted) return;
       // Use showYourNetwork logic to handle both Unconfigured and AutoParent scenarios
       final showYourNetwork = isUnconfigured || !_isPrePaired;
       logger.d(
@@ -876,18 +969,17 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
   }
 
   Future<void> testConnection(
-      {required void Function() success, void Function()? failed}) {
+      {required FutureOr<void> Function() success,
+      void Function()? failed}) async {
     // Check router connected propor, then go to dashboard
-    return ref
-        .read(pnpProvider.notifier)
-        .testConnectionReconnected()
-        .then((value) {
-      success.call();
-    }).onError((error, stackTrace) {
+    try {
+      await ref.read(pnpProvider.notifier).testConnectionReconnected();
+      await success.call();
+    } catch (error) {
       logger.e('[PnP]: Cannot detect the expected WiFi connected!');
       showSimpleSnackBar(context, loc(context).pnpReconnectWiFi);
       failed?.call();
-    });
+    }
   }
 
   void _retryAutoMasterSave() {
