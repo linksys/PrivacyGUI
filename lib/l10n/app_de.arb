@@ -561,6 +561,7 @@
   "disableInstantPrivacyDesc": "Alle Geräte können sich frei mit Ihrem Netzwerk verbinden.",
   "privateMacWarningTitle": "Einige Geräte verwenden eine private WLAN-Adresse",
   "privateMacWarningDesc": "Die unten aufgeführten Geräte verwenden eine private (zufällige) WLAN-Adresse. Da sich diese Adresse im Laufe der Zeit ändert, können die Geräte nach einem Wechsel blockiert werden – auch das Gerät, das Sie gerade verwenden. Um verbunden zu bleiben, deaktivieren Sie für diese Geräte die Option „Private WLAN-Adresse“, bevor Sie Instant Privacy aktivieren.",
+  "privateMacLabel": "Privat",
   "disableInstantPrivacyTitle": "Instant Privacy deaktivieren?",
   "discards": "Verworfene Pakete",
   "distribution": "Verteilung",

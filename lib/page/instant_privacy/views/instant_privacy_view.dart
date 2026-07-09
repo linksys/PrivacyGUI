@@ -53,12 +53,20 @@ class InstantPrivacyView extends ConsumerWidget {
     WidgetRef ref,
     UspInstantPrivacyState state,
   ) {
+    final hasPrivateMacInList = state.isEnabled
+        ? state.allowedDevices.any((d) => d.isPrivateMac)
+        : state.connectedDevices.any((d) => d.isPrivateMac);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         AppText.bodyMedium(
           loc(context).instantPrivacyPageDesc,
         ),
+        if (hasPrivateMacInList) ...[
+          AppGap.md(),
+          _buildPrivateMacWarningBanner(context),
+        ],
         AppGap.lg(),
         _buildToggleCard(context, ref, state),
         AppGap.md(),
@@ -190,14 +198,23 @@ class InstantPrivacyView extends ConsumerWidget {
 
   Widget _buildDeviceLayoutBlock(
       BuildContext context, InstantPrivacyDeviceUIModel device) {
+    final colorScheme = Theme.of(context).colorScheme;
     return LayoutBlock(
       padding: const EdgeInsets.all(AppSpacing.md),
       child: Row(
         children: [
+          if (device.isPrivateMac) ...[
+            AppBadge(
+              label: loc(context).privateMacLabel,
+              color: colorScheme.error,
+              textColor: colorScheme.onError,
+            ),
+            AppGap.sm(),
+          ],
           AppIcon.font(
             Icons.devices,
             size: 20,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
+            color: colorScheme.onSurfaceVariant,
           ),
           AppGap.sm(),
           Expanded(
@@ -207,7 +224,7 @@ class InstantPrivacyView extends ConsumerWidget {
                 AppText.bodyMedium(device.displayName),
                 AppText.bodySmall(
                   device.mac,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  color: colorScheme.onSurfaceVariant,
                 ),
               ],
             ),
@@ -221,60 +238,55 @@ class InstantPrivacyView extends ConsumerWidget {
   // Private (randomized) MAC warning
   // ---------------------------------------------------------------------------
 
-  Widget _buildPrivateMacWarning(
-    BuildContext context,
-    List<InstantPrivacyDeviceUIModel> devices,
-  ) {
+  /// Banner shown on page when any device uses a private MAC.
+  Widget _buildPrivateMacWarningBanner(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: colorScheme.errorContainer,
+        borderRadius: BorderRadius.circular(AppSpacing.sm),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppIcon.font(
+            Icons.warning_amber_rounded,
+            size: 20,
+            color: colorScheme.onErrorContainer,
+          ),
+          AppGap.sm(),
+          Expanded(
+            child: AppText.bodySmall(
+              loc(context).privateMacWarningDesc,
+              color: colorScheme.onErrorContainer,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Inline warning shown in enable dialog (title only).
+  Widget _buildPrivateMacDialogWarning(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.only(top: AppSpacing.md),
-      child: Container(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        decoration: BoxDecoration(
-          color: colorScheme.errorContainer,
-          borderRadius: BorderRadius.circular(AppSpacing.sm),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                AppIcon.font(
-                  Icons.warning_amber_rounded,
-                  size: 20,
-                  color: colorScheme.onErrorContainer,
-                ),
-                AppGap.sm(),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      AppText.labelLarge(
-                        loc(context).privateMacWarningTitle,
-                        color: colorScheme.onErrorContainer,
-                      ),
-                      AppGap.xs(),
-                      AppText.bodySmall(
-                        loc(context).privateMacWarningDesc,
-                        color: colorScheme.onErrorContainer,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+      child: Row(
+        children: [
+          AppIcon.font(
+            Icons.warning_amber_rounded,
+            size: 20,
+            color: colorScheme.error,
+          ),
+          AppGap.sm(),
+          Expanded(
+            child: AppText.labelMedium(
+              loc(context).privateMacWarningTitle,
+              color: colorScheme.error,
             ),
-            AppGap.sm(),
-            for (final device in devices)
-              Padding(
-                padding: const EdgeInsets.only(top: AppSpacing.xs),
-                child: AppText.bodySmall(
-                  '• ${device.displayName} (${device.mac})',
-                  color: colorScheme.onErrorContainer,
-                ),
-              ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -300,7 +312,7 @@ class InstantPrivacyView extends ConsumerWidget {
               loc(context).enableInstantPrivacyDesc(connected.length),
             ),
             if (privateMacDevices.isNotEmpty)
-              _buildPrivateMacWarning(context, privateMacDevices),
+              _buildPrivateMacDialogWarning(context),
           ],
         ),
         actions: [

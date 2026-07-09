@@ -559,6 +559,7 @@
   "disableInstantPrivacyDesc": "모든 장치가 네트워크에 자유롭게 연결할 수 있게 됩니다.",
   "privateMacWarningTitle": "일부 기기가 비공개 Wi-Fi 주소를 사용합니다",
   "privateMacWarningDesc": "아래 기기는 비공개(무작위) Wi-Fi 주소를 사용합니다. 이 주소는 시간이 지나면 변경되므로 주소가 바뀐 후에는 차단될 수 있으며, 지금 사용 중인 기기도 예외가 아닙니다. 계속 연결하려면 Instant Privacy를 활성화하기 전에 이 기기들의 “비공개 Wi-Fi 주소”를 꺼 주세요.",
+  "privateMacLabel": "비공개",
   "disableInstantPrivacyTitle": "Instant Privacy를 비활성화하시겠습니까?",
   "discards": "폐기",
   "distribution": "분포",

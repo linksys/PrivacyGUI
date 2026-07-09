@@ -561,6 +561,7 @@
   "disableInstantPrivacyDesc": "Todos los dispositivos podrán conectarse libremente a su red.",
   "privateMacWarningTitle": "Algunos dispositivos usan una dirección Wi-Fi privada",
   "privateMacWarningDesc": "Los dispositivos que aparecen a continuación usan una dirección Wi-Fi privada (aleatoria). Como esta dirección cambia con el tiempo, pueden quedar bloqueados cuando rote —incluso el que estás usando ahora—. Para no perder la conexión, desactiva la \"Dirección Wi-Fi privada\" en estos dispositivos antes de activar Instant-Privacidad.",
+  "privateMacLabel": "Privada",
   "disableInstantPrivacyTitle": "¿Desactivar Instant-Privacidad?",
   "discards": "Descartes",
   "distribution": "Distribución",

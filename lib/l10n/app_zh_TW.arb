@@ -562,6 +562,7 @@
   "disableInstantPrivacyDesc": "所有裝置都將能自由連線至您的網路。",
   "privateMacWarningTitle": "部分裝置使用私密 Wi-Fi 位址",
   "privateMacWarningDesc": "以下裝置使用私密（隨機）Wi-Fi 位址。由於該位址會隨時間變更，輪替後這些裝置可能會被封鎖——即使是您目前正在使用的裝置。為維持連線，請在啟用即時隱私前，關閉這些裝置的「私密 Wi-Fi 位址」。",
+  "privateMacLabel": "私密",
   "disableInstantPrivacyTitle": "停用即時隱私？",
   "discards": "捨棄",
   "distribution": "分布",

@@ -562,6 +562,7 @@
   "disableInstantPrivacyDesc": "所有设备都将能够自由连接到您的网络。",
   "privateMacWarningTitle": "部分设备使用私有 Wi-Fi 地址",
   "privateMacWarningDesc": "以下设备使用私有（随机）Wi-Fi 地址。由于该地址会随时间变化，轮换后这些设备可能会被屏蔽——即使是您现在正在使用的设备。为保持连接，请在启用即时隐私前，关闭这些设备的“私有 Wi-Fi 地址”。",
+  "privateMacLabel": "私有",
   "disableInstantPrivacyTitle": "禁用即时隐私？",
   "discards": "丢弃",
   "distribution": "分布",

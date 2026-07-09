@@ -561,6 +561,7 @@
   "disableInstantPrivacyDesc": "Alle enheter vil kunne koble til nettverket ditt fritt.",
   "privateMacWarningTitle": "Noen enheter bruker en privat Wi-Fi-adresse",
   "privateMacWarningDesc": "Enhetene nedenfor bruker en privat (tilfeldig) Wi-Fi-adresse. Siden denne adressen endrer seg over tid, kan de bli blokkert etter at den roterer — også den du bruker akkurat nå. For å forbli tilkoblet må du slå av \"Privat Wi-Fi-adresse\" for disse enhetene før du aktiverer Instant Privacy.",
+  "privateMacLabel": "Privat",
   "disableInstantPrivacyTitle": "Deaktivere Instant Privacy?",
   "discards": "Forkastninger",
   "distribution": "Fordeling",
