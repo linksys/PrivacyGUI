@@ -12,8 +12,8 @@ class PppInterfaceInstance {
   final String pppoeServiceName;
   final String connectionTrigger;
   final int idleDisconnectTime;
-  final int lcpEcho;
   final String lowerLayers;
+  final int lcpEcho;
   final String connectionStatus;
 
   const PppInterfaceInstance({
@@ -23,8 +23,8 @@ class PppInterfaceInstance {
     required this.pppoeServiceName,
     required this.connectionTrigger,
     required this.idleDisconnectTime,
-    required this.lcpEcho,
     required this.lowerLayers,
+    required this.lcpEcho,
     required this.connectionStatus,
   });
 }
@@ -62,8 +62,8 @@ class PppInterface {
     'Device.PPP.Interface.*.PPPoE.ServiceName',
     'Device.PPP.Interface.*.ConnectionTrigger',
     'Device.PPP.Interface.*.IdleDisconnectTime',
-    'Device.PPP.Interface.*.LCPEcho',
     'Device.PPP.Interface.*.LowerLayers',
+    'Device.PPP.Interface.*.LCPEcho',
     'Device.PPP.Interface.*.ConnectionStatus',
   ];
 
@@ -94,8 +94,8 @@ class PppInterface {
         response['${p}PPPoE.ServiceName'],
         response['${p}ConnectionTrigger'],
         response['${p}IdleDisconnectTime'],
-        response['${p}LCPEcho'],
         response['${p}LowerLayers'],
+        response['${p}LCPEcho'],
         response['${p}ConnectionStatus']
       ].every((v) =>
           v == null ||
@@ -122,11 +122,11 @@ class PppInterface {
       if (!response.containsKey('${p}IdleDisconnectTime')) {
         missing.add('${p}IdleDisconnectTime');
       }
-      if (!response.containsKey('${p}LCPEcho')) {
-        missing.add('${p}LCPEcho');
-      }
       if (!response.containsKey('${p}LowerLayers')) {
         missing.add('${p}LowerLayers');
+      }
+      if (!response.containsKey('${p}LCPEcho')) {
+        missing.add('${p}LCPEcho');
       }
       if (!response.containsKey('${p}ConnectionStatus')) {
         missing.add('${p}ConnectionStatus');
@@ -143,8 +143,8 @@ class PppInterface {
         idleDisconnectTime: int.tryParse(
                 response['${p}IdleDisconnectTime']?.toString() ?? '') ??
             0,
-        lcpEcho: int.tryParse(response['${p}LCPEcho']?.toString() ?? '') ?? 0,
         lowerLayers: (response['${p}LowerLayers'] ?? '') as String,
+        lcpEcho: int.tryParse(response['${p}LCPEcho']?.toString() ?? '') ?? 0,
         connectionStatus: (response['${p}ConnectionStatus'] ?? '') as String,
       ));
     }
