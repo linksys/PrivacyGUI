@@ -2,36 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
+import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
+import 'package:privacy_gui/page/_shared/utils/device_classifier.dart';
 import 'package:privacy_gui/page/devices/providers/device_filter_provider.dart';
 import 'package:privacy_gui/page/devices/providers/device_filter_state.dart';
+import 'package:privacy_gui/page/devices/views/components/usp_signal_strength_indicator.dart';
 import 'package:privacy_gui/page/_shared/components/wifi_ui.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
-/// Sentinel value used in String-typed dropdowns to represent "All". Avoids
-/// passing `null` as the value, which `AppDropdown` renders at 50% opacity
-/// (its placeholder style). The `onChanged` handlers convert this back to
-/// `null` before updating filter state.
-const _kAllSentinel = '__ALL__';
-
-String _connectionLabel(BuildContext context, DeviceConnectionFilter v) {
-  switch (v) {
-    case DeviceConnectionFilter.all:
-      return loc(context).all;
-    case DeviceConnectionFilter.wifi:
-      return loc(context).wifi;
-    case DeviceConnectionFilter.ethernet:
-      return loc(context).ethernet;
-  }
-}
-
-/// Signal labels reuse `NodeSignalLevelExt.resolveLabel` so the strings are
-/// localized and consistent with the node/topology pages. `all` and `unknown`
-/// have no matching NodeSignalLevel and fall back to literal strings.
-String _signalLabel(BuildContext context, DeviceSignalFilter v) {
-  if (v == DeviceSignalFilter.all) return loc(context).all;
-  if (v == DeviceSignalFilter.unknown) return '--';
-  final level = nodeLevelOf(v);
-  return level?.resolveLabel(context) ?? loc(context).all;
+String _signalLabel(BuildContext context, DeviceSignalLevel level) {
+  final nodeLevel = nodeLevelOf(level);
+  return nodeLevel?.resolveLabel(context) ?? '';
 }
 
 String _statusLabel(BuildContext context, DeviceStatusFilter v) {
@@ -45,23 +26,6 @@ String _statusLabel(BuildContext context, DeviceStatusFilter v) {
   }
 }
 
-List<DeviceSignalFilter> _signalOptions(DeviceFilterOptions options) {
-  return [
-    DeviceSignalFilter.all,
-    DeviceSignalFilter.excellent,
-    DeviceSignalFilter.good,
-    DeviceSignalFilter.fair,
-    DeviceSignalFilter.poor,
-    if (options.hasUnknownSignalDevices) DeviceSignalFilter.unknown,
-  ];
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// Status segmented control — shared by desktop and mobile/tablet layouts
-// ═══════════════════════════════════════════════════════════════════════════
-
-/// Status segmented control for switching between All/Online/Offline views.
-/// Used above the device list in all layouts.
 class UspDeviceStatusSegmented extends ConsumerWidget {
   const UspDeviceStatusSegmented({super.key});
 
@@ -86,12 +50,6 @@ class UspDeviceStatusSegmented extends ConsumerWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// Desktop filter panel
-// ═══════════════════════════════════════════════════════════════════════════
-
-/// Desktop filter panel — vertical sidebar sized to 3 grid columns.
-/// Status filter is NOT included here — it lives above the device list.
 class UspDeviceFilterPanel extends ConsumerWidget {
   const UspDeviceFilterPanel({super.key});
 
@@ -101,11 +59,8 @@ class UspDeviceFilterPanel extends ConsumerWidget {
     final options = ref.watch(deviceFilterOptionsProvider);
 
     final isOffline = filter.status == DeviceStatusFilter.offline;
-    final isEthernet = filter.connection == DeviceConnectionFilter.ethernet;
-    final hasMultipleNodes = options.nodes.length > 1;
+    final isEthernetOnly = filter.isEthernetOnly;
 
-    // When Offline is chosen, other filters are meaningless — offline devices
-    // have no live SSID / band / RSSI / node. Show explanatory note only.
     if (isOffline) {
       return SizedBox(
         width: context.colWidth(3),
@@ -148,7 +103,7 @@ class UspDeviceFilterPanel extends ConsumerWidget {
             ),
             AppGap.md(),
 
-            // ── CONNECTION ────────────────────────────────────────────────
+            // CONNECTION
             LayoutBlock(
               padding: const EdgeInsets.all(AppSpacing.md),
               child: Column(
@@ -156,116 +111,302 @@ class UspDeviceFilterPanel extends ConsumerWidget {
                 children: [
                   _SectionHeader(title: loc(context).connection),
                   AppGap.sm(),
-                  _DropdownRow<DeviceConnectionFilter>(
+                  _ChipGroupRow(
                     label: loc(context).type,
-                    value: filter.connection,
-                    items: DeviceConnectionFilter.values,
-                    labelOf: (v) => _connectionLabel(context, v),
-                    onChanged: (v) => ref
+                    chips: [
+                      ChipItem(label: loc(context).wifi),
+                      ChipItem(label: loc(context).ethernet),
+                    ],
+                    selectedIndices: _connectionToIndices(filter.connections),
+                    onSelectionChanged: (indices) => ref
                         .read(deviceFilterConfigProvider.notifier)
-                        .setConnection(v ?? DeviceConnectionFilter.all),
+                        .setConnections(_indicesToConnections(indices)),
+                  ),
+                  if (options.nodes.isNotEmpty) ...[
+                    AppGap.sm(),
+                    _ChipGroupRow(
+                      label: loc(context).node,
+                      chips: options.nodes
+                          .map((n) => ChipItem(label: n.model))
+                          .toList(),
+                      selectedIndices: _nodeIdsToIndices(
+                        filter.nodeIds,
+                        options.nodes.map((n) => n.deviceId).toList(),
+                      ),
+                      onSelectionChanged: (indices) => ref
+                          .read(deviceFilterConfigProvider.notifier)
+                          .setNodeIds(_indicesToNodeIds(
+                            indices,
+                            options.nodes.map((n) => n.deviceId).toList(),
+                          )),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+
+            // DEVICE
+            AppGap.sm(),
+            LayoutBlock(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _SectionHeader(title: loc(context).devices),
+                  AppGap.sm(),
+                  _ChipGroupRow(
+                    label: loc(context).type,
+                    chips: DeviceCategory.values
+                        .map((c) => ChipItem(
+                              label: '',
+                              iconWidget: Icon(c.icon, size: 16),
+                            ))
+                        .toList(),
+                    selectedIndices: _categoriesToIndices(
+                      filter.deviceCategories,
+                      DeviceCategory.values,
+                    ),
+                    onSelectionChanged: (indices) => ref
+                        .read(deviceFilterConfigProvider.notifier)
+                        .setDeviceCategories(_indicesToCategories(
+                          indices,
+                          DeviceCategory.values,
+                        )),
                   ),
                   AppGap.sm(),
-                  _DropdownRow<DeviceSignalFilter>(
-                    label: loc(context).signal,
-                    value: filter.signal,
-                    items: _signalOptions(options),
-                    labelOf: (v) => _signalLabel(context, v),
-                    disabled: isEthernet,
-                    disabledTooltip:
-                        loc(context).notApplicableForEthernetDevices,
-                    onChanged: (v) => ref
+                  _ChipGroupRow(
+                    label: 'MAC',
+                    chips: [
+                      ChipItem(label: loc(context).privateMac),
+                      ChipItem(label: loc(context).publicMac),
+                    ],
+                    selectedIndices: _privateMacToIndices(filter.privateMac),
+                    onSelectionChanged: (indices) => ref
                         .read(deviceFilterConfigProvider.notifier)
-                        .setSignal(v ?? DeviceSignalFilter.all),
+                        .setPrivateMac(_indicesToPrivateMac(indices)),
                   ),
                 ],
               ),
             ),
 
-            // ── WI-FI ─────────────────────────────────────────────────────
-            // Hide the whole WiFi section when there is no data to offer;
-            // grey it out when the user has scoped to Ethernet.
-            if (options.ssids.isNotEmpty || options.bands.isNotEmpty) ...[
-              AppGap.sm(),
-              LayoutBlock(
-                padding: const EdgeInsets.all(AppSpacing.md),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _SectionHeader(title: loc(context).wifi),
-                    AppGap.sm(),
-                    if (options.ssids.isNotEmpty)
-                      _DropdownRow<String>(
-                        label: loc(context).ssid,
-                        value: filter.ssidName ?? _kAllSentinel,
-                        items: [_kAllSentinel, ...options.ssids],
-                        labelOf: (v) =>
-                            v == _kAllSentinel ? loc(context).all : v,
-                        disabled: isEthernet,
-                        disabledTooltip:
-                            loc(context).notApplicableForEthernetDevices,
-                        onChanged: (v) => ref
-                            .read(deviceFilterConfigProvider.notifier)
-                            .setSsidName(v == _kAllSentinel ? null : v),
+            // WI-FI
+            AppGap.sm(),
+            LayoutBlock(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _SectionHeader(title: loc(context).wifi),
+                  AppGap.sm(),
+                  _ChipGroupRow(
+                    label: loc(context).signal,
+                    chips: [
+                      ChipItem(
+                        label: '',
+                        iconWidget: UspSignalStrengthIndicator.fixed(
+                          level: 3,
+                          color:
+                              NodeSignalLevel.excellent.resolveColor(context) ??
+                                  Colors.green,
+                        ),
                       ),
-                    if (options.ssids.isNotEmpty && options.bands.isNotEmpty)
-                      AppGap.sm(),
-                    if (options.bands.isNotEmpty)
-                      _DropdownRow<String>(
-                        label: loc(context).band,
-                        value: filter.band ?? _kAllSentinel,
-                        items: [_kAllSentinel, ...options.bands],
-                        labelOf: (v) =>
-                            v == _kAllSentinel ? loc(context).all : v,
-                        disabled: isEthernet,
-                        disabledTooltip:
-                            loc(context).notApplicableForEthernetDevices,
-                        onChanged: (v) => ref
-                            .read(deviceFilterConfigProvider.notifier)
-                            .setBand(v == _kAllSentinel ? null : v),
+                      ChipItem(
+                        label: '',
+                        iconWidget: UspSignalStrengthIndicator.fixed(
+                          level: 2,
+                          color: NodeSignalLevel.good.resolveColor(context) ??
+                              Colors.green,
+                        ),
                       ),
-                  ],
-                ),
-              ),
-            ],
-
-            // ── LOCATION ──────────────────────────────────────────────────
-            if (hasMultipleNodes) ...[
-              AppGap.sm(),
-              LayoutBlock(
-                padding: const EdgeInsets.all(AppSpacing.md),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _SectionHeader(title: loc(context).location),
+                      ChipItem(
+                        label: '',
+                        iconWidget: UspSignalStrengthIndicator.fixed(
+                          level: 1,
+                          color: NodeSignalLevel.fair.resolveColor(context) ??
+                              Colors.orange,
+                        ),
+                      ),
+                      ChipItem(
+                        label: '',
+                        iconWidget: UspSignalStrengthIndicator.fixed(
+                          level: 0,
+                          color: NodeSignalLevel.poor.resolveColor(context) ??
+                              Colors.red,
+                        ),
+                      ),
+                      if (options.hasUnknownSignalDevices)
+                        ChipItem(label: '--'),
+                    ],
+                    selectedIndices: _signalToIndices(
+                      filter.signals,
+                      filter.includeUnknownSignal,
+                      options.hasUnknownSignalDevices,
+                    ),
+                    disabled: isEthernetOnly,
+                    disabledTooltip:
+                        loc(context).notApplicableForEthernetDevices,
+                    onSelectionChanged: (indices) {
+                      final (signals, includeUnknown) = _indicesToSignals(
+                        indices,
+                        options.hasUnknownSignalDevices,
+                      );
+                      final notifier =
+                          ref.read(deviceFilterConfigProvider.notifier);
+                      notifier.setSignals(signals);
+                      notifier.setIncludeUnknownSignal(includeUnknown);
+                    },
+                  ),
+                  if (options.ssids.isNotEmpty) ...[
                     AppGap.sm(),
-                    _DropdownRow<String>(
-                      label: loc(context).connectedVia,
-                      value: filter.nodeId ?? _kAllSentinel,
-                      items: [
-                        _kAllSentinel,
-                        ...options.nodes.map((n) => n.deviceId),
-                      ],
-                      labelOf: (id) {
-                        if (id == _kAllSentinel) return loc(context).all;
-                        final node = options.nodes
-                            .where((n) => n.deviceId == id)
-                            .firstOrNull;
-                        return node?.model ?? id;
-                      },
-                      onChanged: (v) => ref
+                    _ChipGroupRow(
+                      label: loc(context).ssid,
+                      chips:
+                          options.ssids.map((s) => ChipItem(label: s)).toList(),
+                      selectedIndices:
+                          _stringsToIndices(filter.ssidNames, options.ssids),
+                      disabled: isEthernetOnly,
+                      disabledTooltip:
+                          loc(context).notApplicableForEthernetDevices,
+                      onSelectionChanged: (indices) => ref
                           .read(deviceFilterConfigProvider.notifier)
-                          .setNodeId(v == _kAllSentinel ? null : v),
+                          .setSsidNames(
+                              _indicesToStrings(indices, options.ssids)),
                     ),
                   ],
-                ),
+                  if (options.bands.isNotEmpty) ...[
+                    AppGap.sm(),
+                    _ChipGroupRow(
+                      label: loc(context).band,
+                      chips:
+                          options.bands.map((b) => ChipItem(label: b)).toList(),
+                      selectedIndices:
+                          _stringsToIndices(filter.bands, options.bands),
+                      disabled: isEthernetOnly,
+                      disabledTooltip:
+                          loc(context).notApplicableForEthernetDevices,
+                      onSelectionChanged: (indices) => ref
+                          .read(deviceFilterConfigProvider.notifier)
+                          .setBands(_indicesToStrings(indices, options.bands)),
+                    ),
+                  ],
+                ],
               ),
-            ],
+            ),
           ],
         ),
       ),
     );
   }
+}
+
+Set<int> _connectionToIndices(Set<DeviceConnectionType> types) {
+  final indices = <int>{};
+  if (types.contains(DeviceConnectionType.wifi)) indices.add(0);
+  if (types.contains(DeviceConnectionType.wired)) indices.add(1);
+  return indices;
+}
+
+Set<DeviceConnectionType> _indicesToConnections(Set<int> indices) {
+  final types = <DeviceConnectionType>{};
+  if (indices.contains(0)) types.add(DeviceConnectionType.wifi);
+  if (indices.contains(1)) types.add(DeviceConnectionType.wired);
+  return types;
+}
+
+Set<int> _signalToIndices(
+  Set<DeviceSignalLevel> signals,
+  bool includeUnknown,
+  bool hasUnknownOption,
+) {
+  final indices = <int>{};
+  if (signals.contains(DeviceSignalLevel.excellent)) indices.add(0);
+  if (signals.contains(DeviceSignalLevel.good)) indices.add(1);
+  if (signals.contains(DeviceSignalLevel.fair)) indices.add(2);
+  if (signals.contains(DeviceSignalLevel.poor)) indices.add(3);
+  if (hasUnknownOption && includeUnknown) indices.add(4);
+  return indices;
+}
+
+(Set<DeviceSignalLevel>, bool) _indicesToSignals(
+  Set<int> indices,
+  bool hasUnknownOption,
+) {
+  final signals = <DeviceSignalLevel>{};
+  if (indices.contains(0)) signals.add(DeviceSignalLevel.excellent);
+  if (indices.contains(1)) signals.add(DeviceSignalLevel.good);
+  if (indices.contains(2)) signals.add(DeviceSignalLevel.fair);
+  if (indices.contains(3)) signals.add(DeviceSignalLevel.poor);
+  final includeUnknown = hasUnknownOption && indices.contains(4);
+  return (signals, includeUnknown);
+}
+
+Set<int> _stringsToIndices(Set<String> selected, List<String> options) {
+  final indices = <int>{};
+  for (var i = 0; i < options.length; i++) {
+    if (selected.contains(options[i])) indices.add(i);
+  }
+  return indices;
+}
+
+Set<String> _indicesToStrings(Set<int> indices, List<String> options) {
+  return indices
+      .where((i) => i < options.length)
+      .map((i) => options[i])
+      .toSet();
+}
+
+Set<int> _nodeIdsToIndices(Set<String> nodeIds, List<String> allNodeIds) {
+  final indices = <int>{};
+  for (var i = 0; i < allNodeIds.length; i++) {
+    if (nodeIds.contains(allNodeIds[i])) indices.add(i);
+  }
+  return indices;
+}
+
+Set<String> _indicesToNodeIds(Set<int> indices, List<String> allNodeIds) {
+  return indices
+      .where((i) => i < allNodeIds.length)
+      .map((i) => allNodeIds[i])
+      .toSet();
+}
+
+Set<int> _categoriesToIndices(
+  Set<DeviceCategory> selected,
+  List<DeviceCategory> options,
+) {
+  final indices = <int>{};
+  for (var i = 0; i < options.length; i++) {
+    if (selected.contains(options[i])) indices.add(i);
+  }
+  return indices;
+}
+
+Set<DeviceCategory> _indicesToCategories(
+  Set<int> indices,
+  List<DeviceCategory> options,
+) {
+  return indices
+      .where((i) => i < options.length)
+      .map((i) => options[i])
+      .toSet();
+}
+
+Set<int> _privateMacToIndices(PrivateMacFilter filter) {
+  return switch (filter) {
+    PrivateMacFilter.all => const {},
+    PrivateMacFilter.privateOnly => const {0},
+    PrivateMacFilter.publicOnly => const {1},
+  };
+}
+
+PrivateMacFilter _indicesToPrivateMac(Set<int> indices) {
+  if (indices.contains(0) && !indices.contains(1)) {
+    return PrivateMacFilter.privateOnly;
+  }
+  if (indices.contains(1) && !indices.contains(0)) {
+    return PrivateMacFilter.publicOnly;
+  }
+  return PrivateMacFilter.all;
 }
 
 class _FilterHeader extends StatelessWidget {
@@ -328,85 +469,71 @@ class _InfoNote extends StatelessWidget {
   }
 }
 
-class _DropdownRow<T> extends StatelessWidget {
-  const _DropdownRow({
+class _ChipGroupRow extends StatelessWidget {
+  const _ChipGroupRow({
     required this.label,
-    required this.value,
-    required this.items,
-    required this.labelOf,
-    required this.onChanged,
+    required this.chips,
+    required this.selectedIndices,
+    required this.onSelectionChanged,
     this.disabled = false,
     this.disabledTooltip,
   });
 
   final String label;
-  final T value;
-  final List<T> items;
-  final String Function(T) labelOf;
-  final ValueChanged<T?> onChanged;
+  final List<ChipItem> chips;
+  final Set<int> selectedIndices;
+  final ValueChanged<Set<int>> onSelectionChanged;
   final bool disabled;
   final String? disabledTooltip;
 
   @override
   Widget build(BuildContext context) {
-    // AppDropdown's `_displayString(null)` returns the hint, so we pass the
-    // "All …" label as hint to get a readable placeholder when value is null.
-    final displayWhenNull = value == null ? labelOf(value) : null;
-
-    Widget dropdown = AppDropdown<T>(
-      items: items,
-      value: value,
-      itemAsString: labelOf,
-      hint: displayWhenNull,
-      onChanged: onChanged,
-    );
-
-    // `AppDropdown` treats `onChanged: null` as disabled visually, but its
-    // internal `AppInteractionSensor.onTap` still opens the menu. Wrap with
-    // IgnorePointer to actually block interaction when disabled.
-    if (disabled) {
-      dropdown = IgnorePointer(child: dropdown);
-    }
-
-    final child = Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(
-          width: 80,
-          child: AppText.labelMedium(
-            label,
-            color: disabled
-                ? Theme.of(context).disabledColor
-                : Theme.of(context).colorScheme.onSurface,
-          ),
+        Row(
+          children: [
+            AppText.labelMedium(
+              label,
+              color: disabled
+                  ? Theme.of(context).disabledColor
+                  : Theme.of(context).colorScheme.onSurface,
+            ),
+            if (disabled && disabledTooltip != null) ...[
+              AppGap.xs(),
+              AppTooltip(
+                message: disabledTooltip!,
+                child: Icon(
+                  Icons.info_outline,
+                  size: 16,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ],
         ),
-        AppGap.sm(),
-        Expanded(child: dropdown),
-        if (disabled && disabledTooltip != null) ...[
-          AppGap.xs(),
-          AppTooltip(
-            message: disabledTooltip!,
-            child: Icon(
-              Icons.info_outline,
-              size: 16,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
+        AppGap.xs(),
+        IgnorePointer(
+          ignoring: disabled,
+          child: Opacity(
+            opacity: disabled ? 0.5 : 1.0,
+            child: AppChipGroup(
+              chips: chips,
+              selectedIndices: selectedIndices,
+              selectionMode: ChipSelectionMode.multiple,
+              onSelectionChanged: onSelectionChanged,
+              wrap: true,
+              spacing: AppSpacing.xs,
+              size: ChipSize.compact,
             ),
           ),
-        ],
+        ),
       ],
     );
-
-    return disabled ? Opacity(opacity: 0.5, child: child) : child;
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
 // Mobile/Tablet chip bar
-// ═══════════════════════════════════════════════════════════════════════════
-
-/// Mobile/tablet filter bar — horizontal chip row for quick filtering.
-/// Status filter is NOT included here — it lives above the device list.
-/// Dependency rules: Offline hides all chips, Ethernet greys out WiFi-scoped chips.
 class UspDeviceFilterChipBar extends ConsumerWidget {
   const UspDeviceFilterChipBar({super.key});
 
@@ -417,101 +544,110 @@ class UspDeviceFilterChipBar extends ConsumerWidget {
     final notifier = ref.read(deviceFilterConfigProvider.notifier);
 
     final isOffline = filter.status == DeviceStatusFilter.offline;
-    final isEthernet = filter.connection == DeviceConnectionFilter.ethernet;
+    final isEthernetOnly = filter.isEthernetOnly;
 
-    // When Offline, no additional filters are meaningful
     if (isOffline) {
       return const SizedBox.shrink();
     }
 
     final chips = <Widget>[
-      _Chip(
-        label: filter.connection == DeviceConnectionFilter.all
+      _FilterChip(
+        label: filter.connections.isEmpty
             ? loc(context).connection
-            : _connectionLabel(context, filter.connection),
-        isActive: filter.connection != DeviceConnectionFilter.all,
-        onTap: () => _showPicker<DeviceConnectionFilter>(
-          context,
+            : filter.connections.length == 1
+                ? (filter.connections.first == DeviceConnectionType.wifi
+                    ? loc(context).wifi
+                    : loc(context).ethernet)
+                : '${loc(context).connection} (${filter.connections.length})',
+        isActive: filter.connections.isNotEmpty,
+        onTap: () => _showMultiSelectPicker<DeviceConnectionType>(
+          context: context,
           title: loc(context).connection,
-          items: DeviceConnectionFilter.values,
-          selected: filter.connection,
-          labelOf: (v) => _connectionLabel(context, v),
-          onSelected: notifier.setConnection,
+          items: DeviceConnectionType.values,
+          selected: filter.connections,
+          labelOf: (v) => v == DeviceConnectionType.wifi
+              ? loc(context).wifi
+              : loc(context).ethernet,
+          onChanged: notifier.setConnections,
         ),
       ),
-      _Chip(
-        label: filter.signal == DeviceSignalFilter.all
-            ? loc(context).signal
-            : _signalLabel(context, filter.signal),
-        isActive: filter.signal != DeviceSignalFilter.all,
-        disabled: isEthernet,
-        onTap: () => _showPicker<DeviceSignalFilter>(
-          context,
-          title: loc(context).signal,
-          items: _signalOptions(options),
-          selected: filter.signal,
-          labelOf: (v) => _signalLabel(context, v),
-          onSelected: notifier.setSignal,
+      _FilterChip(
+        label: _buildSignalChipLabel(context, filter, options),
+        isActive: filter.signals.isNotEmpty || filter.includeUnknownSignal,
+        disabled: isEthernetOnly,
+        onTap: () => _showSignalPicker(
+          context: context,
+          filter: filter,
+          options: options,
+          notifier: notifier,
         ),
       ),
       if (options.ssids.isNotEmpty)
-        _Chip(
-          label: filter.ssidName ?? loc(context).ssid,
-          isActive: filter.ssidName != null,
-          disabled: isEthernet,
-          onTap: () => _showPicker<String?>(
-            context,
+        _FilterChip(
+          label: filter.ssidNames.isEmpty
+              ? loc(context).ssid
+              : filter.ssidNames.length == 1
+                  ? filter.ssidNames.first
+                  : '${loc(context).ssid} (${filter.ssidNames.length})',
+          isActive: filter.ssidNames.isNotEmpty,
+          disabled: isEthernetOnly,
+          onTap: () => _showMultiSelectPicker<String>(
+            context: context,
             title: loc(context).ssid,
-            items: [null, ...options.ssids],
-            selected: filter.ssidName,
-            labelOf: (v) => v ?? loc(context).all,
-            onSelected: notifier.setSsidName,
+            items: options.ssids,
+            selected: filter.ssidNames,
+            labelOf: (v) => v,
+            onChanged: notifier.setSsidNames,
           ),
         ),
       if (options.bands.isNotEmpty)
-        _Chip(
-          label: filter.band ?? loc(context).band,
-          isActive: filter.band != null,
-          disabled: isEthernet,
-          onTap: () => _showPicker<String?>(
-            context,
+        _FilterChip(
+          label: filter.bands.isEmpty
+              ? loc(context).band
+              : filter.bands.length == 1
+                  ? filter.bands.first
+                  : '${loc(context).band} (${filter.bands.length})',
+          isActive: filter.bands.isNotEmpty,
+          disabled: isEthernetOnly,
+          onTap: () => _showMultiSelectPicker<String>(
+            context: context,
             title: loc(context).band,
-            items: [null, ...options.bands],
-            selected: filter.band,
-            labelOf: (v) => v ?? loc(context).all,
-            onSelected: notifier.setBand,
+            items: options.bands,
+            selected: filter.bands,
+            labelOf: (v) => v,
+            onChanged: notifier.setBands,
           ),
         ),
       if (options.nodes.length > 1)
-        _Chip(
-          label: filter.nodeId != null
-              ? (options.nodes
-                      .where((n) => n.deviceId == filter.nodeId)
-                      .firstOrNull
-                      ?.model ??
-                  filter.nodeId!)
-              : loc(context).node,
-          isActive: filter.nodeId != null,
-          onTap: () => _showPicker<String?>(
-            context,
+        _FilterChip(
+          label: filter.nodeIds.isEmpty
+              ? loc(context).node
+              : filter.nodeIds.length == 1
+                  ? (options.nodes
+                          .where((n) => n.deviceId == filter.nodeIds.first)
+                          .firstOrNull
+                          ?.model ??
+                      filter.nodeIds.first)
+                  : '${loc(context).node} (${filter.nodeIds.length})',
+          isActive: filter.nodeIds.isNotEmpty,
+          onTap: () => _showMultiSelectPicker<String>(
+            context: context,
             title: loc(context).node,
-            items: [null, ...options.nodes.map((n) => n.deviceId)],
-            selected: filter.nodeId,
-            labelOf: (id) {
-              if (id == null) return loc(context).all;
-              return options.nodes
-                      .where((n) => n.deviceId == id)
-                      .firstOrNull
-                      ?.model ??
-                  id;
-            },
-            onSelected: notifier.setNodeId,
+            items: options.nodes.map((n) => n.deviceId).toList(),
+            selected: filter.nodeIds,
+            labelOf: (id) =>
+                options.nodes
+                    .where((n) => n.deviceId == id)
+                    .firstOrNull
+                    ?.model ??
+                id,
+            onChanged: notifier.setNodeIds,
           ),
         ),
     ];
 
     if (filter.activeCountExcludingStatus > 0) {
-      chips.add(_Chip(
+      chips.add(_FilterChip(
         label: loc(context).clear,
         isActive: false,
         onTap: notifier.clearAll,
@@ -531,42 +667,141 @@ class UspDeviceFilterChipBar extends ConsumerWidget {
     );
   }
 
-  void _showPicker<T>(
-    BuildContext context, {
+  String _buildSignalChipLabel(
+    BuildContext context,
+    DeviceFilterConfig filter,
+    DeviceFilterOptions options,
+  ) {
+    final count = filter.signals.length + (filter.includeUnknownSignal ? 1 : 0);
+    if (count == 0) return loc(context).signal;
+    if (count == 1) {
+      if (filter.includeUnknownSignal) return '--';
+      return _signalLabel(context, filter.signals.first);
+    }
+    return '${loc(context).signal} ($count)';
+  }
+
+  void _showMultiSelectPicker<T>({
+    required BuildContext context,
     required String title,
     required List<T> items,
-    required T selected,
+    required Set<T> selected,
     required String Function(T) labelOf,
-    required void Function(T) onSelected,
+    required void Function(Set<T>) onChanged,
   }) {
+    Set<T> tempSelected = Set.from(selected);
+
     showModalBottomSheet(
       context: context,
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(AppSpacing.lg),
-              child: AppText.titleMedium(title),
-            ),
-            ...items.map((item) => ListTile(
-                  title: Text(labelOf(item)),
-                  selected: item == selected,
-                  onTap: () {
-                    onSelected(item);
-                    Navigator.pop(ctx);
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setSheetState) => SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(AppSpacing.lg),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    AppText.titleMedium(title),
+                    AppButton.text(
+                      label: loc(context).done,
+                      onTap: () {
+                        onChanged(tempSelected);
+                        Navigator.pop(ctx);
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              ...items.map((item) => CheckboxListTile(
+                    title: Text(labelOf(item)),
+                    value: tempSelected.contains(item),
+                    onChanged: (checked) {
+                      setSheetState(() {
+                        if (checked == true) {
+                          tempSelected.add(item);
+                        } else {
+                          tempSelected.remove(item);
+                        }
+                      });
+                    },
+                  )),
+              const SizedBox(height: AppSpacing.lg),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showSignalPicker({
+    required BuildContext context,
+    required DeviceFilterConfig filter,
+    required DeviceFilterOptions options,
+    required DeviceFilterNotifier notifier,
+  }) {
+    var tempSignals = Set<DeviceSignalLevel>.from(filter.signals);
+    var tempIncludeUnknown = filter.includeUnknownSignal;
+
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setSheetState) => SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(AppSpacing.lg),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    AppText.titleMedium(loc(context).signal),
+                    AppButton.text(
+                      label: loc(context).done,
+                      onTap: () {
+                        notifier.setSignals(tempSignals);
+                        notifier.setIncludeUnknownSignal(tempIncludeUnknown);
+                        Navigator.pop(ctx);
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              ...DeviceSignalLevel.values.map((level) => CheckboxListTile(
+                    title: Text(_signalLabel(context, level)),
+                    value: tempSignals.contains(level),
+                    onChanged: (checked) {
+                      setSheetState(() {
+                        if (checked == true) {
+                          tempSignals.add(level);
+                        } else {
+                          tempSignals.remove(level);
+                        }
+                      });
+                    },
+                  )),
+              if (options.hasUnknownSignalDevices)
+                CheckboxListTile(
+                  title: const Text('--'),
+                  value: tempIncludeUnknown,
+                  onChanged: (checked) {
+                    setSheetState(() {
+                      tempIncludeUnknown = checked ?? false;
+                    });
                   },
-                )),
-            const SizedBox(height: AppSpacing.lg),
-          ],
+                ),
+              const SizedBox(height: AppSpacing.lg),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-class _Chip extends StatelessWidget {
-  const _Chip({
+class _FilterChip extends StatelessWidget {
+  const _FilterChip({
     required this.label,
     required this.isActive,
     required this.onTap,
