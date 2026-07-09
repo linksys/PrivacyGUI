@@ -192,7 +192,11 @@ class UspInstantPrivacyService {
     // Allowed list shows all whitelisted MACs with hostname if known, else MAC
     final allowed = allowedDevices(macAps).map((d) {
       final name = hostnameByMac[d.mac] ?? d.mac;
-      return InstantPrivacyDeviceUIModel(mac: d.mac, displayName: name);
+      return InstantPrivacyDeviceUIModel(
+        mac: d.mac,
+        displayName: name,
+        isPrivateMac: OuiLookup.isRandomizedMac(d.mac),
+      );
     }).toList();
 
     return InstantPrivacyFetchResult(

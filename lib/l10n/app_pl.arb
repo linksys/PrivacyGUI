@@ -557,6 +557,7 @@
   "disableInstantPrivacyDesc": "Wszystkie urządzenia będą mogły swobodnie łączyć się z Twoją siecią.",
   "privateMacWarningTitle": "Niektóre urządzenia używają prywatnego adresu Wi-Fi",
   "privateMacWarningDesc": "Wymienione poniżej urządzenia używają prywatnego (losowego) adresu Wi-Fi. Ponieważ ten adres zmienia się z czasem, po jego zmianie mogą zostać zablokowane — nawet to, którego używasz teraz. Aby zachować połączenie, wyłącz opcję „Prywatny adres Wi-Fi” dla tych urządzeń przed włączeniem Instant Privacy.",
+  "privateMacLabel": "Prywatny",
   "disableInstantPrivacyTitle": "Wyłączyć Instant Privacy?",
   "discards": "Odrzucenia",
   "distribution": "Rozkład",

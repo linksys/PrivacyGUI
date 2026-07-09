@@ -1399,6 +1399,7 @@
   },
   "privateMacWarningTitle": "Some devices use a private Wi-Fi address",
   "privateMacWarningDesc": "The device(s) below use a private (randomized) Wi-Fi address. Because this address changes over time, they may be blocked after it rotates — even the one you're using now. To stay connected, turn off \"Private Wi-Fi Address\" for these devices before enabling Instant Privacy.",
+  "privateMacLabel": "Private",
   "disableInstantPrivacyTitle": "Disable Instant Privacy?",
   "disableInstantPrivacyDesc": "All devices will be able to connect freely to your network.",
   "addDeviceManually": "Add device manually",

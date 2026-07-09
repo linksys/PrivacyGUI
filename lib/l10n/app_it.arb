@@ -559,6 +559,7 @@
   "disableInstantPrivacyDesc": "Tutti i dispositivi potranno connettersi liberamente alla tua rete.",
   "privateMacWarningTitle": "Alcuni dispositivi usano un indirizzo Wi-Fi privato",
   "privateMacWarningDesc": "I dispositivi elencati di seguito usano un indirizzo Wi-Fi privato (casuale). Poiché questo indirizzo cambia nel tempo, potrebbero essere bloccati dopo la sua rotazione — compreso quello che stai usando ora. Per restare connesso, disattiva l’\"Indirizzo Wi-Fi privato\" per questi dispositivi prima di attivare Instant Privacy.",
+  "privateMacLabel": "Privato",
   "disableInstantPrivacyTitle": "Disattivare Instant Privacy?",
   "discards": "Scarti",
   "distribution": "Distribuzione",

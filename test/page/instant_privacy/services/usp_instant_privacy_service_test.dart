@@ -429,6 +429,24 @@ void main() {
       // FF:FF:FF:FF:FF:FF is not in connected devices → MAC address as display name
       expect(result.allowedDevices[0].displayName, 'FF:FF:FF:FF:FF:FF');
     });
+
+    test('allowed devices have isPrivateMac flag set correctly', () async {
+      stubFetchAll(mockUsp, apResponse: {
+        'Device.WiFi.AccessPoint.1.SSIDReference': 'Device.WiFi.SSID.1',
+        'Device.WiFi.AccessPoint.1.MACAddressControlEnabled': true,
+        // 2E:... is locally-administered (private), 74:... is universal (real)
+        'Device.WiFi.AccessPoint.1.AllowedMACAddress':
+            '2E:52:AD:77:D0:F8,74:12:13:21:56:3B',
+      });
+
+      final result = await service.fetchAll();
+
+      expect(result.allowedDevices, hasLength(2));
+      expect(result.allowedDevices[0].mac, '2E:52:AD:77:D0:F8');
+      expect(result.allowedDevices[0].isPrivateMac, isTrue);
+      expect(result.allowedDevices[1].mac, '74:12:13:21:56:3B');
+      expect(result.allowedDevices[1].isPrivateMac, isFalse);
+    });
   });
 
   group('UspInstantPrivacyService — enable', () {
