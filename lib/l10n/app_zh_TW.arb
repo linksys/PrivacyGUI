@@ -474,6 +474,8 @@
   "confirmationRequired": "需要確認",
   "confirmingNewFirmware": "正在確認新韌體是否正在執行…",
   "connect": "連線",
+  "duplicateMacAddress": "此 MAC 位址已被保留",
+  "duplicateIpAddress": "此 IP 位址已被保留",
   "connectedDevices": "已連線的裝置",
   "connecting": "正在連線...",
   "connectingToRouter": "正在連線至路由器...",

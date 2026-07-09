@@ -473,6 +473,8 @@
   "confirmationRequired": "Confirmation requise",
   "confirmingNewFirmware": "Confirmation que le nouveau micrologiciel est en cours d'exécution…",
   "connect": "Connecter",
+  "duplicateMacAddress": "Cette adresse MAC est déjà réservée",
+  "duplicateIpAddress": "Cette adresse IP est déjà réservée",
   "connectedDevices": "Périphériques connectés",
   "connecting": "Connexion...",
   "connectingToRouter": "Connexion au routeur...",

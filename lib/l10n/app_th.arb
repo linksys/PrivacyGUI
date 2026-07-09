@@ -471,6 +471,8 @@
   "confirmationRequired": "ต้องมีการยืนยัน",
   "confirmingNewFirmware": "กำลังยืนยันว่าเฟิร์มแวร์ใหม่กำลังทำงาน…",
   "connect": "เชื่อมต่อ",
+  "duplicateMacAddress": "ที่อยู่ MAC นี้ถูกสำรองไว้แล้ว",
+  "duplicateIpAddress": "ที่อยู่ IP นี้ถูกสำรองไว้แล้ว",
   "connectedDevices": "อุปกรณ์ที่เชื่อมต่อ",
   "connecting": "กำลังเชื่อมต่อ...",
   "connectingToRouter": "กำลังเชื่อมต่อกับเราเตอร์...",

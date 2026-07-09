@@ -471,6 +471,8 @@
   "confirmationRequired": "Cần xác nhận",
   "confirmingNewFirmware": "Đang xác nhận firmware mới đang chạy…",
   "connect": "Kết nối",
+  "duplicateMacAddress": "Địa chỉ MAC này đã được dành riêng",
+  "duplicateIpAddress": "Địa chỉ IP này đã được dành riêng",
   "connectedDevices": "Thiết bị được kết nối",
   "connecting": "Đang kết nối...",
   "connectingToRouter": "Đang kết nối với router...",

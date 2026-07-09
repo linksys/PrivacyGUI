@@ -474,6 +474,8 @@
   "confirmationRequired": "التأكيد مطلوب",
   "confirmingNewFirmware": "جارٍ التأكد من تشغيل البرنامج الثابت الجديد…",
   "connect": "اتصال",
+  "duplicateMacAddress": "عنوان MAC هذا محجوز بالفعل",
+  "duplicateIpAddress": "عنوان IP هذا محجوز بالفعل",
   "connectedDevices": "الأجهزة المتصلة",
   "connecting": "جارٍ الاتصال...",
   "connectingToRouter": "جارٍ الاتصال بجهاز التوجيه...",

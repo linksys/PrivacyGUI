@@ -473,6 +473,8 @@
   "confirmationRequired": "Bevestiging vereist",
   "confirmingNewFirmware": "Bevestigen dat de nieuwe firmware draait…",
   "connect": "Verbinden",
+  "duplicateMacAddress": "Dit MAC-adres is al gereserveerd",
+  "duplicateIpAddress": "Dit IP-adres is al gereserveerd",
   "connectedDevices": "Verbonden apparaten",
   "connecting": "Verbinden...",
   "connectingToRouter": "Verbinden met router...",
