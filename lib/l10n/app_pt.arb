@@ -1118,5 +1118,9 @@
   "targetChain": "Cadeia de destino",
   "synchronized": "Sincronizado",
   "noPortForwardingRulesConfigured": "Nenhuma regra de encaminhamento de portas configurada",
-  "nItems": "{count, plural, one{{count} item} other{{count} itens}}"
+  "nItems": "{count, plural, one{{count} item} other{{count} itens}}",
+  "bridgeReconnectHint": "Após salvar, reconecte-se ao seu roteador em {url}.",
+  "bridgeRedirectTitle": "Reconectar ao seu roteador",
+  "bridgeRedirectMessage": "Seu roteador agora é uma ponte transparente e não distribui mais endereços IP locais. Reconecte-se em {url}.",
+  "bridgeRedirectButton": "Ir para o roteador"
 }

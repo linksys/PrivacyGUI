@@ -1118,5 +1118,9 @@
   "targetChain": "Zielkette",
   "synchronized": "Synchronisiert",
   "noPortForwardingRulesConfigured": "Keine Portweiterleitungsregeln konfiguriert",
-  "nItems": "{count, plural, one{{count} Element} other{{count} Elemente}}"
+  "nItems": "{count, plural, one{{count} Element} other{{count} Elemente}}",
+  "bridgeReconnectHint": "Verbinden Sie sich nach dem Speichern unter {url} erneut mit Ihrem Router.",
+  "bridgeRedirectTitle": "Erneut mit dem Router verbinden",
+  "bridgeRedirectMessage": "Ihr Router arbeitet jetzt als transparente Bridge und vergibt keine lokalen IP-Adressen mehr. Verbinden Sie sich unter {url} erneut.",
+  "bridgeRedirectButton": "Zum Router"
 }

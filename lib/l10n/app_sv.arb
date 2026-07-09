@@ -1118,5 +1118,9 @@
   "targetChain": "Målkedja",
   "synchronized": "Synkroniserad",
   "noPortForwardingRulesConfigured": "Inga regler för portvidarebefordran har konfigurerats",
-  "nItems": "{count, plural, one{{count} objekt} other{{count} objekt}}"
+  "nItems": "{count, plural, one{{count} objekt} other{{count} objekt}}",
+  "bridgeReconnectHint": "Efter att du har sparat ansluter du till din router igen på {url}.",
+  "bridgeRedirectTitle": "Anslut till din router igen",
+  "bridgeRedirectMessage": "Din router fungerar nu som en transparent brygga och delar inte längre ut lokala IP-adresser. Anslut igen på {url}.",
+  "bridgeRedirectButton": "Gå till routern"
 }

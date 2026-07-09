@@ -1118,5 +1118,9 @@
   "targetChain": "เชนเป้าหมาย",
   "synchronized": "ซิงโครไนซ์แล้ว",
   "noPortForwardingRulesConfigured": "ไม่มีการกำหนดค่ากฎการส่งต่อพอร์ต",
-  "nItems": "{count, plural, other{{count} รายการ}}"
+  "nItems": "{count, plural, other{{count} รายการ}}",
+  "bridgeReconnectHint": "หลังจากบันทึกแล้ว โปรดเชื่อมต่อกับเราเตอร์ของคุณอีกครั้งที่ {url}",
+  "bridgeRedirectTitle": "เชื่อมต่อกับเราเตอร์ของคุณอีกครั้ง",
+  "bridgeRedirectMessage": "ขณะนี้เราเตอร์ของคุณทำงานเป็นบริดจ์แบบโปร่งใสและไม่แจกจ่ายที่อยู่ IP ภายในอีกต่อไป โปรดเชื่อมต่อใหม่ที่ {url}",
+  "bridgeRedirectButton": "ไปที่เราเตอร์"
 }

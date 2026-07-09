@@ -47,6 +47,7 @@ void main() {
     'Device.PPP.Interface.1.IdleDisconnectTime': '0',
     'Device.PPP.Interface.1.LCPEcho': '30',
     'Device.PPP.Interface.1.ConnectionStatus': 'Connected',
+    'Device.PPP.Interface.1.LowerLayers': 'Device.Ethernet.Link.2',
   };
 
   const vlanExistingResponse = <String, dynamic>{
@@ -91,6 +92,16 @@ void main() {
       }
       if (paths.any((p) => p.contains('VLANTermination'))) {
         return vlanResponse;
+      }
+      if (paths.any((p) => p.contains('GRE.Tunnel'))) {
+        return <String, dynamic>{
+          'Device.GRE.Tunnel.1.RemoteEndpoints': '',
+        };
+      }
+      if (paths.any((p) => p.contains('L2TPv2.Tunnel'))) {
+        return <String, dynamic>{
+          'Device.L2TPv2.Tunnel.1.RemoteEndpoints': '',
+        };
       }
       return {};
     });
@@ -191,11 +202,14 @@ void main() {
       // - Ipv6Settings._resolveInstance() + fetch() = 2 calls
       // - PppInterface.fetch() = 1 call
       // - VlanTermination.fetch() = 1 call
+      // - GreTunnel.fetch() = 1 call
+      // - L2tpTunnel.fetch() = 1 call
+      // - _fetchHostName() (Device.DeviceInfo.HostName) = 1 call
       // saveAll:
       // - WanStaticIp.updateOrdered() → _resolveInstance() = 1 call
       // - Ipv6Settings.update() → _resolveInstance() = 1 call
-      // Total = 8 get calls
-      verify(() => mockUsp.get(any())).called(8);
+      // Total = 11 get calls
+      verify(() => mockUsp.get(any())).called(11);
 
       // Verify setOrdered was called for Static IP mode switch
       final capturedOrdered = verify(() => mockUsp.setOrdered(captureAny(),
@@ -232,12 +246,13 @@ void main() {
       await service.saveIspSettings(config);
 
       // Verify fetchSettings + saveAll get calls:
-      // fetchSettings: 6 calls (WanSettings, Ipv6, PPP, VLAN)
+      // fetchSettings: 9 calls (WanSettings x2, Ipv6 x2, PPP, VLAN, GRE, L2TP,
+      //   _fetchHostName = Device.DeviceInfo.HostName)
       // saveAll:
       // - WanPppoe.update() → _resolveInstance() = 1 call
       // - Ipv6Settings.update() → _resolveInstance() = 1 call
-      // Total = 8 get calls
-      verify(() => mockUsp.get(any())).called(8);
+      // Total = 11 get calls
+      verify(() => mockUsp.get(any())).called(11);
 
       // Verify PppInterface.add was called (new PPP instance created)
       final addCaptures = verify(() => mockUsp.add(captureAny())).captured;
@@ -289,6 +304,16 @@ void main() {
         }
         if (paths.any((p) => p.contains('VLANTermination'))) {
           return vlanExistingResponse;
+        }
+        if (paths.any((p) => p.contains('GRE.Tunnel'))) {
+          return <String, dynamic>{
+            'Device.GRE.Tunnel.1.RemoteEndpoints': '',
+          };
+        }
+        if (paths.any((p) => p.contains('L2TPv2.Tunnel'))) {
+          return <String, dynamic>{
+            'Device.L2TPv2.Tunnel.1.RemoteEndpoints': '',
+          };
         }
         return {};
       });
@@ -350,6 +375,16 @@ void main() {
         }
         if (paths.any((p) => p.contains('VLANTermination'))) {
           return vlanDisabledResponse;
+        }
+        if (paths.any((p) => p.contains('GRE.Tunnel'))) {
+          return <String, dynamic>{
+            'Device.GRE.Tunnel.1.RemoteEndpoints': '',
+          };
+        }
+        if (paths.any((p) => p.contains('L2TPv2.Tunnel'))) {
+          return <String, dynamic>{
+            'Device.L2TPv2.Tunnel.1.RemoteEndpoints': '',
+          };
         }
         return {};
       });

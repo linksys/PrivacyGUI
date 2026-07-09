@@ -1695,5 +1695,25 @@
         "type": "int"
       }
     }
-  }
+  },
+  "bridgeReconnectHint": "After saving, reconnect to your router at {url}.",
+  "@bridgeReconnectHint": {
+    "description": "Bold inline hint shown while editing when Bridge Mode is selected. {url} is https://<hostname>.local",
+    "placeholders": {
+      "url": {
+        "type": "Object"
+      }
+    }
+  },
+  "bridgeRedirectTitle": "Reconnect to your router",
+  "bridgeRedirectMessage": "Your router is now a transparent bridge and no longer hands out local IP addresses. Reconnect to it at {url}.",
+  "@bridgeRedirectMessage": {
+    "description": "Body of the dialog shown after switching to Bridge Mode. {url} is https://<hostname>.local",
+    "placeholders": {
+      "url": {
+        "type": "Object"
+      }
+    }
+  },
+  "bridgeRedirectButton": "Go to router"
 }

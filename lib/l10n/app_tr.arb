@@ -1118,5 +1118,9 @@
   "targetChain": "Hedef Zinciri",
   "synchronized": "Eşitlendi",
   "noPortForwardingRulesConfigured": "Yapılandırılmış bağlantı noktası yönlendirme kuralı yok",
-  "nItems": "{count, plural, one{{count} öğe} other{{count} öğe}}"
+  "nItems": "{count, plural, one{{count} öğe} other{{count} öğe}}",
+  "bridgeReconnectHint": "Kaydettikten sonra {url} adresinden yönlendiricinize yeniden bağlanın.",
+  "bridgeRedirectTitle": "Yönlendiricinize yeniden bağlanın",
+  "bridgeRedirectMessage": "Yönlendiriciniz artık şeffaf bir köprü olarak çalışıyor ve yerel IP adresleri dağıtmıyor. {url} adresinden yeniden bağlanın.",
+  "bridgeRedirectButton": "Yönlendiriciye git"
 }

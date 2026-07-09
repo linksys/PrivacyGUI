@@ -1118,5 +1118,9 @@
   "targetChain": "目标链",
   "synchronized": "已同步",
   "noPortForwardingRulesConfigured": "未配置端口转发规则",
-  "nItems": "{count, plural, other{{count} 个项目}}"
+  "nItems": "{count, plural, other{{count} 个项目}}",
+  "bridgeReconnectHint": "保存后，请改用 {url} 重新连接到您的路由器。",
+  "bridgeRedirectTitle": "重新连接到您的路由器",
+  "bridgeRedirectMessage": "您的路由器现在是透明网桥，不再分配本地 IP 地址。请改用 {url} 重新连接。",
+  "bridgeRedirectButton": "前往路由器"
 }

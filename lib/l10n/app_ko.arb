@@ -1118,5 +1118,9 @@
   "targetChain": "대상 체인",
   "synchronized": "동기화됨",
   "noPortForwardingRulesConfigured": "구성된 포트 포워딩 규칙이 없습니다",
-  "nItems": "{count, plural, other{{count}개 항목}}"
+  "nItems": "{count, plural, other{{count}개 항목}}",
+  "bridgeReconnectHint": "저장한 후 {url} 에서 라우터에 다시 연결하세요.",
+  "bridgeRedirectTitle": "라우터에 다시 연결",
+  "bridgeRedirectMessage": "라우터가 이제 투명 브리지로 작동하며 로컬 IP 주소를 더 이상 할당하지 않습니다. {url} 에서 다시 연결하세요.",
+  "bridgeRedirectButton": "라우터로 이동"
 }

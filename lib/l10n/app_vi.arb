@@ -1118,5 +1118,9 @@
   "targetChain": "Chuỗi đích",
   "synchronized": "Đã đồng bộ hóa",
   "noPortForwardingRulesConfigured": "Chưa cấu hình quy tắc chuyển tiếp cổng nào",
-  "nItems": "{count, plural, other{{count} mục}}"
+  "nItems": "{count, plural, other{{count} mục}}",
+  "bridgeReconnectHint": "Sau khi lưu, hãy kết nối lại với bộ định tuyến của bạn tại {url}.",
+  "bridgeRedirectTitle": "Kết nối lại với bộ định tuyến của bạn",
+  "bridgeRedirectMessage": "Bộ định tuyến của bạn hiện là cầu nối trong suốt và không còn cấp địa chỉ IP cục bộ nữa. Hãy kết nối lại tại {url}.",
+  "bridgeRedirectButton": "Đi tới bộ định tuyến"
 }
