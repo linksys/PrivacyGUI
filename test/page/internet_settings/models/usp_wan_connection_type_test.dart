@@ -62,10 +62,13 @@ void main() {
         );
       });
 
-      test('returns bridge for unknown addressingType', () {
+      test('returns dhcp for unknown non-empty addressingType', () {
+        // Only an explicitly empty AddressingType signals bridge; any other
+        // unrecognised value (future firmware, transient) falls back to DHCP
+        // rather than being misclassified as bridge.
         expect(
           UspWanConnectionType.fromRawFields(addressingType: 'Something'),
-          UspWanConnectionType.bridge,
+          UspWanConnectionType.dhcp,
         );
       });
     });

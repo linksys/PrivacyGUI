@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/components/usp_status_dot.dart';
-import 'package:privacy_gui/page/internet_settings/models/usp_wan_connection_type.dart';
 import 'package:privacy_gui/page/internet_settings/models/internet_settings_feature_state.dart';
+import 'package:privacy_gui/page/internet_settings/views/components/usp_connection_type_label.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// A prominent banner at the top of the Internet Settings page.
@@ -44,7 +43,7 @@ class UspConnectionStatusBanner extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   AppText.labelLarge(
-                    _connectionTypeLabel(context, connectionType),
+                    connectionType.localizedLabel(context),
                   ),
                   AppGap.xs(),
                   AppText.bodySmall(
@@ -62,17 +61,5 @@ class UspConnectionStatusBanner extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  String _connectionTypeLabel(BuildContext context, UspWanConnectionType type) {
-    final l = loc(context);
-    return switch (type) {
-      UspWanConnectionType.dhcp => l.connectionTypeDhcp,
-      UspWanConnectionType.staticIp => l.staticIp,
-      UspWanConnectionType.pppoe => l.connectionTypePppoe,
-      UspWanConnectionType.pptp => 'PPTP',
-      UspWanConnectionType.l2tp => 'L2TP',
-      UspWanConnectionType.bridge => l.connectionTypeBridge,
-    };
   }
 }

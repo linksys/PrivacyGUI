@@ -6,6 +6,7 @@ import 'package:privacy_gui/page/internet_settings/models/usp_internet_settings_
 import 'package:privacy_gui/page/internet_settings/models/usp_wan_connection_type.dart';
 import 'package:privacy_gui/page/internet_settings/providers/usp_internet_settings_notifier.dart';
 import 'package:privacy_gui/page/internet_settings/models/internet_settings_feature_state.dart';
+import 'package:privacy_gui/page/internet_settings/views/components/usp_connection_type_label.dart';
 import 'package:privacy_gui/page/internet_settings/views/components/usp_section_card.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -132,7 +133,7 @@ class _UspIpv4SectionState extends ConsumerState<UspIpv4Section> {
               label: loc(context).connectionType,
               items: UspWanConnectionType.values,
               value: form.connectionType,
-              itemAsString: (type) => _connectionTypeLabel(context, type),
+              itemAsString: (type) => type.localizedLabel(context),
               onChanged: (type) {
                 if (type != null) {
                   ref
@@ -144,7 +145,7 @@ class _UspIpv4SectionState extends ConsumerState<UspIpv4Section> {
           else
             UspInfoRow(
               label: loc(context).connectionType,
-              value: _connectionTypeLabel(context, form.connectionType),
+              value: form.connectionType.localizedLabel(context),
             ),
           AppGap.md(),
           // Conditional fields based on connection type
@@ -425,18 +426,6 @@ class _UspIpv4SectionState extends ConsumerState<UspIpv4Section> {
         ),
       ],
     ];
-  }
-
-  String _connectionTypeLabel(BuildContext context, UspWanConnectionType type) {
-    final l = loc(context);
-    return switch (type) {
-      UspWanConnectionType.dhcp => l.connectionTypeDhcp,
-      UspWanConnectionType.staticIp => l.staticIp,
-      UspWanConnectionType.pppoe => l.connectionTypePppoe,
-      UspWanConnectionType.pptp => 'PPTP',
-      UspWanConnectionType.l2tp => 'L2TP',
-      UspWanConnectionType.bridge => l.connectionTypeBridge,
-    };
   }
 
   void _updateField(

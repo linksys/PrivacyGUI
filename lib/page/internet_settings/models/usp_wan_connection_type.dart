@@ -13,8 +13,11 @@ enum UspWanConnectionType {
   /// - `Static` → static IP
   /// - `IPCP`   → PPP-based (PPPoE / PPTP / L2TP, disambiguated by [lowerLayers])
   /// - `DHCP`   → DHCP
-  /// - empty / anything else → bridge mode (firmware sets `AddressingType=""`
-  ///   when the WAN interface is placed into a transparent L2 bridge).
+  /// - empty → bridge mode (firmware sets `AddressingType=""` when the WAN
+  ///   interface is placed into a transparent L2 bridge)
+  /// - any other unrecognised value → DHCP (safe fallback; only an explicitly
+  ///   empty value means bridge, so a future/transient value is not
+  ///   misclassified as bridge).
   ///
   /// [lowerLayers] disambiguates PPP-based protocols by checking the tunnel
   /// reference in `PPP.Interface.LowerLayers` (GRE → PPTP, L2TPv2 → L2TP).
@@ -36,7 +39,10 @@ enum UspWanConnectionType {
       case 'DHCP':
         return dhcp;
       default:
-        return bridge;
+        // Only an explicitly empty AddressingType signals bridge mode; any
+        // other unknown value falls back to DHCP rather than misclassifying
+        // as bridge.
+        return addressingType.isEmpty ? bridge : dhcp;
     }
   }
 
