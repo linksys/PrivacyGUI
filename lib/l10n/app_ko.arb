@@ -1125,5 +1125,8 @@
   "bridgeReconnectHint": "저장한 후 {url} 에서 라우터에 다시 연결하세요.",
   "bridgeRedirectTitle": "라우터에 다시 연결",
   "bridgeRedirectMessage": "라우터가 이제 투명 브리지로 작동하며 로컬 IP 주소를 더 이상 할당하지 않습니다. {url} 에서 다시 연결하세요.",
-  "bridgeRedirectButton": "라우터로 이동"
+  "bridgeRedirectButton": "라우터로 이동",
+  "lanIpRedirectTitle": "라우터에 다시 연결",
+  "lanIpRedirectMessage": "라우터의 IP 주소가 변경되었습니다. {url}에서 다시 연결하세요. 기기가 새 주소를 받을 때까지 잠시 기다려야 할 수 있습니다.",
+  "lanIpRedirectButton": "라우터로 이동"
 }

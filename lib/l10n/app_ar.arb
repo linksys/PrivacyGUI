@@ -1125,5 +1125,8 @@
   "bridgeReconnectHint": "بعد الحفظ، أعد الاتصال بجهاز التوجيه على {url}.",
   "bridgeRedirectTitle": "إعادة الاتصال بجهاز التوجيه",
   "bridgeRedirectMessage": "يعمل جهاز التوجيه الآن كجسر شفاف ولم يعد يوزّع عناوين IP محلية. أعد الاتصال على {url}.",
-  "bridgeRedirectButton": "الانتقال إلى جهاز التوجيه"
+  "bridgeRedirectButton": "الانتقال إلى جهاز التوجيه",
+  "lanIpRedirectTitle": "إعادة الاتصال بجهاز التوجيه",
+  "lanIpRedirectMessage": "لقد تغيّر عنوان IP الخاص بجهاز التوجيه. أعد الاتصال به على {url}. قد تحتاج إلى الانتظار قليلاً حتى يحصل جهازك على عنوان جديد.",
+  "lanIpRedirectButton": "الانتقال إلى جهاز التوجيه"
 }

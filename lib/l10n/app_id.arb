@@ -1125,5 +1125,8 @@
   "bridgeReconnectHint": "Setelah menyimpan, sambungkan kembali ke router Anda di {url}.",
   "bridgeRedirectTitle": "Sambungkan kembali ke router Anda",
   "bridgeRedirectMessage": "Router Anda sekarang menjadi bridge transparan dan tidak lagi memberikan alamat IP lokal. Sambungkan kembali di {url}.",
-  "bridgeRedirectButton": "Buka router"
+  "bridgeRedirectButton": "Buka router",
+  "lanIpRedirectTitle": "Sambungkan kembali ke router Anda",
+  "lanIpRedirectMessage": "Alamat IP router Anda telah berubah. Sambungkan kembali ke router di {url}. Anda mungkin perlu menunggu sebentar hingga perangkat Anda memperoleh alamat baru.",
+  "lanIpRedirectButton": "Buka router"
 }

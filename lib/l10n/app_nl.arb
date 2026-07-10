@@ -1125,5 +1125,8 @@
   "bridgeReconnectHint": "Maak na het opslaan opnieuw verbinding met uw router via {url}.",
   "bridgeRedirectTitle": "Opnieuw verbinden met uw router",
   "bridgeRedirectMessage": "Uw router is nu een transparante bridge en wijst geen lokale IP-adressen meer toe. Maak opnieuw verbinding via {url}.",
-  "bridgeRedirectButton": "Naar router"
+  "bridgeRedirectButton": "Naar router",
+  "lanIpRedirectTitle": "Opnieuw verbinden met uw router",
+  "lanIpRedirectMessage": "Het IP-adres van uw router is gewijzigd. Maak opnieuw verbinding via {url}. Mogelijk moet u even wachten totdat uw apparaat een nieuw adres heeft ontvangen.",
+  "lanIpRedirectButton": "Naar router"
 }

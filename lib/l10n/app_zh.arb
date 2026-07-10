@@ -1125,5 +1125,8 @@
   "bridgeReconnectHint": "保存后，请改用 {url} 重新连接到您的路由器。",
   "bridgeRedirectTitle": "重新连接到您的路由器",
   "bridgeRedirectMessage": "您的路由器现在是透明网桥，不再分配本地 IP 地址。请改用 {url} 重新连接。",
-  "bridgeRedirectButton": "前往路由器"
+  "bridgeRedirectButton": "前往路由器",
+  "lanIpRedirectTitle": "重新连接到您的路由器",
+  "lanIpRedirectMessage": "您的路由器 IP 地址已更改。请通过 {url} 重新连接。您可能需要稍等片刻，等待设备获取新地址。",
+  "lanIpRedirectButton": "前往路由器"
 }

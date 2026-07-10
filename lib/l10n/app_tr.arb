@@ -1125,5 +1125,8 @@
   "bridgeReconnectHint": "Kaydettikten sonra {url} adresinden yönlendiricinize yeniden bağlanın.",
   "bridgeRedirectTitle": "Yönlendiricinize yeniden bağlanın",
   "bridgeRedirectMessage": "Yönlendiriciniz artık şeffaf bir köprü olarak çalışıyor ve yerel IP adresleri dağıtmıyor. {url} adresinden yeniden bağlanın.",
-  "bridgeRedirectButton": "Yönlendiriciye git"
+  "bridgeRedirectButton": "Yönlendiriciye git",
+  "lanIpRedirectTitle": "Yönlendiricinize yeniden bağlanın",
+  "lanIpRedirectMessage": "Yönlendiricinizin IP adresi değişti. {url} adresinden ona yeniden bağlanın. Cihazınızın yeni bir adres alması için bir süre beklemeniz gerekebilir.",
+  "lanIpRedirectButton": "Yönlendiriciye git"
 }

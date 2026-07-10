@@ -1125,5 +1125,8 @@
   "bridgeReconnectHint": "Po zapisaniu połącz się ponownie z routerem pod adresem {url}.",
   "bridgeRedirectTitle": "Połącz się ponownie z routerem",
   "bridgeRedirectMessage": "Twój router działa teraz jako most przezroczysty i nie przydziela już lokalnych adresów IP. Połącz się ponownie pod adresem {url}.",
-  "bridgeRedirectButton": "Przejdź do routera"
+  "bridgeRedirectButton": "Przejdź do routera",
+  "lanIpRedirectTitle": "Połącz się ponownie z routerem",
+  "lanIpRedirectMessage": "Adres IP routera uległ zmianie. Połącz się z nim ponownie pod adresem {url}. Może być konieczne odczekanie chwili, aż urządzenie uzyska nowy adres.",
+  "lanIpRedirectButton": "Przejdź do routera"
 }

@@ -1718,5 +1718,16 @@
       }
     }
   },
-  "bridgeRedirectButton": "Go to router"
+  "bridgeRedirectButton": "Go to router",
+  "lanIpRedirectTitle": "Reconnect to your router",
+  "lanIpRedirectMessage": "Your router's IP address has changed. Reconnect to it at {url}. You may need to wait a moment for your device to obtain a new address.",
+  "@lanIpRedirectMessage": {
+    "description": "Body of the dialog shown after changing the router LAN IP address. {url} is https://<hostname>.local",
+    "placeholders": {
+      "url": {
+        "type": "Object"
+      }
+    }
+  },
+  "lanIpRedirectButton": "Go to router"
 }

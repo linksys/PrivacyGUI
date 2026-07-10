@@ -1125,5 +1125,8 @@
   "bridgeReconnectHint": "Efter du har gemt, skal du oprette forbindelse til din router igen på {url}.",
   "bridgeRedirectTitle": "Opret forbindelse til din router igen",
   "bridgeRedirectMessage": "Din router fungerer nu som en transparent bro og tildeler ikke længere lokale IP-adresser. Opret forbindelse igen på {url}.",
-  "bridgeRedirectButton": "Gå til routeren"
+  "bridgeRedirectButton": "Gå til routeren",
+  "lanIpRedirectTitle": "Opret forbindelse til din router igen",
+  "lanIpRedirectMessage": "Din routers IP-adresse er ændret. Opret forbindelse til den igen på {url}. Du skal muligvis vente et øjeblik, før din enhed får en ny adresse.",
+  "lanIpRedirectButton": "Gå til routeren"
 }

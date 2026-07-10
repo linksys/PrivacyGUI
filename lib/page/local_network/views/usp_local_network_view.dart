@@ -11,6 +11,7 @@ import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/local_network/models/local_network_feature_state.dart';
 import 'package:privacy_gui/page/local_network/providers/usp_local_network_notifier.dart';
+import 'package:privacy_gui/page/local_network/views/helpers/lan_ip_redirect_dialog.dart';
 import 'package:privacy_gui/page/shell/usp_top_bar.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -407,8 +408,18 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
     WidgetRef ref,
     LocalNetworkFeatureState state,
   ) async {
+    // Read the change intent and hostname BEFORE saving: save() collapses
+    // original into current (markAsSaved) and may drop SSE, so these must be
+    // captured up front. The disconnection warning covers any IP/subnet change,
+    // but only an IP address change makes the old origin unreachable and
+    // triggers the redirect. hostName is the redirect target
+    // (https://<hostName>.local).
+    final networkChanged = state.hasNetworkChange;
+    final ipChanged = state.hasIpAddressChange;
+    final hostName = state.settings.current.model.hostName;
+
     // Warn if router IP or subnet changed (may cause disconnection)
-    if (state.hasNetworkChange) {
+    if (networkChanged) {
       final confirmed = await _showNetworkChangeConfirmation(context);
       if (confirmed != true || !context.mounted) return;
     }
@@ -418,7 +429,16 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
         context,
         ref.read(uspLocalNetworkProvider.notifier).save(),
       );
-      if (context.mounted) {
+      if (!context.mounted) return;
+
+      // Only redirect after a confirmed save when the IP address actually
+      // changed: the old address is now unreachable, so the browser must be
+      // sent to the router's new .local address. On native, showLanIpRedirect
+      // Dialog's navigate is a no-op. Otherwise (mask-only or DHCP fields),
+      // the connection survives — stay on the page with a success message.
+      if (ipChanged && hostName.isNotEmpty) {
+        await showLanIpRedirectDialog(context, hostName: hostName);
+      } else {
         showSuccessSnackBar(context, loc(context).localNetworkSettingsSaved);
       }
     } catch (e) {
