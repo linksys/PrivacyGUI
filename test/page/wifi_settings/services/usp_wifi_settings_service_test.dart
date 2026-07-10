@@ -146,7 +146,9 @@ void main() {
           transmitPower: 100,
           maxBitRate: 2402,
           autoChannelEnable: false,
-          ieee80211hEnabled: false,
+          // DFS enabled so DFS channels (52–64) survive filtering — this test
+          // exercises bonding-group rules, not DFS filtering.
+          ieee80211hEnabled: true,
           supportedOperatingChannelBandwidths: 'Auto,20MHz,40MHz,80MHz,160MHz',
         ),
       ]);
@@ -174,6 +176,99 @@ void main() {
 
       // 160MHz → valid group: [36..64]
       expect(bwMap['160MHz'], [36, 40, 44, 48, 52, 56, 60, 64]);
+    });
+
+    // -----------------------------------------------------------------------
+    // DFS channel filtering (#1025). When IEEE80211hEnabled is false, 5 GHz
+    // DFS channels (52–64, 100–144) must be stripped from BOTH possibleChannels
+    // and availableChannelsPerBandwidth so the dropdown and the "N channels
+    // available" counts stay consistent.
+    // -----------------------------------------------------------------------
+
+    WiFiSsids singleSsid() => WiFiSsids(items: [
+          WiFiSsid(
+            instancePath: 'Device.WiFi.SSID.1.',
+            ssid: 'DfsNet',
+            enable: true,
+            status: 'Up',
+            bssid: 'AA:BB:CC:DD:EE:FF',
+            lowerLayers: 'Device.WiFi.Radio.1.',
+          ),
+        ]);
+
+    WiFiAccessPoints singleAp() => WiFiAccessPoints(items: [
+          WiFiAccessPoint(
+            instancePath: 'Device.WiFi.AccessPoint.1.',
+            enable: true,
+            status: 'Enabled',
+            modesSupported: 'WPA2-Personal',
+            securityModeEnabled: 'WPA2-Personal',
+            encryptionMode: 'AES',
+            keyPassphrase: 'pass',
+            ssidAdvertisementEnabled: true,
+            ssidReference: 'Device.WiFi.SSID.1.',
+          ),
+        ]);
+
+    WiFiRadios fiveGhzRadio({required bool dfsEnabled}) => WiFiRadios(items: [
+          WiFiRadio(
+            instancePath: 'Device.WiFi.Radio.1.',
+            enable: true,
+            status: 'Up',
+            channel: 36,
+            operatingFrequencyBand: '5GHz',
+            operatingChannelBandwidth: '80MHz',
+            possibleChannels: '36,40,44,48,52,56,60,64,100,104,108,112',
+            operatingStandards: 'ax',
+            supportedStandards: 'a,n,ac,ax',
+            transmitPower: 100,
+            maxBitRate: 2402,
+            autoChannelEnable: false,
+            ieee80211hEnabled: dfsEnabled,
+            supportedOperatingChannelBandwidths: 'Auto,20MHz,40MHz,80MHz',
+          ),
+        ]);
+
+    test('DFS disabled on 5 GHz strips DFS channels from possibleChannels', () {
+      final networks = svc.buildWifiNetworks(
+        ssids: singleSsid(),
+        accessPoints: singleAp(),
+        radios: fiveGhzRadio(dfsEnabled: false),
+      );
+
+      // Only non-DFS UNII-1 channels remain.
+      expect(networks.first.possibleChannels, [36, 40, 44, 48]);
+    });
+
+    test('DFS disabled on 5 GHz strips DFS from availableChannelsPerBandwidth',
+        () {
+      final networks = svc.buildWifiNetworks(
+        ssids: singleSsid(),
+        accessPoints: singleAp(),
+        radios: fiveGhzRadio(dfsEnabled: false),
+      );
+
+      final bwMap = networks.first.availableChannelsPerBandwidth;
+      expect(bwMap['Auto'], [36, 40, 44, 48]);
+      expect(bwMap['20MHz'], [36, 40, 44, 48]);
+      // No DFS channel should appear under any bandwidth.
+      for (final channels in bwMap.values) {
+        expect(channels.any((c) => c >= 52), isFalse,
+            reason: 'DFS channel leaked into bandwidth map');
+      }
+    });
+
+    test('DFS enabled on 5 GHz retains DFS channels', () {
+      final networks = svc.buildWifiNetworks(
+        ssids: singleSsid(),
+        accessPoints: singleAp(),
+        radios: fiveGhzRadio(dfsEnabled: true),
+      );
+
+      expect(
+        networks.first.possibleChannels,
+        [36, 40, 44, 48, 52, 56, 60, 64, 100, 104, 108, 112],
+      );
     });
 
     test('empty supportedOperatingChannelBandwidths falls back to defaults',

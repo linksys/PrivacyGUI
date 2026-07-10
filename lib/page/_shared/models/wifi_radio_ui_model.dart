@@ -21,6 +21,11 @@ class WifiRadioUIModel extends Equatable with DiagnosticLoggable {
   /// Empty when the band exposes no manual channels.
   final List<int> possibleChannels;
 
+  /// Per-radio DFS (IEEE 802.11h) enabled state, from
+  /// `Device.WiFi.Radio.{i}.IEEE80211hEnabled`. When false, 5 GHz DFS channels
+  /// must be hidden from the channel dropdown.
+  final bool isDfsEnabled;
+
   /// Access points grouped under this radio.
   final List<WifiAccessPointUIModel> accessPoints;
 
@@ -35,6 +40,7 @@ class WifiRadioUIModel extends Equatable with DiagnosticLoggable {
     required this.channelBandwidth,
     required this.supportedStandards,
     this.possibleChannels = const [],
+    this.isDfsEnabled = false,
     this.accessPoints = const [],
   });
 
@@ -72,6 +78,7 @@ class WifiRadioUIModel extends Equatable with DiagnosticLoggable {
         'channelBandwidth': channelBandwidth,
         'supportedStandards': supportedStandards,
         'possibleChannels': possibleChannels,
+        'isDfsEnabled': isDfsEnabled,
         'accessPoints': accessPoints,
       };
 }

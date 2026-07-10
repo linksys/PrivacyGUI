@@ -117,7 +117,7 @@ void _stubAllFetches(MockUspClient mockUsp) {
 }
 
 /// Stubs fetches for a single 5 GHz radio whose `PossibleChannels` value is
-/// [possibleChannels]. Used to exercise `_parsePossibleChannels` (private) via
+/// [possibleChannels]. Used to exercise the shared `parsePossibleChannels` via
 /// the public `fetch()` entry point.
 void _stubRadioWithPossibleChannels(
   MockUspClient mockUsp,
@@ -234,6 +234,18 @@ void main() {
       expect(radio2.maxBitRate, 2400);
     });
 
+    test('threads IEEE80211hEnabled into radio model isDfsEnabled', () async {
+      _stubAllFetches(mockUsp);
+
+      final result = await svc.fetch();
+
+      // Both stub radios have IEEE80211hEnabled = false. The dashboard radio
+      // model carries the per-radio DFS flag verbatim (channel filtering happens
+      // in the channel dialog, not here).
+      expect(result.radioModels[0].isDfsEnabled, isFalse);
+      expect(result.radioModels[1].isDfsEnabled, isFalse);
+    });
+
     test('AC7: enriches possibleChannels from PossibleChannels at fetch time',
         () async {
       _stubAllFetches(mockUsp);
@@ -259,7 +271,7 @@ void main() {
 
   // -------------------------------------------------------------------------
   // PossibleChannels parsing — range notation, sentinels, malformed tokens
-  // (W-3 / W-4). Exercises the private _parsePossibleChannels via fetch().
+  // (W-3 / W-4). Exercises the shared parsePossibleChannels via fetch().
   // -------------------------------------------------------------------------
 
   group('PossibleChannels parsing', () {

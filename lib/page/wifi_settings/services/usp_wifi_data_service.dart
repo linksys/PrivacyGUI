@@ -9,6 +9,7 @@ import 'package:privacy_gui/generated/wifi_clients.g.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/core/utils/wifi_channel.dart';
 import 'package:privacy_gui/page/_shared/models/client_connection_detail.dart';
 import 'package:privacy_gui/page/_shared/utils/wifi_guest_detection.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_client_ui_model.dart';
@@ -216,7 +217,8 @@ class UspWifiDataService {
         autoChannelEnable: radio.autoChannelEnable,
         channelBandwidth: radio.operatingChannelBandwidth,
         supportedStandards: radio.supportedStandards,
-        possibleChannels: _parsePossibleChannels(radio.possibleChannels),
+        possibleChannels: parsePossibleChannels(radio.possibleChannels),
+        isDfsEnabled: radio.ieee80211hEnabled,
         accessPoints: apModels,
       );
     }).toList();
@@ -396,39 +398,6 @@ class UspWifiDataService {
     if (lower.contains('5g') || lower.contains('5 g')) return '5GHz';
     if (lower.contains('2.4') || lower.contains('2_4')) return '2.4GHz';
     return rawBand;
-  }
-
-  /// Parses a TR-181 `PossibleChannels` string into a sorted list of channel
-  /// numbers. Handles comma-separated values and range notation.
-  /// e.g. "1-13,36,40,44,48" → [1,2,3,4,5,6,7,8,9,10,11,12,13,36,40,44,48]
-  static List<int> _parsePossibleChannels(String raw) {
-    if (raw.isEmpty) return const [];
-    final result = <int>[];
-    for (final part in raw.split(',')) {
-      final trimmed = part.trim();
-      if (trimmed.contains('-')) {
-        final bounds = trimmed.split('-');
-        // Skip malformed range tokens (e.g. "1-2-3").
-        if (bounds.length != 2) continue;
-        final start = int.tryParse(bounds[0].trim());
-        final end = int.tryParse(bounds[1].trim());
-        if (start != null && end != null) {
-          // Inverted ranges (start > end) naturally yield nothing.
-          for (var i = start; i <= end; i++) {
-            result.add(i);
-          }
-        }
-      } else {
-        final ch = int.tryParse(trimmed);
-        if (ch != null) result.add(ch);
-      }
-    }
-    // Drop non-positive channels: TR-181 PossibleChannels "0" is an
-    // auto/any sentinel, not a real channel, and channel 0 must never
-    // reach the dropdown or be sent to firmware.
-    result.removeWhere((ch) => ch <= 0);
-    result.sort();
-    return result;
   }
 
   /// Builds a BSSID → band mapping from WiFi SSID and Radio data.
