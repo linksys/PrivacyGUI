@@ -962,6 +962,10 @@ class _Flow2State extends ConsumerState<_Flow2> {
   SpeedTestResult? _speedResult;
   bool _isRestarting = false;
   SpeedTestResult? _postRestartResult;
+  // Smart QoS (CAKE bufferbloat shaping) — proto: local toggle, not wired to the
+  // live smartqos JNAP action yet. The gaming/latency path is its home (bufferbloat
+  // = latency-under-load). Backend: linksys/JNAP#11.
+  bool _smartQosEnabled = false;
 
   // Item 2: within-flow back navigation
   final List<int> _stepHistory = [];
@@ -1435,6 +1439,31 @@ class _Flow2State extends ConsumerState<_Flow2> {
                 'One of your child nodes has a weak connection to your router. '
                 'Devices connected through that node will experience higher latency.',
                 icon: Icons.warning_amber, color: Colors.orange),
+          ],
+          // Smart QoS — the real fix for lag under load (bufferbloat).
+          const SizedBox(height: 16),
+          Text('Smart QoS',
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+          const SizedBox(height: 8),
+          if (!_smartQosEnabled) ...[
+            _infoBox(context,
+                'Smart QoS keeps calls and gaming smooth by managing your upload queue — '
+                'it prevents the lag spikes that happen when something else is uploading. '
+                'One tap, no settings to fiddle with.'),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: () => setState(() => _smartQosEnabled = true),
+                icon: const Icon(Icons.speed),
+                label: const Text('Enable Smart QoS'),
+              ),
+            ),
+          ] else ...[
+            _infoBox(context,
+                'Smart QoS is on — your connection is now shaped to keep latency low '
+                'under load. Re-run the speed test to see the improvement.',
+                icon: Icons.check_circle, color: Colors.green),
           ],
           const SizedBox(height: 12),
           SizedBox(
