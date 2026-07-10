@@ -20,14 +20,28 @@ final uspDashboardRoute = ShellRoute(
         return const UspDashboardView();
       },
       onExit: (context, state) async {
-        // Cancel edit mode when navigating away from dashboard (e.g., tab switch).
-        // This reverts any unsaved layout changes.
+        // Cancel edit mode when navigating away from dashboard (e.g., tab
+        // switch), reverting to the pre-edit snapshot.
+        //
+        // Intentional silent-discard policy: unlike the enableDirtyCheck routes
+        // below, the dashboard does NOT prompt with showUnsavedAlert. Layout
+        // edits are persisted on every drag/resize, so "cancel" means restoring
+        // the snapshot captured on edit-mode entry — there is no unsaved buffer
+        // to warn about, and a confirmation dialog on every tab switch would be
+        // noise. See #1037.
         final container = ProviderScope.containerOf(context);
         final editState = container.read(dashboardEditModeProvider);
         if (editState.isEditing) {
-          await container
-              .read(dashboardEditModeProvider.notifier)
-              .cancelEditMode();
+          try {
+            await container
+                .read(dashboardEditModeProvider.notifier)
+                .cancelEditMode();
+          } catch (e, s) {
+            // Never block navigation on a revert failure; cancelEditMode resets
+            // its own state in a finally block, so edit mode won't be stranded.
+            logger.e('[Route]: dashboard cancelEditMode failed on exit',
+                error: e, stackTrace: s);
+          }
         }
         return true;
       },

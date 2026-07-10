@@ -112,8 +112,12 @@ class _UspSliverDashboardViewState
     await ref.read(dashboardEditModeProvider.notifier).enterEditMode();
   }
 
-  void _exitEditMode({bool save = true}) async {
-    await ref.read(dashboardEditModeProvider.notifier).exitEditMode(save: save);
+  void _commitEditMode() async {
+    await ref.read(dashboardEditModeProvider.notifier).commitEditMode();
+  }
+
+  void _cancelEditMode() async {
+    await ref.read(dashboardEditModeProvider.notifier).cancelEditMode();
   }
 
   @override
@@ -204,12 +208,12 @@ class _UspSliverDashboardViewState
               AppGap.sm(),
               AppIconButton(
                 icon: AppIcon.font(Icons.close),
-                onTap: () => _exitEditMode(save: false),
+                onTap: _cancelEditMode,
               ),
               AppGap.sm(),
               AppIconButton(
                 icon: AppIcon.font(Icons.check),
-                onTap: () => _exitEditMode(save: true),
+                onTap: _commitEditMode,
               ),
             ] else ...[
               AppIconButton(
@@ -507,15 +511,11 @@ class _UspSliverDashboardViewState
       ),
     );
 
-    if ((result == 'reset' ||
-            result == 'toggle_off' ||
-            result == 'preset_changed') &&
-        mounted) {
-      // Exit edit mode without saving — the settings panel already applied
-      // the reset/preset change directly.
-      await ref
-          .read(dashboardEditModeProvider.notifier)
-          .exitEditMode(save: false);
+    if ((result == 'reset' || result == 'preset_changed') && mounted) {
+      // Commit (keep) the change — the settings panel already applied the
+      // reset/preset directly to the controller and prefs, so exiting must
+      // preserve it, not revert to the pre-edit snapshot.
+      await ref.read(dashboardEditModeProvider.notifier).commitEditMode();
     }
   }
 
