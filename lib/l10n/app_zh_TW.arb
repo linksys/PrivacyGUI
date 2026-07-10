@@ -1129,5 +1129,8 @@
   "bridgeReconnectHint": "儲存後，請改用 {url} 重新連線到您的路由器。",
   "bridgeRedirectTitle": "重新連線到您的路由器",
   "bridgeRedirectMessage": "您的路由器現在是透明橋接器，不再配發本機 IP 位址。請改用 {url} 重新連線。",
-  "bridgeRedirectButton": "前往路由器"
+  "bridgeRedirectButton": "前往路由器",
+  "lanIpRedirectTitle": "重新連線到您的路由器",
+  "lanIpRedirectMessage": "您的路由器 IP 位址已變更。請透過 {url} 重新連線。您可能需要稍候片刻，等待裝置取得新位址。",
+  "lanIpRedirectButton": "前往路由器"
 }

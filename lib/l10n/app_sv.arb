@@ -1129,5 +1129,8 @@
   "bridgeReconnectHint": "Efter att du har sparat ansluter du till din router igen på {url}.",
   "bridgeRedirectTitle": "Anslut till din router igen",
   "bridgeRedirectMessage": "Din router fungerar nu som en transparent brygga och delar inte längre ut lokala IP-adresser. Anslut igen på {url}.",
-  "bridgeRedirectButton": "Gå till routern"
+  "bridgeRedirectButton": "Gå till routern",
+  "lanIpRedirectTitle": "Anslut till din router igen",
+  "lanIpRedirectMessage": "Routerns IP-adress har ändrats. Anslut till den igen på {url}. Du kan behöva vänta en stund tills din enhet får en ny adress.",
+  "lanIpRedirectButton": "Gå till routern"
 }

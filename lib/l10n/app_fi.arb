@@ -1129,5 +1129,8 @@
   "bridgeReconnectHint": "Yhdistä tallennuksen jälkeen reitittimeesi uudelleen osoitteessa {url}.",
   "bridgeRedirectTitle": "Yhdistä reitittimeesi uudelleen",
   "bridgeRedirectMessage": "Reitittimesi toimii nyt läpinäkyvänä siltana eikä enää jaa paikallisia IP-osoitteita. Yhdistä uudelleen osoitteessa {url}.",
-  "bridgeRedirectButton": "Siirry reitittimeen"
+  "bridgeRedirectButton": "Siirry reitittimeen",
+  "lanIpRedirectTitle": "Yhdistä reitittimeesi uudelleen",
+  "lanIpRedirectMessage": "Reitittimesi IP-osoite on muuttunut. Yhdistä siihen uudelleen osoitteessa {url}. Sinun on ehkä odotettava hetki, että laitteesi saa uuden osoitteen.",
+  "lanIpRedirectButton": "Siirry reitittimeen"
 }

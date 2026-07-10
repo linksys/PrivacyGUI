@@ -1129,5 +1129,8 @@
   "bridgeReconnectHint": "保存後、{url} からルーターに再接続してください。",
   "bridgeRedirectTitle": "ルーターに再接続",
   "bridgeRedirectMessage": "ルーターは現在、透過的なブリッジとして動作しており、ローカル IP アドレスを割り当てません。{url} から再接続してください。",
-  "bridgeRedirectButton": "ルーターに移動"
+  "bridgeRedirectButton": "ルーターに移動",
+  "lanIpRedirectTitle": "ルーターに再接続",
+  "lanIpRedirectMessage": "ルーターの IP アドレスが変更されました。{url} から再接続してください。デバイスが新しいアドレスを取得するまで少し時間がかかる場合があります。",
+  "lanIpRedirectButton": "ルーターに移動"
 }

@@ -1129,5 +1129,8 @@
   "bridgeReconnectHint": "Après l'enregistrement, reconnectez-vous à votre routeur à l'adresse {url}.",
   "bridgeRedirectTitle": "Se reconnecter à votre routeur",
   "bridgeRedirectMessage": "Votre routeur fonctionne désormais comme un pont transparent et n'attribue plus d'adresses IP locales. Reconnectez-vous à l'adresse {url}.",
-  "bridgeRedirectButton": "Accéder au routeur"
+  "bridgeRedirectButton": "Accéder au routeur",
+  "lanIpRedirectTitle": "Se reconnecter à votre routeur",
+  "lanIpRedirectMessage": "L'adresse IP de votre routeur a changé. Reconnectez-vous à celui-ci à l'adresse {url}. Vous devrez peut-être patienter un instant le temps que votre appareil obtienne une nouvelle adresse.",
+  "lanIpRedirectButton": "Accéder au routeur"
 }

@@ -1129,5 +1129,8 @@
   "bridgeReconnectHint": "Sau khi lưu, hãy kết nối lại với bộ định tuyến của bạn tại {url}.",
   "bridgeRedirectTitle": "Kết nối lại với bộ định tuyến của bạn",
   "bridgeRedirectMessage": "Bộ định tuyến của bạn hiện là cầu nối trong suốt và không còn cấp địa chỉ IP cục bộ nữa. Hãy kết nối lại tại {url}.",
-  "bridgeRedirectButton": "Đi tới bộ định tuyến"
+  "bridgeRedirectButton": "Đi tới bộ định tuyến",
+  "lanIpRedirectTitle": "Kết nối lại với bộ định tuyến của bạn",
+  "lanIpRedirectMessage": "Địa chỉ IP của bộ định tuyến đã thay đổi. Kết nối lại với bộ định tuyến tại {url}. Bạn có thể cần đợi một lát để thiết bị của mình nhận được địa chỉ mới.",
+  "lanIpRedirectButton": "Đi tới bộ định tuyến"
 }

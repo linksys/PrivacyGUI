@@ -1129,5 +1129,8 @@
   "bridgeReconnectHint": "Dopo il salvataggio, riconnettiti al router all'indirizzo {url}.",
   "bridgeRedirectTitle": "Riconnettiti al router",
   "bridgeRedirectMessage": "Il router ora funziona come bridge trasparente e non assegna più indirizzi IP locali. Riconnettiti all'indirizzo {url}.",
-  "bridgeRedirectButton": "Vai al router"
+  "bridgeRedirectButton": "Vai al router",
+  "lanIpRedirectTitle": "Riconnettiti al router",
+  "lanIpRedirectMessage": "L'indirizzo IP del router è cambiato. Riconnettiti a esso all'indirizzo {url}. Potrebbe essere necessario attendere un momento affinché il dispositivo ottenga un nuovo indirizzo.",
+  "lanIpRedirectButton": "Vai al router"
 }
