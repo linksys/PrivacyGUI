@@ -1,80 +1,99 @@
 import 'package:equatable/equatable.dart';
+import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
+import 'package:privacy_gui/page/_shared/utils/device_classifier.dart';
 import 'package:privacy_gui/page/topology/models/node_ui_model.dart';
 
 enum DeviceStatusFilter { all, online, offline }
 
-enum DeviceConnectionFilter { all, wifi, ethernet }
+enum DeviceSignalLevel { excellent, good, fair, poor }
 
-/// Signal-quality buckets, thresholds aligned with `DeviceUIModel.signalLevel`.
-/// `unknown` exists so that WiFi devices without RSSI data (rare firmware
-/// state) can still be addressed explicitly, matching the `--` picker option
-/// surfaced in the UI only when such devices are present.
-enum DeviceSignalFilter { all, excellent, good, fair, poor, unknown }
+enum PrivateMacFilter { all, privateOnly, publicOnly }
 
-/// User-selected filter configuration for the device list.
 class DeviceFilterConfig extends Equatable {
   final String searchQuery;
   final DeviceStatusFilter status;
-  final DeviceConnectionFilter connection;
-  final DeviceSignalFilter signal;
-  final String? nodeId;
-  final String? ssidName;
-  final String? band;
+  final Set<DeviceConnectionType> connections;
+  final Set<DeviceCategory> deviceCategories;
+  final PrivateMacFilter privateMac;
+  final Set<DeviceSignalLevel> signals;
+  final bool includeUnknownSignal;
+  final Set<String> nodeIds;
+  final Set<String> ssidNames;
+  final Set<String> bands;
 
   const DeviceFilterConfig({
     this.searchQuery = '',
     this.status = DeviceStatusFilter.all,
-    this.connection = DeviceConnectionFilter.all,
-    this.signal = DeviceSignalFilter.all,
-    this.nodeId,
-    this.ssidName,
-    this.band,
+    this.connections = const {},
+    this.deviceCategories = const {},
+    this.privateMac = PrivateMacFilter.all,
+    this.signals = const {},
+    this.includeUnknownSignal = false,
+    this.nodeIds = const {},
+    this.ssidNames = const {},
+    this.bands = const {},
   });
 
-  /// Count of active filter dimensions (excluding search).
   int get activeCount {
     var count = 0;
     if (status != DeviceStatusFilter.all) count++;
-    if (connection != DeviceConnectionFilter.all) count++;
-    if (signal != DeviceSignalFilter.all) count++;
-    if (nodeId != null) count++;
-    if (ssidName != null) count++;
-    if (band != null) count++;
+    if (connections.isNotEmpty) count++;
+    if (deviceCategories.isNotEmpty) count++;
+    if (privateMac != PrivateMacFilter.all) count++;
+    if (signals.isNotEmpty || includeUnknownSignal) count++;
+    if (nodeIds.isNotEmpty) count++;
+    if (ssidNames.isNotEmpty) count++;
+    if (bands.isNotEmpty) count++;
     return count;
   }
 
-  /// Count of active filter dimensions excluding status (for filter panel badge).
-  /// Status is displayed separately above the list, so the panel badge should
-  /// only reflect the "additional" filters.
   int get activeCountExcludingStatus {
     var count = 0;
-    if (connection != DeviceConnectionFilter.all) count++;
-    if (signal != DeviceSignalFilter.all) count++;
-    if (nodeId != null) count++;
-    if (ssidName != null) count++;
-    if (band != null) count++;
+    if (connections.isNotEmpty) count++;
+    if (deviceCategories.isNotEmpty) count++;
+    if (privateMac != PrivateMacFilter.all) count++;
+    if (signals.isNotEmpty || includeUnknownSignal) count++;
+    if (nodeIds.isNotEmpty) count++;
+    if (ssidNames.isNotEmpty) count++;
+    if (bands.isNotEmpty) count++;
     return count;
   }
 
   bool get isActive => activeCount > 0 || searchQuery.isNotEmpty;
 
+  bool get hasWifiOnlyFilter =>
+      signals.isNotEmpty ||
+      includeUnknownSignal ||
+      ssidNames.isNotEmpty ||
+      bands.isNotEmpty;
+
+  bool get isEthernetOnly =>
+      connections.length == 1 &&
+      connections.contains(DeviceConnectionType.wired);
+
   DeviceFilterConfig copyWith({
     String? searchQuery,
     DeviceStatusFilter? status,
-    DeviceConnectionFilter? connection,
-    DeviceSignalFilter? signal,
-    String? Function()? nodeId,
-    String? Function()? ssidName,
-    String? Function()? band,
+    Set<DeviceConnectionType>? connections,
+    Set<DeviceCategory>? deviceCategories,
+    PrivateMacFilter? privateMac,
+    Set<DeviceSignalLevel>? signals,
+    bool? includeUnknownSignal,
+    Set<String> Function()? nodeIds,
+    Set<String> Function()? ssidNames,
+    Set<String> Function()? bands,
   }) {
     return DeviceFilterConfig(
       searchQuery: searchQuery ?? this.searchQuery,
       status: status ?? this.status,
-      connection: connection ?? this.connection,
-      signal: signal ?? this.signal,
-      nodeId: nodeId != null ? nodeId() : this.nodeId,
-      ssidName: ssidName != null ? ssidName() : this.ssidName,
-      band: band != null ? band() : this.band,
+      connections: connections ?? this.connections,
+      deviceCategories: deviceCategories ?? this.deviceCategories,
+      privateMac: privateMac ?? this.privateMac,
+      signals: signals ?? this.signals,
+      includeUnknownSignal: includeUnknownSignal ?? this.includeUnknownSignal,
+      nodeIds: nodeIds != null ? nodeIds() : this.nodeIds,
+      ssidNames: ssidNames != null ? ssidNames() : this.ssidNames,
+      bands: bands != null ? bands() : this.bands,
     );
   }
 
@@ -82,31 +101,33 @@ class DeviceFilterConfig extends Equatable {
   List<Object?> get props => [
         searchQuery,
         status,
-        connection,
-        signal,
-        nodeId,
-        ssidName,
-        band,
+        connections,
+        deviceCategories,
+        privateMac,
+        signals,
+        includeUnknownSignal,
+        nodeIds,
+        ssidNames,
+        bands,
       ];
 }
 
-/// Available filter options derived from current dashboard data.
 class DeviceFilterOptions extends Equatable {
   final List<NodeUIModel> nodes;
   final List<String> ssids;
   final List<String> bands;
-
-  /// True when at least one WiFi device in the current list has no RSSI.
-  /// Controls whether the `--` (unknown) signal option is offered.
+  final List<DeviceCategory> deviceCategories;
   final bool hasUnknownSignalDevices;
 
   const DeviceFilterOptions({
     this.nodes = const [],
     this.ssids = const [],
     this.bands = const [],
+    this.deviceCategories = const [],
     this.hasUnknownSignalDevices = false,
   });
 
   @override
-  List<Object?> get props => [nodes, ssids, bands, hasUnknownSignalDevices];
+  List<Object?> get props =>
+      [nodes, ssids, bands, deviceCategories, hasUnknownSignalDevices];
 }
