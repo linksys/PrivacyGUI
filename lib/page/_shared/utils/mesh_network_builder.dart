@@ -122,6 +122,7 @@ class MeshNetworkBuilder {
       ipv6Addresses: master.ipv6Addresses,
       instancePath: master.instancePath,
       connectedClients: patchedMasterClients,
+      hostsDeviceId: master.hostsDeviceId,
     );
 
     // 7. Build SlaveNodes
@@ -282,12 +283,15 @@ class MeshNetworkBuilder {
       final signalStrength = device.signalStrength ??
           wifiClient?.signalStrength ??
           meshTopology.clientSignalMap[mac];
-      // Fallback to DataElements band/SSID for slave node clients
+      // Fallback to DataElements band/SSID for slave node clients.
+      // ClientConnectionDetail.band/ssidName are non-nullable Strings that are
+      // '' when AP→SSID→radio resolution fails, so treat empty as absent —
+      // otherwise the empty string would mask the DataElements fallback value.
       final bandSsid = meshTopology.clientBandSsidMap[mac];
       wifi = WifiConnectionInfo(
         signalStrength: signalStrength,
-        band: detail?.band ?? bandSsid?.band,
-        ssidName: detail?.ssidName ?? bandSsid?.ssid,
+        band: _nonEmpty(detail?.band) ?? bandSsid?.band,
+        ssidName: _nonEmpty(detail?.ssidName) ?? bandSsid?.ssid,
         downlinkRate:
             device.lastDataDownlinkRate ?? wifiClient?.lastDataDownlinkRate,
         uplinkRate: device.lastDataUplinkRate ?? wifiClient?.lastDataUplinkRate,
@@ -319,6 +323,11 @@ class MeshNetworkBuilder {
   // ---------------------------------------------------------------------------
   // Private: Hostname grouping
   // ---------------------------------------------------------------------------
+
+  /// Returns [s] if it is non-null and non-empty, otherwise null.
+  /// Used so an empty String from a non-nullable source doesn't mask a `??`
+  /// fallback to another source.
+  static String? _nonEmpty(String? s) => (s != null && s.isNotEmpty) ? s : null;
 
   static String _normalizeHostname(String hostname) {
     var normalized = hostname.trim().toLowerCase();
@@ -417,6 +426,7 @@ class MeshNetworkBuilder {
           [],
       instancePath: masterMeshInfo?.instancePath,
       connectedClients: connectedClients,
+      hostsDeviceId: masterDevice?.deviceId,
     );
   }
 

@@ -300,20 +300,27 @@ void main() {
       container.dispose();
     });
 
-    test('child node clients use parentNodeName as category', () async {
-      // Master WiFi with band
+    test('categorizes by parentNodeId, not the patched parentNodeName',
+        () async {
+      // MeshNetworkBuilder patches parentNodeName onto ALL clients, including
+      // the master's (using the gateway name). Categorization must therefore
+      // key off parentNodeId (null only for master clients) — otherwise master
+      // wired/wifi clients would be mis-grouped under the gateway name.
+
+      // Master WiFi with band — parentNodeName patched, parentNodeId null.
       final masterWifi = ClientDevice(
         mac: 'FF:00:00:00:00:01',
         ip: '192.168.1.200',
         hostName: 'MasterClient',
         isActive: true,
         connectionType: ConnectionType.wifi,
+        parentNodeName: 'MyGateway',
         wifi: const WifiConnectionInfo(
           band: '5GHz',
           signalStrength: -50,
         ),
       );
-      // Child node WiFi client (no band, has parentNodeName)
+      // Child node WiFi client (no band, has parentNodeId + parentNodeName)
       final childWifi = ClientDevice(
         mac: 'FF:00:00:00:00:02',
         ip: '192.168.1.201',
@@ -336,13 +343,14 @@ void main() {
         parentNodeId: 'CHILD_NODE_ID',
         parentNodeName: 'Extender-1',
       );
-      // Master Wired client (no parentNodeName)
+      // Master Wired client — parentNodeName patched (gateway), parentNodeId null.
       final masterWired = ClientDevice(
         mac: 'FF:00:00:00:00:04',
         ip: '192.168.1.203',
         hostName: 'MasterWired',
         isActive: true,
         connectionType: ConnectionType.wired,
+        parentNodeName: 'MyGateway',
       );
       final data =
           createDevicesData([masterWifi, childWifi, childWired, masterWired]);
@@ -350,12 +358,14 @@ void main() {
       await waitForAnalytics(container);
 
       final dist = container.read(uspDeviceAnalyticsProvider).current!;
-      // Master WiFi: uses band (5GHz)
+      // Master WiFi: uses band (5GHz), NOT the patched gateway name.
       expect(dist.bandDistribution['5GHz'], 1);
-      // Child node clients (WiFi + Wired): use parentNodeName
+      // Child node clients (WiFi + Wired): grouped under parentNodeName.
       expect(dist.bandDistribution['Extender-1'], 2);
-      // Master Wired: uses "Wired"
+      // Master Wired: uses "Wired", NOT the patched gateway name.
       expect(dist.bandDistribution['Wired'], 1);
+      // The gateway name must never become a category for master clients.
+      expect(dist.bandDistribution.containsKey('MyGateway'), isFalse);
       container.dispose();
     });
   });

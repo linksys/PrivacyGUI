@@ -18,13 +18,15 @@ final deviceCredentialsProvider = Provider<DeviceCredentials?>((ref) {
 
   // Get master node for MAC address and hostsDeviceId (UUID)
   final master = devicesData.master;
-  // Master's hostsDeviceId comes from Hosts table during MeshNetwork build
-  // For non-mesh routers, master.deviceId is 'GATEWAY' and no UUID is available
-  if (master.deviceId == 'GATEWAY') return null;
+  // Master's hostsDeviceId comes from the Hosts table during MeshNetwork build.
+  // Guardian Remote Assistance requires the Hosts DeviceID/UUID, NOT the MAC —
+  // without it, session lookup / PIN creation would receive the wrong value.
+  final hostsDeviceId = master.hostsDeviceId;
+  if (hostsDeviceId == null || hostsDeviceId.isEmpty) return null;
 
   return DeviceCredentials(
     serialNumber: deviceInfo.serialNumber,
     macAddress: master.deviceId,
-    deviceUUID: master.deviceId, // fallback - may need refinement
+    deviceUUID: hostsDeviceId,
   );
 });

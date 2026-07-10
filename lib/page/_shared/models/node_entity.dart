@@ -116,6 +116,9 @@ final class MasterNode extends NodeEntity {
   /// WAN IPv6 address.
   final String? wanIpv6Address;
 
+  /// Hosts DeviceID (UUID) — used by Remote Assistance / Guardian API calls.
+  final String? hostsDeviceId;
+
   MasterNode({
     required this.deviceId,
     this.dataElementsId,
@@ -131,6 +134,7 @@ final class MasterNode extends NodeEntity {
     this.connectedClients = const [],
     this.wanIpAddress,
     this.wanIpv6Address,
+    this.hostsDeviceId,
   });
 
   @override
@@ -151,6 +155,7 @@ final class MasterNode extends NodeEntity {
     List<ClientDevice>? connectedClients,
     String? wanIpAddress,
     String? wanIpv6Address,
+    String? hostsDeviceId,
   }) {
     return MasterNode(
       deviceId: deviceId ?? this.deviceId,
@@ -167,6 +172,7 @@ final class MasterNode extends NodeEntity {
       connectedClients: connectedClients ?? this.connectedClients,
       wanIpAddress: wanIpAddress ?? this.wanIpAddress,
       wanIpv6Address: wanIpv6Address ?? this.wanIpv6Address,
+      hostsDeviceId: hostsDeviceId ?? this.hostsDeviceId,
     );
   }
 
@@ -186,6 +192,7 @@ final class MasterNode extends NodeEntity {
         connectedClients,
         wanIpAddress,
         wanIpv6Address,
+        hostsDeviceId,
       ];
 }
 

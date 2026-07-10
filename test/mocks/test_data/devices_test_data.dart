@@ -263,6 +263,7 @@ class DevicesTestData {
     String? ipAddress = masterIp,
     List<ClientDevice> connectedClients = const [],
     String? wanIpAddress = '100.64.1.100',
+    String? hostsDeviceId,
   }) =>
       MasterNode(
         deviceId: deviceId,
@@ -276,6 +277,7 @@ class DevicesTestData {
         ipAddress: ipAddress,
         connectedClients: connectedClients,
         wanIpAddress: wanIpAddress,
+        hostsDeviceId: hostsDeviceId,
       );
 
   /// Creates a slave (extender) node with WiFi backhaul.

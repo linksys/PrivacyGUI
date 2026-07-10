@@ -191,10 +191,9 @@ class UspDeviceAnalyticsNotifier extends Notifier<DeviceAnalyticsState> {
     final wiredDevices = online.where((d) => !d.isWifi).toList();
 
     // Category distribution (online only):
+    // - Child node client (WiFi or Wired): show parentNodeName (e.g., "Community00090")
     // - Master WiFi with band: show band (2.4GHz, 5GHz, 6GHz)
-    // - Child node WiFi: show parentNodeName (e.g., "Community00090")
     // - Master Wired: show "Wired"
-    // - Child node Wired: show parentNodeName
     final categoryDist = <String, int>{};
     for (final d in online) {
       final category = _getDeviceCategory(d);
@@ -237,13 +236,18 @@ class UspDeviceAnalyticsNotifier extends Notifier<DeviceAnalyticsState> {
 
   /// Determines the display category for a device.
   ///
+  /// - Child node client (WiFi or Wired): parentNodeName (grouped under node)
   /// - Master WiFi with band: actual band (2.4GHz, 5GHz, 6GHz)
-  /// - Child node client (WiFi or Wired): parentNodeName
   /// - Master Wired: "Wired"
+  ///
+  /// Uses [ClientDevice.parentNodeId] (not parentNodeName) to distinguish a
+  /// slave-node client from a master-node client: the builder patches
+  /// parentNodeName onto ALL clients (including the master's), so parentNodeName
+  /// alone cannot tell them apart. parentNodeId is null only for master clients.
   String _getDeviceCategory(ClientDevice d) {
-    final isChildNodeClient = d.parentNodeName != null && d.band == null;
+    final isChildNodeClient = d.parentNodeId != null;
     if (isChildNodeClient) {
-      return d.parentNodeName!;
+      return d.parentNodeName ?? d.parentNodeId!;
     }
     if (d.isWifi) {
       return d.band ?? 'WiFi';

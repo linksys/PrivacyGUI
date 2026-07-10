@@ -334,6 +334,53 @@ void main() {
       expect(client.wifi?.ssidName, 'NewSSID'); // From connectionDetailMap
     });
 
+    test(
+        'empty-string band/SSID in connectionDetailMap falls back to '
+        'clientBandSsidMap', () {
+      // Regression: ClientConnectionDetail.band is a non-nullable String that
+      // is '' when AP→SSID→radio resolution fails. An empty string must be
+      // treated as absent so the DataElements value is used instead.
+      final connectedDevices = ConnectedDevices(items: [
+        buildConnectedDevice(
+          macAddress: 'AA:BB:CC:DD:EE:01',
+          deviceRole: 'master',
+        ),
+        buildConnectedDevice(
+          macAddress: '11:22:33:44:55:01',
+          deviceRole: 'client',
+          hostName: 'MasterClient',
+          interface_: 'Device.WiFi.Radio.1',
+          interfaceType: 'Wi-Fi',
+          isActive: true,
+        ),
+      ]);
+
+      final meshTopology = MeshTopologyInfo(
+        nodes: [buildMasterNode(deviceId: 'AA:BB:CC:DD:EE:01')],
+        clientToNodeMap: {
+          '11:22:33:44:55:01': 'AA:BB:CC:DD:EE:01',
+        },
+        clientBandSsidMap: {
+          '11:22:33:44:55:01': (band: '5GHz', ssid: 'ResolvedSSID'),
+        },
+      );
+
+      final result = MeshNetworkBuilder.build(
+        connectedDevices: connectedDevices,
+        wifiClientMap: {},
+        connectionDetailMap: {
+          // Present but unresolved → empty strings.
+          '11:22:33:44:55:01': ClientConnectionDetail(band: '', ssidName: ''),
+        },
+        meshTopology: meshTopology,
+        gatewayName: 'Router',
+      );
+
+      final client = result.master.connectedClients.first;
+      expect(client.band, '5GHz'); // Fell back to clientBandSsidMap
+      expect(client.wifi?.ssidName, 'ResolvedSSID'); // Fell back
+    });
+
     test('merges multi-interface devices by hostname', () {
       final connectedDevices = ConnectedDevices(items: [
         buildConnectedDevice(

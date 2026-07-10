@@ -134,6 +134,22 @@ void main() {
         expect(copied.model, 'MR8000');
         expect(copied.deviceId, original.deviceId);
       });
+
+      test('carries hostsDeviceId (UUID) through construction and equality',
+          () {
+        final withUuid =
+            DevicesTestData.createMaster(hostsDeviceId: 'uuid-1234');
+        expect(withUuid.hostsDeviceId, 'uuid-1234');
+
+        final sameUuid =
+            DevicesTestData.createMaster(hostsDeviceId: 'uuid-1234');
+        final otherUuid =
+            DevicesTestData.createMaster(hostsDeviceId: 'uuid-9999');
+
+        // hostsDeviceId participates in Equatable props.
+        expect(withUuid, equals(sameUuid));
+        expect(withUuid, isNot(equals(otherUuid)));
+      });
     });
   });
 
