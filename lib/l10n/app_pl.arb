@@ -126,6 +126,8 @@
   "invalidDestinationMacAddress": "Nieprawidłowy docelowy adres MAC",
   "invalidDns": "Nieprawidłowy DNS",
   "invalidGatewayIpAddress": "Nieprawidłowy adres IP bramy",
+  "gatewayMustBeWithinLanSubnet": "Brama musi znajdować się w podsieci LAN",
+  "gatewayMustBeOutsideLanSubnet": "Brama musi znajdować się poza podsiecią LAN",
   "invalidInput": "Nieprawidłowe dane wejściowe",
   "invalidIpAddress": "Nieprawidłowy adres IP",
   "invalidMACAddress": "Nieprawidłowy adres MAC.",

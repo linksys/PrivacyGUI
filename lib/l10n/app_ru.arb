@@ -126,6 +126,8 @@
   "invalidDestinationMacAddress": "Недействительный MAC-адрес назначения",
   "invalidDns": "Недопустимый DNS-сервер",
   "invalidGatewayIpAddress": "Недействительный IP-адрес шлюза",
+  "gatewayMustBeWithinLanSubnet": "Шлюз должен находиться в подсети LAN",
+  "gatewayMustBeOutsideLanSubnet": "Шлюз должен находиться вне подсети LAN",
   "invalidInput": "Неверный ввод",
   "invalidIpAddress": "Недопустимый IP-адрес",
   "invalidMACAddress": "Недопустимый MAC-адрес.",

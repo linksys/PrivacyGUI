@@ -219,6 +219,8 @@
   "invalidDestinationMacAddress": "Invalid destination MAC address",
   "invalidDns": "Invalid DNS",
   "invalidGatewayIpAddress": "Invalid gateway IP address",
+  "gatewayMustBeWithinLanSubnet": "Gateway must be within LAN subnet",
+  "gatewayMustBeOutsideLanSubnet": "Gateway must be outside LAN subnet",
   "invalidInput": "Invalid input",
   "invalidIpAddress": "Invalid IP address",
   "invalidMACAddress": "Invalid MAC address.",

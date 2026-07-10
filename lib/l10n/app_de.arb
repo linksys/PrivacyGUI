@@ -126,6 +126,8 @@
   "invalidDestinationMacAddress": "Ungültige Ziel MAC-Adresse",
   "invalidDns": "Ungültiges DNS.",
   "invalidGatewayIpAddress": "Ungültige IP-Adresse des Gateways",
+  "gatewayMustBeWithinLanSubnet": "Gateway muss innerhalb des LAN-Subnetzes liegen",
+  "gatewayMustBeOutsideLanSubnet": "Gateway muss außerhalb des LAN-Subnetzes liegen",
   "invalidInput": "Ungültige Eingabe",
   "invalidIpAddress": "Ungültige IP-Adresse",
   "invalidMACAddress": "Ungültige MAC-Adresse.",

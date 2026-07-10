@@ -126,6 +126,8 @@
   "invalidDestinationMacAddress": "잘못된 대상 MAC 주소",
   "invalidDns": "잘못된 DNS",
   "invalidGatewayIpAddress": "잘못된 게이트웨이 IP 주소",
+  "gatewayMustBeWithinLanSubnet": "게이트웨이는 LAN 서브넷 내에 있어야 합니다",
+  "gatewayMustBeOutsideLanSubnet": "게이트웨이는 LAN 서브넷 외부에 있어야 합니다",
   "invalidInput": "잘못된 입력",
   "invalidIpAddress": "잘못된 IP 주소",
   "invalidMACAddress": "잘못된 MAC 주소입니다.",

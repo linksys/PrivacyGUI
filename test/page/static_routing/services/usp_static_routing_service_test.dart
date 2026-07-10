@@ -152,7 +152,7 @@ void main() {
         subnetMask: '255.255.255.0',
         gateway: '',
       );
-      expect(errors['name'], 'Name is required');
+      expect(errors['name'], StaticRoutingErrorKeys.nameRequired);
     });
 
     test('name over 32 chars returns error', () {
@@ -162,7 +162,7 @@ void main() {
         subnetMask: '255.255.255.0',
         gateway: '',
       );
-      expect(errors['name'], 'Name must be 32 characters or less');
+      expect(errors['name'], StaticRoutingErrorKeys.nameTooLong);
     });
 
     test('name exactly 32 chars is valid', () {
@@ -182,7 +182,7 @@ void main() {
         subnetMask: '255.255.255.0',
         gateway: '',
       );
-      expect(errors['destIp'], 'Destination IP is required');
+      expect(errors['destIp'], StaticRoutingErrorKeys.destIpRequired);
     });
 
     test('invalid destIp returns error', () {
@@ -192,7 +192,7 @@ void main() {
         subnetMask: '255.255.255.0',
         gateway: '',
       );
-      expect(errors['destIp'], 'Invalid IP address');
+      expect(errors['destIp'], StaticRoutingErrorKeys.invalidIpAddress);
     });
 
     test('empty subnetMask returns error', () {
@@ -202,7 +202,7 @@ void main() {
         subnetMask: '',
         gateway: '',
       );
-      expect(errors['subnetMask'], 'Subnet mask is required');
+      expect(errors['subnetMask'], StaticRoutingErrorKeys.subnetMaskRequired);
     });
 
     test('invalid subnetMask returns error', () {
@@ -212,7 +212,7 @@ void main() {
         subnetMask: '255.255.0.128',
         gateway: '',
       );
-      expect(errors['subnetMask'], 'Invalid subnet mask');
+      expect(errors['subnetMask'], StaticRoutingErrorKeys.invalidSubnetMask);
     });
 
     test('empty gateway is valid (optional)', () {
@@ -232,7 +232,7 @@ void main() {
         subnetMask: '255.255.255.0',
         gateway: 'not-an-ip',
       );
-      expect(errors['gateway'], 'Invalid IP address');
+      expect(errors['gateway'], StaticRoutingErrorKeys.invalidIpAddress);
     });
 
     test('multiple errors returned simultaneously', () {
@@ -243,6 +243,106 @@ void main() {
         gateway: 'bad',
       );
       expect(errors, hasLength(4));
+    });
+
+    // --- gateway subnet validation (issue #1082) ---
+
+    test('LAN interface: gateway within LAN subnet is valid', () {
+      final errors = UspStaticRoutingService.validateRoute(
+        name: 'Route1',
+        destIp: '10.0.0.0',
+        subnetMask: '255.255.255.0',
+        gateway: '192.168.1.100',
+        interfaceName: 'LAN',
+        lanIp: '192.168.1.1',
+        lanSubnetMask: '255.255.255.0',
+      );
+      expect(errors.containsKey('gateway'), isFalse);
+    });
+
+    test('LAN interface: gateway outside LAN subnet returns error', () {
+      final errors = UspStaticRoutingService.validateRoute(
+        name: 'Route1',
+        destIp: '10.0.0.0',
+        subnetMask: '255.255.255.0',
+        gateway: '8.8.8.8',
+        interfaceName: 'LAN',
+        lanIp: '192.168.1.1',
+        lanSubnetMask: '255.255.255.0',
+      );
+      expect(errors['gateway'],
+          StaticRoutingErrorKeys.gatewayMustBeWithinLanSubnet);
+    });
+
+    test('Internet interface: gateway outside LAN subnet is valid', () {
+      final errors = UspStaticRoutingService.validateRoute(
+        name: 'Route1',
+        destIp: '10.0.0.0',
+        subnetMask: '255.255.255.0',
+        gateway: '100.64.1.1',
+        interfaceName: 'Internet',
+        lanIp: '192.168.1.1',
+        lanSubnetMask: '255.255.255.0',
+      );
+      expect(errors.containsKey('gateway'), isFalse);
+    });
+
+    test('Internet interface: gateway within LAN subnet returns error', () {
+      final errors = UspStaticRoutingService.validateRoute(
+        name: 'Route1',
+        destIp: '10.0.0.0',
+        subnetMask: '255.255.255.0',
+        gateway: '192.168.1.50',
+        interfaceName: 'Internet',
+        lanIp: '192.168.1.1',
+        lanSubnetMask: '255.255.255.0',
+      );
+      expect(errors['gateway'],
+          StaticRoutingErrorKeys.gatewayMustBeOutsideLanSubnet);
+    });
+
+    test('subnet validation skipped when lanIp/lanSubnetMask not provided', () {
+      final errors = UspStaticRoutingService.validateRoute(
+        name: 'Route1',
+        destIp: '10.0.0.0',
+        subnetMask: '255.255.255.0',
+        gateway: '8.8.8.8',
+        interfaceName: 'LAN',
+      );
+      expect(errors.containsKey('gateway'), isFalse);
+    });
+
+    test(
+        'empty-string lanIp/lanSubnetMask (LanData.empty fallback) skips subnet '
+        'check — no false-positive Internet error', () {
+      // Regression for W-NEW-1: LanData.empty() returns ipAddress:'' /
+      // subnetMask:'' (empty strings, not null). ipToNum('') == 0, so the LAN
+      // subnet rule would incorrectly report isInLan == true for ANY gateway,
+      // firing a permanent false-positive gatewayMustBeOutsideLanSubnet error
+      // on Internet-interface routes while LAN data is still loading.
+      final errors = UspStaticRoutingService.validateRoute(
+        name: 'Route1',
+        destIp: '10.0.0.0',
+        subnetMask: '255.255.255.0',
+        gateway: '8.8.8.8',
+        interfaceName: 'Internet',
+        lanIp: '',
+        lanSubnetMask: '',
+      );
+      expect(errors.containsKey('gateway'), isFalse);
+    });
+
+    test('invalid gateway format takes precedence over subnet check', () {
+      final errors = UspStaticRoutingService.validateRoute(
+        name: 'Route1',
+        destIp: '10.0.0.0',
+        subnetMask: '255.255.255.0',
+        gateway: 'bad-ip',
+        interfaceName: 'LAN',
+        lanIp: '192.168.1.1',
+        lanSubnetMask: '255.255.255.0',
+      );
+      expect(errors['gateway'], StaticRoutingErrorKeys.invalidIpAddress);
     });
   });
 

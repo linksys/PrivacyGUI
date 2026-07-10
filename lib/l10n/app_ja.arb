@@ -126,6 +126,8 @@
   "invalidDestinationMacAddress": "無効な宛先MACアドレス",
   "invalidDns": "無効なDNSです。",
   "invalidGatewayIpAddress": "無効なゲートウェイIPアドレス",
+  "gatewayMustBeWithinLanSubnet": "ゲートウェイはLANサブネット内である必要があります",
+  "gatewayMustBeOutsideLanSubnet": "ゲートウェイはLANサブネット外である必要があります",
   "invalidInput": "無効な入力です。",
   "invalidIpAddress": "無効なIPアドレスです。",
   "invalidMACAddress": "無効な MAC アドレスです。",
