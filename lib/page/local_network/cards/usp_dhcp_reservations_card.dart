@@ -24,7 +24,8 @@ class UspDhcpReservationsCard extends ConsumerWidget {
     if (dhcpData == null) return const CardSkeleton.list(rows: 3);
     final reservations = dhcpData.reservationModels;
     final clients = dhcpData.clientModels;
-    final activeClients = clients.where((c) => c.active).toList();
+    // Dashboard shows only online clients (based on Hosts.Active, not DHCP lease).
+    final onlineClients = clients.where((c) => c.isOnline == true).toList();
     final isLoading = ref.watch(uspMutationLoadingProvider) == 'dhcp';
 
     return DashboardCardTemplate.multiSection(
@@ -34,7 +35,7 @@ class UspDhcpReservationsCard extends ConsumerWidget {
         onTap: isLoading ? null : () => _showAddDhcpDialog(context, ref),
       ),
       detailRoute: RouteNamed.uspDhcpDetail,
-      itemCount: reservations.length + activeClients.length,
+      itemCount: reservations.length + onlineClients.length,
       sections: [
         CardSection(
           title: loc(context).reservations,
@@ -52,14 +53,14 @@ class UspDhcpReservationsCard extends ConsumerWidget {
         ),
         CardSection(
           title: loc(context).activeLeases,
-          titleBadge: AppText.labelMedium('${activeClients.length}'),
-          isEmpty: clients.isEmpty,
+          titleBadge: AppText.labelMedium('${onlineClients.length}'),
+          isEmpty: onlineClients.isEmpty,
           emptyMessage: 'No DHCP clients',
           content: Column(
             children: [
-              for (var i = 0; i < clients.length; i++) ...[
-                _buildClientRow(context, clients[i]),
-                if (i < clients.length - 1) AppGap.sm(),
+              for (var i = 0; i < onlineClients.length; i++) ...[
+                _buildClientRow(context, onlineClients[i]),
+                if (i < onlineClients.length - 1) AppGap.sm(),
               ],
             ],
           ),
@@ -104,7 +105,7 @@ class UspDhcpReservationsCard extends ConsumerWidget {
         height: 8,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: client.active
+          color: client.isOnline == true
               ? (appColors?.semanticSuccess ?? Colors.green)
               : colorScheme.outline,
         ),

@@ -51,9 +51,10 @@ class UspDhcpDataService {
   UspDhcpDataService(this._usp);
 
   /// Fetches DHCP clients + reservations in parallel, applies hostname
-  /// enrichment, and returns UI models.
+  /// and online status enrichment, and returns UI models.
   Future<DhcpDataFetchResult> fetch({
     required Map<String, String> hostNameByMac,
+    required Map<String, bool> isOnlineByMac,
   }) async {
     try {
       final results = await Future.wait([
@@ -64,15 +65,17 @@ class UspDhcpDataService {
       final clients = results[0] as DhcpClients;
       final reservations = results[1] as DhcpReservations;
 
-      final clientModels = clients.items
-          .map((c) => DhcpClientUIModel(
-                mac: c.chaddr,
-                ip: c.ipAddress,
-                active: c.active,
-                hostName: hostNameByMac[c.chaddr.trim().toUpperCase()] ?? '',
-                leaseExpiry: c.leaseTimeRemaining,
-              ))
-          .toList();
+      final clientModels = clients.items.map((c) {
+        final normalizedMac = c.chaddr.trim().toUpperCase();
+        return DhcpClientUIModel(
+          mac: c.chaddr,
+          ip: c.ipAddress,
+          leaseActive: c.active,
+          isOnline: isOnlineByMac[normalizedMac],
+          hostName: hostNameByMac[normalizedMac] ?? '',
+          leaseExpiry: c.leaseTimeRemaining,
+        );
+      }).toList();
 
       final reservationModels = reservations.items
           .map((r) => DhcpReservationUIModel(

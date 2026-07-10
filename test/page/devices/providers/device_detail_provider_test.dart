@@ -28,7 +28,7 @@ void main() {
     isWifi: false,
   );
 
-  const reservation = DhcpReservationUIModel(
+  final reservation = DhcpReservationUIModel(
     instancePath: 'Device.DHCPv4.Server.Pool.1.StaticAddress.1.',
     mac: 'AA:BB:CC:DD:EE:01',
     ip: '192.168.1.100',
@@ -39,8 +39,8 @@ void main() {
     deviceModels: [wifiDevice, ethernetDevice],
   );
 
-  const dhcpData = DhcpData(
-    clientModels: [],
+  final dhcpData = DhcpData(
+    clientModels: const [],
     reservationModels: [reservation],
   );
 

@@ -9,6 +9,7 @@ import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
+import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/local_network/providers/dhcp_data_provider.dart';
 
@@ -107,8 +108,8 @@ void main() {
       // Verify client fields
       expect(data.clientModels[0].mac, 'AA:BB:CC:DD:EE:01');
       expect(data.clientModels[0].ip, '192.168.1.101');
-      expect(data.clientModels[0].active, isTrue);
-      expect(data.clientModels[1].active, isFalse);
+      expect(data.clientModels[0].leaseActive, isTrue);
+      expect(data.clientModels[1].leaseActive, isFalse);
 
       // Verify reservation fields
       expect(data.reservationModels[0].mac, 'AA:BB:CC:DD:EE:01');
@@ -131,6 +132,55 @@ void main() {
       expect(data.clientModels[0].displayName, 'MyLaptop');
       // Client 2 has no hostname entry
       expect(data.clientModels[1].hostName, isEmpty);
+      container.dispose();
+    });
+
+    test('isOnline enrichment from devicesData deviceModels', () async {
+      final container = createContainer(
+        devicesData: const DevicesData(
+          hostNameByMac: {'AA:BB:CC:DD:EE:01': 'MyLaptop'},
+          deviceModels: [
+            DeviceUIModel(
+              mac: 'AA:BB:CC:DD:EE:01',
+              ip: '192.168.1.101',
+              hostName: 'MyLaptop',
+              isActive: true,
+              isWifi: true,
+            ),
+            DeviceUIModel(
+              mac: 'AA:BB:CC:DD:EE:02',
+              ip: '192.168.1.102',
+              hostName: '',
+              isActive: false,
+              isWifi: false,
+            ),
+          ],
+        ),
+      );
+      await container.read(devicesDataProvider.future);
+      final data = await container.read(dhcpDataProvider.future);
+
+      // Client 1: online (from Hosts.Active)
+      expect(data.clientModels[0].isOnline, isTrue);
+      // Client 2: offline (from Hosts.Active)
+      expect(data.clientModels[1].isOnline, isFalse);
+      container.dispose();
+    });
+
+    test('isOnline is null when no matching device in devicesData', () async {
+      // Empty deviceModels - no Hosts data available
+      final container = createContainer(
+        devicesData: const DevicesData(
+          hostNameByMac: {},
+          deviceModels: [],
+        ),
+      );
+      await container.read(devicesDataProvider.future);
+      final data = await container.read(dhcpDataProvider.future);
+
+      // No matching device, isOnline should be null
+      expect(data.clientModels[0].isOnline, isNull);
+      expect(data.clientModels[1].isOnline, isNull);
       container.dispose();
     });
 
@@ -167,13 +217,13 @@ void main() {
       container.dispose();
     });
 
-    test('DhcpData props uses lengths for equality', () async {
+    test('DhcpData props uses full lists for equality', () async {
       final container = createContainer();
       final data1 = await container.read(dhcpDataProvider.future);
       final data2 = await container.read(dhcpDataProvider.future);
 
       expect(data1, equals(data2));
-      expect(data1.props, [2, 1]); // 2 clients, 1 reservation
+      expect(data1.props, [data1.clientModels, data1.reservationModels]);
       container.dispose();
     });
 
