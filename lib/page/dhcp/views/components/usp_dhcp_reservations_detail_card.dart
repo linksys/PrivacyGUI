@@ -6,7 +6,6 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/components/detail_widgets.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/_shared/models/dhcp_reservation_ui_model.dart';
-import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/dhcp/providers/usp_dhcp_reservations_notifier.dart';
 import 'package:privacy_gui/page/dhcp/views/dialogs/dhcp_reservation_edit_dialog.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -105,14 +104,16 @@ class UspDhcpReservationsDetailCard extends ConsumerWidget {
     );
   }
 
+  /// Maps device data from the notifier to autocomplete UI options for the
+  /// MAC and IP fields.
   ({List<AppAutoCompleteOption> mac, List<AppAutoCompleteOption> ip})
       _buildDeviceOptions(WidgetRef ref) {
     final devices =
-        ref.read(devicesDataProvider).valueOrNull?.clientDevices ?? [];
+        ref.read(uspDhcpReservationsProvider.notifier).deviceOptions();
     final macOptions = devices
         .where((d) => d.mac.isNotEmpty)
         .map((d) => AppAutoCompleteOption(
-              label: d.displayName,
+              label: d.name,
               value: d.mac,
               subtitle: d.ip,
               isActive: d.isActive,
@@ -121,7 +122,7 @@ class UspDhcpReservationsDetailCard extends ConsumerWidget {
     final ipOptions = devices
         .where((d) => d.ip.isNotEmpty)
         .map((d) => AppAutoCompleteOption(
-              label: d.displayName,
+              label: d.name,
               value: d.ip,
               subtitle: d.mac,
               isActive: d.isActive,
@@ -137,6 +138,7 @@ class UspDhcpReservationsDetailCard extends ConsumerWidget {
       builder: (_) => DhcpReservationEditDialog(
         macDeviceOptions: options.mac,
         ipDeviceOptions: options.ip,
+        existingReservations: reservations,
       ),
     );
     if (result == null || !context.mounted) return;
@@ -161,6 +163,7 @@ class UspDhcpReservationsDetailCard extends ConsumerWidget {
         reservation: reservation,
         macDeviceOptions: options.mac,
         ipDeviceOptions: options.ip,
+        existingReservations: reservations,
       ),
     );
     if (result == null || !context.mounted) return;

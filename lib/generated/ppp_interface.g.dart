@@ -12,6 +12,7 @@ class PppInterfaceInstance {
   final String pppoeServiceName;
   final String connectionTrigger;
   final int idleDisconnectTime;
+  final String lowerLayers;
   final int lcpEcho;
   final String connectionStatus;
 
@@ -22,6 +23,7 @@ class PppInterfaceInstance {
     required this.pppoeServiceName,
     required this.connectionTrigger,
     required this.idleDisconnectTime,
+    required this.lowerLayers,
     required this.lcpEcho,
     required this.connectionStatus,
   });
@@ -35,6 +37,7 @@ class PppInterfaceInstanceUpdate {
   final String? pppoeServiceName;
   final String? connectionTrigger;
   final int? idleDisconnectTime;
+  final String? lowerLayers;
 
   const PppInterfaceInstanceUpdate({
     required this.instancePath,
@@ -43,6 +46,7 @@ class PppInterfaceInstanceUpdate {
     this.pppoeServiceName,
     this.connectionTrigger,
     this.idleDisconnectTime,
+    this.lowerLayers,
   });
 }
 
@@ -58,6 +62,7 @@ class PppInterface {
     'Device.PPP.Interface.*.PPPoE.ServiceName',
     'Device.PPP.Interface.*.ConnectionTrigger',
     'Device.PPP.Interface.*.IdleDisconnectTime',
+    'Device.PPP.Interface.*.LowerLayers',
     'Device.PPP.Interface.*.LCPEcho',
     'Device.PPP.Interface.*.ConnectionStatus',
   ];
@@ -89,6 +94,7 @@ class PppInterface {
         response['${p}PPPoE.ServiceName'],
         response['${p}ConnectionTrigger'],
         response['${p}IdleDisconnectTime'],
+        response['${p}LowerLayers'],
         response['${p}LCPEcho'],
         response['${p}ConnectionStatus']
       ].every((v) =>
@@ -116,6 +122,9 @@ class PppInterface {
       if (!response.containsKey('${p}IdleDisconnectTime')) {
         missing.add('${p}IdleDisconnectTime');
       }
+      if (!response.containsKey('${p}LowerLayers')) {
+        missing.add('${p}LowerLayers');
+      }
       if (!response.containsKey('${p}LCPEcho')) {
         missing.add('${p}LCPEcho');
       }
@@ -134,6 +143,7 @@ class PppInterface {
         idleDisconnectTime: int.tryParse(
                 response['${p}IdleDisconnectTime']?.toString() ?? '') ??
             0,
+        lowerLayers: (response['${p}LowerLayers'] ?? '') as String,
         lcpEcho: int.tryParse(response['${p}LCPEcho']?.toString() ?? '') ?? 0,
         connectionStatus: (response['${p}ConnectionStatus'] ?? '') as String,
       ));
@@ -164,6 +174,9 @@ class PppInterface {
       if (update.idleDisconnectTime != null) {
         params['${update.instancePath}IdleDisconnectTime'] =
             update.idleDisconnectTime;
+      }
+      if (update.lowerLayers != null) {
+        params['${update.instancePath}LowerLayers'] = update.lowerLayers;
       }
     }
     if (params.isEmpty) {

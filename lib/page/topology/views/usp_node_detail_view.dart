@@ -501,7 +501,7 @@ class UspNodeDetailView extends ConsumerWidget {
                     child: UspDeviceListTile(
                       device: devices[i],
                       variant: DeviceListTileVariant.flatLast,
-                      onTap: () => context.goNamed(
+                      onTap: () => context.pushNamed(
                         RouteNamed.uspDeviceDetail,
                         queryParameters: {'mac': devices[i].mac},
                       ),

@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
@@ -13,6 +14,7 @@ import 'package:privacy_gui/generated/wi_fi_access_points.g.dart';
 import 'package:privacy_gui/generated/wi_fi_ssids.g.dart';
 import 'package:privacy_gui/page/_shared/models/mesh_topology_info.dart';
 import 'package:privacy_gui/page/_shared/utils/mesh_topology_builder.dart';
+import 'package:privacy_gui/page/_shared/utils/wifi_guest_detection.dart';
 import 'package:privacy_gui/generated/wi_fi_radios.g.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_isp_config.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_wifi_band.dart';
@@ -107,9 +109,8 @@ class PnpService {
 
   /// Fetch current WiFi SSIDs + Access Points and return structured results.
   ///
-  /// Separates main vs guest SSIDs by detecting shared radios:
-  /// - First SSID per radio = main network
-  /// - Additional SSIDs sharing a radio = guest network
+  /// Separates main vs guest SSIDs via the canonical alias rule: an SSID whose
+  /// `Alias` ends with `-guest` is a guest network (see wifi_guest_detection).
   ///
   /// Supports both unified mode (all bands share SSID) and split mode
   /// (each band has different SSID, e.g. Du ISP routers).
@@ -148,20 +149,26 @@ class PnpService {
       return radios.items.where((r) => r.instancePath == radioPath).firstOrNull;
     }
 
-    // Separate main vs guest SSIDs by radio occupancy.
-    // First SSID per radio is "main", subsequent SSIDs on the same radio
-    // are "guest" (they share the radio via virtual AP).
-    final seenRadios = <String>{};
+    // Separate main vs guest SSIDs via the canonical alias rule (see
+    // wifi_guest_detection). Single source of truth shared across the app.
     final mainSsids = <WiFiSsid>[];
     final guestSsids = <WiFiSsid>[];
 
     for (final ssid in ssids.items) {
-      if (seenRadios.contains(ssid.lowerLayers)) {
+      if (isGuestSsid(ssid)) {
         guestSsids.add(ssid);
       } else {
-        seenRadios.add(ssid.lowerLayers);
         mainSsids.add(ssid);
       }
+    }
+
+    // Diagnostic: multiple SSIDs but none matched the `-guest` alias rule
+    // usually means firmware did not provision guest aliases (see
+    // wifi_guest_detection). Guest/main split degrades silently otherwise.
+    if (guestSsids.isEmpty && ssids.items.length > 1) {
+      logger.w('[PnP] No SSID matched the "-guest" alias rule; '
+          'guest network will be treated as main. Aliases: '
+          '${ssids.items.map((s) => s.alias ?? "null").toList()}');
     }
 
     // Primary SSID = first enabled main SSID
@@ -299,7 +306,8 @@ class PnpService {
       final ssidUpdates = config.ssidInstancePaths
           .map((path) => WiFiSsidUpdate(instancePath: path, ssid: config.ssid))
           .toList();
-      await WiFiSsids.update(_usp, ssidUpdates);
+      final ssidResult = await WiFiSsids.update(_usp, ssidUpdates);
+      _throwIfNotSuccess(ssidResult, 'Main WiFi SSID update');
     }
 
     if (config.isPasswordChanged) {
@@ -309,7 +317,8 @@ class PnpService {
                 keyPassphrase: config.password,
               ))
           .toList();
-      await WiFiAccessPoints.update(_usp, apUpdates);
+      final apResult = await WiFiAccessPoints.update(_usp, apUpdates);
+      _throwIfNotSuccess(apResult, 'Main WiFi password update');
     }
   }
 
@@ -334,10 +343,12 @@ class PnpService {
     }
 
     if (ssidUpdates.isNotEmpty) {
-      await WiFiSsids.update(_usp, ssidUpdates);
+      final ssidResult = await WiFiSsids.update(_usp, ssidUpdates);
+      _throwIfNotSuccess(ssidResult, 'Main WiFi SSID update');
     }
     if (apUpdates.isNotEmpty) {
-      await WiFiAccessPoints.update(_usp, apUpdates);
+      final apResult = await WiFiAccessPoints.update(_usp, apUpdates);
+      _throwIfNotSuccess(apResult, 'Main WiFi password update');
     }
   }
 
@@ -351,7 +362,21 @@ class PnpService {
                 enable: config.guestEnabled,
               ))
           .toList();
-      await WiFiSsids.update(_usp, guestSsidUpdates);
+      final ssidResult = await WiFiSsids.update(_usp, guestSsidUpdates);
+      _throwIfNotSuccess(ssidResult, 'Guest WiFi SSID update');
+
+      // Mirror enable state to AccessPoint layer (#972: SSID.Enable alone
+      // does not stop the AP broadcasting on this firmware).
+      if (config.isGuestEnabledChanged) {
+        final apEnableUpdates = config.guestAccessPointInstancePaths
+            .map((path) => WiFiAccessPointUpdate(
+                  instancePath: path,
+                  enable: config.guestEnabled,
+                ))
+            .toList();
+        final apResult = await WiFiAccessPoints.update(_usp, apEnableUpdates);
+        _throwIfNotSuccess(apResult, 'Guest WiFi AP enable update');
+      }
     }
 
     // Password
@@ -362,7 +387,8 @@ class PnpService {
                 keyPassphrase: config.guestPassword,
               ))
           .toList();
-      await WiFiAccessPoints.update(_usp, guestApUpdates);
+      final apResult = await WiFiAccessPoints.update(_usp, guestApUpdates);
+      _throwIfNotSuccess(apResult, 'Guest WiFi password update');
     }
   }
 
@@ -370,6 +396,7 @@ class PnpService {
     // Collect all bands that have changes
     final ssidUpdates = <WiFiSsidUpdate>[];
     final apUpdates = <WiFiAccessPointUpdate>[];
+    final apEnableUpdates = <WiFiAccessPointUpdate>[];
 
     for (final band in config.guestBands) {
       // Always include enable state for guest bands
@@ -379,6 +406,14 @@ class PnpService {
           ssid: band.ssid,
           enable: config.guestEnabled,
         ));
+        // Mirror enable state to AccessPoint layer (#972)
+        if (config.isGuestEnabledChanged &&
+            band.accessPointInstancePath.isNotEmpty) {
+          apEnableUpdates.add(WiFiAccessPointUpdate(
+            instancePath: band.accessPointInstancePath,
+            enable: config.guestEnabled,
+          ));
+        }
       }
       if (band.isPasswordChanged && band.accessPointInstancePath.isNotEmpty) {
         apUpdates.add(WiFiAccessPointUpdate(
@@ -395,14 +430,29 @@ class PnpService {
           instancePath: band.ssidInstancePath,
           enable: config.guestEnabled,
         ));
+        // Mirror enable state to AccessPoint layer (#972)
+        if (band.accessPointInstancePath.isNotEmpty) {
+          apEnableUpdates.add(WiFiAccessPointUpdate(
+            instancePath: band.accessPointInstancePath,
+            enable: config.guestEnabled,
+          ));
+        }
       }
     }
 
     if (ssidUpdates.isNotEmpty) {
-      await WiFiSsids.update(_usp, ssidUpdates);
+      final ssidResult = await WiFiSsids.update(_usp, ssidUpdates);
+      _throwIfNotSuccess(ssidResult, 'Guest WiFi SSID update');
+    }
+    // Write AP enable state before password updates (enable first, then configure)
+    if (apEnableUpdates.isNotEmpty) {
+      final apEnableResult =
+          await WiFiAccessPoints.update(_usp, apEnableUpdates);
+      _throwIfNotSuccess(apEnableResult, 'Guest WiFi AP enable update');
     }
     if (apUpdates.isNotEmpty) {
-      await WiFiAccessPoints.update(_usp, apUpdates);
+      final apResult = await WiFiAccessPoints.update(_usp, apUpdates);
+      _throwIfNotSuccess(apResult, 'Guest WiFi password update');
     }
   }
 
@@ -522,6 +572,27 @@ class PnpService {
       return info.serialNumber;
     } catch (e) {
       throw mapUspErrorToServiceError(e);
+    }
+  }
+
+  /// Throws [UspPartialFailureError] or [UspCompleteFailureError] if [result]
+  /// is not a complete success. [label] prefixes the error summary.
+  void _throwIfNotSuccess(Map<String, dynamic> result, String label) {
+    final parsed = UspResultParser.parseSetResult(result);
+    switch (parsed) {
+      case UspSuccess():
+        return;
+      case UspPartialSuccess(failures: final f):
+        throw UspPartialFailureError(
+          summary: '$label partial failure: ${f.first.errorMessage}',
+          successPaths: [],
+          failures: f,
+        );
+      case UspFailure(errors: final e):
+        throw UspCompleteFailureError(
+          summary: '$label failed: ${e.first.errorMessage}',
+          failures: e,
+        );
     }
   }
 }

@@ -14,11 +14,16 @@ class DhcpReservationEditDialog extends StatefulWidget {
   final List<AppAutoCompleteOption> macDeviceOptions;
   final List<AppAutoCompleteOption> ipDeviceOptions;
 
+  /// Existing reservations, used to reject duplicate MAC/IP addresses.
+  /// When editing, the reservation being edited is excluded from the check.
+  final List<DhcpReservationUIModel> existingReservations;
+
   const DhcpReservationEditDialog({
     super.key,
     this.reservation,
     this.macDeviceOptions = const [],
     this.ipDeviceOptions = const [],
+    this.existingReservations = const [],
   });
 
   @override
@@ -33,6 +38,8 @@ class _DhcpReservationEditDialogState extends State<DhcpReservationEditDialog> {
 
   late TextEditingController _macController;
   late TextEditingController _ipController;
+  final _macFocusNode = FocusNode();
+  final _ipFocusNode = FocusNode();
   late bool _enabled;
   Map<String, String> _errors = {};
 
@@ -49,13 +56,27 @@ class _DhcpReservationEditDialogState extends State<DhcpReservationEditDialog> {
     _macController = TextEditingController(text: r?.mac ?? '');
     _ipController = TextEditingController(text: r?.ip ?? '');
     _enabled = r?.enable ?? true;
+    _macFocusNode.addListener(_onMacFocusChange);
+    _ipFocusNode.addListener(_onIpFocusChange);
   }
 
   @override
   void dispose() {
+    _macFocusNode.removeListener(_onMacFocusChange);
+    _ipFocusNode.removeListener(_onIpFocusChange);
+    _macFocusNode.dispose();
+    _ipFocusNode.dispose();
     _macController.dispose();
     _ipController.dispose();
     super.dispose();
+  }
+
+  void _onMacFocusChange() {
+    if (!_macFocusNode.hasFocus) _validate();
+  }
+
+  void _onIpFocusChange() {
+    if (!_ipFocusNode.hasFocus) _validate();
   }
 
   void _validate() {
@@ -75,6 +96,35 @@ class _DhcpReservationEditDialogState extends State<DhcpReservationEditDialog> {
       }
     }
 
+    // Reject duplicates against existing reservations (excluding the one being
+    // edited). Comparison is case-insensitive for MAC addresses.
+    //
+    // Exclude "self" by stable identity (instancePath) rather than Equatable
+    // value-equality: the DHCP page listens to SSE invalidations, so a non-key
+    // field (e.g. `enable`) on the edited reservation can drift in
+    // existingReservations while the dialog is open. Value-equality would then
+    // fail to match self and flag the user's own unchanged MAC/IP as a
+    // duplicate. instancePath is the stable device-side identity (null only for
+    // not-yet-saved local reservations, which cannot be edited).
+    final self = widget.reservation;
+    final others = widget.existingReservations.where((r) {
+      if (self == null) return true;
+      if (self.instancePath != null && r.instancePath != null) {
+        return r.instancePath != self.instancePath;
+      }
+      return !identical(r, self);
+    });
+    if (mac.isNotEmpty &&
+        errors['mac'] == null &&
+        others.any((r) => r.mac.toLowerCase() == mac.toLowerCase())) {
+      errors['mac'] = 'duplicateMacAddress';
+    }
+    if (ip.isNotEmpty &&
+        errors['ip'] == null &&
+        others.any((r) => r.ip == ip)) {
+      errors['ip'] = 'duplicateIpAddress';
+    }
+
     setState(() => _errors = errors);
   }
 
@@ -84,6 +134,8 @@ class _DhcpReservationEditDialogState extends State<DhcpReservationEditDialog> {
       'invalidMacAddressFormat' => loc(context).invalidMacAddressFormat,
       'invalidIpv4Format' => loc(context).invalidIpv4Format,
       'reservedIpNotAllowed' => loc(context).reservedIpNotAllowed,
+      'duplicateMacAddress' => loc(context).duplicateMacAddress,
+      'duplicateIpAddress' => loc(context).duplicateIpAddress,
       _ => key,
     };
   }
@@ -111,8 +163,8 @@ class _DhcpReservationEditDialogState extends State<DhcpReservationEditDialog> {
             },
             child: AppTextField(
               controller: _macController,
+              focusNode: _macFocusNode,
               hintText: loc(context).macAddressHint,
-              onChanged: (_) => _validate(),
               errorText: _localizeError(_errors['mac']),
             ),
           ),
@@ -131,8 +183,8 @@ class _DhcpReservationEditDialogState extends State<DhcpReservationEditDialog> {
             },
             child: AppTextField(
               controller: _ipController,
+              focusNode: _ipFocusNode,
               hintText: loc(context).ipAddressHint,
-              onChanged: (_) => _validate(),
               errorText: _localizeError(_errors['ip']),
             ),
           ),
@@ -163,6 +215,8 @@ class _DhcpReservationEditDialogState extends State<DhcpReservationEditDialog> {
   }
 
   void _submit() {
+    _validate();
+    if (!_isFormValid) return;
     final mac = _macController.text.trim();
     final ip = _ipController.text.trim();
     context.pop((mac: mac, ip: ip, enable: _enabled));

@@ -1,43 +1,30 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/utils/oui_lookup.dart';
 import 'package:privacy_gui/core/utils/wifi.dart';
 import 'package:privacy_gui/page/_shared/models/client_device.dart';
+import 'package:privacy_gui/page/_shared/utils/device_classifier.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/devices/providers/device_filter_state.dart';
 
-/// Bucket a signal strength (dBm) into a `DeviceSignalFilter` value.
-/// Delegates to [getWifiSignalLevel] so the filter, the list-tile indicator,
-/// and every other project surface share the same RSSI thresholds
-/// (-65 / -71 / -78 dBm for excellent / good / fair).
-DeviceSignalFilter signalBucketOf(int? rssi) {
-  if (rssi == null) return DeviceSignalFilter.unknown;
+DeviceSignalLevel signalLevelOf(int rssi) {
   return switch (getWifiSignalLevel(rssi)) {
-    NodeSignalLevel.excellent => DeviceSignalFilter.excellent,
-    NodeSignalLevel.good => DeviceSignalFilter.good,
-    NodeSignalLevel.fair => DeviceSignalFilter.fair,
-    NodeSignalLevel.poor || NodeSignalLevel.none => DeviceSignalFilter.poor,
-    // `wired` only returns when rssi is null, which we handled above.
-    NodeSignalLevel.wired => DeviceSignalFilter.unknown,
+    NodeSignalLevel.excellent => DeviceSignalLevel.excellent,
+    NodeSignalLevel.good => DeviceSignalLevel.good,
+    NodeSignalLevel.fair => DeviceSignalLevel.fair,
+    NodeSignalLevel.poor || NodeSignalLevel.none => DeviceSignalLevel.poor,
+    NodeSignalLevel.wired => DeviceSignalLevel.poor,
   };
 }
 
-/// Map a `DeviceSignalFilter` bucket back to the canonical [NodeSignalLevel]
-/// so UI can reuse [NodeSignalLevelExt.resolveLabel] / `resolveColor` and
-/// stay consistent with the node/topology pages.
-NodeSignalLevel? nodeLevelOf(DeviceSignalFilter bucket) {
-  return switch (bucket) {
-    DeviceSignalFilter.all => null,
-    DeviceSignalFilter.excellent => NodeSignalLevel.excellent,
-    DeviceSignalFilter.good => NodeSignalLevel.good,
-    DeviceSignalFilter.fair => NodeSignalLevel.fair,
-    DeviceSignalFilter.poor => NodeSignalLevel.poor,
-    DeviceSignalFilter.unknown => null,
+NodeSignalLevel? nodeLevelOf(DeviceSignalLevel level) {
+  return switch (level) {
+    DeviceSignalLevel.excellent => NodeSignalLevel.excellent,
+    DeviceSignalLevel.good => NodeSignalLevel.good,
+    DeviceSignalLevel.fair => NodeSignalLevel.fair,
+    DeviceSignalLevel.poor => NodeSignalLevel.poor,
   };
 }
 
-/// User-selected filter configuration. Hosted in a notifier so that all
-/// cross-field dependency resets (e.g. Status=Offline clears everything else)
-/// and orphan reconciliation (e.g. selected SSID disappears after SSE refresh)
-/// happen in one place rather than being duplicated at every call site.
 final deviceFilterConfigProvider =
     StateNotifierProvider<DeviceFilterNotifier, DeviceFilterConfig>((ref) {
   return DeviceFilterNotifier(ref);
@@ -45,9 +32,6 @@ final deviceFilterConfigProvider =
 
 class DeviceFilterNotifier extends StateNotifier<DeviceFilterConfig> {
   DeviceFilterNotifier(this._ref) : super(const DeviceFilterConfig()) {
-    // Reconcile when the underlying option set changes (SSE refresh, devices
-    // join/leave, node drops). Clears any field that no longer has a matching
-    // option so the UI never shows an invisible active filter.
     _ref.listen<DeviceFilterOptions>(
       deviceFilterOptionsProvider,
       (_, options) => _reconcile(options),
@@ -61,88 +45,184 @@ class DeviceFilterNotifier extends StateNotifier<DeviceFilterConfig> {
     state = state.copyWith(searchQuery: value);
   }
 
-  /// Status flips are the widest-blast-radius change: Offline collapses every
-  /// other dimension because offline devices have no live SSID/band/RSSI/node.
   void setStatus(DeviceStatusFilter value) {
     if (value == DeviceStatusFilter.offline) {
       state = state.copyWith(
         status: value,
-        connection: DeviceConnectionFilter.all,
-        signal: DeviceSignalFilter.all,
-        nodeId: () => null,
-        ssidName: () => null,
-        band: () => null,
+        connections: const {},
+        signals: const {},
+        includeUnknownSignal: false,
+        nodeIds: () => const {},
+        ssidNames: () => const {},
+        bands: () => const {},
       );
       return;
     }
     state = state.copyWith(status: value);
   }
 
-  /// Picking Ethernet invalidates every WiFi-only dimension; picking WiFi or
-  /// All does not need to clear anything (Ethernet filter was never gating
-  /// them).
-  void setConnection(DeviceConnectionFilter value) {
-    if (value == DeviceConnectionFilter.ethernet) {
+  void setConnections(Set<ConnectionType> values) {
+    final isEthernetOnly =
+        values.length == 1 && values.contains(ConnectionType.wired);
+    if (isEthernetOnly) {
       state = state.copyWith(
-        connection: value,
-        signal: DeviceSignalFilter.all,
-        ssidName: () => null,
-        band: () => null,
+        connections: values,
+        signals: const {},
+        includeUnknownSignal: false,
+        ssidNames: () => const {},
+        bands: () => const {},
       );
       return;
     }
-    state = state.copyWith(connection: value);
+    state = state.copyWith(connections: values);
   }
 
-  void setSignal(DeviceSignalFilter value) {
-    state = state.copyWith(signal: value);
+  void toggleConnection(ConnectionType type) {
+    var next = Set<ConnectionType>.from(state.connections);
+    if (next.contains(type)) {
+      next.remove(type);
+    } else {
+      next.add(type);
+    }
+    setConnections(next);
   }
 
-  void setNodeId(String? value) {
-    state = state.copyWith(nodeId: () => value);
+  void setSignals(Set<DeviceSignalLevel> values) {
+    state = state.copyWith(signals: values);
   }
 
-  void setSsidName(String? value) {
-    state = state.copyWith(ssidName: () => value);
+  void toggleSignal(DeviceSignalLevel level) {
+    var next = Set<DeviceSignalLevel>.from(state.signals);
+    if (next.contains(level)) {
+      next.remove(level);
+    } else {
+      next.add(level);
+    }
+    state = state.copyWith(signals: next);
   }
 
-  void setBand(String? value) {
-    state = state.copyWith(band: () => value);
+  void setIncludeUnknownSignal(bool value) {
+    state = state.copyWith(includeUnknownSignal: value);
+  }
+
+  void setNodeIds(Set<String> values) {
+    state = state.copyWith(nodeIds: () => values);
+  }
+
+  void toggleNodeId(String nodeId) {
+    var next = Set<String>.from(state.nodeIds);
+    if (next.contains(nodeId)) {
+      next.remove(nodeId);
+    } else {
+      next.add(nodeId);
+    }
+    state = state.copyWith(nodeIds: () => next);
+  }
+
+  void setSsidNames(Set<String> values) {
+    state = state.copyWith(ssidNames: () => values);
+  }
+
+  void toggleSsidName(String ssid) {
+    var next = Set<String>.from(state.ssidNames);
+    if (next.contains(ssid)) {
+      next.remove(ssid);
+    } else {
+      next.add(ssid);
+    }
+    state = state.copyWith(ssidNames: () => next);
+  }
+
+  void setBands(Set<String> values) {
+    state = state.copyWith(bands: () => values);
+  }
+
+  void toggleBand(String band) {
+    var next = Set<String>.from(state.bands);
+    if (next.contains(band)) {
+      next.remove(band);
+    } else {
+      next.add(band);
+    }
+    state = state.copyWith(bands: () => next);
+  }
+
+  void setDeviceCategories(Set<DeviceCategory> values) {
+    state = state.copyWith(deviceCategories: values);
+  }
+
+  void toggleDeviceCategory(DeviceCategory category) {
+    var next = Set<DeviceCategory>.from(state.deviceCategories);
+    if (next.contains(category)) {
+      next.remove(category);
+    } else {
+      next.add(category);
+    }
+    state = state.copyWith(deviceCategories: next);
+  }
+
+  void setPrivateMac(PrivateMacFilter value) {
+    state = state.copyWith(privateMac: value);
   }
 
   void clearAll() {
     state = state.copyWith(
       searchQuery: '',
       status: DeviceStatusFilter.all,
-      connection: DeviceConnectionFilter.all,
-      signal: DeviceSignalFilter.all,
-      nodeId: () => null,
-      ssidName: () => null,
-      band: () => null,
+      connections: const {},
+      deviceCategories: const {},
+      privateMac: PrivateMacFilter.all,
+      signals: const {},
+      includeUnknownSignal: false,
+      nodeIds: () => const {},
+      ssidNames: () => const {},
+      bands: () => const {},
     );
   }
 
   void _reconcile(DeviceFilterOptions options) {
     var next = state;
-    if (next.nodeId != null &&
-        !options.nodes.any((n) => n.deviceId == next.nodeId)) {
-      next = next.copyWith(nodeId: () => null);
+
+    if (next.nodeIds.isNotEmpty) {
+      final validNodeIds = options.nodes.map((n) => n.deviceId).toSet();
+      final filtered = next.nodeIds.intersection(validNodeIds);
+      if (filtered.length != next.nodeIds.length) {
+        next = next.copyWith(nodeIds: () => filtered);
+      }
     }
-    if (next.ssidName != null && !options.ssids.contains(next.ssidName)) {
-      next = next.copyWith(ssidName: () => null);
+
+    if (next.ssidNames.isNotEmpty) {
+      final validSsids = options.ssids.toSet();
+      final filtered = next.ssidNames.intersection(validSsids);
+      if (filtered.length != next.ssidNames.length) {
+        next = next.copyWith(ssidNames: () => filtered);
+      }
     }
-    if (next.band != null && !options.bands.contains(next.band)) {
-      next = next.copyWith(band: () => null);
+
+    if (next.bands.isNotEmpty) {
+      final validBands = options.bands.toSet();
+      final filtered = next.bands.intersection(validBands);
+      if (filtered.length != next.bands.length) {
+        next = next.copyWith(bands: () => filtered);
+      }
     }
-    if (next.signal == DeviceSignalFilter.unknown &&
-        !options.hasUnknownSignalDevices) {
-      next = next.copyWith(signal: DeviceSignalFilter.all);
+
+    if (next.includeUnknownSignal && !options.hasUnknownSignalDevices) {
+      next = next.copyWith(includeUnknownSignal: false);
     }
+
+    if (next.deviceCategories.isNotEmpty) {
+      final validCategories = options.deviceCategories.toSet();
+      final filtered = next.deviceCategories.intersection(validCategories);
+      if (filtered.length != next.deviceCategories.length) {
+        next = next.copyWith(deviceCategories: filtered);
+      }
+    }
+
     if (next != state) state = next;
   }
 }
 
-/// Available filter options derived from current device data.
 final deviceFilterOptionsProvider = Provider<DeviceFilterOptions>((ref) {
   final data = ref.watch(devicesDataProvider).valueOrNull;
   if (data == null) return const DeviceFilterOptions();
@@ -163,6 +243,11 @@ final deviceFilterOptionsProvider = Provider<DeviceFilterOptions>((ref) {
         .toSet()
         .toList()
       ..sort(),
+    deviceCategories: devices
+        .map((d) => DeviceClassifier.classify(hostname: d.hostName, mac: d.mac))
+        .toSet()
+        .toList()
+      ..sort((a, b) => a.index.compareTo(b.index)),
     hasUnknownSignalDevices:
         devices.any((d) => d.isWifi && d.signalStrength == null),
   );
@@ -185,47 +270,84 @@ bool _matches(ClientDevice device, DeviceFilterConfig filter) {
     return false;
   }
 
-  // Connection type (WiFi vs. Ethernet).
-  if (filter.connection == DeviceConnectionFilter.wifi && !device.isWifi) {
-    return false;
-  }
-  if (filter.connection == DeviceConnectionFilter.ethernet && device.isWifi) {
-    return false;
-  }
-
-  // Node. Offline devices lose their parentNodeId (mesh STA table only lists
-  // currently associated clients), so node filter must pass them through —
-  // otherwise Status=All + Node=X would silently drop every offline device.
-  if (filter.nodeId != null &&
-      device.isActive &&
-      device.parentNodeId != filter.nodeId) {
-    return false;
-  }
-
-  // Signal. Ethernet and null-RSSI WiFi devices pass through when a specific
-  // level is selected; `unknown` is the explicit opt-in bucket for null-RSSI
-  // WiFi devices.
-  if (filter.signal != DeviceSignalFilter.all) {
-    if (filter.signal == DeviceSignalFilter.unknown) {
-      if (!device.isWifi || device.signalStrength != null) return false;
-    } else if (device.isWifi && device.signalStrength != null) {
-      if (signalBucketOf(device.signalStrength) != filter.signal) return false;
+  // Connection type (multi-select OR)
+  if (filter.connections.isNotEmpty) {
+    final deviceType =
+        device.isWifi ? ConnectionType.wifi : ConnectionType.wired;
+    if (!filter.connections.contains(deviceType)) {
+      return false;
     }
   }
 
-  // SSID — WiFi-only dimension, Ethernet passes through.
-  if (filter.ssidName != null &&
-      device.isWifi &&
-      device.ssidName != filter.ssidName) {
-    return false;
+  // BUG FIX: Exclude Ethernet when WiFi-specific filters are active
+  if (filter.hasWifiOnlyFilter && !device.isWifi) {
+    if (!filter.connections.contains(ConnectionType.wired)) {
+      return false;
+    }
   }
 
-  // Band — WiFi-only dimension, Ethernet passes through.
-  if (filter.band != null && device.isWifi && device.band != filter.band) {
-    return false;
+  // Device category (multi-select OR)
+  if (filter.deviceCategories.isNotEmpty) {
+    final category =
+        DeviceClassifier.classify(hostname: device.hostName, mac: device.mac);
+    if (!filter.deviceCategories.contains(category)) {
+      return false;
+    }
   }
 
-  // Search query — match hostname, MAC, or IP (case-insensitive).
+  // Private MAC filter
+  if (filter.privateMac != PrivateMacFilter.all) {
+    final isPrivate = OuiLookup.isRandomizedMac(device.mac);
+    if (filter.privateMac == PrivateMacFilter.privateOnly && !isPrivate) {
+      return false;
+    }
+    if (filter.privateMac == PrivateMacFilter.publicOnly && isPrivate) {
+      return false;
+    }
+  }
+
+  // Node (multi-select OR). Offline devices pass through.
+  if (filter.nodeIds.isNotEmpty && device.isActive) {
+    if (device.parentNodeId == null ||
+        !filter.nodeIds.contains(device.parentNodeId)) {
+      return false;
+    }
+  }
+
+  // Signal (multi-select OR + unknown toggle)
+  if (filter.signals.isNotEmpty || filter.includeUnknownSignal) {
+    if (device.isWifi) {
+      if (device.signalStrength == null) {
+        if (!filter.includeUnknownSignal) return false;
+      } else {
+        // Device has known signal strength
+        if (filter.signals.isEmpty) {
+          // Only unknown signals requested, exclude devices with known signal
+          return false;
+        }
+        if (!filter.signals.contains(signalLevelOf(device.signalStrength!))) {
+          return false;
+        }
+      }
+    }
+  }
+
+  // SSID (multi-select OR)
+  if (filter.ssidNames.isNotEmpty && device.isWifi) {
+    if (device.ssidName == null ||
+        !filter.ssidNames.contains(device.ssidName)) {
+      return false;
+    }
+  }
+
+  // Band (multi-select OR)
+  if (filter.bands.isNotEmpty && device.isWifi) {
+    if (device.band == null || !filter.bands.contains(device.band)) {
+      return false;
+    }
+  }
+
+  // Search query
   if (filter.searchQuery.isNotEmpty) {
     final q = filter.searchQuery.toLowerCase();
     final matchesHostName = device.hostName.toLowerCase().contains(q);

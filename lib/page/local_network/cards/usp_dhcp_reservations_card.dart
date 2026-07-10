@@ -12,7 +12,7 @@ import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/_shared/components/usp_mutation_helper.dart';
 import 'package:privacy_gui/page/_shared/components/card_skeleton.dart';
 import 'package:privacy_gui/page/_shared/components/dashboard_card_template.dart';
-import 'package:privacy_gui/page/dashboard/views/dialogs/dhcp_reservation_dialog.dart';
+import 'package:privacy_gui/page/dhcp/views/dialogs/dhcp_reservation_edit_dialog.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 class UspDhcpReservationsCard extends ConsumerWidget {
@@ -24,7 +24,8 @@ class UspDhcpReservationsCard extends ConsumerWidget {
     if (dhcpData == null) return const CardSkeleton.list(rows: 3);
     final reservations = dhcpData.reservationModels;
     final clients = dhcpData.clientModels;
-    final activeClients = clients.where((c) => c.active).toList();
+    // Dashboard shows only online clients (based on Hosts.Active, not DHCP lease).
+    final onlineClients = clients.where((c) => c.isOnline == true).toList();
     final isLoading = ref.watch(uspMutationLoadingProvider) == 'dhcp';
 
     return DashboardCardTemplate.multiSection(
@@ -34,7 +35,7 @@ class UspDhcpReservationsCard extends ConsumerWidget {
         onTap: isLoading ? null : () => _showAddDhcpDialog(context, ref),
       ),
       detailRoute: RouteNamed.uspDhcpDetail,
-      itemCount: reservations.length + activeClients.length,
+      itemCount: reservations.length + onlineClients.length,
       sections: [
         CardSection(
           title: loc(context).reservations,
@@ -52,14 +53,14 @@ class UspDhcpReservationsCard extends ConsumerWidget {
         ),
         CardSection(
           title: loc(context).activeLeases,
-          titleBadge: AppText.labelMedium('${activeClients.length}'),
-          isEmpty: clients.isEmpty,
+          titleBadge: AppText.labelMedium('${onlineClients.length}'),
+          isEmpty: onlineClients.isEmpty,
           emptyMessage: 'No DHCP clients',
           content: Column(
             children: [
-              for (var i = 0; i < clients.length; i++) ...[
-                _buildClientRow(context, clients[i]),
-                if (i < clients.length - 1) AppGap.sm(),
+              for (var i = 0; i < onlineClients.length; i++) ...[
+                _buildClientRow(context, onlineClients[i]),
+                if (i < onlineClients.length - 1) AppGap.sm(),
               ],
             ],
           ),
@@ -104,7 +105,7 @@ class UspDhcpReservationsCard extends ConsumerWidget {
         height: 8,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: client.active
+          color: client.isOnline == true
               ? (appColors?.semanticSuccess ?? Colors.green)
               : colorScheme.outline,
         ),
@@ -125,9 +126,13 @@ class UspDhcpReservationsCard extends ConsumerWidget {
   }
 
   Future<void> _showAddDhcpDialog(BuildContext context, WidgetRef ref) async {
+    final options = _buildDeviceOptions(ref);
     final result = await showAppDialog<({String mac, String ip, bool enable})>(
       context: context,
-      builder: (_) => const DhcpReservationDialog(),
+      builder: (_) => DhcpReservationEditDialog(
+        macDeviceOptions: options.mac,
+        ipDeviceOptions: options.ip,
+      ),
     );
     if (result == null || !context.mounted) return;
     await performUspMutation(
@@ -142,6 +147,31 @@ class UspDhcpReservationsCard extends ConsumerWidget {
               ),
       successMessage: loc(context).reservationAdded,
     );
+  }
+
+  ({List<AppAutoCompleteOption> mac, List<AppAutoCompleteOption> ip})
+      _buildDeviceOptions(WidgetRef ref) {
+    final devices =
+        ref.read(uspDhcpReservationsProvider.notifier).deviceOptions();
+    final macOptions = devices
+        .where((d) => d.mac.isNotEmpty)
+        .map((d) => AppAutoCompleteOption(
+              label: d.name,
+              value: d.mac,
+              subtitle: d.ip,
+              isActive: d.isActive,
+            ))
+        .toList();
+    final ipOptions = devices
+        .where((d) => d.ip.isNotEmpty)
+        .map((d) => AppAutoCompleteOption(
+              label: d.name,
+              value: d.ip,
+              subtitle: d.mac,
+              isActive: d.isActive,
+            ))
+        .toList();
+    return (mac: macOptions, ip: ipOptions);
   }
 
   Future<void> _confirmDeleteDhcp(BuildContext context, WidgetRef ref,

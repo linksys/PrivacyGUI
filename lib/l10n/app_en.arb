@@ -219,6 +219,8 @@
   "invalidDestinationMacAddress": "Invalid destination MAC address",
   "invalidDns": "Invalid DNS",
   "invalidGatewayIpAddress": "Invalid gateway IP address",
+  "gatewayMustBeWithinLanSubnet": "Gateway must be within LAN subnet",
+  "gatewayMustBeOutsideLanSubnet": "Gateway must be outside LAN subnet",
   "invalidInput": "Invalid input",
   "invalidIpAddress": "Invalid IP address",
   "invalidMACAddress": "Invalid MAC address.",
@@ -394,9 +396,11 @@
   "prefix": "Prefix",
   "prefixLength": "Prefix length",
   "print": "Print",
+  "privateMac": "Private",
   "privacyAndSecurity": "Privacy & Security",
   "processing": "Processing...",
   "protocol": "Protocol",
+  "publicMac": "Public",
   "rebootChildTitle": "Reboot the node and all its child/s",
   "rebootOk": "Yes, Reboot All",
   "rebootOkSingle": "Yes, Reboot",
@@ -868,6 +872,8 @@
   "internalPortRequired": "Internal port is required",
   "invalidIpv4Format": "Invalid IPv4 address format",
   "reservedIpNotAllowed": "Reserved IP address is not allowed",
+  "duplicateMacAddress": "This MAC address is already reserved",
+  "duplicateIpAddress": "This IP address is already reserved",
   "connectedDevices": "Connected Devices",
   "deviceNotFound": "Device not found",
   "networkConnections": "Network Connections ({count})",
@@ -1397,6 +1403,9 @@
       }
     }
   },
+  "privateMacWarningTitle": "Some devices use a private Wi-Fi address",
+  "privateMacWarningDesc": "The device(s) below use a private (randomized) Wi-Fi address. Because this address changes over time, they may be blocked after it rotates — even the one you're using now. To stay connected, turn off \"Private Wi-Fi Address\" for these devices before enabling Instant Privacy.",
+  "privateMacLabel": "Private",
   "disableInstantPrivacyTitle": "Disable Instant Privacy?",
   "disableInstantPrivacyDesc": "All devices will be able to connect freely to your network.",
   "addDeviceManually": "Add device manually",
@@ -1693,5 +1702,36 @@
         "type": "int"
       }
     }
-  }
+  },
+  "bridgeReconnectHint": "After saving, reconnect to your router at {url}.",
+  "@bridgeReconnectHint": {
+    "description": "Bold inline hint shown while editing when Bridge Mode is selected. {url} is https://<hostname>.local",
+    "placeholders": {
+      "url": {
+        "type": "Object"
+      }
+    }
+  },
+  "bridgeRedirectTitle": "Reconnect to your router",
+  "bridgeRedirectMessage": "Your router is now a transparent bridge and no longer hands out local IP addresses. Reconnect to it at {url}.",
+  "@bridgeRedirectMessage": {
+    "description": "Body of the dialog shown after switching to Bridge Mode. {url} is https://<hostname>.local",
+    "placeholders": {
+      "url": {
+        "type": "Object"
+      }
+    }
+  },
+  "bridgeRedirectButton": "Go to router",
+  "lanIpRedirectTitle": "Reconnect to your router",
+  "lanIpRedirectMessage": "Your router's IP address has changed. Reconnect to it at {url}. You may need to wait a moment for your device to obtain a new address.",
+  "@lanIpRedirectMessage": {
+    "description": "Body of the dialog shown after changing the router LAN IP address. {url} is https://<hostname>.local",
+    "placeholders": {
+      "url": {
+        "type": "Object"
+      }
+    }
+  },
+  "lanIpRedirectButton": "Go to router"
 }
