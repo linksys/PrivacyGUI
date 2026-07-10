@@ -53,18 +53,10 @@ class _UspOptionalSectionState extends ConsumerState<UspOptionalSection> {
     super.dispose();
   }
 
-  int get _mtuMin => 576;
-  int get _mtuMax {
-    final type = widget.state.edited.connectionType;
-    // MTU max varies by connection type due to protocol overhead
-    return switch (type) {
-      UspWanConnectionType.pppoe => 1492, // 1500 - 8 (PPP header)
-      UspWanConnectionType.pptp ||
-      UspWanConnectionType.l2tp =>
-        1460, // tunnel overhead
-      _ => 1500, // Ethernet standard (DHCP, Static, Bridge)
-    };
-  }
+  // MTU range is owned by [UspWanConnectionType] (single source of truth,
+  // shared with the notifier's clamp on type switch).
+  int get _mtuMin => widget.state.edited.connectionType.mtuMin;
+  int get _mtuMax => widget.state.edited.connectionType.mtuMax;
 
   String? _getMtuError(BuildContext context, int mtu) {
     if (mtu < _mtuMin) return loc(context).mtuMinError(_mtuMin);

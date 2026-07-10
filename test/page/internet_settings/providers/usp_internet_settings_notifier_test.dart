@@ -181,6 +181,67 @@ void main() {
       container.dispose();
     });
 
+    test('updateConnectionType to PPPoE clamps over-limit MTU to 1492',
+        () async {
+      when(() => mockService.fetchSettings())
+          .thenAnswer((_) async => testFetchResult);
+      final container = createContainer();
+      await Future.delayed(Duration.zero);
+
+      // Initial MTU is 1500 (DHCP), which exceeds PPPoE's 1492 max.
+      container
+          .read(uspInternetSettingsProvider.notifier)
+          .updateConnectionType(UspWanConnectionType.pppoe);
+
+      final form =
+          container.read(uspInternetSettingsProvider).settings.current.form;
+      expect(form.connectionType, UspWanConnectionType.pppoe);
+      expect(form.mtu, 1492);
+      container.dispose();
+    });
+
+    test('updateConnectionType from bridge auto-fills MTU with type max',
+        () async {
+      when(() => mockService.fetchSettings())
+          .thenAnswer((_) async => testFetchResult);
+      final container = createContainer();
+      await Future.delayed(Duration.zero);
+
+      final notifier = container.read(uspInternetSettingsProvider.notifier);
+      // Bridge sets mtu = 0 (auto)...
+      notifier.updateConnectionType(UspWanConnectionType.bridge);
+      expect(
+          container.read(uspInternetSettingsProvider).settings.current.form.mtu,
+          0);
+
+      // ...switching back to DHCP must not leave MTU empty; 0 is out of range
+      // so it falls back to the type max (1500).
+      notifier.updateConnectionType(UspWanConnectionType.dhcp);
+      final form =
+          container.read(uspInternetSettingsProvider).settings.current.form;
+      expect(form.connectionType, UspWanConnectionType.dhcp);
+      expect(form.mtu, 1500);
+      container.dispose();
+    });
+
+    test('updateConnectionType keeps an in-range MTU unchanged', () async {
+      when(() => mockService.fetchSettings())
+          .thenAnswer((_) async => testFetchResult);
+      final container = createContainer();
+      await Future.delayed(Duration.zero);
+
+      final notifier = container.read(uspInternetSettingsProvider.notifier);
+      // 789 is valid for both DHCP and PPPoE (issue #1083 "last changed value").
+      notifier.updateField((f) => f.copyWith(mtu: 789));
+      notifier.updateConnectionType(UspWanConnectionType.pppoe);
+
+      final form =
+          container.read(uspInternetSettingsProvider).settings.current.form;
+      expect(form.connectionType, UspWanConnectionType.pppoe);
+      expect(form.mtu, 789);
+      container.dispose();
+    });
+
     test('isDirty after field update, clean after revert', () async {
       when(() => mockService.fetchSettings())
           .thenAnswer((_) async => testFetchResult);
