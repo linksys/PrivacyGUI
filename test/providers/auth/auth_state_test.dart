@@ -47,7 +47,7 @@ void main() {
     });
 
     test('fromJson defaults to LoginType.none for missing type', () {
-      final state = AuthState.fromJson({});
+      final state = AuthState.fromJson(const {});
       expect(state.loginType, LoginType.none);
     });
 
