@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
-import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
+import 'package:privacy_gui/page/_shared/models/client_device.dart';
+import 'package:privacy_gui/page/_shared/models/mesh_network.dart';
+import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 import 'package:privacy_gui/page/dashboard/mascot/health/dimensions/devices_dimension.dart';
 import 'package:privacy_gui/page/dashboard/mascot/health/health_dimension.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
@@ -15,18 +17,28 @@ void main() {
       dimension = DevicesHealthDimension();
     });
 
-    DeviceUIModel createDevice({
+    ClientDevice createDevice({
       required String mac,
       required bool isActive,
-      String? deviceRole,
     }) {
-      return DeviceUIModel(
+      return ClientDevice(
         mac: mac,
         ip: '192.168.1.10',
         hostName: 'device-$mac',
         isActive: isActive,
-        isWifi: true,
-        deviceRole: deviceRole,
+        connectionType: ConnectionType.wifi,
+      );
+    }
+
+    DevicesData createDevicesData(List<ClientDevice> clients) {
+      return DevicesData(
+        meshNetwork: MeshNetwork(
+          master: MasterNode(
+            deviceId: 'GATEWAY',
+            model: 'MR7500',
+            connectedClients: clients,
+          ),
+        ),
       );
     }
 
@@ -41,7 +53,7 @@ void main() {
 
       test('returns 100 when no devices', () {
         final context = HealthEvaluationContext(
-          devices: const DevicesData(deviceModels: []),
+          devices: createDevicesData([]),
         );
 
         final score = dimension.evaluate(context);
@@ -51,12 +63,10 @@ void main() {
 
       test('returns 100 when all devices online', () {
         final context = HealthEvaluationContext(
-          devices: DevicesData(
-            deviceModels: [
-              createDevice(mac: 'AA:BB:CC:DD:EE:01', isActive: true),
-              createDevice(mac: 'AA:BB:CC:DD:EE:02', isActive: true),
-            ],
-          ),
+          devices: createDevicesData([
+            createDevice(mac: 'AA:BB:CC:DD:EE:01', isActive: true),
+            createDevice(mac: 'AA:BB:CC:DD:EE:02', isActive: true),
+          ]),
         );
 
         final score = dimension.evaluate(context);
@@ -66,15 +76,13 @@ void main() {
 
       test('returns 80 when > 80% online', () {
         final context = HealthEvaluationContext(
-          devices: DevicesData(
-            deviceModels: [
-              createDevice(mac: 'AA:BB:CC:DD:EE:01', isActive: true),
-              createDevice(mac: 'AA:BB:CC:DD:EE:02', isActive: true),
-              createDevice(mac: 'AA:BB:CC:DD:EE:03', isActive: true),
-              createDevice(mac: 'AA:BB:CC:DD:EE:04', isActive: true),
-              createDevice(mac: 'AA:BB:CC:DD:EE:05', isActive: false), // 80%
-            ],
-          ),
+          devices: createDevicesData([
+            createDevice(mac: 'AA:BB:CC:DD:EE:01', isActive: true),
+            createDevice(mac: 'AA:BB:CC:DD:EE:02', isActive: true),
+            createDevice(mac: 'AA:BB:CC:DD:EE:03', isActive: true),
+            createDevice(mac: 'AA:BB:CC:DD:EE:04', isActive: true),
+            createDevice(mac: 'AA:BB:CC:DD:EE:05', isActive: false), // 80%
+          ]),
         );
 
         final score = dimension.evaluate(context);
@@ -84,14 +92,12 @@ void main() {
 
       test('returns 60 when > 50% online', () {
         final context = HealthEvaluationContext(
-          devices: DevicesData(
-            deviceModels: [
-              createDevice(mac: 'AA:BB:CC:DD:EE:01', isActive: true),
-              createDevice(mac: 'AA:BB:CC:DD:EE:02', isActive: true),
-              createDevice(mac: 'AA:BB:CC:DD:EE:03', isActive: false),
-              createDevice(mac: 'AA:BB:CC:DD:EE:04', isActive: false), // 50%
-            ],
-          ),
+          devices: createDevicesData([
+            createDevice(mac: 'AA:BB:CC:DD:EE:01', isActive: true),
+            createDevice(mac: 'AA:BB:CC:DD:EE:02', isActive: true),
+            createDevice(mac: 'AA:BB:CC:DD:EE:03', isActive: false),
+            createDevice(mac: 'AA:BB:CC:DD:EE:04', isActive: false), // 50%
+          ]),
         );
 
         final score = dimension.evaluate(context);
@@ -100,20 +106,12 @@ void main() {
       });
 
       test('excludes mesh nodes from client count', () {
+        // Mesh nodes are tracked separately in MeshNetwork.allNodes,
+        // so we only need to pass client devices to the master's connectedClients
         final context = HealthEvaluationContext(
-          devices: DevicesData(
-            deviceModels: [
-              createDevice(mac: 'AA:BB:CC:DD:EE:01', isActive: true),
-              createDevice(
-                  mac: 'AA:BB:CC:DD:EE:02',
-                  isActive: true,
-                  deviceRole: 'master'),
-              createDevice(
-                  mac: 'AA:BB:CC:DD:EE:03',
-                  isActive: true,
-                  deviceRole: 'slave'),
-            ],
-          ),
+          devices: createDevicesData([
+            createDevice(mac: 'AA:BB:CC:DD:EE:01', isActive: true),
+          ]),
         );
 
         final score = dimension.evaluate(context);
@@ -125,12 +123,10 @@ void main() {
     group('getSummary', () {
       test('returns All Online when all devices active', () {
         final context = HealthEvaluationContext(
-          devices: DevicesData(
-            deviceModels: [
-              createDevice(mac: 'AA:BB:CC:DD:EE:01', isActive: true),
-              createDevice(mac: 'AA:BB:CC:DD:EE:02', isActive: true),
-            ],
-          ),
+          devices: createDevicesData([
+            createDevice(mac: 'AA:BB:CC:DD:EE:01', isActive: true),
+            createDevice(mac: 'AA:BB:CC:DD:EE:02', isActive: true),
+          ]),
         );
 
         final summary = dimension.getSummary(context);
@@ -141,7 +137,7 @@ void main() {
 
       test('returns No devices when empty', () {
         final context = HealthEvaluationContext(
-          devices: const DevicesData(deviceModels: []),
+          devices: createDevicesData([]),
         );
 
         final summary = dimension.getSummary(context);

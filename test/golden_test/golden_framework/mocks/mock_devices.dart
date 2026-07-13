@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
+import 'package:privacy_gui/page/_shared/models/client_device.dart';
 import 'package:privacy_gui/page/_shared/models/dhcp_reservation_ui_model.dart';
+import 'package:privacy_gui/page/_shared/models/mesh_network.dart';
+import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 import 'package:privacy_gui/page/devices/providers/device_detail_provider.dart';
 import 'package:privacy_gui/page/devices/providers/device_filter_provider.dart';
 import 'package:privacy_gui/page/devices/providers/device_filter_state.dart';
@@ -25,15 +27,30 @@ class FixedDhcpDataNotifier extends DhcpDataNotifier {
   Future<DhcpData> build() async => _fixedData;
 }
 
+/// Creates a minimal MeshNetwork from a list of ClientDevices.
+MeshNetwork _meshNetworkFromClients(List<ClientDevice> clients) {
+  return MeshNetwork(
+    master: MasterNode(
+      deviceId: 'GATEWAY',
+      model: 'Test Router',
+      manufacturer: 'Test',
+      serialNumber: 'SN123',
+      softwareVersion: '1.0.0',
+      connectedClients: clients,
+    ),
+    slaves: [],
+  );
+}
+
 List<Override> devicesListOverrides({
-  required List<DeviceUIModel> devices,
+  required List<ClientDevice> devices,
   DeviceFilterConfig filter = const DeviceFilterConfig(),
   DeviceFilterOptions options = const DeviceFilterOptions(),
 }) =>
     [
       devicesDataProvider.overrideWith(
         () => FixedDevicesDataNotifier(
-          DevicesData(deviceModels: devices),
+          DevicesData(meshNetwork: _meshNetworkFromClients(devices)),
         ),
       ),
       filteredDeviceListProvider.overrideWith((ref) => devices),
@@ -57,7 +74,21 @@ List<Override> deviceDetailOverrides({
         (ref, mac) => detail,
       ),
       devicesDataProvider.overrideWith(
-        () => FixedDevicesDataNotifier(const DevicesData()),
+        () => FixedDevicesDataNotifier(
+          DevicesData(
+            meshNetwork: MeshNetwork(
+              master: MasterNode(
+                deviceId: 'GATEWAY',
+                model: 'Test Router',
+                manufacturer: 'Test',
+                serialNumber: 'SN123',
+                softwareVersion: '1.0.0',
+                connectedClients: [],
+              ),
+              slaves: [],
+            ),
+          ),
+        ),
       ),
       dhcpDataProvider.overrideWith(
         () => FixedDhcpDataNotifier(

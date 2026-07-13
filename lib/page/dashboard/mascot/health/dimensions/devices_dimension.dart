@@ -64,7 +64,7 @@ class DevicesHealthDimension extends HealthDimension {
 
     final online = devices.onlineClientCount;
     final total = devices.totalClientCount;
-    final meshNodes = devices.nodeModels.where((n) => !n.isMaster).length;
+    final meshNodes = devices.nodes.where((n) => !n.isMaster).length;
 
     String status;
     if (total == 0) {

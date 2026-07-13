@@ -64,9 +64,9 @@ class EthernetDataNotifier extends AsyncNotifier<EthernetData> {
   Future<EthernetData> _fetch() async {
     final svc = ref.read(uspEthernetDataServiceProvider);
     final devicesData = ref.read(devicesDataProvider).valueOrNull;
-    final deviceModels = devicesData?.deviceModels ?? [];
+    final devices = devicesData?.clientDevices ?? [];
 
-    final result = await svc.fetch(deviceModels: deviceModels);
+    final result = await svc.fetch(deviceModels: devices);
 
     return EthernetData(ethernetPortModels: result.portModels);
   }

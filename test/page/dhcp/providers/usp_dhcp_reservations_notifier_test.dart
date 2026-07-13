@@ -3,8 +3,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
-import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
+import 'package:privacy_gui/page/_shared/models/backhaul_info.dart';
+import 'package:privacy_gui/page/_shared/models/client_device.dart';
 import 'package:privacy_gui/page/_shared/models/dhcp_reservation_ui_model.dart';
+import 'package:privacy_gui/page/_shared/models/mesh_network.dart';
+import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/dhcp/providers/usp_dhcp_reservations_notifier.dart';
 import 'package:privacy_gui/page/dhcp/services/usp_dhcp_service.dart';
@@ -376,8 +379,8 @@ void main() {
 
     test('deviceOptions maps client devices to pure data', () async {
       when(() => mockService.fetchReservations()).thenAnswer((_) async => []);
-      final container = createContainerWithDevices(DevicesData(
-        deviceModels: [
+      final container = createContainerWithDevices(_devicesData(
+        clients: [
           _device(
             mac: 'AA:BB:CC:DD:EE:01',
             ip: '192.168.1.10',
@@ -403,8 +406,8 @@ void main() {
 
     test('deviceOptions name falls back to hostName then mac', () async {
       when(() => mockService.fetchReservations()).thenAnswer((_) async => []);
-      final container = createContainerWithDevices(DevicesData(
-        deviceModels: [
+      final container = createContainerWithDevices(_devicesData(
+        clients: [
           _device(mac: 'AA:BB:CC:DD:EE:01', ip: '192.168.1.10', hostName: 'pc'),
           _device(mac: 'AA:BB:CC:DD:EE:02', ip: '192.168.1.11'),
         ],
@@ -422,18 +425,26 @@ void main() {
 
     test('deviceOptions excludes mesh nodes (master/slave)', () async {
       when(() => mockService.fetchReservations()).thenAnswer((_) async => []);
-      final container = createContainerWithDevices(DevicesData(
-        deviceModels: [
+      // Clients (on master OR on a slave) surface as options; the mesh nodes
+      // themselves (master/slave NodeEntity identities) must NOT. Exclusion is
+      // structural: nodes live in MeshNetwork.master/.slaves, never in any
+      // node's connectedClients, so they can never leak into clientDevices.
+      const slaveNodeMac = 'AA:BB:CC:DD:EE:03'; // the slave NODE's own id
+      final container = createContainerWithDevices(_devicesData(
+        clients: [
           _device(
-              mac: 'AA:BB:CC:DD:EE:01',
-              ip: '192.168.1.10',
-              deviceRole: 'client'),
-          _device(
-              mac: 'AA:BB:CC:DD:EE:02',
-              ip: '192.168.1.1',
-              deviceRole: 'master'),
-          _device(
-              mac: 'AA:BB:CC:DD:EE:03', ip: '192.168.1.2', deviceRole: 'slave'),
+              mac: 'AA:BB:CC:DD:EE:01', ip: '192.168.1.10'), // master client
+        ],
+        slaves: [
+          SlaveNode(
+            deviceId: slaveNodeMac,
+            model: 'TestExtender',
+            backhaul: const BackhaulInfo(mediaType: 'Wi-Fi'),
+            // A client connected TO the slave — this IS a client and must surface.
+            connectedClients: [
+              _device(mac: 'AA:BB:CC:DD:EE:02', ip: '192.168.1.20'),
+            ],
+          ),
         ],
       ));
       await container.read(devicesDataProvider.future);
@@ -442,14 +453,17 @@ void main() {
       final options =
           container.read(uspDhcpReservationsProvider.notifier).deviceOptions();
 
-      expect(options, hasLength(1));
-      expect(options[0].mac, 'AA:BB:CC:DD:EE:01');
+      final optionMacs = options.map((o) => o.mac).toSet();
+      // Both the master client and the slave-connected client surface...
+      expect(optionMacs, {'AA:BB:CC:DD:EE:01', 'AA:BB:CC:DD:EE:02'});
+      // ...but the slave NODE's own identity must never appear as an option.
+      expect(optionMacs, isNot(contains(slaveNodeMac)));
       container.dispose();
     });
 
     test('deviceOptions returns empty when no devices', () async {
       when(() => mockService.fetchReservations()).thenAnswer((_) async => []);
-      final container = createContainerWithDevices(const DevicesData());
+      final container = createContainerWithDevices(_devicesData());
       await container.read(devicesDataProvider.future);
       await Future.delayed(Duration.zero);
 
@@ -472,22 +486,40 @@ class _TestDevicesDataNotifier extends DevicesDataNotifier {
   Future<DevicesData> build() async => _data;
 }
 
-DeviceUIModel _device({
+ClientDevice _device({
   required String mac,
   required String ip,
   String hostName = '',
   String? friendlyName,
   bool isActive = true,
-  String? deviceRole,
 }) {
-  return DeviceUIModel(
+  return ClientDevice(
     mac: mac,
     ip: ip,
     hostName: hostName,
     isActive: isActive,
-    isWifi: false,
+    connectionType: ConnectionType.wired,
     friendlyName: friendlyName,
-    deviceRole: deviceRole,
+  );
+}
+
+/// Wraps client devices (and optional mesh nodes) into a [DevicesData] backed
+/// by a [MeshNetwork]. Client devices are attached to the master node so they
+/// surface via `devicesData.clientDevices`; mesh nodes are NOT clients and thus
+/// are never offered as reservation options.
+DevicesData _devicesData({
+  List<ClientDevice> clients = const [],
+  List<SlaveNode> slaves = const [],
+}) {
+  return DevicesData(
+    meshNetwork: MeshNetwork(
+      master: MasterNode(
+        deviceId: 'GATEWAY',
+        model: 'TestRouter',
+        connectedClients: clients,
+      ),
+      slaves: slaves,
+    ),
   );
 }
 

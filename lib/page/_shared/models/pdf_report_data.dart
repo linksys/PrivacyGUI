@@ -2,9 +2,9 @@ import 'package:privacy_gui/page/_shared/models/device_analytics_state.dart';
 import 'package:privacy_gui/page/_shared/models/ethernet_port_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/system_monitor_state.dart';
 import 'package:privacy_gui/page/_shared/models/traffic_analysis_state.dart';
-import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
+import 'package:privacy_gui/page/_shared/models/client_device.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_radio_ui_model.dart';
-import 'package:privacy_gui/page/topology/models/node_ui_model.dart';
+import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 import 'package:privacy_gui/page/_shared/models/dhcp_client_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/dhcp_reservation_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/lan_info_ui_model.dart';
@@ -78,11 +78,11 @@ class PdfReportData {
   /// WiFi radio models (from wifiDataProvider).
   final List<WifiRadioUIModel>? radioModels;
 
-  /// Device UI models (from devicesDataProvider).
-  final List<DeviceUIModel>? deviceModels;
+  /// Client devices (from devicesDataProvider.meshNetwork.allClients).
+  final List<ClientDevice>? clientDevices;
 
-  /// Node UI models (from devicesDataProvider).
-  final List<NodeUIModel>? nodeModels;
+  /// Mesh nodes (from devicesDataProvider.meshNetwork.allNodes).
+  final List<NodeEntity>? nodes;
 
   const PdfReportData({
     this.ethernetPortModels,
@@ -103,7 +103,7 @@ class PdfReportData {
     this.wanStatus,
     this.systemInfo,
     this.radioModels,
-    this.deviceModels,
-    this.nodeModels,
+    this.clientDevices,
+    this.nodes,
   });
 }
