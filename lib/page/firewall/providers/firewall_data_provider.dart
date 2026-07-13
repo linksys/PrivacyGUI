@@ -79,6 +79,15 @@ class FirewallData extends Equatable with DiagnosticLoggable {
         'ruleCount': ruleSummaries.length,
         'dmzModel': dmzModel,
       };
+
+  // Explicit props override for reliable equality comparison (includes
+  // ruleContext and the full rule/DMZ summary lists). namedProps is kept lean
+  // for diagnostic JSON output — deriving props from it would narrow equality
+  // to ruleSummaries.length and drop ruleContext/dmzSummaries, so a rule whose
+  // content changed without changing the count would not notify listeners.
+  @override
+  List<Object?> get props =>
+      [firewallModel, ruleContext, ruleSummaries, dmzModel, dmzSummaries];
 }
 
 // ---------------------------------------------------------------------------
