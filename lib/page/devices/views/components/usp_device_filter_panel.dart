@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
-import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
+import 'package:privacy_gui/page/_shared/models/client_device.dart';
 import 'package:privacy_gui/page/_shared/utils/device_classifier.dart';
 import 'package:privacy_gui/page/devices/providers/device_filter_provider.dart';
 import 'package:privacy_gui/page/devices/providers/device_filter_state.dart';
 import 'package:privacy_gui/page/devices/views/components/usp_signal_strength_indicator.dart';
 import 'package:privacy_gui/page/_shared/components/wifi_ui.dart';
-import 'package:ui_kit_library/ui_kit.dart';
+import 'package:ui_kit_library/ui_kit.dart' hide ConnectionType;
 
 String _signalLabel(BuildContext context, DeviceSignalLevel level) {
   final nodeLevel = nodeLevelOf(level);
@@ -299,17 +299,17 @@ class UspDeviceFilterPanel extends ConsumerWidget {
   }
 }
 
-Set<int> _connectionToIndices(Set<DeviceConnectionType> types) {
+Set<int> _connectionToIndices(Set<ConnectionType> types) {
   final indices = <int>{};
-  if (types.contains(DeviceConnectionType.wifi)) indices.add(0);
-  if (types.contains(DeviceConnectionType.wired)) indices.add(1);
+  if (types.contains(ConnectionType.wifi)) indices.add(0);
+  if (types.contains(ConnectionType.wired)) indices.add(1);
   return indices;
 }
 
-Set<DeviceConnectionType> _indicesToConnections(Set<int> indices) {
-  final types = <DeviceConnectionType>{};
-  if (indices.contains(0)) types.add(DeviceConnectionType.wifi);
-  if (indices.contains(1)) types.add(DeviceConnectionType.wired);
+Set<ConnectionType> _indicesToConnections(Set<int> indices) {
+  final types = <ConnectionType>{};
+  if (indices.contains(0)) types.add(ConnectionType.wifi);
+  if (indices.contains(1)) types.add(ConnectionType.wired);
   return types;
 }
 
@@ -555,17 +555,17 @@ class UspDeviceFilterChipBar extends ConsumerWidget {
         label: filter.connections.isEmpty
             ? loc(context).connection
             : filter.connections.length == 1
-                ? (filter.connections.first == DeviceConnectionType.wifi
+                ? (filter.connections.first == ConnectionType.wifi
                     ? loc(context).wifi
                     : loc(context).ethernet)
                 : '${loc(context).connection} (${filter.connections.length})',
         isActive: filter.connections.isNotEmpty,
-        onTap: () => _showMultiSelectPicker<DeviceConnectionType>(
+        onTap: () => _showMultiSelectPicker<ConnectionType>(
           context: context,
           title: loc(context).connection,
-          items: DeviceConnectionType.values,
+          items: ConnectionType.values,
           selected: filter.connections,
-          labelOf: (v) => v == DeviceConnectionType.wifi
+          labelOf: (v) => v == ConnectionType.wifi
               ? loc(context).wifi
               : loc(context).ethernet,
           onChanged: notifier.setConnections,

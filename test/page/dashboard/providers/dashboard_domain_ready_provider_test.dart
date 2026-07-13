@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/page/_shared/models/mesh_network.dart';
+import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_domain_ready_provider.dart';
@@ -37,7 +39,11 @@ class _FailSystemInfoNotifier extends SystemInfoDataNotifier {
 
 class _OkDevicesNotifier extends DevicesDataNotifier {
   @override
-  Future<DevicesData> build() async => DevicesData();
+  Future<DevicesData> build() async => DevicesData(
+        meshNetwork: MeshNetwork(
+          master: MasterNode(deviceId: 'GATEWAY', model: 'TestRouter'),
+        ),
+      );
 }
 
 class _FailDevicesNotifier extends DevicesDataNotifier {
@@ -61,7 +67,11 @@ class _SlowDevicesNotifier extends DevicesDataNotifier {
   @override
   Future<DevicesData> build() async {
     await _gate.future;
-    return DevicesData();
+    return DevicesData(
+      meshNetwork: MeshNetwork(
+        master: MasterNode(deviceId: 'GATEWAY', model: 'TestRouter'),
+      ),
+    );
   }
 }
 

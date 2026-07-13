@@ -62,7 +62,7 @@ final pdfReportDataProvider = Provider<PdfReportData?>((ref) {
     wanStatus: ref.read(wanDataProvider).valueOrNull?.model,
     systemInfo: ref.read(systemInfoDataProvider).valueOrNull?.model,
     radioModels: ref.read(wifiDataProvider).valueOrNull?.radioModels,
-    deviceModels: ref.read(devicesDataProvider).valueOrNull?.deviceModels,
-    nodeModels: ref.read(devicesDataProvider).valueOrNull?.nodeModels,
+    clientDevices: ref.read(devicesDataProvider).valueOrNull?.clientDevices,
+    nodes: ref.read(devicesDataProvider).valueOrNull?.nodes,
   );
 });

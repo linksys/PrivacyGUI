@@ -1,86 +1,106 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
+import 'package:privacy_gui/page/_shared/models/backhaul_info.dart';
+import 'package:privacy_gui/page/_shared/models/client_device.dart';
+import 'package:privacy_gui/page/_shared/models/mesh_network.dart';
 import 'package:privacy_gui/page/_shared/models/mesh_topology_info.dart';
+import 'package:privacy_gui/page/_shared/models/node_entity.dart';
+import 'package:privacy_gui/page/_shared/models/wifi_connection_info.dart';
 import 'package:privacy_gui/page/_shared/utils/device_classifier.dart';
 import 'package:privacy_gui/page/devices/providers/device_filter_provider.dart';
 import 'package:privacy_gui/page/devices/providers/device_filter_state.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
-import 'package:privacy_gui/page/topology/models/node_ui_model.dart';
 
 void main() {
   // ---------------------------------------------------------------------------
   // Shared test data
+  //
+  // Migrated from the deleted DeviceUIModel/NodeUIModel to ClientDevice /
+  // MeshNetwork. isWifi/band/ssidName/signalStrength are exposed as getters
+  // via the WifiConnectionInfo attached to each WiFi device; wired devices
+  // carry no `wifi` (null).
   // ---------------------------------------------------------------------------
 
-  const wifiOnlineExcellent = DeviceUIModel(
+  final wifiOnlineExcellent = ClientDevice(
     mac: 'AA:AA:AA:AA:AA:01',
     ip: '192.168.1.101',
     hostName: 'iPhone',
     isActive: true,
-    isWifi: true,
-    band: '5GHz',
-    ssidName: 'Home',
-    signalStrength: -40, // excellent (>= -65)
+    connectionType: ConnectionType.wifi,
+    wifi: const WifiConnectionInfo(
+      band: '5GHz',
+      ssidName: 'Home',
+      signalStrength: -40, // excellent (>= -65)
+    ),
     parentNodeId: 'NODE-01',
   );
 
-  const wifiOfflineHome = DeviceUIModel(
+  final wifiOfflineHome = ClientDevice(
     mac: 'AA:AA:AA:AA:AA:02',
     ip: '192.168.1.102',
     hostName: 'iPad',
     isActive: false,
-    isWifi: true,
-    band: '2.4GHz',
-    ssidName: 'Home',
+    connectionType: ConnectionType.wifi,
+    // No signalStrength — offline WiFi device with null RSSI.
+    wifi: const WifiConnectionInfo(
+      band: '2.4GHz',
+      ssidName: 'Home',
+    ),
     parentNodeId: 'NODE-01',
   );
 
-  const ethernetOnline = DeviceUIModel(
+  final ethernetOnline = ClientDevice(
     mac: 'AA:AA:AA:AA:AA:03',
     ip: '192.168.1.103',
     hostName: 'Desktop',
     isActive: true,
-    isWifi: false,
+    connectionType: ConnectionType.wired,
     parentNodeId: 'NODE-01',
   );
 
-  const wifiGuestGood = DeviceUIModel(
+  final wifiGuestGood = ClientDevice(
     mac: 'AA:AA:AA:AA:AA:04',
     ip: '192.168.1.104',
     hostName: 'GuestPhone',
     isActive: true,
-    isWifi: true,
-    band: '5GHz',
-    ssidName: 'Guest',
-    signalStrength: -68, // good (-65..-71)
+    connectionType: ConnectionType.wifi,
+    wifi: const WifiConnectionInfo(
+      band: '5GHz',
+      ssidName: 'Guest',
+      signalStrength: -68, // good (-65..-71)
+    ),
     parentNodeId: 'NODE-02',
   );
 
-  const wifiOnlineNullRssi = DeviceUIModel(
+  final wifiOnlineNullRssi = ClientDevice(
     mac: 'AA:AA:AA:AA:AA:05',
     ip: '192.168.1.105',
     hostName: 'NewPhone',
     isActive: true,
-    isWifi: true,
-    band: '5GHz',
-    ssidName: 'Home',
+    connectionType: ConnectionType.wifi,
+    wifi: const WifiConnectionInfo(
+      band: '5GHz',
+      ssidName: 'Home',
+      // signalStrength intentionally null — firmware state where RSSI is absent.
+    ),
     parentNodeId: 'NODE-01',
   );
 
-  const wifiOnlineFair = DeviceUIModel(
+  final wifiOnlineFair = ClientDevice(
     mac: 'AA:AA:AA:AA:AA:06',
     ip: '192.168.1.106',
     hostName: 'Laptop',
     isActive: true,
-    isWifi: true,
-    band: '2.4GHz',
-    ssidName: 'Home',
-    signalStrength: -75, // fair (-71..-78)
+    connectionType: ConnectionType.wifi,
+    wifi: const WifiConnectionInfo(
+      band: '2.4GHz',
+      ssidName: 'Home',
+      signalStrength: -75, // fair (-71..-78)
+    ),
     parentNodeId: 'NODE-01',
   );
 
-  const allDevices = [
+  final allDevices = [
     wifiOnlineExcellent,
     wifiOfflineHome,
     ethernetOnline,
@@ -89,16 +109,49 @@ void main() {
     wifiOnlineFair,
   ];
 
-  const devicesData = DevicesData(
-    deviceModels: allDevices,
-    meshTopology: MeshTopologyInfo(
-      nodes: [
-        NodeUIModel(deviceId: 'NODE-01', model: 'MR7500'),
-        NodeUIModel(deviceId: 'NODE-02', model: 'MX5500'),
-      ],
-      clientToNodeMap: {},
-    ),
-  );
+  /// Builds a [DevicesData] whose clients live on the master node and whose
+  /// topology exposes both NODE-01 / NODE-02 by default. Node membership for
+  /// filtering is driven by each device's `parentNodeId`, so placing every
+  /// client on the master node is fine.
+  ///
+  /// [topologyNodes] overrides the topology node list (used by the node-orphan
+  /// reconciliation test that needs a node to disappear).
+  DevicesData createDevicesData(
+    List<ClientDevice> clients, {
+    List<NodeEntity>? topologyNodes,
+  }) {
+    return DevicesData(
+      meshNetwork: MeshNetwork(
+        master: MasterNode(
+          deviceId: 'NODE-01',
+          model: 'MR7500',
+          connectedClients: clients,
+        ),
+        slaves: [
+          SlaveNode(
+            deviceId: 'NODE-02',
+            model: 'MX5500',
+            connectedClients: const [],
+            backhaul: const BackhaulInfo(mediaType: 'Wi-Fi'),
+          ),
+        ],
+      ),
+      meshTopology: MeshTopologyInfo(
+        nodes: topologyNodes ??
+            [
+              MasterNode(deviceId: 'NODE-01', model: 'MR7500'),
+              SlaveNode(
+                deviceId: 'NODE-02',
+                model: 'MX5500',
+                backhaul: const BackhaulInfo(mediaType: 'Wi-Fi'),
+              ),
+            ],
+        clientToNodeMap: const {},
+      ),
+    );
+  }
+
+  final devicesData = createDevicesData(allDevices);
 
   ProviderContainer createContainer({DevicesData? data}) {
     return ProviderContainer(
@@ -159,7 +212,7 @@ void main() {
         final container = await createReadyContainer();
         container
             .read(deviceFilterConfigProvider.notifier)
-            .setConnections({DeviceConnectionType.wifi});
+            .setConnections({ConnectionType.wifi});
 
         final filtered = container.read(filteredDeviceListProvider);
 
@@ -172,7 +225,7 @@ void main() {
         final container = await createReadyContainer();
         container
             .read(deviceFilterConfigProvider.notifier)
-            .setConnections({DeviceConnectionType.wired});
+            .setConnections({ConnectionType.wired});
 
         final filtered = container.read(filteredDeviceListProvider);
 
@@ -183,8 +236,9 @@ void main() {
 
       test('selecting both WiFi and Ethernet is same as All', () async {
         final container = await createReadyContainer();
-        container.read(deviceFilterConfigProvider.notifier).setConnections(
-            {DeviceConnectionType.wifi, DeviceConnectionType.wired});
+        container
+            .read(deviceFilterConfigProvider.notifier)
+            .setConnections({ConnectionType.wifi, ConnectionType.wired});
 
         final filtered = container.read(filteredDeviceListProvider);
 
@@ -253,6 +307,7 @@ void main() {
         final filtered = container.read(filteredDeviceListProvider);
 
         expect(filtered.map((d) => d.mac), contains(wifiGuestGood.mac));
+        // wifiOfflineHome is offline → passes through despite being on NODE-01.
         expect(filtered.map((d) => d.mac), contains(wifiOfflineHome.mac));
         expect(filtered.any((d) => d.mac == wifiOnlineExcellent.mac), isFalse);
         container.dispose();
@@ -273,25 +328,19 @@ void main() {
       test(
           'regression: Status=All + Node=X must not drop offline devices '
           '(they have null parentNodeId in reality)', () async {
-        const offlineWithNullNode = DeviceUIModel(
+        // Replace wifiOfflineHome with one that has a null parentNodeId — the
+        // realistic offline state. Filter by NODE-01 must still include it.
+        final offlineWithNullNode = ClientDevice(
           mac: 'AA:AA:AA:AA:AA:02',
           ip: '192.168.1.102',
           hostName: 'iPad',
           isActive: false,
-          isWifi: true,
+          connectionType: ConnectionType.wifi,
+          // parentNodeId: null — realistic offline state.
         );
 
         final container = await createReadyContainer(
-          data: const DevicesData(
-            deviceModels: [wifiOnlineExcellent, offlineWithNullNode],
-            meshTopology: MeshTopologyInfo(
-              nodes: [
-                NodeUIModel(deviceId: 'NODE-01', model: 'MR7500'),
-                NodeUIModel(deviceId: 'NODE-02', model: 'MX5500'),
-              ],
-              clientToNodeMap: {},
-            ),
-          ),
+          data: createDevicesData([wifiOnlineExcellent, offlineWithNullNode]),
         );
         container
             .read(deviceFilterConfigProvider.notifier)
@@ -299,6 +348,7 @@ void main() {
 
         final filtered = container.read(filteredDeviceListProvider);
 
+        // wifiOnlineExcellent on NODE-01, offline passes through.
         expect(filtered, hasLength(2));
         container.dispose();
       });
@@ -395,8 +445,7 @@ void main() {
         final container = await createReadyContainer();
         final notifier = container.read(deviceFilterConfigProvider.notifier);
         notifier.setSignals({DeviceSignalLevel.excellent});
-        notifier.setConnections(
-            {DeviceConnectionType.wifi, DeviceConnectionType.wired});
+        notifier.setConnections({ConnectionType.wifi, ConnectionType.wired});
 
         final filtered = container.read(filteredDeviceListProvider);
 
@@ -478,7 +527,7 @@ void main() {
       final container = await createReadyContainer();
       final notifier = container.read(deviceFilterConfigProvider.notifier);
 
-      notifier.setConnections({DeviceConnectionType.wifi});
+      notifier.setConnections({ConnectionType.wifi});
       notifier.setSignals({DeviceSignalLevel.good});
       notifier.setSsidNames({'Home'});
       notifier.setBands({'5GHz'});
@@ -505,10 +554,10 @@ void main() {
       notifier.setSsidNames({'Home'});
       notifier.setBands({'5GHz'});
       notifier.setNodeIds({'NODE-01'});
-      notifier.setConnections({DeviceConnectionType.wired});
+      notifier.setConnections({ConnectionType.wired});
 
       final state = container.read(deviceFilterConfigProvider);
-      expect(state.connections, {DeviceConnectionType.wired});
+      expect(state.connections, {ConnectionType.wired});
       expect(state.signals, isEmpty);
       expect(state.ssidNames, isEmpty);
       expect(state.bands, isEmpty);
@@ -522,8 +571,7 @@ void main() {
       final notifier = container.read(deviceFilterConfigProvider.notifier);
 
       notifier.setSsidNames({'Home'});
-      notifier.setConnections(
-          {DeviceConnectionType.wifi, DeviceConnectionType.wired});
+      notifier.setConnections({ConnectionType.wifi, ConnectionType.wired});
 
       expect(container.read(deviceFilterConfigProvider).ssidNames, {'Home'});
       container.dispose();
@@ -535,7 +583,7 @@ void main() {
       final notifier = container.read(deviceFilterConfigProvider.notifier);
 
       notifier.setSsidNames({'Home'});
-      notifier.setConnections({DeviceConnectionType.wired});
+      notifier.setConnections({ConnectionType.wired});
       notifier.setConnections({});
 
       expect(container.read(deviceFilterConfigProvider).ssidNames, isEmpty);
@@ -569,15 +617,10 @@ void main() {
           .read(deviceFilterConfigProvider.notifier)
           .setSsidNames({'Guest', 'Home'});
 
+      // Push a new dataset without any Guest device.
       final notifier =
           container.read(devicesDataProvider.notifier) as _FakeDevicesNotifier;
-      notifier.emit(const DevicesData(
-        deviceModels: [wifiOnlineExcellent],
-        meshTopology: MeshTopologyInfo(
-          nodes: [NodeUIModel(deviceId: 'NODE-01', model: 'MR7500')],
-          clientToNodeMap: {},
-        ),
-      ));
+      notifier.emit(createDevicesData([wifiOnlineExcellent]));
       await Future<void>.value();
 
       expect(container.read(deviceFilterConfigProvider).ssidNames, {'Home'});
@@ -592,12 +635,9 @@ void main() {
 
       final notifier =
           container.read(devicesDataProvider.notifier) as _FakeDevicesNotifier;
-      notifier.emit(const DevicesData(
-        deviceModels: [wifiOnlineExcellent],
-        meshTopology: MeshTopologyInfo(
-          nodes: [NodeUIModel(deviceId: 'NODE-01', model: 'MR7500')],
-          clientToNodeMap: {},
-        ),
+      notifier.emit(createDevicesData(
+        [wifiOnlineExcellent],
+        topologyNodes: [MasterNode(deviceId: 'NODE-01', model: 'MR7500')],
       ));
       await Future<void>.value();
 
@@ -614,13 +654,7 @@ void main() {
 
       final notifier =
           container.read(devicesDataProvider.notifier) as _FakeDevicesNotifier;
-      notifier.emit(const DevicesData(
-        deviceModels: [wifiOnlineExcellent, ethernetOnline],
-        meshTopology: MeshTopologyInfo(
-          nodes: [NodeUIModel(deviceId: 'NODE-01', model: 'MR7500')],
-          clientToNodeMap: {},
-        ),
-      ));
+      notifier.emit(createDevicesData([wifiOnlineExcellent, ethernetOnline]));
       await Future<void>.value();
 
       expect(container.read(deviceFilterConfigProvider).includeUnknownSignal,
@@ -642,6 +676,7 @@ void main() {
       expect(options.nodes, hasLength(2));
       expect(options.ssids, containsAll(['Guest', 'Home']));
       expect(options.bands, containsAll(['2.4GHz', '5GHz']));
+      // wifiOnlineNullRssi + wifiOfflineHome both have null RSSI.
       expect(options.hasUnknownSignalDevices, isTrue);
       container.dispose();
     });
@@ -649,10 +684,8 @@ void main() {
     test('hasUnknownSignalDevices false when every WiFi device has RSSI',
         () async {
       final container = await createReadyContainer(
-        data: const DevicesData(
-          deviceModels: [wifiOnlineExcellent, wifiGuestGood, ethernetOnline],
-          meshTopology: MeshTopologyInfo(nodes: [], clientToNodeMap: {}),
-        ),
+        data: createDevicesData(
+            [wifiOnlineExcellent, wifiGuestGood, ethernetOnline]),
       );
 
       expect(
@@ -701,7 +734,8 @@ void main() {
 
   group('DeviceFilterConfig helpers', () {
     test('hasWifiOnlyFilter returns true when signal is set', () {
-      final config = DeviceFilterConfig(signals: {DeviceSignalLevel.excellent});
+      final config =
+          DeviceFilterConfig(signals: const {DeviceSignalLevel.excellent});
       expect(config.hasWifiOnlyFilter, isTrue);
     });
 
@@ -712,12 +746,12 @@ void main() {
     });
 
     test('hasWifiOnlyFilter returns true when ssidNames is set', () {
-      final config = DeviceFilterConfig(ssidNames: {'Home'});
+      final config = DeviceFilterConfig(ssidNames: const {'Home'});
       expect(config.hasWifiOnlyFilter, isTrue);
     });
 
     test('hasWifiOnlyFilter returns true when bands is set', () {
-      final config = DeviceFilterConfig(bands: {'5GHz'});
+      final config = DeviceFilterConfig(bands: const {'5GHz'});
       expect(config.hasWifiOnlyFilter, isTrue);
     });
 
@@ -728,14 +762,14 @@ void main() {
 
     test('isEthernetOnly returns true only for single wired selection', () {
       expect(
-        DeviceFilterConfig(connections: {DeviceConnectionType.wired})
+        DeviceFilterConfig(connections: const {ConnectionType.wired})
             .isEthernetOnly,
         isTrue,
       );
       expect(
-        DeviceFilterConfig(connections: {
-          DeviceConnectionType.wifi,
-          DeviceConnectionType.wired
+        DeviceFilterConfig(connections: const {
+          ConnectionType.wifi,
+          ConnectionType.wired,
         }).isEthernetOnly,
         isFalse,
       );
@@ -748,14 +782,14 @@ void main() {
     test('activeCount counts non-empty dimensions', () {
       expect(const DeviceFilterConfig().activeCount, 0);
       expect(
-        DeviceFilterConfig(connections: {DeviceConnectionType.wifi})
+        DeviceFilterConfig(connections: const {ConnectionType.wifi})
             .activeCount,
         1,
       );
       expect(
         DeviceFilterConfig(
-          connections: {DeviceConnectionType.wifi},
-          signals: {DeviceSignalLevel.excellent},
+          connections: const {ConnectionType.wifi},
+          signals: const {DeviceSignalLevel.excellent},
         ).activeCount,
         2,
       );
@@ -763,7 +797,7 @@ void main() {
 
     test('activeCount includes deviceCategories and privateMac', () {
       expect(
-        DeviceFilterConfig(deviceCategories: {DeviceCategory.phone})
+        DeviceFilterConfig(deviceCategories: const {DeviceCategory.phone})
             .activeCount,
         1,
       );
@@ -774,7 +808,7 @@ void main() {
       );
       expect(
         DeviceFilterConfig(
-          deviceCategories: {DeviceCategory.phone},
+          deviceCategories: const {DeviceCategory.phone},
           privateMac: PrivateMacFilter.privateOnly,
         ).activeCount,
         2,
@@ -784,37 +818,63 @@ void main() {
 
   // ---------------------------------------------------------------------------
   // Device Category filter
+  //
+  // Classification is driven by DeviceClassifier.classify(hostname, mac).
+  // To keep these tests independent of OUI-database state and MAC-fallback
+  // heuristics, every fixture below pins its category via an explicit HOSTNAME
+  // pattern and uses an OUI-registered (non-randomized) MAC so the outcome is
+  // decided solely by the hostname rule under test:
+  //   iPhone     → phone     (hostname pattern `iphone`)
+  //   Galaxy S23 → phone     (hostname pattern `galaxy s`)
+  //   iPad       → tablet    (hostname pattern `ipad`)
+  //   Desktop-PC → computer  (hostname pattern `desktop`)
   // ---------------------------------------------------------------------------
 
   group('filteredDeviceListProvider Device Category filter', () {
-    test('filters by device category', () async {
-      final container = await createReadyContainer();
+    // OUI-registered first byte (0x00, bit 1 = 0) → never a randomized MAC, so
+    // classification cannot fall back to the private-MAC heuristic.
+    ClientDevice categoryDevice(String mac, String hostName) => ClientDevice(
+          mac: mac,
+          ip: '192.168.5.${mac.hashCode.abs() % 250 + 1}',
+          hostName: hostName,
+          isActive: true,
+          connectionType: ConnectionType.wifi,
+          wifi: const WifiConnectionInfo(band: '5GHz', ssidName: 'Home'),
+        );
+
+    final phoneA = categoryDevice('00:11:22:00:00:01', 'iPhone');
+    final phoneB = categoryDevice('00:11:22:00:00:02', 'Galaxy S23');
+    final tablet = categoryDevice('00:11:22:00:00:03', 'iPad');
+    final computer = categoryDevice('00:11:22:00:00:04', 'Desktop-PC');
+    final categoryData = createDevicesData([phoneA, phoneB, tablet, computer]);
+
+    test('filters by a single device category (hostname-pinned)', () async {
+      final container = await createReadyContainer(data: categoryData);
       container
           .read(deviceFilterConfigProvider.notifier)
           .setDeviceCategories({DeviceCategory.phone});
 
       final filtered = container.read(filteredDeviceListProvider);
+      final macs = filtered.map((d) => d.mac).toSet();
 
-      // iPhone and GuestPhone should match phone category
-      expect(filtered.any((d) => d.hostName == 'iPhone'), isTrue);
-      expect(filtered.any((d) => d.hostName == 'GuestPhone'), isTrue);
-      // Desktop should not match
-      expect(filtered.any((d) => d.hostName == 'Desktop'), isFalse);
+      // Both phones match; tablet and computer are excluded.
+      expect(macs, {phoneA.mac, phoneB.mac});
       container.dispose();
     });
 
     test('multi-select device categories uses OR logic', () async {
-      final container = await createReadyContainer();
+      final container = await createReadyContainer(data: categoryData);
       container.read(deviceFilterConfigProvider.notifier).setDeviceCategories({
         DeviceCategory.phone,
         DeviceCategory.tablet,
       });
 
       final filtered = container.read(filteredDeviceListProvider);
+      final macs = filtered.map((d) => d.mac).toSet();
 
-      // iPhone, GuestPhone (phone), iPad (tablet) should match
-      expect(filtered.any((d) => d.hostName == 'iPhone'), isTrue);
-      expect(filtered.any((d) => d.hostName == 'iPad'), isTrue);
+      // phones (OR) tablet match; computer excluded.
+      expect(macs, {phoneA.mac, phoneB.mac, tablet.mac});
+      expect(macs, isNot(contains(computer.mac)));
       container.dispose();
     });
   });
@@ -826,30 +886,29 @@ void main() {
   group('filteredDeviceListProvider Private MAC filter', () {
     // Private MAC: bit 1 of first byte = 1 (locally administered)
     // 0x02 = 00000010, bit 1 = 1 -> private
-    const privateMacDevice = DeviceUIModel(
+    final privateMacDevice = ClientDevice(
       mac: '02:00:00:AA:AA:01', // Locally administered (private)
       ip: '192.168.1.200',
       hostName: 'PrivatePhone',
       isActive: true,
-      isWifi: true,
+      connectionType: ConnectionType.wifi,
+      wifi: const WifiConnectionInfo(band: '5GHz', ssidName: 'Home'),
     );
 
     // Public MAC: bit 1 of first byte = 0 (OUI registered)
     // 0x00 = 00000000, bit 1 = 0 -> public
-    const publicMacDevice = DeviceUIModel(
+    final publicMacDevice = ClientDevice(
       mac: '00:11:22:33:44:55', // OUI registered (public)
       ip: '192.168.1.201',
       hostName: 'PublicPhone',
       isActive: true,
-      isWifi: true,
+      connectionType: ConnectionType.wifi,
+      wifi: const WifiConnectionInfo(band: '5GHz', ssidName: 'Home'),
     );
 
     test('privateOnly shows only private MAC devices', () async {
       final container = await createReadyContainer(
-        data: const DevicesData(
-          deviceModels: [privateMacDevice, publicMacDevice],
-          meshTopology: MeshTopologyInfo(nodes: [], clientToNodeMap: {}),
-        ),
+        data: createDevicesData([privateMacDevice, publicMacDevice]),
       );
       container
           .read(deviceFilterConfigProvider.notifier)
@@ -864,10 +923,7 @@ void main() {
 
     test('publicOnly shows only public MAC devices', () async {
       final container = await createReadyContainer(
-        data: const DevicesData(
-          deviceModels: [privateMacDevice, publicMacDevice],
-          meshTopology: MeshTopologyInfo(nodes: [], clientToNodeMap: {}),
-        ),
+        data: createDevicesData([privateMacDevice, publicMacDevice]),
       );
       container
           .read(deviceFilterConfigProvider.notifier)
@@ -882,10 +938,7 @@ void main() {
 
     test('all shows both private and public MAC devices', () async {
       final container = await createReadyContainer(
-        data: const DevicesData(
-          deviceModels: [privateMacDevice, publicMacDevice],
-          meshTopology: MeshTopologyInfo(nodes: [], clientToNodeMap: {}),
-        ),
+        data: createDevicesData([privateMacDevice, publicMacDevice]),
       );
       // Default is PrivateMacFilter.all, no need to set
 
@@ -908,8 +961,19 @@ class _FakeDevicesNotifier extends AsyncNotifier<DevicesData>
   DevicesData? _data;
 
   @override
-  Future<DevicesData> build() async => _data ?? const DevicesData();
+  Future<DevicesData> build() async {
+    if (_data == null) {
+      return DevicesData(
+        meshNetwork: MeshNetwork(
+          master: MasterNode(deviceId: 'GATEWAY', model: 'Unknown'),
+        ),
+      );
+    }
+    return _data!;
+  }
 
+  /// Push a new dataset so that `ref.listen(deviceFilterOptionsProvider)`
+  /// in the notifier fires reconciliation.
   void emit(DevicesData next) {
     _data = next;
     state = AsyncData(next);

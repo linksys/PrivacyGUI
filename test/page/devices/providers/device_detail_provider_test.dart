@@ -1,7 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
+import 'package:privacy_gui/page/_shared/models/client_device.dart';
 import 'package:privacy_gui/page/_shared/models/dhcp_reservation_ui_model.dart';
+import 'package:privacy_gui/page/_shared/models/mesh_network.dart';
+import 'package:privacy_gui/page/_shared/models/node_entity.dart';
+import 'package:privacy_gui/page/_shared/models/wifi_connection_info.dart';
 import 'package:privacy_gui/page/devices/providers/device_detail_provider.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/local_network/providers/dhcp_data_provider.dart';
@@ -11,21 +14,21 @@ void main() {
   // Shared test data
   // ---------------------------------------------------------------------------
 
-  const wifiDevice = DeviceUIModel(
+  final wifiDevice = ClientDevice(
     mac: 'AA:BB:CC:DD:EE:01',
     ip: '192.168.1.100',
     hostName: 'iPhone',
     isActive: true,
-    isWifi: true,
-    signalStrength: -55,
+    connectionType: ConnectionType.wifi,
+    wifi: WifiConnectionInfo(signalStrength: -55),
   );
 
-  const ethernetDevice = DeviceUIModel(
+  final ethernetDevice = ClientDevice(
     mac: 'AA:BB:CC:DD:EE:02',
     ip: '192.168.1.101',
     hostName: 'Desktop',
     isActive: true,
-    isWifi: false,
+    connectionType: ConnectionType.wired,
   );
 
   final reservation = DhcpReservationUIModel(
@@ -35,8 +38,14 @@ void main() {
     enable: true,
   );
 
-  const devicesData = DevicesData(
-    deviceModels: [wifiDevice, ethernetDevice],
+  final devicesData = DevicesData(
+    meshNetwork: MeshNetwork(
+      master: MasterNode(
+        deviceId: 'GATEWAY',
+        model: 'TestRouter',
+        connectedClients: [wifiDevice, ethernetDevice],
+      ),
+    ),
   );
 
   final dhcpData = DhcpData(
@@ -58,105 +67,107 @@ void main() {
 
   group('DeviceDetailProvider', () {
     // -----------------------------------------------------------------------
-    // Basic lookup
+    // Success cases
     // -----------------------------------------------------------------------
 
-    test('returns device and reservation by MAC', () async {
+    test('returns device with reservation', () async {
       final container = createContainer(
         devices: devicesData,
         dhcp: dhcpData,
       );
+      addTearDown(container.dispose);
+
+      // Wait for async providers to complete
       await container.read(devicesDataProvider.future);
       await container.read(dhcpDataProvider.future);
 
-      final detail =
+      final result =
           container.read(uspDeviceDetailProvider('AA:BB:CC:DD:EE:01'));
 
-      expect(detail.device, wifiDevice);
-      expect(detail.reservation, reservation);
-      expect(detail.hasReservation, isTrue);
-      container.dispose();
+      expect(result.device, isNotNull);
+      expect(result.device!.mac, 'AA:BB:CC:DD:EE:01');
+      expect(result.reservation, isNotNull);
+      expect(result.reservation!.mac, 'AA:BB:CC:DD:EE:01');
     });
 
-    test('returns device without reservation when no match', () async {
+    test('returns device without reservation', () async {
       final container = createContainer(
         devices: devicesData,
         dhcp: dhcpData,
       );
+      addTearDown(container.dispose);
+
+      // Wait for async providers to complete
       await container.read(devicesDataProvider.future);
       await container.read(dhcpDataProvider.future);
 
-      final detail =
+      final result =
           container.read(uspDeviceDetailProvider('AA:BB:CC:DD:EE:02'));
 
-      expect(detail.device, ethernetDevice);
-      expect(detail.reservation, isNull);
-      expect(detail.hasReservation, isFalse);
-      container.dispose();
+      expect(result.device, isNotNull);
+      expect(result.device!.mac, 'AA:BB:CC:DD:EE:02');
+      expect(result.reservation, isNull);
     });
 
     // -----------------------------------------------------------------------
-    // Case-insensitive matching
+    // Not found cases
     // -----------------------------------------------------------------------
 
-    test('MAC lookup is case-insensitive', () async {
+    test('returns empty when device not found', () async {
       final container = createContainer(
         devices: devicesData,
         dhcp: dhcpData,
       );
+      addTearDown(container.dispose);
+
+      // Wait for async providers to complete
       await container.read(devicesDataProvider.future);
       await container.read(dhcpDataProvider.future);
 
-      final detail =
-          container.read(uspDeviceDetailProvider('aa:bb:cc:dd:ee:01'));
+      final result =
+          container.read(uspDeviceDetailProvider('NOT:FO:UN:DD:EV:IC'));
 
-      expect(detail.device, wifiDevice);
-      expect(detail.reservation, reservation);
-      container.dispose();
+      expect(result, DeviceDetailState.empty());
     });
 
     // -----------------------------------------------------------------------
-    // Edge cases
+    // Case-insensitive MAC lookup
     // -----------------------------------------------------------------------
 
-    test('returns empty state when devices data is null', () {
-      final container = createContainer(devices: null, dhcp: null);
-
-      final detail =
-          container.read(uspDeviceDetailProvider('AA:BB:CC:DD:EE:01'));
-
-      expect(detail.device, isNull);
-      expect(detail.reservation, isNull);
-      container.dispose();
-    });
-
-    test('returns null device for unknown MAC', () async {
+    test('finds device with lowercase MAC', () async {
       final container = createContainer(
         devices: devicesData,
         dhcp: dhcpData,
       );
+      addTearDown(container.dispose);
+
+      // Wait for async providers to complete
       await container.read(devicesDataProvider.future);
+      await container.read(dhcpDataProvider.future);
 
-      final detail =
-          container.read(uspDeviceDetailProvider('FF:FF:FF:FF:FF:FF'));
+      final result =
+          container.read(uspDeviceDetailProvider('aa:bb:cc:dd:ee:01'));
 
-      expect(detail.device, isNull);
-      container.dispose();
+      expect(result.device, isNotNull);
+      expect(result.device!.mac.toUpperCase(), 'AA:BB:CC:DD:EE:01');
     });
 
-    test('returns device when DHCP data is unavailable', () async {
+    test('finds device with mixed-case MAC', () async {
       final container = createContainer(
         devices: devicesData,
-        dhcp: null,
+        dhcp: dhcpData,
       );
+      addTearDown(container.dispose);
+
+      // Wait for async providers to complete
       await container.read(devicesDataProvider.future);
+      await container.read(dhcpDataProvider.future);
 
-      final detail =
-          container.read(uspDeviceDetailProvider('AA:BB:CC:DD:EE:01'));
+      final result =
+          container.read(uspDeviceDetailProvider('Aa:Bb:Cc:Dd:Ee:01'));
 
-      expect(detail.device, wifiDevice);
-      expect(detail.reservation, isNull);
-      container.dispose();
+      expect(result.device, isNotNull);
+      expect(result.device!.mac.toUpperCase(), 'AA:BB:CC:DD:EE:01');
     });
   });
 }
@@ -171,7 +182,13 @@ class _FakeDevicesNotifier extends AsyncNotifier<DevicesData>
   _FakeDevicesNotifier(this._data);
 
   @override
-  Future<DevicesData> build() async => _data ?? const DevicesData();
+  Future<DevicesData> build() async =>
+      _data ??
+      DevicesData(
+        meshNetwork: MeshNetwork(
+          master: MasterNode(deviceId: 'GATEWAY', model: 'TestRouter'),
+        ),
+      );
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);

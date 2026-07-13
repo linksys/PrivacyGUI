@@ -6,6 +6,8 @@ import 'package:privacy_gui/page/_shared/providers/usp_device_analytics_notifier
 import 'package:privacy_gui/page/_shared/providers/usp_system_monitor_notifier.dart';
 import 'package:privacy_gui/page/_shared/providers/usp_traffic_analysis_notifier.dart';
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
+import 'package:privacy_gui/page/_shared/models/mesh_network.dart';
+import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/firewall/providers/firewall_data_provider.dart';
 import 'package:privacy_gui/page/port_forwarding/providers/port_forwarding_data_provider.dart';
@@ -85,7 +87,11 @@ class FixedWifiDataNotifier extends WifiDataNotifier {
 
 class FixedDevicesDataNotifierForStats extends DevicesDataNotifier {
   @override
-  Future<DevicesData> build() async => const DevicesData();
+  Future<DevicesData> build() async => DevicesData(
+        meshNetwork: MeshNetwork(
+          master: MasterNode(deviceId: 'GATEWAY', model: 'Test Router'),
+        ),
+      );
 }
 
 List<Override> statisticsOverrides({

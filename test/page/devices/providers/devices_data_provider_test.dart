@@ -8,7 +8,9 @@ import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
-import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
+import 'package:privacy_gui/page/_shared/models/client_device.dart';
+import 'package:privacy_gui/page/_shared/models/mesh_network.dart';
+import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_client_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/mesh_topology_info.dart';
@@ -16,7 +18,6 @@ import 'package:privacy_gui/page/_shared/models/client_connection_detail.dart';
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/devices/services/usp_devices_data_service.dart';
-import 'package:privacy_gui/page/topology/models/node_ui_model.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_data_provider.dart';
 
 class MockUspClient extends Mock implements UspClient {}
@@ -27,41 +28,42 @@ void main() {
   late MockUspClient mockUsp;
   late MockUspDevicesDataService mockDevicesSvc;
 
-  final sampleDeviceModels = [
-    DeviceUIModel(
+  final sampleClients = [
+    ClientDevice(
       mac: 'AA:BB:CC:DD:EE:01',
       ip: '192.168.1.101',
       hostName: 'MyLaptop',
       isActive: true,
-      isWifi: true,
+      connectionType: ConnectionType.wifi,
     ),
-    DeviceUIModel(
+    ClientDevice(
       mac: 'AA:BB:CC:DD:EE:02',
       ip: '192.168.1.102',
       hostName: '',
       isActive: true,
-      isWifi: false,
+      connectionType: ConnectionType.wired,
     ),
   ];
 
-  final sampleNodeModels = [
-    NodeUIModel(
-      deviceId: 'gateway',
+  final sampleMeshNetwork = MeshNetwork(
+    master: MasterNode(
+      deviceId: 'GATEWAY',
       model: 'M60TB',
-      isMaster: true,
+      connectedClients: sampleClients,
     ),
-  ];
-
-  final sampleFetchResult = DevicesDataFetchResult(
-    codegenContext: DevicesCodegenContext.empty,
-    deviceModels: sampleDeviceModels,
-    nodeModels: [],
-    hostNameByMac: {'AA:BB:CC:DD:EE:01': 'MyLaptop'},
   );
+
+  late DevicesDataFetchResult sampleFetchResult;
 
   setUp(() {
     mockUsp = MockUspClient();
     mockDevicesSvc = MockUspDevicesDataService();
+
+    sampleFetchResult = DevicesDataFetchResult(
+      codegenContext: DevicesCodegenContext.empty,
+      hostNameByMac: {'AA:BB:CC:DD:EE:01': 'MyLaptop'},
+      meshNetwork: sampleMeshNetwork,
+    );
 
     when(() => mockDevicesSvc.fetch(
           wifiClientMap: any(named: 'wifiClientMap'),
@@ -80,9 +82,16 @@ void main() {
           meshTopology: any(named: 'meshTopology'),
           gatewayName: any(named: 'gatewayName'),
           systemInfo: any(named: 'systemInfo'),
-        )).thenReturn(
-      (deviceModels: sampleDeviceModels, nodeModels: sampleNodeModels),
-    );
+        )).thenReturn(sampleMeshNetwork);
+
+    when(() => mockDevicesSvc.rebuildWithMesh(
+          context: any(named: 'context'),
+          wifiClientMap: any(named: 'wifiClientMap'),
+          connectionDetailMap: any(named: 'connectionDetailMap'),
+          meshTopology: any(named: 'meshTopology'),
+          gatewayName: any(named: 'gatewayName'),
+          systemInfo: any(named: 'systemInfo'),
+        )).thenReturn(sampleMeshNetwork);
   });
 
   setUpAll(() {
@@ -104,7 +113,7 @@ void main() {
     ));
     registerFallbackValue(<String, WifiClientUIModel>{});
     registerFallbackValue(<String, ClientConnectionDetail>{});
-    registerFallbackValue(<DeviceUIModel>[]);
+    registerFallbackValue(<ClientDevice>[]);
   });
 
   ProviderContainer createContainer({
@@ -127,8 +136,8 @@ void main() {
       final container = createContainer();
       final data = await container.read(devicesDataProvider.future);
 
-      expect(data.deviceModels, hasLength(2));
-      expect(data.nodeModels, isEmpty);
+      expect(data.clientDevices, hasLength(2));
+      expect(data.nodes, hasLength(1));
       verify(() => mockDevicesSvc.fetch(
             wifiClientMap: any(named: 'wifiClientMap'),
             connectionDetailMap: any(named: 'connectionDetailMap'),
@@ -179,7 +188,7 @@ void main() {
       );
 
       final data = await container.read(devicesDataProvider.future);
-      expect(data.deviceModels, isNotEmpty);
+      expect(data.clientDevices, isNotEmpty);
 
       verify(() => mockDevicesSvc.fetch(
             wifiClientMap: any(named: 'wifiClientMap'),
@@ -191,20 +200,37 @@ void main() {
     });
 
     test('DevicesData copyWith works', () {
-      const data = DevicesData();
+      final data = DevicesData(
+        meshNetwork: MeshNetwork(
+          master: MasterNode(deviceId: 'GATEWAY', model: 'Test'),
+        ),
+      );
       final updated = data.copyWith(
         hostNameByMac: {'AA:BB': 'Test'},
       );
       expect(updated.hostNameByMac, {'AA:BB': 'Test'});
-      expect(updated.deviceModels, isEmpty);
+      expect(updated.clientDevices, isEmpty);
     });
 
     test('DevicesData props for equality', () {
-      const a = DevicesData();
-      const b = DevicesData();
+      final a = DevicesData(
+        meshNetwork: MeshNetwork(
+          master: MasterNode(deviceId: 'GATEWAY', model: 'Test'),
+        ),
+      );
+      final b = DevicesData(
+        meshNetwork: MeshNetwork(
+          master: MasterNode(deviceId: 'GATEWAY', model: 'Test'),
+        ),
+      );
       expect(a, equals(b));
 
-      final c = DevicesData(hostNameByMac: {'AA:BB': 'Test'});
+      final c = DevicesData(
+        meshNetwork: MeshNetwork(
+          master: MasterNode(deviceId: 'GATEWAY', model: 'Test'),
+        ),
+        hostNameByMac: {'AA:BB': 'Test'},
+      );
       expect(a, isNot(equals(c)));
     });
 

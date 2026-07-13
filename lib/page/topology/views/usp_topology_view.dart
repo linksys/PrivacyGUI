@@ -53,11 +53,12 @@ class _UspTopologyViewState extends ConsumerState<UspTopologyView> {
           ),
           data: (data) {
             final sysInfo = ref.read(systemInfoDataProvider).valueOrNull?.model;
-            if (sysInfo == null) return const SizedBox.shrink();
-            final topology = UspTopologyBuilder.build(
+            if (sysInfo == null) {
+              return const SizedBox.shrink();
+            }
+            final topology = UspTopologyBuilder.buildFromMeshNetwork(
+              meshNetwork: data.meshNetwork,
               info: sysInfo,
-              devices: data.deviceModels,
-              nodeModels: data.nodeModels,
             );
 
             return _buildTopologyCard(context, topology);

@@ -2,6 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
+import 'package:privacy_gui/generated/wi_fi_radios.g.dart';
+import 'package:privacy_gui/generated/wi_fi_ssids.g.dart';
 import 'package:privacy_gui/page/wifi_settings/services/usp_wifi_data_service.dart';
 
 class MockUspClient extends Mock implements UspClient {}
@@ -304,6 +306,166 @@ void main() {
 
       // The malformed token yields nothing; parsing does not throw.
       expect(result.radioModels.single.possibleChannels, isEmpty);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // buildBssidToBandMap
+  // -------------------------------------------------------------------------
+
+  group('buildBssidToBandMap', () {
+    test('maps BSSID to band via SSID.LowerLayers → Radio', () {
+      final ssids = WiFiSsids(items: [
+        WiFiSsid(
+          instancePath: 'Device.WiFi.SSID.1.',
+          ssid: 'Home',
+          enable: true,
+          status: 'Up',
+          bssid: 'AA:BB:CC:DD:EE:01',
+          lowerLayers: 'Device.WiFi.Radio.1.',
+        ),
+        WiFiSsid(
+          instancePath: 'Device.WiFi.SSID.2.',
+          ssid: 'Home',
+          enable: true,
+          status: 'Up',
+          bssid: 'AA:BB:CC:DD:EE:02',
+          lowerLayers: 'Device.WiFi.Radio.2.',
+        ),
+      ]);
+      final radios = WiFiRadios(items: [
+        WiFiRadio(
+          instancePath: 'Device.WiFi.Radio.1.',
+          enable: true,
+          status: 'Up',
+          channel: 6,
+          operatingFrequencyBand: '2.4GHz',
+          operatingChannelBandwidth: '20MHz',
+          possibleChannels: '1,6,11',
+          operatingStandards: 'n',
+          supportedStandards: 'b,g,n',
+          transmitPower: 100,
+          maxBitRate: 300,
+          autoChannelEnable: true,
+          ieee80211hEnabled: false,
+          supportedOperatingChannelBandwidths: '20MHz,40MHz',
+        ),
+        WiFiRadio(
+          instancePath: 'Device.WiFi.Radio.2.',
+          enable: true,
+          status: 'Up',
+          channel: 36,
+          operatingFrequencyBand: '5GHz',
+          operatingChannelBandwidth: '80MHz',
+          possibleChannels: '36,40,44,48',
+          operatingStandards: 'ax',
+          supportedStandards: 'a,n,ac,ax',
+          transmitPower: 100,
+          maxBitRate: 2400,
+          autoChannelEnable: false,
+          ieee80211hEnabled: false,
+          supportedOperatingChannelBandwidths: '20MHz,40MHz,80MHz',
+        ),
+      ]);
+
+      final result =
+          UspWifiDataService.buildBssidToBandMap(ssids: ssids, radios: radios);
+
+      expect(result, {
+        'AA:BB:CC:DD:EE:01': '2.4GHz',
+        'AA:BB:CC:DD:EE:02': '5GHz',
+      });
+    });
+
+    test('normalizes BSSID to uppercase', () {
+      final ssids = WiFiSsids(items: [
+        WiFiSsid(
+          instancePath: 'Device.WiFi.SSID.1.',
+          ssid: 'Home',
+          enable: true,
+          status: 'Up',
+          bssid: 'aa:bb:cc:dd:ee:01', // lowercase
+          lowerLayers: 'Device.WiFi.Radio.1.',
+        ),
+      ]);
+      final radios = WiFiRadios(items: [
+        WiFiRadio(
+          instancePath: 'Device.WiFi.Radio.1.',
+          enable: true,
+          status: 'Up',
+          channel: 6,
+          operatingFrequencyBand: '2.4GHz',
+          operatingChannelBandwidth: '20MHz',
+          possibleChannels: '1,6,11',
+          operatingStandards: 'n',
+          supportedStandards: 'b,g,n',
+          transmitPower: 100,
+          maxBitRate: 300,
+          autoChannelEnable: true,
+          ieee80211hEnabled: false,
+          supportedOperatingChannelBandwidths: '20MHz,40MHz',
+        ),
+      ]);
+
+      final result =
+          UspWifiDataService.buildBssidToBandMap(ssids: ssids, radios: radios);
+
+      expect(result.keys.single, 'AA:BB:CC:DD:EE:01');
+    });
+
+    test('skips SSID with empty BSSID', () {
+      final ssids = WiFiSsids(items: [
+        WiFiSsid(
+          instancePath: 'Device.WiFi.SSID.1.',
+          ssid: 'Home',
+          enable: true,
+          status: 'Up',
+          bssid: '', // empty
+          lowerLayers: 'Device.WiFi.Radio.1.',
+        ),
+      ]);
+      final radios = WiFiRadios(items: [
+        WiFiRadio(
+          instancePath: 'Device.WiFi.Radio.1.',
+          enable: true,
+          status: 'Up',
+          channel: 6,
+          operatingFrequencyBand: '2.4GHz',
+          operatingChannelBandwidth: '20MHz',
+          possibleChannels: '1,6,11',
+          operatingStandards: 'n',
+          supportedStandards: 'b,g,n',
+          transmitPower: 100,
+          maxBitRate: 300,
+          autoChannelEnable: true,
+          ieee80211hEnabled: false,
+          supportedOperatingChannelBandwidths: '20MHz,40MHz',
+        ),
+      ]);
+
+      final result =
+          UspWifiDataService.buildBssidToBandMap(ssids: ssids, radios: radios);
+
+      expect(result, isEmpty);
+    });
+
+    test('returns empty map when no radios', () {
+      final ssids = WiFiSsids(items: [
+        WiFiSsid(
+          instancePath: 'Device.WiFi.SSID.1.',
+          ssid: 'Home',
+          enable: true,
+          status: 'Up',
+          bssid: 'AA:BB:CC:DD:EE:01',
+          lowerLayers: 'Device.WiFi.Radio.1.',
+        ),
+      ]);
+      final radios = WiFiRadios(items: []);
+
+      final result =
+          UspWifiDataService.buildBssidToBandMap(ssids: ssids, radios: radios);
+
+      expect(result, isEmpty);
     });
   });
 }

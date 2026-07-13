@@ -9,7 +9,9 @@ import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
-import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
+import 'package:privacy_gui/page/_shared/models/client_device.dart';
+import 'package:privacy_gui/page/_shared/models/mesh_network.dart';
+import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/local_network/providers/dhcp_data_provider.dart';
 
@@ -91,7 +93,7 @@ void main() {
         uspClientProvider.overrideWithValue(mockUsp),
         uspMutationLockProvider.overrideWithValue(UspMutationLock()),
         devicesDataProvider.overrideWith(
-          () => _TestDevicesDataNotifier(devicesData ?? const DevicesData()),
+          () => _TestDevicesDataNotifier(devicesData ?? _emptyDevicesData()),
         ),
       ],
     );
@@ -120,7 +122,7 @@ void main() {
 
     test('hostname enrichment from devicesData', () async {
       final container = createContainer(
-        devicesData: const DevicesData(
+        devicesData: _emptyDevicesData(
           hostNameByMac: {'AA:BB:CC:DD:EE:01': 'MyLaptop'},
         ),
       );
@@ -135,26 +137,32 @@ void main() {
       container.dispose();
     });
 
-    test('isOnline enrichment from devicesData deviceModels', () async {
+    test('isOnline enrichment from devicesData client devices', () async {
       final container = createContainer(
-        devicesData: const DevicesData(
-          hostNameByMac: {'AA:BB:CC:DD:EE:01': 'MyLaptop'},
-          deviceModels: [
-            DeviceUIModel(
-              mac: 'AA:BB:CC:DD:EE:01',
-              ip: '192.168.1.101',
-              hostName: 'MyLaptop',
-              isActive: true,
-              isWifi: true,
+        devicesData: DevicesData(
+          hostNameByMac: const {'AA:BB:CC:DD:EE:01': 'MyLaptop'},
+          meshNetwork: MeshNetwork(
+            master: MasterNode(
+              deviceId: 'GATEWAY',
+              model: 'TestRouter',
+              connectedClients: [
+                ClientDevice(
+                  mac: 'AA:BB:CC:DD:EE:01',
+                  ip: '192.168.1.101',
+                  hostName: 'MyLaptop',
+                  isActive: true,
+                  connectionType: ConnectionType.wifi,
+                ),
+                ClientDevice(
+                  mac: 'AA:BB:CC:DD:EE:02',
+                  ip: '192.168.1.102',
+                  hostName: '',
+                  isActive: false,
+                  connectionType: ConnectionType.wired,
+                ),
+              ],
             ),
-            DeviceUIModel(
-              mac: 'AA:BB:CC:DD:EE:02',
-              ip: '192.168.1.102',
-              hostName: '',
-              isActive: false,
-              isWifi: false,
-            ),
-          ],
+          ),
         ),
       );
       await container.read(devicesDataProvider.future);
@@ -168,12 +176,9 @@ void main() {
     });
 
     test('isOnline is null when no matching device in devicesData', () async {
-      // Empty deviceModels - no Hosts data available
+      // No client devices - no Hosts data available
       final container = createContainer(
-        devicesData: const DevicesData(
-          hostNameByMac: {},
-          deviceModels: [],
-        ),
+        devicesData: _emptyDevicesData(),
       );
       await container.read(devicesDataProvider.future);
       final data = await container.read(dhcpDataProvider.future);
@@ -189,7 +194,7 @@ void main() {
         overrides: [
           uspClientProvider.overrideWithValue(null),
           devicesDataProvider.overrideWith(
-            () => _TestDevicesDataNotifier(const DevicesData()),
+            () => _TestDevicesDataNotifier(_emptyDevicesData()),
           ),
         ],
       );
@@ -236,7 +241,7 @@ void main() {
             uspClientProvider.overrideWithValue(mockUsp),
             uspMutationLockProvider.overrideWithValue(UspMutationLock()),
             devicesDataProvider.overrideWith(
-              () => _TestDevicesDataNotifier(const DevicesData()),
+              () => _TestDevicesDataNotifier(_emptyDevicesData()),
             ),
             sseInvalidationProvider.overrideWith((ref) => sseController.stream),
           ],
@@ -273,7 +278,7 @@ void main() {
             uspClientProvider.overrideWithValue(mockUsp),
             uspMutationLockProvider.overrideWithValue(UspMutationLock()),
             devicesDataProvider.overrideWith(
-              () => _TestDevicesDataNotifier(const DevicesData()),
+              () => _TestDevicesDataNotifier(_emptyDevicesData()),
             ),
             sseInvalidationProvider.overrideWith((ref) => sseController.stream),
           ],
@@ -305,7 +310,7 @@ void main() {
             uspClientProvider.overrideWithValue(mockUsp),
             uspMutationLockProvider.overrideWithValue(UspMutationLock()),
             devicesDataProvider.overrideWith(
-              () => _TestDevicesDataNotifier(const DevicesData()),
+              () => _TestDevicesDataNotifier(_emptyDevicesData()),
             ),
             sseInvalidationProvider.overrideWith((ref) => sseController.stream),
           ],
@@ -337,4 +342,14 @@ class _TestDevicesDataNotifier extends DevicesDataNotifier {
 
   @override
   Future<DevicesData> build() async => _data;
+}
+
+/// Creates an empty DevicesData for testing.
+DevicesData _emptyDevicesData({Map<String, String>? hostNameByMac}) {
+  return DevicesData(
+    meshNetwork: MeshNetwork(
+      master: MasterNode(deviceId: 'GATEWAY', model: 'TestRouter'),
+    ),
+    hostNameByMac: hostNameByMac ?? const {},
+  );
 }

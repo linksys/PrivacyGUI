@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
+import 'package:privacy_gui/page/_shared/models/client_device.dart';
 import 'package:privacy_gui/page/devices/providers/device_filter_state.dart';
 
 void main() {
@@ -24,8 +24,7 @@ void main() {
     });
 
     test('isActive true when connections is set', () {
-      const config =
-          DeviceFilterConfig(connections: {DeviceConnectionType.wifi});
+      const config = DeviceFilterConfig(connections: {ConnectionType.wifi});
       expect(config.isActive, isTrue);
     });
 
@@ -64,7 +63,7 @@ void main() {
       final updated = config.copyWith(
         searchQuery: 'test',
         status: DeviceStatusFilter.offline,
-        connections: const {DeviceConnectionType.wifi},
+        connections: const {ConnectionType.wifi},
         signals: const {DeviceSignalLevel.good},
         includeUnknownSignal: true,
         nodeIds: () => const {'node1'},
@@ -74,7 +73,7 @@ void main() {
 
       expect(updated.searchQuery, 'test');
       expect(updated.status, DeviceStatusFilter.offline);
-      expect(updated.connections, const {DeviceConnectionType.wifi});
+      expect(updated.connections, const {ConnectionType.wifi});
       expect(updated.signals, const {DeviceSignalLevel.good});
       expect(updated.includeUnknownSignal, isTrue);
       expect(updated.nodeIds, const {'node1'});
@@ -149,19 +148,18 @@ void main() {
 
     test('isEthernetOnly returns true only for single wired selection', () {
       expect(
-        const DeviceFilterConfig(connections: {DeviceConnectionType.wired})
+        const DeviceFilterConfig(connections: {ConnectionType.wired})
             .isEthernetOnly,
         isTrue,
       );
       expect(
-        const DeviceFilterConfig(connections: {
-          DeviceConnectionType.wifi,
-          DeviceConnectionType.wired
-        }).isEthernetOnly,
+        const DeviceFilterConfig(
+                connections: {ConnectionType.wifi, ConnectionType.wired})
+            .isEthernetOnly,
         isFalse,
       );
       expect(
-        const DeviceFilterConfig(connections: {DeviceConnectionType.wifi})
+        const DeviceFilterConfig(connections: {ConnectionType.wifi})
             .isEthernetOnly,
         isFalse,
       );
@@ -174,13 +172,13 @@ void main() {
     test('activeCount counts non-empty dimensions correctly', () {
       expect(const DeviceFilterConfig().activeCount, 0);
       expect(
-        const DeviceFilterConfig(connections: {DeviceConnectionType.wifi})
+        const DeviceFilterConfig(connections: {ConnectionType.wifi})
             .activeCount,
         1,
       );
       expect(
         const DeviceFilterConfig(
-          connections: {DeviceConnectionType.wifi},
+          connections: {ConnectionType.wifi},
           signals: {DeviceSignalLevel.excellent},
         ).activeCount,
         2,
@@ -188,7 +186,7 @@ void main() {
       expect(
         const DeviceFilterConfig(
           status: DeviceStatusFilter.online,
-          connections: {DeviceConnectionType.wifi},
+          connections: {ConnectionType.wifi},
           signals: {DeviceSignalLevel.excellent},
           nodeIds: {'node1'},
           ssidNames: {'Home'},
@@ -207,7 +205,7 @@ void main() {
       expect(
         const DeviceFilterConfig(
           status: DeviceStatusFilter.online,
-          connections: {DeviceConnectionType.wifi},
+          connections: {ConnectionType.wifi},
         ).activeCountExcludingStatus,
         1,
       );
