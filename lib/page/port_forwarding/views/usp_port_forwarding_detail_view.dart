@@ -75,9 +75,9 @@ class _UspPortForwardingDetailViewState
             .fetch(forceRemote: true),
         bottomBar: _buildBottomBar(context, ref, pageState),
         tabs: [
-          Tab(text: loc(context).singlePortWithCount(singlePortRules.length)),
-          Tab(text: loc(context).portRangeWithCount(portRangeRules.length)),
-          Tab(text: loc(context).triggeringWithCount(triggeringRules.length)),
+          Tab(text: loc(context).singlePortForwarding),
+          Tab(text: loc(context).portRangeForwarding),
+          Tab(text: loc(context).portTriggering),
         ],
         tabContentViews: [
           _buildTabContent(

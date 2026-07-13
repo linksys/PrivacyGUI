@@ -29,7 +29,8 @@ class UspPortTriggeringTab extends ConsumerWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            AppText.titleMedium(loc(context).portTriggering),
+            AppText.titleMedium(
+                '${loc(context).portTriggering} (${rules.length})'),
             AppIconButton(
               icon: AppIcon.font(Icons.add, size: 20),
               onTap: isSaving ? null : () => _showAddDialog(context, ref),
