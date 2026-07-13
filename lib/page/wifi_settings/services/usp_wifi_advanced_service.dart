@@ -43,14 +43,23 @@ class UspWifiAdvancedService {
   }
 
   /// Sets IEEE 802.11h on all given radio paths.
+  ///
+  /// [forceAutoChannelPaths] additionally receives `AutoChannelEnable = true`
+  /// in the same set() call. This is used when disabling DFS on a radio that is
+  /// parked on a DFS channel: the firmware does not vacate the channel on its
+  /// own (SSH-verified), so forcing auto-channel makes it reselect a legal
+  /// non-DFS channel. Paths not in this list keep their channel settings.
   Future<void> setIeee80211hEnabled({
     required List<String> radioPaths,
     required bool enabled,
+    List<String> forceAutoChannelPaths = const [],
   }) async {
     if (radioPaths.isEmpty) return;
     try {
       final params = <String, dynamic>{
         for (final path in radioPaths) '${path}IEEE80211hEnabled': enabled,
+        for (final path in forceAutoChannelPaths)
+          '${path}AutoChannelEnable': true,
       };
       await _usp.set(params);
     } catch (e) {

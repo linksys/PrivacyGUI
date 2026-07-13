@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/core/utils/wifi_channel.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/framework/preservable_contract.dart';
 import 'package:privacy_gui/framework/preservable_notifier_mixin.dart';
@@ -106,15 +107,39 @@ class UspWifiAdvancedNotifier
     final radioPaths = current.ieee80211hByRadio.keys.toList();
     final enabled = current.isDfsEnabled;
 
+    // When DFS is being disabled, any radio parked on a DFS channel must be
+    // moved off it — the firmware leaves the channel set on its own
+    // (SSH-verified). Force AutoChannelEnable on those radios so the firmware
+    // reselects a legal non-DFS channel. Only radios being turned off and
+    // currently sitting on a manual DFS channel are affected.
+    final forceAutoChannelPaths = <String>[];
+    if (!enabled) {
+      final radios = ref.read(wifiDataProvider).valueOrNull?.radioModels ?? [];
+      final radioByPath = {
+        for (final r in radios) _withTrailingDot(r.instancePath): r,
+      };
+      for (final path in radioPaths) {
+        // Radios staying on DFS need no channel remediation.
+        if (current.ieee80211hByRadio[path] == true) continue;
+        final radio = radioByPath[_withTrailingDot(path)];
+        if (radio == null || radio.autoChannelEnable) continue;
+        if (isDfsChannel(radio.channel, band: radio.band)) {
+          forceAutoChannelPaths.add(path);
+        }
+      }
+    }
+
     await ref.read(uspMutationLockProvider).withLock(() async {
       await _svc.setIeee80211hEnabled(
         radioPaths: radioPaths,
         enabled: enabled,
+        forceAutoChannelPaths: forceAutoChannelPaths,
       );
     });
 
     logger.d('[USP][WiFi][Advanced]: Save succeeded — '
-        'radios=${radioPaths.length}, enabled=$enabled');
+        'radios=${radioPaths.length}, enabled=$enabled, '
+        'forcedAutoChannel=${forceAutoChannelPaths.length}');
     // Refresh Layer 1 cache so post-save fetch() reads fresh data.
     // Using refresh() instead of invalidate() because the latter only marks
     // the provider dirty — without an active subscriber it won't rebuild,
@@ -154,4 +179,12 @@ class UspWifiAdvancedNotifier
       settings: state.settings.update(updated),
     );
   }
+}
+
+/// Normalizes a TR-181 instance path to a trailing-dot form so that radio
+/// paths from [WifiAdvancedSettings.ieee80211hByRadio] and from
+/// [WifiRadioUIModel.instancePath] compare equal regardless of source format.
+String _withTrailingDot(String path) {
+  if (path.isEmpty) return path;
+  return path.endsWith('.') ? path : '$path.';
 }

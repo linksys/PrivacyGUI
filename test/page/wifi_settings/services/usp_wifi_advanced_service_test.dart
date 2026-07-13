@@ -114,6 +114,37 @@ void main() {
         throwsA(isA<NetworkError>()),
       );
     });
+
+    test('forces AutoChannelEnable in the same set for given paths', () async {
+      when(() => mockUsp.set(any())).thenAnswer((_) async => {});
+
+      await svc.setIeee80211hEnabled(
+        radioPaths: ['Device.WiFi.Radio.1.', 'Device.WiFi.Radio.2.'],
+        enabled: false,
+        forceAutoChannelPaths: ['Device.WiFi.Radio.2.'],
+      );
+
+      // Radio.2 (parked on a DFS channel) also gets AutoChannelEnable=true;
+      // Radio.1 keeps its channel settings.
+      verify(() => mockUsp.set({
+            'Device.WiFi.Radio.1.IEEE80211hEnabled': false,
+            'Device.WiFi.Radio.2.IEEE80211hEnabled': false,
+            'Device.WiFi.Radio.2.AutoChannelEnable': true,
+          })).called(1);
+    });
+
+    test('empty forceAutoChannelPaths writes no AutoChannelEnable', () async {
+      when(() => mockUsp.set(any())).thenAnswer((_) async => {});
+
+      await svc.setIeee80211hEnabled(
+        radioPaths: ['Device.WiFi.Radio.1.'],
+        enabled: false,
+      );
+
+      verify(() => mockUsp.set({
+            'Device.WiFi.Radio.1.IEEE80211hEnabled': false,
+          })).called(1);
+    });
   });
 
   // -------------------------------------------------------------------------
