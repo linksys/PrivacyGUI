@@ -593,8 +593,9 @@ void main() {
       final notifier = container.read(uspWifiSettingsProvider.notifier);
       notifier.updateNetworkField('Device.WiFi.SSID.1.', ssid: 'Changed');
 
-      expect(
-        () => notifier.save(),
+      // Use await + expectLater so the finally block completes before dispose
+      await expectLater(
+        notifier.save(),
         throwsA(isA<NetworkError>()),
       );
       container.dispose();

@@ -1,23 +1,33 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/components/detail_widgets.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/_shared/models/dhcp_client_ui_model.dart';
+import 'package:privacy_gui/page/dhcp/providers/dhcp_client_filter_provider.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
-/// Read-only card displaying active DHCP client leases.
-class UspDhcpActiveLeasesCard extends StatelessWidget {
+/// Read-only card displaying DHCP client leases with filter chips.
+class UspDhcpActiveLeasesCard extends ConsumerWidget {
   final List<DhcpClientUIModel> clients;
 
   const UspDhcpActiveLeasesCard({super.key, required this.clients});
 
   @override
-  Widget build(BuildContext context) {
-    final activeCount = clients.where((c) => c.active).length;
-    final sorted = List<DhcpClientUIModel>.from(clients)
+  Widget build(BuildContext context, WidgetRef ref) {
+    final filter = ref.watch(dhcpClientFilterProvider);
+    final onlineCount = clients.where((c) => c.isOnline == true).length;
+
+    final filtered = filter == DhcpClientFilter.onlineOnly
+        ? clients.where((c) => c.isOnline == true).toList()
+        : clients;
+
+    final sorted = List<DhcpClientUIModel>.from(filtered)
       ..sort((a, b) {
-        // Active first, then by displayName
-        if (a.active != b.active) return a.active ? -1 : 1;
+        // Online first, then by displayName
+        final aOnline = a.isOnline == true;
+        final bOnline = b.isOnline == true;
+        if (aOnline != bOnline) return aOnline ? -1 : 1;
         return a.displayName
             .toLowerCase()
             .compareTo(b.displayName.toLowerCase());
@@ -32,9 +42,11 @@ class UspDhcpActiveLeasesCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               AppText.titleSmall(loc(context).activeLeases),
-              AppText.labelLarge('$activeCount / ${clients.length}'),
+              AppText.labelLarge('$onlineCount / ${clients.length}'),
             ],
           ),
+          AppGap.sm(),
+          _buildFilterChips(context, ref, filter),
           AppGap.md(),
           if (sorted.isEmpty)
             DetailEmptyBlock(
@@ -46,6 +58,37 @@ class UspDhcpActiveLeasesCard extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Widget _buildFilterChips(
+    BuildContext context,
+    WidgetRef ref,
+    DhcpClientFilter filter,
+  ) {
+    const filters = DhcpClientFilter.values;
+    return AppChipGroup(
+      chips: filters
+          .map((f) => ChipItem(label: _filterLabel(context, f)))
+          .toList(),
+      selectedIndices: {filters.indexOf(filter)},
+      selectionMode: ChipSelectionMode.single,
+      onSelectionChanged: (indices) {
+        if (indices.isNotEmpty) {
+          ref.read(dhcpClientFilterProvider.notifier).state =
+              filters[indices.first];
+        }
+      },
+      wrap: false,
+    );
+  }
+
+  String _filterLabel(BuildContext context, DhcpClientFilter filter) {
+    switch (filter) {
+      case DhcpClientFilter.all:
+        return loc(context).all;
+      case DhcpClientFilter.onlineOnly:
+        return loc(context).online;
+    }
   }
 
   Widget _buildClientRow(BuildContext context, DhcpClientUIModel client) {
@@ -60,7 +103,8 @@ class UspDhcpActiveLeasesCard extends StatelessWidget {
             Icon(
               Icons.circle,
               size: 8,
-              color: client.active ? Colors.green : colorScheme.outline,
+              color:
+                  client.isOnline == true ? Colors.green : colorScheme.outline,
             ),
             AppGap.sm(),
             Expanded(
@@ -68,14 +112,11 @@ class UspDhcpActiveLeasesCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   AppText.bodyMedium(client.displayName),
-                  AppText.bodySmall(
-                    [
-                      if (client.hostName.isNotEmpty) client.mac,
-                      if (client.leaseExpiryFormatted.isNotEmpty)
-                        loc(context).leaseExpiry(client.leaseExpiryFormatted),
-                    ].join(' · '),
-                    color: colorScheme.onSurfaceVariant,
-                  ),
+                  if (client.hostName.isNotEmpty)
+                    AppText.bodySmall(
+                      client.mac,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
                 ],
               ),
             ),
@@ -86,15 +127,24 @@ class UspDhcpActiveLeasesCard extends StatelessWidget {
                 color: colorScheme.onSurfaceVariant,
               ),
             ),
-            if (lease.isNotEmpty)
-              SizedBox(
-                width: context.colWidth(1),
-                child: AppText.bodySmall(
-                  lease,
-                  color: colorScheme.onSurfaceVariant,
-                  textAlign: TextAlign.end,
-                ),
+            SizedBox(
+              width: context.colWidth(2),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  if (lease.isNotEmpty)
+                    AppText.bodySmall(
+                      lease,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  if (client.leaseExpiryFormatted.isNotEmpty)
+                    AppText.bodySmall(
+                      client.leaseExpiryFormatted,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                ],
               ),
+            ),
           ],
         ),
       ),

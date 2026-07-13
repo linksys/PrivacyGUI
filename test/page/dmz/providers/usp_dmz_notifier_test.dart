@@ -149,10 +149,9 @@ void main() {
       container.dispose();
     });
 
-    test('updateSetting mutates current model and validates', () async {
+    test('updateSetting mutates current model without validation', () async {
       when(() => mockService.fetch())
           .thenAnswer((_) async => (testSettings, testStatus));
-      when(() => mockService.validateForm(any())).thenReturn({});
 
       final container = createContainer();
       await Future.delayed(Duration.zero);
@@ -162,11 +161,12 @@ void main() {
 
       final state = container.read(uspDmzProvider);
       expect(state.settings.current.model.destIp, '10.0.0.1');
-      verify(() => mockService.validateForm(any())).called(1);
+      // updateSetting no longer calls validateForm — validation is separate
+      verifyNever(() => mockService.validateForm(any()));
       container.dispose();
     });
 
-    test('updateSetting propagates validation errors to status', () async {
+    test('validate propagates validation errors to status', () async {
       when(() => mockService.fetch())
           .thenAnswer((_) async => (testSettings, testStatus));
       when(() => mockService.validateForm(any()))
@@ -177,6 +177,7 @@ void main() {
 
       final notifier = container.read(uspDmzProvider.notifier);
       notifier.updateSetting((m) => m.copyWith(destIp: 'bad'));
+      notifier.validate();
 
       final state = container.read(uspDmzProvider);
       expect(state.status.fieldErrors['destIp'], 'Invalid IP');

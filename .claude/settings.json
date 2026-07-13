@@ -6,12 +6,12 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 .claude/hooks/pr_gate.py",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/pr_gate.py\"",
             "timeout": 10
           },
           {
             "type": "command",
-            "command": "staged=$(git diff --cached --name-only --diff-filter=ACM -- '*.dart'); if [ -n \"$staged\" ]; then if command -v fvm >/dev/null 2>&1; then echo \"$staged\" | xargs fvm dart format; else echo \"$staged\" | xargs dart format; fi; echo \"$staged\" | xargs git add; fi",
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" || exit 0; staged=$(git diff --cached --name-only --diff-filter=ACM -- '*.dart'); if [ -n \"$staged\" ]; then if command -v fvm >/dev/null 2>&1; then echo \"$staged\" | xargs fvm dart format; else echo \"$staged\" | xargs dart format; fi; echo \"$staged\" | xargs git add; fi",
             "timeout": 30,
             "statusMessage": "Formatting staged Dart files..."
           }

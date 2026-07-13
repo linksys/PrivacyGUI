@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:privacy_gui/core/utils/oui_lookup.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/utils/device_classifier.dart';
 import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
@@ -66,6 +67,7 @@ class UspDeviceListTile extends StatelessWidget {
           size: 20,
           iconColor: scheme.onSurface,
           hasMultipleInterfaces: device.hasMultipleInterfaces,
+          isPrivateMac: OuiLookup.isRandomizedMac(device.mac),
         ),
         AppGap.sm(),
         Expanded(

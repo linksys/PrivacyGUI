@@ -120,15 +120,27 @@ class UspDmzNotifier extends AutoDisposeNotifier<DmzFeatureState>
   // UI Mutation (synchronous — no network call)
   // ---------------------------------------------------------------------------
 
-  /// Update a single DMZ setting and re-validate.
+  /// Update a single DMZ setting WITHOUT triggering validation.
+  ///
+  /// Use this for onChange handlers to avoid TextField unfocus on Web.
+  /// Call [validate] separately on unfocus.
   void updateSetting(DmzUIModel Function(DmzUIModel) updater) {
     final current = state.settings.current;
     final newModel = updater(current.model);
-    final errors = _svc.validateForm(newModel);
     state = state.copyWith(
       settings: state.settings.update(
         current.copyWith(model: newModel),
       ),
+    );
+  }
+
+  /// Trigger validation on current settings.
+  ///
+  /// Call this on TextField unfocus to avoid unfocus issues on Web.
+  void validate() {
+    final current = state.settings.current.model;
+    final errors = _svc.validateForm(current);
+    state = state.copyWith(
       status: state.status.copyWith(fieldErrors: errors),
     );
   }

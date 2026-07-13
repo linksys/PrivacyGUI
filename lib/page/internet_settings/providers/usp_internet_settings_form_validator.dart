@@ -38,6 +38,13 @@ bool _validateIpv4Fields(UspInternetSettingsForm form) {
       return form.pppUsername.isNotEmpty &&
           form.pppPassword.isNotEmpty &&
           (form.connectionTrigger != 'OnDemand' || form.idleDisconnectTime > 0);
+    case UspWanConnectionType.pptp:
+    case UspWanConnectionType.l2tp:
+      return form.serverAddress.isNotEmpty &&
+          _isValidHostnameOrIp(form.serverAddress) &&
+          form.pppUsername.isNotEmpty &&
+          form.pppPassword.isNotEmpty &&
+          (form.connectionTrigger != 'OnDemand' || form.idleDisconnectTime > 0);
     case UspWanConnectionType.bridge:
       return true;
   }
@@ -79,6 +86,9 @@ bool _validateOptionalFields(UspInternetSettingsForm form) {
   // MTU must be in valid range: 576 (IPv4 RFC 791 min) to max by protocol
   final mtuMax = switch (form.connectionType) {
     UspWanConnectionType.pppoe => 1492, // 1500 - 8 (PPP header)
+    UspWanConnectionType.pptp ||
+    UspWanConnectionType.l2tp =>
+      1460, // tunnel overhead
     _ => 1500, // Ethernet standard (DHCP, Static)
   };
   if (form.mtu < 576 || form.mtu > mtuMax) return false;
@@ -116,6 +126,16 @@ final _macPattern = RegExp(
 );
 
 bool _isValidMac(String value) => _macPattern.hasMatch(value);
+
+final _hostnamePattern = RegExp(
+  r'^([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)*[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?$',
+);
+
+bool _isValidHostnameOrIp(String value) {
+  if (value.isEmpty) return false;
+  if (_ipAddressRule.validate(value)) return true;
+  return _hostnamePattern.hasMatch(value);
+}
 
 final _ipv6Rule = IPv6WithReservedRule();
 

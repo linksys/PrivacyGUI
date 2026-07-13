@@ -423,13 +423,13 @@ class UspPdfService {
         cellStyle: const pw.TextStyle(fontSize: 8),
         cellPadding: const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 2),
         headerDecoration: const pw.BoxDecoration(color: PdfColors.grey200),
-        headers: ['Name', 'MAC', 'IP', 'Active', 'Lease'],
+        headers: ['Name', 'MAC', 'IP', 'Online', 'Lease'],
         data: clients
             .map((c) => [
                   c.displayName,
                   c.mac,
                   c.ip,
-                  c.active ? 'Yes' : 'No',
+                  (c.isOnline ?? false) ? 'Yes' : 'No',
                   c.leaseTimeFormatted.isNotEmpty ? c.leaseTimeFormatted : '—',
                 ])
             .toList(),

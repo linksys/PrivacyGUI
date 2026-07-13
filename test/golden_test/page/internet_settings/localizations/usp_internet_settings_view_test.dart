@@ -35,6 +35,15 @@ void main() {
         'bridge': (overrides) => overrides.addAll(
               internetSettingsOverrides(dataState(bridgeForm)),
             ),
+        'bridge_editing': (overrides) => overrides.addAll(
+              internetSettingsOverrides(
+                dataState(
+                  bridgeForm,
+                  readOnlyInfo: bridgeReadOnlyInfo,
+                  isEditing: true,
+                ),
+              ),
+            ),
         'ipv6_enabled': (overrides) => overrides.addAll(
               internetSettingsOverrides(
                 dataState(ipv6EnabledForm, readOnlyInfo: ipv6ReadOnlyInfo),

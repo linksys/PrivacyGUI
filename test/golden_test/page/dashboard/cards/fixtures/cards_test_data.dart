@@ -294,7 +294,7 @@ final testDevicesEmptyData = DevicesData(
 // DHCP Reservations & Clients
 // ---------------------------------------------------------------------------
 
-const testDhcpReservations = [
+final testDhcpReservations = [
   DhcpReservationUIModel(
     instancePath: 'Device.DHCPv4.Server.Pool.1.StaticAddress.1.',
     mac: 'AA:BB:CC:DD:EE:01',
@@ -319,21 +319,24 @@ final testDhcpClients = [
   DhcpClientUIModel(
     mac: 'AA:BB:CC:DD:EE:02',
     ip: '192.168.1.102',
-    active: true,
+    leaseActive: true,
+    isOnline: true,
     hostName: 'iPhone-15',
     leaseExpiry: DateTime(2024, 6, 16, 14, 30),
   ),
   DhcpClientUIModel(
     mac: 'AA:BB:CC:DD:EE:03',
     ip: '192.168.1.103',
-    active: true,
+    leaseActive: true,
+    isOnline: true,
     hostName: 'MacBook-Air',
     leaseExpiry: DateTime(2024, 6, 16, 10, 00),
   ),
   DhcpClientUIModel(
     mac: 'AA:BB:CC:DD:EE:04',
     ip: '192.168.1.104',
-    active: true,
+    leaseActive: true,
+    isOnline: true,
     hostName: 'Smart-Speaker',
     leaseExpiry: DateTime(2024, 6, 16, 8, 00),
   ),
