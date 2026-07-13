@@ -344,9 +344,16 @@ class _ChannelsTab extends StatelessWidget {
       final radioIdx = bandToRadioIdx[c.band];
       if (radioIdx == null) continue;
       clientsPerRadio[radioIdx] = (clientsPerRadio[radioIdx] ?? 0) + 1;
-      final snr = computeSNR(c.signalStrength, c.noise);
-      snrSumPerRadio[radioIdx] = (snrSumPerRadio[radioIdx] ?? 0) + snr;
-      snrCountPerRadio[radioIdx] = (snrCountPerRadio[radioIdx] ?? 0) + 1;
+      // Only clients with real noise data contribute to the average SNR.
+      // Slave-node clients have no noise (they aren't in wifiClientMap), so
+      // computeSNR returns 0; including them would deflate the per-radio
+      // average once #1118 gives them a resolved band. Count them as clients
+      // but exclude them from the SNR aggregation until noise is available.
+      if (c.noise != 0) {
+        final snr = computeSNR(c.signalStrength, c.noise);
+        snrSumPerRadio[radioIdx] = (snrSumPerRadio[radioIdx] ?? 0) + snr;
+        snrCountPerRadio[radioIdx] = (snrCountPerRadio[radioIdx] ?? 0) + 1;
+      }
     }
 
     // Compute average SNR per radio

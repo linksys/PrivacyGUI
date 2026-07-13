@@ -190,10 +190,10 @@ class UspDeviceAnalyticsNotifier extends Notifier<DeviceAnalyticsState> {
     final wifiDevices = online.where((d) => d.isWifi).toList();
     final wiredDevices = online.where((d) => !d.isWifi).toList();
 
-    // Category distribution (online only):
-    // - Child node client (WiFi or Wired): show parentNodeName (e.g., "Community00090")
-    // - Master WiFi with band: show band (2.4GHz, 5GHz, 6GHz)
-    // - Master Wired: show "Wired"
+    // Category distribution (online only) — see _getDeviceCategory:
+    // - WiFi with a band: show band (2.4GHz, 5GHz, 6GHz)
+    // - Wired: show "Wired"
+    // - WiFi without a band (e.g. slave clients pending #1118): show node name
     final categoryDist = <String, int>{};
     for (final d in online) {
       final category = _getDeviceCategory(d);
@@ -236,21 +236,26 @@ class UspDeviceAnalyticsNotifier extends Notifier<DeviceAnalyticsState> {
 
   /// Determines the display category for a device.
   ///
-  /// - Child node client (WiFi or Wired): parentNodeName (grouped under node)
-  /// - Master WiFi with band: actual band (2.4GHz, 5GHz, 6GHz)
-  /// - Master Wired: "Wired"
+  /// - WiFi client with a resolved band: the band (2.4GHz / 5GHz / 6GHz)
+  /// - Wired client: "Wired"
+  /// - WiFi client without a band: the connected node name, else "WiFi"
   ///
-  /// Uses [ClientDevice.parentNodeId] (not parentNodeName) to distinguish a
-  /// slave-node client from a master-node client: the builder patches
-  /// parentNodeName onto ALL clients (including the master's), so parentNodeName
-  /// alone cannot tell them apart. parentNodeId is null only for master clients.
+  /// Band takes priority over the node grouping, because a master WiFi client
+  /// keeps a valid band in a mesh too (it comes from the local
+  /// `WiFi.AccessPoint` chain, not DataElements). Keying off `parentNodeId`
+  /// alone was wrong: `MeshTopologyBuilder` maps EVERY node's associated STAs —
+  /// including the master's own clients — into `clientToNodeMap`, so master
+  /// clients also get a non-null `parentNodeId` on a mesh, which previously
+  /// collapsed their band under the gateway name.
+  ///
+  /// Slave WiFi clients currently have no band (DataElements band resolution is
+  /// pending — see #1118), so they fall through to the node-name grouping.
   String _getDeviceCategory(ClientDevice d) {
-    final isChildNodeClient = d.parentNodeId != null;
-    if (isChildNodeClient) {
-      return d.parentNodeName ?? d.parentNodeId!;
-    }
     if (d.isWifi) {
-      return d.band ?? 'WiFi';
+      final band = d.band;
+      if (band != null && band.isNotEmpty) return band;
+      // WiFi client without a resolved band: group under its node.
+      return d.parentNodeName ?? 'WiFi';
     }
     return 'Wired';
   }

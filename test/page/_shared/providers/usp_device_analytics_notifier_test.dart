@@ -300,28 +300,32 @@ void main() {
       container.dispose();
     });
 
-    test('categorizes by parentNodeId, not the patched parentNodeName',
+    test('categorizes by band first, node name only for band-less WiFi',
         () async {
-      // MeshNetworkBuilder patches parentNodeName onto ALL clients, including
-      // the master's (using the gateway name). Categorization must therefore
-      // key off parentNodeId (null only for master clients) — otherwise master
-      // wired/wifi clients would be mis-grouped under the gateway name.
+      // On a REAL mesh, MeshNetworkBuilder maps every node's associated STAs —
+      // including the master's own clients — into clientToNodeMap, so a master
+      // WiFi client gets a NON-NULL parentNodeId AND a patched parentNodeName
+      // (the gateway display name). Categorization must key off the band, not
+      // parentNodeId, or master WiFi clients collapse under the gateway name.
 
-      // Master WiFi with band — parentNodeName patched, parentNodeId null.
-      final masterWifi = ClientDevice(
+      // Master WiFi with band — mesh shape: NON-NULL parentNodeId + patched name.
+      final masterWifiMeshShape = ClientDevice(
         mac: 'FF:00:00:00:00:01',
         ip: '192.168.1.200',
         hostName: 'MasterClient',
         isActive: true,
         connectionType: ConnectionType.wifi,
+        parentNodeId:
+            'MASTER_NODE_ID', // non-null, as the real builder produces
         parentNodeName: 'MyGateway',
         wifi: const WifiConnectionInfo(
           band: '5GHz',
           signalStrength: -50,
         ),
       );
-      // Child node WiFi client (no band, has parentNodeId + parentNodeName)
-      final childWifi = ClientDevice(
+      // Slave WiFi client WITHOUT a band (band resolution pending #1118) —
+      // falls through to its node name.
+      final slaveWifiNoBand = ClientDevice(
         mac: 'FF:00:00:00:00:02',
         ip: '192.168.1.201',
         hostName: 'ChildClient',
@@ -333,8 +337,8 @@ void main() {
           signalStrength: -60,
         ),
       );
-      // Child node Wired client
-      final childWired = ClientDevice(
+      // Slave Wired client → "Wired".
+      final slaveWired = ClientDevice(
         mac: 'FF:00:00:00:00:03',
         ip: '192.168.1.202',
         hostName: 'ChildWired',
@@ -343,28 +347,30 @@ void main() {
         parentNodeId: 'CHILD_NODE_ID',
         parentNodeName: 'Extender-1',
       );
-      // Master Wired client — parentNodeName patched (gateway), parentNodeId null.
+      // Master Wired client — patched gateway name, non-null parentNodeId → Wired.
       final masterWired = ClientDevice(
         mac: 'FF:00:00:00:00:04',
         ip: '192.168.1.203',
         hostName: 'MasterWired',
         isActive: true,
         connectionType: ConnectionType.wired,
+        parentNodeId: 'MASTER_NODE_ID',
         parentNodeName: 'MyGateway',
       );
-      final data =
-          createDevicesData([masterWifi, childWifi, childWired, masterWired]);
+      final data = createDevicesData(
+          [masterWifiMeshShape, slaveWifiNoBand, slaveWired, masterWired]);
       final container = createContainer(data: data);
       await waitForAnalytics(container);
 
       final dist = container.read(uspDeviceAnalyticsProvider).current!;
-      // Master WiFi: uses band (5GHz), NOT the patched gateway name.
+      // Master WiFi with band: bucketed under its BAND even on a mesh
+      // (non-null parentNodeId), NOT the gateway name.
       expect(dist.bandDistribution['5GHz'], 1);
-      // Child node clients (WiFi + Wired): grouped under parentNodeName.
-      expect(dist.bandDistribution['Extender-1'], 2);
-      // Master Wired: uses "Wired", NOT the patched gateway name.
-      expect(dist.bandDistribution['Wired'], 1);
-      // The gateway name must never become a category for master clients.
+      // Band-less slave WiFi client: grouped under its node name.
+      expect(dist.bandDistribution['Extender-1'], 1);
+      // Both wired clients (master + slave): "Wired".
+      expect(dist.bandDistribution['Wired'], 2);
+      // The gateway name must never become a category.
       expect(dist.bandDistribution.containsKey('MyGateway'), isFalse);
       container.dispose();
     });
