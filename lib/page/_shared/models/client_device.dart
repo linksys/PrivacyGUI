@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
+import 'package:privacy_gui/framework/diagnostic_loggable.dart';
 import 'package:privacy_gui/page/_shared/models/network_entity.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_connection_info.dart';
 
@@ -19,7 +20,7 @@ extension ConnectionTypeExt on ConnectionType {
 /// When a device connects via multiple interfaces (e.g., WiFi + Ethernet),
 /// the primary interface is stored in [ClientDevice] fields and additional
 /// interfaces are stored in [ClientDevice.additionalInterfaces].
-class ClientInterfaceInfo with EquatableMixin {
+class ClientInterfaceInfo with EquatableMixin, DiagnosticNamed {
   /// MAC address of this interface.
   final String mac;
 
@@ -68,13 +69,26 @@ class ClientInterfaceInfo with EquatableMixin {
         layer1Interface,
         wifi,
       ];
+
+  @override
+  String get diagnosticName => 'ClientInterfaceInfo';
+
+  @override
+  Map<String, Object?> get namedProps => {
+        'mac': mac,
+        'ip': ip,
+        'connectionType': connectionType,
+        'isActive': isActive,
+        'layer1Interface': layer1Interface,
+        'wifi': wifi,
+      };
 }
 
 /// Client device connected to the mesh network.
 ///
 /// Represents end-user devices (phones, laptops, etc.) that connect to
 /// mesh nodes. Implements [NetworkEntity] for unified identity handling.
-final class ClientDevice extends NetworkEntity {
+final class ClientDevice extends NetworkEntity with DiagnosticNamed {
   // ─── Identity ───
   /// MAC address (uppercase, normalized).
   final String mac;
@@ -284,6 +298,29 @@ final class ClientDevice extends NetworkEntity {
         hostsDeviceId,
         additionalInterfaces,
       ];
+
+  @override
+  String get diagnosticName => 'ClientDevice';
+
+  @override
+  Map<String, Object?> get namedProps => {
+        'mac': mac,
+        'hostName': hostName,
+        'friendlyName': friendlyName,
+        'isActive': isActive,
+        'ip': ip,
+        'ipv6Addresses': ipv6Addresses,
+        'layer1Interface': layer1Interface,
+        'connectionType': connectionType,
+        'wifi': wifi,
+        'parentNodeId': parentNodeId,
+        'parentNodeName': parentNodeName,
+        'manufacturer': manufacturer,
+        'modelName': modelName,
+        'operatingSystem': operatingSystem,
+        'hostsDeviceId': hostsDeviceId,
+        'additionalInterfaces': additionalInterfaces,
+      };
 }
 
 /// Extension methods for List<ClientDevice>.

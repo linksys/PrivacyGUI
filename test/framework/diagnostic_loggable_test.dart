@@ -147,6 +147,42 @@ class TestData extends Equatable with DiagnosticLoggable {
   Map<String, Object?> get namedProps => {'model': model};
 }
 
+/// Model built with `with EquatableMixin` (not `extends Equatable`) — mirrors
+/// the MeshNetwork entities. Uses [DiagnosticNamed] since it cannot mix in
+/// [DiagnosticLoggable] (constrained `on Equatable`). Keeps its own [props].
+class MixinModel with EquatableMixin, DiagnosticNamed {
+  final String id;
+  final int level;
+
+  const MixinModel({required this.id, required this.level});
+
+  @override
+  List<Object?> get props => [id, level];
+
+  @override
+  Map<String, Object?> get namedProps => {'id': id, 'level': level};
+}
+
+/// DiagnosticLoggable that nests a DiagnosticNamed (EquatableMixin) child.
+class LoggableWrappingMixin extends Equatable with DiagnosticLoggable {
+  final MixinModel child;
+
+  const LoggableWrappingMixin({required this.child});
+
+  @override
+  Map<String, Object?> get namedProps => {'child': child};
+}
+
+/// DiagnosticLoggable that nests a list of DiagnosticNamed children.
+class LoggableWrappingList extends Equatable with DiagnosticLoggable {
+  final List<MixinModel> items;
+
+  const LoggableWrappingList({required this.items});
+
+  @override
+  Map<String, Object?> get namedProps => {'items': items};
+}
+
 // --- Tests ---
 
 void main() {
@@ -357,6 +393,50 @@ void main() {
         const model = NonLoggableModel(data: 'secret');
 
         expect(model.toString(), equals('{"data":"secret"}'));
+      });
+    });
+
+    group('DiagnosticNamed (EquatableMixin models)', () {
+      test('EquatableMixin model with DiagnosticNamed outputs keyed JSON', () {
+        const model = MixinModel(id: 'x1', level: 3);
+
+        expect(model.toString(), equals('{"id":"x1","level":3}'));
+      });
+
+      test('DiagnosticNamed keeps its own props for equality', () {
+        // namedProps and props are independent — props still drives equality.
+        const a = MixinModel(id: 'x1', level: 3);
+        const b = MixinModel(id: 'x1', level: 3);
+        const c = MixinModel(id: 'x1', level: 9);
+
+        expect(a, equals(b));
+        expect(a, isNot(equals(c)));
+        expect(a.props, equals(['x1', 3]));
+      });
+
+      test(
+          'DiagnosticNamed nested inside DiagnosticLoggable serializes with keys '
+          '(not a props array or "Instance of")', () {
+        const outer = LoggableWrappingMixin(
+          child: MixinModel(id: 'inner', level: 1),
+        );
+
+        final json = outer.toString();
+
+        expect(json, equals('{"child":{"id":"inner","level":1}}'));
+        expect(json, isNot(contains('Instance of')));
+      });
+
+      test('list of DiagnosticNamed nested in DiagnosticLoggable', () {
+        const outer = LoggableWrappingList(items: [
+          MixinModel(id: 'a', level: 1),
+          MixinModel(id: 'b', level: 2),
+        ]);
+
+        expect(
+          outer.toString(),
+          equals('{"items":[{"id":"a","level":1},{"id":"b","level":2}]}'),
+        );
       });
     });
 

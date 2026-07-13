@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:privacy_gui/framework/diagnostic_loggable.dart';
 import 'package:privacy_gui/page/_shared/models/client_device.dart';
 import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 
@@ -7,7 +8,7 @@ import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 /// Single Source of Truth (SSoT) for all network entities.
 /// Contains one master node, zero or more slave nodes, and all client devices
 /// organized by their parent node.
-class MeshNetwork with EquatableMixin {
+class MeshNetwork with EquatableMixin, DiagnosticNamed {
   /// The master (gateway) node.
   final MasterNode master;
 
@@ -129,4 +130,14 @@ class MeshNetwork with EquatableMixin {
 
   @override
   List<Object?> get props => [master, slaves, unassignedClients];
+
+  @override
+  String get diagnosticName => 'MeshNetwork';
+
+  @override
+  Map<String, Object?> get namedProps => {
+        'master': master,
+        'slaves': slaves,
+        'unassignedClients': unassignedClients,
+      };
 }

@@ -1,9 +1,10 @@
 import 'package:equatable/equatable.dart';
+import 'package:privacy_gui/framework/diagnostic_loggable.dart';
 
 /// Backhaul connection info for slave mesh nodes.
 ///
 /// Describes how a slave node connects to its parent (WiFi or Ethernet).
-class BackhaulInfo with EquatableMixin {
+class BackhaulInfo with EquatableMixin, DiagnosticNamed {
   /// Media type description, e.g., "IEEE 802.11ax", "Ethernet".
   final String mediaType;
 
@@ -74,4 +75,22 @@ class BackhaulInfo with EquatableMixin {
         backhaulAlId,
         backhaulMacAddress,
       ];
+
+  @override
+  String get diagnosticName => 'BackhaulInfo';
+
+  @override
+  Map<String, Object?> get namedProps => {
+        'mediaType': mediaType,
+        'linkType': linkType,
+        'phyRate': phyRate,
+        'signalStrength': signalStrength,
+        'uplinkRate': uplinkRate,
+        'downlinkRate': downlinkRate,
+        'parentNodeId': parentNodeId,
+        'parentBssid': parentBssid,
+        'lastContactTime': lastContactTime,
+        'backhaulAlId': backhaulAlId,
+        'backhaulMacAddress': backhaulMacAddress,
+      };
 }
