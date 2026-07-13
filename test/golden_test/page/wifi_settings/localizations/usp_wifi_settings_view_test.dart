@@ -73,7 +73,11 @@ void main() {
             ),
           ),
           steps: (tester) async {
-            await tester.tap(find.bySemanticsLabel('wifi-name-2.4GHz').first);
+            // SSID value from fixture data — locale-independent. The golden
+            // runner does not build a semantics tree, so bySemanticsLabel finds
+            // nothing; tap the SSID text like the sibling dialog interactions.
+            // First per-band card is 2.4GHz (ssid: 'HomeNetwork').
+            await tester.tap(find.text('HomeNetwork').first);
             await tester.pump();
             for (int i = 0; i < 10; i++) {
               await tester.pump(const Duration(milliseconds: 50));
