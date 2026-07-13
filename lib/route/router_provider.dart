@@ -24,6 +24,7 @@ import 'navigation_extra.dart';
 
 // USP dashboard imports
 import 'package:privacy_gui/page/_shared/providers/usp_bars_visible_provider.dart';
+import 'package:privacy_gui/page/dashboard/providers/dashboard_edit_mode_provider.dart';
 import 'package:privacy_gui/page/dashboard/views/usp_dashboard_view.dart';
 import 'package:privacy_gui/page/menu/views/usp_menu_view.dart';
 import 'package:privacy_gui/page/support/views/usp_support_view.dart';
