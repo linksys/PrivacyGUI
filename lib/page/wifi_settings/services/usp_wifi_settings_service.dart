@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/core/utils/tr181_path.dart';
 import 'package:privacy_gui/core/utils/wifi_channel.dart';
 import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/generated/wi_fi_access_points.g.dart';
@@ -46,13 +47,13 @@ class UspWifiSettingsService {
     // Build lookup maps with normalized trailing-dot paths
     final apBySsidRef = <String, WiFiAccessPoint>{};
     for (final ap in accessPoints.items) {
-      final key = _ensureTrailingDot(ap.ssidReference);
+      final key = ensureTrailingDot(ap.ssidReference);
       if (key.isNotEmpty) apBySsidRef[key] = ap;
     }
 
     final radioByPath = <String, WiFiRadio>{};
     for (final r in radios.items) {
-      radioByPath[_ensureTrailingDot(r.instancePath)] = r;
+      radioByPath[ensureTrailingDot(r.instancePath)] = r;
     }
 
     logger.d('[USP][WiFi]: Building networks: '
@@ -62,13 +63,13 @@ class UspWifiSettingsService {
 
     final networks = <WifiNetworkUIModel>[];
     for (final ssid in ssids.items) {
-      final ssidPath = _ensureTrailingDot(ssid.instancePath);
+      final ssidPath = ensureTrailingDot(ssid.instancePath);
 
       // Find matching AccessPoint via ssidReference
       final ap = apBySsidRef[ssidPath];
 
       // Find matching Radio via SSID.lowerLayers
-      final radioPath = _ensureTrailingDot(ssid.lowerLayers);
+      final radioPath = ensureTrailingDot(ssid.lowerLayers);
       final radio = radioByPath[radioPath];
 
       logger.d('[USP][WiFi]: SSID ${ssid.ssid}: '
@@ -573,10 +574,10 @@ class UspWifiSettingsService {
     if (ssidPaths.isEmpty) return 0;
 
     // Resolve AccessPoint paths whose SSIDReference points at a matched SSID.
-    final matchedSsidPathSet = ssidPaths.map(_ensureTrailingDot).toSet();
+    final matchedSsidPathSet = ssidPaths.map(ensureTrailingDot).toSet();
     final apPaths = accessPoints.items
         .where((ap) =>
-            matchedSsidPathSet.contains(_ensureTrailingDot(ap.ssidReference)))
+            matchedSsidPathSet.contains(ensureTrailingDot(ap.ssidReference)))
         .map((ap) => ap.instancePath)
         .toList();
 
@@ -649,12 +650,6 @@ List<String> _parseModesSupported(String raw) {
       .map((s) => s.trim())
       .where((s) => s.isNotEmpty)
       .toList();
-}
-
-/// Ensures a TR-181 path ends with a dot.
-String _ensureTrailingDot(String path) {
-  if (path.isEmpty) return path;
-  return path.endsWith('.') ? path : '$path.';
 }
 
 /// Parses a TR-181 SupportedOperatingChannelBandwidths string.

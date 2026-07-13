@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/core/utils/tr181_path.dart';
 import 'package:privacy_gui/core/utils/wifi_channel.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/framework/preservable_contract.dart';
@@ -116,12 +117,12 @@ class UspWifiAdvancedNotifier
     if (!enabled) {
       final radios = ref.read(wifiDataProvider).valueOrNull?.radioModels ?? [];
       final radioByPath = {
-        for (final r in radios) _withTrailingDot(r.instancePath): r,
+        for (final r in radios) ensureTrailingDot(r.instancePath): r,
       };
       for (final path in radioPaths) {
         // Radios staying on DFS need no channel remediation.
         if (current.ieee80211hByRadio[path] == true) continue;
-        final radio = radioByPath[_withTrailingDot(path)];
+        final radio = radioByPath[ensureTrailingDot(path)];
         if (radio == null || radio.autoChannelEnable) continue;
         if (isDfsChannel(radio.channel, band: radio.band)) {
           forceAutoChannelPaths.add(path);
@@ -179,12 +180,4 @@ class UspWifiAdvancedNotifier
       settings: state.settings.update(updated),
     );
   }
-}
-
-/// Normalizes a TR-181 instance path to a trailing-dot form so that radio
-/// paths from [WifiAdvancedSettings.ieee80211hByRadio] and from
-/// [WifiRadioUIModel.instancePath] compare equal regardless of source format.
-String _withTrailingDot(String path) {
-  if (path.isEmpty) return path;
-  return path.endsWith('.') ? path : '$path.';
 }

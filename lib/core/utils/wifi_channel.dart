@@ -38,6 +38,10 @@ List<int> parsePossibleChannels(String raw) {
 /// 5 GHz DFS channels (IEEE 802.11h): UNII-2A (52–64) + UNII-2C (100–144).
 /// These are the only channels subject to Dynamic Frequency Selection; 2.4 GHz
 /// and 6 GHz channels are never DFS.
+///
+/// Regulatory scope: this is the US/FCC (UNII-2A/2C) set. Other domains differ
+/// (e.g. ETSI weather-radar restrictions, MIC/Japan assignments) — extend or
+/// parameterize per regulatory domain if multi-market support is required.
 const Set<int> dfsChannels5GHz = {
   52, 56, 60, 64, //
   100, 104, 108, 112, 116, 120, 124, 128, 132, 136, 140, 144,
