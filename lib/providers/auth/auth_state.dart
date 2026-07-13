@@ -27,6 +27,15 @@ class AuthState extends Equatable {
     return const AuthState(loginType: LoginType.none);
   }
 
+  /// Whether this is a Remote Assistance session.
+  ///
+  /// In RA mode the WASM client is pre-authorized via authToken, so
+  /// [UspClient.isAuthenticated] stays false by design. RA must therefore be
+  /// detected from login intent (this getter), not from the client's login
+  /// state. This is the canonical replacement for scattered inline
+  /// `loginType == LoginType.remote` checks.
+  bool get isRemoteAssistance => loginType == LoginType.remote;
+
   /// Creates an [AuthState] from a JSON map.
   factory AuthState.fromJson(Map<String, dynamic> json) {
     final loginType =

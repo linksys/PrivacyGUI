@@ -137,6 +137,36 @@ void main() {
       container.dispose();
     });
 
+    // Regression: issue #1119. The provider must NOT gate its fetch on the raw
+    // usp.isAuthenticated flag — in Remote Assistance that flag stays false by
+    // design (authToken bypass), yet the WiFi data layer serves fine. Auth is
+    // enforced by the router, not here.
+    test('fetch proceeds when usp.isAuthenticated is false (RA bypass)',
+        () async {
+      when(() => mockUsp.isAuthenticated).thenReturn(false);
+      final networks = WifiSettingsTestData.createNetworks();
+      when(() => mockService.buildWifiNetworks(
+            ssids: any(named: 'ssids'),
+            accessPoints: any(named: 'accessPoints'),
+            radios: any(named: 'radios'),
+          )).thenReturn(networks);
+      when(() => mockService.buildQuickSetupNetworks(any())).thenReturn((
+        main: WifiSettingsTestData.createQuickSetupAggregate(),
+        guest: null,
+        isQuickSetup: true,
+      ));
+
+      final container = createContainer();
+      await Future.delayed(Duration.zero);
+      await Future.delayed(Duration.zero);
+
+      final state = container.read(uspWifiSettingsProvider);
+      expect(state.status.error, isNull);
+      expect(state.settings.current.networks, hasLength(3));
+      expect(state.status.isLoading, isFalse);
+      container.dispose();
+    });
+
     // -----------------------------------------------------------------------
     // updateNetworkField
     // -----------------------------------------------------------------------

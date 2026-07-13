@@ -421,9 +421,13 @@ void main() {
       container.dispose();
     });
 
-    test('fetch with unauthenticated service sets error status', () async {
+    // Regression: issue #1119. The provider must NOT gate its fetch on the raw
+    // usp.isAuthenticated flag — in Remote Assistance that flag stays false by
+    // design (authToken bypass), yet the data layer serves fine. Auth is
+    // enforced by the router, not here.
+    test('fetch proceeds when usp.isAuthenticated is false (RA bypass)',
+        () async {
       when(() => mockUsp.isAuthenticated).thenReturn(false);
-      when(() => mockAuthCoordinator.restoreSession()).thenAnswer((_) async {});
       when(() => mockService.fetchSettings())
           .thenAnswer((_) async => testFetchResult);
 
@@ -431,8 +435,29 @@ void main() {
       await Future.delayed(Duration.zero);
 
       final state = container.read(uspInternetSettingsProvider);
-      // Should hit the restore path which won't succeed with our mock.
-      expect(state.status.error, isNotNull);
+      expect(state.status.error, isNull);
+      expect(state.status.isLoading, isFalse);
+      expect(state.settings.current.form.connectionType,
+          UspWanConnectionType.dhcp);
+      verify(() => mockService.fetchSettings()).called(1);
+      container.dispose();
+    });
+
+    test('fetch throws ServiceNotInitializedError when usp is null', () async {
+      final container = ProviderContainer(
+        overrides: [
+          uspClientProvider.overrideWithValue(null),
+          uspInternetSettingsServiceProvider.overrideWithValue(mockService),
+          uspMutationLockProvider.overrideWithValue(UspMutationLock()),
+          uspAuthCoordinatorProvider.overrideWithValue(mockAuthCoordinator),
+          sseManagerProvider.overrideWithValue(mockSseManager),
+        ],
+      );
+      container.listen(uspInternetSettingsProvider, (_, __) {});
+      await Future.delayed(Duration.zero);
+
+      final state = container.read(uspInternetSettingsProvider);
+      expect(state.status.error, isA<ServiceNotInitializedError>());
       container.dispose();
     });
   });

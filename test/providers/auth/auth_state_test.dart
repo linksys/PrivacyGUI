@@ -62,5 +62,14 @@ void main() {
       final b = AuthState(localPasswordHint: 'y', loginType: LoginType.local);
       expect(a, isNot(b));
     });
+
+    test('isRemoteAssistance is true only for LoginType.remote', () {
+      expect(const AuthState(loginType: LoginType.none).isRemoteAssistance,
+          isFalse);
+      expect(const AuthState(loginType: LoginType.local).isRemoteAssistance,
+          isFalse);
+      expect(const AuthState(loginType: LoginType.remote).isRemoteAssistance,
+          isTrue);
+    });
   });
 }

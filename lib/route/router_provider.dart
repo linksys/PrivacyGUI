@@ -140,9 +140,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         // In Remote build mode, redirect to confirm page with restored session params.
         if (GlobalConfig.remote.isActive) {
           // If already connected (USP layer active), allow access
-          final loginType =
-              ref.read(authProvider.select((value) => value.value?.loginType));
-          if (loginType == LoginType.remote) {
+          final isRemoteAssistance = ref.read(authProvider
+              .select((value) => value.value?.isRemoteAssistance ?? false));
+          if (isRemoteAssistance) {
             return state.uri.toString();
           }
 

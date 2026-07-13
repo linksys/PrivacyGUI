@@ -128,9 +128,13 @@ class DashboardOrchestrator extends AsyncNotifier<DashboardOrchestratorState> {
     }
 
     // Remote Assistance mode: client is pre-authenticated via authToken,
-    // skip local USP auth check.
-    final loginType = ref.read(authProvider).value?.loginType;
-    final isRemoteAssistance = loginType == LoginType.remote;
+    // skip local USP auth check. Note we keep the direct usp.isAuthenticated
+    // reads below rather than uspAuthReadyProvider: this code performs
+    // restoreSession and must observe the flag flip synchronously (that plain
+    // getter does not trigger Riverpod invalidation, so a cached provider read
+    // would be stale).
+    final isRemoteAssistance =
+        ref.read(authProvider).value?.isRemoteAssistance ?? false;
 
     // On page reload WASM state is lost — attempt session restore (local only).
     // Use isRecovering: true because we handle auth failure via NotAuthenticatedError
