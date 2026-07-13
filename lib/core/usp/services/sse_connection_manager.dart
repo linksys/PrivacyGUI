@@ -112,7 +112,7 @@ class SseConnectionManager {
 
     // Lock: if connect is already in progress, await it and return.
     if (_connectInProgress != null) {
-      logger.d('[USP][SSE]: connect() already in progress — awaiting');
+      logger.d('[SSE]: connect() already in progress — awaiting');
       await _connectInProgress!.future;
       return;
     }
@@ -126,7 +126,7 @@ class SseConnectionManager {
       _streamEndHandled = false;
       connectionState.value = SseConnectionState.connecting;
 
-      logger.d('[USP][SSE]: Connecting...');
+      logger.d('[SSE]: Connecting...');
 
       final stream = _bridge.notifications();
       _sseSubscription = stream.listen(
@@ -136,7 +136,7 @@ class SseConnectionManager {
       );
       _connectInProgress!.complete();
     } catch (e) {
-      logger.w('[USP][SSE]: Failed to open stream: $e');
+      logger.w('[SSE]: Failed to open stream: $e');
       if (!_connectInProgress!.isCompleted) {
         _connectInProgress!.completeError(e);
       }
@@ -160,7 +160,7 @@ class SseConnectionManager {
       onDisconnected?.call();
     }
     connectionState.value = SseConnectionState.disconnected;
-    logger.d('[USP][SSE]: Disconnected (intentional)');
+    logger.d('[SSE]: Disconnected (intentional)');
   }
 
   /// Attempts to reconnect from [SseConnectionState.suspended] or
@@ -175,7 +175,7 @@ class SseConnectionManager {
         state == SseConnectionState.reconnecting) {
       return false;
     }
-    logger.d('[USP][SSE]: Manual reconnect requested (was: ${state.name})');
+    logger.d('[SSE]: Manual reconnect requested (was: ${state.name})');
     _reconnectAttempt = 0;
     await connect();
     return true;
@@ -202,10 +202,8 @@ class SseConnectionManager {
     // Skip debug events from UspBridgeClient internal diagnostics FIRST —
     // these are synthetic events emitted before the Fetch returns and must
     // NOT trigger a connected transition or subscription re-registration.
-    if (event.event == '_debug') {
-      logger.d('[USP][SSE]: debug: ${event.data}');
-      return;
-    }
+    // Skip synthetic _debug events — they are for development diagnostics only
+    if (event.event == '_debug') return;
 
     // Reset heartbeat watchdog on real events only
     _resetHeartbeatWatchdog();
@@ -214,7 +212,7 @@ class SseConnectionManager {
     if (connectionState.value != SseConnectionState.connected) {
       connectionState.value = SseConnectionState.connected;
       _reconnectAttempt = 0;
-      logger.d('[USP][SSE]: Connected (event: ${event.event})');
+      logger.d('[SSE]: Connected (event: ${event.event})');
       onConnected?.call();
     }
 
@@ -223,12 +221,12 @@ class SseConnectionManager {
   }
 
   void _onError(Object error) {
-    logger.w('[USP][SSE]: Stream error: $error');
+    logger.w('[SSE]: Stream error: $error');
     _handleStreamEnd();
   }
 
   void _onDone() {
-    logger.d('[USP][SSE]: Stream done (server closed connection)');
+    logger.d('[SSE]: Stream done (server closed connection)');
     _handleStreamEnd();
   }
 
@@ -265,7 +263,7 @@ class SseConnectionManager {
 
     final timeout = _heartbeatConfig.timeout;
     _heartbeatWatchdog = Timer(timeout, () {
-      logger.w('[USP][SSE]: Heartbeat timeout (${timeout.inSeconds}s) '
+      logger.w('[SSE]: Heartbeat timeout (${timeout.inSeconds}s) '
           '— connection may be stale');
       _sseSubscription?.cancel();
       _handleStreamEnd();
@@ -297,7 +295,7 @@ class SseConnectionManager {
 
     if (_reconnectAttempt > _maxRetries) {
       connectionState.value = SseConnectionState.suspended;
-      logger.w('[USP][SSE]: Max retries ($_maxRetries) reached — suspended. '
+      logger.w('[SSE]: Max retries ($_maxRetries) reached — suspended. '
           'Call tryReconnect() or wait for lifecycle resume.');
       return;
     }
@@ -305,7 +303,7 @@ class SseConnectionManager {
     connectionState.value = SseConnectionState.reconnecting;
 
     final delay = _nextBackoff;
-    logger.d('[USP][SSE]: Reconnecting in ${delay.inSeconds}s '
+    logger.d('[SSE]: Reconnecting in ${delay.inSeconds}s '
         '(attempt #$_reconnectAttempt/$_maxRetries)');
 
     _reconnectTimer = Timer(delay, () {

@@ -174,10 +174,9 @@ final sseBootstrapProvider = FutureProvider<void>((ref) async {
   if (!GlobalConfig.remote.isActive) {
     try {
       await bridge.health().timeout(const Duration(seconds: 5));
-      logger.d('[USP][SSE][Bootstrap]: Bridge health check passed');
+      logger.d('[SSE]: Bridge health check passed');
     } catch (e) {
-      logger.w(
-          '[USP][SSE][Bootstrap]: Bridge health check failed: $e — continuing');
+      logger.w('[SSE]: Bridge health check failed: $e — continuing');
     }
   }
 
@@ -187,6 +186,6 @@ final sseBootstrapProvider = FutureProvider<void>((ref) async {
   // which causes 503 errors due to the single-threaded OBUSPA backend.
   await manager.connect();
 
-  logger.d('[USP][SSE][Bootstrap]: Complete — SSE connected, '
+  logger.d('[SSE]: Complete — SSE connected, '
       'core subscriptions deferred to orchestrator after domain ready');
 });

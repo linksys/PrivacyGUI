@@ -1,10 +1,11 @@
 import 'package:equatable/equatable.dart';
+import 'package:privacy_gui/framework/diagnostic_loggable.dart';
 
 /// Presentation Layer Model for a single forwarded-port rule
 /// within a port trigger entry (child of `Device.NAT.PortTrigger.{i}.Rule.{i}`).
 ///
 /// [instancePath] is `null` for locally-created forward rules not yet saved.
-class PortTriggerForwardRuleUIModel extends Equatable {
+class PortTriggerForwardRuleUIModel extends Equatable with DiagnosticLoggable {
   final String? instancePath;
   final int forwardPort;
   final int forwardPortEndRange;
@@ -24,12 +25,15 @@ class PortTriggerForwardRuleUIModel extends Equatable {
           : '$forwardPort-$forwardPortEndRange';
 
   @override
-  List<Object?> get props => [
-        instancePath,
-        forwardPort,
-        forwardPortEndRange,
-        forwardProtocol,
-      ];
+  String get diagnosticName => 'PortTriggerForwardRuleUIModel';
+
+  @override
+  Map<String, Object?> get namedProps => {
+        'instancePath': instancePath,
+        'forwardPort': forwardPort,
+        'forwardPortEndRange': forwardPortEndRange,
+        'forwardProtocol': forwardProtocol,
+      };
 }
 
 /// Presentation Layer Model for a port triggering rule.
@@ -38,7 +42,7 @@ class PortTriggerForwardRuleUIModel extends Equatable {
 /// `Rule.{i}` sub-table (children).
 ///
 /// [instancePath] is `null` for newly created (local-only) rules.
-class PortTriggeringRuleUIModel extends Equatable {
+class PortTriggeringRuleUIModel extends Equatable with DiagnosticLoggable {
   final String? instancePath;
   final bool enabled;
   final String description;
@@ -89,24 +93,27 @@ class PortTriggeringRuleUIModel extends Equatable {
 
   /// Forward port display (first rule): "1024-1030" or "—" if no rules.
   String get forwardPortDisplay =>
-      forwardRules.isNotEmpty ? forwardRules.first.portDisplay : '\u2014';
+      forwardRules.isNotEmpty ? forwardRules.first.portDisplay : '—';
 
   /// Forward protocol (first rule) or "—" if no rules.
   String get forwardProtocolDisplay =>
-      forwardRules.isNotEmpty ? forwardRules.first.forwardProtocol : '\u2014';
+      forwardRules.isNotEmpty ? forwardRules.first.forwardProtocol : '—';
 
   /// Summary: "Trigger: 21 TCP → Forward: 1024-1030 TCP".
   String get summary => 'Trigger: $triggerPortDisplay $triggerProtocol '
-      '\u2192 Forward: $forwardPortDisplay $forwardProtocolDisplay';
+      '→ Forward: $forwardPortDisplay $forwardProtocolDisplay';
 
   @override
-  List<Object?> get props => [
-        instancePath,
-        enabled,
-        description,
-        triggerPort,
-        triggerPortEndRange,
-        triggerProtocol,
-        forwardRules,
-      ];
+  String get diagnosticName => 'PortTriggeringRuleUIModel';
+
+  @override
+  Map<String, Object?> get namedProps => {
+        'instancePath': instancePath,
+        'enabled': enabled,
+        'description': description,
+        'triggerPort': triggerPort,
+        'triggerPortEndRange': triggerPortEndRange,
+        'triggerProtocol': triggerProtocol,
+        'forwardRules': forwardRules,
+      };
 }

@@ -96,7 +96,7 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
   ///   and a responsive layout container.
   @override
   Widget build(BuildContext context) {
-    logger.d('[App]: build: $_currentRoute');
+    logger.t('[App]: build: $_currentRoute');
 
     final appSettings = ref.watch(appSettingsProvider);
     final systemLocaleStr = Intl.getCurrentLocale();
@@ -252,7 +252,7 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
   /// native splash screen, revealing the app's UI.
   _initAuth() {
     ref.read(authProvider.notifier).init().then((_) {
-      logger.d('[App]: init auth finish');
+      logger.t('[App]: init auth finish');
       FlutterNativeSplash.remove();
     });
   }

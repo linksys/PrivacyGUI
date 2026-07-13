@@ -167,7 +167,7 @@ class UspWifiDataService {
       for (final ssid in ssids.items)
         if (isGuestSsid(ssid)) _ensureTrailingDot(ssid.instancePath),
     };
-    logger.d('[USP][WiFi] Total guest SSID paths: ${guestSsidPaths.length}');
+    logger.t('[USP][WiFi] Total guest SSID paths: ${guestSsidPaths.length}');
     // Diagnostic: multiple SSIDs but none matched the `-guest` alias rule
     // usually means firmware did not provision guest aliases (see
     // wifi_guest_detection). Guest/main grouping degrades silently otherwise.
@@ -232,7 +232,6 @@ class UspWifiDataService {
   /// limitation), falls back to a broader parent-path fetch and manual parse.
   Future<Map<String, WifiClient>> _fetchWifiClients() async {
     final result = await WifiClients.fetch(_usp);
-    logger.d('[USP][Dashboard]: WifiClients raw: ${result.items.length} items');
 
     if (result.items.isNotEmpty) {
       return {
@@ -241,17 +240,10 @@ class UspWifiDataService {
       };
     }
 
-    logger.d(
-        '[USP][Dashboard]WifiClients selective-get empty, trying parent-path fallback');
     try {
-      final fallback = await _fetchWifiClientsFallback();
-      if (fallback.isNotEmpty) {
-        logger.d(
-            '[USP][Dashboard]WifiClients fallback: ${fallback.length} clients');
-      }
-      return fallback;
+      return await _fetchWifiClientsFallback();
     } catch (e) {
-      logger.d('[USP][Dashboard]: WifiClients fallback failed: $e');
+      logger.w('[WiFi] Fallback fetch failed: $e');
       return {};
     }
   }
@@ -344,9 +336,6 @@ class UspWifiDataService {
         _ensureTrailingDot(r.instancePath):
             _normalizeBand(r.operatingFrequencyBand),
     };
-
-    logger.d('[USP][Dashboard]: Connection detail: '
-        '${apByPath.length} APs, ${ssidByPath.length} SSIDs, ${bandByRadioPath.length} radios');
 
     final result = <String, ClientConnectionDetail>{};
     for (final entry in wifiClientMap.entries) {

@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:privacy_gui/framework/diagnostic_loggable.dart';
 import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 
 /// Result of mesh topology fetch from DataElements.
@@ -8,7 +9,7 @@ import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 ///
 /// NOTE: The [nodes] list contains NodeEntity instances with empty
 /// [connectedClients] — client assignment happens in [MeshNetworkBuilder].
-class MeshTopologyInfo extends Equatable {
+class MeshTopologyInfo extends Equatable with DiagnosticLoggable {
   /// Mesh nodes discovered via DataElements.
   final List<NodeEntity> nodes;
 
@@ -48,6 +49,13 @@ class MeshTopologyInfo extends Equatable {
   bool get isNotEmpty => nodes.isNotEmpty;
 
   @override
-  List<Object?> get props =>
-      [nodes, clientToNodeMap, clientSignalMap, clientBandSsidMap];
+  String get diagnosticName => 'MeshTopologyInfo';
+
+  @override
+  Map<String, Object?> get namedProps => {
+        'nodes': nodes,
+        'clientToNodeMap': clientToNodeMap,
+        'clientSignalMap': clientSignalMap,
+        'clientBandSsidMap': clientBandSsidMap,
+      };
 }

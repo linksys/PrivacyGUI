@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
@@ -91,11 +92,21 @@ class UspClient {
     _client = UspClientWeb.fromJsClient(jsClient);
   }
 
-  static int _reqId = 0;
+  static final _random = Random();
   static const _tag = '[USPClient]:';
   bool _lastCallRetried = false;
 
-  String _idLabel(int id) => '#$id${_lastCallRetried ? '.retry' : ''}';
+  /// Generates a unique request ID: LNU{HEX-MS-TIMESTAMP}{4-CHAR-RANDOM}
+  /// e.g., LNU18F3A2B4C5D6E7F8
+  static String _genReqId() {
+    final ts =
+        DateTime.now().millisecondsSinceEpoch.toRadixString(16).toUpperCase();
+    final rand =
+        _random.nextInt(0xFFFF).toRadixString(16).padLeft(4, '0').toUpperCase();
+    return 'LNU$ts$rand';
+  }
+
+  String _idLabel(String id) => '$id${_lastCallRetried ? '.retry' : ''}';
 
   String get baseUrl => _baseUrl;
 
@@ -255,18 +266,21 @@ class UspClient {
   }
 
   Future<Map<String, dynamic>> _rawGet(List<String> paths) async {
-    final id = ++_reqId;
+    final id = _genReqId();
     _lastCallRetried = false;
     final sw = Stopwatch()..start();
 
-    logger.d('$_tag#$id GET →\n${_prettyList(paths)}');
+    logger.d('$_tag $_separator\n'
+        '$_tag #$id GET (Request) → ${paths.length} paths\n'
+        '${_prettyList(paths)}');
 
     try {
       final rawMap = await _withAuthRetry(() => _client.get(paths));
       sw.stop();
 
       final label = _idLabel(id);
-      logger.d('$_tag$label GET ← (${sw.elapsedMilliseconds}ms)\n'
+      logger.d('$_tag $_separator\n'
+          '$_tag $label GET (Response) ← ${sw.elapsedMilliseconds}ms\n'
           '${_prettyMap(rawMap)}');
 
       if (rawMap.isEmpty) {
@@ -346,7 +360,7 @@ class UspClient {
   }
 
   Future<Map<String, dynamic>> _singleSet(String path, String value) async {
-    final id = ++_reqId;
+    final id = _genReqId();
     _lastCallRetried = false;
     final sw = Stopwatch()..start();
     final params = {path: value};
@@ -370,7 +384,7 @@ class UspClient {
 
   Future<Map<String, dynamic>> _batchSet(Map<String, dynamic> parameters,
       {bool allowPartial = false}) async {
-    final id = ++_reqId;
+    final id = _genReqId();
     _lastCallRetried = false;
     final sw = Stopwatch()..start();
     final Map<String, String> stringParams =
@@ -410,7 +424,7 @@ class UspClient {
   Future<Map<String, dynamic>> setOrdered(
       List<List<Map<String, String>>> parameterGroups,
       {bool allowPartial = false}) async {
-    final id = ++_reqId;
+    final id = _genReqId();
     _lastCallRetried = false;
     final sw = Stopwatch()..start();
 
@@ -456,7 +470,7 @@ class UspClient {
 
   Future<Map<String, dynamic>> _singleAdd(
       String objectPath, Map<String, dynamic> parameters) async {
-    final id = ++_reqId;
+    final id = _genReqId();
     _lastCallRetried = false;
     final sw = Stopwatch()..start();
     final stringParams = parameters.map((k, v) => MapEntry(k, v.toString()));
@@ -483,7 +497,7 @@ class UspClient {
 
   Future<Map<String, dynamic>> _batchAdd(List<Map<String, dynamic>> objects,
       {bool allowPartial = false}) async {
-    final id = ++_reqId;
+    final id = _genReqId();
     _lastCallRetried = false;
     final sw = Stopwatch()..start();
 
@@ -523,7 +537,7 @@ class UspClient {
   }
 
   Future<Map<String, dynamic>> _singleDelete(String path) async {
-    final id = ++_reqId;
+    final id = _genReqId();
     _lastCallRetried = false;
     final sw = Stopwatch()..start();
 
@@ -546,7 +560,7 @@ class UspClient {
 
   Future<Map<String, dynamic>> _batchDelete(List<String> paths,
       {bool allowPartial = false}) async {
-    final id = ++_reqId;
+    final id = _genReqId();
     _lastCallRetried = false;
     final sw = Stopwatch()..start();
 
@@ -582,7 +596,7 @@ class UspClient {
   /// all output arguments from the Operate response.
   Future<Map<String, dynamic>> operate(String command,
       {Map<String, String> args = const {}}) async {
-    final id = ++_reqId;
+    final id = _genReqId();
     _lastCallRetried = false;
     final sw = Stopwatch()..start();
 
@@ -660,7 +674,7 @@ class UspClient {
     required String notifType,
     required String referenceList,
   }) async {
-    final id = ++_reqId;
+    final id = _genReqId();
     final sw = Stopwatch()..start();
     const objectPath = 'Device.LocalAgent.Subscription.';
 
@@ -746,7 +760,7 @@ class UspClient {
 
   /// Deletes an OBUSPA subscription instance.
   Future<void> deleteNotifySubscription(String instancePath) async {
-    final id = ++_reqId;
+    final id = _genReqId();
     final sw = Stopwatch()..start();
     await _withAuthRetry(() => _client.delete([instancePath]));
     sw.stop();
@@ -762,7 +776,7 @@ class UspClient {
   /// Returns raw subscription objects from the router. Each entry typically
   /// contains fields like `instance_path`, `notif_type`, `reference_list`, etc.
   Future<List<Map<String, dynamic>>> listSubscriptions() async {
-    final id = ++_reqId;
+    final id = _genReqId();
     final sw = Stopwatch()..start();
     final subs = await _withAuthRetry(() => _client.listSubscriptions());
     sw.stop();
@@ -783,7 +797,7 @@ class UspClient {
   ///
   /// Returns the number of subscriptions deleted.
   Future<int> purgeAllSubscriptions() async {
-    final id = ++_reqId;
+    final id = _genReqId();
     final sw = Stopwatch()..start();
     const objectPath = 'Device.LocalAgent.Subscription.';
 
@@ -982,6 +996,7 @@ class UspClient {
   // Log helpers
   // ===========================================================================
 
+  static const _separator = '════════════════════════════════════════';
   static const _jsonEncoder = JsonEncoder.withIndent('  ');
 
   static String _prettyList(List<String> list) {

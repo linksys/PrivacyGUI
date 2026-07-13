@@ -1,7 +1,8 @@
 import 'package:equatable/equatable.dart';
+import 'package:privacy_gui/framework/diagnostic_loggable.dart';
 
 /// A wired device connected to an Ethernet port.
-class WiredDeviceInfo extends Equatable {
+class WiredDeviceInfo extends Equatable with DiagnosticLoggable {
   final String hostName;
   final String macAddress;
   final String ipAddress;
@@ -15,11 +16,18 @@ class WiredDeviceInfo extends Equatable {
   String get displayName => hostName.isNotEmpty ? hostName : macAddress;
 
   @override
-  List<Object?> get props => [hostName, macAddress, ipAddress];
+  String get diagnosticName => 'WiredDeviceInfo';
+
+  @override
+  Map<String, Object?> get namedProps => {
+        'hostName': hostName,
+        'macAddress': macAddress,
+        'ipAddress': ipAddress,
+      };
 }
 
 /// Presentation Layer Model for a physical Ethernet port.
-class EthernetPortUIModel extends Equatable {
+class EthernetPortUIModel extends Equatable with DiagnosticLoggable {
   final String name;
   final String label;
   final bool isWan;
@@ -50,13 +58,16 @@ class EthernetPortUIModel extends Equatable {
   }
 
   @override
-  List<Object?> get props => [
-        name,
-        label,
-        isWan,
-        isUp,
-        instancePath,
-        currentBitRate,
-        connectedDevices,
-      ];
+  String get diagnosticName => 'EthernetPortUIModel';
+
+  @override
+  Map<String, Object?> get namedProps => {
+        'name': name,
+        'label': label,
+        'isWan': isWan,
+        'isUp': isUp,
+        'instancePath': instancePath,
+        'currentBitRate': currentBitRate,
+        'connectedDevices': connectedDevices,
+      };
 }

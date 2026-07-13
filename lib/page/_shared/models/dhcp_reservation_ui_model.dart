@@ -1,10 +1,11 @@
 import 'package:equatable/equatable.dart';
+import 'package:privacy_gui/framework/diagnostic_loggable.dart';
 
 /// Presentation Layer Model for a DHCP reservation.
 ///
 /// [instancePath] is `null` for newly created (local-only) reservations
 /// that have not yet been saved to the device.
-class DhcpReservationUIModel extends Equatable {
+class DhcpReservationUIModel extends Equatable with DiagnosticLoggable {
   final String? instancePath;
 
   /// MAC address (normalized to uppercase).
@@ -35,5 +36,13 @@ class DhcpReservationUIModel extends Equatable {
   }
 
   @override
-  List<Object?> get props => [instancePath, mac, ip, enable];
+  String get diagnosticName => 'DhcpReservationUIModel';
+
+  @override
+  Map<String, Object?> get namedProps => {
+        'instancePath': instancePath,
+        'mac': mac,
+        'ip': ip,
+        'enable': enable,
+      };
 }

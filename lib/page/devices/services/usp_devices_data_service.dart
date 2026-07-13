@@ -159,7 +159,7 @@ class UspDevicesDataService {
       network,
       bssidToBandMap: bssidToBandMap,
     );
-    logger.d('[USP][Dashboard]: Mesh nodes: ${result.nodes.length}, '
+    logger.t('[USP][Dashboard]: Mesh nodes: ${result.nodes.length}, '
         'client→node mappings: ${result.clientToNodeMap.length}, '
         'band/SSID mappings: ${result.clientBandSsidMap.length}');
     return result;

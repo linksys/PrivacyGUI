@@ -90,10 +90,18 @@ AppTextField _ipField() =>
 Future<void> _enterMac(WidgetTester tester, String text) async {
   await tester.enterText(find.byType(TextField).at(0), text);
   await tester.pumpAndSettle();
+  // The dialog validates on blur (FocusNode listener), not on every keystroke.
+  // Drop focus to trigger _validate(), mirroring a real user tabbing away.
+  FocusManager.instance.primaryFocus?.unfocus();
+  await tester.pumpAndSettle();
 }
 
 Future<void> _enterIp(WidgetTester tester, String text) async {
   await tester.enterText(find.byType(TextField).at(1), text);
+  await tester.pumpAndSettle();
+  // The dialog validates on blur (FocusNode listener), not on every keystroke.
+  // Drop focus to trigger _validate(), mirroring a real user tabbing away.
+  FocusManager.instance.primaryFocus?.unfocus();
   await tester.pumpAndSettle();
 }
 

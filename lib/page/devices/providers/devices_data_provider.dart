@@ -4,6 +4,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
+import 'package:privacy_gui/framework/diagnostic_loggable.dart';
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
 import 'package:privacy_gui/page/_shared/models/client_device.dart';
 import 'package:privacy_gui/page/_shared/models/mesh_network.dart';
@@ -21,7 +22,7 @@ export 'package:privacy_gui/page/devices/services/usp_devices_data_service.dart'
 // Data Model (Layer 1 — MeshNetwork as SSoT)
 // ---------------------------------------------------------------------------
 
-class DevicesData extends Equatable {
+class DevicesData extends Equatable with DiagnosticLoggable {
   final DevicesCodegenContext codegenContext;
   final MeshTopologyInfo meshTopology;
 
@@ -73,6 +74,18 @@ class DevicesData extends Equatable {
     );
   }
 
+  @override
+  String get diagnosticName => 'DevicesData';
+
+  @override
+  Map<String, Object?> get namedProps => {
+        'meshTopology': meshTopology,
+        'meshNetwork': meshNetwork,
+        'hostNameByMac': hostNameByMac,
+      };
+
+  // Explicit props override for reliable equality (includes the opaque
+  // codegenContext). namedProps is kept lean for diagnostic JSON output.
   @override
   List<Object?> get props => [
         codegenContext,
@@ -163,7 +176,7 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
       systemInfo: sysData?.model,
     );
 
-    logger.d('[USP][DevicesData]: Fetched — '
+    logger.t('[USP][DevicesData]: Fetched — '
         'clients: ${result.meshNetwork.totalClientCount}, '
         'nodes: ${result.meshNetwork.allNodes.length}');
 
@@ -215,7 +228,7 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
       systemInfo: sysData?.model,
     );
 
-    logger.d('[USP][DevicesData]: Mesh update — '
+    logger.t('[USP][DevicesData]: Mesh update — '
         'meshNodes: ${meshTopology.nodes.length}, '
         'clients: ${meshNetwork.totalClientCount}');
 
@@ -237,9 +250,6 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
   Future<void> _refetchPreservingMesh() async {
     final currentState = state.valueOrNull;
     final existingMesh = currentState?.meshTopology ?? MeshTopologyInfo.empty;
-    logger.d('[USP][DevicesData]: _refetchPreservingMesh — '
-        'currentState: ${currentState != null}, '
-        'existingMesh nodes: ${existingMesh.nodes.length}');
 
     final svc = ref.read(uspDevicesDataServiceProvider);
 
@@ -278,7 +288,7 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
             systemInfo: sysData?.model,
           );
 
-    logger.d('[USP][DevicesData]: Refetch (preserve mesh) — '
+    logger.t('[USP][DevicesData]: Refetch (preserve mesh) — '
         'clients: ${meshNetwork.totalClientCount}, '
         'existingMesh: ${existingMesh.nodes.length}');
 

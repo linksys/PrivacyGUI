@@ -1,11 +1,12 @@
 import 'package:equatable/equatable.dart';
 import 'package:privacy_gui/core/utils/wifi.dart';
+import 'package:privacy_gui/framework/diagnostic_loggable.dart';
 
 /// WiFi connection details for a client device.
 ///
 /// Encapsulates signal strength, band, SSID, and throughput metrics.
 /// Null fields indicate data not available (e.g., wired device or no enrichment).
-class WifiConnectionInfo with EquatableMixin {
+class WifiConnectionInfo with EquatableMixin, DiagnosticNamed {
   /// Signal strength in dBm (RSSI). Typically -30 to -90.
   final int? signalStrength;
 
@@ -70,4 +71,16 @@ class WifiConnectionInfo with EquatableMixin {
         downlinkRate,
         uplinkRate,
       ];
+
+  @override
+  String get diagnosticName => 'WifiConnectionInfo';
+
+  @override
+  Map<String, Object?> get namedProps => {
+        'signalStrength': signalStrength,
+        'band': band,
+        'ssidName': ssidName,
+        'downlinkRate': downlinkRate,
+        'uplinkRate': uplinkRate,
+      };
 }

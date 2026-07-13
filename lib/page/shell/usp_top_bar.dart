@@ -12,70 +12,95 @@ import 'package:privacy_gui/providers/auth/_auth.dart';
 import 'package:privacy_gui/providers/theme_config_provider.dart';
 import 'package:privacy_gui/page/shell/usp_dashboard_shell.dart';
 import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/util/debug_mixin.dart';
+import 'package:privacy_gui/util/app_utils.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
-/// USP-specific TopBar — visually matches the JNAP TopBar but without
-/// JNAP-specific provider dependencies (deviceManager, remoteClient, etc.).
+/// Unified TopBar for the app.
 ///
-/// Structure: [App Title] — [MenuHolder top (desktop)] — [GeneralSettingsWidget]
-class UspTopBar extends ConsumerWidget {
-  const UspTopBar({super.key});
+/// Structure: [App Title] — [MenuHolder top (desktop)] — [Apps button (if logged in)] — [GeneralSettingsWidget]
+///
+/// Supports:
+/// - Optional [controllerProvider] for custom menu controller (defaults to uspMenuController)
+/// - Download log via rapid taps on the title area (DebugObserver)
+/// - Apps button visibility based on login state and capability
+class UspTopBar extends ConsumerStatefulWidget {
+  final Provider<MenuController>? controllerProvider;
+
+  const UspTopBar({super.key, this.controllerProvider});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<UspTopBar> createState() => _UspTopBarState();
+}
+
+class _UspTopBarState extends ConsumerState<UspTopBar> with DebugObserver {
+  @override
+  Widget build(BuildContext context) {
     // Build dark theme reactively from current design style
-    final darkTheme = _buildCurrentDarkTheme(ref);
+    final darkTheme = _buildCurrentDarkTheme();
     final colorScheme = darkTheme.colorScheme;
 
     return SafeArea(
       bottom: false,
-      child: Theme(
-        data: darkTheme,
-        child: AppSurface(
-          height: 64,
-          padding: const EdgeInsets.only(left: 24.0, right: 24),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              AppText.titleLarge(
-                loc(context).appTitle,
-                color: colorScheme.onSurface,
-              ),
-              MenuHolder(
-                type: MenuDisplay.top,
-                controllerProvider: uspMenuController,
-              ),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (ref.watch(authProvider.select((v) =>
-                          v.value?.loginType != null &&
-                          v.value?.loginType != LoginType.none)) &&
-                      (ref.watch(appsCapabilityProvider).valueOrNull ?? false))
-                    IconButton(
-                      icon: AppIcon.font(Icons.apps,
-                          color: colorScheme.onSurface),
-                      tooltip: loc(context).apps,
-                      onPressed: () => context.goNamed(RouteNamed.uspApps),
+      child: GestureDetector(
+        onTap: () {
+          if (increase()) {
+            Utils.exportLogFile(context);
+          }
+        },
+        child: Theme(
+          data: darkTheme,
+          child: AppSurface(
+            height: 64,
+            padding: const EdgeInsets.only(left: 24.0, right: 24),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                AppText.titleLarge(
+                  loc(context).appTitle,
+                  color: colorScheme.onSurface,
+                ),
+                MenuHolder(
+                  type: MenuDisplay.top,
+                  controllerProvider:
+                      widget.controllerProvider ?? uspMenuController,
+                ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (ref.watch(authProvider.select((v) =>
+                            v.value?.loginType != null &&
+                            v.value?.loginType != LoginType.none)) &&
+                        (ref.watch(appsCapabilityProvider).valueOrNull ??
+                            false))
+                      Tooltip(
+                        message: loc(context).apps,
+                        child: AppIconButton(
+                          icon: AppIcon.font(Icons.apps,
+                              color: colorScheme.onSurface),
+                          onTap: () => context.goNamed(RouteNamed.uspApps),
+                        ),
+                      ),
+                    const Padding(
+                      padding: EdgeInsets.all(4.0),
+                      child: GeneralSettingsWidget(),
                     ),
-                  const Padding(
-                    padding: EdgeInsets.all(4.0),
-                    child: GeneralSettingsWidget(),
-                  ),
-                ],
-              ),
-            ],
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  ThemeData _buildCurrentDarkTheme(WidgetRef ref) {
+  ThemeData _buildCurrentDarkTheme() {
     final demoConfig = ref.watch(demoThemeConfigProvider);
-    final themeConfig = ref.watch(themeConfigProvider).valueOrNull;
+    final themeConfig =
+        ref.watch(themeConfigProvider.select((v) => v.valueOrNull));
     final userThemeColor =
         ref.watch(appSettingsProvider.select((s) => s.themeColor));
 

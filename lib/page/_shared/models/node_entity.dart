@@ -1,3 +1,4 @@
+import 'package:privacy_gui/framework/diagnostic_loggable.dart';
 import 'package:privacy_gui/page/_shared/models/backhaul_info.dart';
 import 'package:privacy_gui/page/_shared/models/client_device.dart';
 import 'package:privacy_gui/page/_shared/models/network_entity.dart';
@@ -11,7 +12,7 @@ import 'package:privacy_gui/page/_shared/models/network_entity.dart';
 ///   case SlaveNode s: print('Extender via ${s.backhaul.linkType}');
 /// }
 /// ```
-sealed class NodeEntity extends NetworkEntity {
+sealed class NodeEntity extends NetworkEntity with DiagnosticNamed {
   // ─── Identity ───
   /// Device ID (MAC address, uppercase, normalized).
   String get deviceId;
@@ -194,6 +195,28 @@ final class MasterNode extends NodeEntity {
         wanIpv6Address,
         hostsDeviceId,
       ];
+
+  @override
+  String get diagnosticName => 'MasterNode';
+
+  @override
+  Map<String, Object?> get namedProps => {
+        'deviceId': deviceId,
+        'dataElementsId': dataElementsId,
+        'friendlyName': friendlyName,
+        'hostName': hostName,
+        'model': model,
+        'manufacturer': manufacturer,
+        'serialNumber': serialNumber,
+        'softwareVersion': softwareVersion,
+        'ipAddress': ipAddress,
+        'ipv6Addresses': ipv6Addresses,
+        'instancePath': instancePath,
+        'connectedClients': connectedClients,
+        'wanIpAddress': wanIpAddress,
+        'wanIpv6Address': wanIpv6Address,
+        'hostsDeviceId': hostsDeviceId,
+      };
 }
 
 /// Slave (extender) mesh node.
@@ -301,6 +324,26 @@ final class SlaveNode extends NodeEntity {
         connectedClients,
         backhaul,
       ];
+
+  @override
+  String get diagnosticName => 'SlaveNode';
+
+  @override
+  Map<String, Object?> get namedProps => {
+        'deviceId': deviceId,
+        'dataElementsId': dataElementsId,
+        'friendlyName': friendlyName,
+        'hostName': hostName,
+        'model': model,
+        'manufacturer': manufacturer,
+        'serialNumber': serialNumber,
+        'softwareVersion': softwareVersion,
+        'ipAddress': ipAddress,
+        'ipv6Addresses': ipv6Addresses,
+        'instancePath': instancePath,
+        'connectedClients': connectedClients,
+        'backhaul': backhaul,
+      };
 }
 
 /// Extension methods for List<NodeEntity>.

@@ -1,19 +1,22 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
+import 'package:privacy_gui/framework/diagnostic_loggable.dart';
 import 'package:privacy_gui/page/_shared/models/wan_status_ui_model.dart';
 import 'package:privacy_gui/page/internet_settings/services/usp_wan_data_service.dart';
 
 // ── Data Model ──
 
-class WanData extends Equatable {
+class WanData extends Equatable with DiagnosticLoggable {
   final WanStatusUIModel model;
 
   const WanData({required this.model});
 
   @override
-  List<Object?> get props => [model];
+  String get diagnosticName => 'WanData';
+
+  @override
+  Map<String, Object?> get namedProps => {'model': model};
 }
 
 // ── Provider ──
@@ -33,7 +36,6 @@ class WanDataNotifier extends AsyncNotifier<WanData> {
     // SSE listener: WAN status changes (link up/down, IP changes)
     ref.listen(sseInvalidationProvider, (_, next) {
       if (next.value == InvalidationDomain.wanStatus) {
-        logger.d('[USP][WanData]: SSE invalidation received, refreshing');
         ref.invalidateSelf();
       }
     });
@@ -45,8 +47,6 @@ class WanDataNotifier extends AsyncNotifier<WanData> {
     final svc = ref.read(uspWanDataServiceProvider);
     final model = await svc.fetch();
 
-    logger.d('[USP][WanData]: Fetched — ip=${model.ipAddress}, '
-        'isUp=${model.isUp}, gateway=${model.gateway}');
     return WanData(model: model);
   }
 }

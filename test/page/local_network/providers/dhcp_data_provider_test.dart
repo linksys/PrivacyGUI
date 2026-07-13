@@ -222,12 +222,15 @@ void main() {
       container.dispose();
     });
 
-    test('DhcpData props uses full lists for equality', () async {
+    test('DhcpData equality via DiagnosticLoggable namedProps', () async {
       final container = createContainer();
       final data1 = await container.read(dhcpDataProvider.future);
       final data2 = await container.read(dhcpDataProvider.future);
 
       expect(data1, equals(data2));
+      expect(data1.clientModels.length, 2);
+      expect(data1.reservationModels.length, 1);
+      // props is derived from namedProps.values (DiagnosticLoggable mixin).
       expect(data1.props, [data1.clientModels, data1.reservationModels]);
       container.dispose();
     });

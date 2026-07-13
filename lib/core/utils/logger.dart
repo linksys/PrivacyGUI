@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:collection/collection.dart';
 import 'package:device_info_plus/device_info_plus.dart';
@@ -11,17 +12,34 @@ import 'package:package_info_plus/package_info_plus.dart';
 
 /// A global logger instance for application-wide logging.
 ///
-/// This logger is configured with a `ProductionFilter` to control log output
+/// This logger is configured with a [_AppLogFilter] to control log output
 /// based on the build mode, a `SimplePrinter` for formatting, and a
 /// [CustomOutput] for handling log persistence.
 final logger = Logger(
-  filter: ProductionFilter(),
+  filter: _AppLogFilter(),
   printer: SimplePrinter(
     printTime: true,
     colors: kIsWeb ? false : stdout.supportsAnsiEscapes,
   ),
   output: CustomOutput(),
 );
+
+/// Custom log filter that adjusts minimum log level based on build mode.
+///
+/// - Debug/Profile mode: all levels including [Level.trace]
+/// - Release mode: [Level.debug] and above (filters out trace)
+///
+/// Use [logger.t()] for verbose development logs (App build, Throttler dispatch,
+/// internal WiFi/Topology details) that should not appear in production.
+class _AppLogFilter extends LogFilter {
+  @override
+  bool shouldLog(LogEvent event) {
+    final minLevel = kReleaseMode
+        ? Level.debug
+        : Level.trace; // ignore: prefer_const_declarations
+    return event.level.value >= minLevel.value;
+  }
+}
 
 /// A custom log output handler that writes logs to the console, files, or web storage.
 ///
@@ -108,19 +126,74 @@ const routeLogTag = 'RouteChanged';
 /// [log] The log message string to record.
 /// [level] The severity level of this log entry.
 void _recordLog(String log, Level level) async {
-  // Add every log message to the 'app' log list
+  // Add every log message to the 'app' log list (flat/original format)
   _addLogWithTag(message: log, level: level);
   // If a custom tag is specified, add to its log list
   final record = _splitTagAndMessage(log);
   if (record != null) {
-    _addLogWithTag(message: record.$1, tag: record.$2, level: level);
+    // Transform USPClient Response JSON to nested format for tag log
+    final transformedMessage = _transformForTagLog(record.$1, record.$2);
+    _addLogWithTag(message: transformedMessage, tag: record.$2, level: level);
   }
+}
+
+/// Transforms log message for tag-specific display.
+/// USPClient Response logs get their flat JSON converted to nested structure.
+String _transformForTagLog(String message, String tag) {
+  if (tag != 'USPClient') return message;
+  if (!message.contains('(Response)')) return message;
+
+  // Find JSON object in the message
+  final jsonStart = message.indexOf('{');
+  final jsonEnd = message.lastIndexOf('}');
+  if (jsonStart == -1 || jsonEnd == -1 || jsonEnd <= jsonStart) return message;
+
+  try {
+    final jsonStr = message.substring(jsonStart, jsonEnd + 1);
+    final flatMap = jsonDecode(jsonStr) as Map<String, dynamic>;
+    final nestedMap = _toNestedStructure(flatMap);
+    final nestedJson = const JsonEncoder.withIndent('  ')
+        .convert(nestedMap)
+        .replaceAll('\n', '\n  ');
+
+    return '${message.substring(0, jsonStart)}$nestedJson';
+  } catch (_) {
+    return message;
+  }
+}
+
+/// Converts flat TR-181 paths to nested structure.
+Map<String, dynamic> _toNestedStructure(Map<String, dynamic> flatMap) {
+  final result = <String, dynamic>{};
+  for (final entry in flatMap.entries) {
+    final segments = entry.key.split('.');
+    _setNestedValue(result, segments, entry.value);
+  }
+  return result;
+}
+
+void _setNestedValue(
+    Map<String, dynamic> root, List<String> segments, dynamic value) {
+  var current = root;
+  for (var i = 0; i < segments.length - 1; i++) {
+    final segment = segments[i];
+    if (!current.containsKey(segment)) {
+      current[segment] = <String, dynamic>{};
+    }
+    final next = current[segment];
+    if (next is Map<String, dynamic>) {
+      current = next;
+    } else {
+      current[segment] = <String, dynamic>{};
+      current = current[segment] as Map<String, dynamic>;
+    }
+  }
+  current[segments.last] = value;
 }
 
 /// Adds a log message to the cache under a specific tag, managing size limits.
 ///
-/// If the `tag` is 'State', the message is parsed to update the [stateLogCache].
-/// Otherwise, the message is added to the corresponding list in [_webLogCache],
+/// The message is added to the corresponding list in [_webLogCache],
 /// removing the oldest entry if the list exceeds its maximum size.
 ///
 /// [message] The log message to add.
@@ -134,18 +207,11 @@ void _addLogWithTag(
   final maxSize =
       tag == routeLogTag ? _maxLogSizeOfRouteTag : _maxLogSizeOfGeneralTag;
 
-  if (tag == 'State') {
-    final stateMessage = _splitTagAndMessage(message);
-    if (stateMessage != null) {
-      _stateLogCache[stateMessage.$2] = stateMessage.$1;
-    }
-  } else {
-    if (logList.length + 1 > maxSize) {
-      logList.removeAt(0);
-    }
-    logList.add((DateTime.now().millisecondsSinceEpoch, message, level));
-    _webLogCache[tag] = logList;
+  if (logList.length + 1 > maxSize) {
+    logList.removeAt(0);
   }
+  logList.add((DateTime.now().millisecondsSinceEpoch, message, level));
+  _webLogCache[tag] = logList;
 }
 
 /// Splits a formatted log string into its message and tag components.
@@ -203,6 +269,23 @@ String _levelPrefix(Level level) {
 /// Useful for embedding specific log sections (e.g., `UspClient`) into
 /// PDF reports or other diagnostics output.
 String getWebLogByTag({String tag = appLogTag}) => _getWebLogByTag(tag: tag);
+
+/// Updates the state log cache for a specific provider.
+///
+/// Used by [StateLogObserver] to record the latest state of each provider.
+/// Only the most recent state is kept per provider name.
+void updateStateLog(String providerName, String state) {
+  _stateLogCache[providerName] = state;
+}
+
+/// Read-only view of the state log cache for testing.
+@visibleForTesting
+Map<String, String> get stateLogCacheForTest =>
+    Map.unmodifiable(_stateLogCache);
+
+/// Clears the state log cache. For testing only.
+@visibleForTesting
+void clearStateLogCacheForTest() => _stateLogCache.clear();
 
 /// Compiles a full diagnostic log report as a single string.
 ///

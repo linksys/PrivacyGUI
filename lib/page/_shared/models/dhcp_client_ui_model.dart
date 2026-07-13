@@ -1,10 +1,11 @@
 import 'package:equatable/equatable.dart';
+import 'package:privacy_gui/framework/diagnostic_loggable.dart';
 
 /// Presentation Layer Model for a DHCP client lease.
 ///
 /// - [leaseActive]: Whether the DHCP lease is valid (from TR-181 DHCPv4.Server.Pool.*.Client.*.Active)
 /// - [isOnline]: Whether the device is currently connected (from TR-181 Hosts.Host.*.Active)
-class DhcpClientUIModel extends Equatable {
+class DhcpClientUIModel extends Equatable with DiagnosticLoggable {
   /// MAC address (normalized to uppercase).
   final String mac;
   final String ip;
@@ -69,6 +70,15 @@ class DhcpClientUIModel extends Equatable {
   String get displayName => hostName.isNotEmpty ? hostName : mac;
 
   @override
-  List<Object?> get props =>
-      [mac, ip, leaseActive, isOnline, hostName, leaseExpiry];
+  String get diagnosticName => 'DhcpClientUIModel';
+
+  @override
+  Map<String, Object?> get namedProps => {
+        'mac': mac,
+        'ip': ip,
+        'leaseActive': leaseActive,
+        'isOnline': isOnline,
+        'hostName': hostName,
+        'leaseExpiry': leaseExpiry,
+      };
 }

@@ -1,6 +1,7 @@
 import 'package:privacy_gui/page/_shared/utils/device_classifier.dart';
 import 'package:privacy_gui/core/utils/device_image_helper.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/utils/wifi.dart';
 import 'package:privacy_gui/page/_shared/models/client_device.dart'
     hide ConnectionType;
@@ -59,7 +60,14 @@ class UspTopologyBuilder {
       },
     ));
 
-    // Build extender ID lookup maps
+    // Build extender ID lookup maps.
+    // Normalized set (no colons, uppercase) for matching against parentNodeId
+    // which comes from DataElements clientToNodeMap (no colons).
+    // We add BOTH deviceId (from Hosts) and dataElementsId (from DataElements)
+    // since they may be different MAC addresses for the same node.
+    logger.t('[USP][TopologyBuilder]: hasMesh=${meshNetwork.hasMesh}, '
+        'slaveNodes=${meshNetwork.slaves.length}, '
+        'slaveDeviceIds=${meshNetwork.slaves.map((n) => '${n.deviceId}|DE:${n.dataElementsId}').toList()}');
     final extenderNodeIdsNormalized = <String>{};
     final normalizedToOriginal = <String, String>{};
     final deviceIdToExtenderId = <String, String>{};
@@ -81,6 +89,10 @@ class UspTopologyBuilder {
           deviceIdToExtenderId[normalizedDeMac] = extenderId;
         }
       }
+      logger.t('[USP][TopologyBuilder]: Slave ${slave.deviceId} '
+          '→ hostsMac: $normalizedHostsMac, '
+          'dataElementsId: ${slave.dataElementsId}, '
+          'backhaulParentDeviceId: ${slave.backhaul.parentNodeId}');
     }
 
     // Slave nodes
@@ -145,10 +157,18 @@ class UspTopologyBuilder {
       if (meshNetwork.hasMesh && client.parentNodeId != null) {
         final parentNormalized =
             client.parentNodeId!.toUpperCase().replaceAll(':', '');
+        logger.t('[USP][TopologyBuilder]: Device ${client.displayName} '
+            'parentNodeId=${client.parentNodeId}, '
+            'normalized=$parentNormalized, '
+            'inExtenders=${extenderNodeIdsNormalized.contains(parentNormalized)}');
         if (extenderNodeIdsNormalized.contains(parentNormalized)) {
           final originalDeviceId = normalizedToOriginal[parentNormalized]!;
           parentId = 'extender-$originalDeviceId';
         }
+      } else {
+        logger.t('[USP][TopologyBuilder]: Device ${client.displayName} '
+            'hasMesh=${meshNetwork.hasMesh}, '
+            'parentNodeId=${client.parentNodeId} → gateway');
       }
 
       final category = DeviceClassifier.classify(

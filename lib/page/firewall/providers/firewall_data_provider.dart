@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
+import 'package:privacy_gui/framework/diagnostic_loggable.dart';
 import 'package:privacy_gui/page/dmz/models/dmz_ui_model.dart';
 import 'package:privacy_gui/page/firewall/models/firewall_ui_model.dart';
 import 'package:privacy_gui/page/firewall/services/usp_firewall_data_service.dart';
@@ -39,7 +39,7 @@ class DmzEntrySummary extends Equatable {
 // Data Model (Layer 1 — UIModel only)
 // ---------------------------------------------------------------------------
 
-class FirewallData extends Equatable {
+class FirewallData extends Equatable with DiagnosticLoggable {
   /// Pre-built firewall toggle model.
   final FirewallUIModel firewallModel;
 
@@ -70,6 +70,21 @@ class FirewallData extends Equatable {
         dmzModel = const DmzUIModel.disabled(),
         dmzSummaries = const [];
 
+  @override
+  String get diagnosticName => 'FirewallData';
+
+  @override
+  Map<String, Object?> get namedProps => {
+        'firewallModel': firewallModel,
+        'ruleCount': ruleSummaries.length,
+        'dmzModel': dmzModel,
+      };
+
+  // Explicit props override for reliable equality comparison (includes
+  // ruleContext and the full rule/DMZ summary lists). namedProps is kept lean
+  // for diagnostic JSON output — deriving props from it would narrow equality
+  // to ruleSummaries.length and drop ruleContext/dmzSummaries, so a rule whose
+  // content changed without changing the count would not notify listeners.
   @override
   List<Object?> get props =>
       [firewallModel, ruleContext, ruleSummaries, dmzModel, dmzSummaries];
@@ -109,10 +124,6 @@ class FirewallDataNotifier extends AsyncNotifier<FirewallData> {
   Future<FirewallData> _fetch() async {
     final svc = ref.read(uspFirewallDataServiceProvider);
     final result = await svc.fetch();
-
-    logger.d('[USP][FirewallData]: Fetched — '
-        'rules: ${result.ruleSummaries.length}, '
-        'dmz: ${result.dmzSummaries.length}');
 
     return FirewallData(
       firewallModel: result.firewallModel,

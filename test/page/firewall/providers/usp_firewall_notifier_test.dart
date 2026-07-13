@@ -189,4 +189,53 @@ void main() {
       container.dispose();
     });
   });
+
+  group('FirewallData equality', () {
+    FirewallData dataWith({
+      List<FirewallRuleSummary> ruleSummaries = const [],
+      FirewallRuleContext ruleContext = FirewallRuleContext.empty,
+      List<DmzEntrySummary> dmzSummaries = const [],
+    }) =>
+        FirewallData(
+          firewallModel: const FirewallUIModel(),
+          ruleContext: ruleContext,
+          ruleSummaries: ruleSummaries,
+          dmzModel: const DmzUIModel.disabled(),
+          dmzSummaries: dmzSummaries,
+        );
+
+    test('differs when rule content changes but count stays the same', () {
+      // Regression: props must not narrow to ruleSummaries.length. Two rules of
+      // equal length but different content are NOT equal, so the provider still
+      // notifies listeners on a content-only change.
+      final a = dataWith(ruleSummaries: const [
+        FirewallRuleSummary(target: 'ACCEPT', enabled: true),
+      ]);
+      final b = dataWith(ruleSummaries: const [
+        FirewallRuleSummary(target: 'DROP', enabled: true),
+      ]);
+
+      expect(a, isNot(equals(b)));
+    });
+
+    test('differs when only dmzSummaries changes', () {
+      final a = dataWith(dmzSummaries: const []);
+      final b = dataWith(dmzSummaries: const [
+        DmzEntrySummary(enable: true, destIp: '192.168.1.5'),
+      ]);
+
+      expect(a, isNot(equals(b)));
+    });
+
+    test('namedProps stays lean for diagnostic output', () {
+      final data = dataWith(ruleSummaries: const [
+        FirewallRuleSummary(target: 'ACCEPT', enabled: true),
+        FirewallRuleSummary(target: 'DROP', enabled: false),
+      ]);
+
+      expect(data.namedProps.keys,
+          containsAll(<String>['firewallModel', 'ruleCount', 'dmzModel']));
+      expect(data.namedProps['ruleCount'], 2);
+    });
+  });
 }
