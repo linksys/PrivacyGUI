@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
+import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 import 'package:privacy_gui/page/internet_settings/models/usp_internet_settings_form.dart';
-import 'package:privacy_gui/page/topology/models/node_ui_model.dart';
 import 'pnp_wifi_config.dart';
 
 /// Whether this is a factory-default first-time setup or a reconfigure.
@@ -138,7 +138,7 @@ class WizardInitializing extends PnpPhase {
 /// User is editing WiFi name / password / guest WiFi.
 class WizardConfiguring extends PnpPhase {
   final PnpWifiConfig wifiConfig;
-  final List<NodeUIModel> meshNodes;
+  final List<NodeEntity> meshNodes;
 
   const WizardConfiguring({
     required this.wifiConfig,

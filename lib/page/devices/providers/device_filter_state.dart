@@ -1,7 +1,7 @@
 import 'package:equatable/equatable.dart';
-import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
+import 'package:privacy_gui/page/_shared/models/client_device.dart';
+import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 import 'package:privacy_gui/page/_shared/utils/device_classifier.dart';
-import 'package:privacy_gui/page/topology/models/node_ui_model.dart';
 
 enum DeviceStatusFilter { all, online, offline }
 
@@ -12,7 +12,7 @@ enum PrivateMacFilter { all, privateOnly, publicOnly }
 class DeviceFilterConfig extends Equatable {
   final String searchQuery;
   final DeviceStatusFilter status;
-  final Set<DeviceConnectionType> connections;
+  final Set<ConnectionType> connections;
   final Set<DeviceCategory> deviceCategories;
   final PrivateMacFilter privateMac;
   final Set<DeviceSignalLevel> signals;
@@ -68,13 +68,12 @@ class DeviceFilterConfig extends Equatable {
       bands.isNotEmpty;
 
   bool get isEthernetOnly =>
-      connections.length == 1 &&
-      connections.contains(DeviceConnectionType.wired);
+      connections.length == 1 && connections.contains(ConnectionType.wired);
 
   DeviceFilterConfig copyWith({
     String? searchQuery,
     DeviceStatusFilter? status,
-    Set<DeviceConnectionType>? connections,
+    Set<ConnectionType>? connections,
     Set<DeviceCategory>? deviceCategories,
     PrivateMacFilter? privateMac,
     Set<DeviceSignalLevel>? signals,
@@ -113,7 +112,7 @@ class DeviceFilterConfig extends Equatable {
 }
 
 class DeviceFilterOptions extends Equatable {
-  final List<NodeUIModel> nodes;
+  final List<NodeEntity> nodes;
   final List<String> ssids;
   final List<String> bands;
   final List<DeviceCategory> deviceCategories;

@@ -1,9 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
+import 'package:privacy_gui/page/_shared/models/backhaul_info.dart';
+import 'package:privacy_gui/page/_shared/models/client_device.dart';
+import 'package:privacy_gui/page/_shared/models/mesh_network.dart';
 import 'package:privacy_gui/page/_shared/models/mesh_topology_info.dart';
+import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
-import 'package:privacy_gui/page/topology/models/node_ui_model.dart';
 import 'package:privacy_gui/page/topology/providers/node_detail_provider.dart';
 
 void main() {
@@ -11,58 +13,64 @@ void main() {
   // Shared test data
   // ---------------------------------------------------------------------------
 
-  const masterNode = NodeUIModel(
+  final masterNode = MasterNode(
     deviceId: 'AA:BB:CC:DD:EE:01',
     model: 'MR7500',
-    isMaster: true,
-    connectedDeviceCount: 2,
+    connectedClients: [],
   );
 
-  const extenderNode = NodeUIModel(
+  final extenderNode = SlaveNode(
     deviceId: 'AA:BB:CC:DD:EE:02',
     model: 'MX5500',
-    isMaster: false,
-    connectedDeviceCount: 1,
+    connectedClients: [],
+    backhaul: const BackhaulInfo(mediaType: 'Wi-Fi'),
   );
 
-  const device1 = DeviceUIModel(
+  final device1 = ClientDevice(
     mac: '11:22:33:44:55:01',
     ip: '192.168.1.100',
     hostName: 'iPhone',
     isActive: true,
-    isWifi: true,
+    connectionType: ConnectionType.wifi,
     parentNodeId: 'AA:BB:CC:DD:EE:01',
   );
 
-  const device2 = DeviceUIModel(
+  final device2 = ClientDevice(
     mac: '11:22:33:44:55:02',
     ip: '192.168.1.101',
     hostName: 'MacBook',
     isActive: true,
-    isWifi: false,
+    connectionType: ConnectionType.wired,
     parentNodeId: 'AA:BB:CC:DD:EE:01',
   );
 
-  const device3 = DeviceUIModel(
+  final device3 = ClientDevice(
     mac: '11:22:33:44:55:03',
     ip: '192.168.1.102',
     hostName: 'iPad',
     isActive: false,
-    isWifi: true,
+    connectionType: ConnectionType.wifi,
     parentNodeId: 'AA:BB:CC:DD:EE:02',
   );
 
-  const meshData = DevicesData(
-    nodeModels: [masterNode, extenderNode],
-    deviceModels: [device1, device2, device3],
-    meshTopology: MeshTopologyInfo(
-      nodes: [
-        NodeUIModel(deviceId: 'AA:BB:CC:DD:EE:01', model: 'MR7500'),
-        NodeUIModel(deviceId: 'AA:BB:CC:DD:EE:02', model: 'MX5500'),
-      ],
-      clientToNodeMap: {},
-    ),
-  );
+  DevicesData createMeshData() {
+    return DevicesData(
+      meshNetwork: MeshNetwork(
+        master: masterNode.copyWith(
+          connectedClients: [device1, device2],
+        ),
+        slaves: [
+          extenderNode.copyWith(
+            connectedClients: [device3],
+          ),
+        ],
+      ),
+      meshTopology: const MeshTopologyInfo(
+        nodes: [],
+        clientToNodeMap: {},
+      ),
+    );
+  }
 
   ProviderContainer createContainer({DevicesData? data}) {
     return ProviderContainer(
@@ -78,27 +86,31 @@ void main() {
     // -----------------------------------------------------------------------
 
     test('returns node and connected devices for master node', () async {
+      final meshData = createMeshData();
       final container = createContainer(data: meshData);
       await container.read(devicesDataProvider.future);
 
       final detail = container.read(uspNodeDetailProvider('AA:BB:CC:DD:EE:01'));
 
-      expect(detail.node, masterNode);
-      expect(detail.connectedDevices, hasLength(2));
-      expect(detail.connectedDevices, contains(device1));
-      expect(detail.connectedDevices, contains(device2));
+      expect(detail.node, isNotNull);
+      expect(detail.node!.deviceId, 'AA:BB:CC:DD:EE:01');
+      expect(detail.connectedClients, hasLength(2));
+      expect(detail.connectedClients.any((d) => d.mac == device1.mac), isTrue);
+      expect(detail.connectedClients.any((d) => d.mac == device2.mac), isTrue);
       container.dispose();
     });
 
     test('returns node and connected devices for extender node', () async {
+      final meshData = createMeshData();
       final container = createContainer(data: meshData);
       await container.read(devicesDataProvider.future);
 
       final detail = container.read(uspNodeDetailProvider('AA:BB:CC:DD:EE:02'));
 
-      expect(detail.node, extenderNode);
-      expect(detail.connectedDevices, hasLength(1));
-      expect(detail.connectedDevices.first.hostName, 'iPad');
+      expect(detail.node, isNotNull);
+      expect(detail.node!.deviceId, 'AA:BB:CC:DD:EE:02');
+      expect(detail.connectedClients, hasLength(1));
+      expect(detail.connectedClients.first.hostName, 'iPad');
       container.dispose();
     });
 
@@ -107,13 +119,14 @@ void main() {
     // -----------------------------------------------------------------------
 
     test('deviceId lookup is case-insensitive', () async {
+      final meshData = createMeshData();
       final container = createContainer(data: meshData);
       await container.read(devicesDataProvider.future);
 
       final detail = container.read(uspNodeDetailProvider('aa:bb:cc:dd:ee:01'));
 
-      expect(detail.node, masterNode);
-      expect(detail.connectedDevices, hasLength(2));
+      expect(detail.node, isNotNull);
+      expect(detail.connectedClients, hasLength(2));
       container.dispose();
     });
 
@@ -123,32 +136,31 @@ void main() {
 
     test('GATEWAY lookup treats null parentNodeId as connected to gateway',
         () async {
-      const nonMeshData = DevicesData(
-        nodeModels: [
-          NodeUIModel(
+      final device1NoParent = ClientDevice(
+        mac: '11:22:33:44:55:01',
+        ip: '192.168.1.100',
+        hostName: 'iPhone',
+        isActive: true,
+        connectionType: ConnectionType.wifi,
+        parentNodeId: null, // non-mesh: no parent
+      );
+      final device2NoParent = ClientDevice(
+        mac: '11:22:33:44:55:02',
+        ip: '192.168.1.101',
+        hostName: 'MacBook',
+        isActive: true,
+        connectionType: ConnectionType.wired,
+        parentNodeId: null,
+      );
+
+      final nonMeshData = DevicesData(
+        meshNetwork: MeshNetwork(
+          master: MasterNode(
             deviceId: 'GATEWAY',
             model: 'MR7500',
-            isMaster: true,
+            connectedClients: [device1NoParent, device2NoParent],
           ),
-        ],
-        deviceModels: [
-          DeviceUIModel(
-            mac: '11:22:33:44:55:01',
-            ip: '192.168.1.100',
-            hostName: 'iPhone',
-            isActive: true,
-            isWifi: true,
-            parentNodeId: null, // non-mesh: no parent
-          ),
-          DeviceUIModel(
-            mac: '11:22:33:44:55:02',
-            ip: '192.168.1.101',
-            hostName: 'MacBook',
-            isActive: true,
-            isWifi: false,
-            parentNodeId: null,
-          ),
-        ],
+        ),
       );
 
       final container = createContainer(data: nonMeshData);
@@ -156,25 +168,28 @@ void main() {
 
       final detail = container.read(uspNodeDetailProvider('GATEWAY'));
 
-      expect(detail.connectedDevices, hasLength(2));
+      expect(detail.connectedClients, hasLength(2));
       container.dispose();
     });
 
     test('GATEWAY lookup is case-insensitive', () async {
-      const nonMeshData = DevicesData(
-        nodeModels: [
-          NodeUIModel(deviceId: 'GATEWAY', model: 'MR7500', isMaster: true),
-        ],
-        deviceModels: [
-          DeviceUIModel(
-            mac: '11:22:33:44:55:01',
-            ip: '192.168.1.100',
-            hostName: 'Phone',
-            isActive: true,
-            isWifi: true,
-            parentNodeId: null,
+      final phone = ClientDevice(
+        mac: '11:22:33:44:55:01',
+        ip: '192.168.1.100',
+        hostName: 'Phone',
+        isActive: true,
+        connectionType: ConnectionType.wifi,
+        parentNodeId: null,
+      );
+
+      final nonMeshData = DevicesData(
+        meshNetwork: MeshNetwork(
+          master: MasterNode(
+            deviceId: 'GATEWAY',
+            model: 'MR7500',
+            connectedClients: [phone],
           ),
-        ],
+        ),
       );
 
       final container = createContainer(data: nonMeshData);
@@ -182,27 +197,28 @@ void main() {
 
       final detail = container.read(uspNodeDetailProvider('gateway'));
 
-      expect(detail.connectedDevices, hasLength(1));
+      expect(detail.connectedClients, hasLength(1));
       container.dispose();
     });
 
     // -----------------------------------------------------------------------
-    // activeDeviceCount
+    // activeClientCount
     // -----------------------------------------------------------------------
 
-    test('activeDeviceCount counts only active devices', () async {
+    test('activeClientCount counts only active devices', () async {
+      final meshData = createMeshData();
       final container = createContainer(data: meshData);
       await container.read(devicesDataProvider.future);
 
       // Master has device1 (active) + device2 (active) = 2
       final masterDetail =
           container.read(uspNodeDetailProvider('AA:BB:CC:DD:EE:01'));
-      expect(masterDetail.activeDeviceCount, 2);
+      expect(masterDetail.activeClientCount, 2);
 
       // Extender has device3 (inactive) = 0
       final extenderDetail =
           container.read(uspNodeDetailProvider('AA:BB:CC:DD:EE:02'));
-      expect(extenderDetail.activeDeviceCount, 0);
+      expect(extenderDetail.activeClientCount, 0);
       container.dispose();
     });
 
@@ -216,25 +232,31 @@ void main() {
       final detail = container.read(uspNodeDetailProvider('AA:BB:CC:DD:EE:01'));
 
       expect(detail.node, isNull);
-      expect(detail.connectedDevices, isEmpty);
+      expect(detail.connectedClients, isEmpty);
       container.dispose();
     });
 
     test('returns null node for unknown deviceId', () async {
+      final meshData = createMeshData();
       final container = createContainer(data: meshData);
       await container.read(devicesDataProvider.future);
 
       final detail = container.read(uspNodeDetailProvider('UNKNOWN'));
 
       expect(detail.node, isNull);
-      expect(detail.connectedDevices, isEmpty);
+      expect(detail.connectedClients, isEmpty);
       container.dispose();
     });
 
     test('node with no connected devices returns empty list', () async {
-      const data = DevicesData(
-        nodeModels: [masterNode],
-        deviceModels: [],
+      final data = DevicesData(
+        meshNetwork: MeshNetwork(
+          master: MasterNode(
+            deviceId: 'AA:BB:CC:DD:EE:01',
+            model: 'MR7500',
+            connectedClients: [],
+          ),
+        ),
       );
 
       final container = createContainer(data: data);
@@ -242,9 +264,9 @@ void main() {
 
       final detail = container.read(uspNodeDetailProvider('AA:BB:CC:DD:EE:01'));
 
-      expect(detail.node, masterNode);
-      expect(detail.connectedDevices, isEmpty);
-      expect(detail.activeDeviceCount, 0);
+      expect(detail.node, isNotNull);
+      expect(detail.connectedClients, isEmpty);
+      expect(detail.activeClientCount, 0);
       container.dispose();
     });
   });
@@ -260,7 +282,16 @@ class _FakeDevicesNotifier extends AsyncNotifier<DevicesData>
   _FakeDevicesNotifier(this._data);
 
   @override
-  Future<DevicesData> build() async => _data ?? const DevicesData();
+  Future<DevicesData> build() async {
+    if (_data == null) {
+      return DevicesData(
+        meshNetwork: MeshNetwork(
+          master: MasterNode(deviceId: 'GATEWAY', model: 'Unknown'),
+        ),
+      );
+    }
+    return _data;
+  }
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);

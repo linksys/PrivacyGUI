@@ -6,8 +6,8 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/utils/device_classifier.dart';
 import 'package:privacy_gui/core/utils/oui_lookup.dart';
 import 'package:privacy_gui/route/constants.dart';
-import 'package:privacy_gui/page/_shared/extensions/device_ui_extensions.dart';
-import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
+import 'package:privacy_gui/page/_shared/models/client_device.dart'
+    hide ConnectionType;
 import 'package:privacy_gui/page/_shared/components/usp_mutation_helper.dart';
 import 'package:privacy_gui/page/_shared/components/detail_widgets.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
@@ -82,7 +82,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
   // ===========================================================================
 
   Widget _buildMobileLayout(BuildContext context, WidgetRef ref,
-      DeviceUIModel device, DeviceDetailState detail, bool isLoading) {
+      ClientDevice device, DeviceDetailState detail, bool isLoading) {
     return Column(
       children: [
         _buildDeviceIdentityCard(context, device),
@@ -99,7 +99,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
   }
 
   Widget _buildDesktopLayout(BuildContext context, WidgetRef ref,
-      DeviceUIModel device, DeviceDetailState detail, bool isLoading) {
+      ClientDevice device, DeviceDetailState detail, bool isLoading) {
     return Column(
       children: [
         DetailGridRow(
@@ -121,7 +121,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
   // Device Identity Card
   // ===========================================================================
 
-  Widget _buildDeviceIdentityCard(BuildContext context, DeviceUIModel device) {
+  Widget _buildDeviceIdentityCard(BuildContext context, ClientDevice device) {
     final classification = DeviceClassifier.classifyWithConfidence(
       hostname: device.hostName,
       mac: device.mac,
@@ -214,8 +214,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
   // Connection Status Card
   // ===========================================================================
 
-  Widget _buildConnectionStatusCard(
-      BuildContext context, DeviceUIModel device) {
+  Widget _buildConnectionStatusCard(BuildContext context, ClientDevice device) {
     final hasMultipleInterfaces = device.hasMultipleInterfaces;
 
     return AppCard(
@@ -264,7 +263,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
   // ===========================================================================
 
   Widget _buildMultiInterfaceSection(
-      BuildContext context, DeviceUIModel device) {
+      BuildContext context, ClientDevice device) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -423,7 +422,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
   // WiFi Details Card
   // ===========================================================================
 
-  Widget _buildWifiDetailsCard(BuildContext context, DeviceUIModel device) {
+  Widget _buildWifiDetailsCard(BuildContext context, ClientDevice device) {
     final hasSignalData = device.signalStrength != null;
     final hasSpeedData =
         device.downlinkRate != null || device.uplinkRate != null;
@@ -467,39 +466,9 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
             _buildSpeedRow(context, device),
             AppGap.sm(),
           ],
-          if (hasBandSsid || device.interfaceType?.isNotEmpty == true)
+          if (hasBandSsid)
             Row(
               children: [
-                if (device.interfaceType?.isNotEmpty == true) ...[
-                  Expanded(
-                    child: LayoutBlock(
-                      padding: const EdgeInsets.all(AppSpacing.md),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(Icons.settings_input_antenna,
-                                  size: 16,
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurfaceVariant),
-                              AppGap.xs(),
-                              AppText.labelSmall(loc(context).labelInterface,
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurfaceVariant),
-                            ],
-                          ),
-                          AppGap.xs(),
-                          AppText.bodyMedium(device.interfaceType!),
-                        ],
-                      ),
-                    ),
-                  ),
-                  if (device.band != null || device.ssidName != null)
-                    AppGap.sm(),
-                ],
                 if (device.band != null) ...[
                   Expanded(
                     child: LayoutBlock(
@@ -563,7 +532,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
     );
   }
 
-  Widget _buildSignalLayoutBlock(BuildContext context, DeviceUIModel device) {
+  Widget _buildSignalLayoutBlock(BuildContext context, ClientDevice device) {
     return LayoutBlock(
       padding: const EdgeInsets.all(AppSpacing.md),
       child: Row(
@@ -595,7 +564,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
     );
   }
 
-  Widget _buildSpeedRow(BuildContext context, DeviceUIModel device) {
+  Widget _buildSpeedRow(BuildContext context, ClientDevice device) {
     final colorScheme = Theme.of(context).colorScheme;
     return Row(
       children: [
@@ -627,8 +596,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
   // Network Addresses Card (for non-active or wired devices on desktop)
   // ===========================================================================
 
-  Widget _buildNetworkAddressesCard(
-      BuildContext context, DeviceUIModel device) {
+  Widget _buildNetworkAddressesCard(BuildContext context, ClientDevice device) {
     final isWifi = device.isWifi;
     return AppCard(
       padding: const EdgeInsets.all(AppSpacing.md),
@@ -667,7 +635,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
   // ===========================================================================
 
   Widget _buildDhcpCard(BuildContext context, WidgetRef ref,
-      DeviceUIModel device, DeviceDetailState detail, bool isLoading) {
+      ClientDevice device, DeviceDetailState detail, bool isLoading) {
     final colorScheme = Theme.of(context).colorScheme;
     final hasValidIpv4 = NetworkUtils.isValidIpAddress(device.ip);
 
@@ -825,7 +793,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
   // ===========================================================================
 
   Future<void> _reserveIp(
-      BuildContext context, WidgetRef ref, DeviceUIModel device) async {
+      BuildContext context, WidgetRef ref, ClientDevice device) async {
     await performUspMutation(
       context,
       ref,

@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/_shared/models/device_analytics_state.dart';
-import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
+import 'package:privacy_gui/page/_shared/models/client_device.dart';
 import 'package:privacy_gui/page/_shared/providers/device_analytics_persistence.dart';
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
@@ -33,6 +33,7 @@ class UspDeviceAnalyticsNotifier extends Notifier<DeviceAnalyticsState> {
     ref.listen(devicesDataProvider, (previous, next) {
       final data = next.valueOrNull;
       if (data == null) return;
+      // Use clientDevices to exclude mesh nodes (master/slave)
       _onDashboardUpdated(data.clientDevices);
     });
 
@@ -112,13 +113,18 @@ class UspDeviceAnalyticsNotifier extends Notifier<DeviceAnalyticsState> {
   }
 
   /// Returns the set of router MACs (master + slave nodes).
+  /// Used to clean legacy persisted data that may contain mesh node MACs.
   Set<String> _getRouterMacs() {
-    final allDeviceModels =
-        ref.read(devicesDataProvider).valueOrNull?.deviceModels ?? [];
-    return allDeviceModels.where((d) => d.isMeshNode).map((d) => d.mac).toSet();
+    final data = ref.read(devicesDataProvider).valueOrNull;
+    if (data == null) return {};
+    final nodeMacs = <String>{data.master.deviceId};
+    for (final slave in data.slaves) {
+      nodeMacs.add(slave.deviceId);
+    }
+    return nodeMacs;
   }
 
-  void _onDashboardUpdated(List<DeviceUIModel> devices) {
+  void _onDashboardUpdated(List<ClientDevice> devices) {
     // 1. Compute current distribution
     final distribution = _computeDistribution(devices);
 
@@ -159,13 +165,10 @@ class UspDeviceAnalyticsNotifier extends Notifier<DeviceAnalyticsState> {
     final cutoff = now.subtract(Duration(hours: DeviceAnalyticsState.maxHours));
     history = history.where((h) => h.hour.isAfter(cutoff)).toList();
 
-    // Get router MACs to filter out from history (mesh nodes should not appear)
-    final routerMacs = _getRouterMacs();
-
-    // Rebuild allKnownMacs from history, excluding router MACs
+    // Rebuild allKnownMacs from history (clientDevices already excludes mesh nodes)
     final allMacs = <String>{};
     for (final h in history) {
-      allMacs.addAll(h.activeMacs.where((mac) => !routerMacs.contains(mac)));
+      allMacs.addAll(h.activeMacs);
     }
 
     state = state.copyWith(
@@ -179,7 +182,7 @@ class UspDeviceAnalyticsNotifier extends Notifier<DeviceAnalyticsState> {
     _persistState();
   }
 
-  DeviceDistribution _computeDistribution(List<DeviceUIModel> devices) {
+  DeviceDistribution _computeDistribution(List<ClientDevice> devices) {
     final online = devices.where((d) => d.isActive).toList();
     final offline = devices.where((d) => !d.isActive).toList();
 
@@ -187,14 +190,14 @@ class UspDeviceAnalyticsNotifier extends Notifier<DeviceAnalyticsState> {
     final wifiDevices = online.where((d) => d.isWifi).toList();
     final wiredDevices = online.where((d) => !d.isWifi).toList();
 
-    // Band distribution (online WiFi only + wired category)
-    final bandDist = <String, int>{};
-    for (final d in wifiDevices) {
-      final band = d.band ?? 'Unknown';
-      bandDist[band] = (bandDist[band] ?? 0) + 1;
-    }
-    if (wiredDevices.isNotEmpty) {
-      bandDist['Wired'] = wiredDevices.length;
+    // Category distribution (online only) — see _getDeviceCategory:
+    // - WiFi with a band: show band (2.4GHz, 5GHz, 6GHz)
+    // - Wired: show "Wired"
+    // - WiFi without a band (e.g. slave clients pending #1118): show node name
+    final categoryDist = <String, int>{};
+    for (final d in online) {
+      final category = _getDeviceCategory(d);
+      categoryDist[category] = (categoryDist[category] ?? 0) + 1;
     }
 
     // Signal level distribution (online WiFi only)
@@ -204,17 +207,20 @@ class UspDeviceAnalyticsNotifier extends Notifier<DeviceAnalyticsState> {
       signalDist[level] = (signalDist[level] ?? 0) + 1;
     }
 
-    // Average signal quality per band (for radar chart)
-    final bandQualitySum = <String, double>{};
-    final bandQualityCount = <String, int>{};
+    // Average signal quality per category (WiFi devices only)
+    final categoryQualitySum = <String, double>{};
+    final categoryQualityCount = <String, int>{};
     for (final d in wifiDevices) {
-      final band = d.band ?? 'Unknown';
-      bandQualitySum[band] = (bandQualitySum[band] ?? 0) + d.signalQuality;
-      bandQualityCount[band] = (bandQualityCount[band] ?? 0) + 1;
+      final category = _getDeviceCategory(d);
+      categoryQualitySum[category] =
+          (categoryQualitySum[category] ?? 0) + d.signalQuality;
+      categoryQualityCount[category] =
+          (categoryQualityCount[category] ?? 0) + 1;
     }
     final bandSignalQuality = <String, double>{};
-    for (final band in bandQualitySum.keys) {
-      bandSignalQuality[band] = bandQualitySum[band]! / bandQualityCount[band]!;
+    for (final cat in categoryQualitySum.keys) {
+      bandSignalQuality[cat] =
+          categoryQualitySum[cat]! / categoryQualityCount[cat]!;
     }
 
     return DeviceDistribution(
@@ -222,10 +228,36 @@ class UspDeviceAnalyticsNotifier extends Notifier<DeviceAnalyticsState> {
       wiredCount: wiredDevices.length,
       onlineCount: online.length,
       offlineCount: offline.length,
-      bandDistribution: bandDist,
+      bandDistribution: categoryDist,
       signalLevelDistribution: signalDist,
       bandSignalQuality: bandSignalQuality,
     );
+  }
+
+  /// Determines the display category for a device.
+  ///
+  /// - WiFi client with a resolved band: the band (2.4GHz / 5GHz / 6GHz)
+  /// - Wired client: "Wired"
+  /// - WiFi client without a band: the connected node name, else "WiFi"
+  ///
+  /// Band takes priority over the node grouping, because a master WiFi client
+  /// keeps a valid band in a mesh too (it comes from the local
+  /// `WiFi.AccessPoint` chain, not DataElements). Keying off `parentNodeId`
+  /// alone was wrong: `MeshTopologyBuilder` maps EVERY node's associated STAs —
+  /// including the master's own clients — into `clientToNodeMap`, so master
+  /// clients also get a non-null `parentNodeId` on a mesh, which previously
+  /// collapsed their band under the gateway name.
+  ///
+  /// Slave WiFi clients currently have no band (DataElements band resolution is
+  /// pending — see #1118), so they fall through to the node-name grouping.
+  String _getDeviceCategory(ClientDevice d) {
+    if (d.isWifi) {
+      final band = d.band;
+      if (band != null && band.isNotEmpty) return band;
+      // WiFi client without a resolved band: group under its node.
+      return d.parentNodeName ?? 'WiFi';
+    }
+    return 'Wired';
   }
 
   Future<void> _persistState() async {

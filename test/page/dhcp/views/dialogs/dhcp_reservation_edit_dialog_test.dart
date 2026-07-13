@@ -24,7 +24,7 @@ final _testTheme = AppTheme.create(
   designThemeBuilder: (c) => CustomDesignTheme.fromJson({'style': 'flat'}),
 );
 
-const _existing = [
+final _existing = [
   DhcpReservationUIModel(
       mac: 'AA:BB:CC:DD:EE:01', ip: '192.168.1.10', enable: true),
   DhcpReservationUIModel(
@@ -37,8 +37,9 @@ const _existing = [
 Future<({String mac, String ip, bool enable})?> _pumpAndOpen(
   WidgetTester tester, {
   DhcpReservationUIModel? reservation,
-  List<DhcpReservationUIModel> existing = _existing,
+  List<DhcpReservationUIModel>? existing,
 }) async {
+  final existingReservations = existing ?? _existing;
   ({String mac, String ip, bool enable})? result;
   bool popped = false;
   final router = GoRouter(
@@ -55,7 +56,7 @@ Future<({String mac, String ip, bool enable})?> _pumpAndOpen(
                     context: context,
                     builder: (_) => DhcpReservationEditDialog(
                       reservation: reservation,
-                      existingReservations: existing,
+                      existingReservations: existingReservations,
                     ),
                   );
                   popped = true;
@@ -188,21 +189,20 @@ void main() {
       // value-equality (props include `enable`), a value-equality self-filter
       // would fail to exclude self and flag the user's own MAC/IP as a
       // duplicate. Self must be excluded by stable instancePath identity.
-      const frozen = DhcpReservationUIModel(
+      final frozen = DhcpReservationUIModel(
         instancePath: 'Device.DHCPv4.Server.Pool.1.StaticAddress.1',
         mac: 'AA:BB:CC:DD:EE:01',
         ip: '192.168.1.10',
         enable: true,
       );
       // Same instancePath, but enable drifted true -> false (SSE update).
-      const drifted = DhcpReservationUIModel(
+      final drifted = DhcpReservationUIModel(
         instancePath: 'Device.DHCPv4.Server.Pool.1.StaticAddress.1',
         mac: 'AA:BB:CC:DD:EE:01',
         ip: '192.168.1.10',
         enable: false,
       );
-      await _pumpAndOpen(tester,
-          reservation: frozen, existing: const [drifted]);
+      await _pumpAndOpen(tester, reservation: frozen, existing: [drifted]);
       // Change the value (so onChanged fires) then set it back to its own MAC,
       // forcing _validate() to run against the drifted self-entry.
       await _enterMac(tester, 'AA:BB:CC:DD:EE:09');

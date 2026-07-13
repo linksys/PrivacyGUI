@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/utils/oui_lookup.dart';
 import 'package:privacy_gui/core/utils/wifi.dart';
-import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
+import 'package:privacy_gui/page/_shared/models/client_device.dart';
 import 'package:privacy_gui/page/_shared/utils/device_classifier.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/devices/providers/device_filter_state.dart';
@@ -61,9 +61,9 @@ class DeviceFilterNotifier extends StateNotifier<DeviceFilterConfig> {
     state = state.copyWith(status: value);
   }
 
-  void setConnections(Set<DeviceConnectionType> values) {
+  void setConnections(Set<ConnectionType> values) {
     final isEthernetOnly =
-        values.length == 1 && values.contains(DeviceConnectionType.wired);
+        values.length == 1 && values.contains(ConnectionType.wired);
     if (isEthernetOnly) {
       state = state.copyWith(
         connections: values,
@@ -77,8 +77,8 @@ class DeviceFilterNotifier extends StateNotifier<DeviceFilterConfig> {
     state = state.copyWith(connections: values);
   }
 
-  void toggleConnection(DeviceConnectionType type) {
-    var next = Set<DeviceConnectionType>.from(state.connections);
+  void toggleConnection(ConnectionType type) {
+    var next = Set<ConnectionType>.from(state.connections);
     if (next.contains(type)) {
       next.remove(type);
     } else {
@@ -253,15 +253,16 @@ final deviceFilterOptionsProvider = Provider<DeviceFilterOptions>((ref) {
   );
 });
 
-final filteredDeviceListProvider = Provider<List<DeviceUIModel>>((ref) {
+/// Filtered device list — applies every active dimension + search.
+final filteredDeviceListProvider = Provider<List<ClientDevice>>((ref) {
   final data = ref.watch(devicesDataProvider).valueOrNull;
   if (data == null) return [];
   final filter = ref.watch(deviceFilterConfigProvider);
   return data.clientDevices.where((d) => _matches(d, filter)).toList();
 });
 
-bool _matches(DeviceUIModel device, DeviceFilterConfig filter) {
-  // Status
+bool _matches(ClientDevice device, DeviceFilterConfig filter) {
+  // Status.
   if (filter.status == DeviceStatusFilter.online && !device.isActive) {
     return false;
   }
@@ -272,7 +273,7 @@ bool _matches(DeviceUIModel device, DeviceFilterConfig filter) {
   // Connection type (multi-select OR)
   if (filter.connections.isNotEmpty) {
     final deviceType =
-        device.isWifi ? DeviceConnectionType.wifi : DeviceConnectionType.wired;
+        device.isWifi ? ConnectionType.wifi : ConnectionType.wired;
     if (!filter.connections.contains(deviceType)) {
       return false;
     }
@@ -280,7 +281,7 @@ bool _matches(DeviceUIModel device, DeviceFilterConfig filter) {
 
   // BUG FIX: Exclude Ethernet when WiFi-specific filters are active
   if (filter.hasWifiOnlyFilter && !device.isWifi) {
-    if (!filter.connections.contains(DeviceConnectionType.wired)) {
+    if (!filter.connections.contains(ConnectionType.wired)) {
       return false;
     }
   }

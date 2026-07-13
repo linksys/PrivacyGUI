@@ -22,7 +22,7 @@ class UspStatsPanel extends ConsumerWidget {
 
     final devices = devicesData.clientDevices;
     final onlineCount = devices.where((d) => d.isActive).length;
-    final nodeCount = devicesData.nodeModels.length;
+    final nodeCount = devicesData.nodes.length;
     final wifiData = ref.watch(wifiDataProvider).valueOrNull;
     final radioCount = wifiData?.radioModels.length ?? 0;
     final enabledRadios =

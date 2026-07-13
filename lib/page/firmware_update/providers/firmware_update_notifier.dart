@@ -9,7 +9,6 @@ import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_image_ui_model.dart';
-import 'package:privacy_gui/page/topology/models/node_ui_model.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_ota_info.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_update_phase.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_update_state.dart';
@@ -89,15 +88,11 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
 
   /// Build OTA check parameters from device data providers.
   ///
-  /// Returns `null` if required data is unavailable (e.g., master node not found).
+  /// Returns `null` if required data is unavailable.
   Future<FirmwareOtaCheckParams?> buildOtaCheckParams() async {
     try {
       final devicesData = await ref.read(devicesDataProvider.future);
-      final masterNode = devicesData.nodeModels.master;
-      if (masterNode == null) {
-        logger.w('[FirmwareUpdate] Master node not found');
-        return null;
-      }
+      final master = devicesData.master;
 
       final systemInfoData = await ref.read(systemInfoDataProvider.future);
       final hardwareVersion =
@@ -107,9 +102,9 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
       final ipAddress = wanData.model.ipAddress;
 
       return FirmwareOtaCheckParams(
-        macAddress: _formatMacAddress(masterNode.deviceId),
-        installedVersion: masterNode.softwareVersion,
-        modelNumber: masterNode.model,
+        macAddress: _formatMacAddress(master.deviceId),
+        installedVersion: master.softwareVersion,
+        modelNumber: master.model,
         hardwareVersion: hardwareVersion,
         ipAddress: ipAddress,
       );
