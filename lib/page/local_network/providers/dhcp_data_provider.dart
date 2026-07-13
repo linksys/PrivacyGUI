@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
@@ -49,6 +50,25 @@ class DhcpDataNotifier extends AsyncNotifier<DhcpData> {
         _debouncedInvalidate();
       }
     });
+
+    // Devices listener: device online status changes affect DHCP client
+    // isOnline enrichment. Only re-fetch when the online-status map actually
+    // changed — DevicesData emits on any device field change (RSSI, band,
+    // SSID), so a naive listener would trigger needless DHCP re-fetches.
+    ref.listen(devicesDataProvider, (prev, next) {
+      if (!next.hasValue || !state.hasValue) return;
+      final prevOnline = <String, bool>{
+        for (final d in prev?.valueOrNull?.clientDevices ?? [])
+          d.mac: d.isActive
+      };
+      final nextOnline = <String, bool>{
+        for (final d in next.value!.clientDevices) d.mac: d.isActive
+      };
+      if (!const MapEquality<String, bool>().equals(prevOnline, nextOnline)) {
+        _debouncedInvalidate();
+      }
+    });
+
     ref.onDispose(() => _debounce?.cancel());
     return _fetch();
   }
@@ -56,11 +76,19 @@ class DhcpDataNotifier extends AsyncNotifier<DhcpData> {
   Future<DhcpData> _fetch() async {
     final svc = ref.read(uspDhcpDataServiceProvider);
 
-    // Hostname enrichment: read pre-computed map from devices provider.
+    // Enrichment: read pre-computed maps from devices provider.
     final devicesData = ref.read(devicesDataProvider).valueOrNull;
     final hostNameByMac = devicesData?.hostNameByMac ?? const {};
+    // Compute isOnlineByMac inline from clientDevices (mesh nodes never hold
+    // DHCP leases, so their MACs cannot appear in DHCP client models).
+    final isOnlineByMac = <String, bool>{
+      for (final d in devicesData?.clientDevices ?? []) d.mac: d.isActive,
+    };
 
-    final result = await svc.fetch(hostNameByMac: hostNameByMac);
+    final result = await svc.fetch(
+      hostNameByMac: hostNameByMac,
+      isOnlineByMac: isOnlineByMac,
+    );
 
     return DhcpData(
       clientModels: result.clientModels,

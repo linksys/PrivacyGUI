@@ -71,6 +71,9 @@ class WifiNetworkCard extends ConsumerWidget {
               onTap: () => _editSsid(context, ref, n),
             ),
             // ── WiFi password & Security mode ────────────────────────────
+            // Shown for both main and guest whenever the AP reports supported
+            // security modes. Guest security mode is editable too — consistent
+            // with the Quick Setup card.
             if (n.supportedSecurityModes.isNotEmpty) ...[
               SettingBlock(
                 title: loc(context).password,
@@ -78,13 +81,12 @@ class WifiNetworkCard extends ConsumerWidget {
                 trailing: const AppIcon.font(AppFontIcons.edit),
                 onTap: () => _editPassword(context, ref, n),
               ),
-              if (!n.isGuest)
-                SettingBlock(
-                  title: loc(context).securityMode,
-                  value: n.securityMode,
-                  trailing: const AppIcon.font(AppFontIcons.edit),
-                  onTap: () => _editSecurityMode(context, ref, n),
-                ),
+              SettingBlock(
+                title: loc(context).securityMode,
+                value: n.securityMode,
+                trailing: const AppIcon.font(AppFontIcons.edit),
+                onTap: () => _editSecurityMode(context, ref, n),
+              ),
             ],
             // ── WiFi Mode ──────────────────────────────────────────────────
             if (!n.isGuest && n.supportedStandards.isNotEmpty)

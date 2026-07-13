@@ -1,21 +1,36 @@
 import 'package:equatable/equatable.dart';
 import 'package:privacy_gui/framework/diagnostic_loggable.dart';
 
-/// Presentation Layer Model for an active DHCP client lease.
+/// Presentation Layer Model for a DHCP client lease.
+///
+/// - [leaseActive]: Whether the DHCP lease is valid (from TR-181 DHCPv4.Server.Pool.*.Client.*.Active)
+/// - [isOnline]: Whether the device is currently connected (from TR-181 Hosts.Host.*.Active)
 class DhcpClientUIModel extends Equatable with DiagnosticLoggable {
+  /// MAC address (normalized to uppercase).
   final String mac;
   final String ip;
-  final bool active;
+
+  /// Whether the DHCP lease is active (not expired).
+  /// This comes from `Device.DHCPv4.Server.Pool.*.Client.*.Active`.
+  final bool leaseActive;
+
+  /// Whether the device is currently online (connected to the network).
+  /// This comes from `Device.Hosts.Host.*.Active` via join on MAC address.
+  /// Null if no matching host entry found.
+  final bool? isOnline;
+
   final String hostName;
   final DateTime? leaseExpiry;
 
-  const DhcpClientUIModel({
-    required this.mac,
+  /// Creates a DHCP client UI model. MAC is normalized to uppercase.
+  DhcpClientUIModel({
+    required String mac,
     required this.ip,
-    required this.active,
+    required this.leaseActive,
+    this.isOnline,
     this.hostName = '',
     this.leaseExpiry,
-  });
+  }) : mac = mac.toUpperCase();
 
   /// Human-readable lease status.
   ///
@@ -28,7 +43,7 @@ class DhcpClientUIModel extends Equatable with DiagnosticLoggable {
     if (leaseExpiry == null) return '';
     final remaining = leaseExpiry!.difference(DateTime.now());
     if (remaining.isNegative) {
-      return active ? '' : 'Expired';
+      return leaseActive ? '' : 'Expired';
     }
     final days = remaining.inDays;
     final hours = remaining.inHours % 24;
@@ -61,7 +76,8 @@ class DhcpClientUIModel extends Equatable with DiagnosticLoggable {
   Map<String, Object?> get namedProps => {
         'mac': mac,
         'ip': ip,
-        'active': active,
+        'leaseActive': leaseActive,
+        'isOnline': isOnline,
         'hostName': hostName,
         'leaseExpiry': leaseExpiry,
       };

@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/errors/usp_error.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/generated/lan_network_info.g.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
@@ -24,16 +27,30 @@ class UspLocalNetworkService {
 
   // ─── CRUD ──────────────────────────────────────────────────
 
+  /// Time budget for a SET that changes the router IP. Changing the LAN IP
+  /// makes the firmware drop the connection carrying the SET response, so the
+  /// response can never arrive — bound the wait instead of hanging.
+  static const _ipChangeSetTimeout = Duration(seconds: 4);
+
   /// Save changed LAN settings. Only sends fields that differ from original.
+  ///
+  /// When the router IP address changes, the SET is terminal-by-design: the
+  /// firmware applies the new IP and drops the connection carrying the SET
+  /// response, so a timeout / transport error on an IP-changing SET is the
+  /// expected signature of success (the SET was received and applied before the
+  /// disconnect). Any fault the router actively returns BEFORE the disconnect —
+  /// a validation/resource/partial/complete failure — still propagates, so a
+  /// genuine config failure is never hidden. When the IP does not change, the
+  /// response is awaited normally and every error surfaces.
   Future<void> save({
     required LocalNetworkUIModel original,
     required LocalNetworkUIModel pending,
   }) async {
+    final ipAddressChanged = original.ipAddress != pending.ipAddress;
     try {
-      final result = await LanNetworkInfo.update(
+      final updateFuture = LanNetworkInfo.update(
         _usp,
-        ipAddress:
-            original.ipAddress != pending.ipAddress ? pending.ipAddress : null,
+        ipAddress: ipAddressChanged ? pending.ipAddress : null,
         subnetMask: original.subnetMask != pending.subnetMask
             ? pending.subnetMask
             : null,
@@ -55,30 +72,63 @@ class UspLocalNetworkService {
             ? joinDnsServers(
                 pending.dnsServer1, pending.dnsServer2, pending.dnsServer3)
             : null,
+        allowPartial: true,
       );
-      final parsed = UspResultParser.parseSetResult(result);
-      switch (parsed) {
-        case UspSuccess():
-          break;
-        case UspPartialSuccess(
-            :final errorSummary,
-            :final successes,
-            :final failures
-          ):
-          throw UspPartialFailureError(
-            summary: 'Local network update partial failure: $errorSummary',
-            successPaths: successes.map((s) => s.requestedPath).toList(),
-            failures: failures,
-          );
-        case UspFailure(:final errorSummary, :final errors):
-          throw UspCompleteFailureError(
-            summary: 'Local network update failed: $errorSummary',
-            failures: errors,
-          );
-      }
+
+      // On an IP change the response rides a connection the firmware is about
+      // to drop; bound the wait so we don't hang on a reply that can't arrive.
+      final result = ipAddressChanged
+          ? await updateFuture.timeout(_ipChangeSetTimeout)
+          : await updateFuture;
+
+      _handleSetResult(result);
+    } on TimeoutException {
+      // No response within the budget: the firmware applied the new IP and
+      // dropped the connection, so the SET_RESP can never arrive. This is only
+      // reachable when the IP changed (the timeout is applied only then).
+      logger.i('[USP][Network][LAN]: IP-change SET timed out after '
+          '${_ipChangeSetTimeout.inSeconds}s — treating as success '
+          '(firmware dropped the connection applying the new IP)');
     } catch (e) {
+      // A fault the router actively returned (ServiceError from
+      // _handleSetResult) means the connection was alive and the config was
+      // rejected → propagate, even on an IP change.
       if (e is ServiceError) rethrow;
-      throw mapUspErrorToServiceError(e);
+      // Transport / connectivity errors are raw (non-ServiceError). On an IP
+      // change they are the disconnect signature = success; otherwise they are
+      // a genuine failure.
+      final mapped = mapUspErrorToServiceError(e);
+      if (ipAddressChanged &&
+          (mapped is NetworkError || mapped is ConnectivityError)) {
+        logger.i('[USP][Network][LAN]: IP-change SET hit a transport error '
+            '— treating as success (firmware dropped the connection)');
+        return;
+      }
+      throw mapped;
+    }
+  }
+
+  /// Parse a SET result and throw the appropriate [ServiceError] on failure.
+  void _handleSetResult(Map<String, dynamic> result) {
+    final parsed = UspResultParser.parseSetResult(result);
+    switch (parsed) {
+      case UspSuccess():
+        break;
+      case UspPartialSuccess(
+          :final errorSummary,
+          :final successes,
+          :final failures
+        ):
+        throw UspPartialFailureError(
+          summary: 'Local network update partial failure: $errorSummary',
+          successPaths: successes.map((s) => s.requestedPath).toList(),
+          failures: failures,
+        );
+      case UspFailure(:final errorSummary, :final errors):
+        throw UspCompleteFailureError(
+          summary: 'Local network update failed: $errorSummary',
+          failures: errors,
+        );
     }
   }
 

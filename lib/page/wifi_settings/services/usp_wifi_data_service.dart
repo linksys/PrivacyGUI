@@ -10,6 +10,7 @@ import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/_shared/models/client_connection_detail.dart';
+import 'package:privacy_gui/page/_shared/utils/wifi_guest_detection.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_client_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_radio_ui_model.dart';
 
@@ -160,29 +161,21 @@ class UspWifiDataService {
       for (final s in ssids.items) _ensureTrailingDot(s.instancePath): s,
     };
 
-    // Determine guest SSIDs: per-radio, lowest instance index is Main
-    final guestSsidPaths = <String>{};
-    {
-      final ssidsByRadio = <String, List<WiFiSsid>>{};
-      for (final ssid in ssids.items) {
-        final radioKey = _ensureTrailingDot(ssid.lowerLayers);
-        (ssidsByRadio[radioKey] ??= []).add(ssid);
-      }
-      logger.t('[USP][WiFi] ssidsByRadio groups: ${ssidsByRadio.length}');
-      for (final entry in ssidsByRadio.entries) {
-        final group = entry.value;
-        group.sort((a, b) => _ssidInstanceIndex(a.instancePath)
-            .compareTo(_ssidInstanceIndex(b.instancePath)));
-        logger.t('[USP][WiFi] Radio ${entry.key}: '
-            '${group.map((s) => "${s.ssid}(${s.instancePath})").join(", ")}');
-        for (final ssid in group.skip(1)) {
-          guestSsidPaths.add(_ensureTrailingDot(ssid.instancePath));
-          logger.t(
-              '[USP][WiFi] Marked as guest: ${ssid.ssid} (${ssid.instancePath})');
-        }
-      }
-    }
+    // Determine guest SSIDs via the canonical alias rule (see
+    // wifi_guest_detection). Single source of truth shared across the app.
+    final guestSsidPaths = <String>{
+      for (final ssid in ssids.items)
+        if (isGuestSsid(ssid)) _ensureTrailingDot(ssid.instancePath),
+    };
     logger.t('[USP][WiFi] Total guest SSID paths: ${guestSsidPaths.length}');
+    // Diagnostic: multiple SSIDs but none matched the `-guest` alias rule
+    // usually means firmware did not provision guest aliases (see
+    // wifi_guest_detection). Guest/main grouping degrades silently otherwise.
+    if (guestSsidPaths.isEmpty && ssids.items.length > 1) {
+      logger.w('[USP][WiFi] No SSID matched the "-guest" alias rule; '
+          'guest networks will be treated as main. Aliases: '
+          '${ssids.items.map((s) => s.alias ?? "null").toList()}');
+    }
 
     // Group APs by radio: AP.ssidReference → SSID.lowerLayers → Radio
     final apsByRadioPath =
@@ -200,13 +193,17 @@ class UspWifiDataService {
       final apModels = radioAps.map((a) {
         final isGuest =
             guestSsidPaths.contains(_ensureTrailingDot(a.ssid.instancePath));
-        // Use SSID.enable as the canonical enabled state (matches toggle mutation)
+        // Per-network enabled state = SSID.Enable. The Dashboard toggle mutates
+        // both SSID.Enable and AccessPoint.Enable together, so either would do;
+        // we read SSID.Enable as the single source of truth for the UI.
         return WifiAccessPointUIModel(
           enable: a.ssid.enable,
           ssidName: a.ssid.ssid.isNotEmpty ? a.ssid.ssid : a.ap.ssidReference,
           securityMode: a.ap.securityModeEnabled,
           encryptionMode: a.ap.encryptionMode,
           isGuest: isGuest,
+          accessPointInstancePath: a.ap.instancePath,
+          ssidInstancePath: a.ssid.instancePath,
         );
       }).toList();
       return WifiRadioUIModel(
@@ -223,12 +220,6 @@ class UspWifiDataService {
         accessPoints: apModels,
       );
     }).toList();
-  }
-
-  /// Extracts the numeric instance index from a TR-181 SSID path.
-  int _ssidInstanceIndex(String instancePath) {
-    final match = RegExp(r'Device\.WiFi\.SSID\.(\d+)').firstMatch(instancePath);
-    return match != null ? int.parse(match.group(1)!) : 0;
   }
 
   // ---------------------------------------------------------------------------

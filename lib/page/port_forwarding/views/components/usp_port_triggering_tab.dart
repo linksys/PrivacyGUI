@@ -133,6 +133,23 @@ class UspPortTriggeringTab extends ConsumerWidget {
             triggerPort: result.triggerPort,
             triggerPortEndRange: result.triggerPortEndRange,
             triggerProtocol: result.triggerProtocol,
+            // Rebuild the forwarded-port rule from the dialog result so edits
+            // to the forwarded ports actually persist. Preserve the existing
+            // first rule's instancePath so the service updates it in place
+            // (rather than dropping the edit). Any additional forward rules
+            // beyond the first — which the single-mapping dialog cannot show —
+            // are carried through untouched.
+            forwardRules: [
+              PortTriggerForwardRuleUIModel(
+                instancePath: rule.forwardRules.isNotEmpty
+                    ? rule.forwardRules.first.instancePath
+                    : null,
+                forwardPort: result.forwardPort,
+                forwardPortEndRange: result.forwardPortEndRange,
+                forwardProtocol: result.forwardProtocol,
+              ),
+              ...rule.forwardRules.skip(1),
+            ],
           ),
         );
   }

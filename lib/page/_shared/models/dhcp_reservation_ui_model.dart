@@ -7,16 +7,19 @@ import 'package:privacy_gui/framework/diagnostic_loggable.dart';
 /// that have not yet been saved to the device.
 class DhcpReservationUIModel extends Equatable with DiagnosticLoggable {
   final String? instancePath;
+
+  /// MAC address (normalized to uppercase).
   final String mac;
   final String ip;
   final bool enable;
 
-  const DhcpReservationUIModel({
+  /// Creates a DHCP reservation UI model. MAC is normalized to uppercase.
+  DhcpReservationUIModel({
     this.instancePath,
-    required this.mac,
+    required String mac,
     required this.ip,
     required this.enable,
-  });
+  }) : mac = mac.toUpperCase();
 
   DhcpReservationUIModel copyWith({
     String? instancePath,

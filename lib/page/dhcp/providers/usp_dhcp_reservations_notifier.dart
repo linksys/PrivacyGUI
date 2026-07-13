@@ -10,7 +10,17 @@ import 'package:privacy_gui/page/dhcp/models/dhcp_reservation_list.dart';
 import 'package:privacy_gui/page/dhcp/models/dhcp_reservations_feature_state.dart';
 import 'package:privacy_gui/page/dhcp/models/dhcp_reservations_status.dart';
 import 'package:privacy_gui/page/dhcp/services/usp_dhcp_service.dart';
+import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/local_network/providers/dhcp_data_provider.dart';
+
+/// Pure-data snapshot of a client device offered as an autocomplete suggestion
+/// when adding or editing a reservation. The view maps this to UI options.
+typedef ReservationDeviceOption = ({
+  String name,
+  String mac,
+  String ip,
+  bool isActive,
+});
 
 // ---------------------------------------------------------------------------
 // Providers
@@ -162,6 +172,25 @@ class UspDhcpReservationsNotifier
       rethrow;
     }
     ref.invalidate(dhcpDataProvider);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Device suggestions (data source for reservation add/edit autocomplete)
+  // ---------------------------------------------------------------------------
+
+  /// Client devices offered as autocomplete suggestions when adding or editing
+  /// a reservation. Returns pure data — the view maps these to UI options.
+  List<ReservationDeviceOption> deviceOptions() {
+    final devices =
+        ref.read(devicesDataProvider).valueOrNull?.clientDevices ?? [];
+    return devices
+        .map((d) => (
+              name: d.displayName,
+              mac: d.mac,
+              ip: d.ip,
+              isActive: d.isActive,
+            ))
+        .toList();
   }
 
   // ---------------------------------------------------------------------------

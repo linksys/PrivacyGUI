@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:privacy_gui/core/utils/wifi.dart';
 import 'package:privacy_gui/page/_shared/components/wifi_ui.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -23,6 +22,34 @@ class UspSignalStrengthIndicator extends StatelessWidget {
     this.maxBarHeight = 16,
     this.showLabel = true,
   });
+
+  /// Compact variant for filter chips (no label, smaller bars).
+  const UspSignalStrengthIndicator.compact({
+    super.key,
+    required this.rssi,
+    this.barWidth = 3,
+    this.barSpacing = 1.5,
+    this.maxBarHeight = 14,
+  }) : showLabel = false;
+
+  /// Static variant with fixed level (0-3) and color for filter chip icons.
+  factory UspSignalStrengthIndicator.fixed({
+    Key? key,
+    required int level,
+    required Color color,
+    double barWidth = 3,
+    double barSpacing = 1.5,
+    double maxBarHeight = 14,
+  }) {
+    return _FixedSignalBars(
+      key: key,
+      level: level,
+      color: color,
+      barWidth: barWidth,
+      barSpacing: barSpacing,
+      maxBarHeight: maxBarHeight,
+    );
+  }
 
   /// Render level: 0 (poor) to 3 (excellent). Maps the project-wide
   /// [NodeSignalLevel] onto the four bars.
@@ -71,6 +98,45 @@ class UspSignalStrengthIndicator extends StatelessWidget {
             '$rssi dBm',
             color: color,
           ),
+        ],
+      ],
+    );
+  }
+}
+
+/// Fixed-level signal bars for filter chip icons.
+class _FixedSignalBars extends UspSignalStrengthIndicator {
+  final int level;
+  final Color color;
+
+  const _FixedSignalBars({
+    super.key,
+    required this.level,
+    required this.color,
+    super.barWidth = 3,
+    super.barSpacing = 1.5,
+    super.maxBarHeight = 14,
+  }) : super(rssi: 0, showLabel: false);
+
+  @override
+  Widget build(BuildContext context) {
+    final inactiveColor =
+        Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.4);
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        for (int i = 0; i < 4; i++) ...[
+          Container(
+            width: barWidth,
+            height: maxBarHeight * (0.25 + 0.25 * i),
+            decoration: BoxDecoration(
+              color: i <= level ? color : inactiveColor,
+              borderRadius: BorderRadius.circular(1),
+            ),
+          ),
+          if (i < 3) SizedBox(width: barSpacing),
         ],
       ],
     );

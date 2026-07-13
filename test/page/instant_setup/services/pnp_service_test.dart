@@ -47,6 +47,7 @@ void main() {
     'Device.PPP.Interface.1.IdleDisconnectTime': '0',
     'Device.PPP.Interface.1.LCPEcho': '30',
     'Device.PPP.Interface.1.ConnectionStatus': 'Connected',
+    'Device.PPP.Interface.1.LowerLayers': 'Device.Ethernet.Link.2',
   };
 
   const vlanExistingResponse = <String, dynamic>{
@@ -91,6 +92,16 @@ void main() {
       }
       if (paths.any((p) => p.contains('VLANTermination'))) {
         return vlanResponse;
+      }
+      if (paths.any((p) => p.contains('GRE.Tunnel'))) {
+        return <String, dynamic>{
+          'Device.GRE.Tunnel.1.RemoteEndpoints': '',
+        };
+      }
+      if (paths.any((p) => p.contains('L2TPv2.Tunnel'))) {
+        return <String, dynamic>{
+          'Device.L2TPv2.Tunnel.1.RemoteEndpoints': '',
+        };
       }
       return {};
     });
@@ -191,11 +202,14 @@ void main() {
       // - Ipv6Settings._resolveInstance() + fetch() = 2 calls
       // - PppInterface.fetch() = 1 call
       // - VlanTermination.fetch() = 1 call
+      // - GreTunnel.fetch() = 1 call
+      // - L2tpTunnel.fetch() = 1 call
+      // - _fetchHostName() (Device.DeviceInfo.HostName) = 1 call
       // saveAll:
       // - WanStaticIp.updateOrdered() → _resolveInstance() = 1 call
       // - Ipv6Settings.update() → _resolveInstance() = 1 call
-      // Total = 8 get calls
-      verify(() => mockUsp.get(any())).called(8);
+      // Total = 11 get calls
+      verify(() => mockUsp.get(any())).called(11);
 
       // Verify setOrdered was called for Static IP mode switch
       final capturedOrdered = verify(() => mockUsp.setOrdered(captureAny(),
@@ -232,12 +246,13 @@ void main() {
       await service.saveIspSettings(config);
 
       // Verify fetchSettings + saveAll get calls:
-      // fetchSettings: 6 calls (WanSettings, Ipv6, PPP, VLAN)
+      // fetchSettings: 9 calls (WanSettings x2, Ipv6 x2, PPP, VLAN, GRE, L2TP,
+      //   _fetchHostName = Device.DeviceInfo.HostName)
       // saveAll:
       // - WanPppoe.update() → _resolveInstance() = 1 call
       // - Ipv6Settings.update() → _resolveInstance() = 1 call
-      // Total = 8 get calls
-      verify(() => mockUsp.get(any())).called(8);
+      // Total = 11 get calls
+      verify(() => mockUsp.get(any())).called(11);
 
       // Verify PppInterface.add was called (new PPP instance created)
       final addCaptures = verify(() => mockUsp.add(captureAny())).captured;
@@ -289,6 +304,16 @@ void main() {
         }
         if (paths.any((p) => p.contains('VLANTermination'))) {
           return vlanExistingResponse;
+        }
+        if (paths.any((p) => p.contains('GRE.Tunnel'))) {
+          return <String, dynamic>{
+            'Device.GRE.Tunnel.1.RemoteEndpoints': '',
+          };
+        }
+        if (paths.any((p) => p.contains('L2TPv2.Tunnel'))) {
+          return <String, dynamic>{
+            'Device.L2TPv2.Tunnel.1.RemoteEndpoints': '',
+          };
         }
         return {};
       });
@@ -351,6 +376,16 @@ void main() {
         if (paths.any((p) => p.contains('VLANTermination'))) {
           return vlanDisabledResponse;
         }
+        if (paths.any((p) => p.contains('GRE.Tunnel'))) {
+          return <String, dynamic>{
+            'Device.GRE.Tunnel.1.RemoteEndpoints': '',
+          };
+        }
+        if (paths.any((p) => p.contains('L2TPv2.Tunnel'))) {
+          return <String, dynamic>{
+            'Device.L2TPv2.Tunnel.1.RemoteEndpoints': '',
+          };
+        }
         return {};
       });
       setupSetMocks();
@@ -376,6 +411,131 @@ void main() {
 
       // Verify no ADD was called
       verifyNever(() => mockUsp.add(any()));
+    });
+  });
+
+  group('PnpService.fetchWizardData — guest detection via alias', () {
+    // Two radios, each with a main + guest SSID. Guest is identified purely by
+    // the `-guest` alias suffix (see wifi_guest_detection), NOT instance order.
+    const wifiSsidsResponse = <String, dynamic>{
+      'Device.WiFi.SSID.1.SSID': 'MyHome',
+      'Device.WiFi.SSID.1.Enable': true,
+      'Device.WiFi.SSID.1.Status': 'Up',
+      'Device.WiFi.SSID.1.BSSID': 'AA:BB:CC:DD:EE:01',
+      'Device.WiFi.SSID.1.LowerLayers': 'Device.WiFi.Radio.1.',
+      'Device.WiFi.SSID.1.Alias': 'wifi-2g',
+      'Device.WiFi.SSID.2.SSID': 'MyHome',
+      'Device.WiFi.SSID.2.Enable': true,
+      'Device.WiFi.SSID.2.Status': 'Up',
+      'Device.WiFi.SSID.2.BSSID': 'AA:BB:CC:DD:EE:02',
+      'Device.WiFi.SSID.2.LowerLayers': 'Device.WiFi.Radio.2.',
+      'Device.WiFi.SSID.2.Alias': 'wifi-5g',
+      'Device.WiFi.SSID.3.SSID': 'MyHome-Guest',
+      'Device.WiFi.SSID.3.Enable': false,
+      'Device.WiFi.SSID.3.Status': 'Down',
+      'Device.WiFi.SSID.3.BSSID': 'AA:BB:CC:DD:EE:03',
+      'Device.WiFi.SSID.3.LowerLayers': 'Device.WiFi.Radio.1.',
+      'Device.WiFi.SSID.3.Alias': 'wifi-2g-guest',
+      'Device.WiFi.SSID.4.SSID': 'MyHome-Guest',
+      'Device.WiFi.SSID.4.Enable': false,
+      'Device.WiFi.SSID.4.Status': 'Down',
+      'Device.WiFi.SSID.4.BSSID': 'AA:BB:CC:DD:EE:04',
+      'Device.WiFi.SSID.4.LowerLayers': 'Device.WiFi.Radio.2.',
+      'Device.WiFi.SSID.4.Alias': 'wifi-5g-guest',
+    };
+    const wifiApsResponse = <String, dynamic>{
+      'Device.WiFi.AccessPoint.1.Enable': true,
+      'Device.WiFi.AccessPoint.1.Status': 'Enabled',
+      'Device.WiFi.AccessPoint.1.Security.ModesSupported':
+          'WPA2-Personal,WPA3-Personal',
+      'Device.WiFi.AccessPoint.1.Security.ModeEnabled': 'WPA2-Personal',
+      'Device.WiFi.AccessPoint.1.Security.EncryptionMode': 'AES',
+      'Device.WiFi.AccessPoint.1.Security.KeyPassphrase': 'mainpass1',
+      'Device.WiFi.AccessPoint.1.SSIDAdvertisementEnabled': true,
+      'Device.WiFi.AccessPoint.1.SSIDReference': 'Device.WiFi.SSID.1.',
+      'Device.WiFi.AccessPoint.2.Enable': true,
+      'Device.WiFi.AccessPoint.2.Status': 'Enabled',
+      'Device.WiFi.AccessPoint.2.Security.ModesSupported':
+          'WPA2-Personal,WPA3-Personal',
+      'Device.WiFi.AccessPoint.2.Security.ModeEnabled': 'WPA2-Personal',
+      'Device.WiFi.AccessPoint.2.Security.EncryptionMode': 'AES',
+      'Device.WiFi.AccessPoint.2.Security.KeyPassphrase': 'mainpass2',
+      'Device.WiFi.AccessPoint.2.SSIDAdvertisementEnabled': true,
+      'Device.WiFi.AccessPoint.2.SSIDReference': 'Device.WiFi.SSID.2.',
+      'Device.WiFi.AccessPoint.3.Enable': false,
+      'Device.WiFi.AccessPoint.3.Status': 'Disabled',
+      'Device.WiFi.AccessPoint.3.Security.ModesSupported': '',
+      'Device.WiFi.AccessPoint.3.Security.ModeEnabled': 'None',
+      'Device.WiFi.AccessPoint.3.Security.EncryptionMode': 'None',
+      'Device.WiFi.AccessPoint.3.Security.KeyPassphrase': 'guestpass1',
+      'Device.WiFi.AccessPoint.3.SSIDAdvertisementEnabled': true,
+      'Device.WiFi.AccessPoint.3.SSIDReference': 'Device.WiFi.SSID.3.',
+      'Device.WiFi.AccessPoint.4.Enable': false,
+      'Device.WiFi.AccessPoint.4.Status': 'Disabled',
+      'Device.WiFi.AccessPoint.4.Security.ModesSupported': '',
+      'Device.WiFi.AccessPoint.4.Security.ModeEnabled': 'None',
+      'Device.WiFi.AccessPoint.4.Security.EncryptionMode': 'None',
+      'Device.WiFi.AccessPoint.4.Security.KeyPassphrase': 'guestpass2',
+      'Device.WiFi.AccessPoint.4.SSIDAdvertisementEnabled': true,
+      'Device.WiFi.AccessPoint.4.SSIDReference': 'Device.WiFi.SSID.4.',
+    };
+    Map<String, dynamic> radioFields(int i, String band, int channel) => {
+          'Device.WiFi.Radio.$i.Enable': true,
+          'Device.WiFi.Radio.$i.Status': 'Up',
+          'Device.WiFi.Radio.$i.Channel': channel,
+          'Device.WiFi.Radio.$i.OperatingFrequencyBand': band,
+          'Device.WiFi.Radio.$i.OperatingChannelBandwidth': '20MHz',
+          'Device.WiFi.Radio.$i.PossibleChannels': '1,6,11',
+          'Device.WiFi.Radio.$i.OperatingStandards': 'n',
+          'Device.WiFi.Radio.$i.SupportedStandards': 'b,g,n',
+          'Device.WiFi.Radio.$i.TransmitPower': 100,
+          'Device.WiFi.Radio.$i.MaxBitRate': 300,
+          'Device.WiFi.Radio.$i.AutoChannelEnable': true,
+          'Device.WiFi.Radio.$i.IEEE80211hEnabled': false,
+          'Device.WiFi.Radio.$i.SupportedOperatingChannelBandwidths':
+              'Auto,20MHz,40MHz',
+        };
+    final wifiRadiosResponse = <String, dynamic>{
+      ...radioFields(1, '2.4GHz', 6),
+      ...radioFields(2, '5GHz', 36),
+    };
+
+    void stubWifiFetches() {
+      when(() => mockUsp.get(any(), priority: any(named: 'priority')))
+          .thenAnswer((invocation) async {
+        final paths = invocation.positionalArguments[0] as List<String>;
+        final first = paths.isNotEmpty ? paths.first : '';
+        if (first.startsWith('Device.WiFi.SSID.')) {
+          return wifiSsidsResponse;
+        }
+        if (first.startsWith('Device.WiFi.AccessPoint.')) {
+          return wifiApsResponse;
+        }
+        if (first.startsWith('Device.WiFi.Radio.')) {
+          return wifiRadiosResponse;
+        }
+        return <String, dynamic>{};
+      });
+    }
+
+    test('classifies -guest alias SSIDs as guest, others as main', () async {
+      stubWifiFetches();
+
+      final result = await service.fetchWizardData();
+      final config = result.wifiConfig;
+
+      // Main network built from the non-guest SSIDs.
+      expect(config.ssid, 'MyHome');
+      // Guest network built from the -guest alias SSIDs.
+      expect(config.guestSsid, 'MyHome-Guest');
+      expect(config.guestEnabled, isFalse);
+      expect(
+          config.guestAccessPointInstancePaths,
+          containsAll(
+              ['Device.WiFi.AccessPoint.3.', 'Device.WiFi.AccessPoint.4.']));
+      // Guest AP paths must not leak into the main path list.
+      expect(config.accessPointInstancePaths,
+          isNot(contains('Device.WiFi.AccessPoint.3.')));
     });
   });
 }

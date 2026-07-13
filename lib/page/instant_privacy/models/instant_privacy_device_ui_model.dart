@@ -12,11 +12,19 @@ class InstantPrivacyDeviceUIModel extends Equatable {
   /// Display name: hostname if available, otherwise falls back to [mac].
   final String displayName;
 
+  /// Whether [mac] is a locally-administered (private/randomized) address.
+  ///
+  /// Devices using a private WiFi address rotate their MAC, so whitelisting
+  /// the current value risks locking the device out after it rotates. The UI
+  /// surfaces a warning for these before enabling the feature.
+  final bool isPrivateMac;
+
   const InstantPrivacyDeviceUIModel({
     required this.mac,
     required this.displayName,
+    this.isPrivateMac = false,
   });
 
   @override
-  List<Object?> get props => [mac, displayName];
+  List<Object?> get props => [mac, displayName, isPrivateMac];
 }
