@@ -25,9 +25,8 @@ class GeneralSettingsWidget extends ConsumerStatefulWidget {
 class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
   @override
   Widget build(BuildContext context) {
-    final loginType =
-        ref.watch(authProvider.select((state) => state.value?.loginType)) ??
-            LoginType.none;
+    final isLoggedIn = ref.watch(
+        authProvider.select((state) => state.value?.isLoggedIn ?? false));
 
     // Watch Theme.of(context) to trigger rebuild when global theme changes
     Theme.of(context);
@@ -110,8 +109,7 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
                     ),
 
                   // Legal links and logout (hidden in remote mode)
-                  if (!GlobalConfig.remote.isActive &&
-                      loginType != LoginType.none) ...[
+                  if (!GlobalConfig.remote.isActive && isLoggedIn) ...[
                     AppGap.md(),
                     const AppDivider(),
                     AppGap.md(),

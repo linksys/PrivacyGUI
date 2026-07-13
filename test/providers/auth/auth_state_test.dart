@@ -63,6 +63,12 @@ void main() {
       expect(a, isNot(b));
     });
 
+    test('isLoggedIn is true for local and remote, false for none', () {
+      expect(const AuthState(loginType: LoginType.none).isLoggedIn, isFalse);
+      expect(const AuthState(loginType: LoginType.local).isLoggedIn, isTrue);
+      expect(const AuthState(loginType: LoginType.remote).isLoggedIn, isTrue);
+    });
+
     test('isRemoteAssistance is true only for LoginType.remote', () {
       expect(const AuthState(loginType: LoginType.none).isRemoteAssistance,
           isFalse);

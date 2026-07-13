@@ -63,8 +63,7 @@ class AppConnectionStateNotifier extends Notifier<AppConnectionState> {
 
     ref.listen(authProvider, (_, next) {
       if (next.isLoading) return;
-      final loginType = next.value?.loginType;
-      if (loginType == null || loginType == LoginType.none) {
+      if (!(next.value?.isLoggedIn ?? false)) {
         _probeTimer?.cancel();
         _probeTimer = null;
         _cooldownTimer?.cancel();

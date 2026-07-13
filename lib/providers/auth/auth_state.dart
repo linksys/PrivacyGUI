@@ -27,6 +27,15 @@ class AuthState extends Equatable {
     return const AuthState(loginType: LoginType.none);
   }
 
+  /// Whether the user is logged in, by either a local or a Remote Assistance
+  /// session.
+  ///
+  /// This is login *intent* — distinct from the transport-layer
+  /// [UspClient.isAuthenticated] (a WASM flag that stays false in RA mode).
+  /// Canonical replacement for scattered inline `loginType != LoginType.none`
+  /// checks. Use [isRemoteAssistance] when the login *kind* matters.
+  bool get isLoggedIn => loginType != LoginType.none;
+
   /// Whether this is a Remote Assistance session.
   ///
   /// In RA mode the WASM client is pre-authorized via authToken, so

@@ -233,8 +233,7 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
   }
 
   void _tryResumeSse() {
-    final loginType = ref.read(authProvider).value?.loginType;
-    if (loginType == null || loginType == LoginType.none) return;
+    if (!(ref.read(authProvider).value?.isLoggedIn ?? false)) return;
     final sseManager = ref.read(sseManagerProvider);
     if (sseManager == null) return;
     final sseState = sseManager.connection.connectionState.value;
