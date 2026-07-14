@@ -45,7 +45,7 @@ class _AppRootContainerState extends ConsumerState<AppRootContainer> {
             return;
           }
           // not log in yet
-          if (ref.read(authProvider).value?.loginType == LoginType.none) {
+          if (!(ref.read(authProvider).value?.isLoggedIn ?? false)) {
             return;
           }
           // not go into dashboard yet

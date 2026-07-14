@@ -62,8 +62,7 @@ class _RemoteAssistanceSessionGuardState
 
   Future<void> _checkAndRestoreSession() async {
     // Skip for Remote Assistance mode (CA side) - double check
-    final loginType = ref.read(authProvider).value?.loginType;
-    if (loginType == LoginType.remote) return;
+    if (ref.read(authProvider).value?.isRemoteAssistance ?? false) return;
 
     // Get device credentials from unified provider
     final credentials = ref.read(deviceCredentialsProvider);

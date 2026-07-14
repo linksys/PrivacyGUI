@@ -85,10 +85,12 @@ class UspInternetSettingsNotifier
             detail: 'USP service not available');
       }
 
-      if (!usp.isAuthenticated) {
-        throw const ConnectivityError(detail: 'USP not authenticated');
-      }
-
+      // No auth gate here: the router already guards all /usp routes on
+      // loginType (RA-aware), and the WAN service surfaces real errors. The raw
+      // usp.isAuthenticated flag is a WASM transport signal that stays false in
+      // Remote Assistance (authToken bypass), so gating on it here wrongly
+      // blocked RA sessions (issue #1119). The usp == null gate above (and the
+      // service provider itself) still cover the "USP unavailable" case.
       final service = ref.read(uspInternetSettingsServiceProvider);
       final result = await service.fetchSettings();
 

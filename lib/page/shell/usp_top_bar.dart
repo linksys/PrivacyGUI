@@ -70,9 +70,8 @@ class _UspTopBarState extends ConsumerState<UspTopBar> with DebugObserver {
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    if (ref.watch(authProvider.select((v) =>
-                            v.value?.loginType != null &&
-                            v.value?.loginType != LoginType.none)) &&
+                    if (ref.watch(authProvider
+                            .select((v) => v.value?.isLoggedIn ?? false)) &&
                         (ref.watch(appsCapabilityProvider).valueOrNull ??
                             false))
                       Tooltip(
