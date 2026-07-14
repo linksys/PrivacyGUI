@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:privacy_gui/core/utils/wifi_channel.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_radio_ui_model.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -27,6 +28,13 @@ class _WifiChannelDialogState extends State<WifiChannelDialog> {
   /// Currently-selected dropdown value; [_autoValue] means Auto.
   late int _selected;
 
+  /// The value [_selected] held when the dialog opened. Apply is a no-op unless
+  /// the user moves away from this — compared against the initial *dropdown*
+  /// selection, not the radio's stored channel, so a stored channel that was
+  /// filtered out of the list (e.g. a DFS channel while DFS is off, which the
+  /// firmware leaves in place) is not mistaken for a user change.
+  late final int _initialSelected;
+
   /// Manual channels available for this radio's band, sorted ascending.
   late final List<int> _channels;
 
@@ -37,22 +45,22 @@ class _WifiChannelDialogState extends State<WifiChannelDialog> {
   @override
   void initState() {
     super.initState();
-    _channels = widget.radio.possibleChannels;
+    // Hide 5 GHz DFS channels when DFS (IEEE 802.11h) is disabled — the
+    // firmware leaves them in PossibleChannels regardless of DFS state.
+    _channels = filterDfsChannels(
+      widget.radio.possibleChannels,
+      band: widget.radio.band,
+      dfsEnabled: widget.radio.isDfsEnabled,
+    );
     // AC5: a stored channel that is no longer selectable defaults to Auto
     // (no ghost value is ever shown).
     final storedChannelSelectable = !widget.radio.autoChannelEnable &&
         _channels.contains(widget.radio.channel);
     _selected = storedChannelSelectable ? widget.radio.channel : _autoValue;
+    _initialSelected = _selected;
   }
 
-  /// 5 GHz DFS channels (IEEE 802.11h). Used to annotate options with "· DFS".
-  static const _dfsChannels5 = {
-    52, 56, 60, 64, //
-    100, 104, 108, 112, 116, 120, 124, 128, 132, 136, 140, 144,
-  };
-
-  bool _isDfs(int channel) =>
-      widget.radio.band == '5GHz' && _dfsChannels5.contains(channel);
+  bool _isDfs(int channel) => isDfsChannel(channel, band: widget.radio.band);
 
   String _labelFor(int value) {
     if (value == _autoValue) return loc(context).channelAutoRecommended;
@@ -138,19 +146,20 @@ class _WifiChannelDialogState extends State<WifiChannelDialog> {
   }
 
   void _onApply() {
+    // AC4: if the user did not move the dropdown from where it opened, Apply is
+    // a no-op — return null so the caller issues no mutation. Comparing against
+    // the initial dropdown selection (not the radio's stored channel) means an
+    // unselectable stored channel — e.g. a DFS channel the firmware left set
+    // while DFS is off — does not read as a user change and trigger a write.
+    if (_selected == _initialSelected) {
+      Navigator.of(context).pop();
+      return;
+    }
+
     final autoChannel = _autoChannel;
     // When Auto is selected the concrete channel is irrelevant to firmware;
     // keep the existing value so the returned record is stable.
     final channel = autoChannel ? widget.radio.channel : _selected;
-
-    // AC4: selection equal to the stored value is a no-op — return null so the
-    // caller issues no mutation.
-    final unchanged = autoChannel == widget.radio.autoChannelEnable &&
-        (autoChannel || channel == widget.radio.channel);
-    if (unchanged) {
-      Navigator.of(context).pop();
-      return;
-    }
 
     Navigator.of(context).pop((channel: channel, autoChannel: autoChannel));
   }

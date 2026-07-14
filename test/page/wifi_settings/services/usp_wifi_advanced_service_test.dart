@@ -6,6 +6,42 @@ import 'package:privacy_gui/page/wifi_settings/services/usp_wifi_advanced_servic
 
 class MockUspClient extends Mock implements UspClient {}
 
+// WASM v0.11.0 set-result shapes consumed by UspResultParser.parseSetResult.
+Map<String, dynamic> _setSuccess() => {
+      'success': true,
+      'result': {'data': <String, dynamic>{}},
+    };
+
+Map<String, dynamic> _setPartial({
+  String path = 'Device.WiFi.Radio.2.AutoChannelEnable',
+  int errorCode = 7008,
+  String errorMessage = 'Invalid value',
+}) =>
+    {
+      'success': true,
+      'result': {
+        'data': {'Device.WiFi.Radio.1.IEEE80211hEnabled': false},
+        'error': {
+          path: {'errorCode': errorCode, 'errorMessage': errorMessage},
+        },
+      },
+    };
+
+Map<String, dynamic> _setFailure({
+  String path = 'bulk_operation',
+  int errorCode = 7004,
+  String errorMessage = 'Operation failed',
+}) =>
+    {
+      'success': false,
+      'result': {
+        'data': <String, dynamic>{},
+        'error': {
+          path: {'errorCode': errorCode, 'errorMessage': errorMessage},
+        },
+      },
+    };
+
 void main() {
   late MockUspClient mockUsp;
   late UspWifiAdvancedService svc;
@@ -70,7 +106,7 @@ void main() {
 
   group('UspWifiAdvancedService - setIeee80211hEnabled', () {
     test('sets IEEE80211hEnabled on all provided radio paths', () async {
-      when(() => mockUsp.set(any())).thenAnswer((_) async => {});
+      when(() => mockUsp.set(any())).thenAnswer((_) async => _setSuccess());
 
       await svc.setIeee80211hEnabled(
         radioPaths: ['Device.WiFi.Radio.1.', 'Device.WiFi.Radio.2.'],
@@ -90,7 +126,7 @@ void main() {
     });
 
     test('sends false for all radios when disabling', () async {
-      when(() => mockUsp.set(any())).thenAnswer((_) async => {});
+      when(() => mockUsp.set(any())).thenAnswer((_) async => _setSuccess());
 
       await svc.setIeee80211hEnabled(
         radioPaths: ['Device.WiFi.Radio.1.'],
@@ -112,6 +148,65 @@ void main() {
           enabled: true,
         ),
         throwsA(isA<NetworkError>()),
+      );
+    });
+
+    test('forces AutoChannelEnable in the same set for given paths', () async {
+      when(() => mockUsp.set(any())).thenAnswer((_) async => _setSuccess());
+
+      await svc.setIeee80211hEnabled(
+        radioPaths: ['Device.WiFi.Radio.1.', 'Device.WiFi.Radio.2.'],
+        enabled: false,
+        forceAutoChannelPaths: ['Device.WiFi.Radio.2.'],
+      );
+
+      // Radio.2 (parked on a DFS channel) also gets AutoChannelEnable=true;
+      // Radio.1 keeps its channel settings.
+      verify(() => mockUsp.set({
+            'Device.WiFi.Radio.1.IEEE80211hEnabled': false,
+            'Device.WiFi.Radio.2.IEEE80211hEnabled': false,
+            'Device.WiFi.Radio.2.AutoChannelEnable': true,
+          })).called(1);
+    });
+
+    test('empty forceAutoChannelPaths writes no AutoChannelEnable', () async {
+      when(() => mockUsp.set(any())).thenAnswer((_) async => _setSuccess());
+
+      await svc.setIeee80211hEnabled(
+        radioPaths: ['Device.WiFi.Radio.1.'],
+        enabled: false,
+      );
+
+      verify(() => mockUsp.set({
+            'Device.WiFi.Radio.1.IEEE80211hEnabled': false,
+          })).called(1);
+    });
+
+    test('throws UspPartialFailureError on firmware partial rejection',
+        () async {
+      // Firmware accepts IEEE80211hEnabled but rejects the forced
+      // AutoChannelEnable write — must not be silently swallowed.
+      when(() => mockUsp.set(any())).thenAnswer((_) async => _setPartial());
+
+      expect(
+        () => svc.setIeee80211hEnabled(
+          radioPaths: ['Device.WiFi.Radio.1.', 'Device.WiFi.Radio.2.'],
+          enabled: false,
+          forceAutoChannelPaths: ['Device.WiFi.Radio.2.'],
+        ),
+        throwsA(isA<UspPartialFailureError>()),
+      );
+    });
+
+    test('throws UspCompleteFailureError on complete failure', () async {
+      when(() => mockUsp.set(any())).thenAnswer((_) async => _setFailure());
+
+      expect(
+        () => svc.setIeee80211hEnabled(
+          radioPaths: ['Device.WiFi.Radio.1.'],
+          enabled: false,
+        ),
+        throwsA(isA<UspCompleteFailureError>()),
       );
     });
   });

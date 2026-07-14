@@ -465,6 +465,11 @@ class WifiNetworkCard extends ConsumerWidget {
     String selected = channelItems.any((e) => e.value == currentLabel)
         ? currentLabel
         : autoLabel;
+    // Baseline for the no-op check: the selection the dialog opens on. A stored
+    // channel that isn't selectable — e.g. a DFS channel the firmware left set
+    // while DFS is off — opens as Auto, and confirming without moving must NOT
+    // be treated as a change.
+    final initialSelected = selected;
 
     final result = await showSimpleAppDialog<String>(
       context,
@@ -485,7 +490,7 @@ class WifiNetworkCard extends ConsumerWidget {
             label: loc(context).ok, onTap: () => context.pop(selected)),
       ],
     );
-    if (result != null && result != currentLabel && context.mounted) {
+    if (result != null && result != initialSelected && context.mounted) {
       if (result == autoLabel) {
         ref.read(uspWifiSettingsProvider.notifier).updateNetworkField(
               ssidInstancePath,
