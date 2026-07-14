@@ -167,13 +167,9 @@ class ToggleRow extends StatelessWidget {
         width: 44,
         child: Center(
           child: isLoading
-              ? SizedBox(
-                  width: 26,
-                  height: 26,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    semanticsLabel: 'Loading',
-                  ),
+              ? SizedBox.square(
+                  dimension: 26,
+                  child: AppLoader(strokeWidth: 2),
                 )
               : AppSwitch(
                   value: value,
@@ -278,7 +274,7 @@ class NetworkRow extends StatelessWidget {
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (isEnabled && onShareTap != null) ...[
+            if (!isLoading && isEnabled && onShareTap != null) ...[
               _ShareButton(onTap: onShareTap!),
               AppGap.sm(),
             ],
@@ -287,13 +283,9 @@ class NetworkRow extends StatelessWidget {
                     width: 52,
                     height: 32,
                     child: Center(
-                      child: SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          semanticsLabel: 'Loading',
-                        ),
+                      child: SizedBox.square(
+                        dimension: 24,
+                        child: AppLoader(strokeWidth: 2),
                       ),
                     ),
                   )

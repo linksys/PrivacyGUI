@@ -76,7 +76,7 @@ class UspPortForwardingCard extends ConsumerWidget {
     return ToggleRow(
       value: rule.enabled,
       isLoading: isLoading,
-      onChanged: isLoading
+      onChanged: isLoading || rule.instancePath == null
           ? null
           : (value) => performUspMutation(
                 context,
@@ -97,7 +97,7 @@ class UspPortForwardingCard extends ConsumerWidget {
     return ToggleRow(
       value: trigger.enabled,
       isLoading: isLoading,
-      onChanged: isLoading
+      onChanged: isLoading || trigger.instancePath == null
           ? null
           : (value) => performUspMutation(
                 context,

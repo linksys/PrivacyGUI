@@ -54,6 +54,7 @@ class UspWifiNetworksCard extends ConsumerWidget {
     final data = wifiData ?? ref.watch(wifiDataProvider).valueOrNull;
     if (data == null) return const CardSkeleton.list(rows: 3);
 
+    final isLoading = ref.watch(uspMutationLoadingProvider) == 'wifi_network';
     final networks = _aggregateBySSID(
       data.radioModels,
       data.connectionDetailMap,
@@ -69,7 +70,7 @@ class UspWifiNetworksCard extends ConsumerWidget {
           : Column(
               children: [
                 for (var i = 0; i < networks.length; i++) ...[
-                  _buildNetworkRow(context, ref, networks[i]),
+                  _buildNetworkRow(context, ref, networks[i], isLoading),
                   if (i < networks.length - 1) AppGap.sm(),
                 ],
               ],
@@ -93,9 +94,8 @@ class UspWifiNetworksCard extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     _WifiNetworkEntry network,
+    bool isLoading,
   ) {
-    final isLoading = ref.watch(uspMutationLoadingProvider) == 'wifi_network';
-
     return NetworkRow(
       ssidName: network.ssidName,
       bands: network.bands,
