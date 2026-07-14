@@ -75,7 +75,8 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
   bool _forceLogin = false;
   bool _fetchError = false;
   bool _showAutoMasterConnectionError = false;
-  bool _wifiVerificationRetried = false; // Prevent infinite loop in WiFi verification
+  bool _wifiVerificationRetried =
+      false; // Prevent infinite loop in WiFi verification
   PnpStep? _currentStep;
   ({void Function() stepCancel, void Function() stepContinue})? _stepController;
 
@@ -660,14 +661,13 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
                       if (expectedSSIDs.isNotEmpty) {
                         try {
                           // Fetch current WiFi settings from router
-                          final radioInfoResult = await ref
-                              .read(routerRepositoryProvider)
-                              .send(
-                                JNAPAction.getRadioInfo,
-                                auth: true,
-                                fetchRemote: true,
-                                cacheLevel: CacheLevel.noCache,
-                              );
+                          final radioInfoResult =
+                              await ref.read(routerRepositoryProvider).send(
+                                    JNAPAction.getRadioInfo,
+                                    auth: true,
+                                    fetchRemote: true,
+                                    cacheLevel: CacheLevel.noCache,
+                                  );
                           final radioInfo =
                               GetRadioInfo.fromMap(radioInfoResult.output);
                           final currentSSIDs = radioInfo.radios
@@ -686,7 +686,8 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
                             await _saveChanges();
                             return;
                           }
-                          logger.d('[PnP]: WiFi settings verified - SSID matches');
+                          logger.d(
+                              '[PnP]: WiFi settings verified - SSID matches');
                         } catch (e) {
                           // API call failed, log warning but continue flow
                           logger.w(

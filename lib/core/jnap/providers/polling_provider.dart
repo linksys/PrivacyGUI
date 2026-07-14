@@ -181,12 +181,11 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
     await ref.read(instantPrivacyProvider.notifier).fetch(statusOnly: true);
 
     final loginType = ref.read(authProvider).value?.loginType;
-    // TODO: Disable remote assistance for now
-    // logger.i('[Polling]: _additionalPolling loginType: $loginType');
-    // if (loginType == LoginType.local) {
-    //   logger.i('[Polling]: checking active remote session');
-    //   await ref.read(remoteClientProvider.notifier).checkActiveSession();
-    // }
+    logger.i('[Polling]: _additionalPolling loginType: $loginType');
+    if (loginType == LoginType.local) {
+      logger.i('[Polling]: checking active remote session');
+      await ref.read(remoteClientProvider.notifier).checkActiveSession();
+    }
   }
 
   Future forcePolling() {
