@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/providers/usp_auth_coordinator.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/core/session/providers/session_provider.dart';
@@ -46,10 +47,17 @@ class PnpNotifier extends Notifier<PnpState> {
       );
 
       await _checkInternet();
+    } on ServiceError catch (e) {
+      // Reading device info failed (e.g. USP GET returned empty). This is a
+      // read failure, not "no internet" — surface it as such.
+      logger.e('[PnP] startPostLoginFlow read failure: $e (code=${e.code})');
+      state = state.copyWith(
+        phase: AdminReadFailure(code: e.code, detail: '$e'),
+      );
     } catch (e) {
       logger.e('[PnP] startPostLoginFlow error: $e');
       state = state.copyWith(
-        phase: AdminError(message: '$e'),
+        phase: AdminReadFailure(detail: '$e'),
       );
     }
   }
@@ -71,9 +79,18 @@ class PnpNotifier extends Notifier<PnpState> {
           phase: NoInternet(ssid: ssid, currentWanSettings: wanSettings),
         );
       }
+    } on ServiceError catch (e) {
+      // The WAN read threw — we could NOT determine the WAN state (router
+      // unreachable / USP GET returned empty). This is distinct from the router
+      // confirming "no internet" (which returns false above, no throw), so we
+      // must not collapse it into NoInternet.
+      logger.e('[PnP] Internet check read failure: $e (code=${e.code})');
+      state = state.copyWith(
+        phase: AdminReadFailure(code: e.code, detail: '$e'),
+      );
     } catch (e) {
-      logger.e('[PnP] Internet check failed: $e');
-      state = state.copyWith(phase: const NoInternet());
+      logger.e('[PnP] Internet check unexpected error: $e');
+      state = state.copyWith(phase: AdminReadFailure(detail: '$e'));
     }
   }
 
