@@ -75,6 +75,7 @@ class UspPortForwardingCard extends ConsumerWidget {
       PortForwardingRuleUIModel rule, bool isLoading) {
     return ToggleRow(
       value: rule.enabled,
+      isLoading: isLoading,
       onChanged: isLoading
           ? null
           : (value) => performUspMutation(
@@ -95,6 +96,7 @@ class UspPortForwardingCard extends ConsumerWidget {
       PortTriggeringRuleUIModel trigger, bool isLoading) {
     return ToggleRow(
       value: trigger.enabled,
+      isLoading: isLoading,
       onChanged: isLoading
           ? null
           : (value) => performUspMutation(

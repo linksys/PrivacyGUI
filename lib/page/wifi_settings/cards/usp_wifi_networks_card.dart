@@ -102,6 +102,7 @@ class UspWifiNetworksCard extends ConsumerWidget {
       isGuest: network.isGuest,
       isEnabled: network.isEnabled,
       clientCount: network.clientCount,
+      isLoading: isLoading,
       onChanged: isLoading
           ? null
           : (value) => _confirmToggleNetwork(context, ref, network, value),

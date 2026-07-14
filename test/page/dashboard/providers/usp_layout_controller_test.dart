@@ -583,7 +583,7 @@ void main() {
       expect(layout.length, 8);
     });
 
-    test('professional → 17 items', () async {
+    test('professional → 18 items', () async {
       final container = await createInitializedContainer();
       addTearDown(container.dispose);
 
@@ -593,7 +593,7 @@ void main() {
 
       final layout =
           container.read(uspSliverDashboardControllerProvider).exportLayout();
-      expect(layout.length, 17);
+      expect(layout.length, 18);
     });
 
     test('saves preset layout to prefs', () async {
