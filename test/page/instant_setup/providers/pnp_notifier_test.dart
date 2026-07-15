@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
@@ -127,9 +128,10 @@ void main() {
       container.dispose();
     });
 
-    test('error transitions to AdminError phase', () async {
+    test('device info read failure transitions to AdminReadFailure phase',
+        () async {
       when(() => mockPnpService.checkFactoryDefault())
-          .thenThrow(Exception('Network error'));
+          .thenThrow(const NetworkError(detail: 'Network error'));
 
       final container = createContainer();
       final notifier = container.read(pnpProvider.notifier);
@@ -137,8 +139,30 @@ void main() {
       await notifier.startPostLoginFlow();
 
       final state = container.read(pnpProvider);
-      expect(state.phase, isA<AdminError>());
-      expect((state.phase as AdminError).message, contains('Network error'));
+      expect(state.phase, isA<AdminReadFailure>());
+      expect(
+          (state.phase as AdminReadFailure).detail, contains('Network error'));
+      container.dispose();
+    });
+
+    // Regression for #1098: a WAN read FAILURE (USP GET returned empty →
+    // WanStatus.fetch throws) must NOT collapse into NoInternet. That state is
+    // reserved for the router *confirming* no internet (returns false, no throw).
+    test('WAN read failure transitions to AdminReadFailure, not NoInternet',
+        () async {
+      when(() => mockPnpService.checkFactoryDefault())
+          .thenAnswer((_) async => testFactoryResult);
+      when(() => mockPnpService.checkInternetConnected())
+          .thenThrow(const InvalidInputError(code: 9998, detail: 'missing'));
+
+      final container = createContainer();
+      final notifier = container.read(pnpProvider.notifier);
+
+      await notifier.startPostLoginFlow();
+
+      final state = container.read(pnpProvider);
+      expect(state.phase, isA<AdminReadFailure>());
+      expect((state.phase as AdminReadFailure).code, 9998);
       container.dispose();
     });
   });
@@ -332,6 +356,39 @@ void main() {
       verify(() => mockPnpService.saveIspSettings(any())).called(1);
       final state = container.read(pnpProvider);
       expect(state.phase, isA<NoInternet>());
+      container.dispose();
+    });
+
+    // Regression for #1098: the ISP save WRITE succeeds, but the trailing
+    // internet check READ fails (USP GET returned empty). This must land in
+    // AdminReadFailure (read failure), NOT NoInternet — distinct from a genuine
+    // no-internet (checkInternetConnected returns false) and from a save write
+    // failure (which stays on NoInternet + errorMessage, tested above).
+    test('ISP save success but check read failure → AdminReadFailure',
+        () async {
+      when(() => mockPnpService.saveIspSettings(any()))
+          .thenAnswer((_) async {});
+      when(() => mockPnpService.checkInternetConnected())
+          .thenThrow(const InvalidInputError(code: 9998, detail: 'missing'));
+
+      final container = createContainer();
+      final notifier = container.read(pnpProvider.notifier);
+
+      notifier.setDemoPhase(const NoInternet(ssid: 'Test'));
+
+      const config = PnpIspConfig(
+        type: IspConnectionType.staticIp,
+        staticIpAddress: '10.0.0.5',
+        subnetMask: '255.255.255.0',
+        defaultGateway: '10.0.0.1',
+      );
+
+      await notifier.saveIspWithProgress(config);
+
+      verify(() => mockPnpService.saveIspSettings(any())).called(1);
+      final state = container.read(pnpProvider);
+      expect(state.phase, isA<AdminReadFailure>());
+      expect((state.phase as AdminReadFailure).code, 9998);
       container.dispose();
     });
   });
