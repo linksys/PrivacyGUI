@@ -120,6 +120,31 @@ void main() {
       container.dispose();
     });
 
+    test('fec0::1 is NOT link-local and must NOT be filtered (#1129)',
+        () async {
+      // fec0::1 is the first address just above the fe80::/10 range
+      // (link-local spans fe80::-febf::). It is a deprecated site-local
+      // address (RFC 3513), NOT link-local:
+      //   0xfec0 & 0xffc0 == 0xfec0 != 0xfe80
+      // The filter must keep it. This guards the upper boundary of fe80::/10.
+      when(() => mockUsp.get(any())).thenAnswer((_) async {
+        final paths = _.positionalArguments[0] as List;
+        if (paths.any((p) => p.toString().contains('IPv6Address'))) {
+          return <String, dynamic>{
+            'Device.IP.Interface.1.IPv6Enable': true,
+            'Device.IP.Interface.1.IPv6Address.1.IPAddress': 'fec0::1',
+          };
+        }
+        return lanInfoResponse;
+      });
+
+      final container = createContainer();
+      final data = await container.read(lanDataProvider.future);
+
+      expect(data.model.ipv6Addresses, ['fec0::1']);
+      container.dispose();
+    });
+
     test('build throws ServiceNotInitializedError when usp is null', () async {
       final container = ProviderContainer(
         overrides: [
