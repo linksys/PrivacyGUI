@@ -364,7 +364,8 @@ void main() {
     // AdminReadFailure (read failure), NOT NoInternet — distinct from a genuine
     // no-internet (checkInternetConnected returns false) and from a save write
     // failure (which stays on NoInternet + errorMessage, tested above).
-    test('ISP save success but check read failure → AdminReadFailure', () async {
+    test('ISP save success but check read failure → AdminReadFailure',
+        () async {
       when(() => mockPnpService.saveIspSettings(any()))
           .thenAnswer((_) async {});
       when(() => mockPnpService.checkInternetConnected())
