@@ -35,6 +35,18 @@ void main() {
       expect(classifyIpv6Scope('not-an-ip'), Ipv6Scope.other);
     });
 
+    test('deprecated / reserved ranges inside 2000::/3 → other (W-1)', () {
+      // 3FFE::/16 — 6bone deprecated testing network (RFC 3701). Falls inside
+      // 2000::/3 by first byte but must NOT be surfaced as global unicast,
+      // matching IPv6WithReservedRule in validator_rules/rules.dart.
+      expect(classifyIpv6Scope('3ffe::1'), Ipv6Scope.other);
+      // 5F00::/12 and 6000::/3–7FFF::/3 reserved/unallocated.
+      expect(classifyIpv6Scope('5f00::1'), Ipv6Scope.other);
+      expect(classifyIpv6Scope('7000::1'), Ipv6Scope.other);
+      // 3fff (not 6bone) remains a valid global unicast — top of 2000::/3.
+      expect(classifyIpv6Scope('3fff::1'), Ipv6Scope.global);
+    });
+
     test('handles zone id and prefix length suffixes', () {
       expect(classifyIpv6Scope('fe80::1%eth0'), Ipv6Scope.linkLocal);
       expect(classifyIpv6Scope('2401:e180::1/64'), Ipv6Scope.global);

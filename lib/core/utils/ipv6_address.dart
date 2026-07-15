@@ -13,6 +13,8 @@
 /// ordering that surfaces global unicast addresses first.
 library;
 
+import 'package:privacy_gui/core/utils/ipv6_ranges.dart';
+
 /// IPv6 address scope categories, ordered by display preference
 /// (lower [preference] wins).
 enum Ipv6Scope {
@@ -46,16 +48,22 @@ Ipv6Scope classifyIpv6Scope(String address) {
   final firstByte = bytes[0];
   final secondByte = bytes[1];
 
-  // Global unicast: 2000::/3  (first byte 0x20–0x3F).
-  if (firstByte >= 0x20 && firstByte <= 0x3F) return Ipv6Scope.global;
-
-  // Link-local: fe80::/10  (first byte 0xFE, top two bits of second byte = 10).
-  if (firstByte == 0xFE && (secondByte & 0xC0) == 0x80) {
-    return Ipv6Scope.linkLocal;
+  // Deprecated / reserved ranges that fall inside 2000::/3 by first byte must
+  // be excluded before the global-unicast test, matching IPv6WithReservedRule:
+  //   * 3FFE::/16 — 6bone deprecated testing network (RFC 3701).
+  //   * 5F00::/12 and 6000::/3–7FFF::/3 — reserved/unallocated.
+  if (is6boneBytes(firstByte, secondByte) || isReservedGlobalByte(firstByte)) {
+    return Ipv6Scope.other;
   }
 
+  // Global unicast: 2000::/3  (first byte 0x20–0x3F).
+  if (isGlobalUnicastByte(firstByte)) return Ipv6Scope.global;
+
+  // Link-local: fe80::/10  (first byte 0xFE, top two bits of second byte = 10).
+  if (isLinkLocalBytes(firstByte, secondByte)) return Ipv6Scope.linkLocal;
+
   // Unique Local Address: fc00::/7  (first byte 0xFC or 0xFD).
-  if (firstByte == 0xFC || firstByte == 0xFD) return Ipv6Scope.uniqueLocal;
+  if (isUniqueLocalByte(firstByte)) return Ipv6Scope.uniqueLocal;
 
   return Ipv6Scope.other;
 }
