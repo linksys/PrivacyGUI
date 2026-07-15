@@ -134,6 +134,8 @@ class NetworkBadgeWidget extends StatelessWidget {
 ///
 /// Uses [AppListTile] from UI Kit for consistent styling.
 /// Use for DHCP reservations, port forwarding rules, etc.
+///
+/// When [isLoading] is true, displays a spinner in place of the switch.
 class ToggleRow extends StatelessWidget {
   final bool value;
   final ValueChanged<bool>? onChanged;
@@ -141,6 +143,7 @@ class ToggleRow extends StatelessWidget {
   final String? subtitle;
   final Widget? trailing;
   final VoidCallback? onTap;
+  final bool isLoading;
 
   const ToggleRow({
     super.key,
@@ -150,6 +153,7 @@ class ToggleRow extends StatelessWidget {
     this.subtitle,
     this.trailing,
     this.onTap,
+    this.isLoading = false,
   });
 
   @override
@@ -162,11 +166,16 @@ class ToggleRow extends StatelessWidget {
       leading: SizedBox(
         width: 44,
         child: Center(
-          child: AppSwitch(
-            value: value,
-            onChanged: onChanged,
-            scale: 0.8,
-          ),
+          child: isLoading
+              ? SizedBox.square(
+                  dimension: 26,
+                  child: AppLoader(strokeWidth: 2),
+                )
+              : AppSwitch(
+                  value: value,
+                  onChanged: onChanged,
+                  scale: 0.8,
+                ),
         ),
       ),
       title: AppText.bodyMedium(
@@ -195,6 +204,8 @@ class ToggleRow extends StatelessWidget {
 /// Network row block for WiFi networks with band badges, client count, and toggle.
 ///
 /// Uses [AppListTile] from UI Kit for consistent styling.
+///
+/// When [isLoading] is true, displays a spinner in place of the switch.
 class NetworkRow extends StatelessWidget {
   final String ssidName;
   final List<String> bands;
@@ -203,6 +214,7 @@ class NetworkRow extends StatelessWidget {
   final int clientCount;
   final ValueChanged<bool>? onChanged;
   final VoidCallback? onShareTap;
+  final bool isLoading;
 
   const NetworkRow({
     super.key,
@@ -213,6 +225,7 @@ class NetworkRow extends StatelessWidget {
     required this.clientCount,
     this.onChanged,
     this.onShareTap,
+    this.isLoading = false,
   });
 
   @override
@@ -261,14 +274,25 @@ class NetworkRow extends StatelessWidget {
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (isEnabled && onShareTap != null) ...[
+            if (!isLoading && isEnabled && onShareTap != null) ...[
               _ShareButton(onTap: onShareTap!),
               AppGap.sm(),
             ],
-            AppSwitch(
-              value: isEnabled,
-              onChanged: onChanged,
-            ),
+            isLoading
+                ? SizedBox(
+                    width: 52,
+                    height: 32,
+                    child: Center(
+                      child: SizedBox.square(
+                        dimension: 24,
+                        child: AppLoader(strokeWidth: 2),
+                      ),
+                    ),
+                  )
+                : AppSwitch(
+                    value: isEnabled,
+                    onChanged: onChanged,
+                  ),
           ],
         ),
       ),

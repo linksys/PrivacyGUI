@@ -73,6 +73,7 @@ class UspDhcpReservationsCard extends ConsumerWidget {
       DhcpReservationUIModel reservation, bool isLoading) {
     return ToggleRow(
       value: reservation.enable,
+      isLoading: isLoading,
       onChanged: isLoading || reservation.instancePath == null
           ? null
           : (value) => performUspMutation(
@@ -87,7 +88,7 @@ class UspDhcpReservationsCard extends ConsumerWidget {
       subtitle: reservation.ip,
       trailing: AppIconButton(
         icon: AppIcon.font(Icons.delete_outline, size: 18),
-        onTap: isLoading
+        onTap: isLoading || reservation.instancePath == null
             ? null
             : () => _confirmDeleteDhcp(context, ref, reservation),
       ),

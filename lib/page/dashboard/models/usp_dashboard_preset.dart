@@ -81,6 +81,7 @@ extension UspDashboardPresetX on UspDashboardPreset {
             'system_status',
             'connected_devices',
             'wifi_status',
+            'wifi_networks',
             'time_settings',
             'dhcp_reservations',
             'port_forwarding',
@@ -176,7 +177,7 @@ List<LayoutItem> _standardLayout() => [
       _item('firewall_overview', x: 6, y: 23, w: 6, h: 4),
     ];
 
-/// Professional: all 17 cards — full feature set.
+/// Professional: all 18 cards — full feature set.
 ///
 /// ```
 /// y=0:  StatsPanel (12×1)
@@ -185,9 +186,10 @@ List<LayoutItem> _standardLayout() => [
 /// y=9:  TrafficAnalysis (6×5)     | LanInfo (6×3)
 /// y=14: EthernetPorts (6×3)       | ConnectedDevices (6×4)
 /// y=18: Topology (6×5)            | DeviceAnalytics (6×5)
-/// y=23: WiFiStatus (6×6)          | WiFiPerformance (6×5)
-/// y=29: FirewallOverview (6×4)    | TimeSettings (6×3)
-/// y=33: DhcpReservations (6×4)    | PortForwarding (6×4)
+/// y=23: WiFiStatus (6×4)          | WiFiPerformance (6×5)
+/// y=28: WiFiNetworks (6×4)        | FirewallOverview (6×4)
+/// y=32: TimeSettings (6×3)        | DhcpReservations (6×4)
+/// y=36: PortForwarding (6×4)
 /// ```
 List<LayoutItem> _professionalLayout() => [
       _item('stats_panel', x: 0, y: 0, w: 12, h: 1),
@@ -203,10 +205,11 @@ List<LayoutItem> _professionalLayout() => [
       _item('device_analytics', x: 6, y: 18, w: 6, h: 5),
       _item('wifi_status', x: 0, y: 23, w: 6, h: 4),
       _item('wifi_performance', x: 6, y: 23, w: 6, h: 5),
-      _item('firewall_overview', x: 0, y: 29, w: 6, h: 4),
-      _item('time_settings', x: 6, y: 29, w: 6, h: 3),
-      _item('dhcp_reservations', x: 0, y: 33, w: 6, h: 4),
-      _item('port_forwarding', x: 6, y: 33, w: 6, h: 4),
+      _item('wifi_networks', x: 0, y: 28, w: 6, h: 4),
+      _item('firewall_overview', x: 6, y: 28, w: 6, h: 4),
+      _item('time_settings', x: 0, y: 32, w: 6, h: 3),
+      _item('dhcp_reservations', x: 6, y: 32, w: 6, h: 4),
+      _item('port_forwarding', x: 0, y: 36, w: 6, h: 4),
     ];
 
 /// Monitoring: 8 cards — performance & analytics prominent.
