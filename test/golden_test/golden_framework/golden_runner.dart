@@ -314,6 +314,17 @@ Widget _buildGoldenWidget(
             themeMode: brightness == Brightness.dark
                 ? ThemeMode.dark
                 : ThemeMode.light,
+            // Force "reduce motion" for every golden so non-deterministic /
+            // looping animations (e.g. dashboard JiggleShake) render at a
+            // fixed, static frame. Applied inside the app via builder so the
+            // views under test actually observe disableAnimations: true
+            // (a MediaQuery wrapped outside MaterialApp would be overridden).
+            // This does NOT touch the global diffThreshold; it only removes the
+            // animation source of flakiness.
+            builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(context).copyWith(disableAnimations: true),
+              child: child ?? const SizedBox.shrink(),
+            ),
             routerConfig: router,
           ),
         ),
