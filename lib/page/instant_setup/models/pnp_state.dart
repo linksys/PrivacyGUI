@@ -71,12 +71,22 @@ class AdminInternetConnected extends PnpPhase {
   List<Object?> get props => [];
 }
 
-/// Critical error in admin phase.
-class AdminError extends PnpPhase {
-  final String message;
-  const AdminError({required this.message});
+/// Router state could not be read (USP GET returned empty / missing fields).
+///
+/// Distinct from [NoInternet]: the router did not confirm "no internet" — the
+/// read itself failed, so we cannot tell the WAN state at all. The no-internet
+/// troubleshooter options (restart modem / enter ISP settings) are meaningless
+/// here, so this phase renders its own error card with a plain retry instead.
+///
+/// [code] / [detail] carry the underlying [ServiceError] diagnostics (e.g. the
+/// codegen 9998 "required fields missing" fault) for logging only — the UI
+/// derives its message from the phase itself.
+class AdminReadFailure extends PnpPhase {
+  final int? code;
+  final String? detail;
+  const AdminReadFailure({this.code, this.detail});
   @override
-  List<Object?> get props => [message];
+  List<Object?> get props => [code, detail];
 }
 
 /// No internet detected — route to troubleshooter.

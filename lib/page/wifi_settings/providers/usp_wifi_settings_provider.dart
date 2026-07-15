@@ -75,15 +75,12 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
       );
     }
 
-    if (!usp.isAuthenticated) {
-      return (
-        null,
-        WifiSettingsStatus(
-          error: const NotAuthenticatedError(detail: 'USP not authenticated'),
-        )
-      );
-    }
-
+    // No auth gate here: the router already guards all /usp routes on
+    // loginType (RA-aware), and the WiFi data layer surfaces real errors. The
+    // raw usp.isAuthenticated flag is a WASM transport signal that stays false
+    // in Remote Assistance (authToken bypass), so gating on it here wrongly
+    // blocked RA sessions (issue #1119). The usp == null gate above still
+    // covers the "USP unavailable" case.
     logger.d('[USP][WiFi]: Fetching WiFi data...');
 
     // Read from WiFi Data Provider (Layer 1) to avoid duplicate fetch.

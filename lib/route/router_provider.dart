@@ -140,9 +140,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         // In Remote build mode, redirect to confirm page with restored session params.
         if (GlobalConfig.remote.isActive) {
           // If already connected (USP layer active), allow access
-          final loginType =
-              ref.read(authProvider.select((value) => value.value?.loginType));
-          if (loginType == LoginType.remote) {
+          final isRemoteAssistance = ref.read(authProvider
+              .select((value) => value.value?.isRemoteAssistance ?? false));
+          if (isRemoteAssistance) {
             return state.uri.toString();
           }
 
@@ -159,9 +159,9 @@ final routerProvider = Provider<GoRouter>((ref) {
           logger.i('[Route]: Remote mode no session, redirecting to RA page');
           return RoutePath.remoteAssistanceConfirm;
         }
-        final loginType =
-            ref.watch(authProvider.select((value) => value.value?.loginType));
-        if (loginType == null || loginType == LoginType.none) {
+        final isLoggedIn = ref.watch(
+            authProvider.select((value) => value.value?.isLoggedIn ?? false));
+        if (!isLoggedIn) {
           return router._home();
         }
         return state.uri.toString();
@@ -221,7 +221,7 @@ class RouterNotifier extends ChangeNotifier {
     final loginType =
         _ref.watch(authProvider.select((data) => data.value?.loginType));
 
-    // if have no login type and navigate into dashboard, then back to home
+    // if not logged in and navigate into dashboard, then back to home
     if ((loginType == null || loginType == LoginType.none) &&
         (state.matchedLocation.startsWith('/dashboard') ||
             state.matchedLocation.startsWith('/usp'))) {

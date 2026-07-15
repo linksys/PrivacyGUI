@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/core/utils/tr181_path.dart';
+import 'package:privacy_gui/core/utils/wifi_channel.dart';
 import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/generated/wi_fi_access_points.g.dart';
 import 'package:privacy_gui/generated/wi_fi_radios.g.dart';
@@ -45,13 +47,13 @@ class UspWifiSettingsService {
     // Build lookup maps with normalized trailing-dot paths
     final apBySsidRef = <String, WiFiAccessPoint>{};
     for (final ap in accessPoints.items) {
-      final key = _ensureTrailingDot(ap.ssidReference);
+      final key = ensureTrailingDot(ap.ssidReference);
       if (key.isNotEmpty) apBySsidRef[key] = ap;
     }
 
     final radioByPath = <String, WiFiRadio>{};
     for (final r in radios.items) {
-      radioByPath[_ensureTrailingDot(r.instancePath)] = r;
+      radioByPath[ensureTrailingDot(r.instancePath)] = r;
     }
 
     logger.d('[USP][WiFi]: Building networks: '
@@ -61,13 +63,13 @@ class UspWifiSettingsService {
 
     final networks = <WifiNetworkUIModel>[];
     for (final ssid in ssids.items) {
-      final ssidPath = _ensureTrailingDot(ssid.instancePath);
+      final ssidPath = ensureTrailingDot(ssid.instancePath);
 
       // Find matching AccessPoint via ssidReference
       final ap = apBySsidRef[ssidPath];
 
       // Find matching Radio via SSID.lowerLayers
-      final radioPath = _ensureTrailingDot(ssid.lowerLayers);
+      final radioPath = ensureTrailingDot(ssid.lowerLayers);
       final radio = radioByPath[radioPath];
 
       logger.d('[USP][WiFi]: SSID ${ssid.ssid}: '
@@ -83,8 +85,16 @@ class UspWifiSettingsService {
       final supportedModes = _parseModesSupported(ap?.modesSupported ?? '');
 
       final band = _normalizeBand(radio?.operatingFrequencyBand ?? '');
-      final possibleChannels =
-          _parsePossibleChannels(radio?.possibleChannels ?? '');
+      // DFS (IEEE 802.11h) channels must not appear when DFS is disabled. The
+      // firmware leaves them in PossibleChannels regardless, so filter here —
+      // before computing per-bandwidth lists — so both the dropdown and the
+      // "N channels available" counts stay consistent.
+      final dfsEnabled = radio?.ieee80211hEnabled ?? false;
+      final possibleChannels = filterDfsChannels(
+        parsePossibleChannels(radio?.possibleChannels ?? ''),
+        band: band,
+        dfsEnabled: dfsEnabled,
+      );
       final supportedBandwidths = _parseSupportedBandwidths(
           radio?.supportedOperatingChannelBandwidths ?? '');
 
@@ -564,10 +574,10 @@ class UspWifiSettingsService {
     if (ssidPaths.isEmpty) return 0;
 
     // Resolve AccessPoint paths whose SSIDReference points at a matched SSID.
-    final matchedSsidPathSet = ssidPaths.map(_ensureTrailingDot).toSet();
+    final matchedSsidPathSet = ssidPaths.map(ensureTrailingDot).toSet();
     final apPaths = accessPoints.items
         .where((ap) =>
-            matchedSsidPathSet.contains(_ensureTrailingDot(ap.ssidReference)))
+            matchedSsidPathSet.contains(ensureTrailingDot(ap.ssidReference)))
         .map((ap) => ap.instancePath)
         .toList();
 
@@ -640,38 +650,6 @@ List<String> _parseModesSupported(String raw) {
       .map((s) => s.trim())
       .where((s) => s.isNotEmpty)
       .toList();
-}
-
-/// Parses a TR-181 PossibleChannels string into a sorted list of channel numbers.
-/// Handles both comma-separated values and range notation.
-/// e.g. "1-13,36,40,44,48" → [1,2,3,4,5,6,7,8,9,10,11,12,13,36,40,44,48]
-List<int> _parsePossibleChannels(String raw) {
-  if (raw.isEmpty) return [];
-  final result = <int>[];
-  for (final part in raw.split(',')) {
-    final trimmed = part.trim();
-    if (trimmed.contains('-')) {
-      final bounds = trimmed.split('-');
-      final start = int.tryParse(bounds[0].trim());
-      final end = int.tryParse(bounds[1].trim());
-      if (start != null && end != null) {
-        for (var i = start; i <= end; i++) {
-          result.add(i);
-        }
-      }
-    } else {
-      final ch = int.tryParse(trimmed);
-      if (ch != null) result.add(ch);
-    }
-  }
-  result.sort();
-  return result;
-}
-
-/// Ensures a TR-181 path ends with a dot.
-String _ensureTrailingDot(String path) {
-  if (path.isEmpty) return path;
-  return path.endsWith('.') ? path : '$path.';
 }
 
 /// Parses a TR-181 SupportedOperatingChannelBandwidths string.

@@ -129,8 +129,8 @@ class DashboardOrchestrator extends AsyncNotifier<DashboardOrchestratorState> {
 
     // Remote Assistance mode: client is pre-authenticated via authToken,
     // skip local USP auth check.
-    final loginType = ref.read(authProvider).value?.loginType;
-    final isRemoteAssistance = loginType == LoginType.remote;
+    final isRemoteAssistance =
+        ref.read(authProvider).value?.isRemoteAssistance ?? false;
 
     // On page reload WASM state is lost — attempt session restore (local only).
     // Use isRecovering: true because we handle auth failure via NotAuthenticatedError

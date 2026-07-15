@@ -9,6 +9,8 @@ import 'package:privacy_gui/generated/wifi_clients.g.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/core/utils/tr181_path.dart';
+import 'package:privacy_gui/core/utils/wifi_channel.dart';
 import 'package:privacy_gui/page/_shared/models/client_connection_detail.dart';
 import 'package:privacy_gui/page/_shared/utils/wifi_guest_detection.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_client_ui_model.dart';
@@ -158,14 +160,14 @@ class UspWifiDataService {
     required WiFiAccessPoints accessPoints,
   }) {
     final ssidByPath = {
-      for (final s in ssids.items) _ensureTrailingDot(s.instancePath): s,
+      for (final s in ssids.items) ensureTrailingDot(s.instancePath): s,
     };
 
     // Determine guest SSIDs via the canonical alias rule (see
     // wifi_guest_detection). Single source of truth shared across the app.
     final guestSsidPaths = <String>{
       for (final ssid in ssids.items)
-        if (isGuestSsid(ssid)) _ensureTrailingDot(ssid.instancePath),
+        if (isGuestSsid(ssid)) ensureTrailingDot(ssid.instancePath),
     };
     logger.t('[USP][WiFi] Total guest SSID paths: ${guestSsidPaths.length}');
     // Diagnostic: multiple SSIDs but none matched the `-guest` alias rule
@@ -181,18 +183,18 @@ class UspWifiDataService {
     final apsByRadioPath =
         <String, List<({WiFiAccessPoint ap, WiFiSsid ssid})>>{};
     for (final ap in accessPoints.items) {
-      final ssid = ssidByPath[_ensureTrailingDot(ap.ssidReference)];
+      final ssid = ssidByPath[ensureTrailingDot(ap.ssidReference)];
       if (ssid == null) continue;
-      final radioPath = _ensureTrailingDot(ssid.lowerLayers);
+      final radioPath = ensureTrailingDot(ssid.lowerLayers);
       apsByRadioPath.putIfAbsent(radioPath, () => []).add((ap: ap, ssid: ssid));
     }
 
     return radios.items.map((radio) {
       final radioAps =
-          apsByRadioPath[_ensureTrailingDot(radio.instancePath)] ?? [];
+          apsByRadioPath[ensureTrailingDot(radio.instancePath)] ?? [];
       final apModels = radioAps.map((a) {
         final isGuest =
-            guestSsidPaths.contains(_ensureTrailingDot(a.ssid.instancePath));
+            guestSsidPaths.contains(ensureTrailingDot(a.ssid.instancePath));
         // Per-network enabled state = SSID.Enable. The Dashboard toggle mutates
         // both SSID.Enable and AccessPoint.Enable together, so either would do;
         // we read SSID.Enable as the single source of truth for the UI.
@@ -216,7 +218,8 @@ class UspWifiDataService {
         autoChannelEnable: radio.autoChannelEnable,
         channelBandwidth: radio.operatingChannelBandwidth,
         supportedStandards: radio.supportedStandards,
-        possibleChannels: _parsePossibleChannels(radio.possibleChannels),
+        possibleChannels: parsePossibleChannels(radio.possibleChannels),
+        isDfsEnabled: radio.ieee80211hEnabled,
         accessPoints: apModels,
       );
     }).toList();
@@ -326,14 +329,14 @@ class UspWifiDataService {
   }) {
     final apByPath = {
       for (final ap in accessPoints.items)
-        _ensureTrailingDot(ap.instancePath): ap,
+        ensureTrailingDot(ap.instancePath): ap,
     };
     final ssidByPath = {
-      for (final s in ssids.items) _ensureTrailingDot(s.instancePath): s,
+      for (final s in ssids.items) ensureTrailingDot(s.instancePath): s,
     };
     final bandByRadioPath = {
       for (final r in radios.items)
-        _ensureTrailingDot(r.instancePath):
+        ensureTrailingDot(r.instancePath):
             _normalizeBand(r.operatingFrequencyBand),
     };
 
@@ -342,18 +345,18 @@ class UspWifiDataService {
       final mac = entry.key;
       final client = entry.value;
 
-      final ap = apByPath[_ensureTrailingDot(client.parentPath)];
+      final ap = apByPath[ensureTrailingDot(client.parentPath)];
       if (ap == null) {
         logger.d(
             '[USP][Dashboard]Connection detail: no AP for parentPath=${client.parentPath}');
         continue;
       }
 
-      final ssid = ssidByPath[_ensureTrailingDot(ap.ssidReference)];
+      final ssid = ssidByPath[ensureTrailingDot(ap.ssidReference)];
       final ssidName = ssid?.ssid ?? '';
 
       final band = ssid != null
-          ? (bandByRadioPath[_ensureTrailingDot(ssid.lowerLayers)] ?? '')
+          ? (bandByRadioPath[ensureTrailingDot(ssid.lowerLayers)] ?? '')
           : '';
 
       result[mac] = ClientConnectionDetail(band: band, ssidName: ssidName);
@@ -385,50 +388,12 @@ class UspWifiDataService {
   // Helpers
   // ---------------------------------------------------------------------------
 
-  static String _ensureTrailingDot(String path) {
-    if (path.isEmpty) return path;
-    return path.endsWith('.') ? path : '$path.';
-  }
-
   static String _normalizeBand(String rawBand) {
     final lower = rawBand.toLowerCase();
     if (lower.contains('6g') || lower.contains('6 g')) return '6GHz';
     if (lower.contains('5g') || lower.contains('5 g')) return '5GHz';
     if (lower.contains('2.4') || lower.contains('2_4')) return '2.4GHz';
     return rawBand;
-  }
-
-  /// Parses a TR-181 `PossibleChannels` string into a sorted list of channel
-  /// numbers. Handles comma-separated values and range notation.
-  /// e.g. "1-13,36,40,44,48" → [1,2,3,4,5,6,7,8,9,10,11,12,13,36,40,44,48]
-  static List<int> _parsePossibleChannels(String raw) {
-    if (raw.isEmpty) return const [];
-    final result = <int>[];
-    for (final part in raw.split(',')) {
-      final trimmed = part.trim();
-      if (trimmed.contains('-')) {
-        final bounds = trimmed.split('-');
-        // Skip malformed range tokens (e.g. "1-2-3").
-        if (bounds.length != 2) continue;
-        final start = int.tryParse(bounds[0].trim());
-        final end = int.tryParse(bounds[1].trim());
-        if (start != null && end != null) {
-          // Inverted ranges (start > end) naturally yield nothing.
-          for (var i = start; i <= end; i++) {
-            result.add(i);
-          }
-        }
-      } else {
-        final ch = int.tryParse(trimmed);
-        if (ch != null) result.add(ch);
-      }
-    }
-    // Drop non-positive channels: TR-181 PossibleChannels "0" is an
-    // auto/any sentinel, not a real channel, and channel 0 must never
-    // reach the dropdown or be sent to firmware.
-    result.removeWhere((ch) => ch <= 0);
-    result.sort();
-    return result;
   }
 
   /// Builds a BSSID → band mapping from WiFi SSID and Radio data.
@@ -444,7 +409,7 @@ class UspWifiDataService {
     // Build Radio path → band lookup
     final bandByRadioPath = <String, String>{};
     for (final radio in radios.items) {
-      final path = _ensureTrailingDot(radio.instancePath);
+      final path = ensureTrailingDot(radio.instancePath);
       bandByRadioPath[path] = _normalizeBand(radio.operatingFrequencyBand);
     }
 
@@ -454,7 +419,7 @@ class UspWifiDataService {
       final bssid = ssid.bssid.trim().toUpperCase();
       if (bssid.isEmpty) continue;
 
-      final radioPath = _ensureTrailingDot(ssid.lowerLayers);
+      final radioPath = ensureTrailingDot(ssid.lowerLayers);
       final band = bandByRadioPath[radioPath];
       if (band != null && band.isNotEmpty) {
         result[bssid] = band;

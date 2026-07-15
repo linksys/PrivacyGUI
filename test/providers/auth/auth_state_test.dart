@@ -47,7 +47,7 @@ void main() {
     });
 
     test('fromJson defaults to LoginType.none for missing type', () {
-      final state = AuthState.fromJson({});
+      final state = AuthState.fromJson(const {});
       expect(state.loginType, LoginType.none);
     });
 
@@ -61,6 +61,21 @@ void main() {
       final a = AuthState(localPasswordHint: 'x', loginType: LoginType.local);
       final b = AuthState(localPasswordHint: 'y', loginType: LoginType.local);
       expect(a, isNot(b));
+    });
+
+    test('isLoggedIn is true for local and remote, false for none', () {
+      expect(const AuthState(loginType: LoginType.none).isLoggedIn, isFalse);
+      expect(const AuthState(loginType: LoginType.local).isLoggedIn, isTrue);
+      expect(const AuthState(loginType: LoginType.remote).isLoggedIn, isTrue);
+    });
+
+    test('isRemoteAssistance is true only for LoginType.remote', () {
+      expect(const AuthState(loginType: LoginType.none).isRemoteAssistance,
+          isFalse);
+      expect(const AuthState(loginType: LoginType.local).isRemoteAssistance,
+          isFalse);
+      expect(const AuthState(loginType: LoginType.remote).isRemoteAssistance,
+          isTrue);
     });
   });
 }

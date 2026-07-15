@@ -18,6 +18,7 @@ WifiRadioUIModel _radio({
   String band = '5GHz',
   int channel = 36,
   bool autoChannelEnable = false,
+  bool isDfsEnabled = true,
   List<int> possibleChannels = const [36, 40, 44, 48, 52, 149],
 }) {
   return WifiRadioUIModel(
@@ -31,6 +32,7 @@ WifiRadioUIModel _radio({
     channelBandwidth: '80MHz',
     supportedStandards: 'ax',
     possibleChannels: possibleChannels,
+    isDfsEnabled: isDfsEnabled,
   );
 }
 
@@ -138,8 +140,9 @@ void main() {
       expect(captured!.autoChannel, isTrue);
     });
 
-    testWidgets('AC5: stored channel not in possibleChannels defaults to Auto',
-        (t) async {
+    testWidgets(
+        'AC5: stored channel not in possibleChannels displays as Auto, and '
+        'confirming without moving is a no-op', (t) async {
       ({int channel, bool autoChannel})? captured;
       var called = false;
       await t.pumpWidget(host(
@@ -162,10 +165,10 @@ void main() {
       await t.tap(find.text('Apply'));
       await t.pumpAndSettle();
 
-      // Radio was NOT auto originally, now shows Auto -> this is a real change.
+      // The dialog opened on Auto because 165 is unselectable; the user did not
+      // move the selection, so Apply must NOT rewrite the radio to Auto.
       expect(called, isTrue);
-      expect(captured, isNotNull);
-      expect(captured!.autoChannel, isTrue);
+      expect(captured, isNull);
     });
 
     testWidgets(
@@ -234,6 +237,108 @@ void main() {
       // 52 is a DFS channel -> "52 · DFS"; 36 is not.
       expect(dd.itemAsString!(52), '52 · DFS');
       expect(dd.itemAsString!(36), '36');
+    });
+
+    testWidgets('#1025: DFS disabled hides 5GHz DFS channels from the dropdown',
+        (t) async {
+      await t.pumpWidget(host(
+        _radio(
+          band: '5GHz',
+          channel: 36,
+          autoChannelEnable: false,
+          isDfsEnabled: false,
+          possibleChannels: const [36, 40, 44, 48, 52, 100, 149],
+        ),
+        (_) {},
+      ));
+      await openDialog(t);
+
+      final dd = t.widget<AppDropdown<int>>(find.byType(AppDropdown<int>));
+      // -1 is the Auto sentinel; DFS channels 52 and 100 must be gone.
+      expect(dd.items, [-1, 36, 40, 44, 48, 149]);
+    });
+
+    testWidgets('#1025: DFS enabled keeps 5GHz DFS channels in the dropdown',
+        (t) async {
+      await t.pumpWidget(host(
+        _radio(
+          band: '5GHz',
+          channel: 36,
+          autoChannelEnable: false,
+          isDfsEnabled: true,
+          possibleChannels: const [36, 40, 44, 48, 52, 100, 149],
+        ),
+        (_) {},
+      ));
+      await openDialog(t);
+
+      final dd = t.widget<AppDropdown<int>>(find.byType(AppDropdown<int>));
+      expect(dd.items, [-1, 36, 40, 44, 48, 52, 100, 149]);
+    });
+
+    testWidgets(
+        '#1025: radio stuck on a DFS channel with DFS off — confirming without '
+        'moving does not rewrite to Auto', (t) async {
+      // SSH-confirmed firmware behaviour: disabling DFS leaves the radio on its
+      // manual DFS channel (e.g. 100). The dialog can only show Auto since 100
+      // is filtered out, but merely opening and confirming must not mutate.
+      ({int channel, bool autoChannel})? captured;
+      var called = false;
+      await t.pumpWidget(host(
+        _radio(
+          band: '5GHz',
+          channel: 100,
+          autoChannelEnable: false,
+          isDfsEnabled: false,
+          possibleChannels: const [36, 40, 44, 48, 52, 100, 149],
+        ),
+        (r) {
+          captured = r;
+          called = true;
+        },
+      ));
+      await openDialog(t);
+
+      // 100 is filtered out, so the dialog opens on Auto.
+      final sw = t.widget<AppSwitch>(find.byType(AppSwitch));
+      expect(sw.value, isTrue);
+
+      await t.tap(find.text('Apply'));
+      await t.pumpAndSettle();
+
+      // No user interaction → no mutation.
+      expect(called, isTrue);
+      expect(captured, isNull);
+    });
+
+    testWidgets(
+        '#1025: after DFS-off fallback to Auto, actively picking a channel '
+        'still writes', (t) async {
+      // Guard against over-suppression: the no-op check must not block a real
+      // user selection made after the Auto fallback.
+      ({int channel, bool autoChannel})? captured;
+      await t.pumpWidget(host(
+        _radio(
+          band: '5GHz',
+          channel: 100,
+          autoChannelEnable: false,
+          isDfsEnabled: false,
+          possibleChannels: const [36, 40, 44, 48, 52, 100, 149],
+        ),
+        (r) => captured = r,
+      ));
+      await openDialog(t);
+
+      // Turn Auto OFF, which selects the first manual channel (36).
+      await t.tap(find.byType(AppSwitch));
+      await t.pumpAndSettle();
+
+      await t.tap(find.text('Apply'));
+      await t.pumpAndSettle();
+
+      expect(captured, isNotNull);
+      expect(captured!.autoChannel, isFalse);
+      expect(captured!.channel, 36);
     });
 
     // Fix (#1023): UI-kit v2.26.1 gates the AppDropdown tap gesture when
