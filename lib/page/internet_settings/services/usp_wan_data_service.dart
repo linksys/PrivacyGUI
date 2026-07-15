@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
+import 'package:privacy_gui/core/utils/ipv6_address.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
@@ -96,7 +97,14 @@ class UspWanDataService {
           .where((ip) => ip.isNotEmpty)
           .toList();
 
-      return (gateway: gateway, ipv6Addresses: ipv6Addresses);
+      // TR-181 returns IPv6 addresses in instance order, which frequently puts
+      // the link-local (fe80::/10) address first. The WAN widget shows a single
+      // representative address (ipv6Addresses.first), which must be the globally
+      // routable one — not the link-local. Reorder so global unicast wins.
+      // See linksys/PrivacyGUI#1128.
+      final orderedIpv6Addresses = preferGlobalIpv6First(ipv6Addresses);
+
+      return (gateway: gateway, ipv6Addresses: orderedIpv6Addresses);
     } catch (e) {
       logger.w('[USP][WanData]: Gateway/IPv6 fetch failed: $e');
       return (gateway: '', ipv6Addresses: const <String>[]);
