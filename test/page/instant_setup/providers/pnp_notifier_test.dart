@@ -358,5 +358,37 @@ void main() {
       expect(state.phase, isA<NoInternet>());
       container.dispose();
     });
+
+    // Regression for #1098: the ISP save WRITE succeeds, but the trailing
+    // internet check READ fails (USP GET returned empty). This must land in
+    // AdminReadFailure (read failure), NOT NoInternet — distinct from a genuine
+    // no-internet (checkInternetConnected returns false) and from a save write
+    // failure (which stays on NoInternet + errorMessage, tested above).
+    test('ISP save success but check read failure → AdminReadFailure', () async {
+      when(() => mockPnpService.saveIspSettings(any()))
+          .thenAnswer((_) async {});
+      when(() => mockPnpService.checkInternetConnected())
+          .thenThrow(const InvalidInputError(code: 9998, detail: 'missing'));
+
+      final container = createContainer();
+      final notifier = container.read(pnpProvider.notifier);
+
+      notifier.setDemoPhase(const NoInternet(ssid: 'Test'));
+
+      const config = PnpIspConfig(
+        type: IspConnectionType.staticIp,
+        staticIpAddress: '10.0.0.5',
+        subnetMask: '255.255.255.0',
+        defaultGateway: '10.0.0.1',
+      );
+
+      await notifier.saveIspWithProgress(config);
+
+      verify(() => mockPnpService.saveIspSettings(any())).called(1);
+      final state = container.read(pnpProvider);
+      expect(state.phase, isA<AdminReadFailure>());
+      expect((state.phase as AdminReadFailure).code, 9998);
+      container.dispose();
+    });
   });
 }

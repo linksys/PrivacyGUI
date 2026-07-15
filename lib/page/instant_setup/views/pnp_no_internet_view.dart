@@ -34,6 +34,11 @@ class _PnpNoInternetViewState extends ConsumerState<PnpNoInternetView> {
     ref.listen(pnpProvider, (prev, next) {
       if (next.phase is WizardConfiguring || next.phase is WizardInitializing) {
         context.go(RoutePath.pnp);
+      } else if (next.phase is AdminReadFailure) {
+        // "Try again" hit a read failure (router state unreadable) rather than a
+        // confirmed no-internet. Route back to the entry view, which re-runs the
+        // flow (implicit retry) and renders the read-failure card if it persists.
+        context.go(RoutePath.pnp);
       }
     });
 

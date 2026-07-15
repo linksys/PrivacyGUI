@@ -396,27 +396,6 @@ class PnpNotifier extends Notifier<PnpState> {
 
   // ─── No Internet Flow ───────────────────────────────────
 
-  /// Save ISP settings and re-check internet.
-  Future<void> saveIspSettingsAndCheck(PnpIspConfig config) async {
-    try {
-      await ref.read(uspMutationLockProvider).withLock(() async {
-        await _svc.saveIspSettings(config);
-      });
-
-      // Wait for WAN interface to come up
-      await Future.delayed(const Duration(seconds: 5));
-
-      state = state.copyWith(phase: const AdminCheckingInternet());
-      await _checkInternet();
-    } catch (e) {
-      logger.e('[PnP] ISP save failed: $e');
-      state = state.copyWith(
-        phase: const NoInternet(),
-        errorMessage: '$e',
-      );
-    }
-  }
-
   /// Retry internet check after modem restart flow.
   Future<void> retryInternetCheck() async {
     state = state.copyWith(phase: const AdminCheckingInternet());

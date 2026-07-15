@@ -39,6 +39,11 @@ class _PnpIspSettingsViewState extends ConsumerState<PnpIspSettingsView> {
     final phase = state.phase;
     if (phase is WizardConfiguring || phase is WizardInitializing) {
       context.go(RoutePath.pnp);
+    } else if (phase is AdminReadFailure) {
+      // Save succeeded but the trailing internet check could not read router
+      // state. Route back to the entry view, which re-runs the flow (implicit
+      // retry) and renders the read-failure card if it still fails.
+      context.go(RoutePath.pnp);
     } else if (state.errorMessage != null) {
       showFailedSnackBar(context, state.errorMessage!);
     }
