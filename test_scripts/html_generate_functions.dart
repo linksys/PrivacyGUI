@@ -184,6 +184,11 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
     .test-icon.fail { color: var(--color-fail); }
     .test-name { flex: 1; }
     .test-meta { font-size: 0.75rem; color: var(--color-text-muted); }
+    .view-golden {
+      font-size: 0.75rem; color: var(--color-accent); cursor: pointer;
+      margin-right: 0.75rem; text-decoration: none; white-space: nowrap;
+    }
+    .view-golden:hover { text-decoration: underline; }
     .overflow-badge {
       font-size: 0.65rem; padding: 0.125rem 0.375rem;
       border-radius: 3px; background: #fef3c7; color: #92400e;
@@ -598,6 +603,10 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
       let html = '<div class="test-row' + rowClass + '" data-overflow="' + (t.hasOverflow ? 'true' : 'false') + '">';
       html += '<span class="test-icon ' + iconClass + '">' + icon + '</span>';
       html += '<span class="test-name">' + escapeHtml(name) + overflowTag + '</span>';
+      if (isPass && t.goldenPath) {
+        const goldenCaption = name + ' (' + (t.deviceType || '') + ' / ' + (t.locale || '') + ')';
+        html += '<a class="view-golden" data-golden-src="' + escapeHtml(t.goldenPath) + '" data-golden-caption="' + escapeHtml(goldenCaption) + '" onclick="openGolden(this)">View golden</a>';
+      }
       html += '<span class="test-meta">' + (t.deviceType || '') + ' / ' + (t.locale || '') + '</span>';
       html += '</div>';
 
@@ -646,14 +655,39 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
       return div.innerHTML;
     }
 
-    // Lightbox
+    // Lightbox — holds a list of { src, caption } items
     let lbImages = [];
     let lbIndex = 0;
 
+    // Open the comparison images (expected/actual/diff) with cross-image nav
     function openLightbox(img) {
-      lbImages = [...document.querySelectorAll('.image-comparison img[onclick]')];
-      lbIndex = lbImages.indexOf(img);
+      const nodes = [...document.querySelectorAll('.image-comparison img[onclick]')];
+      lbImages = nodes.map(function(node) {
+        const figure = node.closest('figure');
+        const label = figure ? figure.querySelector('figcaption')?.textContent || '' : '';
+        const details = figure ? figure.closest('.failure-details') : null;
+        const row = details ? details.previousElementSibling : null;
+        const testName = row ? row.querySelector('.test-name')?.textContent || '' : '';
+        return { src: node.src, caption: testName + ' (' + label + ')' };
+      });
+      lbIndex = nodes.indexOf(img);
       if (lbIndex === -1) lbIndex = 0;
+      openLightboxAt(lbImages, lbIndex);
+    }
+
+    // Open a single golden image (no cross-image nav)
+    function openGolden(link) {
+      const src = link.getAttribute('data-golden-src');
+      const caption = link.getAttribute('data-golden-caption') || '';
+      openLightboxAt([{ src: src, caption: caption }], 0);
+    }
+
+    function openLightboxAt(images, index) {
+      lbImages = images;
+      lbIndex = index;
+      const single = lbImages.length <= 1;
+      document.querySelector('.lb-prev').style.display = single ? 'none' : '';
+      document.querySelector('.lb-next').style.display = single ? 'none' : '';
       showLightboxImage();
       document.getElementById('lightbox').classList.add('open');
     }
@@ -663,20 +697,17 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
     }
 
     function navLightbox(dir) {
+      if (lbImages.length <= 1) return;
       lbIndex = (lbIndex + dir + lbImages.length) % lbImages.length;
       showLightboxImage();
     }
 
     var showLightboxImage = function() {
-      const img = lbImages[lbIndex];
-      document.getElementById('lb-img').src = img.src;
-      const figure = img.closest('figure');
-      const label = figure ? figure.querySelector('figcaption')?.textContent || '' : '';
-      const details = figure ? figure.closest('.failure-details') : null;
-      const row = details ? details.previousElementSibling : null;
-      const testName = row ? row.querySelector('.test-name')?.textContent || '' : '';
-      const pos = (lbIndex + 1) + '/' + lbImages.length;
-      document.getElementById('lb-caption').textContent = pos + ' — ' + testName + ' (' + label + ')';
+      const item = lbImages[lbIndex];
+      if (!item) return;
+      document.getElementById('lb-img').src = item.src;
+      const pos = lbImages.length > 1 ? (lbIndex + 1) + '/' + lbImages.length + ' — ' : '';
+      document.getElementById('lb-caption').textContent = pos + item.caption;
     };
 
     document.addEventListener('keydown', (e) => {

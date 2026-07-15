@@ -7,6 +7,14 @@ part 'html_generate_functions.dart';
 
 const _coverageIgnore = ['apps', 'system_log', 'test_console'];
 
+/// Strip the report folder prefix so [path] is relative to the report location.
+String _relativeToReport(String path, String folderStr) {
+  if (path.startsWith('$folderStr/')) {
+    return path.substring(folderStr.length + 1);
+  }
+  return path;
+}
+
 List<Map<String, dynamic>> _loadOverflowWarnings() {
   final file = File('goldens/overflow_warnings.json');
   if (!file.existsSync()) return [];
@@ -88,7 +96,6 @@ void main(List<String> args) {
     exit(1);
   }
   final version = args.length > 1 ? args[1] : '0.0.0';
-  final embedImages = args.contains('--embed');
 
   // find parsed test report json files on target folder
   final files = folder.listSync().where((e) =>
@@ -125,29 +132,37 @@ void main(List<String> args) {
   }
   final devices = deviceSet.toList();
 
-  // Process failure image paths
+  // Process failure image paths — make them relative to the report location
   for (final test in jsonObjects) {
     final failureImages = test['failureImages'] as Map<String, dynamic>?;
     if (failureImages == null) continue;
     for (final key in ['expected', 'actual', 'diff']) {
       final path = failureImages[key] as String?;
       if (path == null) continue;
-      if (embedImages) {
-        final file = File(path);
-        if (file.existsSync()) {
-          final bytes = file.readAsBytesSync();
-          final b64 = base64Encode(bytes);
-          failureImages[key] = 'data:image/png;base64,$b64';
-        }
-      } else {
-        // Strip folder prefix so path is relative to the report location
-        if (path.startsWith('$folderStr/')) {
-          failureImages[key] = path.substring(folderStr.length + 1);
-        } else {
-          failureImages[key] = path;
-        }
-      }
+      failureImages[key] = _relativeToReport(path, folderStr);
     }
+  }
+
+  // Attach the golden image path for every test (including passing ones) so the
+  // report can link to the original golden. Goldens live in a `goldens/`
+  // directory next to the test file, named `{tsName}-{deviceType}-{locale}.png`.
+  for (final test in jsonObjects) {
+    final testCaseFilePath = test['testCaseFilePath'] as String?;
+    final tsName = test['tsName'] as String?;
+    final deviceType = test['deviceType'] as String?;
+    final locale = test['locale'] as String?;
+    if (testCaseFilePath == null ||
+        tsName == null ||
+        deviceType == null ||
+        locale == null) {
+      continue;
+    }
+    final relativeTestPath = testCaseFilePath.startsWith('/')
+        ? testCaseFilePath.substring(1)
+        : testCaseFilePath;
+    final testDir = relativeTestPath.replaceFirst(RegExp(r'/[^/]+$'), '');
+    final goldenPath = '$testDir/goldens/$tsName-$deviceType-$locale.png';
+    test['goldenPath'] = _relativeToReport(goldenPath, folderStr);
   }
 
   // Scan coverage
@@ -180,7 +195,6 @@ void main(List<String> args) {
   resultObj['overflowCount'] = overflowWarnings.length;
   resultObj['version'] = version;
   resultObj['timestamp'] = DateTime.now().toIso8601String();
-  resultObj['embedImages'] = embedImages;
 
   final htmlReport = generateHTMLReport(resultObj, version);
   final reportHTMLFile = File('$folderStr/golden_verify_report.html');
