@@ -108,7 +108,12 @@ class UspLanInfoCard extends ConsumerWidget {
                     copyable: true,
                   )
                 else if (info.ipv6Enabled)
-                  InfoGridItem(label: 'IPv6', value: 'Enabled'),
+                  // Issue #1129: IPv6 is enabled but no meaningful (global/ULA)
+                  // address is available (e.g. the interface holds only a
+                  // link-local fe80:: address). Render '-' consistent with how
+                  // the DNS field renders when unavailable, not the link-local
+                  // address and not a bare 'Enabled' label.
+                  InfoGridItem(label: 'IPv6', value: '-'),
               ],
             ),
           ],
