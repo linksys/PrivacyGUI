@@ -2,6 +2,209 @@
 
 All notable changes to PrivacyGUI after version 2.0.0 are documented in this file.
 
+## [2.6.0] - 2026-07-16
+
+- b7137eac - fix(dashboard/detail): unify IPv6 link-local display with a scope badge (#1146)
+- 70c703df - fix(wifi): use OWE token for Enhanced Open security mode (#1073) (#1142)
+- 64a7e1bc - fix(dashboard): surface WAN global IPv6 instead of link-local fe80:: (#1128) (#1139)
+- 147c3cf4 - fix(dashboard): hide link-local IPv6 in LAN Information widget (#1129) (#1138)
+- 0cc56ef0 - feat(fonts): offline CJK subsetting + zero-CDN fallback (12.7MB -> 2.14MB) (#1135)
+- f2af7bb8 - fix(pnp): distinguish router read failure from no-internet (#1098) (#1132)
+- b9c33cd6 - feat(dashboard): show spinner on card toggle during mutation (#1055) (#1126)
+- 1f71a44b - fix(wifi): hide DFS channels when DFS disabled + dedup channel parser (#1025, #1038) (#1124)
+- 80687944 - fix(dashboard): upgrade UI Kit to v2.28.0 to clamp traffic curve at baseline (#1113) (#1123)
+- cdb3167f - fix(auth): unify USP login check so Remote Assistance can open Wi-Fi/Internet Settings (#1119) (#1122)
+- 69eb8f1c - fix(l10n): align port forwarding naming with 1.x (#1097)
+- b4779dda - refactor: unify TopBar + DiagnosticLoggable state logging + trace level logs (#1075)
+- 30e78fd8 - fix(devices): MeshNetwork architecture + fix #1043 #1044 #1047 #1048 (#1068)
+- 727ed877 - fix(dashboard): exit edit mode when navigating away (#1037) (#1089)
+- 8c5b7592 - fix(local-network): cross-service SET, post-save IP redirect, pool prefix sync (#1039) (#1117)
+- aa59621d - feat(devices): refactor filter to multi-select chips + add device type and private MAC filters (#1107) (#1110)
+- 905907a4 - fix(port-forwarding): persist forwarded-port edits in port triggering (#1061) (#1101)
+- 418e4f0e - fix(nav): use pushNamed for sub-page navigation to preserve back stack (#1093)
+- 8a5216ee - fix(dhcp): use Hosts.Active for online status indicator (#1034) (#1087)
+- a79c5292 - fix(static-routing): block interface change without gateway update (#1082) (#1086)
+- b0011652 - fix(internet-settings): remove unnecessary DHCP renew result parsing (#1079)
+- dd711ec5 - fix: extract inline scripts to external JS for CSP compliance (#1085)
+- c4b6adb5 - refactor(instant-privacy): show private MAC warning on page instead of dialog
+- dbd376a1 - i18n(instant-privacy): translate private MAC warning; unify Wi-Fi spelling
+- 690bb46b - fix(instant-privacy): warn before enabling when devices use private MAC
+- de7d99be - fix(internet): auto-fill and clamp MTU on connection type switch (#1083) (#1114)
+- 3cbee8b1 - feat(internet): support PPTP, L2TP, and Bridge WAN connection types (#1094)
+- fbe38ca9 - refactor(dhcp): centralize reservation device-option data source (#1109)
+- 9028ec6e - fix(dhcp): validate reservations added from Dashboard card (#1067) (#1077)
+- 31e4667b - fix(dhcp): reject duplicate MAC/IP in reservation dialog (#1070) (#1078)
+- 5a4c6b54 - fix(web): move validation to unfocus to prevent TextField focus loss (#1059) (#1099)
+- 8787ba96 - fix(wifi): ensure L1 cache invalidation on partial failure
+- 9978d4ea - fix(wifi): write both SSID.Enable and AccessPoint.Enable for network toggle (#971, #972)
+- 6108b1ff - fix(wifi): warn when no SSID matches the -guest alias rule
+- 50d12cb7 - fix(wifi): unify guest WiFi detection on canonical alias rule
+- 93e76caf - chore: bump version to 2.6.0
+- c772492a - fix(auth): handle relogin failure after password change (#1013)
+- 76df6bd9 - style: format dashboard_orchestrator.dart
+- b6395383 - fix(auth): address review feedback for session token persistence
+- 8fc2a408 - feat(auth): replace password storage with session token persistence
+- 394bf3bc - fix(analytics): set _historyLoaded=true on load failure to unblock persistence (#1053)
+- 080a1447 - style: dart format usp_device_analytics_notifier.dart
+- 99f1bace - fix(analytics): address review feedback for device analytics (#1053)
+- d43a10e9 - fix(dashboard): child node client signal + trend Y-axis (#1043, #1044)
+- 6cbfd7f1 - test(topology): add defensive test for RSSI→LinkQuality SSoT consistency (#1024)
+- d7a9cc33 - fix(dashboard): consistent device counts excluding mesh nodes (#1020, #1022, #1024)
+- d1df169d - fix(dashboard): unify card rows + navigation fixes (#1017)
+- dd9ce400 - feat(wifi): add channel dropdown to edit dialog (#1023) (#1027)
+- 48601833 - docs(error-handling): sync implementation guide with review fixes (title param, compact widgets)
+- ed4fd9e1 - fix(l10n): address PR review — error titles, compact card, missed call-sites
+- c5e61b34 - docs(error-handling): unify AsyncValue pages on ServiceErrorView in guide + constitution
+- 5bbd315f - refactor(l10n): migrate diagnostics error pages to ServiceErrorView; localize apps error
+- c974dc9c - refactor(l10n): migrate AsyncValue error pages to shared ServiceErrorView
+- 4075bfd4 - feat(components): add optional secondary action to ServiceErrorView
+- 9c185ff1 - fix(dashboard): resolve card clipping and add mascot outside dismiss
+- b0a1292a - docs(error-handling): consolidate guides + align constitution + fix shared-helper localization (#997)
+- f75a4ff6 - chore: merge dev-2.5.0 to usp (#995)
+
+## [2.5.0] - 2026-06-29
+
+- 7d468331 - fix(sse): add 'remote-' prefix to Remote subscription IDs
+- 8817c671 - fix: resolve PR #979 review criticals and localize dashboard cards (#991)
+- 3b1491b3 - feat(remote): SSE & subscription support for Remote Assistance mode (#987)
+- 2365ef48 - chore(deps): bump ui_kit_library and generative_ui to v2.25.1
+- e19da9b0 - fix(dashboard): reset top/bottom bar visibility when navigating back
+- ba6be720 - Merge pull request #977 from linksys/fix/pnp-guest-wifi-duplicate-963
+- 0a593c6f - Merge branch 'dev-2.5.0' into fix/pnp-guest-wifi-duplicate-963
+- 5ac0c933 - chore(ci): remove debug output from gen-l10n step
+- 80783c22 - chore(l10n): remove pnpGuestWiFiDesc key (deleted in dev-2.5.0)
+- cd778138 - ci: add debug output and mkdir for l10n generation
+- 2d3018a9 - chore: trigger CI rebuild
+- 218d6dca - ci: add flutter gen-l10n step before analyze
+- 8659a202 - fix(test): remove unused embedImages variable
+- 3ca4bea4 - fix(test): remove stale @override methods from fake notifiers
+- ffea1865 - fix(pnp): use correct SSID on reconnect screen in split mode
+- b6057ed4 - fix(ethernet): show LAN port as disconnected when no wired devices
+- e21d7348 - fix(remote): update expiredIn logic from negative to positive time remaining (#982)
+- 47d48266 - Merge pull request #976 from linksys/fix/reduce-duplicate-login-requests
+- 131f919f - l10n: complete missing translations, migrate hardcoded strings, fix existing bugs (#979)
+- 3e593eb0 - fix(auth): restore "init never throws" contract per review feedback
+- b4cacf91 - fix(auth): propagate error to first caller and add completeError test (W3)
+- 08fb6ec3 - refactor(auth): use Dart 3 pattern matching for AsyncError check
+- d4892e26 - fix(pnp): restore context.go('/') for proper PnP check + address Round 2 review
+- 79406b29 - fix(pnp): address review findings for guest WiFi duplicate PR
+- 4805e476 - fix(auth): address review findings for login deduplication PR
+- 6c1d5b74 - fix(pnp): prevent guest WiFi page from appearing twice (#963)
+- 4ffb8c92 - fix(auth): reduce duplicate login requests on app startup
+- e84773dd - Merge pull request #955 from linksys/feature/remote-assistance-poc
+- d3059328 - feat(l10n): localize hardcoded strings across USP pages (#960)
+- afbdc5a9 - fix(remote): use ServiceError.detail instead of .message in view layer
+- 81a60d8e - fix(remote): address Hank's review on remote_client_provider
+- f5fc37b0 - merge: sync with dev-2.5.0 (PR #962 polling timer fix)
+- 737acbb8 - fix(polling): unify auth guard logic and add test coverage for already-resolved path
+- 53984197 - fix(polling): start timer when dashboardDomainReadyProvider already resolved
+- 34d7e431 - Merge pull request #953 from linksys/hank/usp-error-localization
+- 8aee2b56 - docs: fix stale lifecycle comments in usp_internet_settings_service
+- 9545b1de - style: dart format the three files flagged by CI
+- c40e92f6 - test(l10n): cover service_error_localizations and ServiceErrorView
+- ebc58edc - fix(remote): address PR #955 review issues
+- a42ceb6b - fix(auth): restore account-locked message after AdminAccountLockedError removal
+- 7e3151e9 - Merge remote-tracking branch 'origin/dev-2.5.0' into hank/usp-error-localization
+- a11a11f9 - fix(l10n): align batch fault-code localization with _mapProtocolError
+- 2b80346a - fix(remote): use abs() for expiredIn forward compatibility
+- 5abf5309 - feat(skill): add mandatory test execution to review-pr-readiness
+- ac8b3575 - test(internet-settings): align VLAN tests with SET-based approach
+- 9b7cb2df - chore(.claude): fix dart format hook by removing unmatched if glob
+- 5ea46aaa - fix(internet-settings): clean up stale comments after VLAN lifecycle removal
+- 3f209560 - fix(internet-settings): use SET instead of ADD/DELETE for VLAN tagging and enable PPPoE ServiceName (#951)
+- 466057ac - merge: integrate dev-2.5.0 into feature/remote-assistance-poc
+- fc7875ba - chore: remove unused DashboardShell
+- 9062664d - chore(usp): update usp_client WASM to 0.11.1
+- 091457b7 - fix(remote): handle INVALID status in client RA dialogs
+- 4269d6bf - fix(remote): force end CA session on 401 unauthorized
+- 1858fa43 - fix(remote): add session recovery guard to UspDashboardShell
+- 281169e0 - feat(l10n): centralize error message localization for USP features
+- fa54bc79 - refactor(errors): preserve diagnostic code/detail through ServiceError
+- 65887b94 - fix(internet-settings): skip MTU validation for bridge mode
+- 04014705 - feat(internet-settings): add 6rd tunnel field validation with error messages
+- f41845d8 - test: update dashboard tests for Speed Test removal
+- 6819ea0f - chore(dashboard): disable Speed Test card
+- 7a987a0a - chore(wasm): update usp_client to return full error messages
+- 8634a62c - test: update validator tests for MTU range enforcement
+- e10bbe33 - revert: disable PPPoE Service Name and MAC Clone features
+- ed47a9cc - Revert "feat(internet-settings): enable PPPoE Service Name field"
+- 08ff55f4 - feat(internet-settings): enable PPPoE Service Name field
+- 9f3b9591 - fix(auth): display meaningful error message on login failure (#940)
+- 92defbb1 - feat(internet-settings): add MTU validation and MAC Clone editing (#757, #843)
+- 6ed2a9be - feat(mascot): health dashboard with problem-first display (#939)
+- e43a8b08 - feat(remote): add client-side Remote Assistance with session recovery
+- 19edef80 - fix(remote): address code review findings
+- 675d6744 - feat(connection): auto-detect unexpected disconnection and enter wait-for-recovery (#932)
+- 8e22ec26 - refactor(cloud): replace LinksysCloudRepository with GuardianApiClient
+- cb414808 - feat: golden test framework consolidation and HTML report tooling (#925)
+- 351f6c95 - refactor(ui): use AppSurface and AppText in RemoteSessionChip
+- 73118fcb - fix(cloud): remove /cloud prefix from Guardian RA endpoints
+- 29678932 - test(remote): add unit tests for Remote Assistance feature
+- 7ec59cf6 - feat(dashboard): unify card templates and enhance AI assistant (#931)
+- c8e5f5f5 - fix(remote): fix End Session navigation race condition
+- 9cd6a488 - fix(remote): improve Remote Assistance UX
+- 9bcf7dbe - feat(remote): complete Remote Assistance mode implementation
+- 5bc85561 - test: update tests for auth check architecture change
+- 6761dcce - fix(usp): add conditional export for UspClientBuilderJS
+- 892ed895 - feat(config): add GlobalConfig with ThemeConfig integration
+- c30d0456 - feat(build): add force=remote build mode for Remote Assistance
+- 0521b7cc - feat(usp): add Remote Assistance POC via Guardian proxy
+- 800e56b0 - feat(usp): update WASM client with UspClientBuilder support
+- bbdfc72a - feat: mesh topology enhancement with layout system refactor (#915)
+- 3d2b1190 - chore: upgrade Flutter 3.38.5 → 3.44.0 and dependencies (#914)
+- 4e718ceb - feat(firmware-update): add OTA firmware update support (#917)
+- 4d9b978b - refactor(pnp): unify troubleshoot flow UI patterns and behavior (#907)
+- 28222c31 - feat(skill): add golden test coverage check to review-pr-readiness
+- 385bc9e6 - test(firmware-update): add golden tests for all firmware update states
+- 7d22f6dd - chore: bump version to 2.5.0 and add test report generation
+
+## [2.4.0] - 2026-05-29
+
+- f0db1915 - chore(build): add theme_studio parameter to build_web.sh
+- 6becd3af - refactor(admin): use DeviceOperations codegen for reboot/factoryReset
+- ab9a15dd - chore: remove duplicate USP YAML definitions
+- bd88947a - feat(firmware-update): implement manual firmware update flow (#896)
+- 3c849eab - feat: add golden test framework and full USP page coverage (#894)
+- 41519740 - refactor(pnp): delegate ISP save to UspInternetSettingsService (#890)
+- f844a9a4 - feat(instant_setup): switch PnP status to TR-181 via X_LINKSYS_Setup (#893)
+- 6ae37051 - feat(unified-diagnostics): top-level menu with full flow coverage and code review remediation (#892)
+- 1bbcd7ff - fix(topology): correct device-to-node mapping with dataElementsId (#891)
+- c09ab267 - feat(utils): migrate OUI database to JSON for complete IEEE coverage (#886)
+- e1418edd - style: dart format oui_lookup files
+- d82f7183 - feat(utils): expand OUI database to 10,792 entries from IEEE
+- 25766a82 - feat: PnP USP Migration & Multi-Interface Device Grouping (#882)
+- bae5e92b - chore: add dart format pre-commit hook to Claude Code settings (#880)
+- 73dda918 - feat(connection): add connection recovery state machine (#822) (#865)
+- 5349bcc5 - feat: add WiFi Networks dashboard card with SSID-based organization (#873)
+- 16c0211f - feat(skill): add constitution compliance checks to review-pr-readiness (#872)
+- 0505fce7 - feat: add flexible MenuBadge system and replace CircularProgressIndicator with AppLoader (#871)
+- d6d4f457 - feat: improve device list UX and dashboard card layout (#868)
+- 27b5734f - Revert "fix: improve offline device UX in device list and detail"
+- 4561364e - Revert "refactor: simplify dashboard connected devices card"
+- 6423b218 - Revert "style: improve connected devices card layout"
+- 23928ab3 - Revert "style: remove parent node from dashboard device card"
+- 2c1cd358 - Reapply "style: remove parent node from dashboard device card"
+- 08c66cc8 - Revert "style: remove parent node from dashboard device card"
+- fb247715 - style: remove parent node from dashboard device card
+- bac75833 - style: improve connected devices card layout
+- b8efbc2f - refactor: simplify dashboard connected devices card
+- c4914d87 - fix: improve offline device UX in device list and detail
+- 044ca989 - feat: Device List / Detail Redesign with OUI Lookup and Device Classification (#864)
+- 189e74a4 - fix: replace "私隱" with "隱私" in zh_TW localization (#601) (#867)
+- 1b4f0c91 - test: add unit tests for maskSerialNumber and maskMacAddress
+- 6c93c831 - fix: tag regex now captures multi-line log payloads
+- a0bc964f - style: dart format
+- 3e0bfedf - fix: remove replaceHttpScheme that corrupted TR-181 paths in logs
+- 07431aa0 - fix: remove duplicate level prefix in log export
+- 6a8789be - feat: mask serial number and MAC address in log output
+- f990d6e5 - feat: add log level indicator to web log cache export
+- 19287fc8 - refactor: standardize all logger tags to match [Tag]: format
+- 308d428e - refactor: unify USP logging — one log per layer per request
+- 68aaf4b2 - docs: move release notes to doc/releases/ (#846)
+- 9d1dc672 - docs: move release notes to doc/releases/
+- 1100db97 - docs: add v2.3.0 release notes and update CHANGELOG
+- 69568e66 - docs: add README for assets/theme directory
+
 ## [2.3.0] - 2026-05-06
 
 - 4a443875 - fix: prevent infinite redirect loop on logout by filtering auth state transitions
