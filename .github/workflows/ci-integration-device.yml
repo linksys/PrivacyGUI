@@ -3,6 +3,8 @@
 # RUNNER: waits on a self-hosted runner (label: lab-lan) on the QA lab LAN with
 #   the lab router reachable at 192.168.1.1. A Jetson box is being provisioned
 #   for this. Router admin password comes from the ROUTER_ADMIN_PASSWORD secret.
+#   OPEN (review W-5): integration_web.sh does not read that env var yet; the
+#   password must be threaded into the harness config before first live run.
 # NOTE: this tier uses the repo's own harness (integration_web.sh +
 #   shell_scripts/*) which handles factory reset, PnP skip, and device-mode waits.
 name: Integration (device tier, nightly)
@@ -16,6 +18,9 @@ on:
         description: 'test_meta tags to run (default = device-bound set)'
         required: false
         default: 'pnp,wifi,internet_settings,speed_test'
+
+permissions:
+  contents: read
 
 concurrency:
   group: integration-device
@@ -35,9 +40,27 @@ jobs:
           channel: stable
           cache: true
 
+      - name: Setup SSH for Private Deps
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.UI_KIT_DEPLOY_KEY }}
+
+      - name: Configure Git SSH
+        run: git config --global url."git@github.com:".insteadOf "https://github.com/"
+
+      - name: Setup Environment
+        run: |
+          mkdir -p assets/agents
+          if [ -f assets/agents/env.template ]; then
+            cp assets/agents/env.template assets/agents/.env
+          else
+            touch assets/agents/.env
+          fi
+
       - name: Install Dependencies
         run: flutter pub get
 
+      # -k is deliberate: the lab router serves a self-signed cert on an isolated LAN.
       - name: Preflight - router reachable
         run: |
           curl -sk --max-time 10 https://192.168.1.1/ > /dev/null
@@ -46,11 +69,13 @@ jobs:
       # Device-bound flows per integration_test/FLOW-TIERS.md.
       # integration_web.sh resolves tags via test_meta/*.json and runs each flow's
       # declared setUp (factory_reset, skip_setup, pre_paired) before flutter drive.
+      # inputs.tags goes through an env var, never inline interpolation (review W-4).
       - name: Run device-bound flows
         env:
           ROUTER_ADMIN_PASSWORD: ${{ secrets.ROUTER_ADMIN_PASSWORD }}
+          TAGS_INPUT: ${{ inputs.tags || 'pnp,wifi,internet_settings,speed_test' }}
         run: |
-          bash integration_web.sh -t "${{ inputs.tags || 'pnp,wifi,internet_settings,speed_test' }}"
+          bash integration_web.sh -t "$TAGS_INPUT"
 
       - name: Generate report
         if: always()
