@@ -122,4 +122,51 @@ DeviceDetailState get offlineDetail => DeviceDetailState(
       device: offlineDevice,
     );
 
+// Device with a global (routable) IPv6 address — shown without a scope badge.
+final wifiDeviceGlobalIpv6 = ClientDevice(
+  mac: 'AA:BB:CC:DD:EE:06',
+  ip: '192.168.1.106',
+  hostName: 'Desktop-PC',
+  isActive: true,
+  connectionType: ConnectionType.wifi,
+  wifi: WifiConnectionInfo(
+    signalStrength: -42,
+    downlinkRate: 866000,
+    uplinkRate: 433000,
+    band: '5GHz',
+    ssidName: 'MyNetwork',
+  ),
+  ipv6Addresses: const ['2401:e180:8801:d79d::5'],
+  parentNodeId: 'node-1',
+  parentNodeName: 'Living Room',
+);
+
+// Device whose only IPv6 address is link-local (fe80::/10) — shown with a
+// scope badge in place of the leading icon.
+final wifiDeviceLinkLocalIpv6 = ClientDevice(
+  mac: 'AA:BB:CC:DD:EE:07',
+  ip: '192.168.1.107',
+  hostName: 'Laptop',
+  isActive: true,
+  connectionType: ConnectionType.wifi,
+  wifi: WifiConnectionInfo(
+    signalStrength: -42,
+    downlinkRate: 866000,
+    uplinkRate: 433000,
+    band: '5GHz',
+    ssidName: 'MyNetwork',
+  ),
+  ipv6Addresses: const ['fe80::cd3:70da:d0a0:49cf'],
+  parentNodeId: 'node-1',
+  parentNodeName: 'Living Room',
+);
+
 DeviceDetailState get deviceNotFound => DeviceDetailState.empty();
+
+DeviceDetailState get wifiDetailGlobalIpv6 => DeviceDetailState(
+      device: wifiDeviceGlobalIpv6,
+    );
+
+DeviceDetailState get wifiDetailLinkLocalIpv6 => DeviceDetailState(
+      device: wifiDeviceLinkLocalIpv6,
+    );

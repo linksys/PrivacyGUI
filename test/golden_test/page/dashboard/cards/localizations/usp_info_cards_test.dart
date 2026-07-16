@@ -61,6 +61,10 @@ void main() {
         'online_dhcp': (overrides) => overrides.addAll(
               cardOverrides(wanData: testWanOnlineData),
             ),
+        // WAN with only a link-local IPv6 — address shown with a scope badge.
+        'link_local_ipv6': (overrides) => overrides.addAll(
+              cardOverrides(wanData: testWanLinkLocalOnlyData),
+            ),
         'offline': (overrides) => overrides.addAll(
               cardOverrides(wanData: testWanOfflineData),
             ),
@@ -80,6 +84,10 @@ void main() {
       states: {
         'dhcp_enabled': (overrides) => overrides.addAll(
               cardOverrides(lanData: testLanData),
+            ),
+        // LAN with only a link-local IPv6 — address shown with a scope badge.
+        'link_local_ipv6': (overrides) => overrides.addAll(
+              cardOverrides(lanData: testLanLinkLocalOnlyData),
             ),
         'dhcp_disabled': (overrides) => overrides.addAll(
               cardOverrides(lanData: testLanDisabledData),
