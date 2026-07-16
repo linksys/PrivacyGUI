@@ -136,6 +136,7 @@
   "ipv4": "IPv4",
   "ipv6": "IPV6",
   "ipv6Address": "عنوان IPv6",
+  "ipv6ScopeLinkLocal": "الرابط المحلي",
   "keepAlive": "استمرار النشاط",
   "l2tpPassthrough": "عبور من خلال L2TP",
   "labelInterface": "الواجهة",

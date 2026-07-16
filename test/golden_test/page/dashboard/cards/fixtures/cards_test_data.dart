@@ -99,8 +99,22 @@ const testWanOffline = WanStatusUIModel(
   mtu: 1500,
 );
 
+// WAN whose upstream assigns no global/ULA prefix — only a link-local
+// (fe80::/10) address. The card still shows it, tagged with a scope badge.
+const testWanLinkLocalOnly = WanStatusUIModel(
+  isUp: true,
+  ipAddress: '10.92.12.87',
+  subnetMask: '255.255.255.0',
+  addressingType: 'DHCP',
+  mtu: 1500,
+  gateway: '10.92.12.1',
+  ipv6Enabled: true,
+  ipv6Addresses: ['fe80::7612:13ff:fe21:5502'],
+);
+
 final testWanOnlineData = WanData(model: testWanOnline);
 final testWanOfflineData = WanData(model: testWanOffline);
+final testWanLinkLocalOnlyData = WanData(model: testWanLinkLocalOnly);
 
 // ---------------------------------------------------------------------------
 // LAN Info
@@ -118,7 +132,22 @@ const testLanDhcpEnabled = LanInfoUIModel(
   ipv6Addresses: ['fd00::1'],
 );
 
+// LAN whose bridge holds only a link-local (fe80::/10) address — no global/ULA
+// prefix. The card still shows it, tagged with a scope badge.
+const testLanLinkLocalOnly = LanInfoUIModel(
+  ipAddress: '192.168.1.1',
+  subnetMask: '255.255.255.0',
+  dhcpEnabled: true,
+  minAddress: '192.168.1.100',
+  maxAddress: '192.168.1.200',
+  leaseTimeMinutes: 1440,
+  dnsServers: '8.8.8.8, 8.8.4.4',
+  ipv6Enabled: true,
+  ipv6Addresses: ['fe80::7612:13ff:fe21:5502'],
+);
+
 final testLanData = LanData(model: testLanDhcpEnabled);
+final testLanLinkLocalOnlyData = LanData(model: testLanLinkLocalOnly);
 
 const testLanDhcpDisabled = LanInfoUIModel(
   ipAddress: '192.168.1.1',

@@ -136,6 +136,7 @@
   "ipv4": "IPV4",
   "ipv6": "IPv6",
   "ipv6Address": "Διεύθυνση IPv6",
+  "ipv6ScopeLinkLocal": "Τοπικό ζεύξης",
   "keepAlive": "Διατήρηση σε ενεργή κατάσταση",
   "l2tpPassthrough": "Διέλευση L2TP",
   "labelInterface": "Διασύνδεση",

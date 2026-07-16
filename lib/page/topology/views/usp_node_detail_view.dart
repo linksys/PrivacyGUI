@@ -5,6 +5,7 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/route/navigation_extensions.dart';
 import 'package:privacy_gui/core/utils/device_image_helper.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
+import 'package:privacy_gui/core/utils/ipv6_address.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/_shared/components/detail_widgets.dart';
@@ -234,12 +235,17 @@ class UspNodeDetailView extends ConsumerWidget {
                   label: loc(context).lanIp,
                   value: node.ipAddress!,
                 ),
-              // LAN IPv6 (from Hosts)
-              for (final ipv6 in node.ipv6Addresses)
+              // LAN IPv6 (from Hosts) — routable addresses first; a link-local
+              // address swaps its leading icon for a scope badge (see
+              // #1128/#1129).
+              for (final ipv6 in preferGlobalIpv6First(node.ipv6Addresses))
                 DetailCopyableTile(
                   icon: Icons.language,
                   label: loc(context).lanIpv6,
                   value: ipv6,
+                  leading: isLinkLocalIpv6(ipv6)
+                      ? const Ipv6ScopeBadge(size: 16)
+                      : null,
                 ),
               // WAN IPv4 (master only)
               if (wanIp != null && wanIp.isNotEmpty)
@@ -248,12 +254,17 @@ class UspNodeDetailView extends ConsumerWidget {
                   label: loc(context).wanIp,
                   value: wanIp,
                 ),
-              // WAN IPv6 (master only)
-              for (final ipv6 in wanIpv6Addresses)
+              // WAN IPv6 (master only) — routable addresses first; a link-local
+              // address swaps its leading icon for a scope badge (see
+              // #1128/#1129).
+              for (final ipv6 in preferGlobalIpv6First(wanIpv6Addresses))
                 DetailCopyableTile(
                   icon: Icons.public,
                   label: loc(context).wanIpv6,
                   value: ipv6,
+                  leading: isLinkLocalIpv6(ipv6)
+                      ? const Ipv6ScopeBadge(size: 16)
+                      : null,
                 ),
             ],
           ),

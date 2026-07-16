@@ -170,4 +170,35 @@ final masterNodeEmptyDevices = UspNodeDetailState(
   connectedClients: [],
 );
 
+// Slave node with a global (routable) LAN IPv6 — shown without a scope badge.
+final slaveNodeGlobalIpv6 = UspNodeDetailState(
+  node: SlaveNode(
+    deviceId: 'AA:BB:CC:DD:FF:02',
+    model: 'MX2000',
+    manufacturer: 'Linksys',
+    serialNumber: 'DEF789013',
+    softwareVersion: '1.0.10.200000',
+    ipv6Addresses: const ['2401:e180:8801:d79d::5'],
+    connectedClients: _meshSlaveClients,
+    backhaul: BackhaulInfo(mediaType: 'Wi-Fi', signalStrength: -50),
+  ),
+  connectedClients: _meshSlaveClients,
+);
+
+// Slave node whose only LAN IPv6 is link-local (fe80::/10) — shown with a
+// scope badge in place of the leading icon.
+final slaveNodeLinkLocalIpv6 = UspNodeDetailState(
+  node: SlaveNode(
+    deviceId: 'AA:BB:CC:DD:FF:03',
+    model: 'MX2000',
+    manufacturer: 'Linksys',
+    serialNumber: 'DEF789014',
+    softwareVersion: '1.0.10.200000',
+    ipv6Addresses: const ['fe80::7612:13ff:fe21:5503'],
+    connectedClients: _meshSlaveClients,
+    backhaul: BackhaulInfo(mediaType: 'Wi-Fi', signalStrength: -50),
+  ),
+  connectedClients: _meshSlaveClients,
+);
+
 const nodeNotFoundState = UspNodeDetailState();

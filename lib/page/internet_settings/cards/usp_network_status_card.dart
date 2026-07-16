@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/utils/ipv6_address.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/models/wan_status_ui_model.dart';
 import 'package:privacy_gui/page/_shared/components/dashboard_card_template.dart';
@@ -102,6 +103,12 @@ class UspNetworkStatusCard extends ConsumerWidget {
                   label: 'IPv6',
                   value: wan.ipv6Addresses.first,
                   copyable: true,
+                  // The representative address prefers global unicast; when only
+                  // a link-local (fe80::/10) address exists it is still shown,
+                  // tagged with a scope badge rather than hidden. See #1128.
+                  labelTrailing: isLinkLocalIpv6(wan.ipv6Addresses.first)
+                      ? const Ipv6ScopeBadge()
+                      : null,
                 )
               else if (wan.ipv6Enabled)
                 InfoGridItem(label: 'IPv6', value: 'Enabled'),

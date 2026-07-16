@@ -236,6 +236,7 @@
     "description": "Do not translate"
   },
   "ipv6Address": "IPv6 Address",
+  "ipv6ScopeLinkLocal": "Link-local",
   "keepAlive": "Keep alive",
   "l2tpPassthrough": "L2TP Passthrough",
   "labelInterface": "Interface",

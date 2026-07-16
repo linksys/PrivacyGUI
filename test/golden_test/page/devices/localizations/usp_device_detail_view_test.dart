@@ -25,6 +25,14 @@ void main() {
         'wired_device': (overrides) => overrides.addAll(
               deviceDetailOverrides(detail: wiredDetail),
             ),
+        // IPv6 global address — rendered without a scope badge.
+        'global_ipv6': (overrides) => overrides.addAll(
+              deviceDetailOverrides(detail: wifiDetailGlobalIpv6),
+            ),
+        // IPv6 link-local only — leading icon swapped for a scope badge.
+        'link_local_ipv6': (overrides) => overrides.addAll(
+              deviceDetailOverrides(detail: wifiDetailLinkLocalIpv6),
+            ),
         'offline_device': (overrides) => overrides.addAll(
               deviceDetailOverrides(detail: offlineDetail),
             ),

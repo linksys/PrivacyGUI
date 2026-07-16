@@ -72,6 +72,16 @@ Ipv6Scope classifyIpv6Scope(String address) {
 bool isGlobalUnicastIpv6(String address) =>
     classifyIpv6Scope(address) == Ipv6Scope.global;
 
+/// Whether [address] is an IPv6 link-local address (`fe80::/10`).
+///
+/// Link-local addresses are only valid on a single link and are never a
+/// meaningful address to surface in the UI. The single source of truth for the
+/// `fe80::/10` range lives in `ipv6_ranges.dart`; this mirrors the public shape
+/// of [isGlobalUnicastIpv6] so callers can filter without re-implementing the
+/// scope test.
+bool isLinkLocalIpv6(String address) =>
+    classifyIpv6Scope(address) == Ipv6Scope.linkLocal;
+
 /// Returns [addresses] reordered so the most routable address comes first:
 /// global unicast, then ULA, then link-local, then anything else. The relative
 /// order of addresses that share a scope is preserved (stable sort), so the

@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
+import 'package:privacy_gui/core/utils/ipv6_address.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
@@ -70,32 +71,21 @@ class UspLanDataService {
         'Device.IP.Interface.1.IPv6Address.',
       ]).timeout(const Duration(seconds: 20));
 
+      // Issue #1129: keep every LAN IPv6 address (including link-local) and let
+      // the UI mark a link-local (fe80::/10) address with a scope badge rather
+      // than hiding it. Reorder so a globally routable address is preferred as
+      // the representative value; when the interface holds only a link-local
+      // address it is still shown, tagged as link-local. Ordering is shared with
+      // the WAN path via `preferGlobalIpv6First`.
       final instances = resp.getInstances('Device.IP.Interface.1.IPv6Address.');
-      return instances
+      final addresses = instances
           .map((i) => i.getString('IPAddress'))
-          .where((ip) => ip.isNotEmpty && !_isLinkLocalIpv6(ip))
+          .where((ip) => ip.isNotEmpty)
           .toList();
+      return preferGlobalIpv6First(addresses);
     } catch (e) {
       logger.w('[USP][LanData]: IPv6 addresses fetch failed: $e');
       return const <String>[];
     }
-  }
-
-  /// Returns true if [ip] is an IPv6 link-local address (`fe80::/10`).
-  ///
-  /// Issue #1129: when the LAN interface holds only a link-local address
-  /// (scope link, e.g. `fe80::7612:13ff:fe21:5394`) and no global/ULA prefix,
-  /// the widget must render empty rather than the link-local address, since a
-  /// link-local address is only valid on a single link and is not a meaningful
-  /// LAN IPv6 address. The `fe80::/10` block covers any address whose first
-  /// hextet, masked with `0xffc0`, equals `0xfe80` (i.e. `fe80`–`febf`).
-  static bool _isLinkLocalIpv6(String ip) {
-    // Drop any zone index (e.g. "fe80::1%eth0") before parsing.
-    final addr = ip.split('%').first.trim();
-    final firstHextet = addr.split(':').first;
-    if (firstHextet.isEmpty) return false;
-    final value = int.tryParse(firstHextet, radix: 16);
-    if (value == null) return false;
-    return (value & 0xffc0) == 0xfe80;
   }
 }

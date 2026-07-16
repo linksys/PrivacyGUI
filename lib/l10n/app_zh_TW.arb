@@ -136,6 +136,7 @@
   "ipv4": "IPv4",
   "ipv6": "IPv6",
   "ipv6Address": "IPv6 位址",
+  "ipv6ScopeLinkLocal": "連結本地",
   "keepAlive": "保持活躍",
   "l2tpPassthrough": "L2TP 穿透",
   "labelInterface": "介面",

@@ -136,6 +136,7 @@
   "ipv4": "IPv4",
   "ipv6": "IPv6",
   "ipv6Address": "IPv6-Adresse",
+  "ipv6ScopeLinkLocal": "Link-lokal",
   "keepAlive": "Verbindung aufrecht halten",
   "l2tpPassthrough": "L2TP-Passthrough",
   "labelInterface": "Schnittstelle",

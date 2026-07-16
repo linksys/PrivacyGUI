@@ -136,6 +136,7 @@
   "ipv4": "IPv4",
   "ipv6": "IPv6",
   "ipv6Address": "IPv6-osoite",
+  "ipv6ScopeLinkLocal": "Linkkikohtainen",
   "keepAlive": "Aina käytössä",
   "l2tpPassthrough": "L2TP-läpiohjaus",
   "labelInterface": "Käyttöliittymä",

@@ -4,6 +4,7 @@ import 'package:privacy_gui/route/navigation_extensions.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/utils/device_classifier.dart';
+import 'package:privacy_gui/core/utils/ipv6_address.dart';
 import 'package:privacy_gui/core/utils/oui_lookup.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/_shared/models/client_device.dart'
@@ -720,14 +721,26 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
   // IPv6 Section
   // ===========================================================================
 
-  Widget _buildIpv6Section(BuildContext context, List<String> addresses) {
+  Widget _buildIpv6Section(BuildContext context, List<String> rawAddresses) {
     final colorScheme = Theme.of(context).colorScheme;
+    // Surface globally routable addresses first so the collapsed view (which
+    // shows only the first entry) never leads with a link-local address, while
+    // still enumerating every address when expanded. See #1128/#1129.
+    final addresses = preferGlobalIpv6First(rawAddresses);
     final displayCount = _ipv6Expanded ? addresses.length : 1;
+    // When the representative (first) address is link-local, the leading icon
+    // itself signals the scope (public_off + tooltip) instead of a duplicate
+    // trailing badge. See #1128/#1129.
+    final leadingIsLinkLocal =
+        addresses.isNotEmpty && isLinkLocalIpv6(addresses.first);
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(Icons.language, size: 16, color: colorScheme.onSurfaceVariant),
+        if (leadingIsLinkLocal)
+          const Ipv6ScopeBadge(size: 16)
+        else
+          Icon(Icons.language, size: 16, color: colorScheme.onSurfaceVariant),
         AppGap.sm(),
         Expanded(
           child: Column(
