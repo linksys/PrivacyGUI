@@ -31,6 +31,10 @@ class _LanguageTileState extends ConsumerState<LanguageTile> {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: () {
+        // The picker lists every language's native name at once (简体中文, ไทย,
+        // العربية …). All subset fonts are eager-loaded (pubspec `fonts:`), and
+        // each row wraps its title in Localizations.override(locale) below so
+        // the correct per-language fallback family is applied.
         showSimpleAppDialog(
           context,
           content: _localeList(),
@@ -84,9 +88,16 @@ class _LanguageTileState extends ConsumerState<LanguageTile> {
                 return AppListTile(
                   key: Key('locale_item_${locale.toLanguageTag()}'),
                   selected: isSelected,
-                  title: Semantics(
-                      identifier: 'now-locale-item-${locale.toLanguageTag()}',
-                      child: AppText.labelLarge(locale.displayText)),
+                  // Override locale per item so AppText.resolve() picks THIS
+                  // language's fallback family (e.g. the "ไทย" row resolves with
+                  // Thai → NotoSansThai), not the app's current locale.
+                  title: Localizations.override(
+                    context: context,
+                    locale: locale,
+                    child: Semantics(
+                        identifier: 'now-locale-item-${locale.toLanguageTag()}',
+                        child: AppText.labelLarge(locale.displayText)),
+                  ),
                   trailing: isSelected
                       ? Semantics(
                           identifier: 'now-locale-item-checked',

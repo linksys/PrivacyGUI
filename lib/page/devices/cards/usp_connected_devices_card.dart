@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/utils/device_classifier.dart';
-import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
+import 'package:privacy_gui/page/_shared/models/client_device.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/_shared/components/card_skeleton.dart';
 import 'package:privacy_gui/page/_shared/components/dashboard_card_template.dart';
@@ -14,7 +14,7 @@ import 'package:ui_kit_library/ui_kit.dart';
 import 'package:privacy_gui/page/_shared/components/usp_status_dot.dart';
 
 class UspConnectedDevicesCard extends ConsumerWidget {
-  final List<DeviceUIModel>? devices;
+  final List<ClientDevice>? devices;
 
   const UspConnectedDevicesCard({
     super.key,
@@ -110,7 +110,7 @@ class UspConnectedDevicesCard extends ConsumerWidget {
     );
   }
 
-  Widget _buildDeviceRow(BuildContext context, DeviceUIModel device) {
+  Widget _buildDeviceRow(BuildContext context, ClientDevice device) {
     final scheme = Theme.of(context).colorScheme;
     final deviceCategory = DeviceClassifier.classify(
       hostname: device.hostName,

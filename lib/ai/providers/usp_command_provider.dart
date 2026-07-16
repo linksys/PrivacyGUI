@@ -364,16 +364,15 @@ class UspCommandProvider implements IRouterCommandProvider {
           '  - ${d['name']} (${d['ip']}) ${d['connectionType']} signal=${d['signalStrength']}');
     }
 
-    // Mesh extenders (non-master nodes)
-    final extenders = data.nodeModels
-        .where((n) => !n.isMaster)
+    // Mesh extenders (slave nodes)
+    final extenders = data.slaves
         .map((node) => {
               'name': node.displayName,
               'mac': node.deviceId,
               'model': node.model,
-              'backhaulMediaType': node.backhaulMediaType,
-              'backhaulSignalStrength': node.backhaulSignalStrength,
-              'backhaulUplinkRate': node.backhaulUplinkRate,
+              'backhaulMediaType': node.backhaul.mediaType,
+              'backhaulSignalStrength': node.backhaul.signalStrength,
+              'backhaulUplinkRate': node.backhaul.uplinkRate,
             })
         .toList();
 
@@ -504,7 +503,8 @@ class UspCommandProvider implements IRouterCommandProvider {
               'mac': c.mac,
               'ip': c.ip,
               'hostName': c.hostName,
-              'active': c.active,
+              'leaseActive': c.leaseActive,
+              'isOnline': c.isOnline ?? false,
               'leaseExpiry': c.leaseExpiryFormatted,
               'leaseRemaining': c.leaseTimeFormatted,
             })
@@ -869,16 +869,15 @@ String buildRouterContext(ProviderReader read) {
     buffer.writeln('- Currently online: ${devices.onlineClientCount}');
     buffer.writeln();
 
-    // Mesh nodes (extenders)
-    final nodeModels = devices.nodeModels;
-    final extenders = nodeModels.where((n) => !n.isMaster).toList();
+    // Mesh nodes (slave extenders)
+    final extenders = devices.slaves;
     if (extenders.isNotEmpty) {
       _log('buildRouterContext: extenders=${extenders.length}');
       buffer.writeln('## Mesh Extenders');
       for (final ext in extenders) {
         _log('buildRouterContext:   - ${ext.displayName} (${ext.deviceId})');
         buffer.writeln(
-            '- ${ext.displayName}: ${ext.model}, backhaul=${ext.backhaulMediaType}, rssi=${ext.backhaulSignalStrength ?? "N/A"}');
+            '- ${ext.displayName}: ${ext.model}, backhaul=${ext.backhaul.mediaType}, rssi=${ext.backhaul.signalStrength ?? "N/A"}');
       }
       buffer.writeln();
     }

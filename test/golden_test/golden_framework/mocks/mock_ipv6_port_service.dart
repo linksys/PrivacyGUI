@@ -1,4 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/page/_shared/models/mesh_network.dart';
+import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/ipv6_port_service/models/ipv6_port_service_feature_state.dart';
 import 'package:privacy_gui/page/ipv6_port_service/models/ipv6_port_service_rule_list.dart';
@@ -39,7 +41,11 @@ class FixedIpv6PortServiceNotifier extends UspIpv6PortServiceNotifier {
 
 class FixedDevicesDataNotifier extends DevicesDataNotifier {
   @override
-  Future<DevicesData> build() async => const DevicesData();
+  Future<DevicesData> build() async => DevicesData(
+        meshNetwork: MeshNetwork(
+          master: MasterNode(deviceId: 'GATEWAY', model: 'Test Router'),
+        ),
+      );
 }
 
 List<Override> ipv6PortServiceOverrides(Ipv6PortServiceFeatureState state) => [

@@ -11,6 +11,7 @@ import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/local_network/models/local_network_feature_state.dart';
 import 'package:privacy_gui/page/local_network/providers/usp_local_network_notifier.dart';
+import 'package:privacy_gui/page/local_network/views/helpers/lan_ip_redirect_dialog.dart';
 import 'package:privacy_gui/page/shell/usp_top_bar.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -37,6 +38,9 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
   late TextEditingController _dns2Controller;
   late TextEditingController _dns3Controller;
 
+  final _hostNameFocus = FocusNode();
+  final _leaseTimeFocus = FocusNode();
+
   @override
   void initState() {
     super.initState();
@@ -49,10 +53,32 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
     _dns1Controller = TextEditingController();
     _dns2Controller = TextEditingController();
     _dns3Controller = TextEditingController();
+
+    _hostNameFocus.addListener(_onTextFieldFocusChange);
+    _leaseTimeFocus.addListener(_onTextFieldFocusChange);
+  }
+
+  void _onTextFieldFocusChange() {
+    if (!_hostNameFocus.hasFocus && !_leaseTimeFocus.hasFocus) {
+      ref.read(uspLocalNetworkProvider.notifier).validate();
+    }
+  }
+
+  void _onIpv4FocusChanged(int? index, bool hasFocus) {
+    // Only validate when focus leaves the entire IPv4 field
+    if (index == null && !hasFocus) {
+      ref.read(uspLocalNetworkProvider.notifier).validate();
+    }
   }
 
   @override
   void dispose() {
+    _hostNameFocus.removeListener(_onTextFieldFocusChange);
+    _leaseTimeFocus.removeListener(_onTextFieldFocusChange);
+
+    _hostNameFocus.dispose();
+    _leaseTimeFocus.dispose();
+
     _hostNameController.dispose();
     _ipAddressController.dispose();
     _subnetMaskController.dispose();
@@ -108,6 +134,7 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
         if (status.error != null) {
           return ServiceErrorView(
             error: status.error,
+            title: loc(context).failedToLoadSettings,
             onRetry: () => ref
                 .read(uspLocalNetworkProvider.notifier)
                 .fetch(forceRemote: true),
@@ -128,13 +155,19 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
     WidgetRef ref,
     LocalNetworkFeatureState state,
   ) {
-    if (!state.isDirty) return null;
+    // Always return a config to keep widget tree stable.
+    // Returning null when !isDirty causes tree structure change,
+    // which triggers TextField unfocus on Flutter Web.
     return UiKitBottomBarConfig(
       positiveLabel: loc(context).save,
-      isPositiveEnabled:
-          !state.status.isSaving && !state.status.hasValidationErrors,
-      onPositiveTap: () => _onSave(context, ref, state),
-      onNegativeTap: () => ref.read(uspLocalNetworkProvider.notifier).revert(),
+      isPositiveEnabled: state.isDirty &&
+          !state.status.isSaving &&
+          !state.status.hasValidationErrors,
+      isNegativeEnabled: state.isDirty,
+      onPositiveTap: state.isDirty ? () => _onSave(context, ref, state) : null,
+      onNegativeTap: state.isDirty
+          ? () => ref.read(uspLocalNetworkProvider.notifier).revert()
+          : null,
     );
   }
 
@@ -184,6 +217,7 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
               children: [
                 AppTextFormField(
                   controller: _hostNameController,
+                  focusNode: _hostNameFocus,
                   label: loc(context).hostname,
                   onChanged: (v) =>
                       notifier.updateSetting((m) => m.copyWith(hostName: v)),
@@ -196,6 +230,7 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
                   label: loc(context).ipAddress,
                   onChanged: (v) =>
                       notifier.updateSetting((m) => m.copyWith(ipAddress: v)),
+                  onFocusChanged: _onIpv4FocusChanged,
                   errorText: errors['ipAddress'],
                   enabled: !disabled,
                 ),
@@ -205,6 +240,7 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
                   label: loc(context).subnetMask,
                   onChanged: (v) =>
                       notifier.updateSetting((m) => m.copyWith(subnetMask: v)),
+                  onFocusChanged: _onIpv4FocusChanged,
                   errorText: errors['subnetMask'],
                   enabled: !disabled,
                 ),
@@ -270,6 +306,7 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
                     label: loc(context).poolStart,
                     onChanged: (v) => notifier
                         .updateSetting((m) => m.copyWith(minAddress: v)),
+                    onFocusChanged: _onIpv4FocusChanged,
                     errorText: errors['minAddress'],
                     readOnly: poolReadOnly,
                     enabled: !disabled,
@@ -280,6 +317,7 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
                     label: loc(context).poolEnd,
                     onChanged: (v) => notifier
                         .updateSetting((m) => m.copyWith(maxAddress: v)),
+                    onFocusChanged: _onIpv4FocusChanged,
                     errorText: errors['maxAddress'],
                     readOnly: poolReadOnly,
                     enabled: !disabled,
@@ -287,6 +325,7 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
                   AppGap.md(),
                   AppTextFormField(
                     controller: _leaseTimeController,
+                    focusNode: _leaseTimeFocus,
                     label: loc(context).leaseTimeMinutes,
                     keyboardType: TextInputType.number,
                     onChanged: (v) {
@@ -314,6 +353,7 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
                     label: loc(context).dnsServer1,
                     onChanged: (v) => notifier
                         .updateSetting((m) => m.copyWith(dnsServer1: v)),
+                    onFocusChanged: _onIpv4FocusChanged,
                     errorText: errors['dnsServer1'],
                     enabled: !disabled,
                   ),
@@ -323,6 +363,7 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
                     label: loc(context).dnsServer2,
                     onChanged: (v) => notifier
                         .updateSetting((m) => m.copyWith(dnsServer2: v)),
+                    onFocusChanged: _onIpv4FocusChanged,
                     errorText: errors['dnsServer2'],
                     enabled: !disabled,
                   ),
@@ -332,6 +373,7 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
                     label: loc(context).dnsServer3,
                     onChanged: (v) => notifier
                         .updateSetting((m) => m.copyWith(dnsServer3: v)),
+                    onFocusChanged: _onIpv4FocusChanged,
                     errorText: errors['dnsServer3'],
                     enabled: !disabled,
                   ),
@@ -366,8 +408,18 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
     WidgetRef ref,
     LocalNetworkFeatureState state,
   ) async {
+    // Read the change intent and hostname BEFORE saving: save() collapses
+    // original into current (markAsSaved) and may drop SSE, so these must be
+    // captured up front. The disconnection warning covers any IP/subnet change,
+    // but only an IP address change makes the old origin unreachable and
+    // triggers the redirect. hostName is the redirect target
+    // (https://<hostName>.local).
+    final networkChanged = state.hasNetworkChange;
+    final ipChanged = state.hasIpAddressChange;
+    final hostName = state.settings.current.model.hostName;
+
     // Warn if router IP or subnet changed (may cause disconnection)
-    if (state.hasNetworkChange) {
+    if (networkChanged) {
       final confirmed = await _showNetworkChangeConfirmation(context);
       if (confirmed != true || !context.mounted) return;
     }
@@ -377,7 +429,16 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
         context,
         ref.read(uspLocalNetworkProvider.notifier).save(),
       );
-      if (context.mounted) {
+      if (!context.mounted) return;
+
+      // Only redirect after a confirmed save when the IP address actually
+      // changed: the old address is now unreachable, so the browser must be
+      // sent to the router's new .local address. On native, showLanIpRedirect
+      // Dialog's navigate is a no-op. Otherwise (mask-only or DHCP fields),
+      // the connection survives — stay on the page with a success message.
+      if (ipChanged && hostName.isNotEmpty) {
+        await showLanIpRedirectDialog(context, hostName: hostName);
+      } else {
         showSuccessSnackBar(context, loc(context).localNetworkSettingsSaved);
       }
     } catch (e) {

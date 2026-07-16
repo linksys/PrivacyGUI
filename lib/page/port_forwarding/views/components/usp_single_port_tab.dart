@@ -30,7 +30,8 @@ class UspSinglePortTab extends ConsumerWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            AppText.titleMedium(loc(context).singlePortForwarding),
+            AppText.titleMedium(
+                '${loc(context).singlePortForwarding} (${rules.length})'),
             AppIconButton(
               icon: AppIcon.font(Icons.add, size: 20),
               onTap: isSaving ? null : () => _showAddDialog(context, ref),
@@ -101,7 +102,7 @@ class UspSinglePortTab extends ConsumerWidget {
 
   List<AppAutoCompleteOption> _buildIpv4DeviceOptions(WidgetRef ref) {
     final devices =
-        ref.read(devicesDataProvider).valueOrNull?.deviceModels ?? [];
+        ref.read(devicesDataProvider).valueOrNull?.clientDevices ?? [];
     return devices
         .where((d) => d.ip.isNotEmpty)
         .map((d) => AppAutoCompleteOption(

@@ -107,8 +107,7 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
           previous.isLoading &&
           next.hasValue &&
           !next.hasError) {
-        final loginType = next.value?.loginType;
-        if (loginType != null && loginType != LoginType.none) {
+        if (next.value?.isLoggedIn ?? false) {
           if (!context.mounted) return;
           context.go('/');
         }

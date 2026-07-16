@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/components/localizations/service_error_localizations.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
+import 'package:privacy_gui/components/views/service_error_view.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/_shared/components/detail_widgets.dart';
@@ -35,31 +37,14 @@ class InstantPrivacyView extends ConsumerWidget {
       child: (childContext, constraints) {
         return asyncState.when(
           loading: () => const Center(child: AppLoader()),
-          error: (error, _) => _buildError(context, ref, error),
+          error: (error, _) => ServiceErrorView(
+            error: error is ServiceError ? error : null,
+            title: loc(context).failedToLoadSettings,
+            onRetry: () => ref.invalidate(uspInstantPrivacyProvider),
+          ),
           data: (state) => _buildContent(context, ref, state),
         );
       },
-    );
-  }
-
-  Widget _buildError(BuildContext context, WidgetRef ref, Object error) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          AppIcon.font(Icons.error_outline,
-              size: 48, color: Theme.of(context).colorScheme.error),
-          AppGap.xl(),
-          AppText.titleMedium(loc(context).failedToLoadSettings),
-          AppGap.md(),
-          AppText.bodyMedium(localizeServiceError(context, error)),
-          AppGap.xxl(),
-          AppButton(
-            label: loc(context).retry,
-            onTap: () => ref.invalidate(uspInstantPrivacyProvider),
-          ),
-        ],
-      ),
     );
   }
 
@@ -68,12 +53,20 @@ class InstantPrivacyView extends ConsumerWidget {
     WidgetRef ref,
     UspInstantPrivacyState state,
   ) {
+    final hasPrivateMacInList = state.isEnabled
+        ? state.allowedDevices.any((d) => d.isPrivateMac)
+        : state.connectedDevices.any((d) => d.isPrivateMac);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         AppText.bodyMedium(
           loc(context).instantPrivacyPageDesc,
         ),
+        if (hasPrivateMacInList) ...[
+          AppGap.md(),
+          _buildPrivateMacWarningBanner(context),
+        ],
         AppGap.lg(),
         _buildToggleCard(context, ref, state),
         AppGap.md(),
@@ -205,14 +198,23 @@ class InstantPrivacyView extends ConsumerWidget {
 
   Widget _buildDeviceLayoutBlock(
       BuildContext context, InstantPrivacyDeviceUIModel device) {
+    final colorScheme = Theme.of(context).colorScheme;
     return LayoutBlock(
       padding: const EdgeInsets.all(AppSpacing.md),
       child: Row(
         children: [
+          if (device.isPrivateMac) ...[
+            AppBadge(
+              label: loc(context).privateMacLabel,
+              color: colorScheme.error,
+              textColor: colorScheme.onError,
+            ),
+            AppGap.sm(),
+          ],
           AppIcon.font(
             Icons.devices,
             size: 20,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
+            color: colorScheme.onSurfaceVariant,
           ),
           AppGap.sm(),
           Expanded(
@@ -222,9 +224,66 @@ class InstantPrivacyView extends ConsumerWidget {
                 AppText.bodyMedium(device.displayName),
                 AppText.bodySmall(
                   device.mac,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  color: colorScheme.onSurfaceVariant,
                 ),
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Private (randomized) MAC warning
+  // ---------------------------------------------------------------------------
+
+  /// Banner shown on page when any device uses a private MAC.
+  Widget _buildPrivateMacWarningBanner(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: colorScheme.errorContainer,
+        borderRadius: BorderRadius.circular(AppSpacing.sm),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppIcon.font(
+            Icons.warning_amber_rounded,
+            size: 20,
+            color: colorScheme.onErrorContainer,
+          ),
+          AppGap.sm(),
+          Expanded(
+            child: AppText.bodySmall(
+              loc(context).privateMacWarningDesc,
+              color: colorScheme.onErrorContainer,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Inline warning shown in enable dialog (title only).
+  Widget _buildPrivateMacDialogWarning(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.only(top: AppSpacing.md),
+      child: Row(
+        children: [
+          AppIcon.font(
+            Icons.warning_amber_rounded,
+            size: 20,
+            color: colorScheme.error,
+          ),
+          AppGap.sm(),
+          Expanded(
+            child: AppText.labelMedium(
+              loc(context).privateMacWarningTitle,
+              color: colorScheme.error,
             ),
           ),
         ],
@@ -237,19 +296,24 @@ class InstantPrivacyView extends ConsumerWidget {
   // ---------------------------------------------------------------------------
 
   Future<void> _onEnable(BuildContext context, WidgetRef ref) async {
+    final connected =
+        ref.read(uspInstantPrivacyProvider).valueOrNull?.connectedDevices ??
+            const [];
+    final privateMacDevices = connected.where((d) => d.isPrivateMac).toList();
     final confirmed = await showAppDialog<bool>(
       context: context,
       builder: (ctx) => AppDialog(
         titleText: loc(context).enableInstantPrivacyTitle,
-        content: AppText.bodyMedium(
-          loc(context).enableInstantPrivacyDesc(
-            ref
-                    .read(uspInstantPrivacyProvider)
-                    .valueOrNull
-                    ?.connectedDevices
-                    .length ??
-                0,
-          ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AppText.bodyMedium(
+              loc(context).enableInstantPrivacyDesc(connected.length),
+            ),
+            if (privateMacDevices.isNotEmpty)
+              _buildPrivateMacDialogWarning(context),
+          ],
         ),
         actions: [
           AppButton.text(
@@ -316,10 +380,19 @@ class InstantPrivacyView extends ConsumerWidget {
     WidgetRef ref,
     UspInstantPrivacyState state,
   ) async {
+    // Build autocomplete options from connected devices
+    final deviceOptions = state.connectedDevices
+        .map((d) => AppAutoCompleteOption(
+              label: d.displayName,
+              value: d.mac,
+            ))
+        .toList();
+
     await showAppDialog<void>(
       context: context,
       builder: (ctx) => _AddMacDialog(
         existingDevices: state.allowedDevices,
+        deviceOptions: deviceOptions,
         onConfirm: (mac) async {
           Navigator.of(ctx).pop();
           try {
@@ -343,11 +416,13 @@ class InstantPrivacyView extends ConsumerWidget {
 
 class _AddMacDialog extends StatefulWidget {
   final List<InstantPrivacyDeviceUIModel> existingDevices;
+  final List<AppAutoCompleteOption> deviceOptions;
   final Future<void> Function(String mac) onConfirm;
 
   const _AddMacDialog({
     required this.existingDevices,
     required this.onConfirm,
+    this.deviceOptions = const [],
   });
 
   @override
@@ -356,17 +431,33 @@ class _AddMacDialog extends StatefulWidget {
 
 class _AddMacDialogState extends State<_AddMacDialog> {
   final _controller = TextEditingController();
+  final _focusNode = FocusNode();
   String? _errorText;
   bool _isConfirming = false;
 
   @override
+  void initState() {
+    super.initState();
+    _focusNode.addListener(_onFocusChange);
+  }
+
+  @override
   void dispose() {
+    _focusNode.removeListener(_onFocusChange);
+    _focusNode.dispose();
     _controller.dispose();
     super.dispose();
   }
 
-  void _onChanged(String value) {
+  void _onFocusChange() {
+    if (!_focusNode.hasFocus) {
+      _validate();
+    }
+  }
+
+  void _validate() {
     setState(() {
+      final value = _controller.text;
       if (value.isEmpty) {
         _errorText = null;
         return;
@@ -380,6 +471,11 @@ class _AddMacDialogState extends State<_AddMacDialog> {
           widget.existingDevices.any((d) => d.mac == normalized);
       _errorText = isDuplicate ? 'deviceAlreadyInAllowedList' : null;
     });
+  }
+
+  void _onChanged(String value) {
+    // Don't setState here - any state change causes focus loss on Web
+    // Validation happens on unfocus via _onFocusChange
   }
 
   bool get _canConfirm =>
@@ -413,11 +509,17 @@ class _AddMacDialogState extends State<_AddMacDialog> {
         children: [
           AppText.bodyMedium(loc(context).enterMacAddressToAllow),
           AppGap.md(),
-          AppTextFormField(
+          AppSelectAutoComplete(
+            options: widget.deviceOptions,
             controller: _controller,
-            hintText: 'AA:BB:CC:DD:EE:FF',
-            onChanged: _onChanged,
-            externalErrorText: _localizeError(_errorText),
+            onSelected: (_) => _validate(),
+            child: AppTextField(
+              controller: _controller,
+              focusNode: _focusNode,
+              hintText: 'AA:BB:CC:DD:EE:FF',
+              onChanged: _onChanged,
+              errorText: _localizeError(_errorText),
+            ),
           ),
         ],
       ),

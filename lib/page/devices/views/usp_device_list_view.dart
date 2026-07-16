@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
+import 'package:privacy_gui/components/views/service_error_view.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/_shared/components/detail_widgets.dart';
@@ -50,8 +52,11 @@ class _UspDeviceListViewState extends ConsumerState<UspDeviceListView> {
       child: (childContext, constraints) {
         return asyncDevices.when(
           loading: () => const Center(child: AppLoader()),
-          error: (e, _) =>
-              Center(child: AppText.bodyMedium('${loc(context).error}: $e')),
+          error: (e, _) => ServiceErrorView(
+            error: e is ServiceError ? e : null,
+            title: loc(context).unableToGatherDeviceInfo,
+            onRetry: () => ref.invalidate(devicesDataProvider),
+          ),
           data: (state) {
             return AppResponsiveLayout(
               mobile: (_) =>
@@ -116,7 +121,7 @@ class _UspDeviceListViewState extends ConsumerState<UspDeviceListView> {
             child: UspDeviceListTile(
               device: device,
               variant: DeviceListTileVariant.flatLast,
-              onTap: () => context.goNamed(
+              onTap: () => context.pushNamed(
                 RouteNamed.uspDeviceDetail,
                 queryParameters: {'mac': device.mac},
               ),

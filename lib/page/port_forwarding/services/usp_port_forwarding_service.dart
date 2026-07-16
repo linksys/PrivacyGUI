@@ -398,7 +398,13 @@ class UspPortForwardingService {
         }
       }
 
-      // 3. Update (parent-level only)
+      // 3. Update parent-level fields AND reconcile nested forward rules.
+      //
+      // The parent Set (PortTrigger.{i}) only carries the trigger fields
+      // (Enable/Description/Port/PortEndRange/Protocol). The forwarded ports
+      // live in a separate sub-table (PortTrigger.{i}.Rule.{j}) and MUST be
+      // reconciled with their own Add / Set / Delete calls — otherwise edits
+      // to the forwarded ports are silently dropped (#1061).
       final originalByPath = <String, PortTriggeringRuleUIModel>{
         for (final r in original)
           if (r.instancePath != null) r.instancePath!: r,
@@ -408,7 +414,14 @@ class UspPortForwardingService {
         if (cur.instancePath == null) continue;
         final orig = originalByPath[cur.instancePath!];
         if (orig == null) continue;
-        if (cur != orig) {
+        if (cur == orig) continue;
+
+        // 3a. Parent-level trigger fields.
+        if (cur.enabled != orig.enabled ||
+            cur.description != orig.description ||
+            cur.triggerPort != orig.triggerPort ||
+            cur.triggerPortEndRange != orig.triggerPortEndRange ||
+            cur.triggerProtocol != orig.triggerProtocol) {
           toUpdate.add(PortTriggerUpdate(
             instancePath: cur.instancePath!,
             enabled: cur.enabled,
@@ -417,6 +430,17 @@ class UspPortForwardingService {
             triggerPortEndRange: cur.triggerPortEndRange,
             triggerProtocol: cur.triggerProtocol,
           ));
+        }
+
+        // 3b. Nested forwarded-port rules.
+        if (cur.forwardRules != orig.forwardRules) {
+          final (int fwdOps, int fwdFailed) = await _reconcileForwardRules(
+            parentPath: cur.instancePath!,
+            original: orig.forwardRules,
+            current: cur.forwardRules,
+          );
+          totalOps += fwdOps;
+          failedOps += fwdFailed;
         }
       }
       if (toUpdate.isNotEmpty) {
@@ -453,5 +477,110 @@ class UspPortForwardingService {
       if (e is ServiceError) rethrow;
       throw mapUspErrorToServiceError(e);
     }
+  }
+
+  /// Reconcile the nested forwarded-port sub-rules of a single existing
+  /// port trigger (parent already persisted at [parentPath]).
+  ///
+  /// Diffs [original] vs [current] forward rules and issues the minimal set of
+  /// Add / Set / Delete calls against the `Rule.{j}` sub-table. Existing rules
+  /// (non-null instancePath) whose values changed are updated in place via
+  /// [UspClient.set]; rules that vanished are deleted; brand-new rules
+  /// (null instancePath) are added. Returns the number of operations attempted
+  /// and how many failed, so the caller can fold them into its lenient
+  /// all-or-nothing tally.
+  Future<(int, int)> _reconcileForwardRules({
+    required String parentPath,
+    required List<PortTriggerForwardRuleUIModel> original,
+    required List<PortTriggerForwardRuleUIModel> current,
+  }) async {
+    int ops = 0;
+    int failed = 0;
+
+    // 1. Delete forward rules that no longer exist in current.
+    final currentPaths = <String>{
+      for (final r in current)
+        if (r.instancePath != null) r.instancePath!,
+    };
+    final toDelete = original
+        .where((r) =>
+            r.instancePath != null && !currentPaths.contains(r.instancePath))
+        .toList();
+    for (final r in toDelete.reversed) {
+      ops++;
+      final result = await PortTriggering.deletePortTriggerForwardRule(
+          _usp, r.instancePath!);
+      final parsed = UspResultParser.parseDeleteResult(result);
+      switch (parsed) {
+        case UspSuccess():
+          break;
+        case UspPartialSuccess(failures: final f):
+          logger.w(
+              '[PortTriggering]: Forward delete partial: ${f.first.errorMessage}');
+        case UspFailure(errors: final e):
+          failed++;
+          logger.w(
+              '[PortTriggering]: Forward delete failed: ${e.first.errorMessage}');
+      }
+    }
+
+    // 2. Update existing forward rules whose values changed (in-place Set).
+    final originalByPath = <String, PortTriggerForwardRuleUIModel>{
+      for (final r in original)
+        if (r.instancePath != null) r.instancePath!: r,
+    };
+    final updateParams = <String, dynamic>{};
+    for (final cur in current) {
+      if (cur.instancePath == null) continue;
+      final orig = originalByPath[cur.instancePath!];
+      if (orig == null) continue;
+      if (cur == orig) continue;
+      updateParams['${cur.instancePath}Port'] = cur.forwardPort;
+      updateParams['${cur.instancePath}PortEndRange'] = cur.forwardPortEndRange;
+      updateParams['${cur.instancePath}Protocol'] = cur.forwardProtocol;
+    }
+    if (updateParams.isNotEmpty) {
+      ops++;
+      final result = await _usp.set(updateParams);
+      final parsed = UspResultParser.parseSetResult(result);
+      switch (parsed) {
+        case UspSuccess():
+          break;
+        case UspPartialSuccess(failures: final f):
+          logger.w(
+              '[PortTriggering]: Forward update partial: ${f.first.errorMessage}');
+        case UspFailure(errors: final e):
+          failed++;
+          logger.w(
+              '[PortTriggering]: Forward update failed: ${e.first.errorMessage}');
+      }
+    }
+
+    // 3. Add brand-new forward rules (null instancePath).
+    final toAdd = current.where((r) => r.instancePath == null).toList();
+    for (final fr in toAdd) {
+      ops++;
+      final result = await PortTriggering.addPortTriggerForwardRule(
+        _usp,
+        parentPath,
+        forwardPort: fr.forwardPort,
+        forwardPortEndRange: fr.forwardPortEndRange,
+        forwardProtocol: fr.forwardProtocol,
+      );
+      final parsed = UspResultParser.parseAddResult(result);
+      switch (parsed) {
+        case UspSuccess():
+          break;
+        case UspPartialSuccess(failures: final f):
+          logger.w(
+              '[PortTriggering]: Forward add partial: ${f.first.errorMessage}');
+        case UspFailure(errors: final e):
+          failed++;
+          logger.w(
+              '[PortTriggering]: Forward add failed: ${e.first.errorMessage}');
+      }
+    }
+
+    return (ops, failed);
   }
 }

@@ -26,10 +26,18 @@ class StaticRouteDialogResult {
 /// Dialog for adding or editing a static route.
 ///
 /// Pass [route] to pre-fill for editing; omit for adding.
+/// Pass [lanIp] and [lanSubnetMask] to enable gateway subnet validation.
 class StaticRouteDialog extends StatefulWidget {
   final StaticRouteUIModel? route;
+  final String? lanIp;
+  final String? lanSubnetMask;
 
-  const StaticRouteDialog({super.key, this.route});
+  const StaticRouteDialog({
+    super.key,
+    this.route,
+    this.lanIp,
+    this.lanSubnetMask,
+  });
 
   @override
   State<StaticRouteDialog> createState() => _StaticRouteDialogState();
@@ -58,6 +66,10 @@ class _StaticRouteDialogState extends State<StaticRouteDialog> {
     _gatewayController = TextEditingController(text: r?.gatewayIpAddress ?? '');
     _interfaceName = r?.interfaceName ?? 'LAN';
     _enabled = r?.enabled ?? true;
+    // Pre-populate validation state only in edit mode. On add-dialog open all
+    // fields are empty, so computing errors immediately would show "required"
+    // errors before the user has typed anything (confusing, non-standard UX).
+    _errors = _isEdit ? _computeErrors() : {};
   }
 
   @override
@@ -69,26 +81,49 @@ class _StaticRouteDialogState extends State<StaticRouteDialog> {
     super.dispose();
   }
 
-  void _validate() {
-    setState(() {
-      _errors = UspStaticRoutingService.validateRoute(
-        name: _nameController.text.trim(),
-        destIp: _destIpController.text.trim(),
-        subnetMask: _subnetMaskController.text.trim(),
-        gateway: _gatewayController.text.trim(),
-      );
-    });
-  }
-
-  bool get _isFormValid {
-    final errors = UspStaticRoutingService.validateRoute(
+  Map<String, String> _computeErrors() {
+    return UspStaticRoutingService.validateRoute(
       name: _nameController.text.trim(),
       destIp: _destIpController.text.trim(),
       subnetMask: _subnetMaskController.text.trim(),
       gateway: _gatewayController.text.trim(),
+      interfaceName: _interfaceName,
+      lanIp: widget.lanIp,
+      lanSubnetMask: widget.lanSubnetMask,
     );
-    return errors.isEmpty;
   }
+
+  void _validate() {
+    setState(() {
+      _errors = _computeErrors();
+    });
+  }
+
+  /// Convert error key to localized string.
+  String? _localizeError(String? key) {
+    if (key == null) return null;
+    final l = loc(context);
+    return switch (key) {
+      StaticRoutingErrorKeys.nameRequired => l.invalidInput,
+      StaticRoutingErrorKeys.nameTooLong => l.invalidInput,
+      StaticRoutingErrorKeys.destIpRequired => l.ipAddressRequired,
+      StaticRoutingErrorKeys.invalidIpAddress => l.invalidIpAddress,
+      StaticRoutingErrorKeys.subnetMaskRequired => l.invalidInput,
+      StaticRoutingErrorKeys.invalidSubnetMask => l.invalidInput,
+      StaticRoutingErrorKeys.gatewayMustBeWithinLanSubnet =>
+        l.gatewayMustBeWithinLanSubnet,
+      StaticRoutingErrorKeys.gatewayMustBeOutsideLanSubnet =>
+        l.gatewayMustBeOutsideLanSubnet,
+      _ => key,
+    };
+  }
+
+  // Compute validity from the live field values rather than the cached
+  // [_errors] map. In add mode [_errors] starts empty (errors are suppressed
+  // on open for UX), so relying on it would enable the Save button on a blank
+  // form and allow submitting an empty route. Recomputing here reflects the
+  // true form state without surfacing "required" errors before the user types.
+  bool get _isFormValid => _computeErrors().isEmpty;
 
   @override
   Widget build(BuildContext context) {
@@ -102,28 +137,28 @@ class _StaticRouteDialogState extends State<StaticRouteDialog> {
             AppTextField(
               controller: _nameController,
               hintText: loc(context).routeName,
-              errorText: _errors['name'],
+              errorText: _localizeError(_errors['name']),
               onChanged: (_) => _validate(),
             ),
             AppGap.lg(),
             AppIpv4TextField(
               controller: _destIpController,
               label: loc(context).destinationIp,
-              errorText: _errors['destIp'],
+              errorText: _localizeError(_errors['destIp']),
               onChanged: (_) => _validate(),
             ),
             AppGap.lg(),
             AppIpv4TextField(
               controller: _subnetMaskController,
               label: loc(context).subnetMask,
-              errorText: _errors['subnetMask'],
+              errorText: _localizeError(_errors['subnetMask']),
               onChanged: (_) => _validate(),
             ),
             AppGap.lg(),
             AppIpv4TextField(
               controller: _gatewayController,
               label: loc(context).gatewayIp,
-              errorText: _errors['gateway'],
+              errorText: _localizeError(_errors['gateway']),
               onChanged: (_) => _validate(),
             ),
             AppGap.lg(),
@@ -137,8 +172,10 @@ class _StaticRouteDialogState extends State<StaticRouteDialog> {
                           ButtonSegment(value: name, label: Text(name)))
                       .toList(),
                   selected: {_interfaceName},
-                  onSelectionChanged: (v) =>
-                      setState(() => _interfaceName = v.first),
+                  onSelectionChanged: (v) {
+                    setState(() => _interfaceName = v.first);
+                    _validate();
+                  },
                 ),
               ],
             ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/utils/ipv6_address.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/models/lan_info_ui_model.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
@@ -106,6 +107,13 @@ class UspLanInfoCard extends ConsumerWidget {
                     label: 'IPv6',
                     value: info.ipv6Addresses.first,
                     copyable: true,
+                    // The representative address prefers global unicast; when
+                    // only a link-local (fe80::/10) address exists it is still
+                    // shown, tagged with a scope badge rather than hidden.
+                    // See #1129.
+                    labelTrailing: isLinkLocalIpv6(info.ipv6Addresses.first)
+                        ? const Ipv6ScopeBadge()
+                        : null,
                   )
                 else if (info.ipv6Enabled)
                   InfoGridItem(label: 'IPv6', value: 'Enabled'),

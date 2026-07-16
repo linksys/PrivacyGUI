@@ -9,6 +9,7 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/components/detail_widgets.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/page/local_network/providers/lan_data_provider.dart';
 import 'package:privacy_gui/page/static_routing/models/static_routing_feature_state.dart';
 import 'package:privacy_gui/page/static_routing/models/static_routing_ui_model.dart';
 import 'package:privacy_gui/page/static_routing/providers/usp_static_routing_notifier.dart';
@@ -43,6 +44,7 @@ class UspStaticRoutingView extends ConsumerWidget {
         if (status.error != null) {
           return ServiceErrorView(
             error: status.error,
+            title: loc(context).failedToLoadSettings,
             onRetry: () => ref
                 .read(uspStaticRoutingProvider.notifier)
                 .fetch(forceRemote: true),
@@ -189,9 +191,29 @@ class UspStaticRoutingView extends ConsumerWidget {
   // ---------------------------------------------------------------------------
 
   Future<void> _showAddDialog(BuildContext context, WidgetRef ref) async {
+    // Await the LAN data so subnet validation is never bypassed by a fast tap
+    // while lanDataProvider is still AsyncLoading (cold start / network reset).
+    // valueOrNull would return null there and silently skip validateRoute's
+    // gateway-subnet block — the core #1082 fix.
+    final LanData lanData;
+    try {
+      lanData = await ref.read(lanDataProvider.future);
+    } catch (e) {
+      // lanDataProvider can be in AsyncError (router offline, USP timeout,
+      // auth failure). Surface it like _onSave instead of letting the throw
+      // propagate through the onTap lambda and get swallowed silently.
+      if (context.mounted) {
+        showFailedSnackBar(context, localizeServiceError(context, e));
+      }
+      return;
+    }
+    if (!context.mounted) return;
     final result = await showAppDialog<StaticRouteDialogResult>(
       context: context,
-      builder: (_) => const StaticRouteDialog(),
+      builder: (_) => StaticRouteDialog(
+        lanIp: lanData.model.ipAddress,
+        lanSubnetMask: lanData.model.subnetMask,
+      ),
     );
     if (result == null || !context.mounted) return;
     ref.read(uspStaticRoutingProvider.notifier).addRoute(
@@ -208,9 +230,26 @@ class UspStaticRoutingView extends ConsumerWidget {
 
   Future<void> _showEditDialog(BuildContext context, WidgetRef ref, int index,
       StaticRouteUIModel route) async {
+    // Await LAN data (see _showAddDialog) so edit-mode subnet validation is not
+    // bypassed while lanDataProvider is still loading.
+    final LanData lanData;
+    try {
+      lanData = await ref.read(lanDataProvider.future);
+    } catch (e) {
+      // See _showAddDialog: surface AsyncError instead of swallowing it.
+      if (context.mounted) {
+        showFailedSnackBar(context, localizeServiceError(context, e));
+      }
+      return;
+    }
+    if (!context.mounted) return;
     final result = await showAppDialog<StaticRouteDialogResult>(
       context: context,
-      builder: (_) => StaticRouteDialog(route: route),
+      builder: (_) => StaticRouteDialog(
+        route: route,
+        lanIp: lanData.model.ipAddress,
+        lanSubnetMask: lanData.model.subnetMask,
+      ),
     );
     if (result == null || !context.mounted) return;
     ref.read(uspStaticRoutingProvider.notifier).editRoute(

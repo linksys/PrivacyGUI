@@ -1,7 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
+import 'package:privacy_gui/framework/diagnostic_loggable.dart';
 import 'package:privacy_gui/page/_shared/models/ethernet_port_ui_model.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/local_network/services/usp_ethernet_data_service.dart';
@@ -16,7 +16,7 @@ final ethernetDataProvider =
 );
 
 /// Aggregated Ethernet data: presentation-layer port models.
-class EthernetData extends Equatable {
+class EthernetData extends Equatable with DiagnosticLoggable {
   final List<EthernetPortUIModel> ethernetPortModels;
 
   const EthernetData({
@@ -32,7 +32,12 @@ class EthernetData extends Equatable {
   }
 
   @override
-  List<Object?> get props => [ethernetPortModels];
+  String get diagnosticName => 'EthernetData';
+
+  @override
+  Map<String, Object?> get namedProps => {
+        'ethernetPortModels': ethernetPortModels,
+      };
 }
 
 class EthernetDataNotifier extends AsyncNotifier<EthernetData> {
@@ -41,7 +46,6 @@ class EthernetDataNotifier extends AsyncNotifier<EthernetData> {
     // SSE listener: Ethernet interface status changes (link up/down)
     ref.listen(sseInvalidationProvider, (_, next) {
       if (next.value == InvalidationDomain.ethernetInterfaces) {
-        logger.d('[USP][Ethernet]: SSE invalidation received, refreshing');
         ref.invalidateSelf();
       }
     });
@@ -60,12 +64,9 @@ class EthernetDataNotifier extends AsyncNotifier<EthernetData> {
   Future<EthernetData> _fetch() async {
     final svc = ref.read(uspEthernetDataServiceProvider);
     final devicesData = ref.read(devicesDataProvider).valueOrNull;
-    final deviceModels = devicesData?.deviceModels ?? [];
+    final devices = devicesData?.clientDevices ?? [];
 
-    final result = await svc.fetch(deviceModels: deviceModels);
-
-    logger.d('[USP][Ethernet]: Fetch complete — '
-        '${result.portModels.length} port models');
+    final result = await svc.fetch(deviceModels: devices);
 
     return EthernetData(ethernetPortModels: result.portModels);
   }

@@ -5,14 +5,15 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/route/navigation_extensions.dart';
 import 'package:privacy_gui/core/utils/device_image_helper.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
+import 'package:privacy_gui/core/utils/ipv6_address.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/_shared/components/detail_widgets.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
+import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 import 'package:privacy_gui/page/devices/views/components/usp_device_list_tile.dart';
 import 'package:privacy_gui/page/internet_settings/providers/wan_data_provider.dart';
 import 'package:privacy_gui/page/shell/usp_top_bar.dart';
-import 'package:privacy_gui/page/topology/models/node_ui_model.dart';
 import 'package:privacy_gui/page/topology/providers/node_detail_provider.dart';
 import 'package:privacy_gui/page/topology/views/components/backhaul_signal_indicator.dart';
 import 'package:privacy_gui/util/date_format_utils.dart';
@@ -71,13 +72,13 @@ class UspNodeDetailView extends ConsumerWidget {
   // ===========================================================================
 
   Widget _buildMobileLayout(BuildContext context, WidgetRef ref,
-      NodeUIModel node, UspNodeDetailState detail) {
+      NodeEntity node, UspNodeDetailState detail) {
     return Column(
       children: [
         _buildNodeInfoCard(context, node),
         AppGap.lg(),
         _buildNetworkCard(context, ref, node),
-        if (!node.isMaster && node.hasBackhaul) ...[
+        if (node is SlaveNode) ...[
           AppGap.lg(),
           _buildBackhaulCard(context, node, detail.parentNode),
         ],
@@ -88,7 +89,7 @@ class UspNodeDetailView extends ConsumerWidget {
   }
 
   Widget _buildDesktopLayout(BuildContext context, WidgetRef ref,
-      NodeUIModel node, UspNodeDetailState detail) {
+      NodeEntity node, UspNodeDetailState detail) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -99,7 +100,7 @@ class UspNodeDetailView extends ConsumerWidget {
               _buildNodeInfoCard(context, node),
               AppGap.lg(),
               _buildNetworkCard(context, ref, node),
-              if (!node.isMaster && node.hasBackhaul) ...[
+              if (node is SlaveNode) ...[
                 AppGap.lg(),
                 _buildBackhaulCard(context, node, detail.parentNode),
               ],
@@ -119,7 +120,7 @@ class UspNodeDetailView extends ConsumerWidget {
   // Node Info Card
   // ===========================================================================
 
-  Widget _buildNodeInfoCard(BuildContext context, NodeUIModel node) {
+  Widget _buildNodeInfoCard(BuildContext context, NodeEntity node) {
     final colorScheme = Theme.of(context).colorScheme;
     return AppCard(
       padding: const EdgeInsets.all(AppSpacing.md),
@@ -154,7 +155,9 @@ class UspNodeDetailView extends ConsumerWidget {
                       AppGap.xs(),
                       DetailStatusBadge(
                         isActive: true,
-                        activeLabel: node.roleLabel,
+                        activeLabel: node.isMaster
+                            ? loc(context).master
+                            : loc(context).slave,
                       ),
                     ],
                   ),
@@ -207,7 +210,7 @@ class UspNodeDetailView extends ConsumerWidget {
   // ===========================================================================
 
   Widget _buildNetworkCard(
-      BuildContext context, WidgetRef ref, NodeUIModel node) {
+      BuildContext context, WidgetRef ref, NodeEntity node) {
     final wanData =
         node.isMaster ? ref.watch(wanDataProvider).valueOrNull?.model : null;
     final wanIp = wanData?.ipAddress;
@@ -232,12 +235,17 @@ class UspNodeDetailView extends ConsumerWidget {
                   label: loc(context).lanIp,
                   value: node.ipAddress!,
                 ),
-              // LAN IPv6 (from Hosts)
-              for (final ipv6 in node.ipv6Addresses)
+              // LAN IPv6 (from Hosts) — routable addresses first; a link-local
+              // address swaps its leading icon for a scope badge (see
+              // #1128/#1129).
+              for (final ipv6 in preferGlobalIpv6First(node.ipv6Addresses))
                 DetailCopyableTile(
                   icon: Icons.language,
                   label: loc(context).lanIpv6,
                   value: ipv6,
+                  leading: isLinkLocalIpv6(ipv6)
+                      ? const Ipv6ScopeBadge(size: 16)
+                      : null,
                 ),
               // WAN IPv4 (master only)
               if (wanIp != null && wanIp.isNotEmpty)
@@ -246,12 +254,17 @@ class UspNodeDetailView extends ConsumerWidget {
                   label: loc(context).wanIp,
                   value: wanIp,
                 ),
-              // WAN IPv6 (master only)
-              for (final ipv6 in wanIpv6Addresses)
+              // WAN IPv6 (master only) — routable addresses first; a link-local
+              // address swaps its leading icon for a scope badge (see
+              // #1128/#1129).
+              for (final ipv6 in preferGlobalIpv6First(wanIpv6Addresses))
                 DetailCopyableTile(
                   icon: Icons.public,
                   label: loc(context).wanIpv6,
                   value: ipv6,
+                  leading: isLinkLocalIpv6(ipv6)
+                      ? const Ipv6ScopeBadge(size: 16)
+                      : null,
                 ),
             ],
           ),
@@ -265,9 +278,10 @@ class UspNodeDetailView extends ConsumerWidget {
   // ===========================================================================
 
   Widget _buildBackhaulCard(
-      BuildContext context, NodeUIModel node, NodeUIModel? parentNode) {
+      BuildContext context, SlaveNode node, NodeEntity? parentNode) {
     final colorScheme = Theme.of(context).colorScheme;
-    final isWifiBackhaul = !node.isEthernetBackhaul;
+    final backhaul = node.backhaul;
+    final isWifiBackhaul = !backhaul.isEthernet;
 
     return AppCard(
       padding: const EdgeInsets.all(AppSpacing.md),
@@ -299,7 +313,7 @@ class UspNodeDetailView extends ConsumerWidget {
                         AppText.labelSmall(loc(context).connectedTo,
                             color: colorScheme.onSurfaceVariant),
                         AppText.bodyMedium(
-                            '${parentNode.roleLabel} (${parentNode.model})'),
+                            '${parentNode.isMaster ? loc(context).master : loc(context).slave} (${parentNode.model})'),
                       ],
                     ),
                   ),
@@ -331,16 +345,16 @@ class UspNodeDetailView extends ConsumerWidget {
                         ),
                         AppGap.xs(),
                         AppText.bodyMedium(
-                            node.backhaulLinkType ?? node.backhaulMediaType),
+                            backhaul.linkType ?? backhaul.mediaType),
                       ],
                     ),
                   ),
                 ),
-                if (node.backhaulSignalStrength != null) ...[
+                if (backhaul.signalStrength != null) ...[
                   AppGap.sm(),
                   Expanded(
-                    child: BackhaulSignalIndicator(
-                        rssi: node.backhaulSignalStrength!),
+                    child:
+                        BackhaulSignalIndicator(rssi: backhaul.signalStrength!),
                   ),
                 ],
               ],
@@ -363,36 +377,34 @@ class UspNodeDetailView extends ConsumerWidget {
                     ],
                   ),
                   AppGap.xs(),
-                  AppText.bodyMedium(
-                      node.backhaulLinkType ?? node.backhaulMediaType),
+                  AppText.bodyMedium(backhaul.linkType ?? backhaul.mediaType),
                 ],
               ),
             ),
             AppGap.sm(),
           ],
           // Throughput Block
-          if (node.backhaulUplinkRate != null ||
-              node.backhaulDownlinkRate != null) ...[
+          if (backhaul.uplinkRate != null || backhaul.downlinkRate != null) ...[
             Row(
               children: [
-                if (node.backhaulUplinkRate != null)
+                if (backhaul.uplinkRate != null)
                   Expanded(
                     child: DetailSpeedCard(
                       icon: Icons.upload,
                       label: loc(context).upload,
-                      speedKbps: node.backhaulUplinkRate!,
+                      speedKbps: backhaul.uplinkRate!,
                       color: colorScheme.tertiary,
                     ),
                   ),
-                if (node.backhaulUplinkRate != null &&
-                    node.backhaulDownlinkRate != null)
+                if (backhaul.uplinkRate != null &&
+                    backhaul.downlinkRate != null)
                   AppGap.sm(),
-                if (node.backhaulDownlinkRate != null)
+                if (backhaul.downlinkRate != null)
                   Expanded(
                     child: DetailSpeedCard(
                       icon: Icons.download,
                       label: loc(context).download,
-                      speedKbps: node.backhaulDownlinkRate!,
+                      speedKbps: backhaul.downlinkRate!,
                       color: colorScheme.primary,
                     ),
                   ),
@@ -401,10 +413,10 @@ class UspNodeDetailView extends ConsumerWidget {
             AppGap.sm(),
           ],
           // PHY Rate + Last Contact row
-          if (node.backhaulPhyRate > 0 || node.lastContactTime != null)
+          if (backhaul.phyRate > 0 || backhaul.lastContactTime != null)
             Row(
               children: [
-                if (node.backhaulPhyRate > 0)
+                if (backhaul.phyRate > 0)
                   Expanded(
                     child: LayoutBlock(
                       padding: const EdgeInsets.all(AppSpacing.md),
@@ -423,14 +435,14 @@ class UspNodeDetailView extends ConsumerWidget {
                           ),
                           AppGap.xs(),
                           AppText.bodyMedium(NetworkUtils.formatSpeed(
-                              node.backhaulPhyRate * 1000)),
+                              backhaul.phyRate * 1000)),
                         ],
                       ),
                     ),
                   ),
-                if (node.backhaulPhyRate > 0 && node.lastContactTime != null)
+                if (backhaul.phyRate > 0 && backhaul.lastContactTime != null)
                   AppGap.sm(),
-                if (node.lastContactTime != null)
+                if (backhaul.lastContactTime != null)
                   Expanded(
                     child: LayoutBlock(
                       padding: const EdgeInsets.all(AppSpacing.md),
@@ -449,7 +461,7 @@ class UspNodeDetailView extends ConsumerWidget {
                           ),
                           AppGap.xs(),
                           AppText.bodyMedium(DateFormatUtils.formatRelativeTime(
-                              node.lastContactTime)),
+                              backhaul.lastContactTime)),
                         ],
                       ),
                     ),
@@ -467,8 +479,8 @@ class UspNodeDetailView extends ConsumerWidget {
 
   Widget _buildConnectedDevicesCard(
       BuildContext context, UspNodeDetailState detail) {
-    final devices = detail.connectedDevices;
-    final activeCount = detail.activeDeviceCount;
+    final devices = detail.connectedClients;
+    final activeCount = detail.activeClientCount;
 
     return AppCard(
       padding: const EdgeInsets.all(AppSpacing.md),
@@ -500,7 +512,7 @@ class UspNodeDetailView extends ConsumerWidget {
                     child: UspDeviceListTile(
                       device: devices[i],
                       variant: DeviceListTileVariant.flatLast,
-                      onTap: () => context.goNamed(
+                      onTap: () => context.pushNamed(
                         RouteNamed.uspDeviceDetail,
                         queryParameters: {'mac': devices[i].mac},
                       ),

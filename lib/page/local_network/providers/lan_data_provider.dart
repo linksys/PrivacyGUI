@@ -1,12 +1,12 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/framework/diagnostic_loggable.dart';
 import 'package:privacy_gui/page/_shared/models/lan_info_ui_model.dart';
 import 'package:privacy_gui/page/local_network/services/usp_lan_data_service.dart';
 
 // ── Data Model ──
 
-class LanData extends Equatable {
+class LanData extends Equatable with DiagnosticLoggable {
   final LanInfoUIModel model;
 
   const LanData({required this.model});
@@ -21,7 +21,10 @@ class LanData extends Equatable {
         );
 
   @override
-  List<Object?> get props => [model];
+  String get diagnosticName => 'LanData';
+
+  @override
+  Map<String, Object?> get namedProps => {'model': model};
 }
 
 // ── Provider ──
@@ -42,8 +45,6 @@ class LanDataNotifier extends AsyncNotifier<LanData> {
     final svc = ref.read(uspLanDataServiceProvider);
     final model = await svc.fetch();
 
-    logger.d('[USP][LanData]: Fetched — ip=${model.ipAddress}, '
-        'dhcp=${model.dhcpEnabled}, ipv6=${model.ipv6Enabled}');
     return LanData(model: model);
   }
 }

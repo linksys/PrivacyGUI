@@ -136,6 +136,148 @@ void main() {
       });
     });
 
+    group('PPTP connection type', () {
+      test('valid with server, username, and password', () {
+        final form = UspInternetSettingsForm(
+          connectionType: UspWanConnectionType.pptp,
+          serverAddress: 'vpn.example.com',
+          pppUsername: 'user',
+          pppPassword: 'pass',
+          mtu: 1460,
+        );
+        expect(validateForm(form), isTrue);
+      });
+
+      test('valid with IP address as server', () {
+        final form = UspInternetSettingsForm(
+          connectionType: UspWanConnectionType.pptp,
+          serverAddress: '10.0.0.1',
+          pppUsername: 'user',
+          pppPassword: 'pass',
+          mtu: 1460,
+        );
+        expect(validateForm(form), isTrue);
+      });
+
+      test('invalid when server address is empty', () {
+        final form = UspInternetSettingsForm(
+          connectionType: UspWanConnectionType.pptp,
+          serverAddress: '',
+          pppUsername: 'user',
+          pppPassword: 'pass',
+          mtu: 1460,
+        );
+        expect(validateForm(form), isFalse);
+      });
+
+      test('invalid when username is empty', () {
+        final form = UspInternetSettingsForm(
+          connectionType: UspWanConnectionType.pptp,
+          serverAddress: 'vpn.example.com',
+          pppUsername: '',
+          pppPassword: 'pass',
+          mtu: 1460,
+        );
+        expect(validateForm(form), isFalse);
+      });
+
+      test('invalid when password is empty', () {
+        final form = UspInternetSettingsForm(
+          connectionType: UspWanConnectionType.pptp,
+          serverAddress: 'vpn.example.com',
+          pppUsername: 'user',
+          pppPassword: '',
+          mtu: 1460,
+        );
+        expect(validateForm(form), isFalse);
+      });
+
+      test('invalid when OnDemand with zero idle time', () {
+        final form = UspInternetSettingsForm(
+          connectionType: UspWanConnectionType.pptp,
+          serverAddress: 'vpn.example.com',
+          pppUsername: 'user',
+          pppPassword: 'pass',
+          connectionTrigger: 'OnDemand',
+          idleDisconnectTime: 0,
+          mtu: 1460,
+        );
+        expect(validateForm(form), isFalse);
+      });
+
+      test('valid when OnDemand with positive idle time', () {
+        final form = UspInternetSettingsForm(
+          connectionType: UspWanConnectionType.pptp,
+          serverAddress: 'vpn.example.com',
+          pppUsername: 'user',
+          pppPassword: 'pass',
+          connectionTrigger: 'OnDemand',
+          idleDisconnectTime: 300,
+          mtu: 1460,
+        );
+        expect(validateForm(form), isTrue);
+      });
+    });
+
+    group('L2TP connection type', () {
+      test('valid with server, username, and password', () {
+        final form = UspInternetSettingsForm(
+          connectionType: UspWanConnectionType.l2tp,
+          serverAddress: 'l2tp.example.com',
+          pppUsername: 'user',
+          pppPassword: 'pass',
+          mtu: 1460,
+        );
+        expect(validateForm(form), isTrue);
+      });
+
+      test('invalid when server address is empty', () {
+        final form = UspInternetSettingsForm(
+          connectionType: UspWanConnectionType.l2tp,
+          serverAddress: '',
+          pppUsername: 'user',
+          pppPassword: 'pass',
+          mtu: 1460,
+        );
+        expect(validateForm(form), isFalse);
+      });
+
+      test('invalid with invalid server format', () {
+        final form = UspInternetSettingsForm(
+          connectionType: UspWanConnectionType.l2tp,
+          serverAddress: 'has spaces bad',
+          pppUsername: 'user',
+          pppPassword: 'pass',
+          mtu: 1460,
+        );
+        expect(validateForm(form), isFalse);
+      });
+    });
+
+    group('PPTP/L2TP MTU validation', () {
+      test('valid at maximum 1460', () {
+        final form = UspInternetSettingsForm(
+          connectionType: UspWanConnectionType.pptp,
+          serverAddress: 'vpn.example.com',
+          pppUsername: 'user',
+          pppPassword: 'pass',
+          mtu: 1460,
+        );
+        expect(validateForm(form), isTrue);
+      });
+
+      test('invalid above 1460', () {
+        final form = UspInternetSettingsForm(
+          connectionType: UspWanConnectionType.pptp,
+          serverAddress: 'vpn.example.com',
+          pppUsername: 'user',
+          pppPassword: 'pass',
+          mtu: 1492,
+        );
+        expect(validateForm(form), isFalse);
+      });
+    });
+
     group('Bridge connection type', () {
       test('always valid', () {
         final form = UspInternetSettingsForm(

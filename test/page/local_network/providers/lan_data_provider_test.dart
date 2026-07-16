@@ -25,6 +25,8 @@ void main() {
   };
 
   /// IPv6 response from raw usp.get().
+  /// Includes a link-local (fe80::) address (kept but reordered after global,
+  /// tagged by the UI) and a global address that must be preferred first (#1129).
   final ipv6Response = <String, dynamic>{
     'Device.IP.Interface.1.IPv6Enable': true,
     'Device.IP.Interface.1.IPv6Address.1.IPAddress': 'fe80::1',
@@ -65,7 +67,81 @@ void main() {
       expect(data.model.dnsServers, '8.8.8.8,8.8.4.4');
       expect(data.model.hostName, 'LinksysRouter');
       expect(data.model.ipv6Enabled, isTrue);
-      expect(data.model.ipv6Addresses, ['fe80::1', '2001:db8::1']);
+      // #1129: link-local fe80:: is kept but reordered after the global address
+      // (the UI tags it with a scope badge rather than hiding it).
+      expect(data.model.ipv6Addresses, ['2001:db8::1', 'fe80::1']);
+      container.dispose();
+    });
+
+    test('link-local-only IPv6 keeps the link-local address (#1129)', () async {
+      // Reproduces the reported case: br-lan holds only a scope-link fe80::
+      // address and no global/ULA prefix. It is still surfaced (tagged with a
+      // scope badge by the UI), not hidden.
+      when(() => mockUsp.get(any())).thenAnswer((_) async {
+        final paths = _.positionalArguments[0] as List;
+        if (paths.any((p) => p.toString().contains('IPv6Address'))) {
+          return <String, dynamic>{
+            'Device.IP.Interface.1.IPv6Enable': true,
+            'Device.IP.Interface.1.IPv6Address.1.IPAddress':
+                'fe80::7612:13ff:fe21:5394',
+          };
+        }
+        return lanInfoResponse;
+      });
+
+      final container = createContainer();
+      final data = await container.read(lanDataProvider.future);
+
+      expect(data.model.ipv6Enabled, isTrue);
+      expect(data.model.ipv6Addresses, ['fe80::7612:13ff:fe21:5394']);
+      container.dispose();
+    });
+
+    test('link-local reordered after global, all kept (#1129)', () async {
+      when(() => mockUsp.get(any())).thenAnswer((_) async {
+        final paths = _.positionalArguments[0] as List;
+        if (paths.any((p) => p.toString().contains('IPv6Address'))) {
+          return <String, dynamic>{
+            'Device.IP.Interface.1.IPv6Enable': true,
+            'Device.IP.Interface.1.IPv6Address.1.IPAddress': 'fe80::1%eth0',
+            'Device.IP.Interface.1.IPv6Address.2.IPAddress': 'febf::1',
+            'Device.IP.Interface.1.IPv6Address.3.IPAddress': '2001:db8:abcd::5',
+          };
+        }
+        return lanInfoResponse;
+      });
+
+      final container = createContainer();
+      final data = await container.read(lanDataProvider.future);
+
+      // fe80::1%eth0 (zone index) and febf::1 (top of fe80::/10) are link-local;
+      // all addresses are kept, with the global one surfaced first.
+      expect(data.model.ipv6Addresses,
+          ['2001:db8:abcd::5', 'fe80::1%eth0', 'febf::1']);
+      container.dispose();
+    });
+
+    test('fec0::1 is NOT link-local (#1129)', () async {
+      // fec0::1 is the first address just above the fe80::/10 range
+      // (link-local spans fe80::-febf::). It is a deprecated site-local
+      // address (RFC 3513), NOT link-local:
+      //   0xfec0 & 0xffc0 == 0xfec0 != 0xfe80
+      // It is kept and, not being link-local, is not tagged as such by the UI.
+      when(() => mockUsp.get(any())).thenAnswer((_) async {
+        final paths = _.positionalArguments[0] as List;
+        if (paths.any((p) => p.toString().contains('IPv6Address'))) {
+          return <String, dynamic>{
+            'Device.IP.Interface.1.IPv6Enable': true,
+            'Device.IP.Interface.1.IPv6Address.1.IPAddress': 'fec0::1',
+          };
+        }
+        return lanInfoResponse;
+      });
+
+      final container = createContainer();
+      final data = await container.read(lanDataProvider.future);
+
+      expect(data.model.ipv6Addresses, ['fec0::1']);
       container.dispose();
     });
 

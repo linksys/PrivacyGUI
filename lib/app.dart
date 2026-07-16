@@ -10,6 +10,7 @@ import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/demo/providers/demo_theme_config_provider.dart';
 import 'package:privacy_gui/demo/theme_studio/demo_theme_builder.dart';
 import 'package:privacy_gui/theme/theme_json_config.dart';
+import 'package:privacy_gui/localization/fallback_font_resolver.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/components/layouts/root_container.dart';
 import 'package:privacy_gui/providers/app_settings/app_settings.dart';
@@ -96,7 +97,7 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
   ///   and a responsive layout container.
   @override
   Widget build(BuildContext context) {
-    logger.d('[App]: build: $_currentRoute');
+    logger.t('[App]: build: $_currentRoute');
 
     final appSettings = ref.watch(appSettingsProvider);
     final systemLocaleStr = Intl.getCurrentLocale();
@@ -160,18 +161,38 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
     required DemoThemeConfig demoConfig,
     required Color? userThemeColor,
   }) {
-    final appLightTheme = buildDemoThemeData(
+    var appLightTheme = buildDemoThemeData(
       brightness: Brightness.light,
       config: demoConfig,
       themeConfig: themeConfig,
       userThemeColor: userThemeColor,
     );
-    final appDarkTheme = buildDemoThemeData(
+    var appDarkTheme = buildDemoThemeData(
       brightness: Brightness.dark,
       config: demoConfig,
       themeConfig: themeConfig,
       userThemeColor: userThemeColor,
     );
+
+    // CJK / non-Latin fallback for the active locale. The subset fonts are
+    // eager-loaded via pubspec `fonts:` (registered before first frame). Adding
+    // the fallback family to ThemeData.textTheme covers raw `Text` / third-party
+    // widgets; ui_kit's AppText.resolve() injects the same family per-locale for
+    // AppText. Without the family in the TextStyle, the engine treats CJK code
+    // points as missing and probes the CDN. Null for Latin-covered locales.
+    final effectiveLocale = appSettings.locale ?? systemLocale;
+    final cjkFallback =
+        FallbackFontResolver.prefixedFallbackFor(effectiveLocale);
+    if (cjkFallback != null) {
+      appLightTheme = appLightTheme.copyWith(
+        textTheme:
+            appLightTheme.textTheme.apply(fontFamilyFallback: cjkFallback),
+      );
+      appDarkTheme = appDarkTheme.copyWith(
+        textTheme:
+            appDarkTheme.textTheme.apply(fontFamilyFallback: cjkFallback),
+      );
+    }
 
     return MaterialApp.router(
       onGenerateTitle: (context) => loc(context).appTitle,
@@ -233,8 +254,7 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
   }
 
   void _tryResumeSse() {
-    final loginType = ref.read(authProvider).value?.loginType;
-    if (loginType == null || loginType == LoginType.none) return;
+    if (!(ref.read(authProvider).value?.isLoggedIn ?? false)) return;
     final sseManager = ref.read(sseManagerProvider);
     if (sseManager == null) return;
     final sseState = sseManager.connection.connectionState.value;
@@ -252,7 +272,7 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
   /// native splash screen, revealing the app's UI.
   _initAuth() {
     ref.read(authProvider.notifier).init().then((_) {
-      logger.d('[App]: init auth finish');
+      logger.t('[App]: init auth finish');
       FlutterNativeSplash.remove();
     });
   }

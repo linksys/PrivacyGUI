@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:privacy_gui/core/utils/oui_lookup.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/utils/device_classifier.dart';
-import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
+import 'package:privacy_gui/page/_shared/models/client_device.dart';
 import 'package:privacy_gui/page/_shared/components/usp_status_dot.dart';
 import 'package:privacy_gui/page/devices/views/components/device_icon_with_badge.dart';
 import 'package:privacy_gui/page/devices/views/components/usp_signal_strength_indicator.dart';
@@ -34,7 +35,7 @@ enum DeviceListTileVariant {
 /// - Set [variant] to [DeviceListTileVariant.flat] for embedded lists (e.g.
 ///   inside a card) to avoid double card borders.
 class UspDeviceListTile extends StatelessWidget {
-  final DeviceUIModel device;
+  final ClientDevice device;
   final VoidCallback? onTap;
   final DeviceListTileVariant variant;
 
@@ -66,6 +67,7 @@ class UspDeviceListTile extends StatelessWidget {
           size: 20,
           iconColor: scheme.onSurface,
           hasMultipleInterfaces: device.hasMultipleInterfaces,
+          isPrivateMac: OuiLookup.isRandomizedMac(device.mac),
         ),
         AppGap.sm(),
         Expanded(

@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
+import 'package:privacy_gui/framework/diagnostic_loggable.dart';
 
-class FirmwareImageUIModel extends Equatable {
+class FirmwareImageUIModel extends Equatable with DiagnosticLoggable {
   final int instance;
   final String instancePath;
   final String name;
@@ -22,6 +23,16 @@ class FirmwareImageUIModel extends Equatable {
   bool get isActive => status == 'Active';
 
   @override
-  List<Object?> get props =>
-      [instance, instancePath, name, version, status, available, isBootTarget];
+  String get diagnosticName => 'FirmwareImageUIModel';
+
+  @override
+  Map<String, Object?> get namedProps => {
+        'instance': instance,
+        'instancePath': instancePath,
+        'name': name,
+        'version': version,
+        'status': status,
+        'available': available,
+        'isBootTarget': isBootTarget,
+      };
 }

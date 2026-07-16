@@ -18,13 +18,14 @@ class UspInternetSettingsForm extends Equatable {
   final String dnsServer2;
   final String dnsServer3;
 
-  // === PPPoE Fields ===
+  // === PPPoE / PPTP / L2TP Fields ===
   final String pppUsername;
   final String pppPassword;
   final String pppoeServiceName;
   final String connectionTrigger; // 'AlwaysOn' | 'OnDemand'
   final int idleDisconnectTime;
   final int lcpEchoInterval;
+  final String serverAddress; // PPTP/L2TP VPN server hostname or IP
 
   // === VLAN ===
   final bool vlanEnabled;
@@ -58,6 +59,7 @@ class UspInternetSettingsForm extends Equatable {
     this.connectionTrigger = 'AlwaysOn',
     this.idleDisconnectTime = 0,
     this.lcpEchoInterval = 0,
+    this.serverAddress = '',
     this.vlanEnabled = false,
     this.vlanId = 0,
     this.mtu = 0,
@@ -84,6 +86,7 @@ class UspInternetSettingsForm extends Equatable {
     String? connectionTrigger,
     int? idleDisconnectTime,
     int? lcpEchoInterval,
+    String? serverAddress,
     bool? vlanEnabled,
     int? vlanId,
     int? mtu,
@@ -109,6 +112,7 @@ class UspInternetSettingsForm extends Equatable {
       connectionTrigger: connectionTrigger ?? this.connectionTrigger,
       idleDisconnectTime: idleDisconnectTime ?? this.idleDisconnectTime,
       lcpEchoInterval: lcpEchoInterval ?? this.lcpEchoInterval,
+      serverAddress: serverAddress ?? this.serverAddress,
       vlanEnabled: vlanEnabled ?? this.vlanEnabled,
       vlanId: vlanId ?? this.vlanId,
       mtu: mtu ?? this.mtu,
@@ -137,6 +141,7 @@ class UspInternetSettingsForm extends Equatable {
         connectionTrigger,
         idleDisconnectTime,
         lcpEchoInterval,
+        serverAddress,
         vlanEnabled,
         vlanId,
         mtu,

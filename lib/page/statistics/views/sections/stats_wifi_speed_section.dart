@@ -52,7 +52,7 @@ class StatsWifiSpeedSection extends ConsumerWidget {
     for (final entry in wifiData.wifiClientMap.entries) {
       final client = entry.value;
       if (!client.active) continue;
-      final device = devicesData?.deviceModels
+      final device = devicesData?.clientDevices
           .where((d) => d.mac.toUpperCase() == entry.key.toUpperCase())
           .firstOrNull;
       final name = device?.hostName ?? entry.key;

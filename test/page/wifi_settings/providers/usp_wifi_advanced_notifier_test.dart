@@ -3,12 +3,31 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
+import 'package:privacy_gui/page/_shared/models/wifi_radio_ui_model.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_advanced_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_data_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/services/usp_wifi_advanced_service.dart';
 
 class MockUspWifiAdvancedService extends Mock
     implements UspWifiAdvancedService {}
+
+WifiRadioUIModel _radioModel({
+  required String instancePath,
+  required String band,
+  required int channel,
+  required bool autoChannelEnable,
+}) =>
+    WifiRadioUIModel(
+      instancePath: instancePath,
+      band: band,
+      enable: true,
+      transmitPower: 100,
+      maxBitRate: 2402,
+      channel: channel,
+      autoChannelEnable: autoChannelEnable,
+      channelBandwidth: '80MHz',
+      supportedStandards: 'a,n,ac,ax',
+    );
 
 void main() {
   late MockUspWifiAdvancedService mockService;
@@ -17,12 +36,14 @@ void main() {
     mockService = MockUspWifiAdvancedService();
   });
 
-  ProviderContainer createContainer() {
+  ProviderContainer createContainer({
+    List<WifiRadioUIModel> radios = const [],
+  }) {
     final container = ProviderContainer(
       overrides: [
         uspWifiAdvancedServiceProvider.overrideWithValue(mockService),
         uspMutationLockProvider.overrideWithValue(UspMutationLock()),
-        wifiDataProvider.overrideWith(() => _StubWifiDataNotifier()),
+        wifiDataProvider.overrideWith(() => _StubWifiDataNotifier(radios)),
       ],
     );
     container.listen(uspWifiAdvancedProvider, (_, __) {});
@@ -184,6 +205,7 @@ void main() {
       verifyNever(() => mockService.setIeee80211hEnabled(
             radioPaths: any(named: 'radioPaths'),
             enabled: any(named: 'enabled'),
+            forceAutoChannelPaths: any(named: 'forceAutoChannelPaths'),
           ));
       container.dispose();
     });
@@ -220,6 +242,7 @@ void main() {
       when(() => mockService.setIeee80211hEnabled(
             radioPaths: any(named: 'radioPaths'),
             enabled: any(named: 'enabled'),
+            forceAutoChannelPaths: any(named: 'forceAutoChannelPaths'),
           )).thenAnswer((_) async {});
 
       final container = createContainer();
@@ -232,6 +255,118 @@ void main() {
       verify(() => mockService.setIeee80211hEnabled(
             radioPaths: ['Device.WiFi.Radio.1.', 'Device.WiFi.Radio.2.'],
             enabled: true,
+            forceAutoChannelPaths: const [],
+          )).called(1);
+      container.dispose();
+    });
+
+    test(
+        'disabling DFS forces AutoChannelEnable on radios parked on a DFS '
+        'channel', () async {
+      when(() => mockService.fetchIeee80211h()).thenAnswer((_) async => {
+            'Device.WiFi.Radio.1.': true,
+            'Device.WiFi.Radio.2.': true,
+          });
+      when(() => mockService.setIeee80211hEnabled(
+            radioPaths: any(named: 'radioPaths'),
+            enabled: any(named: 'enabled'),
+            forceAutoChannelPaths: any(named: 'forceAutoChannelPaths'),
+          )).thenAnswer((_) async {});
+
+      final container = createContainer(radios: [
+        // 2.4 GHz on ch 6 — never DFS, must not be forced.
+        _radioModel(
+          instancePath: 'Device.WiFi.Radio.1.',
+          band: '2.4GHz',
+          channel: 6,
+          autoChannelEnable: false,
+        ),
+        // 5 GHz manually parked on DFS ch 100 — must be forced to auto.
+        _radioModel(
+          instancePath: 'Device.WiFi.Radio.2.',
+          band: '5GHz',
+          channel: 100,
+          autoChannelEnable: false,
+        ),
+      ]);
+      await Future.delayed(Duration.zero);
+
+      final notifier = container.read(uspWifiAdvancedProvider.notifier);
+      notifier.setDfsEnabled(false);
+      await notifier.save();
+
+      verify(() => mockService.setIeee80211hEnabled(
+            radioPaths: ['Device.WiFi.Radio.1.', 'Device.WiFi.Radio.2.'],
+            enabled: false,
+            forceAutoChannelPaths: ['Device.WiFi.Radio.2.'],
+          )).called(1);
+      container.dispose();
+    });
+
+    test(
+        'disabling DFS does not force auto-channel when the 5 GHz radio is on '
+        'a non-DFS channel', () async {
+      when(() => mockService.fetchIeee80211h()).thenAnswer((_) async => {
+            'Device.WiFi.Radio.2.': true,
+          });
+      when(() => mockService.setIeee80211hEnabled(
+            radioPaths: any(named: 'radioPaths'),
+            enabled: any(named: 'enabled'),
+            forceAutoChannelPaths: any(named: 'forceAutoChannelPaths'),
+          )).thenAnswer((_) async {});
+
+      final container = createContainer(radios: [
+        // 5 GHz on ch 36 (non-DFS) — no remediation needed.
+        _radioModel(
+          instancePath: 'Device.WiFi.Radio.2.',
+          band: '5GHz',
+          channel: 36,
+          autoChannelEnable: false,
+        ),
+      ]);
+      await Future.delayed(Duration.zero);
+
+      final notifier = container.read(uspWifiAdvancedProvider.notifier);
+      notifier.setDfsEnabled(false);
+      await notifier.save();
+
+      verify(() => mockService.setIeee80211hEnabled(
+            radioPaths: ['Device.WiFi.Radio.2.'],
+            enabled: false,
+            forceAutoChannelPaths: const [],
+          )).called(1);
+      container.dispose();
+    });
+
+    test('disabling DFS skips a radio already on auto-channel', () async {
+      when(() => mockService.fetchIeee80211h()).thenAnswer((_) async => {
+            'Device.WiFi.Radio.2.': true,
+          });
+      when(() => mockService.setIeee80211hEnabled(
+            radioPaths: any(named: 'radioPaths'),
+            enabled: any(named: 'enabled'),
+            forceAutoChannelPaths: any(named: 'forceAutoChannelPaths'),
+          )).thenAnswer((_) async {});
+
+      final container = createContainer(radios: [
+        // Auto-channel already on: firmware will pick a legal channel itself.
+        _radioModel(
+          instancePath: 'Device.WiFi.Radio.2.',
+          band: '5GHz',
+          channel: 100,
+          autoChannelEnable: true,
+        ),
+      ]);
+      await Future.delayed(Duration.zero);
+
+      final notifier = container.read(uspWifiAdvancedProvider.notifier);
+      notifier.setDfsEnabled(false);
+      await notifier.save();
+
+      verify(() => mockService.setIeee80211hEnabled(
+            radioPaths: ['Device.WiFi.Radio.2.'],
+            enabled: false,
+            forceAutoChannelPaths: const [],
           )).called(1);
       container.dispose();
     });
@@ -243,6 +378,7 @@ void main() {
       when(() => mockService.setIeee80211hEnabled(
             radioPaths: any(named: 'radioPaths'),
             enabled: any(named: 'enabled'),
+            forceAutoChannelPaths: any(named: 'forceAutoChannelPaths'),
           )).thenThrow(const InvalidInputError(detail: 'read-only'));
 
       final container = createContainer();
@@ -262,6 +398,7 @@ void main() {
       when(() => mockService.setIeee80211hEnabled(
             radioPaths: any(named: 'radioPaths'),
             enabled: any(named: 'enabled'),
+            forceAutoChannelPaths: any(named: 'forceAutoChannelPaths'),
           )).thenAnswer((_) async {});
 
       final container = createContainer();
@@ -326,6 +463,15 @@ void main() {
 // ---------------------------------------------------------------------------
 
 class _StubWifiDataNotifier extends WifiDataNotifier {
+  _StubWifiDataNotifier(this._radios);
+
+  final List<WifiRadioUIModel> _radios;
+
   @override
-  Future<WifiData> build() async => const WifiData.empty();
+  Future<WifiData> build() async => _radios.isEmpty
+      ? const WifiData.empty()
+      : WifiData(
+          codegenContext: WifiCodegenContext.empty,
+          radioModels: _radios,
+        );
 }

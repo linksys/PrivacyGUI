@@ -3,8 +3,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
-import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
+import 'package:privacy_gui/page/_shared/models/client_device.dart';
 import 'package:privacy_gui/page/_shared/models/ethernet_port_ui_model.dart';
+import 'package:privacy_gui/page/_shared/models/mesh_network.dart';
+import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/local_network/providers/ethernet_data_provider.dart';
 import 'package:privacy_gui/page/local_network/services/usp_ethernet_data_service.dart';
@@ -35,7 +37,7 @@ void main() {
   ];
 
   setUpAll(() {
-    registerFallbackValue(<DeviceUIModel>[]);
+    registerFallbackValue(<ClientDevice>[]);
   });
 
   setUp(() {
@@ -55,7 +57,7 @@ void main() {
       overrides: [
         uspEthernetDataServiceProvider.overrideWithValue(mockEthernetSvc),
         devicesDataProvider.overrideWith(
-          () => _TestDevicesDataNotifier(devicesData ?? const DevicesData()),
+          () => _TestDevicesDataNotifier(devicesData ?? _emptyDevicesData()),
         ),
       ],
     );
@@ -80,7 +82,7 @@ void main() {
         overrides: [
           uspClientProvider.overrideWithValue(null),
           devicesDataProvider.overrideWith(
-            () => _TestDevicesDataNotifier(const DevicesData()),
+            () => _TestDevicesDataNotifier(_emptyDevicesData()),
           ),
         ],
       );
@@ -127,4 +129,13 @@ class _TestDevicesDataNotifier extends DevicesDataNotifier {
 
   @override
   Future<DevicesData> build() async => _data;
+}
+
+/// Creates an empty DevicesData for testing.
+DevicesData _emptyDevicesData() {
+  return DevicesData(
+    meshNetwork: MeshNetwork(
+      master: MasterNode(deviceId: 'GATEWAY', model: 'TestRouter'),
+    ),
+  );
 }

@@ -1,11 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/core/utils/tr181_path.dart';
 import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/generated/ethernet_interfaces.g.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
-import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
+import 'package:privacy_gui/page/_shared/models/client_device.dart';
 import 'package:privacy_gui/page/_shared/models/ethernet_port_ui_model.dart';
 
 // ---------------------------------------------------------------------------
@@ -49,7 +50,7 @@ class UspEthernetDataService {
 
   /// Fetches Ethernet interfaces + bridge port map, builds port UI models.
   Future<EthernetDataFetchResult> fetch({
-    required List<DeviceUIModel> deviceModels,
+    required List<ClientDevice> deviceModels,
   }) async {
     final List<Object> results;
     try {
@@ -123,17 +124,17 @@ class UspEthernetDataService {
   /// active wired device is shown as its own LAN port entry.
   List<EthernetPortUIModel> _buildEthernetPortUIModels({
     required EthernetInterfaces ethernetInterfaces,
-    required List<DeviceUIModel> deviceModels,
+    required List<ClientDevice> deviceModels,
     Map<String, String> bridgePortMap = const {},
   }) {
     final result = <EthernetPortUIModel>[];
 
     final bridgeMemberPaths =
-        bridgePortMap.values.map(_ensureTrailingDot).toSet();
+        bridgePortMap.values.map(ensureTrailingDot).toSet();
 
     EthernetInterface? lanAggregate;
     for (final iface in ethernetInterfaces.items) {
-      final path = _ensureTrailingDot(iface.instancePath);
+      final path = ensureTrailingDot(iface.instancePath);
       if (bridgeMemberPaths.contains(path)) {
         lanAggregate ??= iface;
       } else {
@@ -156,7 +157,6 @@ class UspEthernetDataService {
       final wiredConnections =
           <({String displayName, String mac, String ip})>[];
       for (final d in deviceModels) {
-        if (!d.isClientDevice) continue;
         // Check primary interface
         if (d.isActive && !d.isWifi) {
           wiredConnections.add((
@@ -214,10 +214,5 @@ class UspEthernetDataService {
     }
 
     return result;
-  }
-
-  static String _ensureTrailingDot(String path) {
-    if (path.isEmpty) return path;
-    return path.endsWith('.') ? path : '$path.';
   }
 }

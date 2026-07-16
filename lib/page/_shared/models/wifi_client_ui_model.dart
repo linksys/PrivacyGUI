@@ -1,10 +1,11 @@
 import 'package:equatable/equatable.dart';
+import 'package:privacy_gui/framework/diagnostic_loggable.dart';
 
 /// Presentation-layer model for a WiFi associated device.
 ///
 /// Contains only the fields that Views and UI helpers need.
 /// Decouples the UI from the codegen `WifiClient` type.
-class WifiClientUIModel extends Equatable {
+class WifiClientUIModel extends Equatable with DiagnosticLoggable {
   final String macAddress;
   final int signalStrength; // RSSI in dBm
   final int noise; // noise floor in dBm
@@ -22,12 +23,15 @@ class WifiClientUIModel extends Equatable {
   });
 
   @override
-  List<Object?> get props => [
-        macAddress,
-        signalStrength,
-        noise,
-        lastDataDownlinkRate,
-        lastDataUplinkRate,
-        active,
-      ];
+  String get diagnosticName => 'WifiClientUIModel';
+
+  @override
+  Map<String, Object?> get namedProps => {
+        'macAddress': macAddress,
+        'signalStrength': signalStrength,
+        'noise': noise,
+        'lastDataDownlinkRate': lastDataDownlinkRate,
+        'lastDataUplinkRate': lastDataUplinkRate,
+        'active': active,
+      };
 }

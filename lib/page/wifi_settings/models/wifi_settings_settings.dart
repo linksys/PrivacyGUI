@@ -52,7 +52,8 @@ class WifiQuickSetupSettings extends Equatable {
     final passwordChanged = original == null || password != original.password;
     final modeChanged =
         original == null || securityMode != original.securityMode;
-    final isOpen = securityMode == 'None' || securityMode == 'Enhanced-Open';
+    // 'OWE' is the TR-181 token for Enhanced Open (firmware only accepts 'OWE').
+    final isOpen = securityMode == 'None' || securityMode == 'OWE';
     return (passwordChanged || modeChanged) && !isOpen;
   }
 

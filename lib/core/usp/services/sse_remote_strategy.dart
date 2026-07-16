@@ -42,8 +42,7 @@ class RemoteSseStrategy implements SseOperationStrategy {
     for (final sub in subscriptions) {
       final remoteId = _toRemoteId(sub.subscriptionId);
       try {
-        logger
-            .d('[SSE][Remote]: Registering ${sub.subscriptionId} as $remoteId');
+        logger.d('[SSE]: Registering ${sub.subscriptionId} as $remoteId');
 
         // Unregister first to avoid ID conflict
         try {
@@ -70,12 +69,12 @@ class RemoteSseStrategy implements SseOperationStrategy {
         // Breathing room for Guardian between requests
         await Future.delayed(const Duration(milliseconds: 50));
       } catch (e) {
-        logger.w('[SSE][Remote]: Failed to register ${sub.subscriptionId}: $e');
+        logger.w('[SSE]: Failed to register ${sub.subscriptionId}: $e');
       }
     }
 
     logger.d(
-        '[SSE][Remote]: Registered ${records.length}/${subscriptions.length} subscriptions');
+        '[SSE]: Registered ${records.length}/${subscriptions.length} subscriptions');
     return records;
   }
 
@@ -85,9 +84,9 @@ class RemoteSseStrategy implements SseOperationStrategy {
       final remoteId = _toRemoteId(id);
       try {
         await _bridge.unsubscribe(subscriptionId: remoteId);
-        logger.d('[SSE][Remote]: Unregistered $id (as $remoteId)');
+        logger.d('[SSE]: Unregistered $id (as $remoteId)');
       } catch (e) {
-        logger.w('[SSE][Remote]: Failed to unregister $id: $e');
+        logger.w('[SSE]: Failed to unregister $id: $e');
       }
     }
   }
@@ -97,7 +96,7 @@ class RemoteSseStrategy implements SseOperationStrategy {
       List<SseSubscriptionRecord> existingRecords) async {
     // Remote: Do NOT auto resubscribe — orchestrator controls registration
     // This avoids duplicate registration when orchestrator has already registered
-    logger.d('[SSE][Remote]: onConnected — skipping auto resubscribe '
+    logger.d('[SSE]: onConnected — skipping auto resubscribe '
         '(orchestrator controls registration)');
   }
 
@@ -106,11 +105,11 @@ class RemoteSseStrategy implements SseOperationStrategy {
     if (intentional) {
       // Fire-and-forget cleanup: unregister all subscriptions on Guardian
       // Don't await — let it complete in background
-      logger.d('[SSE][Remote]: onDisconnected (intentional) — '
+      logger.d('[SSE]: onDisconnected (intentional) — '
           'fire-and-forget cleanup');
       _fireAndForgetCleanup();
     } else {
-      logger.d('[SSE][Remote]: onDisconnected (unintentional) — '
+      logger.d('[SSE]: onDisconnected (unintentional) — '
           'will resubscribe on reconnect via orchestrator');
     }
   }

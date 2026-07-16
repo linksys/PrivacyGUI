@@ -9,6 +9,9 @@ import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
+import 'package:privacy_gui/page/_shared/models/client_device.dart';
+import 'package:privacy_gui/page/_shared/models/mesh_network.dart';
+import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/local_network/providers/dhcp_data_provider.dart';
 
@@ -90,7 +93,7 @@ void main() {
         uspClientProvider.overrideWithValue(mockUsp),
         uspMutationLockProvider.overrideWithValue(UspMutationLock()),
         devicesDataProvider.overrideWith(
-          () => _TestDevicesDataNotifier(devicesData ?? const DevicesData()),
+          () => _TestDevicesDataNotifier(devicesData ?? _emptyDevicesData()),
         ),
       ],
     );
@@ -107,8 +110,8 @@ void main() {
       // Verify client fields
       expect(data.clientModels[0].mac, 'AA:BB:CC:DD:EE:01');
       expect(data.clientModels[0].ip, '192.168.1.101');
-      expect(data.clientModels[0].active, isTrue);
-      expect(data.clientModels[1].active, isFalse);
+      expect(data.clientModels[0].leaseActive, isTrue);
+      expect(data.clientModels[1].leaseActive, isFalse);
 
       // Verify reservation fields
       expect(data.reservationModels[0].mac, 'AA:BB:CC:DD:EE:01');
@@ -119,7 +122,7 @@ void main() {
 
     test('hostname enrichment from devicesData', () async {
       final container = createContainer(
-        devicesData: const DevicesData(
+        devicesData: _emptyDevicesData(
           hostNameByMac: {'AA:BB:CC:DD:EE:01': 'MyLaptop'},
         ),
       );
@@ -134,12 +137,64 @@ void main() {
       container.dispose();
     });
 
+    test('isOnline enrichment from devicesData client devices', () async {
+      final container = createContainer(
+        devicesData: DevicesData(
+          hostNameByMac: const {'AA:BB:CC:DD:EE:01': 'MyLaptop'},
+          meshNetwork: MeshNetwork(
+            master: MasterNode(
+              deviceId: 'GATEWAY',
+              model: 'TestRouter',
+              connectedClients: [
+                ClientDevice(
+                  mac: 'AA:BB:CC:DD:EE:01',
+                  ip: '192.168.1.101',
+                  hostName: 'MyLaptop',
+                  isActive: true,
+                  connectionType: ConnectionType.wifi,
+                ),
+                ClientDevice(
+                  mac: 'AA:BB:CC:DD:EE:02',
+                  ip: '192.168.1.102',
+                  hostName: '',
+                  isActive: false,
+                  connectionType: ConnectionType.wired,
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      await container.read(devicesDataProvider.future);
+      final data = await container.read(dhcpDataProvider.future);
+
+      // Client 1: online (from Hosts.Active)
+      expect(data.clientModels[0].isOnline, isTrue);
+      // Client 2: offline (from Hosts.Active)
+      expect(data.clientModels[1].isOnline, isFalse);
+      container.dispose();
+    });
+
+    test('isOnline is null when no matching device in devicesData', () async {
+      // No client devices - no Hosts data available
+      final container = createContainer(
+        devicesData: _emptyDevicesData(),
+      );
+      await container.read(devicesDataProvider.future);
+      final data = await container.read(dhcpDataProvider.future);
+
+      // No matching device, isOnline should be null
+      expect(data.clientModels[0].isOnline, isNull);
+      expect(data.clientModels[1].isOnline, isNull);
+      container.dispose();
+    });
+
     test('build throws when usp is null', () async {
       final container = ProviderContainer(
         overrides: [
           uspClientProvider.overrideWithValue(null),
           devicesDataProvider.overrideWith(
-            () => _TestDevicesDataNotifier(const DevicesData()),
+            () => _TestDevicesDataNotifier(_emptyDevicesData()),
           ),
         ],
       );
@@ -167,13 +222,16 @@ void main() {
       container.dispose();
     });
 
-    test('DhcpData props uses lengths for equality', () async {
+    test('DhcpData equality via DiagnosticLoggable namedProps', () async {
       final container = createContainer();
       final data1 = await container.read(dhcpDataProvider.future);
       final data2 = await container.read(dhcpDataProvider.future);
 
       expect(data1, equals(data2));
-      expect(data1.props, [2, 1]); // 2 clients, 1 reservation
+      expect(data1.clientModels.length, 2);
+      expect(data1.reservationModels.length, 1);
+      // props is derived from namedProps.values (DiagnosticLoggable mixin).
+      expect(data1.props, [data1.clientModels, data1.reservationModels]);
       container.dispose();
     });
 
@@ -186,7 +244,7 @@ void main() {
             uspClientProvider.overrideWithValue(mockUsp),
             uspMutationLockProvider.overrideWithValue(UspMutationLock()),
             devicesDataProvider.overrideWith(
-              () => _TestDevicesDataNotifier(const DevicesData()),
+              () => _TestDevicesDataNotifier(_emptyDevicesData()),
             ),
             sseInvalidationProvider.overrideWith((ref) => sseController.stream),
           ],
@@ -223,7 +281,7 @@ void main() {
             uspClientProvider.overrideWithValue(mockUsp),
             uspMutationLockProvider.overrideWithValue(UspMutationLock()),
             devicesDataProvider.overrideWith(
-              () => _TestDevicesDataNotifier(const DevicesData()),
+              () => _TestDevicesDataNotifier(_emptyDevicesData()),
             ),
             sseInvalidationProvider.overrideWith((ref) => sseController.stream),
           ],
@@ -255,7 +313,7 @@ void main() {
             uspClientProvider.overrideWithValue(mockUsp),
             uspMutationLockProvider.overrideWithValue(UspMutationLock()),
             devicesDataProvider.overrideWith(
-              () => _TestDevicesDataNotifier(const DevicesData()),
+              () => _TestDevicesDataNotifier(_emptyDevicesData()),
             ),
             sseInvalidationProvider.overrideWith((ref) => sseController.stream),
           ],
@@ -287,4 +345,14 @@ class _TestDevicesDataNotifier extends DevicesDataNotifier {
 
   @override
   Future<DevicesData> build() async => _data;
+}
+
+/// Creates an empty DevicesData for testing.
+DevicesData _emptyDevicesData({Map<String, String>? hostNameByMac}) {
+  return DevicesData(
+    meshNetwork: MeshNetwork(
+      master: MasterNode(deviceId: 'GATEWAY', model: 'TestRouter'),
+    ),
+    hostNameByMac: hostNameByMac ?? const {},
+  );
 }

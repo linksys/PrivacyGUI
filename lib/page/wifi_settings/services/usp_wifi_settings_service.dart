@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/core/utils/tr181_path.dart';
+import 'package:privacy_gui/core/utils/wifi_channel.dart';
 import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/generated/wi_fi_access_points.g.dart';
 import 'package:privacy_gui/generated/wi_fi_radios.g.dart';
@@ -12,6 +14,7 @@ import 'package:privacy_gui/page/wifi_settings/models/wifi_quick_setup_network.d
 import 'package:privacy_gui/page/wifi_settings/models/wifi_settings_settings.dart';
 import 'package:privacy_gui/page/wifi_settings/models/wifi_settings_status.dart';
 import 'package:privacy_gui/page/wifi_settings/services/wifi_channel_bonding.dart';
+import 'package:privacy_gui/page/_shared/utils/wifi_guest_detection.dart';
 
 final uspWifiSettingsServiceProvider = Provider<UspWifiSettingsService>(
   (ref) => UspWifiSettingsService(ref.read(uspClientProvider)!),
@@ -44,13 +47,13 @@ class UspWifiSettingsService {
     // Build lookup maps with normalized trailing-dot paths
     final apBySsidRef = <String, WiFiAccessPoint>{};
     for (final ap in accessPoints.items) {
-      final key = _ensureTrailingDot(ap.ssidReference);
+      final key = ensureTrailingDot(ap.ssidReference);
       if (key.isNotEmpty) apBySsidRef[key] = ap;
     }
 
     final radioByPath = <String, WiFiRadio>{};
     for (final r in radios.items) {
-      radioByPath[_ensureTrailingDot(r.instancePath)] = r;
+      radioByPath[ensureTrailingDot(r.instancePath)] = r;
     }
 
     logger.d('[USP][WiFi]: Building networks: '
@@ -60,13 +63,13 @@ class UspWifiSettingsService {
 
     final networks = <WifiNetworkUIModel>[];
     for (final ssid in ssids.items) {
-      final ssidPath = _ensureTrailingDot(ssid.instancePath);
+      final ssidPath = ensureTrailingDot(ssid.instancePath);
 
       // Find matching AccessPoint via ssidReference
       final ap = apBySsidRef[ssidPath];
 
       // Find matching Radio via SSID.lowerLayers
-      final radioPath = _ensureTrailingDot(ssid.lowerLayers);
+      final radioPath = ensureTrailingDot(ssid.lowerLayers);
       final radio = radioByPath[radioPath];
 
       logger.d('[USP][WiFi]: SSID ${ssid.ssid}: '
@@ -74,16 +77,24 @@ class UspWifiSettingsService {
           'radio=${radio?.operatingFrequencyBand ?? "none"}, '
           'alias=${ssid.alias ?? "none"}');
 
-      // Guest detection via alias (FW 1.2.1+ auto-provisions wifi-*-guest aliases)
-      final isGuest = ssid.alias?.endsWith('-guest') ?? false;
+      // Guest detection via the canonical alias rule (see wifi_guest_detection).
+      final isGuest = isGuestSsid(ssid);
 
       // Parse Security.ModesSupported comma-separated string into a list.
       // e.g. "None, WPA2-Personal, WPA3-Personal" → ['None', 'WPA2-Personal', 'WPA3-Personal']
       final supportedModes = _parseModesSupported(ap?.modesSupported ?? '');
 
       final band = _normalizeBand(radio?.operatingFrequencyBand ?? '');
-      final possibleChannels =
-          _parsePossibleChannels(radio?.possibleChannels ?? '');
+      // DFS (IEEE 802.11h) channels must not appear when DFS is disabled. The
+      // firmware leaves them in PossibleChannels regardless, so filter here —
+      // before computing per-bandwidth lists — so both the dropdown and the
+      // "N channels available" counts stay consistent.
+      final dfsEnabled = radio?.ieee80211hEnabled ?? false;
+      final possibleChannels = filterDfsChannels(
+        parsePossibleChannels(radio?.possibleChannels ?? ''),
+        band: band,
+        dfsEnabled: dfsEnabled,
+      );
       final supportedBandwidths = _parseSupportedBandwidths(
           radio?.supportedOperatingChannelBandwidths ?? '');
 
@@ -273,13 +284,16 @@ class UspWifiSettingsService {
           }
         }
 
-        // ── AP layer — only when password or securityMode changed ──────────
+        // ── AP layer — when password, securityMode, or enabled changed ─────
+        // enabled is mirrored onto AccessPoint.Enable alongside SSID.Enable
+        // because SSID.Enable alone does not stop broadcasting on this
+        // firmware (see #972).
         final passwordChanged =
             orig == null || orig.password != pending.password;
         final modeChanged =
             orig == null || orig.securityMode != pending.securityMode;
         if (aggregate.apInstancePaths.isNotEmpty &&
-            (passwordChanged || modeChanged)) {
+            (passwordChanged || modeChanged || enabledChanged)) {
           // Build a band lookup: AP instance path → band string.
           // Used to apply the 6 GHz security override (Wi-Fi 6E mandates WPA3).
           final bandByApPath = <String, String>{
@@ -288,6 +302,11 @@ class UspWifiSettingsService {
                 n.accessPointInstancePath!: n.band,
           };
 
+          // Whether the security layer (mode + passphrase) needs writing.
+          // When only `enabled` changed we mirror AccessPoint.Enable without
+          // re-sending security params, so an enable toggle never mutates the
+          // security mode (e.g. the 6 GHz WPA3 override).
+          final securityChanged = passwordChanged || modeChanged;
           for (final p in aggregate.apInstancePaths) {
             final band = bandByApPath[p] ?? '';
             final securityMode = _securityModeFor6GHz(
@@ -299,11 +318,13 @@ class UspWifiSettingsService {
               [
                 WiFiAccessPointUpdate(
                   instancePath: p,
+                  enable: enabledChanged ? pending.enabled : null,
                   // Omit an empty passphrase (e.g. when only securityMode
                   // changed to an open mode) so firmware does not reject it.
-                  keyPassphrase:
-                      pending.password.isNotEmpty ? pending.password : null,
-                  securityModeEnabled: securityMode,
+                  keyPassphrase: securityChanged && pending.password.isNotEmpty
+                      ? pending.password
+                      : null,
+                  securityModeEnabled: securityChanged ? securityMode : null,
                 )
               ],
             );
@@ -384,23 +405,44 @@ class UspWifiSettingsService {
         }
 
         // ── AccessPoint layer ───────────────────────────────────────────────
+        // Mirror the enabled flag onto AccessPoint.Enable alongside SSID.Enable:
+        // on this firmware SSID.Enable alone does not stop the AP broadcasting,
+        // so the enable state must be written to both layers (see #972).
+        //
+        // Each field is gated on its own diff so a pure enable toggle sends
+        // only AccessPoint.Enable and never re-writes the security mode or the
+        // advertisement flag (mirrors saveQuickSetup's AP gating).
         final ap = curr.accessPointInstancePath;
+        final enabledChanged = orig == null || orig.enabled != curr.enabled;
+        final securityChanged = orig == null ||
+            orig.keyPassphrase != curr.keyPassphrase ||
+            orig.securityMode != curr.securityMode;
+        final broadcastChanged = orig == null ||
+            orig.ssidAdvertisementEnabled != curr.ssidAdvertisementEnabled;
         if (ap != null &&
-            (orig == null ||
-                orig.keyPassphrase != curr.keyPassphrase ||
-                orig.securityMode != curr.securityMode ||
-                orig.ssidAdvertisementEnabled !=
-                    curr.ssidAdvertisementEnabled)) {
+            (enabledChanged || securityChanged || broadcastChanged)) {
+          // Apply the 6 GHz security override (Wi-Fi 6E mandates WPA3), the
+          // same way saveQuickSetup does, so both save paths write a
+          // firmware-valid mode on 6 GHz. Skip the override for enable-only
+          // toggles (securityChanged false) so the mode is never re-written.
+          final securityMode = securityChanged && curr.securityMode.isNotEmpty
+              ? _securityModeFor6GHz(
+                  band: curr.band,
+                  selectedMode: curr.securityMode,
+                )
+              : null;
           final result = await WiFiAccessPoints.update(
             _usp,
             [
               WiFiAccessPointUpdate(
                 instancePath: ap,
-                keyPassphrase:
-                    curr.keyPassphrase.isNotEmpty ? curr.keyPassphrase : null,
-                securityModeEnabled:
-                    curr.securityMode.isNotEmpty ? curr.securityMode : null,
-                ssidAdvertisementEnabled: curr.ssidAdvertisementEnabled,
+                enable: enabledChanged ? curr.enabled : null,
+                keyPassphrase: securityChanged && curr.keyPassphrase.isNotEmpty
+                    ? curr.keyPassphrase
+                    : null,
+                securityModeEnabled: securityMode,
+                ssidAdvertisementEnabled:
+                    broadcastChanged ? curr.ssidAdvertisementEnabled : null,
               )
             ],
           );
@@ -476,35 +518,6 @@ class UspWifiSettingsService {
   // Mutations — WiFi Radio quick actions (from Dashboard cards)
   // ---------------------------------------------------------------------------
 
-  /// Toggles a WiFi radio on or off.
-  Future<void> toggleRadio(String instancePath, bool enable) async {
-    try {
-      final result = await WiFiRadios.update(
-        _usp,
-        [WiFiRadioUpdate(instancePath: instancePath, enable: enable)],
-      );
-      final parsed = UspResultParser.parseSetResult(result);
-      switch (parsed) {
-        case UspSuccess():
-          break;
-        case UspPartialSuccess(failures: final f):
-          throw UspPartialFailureError(
-            summary: 'Toggle radio partial failure: ${f.first.errorMessage}',
-            successPaths: [],
-            failures: f,
-          );
-        case UspFailure(errors: final e):
-          throw UspCompleteFailureError(
-            summary: 'Toggle radio failed: ${e.first.errorMessage}',
-            failures: e,
-          );
-      }
-    } catch (e) {
-      if (e is ServiceError) rethrow;
-      throw mapUspErrorToServiceError(e);
-    }
-  }
-
   /// Updates a WiFi radio's channel and auto-channel setting.
   Future<void> updateRadioChannel(
     String instancePath, {
@@ -545,63 +558,94 @@ class UspWifiSettingsService {
     }
   }
 
-  /// Toggles all SSIDs with a given name on or off across all bands.
+  /// Toggles all networks with a given SSID name on or off across all bands.
   ///
-  /// Finds all SSID instances matching [ssidName] from [ssids] and toggles them.
+  /// Finds all SSID instances matching [ssidName] and toggles both their
+  /// SSID.Enable and the matching AccessPoint.Enable. Writing both layers is
+  /// required because SSID.Enable alone does not stop the AP broadcasting on
+  /// this firmware (see #972). The AccessPoint match is resolved via
+  /// AccessPoint.SSIDReference → SSID.instancePath.
+  ///
   /// Returns the number of SSIDs toggled.
   Future<int> toggleSsidsByName(
     WiFiSsids ssids,
+    WiFiAccessPoints accessPoints,
     String ssidName,
     bool enable,
   ) async {
-    final instancePaths = ssids.items
+    final ssidPaths = ssids.items
         .where((s) => s.ssid == ssidName)
         .map((s) => s.instancePath)
         .toList();
 
-    if (instancePaths.isEmpty) return 0;
+    if (ssidPaths.isEmpty) return 0;
+
+    // Resolve AccessPoint paths whose SSIDReference points at a matched SSID.
+    final matchedSsidPathSet = ssidPaths.map(ensureTrailingDot).toSet();
+    final apPaths = accessPoints.items
+        .where((ap) =>
+            matchedSsidPathSet.contains(ensureTrailingDot(ap.ssidReference)))
+        .map((ap) => ap.instancePath)
+        .toList();
 
     try {
-      final updates = instancePaths
+      final ssidUpdates = ssidPaths
           .map((p) => WiFiSsidUpdate(instancePath: p, enable: enable))
           .toList();
-      final result = await WiFiSsids.update(_usp, updates);
-      final parsed = UspResultParser.parseSetResult(result);
-      switch (parsed) {
-        case UspSuccess():
-          return instancePaths.length;
-        case UspPartialSuccess(failures: final f):
-          throw UspPartialFailureError(
-            summary: 'Toggle SSIDs partial failure: ${f.first.errorMessage}',
-            successPaths: [],
-            failures: f,
-          );
-        case UspFailure(errors: final e):
-          throw UspCompleteFailureError(
-            summary: 'Toggle SSIDs failed: ${e.first.errorMessage}',
-            failures: e,
-          );
+      final ssidResult = await WiFiSsids.update(_usp, ssidUpdates);
+      _throwIfNotSuccess(ssidResult, 'Toggle SSIDs');
+
+      if (apPaths.isNotEmpty) {
+        final apUpdates = apPaths
+            .map((p) => WiFiAccessPointUpdate(instancePath: p, enable: enable))
+            .toList();
+        final apResult = await WiFiAccessPoints.update(_usp, apUpdates);
+        _throwIfNotSuccess(apResult, 'Toggle AccessPoints');
       }
+
+      return ssidPaths.length;
     } catch (e) {
       if (e is ServiceError) rethrow;
       throw mapUspErrorToServiceError(e);
     }
   }
 
+  /// Parses a USP Set result and throws the appropriate [ServiceError] when it
+  /// is not a complete success. [label] prefixes the error summary.
+  void _throwIfNotSuccess(Map<String, dynamic> result, String label) {
+    final parsed = UspResultParser.parseSetResult(result);
+    switch (parsed) {
+      case UspSuccess():
+        return;
+      case UspPartialSuccess(failures: final f):
+        throw UspPartialFailureError(
+          summary: '$label partial failure: ${f.first.errorMessage}',
+          successPaths: [],
+          failures: f,
+        );
+      case UspFailure(errors: final e):
+        throw UspCompleteFailureError(
+          summary: '$label failed: ${e.first.errorMessage}',
+          failures: e,
+        );
+    }
+  }
+
   /// Returns the effective security mode to apply to a given band.
   ///
   /// 6 GHz (Wi-Fi 6E) mandates WPA3:
-  ///   - Open / Enhanced-Open selected → send "Enhanced-Open"
-  ///   - Any other mode               → send "WPA3-Personal"
+  ///   - Open / OWE (Enhanced Open) selected → send "OWE"
+  ///   - Any other mode                      → send "WPA3-Personal"
   ///
+  /// 'OWE' is the TR-181 token firmware accepts for Enhanced Open.
   /// All other bands: return [selectedMode] unchanged.
   String _securityModeFor6GHz({
     required String band,
     required String selectedMode,
   }) {
     if (!band.contains('6')) return selectedMode;
-    const openModes = {'None', 'Enhanced-Open', ''};
-    return openModes.contains(selectedMode) ? 'Enhanced-Open' : 'WPA3-Personal';
+    const openModes = {'None', 'OWE', ''};
+    return openModes.contains(selectedMode) ? 'OWE' : 'WPA3-Personal';
   }
 }
 
@@ -614,38 +658,6 @@ List<String> _parseModesSupported(String raw) {
       .map((s) => s.trim())
       .where((s) => s.isNotEmpty)
       .toList();
-}
-
-/// Parses a TR-181 PossibleChannels string into a sorted list of channel numbers.
-/// Handles both comma-separated values and range notation.
-/// e.g. "1-13,36,40,44,48" → [1,2,3,4,5,6,7,8,9,10,11,12,13,36,40,44,48]
-List<int> _parsePossibleChannels(String raw) {
-  if (raw.isEmpty) return [];
-  final result = <int>[];
-  for (final part in raw.split(',')) {
-    final trimmed = part.trim();
-    if (trimmed.contains('-')) {
-      final bounds = trimmed.split('-');
-      final start = int.tryParse(bounds[0].trim());
-      final end = int.tryParse(bounds[1].trim());
-      if (start != null && end != null) {
-        for (var i = start; i <= end; i++) {
-          result.add(i);
-        }
-      }
-    } else {
-      final ch = int.tryParse(trimmed);
-      if (ch != null) result.add(ch);
-    }
-  }
-  result.sort();
-  return result;
-}
-
-/// Ensures a TR-181 path ends with a dot.
-String _ensureTrailingDot(String path) {
-  if (path.isEmpty) return path;
-  return path.endsWith('.') ? path : '$path.';
 }
 
 /// Parses a TR-181 SupportedOperatingChannelBandwidths string.

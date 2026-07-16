@@ -2,11 +2,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
+import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_client_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/mesh_topology_info.dart';
 import 'package:privacy_gui/page/devices/services/usp_devices_data_service.dart';
-import 'package:privacy_gui/page/topology/models/node_ui_model.dart';
 
 class MockUspClient extends Mock implements UspClient {}
 
@@ -67,7 +67,7 @@ void main() {
         systemInfo: _sysInfo,
       );
 
-      expect(result.deviceModels, hasLength(2));
+      expect(result.meshNetwork.allClients, hasLength(2));
       expect(result.codegenContext, isNot(DevicesCodegenContext.empty));
     });
 
@@ -89,10 +89,10 @@ void main() {
         gatewayName: 'Router',
       );
 
-      final wifi =
-          result.deviceModels.firstWhere((d) => d.mac == 'AA:BB:CC:DD:EE:01');
-      final wired =
-          result.deviceModels.firstWhere((d) => d.mac == 'AA:BB:CC:DD:EE:02');
+      final wifi = result.meshNetwork.allClients
+          .firstWhere((d) => d.mac == 'AA:BB:CC:DD:EE:01');
+      final wired = result.meshNetwork.allClients
+          .firstWhere((d) => d.mac == 'AA:BB:CC:DD:EE:02');
       expect(wifi.isWifi, isTrue);
       expect(wired.isWifi, isFalse);
     });
@@ -106,9 +106,9 @@ void main() {
       );
 
       // Empty mesh → synthetic gateway node
-      expect(result.nodeModels, hasLength(1));
-      expect(result.nodeModels.first.deviceId, 'gateway');
-      expect(result.nodeModels.first.model, 'M60TB');
+      expect(result.meshNetwork.allNodes, hasLength(1));
+      expect(result.meshNetwork.master.deviceId, 'GATEWAY');
+      expect(result.meshNetwork.master.model, 'M60TB');
     });
 
     test('skips node models when systemInfo is null', () async {
@@ -119,7 +119,8 @@ void main() {
         systemInfo: null,
       );
 
-      expect(result.nodeModels, isEmpty);
+      // Without systemInfo, still has a master node with default values
+      expect(result.meshNetwork.allNodes, hasLength(1));
     });
 
     test('maps USP error to ServiceError', () async {
@@ -167,7 +168,7 @@ void main() {
       );
 
       final wifi =
-          rebuilt.deviceModels.firstWhere((d) => d.mac == 'AA:BB:CC:DD:EE:01');
+          rebuilt.allClients.firstWhere((d) => d.mac == 'AA:BB:CC:DD:EE:01');
       expect(wifi.signalStrength, -50);
       expect(wifi.downlinkRate, 100);
     });
@@ -182,11 +183,11 @@ void main() {
         systemInfo: _sysInfo,
       );
 
-      const mesh = MeshTopologyInfo(
+      final mesh = MeshTopologyInfo(
         nodes: [
-          NodeUIModel(deviceId: 'NODE-A', model: 'M60'),
+          MasterNode(deviceId: 'NODE-A', model: 'M60'),
         ],
-        clientToNodeMap: {'AA:BB:CC:DD:EE:01': 'NODE-A'},
+        clientToNodeMap: const {'AA:BB:CC:DD:EE:01': 'NODE-A'},
       );
 
       final rebuilt = svc.rebuildWithMesh(
@@ -199,12 +200,12 @@ void main() {
       );
 
       final wifi =
-          rebuilt.deviceModels.firstWhere((d) => d.mac == 'AA:BB:CC:DD:EE:01');
+          rebuilt.allClients.firstWhere((d) => d.mac == 'AA:BB:CC:DD:EE:01');
       expect(wifi.parentNodeId, 'NODE-A');
 
       // Node models should reflect mesh
-      expect(rebuilt.nodeModels, hasLength(1));
-      expect(rebuilt.nodeModels.first.isMaster, isTrue);
+      expect(rebuilt.allNodes, hasLength(1));
+      expect(rebuilt.master.isMaster, isTrue);
     });
   });
 
@@ -238,9 +239,9 @@ void main() {
       );
 
       // Should be merged into 1 device
-      expect(result.deviceModels, hasLength(1));
-      expect(result.deviceModels.first.hasMultipleInterfaces, isTrue);
-      expect(result.deviceModels.first.interfaceCount, 2);
+      expect(result.meshNetwork.allClients, hasLength(1));
+      expect(result.meshNetwork.allClients.first.hasMultipleInterfaces, isTrue);
+      expect(result.meshNetwork.allClients.first.interfaceCount, 2);
     });
 
     test('merged device includes all MAC addresses', () async {
@@ -266,7 +267,7 @@ void main() {
         systemInfo: _sysInfo,
       );
 
-      final device = result.deviceModels.first;
+      final device = result.meshNetwork.allClients.first;
       expect(device.allMacAddresses, hasLength(2));
       expect(
         device.allMacAddresses,
@@ -298,9 +299,10 @@ void main() {
       );
 
       // Should remain as 2 separate devices
-      expect(result.deviceModels, hasLength(2));
-      expect(result.deviceModels.first.hasMultipleInterfaces, isFalse);
-      expect(result.deviceModels.last.hasMultipleInterfaces, isFalse);
+      expect(result.meshNetwork.allClients, hasLength(2));
+      expect(
+          result.meshNetwork.allClients.first.hasMultipleInterfaces, isFalse);
+      expect(result.meshNetwork.allClients.last.hasMultipleInterfaces, isFalse);
     });
 
     test('mesh nodes (master/slave) are not merged', () async {
@@ -328,15 +330,12 @@ void main() {
         systemInfo: _sysInfo,
       );
 
-      // Mesh nodes should not be merged even with same hostname
-      // They should be excluded from deviceModels (client-only) or remain separate
-      final clientDevices =
-          result.deviceModels.where((d) => d.isClientDevice).toList();
-      final meshDevices =
-          result.deviceModels.where((d) => !d.isClientDevice).toList();
+      // Mesh nodes are separate from client devices in MeshNetwork
+      // allClients contains only client devices, allNodes contains mesh nodes
+      final clientDevices = result.meshNetwork.allClients;
 
-      // Mesh devices are not merged
-      expect(meshDevices, hasLength(2));
+      // Mesh nodes with DeviceRole are filtered out from clients
+      // The test data has 2 devices both with mesh roles, so no client devices
       expect(clientDevices, isEmpty);
     });
 
@@ -364,7 +363,7 @@ void main() {
         systemInfo: _sysInfo,
       );
 
-      final device = result.deviceModels.first;
+      final device = result.meshNetwork.allClients.first;
       // WiFi interface should be primary (isWifi=true)
       expect(device.isWifi, isTrue);
       expect(device.mac, 'AA:BB:CC:DD:EE:01'); // WiFi MAC
@@ -393,7 +392,7 @@ void main() {
         systemInfo: _sysInfo,
       );
 
-      final device = result.deviceModels.first;
+      final device = result.meshNetwork.allClients.first;
       expect(device.additionalInterfaces, hasLength(1));
 
       final secondary = device.additionalInterfaces.first;
@@ -427,9 +426,9 @@ void main() {
       );
 
       // Should merge into 1 device despite different case
-      expect(result.deviceModels, hasLength(1));
-      expect(result.deviceModels.first.hasMultipleInterfaces, isTrue);
-      expect(result.deviceModels.first.interfaceCount, 2);
+      expect(result.meshNetwork.allClients, hasLength(1));
+      expect(result.meshNetwork.allClients.first.hasMultipleInterfaces, isTrue);
+      expect(result.meshNetwork.allClients.first.interfaceCount, 2);
     });
 
     test('devices with mDNS suffix hostname merge correctly', () async {
@@ -457,9 +456,9 @@ void main() {
       );
 
       // Should merge: "MacBook._tcp.local" → "macbook", "MacBook" → "macbook"
-      expect(result.deviceModels, hasLength(1));
-      expect(result.deviceModels.first.hasMultipleInterfaces, isTrue);
-      expect(result.deviceModels.first.interfaceCount, 2);
+      expect(result.meshNetwork.allClients, hasLength(1));
+      expect(result.meshNetwork.allClients.first.hasMultipleInterfaces, isTrue);
+      expect(result.meshNetwork.allClients.first.interfaceCount, 2);
     });
 
     test('inactive WiFi + active Ethernet selects Ethernet as primary',
@@ -487,7 +486,7 @@ void main() {
         systemInfo: _sysInfo,
       );
 
-      final device = result.deviceModels.first;
+      final device = result.meshNetwork.allClients.first;
       // Ethernet should be primary because it's active (active > WiFi preference)
       expect(device.isWifi, isFalse);
       expect(device.mac, 'AA:BB:CC:DD:EE:02'); // Ethernet MAC

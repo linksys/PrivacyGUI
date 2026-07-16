@@ -19,11 +19,44 @@ final uspDashboardRoute = ShellRoute(
         });
         return const UspDashboardView();
       },
+      onExit: (context, state) async {
+        // Cancel edit mode when navigating away from dashboard (e.g., tab
+        // switch), reverting to the pre-edit snapshot.
+        //
+        // Intentional silent-discard policy: unlike the enableDirtyCheck routes
+        // below, the dashboard does NOT prompt with showUnsavedAlert. Layout
+        // edits are persisted on every drag/resize, so "cancel" means restoring
+        // the snapshot captured on edit-mode entry — there is no unsaved buffer
+        // to warn about, and a confirmation dialog on every tab switch would be
+        // noise. See #1037.
+        final container = ProviderScope.containerOf(context);
+        final editState = container.read(dashboardEditModeProvider);
+        if (editState.isEditing) {
+          try {
+            await container
+                .read(dashboardEditModeProvider.notifier)
+                .cancelEditMode();
+          } catch (e, s) {
+            // Never block navigation on a revert failure; cancelEditMode resets
+            // its own state in a finally block, so edit mode won't be stranded.
+            logger.e('[Route]: dashboard cancelEditMode failed on exit',
+                error: e, stackTrace: s);
+          }
+        }
+        return true;
+      },
     ),
     LinksysRoute(
       name: RouteNamed.uspMenu,
       path: RoutePath.uspMenu,
       builder: (context, state) => const UspMenuView(),
+      routes: [
+        LinksysRoute(
+          name: RouteNamed.uspUnifiedDiagnostics,
+          path: RoutePath.uspUnifiedDiagnostics,
+          builder: (context, state) => const UnifiedDiagnosticsView(),
+        ),
+      ],
     ),
     LinksysRoute(
       name: RouteNamed.uspSupport,
@@ -102,7 +135,11 @@ final uspDashboardRoute = ShellRoute(
     LinksysRoute(
       name: RouteNamed.uspStatistics,
       path: RoutePath.uspStatistics,
-      builder: (context, state) => const UspStatisticsView(),
+      builder: (context, state) {
+        final tabParam = state.uri.queryParameters['tab'];
+        final initialTab = int.tryParse(tabParam ?? '') ?? 0;
+        return UspStatisticsView(initialTab: initialTab);
+      },
     ),
     LinksysRoute(
       name: RouteNamed.uspAdvancedSettings,
@@ -178,11 +215,6 @@ final uspDashboardRoute = ShellRoute(
       name: RouteNamed.uspApps,
       path: RoutePath.uspApps,
       builder: (context, state) => const UspAppsView(),
-    ),
-    LinksysRoute(
-      name: RouteNamed.uspUnifiedDiagnostics,
-      path: RoutePath.uspUnifiedDiagnostics,
-      builder: (context, state) => const UnifiedDiagnosticsView(),
     ),
     LinksysRoute(
       name: RouteNamed.uspSpeedTest,

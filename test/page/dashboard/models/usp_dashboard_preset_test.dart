@@ -57,8 +57,8 @@ void main() {
       expect(UspDashboardPreset.standard.cardIds.length, 12);
     });
 
-    test('professional has 17 cards (all)', () {
-      expect(UspDashboardPreset.professional.cardIds.length, 17);
+    test('professional has 18 cards (all)', () {
+      expect(UspDashboardPreset.professional.cardIds.length, 18);
     });
 
     test('monitoring has 8 cards', () {

@@ -9,7 +9,10 @@ import 'package:privacy_gui/generated/wifi_clients.g.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/core/utils/tr181_path.dart';
+import 'package:privacy_gui/core/utils/wifi_channel.dart';
 import 'package:privacy_gui/page/_shared/models/client_connection_detail.dart';
+import 'package:privacy_gui/page/_shared/utils/wifi_guest_detection.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_client_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_radio_ui_model.dart';
 
@@ -157,61 +160,57 @@ class UspWifiDataService {
     required WiFiAccessPoints accessPoints,
   }) {
     final ssidByPath = {
-      for (final s in ssids.items) _ensureTrailingDot(s.instancePath): s,
+      for (final s in ssids.items) ensureTrailingDot(s.instancePath): s,
     };
 
-    // Determine guest SSIDs: per-radio, lowest instance index is Main
-    final guestSsidPaths = <String>{};
-    {
-      final ssidsByRadio = <String, List<WiFiSsid>>{};
-      for (final ssid in ssids.items) {
-        final radioKey = _ensureTrailingDot(ssid.lowerLayers);
-        (ssidsByRadio[radioKey] ??= []).add(ssid);
-      }
-      logger.d('[USP][WiFi] ssidsByRadio groups: ${ssidsByRadio.length}');
-      for (final entry in ssidsByRadio.entries) {
-        final group = entry.value;
-        group.sort((a, b) => _ssidInstanceIndex(a.instancePath)
-            .compareTo(_ssidInstanceIndex(b.instancePath)));
-        logger.d('[USP][WiFi] Radio ${entry.key}: '
-            '${group.map((s) => "${s.ssid}(${s.instancePath})").join(", ")}');
-        for (final ssid in group.skip(1)) {
-          guestSsidPaths.add(_ensureTrailingDot(ssid.instancePath));
-          logger.d(
-              '[USP][WiFi] Marked as guest: ${ssid.ssid} (${ssid.instancePath})');
-        }
-      }
+    // Determine guest SSIDs via the canonical alias rule (see
+    // wifi_guest_detection). Single source of truth shared across the app.
+    final guestSsidPaths = <String>{
+      for (final ssid in ssids.items)
+        if (isGuestSsid(ssid)) ensureTrailingDot(ssid.instancePath),
+    };
+    logger.t('[USP][WiFi] Total guest SSID paths: ${guestSsidPaths.length}');
+    // Diagnostic: multiple SSIDs but none matched the `-guest` alias rule
+    // usually means firmware did not provision guest aliases (see
+    // wifi_guest_detection). Guest/main grouping degrades silently otherwise.
+    if (guestSsidPaths.isEmpty && ssids.items.length > 1) {
+      logger.w('[USP][WiFi] No SSID matched the "-guest" alias rule; '
+          'guest networks will be treated as main. Aliases: '
+          '${ssids.items.map((s) => s.alias ?? "null").toList()}');
     }
-    logger.d('[USP][WiFi] Total guest SSID paths: ${guestSsidPaths.length}');
 
     // Group APs by radio: AP.ssidReference → SSID.lowerLayers → Radio
     final apsByRadioPath =
         <String, List<({WiFiAccessPoint ap, WiFiSsid ssid})>>{};
     for (final ap in accessPoints.items) {
-      final ssid = ssidByPath[_ensureTrailingDot(ap.ssidReference)];
+      final ssid = ssidByPath[ensureTrailingDot(ap.ssidReference)];
       if (ssid == null) continue;
-      final radioPath = _ensureTrailingDot(ssid.lowerLayers);
+      final radioPath = ensureTrailingDot(ssid.lowerLayers);
       apsByRadioPath.putIfAbsent(radioPath, () => []).add((ap: ap, ssid: ssid));
     }
 
     return radios.items.map((radio) {
       final radioAps =
-          apsByRadioPath[_ensureTrailingDot(radio.instancePath)] ?? [];
+          apsByRadioPath[ensureTrailingDot(radio.instancePath)] ?? [];
       final apModels = radioAps.map((a) {
         final isGuest =
-            guestSsidPaths.contains(_ensureTrailingDot(a.ssid.instancePath));
-        // Use SSID.enable as the canonical enabled state (matches toggle mutation)
+            guestSsidPaths.contains(ensureTrailingDot(a.ssid.instancePath));
+        // Per-network enabled state = SSID.Enable. The Dashboard toggle mutates
+        // both SSID.Enable and AccessPoint.Enable together, so either would do;
+        // we read SSID.Enable as the single source of truth for the UI.
         return WifiAccessPointUIModel(
           enable: a.ssid.enable,
           ssidName: a.ssid.ssid.isNotEmpty ? a.ssid.ssid : a.ap.ssidReference,
           securityMode: a.ap.securityModeEnabled,
           encryptionMode: a.ap.encryptionMode,
           isGuest: isGuest,
+          accessPointInstancePath: a.ap.instancePath,
+          ssidInstancePath: a.ssid.instancePath,
         );
       }).toList();
       return WifiRadioUIModel(
         instancePath: radio.instancePath,
-        band: radio.operatingFrequencyBand,
+        band: _normalizeBand(radio.operatingFrequencyBand),
         enable: radio.enable,
         transmitPower: radio.transmitPower,
         maxBitRate: radio.maxBitRate,
@@ -219,15 +218,11 @@ class UspWifiDataService {
         autoChannelEnable: radio.autoChannelEnable,
         channelBandwidth: radio.operatingChannelBandwidth,
         supportedStandards: radio.supportedStandards,
+        possibleChannels: parsePossibleChannels(radio.possibleChannels),
+        isDfsEnabled: radio.ieee80211hEnabled,
         accessPoints: apModels,
       );
     }).toList();
-  }
-
-  /// Extracts the numeric instance index from a TR-181 SSID path.
-  int _ssidInstanceIndex(String instancePath) {
-    final match = RegExp(r'Device\.WiFi\.SSID\.(\d+)').firstMatch(instancePath);
-    return match != null ? int.parse(match.group(1)!) : 0;
   }
 
   // ---------------------------------------------------------------------------
@@ -240,7 +235,6 @@ class UspWifiDataService {
   /// limitation), falls back to a broader parent-path fetch and manual parse.
   Future<Map<String, WifiClient>> _fetchWifiClients() async {
     final result = await WifiClients.fetch(_usp);
-    logger.d('[USP][Dashboard]: WifiClients raw: ${result.items.length} items');
 
     if (result.items.isNotEmpty) {
       return {
@@ -249,17 +243,10 @@ class UspWifiDataService {
       };
     }
 
-    logger.d(
-        '[USP][Dashboard]WifiClients selective-get empty, trying parent-path fallback');
     try {
-      final fallback = await _fetchWifiClientsFallback();
-      if (fallback.isNotEmpty) {
-        logger.d(
-            '[USP][Dashboard]WifiClients fallback: ${fallback.length} clients');
-      }
-      return fallback;
+      return await _fetchWifiClientsFallback();
     } catch (e) {
-      logger.d('[USP][Dashboard]: WifiClients fallback failed: $e');
+      logger.w('[WiFi] Fallback fetch failed: $e');
       return {};
     }
   }
@@ -342,37 +329,34 @@ class UspWifiDataService {
   }) {
     final apByPath = {
       for (final ap in accessPoints.items)
-        _ensureTrailingDot(ap.instancePath): ap,
+        ensureTrailingDot(ap.instancePath): ap,
     };
     final ssidByPath = {
-      for (final s in ssids.items) _ensureTrailingDot(s.instancePath): s,
+      for (final s in ssids.items) ensureTrailingDot(s.instancePath): s,
     };
     final bandByRadioPath = {
       for (final r in radios.items)
-        _ensureTrailingDot(r.instancePath):
+        ensureTrailingDot(r.instancePath):
             _normalizeBand(r.operatingFrequencyBand),
     };
-
-    logger.d('[USP][Dashboard]: Connection detail: '
-        '${apByPath.length} APs, ${ssidByPath.length} SSIDs, ${bandByRadioPath.length} radios');
 
     final result = <String, ClientConnectionDetail>{};
     for (final entry in wifiClientMap.entries) {
       final mac = entry.key;
       final client = entry.value;
 
-      final ap = apByPath[_ensureTrailingDot(client.parentPath)];
+      final ap = apByPath[ensureTrailingDot(client.parentPath)];
       if (ap == null) {
         logger.d(
             '[USP][Dashboard]Connection detail: no AP for parentPath=${client.parentPath}');
         continue;
       }
 
-      final ssid = ssidByPath[_ensureTrailingDot(ap.ssidReference)];
+      final ssid = ssidByPath[ensureTrailingDot(ap.ssidReference)];
       final ssidName = ssid?.ssid ?? '';
 
       final band = ssid != null
-          ? (bandByRadioPath[_ensureTrailingDot(ssid.lowerLayers)] ?? '')
+          ? (bandByRadioPath[ensureTrailingDot(ssid.lowerLayers)] ?? '')
           : '';
 
       result[mac] = ClientConnectionDetail(band: band, ssidName: ssidName);
@@ -404,16 +388,43 @@ class UspWifiDataService {
   // Helpers
   // ---------------------------------------------------------------------------
 
-  static String _ensureTrailingDot(String path) {
-    if (path.isEmpty) return path;
-    return path.endsWith('.') ? path : '$path.';
-  }
-
   static String _normalizeBand(String rawBand) {
     final lower = rawBand.toLowerCase();
     if (lower.contains('6g') || lower.contains('6 g')) return '6GHz';
     if (lower.contains('5g') || lower.contains('5 g')) return '5GHz';
     if (lower.contains('2.4') || lower.contains('2_4')) return '2.4GHz';
     return rawBand;
+  }
+
+  /// Builds a BSSID → band mapping from WiFi SSID and Radio data.
+  ///
+  /// Used by [MeshTopologyBuilder] to determine band for clients on slave nodes
+  /// (via DataElements BSS.BSSID → this map → band).
+  ///
+  /// The mapping is: SSID.BSSID + SSID.LowerLayers → Radio.OperatingFrequencyBand
+  static Map<String, String> buildBssidToBandMap({
+    required WiFiSsids ssids,
+    required WiFiRadios radios,
+  }) {
+    // Build Radio path → band lookup
+    final bandByRadioPath = <String, String>{};
+    for (final radio in radios.items) {
+      final path = ensureTrailingDot(radio.instancePath);
+      bandByRadioPath[path] = _normalizeBand(radio.operatingFrequencyBand);
+    }
+
+    // Build BSSID → band mapping via SSID.LowerLayers → Radio
+    final result = <String, String>{};
+    for (final ssid in ssids.items) {
+      final bssid = ssid.bssid.trim().toUpperCase();
+      if (bssid.isEmpty) continue;
+
+      final radioPath = ensureTrailingDot(ssid.lowerLayers);
+      final band = bandByRadioPath[radioPath];
+      if (band != null && band.isNotEmpty) {
+        result[bssid] = band;
+      }
+    }
+    return result;
   }
 }

@@ -88,6 +88,14 @@ const defaultReadOnlyInfo = InternetSettingsReadOnlyInfo(
   staticIpAddress: '192.168.1.100',
 );
 
+const bridgeReadOnlyInfo = InternetSettingsReadOnlyInfo(
+  currentMacAddress: '11:22:33:44:55:66',
+  pppConnectionStatus: '',
+  dhcpv6Duid: '',
+  staticIpAddress: '',
+  hostName: 'Community00080',
+);
+
 const pppoeReadOnlyInfo = InternetSettingsReadOnlyInfo(
   currentMacAddress: '11:22:33:44:55:66',
   pppConnectionStatus: 'Connected',

@@ -34,7 +34,7 @@ class _AppRootContainerState extends ConsumerState<AppRootContainer> {
 
   @override
   Widget build(BuildContext context) {
-    logger.d('[App]: Root Container build: ${widget.route}');
+    logger.t('[App]: Root Container build: ${widget.route}');
 
     return LayoutBuilder(builder: ((context, constraints) {
       return IdleChecker(
@@ -45,7 +45,7 @@ class _AppRootContainerState extends ConsumerState<AppRootContainer> {
             return;
           }
           // not log in yet
-          if (ref.read(authProvider).value?.loginType == LoginType.none) {
+          if (!(ref.read(authProvider).value?.isLoggedIn ?? false)) {
             return;
           }
           // not go into dashboard yet
@@ -61,7 +61,7 @@ class _AppRootContainerState extends ConsumerState<AppRootContainer> {
           if (ref.read(idleCheckerPauseProvider) == true) {
             return;
           }
-          logger.d('[App]: Idled!');
+          logger.t('[App]: Idled!');
           ref.read(authProvider.notifier).logout();
         },
         child: Container(

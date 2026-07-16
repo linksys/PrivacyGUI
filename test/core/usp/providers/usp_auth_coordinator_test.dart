@@ -1,12 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/constants/error_code.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/providers/usp_auth_coordinator.dart';
+import 'package:privacy_gui/core/usp/providers/usp_token_storage.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 
 /// Mock that stores callback fields (mocktail Mock swallows setter calls).
@@ -21,21 +21,26 @@ class TestUspClient extends Mock implements UspClient {
   VoidCallback? onForceLogout;
 }
 
-class MockSecureStorage extends Mock implements FlutterSecureStorage {}
+class MockTokenStorage extends Mock implements UspTokenStorage {}
 
 void main() {
   late TestUspClient mockUsp;
-  late MockSecureStorage mockStorage;
+  late MockTokenStorage mockStorage;
   late UspAuthCoordinator coordinator;
 
   setUp(() {
     mockUsp = TestUspClient();
-    mockStorage = MockSecureStorage();
+    mockStorage = MockTokenStorage();
 
     // Default stubs
     when(() => mockUsp.isAuthenticated).thenReturn(true);
     when(() => mockUsp.isReauthInProgress).thenReturn(false);
-    when(() => mockUsp.refreshToken()).thenAnswer((_) async {});
+    when(() => mockUsp.refreshToken(token: any(named: 'token')))
+        .thenAnswer((_) async {});
+    when(() => mockUsp.sessionToken).thenReturn('test-token');
+    when(() => mockStorage.save(any())).thenReturn(null);
+    when(() => mockStorage.clear()).thenReturn(null);
+    when(() => mockStorage.load()).thenReturn(null);
 
     coordinator = UspAuthCoordinator(mockUsp, mockStorage);
   });
@@ -47,7 +52,7 @@ void main() {
     test('refreshes when _lastTokenRefresh is null', () async {
       await coordinator.ensureAuth();
 
-      verify(() => mockUsp.refreshToken()).called(1);
+      verify(() => mockUsp.refreshToken(token: null)).called(1);
     });
 
     test('skips refresh when elapsed < 12 minutes', () async {
@@ -56,20 +61,22 @@ void main() {
       reset(mockUsp);
       when(() => mockUsp.isAuthenticated).thenReturn(true);
       when(() => mockUsp.isReauthInProgress).thenReturn(false);
-      when(() => mockUsp.refreshToken()).thenAnswer((_) async {});
+      when(() => mockUsp.refreshToken(token: any(named: 'token')))
+          .thenAnswer((_) async {});
+      when(() => mockUsp.sessionToken).thenReturn('test-token');
 
       // Immediate second call — well within 12 min
       await coordinator.ensureAuth();
 
-      verifyNever(() => mockUsp.refreshToken());
+      verifyNever(() => mockUsp.refreshToken(token: any(named: 'token')));
     });
 
     test('refreshes when elapsed >= 12 minutes', () async {
       // First call to set _lastTokenRefresh
       await coordinator.ensureAuth();
-      verify(() => mockUsp.refreshToken()).called(1);
+      verify(() => mockUsp.refreshToken(token: null)).called(1);
 
-      // Simulate time passage by calling syncAfterLogout + re-login
+      // Simulate time passage by calling syncAfterLogout
       // (which resets _lastTokenRefresh to null)
       when(() => mockUsp.logout()).thenAnswer((_) async {});
       await coordinator.syncAfterLogout();
@@ -79,7 +86,7 @@ void main() {
       when(() => mockUsp.isReauthInProgress).thenReturn(false);
       await coordinator.ensureAuth();
 
-      verify(() => mockUsp.refreshToken()).called(1);
+      verify(() => mockUsp.refreshToken(token: null)).called(1);
     });
   });
 
@@ -90,11 +97,17 @@ void main() {
     test('updates _lastTokenRefresh on success', () async {
       await coordinator.ensureAuth();
 
-      verify(() => mockUsp.refreshToken()).called(1);
+      verify(() => mockUsp.refreshToken(token: null)).called(1);
 
       // Second immediate call should skip (timestamp was set)
       await coordinator.ensureAuth();
-      verifyNever(() => mockUsp.refreshToken());
+      verifyNever(() => mockUsp.refreshToken(token: any(named: 'token')));
+    });
+
+    test('persists token on refresh success', () async {
+      await coordinator.ensureAuth();
+
+      verify(() => mockStorage.save('test-token')).called(1);
     });
   });
 
@@ -103,7 +116,7 @@ void main() {
   // ---------------------------------------------------------------------------
   group('ensureAuth — 401 error', () {
     test('calls onForceLogout on HTTP 401', () async {
-      when(() => mockUsp.refreshToken())
+      when(() => mockUsp.refreshToken(token: any(named: 'token')))
           .thenThrow(Exception('HTTP 401 Unauthorized'));
 
       bool logoutCalled = false;
@@ -113,6 +126,16 @@ void main() {
 
       expect(logoutCalled, isTrue);
     });
+
+    test('clears token storage on 401', () async {
+      when(() => mockUsp.refreshToken(token: any(named: 'token')))
+          .thenThrow(Exception('HTTP 401 Unauthorized'));
+      coordinator.onForceLogout = () {};
+
+      await coordinator.ensureAuth();
+
+      verify(() => mockStorage.clear()).called(1);
+    });
   });
 
   // ---------------------------------------------------------------------------
@@ -120,7 +143,7 @@ void main() {
   // ---------------------------------------------------------------------------
   group('ensureAuth — network error', () {
     test('does NOT call onForceLogout on network error', () async {
-      when(() => mockUsp.refreshToken())
+      when(() => mockUsp.refreshToken(token: any(named: 'token')))
           .thenThrow(Exception('SocketException: Connection refused'));
 
       bool logoutCalled = false;
@@ -141,7 +164,7 @@ void main() {
 
       await coordinator.ensureAuth();
 
-      verifyNever(() => mockUsp.refreshToken());
+      verifyNever(() => mockUsp.refreshToken(token: any(named: 'token')));
     });
 
     test('skips when reauth is in progress', () async {
@@ -149,12 +172,13 @@ void main() {
 
       await coordinator.ensureAuth();
 
-      verifyNever(() => mockUsp.refreshToken());
+      verifyNever(() => mockUsp.refreshToken(token: any(named: 'token')));
     });
 
     test('concurrent ensureAuth calls do not stack', () async {
       final completer = Completer<void>();
-      when(() => mockUsp.refreshToken()).thenAnswer((_) => completer.future);
+      when(() => mockUsp.refreshToken(token: any(named: 'token')))
+          .thenAnswer((_) => completer.future);
 
       // Launch two concurrent calls
       final f1 = coordinator.ensureAuth();
@@ -165,7 +189,7 @@ void main() {
       await f2;
 
       // refreshToken should only be called once
-      verify(() => mockUsp.refreshToken()).called(1);
+      verify(() => mockUsp.refreshToken(token: null)).called(1);
     });
   });
 
@@ -173,40 +197,31 @@ void main() {
   // _lastTokenRefresh — login paths
   // ---------------------------------------------------------------------------
   group('_lastTokenRefresh updates on login paths', () {
-    test('syncAfterLocalLogin updates timestamp', () async {
+    test('syncAfterLocalLogin updates timestamp and persists token', () async {
       when(() => mockUsp.login(any())).thenAnswer((_) async {});
 
       await coordinator.syncAfterLocalLogin('password');
 
+      // Token should be persisted
+      verify(() => mockStorage.save('test-token')).called(1);
+
       // Immediate ensureAuth should skip (timestamp just set)
       await coordinator.ensureAuth();
-      verifyNever(() => mockUsp.refreshToken());
+      verifyNever(() => mockUsp.refreshToken(token: any(named: 'token')));
     });
 
-    test('tryUspLogin updates timestamp on success', () async {
+    test('tryUspLogin updates timestamp and persists token on success',
+        () async {
       when(() => mockUsp.login(any())).thenAnswer((_) async {});
 
       await coordinator.tryUspLogin('password');
 
-      // Immediate ensureAuth should skip
-      await coordinator.ensureAuth();
-      verifyNever(() => mockUsp.refreshToken());
-    });
-
-    test('restoreSession updates timestamp on success', () async {
-      when(() => mockUsp.isAuthenticated).thenReturn(false);
-      when(() => mockStorage.read(key: any(named: 'key')))
-          .thenAnswer((_) async => 'storedPassword');
-      when(() => mockUsp.login(any())).thenAnswer((_) async {});
-
-      await coordinator.restoreSession();
-
-      // Re-stub isAuthenticated for ensureAuth check
-      when(() => mockUsp.isAuthenticated).thenReturn(true);
+      // Token should be persisted
+      verify(() => mockStorage.save('test-token')).called(1);
 
       // Immediate ensureAuth should skip
       await coordinator.ensureAuth();
-      verifyNever(() => mockUsp.refreshToken());
+      verifyNever(() => mockUsp.refreshToken(token: any(named: 'token')));
     });
   });
 
@@ -250,10 +265,10 @@ void main() {
   });
 
   // ---------------------------------------------------------------------------
-  // syncAfterLogout resets _lastTokenRefresh
+  // syncAfterLogout resets _lastTokenRefresh and clears token
   // ---------------------------------------------------------------------------
   group('syncAfterLogout', () {
-    test('resets _lastTokenRefresh', () async {
+    test('resets _lastTokenRefresh and clears token storage', () async {
       // Set timestamp via login
       when(() => mockUsp.login(any())).thenAnswer((_) async {});
       await coordinator.syncAfterLocalLogin('password');
@@ -262,79 +277,88 @@ void main() {
       when(() => mockUsp.logout()).thenAnswer((_) async {});
       await coordinator.syncAfterLogout();
 
+      // Token storage should be cleared
+      verify(() => mockStorage.clear()).called(1);
+
       // ensureAuth should now refresh (timestamp is null)
       await coordinator.ensureAuth();
-      verify(() => mockUsp.refreshToken()).called(1);
+      verify(() => mockUsp.refreshToken(token: null)).called(1);
     });
   });
 
   // ---------------------------------------------------------------------------
-  // restoreSession — token-first strategy: tries refreshToken() first, falls
-  // back to password login on 401. Covers reauth Stage 2 and recovery probe.
+  // restoreSession — token-based strategy
   // ---------------------------------------------------------------------------
-  group('restoreSession (onReauthRequired / recovery probe)', () {
+  group('restoreSession (token-based)', () {
     test('uses refreshToken when isAuthenticated=true and token is valid',
         () async {
       when(() => mockUsp.isAuthenticated).thenReturn(true);
-      when(() => mockUsp.refreshToken()).thenAnswer((_) async {});
 
       await coordinator.restoreSession();
 
-      verify(() => mockUsp.refreshToken()).called(1);
+      // Should use in-memory token refresh (no external token)
+      verify(() => mockUsp.refreshToken(token: null)).called(1);
       verifyNever(() => mockUsp.login(any()));
     });
 
-    test('falls back to login when refreshToken returns 401', () async {
-      // WASM client reports authenticated (stale token in memory)
+    test('falls back to stored token when in-memory refresh fails with 401',
+        () async {
+      // First call with in-memory token fails
       when(() => mockUsp.isAuthenticated).thenReturn(true);
-      when(() => mockUsp.refreshToken())
-          .thenThrow(Exception('HTTP 401 Unauthorized'));
-      when(() => mockStorage.read(key: any(named: 'key')))
-          .thenAnswer((_) async => 'storedPassword');
-      when(() => mockUsp.login(any())).thenAnswer((_) async {});
-
-      // UspClient wires onReauthRequired to coordinator.restoreSession
-      final onReauth = mockUsp.onReauthRequired;
-      expect(onReauth, isNotNull);
-      await onReauth!();
-
-      verify(() => mockUsp.refreshToken()).called(1);
-      verify(() => mockUsp.login('storedPassword')).called(1);
-    });
-
-    test('falls back to login when called directly with stale token', () async {
-      when(() => mockUsp.isAuthenticated).thenReturn(true);
-      when(() => mockUsp.refreshToken())
-          .thenThrow(Exception('HTTP 401 Unauthorized'));
-      when(() => mockStorage.read(key: any(named: 'key')))
-          .thenAnswer((_) async => 'storedPassword');
-      when(() => mockUsp.login(any())).thenAnswer((_) async {});
+      var callCount = 0;
+      when(() => mockUsp.refreshToken(token: any(named: 'token')))
+          .thenAnswer((invocation) async {
+        callCount++;
+        if (callCount == 1) {
+          throw Exception('HTTP 401 Unauthorized');
+        }
+        // Second call with stored token succeeds
+      });
+      when(() => mockStorage.load()).thenReturn('stored-token');
 
       await coordinator.restoreSession();
 
-      verify(() => mockUsp.refreshToken()).called(1);
-      verify(() => mockUsp.login('storedPassword')).called(1);
+      // Should try in-memory first, then stored token
+      verify(() => mockUsp.refreshToken(token: null)).called(1);
+      verify(() => mockUsp.refreshToken(token: 'stored-token')).called(1);
     });
 
-    test('uses login directly when isAuthenticated=false (page reload)',
+    test('uses stored token directly when isAuthenticated=false (page reload)',
         () async {
       when(() => mockUsp.isAuthenticated).thenReturn(false);
-      when(() => mockStorage.read(key: any(named: 'key')))
-          .thenAnswer((_) async => 'storedPassword');
-      when(() => mockUsp.login(any())).thenAnswer((_) async {});
+      when(() => mockStorage.load()).thenReturn('stored-token');
 
       await coordinator.restoreSession();
 
-      verifyNever(() => mockUsp.refreshToken());
-      verify(() => mockUsp.login('storedPassword')).called(1);
+      verifyNever(() => mockUsp.refreshToken(token: null));
+      verify(() => mockUsp.refreshToken(token: 'stored-token')).called(1);
     });
 
-    test('concurrent calls are coalesced — only one login attempt', () async {
+    test('returns early when no stored token available', () async {
       when(() => mockUsp.isAuthenticated).thenReturn(false);
-      when(() => mockStorage.read(key: any(named: 'key')))
-          .thenAnswer((_) async => 'storedPassword');
-      // Slow login to ensure concurrent calls overlap
-      when(() => mockUsp.login(any()))
+      when(() => mockStorage.load()).thenReturn(null);
+
+      await coordinator.restoreSession();
+
+      verifyNever(() => mockUsp.refreshToken(token: any(named: 'token')));
+    });
+
+    test('clears stored token when it is expired/invalid', () async {
+      when(() => mockUsp.isAuthenticated).thenReturn(false);
+      when(() => mockStorage.load()).thenReturn('expired-token');
+      when(() => mockUsp.refreshToken(token: 'expired-token'))
+          .thenThrow(Exception('HTTP 401 Unauthorized'));
+
+      await coordinator.restoreSession();
+
+      verify(() => mockStorage.clear()).called(1);
+    });
+
+    test('concurrent calls are coalesced — only one restore attempt', () async {
+      when(() => mockUsp.isAuthenticated).thenReturn(false);
+      when(() => mockStorage.load()).thenReturn('stored-token');
+      // Slow refresh to ensure concurrent calls overlap
+      when(() => mockUsp.refreshToken(token: 'stored-token'))
           .thenAnswer((_) => Future.delayed(const Duration(milliseconds: 50)));
 
       // Launch multiple concurrent calls
@@ -345,24 +369,99 @@ void main() {
       ];
       await Future.wait(futures);
 
-      // login should only be called once despite 3 concurrent calls
-      verify(() => mockUsp.login('storedPassword')).called(1);
+      // refreshToken should only be called once despite 3 concurrent calls
+      verify(() => mockUsp.refreshToken(token: 'stored-token')).called(1);
     });
 
-    test('cooldown skips login within 5 seconds after failure', () async {
+    test('cooldown skips restore within 1 second after failure', () async {
       when(() => mockUsp.isAuthenticated).thenReturn(false);
-      when(() => mockStorage.read(key: any(named: 'key')))
-          .thenAnswer((_) async => 'storedPassword');
-      when(() => mockUsp.login(any()))
+      when(() => mockStorage.load()).thenReturn('stored-token');
+      when(() => mockUsp.refreshToken(token: 'stored-token'))
           .thenThrow(Exception('Connection refused'));
 
       // First call — fails
       await coordinator.restoreSession();
-      verify(() => mockUsp.login('storedPassword')).called(1);
+      verify(() => mockUsp.refreshToken(token: 'stored-token')).called(1);
 
       // Second call within cooldown — should be skipped
       await coordinator.restoreSession();
-      verifyNever(() => mockUsp.login(any())); // No additional login call
+      verifyNever(
+          () => mockUsp.refreshToken(token: any(named: 'token'))); // No extra
+    });
+
+    test('triggers force logout when no stored token and not recovering',
+        () async {
+      when(() => mockUsp.isAuthenticated).thenReturn(false);
+      when(() => mockStorage.load()).thenReturn(null);
+
+      bool logoutCalled = false;
+      coordinator.onForceLogout = () => logoutCalled = true;
+
+      await coordinator.restoreSession(isRecovering: false);
+
+      expect(logoutCalled, isTrue);
+    });
+
+    test('suppresses force logout when no stored token but is recovering',
+        () async {
+      when(() => mockUsp.isAuthenticated).thenReturn(false);
+      when(() => mockStorage.load()).thenReturn(null);
+
+      bool logoutCalled = false;
+      coordinator.onForceLogout = () => logoutCalled = true;
+
+      await coordinator.restoreSession(isRecovering: true);
+
+      expect(logoutCalled, isFalse);
+    });
+
+    test('triggers force logout when token expired and not recovering',
+        () async {
+      when(() => mockUsp.isAuthenticated).thenReturn(false);
+      when(() => mockStorage.load()).thenReturn('expired-token');
+      when(() => mockUsp.refreshToken(token: 'expired-token'))
+          .thenThrow(Exception('HTTP 401 Unauthorized'));
+
+      bool logoutCalled = false;
+      coordinator.onForceLogout = () => logoutCalled = true;
+
+      await coordinator.restoreSession(isRecovering: false);
+
+      expect(logoutCalled, isTrue);
+      verify(() => mockStorage.clear()).called(1);
+    });
+
+    test('suppresses force logout when token expired but is recovering',
+        () async {
+      when(() => mockUsp.isAuthenticated).thenReturn(false);
+      when(() => mockStorage.load()).thenReturn('expired-token');
+      when(() => mockUsp.refreshToken(token: 'expired-token'))
+          .thenThrow(Exception('HTTP 401 Unauthorized'));
+
+      bool logoutCalled = false;
+      coordinator.onForceLogout = () => logoutCalled = true;
+
+      await coordinator.restoreSession(isRecovering: true);
+
+      expect(logoutCalled, isFalse);
+      // Token should still be cleared even in recovery mode
+      verify(() => mockStorage.clear()).called(1);
+    });
+
+    test('does not trigger force logout on network error (might recover)',
+        () async {
+      when(() => mockUsp.isAuthenticated).thenReturn(false);
+      when(() => mockStorage.load()).thenReturn('stored-token');
+      when(() => mockUsp.refreshToken(token: 'stored-token'))
+          .thenThrow(Exception('Connection refused'));
+
+      bool logoutCalled = false;
+      coordinator.onForceLogout = () => logoutCalled = true;
+
+      await coordinator.restoreSession(isRecovering: false);
+
+      // Network error — don't force logout, might recover
+      expect(logoutCalled, isFalse);
     });
   });
 
@@ -380,7 +479,13 @@ void main() {
 
       // ensureAuth should now skip (timestamp was just set)
       await coordinator.ensureAuth();
-      verifyNever(() => mockUsp.refreshToken());
+      verifyNever(() => mockUsp.refreshToken(token: any(named: 'token')));
+    });
+
+    test('onRefreshTokenSuccess persists token', () async {
+      mockUsp.onRefreshTokenSuccess!();
+
+      verify(() => mockStorage.save('test-token')).called(1);
     });
   });
 
@@ -391,19 +496,144 @@ void main() {
     test('resets _lastTokenRefresh on 401 so next call retries immediately',
         () async {
       // Make refreshToken throw 401
-      when(() => mockUsp.refreshToken())
+      when(() => mockUsp.refreshToken(token: any(named: 'token')))
           .thenThrow(Exception('HTTP 401 Unauthorized'));
       coordinator.onForceLogout = () {};
 
       // ensureAuth gets 401 — should reset _lastTokenRefresh
       await coordinator.ensureAuth();
-      verify(() => mockUsp.refreshToken()).called(1);
+      verify(() => mockUsp.refreshToken(token: null)).called(1);
 
       // Immediately call again — should attempt refresh because
       // _lastTokenRefresh was reset to null on 401
-      when(() => mockUsp.refreshToken()).thenAnswer((_) async {});
+      when(() => mockUsp.refreshToken(token: any(named: 'token')))
+          .thenAnswer((_) async {});
       await coordinator.ensureAuth();
-      verify(() => mockUsp.refreshToken()).called(1);
+      verify(() => mockUsp.refreshToken(token: null)).called(1);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // reloginWithNewPassword
+  // ---------------------------------------------------------------------------
+  group('reloginWithNewPassword', () {
+    test(
+        'clears old token, logs out, logs in with new password, persists token',
+        () async {
+      when(() => mockUsp.logout()).thenAnswer((_) async {});
+      when(() => mockUsp.login(any())).thenAnswer((_) async {});
+
+      await coordinator.reloginWithNewPassword('newPassword123');
+
+      // Verify sequence: clear → logout → login → persist
+      verifyInOrder([
+        () => mockStorage.clear(),
+        () => mockUsp.logout(),
+        () => mockUsp.login('newPassword123'),
+        () => mockStorage.save('test-token'),
+      ]);
+    });
+
+    test('continues even if logout fails (best-effort)', () async {
+      when(() => mockUsp.logout()).thenThrow(Exception('Session expired'));
+      when(() => mockUsp.login(any())).thenAnswer((_) async {});
+
+      // Should not throw despite logout failure
+      await coordinator.reloginWithNewPassword('newPassword123');
+
+      verify(() => mockUsp.login('newPassword123')).called(1);
+      verify(() => mockStorage.save('test-token')).called(1);
+    });
+
+    test(
+        'throws InvalidCredentialsError when login succeeds but isAuthenticated=false',
+        () async {
+      when(() => mockUsp.logout()).thenAnswer((_) async {});
+      when(() => mockUsp.login(any())).thenAnswer((_) async {});
+      when(() => mockUsp.isAuthenticated).thenReturn(false);
+
+      await expectLater(
+        coordinator.reloginWithNewPassword('newPassword123'),
+        throwsA(isA<InvalidCredentialsError>()),
+      );
+    });
+
+    test('throws UnexpectedError when login throws non-ServiceError', () async {
+      when(() => mockUsp.logout()).thenAnswer((_) async {});
+      when(() => mockUsp.login(any())).thenThrow(Exception('Network failure'));
+
+      await expectLater(
+        coordinator.reloginWithNewPassword('newPassword123'),
+        throwsA(isA<UnexpectedError>()),
+      );
+    });
+
+    test('rethrows ServiceError from login', () async {
+      when(() => mockUsp.logout()).thenAnswer((_) async {});
+      when(() => mockUsp.login(any()))
+          .thenThrow(const NetworkError(detail: 'timeout'));
+
+      await expectLater(
+        coordinator.reloginWithNewPassword('newPassword123'),
+        throwsA(isA<NetworkError>()),
+      );
+    });
+
+    test('updates _lastTokenRefresh on success', () async {
+      when(() => mockUsp.logout()).thenAnswer((_) async {});
+      when(() => mockUsp.login(any())).thenAnswer((_) async {});
+
+      await coordinator.reloginWithNewPassword('newPassword123');
+
+      // Immediate ensureAuth should skip (timestamp just set)
+      await coordinator.ensureAuth();
+      verifyNever(() => mockUsp.refreshToken(token: any(named: 'token')));
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Null UspClient guards
+  // ---------------------------------------------------------------------------
+  group('null UspClient guards', () {
+    late UspAuthCoordinator nullCoordinator;
+
+    setUp(() {
+      nullCoordinator = UspAuthCoordinator(null, mockStorage);
+    });
+
+    test('reloginWithNewPassword throws ServiceNotInitializedError', () async {
+      await expectLater(
+        nullCoordinator.reloginWithNewPassword('password'),
+        throwsA(isA<ServiceNotInitializedError>()),
+      );
+    });
+
+    test('tryUspLogin throws ServiceNotInitializedError', () async {
+      await expectLater(
+        nullCoordinator.tryUspLogin('password'),
+        throwsA(isA<ServiceNotInitializedError>()),
+      );
+    });
+
+    test('restoreSession returns early without error', () async {
+      // Should not throw, just log warning
+      await nullCoordinator.restoreSession();
+      verifyNever(() => mockStorage.load());
+    });
+
+    test('syncAfterLocalLogin returns early without error', () async {
+      await nullCoordinator.syncAfterLocalLogin('password');
+      verifyNever(() => mockStorage.save(any()));
+    });
+
+    test('syncAfterLogout clears storage even with null client', () async {
+      await nullCoordinator.syncAfterLogout();
+      verify(() => mockStorage.clear()).called(1);
+    });
+
+    test('ensureAuth returns early without error', () async {
+      await nullCoordinator.ensureAuth();
+      // No assertions needed — just verify no exception
     });
   });
 
@@ -412,7 +642,7 @@ void main() {
   // ---------------------------------------------------------------------------
   group('_isAuthError pattern matching', () {
     test('matches actual WASM error format', () async {
-      when(() => mockUsp.refreshToken()).thenThrow(
+      when(() => mockUsp.refreshToken(token: any(named: 'token'))).thenThrow(
           Exception('Get failed: Transport error: HTTP error: HTTP 401'));
 
       bool logoutCalled = false;
@@ -424,7 +654,7 @@ void main() {
     });
 
     test('does NOT match HTTP 500', () async {
-      when(() => mockUsp.refreshToken())
+      when(() => mockUsp.refreshToken(token: any(named: 'token')))
           .thenThrow(Exception('HTTP 500 Internal Server Error'));
 
       bool logoutCalled = false;
@@ -436,7 +666,7 @@ void main() {
     });
 
     test('does NOT match HTTP 403', () async {
-      when(() => mockUsp.refreshToken())
+      when(() => mockUsp.refreshToken(token: any(named: 'token')))
           .thenThrow(Exception('HTTP error: HTTP 403 Forbidden'));
 
       bool logoutCalled = false;
@@ -445,55 +675,6 @@ void main() {
       await coordinator.ensureAuth();
 
       expect(logoutCalled, isFalse);
-    });
-  });
-
-  // ---------------------------------------------------------------------------
-  // _loginWithStoredPassword — silent failure
-  // ---------------------------------------------------------------------------
-  group('_loginWithStoredPassword — silent failure', () {
-    test('restoreSession does not throw when login fails', () async {
-      when(() => mockUsp.isAuthenticated).thenReturn(false);
-      when(() => mockStorage.read(key: any(named: 'key')))
-          .thenAnswer((_) async => 'storedPassword');
-      when(() => mockUsp.login(any()))
-          .thenThrow(Exception('Connection refused'));
-
-      // Should not throw
-      await coordinator.restoreSession();
-    });
-
-    test('onReauthRequired does not throw when login fails', () async {
-      when(() => mockStorage.read(key: any(named: 'key')))
-          .thenAnswer((_) async => 'storedPassword');
-      when(() => mockUsp.login(any()))
-          .thenThrow(Exception('Connection refused'));
-
-      // Trigger restoreSession via onReauthRequired wiring
-      final onReauth = mockUsp.onReauthRequired;
-      expect(onReauth, isNotNull);
-
-      // Should not throw
-      await onReauth!();
-    });
-
-    test('returns false and does not update timestamp on failure', () async {
-      when(() => mockUsp.isAuthenticated).thenReturn(false);
-      when(() => mockStorage.read(key: any(named: 'key')))
-          .thenAnswer((_) async => 'storedPassword');
-      when(() => mockUsp.login(any()))
-          .thenThrow(Exception('Connection refused'));
-
-      await coordinator.restoreSession();
-
-      // Re-stub for ensureAuth check
-      when(() => mockUsp.isAuthenticated).thenReturn(true);
-      when(() => mockUsp.isReauthInProgress).thenReturn(false);
-      when(() => mockUsp.refreshToken()).thenAnswer((_) async {});
-
-      // ensureAuth should refresh (timestamp was NOT set)
-      await coordinator.ensureAuth();
-      verify(() => mockUsp.refreshToken()).called(1);
     });
   });
 }

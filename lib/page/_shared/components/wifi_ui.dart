@@ -105,6 +105,11 @@ String wifiDisplayValue(BuildContext context, String value) {
       return loc(context).none;
     case 'Mixed':
       return loc(context).mixed;
+    case 'OWE':
+      // Firmware reports Enhanced Open as the TR-181 token 'OWE'. Show the
+      // Wi-Fi standard label instead of the raw token; like WPA2/WPA3-Personal
+      // it is a technical term and is not localized.
+      return 'Enhanced Open';
     default:
       return value;
   }

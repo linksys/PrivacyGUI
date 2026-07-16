@@ -1,67 +1,67 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
+import 'package:privacy_gui/page/_shared/models/client_device.dart';
+import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
-import 'package:privacy_gui/page/topology/models/node_ui_model.dart';
 
 /// Computed provider — looks up a single node + its connected devices by deviceId.
+///
+/// Uses [MeshNetwork] for direct node lookup and pre-organized connected clients.
 final uspNodeDetailProvider =
     Provider.family<UspNodeDetailState, String>((ref, deviceId) {
   final data = ref.watch(devicesDataProvider).valueOrNull;
-  if (data == null) return UspNodeDetailState.empty();
+  final meshNetwork = data?.meshNetwork;
 
-  final node = data.nodeModels
-      .where((n) => n.deviceId.toUpperCase() == deviceId.toUpperCase())
-      .firstOrNull;
+  if (meshNetwork == null) return UspNodeDetailState.empty();
 
+  final node = meshNetwork.findNode(deviceId);
   if (node == null) return UspNodeDetailState.empty();
 
-  // Look up parent node using backhaulParentDeviceId (parent's Device ID)
-  NodeUIModel? parentNode;
-  if (node.backhaulParentDeviceId != null &&
-      node.backhaulParentDeviceId!.isNotEmpty) {
-    final parentId =
-        node.backhaulParentDeviceId!.toUpperCase().replaceAll(':', '');
-    parentNode = data.nodeModels.where((n) {
-      final nodeId = n.deviceId.toUpperCase().replaceAll(':', '');
-      final nodeDeId = n.dataElementsId?.toUpperCase().replaceAll(':', '');
-      return nodeId == parentId || nodeDeId == parentId;
-    }).firstOrNull;
+  // Look up parent node for slaves
+  NodeEntity? parentNode;
+  if (node is SlaveNode && node.backhaul.parentNodeId != null) {
+    parentNode = meshNetwork.findNode(node.backhaul.parentNodeId!);
   }
-
-  // For non-mesh routers the synthetic gateway uses deviceId 'gateway',
-  // and devices have parentNodeId == null (no DataElements mapping).
-  // Treat null parentNodeId as "connected to gateway".
-  final isGatewayLookup = deviceId.toUpperCase() == 'GATEWAY';
-  final connectedDevices = data.deviceModels
-      .where((d) =>
-          (d.parentNodeId != null &&
-              d.parentNodeId!.toUpperCase() == deviceId.toUpperCase()) ||
-          (isGatewayLookup && d.parentNodeId == null))
-      .toList();
 
   return UspNodeDetailState(
     node: node,
     parentNode: parentNode,
-    connectedDevices: connectedDevices,
+    connectedClients: node.connectedClients,
   );
 });
 
+// ---------------------------------------------------------------------------
+// State
+// ---------------------------------------------------------------------------
+
 class UspNodeDetailState extends Equatable {
-  final NodeUIModel? node;
-  final NodeUIModel? parentNode;
-  final List<DeviceUIModel> connectedDevices;
+  final NodeEntity? node;
+  final NodeEntity? parentNode;
+  final List<ClientDevice> connectedClients;
 
   const UspNodeDetailState({
     this.node,
     this.parentNode,
-    this.connectedDevices = const [],
+    this.connectedClients = const [],
   });
 
   factory UspNodeDetailState.empty() => const UspNodeDetailState();
 
-  int get activeDeviceCount => connectedDevices.where((d) => d.isActive).length;
+  /// Whether data is available.
+  bool get hasData => node != null;
+
+  /// Active (online) client count.
+  int get activeClientCount => connectedClients.where((c) => c.isOnline).length;
+
+  /// Total connected client count.
+  int get totalClientCount => connectedClients.length;
+
+  /// Node display name.
+  String get displayName => node?.displayName ?? '';
+
+  /// Whether this is the master node.
+  bool get isMaster => node?.isMaster ?? false;
 
   @override
-  List<Object?> get props => [node, parentNode, connectedDevices];
+  List<Object?> get props => [node, parentNode, connectedClients];
 }

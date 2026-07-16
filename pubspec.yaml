@@ -15,7 +15,7 @@ publish_to: "none" # Remove this line if you wish to publish to pub.dev
 # In iOS, build-name is used as CFBundleShortVersionString while build-number used as CFBundleVersion.
 # Read more about iOS versioning at
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
-version: 2.5.0+100000
+version: 2.6.0+100000
 
 environment:
   sdk: ">=3.3.0 <4.0.0"
@@ -59,11 +59,11 @@ dependencies:
   ui_kit_library:
     git:
       url: https://github.com/linksys/privacyGUI-UI-kit.git
-      ref: v2.25.1
+      ref: v2.28.1
   generative_ui:
     git:
       url: https://github.com/linksys/privacyGUI-UI-kit.git
-      ref: v2.25.1
+      ref: v2.28.1
       path: generative_ui
   flutter_blue_plus: ^1.4.0
   crypto: ^3.0.2
@@ -129,7 +129,47 @@ flutter:
     - assets/resources/
     - assets/a2ui/widgets/
     - assets/theme/
-    
+    - assets/fonts/fallback/
+
+  # Non-Latin fallback fonts (CJK subsets built from the interface charset — see
+  # tools/font_subset/ — plus Thai/Arabic/Latin-ext and Roboto). Declared under
+  # fonts: so the engine registers them before the first frame; this is what
+  # stops the CanvasKit fallback manager from probing the CDN (verified: as
+  # assets-only they were probed; declared here, zero CDN). Family names are
+  # package-prefixed to match ui_kit's AppText fallback injection and app.dart's
+  # textTheme fallback. Offline-first: all locales must render without network.
+  fonts:
+    - family: packages/ui_kit_library/NotoSansSC
+      fonts:
+        - asset: assets/fonts/fallback/NotoSansCJKsc.subset.woff2
+    - family: packages/ui_kit_library/NotoSansTC
+      fonts:
+        - asset: assets/fonts/fallback/NotoSansCJKtc.subset.woff2
+    - family: packages/ui_kit_library/NotoSansHK
+      fonts:
+        - asset: assets/fonts/fallback/NotoSansCJKhk.subset.woff2
+    - family: packages/ui_kit_library/NotoSansJP
+      fonts:
+        - asset: assets/fonts/fallback/NotoSansCJKjp.subset.woff2
+    - family: packages/ui_kit_library/NotoSansKR
+      fonts:
+        - asset: assets/fonts/fallback/NotoSansCJKkr.subset.woff2
+    - family: packages/ui_kit_library/NotoSansThai
+      fonts:
+        - asset: assets/fonts/fallback/NotoSansThai.woff2
+    - family: packages/ui_kit_library/NotoSansArabic
+      fonts:
+        - asset: assets/fonts/fallback/NotoSansArabic.woff2
+    - family: packages/ui_kit_library/NotoSansLatinExt
+      fonts:
+        - asset: assets/fonts/fallback/NotoSans-Latin.woff2
+    # Roboto is the engine's built-in default global fallback
+    # (globalFontFallbacks = ['Roboto']). Declared with its BARE family name so
+    # the engine finds it locally instead of probing the CDN on startup.
+    - family: Roboto
+      fonts:
+        - asset: assets/fonts/fallback/Roboto.woff2
+
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware.
 

@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/framework/preservable_contract.dart';
 import 'package:privacy_gui/framework/preservable_notifier_mixin.dart';
@@ -97,6 +98,47 @@ class UspLocalNetworkNotifier
   }
 
   // ---------------------------------------------------------------------------
+  // save — override the mixin's default (performSave -> markAsSaved -> refetch)
+  // to special-case a router IP / subnet change, which makes the router
+  // unreachable on this origin.
+  // ---------------------------------------------------------------------------
+
+  @override
+  Future<LocalNetworkFeatureState> save() async {
+    // Detect the IP change BEFORE saving: markAsSaved() below collapses
+    // original into current, so this must be read up front. Only an IP address
+    // change (not a mask-only change) drops the current connection, so that is
+    // the trigger for the redirect + SSE disconnect.
+    final ipChanged = state.hasIpAddressChange;
+
+    await performSave();
+    markAsSaved();
+
+    if (ipChanged) {
+      // Changing the router LAN IP makes it unreachable on this origin
+      // (the old address stops answering). Two effects are handled here, both
+      // specific to this transition:
+      //
+      // 1. Drop SSE intentionally. disconnect() sets _intentionalDisconnect,
+      //    which stops the reconnect backoff and suppresses onReconnectFailed,
+      //    so the app-level recovery flow (2 reconnect failures ->
+      //    waitingForRecovery) never fires on top of the LAN IP redirect
+      //    dialog.
+      // 2. Skip the post-save re-fetch. The SET already succeeded; the device
+      //    is now gone from this origin, so fetch(forceRemote: true) would only
+      //    time out and surface a spurious error for an operation that actually
+      //    succeeded. The redirect dialog is the only valid next step.
+      await ref.read(sseManagerProvider)?.disconnect();
+      return state;
+    }
+
+    // No IP change (e.g. only DHCP or subnet-mask fields changed): the
+    // connection is still alive, so re-fetch so the dashboard card updates too.
+    ref.invalidate(lanDataProvider);
+    return fetch(forceRemote: true);
+  }
+
+  // ---------------------------------------------------------------------------
   // performSave — required by PreservableAutoDisposeNotifierMixin
   // ---------------------------------------------------------------------------
 
@@ -114,9 +156,6 @@ class UspLocalNetworkNotifier
         await _svc.save(original: o, pending: p);
         logger.d('[USP][Network][LAN]: Saved');
       });
-
-      // Force data provider to re-fetch so dashboard card updates too.
-      ref.invalidate(lanDataProvider);
     } on ServiceError catch (e) {
       logger.e('[USP][Network][LAN]: Save failed', error: e);
       rethrow;
@@ -143,10 +182,13 @@ class UspLocalNetworkNotifier
   // UI Mutation (synchronous — no network call)
   // ---------------------------------------------------------------------------
 
-  /// Update a single setting + trigger cascade validation.
+  /// Update a single setting WITHOUT triggering validation.
   ///
-  /// When router IP changes, locked-prefix octets of pool IPs are
-  /// automatically synced so the user doesn't have to retype them.
+  /// Use this for onChange handlers to avoid TextField unfocus on Web.
+  /// Call [validate] separately on unfocus.
+  ///
+  /// When router IP OR subnet mask changes, locked-prefix octets of pool IPs
+  /// are automatically synced so the user doesn't have to retype them.
   void updateSetting(
       LocalNetworkUIModel Function(LocalNetworkUIModel) updater) {
     final current = state.settings.current;
@@ -157,9 +199,15 @@ class UspLocalNetworkNotifier
       newModel = _svc.applyDhcpDefaults(newModel);
     }
 
-    // Auto-sync pool prefix when router IP changes
-    if (newModel.ipAddress != current.model.ipAddress &&
-        newModel.subnetMask.isNotEmpty) {
+    // Auto-sync pool prefix when the router IP OR the subnet mask changes.
+    // The mask must be included: it determines lockedOctetCount, which the UI
+    // uses to lock pool prefix octets read-only. If only the IP triggered the
+    // sync, changing the mask (e.g. /16 → /24) would widen the locked range
+    // without updating the pool, leaving pool octets that are both out-of-subnet
+    // (validation error) AND read-only (uneditable) — a dead end.
+    final ipChanged = newModel.ipAddress != current.model.ipAddress;
+    final maskChanged = newModel.subnetMask != current.model.subnetMask;
+    if ((ipChanged || maskChanged) && newModel.subnetMask.isNotEmpty) {
       final locked = _svc.lockedOctetCount(newModel.subnetMask);
       if (locked > 0) {
         newModel = newModel.copyWith(
@@ -171,16 +219,24 @@ class UspLocalNetworkNotifier
       }
     }
 
-    final errors = _svc.validateAll(newModel);
-
     state = state.copyWith(
       settings: state.settings.update(
         current.copyWith(model: newModel),
       ),
       status: state.status.copyWith(
-        validationErrors: errors,
         lockedOctetCount: _svc.lockedOctetCount(newModel.subnetMask),
       ),
+    );
+  }
+
+  /// Trigger validation on current settings.
+  ///
+  /// Call this on TextField unfocus to avoid unfocus issues on Web.
+  void validate() {
+    final current = state.settings.current.model;
+    final errors = _svc.validateAll(current);
+    state = state.copyWith(
+      status: state.status.copyWith(validationErrors: errors),
     );
   }
 }

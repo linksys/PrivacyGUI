@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
-import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
+import 'package:privacy_gui/page/_shared/models/client_device.dart';
 import 'package:privacy_gui/page/local_network/services/usp_ethernet_data_service.dart';
 
 class MockUspClient extends Mock implements UspClient {}
@@ -11,19 +11,19 @@ class MockUspClient extends Mock implements UspClient {}
 // Test helpers
 // ---------------------------------------------------------------------------
 
-DeviceUIModel _device({
+ClientDevice _device({
   String mac = 'AA:BB:CC:DD:EE:FF',
   String ip = '192.168.1.10',
   String hostName = 'laptop',
   bool isActive = true,
   bool isWifi = false,
 }) =>
-    DeviceUIModel(
+    ClientDevice(
       mac: mac,
       ip: ip,
       hostName: hostName,
       isActive: isActive,
-      isWifi: isWifi,
+      connectionType: isWifi ? ConnectionType.wifi : ConnectionType.wired,
     );
 
 /// Ethernet interfaces response (2 interfaces).

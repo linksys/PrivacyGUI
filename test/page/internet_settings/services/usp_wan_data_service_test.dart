@@ -137,6 +137,46 @@ void main() {
       expect(result.ipv6Addresses, contains('2001:db8::1'));
       expect(result.ipv6Addresses, contains('2001:db8::2'));
     });
+
+    test('global IPv6 surfaces first, link-local kept at end (issue #1128)',
+        () async {
+      // Instance order as reported by the router in the #1128 diagnostic log:
+      // instance 1 is the link-local fe80:: address.
+      stubWanStatus(
+        ipv6Enabled: true,
+        ipv6Addresses: const [
+          'fe80::7612:13ff:fe21:5394',
+          '2401:e180:8831:505f::1',
+          '2401:e180:8831:505f:7612:13ff:fe21:5394',
+          '2401:e180:8801:d79d:7612:13ff:fe21:5394',
+        ],
+      );
+
+      final result = await svc.fetch();
+
+      // The widget shows ipv6Addresses.first, which must be a global unicast
+      // address. Link-local is not filtered — every address is kept and merely
+      // reordered so global unicast wins; the UI tags the link-local one with a
+      // scope badge. So all 4 remain and the link-local sinks to the end.
+      expect(result.ipv6Addresses, hasLength(4));
+      expect(result.ipv6Addresses.first, '2401:e180:8831:505f::1');
+      expect(result.ipv6Addresses.last, 'fe80::7612:13ff:fe21:5394');
+    });
+
+    test('link-local-only WAN keeps the link-local address (issue #1128)',
+        () async {
+      // Real case observed on an M60TB whose upstream assigns no IPv6 prefix:
+      // the WAN interface (eth0) holds only a scope-link fe80:: address. It is
+      // still surfaced (tagged with a scope badge by the UI), not hidden.
+      stubWanStatus(
+        ipv6Enabled: true,
+        ipv6Addresses: const ['fe80::7612:13ff:fe21:5502'],
+      );
+
+      final result = await svc.fetch();
+
+      expect(result.ipv6Addresses, ['fe80::7612:13ff:fe21:5502']);
+    });
   });
 
   // ---------------------------------------------------------------------------

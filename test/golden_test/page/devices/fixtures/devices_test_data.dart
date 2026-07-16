@@ -1,93 +1,102 @@
-import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
+import 'package:privacy_gui/page/_shared/models/client_device.dart';
 import 'package:privacy_gui/page/_shared/models/dhcp_reservation_ui_model.dart';
+import 'package:privacy_gui/page/_shared/models/wifi_connection_info.dart';
 import 'package:privacy_gui/page/devices/providers/device_detail_provider.dart';
 
-const wifiDevice1 = DeviceUIModel(
+final wifiDevice1 = ClientDevice(
   mac: 'AA:BB:CC:DD:EE:01',
   ip: '192.168.1.100',
   hostName: 'iPhone-15-Pro',
   isActive: true,
-  isWifi: true,
-  signalStrength: -42,
-  downlinkRate: 866000000,
-  uplinkRate: 433000000,
-  band: '5GHz',
-  ssidName: 'MyNetwork',
+  connectionType: ConnectionType.wifi,
+  wifi: WifiConnectionInfo(
+    signalStrength: -42,
+    downlinkRate: 866000,
+    uplinkRate: 433000,
+    band: '5GHz',
+    ssidName: 'MyNetwork',
+  ),
   parentNodeId: 'node-1',
   parentNodeName: 'Living Room',
 );
 
-const wifiDeviceGood = DeviceUIModel(
+final wifiDeviceGood = ClientDevice(
   mac: 'AA:BB:CC:DD:EE:02',
   ip: '192.168.1.101',
   hostName: 'MacBook-Air',
   isActive: true,
-  isWifi: true,
-  signalStrength: -68,
-  downlinkRate: 400000000,
-  uplinkRate: 200000000,
-  band: '5GHz',
-  ssidName: 'MyNetwork',
+  connectionType: ConnectionType.wifi,
+  wifi: WifiConnectionInfo(
+    signalStrength: -68,
+    downlinkRate: 400000,
+    uplinkRate: 200000,
+    band: '5GHz',
+    ssidName: 'MyNetwork',
+  ),
   parentNodeId: 'node-1',
   parentNodeName: 'Living Room',
 );
 
-const wiredDevice1 = DeviceUIModel(
+final wiredDevice1 = ClientDevice(
   mac: 'AA:BB:CC:DD:EE:03',
   ip: '192.168.1.102',
   hostName: 'PlayStation-5',
   isActive: true,
-  isWifi: false,
+  connectionType: ConnectionType.wired,
   parentNodeId: 'node-1',
   parentNodeName: 'Living Room',
 );
 
-const offlineDevice = DeviceUIModel(
+final offlineDevice = ClientDevice(
   mac: 'AA:BB:CC:DD:EE:04',
   ip: '192.168.1.103',
   hostName: 'iPad-Mini',
   isActive: false,
-  isWifi: true,
+  connectionType: ConnectionType.wifi,
 );
 
-const wifiDeviceFair = DeviceUIModel(
+final wifiDeviceFair = ClientDevice(
   mac: 'AA:BB:CC:DD:EE:05',
   ip: '192.168.1.104',
   hostName: 'Samsung-TV',
   isActive: true,
-  isWifi: true,
-  signalStrength: -75,
-  downlinkRate: 72000000,
-  uplinkRate: 36000000,
-  band: '2.4GHz',
-  ssidName: 'MyNetwork',
+  connectionType: ConnectionType.wifi,
+  wifi: WifiConnectionInfo(
+    signalStrength: -75,
+    downlinkRate: 72000,
+    uplinkRate: 36000,
+    band: '2.4GHz',
+    ssidName: 'MyNetwork',
+  ),
   parentNodeId: 'node-2',
   parentNodeName: 'Bedroom',
 );
 
-const wifiDevicePoor = DeviceUIModel(
+final wifiDevicePoor = ClientDevice(
   mac: 'AA:BB:CC:DD:EE:06',
   ip: '192.168.1.105',
   hostName: 'Nest-Cam-Outdoor',
   isActive: true,
-  isWifi: true,
-  signalStrength: -82,
-  downlinkRate: 24000000,
-  uplinkRate: 12000000,
-  band: '2.4GHz',
-  ssidName: 'MyNetwork',
+  connectionType: ConnectionType.wifi,
+  wifi: WifiConnectionInfo(
+    signalStrength: -82,
+    downlinkRate: 24000,
+    uplinkRate: 12000,
+    band: '2.4GHz',
+    ssidName: 'MyNetwork',
+  ),
   parentNodeId: 'node-2',
   parentNodeName: 'Bedroom',
 );
 
-const testReservation = DhcpReservationUIModel(
+final testReservation = DhcpReservationUIModel(
   instancePath: 'Device.DHCPv4.Server.Pool.1.StaticAddress.1.',
   mac: 'AA:BB:CC:DD:EE:01',
   ip: '192.168.1.100',
   enable: true,
 );
 
-List<DeviceUIModel> get allDevices => [
+List<ClientDevice> get allDevices => [
       wifiDevice1,
       wifiDeviceGood,
       wiredDevice1,
@@ -113,4 +122,51 @@ DeviceDetailState get offlineDetail => DeviceDetailState(
       device: offlineDevice,
     );
 
+// Device with a global (routable) IPv6 address — shown without a scope badge.
+final wifiDeviceGlobalIpv6 = ClientDevice(
+  mac: 'AA:BB:CC:DD:EE:06',
+  ip: '192.168.1.106',
+  hostName: 'Desktop-PC',
+  isActive: true,
+  connectionType: ConnectionType.wifi,
+  wifi: WifiConnectionInfo(
+    signalStrength: -42,
+    downlinkRate: 866000,
+    uplinkRate: 433000,
+    band: '5GHz',
+    ssidName: 'MyNetwork',
+  ),
+  ipv6Addresses: const ['2401:e180:8801:d79d::5'],
+  parentNodeId: 'node-1',
+  parentNodeName: 'Living Room',
+);
+
+// Device whose only IPv6 address is link-local (fe80::/10) — shown with a
+// scope badge in place of the leading icon.
+final wifiDeviceLinkLocalIpv6 = ClientDevice(
+  mac: 'AA:BB:CC:DD:EE:07',
+  ip: '192.168.1.107',
+  hostName: 'Laptop',
+  isActive: true,
+  connectionType: ConnectionType.wifi,
+  wifi: WifiConnectionInfo(
+    signalStrength: -42,
+    downlinkRate: 866000,
+    uplinkRate: 433000,
+    band: '5GHz',
+    ssidName: 'MyNetwork',
+  ),
+  ipv6Addresses: const ['fe80::cd3:70da:d0a0:49cf'],
+  parentNodeId: 'node-1',
+  parentNodeName: 'Living Room',
+);
+
 DeviceDetailState get deviceNotFound => DeviceDetailState.empty();
+
+DeviceDetailState get wifiDetailGlobalIpv6 => DeviceDetailState(
+      device: wifiDeviceGlobalIpv6,
+    );
+
+DeviceDetailState get wifiDetailLinkLocalIpv6 => DeviceDetailState(
+      device: wifiDeviceLinkLocalIpv6,
+    );

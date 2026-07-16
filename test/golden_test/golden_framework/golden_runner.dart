@@ -90,7 +90,17 @@ void runViewGoldenTests(GoldenTestConfig config) {
                 await tester.binding.setSurfaceSize(effectiveSize);
                 tester.view.physicalSize = effectiveSize;
                 tester.view.devicePixelRatio = 1.0;
-                await tester.pumpWidget(widget);
+                // Wrap with Localizations so dialogs using root navigator
+                // (showGeneralDialog with useRootNavigator: true) can access
+                // AppLocalizations. The widget tree from alchemist's wrapper
+                // doesn't include our app's Localizations.
+                await tester.pumpWidget(
+                  Localizations(
+                    locale: locale,
+                    delegates: AppLocalizations.localizationsDelegates,
+                    child: widget,
+                  ),
+                );
               },
               builder: () => _buildGoldenWidget(
                 config.view(),
@@ -140,7 +150,16 @@ void runViewGoldenTests(GoldenTestConfig config) {
                   await tester.binding.setSurfaceSize(effectiveSize);
                   tester.view.physicalSize = effectiveSize;
                   tester.view.devicePixelRatio = 1.0;
-                  await tester.pumpWidget(widget);
+                  // Wrap with Localizations so dialogs using root navigator
+                  // (showGeneralDialog with useRootNavigator: true) can access
+                  // AppLocalizations.
+                  await tester.pumpWidget(
+                    Localizations(
+                      locale: locale,
+                      delegates: AppLocalizations.localizationsDelegates,
+                      child: widget,
+                    ),
+                  );
                 },
                 builder: () => _buildGoldenWidget(
                   config.view(),

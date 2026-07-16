@@ -146,7 +146,9 @@ void main() {
           transmitPower: 100,
           maxBitRate: 2402,
           autoChannelEnable: false,
-          ieee80211hEnabled: false,
+          // DFS enabled so DFS channels (52–64) survive filtering — this test
+          // exercises bonding-group rules, not DFS filtering.
+          ieee80211hEnabled: true,
           supportedOperatingChannelBandwidths: 'Auto,20MHz,40MHz,80MHz,160MHz',
         ),
       ]);
@@ -174,6 +176,99 @@ void main() {
 
       // 160MHz → valid group: [36..64]
       expect(bwMap['160MHz'], [36, 40, 44, 48, 52, 56, 60, 64]);
+    });
+
+    // -----------------------------------------------------------------------
+    // DFS channel filtering (#1025). When IEEE80211hEnabled is false, 5 GHz
+    // DFS channels (52–64, 100–144) must be stripped from BOTH possibleChannels
+    // and availableChannelsPerBandwidth so the dropdown and the "N channels
+    // available" counts stay consistent.
+    // -----------------------------------------------------------------------
+
+    WiFiSsids singleSsid() => WiFiSsids(items: [
+          WiFiSsid(
+            instancePath: 'Device.WiFi.SSID.1.',
+            ssid: 'DfsNet',
+            enable: true,
+            status: 'Up',
+            bssid: 'AA:BB:CC:DD:EE:FF',
+            lowerLayers: 'Device.WiFi.Radio.1.',
+          ),
+        ]);
+
+    WiFiAccessPoints singleAp() => WiFiAccessPoints(items: [
+          WiFiAccessPoint(
+            instancePath: 'Device.WiFi.AccessPoint.1.',
+            enable: true,
+            status: 'Enabled',
+            modesSupported: 'WPA2-Personal',
+            securityModeEnabled: 'WPA2-Personal',
+            encryptionMode: 'AES',
+            keyPassphrase: 'pass',
+            ssidAdvertisementEnabled: true,
+            ssidReference: 'Device.WiFi.SSID.1.',
+          ),
+        ]);
+
+    WiFiRadios fiveGhzRadio({required bool dfsEnabled}) => WiFiRadios(items: [
+          WiFiRadio(
+            instancePath: 'Device.WiFi.Radio.1.',
+            enable: true,
+            status: 'Up',
+            channel: 36,
+            operatingFrequencyBand: '5GHz',
+            operatingChannelBandwidth: '80MHz',
+            possibleChannels: '36,40,44,48,52,56,60,64,100,104,108,112',
+            operatingStandards: 'ax',
+            supportedStandards: 'a,n,ac,ax',
+            transmitPower: 100,
+            maxBitRate: 2402,
+            autoChannelEnable: false,
+            ieee80211hEnabled: dfsEnabled,
+            supportedOperatingChannelBandwidths: 'Auto,20MHz,40MHz,80MHz',
+          ),
+        ]);
+
+    test('DFS disabled on 5 GHz strips DFS channels from possibleChannels', () {
+      final networks = svc.buildWifiNetworks(
+        ssids: singleSsid(),
+        accessPoints: singleAp(),
+        radios: fiveGhzRadio(dfsEnabled: false),
+      );
+
+      // Only non-DFS UNII-1 channels remain.
+      expect(networks.first.possibleChannels, [36, 40, 44, 48]);
+    });
+
+    test('DFS disabled on 5 GHz strips DFS from availableChannelsPerBandwidth',
+        () {
+      final networks = svc.buildWifiNetworks(
+        ssids: singleSsid(),
+        accessPoints: singleAp(),
+        radios: fiveGhzRadio(dfsEnabled: false),
+      );
+
+      final bwMap = networks.first.availableChannelsPerBandwidth;
+      expect(bwMap['Auto'], [36, 40, 44, 48]);
+      expect(bwMap['20MHz'], [36, 40, 44, 48]);
+      // No DFS channel should appear under any bandwidth.
+      for (final channels in bwMap.values) {
+        expect(channels.any((c) => c >= 52), isFalse,
+            reason: 'DFS channel leaked into bandwidth map');
+      }
+    });
+
+    test('DFS enabled on 5 GHz retains DFS channels', () {
+      final networks = svc.buildWifiNetworks(
+        ssids: singleSsid(),
+        accessPoints: singleAp(),
+        radios: fiveGhzRadio(dfsEnabled: true),
+      );
+
+      expect(
+        networks.first.possibleChannels,
+        [36, 40, 44, 48, 52, 56, 60, 64, 100, 104, 108, 112],
+      );
     });
 
     test('empty supportedOperatingChannelBandwidths falls back to defaults',
@@ -774,10 +869,10 @@ void main() {
   });
 
   // -------------------------------------------------------------------------
-  // toggleRadio
+  // toggleSsidsByName — writes SSID.Enable + matched AccessPoint.Enable (#972)
   // -------------------------------------------------------------------------
 
-  group('toggleRadio', () {
+  group('toggleSsidsByName', () {
     late MockUspClient mockUsp;
     late UspWifiSettingsService writeSvc;
 
@@ -786,34 +881,79 @@ void main() {
       writeSvc = UspWifiSettingsService(mockUsp);
     });
 
-    test('succeeds on UspSuccess', () async {
+    WiFiSsid ssid(String path, String name, String radio) => WiFiSsid(
+          instancePath: path,
+          ssid: name,
+          enable: true,
+          status: 'Up',
+          bssid: '',
+          lowerLayers: radio,
+        );
+    WiFiAccessPoint ap(String path, String ssidRef) => WiFiAccessPoint(
+          instancePath: path,
+          alias: '',
+          enable: true,
+          status: 'Up',
+          modesSupported: '',
+          securityModeEnabled: '',
+          encryptionMode: '',
+          keyPassphrase: '',
+          ssidAdvertisementEnabled: true,
+          ssidReference: ssidRef,
+        );
+
+    Set<String> capturedKeys() {
+      final captured = verify(() => mockUsp.set(captureAny(),
+          allowPartial: any(named: 'allowPartial'))).captured;
+      final keys = <String>{};
+      for (final arg in captured) {
+        if (arg is Map) keys.addAll(arg.keys.cast<String>());
+      }
+      return keys;
+    }
+
+    test('toggles matched SSIDs and their AccessPoints across bands', () async {
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
           .thenAnswer((_) async => uspSuccess());
 
-      await writeSvc.toggleRadio('Device.WiFi.Radio.1.', true);
+      final ssids = WiFiSsids(items: [
+        ssid('Device.WiFi.SSID.1.', 'Home', 'Device.WiFi.Radio.1.'),
+        ssid('Device.WiFi.SSID.2.', 'Home', 'Device.WiFi.Radio.2.'),
+        ssid('Device.WiFi.SSID.3.', 'Home-Guest', 'Device.WiFi.Radio.1.'),
+      ]);
+      final aps = WiFiAccessPoints(items: [
+        ap('Device.WiFi.AccessPoint.1.', 'Device.WiFi.SSID.1.'),
+        ap('Device.WiFi.AccessPoint.2.', 'Device.WiFi.SSID.2.'),
+        ap('Device.WiFi.AccessPoint.3.', 'Device.WiFi.SSID.3.'),
+      ]);
 
-      verify(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
-          .called(1);
+      final count = await writeSvc.toggleSsidsByName(ssids, aps, 'Home', false);
+
+      expect(count, 2); // SSID.1 + SSID.2 (both named "Home")
+      final keys = capturedKeys();
+      expect(keys, contains('Device.WiFi.SSID.1.Enable'));
+      expect(keys, contains('Device.WiFi.SSID.2.Enable'));
+      expect(keys, contains('Device.WiFi.AccessPoint.1.Enable'));
+      expect(keys, contains('Device.WiFi.AccessPoint.2.Enable'));
+      // The guest network (SSID.3) must be untouched.
+      expect(keys, isNot(contains('Device.WiFi.SSID.3.Enable')));
+      expect(keys, isNot(contains('Device.WiFi.AccessPoint.3.Enable')));
     });
 
-    test('throws UspCompleteFailureError on UspFailure', () async {
-      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
-          .thenAnswer((_) async => uspFailure());
+    test('returns 0 and issues no writes when no SSID matches', () async {
+      final ssids = WiFiSsids(items: [
+        ssid('Device.WiFi.SSID.1.', 'Home', 'Device.WiFi.Radio.1.'),
+      ]);
+      final aps = WiFiAccessPoints(items: [
+        ap('Device.WiFi.AccessPoint.1.', 'Device.WiFi.SSID.1.'),
+      ]);
 
-      expect(
-        () => writeSvc.toggleRadio('Device.WiFi.Radio.1.', true),
-        throwsA(isA<UspCompleteFailureError>()),
-      );
-    });
+      final count =
+          await writeSvc.toggleSsidsByName(ssids, aps, 'Nonexistent', false);
 
-    test('maps transport error to ServiceError', () async {
-      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
-          .thenThrow('Set failed: Transport error: HTTP error: HTTP 504');
-
-      expect(
-        () => writeSvc.toggleRadio('Device.WiFi.Radio.1.', true),
-        throwsA(isA<NetworkError>()),
-      );
+      expect(count, 0);
+      verifyNever(
+          () => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')));
     });
   });
 
@@ -939,6 +1079,98 @@ void main() {
       verifyNever(
           () => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')));
     });
+
+    test('enable-only toggle writes SSID.Enable + AP.Enable, not security',
+        () async {
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => uspSuccess());
+
+      final original = [makeNetwork(enabled: true)];
+      final current = [makeNetwork(enabled: false)];
+
+      await writeSvc.saveAdvanced(original: original, current: current);
+
+      final captured = verify(() => mockUsp.set(captureAny(),
+          allowPartial: any(named: 'allowPartial'))).captured;
+      final keys = <String>{};
+      for (final arg in captured) {
+        if (arg is Map) keys.addAll(arg.keys.cast<String>());
+      }
+      // Both enable layers are written…
+      expect(keys, contains('Device.WiFi.SSID.1.Enable'));
+      expect(keys, contains('Device.WiFi.AccessPoint.1.Enable'));
+      // …but the security/advertisement params are NOT re-sent on a pure
+      // enable toggle (mirrors saveQuickSetup gating).
+      expect(keys,
+          isNot(contains('Device.WiFi.AccessPoint.1.Security.KeyPassphrase')));
+      expect(keys,
+          isNot(contains('Device.WiFi.AccessPoint.1.Security.ModeEnabled')));
+      expect(
+          keys,
+          isNot(
+              contains('Device.WiFi.AccessPoint.1.SSIDAdvertisementEnabled')));
+    });
+
+    // -----------------------------------------------------------------------
+    // 6 GHz security override (#1073, #1142) — saveAdvanced must apply the
+    // same _securityModeFor6GHz coercion as saveQuickSetup, so both save
+    // paths write a firmware-valid mode on 6 GHz.
+    // -----------------------------------------------------------------------
+
+    /// Returns the value written to AccessPoint.1 Security.ModeEnabled after a
+    /// mode change on the given band, or null if it was never sent.
+    Future<String?> capturedModeEnabled({
+      required String band,
+      required String selectedMode,
+    }) async {
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => uspSuccess());
+      // Baseline mode differs from every selectedMode under test so the
+      // security diff always fires (WPA2-in == WPA2-baseline would send nothing).
+      final original = [
+        makeNetwork(band: band, securityMode: 'WPA3-Personal-Transition')
+      ];
+      final current = [makeNetwork(band: band, securityMode: selectedMode)];
+
+      await writeSvc.saveAdvanced(original: original, current: current);
+
+      final captured = verify(() => mockUsp.set(captureAny(),
+          allowPartial: any(named: 'allowPartial'))).captured;
+      const key = 'Device.WiFi.AccessPoint.1.Security.ModeEnabled';
+      for (final arg in captured) {
+        if (arg is Map && arg.containsKey(key)) return arg[key] as String?;
+      }
+      return null;
+    }
+
+    test('6 GHz + OWE selected → sends OWE verbatim', () async {
+      expect(
+        await capturedModeEnabled(band: '6GHz', selectedMode: 'OWE'),
+        'OWE',
+      );
+    });
+
+    test('6 GHz + None (open) selected → normalized to OWE', () async {
+      expect(
+        await capturedModeEnabled(band: '6GHz', selectedMode: 'None'),
+        'OWE',
+      );
+    });
+
+    test('6 GHz + WPA2-Personal selected → forced to WPA3-Personal', () async {
+      expect(
+        await capturedModeEnabled(band: '6GHz', selectedMode: 'WPA2-Personal'),
+        'WPA3-Personal',
+      );
+    });
+
+    test('5 GHz + None selected → written verbatim (no 6 GHz override)',
+        () async {
+      expect(
+        await capturedModeEnabled(band: '5GHz', selectedMode: 'None'),
+        'None',
+      );
+    });
   });
 
   // -------------------------------------------------------------------------
@@ -993,7 +1225,8 @@ void main() {
       return keys;
     }
 
-    test('skips AP write when only guest enabled toggled', () async {
+    test('writes AP.Enable but not Security when only enabled toggled',
+        () async {
       // Guest group: only `enabled` changed. No SSID-name change, no AP change.
       final guestAgg = WifiQuickSetupNetwork(
         isGuest: true,
@@ -1038,7 +1271,10 @@ void main() {
       final keys = capturedKeys();
       // SSID enable write happens…
       expect(keys, contains('Device.WiFi.SSID.3.Enable'));
-      // …but AP layer (KeyPassphrase / Security.ModeEnabled) must NOT be touched.
+      // …and AP.Enable is mirrored so the AP actually stops broadcasting (#972)…
+      expect(keys, contains('Device.WiFi.AccessPoint.3.Enable'));
+      // …but the AP security layer (KeyPassphrase / Security.*) must NOT be
+      // touched when only the enabled flag changed.
       expect(
         keys.any((k) => k.startsWith('Device.WiFi.AccessPoint.3.Security.')),
         isFalse,
@@ -1144,6 +1380,165 @@ void main() {
       expect(keys.any((k) => k.contains('Security.ModeEnabled')), isTrue);
       // Empty passphrase must not be sent to firmware.
       expect(keys.any((k) => k.contains('Security.KeyPassphrase')), isFalse);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // 6 GHz security override (_securityModeFor6GHz) — issue #1073
+  //
+  // Wi-Fi 6E mandates WPA3, so on 6 GHz the service overrides the selected
+  // mode: open modes ('None' / 'OWE' / '') → 'OWE' (the TR-181 token firmware
+  // accepts for Enhanced Open), everything else → 'WPA3-Personal'. On other
+  // bands the selected mode is written verbatim. These tests assert the exact
+  // ModeEnabled value sent to firmware, guarding against a regression to the
+  // old invalid 'Enhanced-Open' token.
+  // -------------------------------------------------------------------------
+
+  group('saveQuickSetup — 6 GHz security override (#1073)', () {
+    late MockUspClient mockUsp;
+    late UspWifiSettingsService writeSvc;
+
+    setUp(() {
+      mockUsp = MockUspClient();
+      writeSvc = UspWifiSettingsService(mockUsp);
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => uspSuccess());
+    });
+
+    WifiNetworkUIModel makeNetwork({
+      required String band,
+      String ssidInstancePath = 'Device.WiFi.SSID.1.',
+      String accessPointInstancePath = 'Device.WiFi.AccessPoint.1.',
+    }) =>
+        WifiNetworkUIModel(
+          ssidInstancePath: ssidInstancePath,
+          accessPointInstancePath: accessPointInstancePath,
+          radioInstancePath: 'Device.WiFi.Radio.1.',
+          ssid: 'Home',
+          enabled: true,
+          ssidAdvertisementEnabled: true,
+          supportedSecurityModes: const [
+            'None',
+            'WPA2-Personal',
+            'WPA3-Personal',
+            'OWE'
+          ],
+          securityMode: 'WPA2-Personal',
+          keyPassphrase: '',
+          isGuest: false,
+          band: band,
+          channel: 6,
+          channelBandwidth: '20MHz',
+          autoChannelEnable: true,
+          possibleChannels: const [1, 6, 11],
+          operatingStandards: 'ax',
+          supportedStandards: 'ax',
+        );
+
+    /// Returns the value written to `<ap>Security.ModeEnabled`, or null if the
+    /// param was never sent.
+    Future<String?> capturedModeEnabled({
+      required String band,
+      required String selectedMode,
+      String ap = 'Device.WiFi.AccessPoint.1.',
+    }) async {
+      final agg = WifiQuickSetupNetwork(
+        isGuest: false,
+        ssid: 'Home',
+        securityMode: 'WPA2-Personal',
+        keyPassphrase: '',
+        supportedSecurityModes: const [
+          'None',
+          'WPA2-Personal',
+          'WPA3-Personal',
+          'OWE'
+        ],
+        ssidInstancePaths: const ['Device.WiFi.SSID.1.'],
+        apInstancePaths: [ap],
+      );
+      // Baseline mode differs from every selectedMode under test so the
+      // security diff always fires (otherwise WPA2-in == WPA2-baseline would
+      // be a no-op and nothing would be sent).
+      const orig = WifiQuickSetupSettings(
+        isGuest: false,
+        enabled: true,
+        ssid: 'Home',
+        password: '',
+        securityMode: 'WPA3-Personal-Transition',
+        supportedSecurityModes: [
+          'None',
+          'WPA2-Personal',
+          'WPA3-Personal',
+          'OWE'
+        ],
+      );
+
+      final original = WifiSettingsSettings(
+        networks: [
+          makeNetwork(band: band, accessPointInstancePath: ap)
+              .copyWith(securityMode: 'WPA3-Personal-Transition')
+        ],
+        quickSetupEnabled: true,
+        quickSetupMain: orig,
+      );
+      final current = original.copyWith(
+        quickSetupMain: orig.copyWith(securityMode: selectedMode),
+      );
+      final status = WifiSettingsStatus(quickSetupMainAggregate: agg);
+
+      await writeSvc.saveQuickSetup(
+        original: original,
+        current: current,
+        status: status,
+      );
+
+      final captured = verify(() => mockUsp.set(captureAny(),
+          allowPartial: any(named: 'allowPartial'))).captured;
+      for (final arg in captured) {
+        if (arg is Map && arg.containsKey('${ap}Security.ModeEnabled')) {
+          return arg['${ap}Security.ModeEnabled'] as String?;
+        }
+      }
+      return null;
+    }
+
+    test('6 GHz + OWE selected → sends OWE verbatim', () async {
+      expect(
+        await capturedModeEnabled(band: '6GHz', selectedMode: 'OWE'),
+        'OWE',
+      );
+    });
+
+    test('6 GHz + None (open) selected → normalized to OWE', () async {
+      expect(
+        await capturedModeEnabled(band: '6GHz', selectedMode: 'None'),
+        'OWE',
+      );
+    });
+
+    test('6 GHz + WPA2-Personal selected → forced to WPA3-Personal', () async {
+      // Pass a non-WPA3 mode so this genuinely exercises the coercion branch
+      // (WPA3 input would pass even if the override were removed).
+      expect(
+        await capturedModeEnabled(band: '6GHz', selectedMode: 'WPA2-Personal'),
+        'WPA3-Personal',
+      );
+    });
+
+    test('2.4 GHz + OWE selected → written verbatim (no 6 GHz override)',
+        () async {
+      expect(
+        await capturedModeEnabled(band: '2.4GHz', selectedMode: 'OWE'),
+        'OWE',
+      );
+    });
+
+    test('5 GHz + None selected → written verbatim (no 6 GHz override)',
+        () async {
+      expect(
+        await capturedModeEnabled(band: '5GHz', selectedMode: 'None'),
+        'None',
+      );
     });
   });
 }

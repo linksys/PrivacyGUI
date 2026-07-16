@@ -58,20 +58,6 @@ class UspWifiStatusCard extends ConsumerWidget {
               UspStatusDot(isActive: radio.enable),
               AppGap.sm(),
               AppText.labelLarge(loc(context).radioBand(radio.band)),
-              const Spacer(),
-              AppSwitch(
-                value: radio.enable,
-                onChanged: isLoading
-                    ? null
-                    : (value) => performUspMutation(
-                          context,
-                          ref,
-                          loadingKey: 'wifi',
-                          mutation: () => ref
-                              .read(uspWifiSettingsProvider.notifier)
-                              .toggleRadio(radio.instancePath, value),
-                        ),
-              ),
             ],
           ),
           AppGap.sm(),
@@ -173,7 +159,7 @@ class UspWifiStatusCard extends ConsumerWidget {
                 channel: result.channel,
                 autoChannel: result.autoChannel,
               ),
-      successMessage: 'Channel updated',
+      successMessage: loc(context).channelUpdated,
     );
   }
 

@@ -35,7 +35,7 @@ class HealthStatusView extends ConsumerWidget {
       data: (state) => _buildStatusView(context, ref, state),
       loading: () => _buildLoading(),
       error: (_, __) => AppText.bodyMedium(
-        'Unable to load health data',
+        loc(context).unableToLoadHealthData,
         color: textColor,
       ),
     );

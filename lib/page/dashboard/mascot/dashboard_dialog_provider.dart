@@ -53,6 +53,7 @@ class DashboardDialogProvider extends MascotDialogProvider {
     return MascotDialogNode(
       id: 'main',
       text: '$greeting\nHow can I help you today?',
+      barrier: MascotDialogBarrier.dismissible,
       options: [
         const MascotDialogOption(
           id: 'ai_assistant',
@@ -218,6 +219,7 @@ class DashboardDialogProvider extends MascotDialogProvider {
     return const MascotDialogNode(
       id: 'diagnostics_menu',
       text: 'What would you like to check?',
+      barrier: MascotDialogBarrier.dismissible,
       options: [
         MascotDialogOption(
           id: 'full',
@@ -314,6 +316,7 @@ class DashboardDialogProvider extends MascotDialogProvider {
       text: result.message,
       type: type,
       suggestedAnimation: animation,
+      barrier: MascotDialogBarrier.dismissible,
       options: const [
         MascotDialogOption(
           id: 'back',
@@ -337,6 +340,7 @@ class DashboardDialogProvider extends MascotDialogProvider {
     return MascotDialogNode(
       id: 'faq_categories',
       text: 'What do you need help with?',
+      barrier: MascotDialogBarrier.dismissible,
       options: [
         ..._faqCategories.asMap().entries.map((entry) => MascotDialogOption(
               id: 'cat_${entry.key}',
@@ -357,6 +361,7 @@ class DashboardDialogProvider extends MascotDialogProvider {
     return MascotDialogNode(
       id: 'faq_items_$catIndex',
       text: getFaqCategoryTitle(category),
+      barrier: MascotDialogBarrier.dismissible,
       options: [
         ...category.items.asMap().entries.map((entry) => MascotDialogOption(
               id: 'item_${catIndex}_${entry.key}',

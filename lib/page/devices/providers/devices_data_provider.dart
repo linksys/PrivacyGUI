@@ -4,74 +4,94 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
+import 'package:privacy_gui/framework/diagnostic_loggable.dart';
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
-import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
+import 'package:privacy_gui/page/_shared/models/client_device.dart';
+import 'package:privacy_gui/page/_shared/models/mesh_network.dart';
 import 'package:privacy_gui/page/_shared/models/mesh_topology_info.dart';
+import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 import 'package:privacy_gui/page/devices/services/usp_devices_data_service.dart';
-import 'package:privacy_gui/page/topology/models/node_ui_model.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_data_provider.dart';
+import 'package:privacy_gui/page/wifi_settings/services/usp_wifi_data_service.dart';
 
 // Re-export so existing consumers can still import DevicesCodegenContext from here.
 export 'package:privacy_gui/page/devices/services/usp_devices_data_service.dart'
     show DevicesCodegenContext;
 
 // ---------------------------------------------------------------------------
-// Data Model (Layer 1 — UIModel only)
+// Data Model (Layer 1 — MeshNetwork as SSoT)
 // ---------------------------------------------------------------------------
 
-class DevicesData extends Equatable {
+class DevicesData extends Equatable with DiagnosticLoggable {
   final DevicesCodegenContext codegenContext;
   final MeshTopologyInfo meshTopology;
-
-  // UI models (computed from raw + cross-domain enrichment)
-  final List<DeviceUIModel> deviceModels;
-  final List<NodeUIModel> nodeModels;
 
   /// Pre-computed MAC → hostname map for DHCP hostname enrichment.
   final Map<String, String> hostNameByMac;
 
+  /// Unified MeshNetwork container (SSoT for nodes and clients).
+  final MeshNetwork meshNetwork;
+
   const DevicesData({
     this.codegenContext = DevicesCodegenContext.empty,
     this.meshTopology = MeshTopologyInfo.empty,
-    this.deviceModels = const [],
-    this.nodeModels = const [],
     this.hostNameByMac = const {},
+    required this.meshNetwork,
   });
 
-  /// Client devices only (excludes mesh nodes: master/slave).
-  List<DeviceUIModel> get clientDevices => deviceModels
-      .where((d) => d.deviceRole != 'master' && d.deviceRole != 'slave')
-      .toList();
+  /// All client devices.
+  List<ClientDevice> get clientDevices => meshNetwork.allClients;
+
+  /// All mesh nodes (master + slaves).
+  List<NodeEntity> get nodes => meshNetwork.allNodes;
+
+  /// Master node.
+  MasterNode get master => meshNetwork.master;
+
+  /// Slave nodes.
+  List<SlaveNode> get slaves => meshNetwork.slaves;
 
   /// Count of online client devices.
-  int get onlineClientCount => clientDevices.where((d) => d.isActive).length;
+  int get onlineClientCount => meshNetwork.onlineClientCount;
 
   /// Total count of client devices.
-  int get totalClientCount => clientDevices.length;
+  int get totalClientCount => meshNetwork.totalClientCount;
+
+  /// Whether this is a mesh network (has slave nodes).
+  bool get hasMesh => meshNetwork.hasMesh;
 
   DevicesData copyWith({
     DevicesCodegenContext? codegenContext,
     MeshTopologyInfo? meshTopology,
-    List<DeviceUIModel>? deviceModels,
-    List<NodeUIModel>? nodeModels,
     Map<String, String>? hostNameByMac,
+    MeshNetwork? meshNetwork,
   }) {
     return DevicesData(
       codegenContext: codegenContext ?? this.codegenContext,
       meshTopology: meshTopology ?? this.meshTopology,
-      deviceModels: deviceModels ?? this.deviceModels,
-      nodeModels: nodeModels ?? this.nodeModels,
       hostNameByMac: hostNameByMac ?? this.hostNameByMac,
+      meshNetwork: meshNetwork ?? this.meshNetwork,
     );
   }
 
   @override
+  String get diagnosticName => 'DevicesData';
+
+  @override
+  Map<String, Object?> get namedProps => {
+        'meshTopology': meshTopology,
+        'meshNetwork': meshNetwork,
+        'hostNameByMac': hostNameByMac,
+      };
+
+  // Explicit props override for reliable equality (includes the opaque
+  // codegenContext). namedProps is kept lean for diagnostic JSON output.
+  @override
   List<Object?> get props => [
         codegenContext,
-        meshTopology.nodes.length,
-        deviceModels,
-        nodeModels,
-        hostNameByMac.length,
+        meshTopology,
+        hostNameByMac,
+        meshNetwork,
       ];
 }
 
@@ -100,7 +120,7 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
       }
     });
 
-    // WiFi data changes → rebuild deviceModels with updated enrichment.
+    // WiFi data changes → rebuild MeshNetwork with updated enrichment.
     ref.listen(wifiDataProvider, (_, next) {
       final wd = next.valueOrNull;
       final cur = state.valueOrNull;
@@ -113,7 +133,7 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
               'Router';
       final sysInfo = ref.read(systemInfoDataProvider).valueOrNull?.model;
 
-      final rebuilt = svc.rebuildWithWifiData(
+      final meshNetwork = svc.rebuildWithWifiData(
         context: cur.codegenContext,
         wifiClientMap: wd.wifiClientMap,
         connectionDetailMap: wd.connectionDetailMap,
@@ -122,10 +142,7 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
         systemInfo: sysInfo,
       );
 
-      state = AsyncData(cur.copyWith(
-        deviceModels: rebuilt.deviceModels,
-        nodeModels: rebuilt.nodeModels,
-      ));
+      state = AsyncData(cur.copyWith(meshNetwork: meshNetwork));
     });
 
     ref.onDispose(() => _debounce?.cancel());
@@ -159,9 +176,9 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
       systemInfo: sysData?.model,
     );
 
-    logger.d('[USP][DevicesData]: Fetched — '
-        'deviceModels: ${result.deviceModels.length}, '
-        'nodeModels: ${result.nodeModels.length}');
+    logger.t('[USP][DevicesData]: Fetched — '
+        'clients: ${result.meshNetwork.totalClientCount}, '
+        'nodes: ${result.meshNetwork.allNodes.length}');
 
     // Preserve existing mesh topology during refetch to avoid UI flicker.
     // Fire-and-forget will update it shortly after.
@@ -174,9 +191,8 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
     return DevicesData(
       codegenContext: result.codegenContext,
       meshTopology: existingMesh,
-      deviceModels: result.deviceModels,
-      nodeModels: result.nodeModels,
       hostNameByMac: result.hostNameByMac,
+      meshNetwork: result.meshNetwork,
     );
   }
 
@@ -188,13 +204,22 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
     SystemInfoData? sysData,
     DevicesDataFetchResult fetchResult,
   ) async {
-    final meshTopology = await svc.fetchMeshTopology();
+    // Build BSSID → band mapping for slave client band resolution
+    final wifiCodegen = wifiData.codegenContext.raw;
+    final bssidToBandMap = UspWifiDataService.buildBssidToBandMap(
+      ssids: wifiCodegen.ssids,
+      radios: wifiCodegen.radios,
+    );
+
+    final meshTopology = await svc.fetchMeshTopology(
+      bssidToBandMap: bssidToBandMap,
+    );
     if (meshTopology.isEmpty) return;
 
     final cur = state.valueOrNull;
     if (cur == null) return;
 
-    final rebuilt = svc.rebuildWithMesh(
+    final meshNetwork = svc.rebuildWithMesh(
       context: cur.codegenContext,
       wifiClientMap: wifiData.wifiClientMap,
       connectionDetailMap: wifiData.connectionDetailMap,
@@ -203,15 +228,13 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
       systemInfo: sysData?.model,
     );
 
-    logger.d('[USP][DevicesData]: Mesh update — '
+    logger.t('[USP][DevicesData]: Mesh update — '
         'meshNodes: ${meshTopology.nodes.length}, '
-        'nodeModels: ${rebuilt.nodeModels.length}, '
-        'deviceModels: ${rebuilt.deviceModels.length}');
+        'clients: ${meshNetwork.totalClientCount}');
 
     state = AsyncData(cur.copyWith(
       meshTopology: meshTopology,
-      deviceModels: rebuilt.deviceModels,
-      nodeModels: rebuilt.nodeModels,
+      meshNetwork: meshNetwork,
     ));
   }
 
@@ -227,9 +250,6 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
   Future<void> _refetchPreservingMesh() async {
     final currentState = state.valueOrNull;
     final existingMesh = currentState?.meshTopology ?? MeshTopologyInfo.empty;
-    logger.d('[USP][DevicesData]: _refetchPreservingMesh — '
-        'currentState: ${currentState != null}, '
-        'existingMesh nodes: ${existingMesh.nodes.length}');
 
     final svc = ref.read(uspDevicesDataServiceProvider);
 
@@ -257,8 +277,8 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
     );
 
     // Rebuild with existing mesh to preserve slave node visibility.
-    final rebuilt = existingMesh.isEmpty
-        ? (deviceModels: result.deviceModels, nodeModels: result.nodeModels)
+    final meshNetwork = existingMesh.isEmpty
+        ? result.meshNetwork
         : svc.rebuildWithMesh(
             context: result.codegenContext,
             wifiClientMap: wifiData.wifiClientMap,
@@ -268,18 +288,16 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
             systemInfo: sysData?.model,
           );
 
-    logger.d('[USP][DevicesData]: Refetch (preserve mesh) — '
-        'deviceModels: ${rebuilt.deviceModels.length}, '
-        'nodeModels: ${rebuilt.nodeModels.length}, '
+    logger.t('[USP][DevicesData]: Refetch (preserve mesh) — '
+        'clients: ${meshNetwork.totalClientCount}, '
         'existingMesh: ${existingMesh.nodes.length}');
 
     // Update state with new device data but preserve existing mesh topology.
     state = AsyncData(DevicesData(
       codegenContext: result.codegenContext,
       meshTopology: existingMesh,
-      deviceModels: rebuilt.deviceModels,
-      nodeModels: rebuilt.nodeModels,
       hostNameByMac: result.hostNameByMac,
+      meshNetwork: meshNetwork,
     ));
 
     // Fire-and-forget: fetch mesh topology in background, then update state.

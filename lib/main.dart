@@ -10,10 +10,12 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:privacy_gui/config/global_config.dart';
 import 'package:privacy_gui/constants/_constants.dart';
 import 'package:privacy_gui/app.dart';
+import 'package:privacy_gui/localization/fallback_font_resolver.dart';
 import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/providers/logger_observer.dart';
 
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/core/utils/state_log_observer.dart';
 import 'package:privacy_gui/core/utils/oui_lookup.dart';
 import 'package:privacy_gui/core/utils/storage.dart';
 import 'package:privacy_gui/core/usp/services/usp_bridge_client.dart';
@@ -79,6 +81,10 @@ void main() async {
   // GetIt - Register services and default theme data
   dependencySetup();
 
+  // Inject the app's locale→fallback-font mapping into ui_kit so AppText
+  // applies the bundled CJK/non-Latin subsets per locale.
+  FallbackFontResolver.install();
+
   runApp(app());
 }
 
@@ -134,6 +140,7 @@ Widget app() {
   return ProviderScope(
     observers: [
       ProviderLogger(),
+      StateLogObserver(),
     ],
     child: const LinksysApp(),
   );

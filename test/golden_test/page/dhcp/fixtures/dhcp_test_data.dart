@@ -21,34 +21,38 @@ final testClients = [
   DhcpClientUIModel(
     mac: 'AA:BB:CC:DD:EE:01',
     ip: '192.168.1.100',
-    active: true,
+    leaseActive: true,
+    isOnline: true,
     hostName: 'iPhone-15-Pro',
     leaseExpiry: DateTime.now().add(const Duration(hours: 12)),
   ),
   DhcpClientUIModel(
     mac: 'AA:BB:CC:DD:EE:02',
     ip: '192.168.1.101',
-    active: true,
+    leaseActive: true,
+    isOnline: true,
     hostName: 'MacBook-Air',
     leaseExpiry: DateTime.now().add(const Duration(hours: 6, minutes: 30)),
   ),
   DhcpClientUIModel(
     mac: 'AA:BB:CC:DD:EE:03',
     ip: '192.168.1.102',
-    active: true,
+    leaseActive: true,
+    isOnline: true,
     hostName: 'PlayStation-5',
     leaseExpiry: DateTime.now().add(const Duration(hours: 23, minutes: 45)),
   ),
   DhcpClientUIModel(
     mac: 'AA:BB:CC:DD:EE:04',
     ip: '192.168.1.103',
-    active: false,
+    leaseActive: false,
+    isOnline: false,
     hostName: 'iPad-Mini',
     leaseExpiry: DateTime.now().subtract(const Duration(hours: 2)),
   ),
 ];
 
-const testReservations = [
+final testReservations = [
   DhcpReservationUIModel(
     instancePath: 'Device.DHCPv4.Server.Pool.1.StaticAddress.1.',
     mac: 'AA:BB:CC:DD:EE:01',
@@ -70,9 +74,10 @@ const testReservations = [
 ];
 
 DhcpReservationsFeatureState dataState({
-  List<DhcpReservationUIModel> reservations = testReservations,
+  List<DhcpReservationUIModel>? reservations,
 }) {
-  final settings = DhcpReservationList(reservations: reservations);
+  final res = reservations ?? testReservations;
+  final settings = DhcpReservationList(reservations: res);
   return DhcpReservationsFeatureState(
     settings: Preservable(original: settings, current: settings),
     status: const DhcpReservationsStatus(),
@@ -80,11 +85,11 @@ DhcpReservationsFeatureState dataState({
 }
 
 DhcpReservationsFeatureState dirtyState() {
-  final original = const DhcpReservationList(reservations: testReservations);
+  final original = DhcpReservationList(reservations: testReservations);
   final current = DhcpReservationList(
     reservations: [
       ...testReservations,
-      const DhcpReservationUIModel(
+      DhcpReservationUIModel(
         mac: 'FF:EE:DD:CC:BB:AA',
         ip: '192.168.1.160',
         enable: true,

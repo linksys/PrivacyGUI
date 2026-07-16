@@ -1,11 +1,12 @@
 import 'package:equatable/equatable.dart';
+import 'package:privacy_gui/framework/diagnostic_loggable.dart';
 
 /// Presentation Layer Model for firewall settings.
 ///
 /// Maps to JNAP GetFirewallSettings / SetFirewallSettings fields.
 /// The underlying TR-181 data comes from Device.Firewall.Chain.1.Rule.{i}
 /// where each rule's Description identifies the feature.
-class FirewallUIModel extends Equatable {
+class FirewallUIModel extends Equatable with DiagnosticLoggable {
   /// IPv4 SPI (Stateful Packet Inspection) firewall enabled.
   final bool isIPv4FirewallEnabled;
 
@@ -67,14 +68,17 @@ class FirewallUIModel extends Equatable {
   }
 
   @override
-  List<Object?> get props => [
-        isIPv4FirewallEnabled,
-        isIPv6FirewallEnabled,
-        blockIPSec,
-        blockPPTP,
-        blockL2TP,
-        blockAnonymousRequests,
-        blockMulticast,
-        blockIDENT,
-      ];
+  String get diagnosticName => 'FirewallUIModel';
+
+  @override
+  Map<String, Object?> get namedProps => {
+        'isIPv4FirewallEnabled': isIPv4FirewallEnabled,
+        'isIPv6FirewallEnabled': isIPv6FirewallEnabled,
+        'blockIPSec': blockIPSec,
+        'blockPPTP': blockPPTP,
+        'blockL2TP': blockL2TP,
+        'blockAnonymousRequests': blockAnonymousRequests,
+        'blockMulticast': blockMulticast,
+        'blockIDENT': blockIDENT,
+      };
 }

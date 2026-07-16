@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
@@ -433,33 +436,38 @@ void main() {
 
     test('save succeeds when firmware returns success', () async {
       when(() => mockUsp.get(any())).thenAnswer((_) async => aliasResponse);
-      when(() => mockUsp.set(any())).thenAnswer((_) async => {
-            'success': true,
-            'result': {'data': <String, dynamic>{}},
-          });
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => {
+                'success': true,
+                'result': {'data': <String, dynamic>{}},
+              });
 
       await service.save(
         original: _model(),
         pending: _model(hostName: 'NewRouter'),
       );
 
-      verify(() => mockUsp.set(any())).called(1);
+      // LAN settings span multiple USP Services (Device.IP + Device.DHCPv4 +
+      // Device.DeviceInfo). The save MUST pass allowPartial: true, otherwise
+      // firmware rejects the cross-service atomic SET with error 7005 (#1039).
+      verify(() => mockUsp.set(any(), allowPartial: true)).called(1);
     });
 
     test('save throws UspCompleteFailureError on firmware failure', () async {
       when(() => mockUsp.get(any())).thenAnswer((_) async => aliasResponse);
-      when(() => mockUsp.set(any())).thenAnswer((_) async => {
-            'success': false,
-            'result': {
-              'data': <String, dynamic>{},
-              'error': {
-                'Device.DHCPv4.Server.Pool.1.MinAddress': {
-                  'errorCode': 7004,
-                  'errorMessage': 'Parameter not writable'
-                }
-              }
-            },
-          });
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => {
+                'success': false,
+                'result': {
+                  'data': <String, dynamic>{},
+                  'error': {
+                    'Device.DHCPv4.Server.Pool.1.MinAddress': {
+                      'errorCode': 7004,
+                      'errorMessage': 'Parameter not writable'
+                    }
+                  }
+                },
+              });
 
       expect(
         () => service.save(
@@ -472,20 +480,21 @@ void main() {
 
     test('save throws UspPartialFailureError on partial success', () async {
       when(() => mockUsp.get(any())).thenAnswer((_) async => aliasResponse);
-      when(() => mockUsp.set(any())).thenAnswer((_) async => {
-            'success': true,
-            'result': {
-              'data': {
-                'Device.DHCPv4.Server.Pool.1.MinAddress': '192.168.1.50'
-              },
-              'error': {
-                'Device.DHCPv4.Server.Pool.1.MaxAddress': {
-                  'errorCode': 7004,
-                  'errorMessage': 'Parameter not writable'
-                }
-              }
-            },
-          });
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => {
+                'success': true,
+                'result': {
+                  'data': {
+                    'Device.DHCPv4.Server.Pool.1.MinAddress': '192.168.1.50'
+                  },
+                  'error': {
+                    'Device.DHCPv4.Server.Pool.1.MaxAddress': {
+                      'errorCode': 7004,
+                      'errorMessage': 'Parameter not writable'
+                    }
+                  }
+                },
+              });
 
       expect(
         () => service.save(
@@ -499,7 +508,7 @@ void main() {
 
     test('save maps transport error to ServiceError', () async {
       when(() => mockUsp.get(any())).thenAnswer((_) async => aliasResponse);
-      when(() => mockUsp.set(any()))
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
           .thenThrow('Set failed: Transport error: Connection refused');
 
       expect(
@@ -508,6 +517,79 @@ void main() {
           pending: _model(hostName: 'NewRouter'),
         ),
         throwsA(isA<ServiceError>()),
+      );
+    });
+
+    // --- Terminal SET on IP address change -------------------------------
+    // Changing the router IP makes the firmware drop the connection carrying
+    // the SET response. A timeout / transport error is then the expected
+    // signature of success, but a fault the router actively returns still fails.
+
+    test('save on IP change treats a Dart timeout as success', () {
+      // The SET response can never arrive (connection gone). Drive the 4s
+      // budget with fake_async so the test does not actually wait.
+      fakeAsync((async) {
+        when(() => mockUsp.get(any())).thenAnswer((_) async => aliasResponse);
+        when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+            .thenAnswer((_) => Completer<Map<String, dynamic>>().future);
+
+        Object? error;
+        var done = false;
+        service
+            .save(
+              original: _model(ipAddress: '192.168.1.1'),
+              pending: _model(ipAddress: '192.168.2.1'),
+            )
+            .then((_) => done = true, onError: (Object e) => error = e);
+
+        async.elapse(const Duration(seconds: 5));
+
+        expect(error, isNull,
+            reason: 'an IP-change SET timeout must be treated as success');
+        expect(done, isTrue);
+      });
+    });
+
+    test('save on IP change treats a transport error as success', () async {
+      when(() => mockUsp.get(any())).thenAnswer((_) async => aliasResponse);
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenThrow('Set failed: Transport error: Connection refused');
+
+      // A transport error on an IP-changing SET is the disconnect signature →
+      // success. (Contrast with the hostName-only case above, which surfaces.)
+      await expectLater(
+        service.save(
+          original: _model(ipAddress: '192.168.1.1'),
+          pending: _model(ipAddress: '192.168.2.1'),
+        ),
+        completes,
+      );
+    });
+
+    test('save on IP change still rethrows a real firmware fault', () async {
+      when(() => mockUsp.get(any())).thenAnswer((_) async => aliasResponse);
+      // Router actively rejected the SET BEFORE any disconnect — a genuine
+      // config failure that must reach the user, never swallowed.
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => {
+                'success': false,
+                'result': {
+                  'data': <String, dynamic>{},
+                  'error': {
+                    'Device.IP.Interface.1.IPv4Address.1.IPAddress': {
+                      'errorCode': 7006,
+                      'errorMessage': 'Invalid value',
+                    },
+                  },
+                },
+              });
+
+      await expectLater(
+        service.save(
+          original: _model(ipAddress: '192.168.1.1'),
+          pending: _model(ipAddress: '192.168.2.1'),
+        ),
+        throwsA(isA<UspCompleteFailureError>()),
       );
     });
   });

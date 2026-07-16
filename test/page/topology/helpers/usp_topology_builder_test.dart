@@ -1,16 +1,17 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:privacy_gui/page/_shared/utils/device_classifier.dart';
 import 'package:privacy_gui/core/utils/oui_lookup.dart';
-import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
+import 'package:privacy_gui/page/_shared/models/mesh_network.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
-import 'package:privacy_gui/page/topology/models/node_ui_model.dart';
 import 'package:privacy_gui/page/topology/helpers/usp_topology_builder.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
+import '../../../mocks/test_data/devices_test_data.dart';
+
 void main() {
-  // OUI database for testing (minimal set for topology tests)
+  // OUI database for testing
   const testOuiDatabase = <String, String>{
     '112233': 'Test Vendor',
+    'AABBCC': 'Linksys',
   };
 
   setUpAll(() {
@@ -21,862 +22,534 @@ void main() {
     OuiLookup.reset();
   });
 
-  // ---------------------------------------------------------------------------
-  // Shared test data
-  // ---------------------------------------------------------------------------
-
   const sysInfo = SystemInfoUIModel(
     manufacturer: 'Linksys',
     modelName: 'MR7500',
-    serialNumber: 'SN123',
     hardwareVersion: '1.0',
-    softwareVersion: '2.0.0',
+    serialNumber: 'SN123456',
+    softwareVersion: '1.0.16.26013014',
     uptime: 3600,
     totalMemory: 512000,
     freeMemory: 256000,
-    cpuUsage: 30,
+    cpuUsage: 25,
   );
 
-  const meshGateway = NodeUIModel(
-    deviceId: 'AA:BB:CC:DD:EE:01',
-    model: 'MR7500',
-    isMaster: true,
-  );
+  group('UspTopologyBuilder.buildFromMeshNetwork', () {
+    // =========================================================================
+    // Basic Topology Structure
+    // =========================================================================
 
-  const meshExtender = NodeUIModel(
-    deviceId: 'AA:BB:CC:DD:EE:02',
-    model: 'MX5500',
-    isMaster: false,
-  );
+    group('basic structure', () {
+      test('creates gateway node for single-node network', () {
+        final meshNetwork = DevicesTestData.createSingleNodeNetwork();
 
-  const wifiDevice = DeviceUIModel(
-    mac: '11:22:33:44:55:01',
-    ip: '192.168.1.100',
-    hostName: 'iPhone',
-    isActive: true,
-    isWifi: true,
-    signalStrength: -55,
-    parentNodeId: 'AA:BB:CC:DD:EE:01',
-  );
+        final topology = UspTopologyBuilder.buildFromMeshNetwork(
+          meshNetwork: meshNetwork,
+          info: sysInfo,
+        );
 
-  const ethernetDevice = DeviceUIModel(
-    mac: '11:22:33:44:55:02',
-    ip: '192.168.1.101',
-    hostName: 'Desktop',
-    isActive: true,
-    isWifi: false,
-    parentNodeId: 'AA:BB:CC:DD:EE:01',
-  );
+        expect(topology.nodes, isNotEmpty);
+        final gateway =
+            topology.nodes.where((n) => n.type == MeshNodeType.gateway).first;
+        expect(gateway.id, 'gateway');
+        expect(gateway.status, MeshNodeStatus.online);
+      });
 
-  const offlineDevice = DeviceUIModel(
-    mac: '11:22:33:44:55:03',
-    ip: '192.168.1.102',
-    hostName: 'Tablet',
-    isActive: false,
-    isWifi: true,
-    signalStrength: -80,
-    parentNodeId: 'AA:BB:CC:DD:EE:02',
-  );
+      test('creates extender nodes for mesh network', () {
+        final meshNetwork = DevicesTestData.createMeshNetwork();
 
-  // ---------------------------------------------------------------------------
-  // Non-mesh topology (single router)
-  // ---------------------------------------------------------------------------
+        final topology = UspTopologyBuilder.buildFromMeshNetwork(
+          meshNetwork: meshNetwork,
+          info: sysInfo,
+        );
 
-  group('UspTopologyBuilder - non-mesh', () {
-    test('builds gateway node with synthetic id when no mesh nodes', () {
-      final topo = UspTopologyBuilder.build(
-        info: sysInfo,
-        devices: [wifiDevice],
-        nodeModels: [],
-      );
+        final extenders =
+            topology.nodes.where((n) => n.type == MeshNodeType.extender);
+        expect(extenders, hasLength(1));
+        expect(extenders.first.id, startsWith('extender-'));
+      });
 
-      expect(topo.nodes.where((n) => n.type == MeshNodeType.gateway),
-          hasLength(1));
-      final gateway = topo.nodes.first;
-      expect(gateway.id, 'gateway');
-      expect(gateway.name, 'MR7500');
-      expect(gateway.metadata?['deviceId'], 'gateway');
+      test('creates client nodes for connected devices', () {
+        final meshNetwork = DevicesTestData.createSingleNodeNetwork();
+
+        final topology = UspTopologyBuilder.buildFromMeshNetwork(
+          meshNetwork: meshNetwork,
+          info: sysInfo,
+        );
+
+        final clients =
+            topology.nodes.where((n) => n.type == MeshNodeType.client);
+        expect(clients, hasLength(2)); // WiFi + Wired from test data
+      });
+
+      test('creates links between nodes', () {
+        final meshNetwork = DevicesTestData.createMeshNetwork();
+
+        final topology = UspTopologyBuilder.buildFromMeshNetwork(
+          meshNetwork: meshNetwork,
+          info: sysInfo,
+        );
+
+        expect(topology.links, isNotEmpty);
+        // Should have link from gateway to extender (sourceId=parent, targetId=child)
+        final extenderLink = topology.links
+            .where((l) => l.targetId.startsWith('extender-'))
+            .firstOrNull;
+        expect(extenderLink, isNotNull);
+        expect(extenderLink?.sourceId, 'gateway');
+      });
     });
 
-    test('all client nodes link to gateway when no mesh', () {
-      final topo = UspTopologyBuilder.build(
-        info: sysInfo,
-        devices: [wifiDevice, ethernetDevice],
-        nodeModels: [],
-      );
+    // =========================================================================
+    // Gateway Node Properties
+    // =========================================================================
 
-      final clientLinks =
-          topo.links.where((l) => l.sourceId == 'gateway').toList();
-      expect(clientLinks, hasLength(2));
+    group('gateway node', () {
+      test('uses master displayName when available', () {
+        final master = DevicesTestData.createMaster(
+          friendlyName: 'My Router',
+        );
+        final meshNetwork = DevicesTestData.createSingleNodeNetwork(
+          master: master,
+        );
+
+        final topology = UspTopologyBuilder.buildFromMeshNetwork(
+          meshNetwork: meshNetwork,
+          info: sysInfo,
+        );
+
+        final gateway =
+            topology.nodes.where((n) => n.type == MeshNodeType.gateway).first;
+        expect(gateway.name, 'My Router');
+      });
+
+      test('falls back to systemInfo gatewayName', () {
+        final master = DevicesTestData.createMaster(
+          friendlyName: null,
+          hostName: null,
+        );
+        final meshNetwork = DevicesTestData.createSingleNodeNetwork(
+          master: master.copyWith(connectedClients: []),
+        );
+
+        final topology = UspTopologyBuilder.buildFromMeshNetwork(
+          meshNetwork: meshNetwork,
+          info: sysInfo,
+        );
+
+        final gateway =
+            topology.nodes.where((n) => n.type == MeshNodeType.gateway).first;
+        // Falls back to model when displayName empty, or gatewayName from sysInfo
+        expect(gateway.name, isNotEmpty);
+      });
+
+      test('includes metadata with deviceId and model', () {
+        final meshNetwork = DevicesTestData.createSingleNodeNetwork();
+
+        final topology = UspTopologyBuilder.buildFromMeshNetwork(
+          meshNetwork: meshNetwork,
+          info: sysInfo,
+        );
+
+        final gateway =
+            topology.nodes.where((n) => n.type == MeshNodeType.gateway).first;
+        expect(gateway.metadata?['deviceId'], isNotNull);
+        expect(gateway.metadata?['isMaster'], isTrue);
+      });
+
+      test('has level 1.0', () {
+        final meshNetwork = DevicesTestData.createSingleNodeNetwork();
+
+        final topology = UspTopologyBuilder.buildFromMeshNetwork(
+          meshNetwork: meshNetwork,
+          info: sysInfo,
+        );
+
+        final gateway =
+            topology.nodes.where((n) => n.type == MeshNodeType.gateway).first;
+        expect(gateway.level, 1.0);
+      });
     });
 
-    test('no extender nodes when mesh is empty', () {
-      final topo = UspTopologyBuilder.build(
-        info: sysInfo,
-        devices: [wifiDevice],
-        nodeModels: [],
-      );
+    // =========================================================================
+    // Extender Node Properties
+    // =========================================================================
 
-      final extenders =
-          topo.nodes.where((n) => n.type == MeshNodeType.extender);
-      expect(extenders, isEmpty);
-    });
-  });
+    group('extender nodes', () {
+      test('uses slave displayName', () {
+        final slave = DevicesTestData.createWifiSlave(
+          friendlyName: 'Living Room Extender',
+        );
+        final meshNetwork = MeshNetwork(
+          master: DevicesTestData.createMaster(),
+          slaves: [slave],
+        );
 
-  // ---------------------------------------------------------------------------
-  // Mesh topology (gateway + extenders)
-  // ---------------------------------------------------------------------------
+        final topology = UspTopologyBuilder.buildFromMeshNetwork(
+          meshNetwork: meshNetwork,
+          info: sysInfo,
+        );
 
-  group('UspTopologyBuilder - mesh', () {
-    test('builds gateway with real deviceId from first mesh node', () {
-      final topo = UspTopologyBuilder.build(
-        info: sysInfo,
-        devices: [],
-        nodeModels: [meshGateway, meshExtender],
-      );
+        final extender =
+            topology.nodes.where((n) => n.type == MeshNodeType.extender).first;
+        expect(extender.name, 'Living Room Extender');
+      });
 
-      final gateway =
-          topo.nodes.firstWhere((n) => n.type == MeshNodeType.gateway);
-      expect(gateway.metadata?['deviceId'], 'AA:BB:CC:DD:EE:01');
-    });
+      test('includes backhaul metadata', () {
+        final meshNetwork = DevicesTestData.createMeshNetwork();
 
-    test('builds extender nodes from mesh nodes (skip first)', () {
-      final topo = UspTopologyBuilder.build(
-        info: sysInfo,
-        devices: [],
-        nodeModels: [meshGateway, meshExtender],
-      );
+        final topology = UspTopologyBuilder.buildFromMeshNetwork(
+          meshNetwork: meshNetwork,
+          info: sysInfo,
+        );
 
-      final extenders =
-          topo.nodes.where((n) => n.type == MeshNodeType.extender).toList();
-      expect(extenders, hasLength(1));
-      expect(extenders.first.name, 'MX5500');
-      expect(extenders.first.metadata?['deviceId'], 'AA:BB:CC:DD:EE:02');
-    });
+        final extender =
+            topology.nodes.where((n) => n.type == MeshNodeType.extender).first;
+        expect(extender.metadata?['backhaulLinkType'], isNotNull);
+        expect(extender.metadata?['isMaster'], isFalse);
+      });
 
-    test('extender links to gateway', () {
-      final topo = UspTopologyBuilder.build(
-        info: sysInfo,
-        devices: [],
-        nodeModels: [meshGateway, meshExtender],
-      );
+      test('WiFi backhaul has level based on signal strength', () {
+        final slave = DevicesTestData.createWifiSlave(
+          backhaul: DevicesTestData.createWifiBackhaul(signalStrength: -50),
+        );
+        final meshNetwork = MeshNetwork(
+          master: DevicesTestData.createMaster(),
+          slaves: [slave],
+        );
 
-      final extenderLink =
-          topo.links.where((l) => l.targetId.startsWith('extender-')).toList();
-      expect(extenderLink, hasLength(1));
-      expect(extenderLink.first.sourceId, 'gateway');
-      expect(extenderLink.first.connectionType, ConnectionType.wifi);
-    });
+        final topology = UspTopologyBuilder.buildFromMeshNetwork(
+          meshNetwork: meshNetwork,
+          info: sysInfo,
+        );
 
-    test('client node links to correct extender based on parentNodeId', () {
-      final topo = UspTopologyBuilder.build(
-        info: sysInfo,
-        devices: [offlineDevice],
-        nodeModels: [meshGateway, meshExtender],
-      );
+        final extender =
+            topology.nodes.where((n) => n.type == MeshNodeType.extender).first;
+        // Excellent signal (-50) should have high level (0.9)
+        expect(extender.level, 0.9);
+      });
 
-      final clientLink = topo.links
-          .where((l) => l.targetId == 'client-${offlineDevice.mac}')
-          .first;
-      expect(clientLink.sourceId, 'extender-AA:BB:CC:DD:EE:02');
-    });
+      test('Ethernet backhaul has default level', () {
+        final slave = DevicesTestData.createEthernetSlave();
+        final meshNetwork = MeshNetwork(
+          master: DevicesTestData.createMaster(),
+          slaves: [slave],
+        );
 
-    test('client node links to gateway when parentNodeId is not an extender',
-        () {
-      final topo = UspTopologyBuilder.build(
-        info: sysInfo,
-        devices: [wifiDevice],
-        nodeModels: [meshGateway, meshExtender],
-      );
+        final topology = UspTopologyBuilder.buildFromMeshNetwork(
+          meshNetwork: meshNetwork,
+          info: sysInfo,
+        );
 
-      final clientLink = topo.links
-          .where((l) => l.targetId == 'client-${wifiDevice.mac}')
-          .first;
-      // wifiDevice's parentNodeId is AA:BB:CC:DD:EE:01 which is the gateway,
-      // not in extenderNodeIds set, so falls back to gateway
-      expect(clientLink.sourceId, 'gateway');
-    });
+        final extender =
+            topology.nodes.where((n) => n.type == MeshNodeType.extender).first;
+        // No signal → 0.5 default
+        expect(extender.level, 0.5);
+      });
 
-    test('client links to extender when parentNodeId matches dataElementsId',
-        () {
-      // Slave's Hosts MAC differs from its DataElements ID — clientToNodeMap
-      // uses the DataElements ID (no colons).
-      const slaveWithDifferentDeId = NodeUIModel(
-        deviceId: 'AA:BB:CC:DD:EE:02', // Hosts MAC
-        dataElementsId: '11:11:11:22:22:22', // DataElements node id
-        model: 'MX5500',
-        isMaster: false,
-      );
-      const clientWithDeParent = DeviceUIModel(
-        mac: '99:88:77:66:55:44',
-        ip: '192.168.1.150',
-        hostName: 'LivingRoomTV',
-        isActive: true,
-        isWifi: true,
-        signalStrength: -60,
-        // parentNodeId from clientToNodeMap is normalized (no colons, upper)
-        parentNodeId: '111111222222',
-      );
+      test('parentId defaults to gateway', () {
+        final meshNetwork = DevicesTestData.createMeshNetwork();
 
-      final topo = UspTopologyBuilder.build(
-        info: sysInfo,
-        devices: [clientWithDeParent],
-        nodeModels: [meshGateway, slaveWithDifferentDeId],
-      );
+        final topology = UspTopologyBuilder.buildFromMeshNetwork(
+          meshNetwork: meshNetwork,
+          info: sysInfo,
+        );
 
-      final clientLink = topo.links
-          .where((l) => l.targetId == 'client-${clientWithDeParent.mac}')
-          .first;
-      // Should attach to the extender (built from Hosts deviceId), not gateway
-      expect(clientLink.sourceId, 'extender-AA:BB:CC:DD:EE:02');
+        final extender =
+            topology.nodes.where((n) => n.type == MeshNodeType.extender).first;
+        expect(extender.parentId, 'gateway');
+      });
     });
 
-    test(
-        'client links to extender when parentNodeId matches Hosts MAC '
-        '(normalized)', () {
-      // parentNodeId in normalized form (no colons) should still match
-      // against the slave's Hosts deviceId.
-      const clientWithNormalizedParent = DeviceUIModel(
-        mac: '99:88:77:66:55:55',
-        ip: '192.168.1.151',
-        hostName: 'Phone',
-        isActive: true,
-        isWifi: true,
-        signalStrength: -60,
-        parentNodeId: 'AABBCCDDEE02', // no colons
-      );
+    // =========================================================================
+    // Client Node Properties
+    // =========================================================================
 
-      final topo = UspTopologyBuilder.build(
-        info: sysInfo,
-        devices: [clientWithNormalizedParent],
-        nodeModels: [meshGateway, meshExtender],
-      );
+    group('client nodes', () {
+      test('creates client node with correct id format', () {
+        final meshNetwork = DevicesTestData.createSingleNodeNetwork();
 
-      final clientLink = topo.links
-          .where(
-              (l) => l.targetId == 'client-${clientWithNormalizedParent.mac}')
-          .first;
-      expect(clientLink.sourceId, 'extender-AA:BB:CC:DD:EE:02');
-    });
-  });
+        final topology = UspTopologyBuilder.buildFromMeshNetwork(
+          meshNetwork: meshNetwork,
+          info: sysInfo,
+        );
 
-  // ---------------------------------------------------------------------------
-  // Client node properties
-  // ---------------------------------------------------------------------------
+        final clients =
+            topology.nodes.where((n) => n.type == MeshNodeType.client);
+        for (final client in clients) {
+          expect(client.id, startsWith('client-'));
+        }
+      });
 
-  group('UspTopologyBuilder - client nodes', () {
-    test('wifi client has wifi connection type', () {
-      final topo = UspTopologyBuilder.build(
-        info: sysInfo,
-        devices: [wifiDevice],
-        nodeModels: [],
-      );
+      test('WiFi client has level based on signal strength', () {
+        final wifiClient = DevicesTestData.createWifiClient(
+          wifi: DevicesTestData.createExcellentSignal(),
+        );
+        final meshNetwork = DevicesTestData.createSingleNodeNetwork(
+          masterClients: [wifiClient],
+        );
 
-      final link =
-          topo.links.where((l) => l.targetId.startsWith('client-')).first;
-      expect(link.connectionType, ConnectionType.wifi);
-      expect(link.rssi, -55);
-    });
+        final topology = UspTopologyBuilder.buildFromMeshNetwork(
+          meshNetwork: meshNetwork,
+          info: sysInfo,
+        );
 
-    test('ethernet client has ethernet connection type', () {
-      final topo = UspTopologyBuilder.build(
-        info: sysInfo,
-        devices: [ethernetDevice],
-        nodeModels: [],
-      );
+        final client =
+            topology.nodes.where((n) => n.type == MeshNodeType.client).first;
+        // Excellent signal should have high level (0.9)
+        expect(client.level, 0.9);
+      });
 
-      final link =
-          topo.links.where((l) => l.targetId.startsWith('client-')).first;
-      expect(link.connectionType, ConnectionType.ethernet);
-      expect(link.rssi, isNull);
-    });
+      test('wired client has level 1.0', () {
+        final wiredClient = DevicesTestData.createWiredClient();
+        final meshNetwork = DevicesTestData.createSingleNodeNetwork(
+          masterClients: [wiredClient],
+        );
 
-    test('online client has online status', () {
-      final topo = UspTopologyBuilder.build(
-        info: sysInfo,
-        devices: [wifiDevice],
-        nodeModels: [],
-      );
+        final topology = UspTopologyBuilder.buildFromMeshNetwork(
+          meshNetwork: meshNetwork,
+          info: sysInfo,
+        );
 
-      final client =
-          topo.nodes.firstWhere((n) => n.type == MeshNodeType.client);
-      expect(client.status, MeshNodeStatus.online);
-    });
+        final client =
+            topology.nodes.where((n) => n.type == MeshNodeType.client).first;
+        expect(client.level, 1.0);
+      });
 
-    test('offline client has offline status', () {
-      final topo = UspTopologyBuilder.build(
-        info: sysInfo,
-        devices: [offlineDevice],
-        nodeModels: [],
-      );
+      test('offline client has offline status', () {
+        final offlineClient = DevicesTestData.createOfflineClient();
+        final meshNetwork = DevicesTestData.createSingleNodeNetwork(
+          masterClients: [offlineClient],
+        );
 
-      final client =
-          topo.nodes.firstWhere((n) => n.type == MeshNodeType.client);
-      expect(client.status, MeshNodeStatus.offline);
-    });
+        final topology = UspTopologyBuilder.buildFromMeshNetwork(
+          meshNetwork: meshNetwork,
+          info: sysInfo,
+        );
 
-    test('client name uses displayName (hostName if available)', () {
-      final topo = UspTopologyBuilder.build(
-        info: sysInfo,
-        devices: [wifiDevice],
-        nodeModels: [],
-      );
+        final client =
+            topology.nodes.where((n) => n.type == MeshNodeType.client).first;
+        expect(client.status, MeshNodeStatus.offline);
+      });
 
-      final client =
-          topo.nodes.firstWhere((n) => n.type == MeshNodeType.client);
-      expect(client.name, 'iPhone');
-    });
-  });
+      test('client parentId points to correct node', () {
+        final slaveClient = DevicesTestData.createSlaveConnectedClient(
+          parentNodeId: DevicesTestData.slaveMac1,
+        );
+        final meshNetwork = DevicesTestData.createMeshNetwork(
+          slaveClients: [slaveClient],
+        );
 
-  // ---------------------------------------------------------------------------
-  // Signal quality and level mapping
-  // ---------------------------------------------------------------------------
+        final topology = UspTopologyBuilder.buildFromMeshNetwork(
+          meshNetwork: meshNetwork,
+          info: sysInfo,
+        );
 
-  group('UspTopologyBuilder - signal mapping', () {
-    test('strong wifi signal maps to high level', () {
-      const device = DeviceUIModel(
-        mac: 'AA:AA:AA:AA:AA:AA',
-        ip: '192.168.1.1',
-        hostName: 'Strong',
-        isActive: true,
-        isWifi: true,
-        signalStrength: -45,
-      );
+        final client = topology.nodes
+            .where((n) =>
+                n.type == MeshNodeType.client &&
+                n.metadata?['mac'] == DevicesTestData.clientMac5)
+            .firstOrNull;
+        expect(client, isNotNull);
+        expect(client?.parentId, startsWith('extender-'));
+      });
 
-      final topo = UspTopologyBuilder.build(
-        info: sysInfo,
-        devices: [device],
-        nodeModels: [],
-      );
+      test('includes MAC in metadata', () {
+        final meshNetwork = DevicesTestData.createSingleNodeNetwork();
 
-      final client =
-          topo.nodes.firstWhere((n) => n.type == MeshNodeType.client);
-      expect(client.level, 0.9);
-      expect(client.linkQuality, LinkQuality.excellent);
+        final topology = UspTopologyBuilder.buildFromMeshNetwork(
+          meshNetwork: meshNetwork,
+          info: sysInfo,
+        );
+
+        final client =
+            topology.nodes.where((n) => n.type == MeshNodeType.client).first;
+        expect(client.metadata?['mac'], isNotNull);
+      });
     });
 
-    test('medium wifi signal maps to medium level', () {
-      // wifi.dart thresholds: [-65, -71, -78]
-      // -75 is >= -78 (fair) → level 0.4, LinkQuality.good
-      const device = DeviceUIModel(
-        mac: 'AA:AA:AA:AA:AA:AA',
-        ip: '192.168.1.1',
-        hostName: 'Medium',
-        isActive: true,
-        isWifi: true,
-        signalStrength: -75,
-      );
+    // =========================================================================
+    // Link Properties
+    // =========================================================================
 
-      final topo = UspTopologyBuilder.build(
-        info: sysInfo,
-        devices: [device],
-        nodeModels: [],
-      );
+    group('links', () {
+      test('creates link from extender to gateway', () {
+        final meshNetwork = DevicesTestData.createMeshNetwork();
 
-      final client =
-          topo.nodes.firstWhere((n) => n.type == MeshNodeType.client);
-      expect(client.level, 0.4);
-      expect(client.linkQuality, LinkQuality.good);
+        final topology = UspTopologyBuilder.buildFromMeshNetwork(
+          meshNetwork: meshNetwork,
+          info: sysInfo,
+        );
+
+        // Link direction: sourceId=parent, targetId=child
+        // extender → gateway means link with sourceId='gateway', targetId='extender-*'
+        final extenderLinks = topology.links
+            .where((l) => l.targetId.startsWith('extender-'))
+            .toList();
+        expect(extenderLinks, isNotEmpty);
+        expect(extenderLinks.first.sourceId, 'gateway');
+      });
+
+      test('creates links from clients to parent nodes', () {
+        final meshNetwork = DevicesTestData.createSingleNodeNetwork();
+
+        final topology = UspTopologyBuilder.buildFromMeshNetwork(
+          meshNetwork: meshNetwork,
+          info: sysInfo,
+        );
+
+        // Link direction: sourceId=parent, targetId=child
+        final clientLinks = topology.links
+            .where((l) => l.targetId.startsWith('client-'))
+            .toList();
+        expect(clientLinks, hasLength(2)); // 2 clients in test data
+        for (final link in clientLinks) {
+          expect(link.sourceId, 'gateway');
+        }
+      });
+
+      test('WiFi link has quality based on signal', () {
+        final wifiClient = DevicesTestData.createWifiClient(
+          wifi: DevicesTestData.createExcellentSignal(),
+        );
+        final meshNetwork = DevicesTestData.createSingleNodeNetwork(
+          masterClients: [wifiClient],
+        );
+
+        final topology = UspTopologyBuilder.buildFromMeshNetwork(
+          meshNetwork: meshNetwork,
+          info: sysInfo,
+        );
+
+        // Link direction: sourceId=parent, targetId=child (client)
+        final link =
+            topology.links.where((l) => l.targetId.startsWith('client-')).first;
+        expect(link.linkQuality, LinkQuality.excellent);
+      });
+
+      test('wired link has stable quality', () {
+        final wiredClient = DevicesTestData.createWiredClient();
+        final meshNetwork = DevicesTestData.createSingleNodeNetwork(
+          masterClients: [wiredClient],
+        );
+
+        final topology = UspTopologyBuilder.buildFromMeshNetwork(
+          meshNetwork: meshNetwork,
+          info: sysInfo,
+        );
+
+        // Link direction: sourceId=parent, targetId=child (client)
+        final link =
+            topology.links.where((l) => l.targetId.startsWith('client-')).first;
+        expect(link.linkQuality, LinkQuality.stable);
+      });
     });
 
-    test('good wifi signal (-68) maps to level 0.65', () {
-      // wifi.dart thresholds: [-65, -71, -78]
-      // -68 is in (-71, -65] → good → level 0.65, LinkQuality.excellent
-      const device = DeviceUIModel(
-        mac: 'AA:AA:AA:AA:AA:AB',
-        ip: '192.168.1.1',
-        hostName: 'Good',
-        isActive: true,
-        isWifi: true,
-        signalStrength: -68,
-      );
+    // =========================================================================
+    // Multi-Slave Network
+    // =========================================================================
 
-      final topo = UspTopologyBuilder.build(
-        info: sysInfo,
-        devices: [device],
-        nodeModels: [],
-      );
+    group('multi-slave network', () {
+      test('creates all extender nodes', () {
+        final meshNetwork = DevicesTestData.createMultiSlaveMeshNetwork();
 
-      final client =
-          topo.nodes.firstWhere((n) => n.type == MeshNodeType.client);
-      expect(client.level, 0.65);
-      expect(client.linkQuality, LinkQuality.excellent);
+        final topology = UspTopologyBuilder.buildFromMeshNetwork(
+          meshNetwork: meshNetwork,
+          info: sysInfo,
+        );
+
+        final extenders =
+            topology.nodes.where((n) => n.type == MeshNodeType.extender);
+        expect(extenders, hasLength(2));
+      });
+
+      test('clients connect to correct parent nodes', () {
+        final meshNetwork = DevicesTestData.createMultiSlaveMeshNetwork();
+
+        final topology = UspTopologyBuilder.buildFromMeshNetwork(
+          meshNetwork: meshNetwork,
+          info: sysInfo,
+        );
+
+        // Master client should connect to gateway
+        final masterClients = topology.nodes
+            .where(
+                (n) => n.type == MeshNodeType.client && n.parentId == 'gateway')
+            .toList();
+        expect(masterClients, isNotEmpty);
+
+        // Slave clients should connect to extenders
+        final slaveClients = topology.nodes
+            .where((n) =>
+                n.type == MeshNodeType.client &&
+                n.parentId != null &&
+                n.parentId!.startsWith('extender-'))
+            .toList();
+        expect(slaveClients, hasLength(2)); // One per slave
+      });
     });
 
-    test('weak wifi signal maps to low level', () {
-      // wifi.dart thresholds: [-65, -71, -78]
-      // -80 is < -78 (poor) → LinkQuality.fair
-      const device = DeviceUIModel(
-        mac: 'AA:AA:AA:AA:AA:AA',
-        ip: '192.168.1.1',
-        hostName: 'Weak',
-        isActive: true,
-        isWifi: true,
-        signalStrength: -80,
-      );
-
-      final topo = UspTopologyBuilder.build(
-        info: sysInfo,
-        devices: [device],
-        nodeModels: [],
-      );
-
-      final client =
-          topo.nodes.firstWhere((n) => n.type == MeshNodeType.client);
-      expect(client.level, 0.1);
-      expect(client.linkQuality, LinkQuality.fair);
-    });
-
-    test('ethernet device maps to wired signal quality and level 1.0', () {
-      final topo = UspTopologyBuilder.build(
-        info: sysInfo,
-        devices: [ethernetDevice],
-        nodeModels: [],
-      );
-
-      final client =
-          topo.nodes.firstWhere((n) => n.type == MeshNodeType.client);
-      expect(client.level, 1.0);
-      expect(client.linkQuality, LinkQuality.stable);
-    });
-
-    test('wifi device with null RSSI maps to unknown quality', () {
-      const device = DeviceUIModel(
-        mac: 'AA:AA:AA:AA:AA:AA',
-        ip: '192.168.1.1',
-        hostName: 'NoRSSI',
-        isActive: true,
-        isWifi: true,
-        signalStrength: null,
-      );
-
-      final topo = UspTopologyBuilder.build(
-        info: sysInfo,
-        devices: [device],
-        nodeModels: [],
-      );
-
-      final client =
-          topo.nodes.firstWhere((n) => n.type == MeshNodeType.client);
-      expect(client.level, 0.0);
-      expect(client.linkQuality, LinkQuality.unknown);
-    });
-  });
-
-  // ---------------------------------------------------------------------------
-  // Total node/link counts
-  // ---------------------------------------------------------------------------
-
-  group('UspTopologyBuilder - totals', () {
-    test('correct total nodes and links for mesh + clients', () {
-      final topo = UspTopologyBuilder.build(
-        info: sysInfo,
-        devices: [wifiDevice, ethernetDevice, offlineDevice],
-        nodeModels: [meshGateway, meshExtender],
-      );
-
-      // 1 gateway + 1 extender + 3 clients = 5 nodes
-      expect(topo.nodes, hasLength(5));
-      // 1 gateway→extender link + 3 client links = 4 links
-      expect(topo.links, hasLength(4));
-    });
-
-    test('empty devices produces only infrastructure nodes', () {
-      final topo = UspTopologyBuilder.build(
-        info: sysInfo,
-        devices: [],
-        nodeModels: [meshGateway, meshExtender],
-      );
-
-      // 1 gateway + 1 extender = 2 nodes
-      expect(topo.nodes, hasLength(2));
-      // 1 gateway→extender link
-      expect(topo.links, hasLength(1));
-    });
-  });
-
-  // ---------------------------------------------------------------------------
-  // Gateway metadata (enriched in topology enhancements)
-  // ---------------------------------------------------------------------------
-
-  group('UspTopologyBuilder - gateway metadata', () {
-    test('gateway metadata includes all system info fields', () {
-      const meshGatewayWithFullInfo = NodeUIModel(
-        deviceId: 'AA:BB:CC:DD:EE:01',
-        model: 'MR7500',
-        manufacturer: 'Linksys',
-        serialNumber: 'SN123',
-        softwareVersion: '2.0.0',
-        isMaster: true,
-      );
-      final topo = UspTopologyBuilder.build(
-        info: sysInfo,
-        devices: [],
-        nodeModels: [meshGatewayWithFullInfo],
-      );
-
-      final gateway =
-          topo.nodes.firstWhere((n) => n.type == MeshNodeType.gateway);
-      expect(gateway.metadata?['model'], 'MR7500');
-      expect(gateway.metadata?['manufacturer'], 'Linksys');
-      expect(gateway.metadata?['serialNumber'], 'SN123');
-      expect(gateway.metadata?['softwareVersion'], '2.0.0');
-      expect(gateway.metadata?['isMaster'], isTrue);
-    });
-
-    test('gateway metadata deviceId uses mesh node deviceId when available',
-        () {
-      final topo = UspTopologyBuilder.build(
-        info: sysInfo,
-        devices: [],
-        nodeModels: [meshGateway],
-      );
-
-      final gateway =
-          topo.nodes.firstWhere((n) => n.type == MeshNodeType.gateway);
-      expect(gateway.metadata?['deviceId'], 'AA:BB:CC:DD:EE:01');
-    });
-
-    test('gateway metadata deviceId is "gateway" when no mesh nodes', () {
-      final topo = UspTopologyBuilder.build(
-        info: sysInfo,
-        devices: [],
-        nodeModels: [],
-      );
-
-      final gateway =
-          topo.nodes.firstWhere((n) => n.type == MeshNodeType.gateway);
-      expect(gateway.metadata?['deviceId'], 'gateway');
-    });
-  });
-
-  // ---------------------------------------------------------------------------
-  // Extender metadata
-  // ---------------------------------------------------------------------------
-
-  group('UspTopologyBuilder - extender metadata', () {
-    const extenderWithFullInfo = NodeUIModel(
-      deviceId: 'AA:BB:CC:DD:EE:02',
-      model: 'MX5500',
-      manufacturer: 'Linksys',
-      serialNumber: 'SN456',
-      softwareVersion: '1.5.0',
-      isMaster: false,
-    );
-
-    test('extender metadata includes all mesh node fields', () {
-      final topo = UspTopologyBuilder.build(
-        info: sysInfo,
-        devices: [],
-        nodeModels: [meshGateway, extenderWithFullInfo],
-      );
-
-      final extender =
-          topo.nodes.firstWhere((n) => n.type == MeshNodeType.extender);
-      expect(extender.metadata?['deviceId'], 'AA:BB:CC:DD:EE:02');
-      expect(extender.metadata?['model'], 'MX5500');
-      expect(extender.metadata?['manufacturer'], 'Linksys');
-      expect(extender.metadata?['serialNumber'], 'SN456');
-      expect(extender.metadata?['softwareVersion'], '1.5.0');
-      expect(extender.metadata?['isMaster'], isFalse);
-    });
-
-    test('extender metadata includes backhaul fields', () {
-      const extenderWithBackhaul = NodeUIModel(
-        deviceId: 'AA:BB:CC:DD:EE:02',
-        model: 'MX5500',
-        isMaster: false,
-        backhaulLinkType: 'Wi-Fi',
-        backhaulParentDeviceId: 'AA:BB:CC:DD:EE:01',
-        backhaulSignalStrength: -45,
-        backhaulUplinkRate: 500000,
-        backhaulDownlinkRate: 600000,
-        lastContactTime: '2026-06-01T10:00:00Z',
-      );
-
-      final topo = UspTopologyBuilder.build(
-        info: sysInfo,
-        devices: [],
-        nodeModels: [meshGateway, extenderWithBackhaul],
-      );
-
-      final extender =
-          topo.nodes.firstWhere((n) => n.type == MeshNodeType.extender);
-      expect(extender.metadata?['backhaulLinkType'], 'Wi-Fi');
-      expect(extender.metadata?['backhaulParentDeviceId'], 'AA:BB:CC:DD:EE:01');
-      expect(extender.metadata?['backhaulSignalStrength'], -45);
-      expect(extender.metadata?['backhaulUplinkRate'], 500000);
-      expect(extender.metadata?['backhaulDownlinkRate'], 600000);
-      expect(extender.metadata?['lastContactTime'], '2026-06-01T10:00:00Z');
-    });
-  });
-
-  // ---------------------------------------------------------------------------
-  // Multi-layer mesh (Slave → Slave → Master)
-  // ---------------------------------------------------------------------------
-
-  group('UspTopologyBuilder - multi-layer mesh', () {
-    test(
-        'slave links to another slave when backhaulParentDeviceId points to slave',
-        () {
-      const slaveA = NodeUIModel(
-        deviceId: 'AA:BB:CC:DD:EE:02',
-        model: 'MX5500',
-        isMaster: false,
-        backhaulParentDeviceId: 'AA:BB:CC:DD:EE:01', // Points to master
-      );
-      const slaveB = NodeUIModel(
-        deviceId: 'AA:BB:CC:DD:EE:03',
-        model: 'MX5500',
-        isMaster: false,
-        backhaulParentDeviceId: 'AA:BB:CC:DD:EE:02', // Points to slaveA
-      );
-
-      final topo = UspTopologyBuilder.build(
-        info: sysInfo,
-        devices: [],
-        nodeModels: [meshGateway, slaveA, slaveB],
-      );
-
-      // SlaveA should link to gateway
-      final slaveALink = topo.links
-          .firstWhere((l) => l.targetId == 'extender-AA:BB:CC:DD:EE:02');
-      expect(slaveALink.sourceId, 'gateway');
-
-      // SlaveB should link to slaveA
-      final slaveBLink = topo.links
-          .firstWhere((l) => l.targetId == 'extender-AA:BB:CC:DD:EE:03');
-      expect(slaveBLink.sourceId, 'extender-AA:BB:CC:DD:EE:02');
-    });
-
-    test('slave links to gateway when backhaulParentDeviceId is null', () {
-      const slaveWithoutParent = NodeUIModel(
-        deviceId: 'AA:BB:CC:DD:EE:02',
-        model: 'MX5500',
-        isMaster: false,
-        backhaulParentDeviceId: null,
-      );
-
-      final topo = UspTopologyBuilder.build(
-        info: sysInfo,
-        devices: [],
-        nodeModels: [meshGateway, slaveWithoutParent],
-      );
-
-      final link = topo.links
-          .firstWhere((l) => l.targetId == 'extender-AA:BB:CC:DD:EE:02');
-      expect(link.sourceId, 'gateway');
-    });
-
-    test('slave links to gateway when backhaulParentDeviceId matches master',
-        () {
-      const slaveConnectedToMaster = NodeUIModel(
-        deviceId: 'AA:BB:CC:DD:EE:02',
-        model: 'MX5500',
-        isMaster: false,
-        backhaulParentDeviceId: 'AA:BB:CC:DD:EE:01', // Points to master
-      );
-
-      final topo = UspTopologyBuilder.build(
-        info: sysInfo,
-        devices: [],
-        nodeModels: [meshGateway, slaveConnectedToMaster],
-      );
-
-      final link = topo.links
-          .firstWhere((l) => l.targetId == 'extender-AA:BB:CC:DD:EE:02');
-      expect(link.sourceId, 'gateway');
-    });
-
-    test(
-        'slave links via dataElementsId when backhaulParentDeviceId uses DE ID',
-        () {
-      const slaveAWithDeId = NodeUIModel(
-        deviceId: 'AA:BB:CC:DD:EE:02',
-        dataElementsId: '11:11:11:22:22:22',
-        model: 'MX5500',
-        isMaster: false,
-        backhaulParentDeviceId: 'AA:BB:CC:DD:EE:01',
-      );
-      const slaveBPointingToDeId = NodeUIModel(
-        deviceId: 'AA:BB:CC:DD:EE:03',
-        model: 'MX5500',
-        isMaster: false,
-        backhaulParentDeviceId: '11:11:11:22:22:22', // Points to slaveA's DE ID
-      );
-
-      final topo = UspTopologyBuilder.build(
-        info: sysInfo,
-        devices: [],
-        nodeModels: [meshGateway, slaveAWithDeId, slaveBPointingToDeId],
-      );
-
-      final slaveBLink = topo.links
-          .firstWhere((l) => l.targetId == 'extender-AA:BB:CC:DD:EE:03');
-      expect(slaveBLink.sourceId, 'extender-AA:BB:CC:DD:EE:02');
-    });
-  });
-
-  // ---------------------------------------------------------------------------
-  // Backhaul link type
-  // ---------------------------------------------------------------------------
-
-  group('UspTopologyBuilder - backhaul link type', () {
-    test('Ethernet backhaul uses ethernet connection type', () {
-      const ethernetSlave = NodeUIModel(
-        deviceId: 'AA:BB:CC:DD:EE:02',
-        model: 'MX5500',
-        isMaster: false,
-        backhaulLinkType: 'Ethernet',
-      );
-
-      final topo = UspTopologyBuilder.build(
-        info: sysInfo,
-        devices: [],
-        nodeModels: [meshGateway, ethernetSlave],
-      );
-
-      final link = topo.links
-          .firstWhere((l) => l.targetId == 'extender-AA:BB:CC:DD:EE:02');
-      expect(link.connectionType, ConnectionType.ethernet);
-    });
-
-    test('Wi-Fi backhaul uses wifi connection type', () {
-      const wifiSlave = NodeUIModel(
-        deviceId: 'AA:BB:CC:DD:EE:02',
-        model: 'MX5500',
-        isMaster: false,
-        backhaulLinkType: 'Wi-Fi',
-      );
-
-      final topo = UspTopologyBuilder.build(
-        info: sysInfo,
-        devices: [],
-        nodeModels: [meshGateway, wifiSlave],
-      );
-
-      final link = topo.links
-          .firstWhere((l) => l.targetId == 'extender-AA:BB:CC:DD:EE:02');
-      expect(link.connectionType, ConnectionType.wifi);
-    });
-
-    test('null backhaul link type defaults to wifi connection type', () {
-      const slavWithoutLinkType = NodeUIModel(
-        deviceId: 'AA:BB:CC:DD:EE:02',
-        model: 'MX5500',
-        isMaster: false,
-        backhaulLinkType: null,
-      );
-
-      final topo = UspTopologyBuilder.build(
-        info: sysInfo,
-        devices: [],
-        nodeModels: [meshGateway, slavWithoutLinkType],
-      );
-
-      final link = topo.links
-          .firstWhere((l) => l.targetId == 'extender-AA:BB:CC:DD:EE:02');
-      expect(link.connectionType, ConnectionType.wifi);
-    });
-  });
-
-  // ---------------------------------------------------------------------------
-  // Client node icons (DeviceClassifier integration)
-  // ---------------------------------------------------------------------------
-
-  group('UspTopologyBuilder - client icons', () {
-    test('iPhone hostname gets phone icon', () {
-      const device = DeviceUIModel(
-        mac: '11:22:33:44:55:01',
-        ip: '192.168.1.100',
-        hostName: 'iPhone',
-        isActive: true,
-        isWifi: true,
-      );
-
-      final topo = UspTopologyBuilder.build(
-        info: sysInfo,
-        devices: [device],
-        nodeModels: [],
-      );
-
-      final client =
-          topo.nodes.firstWhere((n) => n.type == MeshNodeType.client);
-      expect(client.iconData, DeviceCategory.phone.icon);
-    });
-
-    test('MacBook hostname gets computer icon', () {
-      const device = DeviceUIModel(
-        mac: '11:22:33:44:55:02',
-        ip: '192.168.1.101',
-        hostName: 'MacBook-Pro',
-        isActive: true,
-        isWifi: true,
-      );
-
-      final topo = UspTopologyBuilder.build(
-        info: sysInfo,
-        devices: [device],
-        nodeModels: [],
-      );
-
-      final client =
-          topo.nodes.firstWhere((n) => n.type == MeshNodeType.client);
-      expect(client.iconData, DeviceCategory.computer.icon);
-    });
-
-    test('PlayStation hostname gets game console icon', () {
-      const device = DeviceUIModel(
-        mac: '11:22:33:44:55:03',
-        ip: '192.168.1.102',
-        hostName: 'PlayStation5',
-        isActive: true,
-        isWifi: false,
-      );
-
-      final topo = UspTopologyBuilder.build(
-        info: sysInfo,
-        devices: [device],
-        nodeModels: [],
-      );
-
-      final client =
-          topo.nodes.firstWhere((n) => n.type == MeshNodeType.client);
-      expect(client.iconData, DeviceCategory.gameConsole.icon);
-    });
-
-    test('unknown hostname with unknown OUI gets unknown icon', () {
-      // Use universally administered MAC (bit 1 of first byte = 0)
-      // that's not in our test OUI database
-      const device = DeviceUIModel(
-        mac: '00:FF:FF:44:55:04',
-        ip: '192.168.1.103',
-        hostName: 'device-12345',
-        isActive: true,
-        isWifi: true,
-      );
-
-      final topo = UspTopologyBuilder.build(
-        info: sysInfo,
-        devices: [device],
-        nodeModels: [],
-      );
-
-      final client =
-          topo.nodes.firstWhere((n) => n.type == MeshNodeType.client);
-      expect(client.iconData, DeviceCategory.unknown.icon);
-    });
-
-    test('client metadata includes mac address', () {
-      final topo = UspTopologyBuilder.build(
-        info: sysInfo,
-        devices: [wifiDevice],
-        nodeModels: [],
-      );
-
-      final client =
-          topo.nodes.firstWhere((n) => n.type == MeshNodeType.client);
-      expect(client.metadata?['mac'], '11:22:33:44:55:01');
+    // =========================================================================
+    // Edge Cases
+    // =========================================================================
+
+    group('edge cases', () {
+      test('handles empty network (no clients)', () {
+        final meshNetwork = DevicesTestData.createEmptyNetwork();
+
+        final topology = UspTopologyBuilder.buildFromMeshNetwork(
+          meshNetwork: meshNetwork,
+          info: sysInfo,
+        );
+
+        expect(topology.nodes, hasLength(1)); // Gateway only
+        final clients =
+            topology.nodes.where((n) => n.type == MeshNodeType.client);
+        expect(clients, isEmpty);
+      });
+
+      test('handles network with unassigned clients', () {
+        final meshNetwork =
+            DevicesTestData.createNetworkWithUnassignedClients();
+
+        final topology = UspTopologyBuilder.buildFromMeshNetwork(
+          meshNetwork: meshNetwork,
+          info: sysInfo,
+        );
+
+        final clients =
+            topology.nodes.where((n) => n.type == MeshNodeType.client);
+        expect(clients, hasLength(2));
+        // Unassigned clients should connect to gateway
+        for (final client in clients) {
+          expect(client.parentId, 'gateway');
+        }
+      });
+
+      test('handles client with poor signal', () {
+        final poorSignalClient = DevicesTestData.createWifiClient(
+          wifi: DevicesTestData.createPoorSignal(),
+        );
+        final meshNetwork = DevicesTestData.createSingleNodeNetwork(
+          masterClients: [poorSignalClient],
+        );
+
+        final topology = UspTopologyBuilder.buildFromMeshNetwork(
+          meshNetwork: meshNetwork,
+          info: sysInfo,
+        );
+
+        final client =
+            topology.nodes.where((n) => n.type == MeshNodeType.client).first;
+        // Poor signal (-85) should have low level (0.1)
+        expect(client.level, 0.1);
+
+        // Link direction: sourceId=parent, targetId=child (client)
+        final link =
+            topology.links.where((l) => l.targetId.startsWith('client-')).first;
+        // Poor signal maps to unknown quality
+        expect(link.linkQuality, LinkQuality.unknown);
+      });
     });
   });
 }

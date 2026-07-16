@@ -7,7 +7,6 @@ import 'package:privacy_gui/page/local_network/providers/ethernet_data_provider.
 import 'package:privacy_gui/page/_shared/components/card_skeleton.dart';
 import 'package:privacy_gui/page/_shared/components/dashboard_card_template.dart';
 import 'package:privacy_gui/page/dashboard/views/dialogs/ethernet_port_detail_dialog.dart';
-import 'package:privacy_gui/route/constants.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 class UspEthernetPortsCard extends ConsumerWidget {
@@ -30,7 +29,6 @@ class UspEthernetPortsCard extends ConsumerWidget {
 
     return DashboardCardTemplate(
       title: loc(context).ethernetPorts,
-      detailRoute: RouteNamed.uspLocalNetwork,
       content: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

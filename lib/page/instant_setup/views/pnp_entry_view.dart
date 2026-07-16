@@ -60,7 +60,7 @@ class _PnpEntryViewState extends ConsumerState<PnpEntryView> {
             child: switch (pnpState.phase) {
               AdminCheckingInternet() => _buildCheckingInternet(context),
               AdminInternetConnected() => _buildLoading(context),
-              AdminError(message: final msg) => _buildErrorCard(context, msg),
+              AdminReadFailure() => _buildErrorCard(context),
               WizardInitializing() => _buildLoading(context),
               _ => _buildLoading(context),
             },
@@ -93,7 +93,7 @@ class _PnpEntryViewState extends ConsumerState<PnpEntryView> {
     );
   }
 
-  Widget _buildErrorCard(BuildContext context, String message) {
+  Widget _buildErrorCard(BuildContext context) {
     return AppCard(
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.lg),
@@ -102,7 +102,10 @@ class _PnpEntryViewState extends ConsumerState<PnpEntryView> {
           children: [
             AppIcon.font(Icons.error_outline, size: 48, color: Colors.red),
             AppGap.lg(),
-            AppText.bodyMedium(message),
+            AppText.bodyMedium(
+              loc(context).unableToGatherDeviceInfo,
+              textAlign: TextAlign.center,
+            ),
             AppGap.xl(),
             AppButton.text(
               label: loc(context).tryAgain,

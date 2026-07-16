@@ -36,14 +36,13 @@ class SseSubscriptionRegistry {
         .toList();
 
     if (toRegister.isEmpty) {
-      logger.d('[SSE][Registry]: All ${subscriptions.length} subscriptions '
+      logger.d('[SSE]: All ${subscriptions.length} subscriptions '
           'already registered, skipping');
       return;
     }
 
     if (toRegister.length < subscriptions.length) {
-      logger.d(
-          '[SSE][Registry]: Skipping ${subscriptions.length - toRegister.length} '
+      logger.d('[SSE]: Skipping ${subscriptions.length - toRegister.length} '
           'already registered subscriptions');
     }
 
@@ -53,7 +52,7 @@ class SseSubscriptionRegistry {
       _subscriptions[record.subscriptionId] = record;
     }
 
-    logger.d('[SSE][Registry]: Registered ${records.length} subscriptions, '
+    logger.d('[SSE]: Registered ${records.length} subscriptions, '
         'total active: ${_subscriptions.length}');
   }
 
@@ -61,8 +60,7 @@ class SseSubscriptionRegistry {
   Future<void> unregister(String subscriptionId) async {
     final record = _subscriptions.remove(subscriptionId);
     if (record == null) {
-      logger.d(
-          '[SSE][Registry]: Unregister $subscriptionId: not found, skipping');
+      logger.d('[SSE]: Unregister $subscriptionId: not found, skipping');
       return;
     }
 
@@ -77,7 +75,7 @@ class SseSubscriptionRegistry {
     _subscriptions.clear();
 
     await _strategy.unregisterSubscriptions(ids);
-    logger.d('[SSE][Registry]: Unregistered all ${ids.length} subscriptions');
+    logger.d('[SSE]: Unregistered all ${ids.length} subscriptions');
   }
 
   /// Called when SSE connects. Delegates to strategy for reconnect handling.

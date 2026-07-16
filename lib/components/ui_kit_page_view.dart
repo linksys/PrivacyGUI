@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/components/styled/top_bar.dart';
+import 'package:privacy_gui/page/shell/usp_top_bar.dart';
 import 'package:privacy_gui/route/navigation_extensions.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -383,7 +383,7 @@ class _UiKitPageViewState extends ConsumerState<UiKitPageView> {
       Widget topBarContent = topBarWidget;
 
       // If it's a PreferredSize wrapper around TopBar, extract the TopBar
-      if (topBarContent is PreferredSize && topBarContent.child is TopBar) {
+      if (topBarContent is PreferredSize && topBarContent.child is UspTopBar) {
         topBarContent = topBarContent.child;
       }
 
@@ -481,9 +481,9 @@ class _UiKitPageViewState extends ConsumerState<UiKitPageView> {
     }
 
     // Create default TopBar for PrivacyGUI integration
-    return const PreferredSize(
+    return PreferredSize(
       preferredSize: Size.fromHeight(kDefaultToolbarHeight),
-      child: TopBar(),
+      child: UspTopBar(),
     );
   }
 

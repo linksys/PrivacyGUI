@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:privacy_gui/framework/diagnostic_loggable.dart';
 
 /// Presentation Layer Model for a port forwarding rule.
 ///
@@ -9,7 +10,7 @@ import 'package:equatable/equatable.dart';
 ///
 /// [instancePath] is `null` for newly created (local-only) rules
 /// that have not yet been saved to the device.
-class PortForwardingRuleUIModel extends Equatable {
+class PortForwardingRuleUIModel extends Equatable with DiagnosticLoggable {
   final String? instancePath;
   final String description;
   final int externalPort;
@@ -72,14 +73,17 @@ class PortForwardingRuleUIModel extends Equatable {
       '$portRangeDisplay \u2192 $internalClient:$internalPort';
 
   @override
-  List<Object?> get props => [
-        instancePath,
-        description,
-        externalPort,
-        externalPortEndRange,
-        internalPort,
-        internalClient,
-        protocol,
-        enabled,
-      ];
+  String get diagnosticName => 'PortForwardingRuleUIModel';
+
+  @override
+  Map<String, Object?> get namedProps => {
+        'instancePath': instancePath,
+        'description': description,
+        'externalPort': externalPort,
+        'externalPortEndRange': externalPortEndRange,
+        'internalPort': internalPort,
+        'internalClient': internalClient,
+        'protocol': protocol,
+        'enabled': enabled,
+      };
 }

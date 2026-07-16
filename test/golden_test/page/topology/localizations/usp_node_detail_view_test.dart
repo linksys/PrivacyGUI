@@ -18,6 +18,14 @@ void main() {
         'slave_with_devices': (overrides) => overrides.addAll(
               nodeDetailOverrides(slaveNodeWithDevices),
             ),
+        // LAN IPv6 global address — rendered without a scope badge.
+        'global_ipv6': (overrides) => overrides.addAll(
+              nodeDetailOverrides(slaveNodeGlobalIpv6),
+            ),
+        // LAN IPv6 link-local only — leading icon swapped for a scope badge.
+        'link_local_ipv6': (overrides) => overrides.addAll(
+              nodeDetailOverrides(slaveNodeLinkLocalIpv6),
+            ),
         'empty_devices': (overrides) => overrides.addAll(
               nodeDetailOverrides(masterNodeEmptyDevices),
             ),

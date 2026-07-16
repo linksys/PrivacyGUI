@@ -219,6 +219,8 @@
   "invalidDestinationMacAddress": "Invalid destination MAC address",
   "invalidDns": "Invalid DNS",
   "invalidGatewayIpAddress": "Invalid gateway IP address",
+  "gatewayMustBeWithinLanSubnet": "Gateway must be within LAN subnet",
+  "gatewayMustBeOutsideLanSubnet": "Gateway must be outside LAN subnet",
   "invalidInput": "Invalid input",
   "invalidIpAddress": "Invalid IP address",
   "invalidMACAddress": "Invalid MAC address.",
@@ -234,6 +236,7 @@
     "description": "Do not translate"
   },
   "ipv6Address": "IPv6 Address",
+  "ipv6ScopeLinkLocal": "Link-local",
   "keepAlive": "Keep alive",
   "l2tpPassthrough": "L2TP Passthrough",
   "labelInterface": "Interface",
@@ -394,9 +397,11 @@
   "prefix": "Prefix",
   "prefixLength": "Prefix length",
   "print": "Print",
+  "privateMac": "Private",
   "privacyAndSecurity": "Privacy & Security",
   "processing": "Processing...",
   "protocol": "Protocol",
+  "publicMac": "Public",
   "rebootChildTitle": "Reboot the node and all its child/s",
   "rebootOk": "Yes, Reboot All",
   "rebootOkSingle": "Yes, Reboot",
@@ -703,6 +708,7 @@
   "factoryResetInProgress": "Factory reset in progress",
   "factoryResetWaitMessage": "The router is restoring to factory defaults. You will need to set up and log in again.",
   "timezoneUpdated": "Timezone updated",
+  "timeSettingsSaved": "Time settings saved",
   "portFwd": "Port Fwd",
   "portForwarding": "Port Forwarding",
   "portForwardingWithCount": "Port Forwarding ({count})",
@@ -867,6 +873,8 @@
   "internalPortRequired": "Internal port is required",
   "invalidIpv4Format": "Invalid IPv4 address format",
   "reservedIpNotAllowed": "Reserved IP address is not allowed",
+  "duplicateMacAddress": "This MAC address is already reserved",
+  "duplicateIpAddress": "This IP address is already reserved",
   "connectedDevices": "Connected Devices",
   "deviceNotFound": "Device not found",
   "networkConnections": "Network Connections ({count})",
@@ -1041,7 +1049,6 @@
   "rtColumn": "RT",
   "unableToLoadDiagnostics": "Unable to load diagnostics",
   "unableToLoadSpeedTest": "Unable to load speed test",
-  "errorLoadingSpeedTest": "Error loading speed test",
   "internetSpeedTest": "Internet Speed Test",
   "testConnectionSpeedFromRouter": "Test your connection speed from the router",
   "startTest": "Start Test",
@@ -1186,10 +1193,22 @@
   "radios": "Radios",
   "portRules": "Port Rules",
   "channelNumber": "Channel number",
+  "channelAutoRecommended": "Auto (recommended)",
+  "channelCurrentlyUsing": "Currently using: {channel}",
+  "@channelCurrentlyUsing": {
+    "placeholders": {
+      "channel": {
+        "type": "int"
+      }
+    }
+  },
+  "channelDfsSuffix": "· DFS",
+  "channelNoManualOptions": "No manual channels available for this band.",
   "change": "Change",
   "builtInWidgets": "Built-in Widgets",
   "appWidgetCards": "App Widget Cards",
   "wifiSettingsSaved": "WiFi settings saved",
+  "channelUpdated": "Channel updated",
   "noWifiNetworksFound": "No WiFi networks found. Check router connection.",
   "quickSetupNotice": "Quick Setup applies the same name, password, and security mode to all bands. A password is required to save.",
   "noAdvancedWifiSettings": "No advanced WiFi settings available for this device.",
@@ -1211,12 +1230,13 @@
   "requiredLabel": "(Required)",
   "unchangedLabel": "(Unchanged)",
   "portForwardingSettingsSaved": "Port forwarding settings saved",
+  "ruleAdded": "Rule added",
   "singlePortForwarding": "Single Port Forwarding",
   "noSinglePortRules": "No single port forwarding rules configured",
   "portRangeForwarding": "Port Range Forwarding",
   "noPortRangeRules": "No port range forwarding rules configured",
-  "portTriggering": "Port Triggering",
-  "noPortTriggeringRules": "No port triggering rules configured",
+  "portTriggering": "Port Range Triggering",
+  "noPortTriggeringRules": "No port range triggering rules configured",
   "deleteRule": "Delete Rule",
   "deleteConfirm": "Delete \"{name}\"?",
   "@deleteConfirm": {
@@ -1226,8 +1246,8 @@
       }
     }
   },
-  "editPortTriggering": "Edit Port Triggering",
-  "addPortTriggering": "Add Port Triggering",
+  "editPortTriggering": "Edit Port Range Triggering",
+  "addPortTriggering": "Add Port Range Triggering",
   "triggerPorts": "Trigger Ports",
   "forwardedPorts": "Forwarded Ports",
   "endPortOptional": "End Port (optional)",
@@ -1237,30 +1257,6 @@
   "externalPortEnd": "External Port End",
   "max32Characters": "Max 32 characters",
   "mustBeGreaterThanStartPort": "Must be greater than start port",
-  "singlePortWithCount": "Single Port ({count})",
-  "@singlePortWithCount": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "portRangeWithCount": "Port Range ({count})",
-  "@portRangeWithCount": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "triggeringWithCount": "Triggering ({count})",
-  "@triggeringWithCount": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "hostname": "Hostname",
   "addressPool": "Address Pool",
   "poolStart": "Pool Start",
@@ -1384,6 +1380,9 @@
       }
     }
   },
+  "privateMacWarningTitle": "Some devices use a private Wi-Fi address",
+  "privateMacWarningDesc": "The device(s) below use a private (randomized) Wi-Fi address. Because this address changes over time, they may be blocked after it rotates — even the one you're using now. To stay connected, turn off \"Private Wi-Fi Address\" for these devices before enabling Instant Privacy.",
+  "privateMacLabel": "Private",
   "disableInstantPrivacyTitle": "Disable Instant Privacy?",
   "disableInstantPrivacyDesc": "All devices will be able to connect freely to your network.",
   "addDeviceManually": "Add device manually",
@@ -1466,6 +1465,8 @@
   },
   "ipAddressReserved": "IP address reserved",
   "reservationReleased": "Reservation released",
+  "reservationAdded": "Reservation added",
+  "reservationDeleted": "Reservation deleted",
   "viaNode": "via {node}",
   "@viaNode": {
     "placeholders": {
@@ -1476,6 +1477,7 @@
   },
   "connectingToRouter": "Connecting to router...",
   "reconnecting": "Reconnecting...",
+  "reconnectedToRouter": "Reconnected to router",
   "realTimeConnectionLost": "Real-time connection lost",
   "disconnected": "Disconnected",
   "reconnect": "Reconnect",
@@ -1602,6 +1604,9 @@
   "networkTopology": "Network Topology",
   "newPassword": "New Password",
   "noAppsInstalled": "No apps installed on this router",
+  "unableToLoadApps": "Unable to load apps",
+  "unableToLoadHealthData": "Unable to load health data",
+  "unableToLoadTopology": "Unable to load topology",
   "routerPasswordRuleNoConsecutive": "No consecutive identical characters",
   "noDimensions": "No dimensions",
   "noLogFilesAvailable": "No log files available on this router",
@@ -1633,8 +1638,6 @@
   "badgeUser": "USER",
   "uspConsole": "USP Console",
   "uspDashboard": "USP Dashboard",
-  "unableToLoadApps": "Unable to load apps",
-  "unableToLoadTopology": "Unable to load topology",
   "routerPasswordRuleUpperLower": "Upper and lower case letters",
   "validatingSession": "Validating session...",
   "viewDevices": "View Devices",
@@ -1676,5 +1679,36 @@
         "type": "int"
       }
     }
-  }
+  },
+  "bridgeReconnectHint": "After saving, reconnect to your router at {url}.",
+  "@bridgeReconnectHint": {
+    "description": "Bold inline hint shown while editing when Bridge Mode is selected. {url} is https://<hostname>.local",
+    "placeholders": {
+      "url": {
+        "type": "Object"
+      }
+    }
+  },
+  "bridgeRedirectTitle": "Reconnect to your router",
+  "bridgeRedirectMessage": "Your router is now a transparent bridge and no longer hands out local IP addresses. Reconnect to it at {url}.",
+  "@bridgeRedirectMessage": {
+    "description": "Body of the dialog shown after switching to Bridge Mode. {url} is https://<hostname>.local",
+    "placeholders": {
+      "url": {
+        "type": "Object"
+      }
+    }
+  },
+  "bridgeRedirectButton": "Go to router",
+  "lanIpRedirectTitle": "Reconnect to your router",
+  "lanIpRedirectMessage": "Your router's IP address has changed. Reconnect to it at {url}. You may need to wait a moment for your device to obtain a new address.",
+  "@lanIpRedirectMessage": {
+    "description": "Body of the dialog shown after changing the router LAN IP address. {url} is https://<hostname>.local",
+    "placeholders": {
+      "url": {
+        "type": "Object"
+      }
+    }
+  },
+  "lanIpRedirectButton": "Go to router"
 }
