@@ -136,6 +136,7 @@
   "ipv4": "IPV4",
   "ipv6": "IPv6",
   "ipv6Address": "Alamat IPv6",
+  "ipv6ScopeLinkLocal": "Link-local",
   "keepAlive": "Aktifkan terus",
   "l2tpPassthrough": "L2TP Passthrough",
   "labelInterface": "Antarmuka",

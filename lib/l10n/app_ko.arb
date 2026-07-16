@@ -136,6 +136,7 @@
   "ipv4": "IPv4",
   "ipv6": "IPv6",
   "ipv6Address": "IPv6 주소",
+  "ipv6ScopeLinkLocal": "링크-로컬",
   "keepAlive": "상태 유지",
   "l2tpPassthrough": "L2TP 패스스루",
   "labelInterface": "인터페이스",

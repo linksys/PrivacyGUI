@@ -183,11 +183,16 @@ class DetailCopyableTile extends StatelessWidget {
   final String label;
   final String value;
 
+  /// Optional widget that replaces the default leading [Icon] (e.g. an
+  /// [Ipv6ScopeBadge] carrying its own tooltip/semantics).
+  final Widget? leading;
+
   const DetailCopyableTile({
     super.key,
     required this.icon,
     required this.label,
     required this.value,
+    this.leading,
   });
 
   @override
@@ -196,7 +201,7 @@ class DetailCopyableTile extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 16, color: colorScheme.onSurfaceVariant),
+        leading ?? Icon(icon, size: 16, color: colorScheme.onSurfaceVariant),
         AppGap.sm(),
         Expanded(
           child: Column(

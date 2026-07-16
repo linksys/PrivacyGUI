@@ -92,16 +92,18 @@ class UspWanDataService {
         }
       }
 
+      // TR-181 returns IPv6 addresses in instance order, which frequently puts
+      // the link-local (fe80::/10) address first. The WAN widget shows a single
+      // representative address (ipv6Addresses.first), which must prefer the
+      // globally routable one. We keep every address (including link-local) and
+      // only reorder so global unicast wins; the UI marks a link-local address
+      // with a scope badge rather than hiding it, so a WAN with no global/ULA
+      // prefix still shows its link-local address instead of nothing.
+      // See linksys/PrivacyGUI#1128.
       final ipv6Addresses = ipv6.items
           .map((addr) => addr.ipAddress)
           .where((ip) => ip.isNotEmpty)
           .toList();
-
-      // TR-181 returns IPv6 addresses in instance order, which frequently puts
-      // the link-local (fe80::/10) address first. The WAN widget shows a single
-      // representative address (ipv6Addresses.first), which must be the globally
-      // routable one — not the link-local. Reorder so global unicast wins.
-      // See linksys/PrivacyGUI#1128.
       final orderedIpv6Addresses = preferGlobalIpv6First(ipv6Addresses);
 
       return (gateway: gateway, ipv6Addresses: orderedIpv6Addresses);

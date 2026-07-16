@@ -136,6 +136,7 @@
   "ipv4": "IPv4",
   "ipv6": "IPv6",
   "ipv6Address": "IPv6 Adresi",
+  "ipv6ScopeLinkLocal": "Bağlantı yerel",
   "keepAlive": "Bağlı tut",
   "l2tpPassthrough": "L2TP Geçiş İzni",
   "labelInterface": "Arabirim",

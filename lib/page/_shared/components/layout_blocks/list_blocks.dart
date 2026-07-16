@@ -158,12 +158,44 @@ class InfoGridItem {
   final bool fullWidth;
   final bool copyable;
 
+  /// Optional widget rendered next to the label (e.g. an [Ipv6ScopeBadge]).
+  final Widget? labelTrailing;
+
   const InfoGridItem({
     required this.label,
     required this.value,
     this.fullWidth = false,
     this.copyable = false,
+    this.labelTrailing,
   });
+}
+
+/// Icon-only marker for an IPv6 link-local (`fe80::/10`) address.
+///
+/// Link-local addresses are only valid on a single link and are not routable.
+/// Wherever an IPv6 address is surfaced (dashboard cards and the device/node
+/// detail views), a link-local address is shown but tagged with this compact
+/// icon (`public_off` — mirroring the routable `public` icon used for WAN
+/// addresses) rather than hidden. The tooltip provides discoverability and
+/// doubles as the semantic label for screen readers, since the icon alone
+/// carries no text.
+class Ipv6ScopeBadge extends StatelessWidget {
+  final double? size;
+
+  const Ipv6ScopeBadge({super.key, this.size});
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Tooltip(
+      message: loc(context).ipv6ScopeLinkLocal,
+      child: Icon(
+        Icons.public_off,
+        size: size ?? BlockConstants.iconSm,
+        color: colorScheme.onSurfaceVariant,
+      ),
+    );
+  }
 }
 
 class _InfoGridTile extends StatelessWidget {
@@ -179,10 +211,23 @@ class _InfoGridTile extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AppText.labelSmall(
-            item.label.toUpperCase(),
-            color: colorScheme.onSurfaceVariant,
-          ),
+          if (item.labelTrailing != null)
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AppText.labelSmall(
+                  item.label.toUpperCase(),
+                  color: colorScheme.onSurfaceVariant,
+                ),
+                AppGap.xs(),
+                item.labelTrailing!,
+              ],
+            )
+          else
+            AppText.labelSmall(
+              item.label.toUpperCase(),
+              color: colorScheme.onSurfaceVariant,
+            ),
           AppGap.xs(),
           item.copyable
               ? _CopyableText(text: item.value)
