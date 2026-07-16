@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:privacy_gui/core/utils/ipv6_ranges.dart';
 import 'package:privacy_gui/util/network_utils.dart';
 
 abstract class ValidationRule {
@@ -259,21 +260,21 @@ class IPv6WithReservedRule extends ValidationRule {
       }
 
       // 6b. Check for 3ffe::/16 (6bone - deprecated IPv6 testing network).
-      if (rawAddress[0] == 0x3F && rawAddress[1] == 0xFE) {
+      if (is6boneBytes(rawAddress[0], rawAddress[1])) {
         return false;
       }
 
       // 6c. Check for other reserved ranges within 2000::/3 (e.g., 5F00::/12, 6000::/3 to 7FFF::/3).
-      if (rawAddress[0] >= 0x5F && rawAddress[0] <= 0x7F) {
+      if (isReservedGlobalByte(rawAddress[0])) {
         return false;
       }
 
       // --- Rule: Must be a unicast address usable for port service ---
       // Allowed: Global Unicast (2000::/3), Link-local (fe80::/10), ULA (fc00::/7)
       final firstByte = rawAddress[0];
-      final isGlobalUnicast = firstByte >= 0x20 && firstByte <= 0x3F;
-      final isLinkLocal = firstByte == 0xFE && (rawAddress[1] & 0xC0) == 0x80;
-      final isULA = firstByte == 0xFC || firstByte == 0xFD;
+      final isGlobalUnicast = isGlobalUnicastByte(firstByte);
+      final isLinkLocal = isLinkLocalBytes(firstByte, rawAddress[1]);
+      final isULA = isUniqueLocalByte(firstByte);
 
       if (!isGlobalUnicast && !isLinkLocal && !isULA) {
         return false;
