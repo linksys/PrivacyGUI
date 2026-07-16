@@ -1110,6 +1110,67 @@ void main() {
           isNot(
               contains('Device.WiFi.AccessPoint.1.SSIDAdvertisementEnabled')));
     });
+
+    // -----------------------------------------------------------------------
+    // 6 GHz security override (#1073, #1142) — saveAdvanced must apply the
+    // same _securityModeFor6GHz coercion as saveQuickSetup, so both save
+    // paths write a firmware-valid mode on 6 GHz.
+    // -----------------------------------------------------------------------
+
+    /// Returns the value written to AccessPoint.1 Security.ModeEnabled after a
+    /// mode change on the given band, or null if it was never sent.
+    Future<String?> capturedModeEnabled({
+      required String band,
+      required String selectedMode,
+    }) async {
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => uspSuccess());
+      // Baseline mode differs from every selectedMode under test so the
+      // security diff always fires (WPA2-in == WPA2-baseline would send nothing).
+      final original = [
+        makeNetwork(band: band, securityMode: 'WPA3-Personal-Transition')
+      ];
+      final current = [makeNetwork(band: band, securityMode: selectedMode)];
+
+      await writeSvc.saveAdvanced(original: original, current: current);
+
+      final captured = verify(() => mockUsp.set(captureAny(),
+          allowPartial: any(named: 'allowPartial'))).captured;
+      const key = 'Device.WiFi.AccessPoint.1.Security.ModeEnabled';
+      for (final arg in captured) {
+        if (arg is Map && arg.containsKey(key)) return arg[key] as String?;
+      }
+      return null;
+    }
+
+    test('6 GHz + OWE selected → sends OWE verbatim', () async {
+      expect(
+        await capturedModeEnabled(band: '6GHz', selectedMode: 'OWE'),
+        'OWE',
+      );
+    });
+
+    test('6 GHz + None (open) selected → normalized to OWE', () async {
+      expect(
+        await capturedModeEnabled(band: '6GHz', selectedMode: 'None'),
+        'OWE',
+      );
+    });
+
+    test('6 GHz + WPA2-Personal selected → forced to WPA3-Personal', () async {
+      expect(
+        await capturedModeEnabled(band: '6GHz', selectedMode: 'WPA2-Personal'),
+        'WPA3-Personal',
+      );
+    });
+
+    test('5 GHz + None selected → written verbatim (no 6 GHz override)',
+        () async {
+      expect(
+        await capturedModeEnabled(band: '5GHz', selectedMode: 'None'),
+        'None',
+      );
+    });
   });
 
   // -------------------------------------------------------------------------
@@ -1319,6 +1380,165 @@ void main() {
       expect(keys.any((k) => k.contains('Security.ModeEnabled')), isTrue);
       // Empty passphrase must not be sent to firmware.
       expect(keys.any((k) => k.contains('Security.KeyPassphrase')), isFalse);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // 6 GHz security override (_securityModeFor6GHz) — issue #1073
+  //
+  // Wi-Fi 6E mandates WPA3, so on 6 GHz the service overrides the selected
+  // mode: open modes ('None' / 'OWE' / '') → 'OWE' (the TR-181 token firmware
+  // accepts for Enhanced Open), everything else → 'WPA3-Personal'. On other
+  // bands the selected mode is written verbatim. These tests assert the exact
+  // ModeEnabled value sent to firmware, guarding against a regression to the
+  // old invalid 'Enhanced-Open' token.
+  // -------------------------------------------------------------------------
+
+  group('saveQuickSetup — 6 GHz security override (#1073)', () {
+    late MockUspClient mockUsp;
+    late UspWifiSettingsService writeSvc;
+
+    setUp(() {
+      mockUsp = MockUspClient();
+      writeSvc = UspWifiSettingsService(mockUsp);
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => uspSuccess());
+    });
+
+    WifiNetworkUIModel makeNetwork({
+      required String band,
+      String ssidInstancePath = 'Device.WiFi.SSID.1.',
+      String accessPointInstancePath = 'Device.WiFi.AccessPoint.1.',
+    }) =>
+        WifiNetworkUIModel(
+          ssidInstancePath: ssidInstancePath,
+          accessPointInstancePath: accessPointInstancePath,
+          radioInstancePath: 'Device.WiFi.Radio.1.',
+          ssid: 'Home',
+          enabled: true,
+          ssidAdvertisementEnabled: true,
+          supportedSecurityModes: const [
+            'None',
+            'WPA2-Personal',
+            'WPA3-Personal',
+            'OWE'
+          ],
+          securityMode: 'WPA2-Personal',
+          keyPassphrase: '',
+          isGuest: false,
+          band: band,
+          channel: 6,
+          channelBandwidth: '20MHz',
+          autoChannelEnable: true,
+          possibleChannels: const [1, 6, 11],
+          operatingStandards: 'ax',
+          supportedStandards: 'ax',
+        );
+
+    /// Returns the value written to `<ap>Security.ModeEnabled`, or null if the
+    /// param was never sent.
+    Future<String?> capturedModeEnabled({
+      required String band,
+      required String selectedMode,
+      String ap = 'Device.WiFi.AccessPoint.1.',
+    }) async {
+      final agg = WifiQuickSetupNetwork(
+        isGuest: false,
+        ssid: 'Home',
+        securityMode: 'WPA2-Personal',
+        keyPassphrase: '',
+        supportedSecurityModes: const [
+          'None',
+          'WPA2-Personal',
+          'WPA3-Personal',
+          'OWE'
+        ],
+        ssidInstancePaths: const ['Device.WiFi.SSID.1.'],
+        apInstancePaths: [ap],
+      );
+      // Baseline mode differs from every selectedMode under test so the
+      // security diff always fires (otherwise WPA2-in == WPA2-baseline would
+      // be a no-op and nothing would be sent).
+      const orig = WifiQuickSetupSettings(
+        isGuest: false,
+        enabled: true,
+        ssid: 'Home',
+        password: '',
+        securityMode: 'WPA3-Personal-Transition',
+        supportedSecurityModes: [
+          'None',
+          'WPA2-Personal',
+          'WPA3-Personal',
+          'OWE'
+        ],
+      );
+
+      final original = WifiSettingsSettings(
+        networks: [
+          makeNetwork(band: band, accessPointInstancePath: ap)
+              .copyWith(securityMode: 'WPA3-Personal-Transition')
+        ],
+        quickSetupEnabled: true,
+        quickSetupMain: orig,
+      );
+      final current = original.copyWith(
+        quickSetupMain: orig.copyWith(securityMode: selectedMode),
+      );
+      final status = WifiSettingsStatus(quickSetupMainAggregate: agg);
+
+      await writeSvc.saveQuickSetup(
+        original: original,
+        current: current,
+        status: status,
+      );
+
+      final captured = verify(() => mockUsp.set(captureAny(),
+          allowPartial: any(named: 'allowPartial'))).captured;
+      for (final arg in captured) {
+        if (arg is Map && arg.containsKey('${ap}Security.ModeEnabled')) {
+          return arg['${ap}Security.ModeEnabled'] as String?;
+        }
+      }
+      return null;
+    }
+
+    test('6 GHz + OWE selected → sends OWE verbatim', () async {
+      expect(
+        await capturedModeEnabled(band: '6GHz', selectedMode: 'OWE'),
+        'OWE',
+      );
+    });
+
+    test('6 GHz + None (open) selected → normalized to OWE', () async {
+      expect(
+        await capturedModeEnabled(band: '6GHz', selectedMode: 'None'),
+        'OWE',
+      );
+    });
+
+    test('6 GHz + WPA2-Personal selected → forced to WPA3-Personal', () async {
+      // Pass a non-WPA3 mode so this genuinely exercises the coercion branch
+      // (WPA3 input would pass even if the override were removed).
+      expect(
+        await capturedModeEnabled(band: '6GHz', selectedMode: 'WPA2-Personal'),
+        'WPA3-Personal',
+      );
+    });
+
+    test('2.4 GHz + OWE selected → written verbatim (no 6 GHz override)',
+        () async {
+      expect(
+        await capturedModeEnabled(band: '2.4GHz', selectedMode: 'OWE'),
+        'OWE',
+      );
+    });
+
+    test('5 GHz + None selected → written verbatim (no 6 GHz override)',
+        () async {
+      expect(
+        await capturedModeEnabled(band: '5GHz', selectedMode: 'None'),
+        'None',
+      );
     });
   });
 }

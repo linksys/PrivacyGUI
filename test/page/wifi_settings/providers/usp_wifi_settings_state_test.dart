@@ -534,8 +534,8 @@ void main() {
           enabled: true,
           ssid: 'OpenNet',
           password: '',
-          securityMode: 'Enhanced-Open',
-          supportedSecurityModes: ['None', 'Enhanced-Open'],
+          securityMode: 'OWE',
+          supportedSecurityModes: ['None', 'OWE'],
         );
         expect(openPending.isPasswordRequired(null), isFalse);
       });
@@ -553,6 +553,43 @@ void main() {
 
       expect(updated.settings, state.settings);
       expect(updated.status.isSaving, isTrue);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // WifiNetworkUIModel.isOpenSecurity
+  //
+  // 'OWE' is the TR-181 token for Enhanced Open — firmware advertises and
+  // accepts only 'OWE' (see issue #1073). It must be treated as an open
+  // (no-password) mode; 'Enhanced-Open' is not a valid firmware token.
+  // -------------------------------------------------------------------------
+
+  group('WifiNetworkUIModel.isOpenSecurity', () {
+    test('true for None', () {
+      final n = WifiSettingsTestData.createNetworkUIModel(securityMode: 'None');
+      expect(n.isOpenSecurity, isTrue);
+    });
+
+    test('true for empty string', () {
+      final n = WifiSettingsTestData.createNetworkUIModel(securityMode: '');
+      expect(n.isOpenSecurity, isTrue);
+    });
+
+    test('true for OWE (Enhanced Open)', () {
+      final n = WifiSettingsTestData.createNetworkUIModel(securityMode: 'OWE');
+      expect(n.isOpenSecurity, isTrue);
+    });
+
+    test('false for WPA2-Personal', () {
+      final n = WifiSettingsTestData.createNetworkUIModel(
+          securityMode: 'WPA2-Personal');
+      expect(n.isOpenSecurity, isFalse);
+    });
+
+    test('false for WPA3-Personal-Transition', () {
+      final n = WifiSettingsTestData.createNetworkUIModel(
+          securityMode: 'WPA3-Personal-Transition');
+      expect(n.isOpenSecurity, isFalse);
     });
   });
 }

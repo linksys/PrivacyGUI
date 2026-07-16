@@ -421,6 +421,16 @@ class UspWifiSettingsService {
             orig.ssidAdvertisementEnabled != curr.ssidAdvertisementEnabled;
         if (ap != null &&
             (enabledChanged || securityChanged || broadcastChanged)) {
+          // Apply the 6 GHz security override (Wi-Fi 6E mandates WPA3), the
+          // same way saveQuickSetup does, so both save paths write a
+          // firmware-valid mode on 6 GHz. Skip the override for enable-only
+          // toggles (securityChanged false) so the mode is never re-written.
+          final securityMode = securityChanged && curr.securityMode.isNotEmpty
+              ? _securityModeFor6GHz(
+                  band: curr.band,
+                  selectedMode: curr.securityMode,
+                )
+              : null;
           final result = await WiFiAccessPoints.update(
             _usp,
             [
@@ -430,10 +440,7 @@ class UspWifiSettingsService {
                 keyPassphrase: securityChanged && curr.keyPassphrase.isNotEmpty
                     ? curr.keyPassphrase
                     : null,
-                securityModeEnabled:
-                    securityChanged && curr.securityMode.isNotEmpty
-                        ? curr.securityMode
-                        : null,
+                securityModeEnabled: securityMode,
                 ssidAdvertisementEnabled:
                     broadcastChanged ? curr.ssidAdvertisementEnabled : null,
               )
@@ -627,17 +634,18 @@ class UspWifiSettingsService {
   /// Returns the effective security mode to apply to a given band.
   ///
   /// 6 GHz (Wi-Fi 6E) mandates WPA3:
-  ///   - Open / Enhanced-Open selected → send "Enhanced-Open"
-  ///   - Any other mode               → send "WPA3-Personal"
+  ///   - Open / OWE (Enhanced Open) selected → send "OWE"
+  ///   - Any other mode                      → send "WPA3-Personal"
   ///
+  /// 'OWE' is the TR-181 token firmware accepts for Enhanced Open.
   /// All other bands: return [selectedMode] unchanged.
   String _securityModeFor6GHz({
     required String band,
     required String selectedMode,
   }) {
     if (!band.contains('6')) return selectedMode;
-    const openModes = {'None', 'Enhanced-Open', ''};
-    return openModes.contains(selectedMode) ? 'Enhanced-Open' : 'WPA3-Personal';
+    const openModes = {'None', 'OWE', ''};
+    return openModes.contains(selectedMode) ? 'OWE' : 'WPA3-Personal';
   }
 }
 

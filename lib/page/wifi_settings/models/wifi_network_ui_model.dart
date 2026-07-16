@@ -101,11 +101,10 @@ class WifiNetworkUIModel extends Equatable {
     return band.isNotEmpty ? band : 'Unknown';
   }
 
-  /// True if this network uses an open (no password) security mode
+  /// True if this network uses an open (no password) security mode.
+  /// 'OWE' is the TR-181 token for Enhanced Open (firmware only accepts 'OWE').
   bool get isOpenSecurity =>
-      securityMode == 'None' ||
-      securityMode.isEmpty ||
-      securityMode == 'Enhanced-Open';
+      securityMode == 'None' || securityMode.isEmpty || securityMode == 'OWE';
 
   /// Channel display string ("Auto" if autoChannelEnable, else the channel number)
   String get channelDisplay => autoChannelEnable ? 'Auto' : channel.toString();
