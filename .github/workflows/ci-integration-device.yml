@@ -1,0 +1,65 @@
+# Nightly device-bound integration flows on the lab router (tier: device).
+# Classification and rationale: integration_test/FLOW-TIERS.md
+# RUNNER: waits on a self-hosted runner (label: lab-lan) on the QA lab LAN with
+#   the lab router reachable at 192.168.1.1. A Jetson box is being provisioned
+#   for this. Router admin password comes from the ROUTER_ADMIN_PASSWORD secret.
+# NOTE: this tier uses the repo's own harness (integration_web.sh +
+#   shell_scripts/*) which handles factory reset, PnP skip, and device-mode waits.
+name: Integration (device tier, nightly)
+
+on:
+  schedule:
+    - cron: '30 18 * * *'   # 02:30 Taipei / 18:30 UTC, outside CBT lab hours
+  workflow_dispatch:
+    inputs:
+      tags:
+        description: 'test_meta tags to run (default = device-bound set)'
+        required: false
+        default: 'pnp,wifi,internet_settings,speed_test'
+
+concurrency:
+  group: integration-device
+  cancel-in-progress: false   # never interrupt a run that may have factory-reset the router
+
+jobs:
+  device-flows:
+    runs-on: [self-hosted, lab-lan]
+    timeout-minutes: 240
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install Dependencies
+        run: flutter pub get
+
+      - name: Preflight - router reachable
+        run: |
+          curl -sk --max-time 10 https://192.168.1.1/ > /dev/null
+          bash integration_test/shell_scripts/get_device_info.sh
+
+      # Device-bound flows per integration_test/FLOW-TIERS.md.
+      # integration_web.sh resolves tags via test_meta/*.json and runs each flow's
+      # declared setUp (factory_reset, skip_setup, pre_paired) before flutter drive.
+      - name: Run device-bound flows
+        env:
+          ROUTER_ADMIN_PASSWORD: ${{ secrets.ROUTER_ADMIN_PASSWORD }}
+        run: |
+          bash integration_web.sh -t "${{ inputs.tags || 'pnp,wifi,internet_settings,speed_test' }}"
+
+      - name: Generate report
+        if: always()
+        run: bash integration_test/shell_scripts/generate_integration_report.sh || true
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: device-tier-report-${{ github.run_number }}
+          path: build/integration_test/
+          retention-days: 30
