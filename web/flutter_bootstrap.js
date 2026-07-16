@@ -11,7 +11,13 @@ _flutter.buildConfig = {"engineRevision":"cf56914b326edb0ccb123ffdc60f00060bd513
 
 _flutter.loader.load({
   config: {
-    fontFallbackBaseUrl: "./assets/",
+    // Offline-first fonts are eager-loaded via pubspec fonts: (CJK/non-Latin
+    // subsets + Roboto), so everything the UI needs renders without network.
+    // fontFallbackBaseUrl stays on the CDN so that when online, code points
+    // outside the bundled subsets (e.g. rare user-typed CJK) can still be
+    // fetched on demand (A+). Offline, these simply don't load — the bundled
+    // fonts already cover all interface text.
+    fontFallbackBaseUrl: "https://fonts.gstatic.com/s/",
     canvasKitBaseUrl: "./assets/"
   },
   serviceWorkerSettings: {
