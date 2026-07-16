@@ -1110,6 +1110,67 @@ void main() {
           isNot(
               contains('Device.WiFi.AccessPoint.1.SSIDAdvertisementEnabled')));
     });
+
+    // -----------------------------------------------------------------------
+    // 6 GHz security override (#1073, #1142) — saveAdvanced must apply the
+    // same _securityModeFor6GHz coercion as saveQuickSetup, so both save
+    // paths write a firmware-valid mode on 6 GHz.
+    // -----------------------------------------------------------------------
+
+    /// Returns the value written to AccessPoint.1 Security.ModeEnabled after a
+    /// mode change on the given band, or null if it was never sent.
+    Future<String?> capturedModeEnabled({
+      required String band,
+      required String selectedMode,
+    }) async {
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => uspSuccess());
+      // Baseline mode differs from every selectedMode under test so the
+      // security diff always fires (WPA2-in == WPA2-baseline would send nothing).
+      final original = [
+        makeNetwork(band: band, securityMode: 'WPA3-Personal-Transition')
+      ];
+      final current = [makeNetwork(band: band, securityMode: selectedMode)];
+
+      await writeSvc.saveAdvanced(original: original, current: current);
+
+      final captured = verify(() => mockUsp.set(captureAny(),
+          allowPartial: any(named: 'allowPartial'))).captured;
+      const key = 'Device.WiFi.AccessPoint.1.Security.ModeEnabled';
+      for (final arg in captured) {
+        if (arg is Map && arg.containsKey(key)) return arg[key] as String?;
+      }
+      return null;
+    }
+
+    test('6 GHz + OWE selected → sends OWE verbatim', () async {
+      expect(
+        await capturedModeEnabled(band: '6GHz', selectedMode: 'OWE'),
+        'OWE',
+      );
+    });
+
+    test('6 GHz + None (open) selected → normalized to OWE', () async {
+      expect(
+        await capturedModeEnabled(band: '6GHz', selectedMode: 'None'),
+        'OWE',
+      );
+    });
+
+    test('6 GHz + WPA2-Personal selected → forced to WPA3-Personal', () async {
+      expect(
+        await capturedModeEnabled(band: '6GHz', selectedMode: 'WPA2-Personal'),
+        'WPA3-Personal',
+      );
+    });
+
+    test('5 GHz + None selected → written verbatim (no 6 GHz override)',
+        () async {
+      expect(
+        await capturedModeEnabled(band: '5GHz', selectedMode: 'None'),
+        'None',
+      );
+    });
   });
 
   // -------------------------------------------------------------------------
@@ -1395,12 +1456,15 @@ void main() {
         ssidInstancePaths: const ['Device.WiFi.SSID.1.'],
         apInstancePaths: [ap],
       );
+      // Baseline mode differs from every selectedMode under test so the
+      // security diff always fires (otherwise WPA2-in == WPA2-baseline would
+      // be a no-op and nothing would be sent).
       const orig = WifiQuickSetupSettings(
         isGuest: false,
         enabled: true,
         ssid: 'Home',
         password: '',
-        securityMode: 'WPA2-Personal',
+        securityMode: 'WPA3-Personal-Transition',
         supportedSecurityModes: [
           'None',
           'WPA2-Personal',
@@ -1410,7 +1474,10 @@ void main() {
       );
 
       final original = WifiSettingsSettings(
-        networks: [makeNetwork(band: band, accessPointInstancePath: ap)],
+        networks: [
+          makeNetwork(band: band, accessPointInstancePath: ap)
+              .copyWith(securityMode: 'WPA3-Personal-Transition')
+        ],
         quickSetupEnabled: true,
         quickSetupMain: orig,
       );
@@ -1450,8 +1517,10 @@ void main() {
     });
 
     test('6 GHz + WPA2-Personal selected → forced to WPA3-Personal', () async {
+      // Pass a non-WPA3 mode so this genuinely exercises the coercion branch
+      // (WPA3 input would pass even if the override were removed).
       expect(
-        await capturedModeEnabled(band: '6GHz', selectedMode: 'WPA3-Personal'),
+        await capturedModeEnabled(band: '6GHz', selectedMode: 'WPA2-Personal'),
         'WPA3-Personal',
       );
     });
