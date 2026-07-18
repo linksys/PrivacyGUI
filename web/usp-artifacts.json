@@ -2,7 +2,7 @@
   "schema_version": 1,
   "upstream": {
     "repository": "https://github.com/linksys/usp_framework",
-    "commit": "0923f54e19042825e48d91bfdcfb8f6c6b055a32"
+    "commit": "bec64cd221272601eeb5512cffb4fda9d7a8714e"
   },
   "package": {
     "name": "usp-client",
