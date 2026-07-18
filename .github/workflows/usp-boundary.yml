@@ -1,0 +1,35 @@
+name: USP consumer boundary
+
+on:
+  pull_request:
+    branches: [usp]
+  push:
+    branches: [usp]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dart-wasm-boundary:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify vendored artifact hashes and provenance manifest
+        run: >-
+          python3 tools/usp_boundary/verify_artifacts.py
+          --manifest web/usp-artifacts.json
+          --root .
+      - name: Compare every Dart binding with the TypeScript surface
+        run: >-
+          python3 tools/usp_boundary/check_boundary.py
+          --dts web/usp_client.d.ts
+          --dart lib/core/usp/web/usp_client_wasm.dart
+          --dart lib/core/usp/web/usp_ws_client_wrapper.dart
+          --policy tools/usp_boundary/policy.json
+          --root .
+      - name: Prove drift fixtures fail closed
+        run: >-
+          python3 -m unittest discover
+          -s tools/usp_boundary
+          -p 'test_*.py'
