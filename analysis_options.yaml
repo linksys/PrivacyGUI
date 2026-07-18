@@ -8,6 +8,10 @@
 # The following line activates a set of recommended lints for Flutter apps,
 # packages, and plugins designed to encourage good coding practices.
 analyzer:
+  exclude:
+    # Deliberately invalid boundary fixtures are parsed by the Python
+    # contract tests and must not be treated as application Dart sources.
+    - tools/usp_boundary/fixtures/**
   errors:
     prefer_const_constructors: ignore
 include: package:flutter_lints/flutter.yaml
