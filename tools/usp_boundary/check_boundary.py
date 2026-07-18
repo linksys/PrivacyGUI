@@ -91,7 +91,7 @@ def parse_typescript(path):
         body = text[opening + 1:closing]
         methods = {}
         constructor = re.search(
-            r"(?m)^\s*(private\s+)?constructor\s*\(([^()]*)\)\s*;",
+            r"(?ms)^\s*(private\s+)?constructor\s*\(([^;]*?)\)\s*;",
             body,
         )
         if constructor and not constructor.group(1):
@@ -100,7 +100,8 @@ def parse_typescript(path):
             )
         method_pattern = re.compile(
             r"(?m)^\s*(?:static\s+)?(\[Symbol\.dispose\]|\w+)"
-            r"\s*\(([^()]*)\)\s*:\s*([^;\n]+);",
+            r"\s*\(([^;]*?)\)\s*:\s*([^;\n]+);",
+            re.DOTALL,
         )
         for method in method_pattern.finditer(body):
             name = (
@@ -137,7 +138,9 @@ def parse_dart_extensions(path):
     classes = {}
     spans = []
     extension_pattern = re.compile(
-        r"@JS\('([^']+)'\)\s*extension\s+type\s+\w+.*?\{",
+        r"@JS\('([^']+)'\)"
+        r"(?:\s*@[A-Za-z_]\w*(?:\([^)]*\))?)*"
+        r"\s*extension\s+type\s+\w+.*?\{",
         re.DOTALL,
     )
     for match in extension_pattern.finditer(text):
@@ -149,8 +152,8 @@ def parse_dart_extensions(path):
         methods = {}
 
         factory_pattern = re.compile(
-            r"(?m)^\s*(?:@JS\('([^']+)'\)\s*)?"
-            r"external\s+factory\s+\w+(?:\._)?\s*\(([^()]*)\)\s*;",
+            r"(?ms)^\s*(?:@JS\('([^']+)'\)\s*)?"
+            r"external\s+factory\s+\w+(?:\._)?\s*\(([^;]*?)\)\s*;",
         )
         for factory in factory_pattern.finditer(body):
             name = factory.group(1) or "constructor"
@@ -159,9 +162,9 @@ def parse_dart_extensions(path):
             )
 
         method_pattern = re.compile(
-            r"(?m)^\s*(?:@JS\('([^']+)'\)\s*)?"
+            r"(?ms)^\s*(?:@JS\('([^']+)'\)\s*)?"
             r"external\s+(?!factory\b)(?:static\s+)?(\S+)\s+(\w+)\s*"
-            r"\(([^()]*)\)\s*;",
+            r"\(([^;]*?)\)\s*;",
         )
         for method in method_pattern.finditer(body):
             dart_name = method.group(3)
@@ -178,8 +181,8 @@ def parse_dart_extensions(path):
 def parse_dart_globals(path, spans, text):
     globals_ = {}
     pattern = re.compile(
-        r"(?m)^\s*@JS\('([^']+)'\)\s*"
-        r"external\s+(\S+)\s+\w+\s*\(([^()]*)\)\s*;",
+        r"(?ms)^\s*@JS\('([^']+)'\)\s*"
+        r"external\s+(\S+)\s+\w+\s*\(([^;]*?)\)\s*;",
     )
     for match in pattern.finditer(text):
         if any(start <= match.start() < end for start, end in spans):
@@ -198,6 +201,8 @@ def normalized_type(type_name):
     compact = compact.rstrip("?")
     if compact.startswith("Promise<") or compact.startswith("JSPromise<"):
         return "promise"
+    if "Function(" in compact or "=>" in compact:
+        return "function"
     mapping = {
         "any": "any",
         "JSAny": "any",
@@ -259,6 +264,20 @@ def local_js_arity(path, name):
     return len(split_parameters(match.group(1)))
 
 
+def discover_dart_paths(roots):
+    """Discover every Dart file below roots that declares callable JS externals."""
+    discovered = []
+    for root in roots:
+        root = Path(root)
+        if not root.is_dir():
+            raise ValueError("Dart discovery root is not a directory: %s" % root)
+        for path in sorted(root.rglob("*.dart")):
+            text = strip_comments(path.read_text(encoding="utf-8"))
+            if re.search(r"\bexternal\b[^;]*\(", text, flags=re.DOTALL):
+                discovered.append(path)
+    return discovered
+
+
 def run_check(dts_path, dart_paths, policy_path, root):
     policy = json.loads(Path(policy_path).read_text(encoding="utf-8"))
     if policy.get("schema_version") != 1:
@@ -267,14 +286,22 @@ def run_check(dts_path, dart_paths, policy_path, root):
     ts_classes, ts_functions = parse_typescript(dts_path)
     dart_classes = {}
     dart_globals = {}
+    errors = []
     for dart_path in dart_paths:
         classes, spans, text = parse_dart_extensions(dart_path)
+        globals_ = parse_dart_globals(dart_path, spans, text)
+        declared = len(re.findall(r"\bexternal\b", text))
+        recognized = sum(len(methods) for methods in classes.values()) + len(globals_)
+        if recognized != declared:
+            errors.append(
+                "%s contains %d external declarations but only %d were recognized"
+                % (dart_path, declared, recognized)
+            )
         for class_name, methods in classes.items():
             dart_classes.setdefault(class_name, {}).update(methods)
-        dart_globals.update(parse_dart_globals(dart_path, spans, text))
+        dart_globals.update(globals_)
 
     reports = []
-    errors = []
     unbound = policy.get("intentionally_unbound", {})
     for class_name, methods in dart_classes.items():
         if class_name not in ts_classes:
@@ -346,19 +373,39 @@ def run_check(dts_path, dart_paths, policy_path, root):
     for name in local_globals:
         if name not in dart_globals:
             errors.append("stale local JS shim policy entry %s" % name)
+
+    required_classes = policy.get("required_dart_classes", [])
+    for class_name in required_classes:
+        if class_name not in dart_classes:
+            errors.append("required Dart JS class was not discovered: %s" % class_name)
+
+    minimum = policy.get("minimum_decisions")
+    if not isinstance(minimum, int) or isinstance(minimum, bool) or minimum < 1:
+        errors.append("policy minimum_decisions must be a positive integer")
+    elif len(reports) < minimum:
+        errors.append(
+            "boundary decision floor not met: verified=%d required=%d"
+            % (len(reports), minimum)
+        )
     return reports, errors
 
 
 def main(argv=None):
     parser = argparse.ArgumentParser()
     parser.add_argument("--dts", required=True)
-    parser.add_argument("--dart", action="append", required=True)
+    parser.add_argument("--dart", action="append", default=[])
+    parser.add_argument("--dart-root", action="append", default=[])
     parser.add_argument("--policy", required=True)
     parser.add_argument("--root", default=".")
     args = parser.parse_args(argv)
     try:
+        dart_paths = [Path(path) for path in args.dart]
+        dart_paths.extend(discover_dart_paths(args.dart_root))
+        dart_paths = sorted(set(path.resolve() for path in dart_paths))
+        if not dart_paths:
+            raise ValueError("no Dart external-binding files were discovered")
         reports, errors = run_check(
-            args.dts, args.dart, args.policy, Path(args.root).resolve()
+            args.dts, dart_paths, args.policy, Path(args.root).resolve()
         )
     except (OSError, ValueError, json.JSONDecodeError) as error:
         print("FAIL: %s" % error, file=sys.stderr)

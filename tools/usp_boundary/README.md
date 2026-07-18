@@ -14,18 +14,23 @@ python3 tools/usp_boundary/verify_artifacts.py \
 
 python3 tools/usp_boundary/check_boundary.py \
   --dts web/usp_client.d.ts \
-  --dart lib/core/usp/web/usp_client_wasm.dart \
-  --dart lib/core/usp/web/usp_ws_client_wrapper.dart \
+  --dart-root lib/core/usp/web \
   --policy tools/usp_boundary/policy.json \
   --root .
 
 python3 -m unittest discover -s tools/usp_boundary -p 'test_*.py'
 ```
 
-The arity-mismatch fixture recreates the former one-argument Dart
+The checker discovers every callable Dart `external` declaration below the
+configured root, fails if any declaration is not recognized, requires the
+expected JS classes, and enforces a non-zero decision floor. The
+arity-mismatch fixture recreates the former one-argument Dart
 `subscribe()` binding against the real three-argument TypeScript shape and
 proves the checker fails. Hash verification proves the three vendored files
-remain the reviewed artifact set recorded in `web/usp-artifacts.json`.
+remain the reviewed artifact set recorded in `web/usp-artifacts.json`. The
+manifest records the reviewed upstream commit, but consumer CI does not claim
+to authenticate that cross-repository reference. The producer repository owns
+the source-to-committed-package rebuild gate.
 
 This is a producer/consumer API gate. It does not claim that a browser loaded
 the application against a router, that firmware upload succeeded on a device,

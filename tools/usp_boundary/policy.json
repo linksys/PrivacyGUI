@@ -1,5 +1,11 @@
 {
   "schema_version": 1,
+  "minimum_decisions": 40,
+  "required_dart_classes": [
+    "UspClient",
+    "UspClientBuilder",
+    "UspWsClient"
+  ],
   "intentionally_unbound": {
     "UspClient": {
       "Symbol.dispose": "Generated JavaScript lifecycle alias; Dart calls free() explicitly.",

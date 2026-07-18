@@ -3,7 +3,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from check_boundary import run_check
+from check_boundary import discover_dart_paths, run_check
 
 
 HERE = Path(__file__).resolve().parent
@@ -33,6 +33,7 @@ class BoundaryTests(unittest.TestCase):
             (temp / "shim.js").write_text("", encoding="utf-8")
             policy = {
                 "schema_version": 1,
+                "minimum_decisions": 1,
                 "intentionally_unbound": {},
                 "local_js_globals": {
                     "missingShim": {
@@ -51,6 +52,135 @@ class BoundaryTests(unittest.TestCase):
                 temp,
             )
             self.assertTrue(any("not defined" in error for error in errors), errors)
+
+    def test_zero_decisions_fails_the_floor(self):
+        fixture = HERE / "fixtures" / "arity_mismatch"
+        with tempfile.TemporaryDirectory() as temp:
+            temp = Path(temp)
+            dart = temp / "empty.dart"
+            dart.write_text("", encoding="utf-8")
+            policy = temp / "policy.json"
+            policy.write_text(
+                json.dumps(
+                    {
+                        "schema_version": 1,
+                        "minimum_decisions": 1,
+                        "intentionally_unbound": {},
+                        "local_js_globals": {},
+                    }
+                ),
+                encoding="utf-8",
+            )
+            _, errors = run_check(
+                fixture / "usp_client.d.ts", [dart], policy, temp
+            )
+            self.assertTrue(any("decision floor" in error for error in errors), errors)
+
+    def test_static_interop_annotation_does_not_hide_extension(self):
+        with tempfile.TemporaryDirectory() as temp:
+            temp = Path(temp)
+            dts = temp / "usp_client.d.ts"
+            dts.write_text(
+                "export class UspClient { constructor(base_url: string); }\n",
+                encoding="utf-8",
+            )
+            dart = temp / "binding.dart"
+            dart.write_text(
+                "@JS('UspClient')\n"
+                "@staticInterop\n"
+                "extension type UspClientJS._(JSObject _) implements JSObject {\n"
+                "  external factory UspClientJS(String baseUrl);\n"
+                "}\n",
+                encoding="utf-8",
+            )
+            policy = temp / "policy.json"
+            policy.write_text(
+                json.dumps(
+                    {
+                        "schema_version": 1,
+                        "minimum_decisions": 1,
+                        "required_dart_classes": ["UspClient"],
+                        "intentionally_unbound": {},
+                        "local_js_globals": {},
+                    }
+                ),
+                encoding="utf-8",
+            )
+            reports, errors = run_check(dts, [dart], policy, temp)
+            self.assertEqual(errors, [])
+            self.assertIn("BOUND UspClient.constructor", reports)
+
+    def test_unannotated_top_level_external_is_not_silently_ignored(self):
+        with tempfile.TemporaryDirectory() as temp:
+            temp = Path(temp)
+            dts = temp / "usp_client.d.ts"
+            dts.write_text(
+                "export function subscribe(value: string): void;\n",
+                encoding="utf-8",
+            )
+            dart = temp / "binding.dart"
+            dart.write_text(
+                "external void subscribe(String value);\n", encoding="utf-8"
+            )
+            policy = temp / "policy.json"
+            policy.write_text(
+                json.dumps(
+                    {
+                        "schema_version": 1,
+                        "minimum_decisions": 1,
+                        "intentionally_unbound": {},
+                        "local_js_globals": {},
+                    }
+                ),
+                encoding="utf-8",
+            )
+            _, errors = run_check(dts, [dart], policy, temp)
+            self.assertTrue(any("only 0 were recognized" in e for e in errors), errors)
+
+    def test_function_typed_parameter_is_parsed(self):
+        with tempfile.TemporaryDirectory() as temp:
+            temp = Path(temp)
+            dts = temp / "usp_client.d.ts"
+            dts.write_text(
+                "export class UspClient { onRecord(callback: Function): void; }\n",
+                encoding="utf-8",
+            )
+            dart = temp / "binding.dart"
+            dart.write_text(
+                "@JS('UspClient')\n"
+                "extension type UspClientJS._(JSObject _) implements JSObject {\n"
+                "  external void onRecord(void Function(JSAny) callback);\n"
+                "}\n",
+                encoding="utf-8",
+            )
+            policy = temp / "policy.json"
+            policy.write_text(
+                json.dumps(
+                    {
+                        "schema_version": 1,
+                        "minimum_decisions": 1,
+                        "intentionally_unbound": {},
+                        "local_js_globals": {},
+                    }
+                ),
+                encoding="utf-8",
+            )
+            reports, errors = run_check(dts, [dart], policy, temp)
+            self.assertEqual(errors, [])
+            self.assertIn("BOUND UspClient.onRecord", reports)
+
+    def test_discovery_includes_new_external_binding_files(self):
+        with tempfile.TemporaryDirectory() as temp:
+            temp = Path(temp)
+            binding = temp / "new_binding.dart"
+            binding.write_text(
+                "@JS('newBinding')\nexternal void newBinding(String value);\n",
+                encoding="utf-8",
+            )
+            (temp / "ordinary.dart").write_text(
+                "void ordinary() {}\n", encoding="utf-8"
+            )
+            self.assertEqual(discover_dart_paths([temp]), [binding])
 
 
 if __name__ == "__main__":

@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Verify vendored artifact hashes and provenance manifest
+      - name: Verify vendored artifact hashes and recorded source reference
         run: >-
           python3 tools/usp_boundary/verify_artifacts.py
           --manifest web/usp-artifacts.json
@@ -24,8 +24,7 @@ jobs:
         run: >-
           python3 tools/usp_boundary/check_boundary.py
           --dts web/usp_client.d.ts
-          --dart lib/core/usp/web/usp_client_wasm.dart
-          --dart lib/core/usp/web/usp_ws_client_wrapper.dart
+          --dart-root lib/core/usp/web
           --policy tools/usp_boundary/policy.json
           --root .
       - name: Prove drift fixtures fail closed

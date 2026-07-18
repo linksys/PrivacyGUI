@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify vendored USP artifacts, hashes, source revision, and production surface."""
+"""Verify vendored USP artifacts, recorded hashes, and production surface."""
 
 import argparse
 import hashlib
@@ -156,7 +156,7 @@ def main(argv=None):
     if args.verify_upstream:
         print("PASS: vendored USP artifacts match hashes and upstream source")
     else:
-        print("PASS: vendored USP artifacts match the provenance manifest")
+        print("PASS: vendored USP artifacts match the recorded artifact manifest")
     return 0
 
 
