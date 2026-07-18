@@ -65,10 +65,6 @@ extension type UspClientJS._(JSObject _) implements JSObject {
   @JS('getToken')
   external String? getToken();
 
-  external JSPromise<JSAny?> subscribe(String subscriptionId);
-
-  external JSPromise<JSAny?> unsubscribe(String subscriptionId);
-
   external JSPromise<JSAny?> login(String password);
 
   external JSPromise<JSAny?> logout();
@@ -128,14 +124,6 @@ class UspClientWeb {
       logger.e('$_tag getToken() exception: $e');
       return null;
     }
-  }
-
-  Future<void> subscribe(String subscriptionId) async {
-    await _client.subscribe(subscriptionId).toDart;
-  }
-
-  Future<void> unsubscribe(String subscriptionId) async {
-    await _client.unsubscribe(subscriptionId).toDart;
   }
 
   Future<void> login(String password) async {

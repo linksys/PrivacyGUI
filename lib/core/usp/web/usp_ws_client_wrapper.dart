@@ -61,11 +61,6 @@ external JSPromise<JSAny?> _sendWebSocketConnectNative(
 external JSPromise<JSAny?> _sendOperateRecordNative(UspWsClientJS wsClient,
     JSString command, JSAny inputArgs, JSString fromId, JSString toId);
 
-// Debug helper to test sendRecord from pure JS
-@JS('uspWsSendRecord')
-external JSPromise<JSAny?> _uspWsSendRecord(
-    UspWsClientJS wsClient, JSUint8Array bytes);
-
 // -----------------------------------------------------------------------------
 // Dart Wrapper
 // -----------------------------------------------------------------------------
@@ -214,8 +209,7 @@ class UspWsClientWrapper {
       throw StateError('WebSocket is not open (state: $_currentState)');
     }
     logger.d('$_tag sendRecord: ${bytes.length} bytes');
-    // Use debug helper to inspect bytes in pure JS
-    await _uspWsSendRecord(_jsClient, bytes.toJS).toDart;
+    await _jsClient.sendRecord_(bytes.toJS).toDart;
   }
 
   /// Send a WebSocketConnect record (required as first frame per TR-369 §6.4.5).

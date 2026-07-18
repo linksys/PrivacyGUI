@@ -9,13 +9,19 @@ Files in this repo that are built or generated from `linksys/usp_framework` and 
 
 ## Manifest
 
-**Last updated**: 2026-07-07
+**Last updated**: 2026-07-18
+
+The web package is pinned to `usp_framework`
+`2201b6f5ac668330472fd2eae38330dd69d91dae` and built with both the
+`wasm` and `websocket` features. Machine-verifiable hashes and upstream paths
+are recorded in `web/usp-artifacts.json`.
 
 | # | Artifact | Version | Checked-in path | Upstream source |
 |---|----------|---------|-----------------|-----------------|
 | 1 | `usp-codegen` (Mach-O arm64) | **0.15.3** | `tools/usp-codegen` | `usp-codegen/bin/usp-codegen` (built from `src/` via `Makefile.standalone`) |
 | 2 | `usp_client.js` | **0.12.0** | `web/usp_client.js` | `usp-client/pkg/usp_client.js` |
 | 3 | `usp_client_bg.wasm` | **0.12.0** | `web/usp_client_bg.wasm` | `usp-client/pkg/usp_client_bg.wasm` |
+| 4 | `usp_client.d.ts` | **0.12.0** | `web/usp_client.d.ts` | `usp-client/pkg/usp_client.d.ts` |
 
 ## Derived (generated locally, not copied)
 
@@ -49,13 +55,21 @@ The YAML definitions are **not vendored** into this repo.
 
 3. **Web client assets**
    ```bash
+   cd linksys/usp/usp_framework/usp-client
+   wasm-pack build --release --target web --out-dir pkg --features wasm,websocket
+   cd -
    cp linksys/usp/usp_framework/usp-client/pkg/usp_client.js      web/usp_client.js
    cp linksys/usp/usp_framework/usp-client/pkg/usp_client_bg.wasm web/usp_client_bg.wasm
+   cp linksys/usp/usp_framework/usp-client/pkg/usp_client.d.ts    web/usp_client.d.ts
    ```
 
-4. **Update the version table above** in the same commit as the artifact change.
+4. **Update `web/usp-artifacts.json` and the version table above** in the same
+   commit as the artifact change. Use the full upstream commit SHA and hashes
+   from the producer artifact.
 
 5. **Sanity checks**
+   - `python3 tools/usp_boundary/verify_artifacts.py --manifest web/usp-artifacts.json --root .`
+   - `python3 tools/usp_boundary/check_boundary.py --help`
    - `flutter analyze lib/generated` — no new errors
    - `flutter analyze lib/page lib/core` — no new errors
    - Grep for removed APIs when bumping `usp-client` (e.g. `setOrderedWithOptions` was removed in 0.9.0)

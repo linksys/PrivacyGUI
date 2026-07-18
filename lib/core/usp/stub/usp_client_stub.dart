@@ -12,12 +12,6 @@ class UspClientWeb {
 
   String? get sessionToken => null;
 
-  Future<void> subscribe(String subscriptionId) =>
-      throw UnsupportedError('USP is only available on Web');
-
-  Future<void> unsubscribe(String subscriptionId) =>
-      throw UnsupportedError('USP is only available on Web');
-
   Future<void> login(String password) =>
       throw UnsupportedError('USP is only available on Web');
 
