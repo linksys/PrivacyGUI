@@ -2,7 +2,7 @@
   "schema_version": 1,
   "upstream": {
     "repository": "https://github.com/linksys/usp_framework",
-    "commit": "e7fe8ba4d0c4d5a562d0ebc5ef1dbe9837d5c1d9"
+    "commit": "b5e65ae9ce3fc5d61abe63adb269d77a5a7a9cbd"
   },
   "package": {
     "name": "usp-client",
@@ -20,17 +20,17 @@
     {
       "path": "web/usp_client.js",
       "upstream_path": "usp-client/pkg/usp_client.js",
-      "sha256": "f2ea6020d42d83a2a57aea4c71ce0c4c635e59165d87a880388869555495c62b"
+      "sha256": "7ff8eaa93b926d2793ef8565ad9ee40c3f8e91989ffaebfbaf10b5fc19d87da5"
     },
     {
       "path": "web/usp_client_bg.wasm",
       "upstream_path": "usp-client/pkg/usp_client_bg.wasm",
-      "sha256": "a66ec3be082efe25a61f02b905c98ce192a622e8b4774da0c773e21c20c8edf5"
+      "sha256": "767ae88aa39c8d83ad3a611dc5ce0104a98fa5eb3f89b9661b3203a4f9a8721c"
     },
     {
       "path": "web/usp_client.d.ts",
       "upstream_path": "usp-client/pkg/usp_client.d.ts",
-      "sha256": "d01f987bdf7bf3fafdd896d8a7c83cb1f921e99f08e0abf6f0276204745d5e64"
+      "sha256": "f85f8b6fc30e336907d72d6144485fde0614f5fef8433cc5d6baccfe8c0704a6"
     }
   ]
 }

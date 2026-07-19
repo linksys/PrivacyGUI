@@ -12,7 +12,7 @@ Files in this repo that are built or generated from `linksys/usp_framework` and 
 **Last updated**: 2026-07-19
 
 The web package records reviewed `usp_framework` commit
-`e7fe8ba4d0c4d5a562d0ebc5ef1dbe9837d5c1d9` and was built with both the
+`b5e65ae9ce3fc5d61abe63adb269d77a5a7a9cbd` and was built with both the
 `wasm` and `websocket` features. Machine-verifiable local hashes and the
 reviewed upstream paths are recorded in `web/usp-artifacts.json`. Consumer CI
 does not authenticate the cross-repository commit reference; the producer
