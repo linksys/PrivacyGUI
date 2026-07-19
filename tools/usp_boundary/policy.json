@@ -6,6 +6,9 @@
     "UspClientBuilder",
     "UspWsClient"
   ],
+  "required_dart_globals": [
+    "__uspClientReady"
+  ],
   "intentionally_unbound": {
     "UspClient": {
       "Symbol.dispose": "Generated JavaScript lifecycle alias; Dart calls free() explicitly.",
@@ -24,6 +27,11 @@
     }
   },
   "local_js_globals": {
+    "__uspClientReady": {
+      "kind": "getter",
+      "defined_in": "web/usp_init.js",
+      "reason": "PrivacyGUI awaits the Promise installed by its non-module Wasm bootstrap."
+    },
     "sendWebSocketConnectNative": {
       "defined_in": "web/usp_init.js",
       "reason": "PrivacyGUI shim copies Wasm bytes before the mandatory first WebSocket frame."

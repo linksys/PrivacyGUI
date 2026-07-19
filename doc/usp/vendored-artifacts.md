@@ -9,14 +9,21 @@ Files in this repo that are built or generated from `linksys/usp_framework` and 
 
 ## Manifest
 
-**Last updated**: 2026-07-18
+**Last updated**: 2026-07-19
 
 The web package records reviewed `usp_framework` commit
-`bec64cd221272601eeb5512cffb4fda9d7a8714e` and was built with both the
+`e7fe8ba4d0c4d5a562d0ebc5ef1dbe9837d5c1d9` and was built with both the
 `wasm` and `websocket` features. Machine-verifiable local hashes and the
 reviewed upstream paths are recorded in `web/usp-artifacts.json`. Consumer CI
 does not authenticate the cross-repository commit reference; the producer
 repository owns the source-to-committed-package rebuild gate.
+
+The generated TypeScript surface includes `UspClient.subscribe()` and
+`unsubscribe()`, but PrivacyGUI intentionally does not bind those methods.
+Application subscriptions go through the authenticated `UspBridgeClient` and
+SSE lifecycle instead. `tools/usp_boundary/policy.json` records that decision
+and fails if either the upstream method or the consumer policy disappears
+without review.
 
 | # | Artifact | Version | Checked-in path | Upstream source |
 |---|----------|---------|-----------------|-----------------|

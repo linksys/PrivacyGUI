@@ -52,7 +52,8 @@ external JSUint8Array buildWebSocketConnectJS(JSString fromId, JSString toId);
 @JS('decodeRecord')
 external JSAny decodeRecordJS(JSUint8Array data);
 
-// Native JS helpers that bypass Dart interop issues
+// Native JS helpers copy Wasm-backed bytes before a Wasm memory growth can
+// detach their ArrayBuffer while Dart hands them back to JavaScript.
 @JS('sendWebSocketConnectNative')
 external JSPromise<JSAny?> _sendWebSocketConnectNative(
     UspWsClientJS wsClient, JSString fromId, JSString toId);
@@ -141,27 +142,11 @@ class UspWsClientWrapper {
       }
 
       final wrapper = UspWsClientWrapper._(jsClient as UspWsClientJS);
-      // _setupCallbacks is called in constructor, state callback now active
-
-      // Wait for state to settle — either 'open' from callback or 'closed' on error
-      // Most connections settle within 100-300ms; SSL errors close immediately
-      for (var i = 0; i < 10; i++) {
-        await Future<void>.delayed(const Duration(milliseconds: 100));
-        if (wrapper._currentState == WsConnectionState.open) {
-          logger.i('$_tag Connected to $url');
-          return wrapper;
-        }
-        if (wrapper._currentState == WsConnectionState.closed) {
-          logger.e('$_tag WebSocket closed during connect');
-          wrapper.dispose();
-          throw StateError(
-              'WebSocket connection closed (SSL error or server reject)');
-        }
-      }
-
-      // Still connecting after 1s — assume success (some browsers don't fire open callback)
+      // The producer's connect Promise is the readiness contract: it resolves
+      // only after the browser upgrade reaches OPEN and rejects failed
+      // upgrades. Do not infer readiness from a timer.
       wrapper._currentState = WsConnectionState.open;
-      logger.i('$_tag Connected to $url (no open callback, assuming success)');
+      logger.i('$_tag Connected to $url');
       return wrapper;
     } catch (e) {
       logger.e('$_tag Connection failed: $e');

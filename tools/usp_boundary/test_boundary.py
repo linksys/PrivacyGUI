@@ -182,6 +182,105 @@ class BoundaryTests(unittest.TestCase):
             )
             self.assertEqual(discover_dart_paths([temp]), [binding])
 
+    def test_local_js_getter_is_discovered_and_verified(self):
+        with tempfile.TemporaryDirectory() as temp:
+            temp = Path(temp)
+            dts = temp / "usp_client.d.ts"
+            dts.write_text("", encoding="utf-8")
+            binding = temp / "wasm_init.dart"
+            binding.write_text(
+                "@JS('__uspClientReady')\n"
+                "external JSPromise<JSBoolean>? get ready;\n",
+                encoding="utf-8",
+            )
+            (temp / "usp_init.js").write_text(
+                "window.__uspClientReady = Promise.resolve(true);\n",
+                encoding="utf-8",
+            )
+            policy = temp / "policy.json"
+            policy.write_text(
+                json.dumps(
+                    {
+                        "schema_version": 1,
+                        "minimum_decisions": 1,
+                        "required_dart_globals": ["__uspClientReady"],
+                        "intentionally_unbound": {},
+                        "local_js_globals": {
+                            "__uspClientReady": {
+                                "kind": "getter",
+                                "defined_in": "usp_init.js",
+                                "reason": "negative fixture",
+                            }
+                        },
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            self.assertEqual(discover_dart_paths([temp]), [binding])
+            reports, errors = run_check(dts, [binding], policy, temp)
+            self.assertEqual(errors, [])
+            self.assertTrue(
+                any("LOCAL JS VALUE __uspClientReady" in item for item in reports)
+            )
+
+    def test_missing_required_class_fails(self):
+        with tempfile.TemporaryDirectory() as temp:
+            temp = Path(temp)
+            dts = temp / "usp_client.d.ts"
+            dts.write_text(
+                "export class UspClient { constructor(base_url: string); }\n",
+                encoding="utf-8",
+            )
+            dart = temp / "empty.dart"
+            dart.write_text("", encoding="utf-8")
+            policy = temp / "policy.json"
+            policy.write_text(
+                json.dumps(
+                    {
+                        "schema_version": 1,
+                        "minimum_decisions": 1,
+                        "required_dart_classes": ["UspClient"],
+                        "intentionally_unbound": {},
+                        "local_js_globals": {},
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            _, errors = run_check(dts, [dart], policy, temp)
+            self.assertTrue(
+                any("required Dart JS class" in error for error in errors),
+                errors,
+            )
+
+    def test_invalid_unbound_policy_fails_without_a_traceback(self):
+        fixture = HERE / "fixtures" / "arity_mismatch"
+        with tempfile.TemporaryDirectory() as temp:
+            temp = Path(temp)
+            policy = temp / "policy.json"
+            policy.write_text(
+                json.dumps(
+                    {
+                        "schema_version": 1,
+                        "minimum_decisions": 1,
+                        "intentionally_unbound": [],
+                        "local_js_globals": {},
+                    }
+                ),
+                encoding="utf-8",
+            )
+            _, errors = run_check(
+                fixture / "usp_client.d.ts",
+                [fixture / "usp_client_wasm.dart"],
+                policy,
+                temp,
+            )
+            self.assertIn(
+                "policy intentionally_unbound must be an object",
+                errors,
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

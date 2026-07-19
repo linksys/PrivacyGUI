@@ -20,6 +20,7 @@ class Signature:
     name: str
     parameters: tuple[Parameter, ...]
     return_type: str
+    kind: str = "callable"
 
 
 def strip_comments(text):
@@ -180,17 +181,30 @@ def parse_dart_extensions(path):
 
 def parse_dart_globals(path, spans, text):
     globals_ = {}
-    pattern = re.compile(
+    callable_pattern = re.compile(
         r"(?ms)^\s*@JS\('([^']+)'\)\s*"
         r"external\s+(\S+)\s+\w+\s*\(([^;]*?)\)\s*;",
     )
-    for match in pattern.finditer(text):
+    for match in callable_pattern.finditer(text):
         if any(start <= match.start() < end for start, end in spans):
             continue
         globals_[match.group(1)] = Signature(
             match.group(1),
             dart_parameters(match.group(3)),
             match.group(2).strip(),
+        )
+    getter_pattern = re.compile(
+        r"(?ms)^\s*@JS\('([^']+)'\)\s*"
+        r"external\s+(\S+)\s+get\s+\w+\s*;",
+    )
+    for match in getter_pattern.finditer(text):
+        if any(start <= match.start() < end for start, end in spans):
+            continue
+        globals_[match.group(1)] = Signature(
+            match.group(1),
+            (),
+            match.group(2).strip(),
+            kind="getter",
         )
     return globals_
 
@@ -223,12 +237,19 @@ def normalized_type(type_name):
         "UspClientJS": "usp-client",
         "UspClientBuilder": "usp-client-builder",
         "UspClientBuilderJS": "usp-client-builder",
+        "UspWsClient": "usp-ws-client",
+        "UspWsClientJS": "usp-ws-client",
     }
     return mapping.get(compact, compact)
 
 
 def compare_signature(label, dart, typescript):
     errors = []
+    if dart.kind != typescript.kind:
+        errors.append(
+            "%s declaration mismatch: Dart=%s TypeScript=%s"
+            % (label, dart.kind, typescript.kind)
+        )
     if len(dart.parameters) != len(typescript.parameters):
         errors.append(
             "%s arity mismatch: Dart=%d TypeScript=%d"
@@ -264,8 +285,18 @@ def local_js_arity(path, name):
     return len(split_parameters(match.group(1)))
 
 
+def local_js_value_exists(path, name):
+    text = Path(path).read_text(encoding="utf-8")
+    return bool(
+        re.search(
+            r"window\." + re.escape(name) + r"\s*=",
+            text,
+        )
+    )
+
+
 def discover_dart_paths(roots):
-    """Discover every Dart file below roots that declares callable JS externals."""
+    """Discover every Dart file below roots that declares JS externals."""
     discovered = []
     for root in roots:
         root = Path(root)
@@ -273,7 +304,7 @@ def discover_dart_paths(roots):
             raise ValueError("Dart discovery root is not a directory: %s" % root)
         for path in sorted(root.rglob("*.dart")):
             text = strip_comments(path.read_text(encoding="utf-8"))
-            if re.search(r"\bexternal\b[^;]*\(", text, flags=re.DOTALL):
+            if re.search(r"\bexternal\b", text):
                 discovered.append(path)
     return discovered
 
@@ -303,6 +334,25 @@ def run_check(dts_path, dart_paths, policy_path, root):
 
     reports = []
     unbound = policy.get("intentionally_unbound", {})
+    if not isinstance(unbound, dict):
+        return reports, ["policy intentionally_unbound must be an object"]
+    unbound_shape_valid = True
+    for class_name, methods in unbound.items():
+        if not isinstance(methods, dict):
+            errors.append(
+                "policy intentionally_unbound.%s must be an object" % class_name
+            )
+            unbound_shape_valid = False
+            continue
+        for method_name, reason in methods.items():
+            if not isinstance(reason, str) or not reason.strip():
+                errors.append(
+                    "policy reason for %s.%s must be a non-empty string"
+                    % (class_name, method_name)
+                )
+    if not unbound_shape_valid:
+        return reports, errors
+
     for class_name, methods in dart_classes.items():
         if class_name not in ts_classes:
             errors.append("Dart binds missing TypeScript class %s" % class_name)
@@ -343,6 +393,8 @@ def run_check(dts_path, dart_paths, policy_path, root):
                 )
 
     local_globals = policy.get("local_js_globals", {})
+    if not isinstance(local_globals, dict):
+        return reports, errors + ["policy local_js_globals must be an object"]
     for name, dart_signature in dart_globals.items():
         if name in ts_functions:
             errors.extend(
@@ -358,26 +410,76 @@ def run_check(dts_path, dart_paths, policy_path, root):
                 "Dart binds top-level %s, absent from .d.ts and local shim policy" % name
             )
             continue
-        js_path = Path(root) / local["defined_in"]
-        arity = local_js_arity(js_path, name)
-        if arity is None:
-            errors.append("local JS shim %s is not defined in %s" % (name, js_path))
-        elif arity != len(dart_signature.parameters):
+        if not isinstance(local, dict):
+            errors.append("local JS policy entry %s must be an object" % name)
+            continue
+        defined_in = local.get("defined_in")
+        reason = local.get("reason")
+        if not isinstance(defined_in, str) or not defined_in:
+            errors.append("local JS policy entry %s needs defined_in" % name)
+            continue
+        if not isinstance(reason, str) or not reason.strip():
+            errors.append("local JS policy entry %s needs a reason" % name)
+            continue
+        js_path = Path(root) / defined_in
+        local_kind = local.get("kind", "callable")
+        if local_kind not in {"callable", "getter"}:
             errors.append(
-                "local JS shim %s arity mismatch: Dart=%d JavaScript=%d"
-                % (name, len(dart_signature.parameters), arity)
+                "local JS policy entry %s has unsupported kind %s"
+                % (name, local_kind)
             )
+            continue
+        if local_kind != dart_signature.kind:
+            errors.append(
+                "local JS %s declaration mismatch: Dart=%s JavaScript=%s"
+                % (name, dart_signature.kind, local_kind)
+            )
+        elif local_kind == "getter":
+            if local_js_value_exists(js_path, name):
+                reports.append("LOCAL JS VALUE %s — %s" % (name, reason))
+            else:
+                errors.append(
+                    "local JS value %s is not defined in %s" % (name, js_path)
+                )
         else:
-            reports.append("LOCAL JS SHIM %s — %s" % (name, local["reason"]))
+            arity = local_js_arity(js_path, name)
+            if arity is None:
+                errors.append(
+                    "local JS shim %s is not defined in %s" % (name, js_path)
+                )
+            elif arity != len(dart_signature.parameters):
+                errors.append(
+                    "local JS shim %s arity mismatch: Dart=%d JavaScript=%d"
+                    % (name, len(dart_signature.parameters), arity)
+                )
+            else:
+                reports.append("LOCAL JS SHIM %s — %s" % (name, reason))
 
     for name in local_globals:
         if name not in dart_globals:
             errors.append("stale local JS shim policy entry %s" % name)
 
     required_classes = policy.get("required_dart_classes", [])
+    if (
+        not isinstance(required_classes, list)
+        or not all(isinstance(name, str) for name in required_classes)
+    ):
+        errors.append("policy required_dart_classes must be an array of strings")
+        required_classes = []
     for class_name in required_classes:
         if class_name not in dart_classes:
             errors.append("required Dart JS class was not discovered: %s" % class_name)
+
+    required_globals = policy.get("required_dart_globals", [])
+    if (
+        not isinstance(required_globals, list)
+        or not all(isinstance(name, str) for name in required_globals)
+    ):
+        errors.append("policy required_dart_globals must be an array of strings")
+        required_globals = []
+    for name in required_globals:
+        if name not in dart_globals:
+            errors.append("required Dart JS global was not discovered: %s" % name)
 
     minimum = policy.get("minimum_decisions")
     if not isinstance(minimum, int) or isinstance(minimum, bool) or minimum < 1:
