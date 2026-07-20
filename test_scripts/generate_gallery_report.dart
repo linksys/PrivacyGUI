@@ -98,7 +98,10 @@ _GoldenEntry? _parseGoldenFile(String fullPath) {
   // pattern: viewName matches the feature directory name (or a prefix of parts)
   // Simplest: split into viewName (first element) and state (rest joined by '-')
   // Actually viewName can span multiple '-' segments if it has underscores...
-  // The golden_runner uses: '$viewName-$stateKey-${device.name}-${locale.languageCode}'
+  // The golden_runner uses: '$viewName-$stateKey-${device.name}-$localeTag'
+  // where localeTag is the languageCode, or 'languageCode_COUNTRY' for regional
+  // variants (e.g. 'es_AR'). Every field uses '_' internally — never '-' — so
+  // the country code stays attached to the locale segment after the split.
   // Where viewName is snake_case (uses _ not -) and stateKey is snake_case (uses _ not -)
   // So the only '-' separators in the filename are between the 4 main fields!
   // Wait no — viewName like "unified_diagnostics" uses underscores, not dashes.
