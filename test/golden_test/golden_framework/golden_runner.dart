@@ -12,8 +12,13 @@ import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacy_gui/theme/theme_json_config.dart';
+import 'golden_interactions.dart';
 import 'golden_test_config.dart';
 import 'mocks/mock_common.dart';
+
+// Re-export so every test file that imports golden_runner.dart gets the shared
+// interaction helpers (switchToTab, settleWithTimeout) without a separate line.
+export 'golden_interactions.dart';
 
 /// Reads --dart-define=locales and overrides the config's locale list.
 /// Returns config locales if no dart-define is provided.
@@ -82,7 +87,7 @@ void runViewGoldenTests(GoldenTestConfig config) {
               ),
               pumpBeforeTest: (tester) async {
                 await _precacheIfNeeded(tester, config);
-                await _settleWithTimeout(tester);
+                await settleWithTimeout(tester);
               },
               pumpWidget: (tester, widget) async {
                 _suppressOverflowErrors();
@@ -140,9 +145,9 @@ void runViewGoldenTests(GoldenTestConfig config) {
                 ),
                 pumpBeforeTest: (tester) async {
                   await _precacheIfNeeded(tester, config);
-                  await _settleWithTimeout(tester);
+                  await settleWithTimeout(tester);
                   await interactionEntry.value.steps(tester);
-                  await _settleWithTimeout(tester);
+                  await settleWithTimeout(tester);
                 },
                 pumpWidget: (tester, widget) async {
                   _suppressOverflowErrors();
@@ -176,23 +181,6 @@ void runViewGoldenTests(GoldenTestConfig config) {
       }
     }
   });
-}
-
-/// Pumps until no pending frames or timeout — whichever comes first.
-/// Unlike raw pumpAndSettle, this won't fail on infinite animations
-/// (e.g., spinners frozen by TickerMode or looping AnimationControllers).
-Future<void> _settleWithTimeout(WidgetTester tester) async {
-  try {
-    await tester.pumpAndSettle(
-      const Duration(milliseconds: 50),
-      EnginePhase.sendSemanticsUpdate,
-      const Duration(milliseconds: 500),
-    );
-  } on FlutterError {
-    // pumpAndSettle timed out — widget tree has infinite animations.
-    // The TickerMode freeze makes this safe; pump one last frame and move on.
-    await tester.pump();
-  }
 }
 
 /// Precaches images in a real async zone so asset resolution completes.
@@ -314,6 +302,17 @@ Widget _buildGoldenWidget(
             themeMode: brightness == Brightness.dark
                 ? ThemeMode.dark
                 : ThemeMode.light,
+            // Force "reduce motion" for every golden so non-deterministic /
+            // looping animations (e.g. dashboard JiggleShake) render at a
+            // fixed, static frame. Applied inside the app via builder so the
+            // views under test actually observe disableAnimations: true
+            // (a MediaQuery wrapped outside MaterialApp would be overridden).
+            // This does NOT touch the global diffThreshold; it only removes the
+            // animation source of flakiness.
+            builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(context).copyWith(disableAnimations: true),
+              child: child ?? const SizedBox.shrink(),
+            ),
             routerConfig: router,
           ),
         ),

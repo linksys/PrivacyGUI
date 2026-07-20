@@ -38,9 +38,7 @@ void main() {
             portForwardingOverrides(dataState()),
           ),
           steps: (tester) async {
-            await tester.tap(find.byType(Tab).at(1));
-            await tester.pump();
-            await tester.pump(const Duration(milliseconds: 300));
+            await switchToTab(tester, 1);
           },
         ),
         'tab_port_triggering': Interaction(
@@ -48,9 +46,7 @@ void main() {
             portForwardingOverrides(dataState()),
           ),
           steps: (tester) async {
-            await tester.tap(find.byType(Tab).at(2));
-            await tester.pump();
-            await tester.pump(const Duration(milliseconds: 300));
+            await switchToTab(tester, 2);
           },
         ),
         // --- Empty tab views ---
@@ -59,9 +55,7 @@ void main() {
             portForwardingOverrides(emptyDataState),
           ),
           steps: (tester) async {
-            await tester.tap(find.byType(Tab).at(1));
-            await tester.pump();
-            await tester.pump(const Duration(milliseconds: 300));
+            await switchToTab(tester, 1);
           },
         ),
         'empty_port_triggering': Interaction(
@@ -69,9 +63,7 @@ void main() {
             portForwardingOverrides(emptyDataState),
           ),
           steps: (tester) async {
-            await tester.tap(find.byType(Tab).at(2));
-            await tester.pump();
-            await tester.pump(const Duration(milliseconds: 300));
+            await switchToTab(tester, 2);
           },
         ),
         // --- Add dialogs ---
@@ -85,8 +77,7 @@ void main() {
               matching: find.byType(AppIconButton),
             );
             await tester.tap(addBtn.first);
-            await tester.pump();
-            await tester.pump(const Duration(milliseconds: 300));
+            await settleWithTimeout(tester);
           },
         ),
         'dialog_add_port_range': Interaction(
@@ -94,20 +85,13 @@ void main() {
             portForwardingOverrides(dataState()),
           ),
           steps: (tester) async {
-            await tester.tap(find.byType(Tab).at(1));
-            await tester.pump();
-            for (int i = 0; i < 10; i++) {
-              await tester.pump(const Duration(milliseconds: 50));
-            }
+            await switchToTab(tester, 1);
             final addBtn = find.descendant(
               of: find.byType(UspPortRangeTab),
               matching: find.byType(AppIconButton),
             );
             await tester.tap(addBtn.first);
-            await tester.pump();
-            for (int i = 0; i < 10; i++) {
-              await tester.pump(const Duration(milliseconds: 50));
-            }
+            await settleWithTimeout(tester);
           },
         ),
         'dialog_add_port_triggering': Interaction(
@@ -115,20 +99,13 @@ void main() {
             portForwardingOverrides(dataState()),
           ),
           steps: (tester) async {
-            await tester.tap(find.byType(Tab).at(2));
-            await tester.pump();
-            for (int i = 0; i < 10; i++) {
-              await tester.pump(const Duration(milliseconds: 50));
-            }
+            await switchToTab(tester, 2);
             final addBtn = find.descendant(
               of: find.byType(UspPortTriggeringTab),
               matching: find.byType(AppIconButton),
             );
             await tester.tap(addBtn.first);
-            await tester.pump();
-            for (int i = 0; i < 10; i++) {
-              await tester.pump(const Duration(milliseconds: 50));
-            }
+            await settleWithTimeout(tester);
           },
         ),
         // --- Edit dialogs ---
@@ -145,8 +122,7 @@ void main() {
             );
             // buttons: [0]=add, [1]=edit(row1), [2]=delete(row1), [3]=edit(row2), [4]=delete(row2)
             await tester.tap(buttons.at(1));
-            await tester.pump();
-            await tester.pump(const Duration(milliseconds: 300));
+            await settleWithTimeout(tester);
           },
         ),
         'dialog_edit_port_range': Interaction(
@@ -154,20 +130,13 @@ void main() {
             portForwardingOverrides(dataState()),
           ),
           steps: (tester) async {
-            await tester.tap(find.byType(Tab).at(1));
-            await tester.pump();
-            for (int i = 0; i < 10; i++) {
-              await tester.pump(const Duration(milliseconds: 50));
-            }
+            await switchToTab(tester, 1);
             final buttons = find.descendant(
               of: find.byType(UspPortRangeTab),
               matching: find.byType(AppIconButton),
             );
             await tester.tap(buttons.at(1));
-            await tester.pump();
-            for (int i = 0; i < 10; i++) {
-              await tester.pump(const Duration(milliseconds: 50));
-            }
+            await settleWithTimeout(tester);
           },
         ),
         'dialog_edit_port_triggering': Interaction(
@@ -175,20 +144,13 @@ void main() {
             portForwardingOverrides(dataState()),
           ),
           steps: (tester) async {
-            await tester.tap(find.byType(Tab).at(2));
-            await tester.pump();
-            for (int i = 0; i < 10; i++) {
-              await tester.pump(const Duration(milliseconds: 50));
-            }
+            await switchToTab(tester, 2);
             final buttons = find.descendant(
               of: find.byType(UspPortTriggeringTab),
               matching: find.byType(AppIconButton),
             );
             await tester.tap(buttons.at(1));
-            await tester.pump();
-            for (int i = 0; i < 10; i++) {
-              await tester.pump(const Duration(milliseconds: 50));
-            }
+            await settleWithTimeout(tester);
           },
         ),
         // --- Delete confirmation dialog ---
@@ -203,8 +165,7 @@ void main() {
             );
             // [0]=add, [1]=edit(row1), [2]=delete(row1)
             await tester.tap(buttons.at(2));
-            await tester.pump();
-            await tester.pump(const Duration(milliseconds: 300));
+            await settleWithTimeout(tester);
           },
         ),
         // --- Validation errors in dialogs ---
@@ -218,10 +179,7 @@ void main() {
               matching: find.byType(AppIconButton),
             );
             await tester.tap(addBtn.first);
-            await tester.pump();
-            for (int i = 0; i < 10; i++) {
-              await tester.pump(const Duration(milliseconds: 50));
-            }
+            await settleWithTimeout(tester);
             // Single port dialog has 4 fields (desc, extPort, intPort, client)
             final allFields = find.byType(EditableText);
             final count = allFields.evaluate().length;
@@ -255,20 +213,13 @@ void main() {
             portForwardingOverrides(dataState()),
           ),
           steps: (tester) async {
-            await tester.tap(find.byType(Tab).at(1));
-            await tester.pump();
-            for (int i = 0; i < 10; i++) {
-              await tester.pump(const Duration(milliseconds: 50));
-            }
+            await switchToTab(tester, 1);
             final addBtn = find.descendant(
               of: find.byType(UspPortRangeTab),
               matching: find.byType(AppIconButton),
             );
             await tester.tap(addBtn.first);
-            await tester.pump();
-            for (int i = 0; i < 10; i++) {
-              await tester.pump(const Duration(milliseconds: 50));
-            }
+            await settleWithTimeout(tester);
             // Find all EditableText on screen
             final allFields = find.byType(EditableText);
             final count = allFields.evaluate().length;
