@@ -27,7 +27,13 @@ List<Locale> _resolveLocales(GoldenTestConfig config) {
   if (envLocales.isEmpty) return config.locales;
   return envLocales.split(',').map((s) {
     final parts = s.trim().split('_');
-    return parts.length > 1 ? Locale(parts[0], parts[1]) : Locale(parts[0]);
+    // Normalize the country code to uppercase so it forms a standard locale
+    // (e.g. 'es_ar' -> Locale('es', 'AR')). Flutter's localizations assert on
+    // non-standard forms like 'es_ar', and this matches the generated
+    // supportedLocales (Locale('es', 'AR'), Locale('zh', 'TW'), ...).
+    return parts.length > 1
+        ? Locale(parts[0], parts[1].toUpperCase())
+        : Locale(parts[0]);
   }).toList();
 }
 
@@ -79,7 +85,7 @@ void runViewGoldenTests(GoldenTestConfig config) {
             );
 
             goldenTest(
-              '${config.viewName} - ${stateEntry.key} - ${device.name} - ${locale.languageCode}${theme == Brightness.dark ? ' - dark' : ''}',
+              '${config.viewName} - ${stateEntry.key} - ${device.name} - ${_localeTag(locale)}${theme == Brightness.dark ? ' - dark' : ''}',
               fileName: name,
               constraints: BoxConstraints.expand(
                 width: effectiveSize.width,
@@ -137,7 +143,7 @@ void runViewGoldenTests(GoldenTestConfig config) {
               );
 
               goldenTest(
-                '${config.viewName} - ${interactionEntry.key} - ${device.name} - ${locale.languageCode}${theme == Brightness.dark ? ' - dark' : ''}',
+                '${config.viewName} - ${interactionEntry.key} - ${device.name} - ${_localeTag(locale)}${theme == Brightness.dark ? ' - dark' : ''}',
                 fileName: name,
                 constraints: BoxConstraints.expand(
                   width: effectiveSize.width,
@@ -195,6 +201,19 @@ Future<void> _precacheIfNeeded(
   });
 }
 
+/// Builds the locale tag used in golden file names and test descriptions.
+///
+/// Regional variants keep their country code so they don't collide with the
+/// base language (e.g. 'es' vs 'es_AR', 'zh' vs 'zh_TW'). The country code is
+/// joined with '_' — never '-' — because the report parser splits file names
+/// on '-'. This matches Flutter's `Locale.toString()` and the ARB naming.
+String _localeTag(Locale locale) {
+  final country = locale.countryCode;
+  return country == null || country.isEmpty
+      ? locale.languageCode
+      : '${locale.languageCode}_$country';
+}
+
 /// Generates the golden file name.
 ///
 /// Format: {viewName}-{stateKey}-{device}-{locale}.png
@@ -206,7 +225,7 @@ String _goldenFileName(
   Locale locale,
   Brightness theme,
 ) {
-  final base = '$viewName-$stateKey-${device.name}-${locale.languageCode}';
+  final base = '$viewName-$stateKey-${device.name}-${_localeTag(locale)}';
   if (theme == Brightness.dark) {
     return '$base-dark';
   }
