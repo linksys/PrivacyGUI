@@ -21,6 +21,7 @@ import 'package:privacy_gui/page/dashboard/providers/usp_layout_preferences_prov
 import 'package:privacy_gui/page/dashboard/views/components/settings/usp_layout_settings_panel.dart';
 import 'package:privacy_gui/page/dashboard/views/dialogs/preset_selection_dialog.dart';
 import 'package:privacy_gui/config/global_config.dart';
+import 'package:privacy_gui/constants/build_config.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sliver_dashboard/sliver_dashboard.dart';
@@ -55,6 +56,11 @@ class _UspSliverDashboardViewState
   Future<void> _showPresetDialogIfNeeded() async {
     if (_presetDialogShown) return;
     _presetDialogShown = true;
+
+    // E2E mock build: suppress the first-run preset (onboarding) dialog
+    // auto-popup so the dashboard loads deterministically. Tests that need it
+    // open the dialog explicitly. (P0-2)
+    if (BuildConfig.e2eMock) return;
 
     // Skip preset dialog in remote mode — uses fixed remote preset
     if (!GlobalConfig.remote.showPresetDialog) return;
