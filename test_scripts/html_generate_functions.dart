@@ -641,7 +641,7 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
 
     function renderImage(label, src) {
       if (!src) return '<figure><figcaption>' + label + '</figcaption><div style="padding:2rem;color:var(--color-text-muted)">N/A</div></figure>';
-      return '<figure><figcaption>' + label + '</figcaption><img src="' + src + '" alt="' + label + '" loading="lazy" onclick="openLightbox(this)"></figure>';
+      return '<figure><figcaption>' + label + '</figcaption><img src="' + escapeHtml(src) + '" alt="' + label + '" loading="lazy" onclick="openLightbox(this)"></figure>';
     }
 
     function toggleFeature(header) {

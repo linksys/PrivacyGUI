@@ -6,8 +6,30 @@ import 'package:flutter_test/flutter_test.dart';
 /// These exist to keep interaction steps locale-independent and free of
 /// brittle geometry-based gestures.
 
+/// Pumps until no pending frames or timeout — whichever comes first.
+///
+/// Unlike raw `pumpAndSettle`, this won't fail on infinite animations
+/// (e.g., spinners frozen by TickerMode or looping AnimationControllers).
+///
+/// This is the single settle strategy shared by the golden runner
+/// (`pumpBeforeTest`) and interaction helpers like [switchToTab], so tuning it
+/// here benefits both.
+Future<void> settleWithTimeout(WidgetTester tester) async {
+  try {
+    await tester.pumpAndSettle(
+      const Duration(milliseconds: 50),
+      EnginePhase.sendSemanticsUpdate,
+      const Duration(milliseconds: 500),
+    );
+  } on FlutterError {
+    // pumpAndSettle timed out — widget tree has infinite animations.
+    // The TickerMode freeze makes this safe; pump one last frame and move on.
+    await tester.pump();
+  }
+}
+
 /// Switches to the tab at [index] by driving the [TabController] directly,
-/// then pumps until the tab-change animation settles.
+/// then settles the tab-change animation via [settleWithTimeout].
 ///
 /// Why not `tester.tap(find.byType(Tab).at(index))`? The USP pages use a
 /// non-scrollable TabBar (`TabAlignment.fill`), so long localized labels
@@ -27,14 +49,15 @@ Future<void> switchToTab(
   final finder = tabBarFinder ?? find.byType(TabBar);
   final tabBar = tester.widget<TabBar>(finder.first);
   final controller = tabBar.controller;
-  assert(controller != null, 'TabBar has no controller to drive.');
-  controller!.animateTo(index);
-
-  // Let the tab-change + TabBarView transition settle. TabController animations
-  // run ~300ms; pump generously past that so the target tab's content is fully
-  // built and interactive before the caller queries the tree.
-  await tester.pump();
-  for (int i = 0; i < 10; i++) {
-    await tester.pump(const Duration(milliseconds: 50));
+  if (controller == null) {
+    throw StateError(
+      'switchToTab($index): TabBar has no controller to drive — '
+      'pass tabBarFinder if multiple TabBars exist.',
+    );
   }
+  controller.animateTo(index);
+
+  // Let the tab-change + TabBarView transition settle before the caller
+  // queries the tree for the target tab's content.
+  await settleWithTimeout(tester);
 }

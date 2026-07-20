@@ -160,7 +160,12 @@ void main(List<String> args) {
     final relativeTestPath = testCaseFilePath.startsWith('/')
         ? testCaseFilePath.substring(1)
         : testCaseFilePath;
-    final testDir = relativeTestPath.replaceFirst(RegExp(r'/[^/]+$'), '');
+    // Strip a trailing slash first, otherwise `/[^/]+$` won't match the last
+    // segment and testDir keeps the full path → double-slash goldenPath (404).
+    final cleanTestPath = relativeTestPath.endsWith('/')
+        ? relativeTestPath.substring(0, relativeTestPath.length - 1)
+        : relativeTestPath;
+    final testDir = cleanTestPath.replaceFirst(RegExp(r'/[^/]+$'), '');
     final goldenPath = '$testDir/goldens/$tsName-$deviceType-$locale.png';
     test['goldenPath'] = _relativeToReport(goldenPath, folderStr);
   }

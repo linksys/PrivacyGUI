@@ -1,6 +1,5 @@
 import 'package:privacy_gui/page/statistics/views/usp_statistics_view.dart';
 
-import '../../../golden_framework/golden_interactions.dart';
 import '../../../golden_framework/golden_runner.dart';
 import '../../../golden_framework/golden_test_config.dart';
 import '../../../golden_framework/mocks/mock_statistics.dart';

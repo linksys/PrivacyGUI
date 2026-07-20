@@ -1,7 +1,7 @@
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/page/wifi_settings/views/usp_wifi_settings_view.dart';
 
-import '../../../golden_framework/golden_interactions.dart';
 import '../../../golden_framework/golden_runner.dart';
 import '../../../golden_framework/golden_test_config.dart';
 import '../../../golden_framework/mocks/mock_wifi_settings.dart';
@@ -65,15 +65,12 @@ void main() {
             ),
           ),
           steps: (tester) async {
-            // SSID value from fixture data — locale-independent. The golden
-            // runner does not build a semantics tree, so bySemanticsLabel finds
-            // nothing; tap the SSID text like the sibling dialog interactions.
-            // First per-band card is 2.4GHz (ssid: 'HomeNetwork').
-            await tester.tap(find.text('HomeNetwork').first);
-            await tester.pump();
-            for (int i = 0; i < 10; i++) {
-              await tester.pump(const Duration(milliseconds: 50));
-            }
+            // Tap the 2.4GHz name tile by widget Key — independent of both
+            // locale and fixture SSID text. (The golden runner builds no
+            // semantics tree, so bySemanticsLabel can't be used here.)
+            await tester
+                .tap(find.byKey(const Key('wifi-name-tile-2.4GHz-main')));
+            await settleWithTimeout(tester);
           },
         ),
         'dialog_edit_password': Interaction(

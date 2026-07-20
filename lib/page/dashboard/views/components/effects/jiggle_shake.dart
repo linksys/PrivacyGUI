@@ -28,7 +28,8 @@ class _JiggleShakeState extends State<JiggleShake>
 
   /// Platform "reduce motion" accessibility flag. Read from MediaQuery in
   /// didChangeDependencies (not initState, where inherited widgets are unsafe).
-  bool _reduceMotion = false;
+  /// Null until the first didChangeDependencies so the initial sync always runs.
+  bool? _reduceMotion;
 
   @override
   void initState() {
@@ -52,7 +53,12 @@ class _JiggleShakeState extends State<JiggleShake>
   void didChangeDependencies() {
     super.didChangeDependencies();
     // MediaQuery is only safe to read here — not in initState.
-    _reduceMotion = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
+    // didChangeDependencies fires on ANY ancestor InheritedWidget change
+    // (Theme, Directionality, Localizations…), so short-circuit when the
+    // reduce-motion value is unchanged to avoid re-triggering the animation.
+    final reduceMotion = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
+    if (reduceMotion == _reduceMotion) return;
+    _reduceMotion = reduceMotion;
     _syncAnimation();
   }
 
@@ -64,9 +70,12 @@ class _JiggleShakeState extends State<JiggleShake>
     }
   }
 
+  /// Whether motion is allowed: reduce-motion is off (or not yet resolved).
+  bool get _motionAllowed => _reduceMotion != true;
+
   /// Starts or stops the shake based on [active] and the reduce-motion flag.
   void _syncAnimation() {
-    if (widget.active && !_reduceMotion) {
+    if (widget.active && _motionAllowed) {
       _startShaking();
     } else {
       _stopShaking();
@@ -77,7 +86,7 @@ class _JiggleShakeState extends State<JiggleShake>
     if (_controller.isAnimating) return;
     // Add a tiny random delay before starting to enhance the organic feel
     Future.delayed(Duration(milliseconds: _random.nextInt(50)), () {
-      if (mounted && widget.active && !_reduceMotion) {
+      if (mounted && widget.active && _motionAllowed) {
         _controller.repeat(reverse: true);
       }
     });
@@ -103,7 +112,7 @@ class _JiggleShakeState extends State<JiggleShake>
         // force 0 when inactive or when reduce-motion is on (deterministic,
         // static rendering — also what golden tests rely on).
         final turns =
-            (widget.active && !_reduceMotion) ? _animation.value : 0.0;
+            (widget.active && _motionAllowed) ? _animation.value : 0.0;
         return Transform.rotate(
           angle: turns,
           child: child,

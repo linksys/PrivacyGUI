@@ -9,7 +9,6 @@ import 'package:privacy_gui/page/port_forwarding/views/components/usp_single_por
 import 'package:privacy_gui/page/port_forwarding/views/usp_port_forwarding_detail_view.dart';
 import 'package:ui_kit_library/ui_kit.dart' show AppIconButton;
 
-import '../../../golden_framework/golden_interactions.dart';
 import '../../../golden_framework/golden_runner.dart';
 import '../../../golden_framework/golden_test_config.dart';
 import '../../../golden_framework/mocks/mock_port_forwarding.dart';
@@ -78,8 +77,7 @@ void main() {
               matching: find.byType(AppIconButton),
             );
             await tester.tap(addBtn.first);
-            await tester.pump();
-            await tester.pump(const Duration(milliseconds: 300));
+            await settleWithTimeout(tester);
           },
         ),
         'dialog_add_port_range': Interaction(
@@ -93,10 +91,7 @@ void main() {
               matching: find.byType(AppIconButton),
             );
             await tester.tap(addBtn.first);
-            await tester.pump();
-            for (int i = 0; i < 10; i++) {
-              await tester.pump(const Duration(milliseconds: 50));
-            }
+            await settleWithTimeout(tester);
           },
         ),
         'dialog_add_port_triggering': Interaction(
@@ -110,10 +105,7 @@ void main() {
               matching: find.byType(AppIconButton),
             );
             await tester.tap(addBtn.first);
-            await tester.pump();
-            for (int i = 0; i < 10; i++) {
-              await tester.pump(const Duration(milliseconds: 50));
-            }
+            await settleWithTimeout(tester);
           },
         ),
         // --- Edit dialogs ---
@@ -130,8 +122,7 @@ void main() {
             );
             // buttons: [0]=add, [1]=edit(row1), [2]=delete(row1), [3]=edit(row2), [4]=delete(row2)
             await tester.tap(buttons.at(1));
-            await tester.pump();
-            await tester.pump(const Duration(milliseconds: 300));
+            await settleWithTimeout(tester);
           },
         ),
         'dialog_edit_port_range': Interaction(
@@ -145,10 +136,7 @@ void main() {
               matching: find.byType(AppIconButton),
             );
             await tester.tap(buttons.at(1));
-            await tester.pump();
-            for (int i = 0; i < 10; i++) {
-              await tester.pump(const Duration(milliseconds: 50));
-            }
+            await settleWithTimeout(tester);
           },
         ),
         'dialog_edit_port_triggering': Interaction(
@@ -162,10 +150,7 @@ void main() {
               matching: find.byType(AppIconButton),
             );
             await tester.tap(buttons.at(1));
-            await tester.pump();
-            for (int i = 0; i < 10; i++) {
-              await tester.pump(const Duration(milliseconds: 50));
-            }
+            await settleWithTimeout(tester);
           },
         ),
         // --- Delete confirmation dialog ---
@@ -180,8 +165,7 @@ void main() {
             );
             // [0]=add, [1]=edit(row1), [2]=delete(row1)
             await tester.tap(buttons.at(2));
-            await tester.pump();
-            await tester.pump(const Duration(milliseconds: 300));
+            await settleWithTimeout(tester);
           },
         ),
         // --- Validation errors in dialogs ---
@@ -195,10 +179,7 @@ void main() {
               matching: find.byType(AppIconButton),
             );
             await tester.tap(addBtn.first);
-            await tester.pump();
-            for (int i = 0; i < 10; i++) {
-              await tester.pump(const Duration(milliseconds: 50));
-            }
+            await settleWithTimeout(tester);
             // Single port dialog has 4 fields (desc, extPort, intPort, client)
             final allFields = find.byType(EditableText);
             final count = allFields.evaluate().length;
@@ -238,10 +219,7 @@ void main() {
               matching: find.byType(AppIconButton),
             );
             await tester.tap(addBtn.first);
-            await tester.pump();
-            for (int i = 0; i < 10; i++) {
-              await tester.pump(const Duration(milliseconds: 50));
-            }
+            await settleWithTimeout(tester);
             // Find all EditableText on screen
             final allFields = find.byType(EditableText);
             final count = allFields.evaluate().length;
