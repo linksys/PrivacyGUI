@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
+import 'package:privacy_gui/core/usp/transport/usp_transport.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 
 import 'bridge_request_throttler.dart';
@@ -71,7 +72,7 @@ class Subscription<T> {
 
 /// Platform-agnostic Service for interacting with the router via USP.
 class UspClient {
-  late final UspClientWeb _client;
+  late final UspTransport _client;
   final String _baseUrl;
 
   UspClient(String baseUrl) : _baseUrl = baseUrl {
@@ -90,6 +91,17 @@ class UspClient {
       throw UnsupportedError('This POC only supports Web platforms currently.');
     }
     _client = UspClientWeb.fromJsClient(jsClient);
+  }
+
+  /// Creates a UspClient backed by an arbitrary [UspTransport] instead of the
+  /// production WASM client. The transport seam lets an alternate data source
+  /// (demo mode's in-Dart model, an E2E harness) drive the exact same
+  /// [UspClient] behaviour without touching the production boot path. Not used
+  /// by production code — `UspClient(baseUrl)` / [fromBuilder] still build
+  /// `UspClientWeb`.
+  UspClient.withTransport(UspTransport transport, {String baseUrl = ''})
+      : _baseUrl = baseUrl {
+    _client = transport;
   }
 
   static final _random = Random();

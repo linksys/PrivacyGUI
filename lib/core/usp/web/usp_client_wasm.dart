@@ -3,6 +3,7 @@ library usp_client;
 
 import 'dart:js_interop';
 
+import 'package:privacy_gui/core/usp/transport/usp_transport.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 
 /// Safely converts dartify() LinkedMap<Object?, Object?> to Map<String, dynamic>.
@@ -99,7 +100,7 @@ extension type UspClientJS._(JSObject _) implements JSObject {
 }
 
 /// Dart wrapper around JS interop bindings — unified API matching JS WASM client.
-class UspClientWeb {
+class UspClientWeb implements UspTransport {
   late final UspClientJS _client;
 
   UspClientWeb(String baseUrl) {
@@ -112,6 +113,7 @@ class UspClientWeb {
     _client = jsClient;
   }
 
+  @override
   bool get isAuthenticated {
     try {
       return _client.isAuthenticated();
@@ -121,6 +123,7 @@ class UspClientWeb {
     }
   }
 
+  @override
   String? get sessionToken {
     try {
       return _client.getToken();
@@ -138,6 +141,7 @@ class UspClientWeb {
     await _client.unsubscribe(subscriptionId).toDart;
   }
 
+  @override
   Future<void> login(String password) async {
     try {
       await _client.login(password).toDart;
@@ -147,10 +151,12 @@ class UspClientWeb {
     }
   }
 
+  @override
   Future<void> logout() async {
     await _client.logout().toDart;
   }
 
+  @override
   Future<void> refreshToken({String? token}) async {
     await _client.refreshToken(token).toDart;
   }
@@ -159,6 +165,7 @@ class UspClientWeb {
   // GET — unified, always List<String>
   // ---------------------------------------------------------------------------
 
+  @override
   Future<Map<String, String>> get(List<String> paths) async {
     final jsPaths = paths.map((p) => p.toJS).toList().toJS;
 
@@ -190,6 +197,7 @@ class UspClientWeb {
   // SET — unified, always Map<String, String>
   // ---------------------------------------------------------------------------
 
+  @override
   Future<Map<String, dynamic>> set(Map<String, String> parameters,
       {bool allowPartial = false}) async {
     final result = await _client
@@ -208,6 +216,7 @@ class UspClientWeb {
   // SET ORDERED — groups of [{path, value}, ...] processed in sequence
   // ---------------------------------------------------------------------------
 
+  @override
   Future<Map<String, dynamic>> setOrdered(
       List<List<Map<String, String>>> parameterGroups,
       {bool allowPartial = false}) async {
@@ -233,6 +242,7 @@ class UspClientWeb {
   // ADD — unified, always List<Map>
   // ---------------------------------------------------------------------------
 
+  @override
   Future<Map<String, dynamic>> add(List<Map<String, dynamic>> items,
       {bool allowPartial = false}) async {
     // Stringify all param values — Rust WASM expects JS strings, not
@@ -274,6 +284,7 @@ class UspClientWeb {
   // DELETE — unified, always List<String>
   // ---------------------------------------------------------------------------
 
+  @override
   Future<Map<String, dynamic>> delete(List<String> paths,
       {bool allowPartial = false}) async {
     try {
@@ -318,6 +329,7 @@ class UspClientWeb {
   // OPERATE
   // ---------------------------------------------------------------------------
 
+  @override
   Future<Map<String, dynamic>> operate(String command,
       {Map<String, String> args = const {}}) async {
     final result = await _client.operate(command, args.jsify()!).toDart;
@@ -344,6 +356,7 @@ class UspClientWeb {
   // SUBSCRIPTIONS
   // ---------------------------------------------------------------------------
 
+  @override
   Future<List<Map<String, dynamic>>> listSubscriptions() async {
     final result = await _client.listSubscriptions().toDart;
 
@@ -358,6 +371,7 @@ class UspClientWeb {
         .cast<Map<String, dynamic>>();
   }
 
+  @override
   void dispose() {
     _client.free();
   }
