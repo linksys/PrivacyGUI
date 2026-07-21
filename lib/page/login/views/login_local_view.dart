@@ -248,24 +248,22 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
               children: [
                 AppText.headlineSmall(loc(context).login),
                 AppGap.xxxl(),
-                Semantics(
-                  label: 'login-password-input',
-                  child: AppPasswordInput(
-                    controller: _passwordController,
-                    hintText: loc(context).routerPassword,
-                    onChanged: (value) {
-                      setState(() {
-                        _shouldEnableLoginButton();
-                      });
-                    },
-                    onSubmitted: (_) {
-                      if (_passwordController.text.isEmpty) {
-                        return;
-                      }
-                      _doLogin();
-                    },
-                    errorText: _errorMessage,
-                  ),
+                AppPasswordInput(
+                  controller: _passwordController,
+                  semanticLabel: 'login-password-input',
+                  hintText: loc(context).routerPassword,
+                  onChanged: (value) {
+                    setState(() {
+                      _shouldEnableLoginButton();
+                    });
+                  },
+                  onSubmitted: (_) {
+                    if (_passwordController.text.isEmpty) {
+                      return;
+                    }
+                    _doLogin();
+                  },
+                  errorText: _errorMessage,
                 ),
                 if (_passwordHint != null && _passwordHint?.isNotEmpty == true)
                   AppExpansionPanel.compactSingle(
