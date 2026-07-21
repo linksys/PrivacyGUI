@@ -1,13 +1,15 @@
 /// Demo Provider Overrides
 ///
 /// Minimal overrides for Demo application. Most providers use their
-/// original implementation with USP mock data via DemoUspClient.
+/// original implementation with USP mock data via DemoUspTransport (plugged
+/// into the real UspClient through UspClient.withTransport).
 library;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/cloud/providers/geolocation/geolocation_provider.dart';
 import 'package:privacy_gui/core/cloud/providers/geolocation/geolocation_state.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/demo/usp/demo_usp_data_loader.dart';
 import 'package:privacy_gui/demo/usp/demo_usp_service.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
@@ -29,7 +31,11 @@ import 'demo_package_widget_loader.dart';
 class DemoProviders {
   /// Returns all provider overrides needed for demo mode.
   static List<Override> get allOverrides {
-    final demoUsp = DemoUspClient(DemoUspDataLoader.instance);
+    // Demo data flows through the real UspClient via the transport seam
+    // (P3/P4): DemoUspTransport swaps the router for an in-memory loader while
+    // UspClient still owns coercion, wildcard back-fill, and polling subscribe.
+    final demoUsp = UspClient.withTransport(
+        DemoUspTransport(DemoUspDataLoader.instance));
     return [
       // 1. Auth: Always logged in
       authProvider.overrideWith(() => _DemoAuthNotifier()),
@@ -54,7 +60,7 @@ class DemoProviders {
       // 7. USP Bridge Client: Null (no bridge in demo)
       uspBridgeClientProvider.overrideWith((ref) => null),
 
-      // 8. USP Auth Coordinator: Uses DemoUspClient (always authenticated)
+      // 8. USP Auth Coordinator: Uses the demo UspClient (always authenticated)
       uspAuthCoordinatorProvider.overrideWith(
           (ref) => UspAuthCoordinator(demoUsp, UspTokenStorage())),
 
