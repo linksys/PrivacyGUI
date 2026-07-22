@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
+import 'package:privacy_gui/core/usp/models/usp_operation_result.dart';
 import 'package:privacy_gui/core/usp/transport/usp_transport.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 
@@ -706,20 +707,19 @@ class UspClient {
           {'path': objectPath, 'params': <String, dynamic>{}}
         ]));
 
-    // Step 3: Resolve instance path from structured result
+    // Step 3: Resolve instance path from structured result.
+    // add() returns the WASM v0.11.0 unified shape
+    // {success, result: {data: {instances: [<path>, ...]}}}. Parse it via the
+    // canonical UspResultParser rather than reading keys by hand (the old
+    // addResult['results'] / createdInstances path was the pre-unified shape and
+    // is always null now → every subscription fell through to the GET-diff).
     String instancePath;
 
-    // Try to extract created path from structured response
     String? createdPath;
-    final results = addResult['results'] as List? ?? [];
-    if (results.isNotEmpty) {
-      final firstResult = results.first as Map<String, dynamic>? ?? {};
-      final createdInstances = firstResult['createdInstances'] as List? ?? [];
-      if (createdInstances.isNotEmpty) {
-        final firstInstance =
-            createdInstances.first as Map<String, dynamic>? ?? {};
-        createdPath = firstInstance['affectedPath'] as String?;
-      }
+    final parsedAdd = UspResultParser.parseAddResult(addResult);
+    if (parsedAdd is UspSuccess<List<String>>) {
+      final created = parsedAdd.allCreatedInstances;
+      if (created.isNotEmpty) createdPath = created.first.affectedPath;
     }
 
     if (createdPath != null && createdPath.startsWith('Device.')) {

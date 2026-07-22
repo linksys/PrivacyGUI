@@ -18,6 +18,24 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
+/// Allowlist of valid demo scenario names. Must match the E2E
+/// `data/scenario-<name>.json` files (exported from the E2E SCENARIOS table);
+/// 'populated' = clean base (no override file). Lives here (the validation
+/// consumer) so both [DemoUspDataLoader.load] and the picker gate against it
+/// without a pages→usp circular import.
+const List<String> kDemoScenarios = [
+  'populated',
+  'empty-devices',
+  'empty-port-forwarding',
+  'wifi-disabled',
+  'wifi-empty',
+  'wan-no-internet',
+  'wan-static',
+  'firewall-spi-off',
+  'dmz-enabled',
+  'dhcp-off',
+];
+
 class DemoUspDataLoader {
   DemoUspDataLoader._();
 
@@ -52,7 +70,10 @@ class DemoUspDataLoader {
         '[DemoUsp] Loaded ${_data.length} TR-181 paths from data/base.json');
 
     final scenario = Uri.base.queryParameters['scenario'];
-    if (scenario != null && scenario.isNotEmpty && scenario != 'populated') {
+    if (scenario != null &&
+        scenario.isNotEmpty &&
+        scenario != 'populated' &&
+        kDemoScenarios.contains(scenario)) {
       await applyScenario(scenario);
     }
   }
@@ -60,6 +81,13 @@ class DemoUspDataLoader {
   /// Re-derive the working set from the clean base with the given scenario
   /// override applied. Used both at startup and by an interactive picker.
   Future<void> applyScenario(String name) async {
+    // Defense-in-depth: the scenario name is interpolated into a fetched
+    // filename (scenario-$name.json) which Uri.resolve() would let escape the
+    // data/ dir via ../ segments. Only allowlisted names may reach that path.
+    if (!kDemoScenarios.contains(name)) {
+      debugPrint('[DemoUsp] Ignoring unknown scenario "$name"');
+      return;
+    }
     if (_base.isEmpty) {
       _base = await _fetchFlatMap(_dataUri('base.json'));
     }

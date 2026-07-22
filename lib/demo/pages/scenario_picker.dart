@@ -19,20 +19,8 @@ import 'package:privacy_gui/core/utils/assign_ip/assign_ip.dart';
 import 'package:privacy_gui/route/router_provider.dart';
 import 'package:privacy_gui/demo/usp/demo_usp_data_loader.dart';
 
-/// Scenario names must match the E2E `data/scenario-<name>.json` files
-/// (exported from the E2E SCENARIOS table). 'populated' = clean base.
-const List<String> kDemoScenarios = [
-  'populated',
-  'empty-devices',
-  'empty-port-forwarding',
-  'wifi-disabled',
-  'wifi-empty',
-  'wan-no-internet',
-  'wan-static',
-  'firewall-spi-off',
-  'dmz-enabled',
-  'dhcp-off',
-];
+// kDemoScenarios now lives in demo_usp_data_loader.dart (the validation
+// consumer) so load() + applyScenario gate against it; imported above.
 
 class ScenarioPicker extends StatelessWidget {
   const ScenarioPicker({super.key});
@@ -71,16 +59,17 @@ class ScenarioPicker extends StatelessWidget {
     final isCustom = _current != 'populated';
     return Material(
       color: Colors.transparent,
-      child: IconButton(
-        // No `tooltip`: this button sits outside the Navigator/Overlay (it's in
-        // MaterialApp.router's builder), and RawTooltip needs an Overlay
-        // ancestor. The icon colour signals whether a scenario is active.
-        icon: Icon(
+      // No `tooltip`: this button sits outside the Navigator/Overlay (it's in
+      // MaterialApp.router's builder), and RawTooltip needs an Overlay ancestor.
+      // The icon colour signals whether a scenario is active.
+      child: AppIconButton.icon(
+        icon: AppIcon.font(
           Icons.tune,
           size: 20,
           color: isCustom ? Colors.orange.shade700 : Colors.blueGrey.shade400,
         ),
-        onPressed: _openPicker,
+        onTap: _openPicker,
+        semanticLabel: 'demo-scenario-picker',
       ),
     );
   }
