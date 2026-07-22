@@ -47,6 +47,16 @@ class _PortRangeForwardingDialogState extends State<PortRangeForwardingDialog> {
   late TextEditingController _extPortEndController;
   late TextEditingController _intPortController;
   late TextEditingController _intClientController;
+  // Focus nodes so validation runs on focus-loss, not per keystroke —
+  // validating in onChanged calls setState with a changed _errors map, which
+  // rebuilds the field with an error slot mid-edit, tearing down the CanvasKit
+  // <input> and dropping focus + the value being typed. (Same focus-loss
+  // pattern as usp_local_network_view.)
+  final _descFocus = FocusNode();
+  final _extPortStartFocus = FocusNode();
+  final _extPortEndFocus = FocusNode();
+  final _intPortFocus = FocusNode();
+  final _intClientFocus = FocusNode();
   late String _protocol;
   late bool _enabled;
   Map<String, String> _errors = {};
@@ -73,6 +83,24 @@ class _PortRangeForwardingDialogState extends State<PortRangeForwardingDialog> {
     _intClientController = TextEditingController(text: r?.internalClient ?? '');
     _protocol = r?.protocol ?? 'TCP';
     _enabled = r?.enabled ?? true;
+    for (final f in [
+      _descFocus,
+      _extPortStartFocus,
+      _extPortEndFocus,
+      _intPortFocus,
+      _intClientFocus,
+    ]) {
+      f.addListener(() {
+        if (!f.hasFocus && mounted) _validate();
+      });
+    }
+  }
+
+  /// Rebuild to re-evaluate the Add-button enable state (_hasRequiredInput)
+  /// WITHOUT running validation — so no error text appears mid-edit and focus
+  /// is preserved. Full validation happens on focus-loss.
+  void _onInputChanged() {
+    setState(() {});
   }
 
   @override
@@ -82,6 +110,11 @@ class _PortRangeForwardingDialogState extends State<PortRangeForwardingDialog> {
     _extPortEndController.dispose();
     _intPortController.dispose();
     _intClientController.dispose();
+    _descFocus.dispose();
+    _extPortStartFocus.dispose();
+    _extPortEndFocus.dispose();
+    _intPortFocus.dispose();
+    _intClientFocus.dispose();
     super.dispose();
   }
 
@@ -153,9 +186,10 @@ class _PortRangeForwardingDialogState extends State<PortRangeForwardingDialog> {
         children: [
           AppTextField(
             controller: _descController,
+            focusNode: _descFocus,
             hintText: loc(context).description,
             errorText: _localizeError(_errors['description']),
-            onChanged: (_) => _validate(),
+            onChanged: (_) => _onInputChanged(),
           ),
           AppGap.lg(),
           Row(
@@ -163,20 +197,22 @@ class _PortRangeForwardingDialogState extends State<PortRangeForwardingDialog> {
               Expanded(
                 child: AppTextField(
                   controller: _extPortStartController,
+                  focusNode: _extPortStartFocus,
                   hintText: loc(context).externalPortStart,
                   keyboardType: TextInputType.number,
                   errorText: _localizeError(_errors['extStart']),
-                  onChanged: (_) => _validate(),
+                  onChanged: (_) => _onInputChanged(),
                 ),
               ),
               AppGap.md(),
               Expanded(
                 child: AppTextField(
                   controller: _extPortEndController,
+                  focusNode: _extPortEndFocus,
                   hintText: loc(context).externalPortEnd,
                   keyboardType: TextInputType.number,
                   errorText: _localizeError(_errors['extEnd']),
-                  onChanged: (_) => _validate(),
+                  onChanged: (_) => _onInputChanged(),
                 ),
               ),
             ],
@@ -184,17 +220,19 @@ class _PortRangeForwardingDialogState extends State<PortRangeForwardingDialog> {
           AppGap.lg(),
           AppTextField(
             controller: _intPortController,
+            focusNode: _intPortFocus,
             hintText: loc(context).internalPort,
             keyboardType: TextInputType.number,
             errorText: _localizeError(_errors['intPort']),
-            onChanged: (_) => _validate(),
+            onChanged: (_) => _onInputChanged(),
           ),
           AppGap.lg(),
           AppTextField(
             controller: _intClientController,
+            focusNode: _intClientFocus,
             hintText: loc(context).internalIpHint,
             errorText: _localizeError(_errors['client']),
-            onChanged: (_) => _validate(),
+            onChanged: (_) => _onInputChanged(),
           ),
           AppGap.lg(),
           Row(
