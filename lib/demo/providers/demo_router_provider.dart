@@ -5,9 +5,6 @@ import 'package:privacy_gui/route/router_provider.dart';
 import 'package:privacy_gui/route/router_logger.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/demo/pages/pnp_demo_launcher.dart';
-import 'package:privacy_gui/demo/theme_studio/theme_studio_fab.dart';
-import 'package:privacy_gui/demo/theme_studio/theme_studio_panel.dart';
-import 'package:privacy_gui/demo/providers/demo_ui_provider.dart';
 
 /// Route path for the PnP demo launcher (demo-only).
 /// Access via /demoPnpLauncher to test PnP flows.
@@ -33,41 +30,11 @@ final demoRouterProvider = Provider<GoRouter>((ref) {
     initialLocation: '/',
     routes: [
       ShellRoute(
-        builder: (context, state, child) {
-          return Stack(
-            fit: StackFit.expand, // Ensure stack fills the screen
-            children: [
-              // Main Application Page Content
-              child,
-
-              // Theme Studio Panel (Animated Overlay)
-              Consumer(
-                builder: (context, ref, _) {
-                  final isOpen = ref.watch(demoUIProvider).isThemePanelOpen;
-                  return AnimatedPositioned(
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeInOutCubic,
-                    top: 0,
-                    bottom: 0,
-                    right: isOpen ? 0 : -500,
-                    width: 500,
-                    child: const Material(
-                      elevation: 16,
-                      child: ThemeStudioPanel(),
-                    ),
-                  );
-                },
-              ),
-
-              // Theme Studio FAB
-              const Positioned(
-                bottom: 16,
-                right: 16,
-                child: ThemeStudioFab(),
-              ),
-            ],
-          );
-        },
+        // Demo runs the SAME shells as production (UspDashboardShell etc.), so
+        // the mascot-hosted Theme Studio is already available. This ShellRoute
+        // is now a plain pass-through — the old demo-only Theme Studio FAB /
+        // Panel overlay was removed so the demo UI matches the production build.
+        builder: (context, state, child) => child,
         routes: [
           // Demo-only PnP launcher route
           GoRoute(

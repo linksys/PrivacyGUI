@@ -14,6 +14,7 @@ import 'package:ui_kit_library/ui_kit.dart';
 import 'package:privacy_gui/theme/theme_json_config.dart';
 
 import 'package:privacy_gui/demo/providers/demo_theme_config_provider.dart';
+import 'package:privacy_gui/demo/pages/scenario_picker.dart';
 
 /// Demo version of the Linksys application.
 ///
@@ -115,11 +116,22 @@ class _DemoLinksysAppState extends ConsumerState<DemoLinksysApp> {
                 child: child,
               ),
 
-              // Demo mode banner
+              // Demo mode banner + scenario picker (top-right, unobtrusive).
+              // The picker is the only intentional demo-vs-production UI
+              // difference: a small icon that opens a centered dialog to switch
+              // UI-state scenarios (same override files E2E uses).
               const Positioned(
                 top: 0,
                 right: 0,
-                child: _DemoModeBanner(),
+                child: SafeArea(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      ScenarioPicker(),
+                      _DemoModeBanner(),
+                    ],
+                  ),
+                ),
               ),
             ],
           ),

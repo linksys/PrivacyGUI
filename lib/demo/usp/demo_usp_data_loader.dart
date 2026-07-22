@@ -1,13 +1,22 @@
 /// TR-181 Mock Data Loader for Demo Mode.
 ///
-/// Loads `demo_usp_data.json` and provides wildcard-aware path lookups
-/// that mirror how the real USP agent resolves TR-181 GET requests.
+/// Loads the fixture data at RUNTIME (via HTTP) from a `data/` directory served
+/// next to the app, instead of a bundled asset. This is the E6 single-source
+/// design: the JSON is produced by the E2E canonical base (the one source of
+/// truth) and dropped into `web/data/` at build time (CI) or by a local export
+/// step — PrivacyGUI ships no fixture data of its own.
+///
+/// Scenario switching: the loader can layer a named scenario override on top of
+/// the base (empty / disabled / wan-static / …), driven by a `?scenario=<name>`
+/// URL query or by [loadScenario]. Scenario files are `data/scenario-<name>.json`
+/// holding a declarative `{ omit: [...], set: {...} }` override — the same shape
+/// the E2E suite uses — so demo and E2E drive identical states.
 library;
 
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
+import 'package:http/http.dart' as http;
 
 class DemoUspDataLoader {
   DemoUspDataLoader._();
@@ -19,24 +28,98 @@ class DemoUspDataLoader {
   /// Mutable — `set`, `add`, `delete` operations modify this map.
   final Map<String, String> _data = {};
 
+  /// The unmodified base map, kept so [applyScenario] can re-derive from a
+  /// clean base without re-fetching.
+  Map<String, String> _base = {};
+
   bool get isLoaded => _data.isNotEmpty;
 
-  /// Load mock data from asset.
+  /// Resolve a file under the served `data/` directory relative to the app's
+  /// base href (works locally under `flutter run` and on GitHub Pages under
+  /// `/PrivacyGUI/demo/`).
+  Uri _dataUri(String file) => Uri.base.resolve('data/$file');
+
+  /// Load the base fixture, then apply the scenario named in the `?scenario=`
+  /// URL query (if any). Safe to call once at startup.
   Future<void> load() async {
     if (_data.isNotEmpty) return;
 
+    _base = await _fetchFlatMap(_dataUri('base.json'));
+    _data
+      ..clear()
+      ..addAll(_base);
+    debugPrint(
+        '[DemoUsp] Loaded ${_data.length} TR-181 paths from data/base.json');
+
+    final scenario = Uri.base.queryParameters['scenario'];
+    if (scenario != null && scenario.isNotEmpty && scenario != 'populated') {
+      await applyScenario(scenario);
+    }
+  }
+
+  /// Re-derive the working set from the clean base with the given scenario
+  /// override applied. Used both at startup and by an interactive picker.
+  Future<void> applyScenario(String name) async {
+    if (_base.isEmpty) {
+      _base = await _fetchFlatMap(_dataUri('base.json'));
+    }
+    final next = Map<String, String>.from(_base);
+
+    if (name != 'populated') {
+      final override = await _fetchOverride(_dataUri('scenario-$name.json'));
+      // omit: drop every path under any listed prefix.
+      final omit = override['omit'];
+      if (omit is List) {
+        next.removeWhere(
+            (k, _) => omit.any((p) => p is String && k.startsWith(p)));
+      }
+      // set: override / add exact paths.
+      final set = override['set'];
+      if (set is Map) {
+        set.forEach((k, v) => next['$k'] = v?.toString() ?? '');
+      }
+    }
+
+    _data
+      ..clear()
+      ..addAll(next);
+    debugPrint('[DemoUsp] Applied scenario "$name" → ${_data.length} paths');
+  }
+
+  /// Fetch a flat `path → value` JSON map (the base), skipping `_`-prefixed
+  /// comment keys and stringifying values.
+  Future<Map<String, String>> _fetchFlatMap(Uri uri) async {
     try {
-      final jsonString = await rootBundle.loadString(
-        'assets/resources/demo_usp_data.json',
-      );
-      final raw = json.decode(jsonString) as Map<String, dynamic>;
+      final resp = await http.get(uri);
+      if (resp.statusCode != 200) {
+        debugPrint('[DemoUsp] Fetch $uri → HTTP ${resp.statusCode}');
+        return {};
+      }
+      final raw = json.decode(resp.body) as Map<String, dynamic>;
+      final out = <String, String>{};
       for (final entry in raw.entries) {
         if (entry.key.startsWith('_')) continue; // skip comments
-        _data[entry.key] = entry.value?.toString() ?? '';
+        out[entry.key] = entry.value?.toString() ?? '';
       }
-      debugPrint('[DemoUsp] Loaded ${_data.length} TR-181 paths');
+      return out;
     } catch (e) {
-      debugPrint('[DemoUsp] Failed to load demo_usp_data.json: $e');
+      debugPrint('[DemoUsp] Failed to fetch $uri: $e');
+      return {};
+    }
+  }
+
+  /// Fetch a declarative override document (`{ omit: [...], set: {...} }`).
+  Future<Map<String, dynamic>> _fetchOverride(Uri uri) async {
+    try {
+      final resp = await http.get(uri);
+      if (resp.statusCode != 200) {
+        debugPrint('[DemoUsp] Scenario $uri → HTTP ${resp.statusCode}');
+        return {};
+      }
+      return json.decode(resp.body) as Map<String, dynamic>;
+    } catch (e) {
+      debugPrint('[DemoUsp] Failed to fetch scenario $uri: $e');
+      return {};
     }
   }
 
