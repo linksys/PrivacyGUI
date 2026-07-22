@@ -90,7 +90,8 @@ class DemoUspTransport implements UspTransport {
       _loader.setValue(entry.key, entry.value);
     }
 
-    return _unifiedSuccess({for (final e in parameters.entries) e.key: e.value});
+    return _unifiedSuccess(
+        {for (final e in parameters.entries) e.key: e.value});
   }
 
   @override
@@ -129,7 +130,8 @@ class DemoUspTransport implements UspTransport {
     final createdPaths = <String>[];
     for (final item in items) {
       final objectPath = item['path'] as String? ?? '';
-      final parameters = (item['params'] as Map?)?.cast<String, dynamic>() ?? {};
+      final parameters =
+          (item['params'] as Map?)?.cast<String, dynamic>() ?? {};
       final normalized = objectPath.endsWith('.') ? objectPath : '$objectPath.';
       final nextId = _loader.nextInstanceId(normalized);
       final instancePath = '$normalized$nextId.';

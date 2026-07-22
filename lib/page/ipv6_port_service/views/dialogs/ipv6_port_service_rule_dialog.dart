@@ -75,7 +75,12 @@ class _Ipv6PortServiceRuleDialogState extends State<Ipv6PortServiceRuleDialog> {
     );
     _protocol = r?.protocol ?? 'Both';
     _enabled = r?.enabled ?? true;
-    for (final f in [_descriptionFocus, _ipv6Focus, _startPortFocus, _endPortFocus]) {
+    for (final f in [
+      _descriptionFocus,
+      _ipv6Focus,
+      _startPortFocus,
+      _endPortFocus
+    ]) {
       f.addListener(() {
         if (!f.hasFocus && mounted) _validate();
       });

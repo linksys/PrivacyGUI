@@ -34,8 +34,8 @@ class DemoProviders {
     // Demo data flows through the real UspClient via the transport seam
     // (P3/P4): DemoUspTransport swaps the router for an in-memory loader while
     // UspClient still owns coercion, wildcard back-fill, and polling subscribe.
-    final demoUsp = UspClient.withTransport(
-        DemoUspTransport(DemoUspDataLoader.instance));
+    final demoUsp =
+        UspClient.withTransport(DemoUspTransport(DemoUspDataLoader.instance));
     return [
       // 1. Auth: Always logged in
       authProvider.overrideWith(() => _DemoAuthNotifier()),

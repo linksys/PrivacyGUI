@@ -73,7 +73,12 @@ class _PortForwardingDialogState extends State<PortForwardingDialog> {
     _protocol = r?.protocol ?? 'TCP';
     _enabled = r?.enabled ?? true;
     // Validate when each field loses focus (updates the shown errorText).
-    for (final f in [_descFocus, _extPortFocus, _intPortFocus, _intClientFocus]) {
+    for (final f in [
+      _descFocus,
+      _extPortFocus,
+      _intPortFocus,
+      _intClientFocus
+    ]) {
       f.addListener(() {
         if (!f.hasFocus && mounted) _validate(context);
       });

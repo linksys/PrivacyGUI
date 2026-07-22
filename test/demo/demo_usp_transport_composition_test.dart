@@ -85,7 +85,8 @@ void main() {
       final raw = await client.set({'Device.WiFi.Radio.1.Channel': '149'});
       final parsed = UspResultParser.parseSetResult(raw);
       expect(parsed.isCompleteSuccess, isTrue,
-          reason: 'demo SET must return the WASM-unified {success,result} shape '
+          reason:
+              'demo SET must return the WASM-unified {success,result} shape '
               'the real parser reads via map[\'success\']');
 
       // Read-after-write through the same client.
@@ -130,8 +131,7 @@ void main() {
   });
 
   group('composition: operate → flattened output', () {
-    test('IPPing operate returns commandKey + flattened output args',
-        () async {
+    test('IPPing operate returns commandKey + flattened output args', () async {
       final r = await client.operate('Device.IP.Diagnostics.IPPing()',
           args: {'NumberOfRepetitions': '4'});
       // UspClient._extractOperateResult flattens the unified shape demo returns.
