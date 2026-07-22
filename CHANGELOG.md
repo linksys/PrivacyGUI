@@ -2,6 +2,21 @@
 
 All notable changes to PrivacyGUI after version 2.0.0 are documented in this file.
 
+## [2.7.0] - 2026-07-22
+
+- 825f2875 - feat(port-forwarding): add semanticLabels to add/edit dialog fields
+- e0131a05 - feat(dashboard): add semanticLabels to dashboard toolbar icon buttons
+- 5c976845 - fix(ipv6-port-service): validate on focus-loss, not per keystroke (dialog focus drop)
+- 210f7443 - fix(port-forwarding): validate on focus-loss, not per keystroke (dialog focus drop)
+- 8140c55a - refactor(demo): fetch fixture data at runtime + scenario picker; drop demo-only FAB
+- b3c6f764 - chore(deps): bump ui_kit to v2.29.0 for input semanticLabel
+- ba6d6d46 - refactor(demo): route demo mode through real UspClient via transport
+- db80edbc - refactor(usp): extract UspTransport seam behind UspClient
+- d6a46249 - feat(e2e): add E2E_MOCK build flag guarding SSE + onboarding
+- e39298f0 - chore: remove dead JNAP transitional code
+- 58d06aac - docs(usp): add E2E boot-contract spec
+- d44512d2 - refactor(demo): replace deprecated overrideWithProvider
+
 ## [2.6.0] - 2026-07-16
 
 - b7137eac - fix(dashboard/detail): unify IPv6 link-local display with a scope badge (#1146)
