@@ -188,6 +188,7 @@ class _UspSliverDashboardViewState
           children: [
             if (isEditMode) ...[
               AppIconButton(
+                semanticLabel: 'dashboard-optimize-layout',
                 icon: AppIcon.font(Icons.auto_fix_high),
                 onTap: () {
                   final controller =
@@ -208,21 +209,25 @@ class _UspSliverDashboardViewState
               ),
               AppGap.sm(),
               AppIconButton(
+                semanticLabel: 'dashboard-layout-settings',
                 icon: AppIcon.font(Icons.tune),
                 onTap: () => _openLayoutSettings(context),
               ),
               AppGap.sm(),
               AppIconButton(
+                semanticLabel: 'dashboard-edit-cancel',
                 icon: AppIcon.font(Icons.close),
                 onTap: _cancelEditMode,
               ),
               AppGap.sm(),
               AppIconButton(
+                semanticLabel: 'dashboard-edit-commit',
                 icon: AppIcon.font(Icons.check),
                 onTap: _commitEditMode,
               ),
             ] else ...[
               AppIconButton(
+                semanticLabel: 'dashboard-print',
                 icon: AppIcon.font(Icons.print),
                 onTap: () async {
                   final orchState =
@@ -244,6 +249,7 @@ class _UspSliverDashboardViewState
               ),
               AppGap.sm(),
               AppIconButton(
+                semanticLabel: 'dashboard-refresh',
                 icon: AppIcon.font(Icons.refresh),
                 onTap: () => ref
                     .read(dashboardOrchestratorProvider.notifier)
@@ -253,6 +259,7 @@ class _UspSliverDashboardViewState
               if (!isRemoteMode) ...[
                 AppGap.sm(),
                 AppIconButton(
+                  semanticLabel: 'dashboard-edit',
                   icon: AppIcon.font(Icons.edit),
                   onTap: _enterEditMode,
                 ),
