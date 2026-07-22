@@ -41,7 +41,7 @@ class DemoProviders {
       authProvider.overrideWith(() => _DemoAuthNotifier()),
 
       // 2. Router: Wrap with ShellRoute for Theme Panel Overlay
-      routerProvider.overrideWithProvider(demoRouterProvider),
+      routerProvider.overrideWith((ref) => ref.watch(demoRouterProvider)),
 
       // 3. Geolocation: Bypass cloud service call
       geolocationProvider.overrideWith(() => _DemoGeolocationNotifier()),
