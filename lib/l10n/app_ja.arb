@@ -341,6 +341,7 @@
   "timezoneTurkeyIraqJordanKuwait": "トルコ、イラク、ヨルダン、クウェート",
   "traceroute": "トレースルート",
   "tryAgain": "もう一度試す",
+  "logIntoRouter": "ルーターにログインする",
   "turnOff": "オフにする",
   "turnOffInstantPrivacy": "Instant-プライバシーをオフにしますか？",
   "turnOffInstantPrivacyDesc": "これにより、新しいデバイスがネットワークに接続できるようになります。",

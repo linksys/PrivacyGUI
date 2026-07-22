@@ -402,6 +402,44 @@ class PnpNotifier extends Notifier<PnpState> {
     await _checkInternet();
   }
 
+  /// Bypass the no-internet page and let the user into the dashboard.
+  ///
+  /// Ports the dev-1.3.0 "Log into router" escape hatch. Unlike 1.3.0 — which
+  /// routed into a trimmed-down setup wizard — the USP flow goes straight to the
+  /// dashboard (the USP wizard is phase-driven and has no forceLogin branch, and
+  /// the dashboard does not depend on internet being up).
+  ///
+  /// We acknowledge PnP completion here so a later redirect through `/` does not
+  /// bounce the user back into PnP (`router_provider._prepare` re-checks
+  /// `needsPnp`; without acknowledging, a full-page reload would kick them out
+  /// again). This mirrors 1.3.0, where a configured router's save already sends
+  /// `SetUserAcknowledgedAutoConfig`. Acknowledge is fire-and-forget and does not
+  /// need WAN, so it succeeds while the router is offline.
+  ///
+  /// The caller performs the actual navigation once this completes.
+  ///
+  /// This never throws: an escape hatch must always let the user through. A
+  /// failed acknowledge / save is logged and swallowed — at worst the router
+  /// stays un-acknowledged and PnP is re-offered on the next `/` redirect, which
+  /// is strictly better than trapping the user on the no-internet page.
+  Future<void> bypassToDashboard() async {
+    final sn = state.serialNumber;
+    if (sn == null || sn.isEmpty) {
+      logger
+          .w('[PnP] bypassToDashboard: no serial number, skipping acknowledge');
+      return;
+    }
+    try {
+      await ref.read(pnpStatusServiceProvider).acknowledge(sn);
+      // Persist selected network for session management, matching saveChanges().
+      await ref.read(sessionProvider.notifier).saveSelectedNetwork(sn, '');
+    } catch (e) {
+      // Do not block navigation — see method doc.
+      logger
+          .w('[PnP] bypassToDashboard: acknowledge/save failed (ignored): $e');
+    }
+  }
+
   // ─── Modem Restart Flow ───────────────────────────────────
 
   /// Start the modem restart countdown (150s).
