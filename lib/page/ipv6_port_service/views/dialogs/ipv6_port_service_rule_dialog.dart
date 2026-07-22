@@ -46,6 +46,14 @@ class _Ipv6PortServiceRuleDialogState extends State<Ipv6PortServiceRuleDialog> {
   late TextEditingController _ipv6Controller;
   late TextEditingController _startPortController;
   late TextEditingController _endPortController;
+  // Validate on focus-loss, not per keystroke: validating in onChanged setState's
+  // a changed _errors map, which on CanvasKit rebuilds the field with an error
+  // slot mid-edit and drops focus + the value being typed. (Same fix as the
+  // port-forwarding dialogs / usp_local_network_view.)
+  final _descriptionFocus = FocusNode();
+  final _ipv6Focus = FocusNode();
+  final _startPortFocus = FocusNode();
+  final _endPortFocus = FocusNode();
   late String _protocol;
   late bool _enabled;
 
@@ -67,6 +75,11 @@ class _Ipv6PortServiceRuleDialogState extends State<Ipv6PortServiceRuleDialog> {
     );
     _protocol = r?.protocol ?? 'Both';
     _enabled = r?.enabled ?? true;
+    for (final f in [_descriptionFocus, _ipv6Focus, _startPortFocus, _endPortFocus]) {
+      f.addListener(() {
+        if (!f.hasFocus && mounted) _validate();
+      });
+    }
   }
 
   @override
@@ -75,9 +88,14 @@ class _Ipv6PortServiceRuleDialogState extends State<Ipv6PortServiceRuleDialog> {
     _ipv6Controller.dispose();
     _startPortController.dispose();
     _endPortController.dispose();
+    _descriptionFocus.dispose();
+    _ipv6Focus.dispose();
+    _startPortFocus.dispose();
+    _endPortFocus.dispose();
     super.dispose();
   }
 
+  /// Full validation (shows error text) — only run on focus-loss.
   void _validate() {
     setState(() {
       _errors = UspIpv6PortServiceService.validateRule(
@@ -88,6 +106,11 @@ class _Ipv6PortServiceRuleDialogState extends State<Ipv6PortServiceRuleDialog> {
       );
     });
   }
+
+  /// Lightweight rebuild to re-evaluate the submit-enable state (_isFormValid)
+  /// WITHOUT surfacing errors mid-edit — so no error text appears while typing
+  /// and focus is preserved.
+  void _onInputChanged() => setState(() {});
 
   bool get _isFormValid {
     final errors = UspIpv6PortServiceService.validateRule(
@@ -109,9 +132,10 @@ class _Ipv6PortServiceRuleDialogState extends State<Ipv6PortServiceRuleDialog> {
           children: [
             AppTextField(
               controller: _descriptionController,
+              focusNode: _descriptionFocus,
               hintText: loc(context).ruleName,
               errorText: _errors['description'],
-              onChanged: (_) => _validate(),
+              onChanged: (_) => _onInputChanged(),
             ),
             AppGap.lg(),
             AppSelectAutoComplete(
@@ -120,9 +144,10 @@ class _Ipv6PortServiceRuleDialogState extends State<Ipv6PortServiceRuleDialog> {
               onSelected: (_) => _validate(),
               child: AppTextField(
                 controller: _ipv6Controller,
+                focusNode: _ipv6Focus,
                 hintText: loc(context).ipv6AddressSearchHint,
                 errorText: _errors['ipv6Address'],
-                onChanged: (_) => _validate(),
+                onChanged: (_) => _onInputChanged(),
               ),
             ),
             AppGap.lg(),
@@ -145,10 +170,12 @@ class _Ipv6PortServiceRuleDialogState extends State<Ipv6PortServiceRuleDialog> {
             AppRangeInput(
               startController: _startPortController,
               endController: _endPortController,
+              startFocusNode: _startPortFocus,
+              endFocusNode: _endPortFocus,
               startLabel: loc(context).startPort,
               endLabel: loc(context).endPort,
               errorText: _errors['startPort'] ?? _errors['endPort'],
-              onChanged: (_, __) => _validate(),
+              onChanged: (_, __) => _onInputChanged(),
             ),
             AppGap.lg(),
             Row(
