@@ -341,6 +341,7 @@
   "timezoneTurkeyIraqJordanKuwait": "土耳其、伊拉克、约旦、科威特",
   "traceroute": "路由跟踪",
   "tryAgain": "请重试",
+  "logIntoRouter": "登录路由器",
   "turnOff": "关闭",
   "turnOffInstantPrivacy": "是否关闭Instant隐私？",
   "turnOffInstantPrivacyDesc": "这将允许新设备连接到网络。",

@@ -18,6 +18,7 @@ class PnpNoInternetView extends ConsumerStatefulWidget {
 
 class _PnpNoInternetViewState extends ConsumerState<PnpNoInternetView> {
   bool _retrying = false;
+  bool _bypassing = false;
 
   Future<void> _onRetry() async {
     setState(() => _retrying = true);
@@ -25,6 +26,18 @@ class _PnpNoInternetViewState extends ConsumerState<PnpNoInternetView> {
       await ref.read(pnpProvider.notifier).retryInternetCheck();
     } finally {
       if (mounted) setState(() => _retrying = false);
+    }
+  }
+
+  /// "Log into router" escape hatch — acknowledge PnP and enter the dashboard
+  /// without waiting for internet. See [PnpNotifier.bypassToDashboard].
+  Future<void> _onLogIntoRouter() async {
+    setState(() => _bypassing = true);
+    try {
+      await ref.read(pnpProvider.notifier).bypassToDashboard();
+      if (mounted) context.go(RoutePath.uspDashboard);
+    } finally {
+      if (mounted) setState(() => _bypassing = false);
     }
   }
 
@@ -82,6 +95,14 @@ class _PnpNoInternetViewState extends ConsumerState<PnpNoInternetView> {
                         context.goNamed(RouteNamed.pnpIspTypeSelection),
                   ),
                   AppGap.xxxl(),
+                  Center(
+                    child: AppButton.text(
+                      label: loc(context).logIntoRouter,
+                      isLoading: _bypassing,
+                      onTap: _bypassing ? null : _onLogIntoRouter,
+                    ),
+                  ),
+                  AppGap.lg(),
                   Center(
                     child: AppButton.text(
                       label: loc(context).tryAgain,
