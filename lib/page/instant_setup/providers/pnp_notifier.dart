@@ -259,7 +259,10 @@ class PnpNotifier extends Notifier<PnpState> {
         await _svc.saveWifi(phase.wifiConfig);
       });
 
-      // Acknowledge PnP completion and save serial number
+      // Acknowledge PnP completion and save serial number.
+      // NOTE: the same acknowledge + saveSelectedNetwork pair lives in
+      // bypassToDashboard(), but there errors are swallowed; here they
+      // propagate to the catch below so the user stays on the form to retry.
       logger.d(
           '[PnP] Saving setup completion, serialNumber=${state.serialNumber}');
       if (state.serialNumber != null) {
@@ -430,9 +433,15 @@ class PnpNotifier extends Notifier<PnpState> {
       return;
     }
     try {
+      // Same acknowledge + saveSelectedNetwork pair as saveChanges(), but the
+      // error handling is intentionally the opposite: saveChanges() lets errors
+      // propagate (a failed WiFi save should keep the user on the form to
+      // retry), whereas here we swallow them (an escape hatch must never block
+      // navigation). Keep the two in sync when changing this pair.
       await ref.read(pnpStatusServiceProvider).acknowledge(sn);
       // Persist selected network for session management, matching saveChanges().
       await ref.read(sessionProvider.notifier).saveSelectedNetwork(sn, '');
+      logger.i('[PnP] bypassToDashboard: acknowledged, entering dashboard');
     } catch (e) {
       // Do not block navigation — see method doc.
       logger

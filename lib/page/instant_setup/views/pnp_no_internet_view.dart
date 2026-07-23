@@ -20,7 +20,12 @@ class _PnpNoInternetViewState extends ConsumerState<PnpNoInternetView> {
   bool _retrying = false;
   bool _bypassing = false;
 
+  /// True while either action is in flight. Both buttons guard on this so a
+  /// retry and a bypass can never run concurrently and race their navigation.
+  bool get _busy => _retrying || _bypassing;
+
   Future<void> _onRetry() async {
+    if (_busy) return;
     setState(() => _retrying = true);
     try {
       await ref.read(pnpProvider.notifier).retryInternetCheck();
@@ -32,6 +37,7 @@ class _PnpNoInternetViewState extends ConsumerState<PnpNoInternetView> {
   /// "Log into router" escape hatch — acknowledge PnP and enter the dashboard
   /// without waiting for internet. See [PnpNotifier.bypassToDashboard].
   Future<void> _onLogIntoRouter() async {
+    if (_busy) return;
     setState(() => _bypassing = true);
     try {
       await ref.read(pnpProvider.notifier).bypassToDashboard();
@@ -99,7 +105,7 @@ class _PnpNoInternetViewState extends ConsumerState<PnpNoInternetView> {
                     child: AppButton.text(
                       label: loc(context).logIntoRouter,
                       isLoading: _bypassing,
-                      onTap: _bypassing ? null : _onLogIntoRouter,
+                      onTap: _busy ? null : _onLogIntoRouter,
                     ),
                   ),
                   AppGap.lg(),
@@ -107,7 +113,7 @@ class _PnpNoInternetViewState extends ConsumerState<PnpNoInternetView> {
                     child: AppButton.text(
                       label: loc(context).tryAgain,
                       isLoading: _retrying,
-                      onTap: _retrying ? null : _onRetry,
+                      onTap: _busy ? null : _onRetry,
                     ),
                   ),
                 ],
