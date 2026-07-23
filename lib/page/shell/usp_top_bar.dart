@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart' hide MenuController;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/demo/providers/demo_theme_config_provider.dart';
-import 'package:privacy_gui/demo/theme_studio/demo_theme_builder.dart';
+import 'package:privacy_gui/demo/providers/theme_studio_config_provider.dart';
+import 'package:privacy_gui/demo/theme_studio/studio_theme_builder.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/components/styled/general_settings_widget/general_settings_widget.dart';
 import 'package:privacy_gui/components/styled/menus/menu_consts.dart';
@@ -97,13 +97,13 @@ class _UspTopBarState extends ConsumerState<UspTopBar> with DebugObserver {
   }
 
   ThemeData _buildCurrentDarkTheme() {
-    final demoConfig = ref.watch(demoThemeConfigProvider);
+    final demoConfig = ref.watch(themeStudioConfigProvider);
     final themeConfig =
         ref.watch(themeConfigProvider.select((v) => v.valueOrNull));
     final userThemeColor =
         ref.watch(appSettingsProvider.select((s) => s.themeColor));
 
-    return buildDemoThemeData(
+    return buildStudioThemeData(
       brightness: Brightness.dark,
       config: demoConfig,
       themeConfig: themeConfig,

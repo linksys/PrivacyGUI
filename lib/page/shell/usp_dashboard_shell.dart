@@ -4,9 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/page/_shared/helpers/recovery_dialog_helper.dart';
 import 'package:privacy_gui/core/connection/models/app_connection_state.dart';
 import 'package:privacy_gui/core/connection/providers/app_connection_state_provider.dart';
-import 'package:privacy_gui/demo/providers/demo_theme_config_provider.dart';
+import 'package:privacy_gui/demo/providers/theme_studio_config_provider.dart';
 import 'package:privacy_gui/demo/providers/demo_ui_provider.dart';
-import 'package:privacy_gui/demo/theme_studio/demo_theme_builder.dart';
+import 'package:privacy_gui/demo/theme_studio/studio_theme_builder.dart';
 import 'package:privacy_gui/demo/theme_studio/theme_studio_panel.dart';
 import 'package:privacy_gui/components/styled/menus/menu_consts.dart';
 import 'package:privacy_gui/components/styled/menus/widgets/menu_holder.dart';
@@ -109,12 +109,12 @@ class _UspDashboardShellState extends ConsumerState<UspDashboardShell> {
     ref.watch(sseBootstrapProvider);
 
     // Build dark theme reactively from current design style
-    final demoConfig = ref.watch(demoThemeConfigProvider);
+    final demoConfig = ref.watch(themeStudioConfigProvider);
     final themeConfig = ref.watch(themeConfigProvider).valueOrNull;
     final userThemeColor =
         ref.watch(appSettingsProvider.select((s) => s.themeColor));
 
-    final darkTheme = buildDemoThemeData(
+    final darkTheme = buildStudioThemeData(
       brightness: Brightness.dark,
       config: demoConfig,
       themeConfig: themeConfig,

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ui_kit_library/ui_kit.dart';
-import 'package:privacy_gui/demo/providers/demo_theme_config_provider.dart';
+import 'package:privacy_gui/demo/providers/theme_studio_config_provider.dart';
 import '../widgets/section_header.dart';
 import '../widgets/compact_color_picker.dart';
 
@@ -10,7 +10,7 @@ class ComponentsTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final config = ref.watch(demoThemeConfigProvider);
+    final config = ref.watch(themeStudioConfigProvider);
     final components = config.overrides?.component;
 
     return Column(
@@ -43,7 +43,7 @@ class ComponentsTab extends ConsumerWidget {
                         isSelected: isSelected,
                         onTap: () {
                           ref
-                              .read(demoThemeConfigProvider.notifier)
+                              .read(themeStudioConfigProvider.notifier)
                               .updateLoaderColors(type: type);
                         },
                       );
@@ -99,7 +99,7 @@ class ComponentsTab extends ConsumerWidget {
                         isSelected: isSelected,
                         onTap: () {
                           ref
-                              .read(demoThemeConfigProvider.notifier)
+                              .read(themeStudioConfigProvider.notifier)
                               .updateLoaderColors(type: type);
                         },
                       );
@@ -140,7 +140,7 @@ class ComponentsTab extends ConsumerWidget {
               label: 'Primary',
               color: components?.loader?.primaryColor,
               onChanged: (c) => ref
-                  .read(demoThemeConfigProvider.notifier)
+                  .read(themeStudioConfigProvider.notifier)
                   .updateLoaderColors(primaryColor: c),
             ),
             const SizedBox(width: 8),
@@ -148,7 +148,7 @@ class ComponentsTab extends ConsumerWidget {
               label: 'Background',
               color: components?.loader?.backgroundColor,
               onChanged: (c) => ref
-                  .read(demoThemeConfigProvider.notifier)
+                  .read(themeStudioConfigProvider.notifier)
                   .updateLoaderColors(backgroundColor: c),
             ),
           ],
@@ -167,7 +167,7 @@ class ComponentsTab extends ConsumerWidget {
               isSelected: isSelected,
               onTap: () {
                 ref
-                    .read(demoThemeConfigProvider.notifier)
+                    .read(themeStudioConfigProvider.notifier)
                     .updateSkeletonColors(animationType: type);
               },
             );
@@ -180,7 +180,7 @@ class ComponentsTab extends ConsumerWidget {
               label: 'Base',
               color: components?.skeleton?.baseColor,
               onChanged: (c) => ref
-                  .read(demoThemeConfigProvider.notifier)
+                  .read(themeStudioConfigProvider.notifier)
                   .updateSkeletonColors(baseColor: c),
             ),
             const SizedBox(width: 12),
@@ -188,7 +188,7 @@ class ComponentsTab extends ConsumerWidget {
               label: 'Highlight',
               color: components?.skeleton?.highlightColor,
               onChanged: (c) => ref
-                  .read(demoThemeConfigProvider.notifier)
+                  .read(themeStudioConfigProvider.notifier)
                   .updateSkeletonColors(highlightColor: c),
             ),
           ],
@@ -227,7 +227,7 @@ class ComponentsTab extends ConsumerWidget {
                       label: 'Track',
                       color: components?.toggle?.activeTrackColor,
                       onChanged: (c) => ref
-                          .read(demoThemeConfigProvider.notifier)
+                          .read(themeStudioConfigProvider.notifier)
                           .updateToggleColors(activeTrackColor: c),
                     ),
                     const SizedBox(width: 8),
@@ -235,7 +235,7 @@ class ComponentsTab extends ConsumerWidget {
                       label: 'Thumb',
                       color: components?.toggle?.activeThumbColor,
                       onChanged: (c) => ref
-                          .read(demoThemeConfigProvider.notifier)
+                          .read(themeStudioConfigProvider.notifier)
                           .updateToggleColors(activeThumbColor: c),
                     ),
                   ],
@@ -254,7 +254,7 @@ class ComponentsTab extends ConsumerWidget {
                       label: 'Track',
                       color: components?.toggle?.inactiveTrackColor,
                       onChanged: (c) => ref
-                          .read(demoThemeConfigProvider.notifier)
+                          .read(themeStudioConfigProvider.notifier)
                           .updateToggleColors(inactiveTrackColor: c),
                     ),
                     const SizedBox(width: 8),
@@ -262,7 +262,7 @@ class ComponentsTab extends ConsumerWidget {
                       label: 'Thumb',
                       color: components?.toggle?.inactiveThumbColor,
                       onChanged: (c) => ref
-                          .read(demoThemeConfigProvider.notifier)
+                          .read(themeStudioConfigProvider.notifier)
                           .updateToggleColors(inactiveThumbColor: c),
                     ),
                   ],
@@ -290,7 +290,7 @@ class ComponentsTab extends ConsumerWidget {
               label: 'Background',
               color: components?.toast?.backgroundColor,
               onChanged: (c) => ref
-                  .read(demoThemeConfigProvider.notifier)
+                  .read(themeStudioConfigProvider.notifier)
                   .updateToastColors(backgroundColor: c),
             ),
             const SizedBox(width: 12),
@@ -298,7 +298,7 @@ class ComponentsTab extends ConsumerWidget {
               label: 'Text',
               color: components?.toast?.textColor,
               onChanged: (c) => ref
-                  .read(demoThemeConfigProvider.notifier)
+                  .read(themeStudioConfigProvider.notifier)
                   .updateToastColors(textColor: c),
             ),
             const SizedBox(width: 12),
@@ -306,7 +306,7 @@ class ComponentsTab extends ConsumerWidget {
               label: 'Border',
               color: components?.toast?.borderColor,
               onChanged: (c) => ref
-                  .read(demoThemeConfigProvider.notifier)
+                  .read(themeStudioConfigProvider.notifier)
                   .updateToastColors(borderColor: c),
             ),
           ],

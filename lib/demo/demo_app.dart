@@ -13,7 +13,7 @@ import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 import 'package:privacy_gui/theme/theme_json_config.dart';
 
-import 'package:privacy_gui/demo/providers/demo_theme_config_provider.dart';
+import 'package:privacy_gui/demo/providers/theme_studio_config_provider.dart';
 import 'package:privacy_gui/demo/pages/scenario_picker.dart';
 
 /// Demo version of the Linksys application.
@@ -52,19 +52,25 @@ class _DemoLinksysAppState extends ConsumerState<DemoLinksysApp> {
     final systemLocale = Locale(getLanguageData(systemLocaleStr)['value']);
 
     // Watch configuration and UI state
-    final demoConfig = ref.watch(demoThemeConfigProvider);
+    final demoConfig = ref.watch(themeStudioConfigProvider);
 
     // Use demo seedColor if set, otherwise fall back to appSettings
     final effectiveSeedColor = demoConfig.seedColor ?? appSettings.themeColor;
 
     // Build dynamic theme (Same as before)
+    // Demo app showcases Theme Studio, so it falls back to the legacy glass +
+    // all-effects defaults when the studio config still inherits (null).
+    final demoStyle = demoConfig.style ?? 'glass';
+    final demoVisualEffects =
+        demoConfig.visualEffects ?? AppThemeConfig.effectAll;
+
     final themeData = _buildThemeData(
       brightness: appSettings.themeMode == ThemeMode.dark
           ? Brightness.dark
           : Brightness.light,
-      style: demoConfig.style,
+      style: demoStyle,
       globalOverlay: demoConfig.globalOverlay,
-      visualEffects: demoConfig.visualEffects,
+      visualEffects: demoVisualEffects,
       userThemeColor: effectiveSeedColor,
       primary: demoConfig.primary,
       secondary: demoConfig.secondary,
@@ -76,9 +82,9 @@ class _DemoLinksysAppState extends ConsumerState<DemoLinksysApp> {
     // ... Dark Theme Build ...
     final darkTheme = _buildThemeData(
       brightness: Brightness.dark,
-      style: demoConfig.style,
+      style: demoStyle,
       globalOverlay: demoConfig.globalOverlay,
-      visualEffects: demoConfig.visualEffects,
+      visualEffects: demoVisualEffects,
       userThemeColor: effectiveSeedColor,
       primary: demoConfig.primary,
       secondary: demoConfig.secondary,
