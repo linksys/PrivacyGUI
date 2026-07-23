@@ -168,8 +168,9 @@ void main() {
 
         final state = container.read(unifiedDiagnosticsProvider);
         expect(state.step, DiagnosticStep.showingResults);
-        // WAN, DHCP Pool, Gateway, DNS Ping, DNS Lookup, Internet, SpeedTest
-        expect(state.results.length, 7);
+        // WAN, DHCP Pool, Gateway, DNS Ping, DNS Lookup, Internet.
+        // Speed test disabled: blocked by FW support (#857).
+        expect(state.results.length, 6);
         expect(state.results.every((r) => r.isOk), isTrue);
         container.dispose();
       });

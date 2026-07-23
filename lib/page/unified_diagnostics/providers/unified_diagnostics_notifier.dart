@@ -6,8 +6,9 @@ import 'package:privacy_gui/core/usp/models/operate_result.dart';
 import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
 import 'package:privacy_gui/core/usp/services/network_diagnostics_executor.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
-import 'package:privacy_gui/page/unified_diagnostics/models/speed_test_state.dart';
-import 'package:privacy_gui/page/unified_diagnostics/providers/speed_test_notifier.dart';
+// Speed Test disabled: blocked by FW support (#857)
+// import 'package:privacy_gui/page/unified_diagnostics/models/speed_test_state.dart';
+// import 'package:privacy_gui/page/unified_diagnostics/providers/speed_test_notifier.dart';
 
 import '../models/diagnostic_result.dart';
 import '../models/diagnostic_state.dart';
@@ -371,24 +372,7 @@ class UnifiedDiagnosticsNotifier
       state = state.copyWith(results: List.from(results));
     }
 
-    // Step 5: Speed test
-    state = state.copyWith(step: DiagnosticStep.runningSpeedTest);
-    try {
-      final speedTestResult = await _runSharedSpeedTest();
-      if (speedTestResult != null) {
-        state = state.copyWith(speedTest: speedTestResult);
-        final speedResult = _evaluateSpeedTest(speedTestResult);
-        results.add(speedResult);
-        state = state.copyWith(results: List.from(results));
-      } else {
-        results.add(
-            _errorResult(DiagnosticStep.runningSpeedTest, 'Speed test failed'));
-        state = state.copyWith(results: List.from(results));
-      }
-    } catch (e) {
-      results.add(_errorResult(DiagnosticStep.runningSpeedTest, e));
-      state = state.copyWith(results: List.from(results));
-    }
+    // Speed test step disabled: blocked by FW support (#857)
 
     // Step 6: Check WiFi signal (per-radio RSSI)
     state = state.copyWith(step: DiagnosticStep.checkingWifiSignal);
@@ -457,7 +441,6 @@ class UnifiedDiagnosticsNotifier
     }
 
     final results = <DiagnosticStepUIModel>[];
-    bool connectivityOk = true;
 
     // Step 1: Check WAN status
     state = state.copyWith(step: DiagnosticStep.checkingWanStatus);
@@ -466,11 +449,9 @@ class UnifiedDiagnosticsNotifier
       final wanResult = _evaluateWanStatus(wan);
       results.add(wanResult);
       state = state.copyWith(results: List.from(results));
-      if (wanResult.isError) connectivityOk = false;
     } catch (e) {
       results.add(_errorResult(DiagnosticStep.checkingWanStatus, e));
       state = state.copyWith(results: List.from(results));
-      connectivityOk = false;
     }
 
     // Step 1b: Check DHCP pool capacity / usage
@@ -498,11 +479,9 @@ class UnifiedDiagnosticsNotifier
       final pingResult = _evaluatePing(DiagnosticStep.pingGateway, ping);
       results.add(pingResult);
       state = state.copyWith(results: List.from(results));
-      if (pingResult.isError) connectivityOk = false;
     } catch (e) {
       results.add(_errorResult(DiagnosticStep.pingGateway, e));
       state = state.copyWith(results: List.from(results));
-      connectivityOk = false;
     }
 
     // Step 3: Ping DNS
@@ -512,11 +491,9 @@ class UnifiedDiagnosticsNotifier
       final pingResult = _evaluatePing(DiagnosticStep.pingDns, ping);
       results.add(pingResult);
       state = state.copyWith(results: List.from(results));
-      if (pingResult.isError) connectivityOk = false;
     } catch (e) {
       results.add(_errorResult(DiagnosticStep.pingDns, e));
       state = state.copyWith(results: List.from(results));
-      connectivityOk = false;
     }
 
     // Step 3b: DNS lookup — verify name resolution actually works
@@ -525,11 +502,9 @@ class UnifiedDiagnosticsNotifier
       final dnsResult = await _runDnsLookup(svc);
       results.add(dnsResult);
       state = state.copyWith(results: List.from(results));
-      if (dnsResult.isError) connectivityOk = false;
     } catch (e) {
       results.add(_errorResult(DiagnosticStep.dnsLookup, e));
       state = state.copyWith(results: List.from(results));
-      connectivityOk = false;
     }
 
     // Step 4: Ping internet
@@ -539,33 +514,12 @@ class UnifiedDiagnosticsNotifier
       final pingResult = _evaluatePing(DiagnosticStep.pingInternet, ping);
       results.add(pingResult);
       state = state.copyWith(results: List.from(results));
-      if (pingResult.isError) connectivityOk = false;
     } catch (e) {
       results.add(_errorResult(DiagnosticStep.pingInternet, e));
       state = state.copyWith(results: List.from(results));
-      connectivityOk = false;
     }
 
-    // Step 5: Speed test (only if connectivity is OK)
-    if (connectivityOk) {
-      state = state.copyWith(step: DiagnosticStep.runningSpeedTest);
-      try {
-        final speedTestResult = await _runSharedSpeedTest();
-        if (speedTestResult != null) {
-          state = state.copyWith(speedTest: speedTestResult);
-          final speedResult = _evaluateSpeedTest(speedTestResult);
-          results.add(speedResult);
-          state = state.copyWith(results: List.from(results));
-        } else {
-          results.add(_errorResult(
-              DiagnosticStep.runningSpeedTest, 'Speed test failed'));
-          state = state.copyWith(results: List.from(results));
-        }
-      } catch (e) {
-        results.add(_errorResult(DiagnosticStep.runningSpeedTest, e));
-        state = state.copyWith(results: List.from(results));
-      }
-    }
+    // Speed test step disabled: blocked by FW support (#857)
 
     await _analyzeAndShowResults(results);
   }
@@ -804,70 +758,6 @@ class UnifiedDiagnosticsNotifier
   }
 
   // ══════════════════════════════════════════════════════════════════════════
-  // Shared Speed Test
-  // ══════════════════════════════════════════════════════════════════════════
-
-  /// Run speed test using shared [speedTestProvider] and wait for completion.
-  Future<SpeedTestResult?> _runSharedSpeedTest() async {
-    logger.d('[Diagnostics] Starting shared speed test');
-
-    // Wait for provider to be ready
-    final asyncState = ref.read(speedTestProvider);
-    if (asyncState.isLoading) {
-      logger.d('[Diagnostics] Waiting for speedTestProvider to initialize');
-      await ref.read(speedTestProvider.future);
-    }
-
-    // Now start the speed test
-    final notifier = ref.read(speedTestProvider.notifier);
-    logger.d('[Diagnostics] Calling runSpeedTest()');
-
-    // Don't await - runSpeedTest updates state asynchronously
-    unawaited(notifier.runSpeedTest());
-
-    // Wait for completion by polling the provider state
-    final completer = Completer<SpeedTestResult?>();
-
-    void checkState() {
-      final speedState = ref.read(speedTestProvider).valueOrNull;
-      if (speedState == null) return;
-
-      logger.d('[Diagnostics] SpeedTest state: step=${speedState.step}');
-
-      if (speedState.step == SpeedTestStep.completed &&
-          speedState.result != null) {
-        if (!completer.isCompleted) {
-          logger.d('[Diagnostics] SpeedTest completed');
-          completer.complete(speedState.result);
-        }
-      } else if (speedState.step == SpeedTestStep.error) {
-        if (!completer.isCompleted) {
-          logger.w('[Diagnostics] SpeedTest error: ${speedState.error}');
-          completer.complete(null);
-        }
-      }
-    }
-
-    // Listen for state changes
-    final sub = ref.listen(speedTestProvider, (_, __) => checkState());
-
-    // Also check immediately in case it's already done
-    checkState();
-
-    // Timeout after 3 minutes
-    final result = await completer.future.timeout(
-      const Duration(minutes: 3),
-      onTimeout: () {
-        logger.w('[Diagnostics] Speed test timed out');
-        return null;
-      },
-    );
-
-    sub.close();
-    return result;
-  }
-
-  // ══════════════════════════════════════════════════════════════════════════
   // Analysis & Recommendations
   // ══════════════════════════════════════════════════════════════════════════
 
@@ -975,26 +865,7 @@ class UnifiedDiagnosticsNotifier
             priority: 4,
             actionId: 'contactIsp',
           ));
-        case DiagnosticStep.runningSpeedTest:
-          final speedTest = state.speedTest;
-          if (speedTest != null) {
-            if (speedTest.isSlowDownload) {
-              recommendations.add(RecommendationUIModel(
-                id: 'slow_download',
-                titleKey: 'diagnostics_rec_slow_download_title',
-                descriptionKey: 'diagnostics_rec_slow_download_desc',
-                priority: 5,
-              ));
-            }
-            if (speedTest.isSlowUpload) {
-              recommendations.add(RecommendationUIModel(
-                id: 'slow_upload',
-                titleKey: 'diagnostics_rec_slow_upload_title',
-                descriptionKey: 'diagnostics_rec_slow_upload_desc',
-                priority: 6,
-              ));
-            }
-          }
+        // Speed test recommendations disabled: blocked by FW support (#857)
         case DiagnosticStep.checkingWifiSignal:
           if (result is WifiSignalCheckUIModel && result.isWeakSignal) {
             recommendations.add(RecommendationUIModel(
@@ -1189,40 +1060,6 @@ class UnifiedDiagnosticsNotifier
       severity: severity,
       titleKey: titleKey,
       descriptionKey: descriptionKey,
-    );
-  }
-
-  DiagnosticStepUIModel _evaluateSpeedTest(SpeedTestResult speedTest) {
-    DiagnosticSeverity severity;
-    String titleKey;
-    String descriptionKey;
-
-    if (speedTest.isSlowDownload && speedTest.isSlowUpload) {
-      severity = DiagnosticSeverity.error;
-      titleKey = 'diagnostics_speed_slow';
-      descriptionKey = 'diagnostics_speed_slow_desc';
-    } else if (speedTest.isSlowDownload || speedTest.isSlowUpload) {
-      severity = DiagnosticSeverity.warning;
-      titleKey = 'diagnostics_speed_partial';
-      descriptionKey = 'diagnostics_speed_partial_desc';
-    } else {
-      severity = DiagnosticSeverity.ok;
-      titleKey = 'diagnostics_speed_ok';
-      descriptionKey = 'diagnostics_speed_ok_desc';
-    }
-
-    return DiagnosticStepUIModel(
-      step: DiagnosticStep.runningSpeedTest,
-      severity: severity,
-      titleKey: titleKey,
-      descriptionKey: descriptionKey,
-      rawData: {
-        'downloadMbps': speedTest.downloadMbps,
-        'uploadMbps': speedTest.uploadMbps,
-        'hasUpload': speedTest.hasUpload,
-        if (speedTest.hasLatency) 'latencyMs': speedTest.latencyMs!,
-        if (speedTest.serverHost != null) 'serverHost': speedTest.serverHost!,
-      },
     );
   }
 
