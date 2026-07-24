@@ -127,17 +127,17 @@ class UspDeviceFilterPanel extends ConsumerWidget {
                     _ChipGroupRow(
                       label: loc(context).node,
                       chips: options.nodes
-                          .map((n) => ChipItem(label: n.model))
+                          .map((n) => ChipItem(label: n.label))
                           .toList(),
                       selectedIndices: _nodeIdsToIndices(
                         filter.nodeIds,
-                        options.nodes.map((n) => n.deviceId).toList(),
+                        options.nodes.map((n) => n.id).toList(),
                       ),
                       onSelectionChanged: (indices) => ref
                           .read(deviceFilterConfigProvider.notifier)
                           .setNodeIds(_indicesToNodeIds(
                             indices,
-                            options.nodes.map((n) => n.deviceId).toList(),
+                            options.nodes.map((n) => n.id).toList(),
                           )),
                     ),
                   ],
@@ -624,23 +624,19 @@ class UspDeviceFilterChipBar extends ConsumerWidget {
               ? loc(context).node
               : filter.nodeIds.length == 1
                   ? (options.nodes
-                          .where((n) => n.deviceId == filter.nodeIds.first)
+                          .where((n) => n.id == filter.nodeIds.first)
                           .firstOrNull
-                          ?.model ??
+                          ?.label ??
                       filter.nodeIds.first)
                   : '${loc(context).node} (${filter.nodeIds.length})',
           isActive: filter.nodeIds.isNotEmpty,
           onTap: () => _showMultiSelectPicker<String>(
             context: context,
             title: loc(context).node,
-            items: options.nodes.map((n) => n.deviceId).toList(),
+            items: options.nodes.map((n) => n.id).toList(),
             selected: filter.nodeIds,
             labelOf: (id) =>
-                options.nodes
-                    .where((n) => n.deviceId == id)
-                    .firstOrNull
-                    ?.model ??
-                id,
+                options.nodes.where((n) => n.id == id).firstOrNull?.label ?? id,
             onChanged: notifier.setNodeIds,
           ),
         ),
