@@ -325,6 +325,7 @@ class UnifiedDiagnosticsNotifier
     }
 
     // Step 2: Ping gateway
+    if (_cancelled) return;
     state = state.copyWith(step: DiagnosticStep.pingGateway);
     try {
       final ping = await svc.pingGateway();
@@ -337,6 +338,7 @@ class UnifiedDiagnosticsNotifier
     }
 
     // Step 3: Ping DNS
+    if (_cancelled) return;
     state = state.copyWith(step: DiagnosticStep.pingDns);
     try {
       final ping = await svc.pingDns();
@@ -349,6 +351,7 @@ class UnifiedDiagnosticsNotifier
     }
 
     // Step 3b: DNS lookup
+    if (_cancelled) return;
     state = state.copyWith(step: DiagnosticStep.dnsLookup);
     try {
       final dnsResult = await _runDnsLookup(svc);
@@ -360,6 +363,7 @@ class UnifiedDiagnosticsNotifier
     }
 
     // Step 4: Ping internet
+    if (_cancelled) return;
     state = state.copyWith(step: DiagnosticStep.pingInternet);
     try {
       final ping = await svc.pingInternet();
@@ -372,6 +376,7 @@ class UnifiedDiagnosticsNotifier
     }
 
     // Step 5: Speed test
+    if (_cancelled) return;
     state = state.copyWith(step: DiagnosticStep.runningSpeedTest);
     try {
       final speedTestResult = await _runSharedSpeedTest();
@@ -391,6 +396,7 @@ class UnifiedDiagnosticsNotifier
     }
 
     // Step 6: Check WiFi signal (per-radio RSSI)
+    if (_cancelled) return;
     state = state.copyWith(step: DiagnosticStep.checkingWifiSignal);
     try {
       final perRadio = await svc.analyzeWifiSignalPerRadio();
@@ -403,6 +409,7 @@ class UnifiedDiagnosticsNotifier
     }
 
     // Step 6b: Check DHCP pool usage
+    if (_cancelled) return;
     state = state.copyWith(step: DiagnosticStep.checkingDhcpPool);
     try {
       final pool = await svc.checkDhcpPool();
@@ -416,6 +423,7 @@ class UnifiedDiagnosticsNotifier
 
     // Step 6c: Mesh / Backhaul (LAN-only GET — runs even without internet).
     // Skipped silently when only one node exists.
+    if (_cancelled) return;
     state = state.copyWith(step: DiagnosticStep.checkingMeshBackhaul);
     try {
       final meshResult = _buildMeshBackhaulResult(
@@ -429,6 +437,7 @@ class UnifiedDiagnosticsNotifier
     }
 
     // Step 7: Check connected devices
+    if (_cancelled) return;
     state = state.copyWith(step: DiagnosticStep.checkingConnectedDevices);
     try {
       final devices = await svc.checkConnectedDevices();
@@ -440,6 +449,7 @@ class UnifiedDiagnosticsNotifier
       state = state.copyWith(results: List.from(results));
     }
 
+    if (_cancelled) return;
     await _analyzeAndShowResults(results);
   }
 
@@ -474,6 +484,7 @@ class UnifiedDiagnosticsNotifier
     }
 
     // Step 1b: Check DHCP pool capacity / usage
+    if (_cancelled) return;
     state = state.copyWith(step: DiagnosticStep.checkingDhcpPool);
     try {
       final pool = await svc.checkDhcpPool();
@@ -492,6 +503,7 @@ class UnifiedDiagnosticsNotifier
     }
 
     // Step 2: Ping gateway
+    if (_cancelled) return;
     state = state.copyWith(step: DiagnosticStep.pingGateway);
     try {
       final ping = await svc.pingGateway();
@@ -506,6 +518,7 @@ class UnifiedDiagnosticsNotifier
     }
 
     // Step 3: Ping DNS
+    if (_cancelled) return;
     state = state.copyWith(step: DiagnosticStep.pingDns);
     try {
       final ping = await svc.pingDns();
@@ -520,6 +533,7 @@ class UnifiedDiagnosticsNotifier
     }
 
     // Step 3b: DNS lookup — verify name resolution actually works
+    if (_cancelled) return;
     state = state.copyWith(step: DiagnosticStep.dnsLookup);
     try {
       final dnsResult = await _runDnsLookup(svc);
@@ -533,6 +547,7 @@ class UnifiedDiagnosticsNotifier
     }
 
     // Step 4: Ping internet
+    if (_cancelled) return;
     state = state.copyWith(step: DiagnosticStep.pingInternet);
     try {
       final ping = await svc.pingInternet();
@@ -548,6 +563,7 @@ class UnifiedDiagnosticsNotifier
 
     // Step 5: Speed test (only if connectivity is OK)
     if (connectivityOk) {
+      if (_cancelled) return;
       state = state.copyWith(step: DiagnosticStep.runningSpeedTest);
       try {
         final speedTestResult = await _runSharedSpeedTest();
@@ -567,6 +583,7 @@ class UnifiedDiagnosticsNotifier
       }
     }
 
+    if (_cancelled) return;
     await _analyzeAndShowResults(results);
   }
 

@@ -802,6 +802,64 @@ void main() {
         verify(() => mockScope.release()).called(1);
         container.dispose();
       });
+
+      // Regression for #1148: pressing "Cancel Diagnostics" mid-flow must
+      // short-circuit the remaining sequential steps at the next step
+      // boundary, not run every check to completion first. We hang the
+      // gateway ping, fire cancel() while it's in-flight, then release the
+      // ping — the subsequent steps (DNS ping, DNS lookup, internet ping,
+      // speed test) must NOT be invoked.
+      test('cancel mid-flow skips subsequent diagnostic steps (#1148)',
+          () async {
+        final container = createContainer();
+        final notifier = container.read(unifiedDiagnosticsProvider.notifier);
+
+        when(() => mockService.checkWanStatus())
+            .thenAnswer((_) async => const WanStatusUIModel(
+                  status: 'Up',
+                  ipAddress: '192.168.1.100',
+                  subnetMask: '255.255.255.0',
+                  addressingType: 'DHCP',
+                ));
+        // Hang the gateway ping so we can interleave a cancel() before the
+        // remaining steps run.
+        final gatewayCompleter = Completer<PingResult>();
+        when(() =>
+                mockService.pingGateway(repeatCount: any(named: 'repeatCount')))
+            .thenAnswer((_) => gatewayCompleter.future);
+        when(() => mockService.pingDns(
+              host: any(named: 'host'),
+              repeatCount: any(named: 'repeatCount'),
+            )).thenAnswer((_) async => _createPingResult('8.8.8.8'));
+        when(() => mockService.pingInternet(
+              host: any(named: 'host'),
+              repeatCount: any(named: 'repeatCount'),
+            )).thenAnswer((_) async => _createPingResult('1.1.1.1'));
+
+        final runFuture = notifier.selectFlow(DiagnosticFlow.internet);
+        await Future.delayed(Duration.zero);
+
+        // Cancel while the gateway ping is still in-flight, then let it
+        // resolve. The next step boundary must observe _cancelled and bail.
+        final cancelFuture = notifier.cancel();
+        gatewayCompleter.complete(_createPingResult('192.168.1.1'));
+        await runFuture;
+        await cancelFuture;
+
+        // Steps after the cancelled gateway ping must never have executed.
+        verifyNever(() => mockService.pingDns(
+              host: any(named: 'host'),
+              repeatCount: any(named: 'repeatCount'),
+            ));
+        verifyNever(() => mockService.pingInternet(
+              host: any(named: 'host'),
+              repeatCount: any(named: 'repeatCount'),
+            ));
+
+        final state = container.read(unifiedDiagnosticsProvider);
+        expect(state.step, DiagnosticStep.idle);
+        container.dispose();
+      });
     });
 
     group('Restart', () {
