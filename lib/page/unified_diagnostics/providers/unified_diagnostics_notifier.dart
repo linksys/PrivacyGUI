@@ -200,18 +200,28 @@ class UnifiedDiagnosticsNotifier
     }
   }
 
-  /// Cancel and reset to idle. Awaits any in-flight diagnostic future before
-  /// releasing the scope so we don't race with operations still completing.
+  /// Cancel and reset to idle. Tears down the in-flight future and scope off
+  /// the critical path (mirrors [goBack]'s running case) so the UI resets
+  /// immediately. Awaiting the in-flight future here would block the state
+  /// reset for up to the speed test's 3-minute timeout, making the Cancel
+  /// button appear ignored during [DiagnosticStep.runningSpeedTest].
   Future<void> cancel() async {
     logger.d('[Diagnostics] Cancelled');
     _cancelled = true;
-    final inFlight = _runFuture;
-    if (inFlight != null) {
+    unawaited(() async {
+      // Actively stop the shared speed test so its polling future observes the
+      // cancellation and completes promptly instead of lingering to timeout.
       try {
-        await inFlight;
+        await ref.read(speedTestProvider.notifier).cancel();
       } catch (_) {}
-    }
-    await _releaseScope();
+      final inFlight = _runFuture;
+      if (inFlight != null) {
+        try {
+          await inFlight;
+        } catch (_) {}
+      }
+      await _releaseScope();
+    }());
     state = const UnifiedDiagnosticsState();
   }
 
@@ -846,6 +856,16 @@ class UnifiedDiagnosticsNotifier
     final completer = Completer<SpeedTestResult?>();
 
     void checkState() {
+      // Honor cancellation: if the flow was cancelled, resolve immediately so
+      // the in-flight future does not linger until the 3-minute timeout.
+      if (_cancelled) {
+        if (!completer.isCompleted) {
+          logger.d('[Diagnostics] SpeedTest cancelled');
+          completer.complete(null);
+        }
+        return;
+      }
+
       final speedState = ref.read(speedTestProvider).valueOrNull;
       if (speedState == null) return;
 
