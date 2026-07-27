@@ -102,6 +102,7 @@ class UnifiedDiagnosticsNotifier
   /// Start diagnostic flow with pre-qualifier check.
   /// Runs a quick WAN + ping check, then shows flow menu or auto-selects flow.
   Future<void> startWithPreQualifier() async {
+    _cancelled = false;
     logger.i('[Diagnostics] Starting with pre-qualifier');
     state = const UnifiedDiagnosticsState(step: DiagnosticStep.preQualifying);
 
@@ -208,11 +209,17 @@ class UnifiedDiagnosticsNotifier
   Future<void> cancel() async {
     logger.d('[Diagnostics] Cancelled');
     _cancelled = true;
+    // Capture the notifier synchronously before the async gap. This
+    // AutoDisposeNotifier can be disposed (e.g. route popped right after the
+    // Cancel tap) before the unawaited closure runs, at which point a deferred
+    // `ref.read` would throw StateError and the speed test would never be told
+    // to stop. Reading it now guarantees the cancellation is delivered.
+    final speedTestNotifier = ref.read(speedTestProvider.notifier);
     unawaited(() async {
       // Actively stop the shared speed test so its polling future observes the
       // cancellation and completes promptly instead of lingering to timeout.
       try {
-        await ref.read(speedTestProvider.notifier).cancel();
+        await speedTestNotifier.cancel();
       } catch (_) {}
       final inFlight = _runFuture;
       if (inFlight != null) {
@@ -647,6 +654,7 @@ class UnifiedDiagnosticsNotifier
       state = state.copyWith(results: List.from(results));
     }
 
+    if (_cancelled) return;
     await _analyzeAndShowResults(results);
   }
 
@@ -694,6 +702,7 @@ class UnifiedDiagnosticsNotifier
       state = state.copyWith(results: List.from(results));
     }
 
+    if (_cancelled) return;
     await _analyzeAndShowResults(results);
   }
 
@@ -723,6 +732,7 @@ class UnifiedDiagnosticsNotifier
       state = state.copyWith(results: List.from(results));
     }
 
+    if (_cancelled) return;
     await _analyzeAndShowResults(results);
   }
 
@@ -827,6 +837,7 @@ class UnifiedDiagnosticsNotifier
       state = state.copyWith(results: List.from(results));
     }
 
+    if (_cancelled) return;
     await _analyzeAndShowResults(results);
   }
 
