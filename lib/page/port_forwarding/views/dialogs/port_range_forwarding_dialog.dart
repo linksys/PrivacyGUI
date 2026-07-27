@@ -187,6 +187,7 @@ class _PortRangeForwardingDialogState extends State<PortRangeForwardingDialog> {
           AppTextField(
             controller: _descController,
             focusNode: _descFocus,
+            identifier: 'pf-range-description',
             hintText: loc(context).description,
             errorText: _localizeError(_errors['description']),
             onChanged: (_) => _onInputChanged(),
@@ -198,6 +199,7 @@ class _PortRangeForwardingDialogState extends State<PortRangeForwardingDialog> {
                 child: AppTextField(
                   controller: _extPortStartController,
                   focusNode: _extPortStartFocus,
+                  identifier: 'pf-range-external-port-start',
                   hintText: loc(context).externalPortStart,
                   keyboardType: TextInputType.number,
                   errorText: _localizeError(_errors['extStart']),
@@ -209,6 +211,7 @@ class _PortRangeForwardingDialogState extends State<PortRangeForwardingDialog> {
                 child: AppTextField(
                   controller: _extPortEndController,
                   focusNode: _extPortEndFocus,
+                  identifier: 'pf-range-external-port-end',
                   hintText: loc(context).externalPortEnd,
                   keyboardType: TextInputType.number,
                   errorText: _localizeError(_errors['extEnd']),
@@ -221,6 +224,7 @@ class _PortRangeForwardingDialogState extends State<PortRangeForwardingDialog> {
           AppTextField(
             controller: _intPortController,
             focusNode: _intPortFocus,
+            identifier: 'pf-range-internal-port',
             hintText: loc(context).internalPort,
             keyboardType: TextInputType.number,
             errorText: _localizeError(_errors['intPort']),
@@ -230,6 +234,7 @@ class _PortRangeForwardingDialogState extends State<PortRangeForwardingDialog> {
           AppTextField(
             controller: _intClientController,
             focusNode: _intClientFocus,
+            identifier: 'pf-range-internal-ip',
             hintText: loc(context).internalIpHint,
             errorText: _localizeError(_errors['client']),
             onChanged: (_) => _onInputChanged(),
@@ -256,6 +261,7 @@ class _PortRangeForwardingDialogState extends State<PortRangeForwardingDialog> {
             children: [
               AppText.bodyMedium(loc(context).enabled),
               AppSwitch(
+                identifier: 'pf-range-enabled',
                 value: _enabled,
                 onChanged: (value) => setState(() => _enabled = value),
               ),
@@ -265,10 +271,12 @@ class _PortRangeForwardingDialogState extends State<PortRangeForwardingDialog> {
       ),
       actions: [
         AppButton.text(
+          identifier: 'pf-range-cancel',
           label: loc(context).cancel,
           onTap: () => context.pop(),
         ),
         AppButton.text(
+          identifier: 'pf-range-submit',
           label: _isEdit ? loc(context).save : loc(context).add,
           onTap: _isFormValid ? _submit : null,
         ),

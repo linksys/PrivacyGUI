@@ -34,6 +34,7 @@ class UspSinglePortTab extends ConsumerWidget {
                 '${loc(context).singlePortForwarding} (${rules.length})'),
             AppIconButton(
               icon: AppIcon.font(Icons.add, size: 20),
+              identifier: 'pf-add-single-port',
               onTap: isSaving ? null : () => _showAddDialog(context, ref),
             ),
           ],
@@ -59,6 +60,7 @@ class UspSinglePortTab extends ConsumerWidget {
         child: Row(
           children: [
             AppSwitch(
+              identifier: 'pf-rule-enable-${rule.identifierKey}',
               value: rule.enabled,
               scale: 0.8,
               onChanged: isSaving
@@ -87,11 +89,13 @@ class UspSinglePortTab extends ConsumerWidget {
             AppGap.sm(),
             AppIconButton(
               icon: AppIcon.font(Icons.edit, size: 18),
+              identifier: 'pf-edit-${rule.identifierKey}',
               onTap:
                   isSaving ? null : () => _showEditDialog(context, ref, rule),
             ),
             AppIconButton(
               icon: AppIcon.font(Icons.delete_outline, size: 18),
+              identifier: 'pf-delete-${rule.identifierKey}',
               onTap: isSaving ? null : () => _confirmDelete(context, ref, rule),
             ),
           ],

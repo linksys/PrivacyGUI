@@ -39,6 +39,13 @@ class UiKitBottomBarConfig {
   final bool isNegativeEnabled;
   final bool isDestructive;
 
+  /// Stable, screen-reader-silent test hooks (→ `flt-semantics-identifier`) for
+  /// the page-level Save / Cancel buttons. Defaulted so every page's bottom bar
+  /// carries a hook without call-site churn; override per page if disambiguation
+  /// is ever needed. See PrivacyGUI#1172.
+  final String? positiveIdentifier;
+  final String? negativeIdentifier;
+
   const UiKitBottomBarConfig({
     this.positiveLabel,
     this.negativeLabel,
@@ -47,6 +54,8 @@ class UiKitBottomBarConfig {
     this.isPositiveEnabled = true,
     this.isNegativeEnabled = true,
     this.isDestructive = false,
+    this.positiveIdentifier = 'page-save',
+    this.negativeIdentifier = 'page-cancel',
   });
 }
 
@@ -527,6 +536,8 @@ class _UiKitPageViewState extends ConsumerState<UiKitPageView> {
       isPositiveEnabled: bottomBar.isPositiveEnabled,
       isNegativeEnabled: bottomBar.isNegativeEnabled,
       isDestructive: bottomBar.isDestructive,
+      positiveIdentifier: bottomBar.positiveIdentifier,
+      negativeIdentifier: bottomBar.negativeIdentifier,
     );
   }
 

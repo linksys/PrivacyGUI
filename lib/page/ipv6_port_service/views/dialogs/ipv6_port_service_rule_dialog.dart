@@ -138,6 +138,7 @@ class _Ipv6PortServiceRuleDialogState extends State<Ipv6PortServiceRuleDialog> {
             AppTextField(
               controller: _descriptionController,
               focusNode: _descriptionFocus,
+              identifier: 'ipv6-rule-description',
               hintText: loc(context).ruleName,
               errorText: _errors['description'],
               onChanged: (_) => _onInputChanged(),
@@ -150,6 +151,7 @@ class _Ipv6PortServiceRuleDialogState extends State<Ipv6PortServiceRuleDialog> {
               child: AppTextField(
                 controller: _ipv6Controller,
                 focusNode: _ipv6Focus,
+                identifier: 'ipv6-rule-address',
                 hintText: loc(context).ipv6AddressSearchHint,
                 errorText: _errors['ipv6Address'],
                 onChanged: (_) => _onInputChanged(),
@@ -179,6 +181,8 @@ class _Ipv6PortServiceRuleDialogState extends State<Ipv6PortServiceRuleDialog> {
               endFocusNode: _endPortFocus,
               startLabel: loc(context).startPort,
               endLabel: loc(context).endPort,
+              startIdentifier: 'ipv6-rule-start-port',
+              endIdentifier: 'ipv6-rule-end-port',
               errorText: _errors['startPort'] ?? _errors['endPort'],
               onChanged: (_, __) => _onInputChanged(),
             ),
@@ -188,6 +192,7 @@ class _Ipv6PortServiceRuleDialogState extends State<Ipv6PortServiceRuleDialog> {
               children: [
                 AppText.bodyMedium(loc(context).enabled),
                 AppSwitch(
+                  identifier: 'ipv6-rule-enabled',
                   value: _enabled,
                   onChanged: (value) => setState(() => _enabled = value),
                 ),

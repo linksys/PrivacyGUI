@@ -114,6 +114,7 @@ class UspInstantSafetyView extends ConsumerWidget {
                   child: AppText.labelLarge(loc(context).safeBrowsingOpenDns),
                 ),
                 AppSwitch(
+                  identifier: 'instant-safety-enable',
                   value: isEnabled,
                   onChanged:
                       isSaving ? null : (value) => notifier.setEnabled(value),
