@@ -1,6 +1,25 @@
 import 'package:equatable/equatable.dart';
 import 'package:privacy_gui/framework/diagnostic_loggable.dart';
 
+/// Builds a stable, kebab-case key for E2E `identifier` hooks on port-forwarding
+/// / port-triggering rule rows. Prefers the (localizable-free) [description]
+/// slug — "Web Server" → "web-server" — so tests can target a specific rule by
+/// name instead of by row index. Falls back to the saved instance number parsed
+/// from [instancePath] (e.g. `Device.NAT.PortMapping.2` → "2"), then "unnamed",
+/// guaranteeing the result is always non-empty.
+String ruleIdentifierKey(String description, String? instancePath) {
+  final slug = description
+      .trim()
+      .toLowerCase()
+      .replaceAll(RegExp(r'[^a-z0-9]+'), '-')
+      .replaceAll(RegExp(r'^-+|-+$'), '');
+  if (slug.isNotEmpty) return slug;
+  final instance = instancePath == null
+      ? null
+      : RegExp(r'(\d+)$').firstMatch(instancePath)?.group(1);
+  return instance ?? 'unnamed';
+}
+
 /// Presentation Layer Model for a port forwarding rule.
 ///
 /// Covers both single port and port range forwarding from
@@ -63,6 +82,12 @@ class PortForwardingRuleUIModel extends Equatable with DiagnosticLoggable {
   /// Display name: description if available, otherwise "Unnamed rule".
   String get displayName =>
       description.isNotEmpty ? description : 'Unnamed rule';
+
+  /// Stable, kebab-case key for E2E `identifier` hooks (e.g. `pf-edit-<key>`).
+  /// Derived from the description ("Web Server" → "web-server"); falls back to
+  /// the saved instance number, then "unnamed", so it is always non-empty and
+  /// never collides across rows.
+  String get identifierKey => ruleIdentifierKey(description, instancePath);
 
   /// External port display: "8080" or "3074-3080".
   String get portRangeDisplay =>

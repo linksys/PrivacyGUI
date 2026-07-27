@@ -36,6 +36,7 @@ class UspSystemActionsCard extends StatelessWidget {
                             size: 40, color: colorScheme.primary),
                         AppGap.md(),
                         AppButton.primaryOutline(
+                          identifier: 'admin-reboot',
                           label: loc(context).reboot,
                           onTap: onReboot,
                         ),
@@ -53,6 +54,7 @@ class UspSystemActionsCard extends StatelessWidget {
                             size: 40, color: colorScheme.error),
                         AppGap.md(),
                         AppButton.primaryOutline(
+                          identifier: 'admin-factory-reset',
                           label: loc(context).factoryReset,
                           onTap: onFactoryReset,
                         ),

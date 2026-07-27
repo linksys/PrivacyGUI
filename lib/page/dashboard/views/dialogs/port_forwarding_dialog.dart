@@ -197,6 +197,7 @@ class _PortForwardingDialogState extends State<PortForwardingDialog> {
             AppTextField(
               controller: _descController,
               focusNode: _descFocus,
+              identifier: 'pf-single-description',
               semanticLabel: 'port-forwarding-description',
               hintText: loc(context).description,
               errorText: _errors['description'],
@@ -206,6 +207,7 @@ class _PortForwardingDialogState extends State<PortForwardingDialog> {
             AppTextField(
               controller: _extPortController,
               focusNode: _extPortFocus,
+              identifier: 'pf-single-external-port',
               semanticLabel: 'port-forwarding-external-port',
               hintText: loc(context).externalPort,
               keyboardType: TextInputType.number,
@@ -216,6 +218,7 @@ class _PortForwardingDialogState extends State<PortForwardingDialog> {
             AppTextField(
               controller: _intPortController,
               focusNode: _intPortFocus,
+              identifier: 'pf-single-internal-port',
               semanticLabel: 'port-forwarding-internal-port',
               hintText: loc(context).internalPort,
               keyboardType: TextInputType.number,
@@ -230,6 +233,7 @@ class _PortForwardingDialogState extends State<PortForwardingDialog> {
               child: AppTextField(
                 controller: _intClientController,
                 focusNode: _intClientFocus,
+                identifier: 'pf-single-internal-ip',
                 semanticLabel: 'port-forwarding-internal-ip',
                 hintText: loc(context).internalIpHint,
                 errorText: _errors['internalClient'],
@@ -260,6 +264,7 @@ class _PortForwardingDialogState extends State<PortForwardingDialog> {
               children: [
                 AppText.bodyMedium(loc(context).enabled),
                 AppSwitch(
+                  identifier: 'pf-single-enabled',
                   value: _enabled,
                   onChanged: (value) => setState(() => _enabled = value),
                 ),
