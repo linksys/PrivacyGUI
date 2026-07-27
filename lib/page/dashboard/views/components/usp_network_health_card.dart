@@ -302,23 +302,38 @@ class _ErrorsChart extends StatelessWidget {
           ),
         ),
         AppGap.sm(),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+        Wrap(
+          alignment: WrapAlignment.center,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 16,
+          runSpacing: 4,
           children: [
-            _LegendDot(color: colorScheme.error),
-            AppGap.xs(),
-            AppText.labelSmall(
-              loc(parentContext).avgValuePeakValue(
-                NetworkHealthHelpers.formatFaultRate(avgErr),
-                NetworkHealthHelpers.formatFaultRate(peakErr),
-              ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _LegendDot(color: colorScheme.error),
+                AppGap.xs(),
+                AppText.labelSmall(
+                  loc(parentContext).seriesAvgValuePeakValue(
+                    loc(parentContext).errors,
+                    NetworkHealthHelpers.formatFaultRate(avgErr),
+                    NetworkHealthHelpers.formatFaultRate(peakErr),
+                  ),
+                ),
+              ],
             ),
-            AppGap.lg(),
-            _LegendDot(color: Colors.orange),
-            AppGap.xs(),
-            AppText.labelSmall(
-              loc(parentContext)
-                  .avgValue(NetworkHealthHelpers.formatFaultRate(avgDisc)),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _LegendDot(color: Colors.orange),
+                AppGap.xs(),
+                AppText.labelSmall(
+                  loc(parentContext).seriesAvgValue(
+                    loc(parentContext).discards,
+                    NetworkHealthHelpers.formatFaultRate(avgDisc),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -381,7 +396,8 @@ class _LossChart extends StatelessWidget {
             _LegendDot(color: colorScheme.error),
             AppGap.xs(),
             AppText.labelSmall(
-              loc(parentContext).avgValuePeakValue(
+              loc(parentContext).seriesAvgValuePeakValue(
+                loc(parentContext).loss,
                 '${avgLoss.toStringAsFixed(3)}%',
                 '${peakLoss.toStringAsFixed(3)}%',
               ),

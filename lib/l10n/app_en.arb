@@ -1186,6 +1186,31 @@
       }
     }
   },
+  "seriesAvgValuePeakValue": "{series}  Avg: {avg}  Peak: {peak}",
+  "@seriesAvgValuePeakValue": {
+    "placeholders": {
+      "series": {
+        "type": "String"
+      },
+      "avg": {
+        "type": "String"
+      },
+      "peak": {
+        "type": "String"
+      }
+    }
+  },
+  "seriesAvgValue": "{series}  Avg: {value}",
+  "@seriesAvgValue": {
+    "placeholders": {
+      "series": {
+        "type": "String"
+      },
+      "value": {
+        "type": "String"
+      }
+    }
+  },
   "releaseToRemove": "Release to Remove",
   "dragHereToRemove": "Drag Here to Remove",
   "traffic": "Traffic",
