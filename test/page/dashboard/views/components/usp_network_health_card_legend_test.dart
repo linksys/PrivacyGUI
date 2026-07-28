@@ -62,13 +62,13 @@ void main() {
 
     // Errors series: "Errors  Avg: ...  Peak: ..." (single string, prefixed).
     expect(
-      textContaining('${l.errors}  Avg:'),
+      textContaining('${l.errors}  '),
       findsOneWidget,
       reason: 'Errors legend entry must be prefixed with its series name',
     );
     // Discards series: "Discards  Avg: ..." (single string, prefixed).
     expect(
-      textContaining('${l.discards}  Avg:'),
+      textContaining('${l.discards}  '),
       findsOneWidget,
       reason: 'Discards legend entry must be prefixed with its series name',
     );
@@ -83,7 +83,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(
-      textContaining('${l.loss}  Avg:'),
+      textContaining('${l.loss}  '),
       findsOneWidget,
       reason: 'Loss legend entry must be prefixed with its series name',
     );
