@@ -414,6 +414,8 @@
   "avgSignal": "Keskim. signaali",
   "avgValue": "Keskiarvo: {value}",
   "avgValuePeakValue": "Keskiarvo: {avg}  Huippu: {peak}",
+  "seriesAvgValuePeakValue": "{series}  Keskiarvo: {avg}  Huippu: {peak}",
+  "seriesAvgValue": "{series}  Keskiarvo: {value}",
   "awsAccessKeyId": "AWS Access Key ID",
   "awsBedrockConfiguration": "AWS Bedrock -määritykset",
   "awsSecretAccessKey": "AWS Secret Access Key",

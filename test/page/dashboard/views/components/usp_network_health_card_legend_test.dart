@@ -88,4 +88,42 @@ void main() {
       reason: 'Loss legend entry must be prefixed with its series name',
     );
   });
+
+  testWidgets(
+      'Errors tab Discards legend renders the formatted non-zero avg value',
+      (tester) async {
+    // Base fixture leaves discards at 0; this variant supplies a constant
+    // 3.0/s WAN discard rate so the formatted value path is exercised.
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: cardOverrides(trafficAnalysisState: testTrafficWithDiscards),
+        child: MaterialApp(
+          theme: _testTheme,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const Scaffold(
+            body: SizedBox(
+              width: 500,
+              height: 400,
+              child: UspNetworkHealthCard(),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final l = locOf(tester);
+
+    // Switch to the Errors tab.
+    await tester.tap(find.text(l.errors).first);
+    await tester.pumpAndSettle();
+
+    // Discards series carries a real, formatted rate — not the default 0.
+    // avg = (1.5 + 1.5)/s constant across snapshots => formatFaultRate => "3.0/s".
+    expect(
+      textContaining('${l.discards}  Avg: 3.0/s'),
+      findsOneWidget,
+      reason: 'Discards legend must render the formatted non-zero avg value',
+    );
+  });
 }

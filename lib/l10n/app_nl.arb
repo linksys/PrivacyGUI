@@ -416,6 +416,8 @@
   "avgSignal": "Gem. signaal",
   "avgValue": "Gem.: {value}",
   "avgValuePeakValue": "Gem.: {avg}  Piek: {peak}",
+  "seriesAvgValuePeakValue": "{series}  Gem.: {avg}  Piek: {peak}",
+  "seriesAvgValue": "{series}  Gem.: {value}",
   "awsAccessKeyId": "AWS Access Key ID",
   "awsBedrockConfiguration": "AWS Bedrock-configuratie",
   "awsSecretAccessKey": "AWS Secret Access Key",
