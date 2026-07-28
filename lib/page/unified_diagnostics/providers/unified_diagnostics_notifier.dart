@@ -303,6 +303,30 @@ class UnifiedDiagnosticsNotifier
         // to — or launching an unsolicited flow via selectFlow on WAN-down.
         // Mirrors [cancel] and the running case below.
         ++_generation;
+        // [startWithPreQualifier] acquires [_scope] (via [_ensureScope]) before
+        // its pingInternet step, so a Back from preQualifying can leave a live
+        // scope with an in-flight op. Capture it, null the live field so a new
+        // runner's [_ensureScope] acquires a fresh scope instead of reusing this
+        // one, then drain + release off the critical path and track it via
+        // [_teardownFuture] so [teardownDone] reflects the real completion.
+        final scope = _scope;
+        _scope = null;
+        _teardownFuture = () async {
+          final inFlight = _runFuture;
+          if (inFlight != null) {
+            try {
+              await inFlight;
+            } catch (_) {}
+          }
+          if (scope != null) {
+            try {
+              await scope.release();
+            } catch (e) {
+              logger.w('[Diagnostics] Failed to release scope on back: $e');
+            }
+          }
+        }();
+        unawaited(_teardownFuture!);
         state = const UnifiedDiagnosticsState();
         return true;
       case DiagnosticStep.showingResults:

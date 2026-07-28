@@ -1087,6 +1087,66 @@ void main() {
             mockService.pingGateway(repeatCount: any(named: 'repeatCount')));
         container.dispose();
       });
+
+      // Regression for the preQualifying-back scope-release gap (PR #1175
+      // review, W-6). startWithPreQualifier acquires the scope via
+      // _ensureScope() right before its pingInternet step; if the user presses
+      // Back while that ping is in flight, goBack()'s preQualifying case must
+      // run the full teardown invariant like cancel() and the running case:
+      // null the live _scope (so a re-entry acquires a fresh one instead of
+      // reusing a scope with an in-flight op) and drain + release it via
+      // _teardownFuture (so teardownDone reflects real completion). Before the
+      // fix this branch only bumped the generation, leaking the scope. Here we
+      // pass WAN, hang on pingInternet, press Back, then release the ping and
+      // assert the captured scope was released and teardownDone resolves.
+      test('back during preQualifying releases the acquired scope (#1175)',
+          () async {
+        final container = createContainer();
+        final notifier = container.read(unifiedDiagnosticsProvider.notifier);
+
+        // WAN passes so the runner proceeds to acquire the scope and then
+        // suspends on the hung pingInternet.
+        when(() => mockService.checkWanStatus()).thenAnswer(
+          (_) async => const WanStatusUIModel(
+            status: 'Up',
+            ipAddress: '192.168.1.100',
+            subnetMask: '255.255.255.0',
+            addressingType: 'DHCP',
+          ),
+        );
+        final pingCompleter = Completer<PingResult>();
+        when(() => mockService.pingInternet(
+              host: any(named: 'host'),
+              repeatCount: any(named: 'repeatCount'),
+            )).thenAnswer((_) => pingCompleter.future);
+
+        // Start the pre-qualifier; it acquires the scope, then suspends on the
+        // hung internet ping.
+        final preQualFuture = notifier.startWithPreQualifier();
+        await Future.delayed(Duration.zero);
+        expect(container.read(unifiedDiagnosticsProvider).step,
+            DiagnosticStep.preQualifying);
+        verify(() => mockExecutor.acquireScope(
+              referencePaths: any(named: 'referencePaths'),
+            )).called(1);
+
+        // User presses Back while the scope is live with an in-flight ping.
+        final handled = notifier.goBack();
+        expect(handled, isTrue);
+        expect(container.read(unifiedDiagnosticsProvider).step,
+            DiagnosticStep.idle);
+
+        // Release the in-flight ping so the teardown drain can complete.
+        pingCompleter.complete(_createPingResult('1.1.1.1'));
+        await preQualFuture;
+        await notifier.teardownDone;
+        await Future.delayed(Duration.zero);
+
+        // The scope captured by goBack() must have been released, and the
+        // teardown future must resolve (not report a misleading "already done").
+        verify(() => mockScope.release()).called(1);
+        container.dispose();
+      });
     });
 
     group('Restart', () {
