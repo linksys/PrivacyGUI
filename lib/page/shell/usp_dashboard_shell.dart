@@ -192,9 +192,11 @@ class _UspDashboardShellState extends ConsumerState<UspDashboardShell> {
       ],
     );
 
-    // Wrap with MascotOverlay only if mascot is enabled, dashboard is ready,
-    // and NOT in remote mode (mascot hidden in remote assistance)
-    if (showMascot && isDashboardReady && !isRemoteMode) {
+    // Wrap with MascotOverlay only when the user preference is on, the
+    // dashboard is ready, and the mascot is enabled for this build —
+    // GlobalConfig.remote.mascotEnabled excludes remote assistance and E2E
+    // mock builds (kept in sync with the General Settings toggle). (P0-2)
+    if (showMascot && isDashboardReady && GlobalConfig.remote.mascotEnabled) {
       content = MascotOverlay(
         controller: mascotController,
         dialogProvider: dialogProvider,
