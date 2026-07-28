@@ -1482,7 +1482,9 @@ An `identifier` MUST be added when, and only when, a control lacks a stable, uni
 * ✅ **Required** — any control a test currently reaches only via `.nth()` / positional index.
 * ❌ **Not required** — controls already uniquely addressable by role + accessible name, or by stable visible content text (e.g. a labelled `AppButton`, a device row keyed on its name). Do not add redundant identifiers to anchorable controls.
 
-**Principle**: The `identifier` exists to eliminate positional selectors. If a control is already stably anchorable, adding an `identifier` is noise — Article V (Simplicity) applies.
+**Locale caveat**: "addressable by accessible name" counts as a stable anchor **only while the E2E suite is locked to a single locale**. An accessible name is localized display copy — `getByRole(role, { name: 'Save' })` targets the English string. The current suite has no locale lock (`playwright.config.ts` sets none) and matches localized names directly, so it is implicitly English-only. The moment E2E must run across locales — or the app's default locale changes — such a control is reachable only through copy that varies, which is the same silent-break failure mode this Article exists to kill (locale-triggered rather than layout-triggered). In that case the control moves back to ✅ **Required**: give it an `identifier`. A cross-locale test matrix is therefore a trigger to re-audit every ❌ decision made under this section.
+
+**Principle**: The `identifier` exists to eliminate selectors that break on things unrelated to identity — positional index, and (under a cross-locale matrix) localized copy. If a control is already stably anchorable *for the locales the suite runs*, adding an `identifier` is noise — Article V (Simplicity) applies.
 
 **Section 16.3: Naming Convention**
 
@@ -1505,11 +1507,15 @@ identifier: 'pf-delete-${rule.identifierKey}'
 
 The derivation helper (e.g. `ruleIdentifierKey`) MUST be a pure, unit-tested function (Article I). A row-index-based identifier (`pf-edit-0`) is a violation — it is a positional selector wearing an identifier's clothes.
 
+**Raw `Semantics` is also a legal hook host.** The hook need not sit on a ui_kit widget: wrapping any subtree in `Semantics(identifier: '…')` is a valid anchor and is preferred over `Semantics(label: '…')` for a test-only slug (a bare `label` is announced aloud, same as `semanticLabel`). One generator constraint governs this: the E2E generator (`scripts/gen-identifiers.mts`) matches on the **attribute name**, not the host widget — it scans for the literal attributes `identifier:` and `semanticLabel:`. Consequently `Semantics(label: '…')` is **invisible to the generator** (the attribute is `label`, not `semanticLabel`) and produces no selector entry. Use `Semantics(identifier: '…')` so the hook is both silent and discoverable.
+
 **Section 16.4: Layer Responsibility & SSOT**
 
 * **ui_kit_library** owns `identifier` passthrough on shared widgets (`AppIconButton`, `AppSwitch`, `AppTextField`, …). If a widget a test must target does not forward `identifier`, **stop and ask** per Article XV Rule 2 to add passthrough; a `semanticLabel` slug is only the tolerated interim per Rule 16.1.2 until it lands.
-* **PrivacyGUI (`lib/`)** owns the identifier *values* on feature controls.
+* **PrivacyGUI (`lib/`)** owns the identifier *values* on feature controls, including values placed on raw `Semantics(identifier:)` nodes where no ui_kit passthrough exists.
 * **E2E repo** owns the generated selector map (`identifiers.generated.ts`), produced by scanning app Dart source. App source is the single source of truth; the E2E map is derived. Renaming an identifier in `lib/` is a contract change — regenerate the map.
+
+**A `semanticLabel` → `identifier` migration is a contract change even when the slug value is unchanged.** Moving a hook between the two attributes changes the *mechanism*, not the string: the slug relocates from `LABELS` (located via `getByRole(role, { name })`) to `IDS` (located via `byIdentifier()`). Every spec that reached the control by its old mechanism MUST be migrated to the new locator in the same change — "the slug didn't change" is not evidence that E2E is unaffected. Regenerate the map and grep the specs for the old mechanism. (The generator errors if a single slug is declared as *both* `identifier` and `semanticLabel`, but that guard does not catch an attribute swap where the old and new coexist across a mid-migration diff — the spec-side migration is a manual obligation.)
 
 **Section 16.5: Code Review Checklist**
 
@@ -1519,6 +1525,8 @@ Code Review MUST check:
 - ✅ A `semanticLabel` test slug appears only where the host widget exposes no `identifier` passthrough (Rule 16.1.2), and such cases are flagged as tech debt to migrate
 - ✅ Identifier values are `kebab-case`, follow `{page}-{control}[-{instance-key}]`, and per-instance keys derive from data (not row index)
 - ✅ Per-instance key derivation is a pure, unit-tested function
-- ✅ No redundant identifier added to a control already anchorable by role+name or stable content text
+- ✅ No redundant identifier added to a control already anchorable by role+name or stable content text — but any ❌-"not required" call is sound only for the locales the suite runs; a cross-locale matrix re-opens it (16.2 locale caveat)
+- ✅ Raw `Semantics` test hooks use `identifier:`, not `label:` (a bare `label` is announced aloud AND invisible to the generator)
+- ✅ Any `semanticLabel`→`identifier` migration — even with an unchanged slug — regenerated the map AND migrated every spec from `getByRole({name})` to `byIdentifier()` (16.4)
 
 ---
