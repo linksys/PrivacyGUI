@@ -951,6 +951,70 @@ void main() {
             reason: 'revived Run A (WAN Down) must not clobber Run B (WAN Up)');
         container.dispose();
       });
+
+      // Regression for the residual clobber race on the Intermittent flow
+      // (PR #1175 review). Unlike the Internet flow above, this runner suspends
+      // on the *scope acquisition* await (`_ensureScope()`), and the bare
+      // `state = copyWith(step: pingInternet)` write that follows it was the one
+      // flow missing an `_isCurrent(gen)` recheck. We hang Run A on
+      // acquireScope, cancel (resetting to idle), let Run B finish, then revive
+      // Run A: without the guard it re-stamps step=pingInternet over Run B's
+      // showingResults, stranding the view on a spinner. The guard makes the
+      // stale write a no-op.
+      test(
+          'revived intermittent run after cancel+restart does not clobber step (#1175)',
+          () async {
+        final container = createContainer();
+        final notifier = container.read(unifiedDiagnosticsProvider.notifier);
+
+        // First scope acquisition (Run A) hangs; later calls (Run B, after
+        // cancel nulls the cached scope) resolve immediately.
+        final runAScope = Completer<DiagnosticScope>();
+        var acquireCalls = 0;
+        when(() => mockExecutor.acquireScope(
+              referencePaths: any(named: 'referencePaths'),
+            )).thenAnswer((_) {
+          acquireCalls++;
+          return acquireCalls == 1 ? runAScope.future : Future.value(mockScope);
+        });
+        when(() => mockService.checkIntermittent())
+            .thenAnswer((_) async => const IntermittentUIModel(
+                  uptimeSeconds: 86400,
+                  pingSuccessRate: 1.0,
+                  averageLatencyMs: 12,
+                  jitterMs: 2,
+                  hasHighJitter: false,
+                  hasPacketLoss: false,
+                  recentReboot: false,
+                ));
+
+        // Run A — suspends inside _ensureScope on the hung acquireScope.
+        final runAFuture = notifier.selectFlow(DiagnosticFlow.intermittent);
+        await Future.delayed(Duration.zero);
+
+        // Cancel Run A (resets state to idle), then start Run B and let it
+        // complete while A is still suspended on scope acquisition.
+        final cancelFuture = notifier.cancel();
+        final runBFuture = notifier.selectFlow(DiagnosticFlow.intermittent);
+        await runBFuture;
+        await Future.delayed(Duration.zero);
+
+        final afterB = container.read(unifiedDiagnosticsProvider);
+        expect(afterB.step, DiagnosticStep.showingResults);
+
+        // Revive Run A: its post-await `step=pingInternet` write must be
+        // rejected by the generation guard, leaving Run B's terminal state.
+        runAScope.complete(mockScope);
+        await runAFuture;
+        await cancelFuture;
+        await Future.delayed(Duration.zero);
+
+        final finalState = container.read(unifiedDiagnosticsProvider);
+        expect(finalState.step, DiagnosticStep.showingResults,
+            reason:
+                'revived Run A must not re-stamp step=pingInternet over Run B');
+        container.dispose();
+      });
     });
 
     group('Restart', () {

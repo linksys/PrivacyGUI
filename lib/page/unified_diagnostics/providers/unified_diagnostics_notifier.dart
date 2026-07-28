@@ -792,6 +792,7 @@ class UnifiedDiagnosticsNotifier
     }
 
     // Step 1: Check intermittent issues (uptime + jitter)
+    if (!_isCurrent(gen)) return;
     state = state.copyWith(step: DiagnosticStep.pingInternet);
     try {
       final intermittent = await svc.checkIntermittent();
