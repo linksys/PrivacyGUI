@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
+import 'package:privacy_gui/page/_shared/models/traffic_analysis_state.dart';
 import 'package:privacy_gui/page/dashboard/views/components/usp_network_health_card.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -22,10 +23,15 @@ final _testTheme = AppTheme.create(
 /// values are distinguishable — consistent with the labeled charts elsewhere
 /// (System Status card labels CPU / Memory next to each legend dot).
 void main() {
-  Future<void> pumpCard(WidgetTester tester) async {
+  Future<void> pumpCard(
+    WidgetTester tester, {
+    TrafficAnalysisState? state,
+  }) async {
     await tester.pumpWidget(
       ProviderScope(
-        overrides: cardOverrides(trafficAnalysisState: testTrafficWithHistory),
+        overrides: cardOverrides(
+          trafficAnalysisState: state ?? testTrafficWithHistory,
+        ),
         child: MaterialApp(
           theme: _testTheme,
           localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -94,24 +100,7 @@ void main() {
       (tester) async {
     // Base fixture leaves discards at 0; this variant supplies a constant
     // 3.0/s WAN discard rate so the formatted value path is exercised.
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: cardOverrides(trafficAnalysisState: testTrafficWithDiscards),
-        child: MaterialApp(
-          theme: _testTheme,
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: const Scaffold(
-            body: SizedBox(
-              width: 500,
-              height: 400,
-              child: UspNetworkHealthCard(),
-            ),
-          ),
-        ),
-      ),
-    );
-    await tester.pumpAndSettle();
+    await pumpCard(tester, state: testTrafficWithDiscards);
     final l = locOf(tester);
 
     // Switch to the Errors tab.
