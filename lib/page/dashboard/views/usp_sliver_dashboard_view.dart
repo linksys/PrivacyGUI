@@ -188,7 +188,9 @@ class _UspSliverDashboardViewState
           children: [
             if (isEditMode) ...[
               AppIconButton(
-                semanticLabel: 'dashboard-optimize-layout',
+                identifier: 'dashboard-optimize-layout',
+                semanticLabel: loc(context).optimizeLayout,
+                tooltip: loc(context).optimizeLayout,
                 icon: AppIcon.font(Icons.auto_fix_high),
                 onTap: () {
                   final controller =
@@ -209,25 +211,33 @@ class _UspSliverDashboardViewState
               ),
               AppGap.sm(),
               AppIconButton(
-                semanticLabel: 'dashboard-layout-settings',
+                identifier: 'dashboard-layout-settings',
+                semanticLabel: loc(context).settings,
+                tooltip: loc(context).settings,
                 icon: AppIcon.font(Icons.tune),
                 onTap: () => _openLayoutSettings(context),
               ),
               AppGap.sm(),
               AppIconButton(
-                semanticLabel: 'dashboard-edit-cancel',
+                identifier: 'dashboard-edit-cancel',
+                semanticLabel: loc(context).cancel,
+                tooltip: loc(context).cancel,
                 icon: AppIcon.font(Icons.close),
                 onTap: _cancelEditMode,
               ),
               AppGap.sm(),
               AppIconButton(
-                semanticLabel: 'dashboard-edit-commit',
+                identifier: 'dashboard-edit-commit',
+                semanticLabel: loc(context).done,
+                tooltip: loc(context).done,
                 icon: AppIcon.font(Icons.check),
                 onTap: _commitEditMode,
               ),
             ] else ...[
               AppIconButton(
-                semanticLabel: 'dashboard-print',
+                identifier: 'dashboard-print',
+                semanticLabel: loc(context).print,
+                tooltip: loc(context).print,
                 icon: AppIcon.font(Icons.print),
                 onTap: () async {
                   final orchState =
@@ -249,7 +259,9 @@ class _UspSliverDashboardViewState
               ),
               AppGap.sm(),
               AppIconButton(
-                semanticLabel: 'dashboard-refresh',
+                identifier: 'dashboard-refresh',
+                semanticLabel: loc(context).refresh,
+                tooltip: loc(context).refresh,
                 icon: AppIcon.font(Icons.refresh),
                 onTap: () => ref
                     .read(dashboardOrchestratorProvider.notifier)
@@ -259,7 +271,9 @@ class _UspSliverDashboardViewState
               if (!isRemoteMode) ...[
                 AppGap.sm(),
                 AppIconButton(
-                  semanticLabel: 'dashboard-edit',
+                  identifier: 'dashboard-edit',
+                  semanticLabel: loc(context).edit,
+                  tooltip: loc(context).edit,
                   icon: AppIcon.font(Icons.edit),
                   onTap: _enterEditMode,
                 ),

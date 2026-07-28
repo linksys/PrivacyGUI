@@ -227,6 +227,64 @@ grep -l -E "class.*TestData|Factory\(\)|\.fromJson\(\{" <new_test_files>
 - Severity: **INFO**
 - Suggestion: "Consider moving reusable test data to `test/mocks/test_data/[feature]_test_data.dart` (constitution Article I §1.6.2)."
 
+**Step 3.8: E2E Test Hook Compliance (Article XVI)**
+
+Applies to changed View/component files (`lib/**/*.dart` that render UI). Only run if such files changed. These checks are **heuristic** — a static grep cannot prove two attributes sit on the *same* widget, so report candidates and instruct the reviewer to confirm by reading the widget. Never emit ERROR from this step.
+
+**3.8.1 — `semanticLabel` test-slug where the host forwards `identifier` (Rule 16.1.1)**
+
+A kebab-case slug in `semanticLabel:` is a test hook in the wrong place when the host widget forwards `identifier`. It is announced aloud by screen readers (real a11y defect) and should be `identifier:`.
+
+```bash
+# Kebab-slug semanticLabel usages in changed files (candidates)
+grep -rnE "semanticLabel: *'[a-z][a-z0-9-]*'" <changed_view_files>
+```
+
+For each hit, read the host widget and classify:
+- Host **forwards `identifier`** (AppButton, AppIconButton, AppTextField, AppSwitch, AppListTile, AppCheckbox, AppRadio, raw `Semantics`, …): **WARNING** — "Move test slug from `semanticLabel:` to `identifier:` (Article XVI Rule 16.1.1). `semanticLabel` is announced by screen readers; use it only for genuine localized a11y text."
+- Host **exposes only `semanticLabel`** (e.g. `AppMenuCard` / `AppSectionItemData`): **INFO** — "Tolerated interim hook (Rule 16.1.2); tech debt pending `identifier` passthrough in ui_kit. Do not fix in `lib/`."
+
+To tell them apart, grep the host widget's ui_kit source (or `lib/` for app-defined widgets) for `identifier`:
+```bash
+grep -rl "final String? identifier" ../../ui_kit/lib/src <app_widget_dirs>
+```
+
+**3.8.2 — Both `identifier` and a test-slug `semanticLabel` on one widget (Rule 16.1.1)**
+
+```bash
+# Files carrying BOTH — inspect whether they land on the same widget
+for f in <changed_view_files>; do
+  grep -qE "identifier: *'[a-z]" "$f" && grep -qE "semanticLabel: *'[a-z][a-z0-9-]*'" "$f" && echo "$f"
+done
+```
+
+- For each flagged file, read the widgets: if one widget has both, **WARNING** — "Remove the redundant test-slug `semanticLabel`; the `identifier` is the anchor (Article XVI Rule 16.1.1)."
+
+**3.8.3 — Raw `Semantics(label:)` test slug (Rule 16.3)**
+
+A bare `label:` on a raw `Semantics` is announced aloud AND invisible to the E2E generator (which matches the attribute name `semanticLabel`, not `label`).
+
+```bash
+# label: directly under Semantics( — slug is literal or interpolated
+grep -rnE -A1 "Semantics\(" <changed_view_files> | grep -E "label: *'[a-z]"
+```
+
+- For each hit: **WARNING** — "Use `Semantics(identifier: '…')` not `label:` — a bare `label` is read by screen readers and is not picked up by `gen-identifiers.mts` (Article XVI §16.3)."
+
+**3.8.4 — Row-index-based identifier (Rule 16.3)**
+
+Per-instance identifiers must derive from data, not list position.
+
+```bash
+# Interpolated index or trailing numeric literal in an identifier
+grep -rnE "identifier: *'[^']*-[0-9]+'" <changed_view_files>
+grep -rnE "identifier: *[\"'][^\"']*\\\$\{?(index|i|idx)\}?" <changed_view_files>
+```
+
+- For each hit: **WARNING** — "Per-instance identifiers must embed a data-derived key (a slug helper), not a row index like `pf-edit-0` (Article XVI §16.3). A row-index identifier is a positional selector in disguise."
+
+**Note on the SSOT contract (Article XVI §16.4)**: if this branch renames an identifier value OR migrates a hook `semanticLabel:` → `identifier:` (even with an unchanged slug), remind the user: the E2E selector map is derived from app source — regenerate it (`npm run gen:ids` in the e2e repo) and migrate any spec that located the control by its old mechanism (`getByRole({name})` → `byIdentifier()`). This is a cross-repo contract change, not an app-only edit.
+
 ### Phase 4: Test Coverage
 
 **Step 4.1: Check Test File Existence**
@@ -398,6 +456,7 @@ Changed Dart files: <count>
 - [PASS/WARN] Naming conventions: <summary>
 - [PASS/WARN/INFO] Provider autoDispose: <summary>
 - [PASS/INFO] Test data location: <summary>
+- [PASS/WARN/INFO/SKIP] E2E test hooks (identifier vs semanticLabel, Article XVI): <summary>
 
 ### Test Coverage
 - [PASS/WARN] Test files: <summary>

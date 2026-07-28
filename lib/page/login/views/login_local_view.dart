@@ -250,7 +250,8 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
                 AppGap.xxxl(),
                 AppPasswordInput(
                   controller: _passwordController,
-                  semanticLabel: 'login-password-input',
+                  identifier: 'login-password-input',
+                  semanticLabel: loc(context).routerPassword,
                   hintText: loc(context).routerPassword,
                   onChanged: (value) {
                     setState(() {
@@ -288,7 +289,7 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
                 AppGap.xxxl(),
                 AppButton(
                   key: const Key('loginLocalView_loginButton'),
-                  semanticLabel: 'login-submit-button',
+                  identifier: 'login-submit-button',
                   label: loc(context).login,
                   variant: SurfaceVariant.highlight,
                   size: AppButtonSize.small,
