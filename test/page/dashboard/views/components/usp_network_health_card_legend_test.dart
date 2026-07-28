@@ -121,7 +121,7 @@ void main() {
     // Discards series carries a real, formatted rate — not the default 0.
     // avg = (1.5 + 1.5)/s constant across snapshots => formatFaultRate => "3.0/s".
     expect(
-      textContaining('${l.discards}  Avg: 3.0/s'),
+      textContaining(l.seriesAvgValue(l.discards, '3.0/s')),
       findsOneWidget,
       reason: 'Discards legend must render the formatted non-zero avg value',
     );
