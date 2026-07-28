@@ -861,6 +861,96 @@ void main() {
         expect(state.step, DiagnosticStep.idle);
         container.dispose();
       });
+
+      // Regression for the cancel→restart clobber race (PR #1175 review):
+      // a runner suspended on a long await must NOT overwrite a *newer* run's
+      // state when it revives. Run A hangs on the gateway ping; we cancel, then
+      // start Run B which completes fully; only then do we release Run A's ping.
+      // With the old shared `_cancelled` bool (reset to false by Run B), the
+      // revived Run A saw _cancelled==false and clobbered B's state. The
+      // per-run generation guard must make A's post-await writes no-ops.
+      test('revived run after cancel+restart does not clobber new run (#1175)',
+          () async {
+        final container = createContainer();
+        final notifier = container.read(unifiedDiagnosticsProvider.notifier);
+
+        // Fingerprint the two runs so a clobber is detectable: Run A's WAN
+        // check reports Down (error), Run B's reports Up (ok). If revived Run A
+        // clobbers state, the final WAN result would be an error and the
+        // results list would collapse to Run A's short accumulation.
+        var wanCalls = 0;
+        when(() => mockService.checkWanStatus()).thenAnswer((_) async {
+          wanCalls++;
+          return wanCalls == 1
+              ? const WanStatusUIModel(
+                  status: 'Down',
+                  ipAddress: '',
+                  subnetMask: '',
+                  addressingType: 'DHCP',
+                )
+              : const WanStatusUIModel(
+                  status: 'Up',
+                  ipAddress: '192.168.1.100',
+                  subnetMask: '255.255.255.0',
+                  addressingType: 'DHCP',
+                );
+        });
+        // First gateway ping (Run A) hangs; every later call (Run B) resolves
+        // immediately so B can run to completion while A is suspended.
+        final runAGateway = Completer<PingResult>();
+        var gatewayCalls = 0;
+        when(() =>
+                mockService.pingGateway(repeatCount: any(named: 'repeatCount')))
+            .thenAnswer((_) {
+          gatewayCalls++;
+          return gatewayCalls == 1
+              ? runAGateway.future
+              : Future.value(_createPingResult('192.168.1.1'));
+        });
+        when(() => mockService.pingDns(
+              host: any(named: 'host'),
+              repeatCount: any(named: 'repeatCount'),
+            )).thenAnswer((_) async => _createPingResult('8.8.8.8'));
+        when(() => mockService.pingInternet(
+              host: any(named: 'host'),
+              repeatCount: any(named: 'repeatCount'),
+            )).thenAnswer((_) async => _createPingResult('1.1.1.1'));
+
+        // Run A — suspends at the hung gateway ping.
+        final runAFuture = notifier.selectFlow(DiagnosticFlow.internet);
+        await Future.delayed(Duration.zero);
+
+        // Cancel Run A, then immediately start Run B and let it finish.
+        final cancelFuture = notifier.cancel();
+        final runBFuture = notifier.selectFlow(DiagnosticFlow.internet);
+        await runBFuture;
+        await Future.delayed(Duration.zero);
+
+        // Snapshot Run B's completed state before reviving A.
+        final afterB = container.read(unifiedDiagnosticsProvider);
+        expect(afterB.step, DiagnosticStep.showingResults);
+        expect(afterB.results.length, 6);
+        final wanB = afterB.results
+            .firstWhere((r) => r.step == DiagnosticStep.checkingWanStatus);
+        expect(wanB.isError, isFalse); // Run B saw WAN Up.
+
+        // Revive Run A — its post-await writes must be rejected by the
+        // generation guard and leave Run B's state untouched.
+        runAGateway.complete(_createPingResult('192.168.1.1'));
+        await runAFuture;
+        await cancelFuture;
+        await Future.delayed(Duration.zero);
+
+        final finalState = container.read(unifiedDiagnosticsProvider);
+        expect(finalState.step, DiagnosticStep.showingResults);
+        // Run A must NOT have clobbered: length and WAN verdict stay Run B's.
+        expect(finalState.results.length, 6);
+        final finalWan = finalState.results
+            .firstWhere((r) => r.step == DiagnosticStep.checkingWanStatus);
+        expect(finalWan.isError, isFalse,
+            reason: 'revived Run A (WAN Down) must not clobber Run B (WAN Up)');
+        container.dispose();
+      });
     });
 
     group('Restart', () {
