@@ -9,6 +9,7 @@ import 'package:privacy_gui/page/_shared/models/traffic_analysis_state.dart';
 import 'package:privacy_gui/page/_shared/providers/card_tab_state_provider.dart';
 import 'package:privacy_gui/page/_shared/providers/usp_traffic_analysis_notifier.dart';
 import 'package:privacy_gui/page/_shared/components/dashboard_card_template.dart';
+import 'package:privacy_gui/page/internet_settings/providers/wan_data_provider.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Network Health Monitoring card — 3-tab card (F-022).
@@ -33,6 +34,10 @@ class _UspNetworkHealthCardState extends ConsumerState<UspNetworkHealthCard> {
   Widget build(BuildContext context) {
     final trafficState = ref.watch(uspTrafficAnalysisProvider);
     final selectedTab = ref.watch(cardTabIndexProvider(_cardId));
+    // Physical WAN link state — same signal the page-top connection banner
+    // uses. Consulted so a disconnected WAN is not scored "Excellent" purely
+    // because a down link carries no traffic (loss 0%). See #1143.
+    final wanIsUp = ref.watch(wanDataProvider).valueOrNull?.model.isUp ?? true;
 
     return DashboardCardTemplate.tabbed(
       title: loc(context).networkHealth,
@@ -49,15 +54,15 @@ class _UspNetworkHealthCardState extends ConsumerState<UspNetworkHealthCard> {
       tabs: [
         CardTab(
           label: loc(context).health,
-          content: _buildTabContent(context, trafficState, 0),
+          content: _buildTabContent(context, trafficState, wanIsUp, 0),
         ),
         CardTab(
           label: loc(context).errors,
-          content: _buildTabContent(context, trafficState, 1),
+          content: _buildTabContent(context, trafficState, wanIsUp, 1),
         ),
         CardTab(
           label: loc(context).loss,
-          content: _buildTabContent(context, trafficState, 2),
+          content: _buildTabContent(context, trafficState, wanIsUp, 2),
         ),
       ],
     );
@@ -66,6 +71,7 @@ class _UspNetworkHealthCardState extends ConsumerState<UspNetworkHealthCard> {
   Widget _buildTabContent(
     BuildContext context,
     TrafficAnalysisState state,
+    bool wanIsUp,
     int selectedTab,
   ) {
     if (state.history.isEmpty) {
@@ -78,7 +84,8 @@ class _UspNetworkHealthCardState extends ConsumerState<UspNetworkHealthCard> {
     }
 
     return switch (selectedTab) {
-      0 => _HealthOverview(state: state, parentContext: context),
+      0 =>
+        _HealthOverview(state: state, wanIsUp: wanIsUp, parentContext: context),
       1 => _ErrorsChart(state: state, parentContext: context),
       2 => _LossChart(state: state, parentContext: context),
       _ => const SizedBox.shrink(),
@@ -92,8 +99,13 @@ class _UspNetworkHealthCardState extends ConsumerState<UspNetworkHealthCard> {
 
 class _HealthOverview extends StatelessWidget {
   final TrafficAnalysisState state;
+  final bool wanIsUp;
   final BuildContext parentContext;
-  const _HealthOverview({required this.state, required this.parentContext});
+  const _HealthOverview({
+    required this.state,
+    required this.wanIsUp,
+    required this.parentContext,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -101,8 +113,12 @@ class _HealthOverview extends StatelessWidget {
     final wan = state.latest?.interfaces[TrafficInterface.wan];
     final lan = state.latest?.interfaces[TrafficInterface.lan];
 
+    // WAN score consults physical link state: a disconnected WAN scores 0
+    // ("Critical") regardless of (absent) traffic, so it can no longer be
+    // reported as "Excellent" while the connection banner says otherwise.
+    // See #1143.
     final wanScore =
-        wan != null ? NetworkHealthHelpers.computeHealthScore(wan) : 100;
+        NetworkHealthHelpers.computeWanScore(wan, wanIsUp: wanIsUp);
     final lanScore =
         lan != null ? NetworkHealthHelpers.computeHealthScore(lan) : 100;
     // Overall score = min of WAN and LAN
@@ -147,6 +163,10 @@ class _HealthOverview extends StatelessWidget {
               label: loc(parentContext).wan,
               tier: wanTier,
               colorScheme: colorScheme,
+              // When the WAN link is physically down, show "Disconnected"
+              // instead of a health tier so the card agrees with the
+              // page-top connection banner. See #1143.
+              statusOverride: wanIsUp ? null : loc(parentContext).disconnected,
             ),
             AppGap.xl(),
             _TrafficLight(
@@ -192,15 +212,21 @@ class _TrafficLight extends StatelessWidget {
   final HealthTier tier;
   final ColorScheme colorScheme;
 
+  /// When non-null, replaces the health-tier label (e.g. "Disconnected"
+  /// for a physically down WAN link). The dot color still follows [tier].
+  final String? statusOverride;
+
   const _TrafficLight({
     required this.label,
     required this.tier,
     required this.colorScheme,
+    this.statusOverride,
   });
 
   @override
   Widget build(BuildContext context) {
     final color = NetworkHealthHelpers.tierColor(tier, colorScheme);
+    final status = statusOverride ?? tier.resolveLabel(context);
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -210,7 +236,7 @@ class _TrafficLight extends StatelessWidget {
           decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
         AppGap.xs(),
-        AppText.labelSmall('$label: ${tier.resolveLabel(context)}'),
+        AppText.labelSmall('$label: $status'),
       ],
     );
   }
