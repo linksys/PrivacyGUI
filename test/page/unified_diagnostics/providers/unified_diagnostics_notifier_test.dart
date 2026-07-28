@@ -168,8 +168,9 @@ void main() {
 
         final state = container.read(unifiedDiagnosticsProvider);
         expect(state.step, DiagnosticStep.showingResults);
-        // WAN, DHCP Pool, Gateway, DNS Ping, DNS Lookup, Internet, SpeedTest
-        expect(state.results.length, 7);
+        // WAN, DHCP Pool, Gateway, DNS Ping, DNS Lookup, Internet.
+        // Speed test disabled: blocked by FW support (#857).
+        expect(state.results.length, 6);
         expect(state.results.every((r) => r.isOk), isTrue);
         container.dispose();
       });
@@ -860,65 +861,6 @@ void main() {
         expect(state.step, DiagnosticStep.idle);
         container.dispose();
       });
-
-      // Regression for #1148: pressing Cancel while the shared speed test is
-      // in-flight must reset the unified state to idle IMMEDIATELY (not block
-      // on the speed test's 3-minute timeout) AND actively cancel the shared
-      // speed-test notifier so its polling future stops promptly.
-      test(
-          'cancel during speed-test step resets immediately and stops the '
-          'speed test (#1148)', () async {
-        final hangingSpeedTest = _HangingSpeedTestNotifier();
-        final container = ProviderContainer(
-          overrides: [
-            unifiedDiagnosticsServiceProvider.overrideWithValue(mockService),
-            networkDiagnosticsExecutorProvider.overrideWithValue(mockExecutor),
-            speedTestProvider.overrideWith(() => hangingSpeedTest),
-          ],
-        );
-        container.listen(unifiedDiagnosticsProvider, (_, __) {});
-        final notifier = container.read(unifiedDiagnosticsProvider.notifier);
-
-        when(() => mockService.checkWanStatus())
-            .thenAnswer((_) async => const WanStatusUIModel(
-                  status: 'Up',
-                  ipAddress: '192.168.1.100',
-                  subnetMask: '255.255.255.0',
-                  addressingType: 'DHCP',
-                ));
-        when(() =>
-                mockService.pingGateway(repeatCount: any(named: 'repeatCount')))
-            .thenAnswer((_) async => _createPingResult('192.168.1.1'));
-        when(() => mockService.pingDns(
-              host: any(named: 'host'),
-              repeatCount: any(named: 'repeatCount'),
-            )).thenAnswer((_) async => _createPingResult('8.8.8.8'));
-        when(() => mockService.pingInternet(
-              host: any(named: 'host'),
-              repeatCount: any(named: 'repeatCount'),
-            )).thenAnswer((_) async => _createPingResult('1.1.1.1'));
-
-        // Kick off the flow; it will run up to the speed-test step and hang
-        // there because _HangingSpeedTestNotifier.runSpeedTest blocks.
-        final runFuture = notifier.selectFlow(DiagnosticFlow.internet);
-        await Future.delayed(Duration.zero);
-
-        // Cancel while the speed test is still in-flight. The state reset must
-        // be synchronous — no need to release the hanging speed test first.
-        await notifier.cancel();
-
-        final state = container.read(unifiedDiagnosticsProvider);
-        expect(state.step, DiagnosticStep.idle,
-            reason: 'cancel() must reset state without blocking on the '
-                'in-flight speed test');
-        expect(hangingSpeedTest.cancelCalled, isTrue,
-            reason: 'cancel() must actively cancel the shared speed test');
-
-        // Let the (now released) in-flight future unwind cleanly.
-        hangingSpeedTest.release();
-        await runFuture;
-        container.dispose();
-      });
     });
 
     group('Restart', () {
@@ -1018,49 +960,6 @@ class _MockSpeedTestNotifier extends AutoDisposeAsyncNotifier<SpeedTestState>
 
   @override
   Future<void> cancel() async {
-    state = const AsyncData(SpeedTestState());
-  }
-}
-
-/// Speed-test notifier whose [runSpeedTest] hangs until [release] is called,
-/// and which records whether [cancel] was invoked. Used to reproduce the
-/// #1148 finding: pressing Cancel during the speed-test step must reset the
-/// unified state immediately AND actively cancel the shared speed test,
-/// instead of blocking on the speed test's timeout.
-class _HangingSpeedTestNotifier extends AutoDisposeAsyncNotifier<SpeedTestState>
-    implements SpeedTestNotifier {
-  final Completer<void> _runGate = Completer<void>();
-  bool cancelCalled = false;
-
-  void release() {
-    if (!_runGate.isCompleted) _runGate.complete();
-  }
-
-  @override
-  Future<SpeedTestState> build() async => const SpeedTestState();
-
-  @override
-  void selectServer(SpeedTestServer server) {}
-
-  @override
-  Future<void> runSpeedTest() async {
-    state = AsyncData(state.requireValue.copyWith(
-      step: SpeedTestStep.testingDownload,
-    ));
-    // Block until the test explicitly releases us (simulates the long-running
-    // speed test that previously pinned cancel() to its 3-minute timeout).
-    await _runGate.future;
-  }
-
-  @override
-  void reset() {
-    state = const AsyncData(SpeedTestState());
-  }
-
-  @override
-  Future<void> cancel() async {
-    cancelCalled = true;
-    release();
     state = const AsyncData(SpeedTestState());
   }
 }

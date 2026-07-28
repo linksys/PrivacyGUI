@@ -681,6 +681,70 @@ void main() {
       container.dispose();
     });
 
+    test(
+        'node option uses the display name, not the model — id stays the '
+        'DataElements node id (#1157)', () async {
+      // meshTopology.nodes (DataElements) carry only model names and no
+      // user-assigned name. The fully-built mesh nodes (data.nodes) carry the
+      // Hosts friendlyName, matched back via dataElementsId. The Node filter
+      // must show the friendlyName while keeping the DataElements id as the
+      // selection key.
+      final data = DevicesData(
+        meshNetwork: MeshNetwork(
+          master: MasterNode(
+            deviceId: 'AA:BB:CC:DD:EE:01', // built node id = MAC
+            dataElementsId: 'NODE-01', // maps back to meshTopology node
+            friendlyName: 'Living Room',
+            model: 'MR7500',
+            connectedClients: const [],
+          ),
+          slaves: [
+            SlaveNode(
+              deviceId: 'AA:BB:CC:DD:EE:02',
+              dataElementsId: 'NODE-02',
+              friendlyName: 'Bedroom',
+              model: 'MX5500',
+              connectedClients: const [],
+              backhaul: const BackhaulInfo(mediaType: 'Wi-Fi'),
+            ),
+          ],
+        ),
+        meshTopology: MeshTopologyInfo(
+          nodes: [
+            MasterNode(deviceId: 'NODE-01', model: 'MR7500'),
+            SlaveNode(
+              deviceId: 'NODE-02',
+              model: 'MX5500',
+              backhaul: const BackhaulInfo(mediaType: 'Wi-Fi'),
+            ),
+          ],
+          clientToNodeMap: const {},
+        ),
+      );
+      final container = await createReadyContainer(data: data);
+
+      final nodes = container.read(deviceFilterOptionsProvider).nodes;
+
+      // Selection key stays the DataElements node id (matches parentNodeId).
+      expect(nodes.map((n) => n.id), ['NODE-01', 'NODE-02']);
+      // Label is the friendlyName, never the model.
+      expect(nodes.map((n) => n.label), ['Living Room', 'Bedroom']);
+      container.dispose();
+    });
+
+    test('node option falls back to model when no display name exists',
+        () async {
+      // Default test data: neither the built nodes nor meshTopology.nodes have
+      // a friendlyName/hostName, so the label falls back to the model.
+      final container = await createReadyContainer();
+
+      final nodes = container.read(deviceFilterOptionsProvider).nodes;
+
+      expect(nodes.map((n) => n.id), ['NODE-01', 'NODE-02']);
+      expect(nodes.map((n) => n.label), ['MR7500', 'MX5500']);
+      container.dispose();
+    });
+
     test('hasUnknownSignalDevices false when every WiFi device has RSSI',
         () async {
       final container = await createReadyContainer(

@@ -216,11 +216,12 @@ final uspDashboardRoute = ShellRoute(
       path: RoutePath.uspApps,
       builder: (context, state) => const UspAppsView(),
     ),
-    LinksysRoute(
-      name: RouteNamed.uspSpeedTest,
-      path: RoutePath.uspSpeedTest,
-      builder: (context, state) => const SpeedTestView(),
-    ),
+    // Speed Test route disabled: blocked by FW support (#857)
+    // LinksysRoute(
+    //   name: RouteNamed.uspSpeedTest,
+    //   path: RoutePath.uspSpeedTest,
+    //   builder: (context, state) => const SpeedTestView(),
+    // ),
     LinksysRoute(
       name: RouteNamed.uspAiAssistant,
       path: RoutePath.uspAiAssistant,
