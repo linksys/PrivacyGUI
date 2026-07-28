@@ -414,6 +414,8 @@
   "avgSignal": "Ort. Sinyal",
   "avgValue": "Ort: {value}",
   "avgValuePeakValue": "Ort: {avg}  Tepe: {peak}",
+  "seriesAvgValuePeakValue": "{series}  Ort: {avg}  Tepe: {peak}",
+  "seriesAvgValue": "{series}  Ort: {value}",
   "awsAccessKeyId": "AWS Access Key ID",
   "awsBedrockConfiguration": "AWS Bedrock Yapılandırması",
   "awsSecretAccessKey": "AWS Secret Access Key",

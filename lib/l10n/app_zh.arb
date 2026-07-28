@@ -417,6 +417,8 @@
   "avgSignal": "平均信号",
   "avgValue": "平均：{value}",
   "avgValuePeakValue": "平均：{avg}  峰值：{peak}",
+  "seriesAvgValuePeakValue": "{series}  平均：{avg}  峰值：{peak}",
+  "seriesAvgValue": "{series}  平均：{value}",
   "awsAccessKeyId": "AWS Access Key ID",
   "awsBedrockConfiguration": "AWS Bedrock 配置",
   "awsSecretAccessKey": "AWS Secret Access Key",

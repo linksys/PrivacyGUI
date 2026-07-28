@@ -417,6 +417,8 @@
   "avgSignal": "متوسط الإشارة",
   "avgValue": "المتوسط: {value}",
   "avgValuePeakValue": "المتوسط: {avg}  الذروة: {peak}",
+  "seriesAvgValuePeakValue": "{series}  المتوسط: {avg}  الذروة: {peak}",
+  "seriesAvgValue": "{series}  المتوسط: {value}",
   "awsAccessKeyId": "معرّف مفتاح وصول AWS",
   "awsBedrockConfiguration": "تكوين AWS Bedrock",
   "awsSecretAccessKey": "مفتاح الوصول السري لـ AWS",

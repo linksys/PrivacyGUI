@@ -416,6 +416,8 @@
   "avgSignal": "Signal moy.",
   "avgValue": "Moy. : {value}",
   "avgValuePeakValue": "Moy. : {avg}  Pic : {peak}",
+  "seriesAvgValuePeakValue": "{series}  Moy. : {avg}  Pic : {peak}",
+  "seriesAvgValue": "{series}  Moy. : {value}",
   "awsAccessKeyId": "ID de clé d'accès AWS",
   "awsBedrockConfiguration": "Configuration AWS Bedrock",
   "awsSecretAccessKey": "Clé d'accès secrète AWS",

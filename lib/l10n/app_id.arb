@@ -414,6 +414,8 @@
   "avgSignal": "Sinyal Rata-rata",
   "avgValue": "Rata-rata: {value}",
   "avgValuePeakValue": "Rata-rata: {avg}  Puncak: {peak}",
+  "seriesAvgValuePeakValue": "{series}  Rata-rata: {avg}  Puncak: {peak}",
+  "seriesAvgValue": "{series}  Rata-rata: {value}",
   "awsAccessKeyId": "AWS Access Key ID",
   "awsBedrockConfiguration": "Konfigurasi AWS Bedrock",
   "awsSecretAccessKey": "AWS Secret Access Key",

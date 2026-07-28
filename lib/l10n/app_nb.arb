@@ -416,6 +416,8 @@
   "avgSignal": "Gj.snittlig signal",
   "avgValue": "Gj.snitt: {value}",
   "avgValuePeakValue": "Gj.snitt: {avg}  Topp: {peak}",
+  "seriesAvgValuePeakValue": "{series}  Gj.snitt: {avg}  Topp: {peak}",
+  "seriesAvgValue": "{series}  Gj.snitt: {value}",
   "awsAccessKeyId": "AWS Access Key ID",
   "awsBedrockConfiguration": "AWS Bedrock-konfigurasjon",
   "awsSecretAccessKey": "AWS Secret Access Key",
