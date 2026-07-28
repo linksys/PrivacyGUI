@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -121,16 +123,40 @@ class _UnifiedDiagnosticsViewState
     );
   }
 
-  Future<void> _handleBack(
+  // Single-flight guard for the app-bar back tap. onBackTap is a plain
+  // VoidCallback slot, so a Future-returning handler would have its Future
+  // silently discarded — leaving no guard against a second back-tap firing a
+  // concurrent cancel()/teardown that clobbers _teardownFuture. Keeping
+  // _handleBack synchronous and gating on this flag prevents that race.
+  bool _isBackNavigating = false;
+
+  void _handleBack(
     BuildContext context,
     WidgetRef ref,
     UnifiedDiagnosticsState state,
-  ) async {
+  ) {
+    if (_isBackNavigating) return;
     final notifier = ref.read(unifiedDiagnosticsProvider.notifier);
     final handledInternally = notifier.goBack();
-    if (!handledInternally) {
-      await _returnToMenu(context, ref);
-    }
+    if (handledInternally) return;
+
+    // Leaving the page: capture the router before any state change, cancel the
+    // in-flight run, then navigate only after the full teardown (in-flight
+    // drain + scope release) completes — mirroring _returnToMenu. Awaiting
+    // cancel() alone would race the unsubscribe DELETE against a quick
+    // re-entry's subscribe POST.
+    _isBackNavigating = true;
+    final router = GoRouter.of(context);
+    notifier.cancel();
+    unawaited(notifier.teardownDone.then((_) {
+      _isBackNavigating = false;
+      if (!mounted) return;
+      if (router.canPop()) {
+        router.pop();
+      } else {
+        router.goNamed(RouteNamed.uspMenu);
+      }
+    }));
   }
 
   Future<void> _returnToMenu(BuildContext context, WidgetRef ref) async {
