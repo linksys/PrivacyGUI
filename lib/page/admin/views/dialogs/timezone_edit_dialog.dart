@@ -70,6 +70,7 @@ Future<TimezoneEditResult?> showTimezoneEditDialog(
               ),
               AppSwitch(
                 key: const Key('dstToggle'),
+                identifier: 'admin-timezone-dst',
                 value: dstEnabled,
                 onChanged: dstToggleEnabled
                     ? (value) {
