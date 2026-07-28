@@ -32,6 +32,20 @@ class UnifiedDiagnosticsNotifier
   DiagnosticScope? _scope;
   Future<void>? _runFuture;
 
+  /// Completion of the most recent off-critical-path teardown started by
+  /// [cancel] / [goBack]. [cancel] resets state synchronously and releases the
+  /// scope in an `unawaited` background task for UI responsiveness, so awaiting
+  /// [cancel] alone no longer guarantees the scope is released. Callers that
+  /// need the shared scope actually released before proceeding (e.g. navigating
+  /// away so the notifier auto-disposes, then quickly re-entering) must await
+  /// [teardownDone] after [cancel]. Resolves immediately when no teardown is
+  /// in flight.
+  Future<void>? _teardownFuture;
+
+  /// Resolves when the last [cancel]/[goBack] teardown (in-flight drain +
+  /// scope release) has completed. See [_teardownFuture].
+  Future<void> get teardownDone => _teardownFuture ?? Future.value();
+
   /// Monotonic run-identity token. Every run entry point ([runFullDiagnostic],
   /// [startWithPreQualifier], [selectFlow]) claims a fresh generation by
   /// pre-incrementing this counter and capturing the value locally. Step guards
@@ -239,7 +253,7 @@ class UnifiedDiagnosticsNotifier
     // reusing (and having torn out from under it) the one released below.
     final scope = _scope;
     _scope = null;
-    unawaited(() async {
+    _teardownFuture = () async {
       final inFlight = _runFuture;
       if (inFlight != null) {
         try {
@@ -253,7 +267,8 @@ class UnifiedDiagnosticsNotifier
           logger.w('[Diagnostics] Failed to release scope on cancel: $e');
         }
       }
-    }());
+    }();
+    unawaited(_teardownFuture!);
     state = const UnifiedDiagnosticsState();
   }
 

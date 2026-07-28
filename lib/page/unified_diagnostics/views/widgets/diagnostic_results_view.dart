@@ -68,10 +68,14 @@ class DiagnosticResultsView extends ConsumerWidget {
   }
 
   Future<void> _returnToDashboard(BuildContext context, WidgetRef ref) async {
-    // Await cancel so the shared diagnostic scope is released before the
-    // notifier auto-disposes — without this, a quick re-entry races the
-    // unsubscribe DELETE against the next acquire's subscribe POST.
-    await ref.read(unifiedDiagnosticsProvider.notifier).cancel();
+    // Release the shared diagnostic scope before the notifier auto-disposes.
+    // cancel() resets state synchronously and tears the scope down off the
+    // critical path (unawaited), so awaiting cancel() alone is not enough —
+    // we must also await teardownDone. Without this, a quick re-entry races
+    // the unsubscribe DELETE against the next acquire's subscribe POST.
+    final notifier = ref.read(unifiedDiagnosticsProvider.notifier);
+    await notifier.cancel();
+    await notifier.teardownDone;
     if (!context.mounted) return;
     context.goNamed(RouteNamed.uspDashboard);
   }
