@@ -148,15 +148,21 @@ class _UnifiedDiagnosticsViewState
     _isBackNavigating = true;
     final router = GoRouter.of(context);
     notifier.cancel();
-    unawaited(notifier.teardownDone.then((_) {
-      _isBackNavigating = false;
-      if (!mounted) return;
-      if (router.canPop()) {
-        router.pop();
-      } else {
-        router.goNamed(RouteNamed.uspMenu);
-      }
-    }));
+    unawaited(
+      notifier.teardownDone
+          // Release the single-flight guard unconditionally — even if teardown
+          // completes with an error — so the app-bar back button can never get
+          // permanently stuck disabled.
+          .whenComplete(() => _isBackNavigating = false)
+          .then((_) {
+        if (!mounted) return;
+        if (router.canPop()) {
+          router.pop();
+        } else {
+          router.goNamed(RouteNamed.uspMenu);
+        }
+      }),
+    );
   }
 
   Future<void> _returnToMenu(BuildContext context, WidgetRef ref) async {
