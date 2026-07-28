@@ -281,7 +281,13 @@ class UnifiedDiagnosticsNotifier
       case DiagnosticStep.preQualifying:
       case DiagnosticStep.selectFlow:
       case DiagnosticStep.manualTools:
-        // Back to start screen
+        // Back to start screen. Bump the generation first so any in-flight
+        // runner (e.g. a [startWithPreQualifier] suspended on checkWanStatus /
+        // pingInternet) short-circuits at its next [_isCurrent] / [_publish]
+        // guard instead of clobbering the idle screen the user just navigated
+        // to — or launching an unsolicited flow via selectFlow on WAN-down.
+        // Mirrors [cancel] and the running case below.
+        ++_generation;
         state = const UnifiedDiagnosticsState();
         return true;
       case DiagnosticStep.showingResults:

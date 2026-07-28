@@ -1015,6 +1015,78 @@ void main() {
                 'revived Run A must not re-stamp step=pingInternet over Run B');
         container.dispose();
       });
+
+      // Regression for the preQualifying-back state-clobber (PR #1175 review).
+      // Back is a live affordance during preQualifying: the spinner view wires
+      // onBackTap -> goBack(), which returns handledInternally==true so the
+      // AutoDispose notifier survives with the same generation. Before the fix,
+      // goBack()'s preQualifying case reset state to idle WITHOUT bumping
+      // _generation (unlike cancel() and the running case), so a
+      // startWithPreQualifier runner suspended on checkWanStatus would revive,
+      // still pass _isCurrent(gen), and either _publish stale selectFlow state
+      // over the idle start screen or fire an unsolicited selectFlow on
+      // WAN-down. Here Run A's WAN check hangs and reports Down; we press Back,
+      // then release the WAN check. The generation bump in goBack must make the
+      // revived runner's post-await writes no-ops, leaving the idle screen and
+      // NOT auto-launching the internet flow.
+      test('back during preQualifying does not clobber idle screen (#1175)',
+          () async {
+        final container = createContainer();
+        final notifier = container.read(unifiedDiagnosticsProvider.notifier);
+
+        // Hang the WAN check so we can interleave a goBack() while the
+        // pre-qualifier runner is suspended on it.
+        final wanCompleter = Completer<WanStatusUIModel>();
+        when(() => mockService.checkWanStatus())
+            .thenAnswer((_) => wanCompleter.future);
+        when(() =>
+                mockService.pingGateway(repeatCount: any(named: 'repeatCount')))
+            .thenAnswer((_) async => _createPingResult('192.168.1.1'));
+        when(() => mockService.pingDns(
+              host: any(named: 'host'),
+              repeatCount: any(named: 'repeatCount'),
+            )).thenAnswer((_) async => _createPingResult('8.8.8.8'));
+        when(() => mockService.pingInternet(
+              host: any(named: 'host'),
+              repeatCount: any(named: 'repeatCount'),
+            )).thenAnswer((_) async => _createPingResult('1.1.1.1'));
+
+        // Start the pre-qualifier; it suspends on the hung WAN check.
+        final preQualFuture = notifier.startWithPreQualifier();
+        await Future.delayed(Duration.zero);
+        expect(container.read(unifiedDiagnosticsProvider).step,
+            DiagnosticStep.preQualifying);
+
+        // User presses Back — handled internally, state resets to idle.
+        final handled = notifier.goBack();
+        expect(handled, isTrue);
+        expect(container.read(unifiedDiagnosticsProvider).step,
+            DiagnosticStep.idle);
+
+        // Revive the suspended WAN check with a WAN-down result. Without the
+        // generation bump this would _publish selectFlow(wanDownNoIp) over the
+        // idle screen AND auto-launch selectFlow(DiagnosticFlow.internet).
+        wanCompleter.complete(const WanStatusUIModel(
+          status: 'Down',
+          ipAddress: '',
+          subnetMask: '',
+          addressingType: 'DHCP',
+        ));
+        await preQualFuture;
+        await Future.delayed(Duration.zero);
+
+        final finalState = container.read(unifiedDiagnosticsProvider);
+        expect(finalState.step, DiagnosticStep.idle,
+            reason:
+                'revived pre-qualifier must not clobber the idle start screen');
+        expect(finalState.flow, isNull,
+            reason: 'no unsolicited flow may be launched after Back');
+        // The auto-select internet flow (which would ping the gateway) must
+        // never have fired.
+        verifyNever(() =>
+            mockService.pingGateway(repeatCount: any(named: 'repeatCount')));
+        container.dispose();
+      });
     });
 
     group('Restart', () {
