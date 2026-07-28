@@ -121,20 +121,27 @@ class _UnifiedDiagnosticsViewState
     );
   }
 
-  void _handleBack(
+  Future<void> _handleBack(
     BuildContext context,
     WidgetRef ref,
     UnifiedDiagnosticsState state,
-  ) {
+  ) async {
     final notifier = ref.read(unifiedDiagnosticsProvider.notifier);
     final handledInternally = notifier.goBack();
     if (!handledInternally) {
-      _returnToMenu(context, ref);
+      await _returnToMenu(context, ref);
     }
   }
 
-  void _returnToMenu(BuildContext context, WidgetRef ref) {
-    ref.read(unifiedDiagnosticsProvider.notifier).cancel();
+  Future<void> _returnToMenu(BuildContext context, WidgetRef ref) async {
+    // Await the full teardown (in-flight drain + scope release) before
+    // navigating, mirroring _returnToDashboard. cancel() tears the scope down
+    // off the critical path, so awaiting cancel() alone races the unsubscribe
+    // DELETE against a quick re-entry's subscribe POST.
+    final notifier = ref.read(unifiedDiagnosticsProvider.notifier);
+    await notifier.cancel();
+    await notifier.teardownDone;
+    if (!context.mounted) return;
     if (context.canPop()) {
       context.pop();
     } else {

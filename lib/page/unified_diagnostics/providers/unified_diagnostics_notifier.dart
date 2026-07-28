@@ -103,6 +103,9 @@ class UnifiedDiagnosticsNotifier
   Future<void> runFullDiagnostic() async {
     logger.i('[Diagnostics] Running full diagnostic (auto-run)');
     final gen = ++_generation;
+    // Clear any completed prior teardown so [teardownDone] reflects THIS run's
+    // lifecycle, not a stale cancel()/goBack() future that already resolved.
+    _teardownFuture = null;
     state =
         const UnifiedDiagnosticsState(step: DiagnosticStep.checkingWanStatus);
     final future = _runFullDiagnosticFlow(gen);
@@ -124,6 +127,9 @@ class UnifiedDiagnosticsNotifier
   /// Runs a quick WAN + ping check, then shows flow menu or auto-selects flow.
   Future<void> startWithPreQualifier() async {
     final gen = ++_generation;
+    // Clear any completed prior teardown so [teardownDone] reflects THIS run's
+    // lifecycle, not a stale cancel()/goBack() future that already resolved.
+    _teardownFuture = null;
     logger.i('[Diagnostics] Starting with pre-qualifier');
     state = const UnifiedDiagnosticsState(step: DiagnosticStep.preQualifying);
 
@@ -216,6 +222,9 @@ class UnifiedDiagnosticsNotifier
   Future<void> selectFlow(DiagnosticFlow flow) async {
     logger.i('[Diagnostics] Flow selected: $flow');
     final gen = ++_generation;
+    // Clear any completed prior teardown so [teardownDone] reflects THIS run's
+    // lifecycle, not a stale cancel()/goBack() future that already resolved.
+    _teardownFuture = null;
     state = state.copyWith(
       flow: flow,
       results: [],
@@ -352,7 +361,12 @@ class UnifiedDiagnosticsNotifier
         ++_generation;
         final scope = _scope;
         _scope = null;
-        unawaited(() async {
+        // Track the teardown via [_teardownFuture] (mirrors [cancel] and the
+        // preQualifying case above) so [teardownDone] reflects THIS back-nav's
+        // drain + scope release. A bare unawaited() here would leave
+        // [_teardownFuture] pointing at a stale prior teardown, so
+        // [teardownDone] would resolve early on the wrong future.
+        _teardownFuture = () async {
           final inFlight = _runFuture;
           if (inFlight != null) {
             try {
@@ -366,7 +380,8 @@ class UnifiedDiagnosticsNotifier
               logger.w('[Diagnostics] Failed to release scope on back: $e');
             }
           }
-        }());
+        }();
+        unawaited(_teardownFuture!);
         if (state.flow != null) {
           state = state.copyWith(
             step: DiagnosticStep.selectFlow,

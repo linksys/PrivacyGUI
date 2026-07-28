@@ -73,11 +73,16 @@ class DiagnosticResultsView extends ConsumerWidget {
     // critical path (unawaited), so awaiting cancel() alone is not enough —
     // we must also await teardownDone. Without this, a quick re-entry races
     // the unsubscribe DELETE against the next acquire's subscribe POST.
+    //
+    // cancel() resets state to UnifiedDiagnosticsState(), which rebuilds and
+    // unmounts THIS widget. Since the awaits cross frame boundaries,
+    // context.mounted is false afterward and a context-based navigation would
+    // be silently dropped — so capture the router up front.
+    final router = GoRouter.of(context);
     final notifier = ref.read(unifiedDiagnosticsProvider.notifier);
     await notifier.cancel();
     await notifier.teardownDone;
-    if (!context.mounted) return;
-    context.goNamed(RouteNamed.uspDashboard);
+    router.goNamed(RouteNamed.uspDashboard);
   }
 }
 
