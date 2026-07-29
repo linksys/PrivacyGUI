@@ -1147,6 +1147,136 @@ void main() {
         verify(() => mockScope.release()).called(1);
         container.dispose();
       });
+
+      // Regression for H-1 (PR #1175 review). startWithPreQualifier acquires the
+      // scope before its pingInternet step but — unlike runFullDiagnostic and
+      // selectFlow — used to assign no _runFuture. cancel()'s teardown drains
+      // `_runFuture` before calling scope.release(), so a null _runFuture made
+      // it release the scope WHILE the ping was still in flight (the
+      // unsubscribe-DELETE vs next-subscribe-POST overlap the PR exists to
+      // prevent). With the fix, startWithPreQualifier registers its future, so
+      // cancel() drains the in-flight ping before releasing the scope. We assert
+      // the scope is NOT released until the hung ping completes.
+      test(
+          'cancel during preQualifier ping drains it before scope release '
+          '(#1175 H-1)', () async {
+        final container = createContainer();
+        final notifier = container.read(unifiedDiagnosticsProvider.notifier);
+
+        // WAN up so the runner acquires the scope, then suspends on the hung
+        // internet ping.
+        when(() => mockService.checkWanStatus()).thenAnswer(
+          (_) async => const WanStatusUIModel(
+            status: 'Up',
+            ipAddress: '192.168.1.100',
+            subnetMask: '255.255.255.0',
+            addressingType: 'DHCP',
+          ),
+        );
+        final pingCompleter = Completer<PingResult>();
+        when(() => mockService.pingInternet(
+              host: any(named: 'host'),
+              repeatCount: any(named: 'repeatCount'),
+            )).thenAnswer((_) => pingCompleter.future);
+
+        final preQualFuture = notifier.startWithPreQualifier();
+        await Future.delayed(Duration.zero);
+        expect(container.read(unifiedDiagnosticsProvider).step,
+            DiagnosticStep.preQualifying);
+        verify(() => mockExecutor.acquireScope(
+              referencePaths: any(named: 'referencePaths'),
+            )).called(1);
+
+        // Cancel while the ping is in flight. State resets immediately, but the
+        // scope must NOT be released yet — the teardown has to drain the
+        // in-flight ping first (which requires _runFuture to be registered).
+        final cancelFuture = notifier.cancel();
+        await Future.delayed(Duration.zero);
+        expect(container.read(unifiedDiagnosticsProvider).step,
+            DiagnosticStep.idle);
+        verifyNever(() => mockScope.release());
+
+        // Complete the ping — only now may the scope be released.
+        pingCompleter.complete(_createPingResult('1.1.1.1'));
+        await preQualFuture;
+        await cancelFuture;
+        await notifier.teardownDone;
+        await Future.delayed(Duration.zero);
+        verify(() => mockScope.release()).called(1);
+        container.dispose();
+      });
+
+      // Regression for H-3 (PR #1175 review). _ensureScope() was the only
+      // post-await mutation without a generation guard: after `await
+      // acquireScope()` it unconditionally wrote `_scope = scope`. A stale
+      // runner revived inside acquireScope would therefore overwrite the live
+      // run's _scope with its own, orphaning the live scope (nothing releases
+      // it → the shared SSE ref-count never returns to 0). This is the acquire
+      // -side mirror of the release-side sink fixed in 37d28891. Here Run A
+      // hangs inside acquireScope (returning a DISTINCT scopeA); we cancel, let
+      // Run B acquire scopeB and finish, then revive Run A. The guard must make
+      // Run A release scopeA and leave scopeB as the live _scope.
+      test(
+          'revived run releases its own scope instead of orphaning the live '
+          "run's (#1175 H-3)", () async {
+        final container = createContainer();
+        final notifier = container.read(unifiedDiagnosticsProvider.notifier);
+
+        final scopeA = _MockScope();
+        when(() => scopeA.isReleased).thenReturn(false);
+        when(() => scopeA.release()).thenAnswer((_) async {});
+
+        // Run A's scope acquisition hangs and yields a distinct scopeA; Run B
+        // (after cancel nulls the cached scope) gets the default mockScope.
+        final runAScope = Completer<DiagnosticScope>();
+        var acquireCalls = 0;
+        when(() => mockExecutor.acquireScope(
+              referencePaths: any(named: 'referencePaths'),
+            )).thenAnswer((_) {
+          acquireCalls++;
+          return acquireCalls == 1 ? runAScope.future : Future.value(mockScope);
+        });
+        when(() => mockService.checkIntermittent())
+            .thenAnswer((_) async => const IntermittentUIModel(
+                  uptimeSeconds: 86400,
+                  pingSuccessRate: 1.0,
+                  averageLatencyMs: 12,
+                  jitterMs: 2,
+                  hasHighJitter: false,
+                  hasPacketLoss: false,
+                  recentReboot: false,
+                ));
+
+        // Run A — suspends inside _ensureScope on the hung acquireScope.
+        final runAFuture = notifier.selectFlow(DiagnosticFlow.intermittent);
+        await Future.delayed(Duration.zero);
+
+        // Cancel Run A, then start Run B (acquires scopeB) and let it finish.
+        final cancelFuture = notifier.cancel();
+        final runBFuture = notifier.selectFlow(DiagnosticFlow.intermittent);
+        await runBFuture;
+        await Future.delayed(Duration.zero);
+        expect(container.read(unifiedDiagnosticsProvider).step,
+            DiagnosticStep.showingResults);
+
+        // Revive Run A: _ensureScope resumes and sees the run is stale, so it
+        // must release scopeA (the scope it just acquired) and NOT overwrite
+        // the live _scope. Without the fix, `_scope = scopeA` orphans scopeB.
+        runAScope.complete(scopeA);
+        await runAFuture;
+        await cancelFuture;
+        await Future.delayed(Duration.zero);
+
+        // Stale Run A released its own scope immediately.
+        verify(() => scopeA.release()).called(1);
+
+        // The live run's scope (scopeB == mockScope) must still be the one held
+        // by the notifier — proven by it being released on dispose. Without the
+        // fix it was orphaned by scopeA and would never be released.
+        container.dispose();
+        await Future.delayed(Duration.zero);
+        verify(() => mockScope.release()).called(1);
+      });
     });
 
     group('Restart', () {

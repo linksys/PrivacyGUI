@@ -84,7 +84,7 @@ class UnifiedDiagnosticsNotifier
 
   /// Acquire (or reuse) the shared diagnostic scope. Lifecycle is bound to
   /// this notifier — released automatically on dispose.
-  Future<DiagnosticScope> _ensureScope() async {
+  Future<DiagnosticScope> _ensureScope(int gen) async {
     final existing = _scope;
     if (existing != null && !existing.isReleased) return existing;
 
@@ -94,6 +94,19 @@ class UnifiedDiagnosticsNotifier
           detail: 'NetworkDiagnosticsExecutor not available');
     }
     final scope = await executor.acquireScope();
+    // Guard this post-await mutation like every other state write. If the run
+    // was invalidated (cancel/back/newer run) while [acquireScope] was in
+    // flight, release the scope we just took instead of clobbering [_scope] —
+    // otherwise a newer run's scope is orphaned and never released (the
+    // acquire-side mirror of the release-side guard).
+    if (!_isCurrent(gen)) {
+      try {
+        await scope.release();
+      } catch (e) {
+        logger.w('[Diagnostics] Failed to release scope for stale run: $e');
+      }
+      return scope;
+    }
     _scope = scope;
     _svc?.attachScope(scope);
     return scope;
@@ -133,6 +146,21 @@ class UnifiedDiagnosticsNotifier
     logger.i('[Diagnostics] Starting with pre-qualifier');
     state = const UnifiedDiagnosticsState(step: DiagnosticStep.preQualifying);
 
+    // Register the run future exactly as [runFullDiagnostic] and [selectFlow]
+    // do, so cancel()/goBack() teardown can drain the in-flight pingInternet
+    // before releasing the scope this flow acquires — otherwise the scope is
+    // released while the ping is still in flight (DELETE/POST overlap risk).
+    final future = _preQualifierFlow(gen);
+    _runFuture = future;
+    try {
+      await future;
+    } finally {
+      if (identical(_runFuture, future)) _runFuture = null;
+    }
+  }
+
+  Future<void> _preQualifierFlow(int gen) async {
+    if (!_isCurrent(gen)) return;
     final svc = _svc;
     if (svc == null) {
       logger
@@ -165,7 +193,7 @@ class UnifiedDiagnosticsNotifier
 
       // Step 2: Quick ping to check internet connectivity
       try {
-        await _ensureScope();
+        await _ensureScope(gen);
         final pingResult = await svc.pingInternet(repeatCount: 1);
         if (!_isCurrent(gen)) return;
 
@@ -429,7 +457,7 @@ class UnifiedDiagnosticsNotifier
     // Acquire shared scope for all ping and speed test operations.
     // Released on notifier dispose / cancel / back navigation.
     try {
-      await _ensureScope();
+      await _ensureScope(gen);
     } catch (e) {
       logger.e('[Diagnostics] Failed to acquire scope: $e');
     }
@@ -586,7 +614,7 @@ class UnifiedDiagnosticsNotifier
     }
 
     try {
-      await _ensureScope();
+      await _ensureScope(gen);
     } catch (e) {
       logger.e('[Diagnostics] Failed to acquire scope: $e');
     }
@@ -846,7 +874,7 @@ class UnifiedDiagnosticsNotifier
     final results = <DiagnosticStepUIModel>[];
 
     try {
-      await _ensureScope();
+      await _ensureScope(gen);
     } catch (e) {
       logger.e('[Diagnostics] Failed to acquire scope: $e');
     }
