@@ -2,3 +2,7 @@ tags:
   golden:
   loc:
   ui:
+  # Defensive widget gates that must run in the PR test command (#1183).
+  # NOT excluded by run_tests.sh's --exclude-tags="golden||loc||ui", so a
+  # failure here blocks the PR.
+  dashboard-card:
