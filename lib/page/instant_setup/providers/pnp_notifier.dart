@@ -259,7 +259,10 @@ class PnpNotifier extends Notifier<PnpState> {
         await _svc.saveWifi(phase.wifiConfig);
       });
 
-      // Acknowledge PnP completion and save serial number
+      // Acknowledge PnP completion and save serial number.
+      // NOTE: the same acknowledge + saveSelectedNetwork pair lives in
+      // bypassToDashboard(), but there errors are swallowed; here they
+      // propagate to the catch below so the user stays on the form to retry.
       logger.d(
           '[PnP] Saving setup completion, serialNumber=${state.serialNumber}');
       if (state.serialNumber != null) {
@@ -400,6 +403,50 @@ class PnpNotifier extends Notifier<PnpState> {
   Future<void> retryInternetCheck() async {
     state = state.copyWith(phase: const AdminCheckingInternet());
     await _checkInternet();
+  }
+
+  /// Bypass the no-internet page and let the user into the dashboard.
+  ///
+  /// Ports the dev-1.3.0 "Log into router" escape hatch. Unlike 1.3.0 — which
+  /// routed into a trimmed-down setup wizard — the USP flow goes straight to the
+  /// dashboard (the USP wizard is phase-driven and has no forceLogin branch, and
+  /// the dashboard does not depend on internet being up).
+  ///
+  /// We acknowledge PnP completion here so a later redirect through `/` does not
+  /// bounce the user back into PnP (`router_provider._prepare` re-checks
+  /// `needsPnp`; without acknowledging, a full-page reload would kick them out
+  /// again). This mirrors 1.3.0, where a configured router's save already sends
+  /// `SetUserAcknowledgedAutoConfig`. Acknowledge is fire-and-forget and does not
+  /// need WAN, so it succeeds while the router is offline.
+  ///
+  /// The caller performs the actual navigation once this completes.
+  ///
+  /// This never throws: an escape hatch must always let the user through. A
+  /// failed acknowledge / save is logged and swallowed — at worst the router
+  /// stays un-acknowledged and PnP is re-offered on the next `/` redirect, which
+  /// is strictly better than trapping the user on the no-internet page.
+  Future<void> bypassToDashboard() async {
+    final sn = state.serialNumber;
+    if (sn == null || sn.isEmpty) {
+      logger
+          .w('[PnP] bypassToDashboard: no serial number, skipping acknowledge');
+      return;
+    }
+    try {
+      // Same acknowledge + saveSelectedNetwork pair as saveChanges(), but the
+      // error handling is intentionally the opposite: saveChanges() lets errors
+      // propagate (a failed WiFi save should keep the user on the form to
+      // retry), whereas here we swallow them (an escape hatch must never block
+      // navigation). Keep the two in sync when changing this pair.
+      await ref.read(pnpStatusServiceProvider).acknowledge(sn);
+      // Persist selected network for session management, matching saveChanges().
+      await ref.read(sessionProvider.notifier).saveSelectedNetwork(sn, '');
+      logger.i('[PnP] bypassToDashboard: acknowledged, entering dashboard');
+    } catch (e) {
+      // Do not block navigation — see method doc.
+      logger
+          .w('[PnP] bypassToDashboard: acknowledge/save failed (ignored): $e');
+    }
   }
 
   // ─── Modem Restart Flow ───────────────────────────────────

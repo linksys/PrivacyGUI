@@ -23,6 +23,27 @@ class MockPnpStatusService extends Mock implements PnpStatusService {}
 
 class MockSessionNotifier extends Mock implements SessionNotifier {}
 
+/// Mountable session notifier that records [saveSelectedNetwork] calls.
+///
+/// A plain mocktail mock cannot be mounted by Riverpod (it lacks the internal
+/// `_setElement` hook), so tests that actually invoke `sessionProvider.notifier`
+/// use this spy instead of [MockSessionNotifier].
+class SpySessionNotifier extends Notifier<SessionState>
+    implements SessionNotifier {
+  final List<({String sn, String networkId})> savedNetworks = [];
+
+  @override
+  SessionState build() => const SessionState();
+
+  @override
+  Future<void> saveSelectedNetwork(String sn, String networkId) async {
+    savedNetworks.add((sn: sn, networkId: networkId));
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
 class FakePnpWifiConfig extends Fake implements PnpWifiConfig {}
 
 class FakePnpIspConfig extends Fake implements PnpIspConfig {}
@@ -242,6 +263,84 @@ void main() {
 
       final state = container.read(pnpProvider);
       expect(state.phase, isA<WizardConfiguring>());
+      container.dispose();
+    });
+  });
+
+  group('PnpNotifier — bypassToDashboard', () {
+    test('acknowledges PnP and saves selected network when SN is present',
+        () async {
+      when(() => mockPnpService.checkFactoryDefault())
+          .thenAnswer((_) async => testFactoryResult);
+      when(() => mockPnpService.checkInternetConnected())
+          .thenAnswer((_) async => false);
+      when(() => mockPnpService.fetchCurrentSsid())
+          .thenAnswer((_) async => 'Test');
+      when(() => mockPnpStatusService.acknowledge(any()))
+          .thenAnswer((_) async {});
+
+      // Use the mountable spy so sessionProvider.notifier can be read.
+      final spySession = SpySessionNotifier();
+      final container = ProviderContainer(
+        overrides: [
+          uspClientProvider.overrideWithValue(mockUsp),
+          pnpServiceProvider.overrideWithValue(mockPnpService),
+          pnpStatusServiceProvider.overrideWithValue(mockPnpStatusService),
+          uspMutationLockProvider.overrideWithValue(UspMutationLock()),
+          sessionProvider.overrideWith(() => spySession),
+        ],
+      );
+      final notifier = container.read(pnpProvider.notifier);
+
+      // Populate serialNumber via the normal entry flow (lands on NoInternet).
+      await notifier.startPostLoginFlow();
+      expect(container.read(pnpProvider).phase, isA<NoInternet>());
+
+      await notifier.bypassToDashboard();
+
+      verify(() => mockPnpStatusService.acknowledge('SN123')).called(1);
+      expect(spySession.savedNetworks, [(sn: 'SN123', networkId: '')]);
+      container.dispose();
+    });
+
+    test('skips acknowledge when serial number is missing', () async {
+      final container = createContainer();
+      final notifier = container.read(pnpProvider.notifier);
+
+      // No startPostLoginFlow → serialNumber stays null.
+      await notifier.bypassToDashboard();
+
+      verifyNever(() => mockPnpStatusService.acknowledge(any()));
+      container.dispose();
+    });
+
+    // The escape hatch must never throw — a failed acknowledge/save must not
+    // trap the user on the no-internet page. The view navigates regardless.
+    test('does not throw when acknowledge fails', () async {
+      when(() => mockPnpService.checkFactoryDefault())
+          .thenAnswer((_) async => testFactoryResult);
+      when(() => mockPnpService.checkInternetConnected())
+          .thenAnswer((_) async => false);
+      when(() => mockPnpService.fetchCurrentSsid())
+          .thenAnswer((_) async => 'Test');
+      when(() => mockPnpStatusService.acknowledge(any()))
+          .thenThrow(Exception('TR-181 write failed'));
+
+      final spySession = SpySessionNotifier();
+      final container = ProviderContainer(
+        overrides: [
+          uspClientProvider.overrideWithValue(mockUsp),
+          pnpServiceProvider.overrideWithValue(mockPnpService),
+          pnpStatusServiceProvider.overrideWithValue(mockPnpStatusService),
+          uspMutationLockProvider.overrideWithValue(UspMutationLock()),
+          sessionProvider.overrideWith(() => spySession),
+        ],
+      );
+      final notifier = container.read(pnpProvider.notifier);
+      await notifier.startPostLoginFlow();
+
+      // Must complete normally (no throw) despite acknowledge failing.
+      await expectLater(notifier.bypassToDashboard(), completes);
       container.dispose();
     });
   });

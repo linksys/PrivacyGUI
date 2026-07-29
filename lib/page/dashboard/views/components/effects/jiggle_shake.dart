@@ -26,6 +26,11 @@ class _JiggleShakeState extends State<JiggleShake>
   late final Animation<double> _animation;
   final _random = Random();
 
+  /// Platform "reduce motion" accessibility flag. Read from MediaQuery in
+  /// didChangeDependencies (not initState, where inherited widgets are unsafe).
+  /// Null until the first didChangeDependencies so the initial sync always runs.
+  bool? _reduceMotion;
+
   @override
   void initState() {
     super.initState();
@@ -42,28 +47,46 @@ class _JiggleShakeState extends State<JiggleShake>
       begin: startPositive ? -maxRad : maxRad,
       end: startPositive ? maxRad : -maxRad,
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+  }
 
-    if (widget.active) {
-      _startShaking();
-    }
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // MediaQuery is only safe to read here — not in initState.
+    // didChangeDependencies fires on ANY ancestor InheritedWidget change
+    // (Theme, Directionality, Localizations…), so short-circuit when the
+    // reduce-motion value is unchanged to avoid re-triggering the animation.
+    final reduceMotion = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
+    if (reduceMotion == _reduceMotion) return;
+    _reduceMotion = reduceMotion;
+    _syncAnimation();
   }
 
   @override
   void didUpdateWidget(covariant JiggleShake oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.active != oldWidget.active) {
-      if (widget.active) {
-        _startShaking();
-      } else {
-        _stopShaking();
-      }
+      _syncAnimation();
+    }
+  }
+
+  /// Whether motion is allowed: reduce-motion is off (or not yet resolved).
+  bool get _motionAllowed => _reduceMotion != true;
+
+  /// Starts or stops the shake based on [active] and the reduce-motion flag.
+  void _syncAnimation() {
+    if (widget.active && _motionAllowed) {
+      _startShaking();
+    } else {
+      _stopShaking();
     }
   }
 
   void _startShaking() {
+    if (_controller.isAnimating) return;
     // Add a tiny random delay before starting to enhance the organic feel
     Future.delayed(Duration(milliseconds: _random.nextInt(50)), () {
-      if (mounted && widget.active) {
+      if (mounted && widget.active && _motionAllowed) {
         _controller.repeat(reverse: true);
       }
     });
@@ -71,7 +94,6 @@ class _JiggleShakeState extends State<JiggleShake>
 
   void _stopShaking() {
     _controller.stop();
-    _controller.animateTo(0.5); // Reset to center (approx) or just reset
     _controller.reset();
   }
 
@@ -83,13 +105,14 @@ class _JiggleShakeState extends State<JiggleShake>
 
   @override
   Widget build(BuildContext context) {
-    // Optimization: If not active and not animating, return child directly (or Rotation with 0)
-    // But RotationTransition with 0 turns is cheap.
     return AnimatedBuilder(
       animation: _animation,
       builder: (context, child) {
-        // If inactive, force 0 rotation
-        final turns = widget.active ? _animation.value : 0.0;
+        // build() is the single source of truth for the rendered angle:
+        // force 0 when inactive or when reduce-motion is on (deterministic,
+        // static rendering — also what golden tests rely on).
+        final turns =
+            (widget.active && _motionAllowed) ? _animation.value : 0.0;
         return Transform.rotate(
           angle: turns,
           child: child,

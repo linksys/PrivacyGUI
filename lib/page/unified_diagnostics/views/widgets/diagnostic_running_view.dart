@@ -109,7 +109,7 @@ class DiagnosticRunningView extends ConsumerWidget {
           DiagnosticStep.pingDns,
           DiagnosticStep.dnsLookup,
           DiagnosticStep.pingInternet,
-          DiagnosticStep.runningSpeedTest,
+          // Speed test disabled: blocked by FW support (#857)
         ],
       DiagnosticFlow.deviceIssues => [
           DiagnosticStep.checkingConnectedDevices,
@@ -130,7 +130,7 @@ class DiagnosticRunningView extends ConsumerWidget {
           DiagnosticStep.pingDns,
           DiagnosticStep.dnsLookup,
           DiagnosticStep.pingInternet,
-          DiagnosticStep.runningSpeedTest,
+          // Speed test disabled: blocked by FW support (#857)
           DiagnosticStep.checkingWifiSignal,
           DiagnosticStep.checkingDhcpPool,
           DiagnosticStep.checkingMeshBackhaul,
@@ -145,7 +145,7 @@ class DiagnosticRunningView extends ConsumerWidget {
       DiagnosticFlow.internet => (
           Icons.language,
           loc(context).internetDiagnostics,
-          7
+          6
         ),
       DiagnosticFlow.deviceIssues => (
           Icons.devices,
@@ -167,7 +167,7 @@ class DiagnosticRunningView extends ConsumerWidget {
           loc(context).intermittentConnectionDiagnostics,
           1,
         ),
-      null => (Icons.network_check, loc(context).fullDiagnostic, 10),
+      null => (Icons.network_check, loc(context).fullDiagnostic, 9),
     };
   }
 

@@ -9,20 +9,13 @@ else
   DART="dart"
 fi
 
-EMBED_FLAG=""
-
-while getopts l:s:f:v:-: flag
+while getopts l:s:f:v: flag
 do
     case "${flag}" in
         l) locales=${OPTARG};;
         s) screens=${OPTARG};;
         f) file=${OPTARG};;
         v) version=${OPTARG};;
-        -)
-            case "${OPTARG}" in
-                embed) EMBED_FLAG="--embed";;
-            esac
-            ;;
     esac
 done
 
@@ -43,7 +36,6 @@ echo "*********************Golden Test Verification********************"
 echo "Locales: $locales"
 echo "Screens: $screens"
 echo "Version: $version"
-echo "Embed images: ${EMBED_FLAG:-no}"
 
 if [ -z "$file" ]; then
   IFS=',' read -ra LOCS <<< "$locales"
@@ -57,7 +49,7 @@ if [ -z "$file" ]; then
     rm -f $REPORT_DIR/tests.json
   done
 
-  $DART run test_scripts/combine_results.dart $REPORT_DIR "$version" $EMBED_FLAG || FAILED=1
+  $DART run test_scripts/combine_results.dart $REPORT_DIR "$version" || FAILED=1
   echo ""
   echo "Report generated: $REPORT_DIR/golden_verify_report.html"
 else
@@ -68,7 +60,7 @@ else
     --dart-define=visualEffects=0 || FAILED=1
   $DART run test_scripts/test_result_parser.dart $REPORT_DIR/tests.json "$locales" || FAILED=1
   rm -f $REPORT_DIR/tests.json
-  $DART run test_scripts/combine_results.dart $REPORT_DIR "$version" $EMBED_FLAG || FAILED=1
+  $DART run test_scripts/combine_results.dart $REPORT_DIR "$version" || FAILED=1
   echo ""
   echo "Report generated: $REPORT_DIR/golden_verify_report.html"
 fi

@@ -128,13 +128,13 @@ class UspMenuView extends ConsumerWidget {
         iconData: Icons.bar_chart,
         onTap: () => context.goNamed(RouteNamed.uspStatistics),
       ),
-      AppSectionItemData(
-        identifier: 'menu-speed-test',
-        title: loc(context).speedTest,
-        description: loc(context).menuSpeedTestDesc,
-        iconData: Icons.speed,
-        onTap: () => context.goNamed(RouteNamed.uspSpeedTest),
-      ),
+      // AppSectionItemData(
+      //   identifier: 'menu-speed-test',
+      //   title: loc(context).speedTest,
+      //   description: loc(context).menuSpeedTestDesc,
+      //   iconData: Icons.speed,
+      //   onTap: () => context.goNamed(RouteNamed.uspSpeedTest),
+      // ), // disabled: blocked by FW support (#857)
       AppSectionItemData(
         identifier: 'menu-network-diagnostics',
         title: loc(context).networkDiagnostics,

@@ -12,8 +12,13 @@ import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacy_gui/theme/theme_json_config.dart';
+import 'golden_interactions.dart';
 import 'golden_test_config.dart';
 import 'mocks/mock_common.dart';
+
+// Re-export so every test file that imports golden_runner.dart gets the shared
+// interaction helpers (switchToTab, settleWithTimeout) without a separate line.
+export 'golden_interactions.dart';
 
 /// Reads --dart-define=locales and overrides the config's locale list.
 /// Returns config locales if no dart-define is provided.
@@ -22,7 +27,13 @@ List<Locale> _resolveLocales(GoldenTestConfig config) {
   if (envLocales.isEmpty) return config.locales;
   return envLocales.split(',').map((s) {
     final parts = s.trim().split('_');
-    return parts.length > 1 ? Locale(parts[0], parts[1]) : Locale(parts[0]);
+    // Normalize the country code to uppercase so it forms a standard locale
+    // (e.g. 'es_ar' -> Locale('es', 'AR')). Flutter's localizations assert on
+    // non-standard forms like 'es_ar', and this matches the generated
+    // supportedLocales (Locale('es', 'AR'), Locale('zh', 'TW'), ...).
+    return parts.length > 1
+        ? Locale(parts[0], parts[1].toUpperCase())
+        : Locale(parts[0]);
   }).toList();
 }
 
@@ -74,7 +85,7 @@ void runViewGoldenTests(GoldenTestConfig config) {
             );
 
             goldenTest(
-              '${config.viewName} - ${stateEntry.key} - ${device.name} - ${locale.languageCode}${theme == Brightness.dark ? ' - dark' : ''}',
+              '${config.viewName} - ${stateEntry.key} - ${device.name} - ${_localeTag(locale)}${theme == Brightness.dark ? ' - dark' : ''}',
               fileName: name,
               constraints: BoxConstraints.expand(
                 width: effectiveSize.width,
@@ -82,7 +93,7 @@ void runViewGoldenTests(GoldenTestConfig config) {
               ),
               pumpBeforeTest: (tester) async {
                 await _precacheIfNeeded(tester, config);
-                await _settleWithTimeout(tester);
+                await settleWithTimeout(tester);
               },
               pumpWidget: (tester, widget) async {
                 _suppressOverflowErrors();
@@ -132,7 +143,7 @@ void runViewGoldenTests(GoldenTestConfig config) {
               );
 
               goldenTest(
-                '${config.viewName} - ${interactionEntry.key} - ${device.name} - ${locale.languageCode}${theme == Brightness.dark ? ' - dark' : ''}',
+                '${config.viewName} - ${interactionEntry.key} - ${device.name} - ${_localeTag(locale)}${theme == Brightness.dark ? ' - dark' : ''}',
                 fileName: name,
                 constraints: BoxConstraints.expand(
                   width: effectiveSize.width,
@@ -140,9 +151,9 @@ void runViewGoldenTests(GoldenTestConfig config) {
                 ),
                 pumpBeforeTest: (tester) async {
                   await _precacheIfNeeded(tester, config);
-                  await _settleWithTimeout(tester);
+                  await settleWithTimeout(tester);
                   await interactionEntry.value.steps(tester);
-                  await _settleWithTimeout(tester);
+                  await settleWithTimeout(tester);
                 },
                 pumpWidget: (tester, widget) async {
                   _suppressOverflowErrors();
@@ -178,23 +189,6 @@ void runViewGoldenTests(GoldenTestConfig config) {
   });
 }
 
-/// Pumps until no pending frames or timeout — whichever comes first.
-/// Unlike raw pumpAndSettle, this won't fail on infinite animations
-/// (e.g., spinners frozen by TickerMode or looping AnimationControllers).
-Future<void> _settleWithTimeout(WidgetTester tester) async {
-  try {
-    await tester.pumpAndSettle(
-      const Duration(milliseconds: 50),
-      EnginePhase.sendSemanticsUpdate,
-      const Duration(milliseconds: 500),
-    );
-  } on FlutterError {
-    // pumpAndSettle timed out — widget tree has infinite animations.
-    // The TickerMode freeze makes this safe; pump one last frame and move on.
-    await tester.pump();
-  }
-}
-
 /// Precaches images in a real async zone so asset resolution completes.
 Future<void> _precacheIfNeeded(
     WidgetTester tester, GoldenTestConfig config) async {
@@ -205,6 +199,19 @@ Future<void> _precacheIfNeeded(
       await precacheImage(image, element);
     }
   });
+}
+
+/// Builds the locale tag used in golden file names and test descriptions.
+///
+/// Regional variants keep their country code so they don't collide with the
+/// base language (e.g. 'es' vs 'es_AR', 'zh' vs 'zh_TW'). The country code is
+/// joined with '_' — never '-' — because the report parser splits file names
+/// on '-'. This matches Flutter's `Locale.toString()` and the ARB naming.
+String _localeTag(Locale locale) {
+  final country = locale.countryCode;
+  return country == null || country.isEmpty
+      ? locale.languageCode
+      : '${locale.languageCode}_$country';
 }
 
 /// Generates the golden file name.
@@ -218,7 +225,7 @@ String _goldenFileName(
   Locale locale,
   Brightness theme,
 ) {
-  final base = '$viewName-$stateKey-${device.name}-${locale.languageCode}';
+  final base = '$viewName-$stateKey-${device.name}-${_localeTag(locale)}';
   if (theme == Brightness.dark) {
     return '$base-dark';
   }
@@ -314,6 +321,17 @@ Widget _buildGoldenWidget(
             themeMode: brightness == Brightness.dark
                 ? ThemeMode.dark
                 : ThemeMode.light,
+            // Force "reduce motion" for every golden so non-deterministic /
+            // looping animations (e.g. dashboard JiggleShake) render at a
+            // fixed, static frame. Applied inside the app via builder so the
+            // views under test actually observe disableAnimations: true
+            // (a MediaQuery wrapped outside MaterialApp would be overridden).
+            // This does NOT touch the global diffThreshold; it only removes the
+            // animation source of flakiness.
+            builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(context).copyWith(disableAnimations: true),
+              child: child ?? const SizedBox.shrink(),
+            ),
             routerConfig: router,
           ),
         ),

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/page/wifi_settings/views/usp_wifi_settings_view.dart';
 
@@ -43,11 +43,7 @@ void main() {
             ),
           ),
           steps: (tester) async {
-            await tester.tap(find.byType(Tab).at(1));
-            await tester.pump();
-            for (int i = 0; i < 10; i++) {
-              await tester.pump(const Duration(milliseconds: 50));
-            }
+            await switchToTab(tester, 1);
           },
         ),
         'tab_advanced_dfs_off': Interaction(
@@ -58,11 +54,7 @@ void main() {
             ),
           ),
           steps: (tester) async {
-            await tester.tap(find.byType(Tab).at(1));
-            await tester.pump();
-            for (int i = 0; i < 10; i++) {
-              await tester.pump(const Duration(milliseconds: 50));
-            }
+            await switchToTab(tester, 1);
           },
         ),
         'dialog_edit_name': Interaction(
@@ -73,11 +65,12 @@ void main() {
             ),
           ),
           steps: (tester) async {
-            await tester.tap(find.bySemanticsLabel('wifi-name-2.4GHz').first);
-            await tester.pump();
-            for (int i = 0; i < 10; i++) {
-              await tester.pump(const Duration(milliseconds: 50));
-            }
+            // Tap the 2.4GHz name tile by widget Key — independent of both
+            // locale and fixture SSID text. (The golden runner builds no
+            // semantics tree, so bySemanticsLabel can't be used here.)
+            await tester
+                .tap(find.byKey(const Key('wifi-name-tile-2.4GHz-main')));
+            await settleWithTimeout(tester);
           },
         ),
         'dialog_edit_password': Interaction(
