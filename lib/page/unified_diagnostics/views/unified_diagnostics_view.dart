@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -121,20 +123,57 @@ class _UnifiedDiagnosticsViewState
     );
   }
 
+  // Single-flight guard for the app-bar back tap. onBackTap is a plain
+  // VoidCallback slot, so a Future-returning handler would have its Future
+  // silently discarded — leaving no guard against a second back-tap firing a
+  // concurrent cancel()/teardown that clobbers _teardownFuture. Keeping
+  // _handleBack synchronous and gating on this flag prevents that race.
+  bool _isBackNavigating = false;
+
   void _handleBack(
     BuildContext context,
     WidgetRef ref,
     UnifiedDiagnosticsState state,
   ) {
+    if (_isBackNavigating) return;
     final notifier = ref.read(unifiedDiagnosticsProvider.notifier);
     final handledInternally = notifier.goBack();
-    if (!handledInternally) {
-      _returnToMenu(context, ref);
-    }
+    if (handledInternally) return;
+
+    // Leaving the page: capture the router before any state change, cancel the
+    // in-flight run, then navigate only after the full teardown (in-flight
+    // drain + scope release) completes — mirroring _returnToMenu. Awaiting
+    // cancel() alone would race the unsubscribe DELETE against a quick
+    // re-entry's subscribe POST.
+    _isBackNavigating = true;
+    final router = GoRouter.of(context);
+    notifier.cancel();
+    unawaited(
+      notifier.teardownDone
+          // Release the single-flight guard unconditionally — even if teardown
+          // completes with an error — so the app-bar back button can never get
+          // permanently stuck disabled.
+          .whenComplete(() => _isBackNavigating = false)
+          .then((_) {
+        if (!mounted) return;
+        if (router.canPop()) {
+          router.pop();
+        } else {
+          router.goNamed(RouteNamed.uspMenu);
+        }
+      }),
+    );
   }
 
-  void _returnToMenu(BuildContext context, WidgetRef ref) {
-    ref.read(unifiedDiagnosticsProvider.notifier).cancel();
+  Future<void> _returnToMenu(BuildContext context, WidgetRef ref) async {
+    // Await the full teardown (in-flight drain + scope release) before
+    // navigating, mirroring _returnToDashboard. cancel() tears the scope down
+    // off the critical path, so awaiting cancel() alone races the unsubscribe
+    // DELETE against a quick re-entry's subscribe POST.
+    final notifier = ref.read(unifiedDiagnosticsProvider.notifier);
+    await notifier.cancel();
+    await notifier.teardownDone;
+    if (!context.mounted) return;
     if (context.canPop()) {
       context.pop();
     } else {
