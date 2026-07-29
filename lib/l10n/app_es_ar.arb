@@ -414,8 +414,6 @@
   "avgRtt": "RTT prom.",
   "avgShort": "Prom.",
   "avgSignal": "Señal prom.",
-  "avgValue": "Prom.: {value}",
-  "avgValuePeakValue": "Prom.: {avg}  Máx.: {peak}",
   "seriesAvgValuePeakValue": "{series}  Prom.: {avg}  Máx.: {peak}",
   "seriesAvgValue": "{series}  Prom.: {value}",
   "awsAccessKeyId": "ID de clave de acceso de AWS",

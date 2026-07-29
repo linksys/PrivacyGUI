@@ -414,8 +414,6 @@
   "avgRtt": "Gem. RTT",
   "avgShort": "Gem.",
   "avgSignal": "Gem. signaal",
-  "avgValue": "Gem.: {value}",
-  "avgValuePeakValue": "Gem.: {avg}  Piek: {peak}",
   "seriesAvgValuePeakValue": "{series}  Gem.: {avg}  Piek: {peak}",
   "seriesAvgValue": "{series}  Gem.: {value}",
   "awsAccessKeyId": "AWS Access Key ID",

@@ -412,8 +412,6 @@
   "avgRtt": "Сред. RTT",
   "avgShort": "Сред.",
   "avgSignal": "Сред. сигнал",
-  "avgValue": "Сред.: {value}",
-  "avgValuePeakValue": "Сред.: {avg}  Пик: {peak}",
   "seriesAvgValuePeakValue": "{series}  Сред.: {avg}  Пик: {peak}",
   "seriesAvgValue": "{series}  Сред.: {value}",
   "awsAccessKeyId": "AWS Access Key ID",

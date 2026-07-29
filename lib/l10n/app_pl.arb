@@ -412,8 +412,6 @@
   "avgRtt": "Śr. RTT",
   "avgShort": "Śr.",
   "avgSignal": "Śr. sygnał",
-  "avgValue": "Śr.: {value}",
-  "avgValuePeakValue": "Śr.: {avg}  Szczyt: {peak}",
   "seriesAvgValuePeakValue": "{series}  Śr.: {avg}  Szczyt: {peak}",
   "seriesAvgValue": "{series}  Śr.: {value}",
   "awsAccessKeyId": "Identyfikator klucza dostępu AWS",

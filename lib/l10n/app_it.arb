@@ -414,8 +414,6 @@
   "avgRtt": "RTT medio",
   "avgShort": "Media",
   "avgSignal": "Segnale medio",
-  "avgValue": "Media: {value}",
-  "avgValuePeakValue": "Media: {avg}  Picco: {peak}",
   "seriesAvgValuePeakValue": "{series}  Media: {avg}  Picco: {peak}",
   "seriesAvgValue": "{series}  Media: {value}",
   "awsAccessKeyId": "AWS Access Key ID",

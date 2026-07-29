@@ -412,8 +412,6 @@
   "avgRtt": "Μέσο RTT",
   "avgShort": "Μ.Ο.",
   "avgSignal": "Μέσο σήμα",
-  "avgValue": "Μ.Ο.: {value}",
-  "avgValuePeakValue": "Μ.Ο.: {avg}  Αιχμή: {peak}",
   "seriesAvgValuePeakValue": "{series}  Μ.Ο.: {avg}  Αιχμή: {peak}",
   "seriesAvgValue": "{series}  Μ.Ο.: {value}",
   "awsAccessKeyId": "AWS Access Key ID",

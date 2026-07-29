@@ -415,8 +415,6 @@
   "avgRtt": "متوسط RTT",
   "avgShort": "المتوسط",
   "avgSignal": "متوسط الإشارة",
-  "avgValue": "المتوسط: {value}",
-  "avgValuePeakValue": "المتوسط: {avg}  الذروة: {peak}",
   "seriesAvgValuePeakValue": "{series}  المتوسط: {avg}  الذروة: {peak}",
   "seriesAvgValue": "{series}  المتوسط: {value}",
   "awsAccessKeyId": "معرّف مفتاح وصول AWS",
