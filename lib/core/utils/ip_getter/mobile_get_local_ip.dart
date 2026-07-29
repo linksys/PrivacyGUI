@@ -6,3 +6,7 @@ String getLocalIp(ProviderReader read) => '';
 
 String getFullLocation(ProviderReader read) =>
     throw UnsupportedError('[Platform ERROR] Get Full Location');
+
+/// No browser origin on mobile and CORS does not apply → empty string, so the
+/// cloud host resolver falls back to the direct cloud base.
+String getCloudOrigin() => '';

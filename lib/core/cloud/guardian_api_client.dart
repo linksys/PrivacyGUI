@@ -9,10 +9,11 @@ import 'package:privacy_gui/core/cloud/http/linksys_http_client.dart';
 import 'package:privacy_gui/core/cloud/model/guardians_remote_assistance.dart';
 import 'package:privacy_gui/core/cloud/model/error_response.dart';
 import 'package:privacy_gui/core/utils/extension.dart';
+import 'package:privacy_gui/core/utils/ip_getter/ip_getter.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 
 final guardianApiClientProvider = Provider((ref) => GuardianApiClient(
-      hostResolver: CloudHostResolver(originGetter: () => Uri.base.origin),
+      hostResolver: CloudHostResolver(originGetter: getCloudOrigin),
     ));
 
 /// API client for Guardian Remote Assistance services.

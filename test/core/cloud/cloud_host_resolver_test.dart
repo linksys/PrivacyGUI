@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/constants/_constants.dart';
 import 'package:privacy_gui/core/cloud/cloud_host_resolver.dart';
+import 'package:privacy_gui/core/utils/ip_getter/ip_getter.dart';
 
 void main() {
   // Assert against the configured cloud base (not a hardcoded domain) so the
@@ -72,6 +73,27 @@ void main() {
 
       expect(resolver.resolve(forCA: false), cloudBase);
       expect(resolver.resolve(forCA: true), cloudBase);
+    });
+  });
+
+  group('getCloudOrigin (platform stub) → resolver integration', () {
+    // Tests run on the Dart VM, which selects the non-web (stub/mobile)
+    // implementation. It MUST return '' — never call Uri.base.origin, which
+    // throws a StateError on a file: URI. This locks in the non-web crash fix.
+    test('returns empty string on non-web', () {
+      expect(getCloudOrigin(), isEmpty);
+    });
+
+    test('local build + non-web origin → falls back to cloud base (no throw)',
+        () {
+      // Emulates a mobile .local build: isLocal() true, but getCloudOrigin()
+      // yields '' → resolver must fall back to the cloud base without throwing.
+      final resolver = CloudHostResolver(
+        isLocal: () => true,
+        originGetter: getCloudOrigin,
+      );
+
+      expect(resolver.resolve(forCA: false), cloudBase);
     });
   });
 }
