@@ -414,8 +414,6 @@
   "avgRtt": "Durchschn. RTT",
   "avgShort": "Durchschn.",
   "avgSignal": "Durchschn. Signal",
-  "avgValue": "Durchschn.: {value}",
-  "avgValuePeakValue": "Durchschn.: {avg}  Spitze: {peak}",
   "seriesAvgValuePeakValue": "{series}  Durchschn.: {avg}  Spitze: {peak}",
   "seriesAvgValue": "{series}  Durchschn.: {value}",
   "awsAccessKeyId": "AWS Access Key ID",

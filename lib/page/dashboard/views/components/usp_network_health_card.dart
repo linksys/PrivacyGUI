@@ -292,7 +292,7 @@ class _ErrorsChart extends StatelessWidget {
                 AppChartSeries(
                   label: loc(parentContext).discards,
                   data: discardData,
-                  color: Colors.orange,
+                  color: colorScheme.tertiary,
                 ),
               ],
               yAxis: AppChartAxis(min: 0, max: yMax),
@@ -317,7 +317,7 @@ class _ErrorsChart extends StatelessWidget {
               ),
             ),
             _LegendEntry(
-              color: Colors.orange,
+              color: colorScheme.tertiary,
               label: loc(parentContext).seriesAvgValue(
                 loc(parentContext).discards,
                 NetworkHealthHelpers.formatFaultRate(avgDisc),
@@ -385,8 +385,8 @@ class _LossChart extends StatelessWidget {
               color: colorScheme.error,
               label: loc(parentContext).seriesAvgValuePeakValue(
                 loc(parentContext).loss,
-                '${avgLoss.toStringAsFixed(3)}%',
-                '${peakLoss.toStringAsFixed(3)}%',
+                '${avgLoss.toStringAsFixed(2)}%',
+                '${peakLoss.toStringAsFixed(2)}%',
               ),
             ),
           ],

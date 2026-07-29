@@ -1167,25 +1167,6 @@
   },
   "networkHealth": "Network Health",
   "health": "Health",
-  "avgValuePeakValue": "Avg: {avg}  Peak: {peak}",
-  "@avgValuePeakValue": {
-    "placeholders": {
-      "avg": {
-        "type": "String"
-      },
-      "peak": {
-        "type": "String"
-      }
-    }
-  },
-  "avgValue": "Avg: {value}",
-  "@avgValue": {
-    "placeholders": {
-      "value": {
-        "type": "String"
-      }
-    }
-  },
   "seriesAvgValuePeakValue": "{series}  Avg: {avg}  Peak: {peak}",
   "@seriesAvgValuePeakValue": {
     "placeholders": {

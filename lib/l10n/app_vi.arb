@@ -412,8 +412,6 @@
   "avgRtt": "RTT TB",
   "avgShort": "TB",
   "avgSignal": "Tín hiệu TB",
-  "avgValue": "TB: {value}",
-  "avgValuePeakValue": "TB: {avg}  Đỉnh: {peak}",
   "seriesAvgValuePeakValue": "{series}  TB: {avg}  Đỉnh: {peak}",
   "seriesAvgValue": "{series}  TB: {value}",
   "awsAccessKeyId": "AWS Access Key ID",

@@ -414,8 +414,6 @@
   "avgRtt": "Gj.snittlig RTT",
   "avgShort": "Gj.snitt",
   "avgSignal": "Gj.snittlig signal",
-  "avgValue": "Gj.snitt: {value}",
-  "avgValuePeakValue": "Gj.snitt: {avg}  Topp: {peak}",
   "seriesAvgValuePeakValue": "{series}  Gj.snitt: {avg}  Topp: {peak}",
   "seriesAvgValue": "{series}  Gj.snitt: {value}",
   "awsAccessKeyId": "AWS Access Key ID",

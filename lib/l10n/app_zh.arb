@@ -415,8 +415,6 @@
   "avgRtt": "平均 RTT",
   "avgShort": "平均",
   "avgSignal": "平均信号",
-  "avgValue": "平均：{value}",
-  "avgValuePeakValue": "平均：{avg}  峰值：{peak}",
   "seriesAvgValuePeakValue": "{series}  平均：{avg}  峰值：{peak}",
   "seriesAvgValue": "{series}  平均：{value}",
   "awsAccessKeyId": "AWS Access Key ID",

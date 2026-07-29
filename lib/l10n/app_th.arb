@@ -412,8 +412,6 @@
   "avgRtt": "RTT เฉลี่ย",
   "avgShort": "เฉลี่ย",
   "avgSignal": "สัญญาณเฉลี่ย",
-  "avgValue": "เฉลี่ย: {value}",
-  "avgValuePeakValue": "เฉลี่ย: {avg}  สูงสุด: {peak}",
   "seriesAvgValuePeakValue": "{series}  เฉลี่ย: {avg}  สูงสุด: {peak}",
   "seriesAvgValue": "{series}  เฉลี่ย: {value}",
   "awsAccessKeyId": "AWS Access Key ID",
