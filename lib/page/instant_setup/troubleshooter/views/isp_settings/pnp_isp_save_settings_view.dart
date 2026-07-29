@@ -13,6 +13,7 @@ import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_exception.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_provider.dart';
 import 'package:privacy_gui/page/instant_setup/troubleshooter/providers/pnp_troubleshooter_provider.dart';
+import 'package:privacy_gui/page/instant_setup/widgets/pnp_auto_master_flow.dart';
 import 'package:privacy_gui/page/instant_setup/widgets/pnp_auto_master_waiting_view.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/util/error_code_helper.dart';
@@ -29,8 +30,8 @@ class PnpIspSaveSettingsView extends ArgumentsConsumerStatefulView {
       _PnpIspSaveSettingsViewState();
 }
 
-class _PnpIspSaveSettingsViewState
-    extends ConsumerState<PnpIspSaveSettingsView> {
+class _PnpIspSaveSettingsViewState extends ConsumerState<PnpIspSaveSettingsView>
+    with PnpAutoMasterFlowMixin<PnpIspSaveSettingsView> {
   final _passwordController = TextEditingController();
   late final InternetSettingsState newSettings;
   String? _spinnerText; //TODO: all spinner text is not confirmed
@@ -39,6 +40,11 @@ class _PnpIspSaveSettingsViewState
   // Auto Master state
   bool _waitingForAutoMaster = false;
   bool _showAutoMasterConnectionError = false;
+
+  // Whether the current Auto Master wait was triggered after WAN came up
+  // (post internet-check), as opposed to the pre-save check. Governs the retry
+  // path in [build].
+  bool _autoMasterPostWanUp = false;
 
   @override
   void initState() {
@@ -75,54 +81,29 @@ class _PnpIspSaveSettingsViewState
     }
 
     if (status == AutoMasterStatus.running) {
+      _autoMasterPostWanUp = false;
+      final result = await runAutoMasterFlow(
+        onEnterWaiting: () => setState(() {
+          _waitingForAutoMaster = true;
+          _showAutoMasterConnectionError = false;
+        }),
+        onShowConnectionError: () =>
+            setState(() => _showAutoMasterConnectionError = true),
+        onExitWaiting: () => setState(() => _waitingForAutoMaster = false),
+      );
       if (!mounted) return false;
-      setState(() {
-        _waitingForAutoMaster = true;
-        _showAutoMasterConnectionError = false;
-      });
-
-      int consecutiveFailures = 0;
-      const maxConsecutiveFailures = 3;
-
-      await for (final pollStatus
-          in ref.read(pnpProvider.notifier).pollAutoMasterStatus()) {
-        if (!mounted) return false;
-
-        if (pollStatus == null) {
-          consecutiveFailures++;
-          logger.w(
-              '[PnP]: Troubleshooter - Auto Master polling failed, consecutive: $consecutiveFailures');
-          if (consecutiveFailures >= maxConsecutiveFailures) {
-            setState(() => _showAutoMasterConnectionError = true);
-            return false;
-          }
-        } else {
-          consecutiveFailures = 0;
-          if (pollStatus == AutoMasterStatus.complete ||
-              pollStatus == AutoMasterStatus.idle) {
-            logger.i(
-                '[PnP]: Troubleshooter - Auto Master completed, redirect to PnP');
-            if (mounted) context.goNamed(RouteNamed.pnp);
-            return false;
-          }
-          if (pollStatus == AutoMasterStatus.failed) {
-            logger
-                .i('[PnP]: Troubleshooter - Auto Master failed, continue save');
-            if (mounted) setState(() => _waitingForAutoMaster = false);
-            return true;
-          }
-        }
-      }
-
-      // Polling timeout
-      logger.w('[PnP]: Troubleshooter - Auto Master polling timeout');
-      try {
-        await ref.read(pnpProvider.notifier).testConnectionReconnected();
-        if (mounted) setState(() => _waitingForAutoMaster = false);
-        return true;
-      } catch (e) {
-        if (mounted) setState(() => _showAutoMasterConnectionError = true);
-        return false;
+      switch (result) {
+        case AutoMasterFlowResult.completed:
+          logger.i(
+              '[PnP]: Troubleshooter - Auto Master completed, redirect to PnP');
+          context.goNamed(RouteNamed.pnp);
+          return false;
+        case AutoMasterFlowResult.proceed:
+          logger.i('[PnP]: Troubleshooter - Auto Master done, continue save');
+          return true;
+        case AutoMasterFlowResult.connectionError:
+          // Waiting view already shows the error + retry.
+          return false;
       }
     }
 
@@ -175,11 +156,31 @@ class _PnpIspSaveSettingsViewState
                 ref
                     .read(pnpProvider.notifier)
                     .checkInternetConnection(30)
-                    .then((value) {
+                    .then((value) async {
                   logger.i(
                       '[PnP]: Troubleshooter - Check internet connection with new settings - OK');
-                  // Internet connection is OK
-                  context.goNamed(RouteNamed.pnp);
+                  // Internet connection is OK. WAN is now up, so firmware may
+                  // start Auto Master ("make Master") shortly. Detect it here
+                  // (★) so the user waits once instead of filling WiFi twice.
+                  _autoMasterPostWanUp = true;
+                  final result = await runAutoMasterFlow(
+                    waitForRunningFirst: true,
+                    onEnterWaiting: () => setState(() {
+                      _waitingForAutoMaster = true;
+                      _showAutoMasterConnectionError = false;
+                    }),
+                    onShowConnectionError: () =>
+                        setState(() => _showAutoMasterConnectionError = true),
+                    onExitWaiting: () =>
+                        setState(() => _waitingForAutoMaster = false),
+                  );
+                  if (!mounted) return;
+                  if (result != AutoMasterFlowResult.connectionError) {
+                    // proceed / completed → let the router decide pnp-vs-login
+                    // via userAcknowledgedAutoConfiguration.
+                    context.goNamed(RouteNamed.pnp);
+                  }
+                  // connectionError → waiting view shows error + retry.
                 }).catchError((error) {
                   logger.e(
                       '[PnP]: Troubleshooter - Check internet connection with new settings - Failed');
@@ -248,7 +249,15 @@ class _PnpIspSaveSettingsViewState
             _showAutoMasterConnectionError = false;
             _waitingForAutoMaster = false;
           });
-          _saveNewSettings();
+          if (_autoMasterPostWanUp) {
+            // The error happened after WAN was already up (settings saved).
+            // Re-saving would be wrong; restart the flow via PnP (re-entry is
+            // itself the recovery path).
+            context.goNamed(RouteNamed.pnp);
+          } else {
+            // Pre-save error → re-run the save from the top.
+            _saveNewSettings();
+          }
         },
       );
     }

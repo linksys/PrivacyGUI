@@ -107,6 +107,7 @@ abstract class BasePnpNotifier extends Notifier<PnpState> {
   // Auto Master
   Future<AutoMasterStatus?> checkAutoMasterStatus();
   Stream<AutoMasterStatus?> pollAutoMasterStatus();
+  Stream<AutoMasterStatus?> pollAutoMasterUntilRunning();
   void setAutoMasterStatusOnEntry(AutoMasterStatus? status);
 }
 
@@ -242,6 +243,11 @@ class MockPnpNotifier extends BasePnpNotifier {
 
   @override
   Stream<AutoMasterStatus?> pollAutoMasterStatus() async* {
+    yield AutoMasterStatus.idle;
+  }
+
+  @override
+  Stream<AutoMasterStatus?> pollAutoMasterUntilRunning() async* {
     yield AutoMasterStatus.idle;
   }
 
@@ -785,6 +791,50 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
         final status = AutoMasterStatus.fromValue(
             result.output['autoMasterStatus'] as String?);
         logger.d('[PnP]: Auto Master polling status: $status');
+        return status;
+      }
+      return null;
+    });
+  }
+
+  /// Poll Auto Master status waiting for it to *start* (Idle -> Running).
+  ///
+  /// Unlike [pollAutoMasterStatus] (which waits for Auto Master to *finish*),
+  /// this is used right after WAN comes up (the ISP-save WAN-up point) where
+  /// the status is very likely still `Idle` during the make-Master delay
+  /// window. It stops as soon as the status becomes `running` (the case we
+  /// want to catch), or `complete`/`failed` (in case make-Master finished so
+  /// fast we miss the running edge). It keeps polling on `idle`/error/`null`.
+  @override
+  Stream<AutoMasterStatus?> pollAutoMasterUntilRunning() {
+    return ref
+        .read(routerRepositoryProvider)
+        .scheduledCommand(
+          action: JNAPAction.getAutoMasterStatus,
+          auth: true,
+          maxRetry: 18,
+          retryDelayInMilliSec: 5000,
+          firstDelayInMilliSec: 1000,
+          condition: (result) {
+            if (result is JNAPSuccess) {
+              final status = AutoMasterStatus.fromValue(
+                  result.output['autoMasterStatus'] as String?);
+              return status == AutoMasterStatus.running ||
+                  status == AutoMasterStatus.complete ||
+                  status == AutoMasterStatus.failed;
+            }
+            return false;
+          },
+          onCompleted: (exceedMaxRetry) {
+            logger.d(
+                '[PnP]: Auto Master wait-for-running done, exceeded max: $exceedMaxRetry');
+          },
+        )
+        .map((result) {
+      if (result is JNAPSuccess) {
+        final status = AutoMasterStatus.fromValue(
+            result.output['autoMasterStatus'] as String?);
+        logger.d('[PnP]: Auto Master wait-for-running status: $status');
         return status;
       }
       return null;
