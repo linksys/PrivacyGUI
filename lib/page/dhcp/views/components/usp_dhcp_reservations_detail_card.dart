@@ -78,12 +78,28 @@ class UspDhcpReservationsDetailCard extends ConsumerWidget {
                       .toggleReservation(reservation, value),
             ),
             AppGap.md(),
-            Expanded(child: AppText.bodyMedium(reservation.mac)),
-            SizedBox(
-              width: context.colWidth(2),
-              child: AppText.bodySmall(
-                reservation.ip,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
+            // MAC over IP rather than side by side: the row's flexible space is
+            // narrower than a full MAC plus an IP, so a side-by-side layout
+            // ellipsised the MAC — the row's only device identifier. The IP no
+            // longer uses `context.colWidth()`, which measures against the page
+            // grid: its 216dp on a 4-column mobile grid left the MAC column too
+            // narrow for one line, wrapping it one octet per line (#1140).
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  AppText.bodyMedium(
+                    reservation.mac,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  AppText.bodySmall(
+                    reservation.ip,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
               ),
             ),
             AppIconButton(

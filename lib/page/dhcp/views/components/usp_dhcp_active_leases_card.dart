@@ -98,6 +98,10 @@ class UspDhcpActiveLeasesCard extends ConsumerWidget {
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: LayoutBlock(
         padding: const EdgeInsets.all(AppSpacing.md),
+        // Columns are sized by flex, not `context.colWidth()`: colWidth is
+        // measured against the page grid, so on a 4-column mobile grid two
+        // colWidth(2) boxes exceed this row's own width, starving the name
+        // column to zero and overflowing the row (#1140).
         child: Row(
           children: [
             Icon(
@@ -108,27 +112,38 @@ class UspDhcpActiveLeasesCard extends ConsumerWidget {
             ),
             AppGap.sm(),
             Expanded(
+              flex: 4,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  AppText.bodyMedium(client.displayName),
+                  AppText.bodyMedium(
+                    client.displayName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                   if (client.hostName.isNotEmpty)
                     AppText.bodySmall(
                       client.mac,
                       color: colorScheme.onSurfaceVariant,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                 ],
               ),
             ),
-            SizedBox(
-              width: context.colWidth(2),
+            AppGap.sm(),
+            Expanded(
+              flex: 3,
               child: AppText.bodySmall(
                 client.ip,
                 color: colorScheme.onSurfaceVariant,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
-            SizedBox(
-              width: context.colWidth(2),
+            AppGap.sm(),
+            Expanded(
+              flex: 3,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
@@ -136,11 +151,17 @@ class UspDhcpActiveLeasesCard extends ConsumerWidget {
                     AppText.bodySmall(
                       lease,
                       color: colorScheme.onSurfaceVariant,
+                      textAlign: TextAlign.end,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   if (client.leaseExpiryFormatted.isNotEmpty)
                     AppText.bodySmall(
                       client.leaseExpiryFormatted,
                       color: colorScheme.onSurfaceVariant,
+                      textAlign: TextAlign.end,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                 ],
               ),
