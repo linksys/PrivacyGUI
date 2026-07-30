@@ -1,0 +1,72 @@
+{
+  "tracking": {
+    "network_health": "legend fix #1145/#1174"
+  },
+  "allowlist": {
+    "device_info|preferred|0": ["fi", "id", "pl", "sv"],
+    "network_status|min|0": [
+      "ar", "da", "de", "el", "en", "es", "es_AR", "fi", "fr", "fr_CA",
+      "id", "it", "ja", "nb", "nl", "pl", "pt", "pt_PT", "sv", "th", "tr", "vi"
+    ],
+    "network_status|preferred|0": ["es_AR"],
+    "lan_info|min|0": ["*"],
+    "lan_info|preferred|0": [
+      "ar", "da", "de", "el", "es", "es_AR", "fi", "fr", "fr_CA", "it",
+      "nb", "nl", "pl", "pt", "pt_PT", "tr", "vi"
+    ],
+    "ethernet_ports|min|0": ["*"],
+    "ethernet_ports|preferred|0": [
+      "ar", "da", "de", "el", "en", "es", "es_AR", "fi", "fr", "fr_CA",
+      "id", "it", "nb", "nl", "pl", "pt", "pt_PT", "ru", "sv", "th", "tr", "vi"
+    ],
+    "system_status|min|0": ["*"],
+    "system_status|min|1": ["*"],
+    "system_status|min|2": [
+      "de", "es", "es_AR", "fi", "fr", "fr_CA", "id", "it", "nl", "pt", "pt_PT", "ru", "sv", "tr"
+    ],
+    "system_status|min|3": ["de", "fi", "fr", "fr_CA", "it", "nb"],
+    "system_status|preferred|0": ["fr", "fr_CA"],
+    "system_status|preferred|1": ["de", "fi", "id", "nb"],
+    "system_status|preferred|2": ["fr", "fr_CA"],
+    "connected_devices|min|0": ["*"],
+    "connected_devices|preferred|0": ["el"],
+    "time_settings|min|0": [
+      "da", "de", "el", "en", "es", "es_AR", "fi", "fr", "fr_CA", "id",
+      "it", "nb", "nl", "pl", "pt", "pt_PT", "ru", "sv", "th", "tr", "vi"
+    ],
+    "port_forwarding|min|0": ["es", "fr", "fr_CA", "pt", "pt_PT"],
+    "port_forwarding|preferred|0": ["pt", "pt_PT"],
+    "network_health|min|0": [
+      "ar", "da", "de", "el", "en", "es", "es_AR", "fi", "fr", "fr_CA",
+      "id", "it", "ja", "nb", "nl", "pl", "pt", "pt_PT", "ru", "sv", "th", "tr", "vi"
+    ],
+    "network_health|min|1": [
+      "ar", "da", "de", "el", "en", "es", "es_AR", "fi", "fr", "fr_CA",
+      "id", "it", "ja", "nb", "nl", "pl", "pt", "pt_PT", "ru", "sv", "th", "tr", "vi"
+    ],
+    "network_health|min|2": [
+      "ar", "da", "de", "el", "en", "es", "es_AR", "fi", "fr", "fr_CA",
+      "id", "it", "nb", "nl", "pl", "pt", "pt_PT", "ru", "sv", "th", "tr", "vi"
+    ],
+    "network_health|preferred|0": ["fr_CA", "pl", "ru"],
+    "network_health|preferred|1": ["id"],
+    "network_health|preferred|2": ["id"],
+    "wifi_performance|min|0": [
+      "da", "de", "el", "en", "es", "es_AR", "fi", "fr", "fr_CA", "id",
+      "it", "nl", "pl", "pt", "pt_PT", "ru", "sv", "th"
+    ],
+    "wifi_performance|min|1": ["es", "es_AR", "fr", "fr_CA", "pt_PT", "tr"],
+    "wifi_performance|preferred|0": [
+      "de", "es", "es_AR", "fi", "fr", "id", "it", "nl", "pl", "pt", "pt_PT", "ru", "sv", "th"
+    ],
+    "wifi_performance|preferred|1": ["es", "fr", "fr_CA", "pt_PT"],
+    "traffic_analysis|min|0": [
+      "ar", "da", "de", "el", "en", "es", "es_AR", "fi", "fr", "fr_CA",
+      "id", "it", "ja", "nb", "nl", "pl", "pt", "pt_PT", "ru", "sv", "th", "tr", "vi"
+    ],
+    "traffic_analysis|preferred|0": [
+      "da", "de", "en", "es", "es_AR", "fi", "fr", "fr_CA", "id", "it",
+      "nb", "nl", "pl", "pt", "pt_PT", "ru", "sv", "th", "tr", "vi"
+    ]
+  }
+}

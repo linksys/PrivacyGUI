@@ -1,6 +1,10 @@
 @Tags(['dashboard-card'])
 library;
 
+import 'dart:convert';
+import 'dart:io';
+import 'dart:math' as math;
+
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
@@ -9,6 +13,8 @@ import 'package:privacy_gui/page/dashboard/models/usp_widget_specs.dart';
 
 import '../../../util/app_test_fonts.dart';
 import '../../../util/dashboard/dashboard_card_probe.dart';
+import '../../../util/dashboard/dashboard_overflow_report_generator.dart';
+import '../../../util/overflow_probe.dart';
 
 /// Defensive RenderFlex-overflow gate for every dashboard card (#1183).
 ///
@@ -45,10 +51,6 @@ import '../../../util/dashboard/dashboard_card_probe.dart';
 ///   failure blocks the PR. (Do not retag it golden/ui/loc — it would silently
 ///   drop out of the gate.)
 
-/// Every locale the app ships — the same list the running app offers, so this
-/// gate tracks all of them (and any future language) automatically.
-const List<Locale> _allLocales = AppLocalizations.supportedLocales;
-
 /// Locale identity used as the allowlist key and in test names. Keeps the
 /// country code so regional variants stay distinct (`zh` vs `zh_TW`, `fr` vs
 /// `fr_CA`) — they can differ in label length and must be tracked separately.
@@ -56,351 +58,59 @@ String _localeTag(Locale l) => l.countryCode == null || l.countryCode!.isEmpty
     ? l.languageCode
     : '${l.languageCode}_${l.countryCode}';
 
+/// Target locales parsed from --dart-define=LOCALE=... or environment variables.
+/// Defaults to all shipped locales if no filter is provided.
+List<Locale> get _targetLocales {
+  const d = String.fromEnvironment('LOCALE', defaultValue: '');
+  const d2 = String.fromEnvironment('locale', defaultValue: '');
+  final env = Platform.environment;
+  final filterStr = d.isNotEmpty ? d : (d2.isNotEmpty ? d2 : (env['LOCALE'] ?? env['locale'] ?? ''));
+
+  if (filterStr.isEmpty || filterStr == 'all') {
+    return AppLocalizations.supportedLocales;
+  }
+
+  final tags = filterStr.split(',').map((s) => s.trim().toLowerCase()).toSet();
+  return AppLocalizations.supportedLocales.where((l) {
+    final tag = _localeTag(l).toLowerCase();
+    final lang = l.languageCode.toLowerCase();
+    return tags.contains(tag) || tags.contains(lang);
+  }).toList();
+}
+
 /// Small tolerance for sub-pixel shaping differences between the mac (local) and
 /// ubuntu (CI) font rasterizers. The project bundles fixed font files so the two
 /// load the same glyphs, but borderline cases (~1px) can still flip; anything
 /// meaningfully clipped is many pixels over.
 const double _tolerancePx = 2.0;
 
-/// Why a card's overflows are tolerated + where the fix is tracked. Cited in
-/// test output. Keyed by card id since a card's debt shares one tracking ref.
-const Map<String, String> _trackingByCard = {
-  'network_health': 'legend fix #1145/#1174',
-};
+Map<String, String> _trackingByCard = {};
+Map<String, Set<String>> _knownOverflowAllowlist = {};
 
 String _trackingFor(String card) => _trackingByCard[card] ?? 'baseline #1183';
 
-/// Baseline of overflows that already exist and must NOT fail this gate yet.
-///
-/// This is a *ratchet*, not a dumping ground. It was measured across the real
-/// production grid widths × all 26 shipped locales × every tab when the gate was
-/// introduced on `dev-2.7.0` (#1183): 12 of 18 cards overflow at their narrowest
-/// realizations (460 (card, width, tab, locale) coordinates). The gate ships
-/// green by tolerating exactly these, while:
-///   * any NEW overflow — a different card/width/tab/locale — fails immediately,
-///     and
-///   * removing a card's layout debt makes its entries stale; delete them so a
-///     regression re-fails.
-///
-/// KEY is `'<cardId>|<widthLabel>|<tabIndex>'` (widthLabel ∈ {min, preferred,
-/// max}); VALUE is the set of overflowing locale tags, or `{'*'}` meaning **all**
-/// shipped locales. A `{'*'}` entry is a *structural* overflow — the card
-/// overflows regardless of language (a fixed-width element, not long text), and
-/// is the highest-value thing to fix. Anything else is text-length dependent.
-///
-/// Fixing these cards' layouts and shrinking this map is the follow-up work
-/// #1183 exists to track. `network_health` specifically is addressed by the
-/// #1145/#1174 legend fix — drop its entries once that lands on this base.
-const Map<String, Set<String>> _knownOverflowAllowlist = {
-  'stats_panel|min|0': {'*'}, // structural — all locales
-  'device_info|min|0': {
-    'ar',
-    'da',
-    'de',
-    'el',
-    'en',
-    'es',
-    'es_AR',
-    'fi',
-    'fr',
-    'fr_CA',
-    'id',
-    'it',
-    'ja',
-    'nb',
-    'nl',
-    'pl',
-    'pt',
-    'pt_PT',
-    'ru',
-    'sv',
-    'th',
-    'tr',
-    'vi',
-  },
-  'device_info|preferred|0': {'fi', 'id', 'pl', 'sv'},
-  'network_status|min|0': {
-    'ar',
-    'da',
-    'de',
-    'el',
-    'en',
-    'es',
-    'es_AR',
-    'fi',
-    'fr',
-    'fr_CA',
-    'id',
-    'it',
-    'ja',
-    'nb',
-    'nl',
-    'pl',
-    'pt',
-    'pt_PT',
-    'sv',
-    'th',
-    'tr',
-    'vi',
-  },
-  'network_status|preferred|0': {'es_AR'},
-  'lan_info|min|0': {'*'}, // structural — all locales
-  'lan_info|preferred|0': {
-    'ar',
-    'da',
-    'de',
-    'el',
-    'es',
-    'es_AR',
-    'fi',
-    'fr',
-    'fr_CA',
-    'it',
-    'nb',
-    'nl',
-    'pl',
-    'pt',
-    'pt_PT',
-    'tr',
-    'vi',
-  },
-  'ethernet_ports|min|0': {'*'}, // structural — all locales
-  'ethernet_ports|preferred|0': {
-    'ar',
-    'da',
-    'de',
-    'el',
-    'en',
-    'es',
-    'es_AR',
-    'fi',
-    'fr',
-    'fr_CA',
-    'id',
-    'it',
-    'nb',
-    'nl',
-    'pl',
-    'pt',
-    'pt_PT',
-    'ru',
-    'sv',
-    'th',
-    'tr',
-    'vi',
-  },
-  'system_status|min|0': {'*'}, // structural — all locales
-  'system_status|min|1': {'*'}, // structural — all locales
-  'system_status|min|2': {
-    'de',
-    'es',
-    'es_AR',
-    'fi',
-    'fr',
-    'fr_CA',
-    'id',
-    'it',
-    'nl',
-    'pt',
-    'pt_PT',
-    'ru',
-    'sv',
-    'tr',
-  },
-  'system_status|min|3': {'de', 'fi', 'fr', 'fr_CA', 'it', 'nb'},
-  'system_status|preferred|0': {'fr', 'fr_CA'},
-  'system_status|preferred|1': {'de', 'fi', 'id', 'nb'},
-  'system_status|preferred|2': {'fr', 'fr_CA'},
-  'connected_devices|min|0': {'*'}, // structural — all locales
-  'connected_devices|preferred|0': {'el'},
-  'time_settings|min|0': {
-    'da',
-    'de',
-    'el',
-    'en',
-    'es',
-    'es_AR',
-    'fi',
-    'fr',
-    'fr_CA',
-    'id',
-    'it',
-    'nb',
-    'nl',
-    'pl',
-    'pt',
-    'pt_PT',
-    'ru',
-    'sv',
-    'th',
-    'tr',
-    'vi',
-  },
-  'port_forwarding|min|0': {'es', 'fr', 'fr_CA', 'pt', 'pt_PT'},
-  'port_forwarding|preferred|0': {'pt', 'pt_PT'},
-  'network_health|min|0': {
-    'ar',
-    'da',
-    'de',
-    'el',
-    'en',
-    'es',
-    'es_AR',
-    'fi',
-    'fr',
-    'fr_CA',
-    'id',
-    'it',
-    'ja',
-    'nb',
-    'nl',
-    'pl',
-    'pt',
-    'pt_PT',
-    'ru',
-    'sv',
-    'th',
-    'tr',
-    'vi',
-  },
-  'network_health|min|1': {
-    'ar',
-    'da',
-    'de',
-    'el',
-    'en',
-    'es',
-    'es_AR',
-    'fi',
-    'fr',
-    'fr_CA',
-    'id',
-    'it',
-    'ja',
-    'nb',
-    'nl',
-    'pl',
-    'pt',
-    'pt_PT',
-    'ru',
-    'sv',
-    'th',
-    'tr',
-    'vi',
-  },
-  'network_health|min|2': {
-    'ar',
-    'da',
-    'de',
-    'el',
-    'en',
-    'es',
-    'es_AR',
-    'fi',
-    'fr',
-    'fr_CA',
-    'id',
-    'it',
-    'nb',
-    'nl',
-    'pl',
-    'pt',
-    'pt_PT',
-    'ru',
-    'sv',
-    'th',
-    'tr',
-    'vi',
-  },
-  'network_health|preferred|0': {'fr_CA', 'pl', 'ru'},
-  'network_health|preferred|1': {'id'},
-  'network_health|preferred|2': {'id'},
-  'wifi_performance|min|0': {
-    'da',
-    'de',
-    'el',
-    'en',
-    'es',
-    'es_AR',
-    'fi',
-    'fr',
-    'fr_CA',
-    'id',
-    'it',
-    'nl',
-    'pl',
-    'pt',
-    'pt_PT',
-    'ru',
-    'sv',
-    'th',
-  },
-  'wifi_performance|min|1': {'es', 'es_AR', 'fr', 'fr_CA', 'pt_PT', 'tr'},
-  'wifi_performance|preferred|0': {
-    'de',
-    'es',
-    'es_AR',
-    'fi',
-    'fr',
-    'id',
-    'it',
-    'nl',
-    'pl',
-    'pt',
-    'pt_PT',
-    'ru',
-    'sv',
-    'th',
-  },
-  'wifi_performance|preferred|1': {'es', 'fr', 'fr_CA', 'pt_PT'},
-  'traffic_analysis|min|0': {
-    'ar',
-    'da',
-    'de',
-    'el',
-    'en',
-    'es',
-    'es_AR',
-    'fi',
-    'fr',
-    'fr_CA',
-    'id',
-    'it',
-    'ja',
-    'nb',
-    'nl',
-    'pl',
-    'pt',
-    'pt_PT',
-    'ru',
-    'sv',
-    'th',
-    'tr',
-    'vi',
-  },
-  'traffic_analysis|preferred|0': {
-    'da',
-    'de',
-    'en',
-    'es',
-    'es_AR',
-    'fi',
-    'fr',
-    'fr_CA',
-    'id',
-    'it',
-    'nb',
-    'nl',
-    'pl',
-    'pt',
-    'pt_PT',
-    'ru',
-    'sv',
-    'th',
-    'tr',
-    'vi',
-  },
-};
+void _loadKnownOverflowsFixture() {
+  final file = File('test/fixtures/known_overflows.json');
+  if (!file.existsSync()) return;
+
+  try {
+    final content = file.readAsStringSync();
+    final Map<String, dynamic> json = jsonDecode(content);
+
+    if (json.containsKey('tracking')) {
+      _trackingByCard = Map<String, String>.from(json['tracking']);
+    }
+    if (json.containsKey('allowlist')) {
+      final Map<String, dynamic> allowMap = json['allowlist'];
+      _knownOverflowAllowlist = allowMap.map((key, value) {
+        return MapEntry(key, Set<String>.from(value as List));
+      });
+    }
+  } catch (e) {
+    // ignore: avoid_print
+    print('⚠️ Failed to load known overflows fixture: $e');
+  }
+}
 
 /// True if (card, widthLabel, tab, locale) is in the baseline — either its
 /// locale set lists [tag] explicitly, or the set is `{'*'}` (all locales).
@@ -410,9 +120,94 @@ bool _isAllowlisted(String card, String width, int tab, String tag) {
   return locales.contains('*') || locales.contains(tag);
 }
 
+/// 改為 true 即可在檔案內直接開啟截圖輸出至 `build/overflow_png/`
+/// 0: 預設 — 不產出任何檔案 (最高效模式)
+/// 1: 產出精簡 Markdown 條列式報告 (build/overflow_report.md) — 無圖片、無總覽
+/// 2: 產出 HTML 詳盡視覺報告 (build/overflow_report.html) + PNG 截圖 (build/overflow_png/...)
+/// 3: 產出 1 + 2 (Markdown 條列 + HTML 視覺報告 + PNG 截圖)
+const int _dumpMode = 0;
+
+int get dumpMode {
+  if (_dumpMode > 0) return _dumpMode;
+
+  const defines = [
+    String.fromEnvironment('DUMP'),
+    String.fromEnvironment('dump'),
+    String.fromEnvironment('DUMP_MODE'),
+    String.fromEnvironment('dump_mode'),
+  ];
+  for (final d in defines) {
+    final v = int.tryParse(d);
+    if (v != null && v >= 0 && v <= 3) return v;
+  }
+
+  final env = Platform.environment;
+  final keys = ['DUMP', 'dump', 'DUMP_MODE', 'dump_mode'];
+  for (final k in keys) {
+    final val = env[k];
+    if (val != null) {
+      final v = int.tryParse(val);
+      if (v != null && v >= 0 && v <= 3) return v;
+    }
+  }
+
+  return 0;
+}
+
+bool get _shouldDumpPng => dumpMode == 2 || dumpMode == 3;
+bool get _shouldDumpMd => dumpMode == 1 || dumpMode == 3;
+bool get _shouldDumpHtml => dumpMode == 2 || dumpMode == 3;
+bool get _shouldCollectReport => dumpMode > 0;
+
+final List<OverflowReportItem> _collectedReportItems = [];
+
+bool get _isListOnly {
+  const d = String.fromEnvironment('LIST_CARDS');
+  if (d == 'true' || d == '1') return true;
+  final env = Platform.environment;
+  return env['LIST_CARDS'] == 'true' || env['LIST_CARDS'] == '1';
+}
+
 void main() {
+  if (_isListOnly) {
+    test('list all registered dashboard cards', () {
+      // ignore: avoid_print
+      print('');
+      // ignore: avoid_print
+      print('================================================================');
+      // ignore: avoid_print
+      print(
+          ' 📋 Registered Dashboard Cards in UspWidgetSpecs.all (${UspWidgetSpecs.all.length} cards)');
+      // ignore: avoid_print
+      print('================================================================');
+      for (var i = 0; i < UspWidgetSpecs.all.length; i++) {
+        final spec = UspWidgetSpecs.all[i];
+        final c = spec.getConstraints(DisplayMode.normal);
+        final tabCount = tabCountFor(spec.id);
+        final tabInfo = tabCount > 1 ? ' | $tabCount tabs' : ' | single tab';
+        // ignore: avoid_print
+        print(
+          '  ${(i + 1).toString().padLeft(2)}. ${spec.id.padRight(28)} (columns: min ${c.minColumns} / pref ${c.preferredColumns} / max ${c.maxColumns}$tabInfo)',
+        );
+      }
+      // ignore: avoid_print
+      print('================================================================');
+    });
+    return;
+  }
+
   setUpAll(() async {
+    _loadKnownOverflowsFixture();
     await loadAppFonts();
+  });
+
+  tearDownAll(() async {
+    if (_shouldCollectReport) {
+      await DashboardOverflowReportGenerator.generateAll(
+        _collectedReportItems,
+        baseDir: 'build/overflow_testing',
+      );
+    }
   });
 
   // Meta-test: the hardcoded tab counts in kTabbedCardTabCounts must match what
@@ -423,7 +218,7 @@ void main() {
       testWidgets('${entry.key} still has ${entry.value} tabs', (tester) async {
         final spec = UspWidgetSpecs.all.firstWhere((s) => s.id == entry.key);
         final wc = widthCasesFor(spec).first;
-        final rows = spec.getConstraints(DisplayMode.normal).maxHeightRows;
+        final rows = spec.getConstraints(DisplayMode.normal).minHeightRows;
         await probeCardOverflow(
           tester,
           cardId: entry.key,
@@ -445,19 +240,20 @@ void main() {
   });
 
   for (final spec in UspWidgetSpecs.all) {
-    final rows = spec.getConstraints(DisplayMode.normal).maxHeightRows;
+    final rows = spec.getConstraints(DisplayMode.normal).minHeightRows;
     final widthCases = widthCasesFor(spec);
     final tabCount = tabCountFor(spec.id);
 
     group('${spec.id} overflow', () {
       for (final wc in widthCases) {
         for (var tab = 0; tab < tabCount; tab++) {
-          for (final locale in _allLocales) {
+          for (final locale in _targetLocales) {
             final tag = _localeTag(locale);
             final tabLabel = tabCount > 1 ? ' tab$tab' : '';
             testWidgets(
               'no overflow @${wc.label} ${wc.widthKey}px$tabLabel ($tag)',
               (tester) async {
+                final repaintKey = _shouldDumpPng ? GlobalKey() : null;
                 final incidents = await probeCardOverflow(
                   tester,
                   cardId: spec.id,
@@ -465,11 +261,100 @@ void main() {
                   cardHeightRows: rows,
                   tabIndex: tab,
                   locale: locale,
+                  repaintKey: repaintKey,
                 );
 
                 final significant =
                     incidents.where((i) => i.pixels > _tolerancePx).toList();
                 if (significant.isEmpty) return;
+
+                final maxColsOnScreen = gridColumnsForWidth(wc.screenWidth);
+                final currentColSpan = wc.columnSpan.clamp(1, maxColsOnScreen);
+
+                final hasRightOverflow =
+                    significant.any((i) => i.side == 'right');
+                final hasBottomOverflow =
+                    significant.any((i) => i.side == 'bottom');
+
+                bool isWidthExpandable = true;
+                int recCols = currentColSpan;
+
+                if (hasRightOverflow) {
+                  if (currentColSpan < maxColsOnScreen) {
+                    recCols = math.min(currentColSpan + 1, maxColsOnScreen);
+                    isWidthExpandable = true;
+                  } else {
+                    recCols = currentColSpan;
+                    isWidthExpandable = false;
+                  }
+                }
+
+                final origHeight = dashboardCardHeight(rows);
+                int recRows = rows;
+                if (hasBottomOverflow) {
+                  final maxBottom = significant
+                      .where((i) => i.side == 'bottom')
+                      .fold(0.0, (m, i) => math.max(m, i.pixels));
+                  final targetHeight = origHeight + maxBottom + 4.0;
+                  recRows = calcRecommendedRows(targetHeight);
+                }
+
+                final recWidth = cardWidthAt(wc.screenWidth, recCols);
+                final recHeight = dashboardCardHeight(recRows);
+
+                bool isAdjustedClean = true;
+                List<OverflowIncident> adjustedIncidents = [];
+
+                if (_shouldDumpPng && repaintKey != null) {
+                  final tabSuffix = tabCount > 1 ? '_t$tab' : '';
+                  final path =
+                      'build/overflow_testing/png/${spec.id}/screen${wc.screenKey}_card${wc.widthKey}_${wc.columnSpan}x${rows}${tabSuffix}_$tag.png';
+                  await saveCardScreenshot(
+                    tester,
+                    repaintKey,
+                    path,
+                  );
+
+                  final adjustPath =
+                      'build/overflow_testing/png/adjust/${spec.id}/screen${wc.screenKey}_card${wc.widthKey}_${wc.columnSpan}x${rows}${tabSuffix}_${tag}_adjusted.png';
+                  adjustedIncidents = await captureAdjustedCardScreenshot(
+                    tester,
+                    cardId: spec.id,
+                    screenWidth: wc.screenWidth,
+                    recWidth: recWidth,
+                    recHeight: recHeight,
+                    tabIndex: tab,
+                    locale: locale,
+                    path: adjustPath,
+                  );
+                  isAdjustedClean = adjustedIncidents
+                      .where((i) => i.pixels > _tolerancePx)
+                      .isEmpty;
+                }
+
+                if (_shouldCollectReport) {
+                  _collectedReportItems.add(OverflowReportItem(
+                    cardId: spec.id,
+                    screenWidth: wc.screenWidth,
+                    cardWidth: wc.cardWidth,
+                    cardHeight: origHeight,
+                    columnSpan: wc.columnSpan,
+                    rowSpan: rows,
+                    widthLabel: wc.label,
+                    tabIndex: tab,
+                    tabCount: tabCount,
+                    localeTag: tag,
+                    incidents: significant,
+                    isAllowed: _isAllowlisted(spec.id, wc.label, tab, tag),
+                    recCols: recCols,
+                    recRows: recRows,
+                    recWidth: recWidth,
+                    recHeight: recHeight,
+                    isWidthExpandable: isWidthExpandable,
+                    isAdjustedClean: isAdjustedClean,
+                    adjustedIncidents: adjustedIncidents,
+                  ));
+                }
 
                 final allowed = _isAllowlisted(spec.id, wc.label, tab, tag);
                 final detail = significant.join(', ');

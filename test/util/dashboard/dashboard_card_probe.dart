@@ -1,4 +1,8 @@
+import 'dart:io';
+import 'dart:math' as math;
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_portal/flutter_portal.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -7,6 +11,7 @@ import 'package:privacy_gui/page/_shared/providers/card_tab_state_provider.dart'
 import 'package:privacy_gui/page/dashboard/factories/usp_widget_factory.dart';
 import 'package:privacy_gui/page/dashboard/models/display_mode.dart';
 import 'package:privacy_gui/page/dashboard/models/widget_spec.dart';
+import 'package:privacy_gui/localization/fallback_font_resolver.dart';
 import 'package:privacy_gui/theme/theme_json_config.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -108,6 +113,7 @@ double dashboardCardHeight(int rows) =>
 class CardWidthCase {
   final double screenWidth;
   final double cardWidth;
+  final int columnSpan;
 
   /// Which spec column count this realizes ('min', 'preferred', 'max').
   final String label;
@@ -115,11 +121,31 @@ class CardWidthCase {
   const CardWidthCase({
     required this.screenWidth,
     required this.cardWidth,
+    required this.columnSpan,
     required this.label,
   });
 
+  /// Rounded key for screen width.
+  String get screenKey => screenWidth.toStringAsFixed(0);
+
   /// Rounded key for de-duplication and stable test names.
   String get widthKey => cardWidth.toStringAsFixed(0);
+}
+
+/// Minimum screen width filter parsed from external --dart-define or env var
+/// (`MIN_SCREEN=400` or `min_screen=400`).
+double get minScreenFilter {
+  const d = String.fromEnvironment('MIN_SCREEN', defaultValue: '');
+  if (d.isNotEmpty) return double.tryParse(d) ?? 0.0;
+
+  const d2 = String.fromEnvironment('min_screen', defaultValue: '');
+  if (d2.isNotEmpty) return double.tryParse(d2) ?? 0.0;
+
+  final env = Platform.environment;
+  final e = env['MIN_SCREEN'] ?? env['min_screen'];
+  if (e != null && e.isNotEmpty) return double.tryParse(e) ?? 0.0;
+
+  return 0.0;
 }
 
 /// Screen widths scanned to find each span's **narrowest** realization. Covers
@@ -149,16 +175,11 @@ const List<double> _scanScreens = [
 
 /// The [CardWidthCase]s to test [spec] at: the narrowest realization of each of
 /// its min / preferred / max column spans, de-duplicated by resulting width.
-///
-/// WHY NARROWEST-PER-SPAN IS SUFFICIENT (measured, see #1183)
-///   RenderFlex overflow on a card is **monotonic in width** (a wider card
-///   never overflows more than a narrower one — verified across every card:
-///   overflow strictly shrinks as width grows and, once clean, stays clean) and
-///   **independent of height**. So for each span, the narrowest pixel width it
-///   can reach across all breakpoints is its worst case; wider realizations of
-///   the same span can't reveal anything new. Testing all breakpoints × spans
-///   verbatim would be ~5× the tests for identical coverage.
-List<CardWidthCase> widthCasesFor(WidgetSpec spec) {
+List<CardWidthCase> widthCasesFor(WidgetSpec spec, {double? minScreen}) {
+  final minWidth = minScreen ?? minScreenFilter;
+  final validScreens = _scanScreens.where((s) => s >= minWidth).toList();
+  if (validScreens.isEmpty) return [];
+
   final c = spec.getConstraints(DisplayMode.normal);
   final spans = <String, int>{
     'min': c.minColumns,
@@ -168,19 +189,21 @@ List<CardWidthCase> widthCasesFor(WidgetSpec spec) {
 
   final byWidth = <String, CardWidthCase>{};
   for (final entry in spans.entries) {
-    // Find the screen that makes this span narrowest.
+    // Find the screen (>= minScreen) that makes this span narrowest.
     double? bestScreen;
     double bestWidth = double.infinity;
-    for (final screen in _scanScreens) {
+    for (final screen in validScreens) {
       final w = cardWidthAt(screen, entry.value);
       if (w < bestWidth) {
         bestWidth = w;
         bestScreen = screen;
       }
     }
+    if (bestScreen == null) continue;
     final wc = CardWidthCase(
-      screenWidth: bestScreen!,
+      screenWidth: bestScreen,
       cardWidth: bestWidth,
+      columnSpan: entry.value,
       label: entry.key,
     );
     // De-dup by rounded width; keep the first (min-labelled) if identical.
@@ -232,6 +255,7 @@ Widget buildDashboardCardApp({
   required double cardWidth,
   required double cardHeight,
   int tabIndex = 0,
+  Key? repaintKey,
 }) {
   final card = UspWidgetFactory().buildWidget(cardId);
   if (card == null) {
@@ -241,7 +265,13 @@ Widget buildDashboardCardApp({
     );
   }
 
-  final theme = ThemeJsonConfig.defaultConfig().createLightTheme();
+  var theme = ThemeJsonConfig.defaultConfig().createLightTheme();
+  final cjkFallback = FallbackFontResolver.prefixedFallbackFor(locale);
+  if (cjkFallback != null) {
+    theme = theme.copyWith(
+      textTheme: theme.textTheme.apply(fontFamilyFallback: cjkFallback),
+    );
+  }
 
   return ProviderScope(
     overrides: [
@@ -266,10 +296,13 @@ Widget buildDashboardCardApp({
           body: SingleChildScrollView(
             child: Align(
               alignment: Alignment.topLeft,
-              child: SizedBox(
-                width: cardWidth,
-                height: cardHeight,
-                child: card,
+              child: RepaintBoundary(
+                key: repaintKey,
+                child: SizedBox(
+                  width: cardWidth,
+                  height: cardHeight,
+                  child: card,
+                ),
               ),
             ),
           ),
@@ -298,6 +331,7 @@ Future<List<OverflowIncident>> probeCardOverflow(
   required int cardHeightRows,
   required int tabIndex,
   required Locale locale,
+  Key? repaintKey,
 }) {
   final surface =
       Size(widthCase.screenWidth, dashboardCardHeight(cardHeightRows));
@@ -313,9 +347,95 @@ Future<List<OverflowIncident>> probeCardOverflow(
         cardWidth: widthCase.cardWidth,
         cardHeight: dashboardCardHeight(cardHeightRows),
         tabIndex: tabIndex,
+        repaintKey: repaintKey,
       ),
     );
     await settleIgnoringAnimations(tester);
+    return sink;
+  });
+}
+
+/// Saves the widget rendered under [repaintKey] to a PNG file at [path].
+Future<void> saveCardScreenshot(
+  WidgetTester tester,
+  GlobalKey repaintKey,
+  String path, {
+  double pixelRatio = 2.0,
+}) async {
+  await tester.binding.runAsync(() async {
+    try {
+      final file = File(path);
+      if (file.existsSync()) return;
+
+      final boundary = repaintKey.currentContext?.findRenderObject()
+          as RenderRepaintBoundary?;
+      if (boundary == null) {
+        // ignore: avoid_print
+        print('[PNG DUMP FAILED] boundary is null for $path');
+        return;
+      }
+      final image = await boundary.toImage(pixelRatio: pixelRatio);
+      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      if (byteData != null) {
+        await file.parent.create(recursive: true);
+        await file.writeAsBytes(byteData.buffer.asUint8List());
+        // ignore: avoid_print
+        print(
+            '[PNG DUMP SUCCESS] Saved $path (${byteData.lengthInBytes} bytes)');
+      } else {
+        // ignore: avoid_print
+        print('[PNG DUMP FAILED] byteData is null for $path');
+      }
+    } catch (e, st) {
+      // ignore: avoid_print
+      print('[PNG DUMP EXCEPTION] Failed to save $path: $e\n$st');
+    }
+  });
+}
+
+/// Calculates the grid rows needed to fit a target logical height.
+int calcRecommendedRows(double targetHeight) {
+  int r = 1;
+  while (dashboardCardHeight(r) < targetHeight && r < 10) {
+    r++;
+  }
+  return r;
+}
+
+/// Re-pumps [cardId] at grid-calculated [recWidth] × [recHeight], saves an
+/// adjusted screenshot to [path], and returns any remaining overflow incidents.
+Future<List<OverflowIncident>> captureAdjustedCardScreenshot(
+  WidgetTester tester, {
+  required String cardId,
+  required double screenWidth,
+  required double recWidth,
+  required double recHeight,
+  required int tabIndex,
+  required Locale locale,
+  required String path,
+}) async {
+  final adjustKey = GlobalKey();
+  final surface = Size(
+    math.max(screenWidth, recWidth + 32),
+    math.max(recHeight + 32, 400.0),
+  );
+  return runWithOverflowCollection((sink) async {
+    await tester.binding.setSurfaceSize(surface);
+    tester.view.physicalSize = surface;
+    tester.view.devicePixelRatio = 1.0;
+    await tester.pumpWidget(
+      buildDashboardCardApp(
+        cardId: cardId,
+        locale: locale,
+        screenWidth: screenWidth,
+        cardWidth: recWidth,
+        cardHeight: recHeight,
+        tabIndex: tabIndex,
+        repaintKey: adjustKey,
+      ),
+    );
+    await settleIgnoringAnimations(tester);
+    await saveCardScreenshot(tester, adjustKey, path);
     return sink;
   });
 }

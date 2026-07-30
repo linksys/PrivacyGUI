@@ -15,10 +15,14 @@ class OverflowIncident {
   /// The raw Flutter error string (first line), kept for diagnostics.
   final String message;
 
+  /// Full Flutter details string (includes line numbers, stack, and cause).
+  final String fullLog;
+
   const OverflowIncident({
     required this.pixels,
     required this.side,
     required this.message,
+    this.fullLog = '',
   });
 
   static final _re = RegExp(
@@ -28,13 +32,14 @@ class OverflowIncident {
 
   /// Parses [errorString]; falls back to `pixels: 0, side: 'unknown'` if the
   /// message shape ever changes so we still record that *something* overflowed.
-  factory OverflowIncident.parse(String errorString) {
+  factory OverflowIncident.parse(String errorString, {String fullLog = ''}) {
     final firstLine = errorString.split('\n').first.trim();
     final m = _re.firstMatch(errorString);
     return OverflowIncident(
       pixels: m == null ? 0 : double.tryParse(m.group(1)!) ?? 0,
       side: m == null ? 'unknown' : m.group(2)!.toLowerCase(),
       message: firstLine,
+      fullLog: fullLog.isNotEmpty ? fullLog : errorString,
     );
   }
 
@@ -68,7 +73,9 @@ Future<T> runWithOverflowCollection<T>(
   FlutterError.onError = (FlutterErrorDetails details) {
     final asString = details.exceptionAsString();
     if (asString.contains('overflowed')) {
-      incidents.add(OverflowIncident.parse(asString));
+      incidents.add(
+        OverflowIncident.parse(asString, fullLog: details.toString()),
+      );
       return;
     }
     original?.call(details);

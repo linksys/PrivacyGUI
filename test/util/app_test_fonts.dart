@@ -23,7 +23,12 @@ import 'package:flutter_test/flutter_test.dart';
 /// files are skipped silently (CI without the ui_kit checkout still runs, just
 /// with fewer fallbacks) — the primary NeueHaas + NotoSans covers Latin scripts,
 /// which is what the long-word overflow locales (de/fi/ru/fr) need.
+import 'package:privacy_gui/localization/fallback_font_resolver.dart';
+
 Future<void> loadAppFonts() async {
+  // Injects the bare-name fallback resolver into ui_kit for AppText
+  FallbackFontResolver.install();
+
   final uiKitRoot = _resolveUiKitPath();
 
   // Primary font, shipped inside the ui_kit_library package.
@@ -42,30 +47,84 @@ Future<void> loadAppFonts() async {
   }
   await mainFont.load();
 
-  // CJK / Arabic / Thai fallbacks, vendored under test/fonts/.
-  const fontNames = [
-    'NotoSans',
-    'NotoSansKR',
-    'NotoSansSC',
-    'NotoSansArabic',
-    'NotoSansThai',
-  ];
-  const fontFiles = [
-    'NotoSans-Regular.ttf',
-    'NotoSansKR-Regular.ttf',
-    'NotoSansSC-Regular.ttf',
-    'NotoSansArabic-Regular.ttf',
-    'NotoSansThai-Regular.ttf',
-  ];
-  for (var i = 0; i < fontNames.length; i++) {
-    final loader = FontLoader('packages/ui_kit_library/${fontNames[i]}');
-    final file = File('test/fonts/${fontFiles[i]}');
-    if (file.existsSync()) {
-      loader
-          .addFont(Future.value(ByteData.view(file.readAsBytesSync().buffer)));
-    }
-    await loader.load();
+  // Icon fonts: LinksysIcons (ui_kit_library) & MaterialIcons (Flutter SDK).
+  final linksysFontFile = File('$uiKitRoot/assets/fonts/LinksysIcons.otf');
+  if (linksysFontFile.existsSync()) {
+    final bytes = linksysFontFile.readAsBytesSync();
+    final linksysLoaderPkg =
+        FontLoader('packages/ui_kit_library/LinksysIcons');
+    linksysLoaderPkg.addFont(Future.value(ByteData.view(bytes.buffer)));
+    await linksysLoaderPkg.load();
+
+    final linksysLoaderBare = FontLoader('LinksysIcons');
+    linksysLoaderBare.addFont(Future.value(ByteData.view(bytes.buffer)));
+    await linksysLoaderBare.load();
   }
+
+  final matFile = _findMaterialIconsFile();
+  if (matFile != null && matFile.existsSync()) {
+    final matLoader = FontLoader('MaterialIcons');
+    matLoader.addFont(
+        Future.value(ByteData.view(matFile.readAsBytesSync().buffer)));
+    await matLoader.load();
+  }
+
+  // CJK / Arabic / Thai / Russian fallbacks mapping.
+  final fontMap = <String, String>{
+    'NotoSans': 'test/fonts/NotoSans-Regular.ttf',
+    'NotoSansLatinExt': 'test/fonts/NotoSans-Regular.ttf',
+    'NotoSansArabic': 'test/fonts/NotoSansArabic-Regular.ttf',
+    'NotoSansThai': 'test/fonts/NotoSansThai-Regular.ttf',
+    'NotoSansKR': 'test/fonts/NotoSansKR-Regular.ttf',
+    'NotoSansSC': 'test/fonts/NotoSansSC-Regular.ttf',
+    'NotoSansTC': 'test/fonts/NotoSansSC-Regular.ttf',
+    'NotoSansJP': 'test/fonts/NotoSansSC-Regular.ttf',
+    'NotoSansHK': 'test/fonts/NotoSansSC-Regular.ttf',
+  };
+
+  for (final entry in fontMap.entries) {
+    final file = File(entry.value);
+    if (!file.existsSync()) continue;
+    final bytes = file.readAsBytesSync();
+
+    final loaderPkg = FontLoader('packages/ui_kit_library/${entry.key}');
+    loaderPkg.addFont(Future.value(ByteData.view(bytes.buffer)));
+    await loaderPkg.load();
+
+    final loaderBare = FontLoader(entry.key);
+    loaderBare.addFont(Future.value(ByteData.view(bytes.buffer)));
+    await loaderBare.load();
+  }
+
+  // System fallback families for Flutter test engine missing glyph resolution.
+  const fallbackFamilies = ['Roboto', '.SF UI Text', '.AppleSystemUIFont'];
+  for (final family in fallbackFamilies) {
+    final fallbackLoader = FontLoader(family);
+    for (final fontPath in fontMap.values.toSet()) {
+      final file = File(fontPath);
+      if (file.existsSync()) {
+        fallbackLoader.addFont(
+            Future.value(ByteData.view(file.readAsBytesSync().buffer)));
+      }
+    }
+    await fallbackLoader.load();
+  }
+}
+
+File? _findMaterialIconsFile() {
+  final flutterRoot = Platform.environment['FLUTTER_ROOT'];
+  if (flutterRoot != null) {
+    final file = File(
+        '$flutterRoot/bin/cache/artifacts/material_fonts/MaterialIcons-Regular.otf');
+    if (file.existsSync()) return file;
+  }
+  // Fallback: resolve relative to the current flutter executable or fvm version
+  final flutterBin = File(Platform.resolvedExecutable);
+  final sdkDir = flutterBin.parent.parent;
+  final candidate = File(
+      '${sdkDir.path}/bin/cache/artifacts/material_fonts/MaterialIcons-Regular.otf');
+  if (candidate.existsSync()) return candidate;
+  return null;
 }
 
 /// Resolves the ui_kit_library package root from
