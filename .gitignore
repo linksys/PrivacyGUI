@@ -93,6 +93,10 @@ test/**/goldens/*
 test/**/localizations/failures/
 test/golden_test/*.html
 test/golden_test/*.json
+# Golden run artifacts written to the repo root by golden_runner.dart. These are
+# generated per run and must never be committed; line 92 only covers goldens
+# directories under test/.
+/goldens/
 
 # mock
 test/**/*.mocks.dart
