@@ -128,9 +128,9 @@ class UspStaticRoutingView extends ConsumerWidget {
     bool isSaving,
   ) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      padding: const EdgeInsets.only(bottom: AppSpacing.xxl),
       child: LayoutBlock(
-        padding: const EdgeInsets.all(AppSpacing.md),
+        padding: const EdgeInsets.all(AppSpacing.xxxl),
         child: Row(
           children: [
             AppSwitch(
@@ -151,7 +151,7 @@ class UspStaticRoutingView extends ConsumerWidget {
                     route.name.isNotEmpty ? route.name : loc(context).unnamed,
                   ),
                   AppText.bodySmall(
-                    '${route.destIpAddress} / ${route.destSubnetMask}',
+                    'Destination: ${route.destIpAddress} mask ${route.destSubnetMask}',
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                   AppText.bodySmall(

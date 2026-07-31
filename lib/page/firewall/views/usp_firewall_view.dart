@@ -118,7 +118,10 @@ class UspFirewallView extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AppText.titleSmall(loc(context).firewallProtection),
+          AppText.titleSmall(
+            loc(context).firewallProtection,
+            color: Theme.of(context).colorScheme.primary,
+          ),
           AppGap.md(),
           SwitchBlock(
             label: loc(context).ipv4SpiFirewall,
@@ -129,7 +132,7 @@ class UspFirewallView extends ConsumerWidget {
                       (m) => m.copyWith(isIPv4FirewallEnabled: v),
                     ),
           ),
-          AppGap.sm(),
+          AppGap.xxxl(),
           SwitchBlock(
             label: loc(context).ipv6SpiFirewall,
             value: fw.isIPv6FirewallEnabled,
@@ -159,7 +162,10 @@ class UspFirewallView extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AppText.titleSmall(loc(context).vpnPassthrough),
+          AppText.titleSmall(
+            loc(context).vpnPassthrough,
+            color: Theme.of(context).colorScheme.error,
+          ),
           AppGap.md(),
           SwitchBlock(
             label: loc(context).ipsecPassthrough,
@@ -170,7 +176,7 @@ class UspFirewallView extends ConsumerWidget {
                       (m) => m.copyWith(blockIPSec: !v),
                     ),
           ),
-          AppGap.sm(),
+          AppGap.xxxl(),
           SwitchBlock(
             label: loc(context).pptpPassthrough,
             value: !fw.blockPPTP,
@@ -180,7 +186,7 @@ class UspFirewallView extends ConsumerWidget {
                       (m) => m.copyWith(blockPPTP: !v),
                     ),
           ),
-          AppGap.sm(),
+          AppGap.xxxl(),
           SwitchBlock(
             label: loc(context).l2tpPassthrough,
             value: !fw.blockL2TP,
@@ -221,7 +227,7 @@ class UspFirewallView extends ConsumerWidget {
                       (m) => m.copyWith(blockAnonymousRequests: v),
                     ),
           ),
-          AppGap.sm(),
+          AppGap.xxxl(),
           SwitchBlock(
             label: loc(context).filterMulticast,
             value: fw.blockMulticast,
@@ -231,7 +237,7 @@ class UspFirewallView extends ConsumerWidget {
                       (m) => m.copyWith(blockMulticast: v),
                     ),
           ),
-          AppGap.sm(),
+          AppGap.xxxl(),
           SwitchBlock(
             label: loc(context).filterIdent,
             value: fw.blockIDENT,
