@@ -62,6 +62,7 @@ class UspDhcpReservationsDetailCard extends ConsumerWidget {
     WidgetRef ref,
     DhcpReservationUIModel reservation,
   ) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: LayoutBlock(
@@ -93,21 +94,24 @@ class UspDhcpReservationsDetailCard extends ConsumerWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  AppText.bodySmall(
-                    reservation.ip,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                  if (reservation.ip.isNotEmpty)
+                    AppText.bodySmall(
+                      reservation.ip,
+                      color: colorScheme.onSurfaceVariant,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                 ],
               ),
             ),
+            AppGap.sm(),
             AppIconButton(
               icon: AppIcon.font(Icons.edit_outlined, size: 18),
               onTap: isSaving
                   ? null
                   : () => _showEditDialog(context, ref, reservation),
             ),
+            AppGap.sm(),
             AppIconButton(
               icon: AppIcon.font(Icons.delete_outline, size: 18),
               onTap: isSaving

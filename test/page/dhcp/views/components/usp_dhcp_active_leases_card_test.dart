@@ -1,110 +1,134 @@
-@Tags(['ui'])
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
+import 'package:privacy_gui/page/_shared/models/dhcp_client_ui_model.dart';
 import 'package:privacy_gui/page/dhcp/views/components/usp_dhcp_active_leases_card.dart';
-import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../../golden_test/page/dhcp/fixtures/dhcp_test_data.dart';
-
-final _testTheme = AppTheme.create(
-  brightness: Brightness.light,
-  seedColor: Colors.blue,
-  designThemeBuilder: (c) => CustomDesignTheme.fromJson({'style': 'flat'}),
-);
-
-/// Mobile viewport used by the golden suite (GoldenDevice.phone480).
-const _phoneSize = Size(480, 800);
-
-/// Content width the page grid hands the card at [_phoneSize]:
-/// screen 480 minus the page margin (16) on both sides.
-const _phoneContentWidth = 448.0;
+import 'dhcp_card_test_harness.dart';
 
 /// Widget tests for [UspDhcpActiveLeasesCard] mobile layout (#1140).
 ///
 /// Regression coverage: the lease row used two fixed `context.colWidth(2)`
 /// boxes, which are sized against the *page* grid (216dp each on a 4-column
-/// mobile grid) rather than the row's own 400dp of usable width. That starved
+/// mobile grid) rather than the row's own 398dp of usable width. That starved
 /// the name/MAC `Expanded` down to zero width — wrapping one character per
-/// line — and overflowed the Row by ~50dp.
+/// line — and overflowed the Row.
+///
+/// `flutter_test_config.dart` in this directory loads the shipped fonts, so the
+/// measurements below reflect what users see. Without it Flutter's built-in test
+/// font applies and is ~1.8x wider, which reports text as truncated when it is
+/// not.
 void main() {
-  Future<void> pumpCard(WidgetTester tester) async {
-    await tester.binding.setSurfaceSize(_phoneSize);
-    tester.view.physicalSize = _phoneSize;
-    tester.view.devicePixelRatio = 1.0;
-    addTearDown(() async {
-      tester.view.resetPhysicalSize();
-      tester.view.resetDevicePixelRatio();
-      await tester.binding.setSurfaceSize(null);
+  group('UspDhcpActiveLeasesCard - mobile row layout', () {
+    /// The row's last child, so it is what an overflow pushes past the edge.
+    Finder leaseTextOf(DhcpClientUIModel client) =>
+        find.text(client.leaseExpiryFormatted);
+
+    testWidgets('lease rows do not overflow at mobile width', (tester) async {
+      await pumpDhcpCard(
+        tester,
+        UspDhcpActiveLeasesCard(clients: testClients),
+      );
+
+      expect(
+        tester.takeException(),
+        isNull,
+        reason: 'lease row Row must fit within the mobile content width',
+      );
     });
 
-    await tester.pumpWidget(
-      ProviderScope(
-        child: MaterialApp(
-          theme: _testTheme,
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            body: SingleChildScrollView(
-              child: SizedBox(
-                width: _phoneContentWidth,
-                child: UspDhcpActiveLeasesCard(clients: testClients),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-    await tester.pumpAndSettle();
-  }
+    testWidgets('device name and MAC each render on a single line',
+        (tester) async {
+      await pumpDhcpCard(
+        tester,
+        UspDhcpActiveLeasesCard(clients: testClients),
+      );
+      expect(tester.takeException(), isNull);
 
-  testWidgets('lease rows do not overflow at mobile width', (tester) async {
-    await pumpCard(tester);
+      // The bug stacked every character vertically, making these hundreds of
+      // dp tall.
+      expect(
+        tester.getSize(find.text('iPhone-15-Pro')).height,
+        lessThan(singleLineMaxHeight),
+        reason: 'device name must stay on one line, not wrap per character',
+      );
+      expect(
+        tester.getSize(find.text('AA:BB:CC:DD:EE:01')).height,
+        lessThan(singleLineMaxHeight),
+        reason: 'MAC address must stay on one line, not wrap per character',
+      );
+    });
 
-    expect(
-      tester.takeException(),
-      isNull,
-      reason: 'lease row Row must fit within the mobile content width',
-    );
-  });
+    testWidgets('lease column stays within its own row bounds', (tester) async {
+      await pumpDhcpCard(
+        tester,
+        UspDhcpActiveLeasesCard(clients: testClients),
+      );
+      expect(tester.takeException(), isNull);
 
-  testWidgets('device name and MAC each render on a single line',
-      (tester) async {
-    await pumpCard(tester);
-    tester.takeException(); // overflow is asserted by the test above
+      // Bind the text to its own row rather than assuming display order: the
+      // card re-sorts rows (online first, then by display name), so indexing
+      // LayoutBlock and the fixture list independently only lines up by
+      // coincidence.
+      final leaseText = leaseTextOf(testClients.first);
+      final row = find.ancestor(
+        of: leaseText,
+        matching: find.byType(LayoutBlock),
+      );
+      expect(row, findsOneWidget);
 
-    // A single line of bodyMedium/bodySmall is well under 40dp tall; the bug
-    // stacked every character vertically, making these hundreds of dp tall.
-    final nameSize = tester.getSize(find.text('iPhone-15-Pro'));
-    expect(
-      nameSize.height,
-      lessThan(40),
-      reason: 'device name must stay on one line, not wrap per character',
-    );
+      expect(
+        tester.getRect(leaseText).right,
+        lessThanOrEqualTo(tester.getRect(row).right),
+        reason: 'lease column must not be clipped off the right edge',
+      );
+    });
 
-    final macSize = tester.getSize(find.text('AA:BB:CC:DD:EE:01'));
-    expect(
-      macSize.height,
-      lessThan(40),
-      reason: 'MAC address must stay on one line, not wrap per character',
-    );
-  });
+    testWidgets('a long device name ellipsises instead of wrapping',
+        (tester) async {
+      // #1140 accepts truncation with an ellipsis; what it rules out is
+      // wrapping (one character per line) and overflowing the row. A name
+      // wider than its column is the case most likely to regress.
+      final client = DhcpClientUIModel(
+        mac: 'AA:BB:CC:DD:EE:09',
+        ip: '192.168.1.109',
+        leaseActive: true,
+        isOnline: true,
+        hostName: 'Peters-MacBook-Pro-16-inch-2023',
+        leaseExpiry: DateTime.now().add(const Duration(hours: 12)),
+      );
 
-  testWidgets('lease column stays within the row bounds', (tester) async {
-    await pumpCard(tester);
-    tester.takeException(); // overflow is asserted by the first test
+      await pumpDhcpCard(
+        tester,
+        UspDhcpActiveLeasesCard(clients: [client]),
+      );
+      expect(
+        tester.takeException(),
+        isNull,
+        reason: 'an over-long name must not overflow the row',
+      );
 
-    // The lease column is the row's last child, so it is what the overflow
-    // pushed past the right edge and clipped.
-    final blockRight = tester.getRect(find.byType(LayoutBlock).first).right;
-    final expiryRight =
-        tester.getRect(find.text(testClients.first.leaseExpiryFormatted)).right;
-    expect(
-      expiryRight,
-      lessThanOrEqualTo(blockRight),
-      reason: 'lease column must not be clipped off the right edge',
-    );
+      final name = find.text(client.hostName);
+      final paragraph = tester.renderObject<RenderParagraph>(name);
+      expect(
+        paragraph.didExceedMaxLines,
+        isTrue,
+        reason: 'this name is wider than its column, so it should ellipsise — '
+            'if it now fits, the fixture no longer covers the truncation path',
+      );
+      expect(
+        tester.getSize(name).height,
+        lessThan(singleLineMaxHeight),
+        reason: 'ellipsised text must stay on one line',
+      );
+
+      final row = find.ancestor(of: name, matching: find.byType(LayoutBlock));
+      expect(
+        tester.getRect(name).right,
+        lessThanOrEqualTo(tester.getRect(row).right),
+        reason: 'ellipsised text must stay inside the row',
+      );
+    });
   });
 }
