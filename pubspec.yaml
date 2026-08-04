@@ -110,6 +110,21 @@ dev_dependencies:
   flutter_lints: ^2.0.1
   args: ^2.6.0
 
+# TEMPORARY — local development only. Do not merge.
+# Points the UI kit packages at the local checkout so the unreleased
+# ChatMessage.toolResults() API can be used while fixing #1191.
+# All three must be overridden together: generative_ui and ui_kit_library
+# share gen_ui_contracts, and pub rejects mixing path and git sources for it.
+# Remove once the UI kit cuts a tag containing that commit and the
+# generative_ui / ui_kit_library refs above are bumped to it.
+dependency_overrides:
+  generative_ui:
+    path: ../privacyGUI-UI-kit/generative_ui
+  ui_kit_library:
+    path: ../privacyGUI-UI-kit
+  gen_ui_contracts:
+    path: ../privacyGUI-UI-kit/gen_ui_contracts
+
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 
