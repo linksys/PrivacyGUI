@@ -19,6 +19,16 @@ class TopNavigationMenu extends StatefulWidget {
 }
 
 class _TopNavigationMenuState extends State<TopNavigationMenu> {
+  // Bumped on every chip tap to force AppChipGroup to rebuild from scratch and
+  // re-read the authoritative `widget.selected`. AppChipGroup owns its
+  // selection state internally and optimistically moves the highlight on tap,
+  // only re-syncing to its `selectedIndices` prop when that prop changes. When
+  // a navigation is cancelled (e.g. the user picks "Go back" in the unsaved
+  // changes dialog), `widget.selected` never changes, so without this the
+  // highlight would stay stuck on the cancelled destination. Re-keying forces
+  // the highlight back to the still-current option. See PrivacyGUI#1158.
+  int _syncToken = 0;
+
   @override
   void initState() {
     super.initState();
@@ -37,6 +47,7 @@ class _TopNavigationMenuState extends State<TopNavigationMenu> {
     return Theme(
       data: darkTheme,
       child: AppChipGroup(
+        key: ValueKey('top-nav-chip-group-$selectedIndex-$_syncToken'),
         chips: widget.items
             .map((type) => ChipItem(
                   label: type.resloveLabel(context),
@@ -54,6 +65,20 @@ class _TopNavigationMenuState extends State<TopNavigationMenu> {
         onSelectionChanged: (selectedIndices) {
           if (selectedIndices.isNotEmpty) {
             widget.onItemClick?.call(selectedIndices.first);
+            // Force AppChipGroup to re-assert `widget.selected` on the next
+            // frame. If the navigation is confirmed, the controller updates
+            // `selected` and the highlight follows; if it is cancelled, the
+            // highlight reverts to the current option instead of staying on
+            // the tapped-but-rejected destination.
+            //
+            // This bump MUST stay here (synchronous, on every tap). It cannot
+            // move to didUpdateWidget: a cancelled navigation leaves the
+            // MenuController's `selected` unchanged, so this widget never
+            // rebuilds and didUpdateWidget never fires — the highlight would
+            // stay stuck on the rejected destination (the exact #1158 bug).
+            if (mounted) {
+              setState(() => _syncToken++);
+            }
           }
         },
       ),
