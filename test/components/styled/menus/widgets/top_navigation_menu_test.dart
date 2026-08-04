@@ -44,18 +44,27 @@ void main() {
   }
 
   /// Returns true when the chip carrying [label] is rendered as selected.
-  /// AppChipGroup renders the selected chip's label in bold (see
-  /// app_chip_group.dart: `fontWeight: isSelected ? FontWeight.bold : normal`).
+  ///
+  /// Reads the authoritative `selected` semantics flag that AppChipGroup emits
+  /// per chip (`Semantics(label: chip.label, selected: isSelected, ...)` in
+  /// app_chip_group.dart). This is the accessibility contract for the selected
+  /// state, so it is stable across visual-style changes — unlike asserting on
+  /// the selected chip's bold font weight, which couples the test to a
+  /// ui_kit_library rendering detail that could switch to colour/underline.
   bool isChipSelected(WidgetTester tester, String label) {
-    final appText = tester.widget<AppText>(
-      find
-          .ancestor(
-            of: find.text(label),
-            matching: find.byType(AppText),
-          )
-          .first,
+    // Scope to the AppChipGroup's own Semantics node for this chip (which
+    // carries `selected`), not the inner AppText's text-only semantics.
+    final chipSemantics = find.ancestor(
+      of: find.text(label),
+      matching: find.byWidgetPredicate(
+        (w) => w is Semantics && w.properties.selected != null,
+      ),
     );
-    return appText.fontWeight == FontWeight.bold;
+    expect(chipSemantics, findsOneWidget,
+        reason: 'Expected exactly one selectable chip semantics node for '
+            '"$label"');
+    final semantics = tester.widget<Semantics>(chipSemantics);
+    return semantics.properties.selected ?? false;
   }
 
   testWidgets(

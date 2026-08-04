@@ -65,6 +65,12 @@ class _TopNavigationMenuState extends State<TopNavigationMenu> {
             // `selected` and the highlight follows; if it is cancelled, the
             // highlight reverts to the current option instead of staying on
             // the tapped-but-rejected destination.
+            //
+            // This bump MUST stay here (synchronous, on every tap). It cannot
+            // move to didUpdateWidget: a cancelled navigation leaves the
+            // MenuController's `selected` unchanged, so this widget never
+            // rebuilds and didUpdateWidget never fires — the highlight would
+            // stay stuck on the rejected destination (the exact #1158 bug).
             if (mounted) {
               setState(() => _syncToken++);
             }
