@@ -59,6 +59,7 @@ Future<bool?> showChangePasswordDialog(
         children: [
           AppPasswordInput(
             key: const Key('newPasswordField'),
+            identifier: 'admin-new-password',
             controller: controller,
             label: loc(context).newPassword,
             rules: passwordRules,
@@ -72,6 +73,7 @@ Future<bool?> showChangePasswordDialog(
           AppGap.lg(),
           AppPasswordInput(
             key: const Key('confirmPasswordField'),
+            identifier: 'admin-confirm-password',
             controller: confirmController,
             label: loc(context).confirmPassword,
             onChanged: (value) {

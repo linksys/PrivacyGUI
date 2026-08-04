@@ -60,28 +60,28 @@ class UspMenuView extends ConsumerWidget {
 
     return [
       AppSectionItemData(
-        semanticLabel: 'menu-wifi-settings',
+        identifier: 'menu-wifi-settings',
         title: loc(context).menuWifiSettings,
         description: loc(context).menuWifiSettingsDesc,
         iconData: Icons.wifi,
         onTap: () => context.goNamed(RouteNamed.uspWifiSettings),
       ),
       AppSectionItemData(
-        semanticLabel: 'menu-topology',
+        identifier: 'menu-topology',
         title: loc(context).topology,
         description: loc(context).menuTopologyDesc,
         iconData: Icons.account_tree,
         onTap: () => context.goNamed(RouteNamed.uspTopology),
       ),
       AppSectionItemData(
-        semanticLabel: 'menu-devices',
+        identifier: 'menu-devices',
         title: loc(context).devices,
         description: loc(context).instantDevicesDesc,
         iconData: Icons.devices,
         onTap: () => context.goNamed(RouteNamed.uspDeviceList),
       ),
       AppSectionItemData(
-        semanticLabel: 'menu-instant-safety',
+        identifier: 'menu-instant-safety',
         title: loc(context).instantSafety,
         description: loc(context).menuInstantSafetyDesc,
         iconData: Icons.shield_outlined,
@@ -91,7 +91,7 @@ class UspMenuView extends ConsumerWidget {
         onTap: () => context.goNamed(RouteNamed.uspInstantSafety),
       ),
       AppSectionItemData(
-        semanticLabel: 'menu-instant-privacy',
+        identifier: 'menu-instant-privacy',
         title: loc(context).instantPrivacy,
         description: loc(context).instantPrivacyDesc,
         iconData: Icons.lock_outlined,
@@ -101,42 +101,42 @@ class UspMenuView extends ConsumerWidget {
         onTap: () => context.goNamed(RouteNamed.uspInstantPrivacy),
       ),
       AppSectionItemData(
-        semanticLabel: 'menu-administration',
+        identifier: 'menu-administration',
         title: loc(context).administration,
         description: loc(context).menuAdministrationDesc,
         iconData: Icons.admin_panel_settings,
         onTap: () => context.goNamed(RouteNamed.uspAdmin),
       ),
       AppSectionItemData(
-        semanticLabel: 'menu-advanced-settings',
+        identifier: 'menu-advanced-settings',
         title: loc(context).advancedSettings,
         description: loc(context).menuAdvancedSettingsDesc,
         iconData: Icons.tune,
         onTap: () => context.goNamed(RouteNamed.uspAdvancedSettings),
       ),
       // AppSectionItemData(
-      //   semanticLabel: 'menu-system-logs',
+      //   identifier: 'menu-system-logs',
       //   title: 'System Logs',
       //   description: 'View router log files',
       //   iconData: Icons.article_outlined,
       //   onTap: () => context.goNamed(RouteNamed.uspSystemLog),
       // ),
       AppSectionItemData(
-        semanticLabel: 'menu-statistics',
+        identifier: 'menu-statistics',
         title: loc(context).statistics,
         description: loc(context).menuStatisticsDesc,
         iconData: Icons.bar_chart,
         onTap: () => context.goNamed(RouteNamed.uspStatistics),
       ),
       // AppSectionItemData(
-      //   semanticLabel: 'menu-speed-test',
+      //   identifier: 'menu-speed-test',
       //   title: loc(context).speedTest,
       //   description: loc(context).menuSpeedTestDesc,
       //   iconData: Icons.speed,
       //   onTap: () => context.goNamed(RouteNamed.uspSpeedTest),
       // ), // disabled: blocked by FW support (#857)
       AppSectionItemData(
-        semanticLabel: 'menu-network-diagnostics',
+        identifier: 'menu-network-diagnostics',
         title: loc(context).networkDiagnostics,
         description: loc(context).menuNetworkDiagnosticsDesc,
         iconData: Icons.network_check,
@@ -179,6 +179,7 @@ class UspMenuView extends ConsumerWidget {
             onTap: item.onTap,
             badges: item.badges,
             semanticLabel: item.semanticLabel,
+            identifier: item.identifier,
           );
         },
       ),

@@ -42,6 +42,11 @@ class _TopNavigationMenuState extends State<TopNavigationMenu> {
                   label: type.resloveLabel(context),
                   icon: type.resolveIcon(),
                   enabled: true,
+                  // Layout-neutral test hook: the primary-nav destinations
+                  // render as top chips on desktop and a bottom bar on mobile;
+                  // both emit the same `nav-<home|menu|support>` identifier so
+                  // E2E targeting is breakpoint-agnostic. See PrivacyGUI#1172.
+                  identifier: 'nav-${type.name}',
                 ))
             .toList(),
         selectedIndices: {selectedIndex},

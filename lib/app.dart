@@ -7,8 +7,8 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:privacy_gui/constants/_constants.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
-import 'package:privacy_gui/demo/providers/demo_theme_config_provider.dart';
-import 'package:privacy_gui/demo/theme_studio/demo_theme_builder.dart';
+import 'package:privacy_gui/demo/providers/theme_studio_config_provider.dart';
+import 'package:privacy_gui/demo/theme_studio/studio_theme_builder.dart';
 import 'package:privacy_gui/theme/theme_json_config.dart';
 import 'package:privacy_gui/localization/fallback_font_resolver.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -114,7 +114,7 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
     final themeConfigAsync = ref.watch(themeConfigProvider);
 
     // Watch Theme Studio config for dynamic theme overrides
-    final demoConfig = ref.watch(demoThemeConfigProvider);
+    final demoConfig = ref.watch(themeStudioConfigProvider);
 
     // Always use MaterialApp.router to preserve navigation state
     // Use default theme during loading to prevent router swap
@@ -158,16 +158,16 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
     required AppSettings appSettings,
     required Locale systemLocale,
     required ThemeJsonConfig themeConfig,
-    required DemoThemeConfig demoConfig,
+    required ThemeStudioConfig demoConfig,
     required Color? userThemeColor,
   }) {
-    var appLightTheme = buildDemoThemeData(
+    var appLightTheme = buildStudioThemeData(
       brightness: Brightness.light,
       config: demoConfig,
       themeConfig: themeConfig,
       userThemeColor: userThemeColor,
     );
-    var appDarkTheme = buildDemoThemeData(
+    var appDarkTheme = buildStudioThemeData(
       brightness: Brightness.dark,
       config: demoConfig,
       themeConfig: themeConfig,

@@ -170,3 +170,7 @@ macos/
 # Untrack auto-generated CLAUDE.md in project root
 CLAUDE.md
 .mcp.json
+
+# Demo fixture data — fetched at runtime, produced by the E2E canonical base
+# (single source of truth). Generated locally via the E2E export; never committed.
+/web/data/

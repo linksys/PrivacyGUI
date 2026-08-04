@@ -121,6 +121,7 @@ class UspFirewallView extends ConsumerWidget {
           AppText.titleSmall(loc(context).firewallProtection),
           AppGap.md(),
           SwitchBlock(
+            identifier: 'firewall-spi-ipv4',
             label: loc(context).ipv4SpiFirewall,
             value: fw.isIPv4FirewallEnabled,
             onChanged: disabled
@@ -131,6 +132,7 @@ class UspFirewallView extends ConsumerWidget {
           ),
           AppGap.sm(),
           SwitchBlock(
+            identifier: 'firewall-spi-ipv6',
             label: loc(context).ipv6SpiFirewall,
             value: fw.isIPv6FirewallEnabled,
             onChanged: disabled
@@ -252,6 +254,7 @@ class UspFirewallView extends ConsumerWidget {
 
   Widget _buildIpv6PortServiceLink(BuildContext context) {
     return NavLinkBlock(
+      identifier: 'firewall-ipv6-port-service',
       title: loc(context).ipv6PortService,
       description: loc(context).manageIpv6PortRules,
       onTap: () => context.goNamed(RouteNamed.uspIpv6PortService),

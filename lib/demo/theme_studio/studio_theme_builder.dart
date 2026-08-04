@@ -1,36 +1,44 @@
 import 'package:flutter/material.dart';
 import 'package:privacy_gui/di.dart';
-import 'package:privacy_gui/demo/providers/demo_theme_config_provider.dart';
+import 'package:privacy_gui/demo/providers/theme_studio_config_provider.dart';
 import 'package:privacy_gui/theme/theme_json_config.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Builds a [ThemeData] by merging a base [ThemeJsonConfig] with
-/// [DemoThemeConfig] overrides from the Theme Studio.
+/// [ThemeStudioConfig] overrides from the Theme Studio.
 ///
 /// [themeConfig] — base JSON config (device-specific or default).
 /// Falls back to `getIt<ThemeJsonConfig>()` when omitted.
 ///
 /// Used by both `LinksysApp` (production) and `DemoLinksysApp` (demo mode)
 /// to keep theme-building logic in a single place.
-ThemeData buildDemoThemeData({
-  required Brightness brightness,
-  required DemoThemeConfig config,
-  ThemeJsonConfig? themeConfig,
+/// Merges a base theme JSON with [ThemeStudioConfig] overrides into the
+/// effective theme JSON.
+///
+/// Pure function (no I/O), extracted so the override semantics can be unit
+/// tested directly. The critical contract: `style` / `visualEffects` are only
+/// overwritten when the studio config set them explicitly (non-null); when
+/// null they inherit from [baseJson] (device theme / THEME_JSON). This is what
+/// stops the studio defaults from clobbering the build-time theme in
+/// production / E2E builds where Theme Studio is never touched.
+Map<String, dynamic> mergeStudioConfigJson(
+  Map<String, dynamic> baseJson,
+  ThemeStudioConfig config, {
   Color? userThemeColor,
 }) {
-  final effectiveConfig = themeConfig ?? getIt<ThemeJsonConfig>();
-  final baseJson = brightness == Brightness.dark
-      ? effectiveConfig.darkJson
-      : effectiveConfig.lightJson;
-
   final dynamicJson = Map<String, dynamic>.from(baseJson);
-  dynamicJson['style'] = config.style;
+  // style / visualEffects are only overwritten when the user explicitly set
+  // them in Theme Studio (non-null). When null, the base config's values
+  // (device theme / THEME_JSON) are preserved.
+  if (config.style != null) {
+    dynamicJson['style'] = config.style;
+  }
   if (config.globalOverlay != null) {
     dynamicJson['globalOverlay'] = config.globalOverlay!.name;
-  } else {
-    dynamicJson.remove('globalOverlay');
   }
-  dynamicJson['visualEffects'] = config.visualEffects;
+  if (config.visualEffects != null) {
+    dynamicJson['visualEffects'] = config.visualEffects;
+  }
 
   // Seed color: config takes priority, then userThemeColor fallback
   final effectiveSeedColor = config.seedColor ?? userThemeColor;
@@ -64,9 +72,28 @@ ThemeData buildDemoThemeData({
     dynamicJson['overrides'] = config.overrides!.toJson();
   }
 
+  return dynamicJson;
+}
+
+ThemeData buildStudioThemeData({
+  required Brightness brightness,
+  required ThemeStudioConfig config,
+  ThemeJsonConfig? themeConfig,
+  Color? userThemeColor,
+}) {
+  final effectiveConfig = themeConfig ?? getIt<ThemeJsonConfig>();
+  final baseJson = brightness == Brightness.dark
+      ? effectiveConfig.darkJson
+      : effectiveConfig.lightJson;
+
+  final dynamicJson =
+      mergeStudioConfigJson(baseJson, config, userThemeColor: userThemeColor);
+
   final designTheme = CustomDesignTheme.fromJson(dynamicJson);
 
-  // Resolve final seed color for AppTheme.create
+  // Resolve final seed color for AppTheme.create. mergeStudioConfigJson has
+  // already written the effective seed (config.seedColor ?? userThemeColor)
+  // into dynamicJson, so parsing it back covers both sources.
   final seedColorHex = dynamicJson['seedColor'] as String?;
   Color? parsedSeedColor;
   if (seedColorHex != null) {
@@ -79,8 +106,7 @@ ThemeData buildDemoThemeData({
       }
     } catch (_) {}
   }
-  final resolvedSeedColor =
-      effectiveSeedColor ?? parsedSeedColor ?? AppPalette.brandPrimary;
+  final resolvedSeedColor = parsedSeedColor ?? AppPalette.brandPrimary;
 
   return AppTheme.create(
     brightness: brightness,

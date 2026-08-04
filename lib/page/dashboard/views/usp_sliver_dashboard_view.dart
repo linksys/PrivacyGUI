@@ -21,6 +21,7 @@ import 'package:privacy_gui/page/dashboard/providers/usp_layout_preferences_prov
 import 'package:privacy_gui/page/dashboard/views/components/settings/usp_layout_settings_panel.dart';
 import 'package:privacy_gui/page/dashboard/views/dialogs/preset_selection_dialog.dart';
 import 'package:privacy_gui/config/global_config.dart';
+import 'package:privacy_gui/constants/build_config.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sliver_dashboard/sliver_dashboard.dart';
@@ -55,6 +56,11 @@ class _UspSliverDashboardViewState
   Future<void> _showPresetDialogIfNeeded() async {
     if (_presetDialogShown) return;
     _presetDialogShown = true;
+
+    // E2E mock build: suppress the first-run preset (onboarding) dialog
+    // auto-popup so the dashboard loads deterministically. Tests that need it
+    // open the dialog explicitly. (P0-2)
+    if (BuildConfig.e2eMock) return;
 
     // Skip preset dialog in remote mode — uses fixed remote preset
     if (!GlobalConfig.remote.showPresetDialog) return;
@@ -182,6 +188,9 @@ class _UspSliverDashboardViewState
           children: [
             if (isEditMode) ...[
               AppIconButton(
+                identifier: 'dashboard-optimize-layout',
+                semanticLabel: loc(context).optimizeLayout,
+                tooltip: loc(context).optimizeLayout,
                 icon: AppIcon.font(Icons.auto_fix_high),
                 onTap: () {
                   final controller =
@@ -202,21 +211,33 @@ class _UspSliverDashboardViewState
               ),
               AppGap.sm(),
               AppIconButton(
+                identifier: 'dashboard-layout-settings',
+                semanticLabel: loc(context).settings,
+                tooltip: loc(context).settings,
                 icon: AppIcon.font(Icons.tune),
                 onTap: () => _openLayoutSettings(context),
               ),
               AppGap.sm(),
               AppIconButton(
+                identifier: 'dashboard-edit-cancel',
+                semanticLabel: loc(context).cancel,
+                tooltip: loc(context).cancel,
                 icon: AppIcon.font(Icons.close),
                 onTap: _cancelEditMode,
               ),
               AppGap.sm(),
               AppIconButton(
+                identifier: 'dashboard-edit-commit',
+                semanticLabel: loc(context).done,
+                tooltip: loc(context).done,
                 icon: AppIcon.font(Icons.check),
                 onTap: _commitEditMode,
               ),
             ] else ...[
               AppIconButton(
+                identifier: 'dashboard-print',
+                semanticLabel: loc(context).print,
+                tooltip: loc(context).print,
                 icon: AppIcon.font(Icons.print),
                 onTap: () async {
                   final orchState =
@@ -238,6 +259,9 @@ class _UspSliverDashboardViewState
               ),
               AppGap.sm(),
               AppIconButton(
+                identifier: 'dashboard-refresh',
+                semanticLabel: loc(context).refresh,
+                tooltip: loc(context).refresh,
                 icon: AppIcon.font(Icons.refresh),
                 onTap: () => ref
                     .read(dashboardOrchestratorProvider.notifier)
@@ -247,6 +271,9 @@ class _UspSliverDashboardViewState
               if (!isRemoteMode) ...[
                 AppGap.sm(),
                 AppIconButton(
+                  identifier: 'dashboard-edit',
+                  semanticLabel: loc(context).edit,
+                  tooltip: loc(context).edit,
                   icon: AppIcon.font(Icons.edit),
                   onTap: _enterEditMode,
                 ),

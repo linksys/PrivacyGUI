@@ -99,6 +99,7 @@ class _PortTriggeringDialogState extends State<PortTriggeringDialog> {
           children: [
             AppTextField(
               controller: _descController,
+              identifier: 'pf-trigger-description',
               hintText: loc(context).description,
             ),
             AppGap.xl(),
@@ -109,6 +110,7 @@ class _PortTriggeringDialogState extends State<PortTriggeringDialog> {
                 Expanded(
                   child: AppTextField(
                     controller: _trigPortStartController,
+                    identifier: 'pf-trigger-trigger-port-start',
                     hintText: loc(context).startPort,
                     keyboardType: TextInputType.number,
                   ),
@@ -117,6 +119,7 @@ class _PortTriggeringDialogState extends State<PortTriggeringDialog> {
                 Expanded(
                   child: AppTextField(
                     controller: _trigPortEndController,
+                    identifier: 'pf-trigger-trigger-port-end',
                     hintText: loc(context).endPortOptional,
                     keyboardType: TextInputType.number,
                   ),
@@ -149,6 +152,7 @@ class _PortTriggeringDialogState extends State<PortTriggeringDialog> {
                 Expanded(
                   child: AppTextField(
                     controller: _fwdPortStartController,
+                    identifier: 'pf-trigger-forward-port-start',
                     hintText: loc(context).startPort,
                     keyboardType: TextInputType.number,
                   ),
@@ -157,6 +161,7 @@ class _PortTriggeringDialogState extends State<PortTriggeringDialog> {
                 Expanded(
                   child: AppTextField(
                     controller: _fwdPortEndController,
+                    identifier: 'pf-trigger-forward-port-end',
                     hintText: loc(context).endPortOptional,
                     keyboardType: TextInputType.number,
                   ),
@@ -187,6 +192,7 @@ class _PortTriggeringDialogState extends State<PortTriggeringDialog> {
               children: [
                 AppText.bodyMedium(loc(context).enabled),
                 AppSwitch(
+                  identifier: 'pf-trigger-enabled',
                   value: _enabled,
                   onChanged: (value) => setState(() => _enabled = value),
                 ),

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ui_kit_library/ui_kit.dart';
-import 'package:privacy_gui/demo/providers/demo_theme_config_provider.dart';
+import 'package:privacy_gui/demo/providers/theme_studio_config_provider.dart';
 import '../widgets/section_header.dart';
 import '../widgets/compact_color_picker.dart';
 
@@ -10,7 +10,7 @@ class TopologyTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final config = ref.watch(demoThemeConfigProvider);
+    final config = ref.watch(themeStudioConfigProvider);
     final override = config.overrides?.component?.topology;
 
     return Column(
@@ -197,7 +197,7 @@ class TopologyTab extends ConsumerWidget {
                     isSelected: isSelected,
                     onTap: () {
                       ref
-                          .read(demoThemeConfigProvider.notifier)
+                          .read(themeStudioConfigProvider.notifier)
                           .updateTopologyColors(ethernetAnimationType: type);
                     },
                   );
@@ -208,7 +208,7 @@ class TopologyTab extends ConsumerWidget {
               label: 'Color',
               color: override?.ethernetLinkColor,
               onChanged: (c) => ref
-                  .read(demoThemeConfigProvider.notifier)
+                  .read(themeStudioConfigProvider.notifier)
                   .updateTopologyColors(ethernetLinkColor: c),
             ),
           ],
@@ -238,7 +238,7 @@ class TopologyTab extends ConsumerWidget {
                         isSelected: isSelected,
                         onTap: () {
                           ref
-                              .read(demoThemeConfigProvider.notifier)
+                              .read(themeStudioConfigProvider.notifier)
                               .updateTopologyColors(wifiAnimationType: type);
                         },
                       );
@@ -253,21 +253,21 @@ class TopologyTab extends ConsumerWidget {
                         label: 'Strong',
                         color: override?.wifiStrongColor,
                         onChanged: (c) => ref
-                            .read(demoThemeConfigProvider.notifier)
+                            .read(themeStudioConfigProvider.notifier)
                             .updateTopologyColors(wifiStrongColor: c),
                       ),
                       CompactColorPicker(
                         label: 'Medium',
                         color: override?.wifiMediumColor,
                         onChanged: (c) => ref
-                            .read(demoThemeConfigProvider.notifier)
+                            .read(themeStudioConfigProvider.notifier)
                             .updateTopologyColors(wifiMediumColor: c),
                       ),
                       CompactColorPicker(
                         label: 'Weak',
                         color: override?.wifiWeakColor,
                         onChanged: (c) => ref
-                            .read(demoThemeConfigProvider.notifier)
+                            .read(themeStudioConfigProvider.notifier)
                             .updateTopologyColors(wifiWeakColor: c),
                       ),
                     ],
@@ -290,21 +290,21 @@ class TopologyTab extends ConsumerWidget {
           'Gateway',
           override?.gatewayRenderer,
           (type) => ref
-              .read(demoThemeConfigProvider.notifier)
+              .read(themeStudioConfigProvider.notifier)
               .updateTopologyColors(gatewayRenderer: type),
           [
             CompactColorPicker(
               label: 'Bg',
               color: override?.gatewayNormalBackgroundColor,
               onChanged: (c) => ref
-                  .read(demoThemeConfigProvider.notifier)
+                  .read(themeStudioConfigProvider.notifier)
                   .updateTopologyColors(gatewayNormalBackgroundColor: c),
             ),
             CompactColorPicker(
                 label: 'Icon',
                 color: override?.gatewayNormalIconColor,
                 onChanged: (c) => ref
-                    .read(demoThemeConfigProvider.notifier)
+                    .read(themeStudioConfigProvider.notifier)
                     .updateTopologyColors(gatewayNormalIconColor: c)),
           ],
         ),
@@ -314,21 +314,21 @@ class TopologyTab extends ConsumerWidget {
           'Extender',
           override?.extenderRenderer,
           (type) => ref
-              .read(demoThemeConfigProvider.notifier)
+              .read(themeStudioConfigProvider.notifier)
               .updateTopologyColors(extenderRenderer: type),
           [
             CompactColorPicker(
               label: 'Bg',
               color: override?.extenderNormalBackgroundColor,
               onChanged: (c) => ref
-                  .read(demoThemeConfigProvider.notifier)
+                  .read(themeStudioConfigProvider.notifier)
                   .updateTopologyColors(extenderNormalBackgroundColor: c),
             ),
             CompactColorPicker(
                 label: 'Icon',
                 color: override?.extenderNormalIconColor,
                 onChanged: (c) => ref
-                    .read(demoThemeConfigProvider.notifier)
+                    .read(themeStudioConfigProvider.notifier)
                     .updateTopologyColors(extenderNormalIconColor: c)),
           ],
         ),
@@ -338,21 +338,21 @@ class TopologyTab extends ConsumerWidget {
           'Client',
           override?.clientRenderer,
           (type) => ref
-              .read(demoThemeConfigProvider.notifier)
+              .read(themeStudioConfigProvider.notifier)
               .updateTopologyColors(clientRenderer: type),
           [
             CompactColorPicker(
               label: 'Bg',
               color: override?.clientNormalBackgroundColor,
               onChanged: (c) => ref
-                  .read(demoThemeConfigProvider.notifier)
+                  .read(themeStudioConfigProvider.notifier)
                   .updateTopologyColors(clientNormalBackgroundColor: c),
             ),
             CompactColorPicker(
                 label: 'Icon',
                 color: override?.clientNormalIconColor,
                 onChanged: (c) => ref
-                    .read(demoThemeConfigProvider.notifier)
+                    .read(themeStudioConfigProvider.notifier)
                     .updateTopologyColors(clientNormalIconColor: c)),
           ],
         ),
