@@ -11,10 +11,16 @@ class PendingConfirmation {
   final Map<String, dynamic> params;
   final ToolUseBlock toolUse;
 
+  /// Conversation generation the batch that produced this confirmation belongs
+  /// to. Validated before the result is emitted so a confirmation resolving
+  /// after the conversation moved on cannot inject an orphaned `tool_result`.
+  final int generation;
+
   const PendingConfirmation({
     required this.command,
     required this.params,
     required this.toolUse,
+    required this.generation,
   });
 }
 
@@ -61,6 +67,13 @@ class RouterChatController extends ChangeNotifier {
     logger.d('[AI]: $message');
   }
 
+  // Tool result `status` values. These are part of the protocol the model
+  // reads, so they are defined once rather than spelled out at each site.
+  static const _statusExecuted = 'executed';
+  static const _statusCancelled = 'cancelled';
+  static const _statusNotExecuted = 'not_executed';
+  static const _statusRendered = 'rendered';
+
   final IConversationGenerator _generator;
   final IRouterCommandProvider _commandProvider;
   final String _routerContext;
@@ -71,6 +84,7 @@ class RouterChatController extends ChangeNotifier {
   List<SystemPromptPart>? _systemPromptParts;
   List<GenTool>? _routerTools;
   Map<String, RouterCommand>? _commandsByName;
+  Future<Map<String, RouterCommand>>? _commandsLoad;
 
   /// Tool results for the batch currently being processed. Flushed by
   /// [_flushPendingResults].
@@ -136,18 +150,28 @@ class RouterChatController extends ChangeNotifier {
         'System prompt initialized: ${_systemPromptParts!.length} parts, static cached: ${_systemPromptParts!.first.cache}');
   }
 
-  /// Build router tools from command provider.
-  Future<List<GenTool>> _getRouterTools() async {
-    if (_routerTools != null) return _routerTools!;
+  /// Load the command registry once per conversation.
+  ///
+  /// Both the tool definitions sent to the model and the per-name lookup are
+  /// derived here so the provider is queried once, and the two views cannot
+  /// drift apart. The future itself is cached so concurrent first calls share
+  /// one query.
+  Future<Map<String, RouterCommand>> _loadCommands() {
+    return _commandsLoad ??= _commandProvider.listCommands().then((commands) {
+      _routerTools = commands
+          .map((cmd) => GenTool(
+                name: cmd.name,
+                description: cmd.description,
+                inputSchema: cmd.inputSchema,
+              ))
+          .toList();
+      return _commandsByName = {for (final c in commands) c.name: c};
+    });
+  }
 
-    final commands = await _commandProvider.listCommands();
-    _routerTools = commands
-        .map((cmd) => GenTool(
-              name: cmd.name,
-              description: cmd.description,
-              inputSchema: cmd.inputSchema,
-            ))
-        .toList();
+  /// Tool definitions for the model, loading the registry if needed.
+  Future<List<GenTool>> _getRouterTools() async {
+    await _loadCommands();
     return _routerTools!;
   }
 
@@ -159,7 +183,7 @@ class RouterChatController extends ChangeNotifier {
     _lastUserMessage = message;
 
     // Insert pending tool results if needed
-    _insertPendingToolResults();
+    _closeOutOpenBatch();
 
     // Add user message
     final userMessage = ChatMessage.user(message);
@@ -181,7 +205,14 @@ class RouterChatController extends ChangeNotifier {
   /// - Detecting confirmation requirements
   /// - Looping for multi-turn tool use
   Future<void> _processConversation() async {
+    // Snapshot the generation this exchange belongs to. Every await below is a
+    // point where the user can reset the conversation, and anything written
+    // afterwards would land in a conversation this work no longer belongs to.
+    final generation = _conversationGeneration;
+
     final tools = await _getRouterTools();
+    if (_isStale(generation)) return;
+
     var loopCount = 0;
     const maxLoops = 5;
 
@@ -203,6 +234,7 @@ class RouterChatController extends ChangeNotifier {
           tools: tools.isNotEmpty ? tools : null,
           systemPromptParts: _systemPromptParts,
         );
+        if (_isStale(generation)) return;
         _log(
             '_processConversation: LLM responded, stopReason=${response.stopReason}');
 
@@ -260,42 +292,57 @@ class RouterChatController extends ChangeNotifier {
         _pendingResults.clear();
 
         for (final toolUse in toolUseBlocks) {
-          // Only the first confirmation-required command is executed in this
-          // batch. Answering the rest with an explicit "not executed" result
-          // keeps the batch complete and tells the model to ask again.
-          if (deferred != null) {
-            final command = await _findCommand(toolUse.name);
-            if (command?.requiresConfirmation ?? false) {
+          // Every tool is wrapped so that a failure anywhere — including a
+          // provider lookup — still yields a result. Leaving one unanswered
+          // would make the next request invalid.
+          try {
+            // Only the first confirmation-required command is executed in this
+            // batch. Answering the rest with an explicit "not executed" result
+            // keeps the batch complete and tells the model to ask again.
+            if (deferred != null) {
+              final command = await _findCommand(toolUse.name);
+              if (_isStale(generation)) return;
+              if (command?.requiresConfirmation ?? false) {
+                _log(
+                    '_processConversation: deferring extra confirmation-required '
+                    'tool "${toolUse.name}" to a later turn');
+                _pendingResults.add(ToolResultPart(
+                  toolUseId: toolUse.id,
+                  result: {
+                    'status': _statusNotExecuted,
+                    'reason':
+                        'Only one operation requiring confirmation can be '
+                            'handled at a time. Request this one again in a '
+                            'follow-up turn.',
+                  },
+                ));
+                continue;
+              }
+            }
+
+            _log('_processConversation: executing tool "${toolUse.name}"');
+            final result = await _executeToolUse(toolUse, generation);
+            if (_isStale(generation)) return;
+
+            if (result.requiresConfirmation) {
+              _log('_processConversation: tool requires confirmation');
+              // Hold the batch open — the result is added once the user decides.
+              deferred = result.pendingConfirmation;
+            } else {
               _log(
-                  '_processConversation: deferring extra confirmation-required '
-                  'tool "${toolUse.name}" to a later turn');
+                  '_processConversation: tool result: ${result.isError ? "ERROR" : "SUCCESS"}');
               _pendingResults.add(ToolResultPart(
                 toolUseId: toolUse.id,
-                result: {
-                  'status': 'not_executed',
-                  'reason': 'Only one operation requiring confirmation can be '
-                      'handled at a time. Request this one again in a '
-                      'follow-up turn.',
-                },
+                result: result.data,
+                isError: result.isError,
               ));
-              continue;
             }
-          }
-
-          _log('_processConversation: executing tool "${toolUse.name}"');
-          final result = await _executeToolUse(toolUse);
-
-          if (result.requiresConfirmation) {
-            _log('_processConversation: tool requires confirmation');
-            // Hold the batch open — the result is added once the user decides.
-            deferred = result.pendingConfirmation;
-          } else {
-            _log(
-                '_processConversation: tool result: ${result.isError ? "ERROR" : "SUCCESS"}');
+          } catch (e) {
+            _log('_processConversation: tool "${toolUse.name}" threw: $e');
             _pendingResults.add(ToolResultPart(
               toolUseId: toolUse.id,
-              result: result.data,
-              isError: result.isError,
+              result: {'error': e.toString()},
+              isError: true,
             ));
           }
         }
@@ -309,7 +356,7 @@ class RouterChatController extends ChangeNotifier {
           return;
         }
 
-        _flushPendingResults();
+        if (!_completeBatch(generation)) return;
 
         // Restore loading state before continuing loop
         _log('_processConversation: continuing to next loop iteration');
@@ -317,13 +364,13 @@ class RouterChatController extends ChangeNotifier {
         notifyListeners();
       } on GenUiException catch (e) {
         _log('_processConversation: GenUiException: ${e.message}');
-        _abandonBatch(deferred);
+        _abandonBatch(generation, deferred);
         _state = _state.withError(e.message, retryable: e.isRetryable);
         notifyListeners();
         return;
       } catch (e) {
         _log('_processConversation: unexpected error: $e');
-        _abandonBatch(deferred);
+        _abandonBatch(generation, deferred);
         _state = _state.withError('An unexpected error occurred: $e');
         notifyListeners();
         return;
@@ -337,15 +384,21 @@ class RouterChatController extends ChangeNotifier {
   }
 
   /// Look up a command by name, or null when it is not registered.
+  Future<RouterCommand?> _findCommand(String name) async =>
+      (await _loadCommands())[name];
+
+  /// Whether [generation] belongs to a conversation that has since been reset.
   ///
-  /// Cached alongside [_routerTools] so a batch does not re-query the provider
-  /// once per tool.
-  Future<RouterCommand?> _findCommand(String name) async {
-    if (_commandsByName == null) {
-      final commands = await _commandProvider.listCommands();
-      _commandsByName = {for (final c in commands) c.name: c};
-    }
-    return _commandsByName![name];
+  /// Work in flight across an `await` must check this before touching state:
+  /// writing into a conversation it no longer belongs to would leave a
+  /// `tool_result` with no matching `tool_use` and invalidate every later
+  /// request.
+  bool _isStale(int generation) {
+    if (generation == _conversationGeneration) return false;
+    _log('_isStale: conversation moved on (batch gen $generation, '
+        'current $_conversationGeneration) — abandoning this exchange');
+    _pendingResults.clear();
+    return true;
   }
 
   /// Wind down a batch that failed part-way through.
@@ -353,14 +406,14 @@ class RouterChatController extends ChangeNotifier {
   /// Any tools that already ran are answered so the assistant turn is not left
   /// with unanswered `tool_use` blocks, and a confirmation discovered before
   /// the failure is still surfaced so the user's write request is not lost.
-  void _abandonBatch(PendingConfirmation? deferred) {
+  void _abandonBatch(int generation, PendingConfirmation? deferred) {
     if (deferred != null) {
       _log(
           '_abandonBatch: keeping confirmation for "${deferred.command.name}"');
       _pendingConfirmation = deferred;
       return;
     }
-    _flushPendingResults();
+    _completeBatch(generation);
   }
 
   /// Emit [_pendingResults] as a single tool result message and clear the batch.
@@ -383,7 +436,10 @@ class RouterChatController extends ChangeNotifier {
   /// When the command requires confirmation this only *reports* that fact — it
   /// deliberately does not set [_pendingConfirmation] or notify listeners, so
   /// the dialog cannot appear while sibling tools are still executing.
-  Future<_ToolExecutionResult> _executeToolUse(ToolUseBlock toolUse) async {
+  Future<_ToolExecutionResult> _executeToolUse(
+    ToolUseBlock toolUse,
+    int generation,
+  ) async {
     final command = await _findCommand(toolUse.name);
 
     if (command == null) {
@@ -395,12 +451,12 @@ class RouterChatController extends ChangeNotifier {
 
     // Check if confirmation required
     if (command.requiresConfirmation) {
-      return _ToolExecutionResult(
-        requiresConfirmation: true,
-        pendingConfirmation: PendingConfirmation(
+      return _ToolExecutionResult.awaitingConfirmation(
+        PendingConfirmation(
           command: command,
           params: toolUse.input,
           toolUse: toolUse,
+          generation: generation,
         ),
       );
     }
@@ -431,7 +487,9 @@ class RouterChatController extends ChangeNotifier {
     final pending = _pendingConfirmation;
     if (pending == null) return;
 
-    final generation = _conversationGeneration;
+    // Validate against the generation the batch was opened in, not the current
+    // one — the conversation may have moved on while the dialog was showing.
+    final generation = pending.generation;
     _pendingConfirmation = null;
     _state = _state.loading();
     notifyListeners();
@@ -447,7 +505,7 @@ class RouterChatController extends ChangeNotifier {
       _pendingResults.add(ToolResultPart(
         toolUseId: pending.toolUse.id,
         result: result.success
-            ? {...result.data, 'status': 'executed'}
+            ? {...result.data, 'status': _statusExecuted}
             : {'error': result.error ?? 'Operation failed'},
         isError: !result.success,
       ));
@@ -492,7 +550,9 @@ class RouterChatController extends ChangeNotifier {
     final pending = _pendingConfirmation;
     if (pending == null) return;
 
-    final generation = _conversationGeneration;
+    // Validate against the generation the batch was opened in, not the current
+    // one — the conversation may have moved on while the dialog was showing.
+    final generation = pending.generation;
     _pendingConfirmation = null;
     _state = _state.loading();
     notifyListeners();
@@ -501,7 +561,7 @@ class RouterChatController extends ChangeNotifier {
     _pendingResults.add(ToolResultPart(
       toolUseId: pending.toolUse.id,
       result: {
-        'status': 'cancelled',
+        'status': _statusCancelled,
         'message': 'User declined to execute ${pending.command.name}',
       },
     ));
@@ -517,7 +577,7 @@ class RouterChatController extends ChangeNotifier {
     // Close out whatever the previous turn left open first — including a
     // confirmation the user never answered, whose tool_use would otherwise stay
     // unanswered while this action's result is appended.
-    _insertPendingToolResults();
+    _closeOutOpenBatch();
 
     final toolResultMessage = action.toChatMessage();
     _state = _state.withMessage(toolResultMessage);
@@ -530,17 +590,29 @@ class RouterChatController extends ChangeNotifier {
     await _processConversation();
   }
 
-  /// Answer any `tool_use` blocks of the trailing assistant message that do not
-  /// have a result yet.
+  /// Close out the previous turn before starting a new one.
   ///
-  /// This happens when the previous turn ended without completing its batch —
-  /// for example the user typed a new message instead of answering a pending
-  /// confirmation dialog. Leaving a `tool_use` unanswered makes the API reject
-  /// the next request, so the gaps are filled with an acknowledgment.
-  void _insertPendingToolResults() {
-    // A confirmation is still open: drop it and abandon its batch, otherwise
-    // the stale results would be flushed alongside the next turn's.
+  /// Called when the user moves on without completing a batch — typing a new
+  /// message instead of answering a confirmation dialog, or triggering a UI
+  /// action. Leaving a `tool_use` unanswered makes the API reject the next
+  /// request, so any gap in the trailing assistant turn is filled.
+  ///
+  /// Results already computed for that turn are **preserved** — they hold real
+  /// device data — and only the genuinely missing ids are synthesised. The
+  /// generation is bumped so a confirmation still awaiting the device cannot
+  /// come back and answer an id this method just answered.
+  void _closeOutOpenBatch() {
+    final hadOpenWork =
+        _pendingConfirmation != null || _pendingResults.isNotEmpty;
     _pendingConfirmation = null;
+    if (hadOpenWork) {
+      // Invalidate in-flight work belonging to the batch being closed.
+      _conversationGeneration++;
+    }
+
+    // Results computed for the turn being closed are real; keep them and only
+    // fill the gaps below.
+    final carried = List<ToolResultPart>.of(_pendingResults);
     _pendingResults.clear();
 
     if (_state.messages.isEmpty) return;
@@ -568,42 +640,60 @@ class RouterChatController extends ChangeNotifier {
     final response = lastAssistantMessage?.response;
     if (response == null) return;
 
-    final unanswered = response.content
-        .whereType<ToolUseBlock>()
-        .where((block) => !answeredIds.contains(block.id))
-        .toList();
-    if (unanswered.isEmpty) return;
+    // Carried results answer their ids too — do not synthesise over them.
+    answeredIds.addAll(carried.map((p) => p.toolUseId));
 
-    _log('_insertPendingToolResults: answering ${unanswered.length} '
-        'unanswered tool_use block(s)');
-    _state = _state.withMessage(ChatMessage.toolResults([
-      for (final toolUse in unanswered)
-        ToolResultPart(
-          toolUseId: toolUse.id,
-          result: _abandonedToolResult(toolUse.name),
-        ),
-    ]));
+    final synthesised = [
+      for (final block in response.content.whereType<ToolUseBlock>())
+        if (!answeredIds.contains(block.id))
+          ToolResultPart(
+            toolUseId: block.id,
+            result: _abandonedToolResult(block.name),
+          ),
+    ];
+
+    final parts = [...carried, ...synthesised];
+    if (parts.isEmpty) return;
+
+    _log('_closeOutOpenBatch: emitting ${carried.length} carried + '
+        '${synthesised.length} synthesised result(s)');
+    _state = _state.withMessage(ChatMessage.toolResults(parts));
     notifyListeners();
   }
 
   /// Result body for a `tool_use` the user walked away from.
   ///
-  /// Router commands must not be reported as done — they never ran. Anything
-  /// that is not a known command is an A2UI component, which really was
-  /// rendered, so the original acknowledgment still applies.
+  /// A router command must never be reported as done — it never ran. Only names
+  /// the registry positively confirms are *not* commands are treated as A2UI
+  /// components, which genuinely were rendered. When the registry is unavailable
+  /// the answer falls to `not_executed`: claiming an unexecuted write succeeded
+  /// is the harmful direction to be wrong in.
   Map<String, dynamic> _abandonedToolResult(String toolName) {
-    if (_commandsByName?.containsKey(toolName) ?? false) {
-      return {
-        'status': 'not_executed',
-        'reason': 'The user moved on without responding to the confirmation.',
-      };
+    final registry = _commandsByName;
+    final isKnownComponent =
+        registry != null && !registry.containsKey(toolName);
+    if (isKnownComponent) {
+      return {'status': _statusRendered, 'component': toolName};
     }
-    return {'status': 'rendered', 'component': toolName};
+    return {
+      'status': _statusNotExecuted,
+      'reason': 'The user moved on without responding to the confirmation.',
+    };
   }
 
   /// Retry the last failed operation.
   Future<void> retry() async {
     if (!_state.hasError || _lastUserMessage == null) return;
+
+    // A batch that failed while holding a confirmation still owns its results
+    // and the user's write request. Retrying would clear both and leave the
+    // assistant turn unanswered, so the confirmation takes precedence — the
+    // user must answer the dialog first.
+    if (_pendingConfirmation != null) {
+      _log('retry: ignored — a confirmation is still awaiting the user');
+      notifyListeners();
+      return;
+    }
 
     // Drop the trailing user message so [sendMessage] can re-add it. Tool
     // result messages also carry the user role, but they answer a preceding
@@ -648,6 +738,7 @@ class RouterChatController extends ChangeNotifier {
     _lastUserMessage = null;
     _routerTools = null;
     _commandsByName = null;
+    _commandsLoad = null;
     _totalInputTokens = 0;
     _totalOutputTokens = 0;
     _totalCacheReadTokens = 0;
@@ -662,22 +753,35 @@ class RouterChatController extends ChangeNotifier {
   void refreshContext() {
     _initializeSystemPrompt();
   }
+
+  /// Test seam for [_abandonedToolResult], which is otherwise only reachable
+  /// through a specific abandonment sequence.
+  @visibleForTesting
+  Map<String, dynamic> debugAbandonedToolResultFor(String toolName) =>
+      _abandonedToolResult(toolName);
 }
 
 /// Internal result type for tool execution.
 class _ToolExecutionResult {
   final Map<String, dynamic> data;
   final bool isError;
-  final bool requiresConfirmation;
 
-  /// Set when [requiresConfirmation] is true — the confirmation the caller
-  /// should surface once the rest of the batch has finished executing.
+  /// The confirmation the caller must surface once the rest of the batch has
+  /// finished, or null when the tool ran to completion.
   final PendingConfirmation? pendingConfirmation;
 
   const _ToolExecutionResult({
     this.data = const {},
     this.isError = false,
-    this.requiresConfirmation = false,
-    this.pendingConfirmation,
-  });
+  }) : pendingConfirmation = null;
+
+  /// The tool was not run because it needs the user to confirm first.
+  const _ToolExecutionResult.awaitingConfirmation(
+    PendingConfirmation this.pendingConfirmation,
+  )   : data = const {},
+        isError = false;
+
+  /// Whether the caller must surface [pendingConfirmation] instead of recording
+  /// a result. Cannot disagree with [pendingConfirmation] being set.
+  bool get requiresConfirmation => pendingConfirmation != null;
 }
