@@ -12,6 +12,11 @@ import 'package:privacy_gui/page/_shared/components/dashboard_card_template.dart
 import 'package:privacy_gui/page/internet_settings/providers/wan_data_provider.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
+/// Placeholder shown for traffic metrics that carry no meaningful value while
+/// the WAN link is down (a disconnected link carries no traffic, so 0%/0/s
+/// would be misleading). Language-neutral, so no localization key is needed.
+const String _kNoTrafficPlaceholder = '--';
+
 /// Network Health Monitoring card — 3-tab card (F-022).
 ///
 /// Reads data from [uspTrafficAnalysisProvider] (shared timer, no separate poll).
@@ -37,7 +42,7 @@ class _UspNetworkHealthCardState extends ConsumerState<UspNetworkHealthCard> {
     // Physical WAN link state — same signal the page-top connection banner
     // uses. Consulted so a disconnected WAN is not scored "Excellent" purely
     // because a down link carries no traffic (loss 0%). See #1143.
-    final wanIsUp = ref.watch(wanDataProvider).valueOrNull?.model.isUp ?? true;
+    final wanIsUp = ref.watch(wanIsUpProvider);
 
     return DashboardCardTemplate.tabbed(
       title: loc(context).networkHealth,
@@ -86,8 +91,8 @@ class _UspNetworkHealthCardState extends ConsumerState<UspNetworkHealthCard> {
     return switch (selectedTab) {
       0 =>
         _HealthOverview(state: state, wanIsUp: wanIsUp, parentContext: context),
-      1 => _ErrorsChart(state: state, parentContext: context),
-      2 => _LossChart(state: state, parentContext: context),
+      1 => _ErrorsChart(state: state, wanIsUp: wanIsUp, parentContext: context),
+      2 => _LossChart(state: state, wanIsUp: wanIsUp, parentContext: context),
       _ => const SizedBox.shrink(),
     };
   }
@@ -129,10 +134,18 @@ class _HealthOverview extends StatelessWidget {
     final wanTier = NetworkHealthHelpers.tierFromScore(wanScore);
     final lanTier = NetworkHealthHelpers.tierFromScore(lanScore);
 
-    final lossPercent =
-        wan != null ? NetworkHealthHelpers.computeLossPercent(wan) : 0.0;
-    final errorRate = wan?.totalErrorsPerSec ?? 0;
-    final discardRate = wan?.totalDiscardsPerSec ?? 0;
+    // A down WAN link carries no traffic, so loss/error/discard would all read
+    // 0 and contradict the "Disconnected" status. Show a neutral placeholder
+    // instead of a misleading zero. See #1143.
+    final lossText = wanIsUp
+        ? '${(wan != null ? NetworkHealthHelpers.computeLossPercent(wan) : 0.0).toStringAsFixed(2)}%'
+        : _kNoTrafficPlaceholder;
+    final errorText = wanIsUp
+        ? NetworkHealthHelpers.formatFaultRate(wan?.totalErrorsPerSec ?? 0)
+        : _kNoTrafficPlaceholder;
+    final discardText = wanIsUp
+        ? NetworkHealthHelpers.formatFaultRate(wan?.totalDiscardsPerSec ?? 0)
+        : _kNoTrafficPlaceholder;
 
     return Column(
       children: [
@@ -144,9 +157,16 @@ class _HealthOverview extends StatelessWidget {
               centerBuilder: (ctx, v) => Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  AppText.titleLarge('$overallScore'),
+                  // When the WAN is down the score gauge shows the neutral
+                  // placeholder + "Disconnected" so it speaks the same
+                  // vocabulary as the traffic-light row and the banner, rather
+                  // than "0 / Critical". See #1143.
+                  AppText.titleLarge(
+                      wanIsUp ? '$overallScore' : _kNoTrafficPlaceholder),
                   AppText.labelSmall(
-                    tier.resolveLabel(ctx),
+                    wanIsUp
+                        ? tier.resolveLabel(ctx)
+                        : loc(parentContext).disconnected,
                     color: tierClr,
                   ),
                 ],
@@ -155,9 +175,13 @@ class _HealthOverview extends StatelessWidget {
           ),
         ),
         AppGap.sm(),
-        // WAN / LAN traffic light row
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+        // WAN / LAN traffic light row. A Wrap (not a Row) so the longer
+        // "WAN: Disconnected" label flows to a second line on narrow tiles
+        // instead of overflowing (same pattern as the Errors legend, #1145).
+        Wrap(
+          alignment: WrapAlignment.center,
+          spacing: AppSpacing.xl,
+          runSpacing: AppSpacing.xs,
           children: [
             _TrafficLight(
               label: loc(parentContext).wan,
@@ -168,7 +192,6 @@ class _HealthOverview extends StatelessWidget {
               // page-top connection banner. See #1143.
               statusOverride: wanIsUp ? null : loc(parentContext).disconnected,
             ),
-            AppGap.xl(),
             _TrafficLight(
               label: loc(parentContext).lan,
               tier: lanTier,
@@ -183,21 +206,21 @@ class _HealthOverview extends StatelessWidget {
             Expanded(
               child: _MetricChip(
                 label: loc(parentContext).errors,
-                value: NetworkHealthHelpers.formatFaultRate(errorRate),
+                value: errorText,
               ),
             ),
             AppGap.sm(),
             Expanded(
               child: _MetricChip(
                 label: loc(parentContext).discards,
-                value: NetworkHealthHelpers.formatFaultRate(discardRate),
+                value: discardText,
               ),
             ),
             AppGap.sm(),
             Expanded(
               child: _MetricChip(
                 label: loc(parentContext).loss,
-                value: '${lossPercent.toStringAsFixed(2)}%',
+                value: lossText,
               ),
             ),
           ],
@@ -271,8 +294,13 @@ class _MetricChip extends StatelessWidget {
 
 class _ErrorsChart extends StatelessWidget {
   final TrafficAnalysisState state;
+  final bool wanIsUp;
   final BuildContext parentContext;
-  const _ErrorsChart({required this.state, required this.parentContext});
+  const _ErrorsChart({
+    required this.state,
+    required this.wanIsUp,
+    required this.parentContext,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -304,6 +332,7 @@ class _ErrorsChart extends StatelessWidget {
 
     return Column(
       children: [
+        if (!wanIsUp) _DisconnectNotice(parentContext: parentContext),
         Expanded(
           child: Padding(
             padding: EdgeInsets.only(top: 8),
@@ -359,8 +388,13 @@ class _ErrorsChart extends StatelessWidget {
 
 class _LossChart extends StatelessWidget {
   final TrafficAnalysisState state;
+  final bool wanIsUp;
   final BuildContext parentContext;
-  const _LossChart({required this.state, required this.parentContext});
+  const _LossChart({
+    required this.state,
+    required this.wanIsUp,
+    required this.parentContext,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -382,6 +416,7 @@ class _LossChart extends StatelessWidget {
 
     return Column(
       children: [
+        if (!wanIsUp) _DisconnectNotice(parentContext: parentContext),
         Expanded(
           child: Padding(
             padding: EdgeInsets.only(top: 8),
@@ -422,6 +457,41 @@ class _LossChart extends StatelessWidget {
 // =============================================================================
 // Shared
 // =============================================================================
+
+/// Inline notice shown above the Errors/Loss charts when the WAN link is down.
+///
+/// The historical chart still renders (past data is real), but a down link
+/// carries no current traffic, so this makes clear that the flat-lining series
+/// reflect a disconnect rather than a perfectly healthy link — keeping the
+/// chart tabs consistent with the banner and the Health tab. See #1143.
+class _DisconnectNotice extends StatelessWidget {
+  final BuildContext parentContext;
+  const _DisconnectNotice({required this.parentContext});
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: EdgeInsets.only(top: 4, bottom: 4),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          AppIcon.font(
+            Icons.wifi_off,
+            size: 14,
+            color: colorScheme.error,
+          ),
+          AppGap.xs(),
+          AppText.labelSmall(
+            loc(parentContext).disconnected,
+            color: colorScheme.error,
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 class _LegendDot extends StatelessWidget {
   final Color color;

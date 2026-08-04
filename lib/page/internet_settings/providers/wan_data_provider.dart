@@ -28,6 +28,18 @@ class WanData extends Equatable with DiagnosticLoggable {
 final wanDataProvider =
     AsyncNotifierProvider<WanDataNotifier, WanData>(WanDataNotifier.new);
 
+/// Physical WAN link state as a plain `bool`, the single source of truth for
+/// "is the WAN up?" across the dashboard, Statistics, and health scoring.
+///
+/// Defaults to `true` while [wanDataProvider] has never produced a value
+/// (first load), so a momentarily-unavailable link state does not read as a
+/// false disconnect. During an SSE-triggered `invalidateSelf()` refresh the
+/// previous value is preserved (seamless refresh), so this keeps reporting the
+/// last known state rather than flipping to the loading default. See #1143.
+final wanIsUpProvider = Provider<bool>(
+  (ref) => ref.watch(wanDataProvider).valueOrNull?.model.isUp ?? true,
+);
+
 // ── Notifier (NOT autoDispose) ──
 
 class WanDataNotifier extends AsyncNotifier<WanData> {
