@@ -52,6 +52,7 @@ Widget testableSingleRoute({
   Locale? locale,
   ProviderContainer? provider,
   GlobalKey<NavigatorState>? navigatorKey,
+  List<RouteBase> extraRoutes = const [],
 }) {
   final router = GoRouter(
     navigatorKey: navigatorKey ?? shellNavigatorKey,
@@ -62,6 +63,10 @@ Widget testableSingleRoute({
         config: config,
         builder: (context, state) => child,
       ),
+      // Destinations the view under test may navigate to (e.g. the login page
+      // after an Auto Master 401). Without them, `context.goNamed(...)` throws
+      // "unknown route name" in this single-route harness.
+      ...extraRoutes,
     ],
   );
 

@@ -16,6 +16,7 @@ import 'package:privacy_gui/page/instant_setup/data/pnp_step_state.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_wifi_settings.dart';
 import 'package:privacy_gui/page/instant_setup/model/pnp_step.dart';
 import 'package:privacy_gui/page/instant_setup/pnp_setup_view.dart';
+import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
@@ -27,6 +28,16 @@ import 'package:privacy_gui/page/instant_setup/data/pnp_state.dart';
 import '../../../common/test_responsive_widget.dart';
 import '../../../common/testable_router.dart';
 import '../../../test_data/device_info_test_data.dart';
+
+/// A stub destination for `RouteNamed.localLoginPassword` so redirect-to-login
+/// paths can navigate inside the single-route test harness (which otherwise
+/// only knows the '/' route and throws "unknown route name").
+LinksysRoute _loginStubRoute() => LinksysRoute(
+      name: RouteNamed.localLoginPassword,
+      path: RoutePath.localLoginPassword,
+      config: const LinksysRouteConfig(noNaviRail: true),
+      builder: (context, state) => const SizedBox.shrink(key: Key('loginStub')),
+    );
 
 void main() async {
   late Mock.MockPnpNotifier mockPnpNotifier;
@@ -734,5 +745,56 @@ void main() async {
     final btnFinder3 = find.byType(FilledButton);
     await tester.tap(btnFinder3.first);
     await tester.pump(const Duration(seconds: 2));
+  });
+
+  // Regression: the poll stream terminates on the first 401 (make-Master
+  // rotated the admin password mid-poll). Instead of flattening to null and
+  // re-polling with the stale credential, the save flow catches
+  // ExceptionAutoMasterUnauthorized and routes to login. This exercises the new
+  // try/catch around the await-for in _saveChanges.
+  testLocalizations('Instant Setup - PnP: Auto Master poll stream unauthorized',
+      (tester, locale) async {
+    var callCount = 0;
+    when(mockPnpNotifier.checkAutoMasterStatus()).thenAnswer((_) async {
+      callCount++;
+      return callCount == 1 ? AutoMasterStatus.idle : AutoMasterStatus.running;
+    });
+    when(mockPnpNotifier.pollAutoMasterStatus()).thenAnswer((_) {
+      return Stream<AutoMasterStatus?>.error(ExceptionAutoMasterUnauthorized());
+    });
+
+    await tester.pumpWidget(
+      testableSingleRoute(
+        child: const PnpSetupView(),
+        config: LinksysRouteConfig(
+            column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
+        locale: locale,
+        overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
+        extraRoutes: [_loginStubRoute()],
+      ),
+    );
+    await tester.pump(const Duration(seconds: 6));
+    final state =
+        tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
+    state.setState(() {});
+    await tester.pumpAndSettle();
+    final ssidEditFinder = find.byType(TextField).first;
+    final passwordEditFinder = find.byType(TextField).last;
+    await tester.enterText(ssidEditFinder, 'MyAwesomeWiFiName');
+    await tester.pumpAndSettle();
+    await tester.enterText(passwordEditFinder, 'MyAwesomeWiFiPassword!');
+    await tester.pumpAndSettle();
+    final btnFinder = find.byType(FilledButton);
+    await tester.tap(btnFinder.first);
+    await tester.pumpAndSettle();
+    final btnFinder2 = find.byType(FilledButton);
+    await tester.tap(btnFinder2.first);
+    await tester.pumpAndSettle();
+    final btnFinder3 = find.byType(FilledButton);
+    await tester.tap(btnFinder3.first);
+    await tester.pumpAndSettle();
+    // The poll-stream 401 during save must route to login instead of
+    // re-polling with the stale credential.
+    expect(find.byKey(const Key('loginStub')), findsOneWidget);
   });
 }

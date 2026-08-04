@@ -787,6 +787,14 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
           },
         )
         .map((result) {
+      // A 401 here means make-Master rotated the admin password mid-poll. Surface
+      // it as an error so the consumer's await-for terminates on the FIRST 401
+      // instead of flattening it to null and re-polling with the now-stale
+      // credential (which burns the CGI auth-attempt budget → login lockout).
+      if (result is JNAPError && result.result == errorJNAPUnauthorized) {
+        logger.w('[PnP]: Auto Master polling unauthorized → terminate stream');
+        throw ExceptionAutoMasterUnauthorized();
+      }
       if (result is JNAPSuccess) {
         final status = AutoMasterStatus.fromValue(
             result.output['autoMasterStatus'] as String?);
@@ -831,6 +839,13 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
           },
         )
         .map((result) {
+      // See pollAutoMasterStatus: terminate on the first 401 (make-Master
+      // rotated the credential) rather than re-polling with stale credentials.
+      if (result is JNAPError && result.result == errorJNAPUnauthorized) {
+        logger.w(
+            '[PnP]: Auto Master wait-for-running unauthorized → terminate stream');
+        throw ExceptionAutoMasterUnauthorized();
+      }
       if (result is JNAPSuccess) {
         final status = AutoMasterStatus.fromValue(
             result.output['autoMasterStatus'] as String?);

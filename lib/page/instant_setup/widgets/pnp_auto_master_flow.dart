@@ -88,33 +88,40 @@ mixin PnpAutoMasterFlowMixin<T extends ConsumerStatefulWidget>
   /// observed, proceed to wait for completion".
   Future<AutoMasterFlowResult?> _waitForRunning(int threshold) async {
     int consecutiveNulls = 0;
-    await for (final status
-        in ref.read(pnpProvider.notifier).pollAutoMasterUntilRunning()) {
-      if (!mounted) return AutoMasterFlowResult.proceed;
+    try {
+      await for (final status
+          in ref.read(pnpProvider.notifier).pollAutoMasterUntilRunning()) {
+        if (!mounted) return AutoMasterFlowResult.proceed;
 
-      if (status == AutoMasterStatus.running) {
-        return null; // → wait for completion
-      }
-      if (status == AutoMasterStatus.complete) {
-        return AutoMasterFlowResult.completed;
-      }
-      if (status == AutoMasterStatus.failed) {
-        return AutoMasterFlowResult.proceed;
-      }
-      if (status == null) {
-        consecutiveNulls++;
-        logger.w(
-            '[PnP]: Auto Master wait-for-running null, consecutive: $consecutiveNulls');
-        if (consecutiveNulls >= threshold) {
-          final probe = await _probeUnauthorized();
-          if (!mounted) return AutoMasterFlowResult.proceed;
-          if (probe != null) return probe;
-          consecutiveNulls = 0; // probe saw Running → keep waiting
+        if (status == AutoMasterStatus.running) {
+          return null; // → wait for completion
         }
-      } else {
-        // idle → not started yet, keep waiting
-        consecutiveNulls = 0;
+        if (status == AutoMasterStatus.complete) {
+          return AutoMasterFlowResult.completed;
+        }
+        if (status == AutoMasterStatus.failed) {
+          return AutoMasterFlowResult.proceed;
+        }
+        if (status == null) {
+          consecutiveNulls++;
+          logger.w(
+              '[PnP]: Auto Master wait-for-running null, consecutive: $consecutiveNulls');
+          if (consecutiveNulls >= threshold) {
+            final probe = await _probeUnauthorized();
+            if (!mounted) return AutoMasterFlowResult.proceed;
+            if (probe != null) return probe;
+            consecutiveNulls = 0; // probe saw Running → keep waiting
+          }
+        } else {
+          // idle → not started yet, keep waiting
+          consecutiveNulls = 0;
+        }
       }
+    } on ExceptionAutoMasterUnauthorized {
+      // The stream terminated on the first 401: make-Master rotated the admin
+      // password mid-poll → Auto Master effectively completed → recover.
+      logger.i('[PnP]: Auto Master wait-for-running unauthorized → completed');
+      return AutoMasterFlowResult.completed;
     }
 
     // Stream ended without Running (timeout). The session was just proven alive
@@ -126,31 +133,38 @@ mixin PnpAutoMasterFlowMixin<T extends ConsumerStatefulWidget>
   /// Phase B — wait for Auto Master to *finish*.
   Future<AutoMasterFlowResult> _waitForCompletion(int threshold) async {
     int consecutiveNulls = 0;
-    await for (final status
-        in ref.read(pnpProvider.notifier).pollAutoMasterStatus()) {
-      if (!mounted) return AutoMasterFlowResult.proceed;
+    try {
+      await for (final status
+          in ref.read(pnpProvider.notifier).pollAutoMasterStatus()) {
+        if (!mounted) return AutoMasterFlowResult.proceed;
 
-      if (status == AutoMasterStatus.complete ||
-          status == AutoMasterStatus.idle) {
-        return AutoMasterFlowResult.completed;
-      }
-      if (status == AutoMasterStatus.failed) {
-        return AutoMasterFlowResult.proceed;
-      }
-      if (status == null) {
-        consecutiveNulls++;
-        logger.w(
-            '[PnP]: Auto Master polling null, consecutive: $consecutiveNulls');
-        if (consecutiveNulls >= threshold) {
-          final probe = await _probeUnauthorized();
-          if (!mounted) return AutoMasterFlowResult.proceed;
-          if (probe != null) return probe;
-          consecutiveNulls = 0; // probe saw Running → keep waiting
+        if (status == AutoMasterStatus.complete ||
+            status == AutoMasterStatus.idle) {
+          return AutoMasterFlowResult.completed;
         }
-      } else {
-        // running → keep waiting for completion
-        consecutiveNulls = 0;
+        if (status == AutoMasterStatus.failed) {
+          return AutoMasterFlowResult.proceed;
+        }
+        if (status == null) {
+          consecutiveNulls++;
+          logger.w(
+              '[PnP]: Auto Master polling null, consecutive: $consecutiveNulls');
+          if (consecutiveNulls >= threshold) {
+            final probe = await _probeUnauthorized();
+            if (!mounted) return AutoMasterFlowResult.proceed;
+            if (probe != null) return probe;
+            consecutiveNulls = 0; // probe saw Running → keep waiting
+          }
+        } else {
+          // running → keep waiting for completion
+          consecutiveNulls = 0;
+        }
       }
+    } on ExceptionAutoMasterUnauthorized {
+      // The stream terminated on the first 401: make-Master rotated the admin
+      // password mid-poll → Auto Master effectively completed → recover.
+      logger.i('[PnP]: Auto Master polling unauthorized → completed');
+      return AutoMasterFlowResult.completed;
     }
 
     // Stream ended (timeout). Verify the session survived make-Master.

@@ -224,4 +224,49 @@ void main() {
       verify(mockPnpNotifier.checkAutoMasterStatus()).called(1);
     });
   });
+
+  group('PnpAutoMasterFlowMixin - stream terminates on first 401', () {
+    testWidgets(
+        'Phase A: wait-for-running stream throws 401 -> completed (recover)',
+        (tester) async {
+      // make-Master rotated the admin password mid-poll: the stream terminates
+      // on the FIRST 401 (no null-flatten, no probe round-trip).
+      when(mockPnpNotifier.pollAutoMasterUntilRunning())
+          .thenAnswer((_) => Stream.error(ExceptionAutoMasterUnauthorized()));
+
+      final r = await pumpFlow(tester, waitForRunningFirst: true);
+
+      expect(r.result, AutoMasterFlowResult.completed);
+      expect(r.state.events, ['enter', 'exit']);
+      // The 401 is handled by the stream terminator, not the null-threshold probe.
+      verifyNever(mockPnpNotifier.checkAutoMasterStatus());
+    });
+
+    testWidgets('Phase B: polling stream throws 401 -> completed (recover)',
+        (tester) async {
+      when(mockPnpNotifier.pollAutoMasterStatus())
+          .thenAnswer((_) => Stream.error(ExceptionAutoMasterUnauthorized()));
+
+      final r = await pumpFlow(tester, waitForRunningFirst: false);
+
+      expect(r.result, AutoMasterFlowResult.completed);
+      expect(r.state.events, ['enter', 'exit']);
+      verifyNever(mockPnpNotifier.checkAutoMasterStatus());
+    });
+
+    testWidgets(
+        'Phase A Running then Phase B stream throws 401 -> completed (recover)',
+        (tester) async {
+      // Running is observed in Phase A, then completion-poll dies on 401.
+      when(mockPnpNotifier.pollAutoMasterUntilRunning())
+          .thenAnswer((_) => Stream.value(AutoMasterStatus.running));
+      when(mockPnpNotifier.pollAutoMasterStatus())
+          .thenAnswer((_) => Stream.error(ExceptionAutoMasterUnauthorized()));
+
+      final r = await pumpFlow(tester, waitForRunningFirst: true);
+
+      expect(r.result, AutoMasterFlowResult.completed);
+      expect(r.state.events, ['enter', 'exit']);
+    });
+  });
 }
