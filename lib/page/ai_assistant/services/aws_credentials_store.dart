@@ -12,13 +12,12 @@ import 'package:privacy_gui/ai/ai_logging.dart';
 /// failure rather than "not configured".
 const _kRecordKey = 'ai_assistant_aws_credentials';
 
-/// Keys written by the previous three-key layout, removed on write and clear so
-/// stale halves cannot linger after an upgrade.
-const _kLegacyKeys = [
-  'ai_assistant_aws_access_key_id',
-  'ai_assistant_aws_secret_access_key',
-  'ai_assistant_bedrock_model_id',
-];
+/// How long a single storage operation may take before the chain gives up.
+///
+/// Without this, one hung `write` blocks every operation queued behind it — the
+/// user's `clear()` included, so "change configuration" would never take effect
+/// and the config screen would stay disabled with no error.
+const _kOperationTimeout = Duration(seconds: 10);
 
 final awsCredentialsStoreProvider = Provider<AwsCredentialsStore>((ref) {
   return AwsCredentialsStore(const FlutterSecureStorage());
@@ -42,6 +41,13 @@ final awsCredentialsStoreProvider = Provider<AwsCredentialsStore>((ref) {
 /// without serialisation the writes of a connect could overtake the deletes of
 /// the "change configuration" that followed it — resurrecting credentials the
 /// user had just discarded.
+///
+/// Each operation is bounded by [_kOperationTimeout] so one that never settles
+/// cannot hold the queue — and with it the user's `clear()` — indefinitely.
+///
+/// The ordering guarantee holds because [awsCredentialsStoreProvider] is a
+/// plain [Provider], i.e. one instance for the session. Making it `autoDispose`
+/// would hand out fresh chains and revive the race invisibly.
 class AwsCredentialsStore {
   AwsCredentialsStore(this._storage);
 
@@ -54,9 +60,12 @@ class AwsCredentialsStore {
   ///
   /// The chain is never broken by a failure: the tail swallows errors so a
   /// rejected write cannot stop later operations from running, while the
-  /// returned future still reports the failure to this caller.
+  /// returned future still reports the failure to this caller. A timeout counts
+  /// as a failure, which is what stops a stalled operation from blocking the
+  /// queue forever.
   Future<T> _serialize<T>(Future<T> Function() operation) {
-    final result = _pending.then((_) => operation());
+    final result =
+        _pending.then((_) => operation().timeout(_kOperationTimeout));
     _pending = result.then((_) {}, onError: (_) {});
     return result;
   }
@@ -78,7 +87,6 @@ class AwsCredentialsStore {
           'modelId': modelId,
         }),
       );
-      await _deleteLegacyKeys();
       aiLog('[Credentials] Stored');
     });
   }
@@ -90,34 +98,21 @@ class AwsCredentialsStore {
   /// handles it instead of a signing error later.
   Future<StoredAwsCredentials?> read() {
     return _serialize(() async {
-      final raw = await _storage.read(key: _kRecordKey);
-      if (raw == null || raw.isEmpty) return null;
+      final record = await _readRecord();
+      if (record == null) return null;
 
-      final Map<String, dynamic> record;
-      try {
-        final decoded = jsonDecode(raw);
-        if (decoded is! Map<String, dynamic>) return null;
-        record = decoded;
-      } catch (e) {
-        // Corrupted or externally tampered value; treat as not configured.
-        aiLog('[Credentials] Discarding unreadable record');
-        return null;
-      }
-
-      final accessKeyId = (record['accessKeyId'] as String?)?.trim() ?? '';
-      final secretAccessKey =
-          (record['secretAccessKey'] as String?)?.trim() ?? '';
+      final accessKeyId = _stringOrNull(record['accessKeyId']) ?? '';
+      final secretAccessKey = _stringOrNull(record['secretAccessKey']) ?? '';
       // Blank is as unusable as absent, and whitespace reaching the form would
       // overwrite what the user typed with something that cannot connect.
       if (accessKeyId.isEmpty || secretAccessKey.isEmpty) return null;
 
-      final modelId = (record['modelId'] as String?)?.trim();
       return StoredAwsCredentials(
         accessKeyId: accessKeyId,
         secretAccessKey: secretAccessKey,
         // A model may be missing if it was never chosen; the caller falls back
         // to its own default rather than being forced to re-enter everything.
-        modelId: (modelId == null || modelId.isEmpty) ? null : modelId,
+        modelId: _stringOrNull(record['modelId']),
       );
     });
   }
@@ -128,17 +123,8 @@ class AwsCredentialsStore {
   /// meaning to a model preference without credentials to use it with.
   Future<void> storeModelId(String modelId) {
     return _serialize(() async {
-      final raw = await _storage.read(key: _kRecordKey);
-      if (raw == null || raw.isEmpty) return;
-
-      final Map<String, dynamic> record;
-      try {
-        final decoded = jsonDecode(raw);
-        if (decoded is! Map<String, dynamic>) return;
-        record = decoded;
-      } catch (e) {
-        return;
-      }
+      final record = await _readRecord();
+      if (record == null) return;
 
       record['modelId'] = modelId;
       await _storage.write(key: _kRecordKey, value: jsonEncode(record));
@@ -149,15 +135,42 @@ class AwsCredentialsStore {
   Future<void> clear() {
     return _serialize(() async {
       await _storage.delete(key: _kRecordKey);
-      await _deleteLegacyKeys();
       aiLog('[Credentials] Cleared');
     });
   }
 
-  Future<void> _deleteLegacyKeys() async {
-    for (final key in _kLegacyKeys) {
-      await _storage.delete(key: key);
+  /// The stored record as a map, or null when there is nothing usable.
+  ///
+  /// Never throws on a bad value: absent, blank, non-JSON and non-object all
+  /// collapse to null, so both callers can treat "unusable" as "not
+  /// configured" rather than having to catch.
+  Future<Map<String, dynamic>?> _readRecord() async {
+    final raw = await _storage.read(key: _kRecordKey);
+    if (raw == null || raw.isEmpty) return null;
+
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! Map<String, dynamic>) {
+        aiLog('[Credentials] Discarding unreadable record');
+        return null;
+      }
+      return decoded;
+    } catch (_) {
+      // Corrupted or externally tampered value; treat as not configured.
+      aiLog('[Credentials] Discarding unreadable record');
+      return null;
     }
+  }
+
+  /// A trimmed non-empty String, or null for anything else.
+  ///
+  /// A tampered record can hold a number, bool or list where a String belongs.
+  /// Returning null keeps [read]'s "unusable means not configured" contract
+  /// instead of throwing a cast error at the caller.
+  static String? _stringOrNull(Object? value) {
+    if (value is! String) return null;
+    final trimmed = value.trim();
+    return trimmed.isEmpty ? null : trimmed;
   }
 }
 
