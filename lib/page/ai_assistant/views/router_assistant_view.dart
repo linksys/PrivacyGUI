@@ -55,14 +55,20 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
 
   /// True while saved credentials are being read on startup.
   ///
-  /// The config screen is disabled during this window: a restore that lands
-  /// after the user started typing would otherwise overwrite their input and
-  /// connect with different credentials than the ones they entered.
+  /// Every input on the config screen is sealed for this window, which is what
+  /// makes the restore safe: landing after the user started typing would
+  /// otherwise overwrite their input and connect with credentials other than
+  /// the ones they entered. It is therefore always cleared — see
+  /// [_restoreSavedCredentials] — because a stuck flag locks the user out of
+  /// the only screen they can act on.
   bool _isRestoring = false;
 
-  /// Set once the user interacts with the config screen, so a restore that
-  /// arrives late defers to them rather than replacing their input.
-  bool _userTookOver = false;
+  /// How long to wait for stored credentials before showing an empty form.
+  ///
+  /// Shorter than the store's own timeout so the user is never left looking at
+  /// a disabled screen for long; the restore is a convenience, and typing the
+  /// credentials again is a worse outcome than waiting but not a broken one.
+  static const _restoreTimeout = Duration(seconds: 5);
 
   @override
   void initState() {
@@ -106,25 +112,29 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
   /// Failing to restore is not surfaced as an error: the config screen is
   /// already the correct next step, and the message there should describe why
   /// configuration is needed, not that a restore attempt failed.
+  ///
+  /// Bounded by [_restoreTimeout] and cleared in a `finally`, so a read that
+  /// never settles cannot leave the config screen disabled with no way out —
+  /// the Change-configuration button that also clears the flag lives on the
+  /// chat screen, which is unreachable while configuration is needed.
   Future<void> _restoreSavedCredentials() async {
     final store = ref.read(awsCredentialsStoreProvider);
 
     StoredAwsCredentials? stored;
     try {
-      stored = await store.read();
+      stored = await store.read().timeout(_restoreTimeout);
     } catch (e) {
       aiLog('RouterAssistantView: Could not read saved credentials: $e');
+    } finally {
+      if (mounted) setState(() => _isRestoring = false);
     }
 
     if (!mounted) return;
 
     final saved = stored;
-    // Stand down if the user got there first, or if a session already exists.
-    // Replacing either would discard work they can see.
-    if (saved == null || _userTookOver || _controller != null) {
-      setState(() => _isRestoring = false);
-      return;
-    }
+    // Stand down if a session already exists: replacing a live controller would
+    // orphan its listener and discard the conversation the user can see.
+    if (saved == null || _controller != null) return;
 
     final model = BedrockModel.models.firstWhere(
       (m) => m.id == saved.modelId,
@@ -134,18 +144,11 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
     );
 
     setState(() {
-      _isRestoring = false;
       _accessKeyController.text = saved.accessKeyId;
       _secretKeyController.text = saved.secretAccessKey;
       _selectedModel = model;
     });
     _initControllerWithManualConfig(persist: false);
-  }
-
-  /// Record that the user is driving the config screen themselves.
-  void _markUserTookOver() {
-    if (_userTookOver) return;
-    _userTookOver = true;
   }
 
   /// Build the controller from the fields on the config screen.
@@ -394,7 +397,6 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
                       controller: _accessKeyController,
                       hintText: 'AKIA...',
                       readOnly: _isRestoring,
-                      onChanged: (_) => _markUserTookOver(),
                     ),
                   ],
                 ),
@@ -408,7 +410,6 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
                       controller: _secretKeyController,
                       hintText: loc(context).enterSecretKey,
                       readOnly: _isRestoring,
-                      onChanged: (_) => _markUserTookOver(),
                     ),
                   ],
                 ),
@@ -430,10 +431,7 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
                   // restore and leave two controllers fighting over the view.
                   onTap: (_isConfiguring || _isRestoring)
                       ? null
-                      : () {
-                          _markUserTookOver();
-                          _initControllerWithManualConfig();
-                        },
+                      : _initControllerWithManualConfig,
                   variant: SurfaceVariant.highlight,
                 ),
               ],
@@ -458,7 +456,6 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
               ? null
               : (value) {
                   if (value == null) return;
-                  _markUserTookOver();
                   setState(() => _selectedModel = value);
                   // Keep a stored record in step, so a model changed after a
                   // restore is not silently forgotten on the next launch.
@@ -550,9 +547,9 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
                 // Reset the model too: leaving the previous account's choice
                 // selected would silently connect the next credentials on it.
                 _selectedModel = BedrockModel.models.first;
-                // The user is explicitly configuring; nothing may restore over
-                // them, and no restore is in flight on this path.
-                _userTookOver = true;
+                // No restore is in flight on this path — reaching this button
+                // means a session exists — but clear the flag so the fresh
+                // config screen is never handed over in a disabled state.
                 _isRestoring = false;
                 _isConfiguring = false;
               });

@@ -1,8 +1,11 @@
+import 'dart:async';
 import 'dart:convert';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:privacy_gui/ai/ai_logging.dart';
 import 'package:privacy_gui/page/ai_assistant/services/aws_credentials_store.dart';
 
 class MockSecureStorage extends Mock implements FlutterSecureStorage {}
@@ -11,6 +14,9 @@ class MockSecureStorage extends Mock implements FlutterSecureStorage {}
 /// interleave operations the way the UI does (fire-and-forget).
 class FakeSecureStorage extends Fake implements FlutterSecureStorage {
   final Map<String, String> values = {};
+
+  /// Ordered record of the operations that reached storage, so a test can pin
+  /// the ordering contract rather than only its outcome.
   final List<String> log = [];
 
   Duration writeDelay = Duration.zero;
@@ -18,6 +24,9 @@ class FakeSecureStorage extends Fake implements FlutterSecureStorage {
 
   /// Keys whose next write should throw.
   final Set<String> failWritesFor = {};
+
+  /// Keys whose write never completes, to exercise the operation timeout.
+  final Set<String> hangWritesFor = {};
 
   @override
   Future<void> write({
@@ -30,6 +39,10 @@ class FakeSecureStorage extends Fake implements FlutterSecureStorage {
     AppleOptions? mOptions,
     WindowsOptions? wOptions,
   }) async {
+    if (hangWritesFor.contains(key)) {
+      log.add('W…$key');
+      return Completer<void>().future;
+    }
     if (writeDelay > Duration.zero) await Future.delayed(writeDelay);
     if (failWritesFor.contains(key)) {
       log.add('W!$key');
@@ -75,9 +88,6 @@ class FakeSecureStorage extends Fake implements FlutterSecureStorage {
 
 void main() {
   const recordKey = 'ai_assistant_aws_credentials';
-  const legacyAccessKey = 'ai_assistant_aws_access_key_id';
-  const legacySecretKey = 'ai_assistant_aws_secret_access_key';
-  const legacyModelKey = 'ai_assistant_bedrock_model_id';
 
   group('AwsCredentialsStore', () {
     late FakeSecureStorage storage;
@@ -103,20 +113,16 @@ void main() {
         });
       });
 
-      test('removes keys left by the previous three-key layout', () async {
-        storage.values[legacyAccessKey] = 'old';
-        storage.values[legacySecretKey] = 'old';
-        storage.values[legacyModelKey] = 'old';
-
+      test('touches only the record key', () async {
         await store.store(
           accessKeyId: 'AKIAEXAMPLE',
           secretAccessKey: 'secret',
           modelId: 'model-a',
         );
 
-        expect(storage.values.containsKey(legacyAccessKey), isFalse);
-        expect(storage.values.containsKey(legacySecretKey), isFalse);
-        expect(storage.values.containsKey(legacyModelKey), isFalse);
+        expect(storage.log, ['W:$recordKey'],
+            reason: 'one write is the whole operation; extra keys would cost '
+                'a round trip and could leave a stale half behind');
       });
 
       test('a failed re-save leaves the previous record intact', () async {
@@ -197,6 +203,32 @@ void main() {
         expect(await store.read(), isNull);
       });
 
+      test('returns null when a field holds the wrong JSON type', () async {
+        storage.values[recordKey] = jsonEncode({
+          'accessKeyId': 12345,
+          'secretAccessKey': true,
+          'modelId': ['m'],
+        });
+
+        // A tampered record must take the "not configured" path rather than
+        // throwing a cast error the caller has no reason to expect.
+        expect(await store.read(), isNull);
+      });
+
+      test('ignores a non-String model rather than failing the read', () async {
+        storage.values[recordKey] = jsonEncode({
+          'accessKeyId': 'AKIAEXAMPLE',
+          'secretAccessKey': 'secret',
+          'modelId': 42,
+        });
+
+        final result = await store.read();
+
+        expect(result, isNotNull,
+            reason: 'usable credentials must survive a bad model field');
+        expect(result!.modelId, isNull);
+      });
+
       test('trims stored values', () async {
         storage.values[recordKey] = jsonEncode({
           'accessKeyId': '  AKIAEXAMPLE  ',
@@ -246,16 +278,33 @@ void main() {
         expect(storage.values.containsKey(recordKey), isFalse,
             reason: 'a model preference with no credentials is meaningless');
       });
+
+      test('reports an unreadable record the same way read() does', () async {
+        storage.values[recordKey] = 'not json at all';
+        final lines = captureAiLogs();
+        addTearDown(resetAiLoggingForTest);
+
+        await store.storeModelId('model-b');
+
+        // One failure class, one diagnostic: a silent return here would leave
+        // no trace of why the preference was dropped.
+        expect(
+            lines,
+            contains('[AI]: [Credentials] Discarding unreadable '
+                'record'));
+        expect(storage.values[recordKey], 'not json at all',
+            reason: 'a corrupt record must not be overwritten with a '
+                'model-only jsonEncode of it');
+      });
     });
 
     group('clear', () {
-      test('removes the record and any legacy keys', () async {
+      test('removes the record', () async {
         await store.store(
           accessKeyId: 'AKIAEXAMPLE',
           secretAccessKey: 'secret',
           modelId: 'model-a',
         );
-        storage.values[legacyAccessKey] = 'old';
 
         await store.clear();
 
@@ -320,17 +369,99 @@ void main() {
 
         expect(result?.accessKeyId, 'AKIAEXAMPLE');
       });
+
+      test('a hung operation does not block the queue forever', () {
+        // The failure this guards: the user presses "change configuration"
+        // behind a write that never settles, so the clear never runs and the
+        // revoked credentials are restored on the next launch.
+        fakeAsync((async) {
+          // Built inside the zone: the operation chain starts from a
+          // Future.value(), and one created outside would schedule its
+          // continuations on a microtask queue this zone never flushes.
+          storage = FakeSecureStorage();
+          store = AwsCredentialsStore(storage);
+          storage.hangWritesFor.add(recordKey);
+          storage.values[recordKey] = 'stale';
+
+          Object? storeError;
+          var cleared = false;
+          store
+              .store(
+                accessKeyId: 'AKIAEXAMPLE',
+                secretAccessKey: 'secret',
+                modelId: 'model-a',
+              )
+              .catchError((Object e) => storeError = e);
+          store.clear().then((_) => cleared = true);
+
+          async.elapse(const Duration(seconds: 30));
+
+          expect(storeError, isA<TimeoutException>(),
+              reason: 'the stalled write must be abandoned, not awaited');
+          expect(cleared, isTrue,
+              reason: 'the clear must still run once the write times out');
+          expect(storage.values, isEmpty);
+        });
+      });
+    });
+  });
+
+  group('logging', () {
+    late FakeSecureStorage storage;
+    late AwsCredentialsStore store;
+    late List<String> lines;
+
+    setUp(() {
+      storage = FakeSecureStorage();
+      store = AwsCredentialsStore(storage);
+      lines = captureAiLogs();
+    });
+
+    tearDown(resetAiLoggingForTest);
+
+    test('no credential value reaches the log', () async {
+      // A regression here would put a long-lived AWS secret into the log file,
+      // so assert on the emitted lines themselves rather than on what was
+      // written to storage.
+      await store.store(
+        accessKeyId: 'AKIA_SENSITIVE',
+        secretAccessKey: 'SUPER_SECRET',
+        modelId: 'model-sensitive',
+      );
+      await store.read();
+      await store.storeModelId('model-other');
+      await store.clear();
+
+      final logged = lines.join('\n');
+      expect(logged, isNot(contains('AKIA_SENSITIVE')));
+      expect(logged, isNot(contains('SUPER_SECRET')));
+      expect(logged, isNot(contains('model-sensitive')),
+          reason: 'even the model id is only ever a lifecycle detail here');
+    });
+
+    test('logs lifecycle events so a field report shows what happened',
+        () async {
+      await store.store(
+        accessKeyId: 'AKIAEXAMPLE',
+        secretAccessKey: 'secret',
+        modelId: 'model-a',
+      );
+      await store.storeModelId('model-b');
+      await store.clear();
+
+      expect(lines, [
+        '[AI]: [Credentials] Stored',
+        '[AI]: [Credentials] Model updated',
+        '[AI]: [Credentials] Cleared',
+      ]);
     });
   });
 
   group('AwsCredentialsStore with a mock storage', () {
-    test('never logs credential values', () async {
-      // Guards the contract that the store logs only lifecycle events. A
-      // regression here would put a long-lived AWS secret into the log file.
+    test('writes the credentials as a single value under one key', () async {
       final mock = MockSecureStorage();
       when(() => mock.write(key: any(named: 'key'), value: any(named: 'value')))
           .thenAnswer((_) async {});
-      when(() => mock.delete(key: any(named: 'key'))).thenAnswer((_) async {});
 
       await AwsCredentialsStore(mock).store(
         accessKeyId: 'AKIA_SENSITIVE',
@@ -338,13 +469,13 @@ void main() {
         modelId: 'model-a',
       );
 
-      // The value written is the JSON record; assert it is what reaches storage
-      // and nothing else was passed anywhere.
       final captured = verify(() =>
               mock.write(key: recordKey, value: captureAny(named: 'value')))
           .captured
           .single as String;
       expect(jsonDecode(captured)['secretAccessKey'], 'SUPER_SECRET');
+      verifyNever(() => mock.delete(key: any(named: 'key')));
+      verifyNoMoreInteractions(mock);
     });
   });
 }
