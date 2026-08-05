@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/ai/ai_logging.dart';
 
 /// Single key holding the whole record.
 ///
@@ -79,7 +79,7 @@ class AwsCredentialsStore {
         }),
       );
       await _deleteLegacyKeys();
-      logger.d('[AI][Credentials] Stored');
+      aiLog('[Credentials] Stored');
     });
   }
 
@@ -100,7 +100,7 @@ class AwsCredentialsStore {
         record = decoded;
       } catch (e) {
         // Corrupted or externally tampered value; treat as not configured.
-        logger.d('[AI][Credentials] Discarding unreadable record');
+        aiLog('[Credentials] Discarding unreadable record');
         return null;
       }
 
@@ -142,7 +142,7 @@ class AwsCredentialsStore {
 
       record['modelId'] = modelId;
       await _storage.write(key: _kRecordKey, value: jsonEncode(record));
-      logger.d('[AI][Credentials] Model updated');
+      aiLog('[Credentials] Model updated');
     });
   }
 
@@ -150,7 +150,7 @@ class AwsCredentialsStore {
     return _serialize(() async {
       await _storage.delete(key: _kRecordKey);
       await _deleteLegacyKeys();
-      logger.d('[AI][Credentials] Cleared');
+      aiLog('[Credentials] Cleared');
     });
   }
 

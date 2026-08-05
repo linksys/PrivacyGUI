@@ -2,9 +2,9 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:generative_ui/generative_ui.dart';
 
+import 'package:privacy_gui/ai/ai_logging.dart';
 import 'package:privacy_gui/ai/abstraction/_abstraction.dart';
 import 'package:privacy_gui/ai/prompts/router_system_prompt.dart';
-import 'package:privacy_gui/core/utils/logger.dart';
 
 /// Results accumulated for one assistant turn, owned by the exchange that
 /// opened it.
@@ -86,13 +86,13 @@ class RouterChatController extends ChangeNotifier {
         _commandProvider = commandProvider,
         _routerContext = routerContext {
     _log('RouterChatController initialized');
-    _log('Router context:\n$routerContext');
+    // The router context is the user's network: model, IP addresses, SSIDs,
+    // device names. Debug builds only.
+    aiLogSensitive(() => 'Router context:\n$routerContext');
     _initializeSystemPrompt();
   }
 
-  static void _log(String message) {
-    logger.d('[AI]: $message');
-  }
+  static void _log(String message) => aiLog(message);
 
   // Tool result `status` values. These are part of the protocol the model
   // reads, so they are defined once rather than spelled out at each site.
@@ -217,7 +217,10 @@ class RouterChatController extends ChangeNotifier {
   Future<void> sendMessage(String message) async {
     if (message.trim().isEmpty) return;
 
-    _log('sendMessage: "$message"');
+    aiLogSensitive(
+      () => 'sendMessage: "$message"',
+      orElse: () => 'sendMessage: ${message.length} chars',
+    );
     _lastUserMessage = message;
 
     // Insert pending tool results if needed
