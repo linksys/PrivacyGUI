@@ -637,7 +637,6 @@
   "factoryResetInProgress": "Η επαναφορά εργοστασιακών ρυθμίσεων είναι σε εξέλιξη",
   "factoryResetWaitMessage": "Ο δρομολογητής επαναφέρεται στις εργοστασιακές ρυθμίσεις. Θα χρειαστεί να κάνετε ξανά εγκατάσταση και σύνδεση.",
   "failed": "Απέτυχε",
-  "failedToInitialize": "Αποτυχία αρχικοποίησης: {error}",
   "failedToLoadSettings": "Αποτυχία φόρτωσης ρυθμίσεων",
   "failedToRenew": "Αποτυχία ανανέωσης: {error}",
   "failedToStartOtaUpdate": "Αποτυχία έναρξης της ενημέρωσης OTA",

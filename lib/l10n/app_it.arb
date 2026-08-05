@@ -639,7 +639,6 @@
   "factoryResetInProgress": "Ripristino delle impostazioni di fabbrica in corso",
   "factoryResetWaitMessage": "Il router sta ripristinando le impostazioni di fabbrica. Dovrai effettuare nuovamente la configurazione e l'accesso.",
   "failed": "Non riuscito",
-  "failedToInitialize": "Inizializzazione non riuscita: {error}",
   "failedToLoadSettings": "Caricamento delle impostazioni non riuscito",
   "failedToRenew": "Rinnovo non riuscito: {error}",
   "failedToStartOtaUpdate": "Avvio dell'aggiornamento OTA non riuscito",

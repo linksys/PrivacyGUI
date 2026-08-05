@@ -639,7 +639,6 @@
   "factoryResetInProgress": "Réinitialisation aux paramètres d'usine en cours",
   "factoryResetWaitMessage": "Le routeur revient à sa configuration d'usine par défaut. Vous devrez le configurer et vous reconnecter.",
   "failed": "Échec",
-  "failedToInitialize": "Échec de l'initialisation : {error}",
   "failedToLoadSettings": "Échec du chargement des paramètres",
   "failedToRenew": "Échec du renouvellement : {error}",
   "failedToStartOtaUpdate": "Échec du démarrage de la mise à jour OTA",

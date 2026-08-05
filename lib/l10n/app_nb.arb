@@ -639,7 +639,6 @@
   "factoryResetInProgress": "Tilbakestilling til fabrikkinnstillinger pågår",
   "factoryResetWaitMessage": "Ruteren tilbakestilles til fabrikkinnstillingene. Du må sette opp og logge inn på nytt.",
   "failed": "Mislyktes",
-  "failedToInitialize": "Klarte ikke å initialisere: {error}",
   "failedToLoadSettings": "Klarte ikke å laste inn innstillinger",
   "failedToRenew": "Klarte ikke å fornye: {error}",
   "failedToStartOtaUpdate": "Klarte ikke å starte OTA-oppdatering",

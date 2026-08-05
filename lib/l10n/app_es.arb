@@ -639,7 +639,6 @@
   "factoryResetInProgress": "Restablecimiento de fábrica en curso",
   "factoryResetWaitMessage": "El router está restaurando los valores de fábrica. Tendrá que volver a configurarlo e iniciar sesión de nuevo.",
   "failed": "Fallido",
-  "failedToInitialize": "Error al inicializar: {error}",
   "failedToLoadSettings": "Error al cargar la configuración",
   "failedToRenew": "Error al renovar: {error}",
   "failedToStartOtaUpdate": "Error al iniciar la actualización OTA",

@@ -639,7 +639,6 @@
   "factoryResetInProgress": "Fabrieksinstellingen worden hersteld",
   "factoryResetWaitMessage": "De router wordt teruggezet naar de fabrieksinstellingen. U moet opnieuw instellen en aanmelden.",
   "failed": "Mislukt",
-  "failedToInitialize": "Initialiseren mislukt: {error}",
   "failedToLoadSettings": "Instellingen laden mislukt",
   "failedToRenew": "Vernieuwen mislukt: {error}",
   "failedToStartOtaUpdate": "OTA-update starten mislukt",

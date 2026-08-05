@@ -2,10 +2,12 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:fake_async/fake_async.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/ai/ai_logging.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/page/ai_assistant/services/aws_credentials_store.dart';
 
 class MockSecureStorage extends Mock implements FlutterSecureStorage {}
@@ -24,6 +26,9 @@ class FakeSecureStorage extends Fake implements FlutterSecureStorage {
 
   /// Keys whose next write should throw.
   final Set<String> failWritesFor = {};
+
+  /// Keys whose read should throw, as a platform failure would.
+  final Set<String> failReadsFor = {};
 
   /// Keys whose write never completes, to exercise the operation timeout.
   final Set<String> hangWritesFor = {};
@@ -46,7 +51,7 @@ class FakeSecureStorage extends Fake implements FlutterSecureStorage {
     if (writeDelay > Duration.zero) await Future.delayed(writeDelay);
     if (failWritesFor.contains(key)) {
       log.add('W!$key');
-      throw Exception('write failed');
+      throw PlatformException(code: 'write_error', message: 'keychain failure');
     }
     log.add('W:$key');
     if (value == null) {
@@ -66,6 +71,10 @@ class FakeSecureStorage extends Fake implements FlutterSecureStorage {
     AppleOptions? mOptions,
     WindowsOptions? wOptions,
   }) async {
+    if (failReadsFor.contains(key)) {
+      log.add('R!$key');
+      throw PlatformException(code: 'read_error', message: 'keychain failure');
+    }
     log.add('R:$key');
     return values[key];
   }
@@ -139,7 +148,7 @@ void main() {
             secretAccessKey: 'secret_new',
             modelId: 'model-new',
           ),
-          throwsA(isA<Exception>()),
+          throwsA(isA<StorageError>()),
         );
 
         final result = await store.read();
@@ -298,6 +307,44 @@ void main() {
       });
     });
 
+    group('error mapping', () {
+      test('a platform failure surfaces as StorageError, not PlatformException',
+          () async {
+        storage.failWritesFor.add(recordKey);
+
+        // Art. XIII §13.1: the service layer is the conversion point, so no
+        // caller has to reason about platform-specific error shapes.
+        await expectLater(
+          store.store(
+            accessKeyId: 'AKIAEXAMPLE',
+            secretAccessKey: 'secret',
+            modelId: 'model-a',
+          ),
+          throwsA(isA<StorageError>()),
+        );
+      });
+
+      test('keeps the platform error for the log but not for display',
+          () async {
+        storage.failReadsFor.add(recordKey);
+
+        final error = await store.read().then<Object?>((_) => null,
+            onError: (Object e) => e) as StorageError;
+
+        expect(error.originalError, isNotNull,
+            reason: 'the technical text stays available to logger.e');
+        expect(error.detail, isNull,
+            reason: 'localizeServiceError surfaces detail to the user, and a '
+                'keychain code is not actionable — it must stay out');
+      });
+
+      test('every operation converts, not just writes', () async {
+        storage.failReadsFor.add(recordKey);
+
+        await expectLater(store.read(), throwsA(isA<StorageError>()));
+      });
+    });
+
     group('clear', () {
       test('removes the record', () async {
         await store.store(
@@ -343,7 +390,7 @@ void main() {
           secretAccessKey: 'secret',
           modelId: 'model-a',
         );
-        await expectLater(failing, throwsA(isA<Exception>()));
+        await expectLater(failing, throwsA(isA<StorageError>()));
 
         storage.failWritesFor.clear();
         await store.store(
@@ -396,8 +443,9 @@ void main() {
 
           async.elapse(const Duration(seconds: 30));
 
-          expect(storeError, isA<TimeoutException>(),
-              reason: 'the stalled write must be abandoned, not awaited');
+          expect(storeError, isA<TimeoutError>(),
+              reason: 'the stalled write must be abandoned, not awaited, and '
+                  'must reach the caller as a ServiceError');
           expect(cleared, isTrue,
               reason: 'the clear must still run once the write times out');
           expect(storage.values, isEmpty);

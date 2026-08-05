@@ -637,7 +637,6 @@
   "factoryResetInProgress": "กำลังรีเซ็ตเป็นค่าจากโรงงาน",
   "factoryResetWaitMessage": "เราเตอร์กำลังคืนค่าเป็นค่าเริ่มต้นจากโรงงาน คุณจะต้องตั้งค่าและลงชื่อเข้าใช้อีกครั้ง",
   "failed": "ล้มเหลว",
-  "failedToInitialize": "เริ่มต้นไม่สำเร็จ: {error}",
   "failedToLoadSettings": "โหลดการตั้งค่าไม่สำเร็จ",
   "failedToRenew": "ต่ออายุไม่สำเร็จ: {error}",
   "failedToStartOtaUpdate": "เริ่มการอัปเดต OTA ไม่สำเร็จ",

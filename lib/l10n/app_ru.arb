@@ -637,7 +637,6 @@
   "factoryResetInProgress": "Выполняется сброс к заводским настройкам",
   "factoryResetWaitMessage": "Маршрутизатор восстанавливает заводские настройки. Вам потребуется снова выполнить настройку и вход.",
   "failed": "Не удалось",
-  "failedToInitialize": "Не удалось инициализировать: {error}",
   "failedToLoadSettings": "Не удалось загрузить настройки",
   "failedToRenew": "Не удалось обновить: {error}",
   "failedToStartOtaUpdate": "Не удалось запустить обновление OTA",
