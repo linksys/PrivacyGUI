@@ -47,6 +47,13 @@ const kSessionInfo =
     '/v1/guardians/remote-assistances/sessions/$kVarRASessionId';
 const kCreatePin = '/v1/guardians/remote-assistances/sessions/pin';
 
+/// Path prefix for the router's reverse proxy to cloud (same-origin), used only
+/// for client-side RA requests on a local web build so the browser avoids CORS.
+/// Verified end-to-end against QA + Production + router FW (see issue #1179);
+/// kept as a single point of change should the FW prefix ever move.
+/// Must NOT end with a trailing slash (endpoints already start with '/').
+const kProxyPrefix = '/cloud';
+
 // Client type id/secret
 final kClientTypeId = clientTypeID;
 final kClientSecret = clientTypeSecret;
