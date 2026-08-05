@@ -1,0 +1,6 @@
+{
+  "schema_version": 1,
+  "minimum_decisions": 1,
+  "intentionally_unbound": {},
+  "local_js_globals": {}
+}

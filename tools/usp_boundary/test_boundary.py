@@ -21,6 +21,18 @@ class BoundaryTests(unittest.TestCase):
         )
         self.assertTrue(any("arity mismatch" in error for error in errors), errors)
 
+    def test_static_instance_mismatch_fails(self):
+        fixture = HERE / "fixtures" / "static_mismatch"
+        _, errors = run_check(
+            fixture / "usp_client.d.ts",
+            [fixture / "usp_client_wasm.dart"],
+            fixture / "policy.json",
+            fixture,
+        )
+        self.assertTrue(
+            any("static-ness mismatch" in error for error in errors), errors
+        )
+
     def test_missing_local_shim_fails(self):
         fixture = HERE / "fixtures" / "arity_mismatch"
         with tempfile.TemporaryDirectory() as temp:

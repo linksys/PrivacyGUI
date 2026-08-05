@@ -42,6 +42,7 @@ class FirmwareWsUploadStrategy implements FirmwareUploadStrategy {
   UspWsClientWrapper? _wsClient;
   StreamSubscription? _messageSubscription;
   Completer<void>? _responseCompleter;
+  bool _finalized = false;
 
   FirmwareWsUploadStrategy({
     required TurboSessionManager turboManager,
@@ -180,6 +181,14 @@ class FirmwareWsUploadStrategy implements FirmwareUploadStrategy {
 
   @override
   Future<void> finalize() async {
+    // prepare() finalizes on handshake failure and the owning service
+    // finalizes again per the strategy lifecycle contract — the second
+    // call must be a no-op (no duplicate turbo release).
+    if (_finalized) {
+      logger.d('$_tag finalize() already ran, skipping');
+      return;
+    }
+    _finalized = true;
     logger.d('$_tag Finalizing WebSocket upload...');
 
     // Cancel message subscription

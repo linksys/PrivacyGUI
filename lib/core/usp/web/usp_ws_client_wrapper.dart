@@ -145,7 +145,13 @@ class UspWsClientWrapper {
       // The producer's connect Promise is the readiness contract: it resolves
       // only after the browser upgrade reaches OPEN and rejects failed
       // upgrades. Do not infer readiness from a timer.
-      wrapper._currentState = WsConnectionState.open;
+      //
+      // The producer replays the live state to callbacks registered in the
+      // constructor, so a fast remote close may already have advanced the
+      // state past `connecting` — never overwrite a replayed `closed`.
+      if (wrapper._currentState == WsConnectionState.connecting) {
+        wrapper._currentState = WsConnectionState.open;
+      }
       logger.i('$_tag Connected to $url');
       return wrapper;
     } catch (e) {

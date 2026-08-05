@@ -21,6 +21,7 @@ class Signature:
     parameters: tuple[Parameter, ...]
     return_type: str
     kind: str = "callable"
+    static: bool = False
 
 
 def strip_comments(text):
@@ -100,20 +101,21 @@ def parse_typescript(path):
                 "constructor", ts_parameters(constructor.group(2)), class_name
             )
         method_pattern = re.compile(
-            r"(?m)^\s*(?:static\s+)?(\[Symbol\.dispose\]|\w+)"
+            r"(?m)^\s*(static\s+)?(\[Symbol\.dispose\]|\w+)"
             r"\s*\(([^;]*?)\)\s*:\s*([^;\n]+);",
             re.DOTALL,
         )
         for method in method_pattern.finditer(body):
             name = (
                 "Symbol.dispose"
-                if method.group(1) == "[Symbol.dispose]"
-                else method.group(1)
+                if method.group(2) == "[Symbol.dispose]"
+                else method.group(2)
             )
             methods[name] = Signature(
                 name,
-                ts_parameters(method.group(2)),
-                method.group(3).strip(),
+                ts_parameters(method.group(3)),
+                method.group(4).strip(),
+                static=bool(method.group(1)),
             )
         classes[class_name] = methods
 
@@ -164,16 +166,17 @@ def parse_dart_extensions(path):
 
         method_pattern = re.compile(
             r"(?ms)^\s*(?:@JS\('([^']+)'\)\s*)?"
-            r"external\s+(?!factory\b)(?:static\s+)?(\S+)\s+(\w+)\s*"
+            r"external\s+(?!factory\b)(static\s+)?(\S+)\s+(\w+)\s*"
             r"\(([^;]*?)\)\s*;",
         )
         for method in method_pattern.finditer(body):
-            dart_name = method.group(3)
+            dart_name = method.group(4)
             name = method.group(1) or dart_name.rstrip("_")
             methods[name] = Signature(
                 name,
-                dart_parameters(method.group(4)),
-                method.group(2).strip(),
+                dart_parameters(method.group(5)),
+                method.group(3).strip(),
+                static=bool(method.group(2)),
             )
         classes[js_class] = methods
     return classes, spans, text
@@ -245,6 +248,13 @@ def normalized_type(type_name):
 
 def compare_signature(label, dart, typescript):
     errors = []
+    if dart.static != typescript.static:
+        errors.append(
+            "%s static-ness mismatch: Dart=%s TypeScript=%s"
+            % (label,
+               "static" if dart.static else "instance",
+               "static" if typescript.static else "instance")
+        )
     if dart.kind != typescript.kind:
         errors.append(
             "%s declaration mismatch: Dart=%s TypeScript=%s"
