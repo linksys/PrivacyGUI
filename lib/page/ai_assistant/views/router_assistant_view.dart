@@ -4,9 +4,10 @@ import 'package:generative_ui/generative_ui.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 import 'package:privacy_gui/ai/_ai.dart';
-import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/ai/ai_logging.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/ai_assistant/providers/router_command_provider.dart';
+import 'package:privacy_gui/page/ai_assistant/services/aws_credentials_store.dart';
 import 'package:privacy_gui/page/dashboard/mascot/mascot_hero_widget.dart';
 
 /// Available Bedrock model options.
@@ -52,11 +53,34 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
   BedrockModel _selectedModel = BedrockModel.models.first;
   bool _isConfiguring = false;
 
+  /// True while saved credentials are being read on startup.
+  ///
+  /// Every input on the config screen is sealed for this window, which is what
+  /// makes the restore safe: landing after the user started typing would
+  /// otherwise overwrite their input and connect with credentials other than
+  /// the ones they entered. It is therefore always cleared — see
+  /// [_restoreSavedCredentials] — because a stuck flag locks the user out of
+  /// the only screen they can act on.
+  bool _isRestoring = false;
+
+  /// How long to wait for stored credentials before showing an empty form.
+  ///
+  /// Shorter than the store's own timeout so the user is never left looking at
+  /// a disabled screen for long; the restore is a convenience, and typing the
+  /// credentials again is a worse outcome than waiting but not a broken one.
+  static const _restoreTimeout = Duration(seconds: 5);
+
   @override
   void initState() {
     super.initState();
     _registry = RouterComponentRegistry.create();
     _tryInitController();
+    if (_needsConfig) {
+      // Environment config was unavailable; fall back to whatever the user
+      // saved on a previous run before asking them to type it again.
+      _isRestoring = true;
+      _restoreSavedCredentials();
+    }
   }
 
   void _tryInitController() {
@@ -73,19 +97,68 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
       _needsConfig = false;
       _configError = null;
     } on ConfigurationException catch (e) {
-      logger.d('RouterAssistantView: Config error: $e');
+      aiLog('RouterAssistantView: Config error: $e');
       _needsConfig = true;
       _configError = e.message;
     } catch (e) {
-      logger.d('RouterAssistantView: Unexpected error: $e');
+      aiLog('RouterAssistantView: Unexpected error: $e');
       _needsConfig = true;
       _configError = e.toString();
     }
   }
 
-  void _initControllerWithManualConfig() {
-    if (_accessKeyController.text.isEmpty ||
-        _secretKeyController.text.isEmpty) {
+  /// Connect with credentials saved on a previous run, if there are any.
+  ///
+  /// Failing to restore is not surfaced as an error: the config screen is
+  /// already the correct next step, and the message there should describe why
+  /// configuration is needed, not that a restore attempt failed.
+  ///
+  /// Bounded by [_restoreTimeout] and cleared in a `finally`, so a read that
+  /// never settles cannot leave the config screen disabled with no way out —
+  /// the Change-configuration button that also clears the flag lives on the
+  /// chat screen, which is unreachable while configuration is needed.
+  Future<void> _restoreSavedCredentials() async {
+    final store = ref.read(awsCredentialsStoreProvider);
+
+    StoredAwsCredentials? stored;
+    try {
+      stored = await store.read().timeout(_restoreTimeout);
+    } catch (e) {
+      aiLog('RouterAssistantView: Could not read saved credentials: $e');
+    } finally {
+      if (mounted) setState(() => _isRestoring = false);
+    }
+
+    if (!mounted) return;
+
+    final saved = stored;
+    // Stand down if a session already exists: replacing a live controller would
+    // orphan its listener and discard the conversation the user can see.
+    if (saved == null || _controller != null) return;
+
+    final model = BedrockModel.models.firstWhere(
+      (m) => m.id == saved.modelId,
+      // The saved model may no longer be offered; connect with the default
+      // rather than discarding otherwise-valid credentials.
+      orElse: () => BedrockModel.models.first,
+    );
+
+    setState(() {
+      _accessKeyController.text = saved.accessKeyId;
+      _secretKeyController.text = saved.secretAccessKey;
+      _selectedModel = model;
+    });
+    _initControllerWithManualConfig(persist: false);
+  }
+
+  /// Build the controller from the fields on the config screen.
+  ///
+  /// [persist] is false when the fields were themselves populated from storage,
+  /// so a restore does not rewrite what it just read.
+  void _initControllerWithManualConfig({bool persist = true}) {
+    final accessKeyId = _accessKeyController.text.trim();
+    final secretAccessKey = _secretKeyController.text.trim();
+    if (accessKeyId.isEmpty || secretAccessKey.isEmpty) {
       setState(() {
         _configError = 'fillAllRequiredFields';
       });
@@ -100,8 +173,8 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
     try {
       final commandProvider = ref.read(routerCommandProviderProvider);
       final awsConfig = AWSConfig(
-        accessKeyId: _accessKeyController.text.trim(),
-        secretAccessKey: _secretKeyController.text.trim(),
+        accessKeyId: accessKeyId,
+        secretAccessKey: secretAccessKey,
         region: 'us-west-2',
         modelId: _selectedModel.id,
       );
@@ -117,6 +190,20 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
         _needsConfig = false;
         _isConfiguring = false;
       });
+
+      if (persist) {
+        // Fire-and-forget: a storage failure must not block a working session.
+        ref
+            .read(awsCredentialsStoreProvider)
+            .store(
+              accessKeyId: accessKeyId,
+              secretAccessKey: secretAccessKey,
+              modelId: _selectedModel.id,
+            )
+            .catchError((Object e) {
+          aiLog('RouterAssistantView: Could not save credentials: $e');
+        });
+      }
     } catch (e) {
       setState(() {
         _configError = 'failedToInitialize:$e';
@@ -309,6 +396,7 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
                     AppTextField(
                       controller: _accessKeyController,
                       hintText: 'AKIA...',
+                      readOnly: _isRestoring,
                     ),
                   ],
                 ),
@@ -321,6 +409,7 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
                     AppPasswordInput(
                       controller: _secretKeyController,
                       hintText: loc(context).enterSecretKey,
+                      readOnly: _isRestoring,
                     ),
                   ],
                 ),
@@ -333,11 +422,16 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
                 ),
                 const SizedBox(height: 24),
                 AppButton(
-                  label: _isConfiguring
-                      ? loc(context).connecting
-                      : loc(context).connect,
-                  onTap:
-                      _isConfiguring ? null : _initControllerWithManualConfig,
+                  label: _isRestoring
+                      ? loc(context).loading
+                      : (_isConfiguring
+                          ? loc(context).connecting
+                          : loc(context).connect),
+                  // Disabled while restoring: connecting now would race the
+                  // restore and leave two controllers fighting over the view.
+                  onTap: (_isConfiguring || _isRestoring)
+                      ? null
+                      : _initControllerWithManualConfig,
                   variant: SurfaceVariant.highlight,
                 ),
               ],
@@ -358,11 +452,20 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
           value: _selectedModel,
           items: BedrockModel.models,
           itemAsString: (m) => m.displayName,
-          onChanged: (value) {
-            if (value != null) {
-              setState(() => _selectedModel = value);
-            }
-          },
+          onChanged: _isRestoring
+              ? null
+              : (value) {
+                  if (value == null) return;
+                  setState(() => _selectedModel = value);
+                  // Keep a stored record in step, so a model changed after a
+                  // restore is not silently forgotten on the next launch.
+                  ref
+                      .read(awsCredentialsStoreProvider)
+                      .storeModelId(value.id)
+                      .catchError((Object e) {
+                    aiLog('RouterAssistantView: Could not save model: $e');
+                  });
+                },
         ),
       ],
     );
@@ -425,11 +528,30 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
             label: loc(context).change,
             onTap: () {
               Navigator.pop(ctx);
+              // This is the user's way to remove saved credentials — leaving
+              // them in storage would silently restore on the next launch,
+              // defeating the change they just asked for.
+              ref
+                  .read(awsCredentialsStoreProvider)
+                  .clear()
+                  .catchError((Object e) {
+                aiLog('RouterAssistantView: Could not clear credentials: $e');
+              });
               setState(() {
                 _controller?.removeListener(_onControllerChanged);
                 _controller = null;
                 _needsConfig = true;
                 _configError = null;
+                _accessKeyController.clear();
+                _secretKeyController.clear();
+                // Reset the model too: leaving the previous account's choice
+                // selected would silently connect the next credentials on it.
+                _selectedModel = BedrockModel.models.first;
+                // No restore is in flight on this path — reaching this button
+                // means a session exists — but clear the flag so the fresh
+                // config screen is never handed over in a disabled state.
+                _isRestoring = false;
+                _isConfiguring = false;
               });
             },
           ),
@@ -558,7 +680,6 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
     final isUser = message.role == ChatRole.user;
 
     if (message.isToolResult) {
-      logger.d('[AI] MessageBubble: skipping tool_result');
       return const SizedBox.shrink();
     }
 
@@ -567,30 +688,27 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
 
     if (message.isUser) {
       textContent = message.content as String?;
-      logger.d('[AI] MessageBubble: user message, content=$textContent');
     } else if (message.isAssistant && message.response != null) {
       final textBlocks = message.response!.content.whereType<TextBlock>();
-      logger.d(
-          '[AI] MessageBubble: assistant message, textBlocks=${textBlocks.length}');
       if (textBlocks.isNotEmpty) {
         textContent = textBlocks.map((b) => b.text).join('\n');
         isA2UI = A2UIResponseRenderer.containsA2UI(textContent);
-        logger.d(
-            '[AI] MessageBubble: textContent length=${textContent.length}, isA2UI=$isA2UI');
-        logger.d(
-            '[AI] MessageBubble: textContent preview=${textContent.substring(0, textContent.length.clamp(0, 200))}');
       }
     } else {
-      logger.d(
-          '[AI] MessageBubble: unknown message type, role=${message.role}, isAssistant=${message.isAssistant}, response=${message.response}');
+      aiLog('MessageBubble: unknown message type, role=${message.role}');
     }
 
     if (textContent == null || textContent.isEmpty) {
-      logger.d('[AI] MessageBubble: no textContent, returning empty');
       return const SizedBox.shrink();
     }
 
-    logger.d('[AI] MessageBubble: rendering, isUser=$isUser, isA2UI=$isA2UI');
+    // Shape and length are diagnostic; the text itself is the conversation.
+    aiLogSensitive(
+      () => 'MessageBubble: rendering, isUser=$isUser, isA2UI=$isA2UI, '
+          'content=$textContent',
+      orElse: () => 'MessageBubble: rendering, isUser=$isUser, '
+          'isA2UI=$isA2UI, length=${textContent!.length}',
+    );
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -604,7 +722,6 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
             child: isA2UI
                 ? Builder(
                     builder: (context) {
-                      logger.d('[AI] Rendering A2UIResponseRenderer');
                       return A2UIResponseRenderer(
                         content: textContent!,
                         registry: _registry,
@@ -629,7 +746,11 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
   }
 
   void _handleA2UIAction(Map<String, dynamic> data) {
-    logger.d('A2UI Action: $data');
+    // The payload can carry device details from the rendered component.
+    aiLogSensitive(
+      () => 'A2UI Action: $data',
+      orElse: () => 'A2UI Action: ${data['action'] ?? 'unknown'}',
+    );
 
     final toolUseId = data['toolUseId'] as String?;
     if (toolUseId == null) return;

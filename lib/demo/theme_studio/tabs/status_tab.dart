@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ui_kit_library/ui_kit.dart';
-import 'package:privacy_gui/demo/providers/demo_theme_config_provider.dart';
+import 'package:privacy_gui/demo/providers/theme_studio_config_provider.dart';
 import '../widgets/section_header.dart';
 import '../widgets/color_circle.dart';
 import '../widgets/color_picker_dialog.dart';
@@ -11,7 +11,7 @@ class StatusTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final config = ref.watch(demoThemeConfigProvider);
+    final config = ref.watch(themeStudioConfigProvider);
     final semantics = config.overrides?.semantic;
 
     return Column(
@@ -24,7 +24,7 @@ class StatusTab extends ConsumerWidget {
           label: 'Success',
           color: semantics?.success,
           onChanged: (c) => ref
-              .read(demoThemeConfigProvider.notifier)
+              .read(themeStudioConfigProvider.notifier)
               .updateSemanticOverrides(success: c),
         ),
         const SizedBox(height: 12),
@@ -33,7 +33,7 @@ class StatusTab extends ConsumerWidget {
           label: 'Warning',
           color: semantics?.warning,
           onChanged: (c) => ref
-              .read(demoThemeConfigProvider.notifier)
+              .read(themeStudioConfigProvider.notifier)
               .updateSemanticOverrides(warning: c),
         ),
         const SizedBox(height: 12),
@@ -42,7 +42,7 @@ class StatusTab extends ConsumerWidget {
           label: 'Danger',
           color: semantics?.error,
           onChanged: (c) => ref
-              .read(demoThemeConfigProvider.notifier)
+              .read(themeStudioConfigProvider.notifier)
               .updateSemanticOverrides(danger: c),
         ),
         const SizedBox(height: 12),
@@ -51,7 +51,7 @@ class StatusTab extends ConsumerWidget {
           label: 'Info',
           color: semantics?.info,
           onChanged: (c) => ref
-              .read(demoThemeConfigProvider.notifier)
+              .read(themeStudioConfigProvider.notifier)
               .updateSemanticOverrides(info: c),
         ),
       ],

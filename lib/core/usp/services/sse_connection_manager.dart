@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
+import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 
 import 'sse_operation_strategy.dart';
@@ -109,6 +110,15 @@ class SseConnectionManager {
   /// is already in progress, subsequent calls await the existing attempt.
   Future<void> connect() async {
     if (_disposed) return;
+
+    // E2E mock build: the USP bridge is mocked at the browser JS boundary and
+    // the real SSE stream cannot establish. Treat the connection as online and
+    // skip stream setup entirely, so the connecting/reconnecting/suspended
+    // banner never renders and downstream UI reads "online". (P0-1)
+    if (BuildConfig.e2eMock) {
+      connectionState.value = SseConnectionState.connected;
+      return;
+    }
 
     // Lock: if connect is already in progress, await it and return.
     if (_connectInProgress != null) {

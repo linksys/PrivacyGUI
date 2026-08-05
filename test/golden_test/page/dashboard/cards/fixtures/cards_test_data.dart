@@ -713,6 +713,36 @@ final testTrafficWithHistory = TrafficAnalysisState(
 
 const testTrafficEmpty = TrafficAnalysisState();
 
+/// Variant of [testTrafficWithHistory] that carries a constant, non-zero WAN
+/// discard rate so the Errors-tab "Discards" legend renders a formatted value
+/// (avg 3.0/s) rather than the default 0. Used to cover the non-zero discards
+/// path, which the base fixture leaves at 0 (#1145 review-fix).
+final testTrafficWithDiscards = TrafficAnalysisState(
+  history: List.generate(
+    10,
+    (i) => MultiInterfaceSnapshot(
+      timestamp: _baseTime.add(Duration(seconds: i * 5)),
+      interfaces: {
+        TrafficInterface.wan: InterfaceTrafficSnapshot(
+          uploadBytesPerSec: 50000.0 + i * 10000,
+          downloadBytesPerSec: 200000.0 + i * 30000,
+          totalBytesSent: 5000000 + i * 50000,
+          totalBytesReceived: 20000000 + i * 200000,
+          totalPacketsSent: 5000 + i * 50,
+          totalPacketsReceived: 20000 + i * 200,
+          uploadPacketsPerSec: 50.0 + i * 5,
+          downloadPacketsPerSec: 200.0 + i * 20,
+          errorsSentPerSec: i * 0.05,
+          errorsReceivedPerSec: i * 0.05,
+          discardsSentPerSec: 1.5,
+          discardsReceivedPerSec: 1.5,
+        ),
+      },
+    ),
+  ),
+  refreshInterval: Duration(seconds: 5),
+);
+
 // ---------------------------------------------------------------------------
 // Device Analytics
 // ---------------------------------------------------------------------------

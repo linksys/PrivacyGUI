@@ -37,6 +37,7 @@ class UspPasswordCard extends StatelessWidget {
                     child: AppText.labelLarge('\u2022' * 12),
                   ),
                   AppButton.text(
+                    identifier: 'admin-change-password',
                     label: loc(context).change,
                     onTap: onChangePassword,
                   ),

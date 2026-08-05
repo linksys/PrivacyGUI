@@ -8,6 +8,7 @@
   "all": "All",
   "addPortForwarding": "Add Port Forwarding",
   "addRule": "Add rule",
+  "edit": "Edit",
   "editRule": "Edit rule",
   "addStaticRoute": "Add static route",
   "administration": "Administration",
@@ -394,9 +395,11 @@
   "pnpYourNetworkTitle": "Your network",
   "poor": "Poor",
   "pptpPassthrough": "PPTP Passthrough",
+  "optimizeLayout": "Optimize layout",
   "prefix": "Prefix",
   "prefixLength": "Prefix length",
   "print": "Print",
+  "refresh": "Refresh",
   "privateMac": "Private",
   "privacyAndSecurity": "Privacy & Security",
   "processing": "Processing...",
@@ -535,6 +538,7 @@
   "trend": "Trend",
   "trends": "Trends",
   "tryAgain": "Try again",
+  "logIntoRouter": "Log into router",
   "turnOff": "Turn Off",
   "type": "Type",
   "turnOffInstantPrivacy": "Turn off Instant-Privacy?",
@@ -1166,9 +1170,12 @@
   },
   "networkHealth": "Network Health",
   "health": "Health",
-  "avgValuePeakValue": "Avg: {avg}  Peak: {peak}",
-  "@avgValuePeakValue": {
+  "seriesAvgValuePeakValue": "{series}  Avg: {avg}  Peak: {peak}",
+  "@seriesAvgValuePeakValue": {
     "placeholders": {
+      "series": {
+        "type": "String"
+      },
       "avg": {
         "type": "String"
       },
@@ -1177,9 +1184,12 @@
       }
     }
   },
-  "avgValue": "Avg: {value}",
-  "@avgValue": {
+  "seriesAvgValue": "{series}  Avg: {value}",
+  "@seriesAvgValue": {
     "placeholders": {
+      "series": {
+        "type": "String"
+      },
       "value": {
         "type": "String"
       }

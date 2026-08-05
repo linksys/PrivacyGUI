@@ -292,7 +292,7 @@ class _ErrorsChart extends StatelessWidget {
                 AppChartSeries(
                   label: loc(parentContext).discards,
                   data: discardData,
-                  color: Colors.orange,
+                  color: colorScheme.tertiary,
                 ),
               ],
               yAxis: AppChartAxis(min: 0, max: yMax),
@@ -302,23 +302,26 @@ class _ErrorsChart extends StatelessWidget {
           ),
         ),
         AppGap.sm(),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+        Wrap(
+          alignment: WrapAlignment.center,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 16,
+          runSpacing: 4,
           children: [
-            _LegendDot(color: colorScheme.error),
-            AppGap.xs(),
-            AppText.labelSmall(
-              loc(parentContext).avgValuePeakValue(
+            _LegendEntry(
+              color: colorScheme.error,
+              label: loc(parentContext).seriesAvgValuePeakValue(
+                loc(parentContext).errors,
                 NetworkHealthHelpers.formatFaultRate(avgErr),
                 NetworkHealthHelpers.formatFaultRate(peakErr),
               ),
             ),
-            AppGap.lg(),
-            _LegendDot(color: Colors.orange),
-            AppGap.xs(),
-            AppText.labelSmall(
-              loc(parentContext)
-                  .avgValue(NetworkHealthHelpers.formatFaultRate(avgDisc)),
+            _LegendEntry(
+              color: colorScheme.tertiary,
+              label: loc(parentContext).seriesAvgValue(
+                loc(parentContext).discards,
+                NetworkHealthHelpers.formatFaultRate(avgDisc),
+              ),
             ),
           ],
         ),
@@ -378,12 +381,12 @@ class _LossChart extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _LegendDot(color: colorScheme.error),
-            AppGap.xs(),
-            AppText.labelSmall(
-              loc(parentContext).avgValuePeakValue(
-                '${avgLoss.toStringAsFixed(3)}%',
-                '${peakLoss.toStringAsFixed(3)}%',
+            _LegendEntry(
+              color: colorScheme.error,
+              label: loc(parentContext).seriesAvgValuePeakValue(
+                loc(parentContext).loss,
+                '${avgLoss.toStringAsFixed(2)}%',
+                '${peakLoss.toStringAsFixed(2)}%',
               ),
             ),
           ],
@@ -407,6 +410,24 @@ class _LegendDot extends StatelessWidget {
       width: 8,
       height: 8,
       decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+    );
+  }
+}
+
+class _LegendEntry extends StatelessWidget {
+  final Color color;
+  final String label;
+  const _LegendEntry({required this.color, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _LegendDot(color: color),
+        AppGap.xs(),
+        AppText.labelSmall(label),
+      ],
     );
   }
 }

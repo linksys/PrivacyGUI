@@ -22,7 +22,7 @@ List<Override> commonOverrides() {
 /// Ensures GetIt has default singletons registered.
 ///
 /// Registers ThemeJsonConfig, light ThemeData, and dark ThemeData —
-/// required by GeneralSettingsWidget, UspTopBar, and buildDemoThemeData.
+/// required by GeneralSettingsWidget, UspTopBar, and buildStudioThemeData.
 /// Safe to call multiple times.
 void _ensureGetItDefaults() {
   final getIt = GetIt.instance;

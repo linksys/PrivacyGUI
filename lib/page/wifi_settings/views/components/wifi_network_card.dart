@@ -64,6 +64,8 @@ class WifiNetworkCard extends ConsumerWidget {
             ),
             // ── WiFi name ─────────────────────────────────────────────────
             SettingBlock(
+              key: Key(
+                  'wifi-name-tile-${n.band}-${n.isGuest ? 'guest' : 'main'}'),
               title: loc(context).name,
               value: n.ssid.isNotEmpty ? n.ssid : loc(context).noSsid,
               semanticLabel: 'wifi-name-${n.band}',

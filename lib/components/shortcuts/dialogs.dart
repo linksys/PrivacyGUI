@@ -329,7 +329,7 @@ Future<bool?> showUnsavedAlert(BuildContext context,
     actions: [
       AppButton.text(
         label: loc(context).goBack,
-        semanticLabel: 'unsaved-go-back',
+        identifier: 'unsaved-go-back',
         key: const Key('unsavedAlert_goBackButton'),
         onTap: () {
           context.pop();
@@ -337,7 +337,7 @@ Future<bool?> showUnsavedAlert(BuildContext context,
       ),
       AppButton.dangerText(
         label: loc(context).discardChanges,
-        semanticLabel: 'unsaved-discard',
+        identifier: 'unsaved-discard',
         key: const Key('unsavedAlert_discardButton'),
         onTap: () {
           context.pop(true);

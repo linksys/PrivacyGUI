@@ -136,6 +136,7 @@ class _StaticRouteDialogState extends State<StaticRouteDialog> {
           children: [
             AppTextField(
               controller: _nameController,
+              identifier: 'static-route-name',
               hintText: loc(context).routeName,
               errorText: _localizeError(_errors['name']),
               onChanged: (_) => _validate(),
@@ -143,6 +144,7 @@ class _StaticRouteDialogState extends State<StaticRouteDialog> {
             AppGap.lg(),
             AppIpv4TextField(
               controller: _destIpController,
+              identifier: 'static-route-dest-ip',
               label: loc(context).destinationIp,
               errorText: _localizeError(_errors['destIp']),
               onChanged: (_) => _validate(),
@@ -150,6 +152,7 @@ class _StaticRouteDialogState extends State<StaticRouteDialog> {
             AppGap.lg(),
             AppIpv4TextField(
               controller: _subnetMaskController,
+              identifier: 'static-route-subnet-mask',
               label: loc(context).subnetMask,
               errorText: _localizeError(_errors['subnetMask']),
               onChanged: (_) => _validate(),
@@ -157,6 +160,7 @@ class _StaticRouteDialogState extends State<StaticRouteDialog> {
             AppGap.lg(),
             AppIpv4TextField(
               controller: _gatewayController,
+              identifier: 'static-route-gateway',
               label: loc(context).gatewayIp,
               errorText: _localizeError(_errors['gateway']),
               onChanged: (_) => _validate(),
@@ -185,6 +189,7 @@ class _StaticRouteDialogState extends State<StaticRouteDialog> {
               children: [
                 AppText.bodyMedium(loc(context).enabled),
                 AppSwitch(
+                  identifier: 'static-route-enabled',
                   value: _enabled,
                   onChanged: (value) => setState(() => _enabled = value),
                 ),

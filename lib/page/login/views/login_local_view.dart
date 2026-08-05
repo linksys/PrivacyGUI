@@ -248,24 +248,23 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
               children: [
                 AppText.headlineSmall(loc(context).login),
                 AppGap.xxxl(),
-                Semantics(
-                  label: 'login-password-input',
-                  child: AppPasswordInput(
-                    controller: _passwordController,
-                    hintText: loc(context).routerPassword,
-                    onChanged: (value) {
-                      setState(() {
-                        _shouldEnableLoginButton();
-                      });
-                    },
-                    onSubmitted: (_) {
-                      if (_passwordController.text.isEmpty) {
-                        return;
-                      }
-                      _doLogin();
-                    },
-                    errorText: _errorMessage,
-                  ),
+                AppPasswordInput(
+                  controller: _passwordController,
+                  identifier: 'login-password-input',
+                  semanticLabel: loc(context).routerPassword,
+                  hintText: loc(context).routerPassword,
+                  onChanged: (value) {
+                    setState(() {
+                      _shouldEnableLoginButton();
+                    });
+                  },
+                  onSubmitted: (_) {
+                    if (_passwordController.text.isEmpty) {
+                      return;
+                    }
+                    _doLogin();
+                  },
+                  errorText: _errorMessage,
                 ),
                 if (_passwordHint != null && _passwordHint?.isNotEmpty == true)
                   AppExpansionPanel.compactSingle(
@@ -290,7 +289,7 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
                 AppGap.xxxl(),
                 AppButton(
                   key: const Key('loginLocalView_loginButton'),
-                  semanticLabel: 'login-submit-button',
+                  identifier: 'login-submit-button',
                   label: loc(context).login,
                   variant: SurfaceVariant.highlight,
                   size: AppButtonSize.small,

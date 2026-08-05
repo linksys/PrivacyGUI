@@ -14,6 +14,11 @@ class AppSectionItemData {
   final VoidCallback? onTap;
   final String? semanticLabel;
 
+  /// Stable E2E test hook, mapped to the `flt-semantics-identifier` DOM attr
+  /// (silent to screen readers). Prefer this over [semanticLabel] for test
+  /// slugs so the accessible name stays the localized card title.
+  final String? identifier;
+
   const AppSectionItemData({
     this.iconData,
     required this.title,
@@ -22,5 +27,6 @@ class AppSectionItemData {
     this.badges = const [],
     this.disabledOnBridge = false,
     this.semanticLabel,
+    this.identifier,
   });
 }
