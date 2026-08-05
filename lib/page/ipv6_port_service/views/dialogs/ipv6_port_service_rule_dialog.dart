@@ -129,86 +129,87 @@ class _Ipv6PortServiceRuleDialogState extends State<Ipv6PortServiceRuleDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text(_isEdit ? loc(context).editRule : loc(context).addRule),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AppTextField(
-              controller: _descriptionController,
-              focusNode: _descriptionFocus,
-              identifier: 'ipv6-rule-description',
-              hintText: loc(context).ruleName,
-              errorText: _errors['description'],
+    return AppDialog(
+      title: AppText.titleLarge(
+          _isEdit ? loc(context).editRule : loc(context).addRule),
+      scrollable: true,
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AppTextField(
+            controller: _descriptionController,
+            focusNode: _descriptionFocus,
+            identifier: 'ipv6-rule-description',
+            hintText: loc(context).ruleName,
+            errorText: _errors['description'],
+            onChanged: (_) => _onInputChanged(),
+          ),
+          AppGap.lg(),
+          AppSelectAutoComplete(
+            options: widget.deviceOptions,
+            controller: _ipv6Controller,
+            onSelected: (_) => _validate(),
+            child: AppTextField(
+              controller: _ipv6Controller,
+              focusNode: _ipv6Focus,
+              identifier: 'ipv6-rule-address',
+              hintText: loc(context).ipv6AddressSearchHint,
+              errorText: _errors['ipv6Address'],
               onChanged: (_) => _onInputChanged(),
             ),
-            AppGap.lg(),
-            AppSelectAutoComplete(
-              options: widget.deviceOptions,
-              controller: _ipv6Controller,
-              onSelected: (_) => _validate(),
-              child: AppTextField(
-                controller: _ipv6Controller,
-                focusNode: _ipv6Focus,
-                identifier: 'ipv6-rule-address',
-                hintText: loc(context).ipv6AddressSearchHint,
-                errorText: _errors['ipv6Address'],
-                onChanged: (_) => _onInputChanged(),
+          ),
+          AppGap.lg(),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              AppText.bodyMedium(loc(context).protocol),
+              SegmentedButton<String>(
+                segments: UspIpv6PortServiceService.protocolOptions
+                    .map(
+                        (name) => ButtonSegment(value: name, label: Text(name)))
+                    .toList(),
+                selected: {_protocol},
+                onSelectionChanged: (v) => setState(() => _protocol = v.first),
               ),
-            ),
-            AppGap.lg(),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                AppText.bodyMedium(loc(context).protocol),
-                SegmentedButton<String>(
-                  segments: UspIpv6PortServiceService.protocolOptions
-                      .map((name) =>
-                          ButtonSegment(value: name, label: Text(name)))
-                      .toList(),
-                  selected: {_protocol},
-                  onSelectionChanged: (v) =>
-                      setState(() => _protocol = v.first),
-                ),
-              ],
-            ),
-            AppGap.lg(),
-            AppRangeInput(
-              startController: _startPortController,
-              endController: _endPortController,
-              startFocusNode: _startPortFocus,
-              endFocusNode: _endPortFocus,
-              startLabel: loc(context).startPort,
-              endLabel: loc(context).endPort,
-              startIdentifier: 'ipv6-rule-start-port',
-              endIdentifier: 'ipv6-rule-end-port',
-              errorText: _errors['startPort'] ?? _errors['endPort'],
-              onChanged: (_, __) => _onInputChanged(),
-            ),
-            AppGap.lg(),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                AppText.bodyMedium(loc(context).enabled),
-                AppSwitch(
-                  identifier: 'ipv6-rule-enabled',
-                  value: _enabled,
-                  onChanged: (value) => setState(() => _enabled = value),
-                ),
-              ],
-            ),
-          ],
-        ),
+            ],
+          ),
+          AppGap.lg(),
+          AppRangeInput(
+            startController: _startPortController,
+            endController: _endPortController,
+            startFocusNode: _startPortFocus,
+            endFocusNode: _endPortFocus,
+            startLabel: loc(context).startPort,
+            endLabel: loc(context).endPort,
+            startIdentifier: 'ipv6-rule-start-port',
+            endIdentifier: 'ipv6-rule-end-port',
+            errorText: _errors['startPort'] ?? _errors['endPort'],
+            onChanged: (_, __) => _onInputChanged(),
+          ),
+          AppGap.lg(),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              AppText.bodyMedium(loc(context).enabled),
+              AppSwitch(
+                identifier: 'ipv6-rule-enabled',
+                value: _enabled,
+                onChanged: (value) => setState(() => _enabled = value),
+              ),
+            ],
+          ),
+        ],
       ),
       actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text(loc(context).cancel),
+        AppButton.text(
+          identifier: 'ipv6-rule-cancel',
+          label: loc(context).cancel,
+          onTap: () => Navigator.of(context).pop(),
         ),
-        FilledButton(
-          onPressed: _isFormValid ? _submit : null,
-          child: Text(_isEdit ? loc(context).save : loc(context).add),
+        AppButton.text(
+          identifier: 'ipv6-rule-submit',
+          label: _isEdit ? loc(context).save : loc(context).add,
+          onTap: _isFormValid ? _submit : null,
         ),
       ],
     );
