@@ -526,6 +526,61 @@ void main() {
             .called(1);
       });
 
+      test('a stale exchange cannot discard the results of a live one',
+          () async {
+        // Gen 0's read is parked; the user clears, sends again, and gen 1
+        // accumulates its own results. Gen 0 must not touch them when it
+        // resumes.
+        final firstRead = Completer<RouterCommandResult>();
+        var reads = 0;
+        when(() => mockCommandProvider.execute('getSystemInfo', any()))
+            .thenAnswer((_) {
+          reads++;
+          return reads == 1
+              ? firstRead.future
+              : Future.value(RouterCommandResult.success(const {'gen': 1}));
+        });
+
+        // Ask for a read whenever the turn has no results yet, otherwise wrap
+        // up — independent of how many times the registry is reloaded.
+        var toolId = 0;
+        when(() => mockGenerator.generateWithHistory(
+              any(),
+              tools: any(named: 'tools'),
+              systemPromptParts: any(named: 'systemPromptParts'),
+              forceToolUse: any(named: 'forceToolUse'),
+            )).thenAnswer((invocation) async {
+          final history =
+              invocation.positionalArguments[0] as List<ChatMessage>;
+          if (history.any((m) => m.isToolResult)) return _textResponse('done');
+          toolId++;
+          return _multiToolUseResponse([
+            ('read-$toolId', 'getSystemInfo', const <String, dynamic>{}),
+          ]);
+        });
+
+        final genZero = controller.sendMessage('First question');
+        await Future<void>.delayed(Duration.zero);
+
+        controller.clearConversation();
+        await controller.sendMessage('Second question');
+
+        // Gen 1 finished and emitted its own result.
+        final afterGenOne = _toolResultMessages(controller.messages);
+        expect(afterGenOne, hasLength(1));
+        expect(_partsOf(afterGenOne.single).single.result['gen'], 1);
+
+        // Now let gen 0's device call return.
+        firstRead.complete(RouterCommandResult.success(const {'gen': 0}));
+        await genZero;
+
+        final afterGenZero = _toolResultMessages(controller.messages);
+        expect(afterGenZero, hasLength(1),
+            reason: 'the stale exchange must neither emit nor erase anything');
+        expect(_partsOf(afterGenZero.single).single.result['gen'], 1,
+            reason: "gen 1's real result must survive gen 0 resuming");
+      });
+
       test('discards read results when the conversation is cleared mid-tool',
           () async {
         // The read tool is still in flight when the user hits Clear.

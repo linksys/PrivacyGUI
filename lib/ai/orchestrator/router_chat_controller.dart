@@ -1,3 +1,4 @@
+import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:generative_ui/generative_ui.dart';
 
@@ -5,23 +6,49 @@ import 'package:privacy_gui/ai/abstraction/_abstraction.dart';
 import 'package:privacy_gui/ai/prompts/router_system_prompt.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 
+/// Results accumulated for one assistant turn, owned by the exchange that
+/// opened it.
+///
+/// Pairing the results with the generation they belong to is what makes
+/// staleness safe to act on: work resuming after an `await` holds a reference
+/// to *its own* batch, so it can never read, clear, or append to results that
+/// belong to a later exchange.
+class ToolResultBatch {
+  ToolResultBatch(this.generation);
+
+  /// Conversation generation this batch was opened in.
+  final int generation;
+
+  /// Tool results collected so far, in execution order.
+  ///
+  /// Order does not have to match the assistant's `tool_use` order — a
+  /// confirmed write is appended after its siblings — because the API matches
+  /// results to requests by `tool_use_id`. What matters is that they all arrive
+  /// in the single user message following the assistant turn.
+  final List<ToolResultPart> results = [];
+}
+
 /// Pending confirmation state for write/admin operations.
-class PendingConfirmation {
+class PendingConfirmation extends Equatable {
   final RouterCommand command;
   final Map<String, dynamic> params;
   final ToolUseBlock toolUse;
 
-  /// Conversation generation the batch that produced this confirmation belongs
-  /// to. Validated before the result is emitted so a confirmation resolving
-  /// after the conversation moved on cannot inject an orphaned `tool_result`.
-  final int generation;
+  /// The batch this confirmation was raised from. Its result rejoins that
+  /// batch's siblings, and its generation decides whether the batch may still
+  /// be emitted — so a confirmation answered after the conversation moved on
+  /// cannot inject an orphaned `tool_result`.
+  final ToolResultBatch batch;
 
   const PendingConfirmation({
     required this.command,
     required this.params,
     required this.toolUse,
-    required this.generation,
+    required this.batch,
   });
+
+  @override
+  List<Object?> get props => [command, params, toolUse, batch];
 }
 
 /// Controller for managing Router AI Assistant conversations.
@@ -42,7 +69,7 @@ class PendingConfirmation {
 ///
 /// The Claude Messages API requires every `tool_use` block in an assistant
 /// message to be answered within the *single* user message that immediately
-/// follows it. Results are therefore accumulated in [_pendingResults] and
+/// follows it. Results are therefore accumulated in a [ToolResultBatch] and
 /// flushed as one [ChatMessage.toolResults] message once every tool in the
 /// batch has a result.
 ///
@@ -86,14 +113,13 @@ class RouterChatController extends ChangeNotifier {
   Map<String, RouterCommand>? _commandsByName;
   Future<Map<String, RouterCommand>>? _commandsLoad;
 
-  /// Tool results for the batch currently being processed. Flushed by
-  /// [_flushPendingResults].
+  /// The batch currently accumulating results, or null between exchanges.
   ///
-  /// Ordering follows execution, not the assistant's `tool_use` order — a
-  /// confirmed write is appended after its siblings. That is fine: the API
-  /// matches results to requests by `tool_use_id`, and only requires them all
-  /// to arrive in the single user message following the assistant turn.
-  final List<ToolResultPart> _pendingResults = [];
+  /// Owning the results together with the generation they belong to is what
+  /// makes staleness safe to act on: work returning from an `await` can only
+  /// ever touch *its own* batch, so it can never clear or append to results
+  /// belonging to a later exchange.
+  ToolResultBatch? _batch;
 
   /// Incremented whenever the conversation is reset, so work that was already
   /// in flight (e.g. a confirmation awaiting the device) can tell that its
@@ -157,7 +183,10 @@ class RouterChatController extends ChangeNotifier {
   /// drift apart. The future itself is cached so concurrent first calls share
   /// one query.
   Future<Map<String, RouterCommand>> _loadCommands() {
-    return _commandsLoad ??= _commandProvider.listCommands().then((commands) {
+    final cached = _commandsLoad;
+    if (cached != null) return cached;
+
+    final load = _commandProvider.listCommands().then((commands) {
       _routerTools = commands
           .map((cmd) => GenTool(
                 name: cmd.name,
@@ -167,12 +196,21 @@ class RouterChatController extends ChangeNotifier {
           .toList();
       return _commandsByName = {for (final c in commands) c.name: c};
     });
+
+    // Drop a rejected load so a transient provider failure does not stick for
+    // the rest of the conversation.
+    _commandsLoad = load.catchError((Object e) {
+      _commandsLoad = null;
+      throw e;
+    });
+    return _commandsLoad!;
   }
 
   /// Tool definitions for the model, loading the registry if needed.
   Future<List<GenTool>> _getRouterTools() async {
     await _loadCommands();
-    return _routerTools!;
+    // Set by the load above; the map and the list are always populated together.
+    return _routerTools ?? const [];
   }
 
   /// Send a user message and process response.
@@ -205,13 +243,24 @@ class RouterChatController extends ChangeNotifier {
   /// - Detecting confirmation requirements
   /// - Looping for multi-turn tool use
   Future<void> _processConversation() async {
-    // Snapshot the generation this exchange belongs to. Every await below is a
-    // point where the user can reset the conversation, and anything written
-    // afterwards would land in a conversation this work no longer belongs to.
-    final generation = _conversationGeneration;
+    // This exchange owns its own batch, stamped with the generation it belongs
+    // to. Every await below is a point where the user can reset the
+    // conversation; because results live on the batch rather than in shared
+    // state, work resuming afterwards can only ever discard its own.
+    final batch = ToolResultBatch(_conversationGeneration);
+    _batch = batch;
 
-    final tools = await _getRouterTools();
-    if (_isStale(generation)) return;
+    final List<GenTool> tools;
+    try {
+      tools = await _getRouterTools();
+    } catch (e) {
+      _log('_processConversation: loading commands failed: $e');
+      if (_isStale(batch)) return;
+      _state = _state.withError('An unexpected error occurred: $e');
+      notifyListeners();
+      return;
+    }
+    if (_isStale(batch)) return;
 
     var loopCount = 0;
     const maxLoops = 5;
@@ -234,7 +283,7 @@ class RouterChatController extends ChangeNotifier {
           tools: tools.isNotEmpty ? tools : null,
           systemPromptParts: _systemPromptParts,
         );
-        if (_isStale(generation)) return;
+        if (_isStale(batch)) return;
         _log(
             '_processConversation: LLM responded, stopReason=${response.stopReason}');
 
@@ -289,7 +338,7 @@ class RouterChatController extends ChangeNotifier {
 
         // Process each tool use. Results are accumulated rather than emitted
         // one by one, so the whole batch can be flushed as a single message.
-        _pendingResults.clear();
+        batch.results.clear();
 
         for (final toolUse in toolUseBlocks) {
           // Every tool is wrapped so that a failure anywhere — including a
@@ -301,12 +350,12 @@ class RouterChatController extends ChangeNotifier {
             // keeps the batch complete and tells the model to ask again.
             if (deferred != null) {
               final command = await _findCommand(toolUse.name);
-              if (_isStale(generation)) return;
+              if (_isStale(batch)) return;
               if (command?.requiresConfirmation ?? false) {
                 _log(
                     '_processConversation: deferring extra confirmation-required '
                     'tool "${toolUse.name}" to a later turn');
-                _pendingResults.add(ToolResultPart(
+                batch.results.add(ToolResultPart(
                   toolUseId: toolUse.id,
                   result: {
                     'status': _statusNotExecuted,
@@ -321,8 +370,8 @@ class RouterChatController extends ChangeNotifier {
             }
 
             _log('_processConversation: executing tool "${toolUse.name}"');
-            final result = await _executeToolUse(toolUse, generation);
-            if (_isStale(generation)) return;
+            final result = await _executeToolUse(toolUse, batch);
+            if (_isStale(batch)) return;
 
             if (result.requiresConfirmation) {
               _log('_processConversation: tool requires confirmation');
@@ -331,7 +380,7 @@ class RouterChatController extends ChangeNotifier {
             } else {
               _log(
                   '_processConversation: tool result: ${result.isError ? "ERROR" : "SUCCESS"}');
-              _pendingResults.add(ToolResultPart(
+              batch.results.add(ToolResultPart(
                 toolUseId: toolUse.id,
                 result: result.data,
                 isError: result.isError,
@@ -339,7 +388,7 @@ class RouterChatController extends ChangeNotifier {
             }
           } catch (e) {
             _log('_processConversation: tool "${toolUse.name}" threw: $e');
-            _pendingResults.add(ToolResultPart(
+            batch.results.add(ToolResultPart(
               toolUseId: toolUse.id,
               result: {'error': e.toString()},
               isError: true,
@@ -356,7 +405,7 @@ class RouterChatController extends ChangeNotifier {
           return;
         }
 
-        if (!_completeBatch(generation)) return;
+        if (!_completeBatch(batch)) return;
 
         // Restore loading state before continuing loop
         _log('_processConversation: continuing to next loop iteration');
@@ -364,13 +413,13 @@ class RouterChatController extends ChangeNotifier {
         notifyListeners();
       } on GenUiException catch (e) {
         _log('_processConversation: GenUiException: ${e.message}');
-        _abandonBatch(generation, deferred);
+        _abandonBatch(batch, deferred);
         _state = _state.withError(e.message, retryable: e.isRetryable);
         notifyListeners();
         return;
       } catch (e) {
         _log('_processConversation: unexpected error: $e');
-        _abandonBatch(generation, deferred);
+        _abandonBatch(batch, deferred);
         _state = _state.withError('An unexpected error occurred: $e');
         notifyListeners();
         return;
@@ -387,17 +436,17 @@ class RouterChatController extends ChangeNotifier {
   Future<RouterCommand?> _findCommand(String name) async =>
       (await _loadCommands())[name];
 
-  /// Whether [generation] belongs to a conversation that has since been reset.
+  /// Whether [batch] belongs to a conversation that has since been reset.
   ///
-  /// Work in flight across an `await` must check this before touching state:
-  /// writing into a conversation it no longer belongs to would leave a
-  /// `tool_result` with no matching `tool_use` and invalidate every later
-  /// request.
-  bool _isStale(int generation) {
-    if (generation == _conversationGeneration) return false;
-    _log('_isStale: conversation moved on (batch gen $generation, '
+  /// A pure predicate — it deliberately touches no state, so a losing exchange
+  /// cannot disturb the one that replaced it. Work resuming after an `await`
+  /// checks this before writing anything: a `tool_result` landing in a
+  /// conversation it does not belong to has no matching `tool_use` and
+  /// invalidates every later request.
+  bool _isStale(ToolResultBatch batch) {
+    if (batch.generation == _conversationGeneration) return false;
+    _log('_isStale: conversation moved on (batch gen ${batch.generation}, '
         'current $_conversationGeneration) — abandoning this exchange');
-    _pendingResults.clear();
     return true;
   }
 
@@ -406,29 +455,43 @@ class RouterChatController extends ChangeNotifier {
   /// Any tools that already ran are answered so the assistant turn is not left
   /// with unanswered `tool_use` blocks, and a confirmation discovered before
   /// the failure is still surfaced so the user's write request is not lost.
-  void _abandonBatch(int generation, PendingConfirmation? deferred) {
+  void _abandonBatch(ToolResultBatch batch, PendingConfirmation? deferred) {
     if (deferred != null) {
+      // Re-arming only makes sense while the batch still owns the conversation.
+      if (_isStale(batch)) return;
       _log(
           '_abandonBatch: keeping confirmation for "${deferred.command.name}"');
       _pendingConfirmation = deferred;
       return;
     }
-    _completeBatch(generation);
+    _completeBatch(batch);
   }
 
-  /// Emit [_pendingResults] as a single tool result message and clear the batch.
+  /// Emit [batch]'s results as a single tool result message.
   ///
-  /// Does nothing when the batch is empty, since a tool result message with no
-  /// content is not valid.
-  void _flushPendingResults() {
-    if (_pendingResults.isEmpty) return;
-    _log('_flushPendingResults: emitting ${_pendingResults.length} result(s) '
-        'in one message');
-    _state = _state.withMessage(
-      ChatMessage.toolResults(List.of(_pendingResults)),
-    );
-    _pendingResults.clear();
-    notifyListeners();
+  /// Returns false when the batch no longer owns the conversation, in which
+  /// case nothing is written. Does nothing for an empty batch either, since a
+  /// tool result message with no content is not valid.
+  bool _completeBatch(ToolResultBatch batch) {
+    if (_isStale(batch)) {
+      _log(
+          '_completeBatch: discarding ${batch.results.length} stale result(s)');
+      batch.results.clear();
+      return false;
+    }
+    if (batch.results.isNotEmpty) {
+      _log('_completeBatch: emitting ${batch.results.length} result(s) '
+          'in one message');
+      // Copy: the message must not alias a list this batch still owns.
+      _state = _state.withMessage(
+        ChatMessage.toolResults(List.of(batch.results)),
+      );
+      // Emptied so a later wind-down of the same batch cannot re-emit them.
+      batch.results.clear();
+      notifyListeners();
+    }
+    if (_batch == batch) _batch = null;
+    return true;
   }
 
   /// Execute a single tool use block.
@@ -438,7 +501,7 @@ class RouterChatController extends ChangeNotifier {
   /// the dialog cannot appear while sibling tools are still executing.
   Future<_ToolExecutionResult> _executeToolUse(
     ToolUseBlock toolUse,
-    int generation,
+    ToolResultBatch batch,
   ) async {
     final command = await _findCommand(toolUse.name);
 
@@ -456,7 +519,7 @@ class RouterChatController extends ChangeNotifier {
           command: command,
           params: toolUse.input,
           toolUse: toolUse,
-          generation: generation,
+          batch: batch,
         ),
       );
     }
@@ -487,9 +550,9 @@ class RouterChatController extends ChangeNotifier {
     final pending = _pendingConfirmation;
     if (pending == null) return;
 
-    // Validate against the generation the batch was opened in, not the current
-    // one — the conversation may have moved on while the dialog was showing.
-    final generation = pending.generation;
+    // The confirmation carries the batch it belongs to, so the result joins
+    // that batch's siblings — not whatever is open when the user answers.
+    final batch = pending.batch;
     _pendingConfirmation = null;
     _state = _state.loading();
     notifyListeners();
@@ -502,44 +565,30 @@ class RouterChatController extends ChangeNotifier {
 
       // Complete the batch this confirmation belongs to, then flush it as one
       // message so every tool_use in the assistant turn is answered together.
-      _pendingResults.add(ToolResultPart(
+      batch.results.add(ToolResultPart(
         toolUseId: pending.toolUse.id,
         result: result.success
-            ? {...result.data, 'status': _statusExecuted}
+            // Nested so a 'status' field the device itself returns is not
+            // silently overwritten by ours.
+            ? {'status': _statusExecuted, 'result': result.data}
             : {'error': result.error ?? 'Operation failed'},
         isError: !result.success,
       ));
-      if (!_completeBatch(generation)) return;
+      if (!_completeBatch(batch)) return;
 
       // Continue conversation to get LLM's follow-up response
       await _processConversation();
     } catch (e) {
-      _pendingResults.add(ToolResultPart(
+      batch.results.add(ToolResultPart(
         toolUseId: pending.toolUse.id,
         result: {'error': e.toString()},
         isError: true,
       ));
-      if (!_completeBatch(generation)) return;
+      if (!_completeBatch(batch)) return;
 
       // Still continue to get LLM response about the error
       await _processConversation();
     }
-  }
-
-  /// Flush the batch unless the conversation moved on while we were awaiting.
-  ///
-  /// Returns false when [generation] is stale — the results belong to a
-  /// conversation that has since been cleared, so emitting them would leave a
-  /// `tool_result` with no matching `tool_use` and break every later request.
-  bool _completeBatch(int generation) {
-    if (generation != _conversationGeneration) {
-      _log('_completeBatch: conversation was reset, discarding '
-          '${_pendingResults.length} stale result(s)');
-      _pendingResults.clear();
-      return false;
-    }
-    _flushPendingResults();
-    return true;
   }
 
   /// Cancel the pending action.
@@ -550,22 +599,21 @@ class RouterChatController extends ChangeNotifier {
     final pending = _pendingConfirmation;
     if (pending == null) return;
 
-    // Validate against the generation the batch was opened in, not the current
-    // one — the conversation may have moved on while the dialog was showing.
-    final generation = pending.generation;
+    // The cancellation joins the batch the confirmation came from.
+    final batch = pending.batch;
     _pendingConfirmation = null;
     _state = _state.loading();
     notifyListeners();
 
     // Complete the batch with the cancellation, then flush it as one message.
-    _pendingResults.add(ToolResultPart(
+    batch.results.add(ToolResultPart(
       toolUseId: pending.toolUse.id,
       result: {
         'status': _statusCancelled,
         'message': 'User declined to execute ${pending.command.name}',
       },
     ));
-    if (!_completeBatch(generation)) return;
+    if (!_completeBatch(batch)) return;
 
     // Continue conversation to get LLM's response to cancellation
     await _processConversation();
@@ -573,11 +621,11 @@ class RouterChatController extends ChangeNotifier {
 
   /// Handle tool action from A2UI component.
   Future<void> handleToolAction(ToolActionOutput action) async {
-    // A UI action answers a single rendered component, so it is its own batch.
     // Close out whatever the previous turn left open first — including a
     // confirmation the user never answered, whose tool_use would otherwise stay
-    // unanswered while this action's result is appended.
-    _closeOutOpenBatch();
+    // unanswered while this action's result is appended. The id this action
+    // answers is excluded so it is not answered twice.
+    _closeOutOpenBatch(except: {action.toolUseId});
 
     final toolResultMessage = action.toChatMessage();
     _state = _state.withMessage(toolResultMessage);
@@ -599,21 +647,29 @@ class RouterChatController extends ChangeNotifier {
   ///
   /// Results already computed for that turn are **preserved** — they hold real
   /// device data — and only the genuinely missing ids are synthesised. The
-  /// generation is bumped so a confirmation still awaiting the device cannot
-  /// come back and answer an id this method just answered.
-  void _closeOutOpenBatch() {
-    final hadOpenWork =
-        _pendingConfirmation != null || _pendingResults.isNotEmpty;
+  /// generation is always bumped, so anything still in flight for the closed
+  /// batch (a confirmation awaiting the device, or an LLM call mid-request)
+  /// cannot come back and answer an id this method just answered.
+  void _closeOutOpenBatch({Set<String> except = const {}}) {
+    final hadConfirmation = _pendingConfirmation != null;
     _pendingConfirmation = null;
-    if (hadOpenWork) {
-      // Invalidate in-flight work belonging to the batch being closed.
-      _conversationGeneration++;
-    }
 
     // Results computed for the turn being closed are real; keep them and only
     // fill the gaps below.
-    final carried = List<ToolResultPart>.of(_pendingResults);
-    _pendingResults.clear();
+    final closed = _batch;
+    _batch = null;
+
+    // Bump only when work for the closed batch may still be in flight — an
+    // unanswered confirmation awaiting the device, or a batch left open by an
+    // exchange that has not finished. A batch that already completed sets
+    // _batch to null, so a normal turn does not invalidate the next one.
+    if (hadConfirmation || closed != null) {
+      _conversationGeneration++;
+    }
+
+    final carried = closed == null
+        ? <ToolResultPart>[]
+        : List<ToolResultPart>.of(closed.results);
 
     if (_state.messages.isEmpty) return;
 
@@ -642,6 +698,8 @@ class RouterChatController extends ChangeNotifier {
 
     // Carried results answer their ids too — do not synthesise over them.
     answeredIds.addAll(carried.map((p) => p.toolUseId));
+    // Ids the caller is about to answer itself.
+    answeredIds.addAll(except);
 
     final synthesised = [
       for (final block in response.content.whereType<ToolUseBlock>())
@@ -734,7 +792,7 @@ class RouterChatController extends ChangeNotifier {
     // the new conversation once the device responds.
     _conversationGeneration++;
     _pendingConfirmation = null;
-    _pendingResults.clear();
+    _batch = null;
     _lastUserMessage = null;
     _routerTools = null;
     _commandsByName = null;
