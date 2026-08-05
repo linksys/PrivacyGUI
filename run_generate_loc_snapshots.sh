@@ -33,6 +33,13 @@ echo "Locales: $locales"
 echo "Screens: $screens"
 echo "Version: $version"
 
+# Start every run with an empty overflow report. golden_runner.dart appends to
+# this file instead of overwriting it, and skips writing entirely when a run has
+# no overflows, so a leftover copy keeps reporting overflows that are already
+# fixed. Only this file is removed: the golden PNGs must survive, because -f/-l/-s
+# regenerate a subset and clear_goldens.sh is the opt-in way to wipe them all.
+rm -f goldens/overflow_warnings.json
+
 if [ -z "$file" ]; then
   IFS=',' read -ra LOCS <<< "$locales"
   for((i=0; i < ${#LOCS[@]}; i++))
