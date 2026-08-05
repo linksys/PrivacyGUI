@@ -42,7 +42,7 @@ class FirmwareWsUploadStrategy implements FirmwareUploadStrategy {
   UspWsClientWrapper? _wsClient;
   StreamSubscription? _messageSubscription;
   Completer<void>? _responseCompleter;
-  bool _finalized = false;
+  Future<void>? _finalizeFuture;
 
   FirmwareWsUploadStrategy({
     required TurboSessionManager turboManager,
@@ -180,28 +180,55 @@ class FirmwareWsUploadStrategy implements FirmwareUploadStrategy {
   }
 
   @override
-  Future<void> finalize() async {
+  Future<void> finalize() {
     // prepare() finalizes on handshake failure and the owning service
-    // finalizes again per the strategy lifecycle contract — the second
-    // call must be a no-op (no duplicate turbo release).
-    if (_finalized) {
-      logger.d('$_tag finalize() already ran, skipping');
-      return;
+    // finalizes again per the strategy lifecycle contract. Every caller
+    // awaits the same cleanup so release runs once without returning early.
+    final existing = _finalizeFuture;
+    if (existing != null) {
+      logger.d('$_tag finalize() already running or complete, reusing it');
+      return existing;
     }
-    _finalized = true;
+
+    final completion = Completer<void>();
+    _finalizeFuture = completion.future;
+    unawaited(_completeFinalization(completion));
+    return completion.future;
+  }
+
+  Future<void> _completeFinalization(Completer<void> completion) async {
+    try {
+      await _finalizeResources();
+      completion.complete();
+    } catch (error, stackTrace) {
+      logger.e(
+        '$_tag Unexpected finalization error (ignored): '
+        '$error\n$stackTrace',
+      );
+      completion.complete();
+    }
+  }
+
+  Future<void> _finalizeResources() async {
     logger.d('$_tag Finalizing WebSocket upload...');
 
     // Cancel message subscription
-    await _messageSubscription?.cancel();
+    final messageSubscription = _messageSubscription;
     _messageSubscription = null;
+    try {
+      await messageSubscription?.cancel();
+    } catch (e) {
+      logger.w('$_tag Message subscription cancel error (ignored): $e');
+    }
 
     // Close WebSocket
+    final wsClient = _wsClient;
+    _wsClient = null;
     try {
-      _wsClient?.dispose();
+      wsClient?.dispose();
     } catch (e) {
       logger.w('$_tag WebSocket close error (ignored): $e');
     }
-    _wsClient = null;
 
     // Release turbo session (always, even if above steps failed)
     try {

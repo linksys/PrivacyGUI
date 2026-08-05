@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
@@ -46,6 +48,7 @@ void main() {
     );
 
     await expectLater(strategy.prepare(), throwsA(isA<NetworkError>()));
+    await strategy.finalize();
 
     expect(connectedUrl, 'wss://router.test/usp-ws');
     verify(() => turboManager.start()).called(1);
@@ -56,6 +59,62 @@ void main() {
       ),
     ).called(1);
     verify(() => wsClient.dispose()).called(1);
+    verify(() => turboManager.release()).called(1);
+  });
+
+  test(
+    'subscription cancellation failure still disposes and releases',
+    () async {
+      final messages = StreamController<UspWsMessage>(
+        onCancel: () => Future<void>.error(StateError('cancel failed')),
+      );
+      when(() => wsClient.onMessage).thenAnswer((_) => messages.stream);
+
+      final strategy = FirmwareWsUploadStrategy(
+        turboManager: turboManager,
+        wsUrl: 'wss://router.test/usp-ws',
+        fromId: 'controller::test',
+        toId: 'agent::test',
+        connect: (_) async => wsClient,
+        handshakeTimeout: const Duration(milliseconds: 1),
+      );
+
+      await expectLater(strategy.prepare(), throwsA(isA<NetworkError>()));
+      await strategy.finalize();
+
+      verify(() => wsClient.dispose()).called(1);
+      verify(() => turboManager.release()).called(1);
+    },
+  );
+
+  test('concurrent finalize callers await the same cleanup', () async {
+    final releaseStarted = Completer<void>();
+    final allowRelease = Completer<void>();
+    when(() => turboManager.release()).thenAnswer((_) {
+      releaseStarted.complete();
+      return allowRelease.future;
+    });
+
+    final strategy = FirmwareWsUploadStrategy(
+      turboManager: turboManager,
+      wsUrl: 'wss://router.test/usp-ws',
+      fromId: 'controller::test',
+      toId: 'agent::test',
+    );
+
+    final first = strategy.finalize();
+    await releaseStarted.future;
+
+    var secondCompleted = false;
+    final second = strategy.finalize().whenComplete(() {
+      secondCompleted = true;
+    });
+    await Future<void>.delayed(Duration.zero);
+
+    expect(secondCompleted, isFalse);
+
+    allowRelease.complete();
+    await Future.wait([first, second]);
     verify(() => turboManager.release()).called(1);
   });
 }
