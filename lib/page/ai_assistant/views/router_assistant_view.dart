@@ -7,6 +7,7 @@ import 'package:privacy_gui/ai/_ai.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/ai_assistant/providers/router_command_provider.dart';
+import 'package:privacy_gui/page/ai_assistant/services/aws_credentials_store.dart';
 import 'package:privacy_gui/page/dashboard/mascot/mascot_hero_widget.dart';
 
 /// Available Bedrock model options.
@@ -52,11 +53,28 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
   BedrockModel _selectedModel = BedrockModel.models.first;
   bool _isConfiguring = false;
 
+  /// True while saved credentials are being read on startup.
+  ///
+  /// The config screen is disabled during this window: a restore that lands
+  /// after the user started typing would otherwise overwrite their input and
+  /// connect with different credentials than the ones they entered.
+  bool _isRestoring = false;
+
+  /// Set once the user interacts with the config screen, so a restore that
+  /// arrives late defers to them rather than replacing their input.
+  bool _userTookOver = false;
+
   @override
   void initState() {
     super.initState();
     _registry = RouterComponentRegistry.create();
     _tryInitController();
+    if (_needsConfig) {
+      // Environment config was unavailable; fall back to whatever the user
+      // saved on a previous run before asking them to type it again.
+      _isRestoring = true;
+      _restoreSavedCredentials();
+    }
   }
 
   void _tryInitController() {
@@ -83,9 +101,61 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
     }
   }
 
-  void _initControllerWithManualConfig() {
-    if (_accessKeyController.text.isEmpty ||
-        _secretKeyController.text.isEmpty) {
+  /// Connect with credentials saved on a previous run, if there are any.
+  ///
+  /// Failing to restore is not surfaced as an error: the config screen is
+  /// already the correct next step, and the message there should describe why
+  /// configuration is needed, not that a restore attempt failed.
+  Future<void> _restoreSavedCredentials() async {
+    final store = ref.read(awsCredentialsStoreProvider);
+
+    StoredAwsCredentials? stored;
+    try {
+      stored = await store.read();
+    } catch (e) {
+      logger.d('RouterAssistantView: Could not read saved credentials: $e');
+    }
+
+    if (!mounted) return;
+
+    final saved = stored;
+    // Stand down if the user got there first, or if a session already exists.
+    // Replacing either would discard work they can see.
+    if (saved == null || _userTookOver || _controller != null) {
+      setState(() => _isRestoring = false);
+      return;
+    }
+
+    final model = BedrockModel.models.firstWhere(
+      (m) => m.id == saved.modelId,
+      // The saved model may no longer be offered; connect with the default
+      // rather than discarding otherwise-valid credentials.
+      orElse: () => BedrockModel.models.first,
+    );
+
+    setState(() {
+      _isRestoring = false;
+      _accessKeyController.text = saved.accessKeyId;
+      _secretKeyController.text = saved.secretAccessKey;
+      _selectedModel = model;
+    });
+    _initControllerWithManualConfig(persist: false);
+  }
+
+  /// Record that the user is driving the config screen themselves.
+  void _markUserTookOver() {
+    if (_userTookOver) return;
+    _userTookOver = true;
+  }
+
+  /// Build the controller from the fields on the config screen.
+  ///
+  /// [persist] is false when the fields were themselves populated from storage,
+  /// so a restore does not rewrite what it just read.
+  void _initControllerWithManualConfig({bool persist = true}) {
+    final accessKeyId = _accessKeyController.text.trim();
+    final secretAccessKey = _secretKeyController.text.trim();
+    if (accessKeyId.isEmpty || secretAccessKey.isEmpty) {
       setState(() {
         _configError = 'fillAllRequiredFields';
       });
@@ -100,8 +170,8 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
     try {
       final commandProvider = ref.read(routerCommandProviderProvider);
       final awsConfig = AWSConfig(
-        accessKeyId: _accessKeyController.text.trim(),
-        secretAccessKey: _secretKeyController.text.trim(),
+        accessKeyId: accessKeyId,
+        secretAccessKey: secretAccessKey,
         region: 'us-west-2',
         modelId: _selectedModel.id,
       );
@@ -117,6 +187,20 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
         _needsConfig = false;
         _isConfiguring = false;
       });
+
+      if (persist) {
+        // Fire-and-forget: a storage failure must not block a working session.
+        ref
+            .read(awsCredentialsStoreProvider)
+            .store(
+              accessKeyId: accessKeyId,
+              secretAccessKey: secretAccessKey,
+              modelId: _selectedModel.id,
+            )
+            .catchError((Object e) {
+          logger.d('RouterAssistantView: Could not save credentials: $e');
+        });
+      }
     } catch (e) {
       setState(() {
         _configError = 'failedToInitialize:$e';
@@ -309,6 +393,8 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
                     AppTextField(
                       controller: _accessKeyController,
                       hintText: 'AKIA...',
+                      readOnly: _isRestoring,
+                      onChanged: (_) => _markUserTookOver(),
                     ),
                   ],
                 ),
@@ -321,6 +407,8 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
                     AppPasswordInput(
                       controller: _secretKeyController,
                       hintText: loc(context).enterSecretKey,
+                      readOnly: _isRestoring,
+                      onChanged: (_) => _markUserTookOver(),
                     ),
                   ],
                 ),
@@ -333,11 +421,19 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
                 ),
                 const SizedBox(height: 24),
                 AppButton(
-                  label: _isConfiguring
-                      ? loc(context).connecting
-                      : loc(context).connect,
-                  onTap:
-                      _isConfiguring ? null : _initControllerWithManualConfig,
+                  label: _isRestoring
+                      ? loc(context).loading
+                      : (_isConfiguring
+                          ? loc(context).connecting
+                          : loc(context).connect),
+                  // Disabled while restoring: connecting now would race the
+                  // restore and leave two controllers fighting over the view.
+                  onTap: (_isConfiguring || _isRestoring)
+                      ? null
+                      : () {
+                          _markUserTookOver();
+                          _initControllerWithManualConfig();
+                        },
                   variant: SurfaceVariant.highlight,
                 ),
               ],
@@ -358,11 +454,21 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
           value: _selectedModel,
           items: BedrockModel.models,
           itemAsString: (m) => m.displayName,
-          onChanged: (value) {
-            if (value != null) {
-              setState(() => _selectedModel = value);
-            }
-          },
+          onChanged: _isRestoring
+              ? null
+              : (value) {
+                  if (value == null) return;
+                  _markUserTookOver();
+                  setState(() => _selectedModel = value);
+                  // Keep a stored record in step, so a model changed after a
+                  // restore is not silently forgotten on the next launch.
+                  ref
+                      .read(awsCredentialsStoreProvider)
+                      .storeModelId(value.id)
+                      .catchError((Object e) {
+                    logger.d('RouterAssistantView: Could not save model: $e');
+                  });
+                },
         ),
       ],
     );
@@ -425,11 +531,31 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
             label: loc(context).change,
             onTap: () {
               Navigator.pop(ctx);
+              // This is the user's way to remove saved credentials — leaving
+              // them in storage would silently restore on the next launch,
+              // defeating the change they just asked for.
+              ref
+                  .read(awsCredentialsStoreProvider)
+                  .clear()
+                  .catchError((Object e) {
+                logger
+                    .d('RouterAssistantView: Could not clear credentials: $e');
+              });
               setState(() {
                 _controller?.removeListener(_onControllerChanged);
                 _controller = null;
                 _needsConfig = true;
                 _configError = null;
+                _accessKeyController.clear();
+                _secretKeyController.clear();
+                // Reset the model too: leaving the previous account's choice
+                // selected would silently connect the next credentials on it.
+                _selectedModel = BedrockModel.models.first;
+                // The user is explicitly configuring; nothing may restore over
+                // them, and no restore is in flight on this path.
+                _userTookOver = true;
+                _isRestoring = false;
+                _isConfiguring = false;
               });
             },
           ),
