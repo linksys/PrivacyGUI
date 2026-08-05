@@ -4,7 +4,7 @@ import 'package:generative_ui/generative_ui.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 import 'package:privacy_gui/ai/_ai.dart';
-import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/ai/ai_logging.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/ai_assistant/providers/router_command_provider.dart';
 import 'package:privacy_gui/page/ai_assistant/services/aws_credentials_store.dart';
@@ -91,11 +91,11 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
       _needsConfig = false;
       _configError = null;
     } on ConfigurationException catch (e) {
-      logger.d('RouterAssistantView: Config error: $e');
+      aiLog('RouterAssistantView: Config error: $e');
       _needsConfig = true;
       _configError = e.message;
     } catch (e) {
-      logger.d('RouterAssistantView: Unexpected error: $e');
+      aiLog('RouterAssistantView: Unexpected error: $e');
       _needsConfig = true;
       _configError = e.toString();
     }
@@ -113,7 +113,7 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
     try {
       stored = await store.read();
     } catch (e) {
-      logger.d('RouterAssistantView: Could not read saved credentials: $e');
+      aiLog('RouterAssistantView: Could not read saved credentials: $e');
     }
 
     if (!mounted) return;
@@ -198,7 +198,7 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
               modelId: _selectedModel.id,
             )
             .catchError((Object e) {
-          logger.d('RouterAssistantView: Could not save credentials: $e');
+          aiLog('RouterAssistantView: Could not save credentials: $e');
         });
       }
     } catch (e) {
@@ -466,7 +466,7 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
                       .read(awsCredentialsStoreProvider)
                       .storeModelId(value.id)
                       .catchError((Object e) {
-                    logger.d('RouterAssistantView: Could not save model: $e');
+                    aiLog('RouterAssistantView: Could not save model: $e');
                   });
                 },
         ),
@@ -538,8 +538,7 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
                   .read(awsCredentialsStoreProvider)
                   .clear()
                   .catchError((Object e) {
-                logger
-                    .d('RouterAssistantView: Could not clear credentials: $e');
+                aiLog('RouterAssistantView: Could not clear credentials: $e');
               });
               setState(() {
                 _controller?.removeListener(_onControllerChanged);
@@ -684,7 +683,6 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
     final isUser = message.role == ChatRole.user;
 
     if (message.isToolResult) {
-      logger.d('[AI] MessageBubble: skipping tool_result');
       return const SizedBox.shrink();
     }
 
@@ -693,30 +691,27 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
 
     if (message.isUser) {
       textContent = message.content as String?;
-      logger.d('[AI] MessageBubble: user message, content=$textContent');
     } else if (message.isAssistant && message.response != null) {
       final textBlocks = message.response!.content.whereType<TextBlock>();
-      logger.d(
-          '[AI] MessageBubble: assistant message, textBlocks=${textBlocks.length}');
       if (textBlocks.isNotEmpty) {
         textContent = textBlocks.map((b) => b.text).join('\n');
         isA2UI = A2UIResponseRenderer.containsA2UI(textContent);
-        logger.d(
-            '[AI] MessageBubble: textContent length=${textContent.length}, isA2UI=$isA2UI');
-        logger.d(
-            '[AI] MessageBubble: textContent preview=${textContent.substring(0, textContent.length.clamp(0, 200))}');
       }
     } else {
-      logger.d(
-          '[AI] MessageBubble: unknown message type, role=${message.role}, isAssistant=${message.isAssistant}, response=${message.response}');
+      aiLog('MessageBubble: unknown message type, role=${message.role}');
     }
 
     if (textContent == null || textContent.isEmpty) {
-      logger.d('[AI] MessageBubble: no textContent, returning empty');
       return const SizedBox.shrink();
     }
 
-    logger.d('[AI] MessageBubble: rendering, isUser=$isUser, isA2UI=$isA2UI');
+    // Shape and length are diagnostic; the text itself is the conversation.
+    aiLogSensitive(
+      () => 'MessageBubble: rendering, isUser=$isUser, isA2UI=$isA2UI, '
+          'content=$textContent',
+      orElse: () => 'MessageBubble: rendering, isUser=$isUser, '
+          'isA2UI=$isA2UI, length=${textContent!.length}',
+    );
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -730,7 +725,6 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
             child: isA2UI
                 ? Builder(
                     builder: (context) {
-                      logger.d('[AI] Rendering A2UIResponseRenderer');
                       return A2UIResponseRenderer(
                         content: textContent!,
                         registry: _registry,
@@ -755,7 +749,11 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
   }
 
   void _handleA2UIAction(Map<String, dynamic> data) {
-    logger.d('A2UI Action: $data');
+    // The payload can carry device details from the rendered component.
+    aiLogSensitive(
+      () => 'A2UI Action: $data',
+      orElse: () => 'A2UI Action: ${data['action'] ?? 'unknown'}',
+    );
 
     final toolUseId = data['toolUseId'] as String?;
     if (toolUseId == null) return;
