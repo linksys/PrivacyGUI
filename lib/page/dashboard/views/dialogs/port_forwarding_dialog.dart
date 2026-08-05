@@ -270,13 +270,15 @@ class _PortForwardingDialogState extends State<PortForwardingDialog> {
         ),
       ),
       actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text(loc(context).cancel),
+        AppButton.text(
+          identifier: 'pf-single-cancel',
+          label: loc(context).cancel,
+          onTap: () => Navigator.of(context).pop(),
         ),
-        FilledButton(
-          onPressed: _isFormValid(context) ? _submit : null,
-          child: Text(_isEdit ? loc(context).save : loc(context).add),
+        AppButton.text(
+          identifier: 'pf-single-submit',
+          label: _isEdit ? loc(context).save : loc(context).add,
+          onTap: _isFormValid(context) ? _submit : null,
         ),
       ],
     );
