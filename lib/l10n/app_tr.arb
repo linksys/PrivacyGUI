@@ -637,7 +637,6 @@
   "factoryResetInProgress": "Fabrika ayarlarına sıfırlama devam ediyor",
   "factoryResetWaitMessage": "Yönlendirici fabrika ayarlarına geri yükleniyor. Yeniden kurulum yapmanız ve tekrar oturum açmanız gerekecek.",
   "failed": "Başarısız",
-  "failedToInitialize": "Başlatılamadı: {error}",
   "failedToLoadSettings": "Ayarlar yüklenemedi",
   "failedToRenew": "Yenilenemedi: {error}",
   "failedToStartOtaUpdate": "OTA güncellemesi başlatılamadı",

@@ -637,7 +637,6 @@
   "factoryResetInProgress": "Tehdasasetusten palautus käynnissä",
   "factoryResetWaitMessage": "Reititin palauttaa tehdasasetuksia. Sinun on määritettävä ja kirjauduttava sisään uudelleen.",
   "failed": "Epäonnistui",
-  "failedToInitialize": "Alustus epäonnistui: {error}",
   "failedToLoadSettings": "Asetusten lataaminen epäonnistui",
   "failedToRenew": "Uusiminen epäonnistui: {error}",
   "failedToStartOtaUpdate": "OTA-päivityksen aloitus epäonnistui",

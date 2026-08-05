@@ -639,7 +639,6 @@
   "factoryResetInProgress": "Zurücksetzen auf Werkseinstellungen läuft",
   "factoryResetWaitMessage": "Der Router wird auf die Werkseinstellungen zurückgesetzt. Sie müssen ihn erneut einrichten und sich erneut anmelden.",
   "failed": "Fehlgeschlagen",
-  "failedToInitialize": "Initialisierung fehlgeschlagen: {error}",
   "failedToLoadSettings": "Einstellungen konnten nicht geladen werden",
   "failedToRenew": "Erneuern fehlgeschlagen: {error}",
   "failedToStartOtaUpdate": "OTA-Update konnte nicht gestartet werden",

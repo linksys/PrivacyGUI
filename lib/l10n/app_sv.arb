@@ -639,7 +639,6 @@
   "factoryResetInProgress": "Fabriksåterställning pågår",
   "factoryResetWaitMessage": "Routern återställs till fabriksinställningarna. Du behöver konfigurera och logga in igen.",
   "failed": "Misslyckades",
-  "failedToInitialize": "Det gick inte att initiera: {error}",
   "failedToLoadSettings": "Det gick inte att läsa in inställningarna",
   "failedToRenew": "Det gick inte att förnya: {error}",
   "failedToStartOtaUpdate": "Det gick inte att starta OTA-uppdateringen",

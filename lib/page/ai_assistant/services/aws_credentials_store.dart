@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:privacy_gui/ai/ai_logging.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 
 /// Single key holding the whole record.
 ///
@@ -48,6 +50,18 @@ final awsCredentialsStoreProvider = Provider<AwsCredentialsStore>((ref) {
 /// The ordering guarantee holds because [awsCredentialsStoreProvider] is a
 /// plain [Provider], i.e. one instance for the session. Making it `autoDispose`
 /// would hand out fresh chains and revive the race invisibly.
+///
+/// ## Errors
+///
+/// Every method throws only [ServiceError] subtypes — [StorageError] for a
+/// platform storage failure, [TimeoutError] when an operation exceeds
+/// [_kOperationTimeout]. `FlutterSecureStorage`'s `PlatformException` never
+/// leaves this class, so no caller has to reason about platform-specific error
+/// shapes (constitution Art. XIII §13.1).
+///
+/// Callers are expected to log these rather than show them: persistence is a
+/// convenience, and a failure to save leaves a working session untouched. The
+/// user has nothing to act on, so surfacing it would be noise.
 class AwsCredentialsStore {
   AwsCredentialsStore(this._storage);
 
@@ -63,16 +77,39 @@ class AwsCredentialsStore {
   /// returned future still reports the failure to this caller. A timeout counts
   /// as a failure, which is what stops a stalled operation from blocking the
   /// queue forever.
+  ///
+  /// This is also the single place platform errors are converted, so each
+  /// method body can stay free of error handling.
   Future<T> _serialize<T>(Future<T> Function() operation) {
-    final result =
-        _pending.then((_) => operation().timeout(_kOperationTimeout));
+    final result = _pending
+        .then((_) => operation().timeout(_kOperationTimeout))
+        .onError<Object>((e, _) => throw _asServiceError(e));
     _pending = result.then((_) {}, onError: (_) {});
     return result;
   }
 
+  /// Convert anything storage throws into a [ServiceError].
+  ///
+  /// The platform error goes on `originalError`, never into `detail`. `detail`
+  /// is the field a localizer may choose to surface — `localizeServiceError`
+  /// already does for `UnexpectedError` — and a keychain error code or a web
+  /// `localStorage` message is not something a user can act on. Keeping it out
+  /// means the leak cannot happen even if the mapping changes later.
+  /// `mapUspErrorToServiceError` makes the same call for an unparseable error.
+  ///
+  /// The `TimeoutError` detail is a fixed string naming the operation, not
+  /// error text — safe by construction, and useful in a log.
+  ServiceError _asServiceError(Object error) {
+    if (error is ServiceError) return error;
+    if (error is TimeoutException) {
+      return const TimeoutError(detail: 'credential storage');
+    }
+    return StorageError(originalError: error);
+  }
+
   /// Persist the credentials and the selected model.
   ///
-  /// Values are never logged.
+  /// Values are never logged. Throws [StorageError] or [TimeoutError].
   Future<void> store({
     required String accessKeyId,
     required String secretAccessKey,
@@ -95,7 +132,8 @@ class AwsCredentialsStore {
   ///
   /// Returns null rather than a half-built record for anything unusable —
   /// absent, blank, or unparseable — so the caller's "not configured" path
-  /// handles it instead of a signing error later.
+  /// handles it instead of a signing error later. A bad record is therefore not
+  /// an error; only storage itself failing is ([StorageError], [TimeoutError]).
   Future<StoredAwsCredentials?> read() {
     return _serialize(() async {
       final record = await _readRecord();

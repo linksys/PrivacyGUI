@@ -637,7 +637,6 @@
   "factoryResetInProgress": "Đang khôi phục cài đặt gốc",
   "factoryResetWaitMessage": "Router đang khôi phục về cài đặt gốc. Bạn sẽ cần thiết lập và đăng nhập lại.",
   "failed": "Thất bại",
-  "failedToInitialize": "Khởi tạo thất bại: {error}",
   "failedToLoadSettings": "Tải cài đặt thất bại",
   "failedToRenew": "Gia hạn thất bại: {error}",
   "failedToStartOtaUpdate": "Bắt đầu cập nhật OTA thất bại",

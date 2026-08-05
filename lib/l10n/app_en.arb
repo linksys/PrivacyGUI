@@ -1414,14 +1414,6 @@
   "connecting": "Connecting...",
   "connect": "Connect",
   "fillAllRequiredFields": "Please fill in all required fields",
-  "failedToInitialize": "Failed to initialize: {error}",
-  "@failedToInitialize": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "confirmationRequired": "Confirmation Required",
   "confirmExecuteOperation": "Are you sure you want to execute this operation?",
   "confirm": "Confirm",
