@@ -92,8 +92,10 @@ class DhcpClients {
             response['${p}Active'] == 'true' ||
             response['${p}Active'] == '1',
         ipAddress: (response['${p}IPv4Address.1.IPAddress'] ?? '') as String,
-        leaseTimeRemaining: DateTime.parse(
-            response['${p}IPv4Address.1.LeaseTimeRemaining']?.toString() ?? ''),
+        leaseTimeRemaining: DateTime.tryParse(
+                response['${p}IPv4Address.1.LeaseTimeRemaining']?.toString() ??
+                    '') ??
+            DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
       ));
     }
     return DhcpClients(items: items);
