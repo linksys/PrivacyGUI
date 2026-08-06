@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart' show NotInitializedError;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:generative_ui/generative_ui.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -82,9 +83,11 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
 
   /// How long to wait for stored credentials before showing an empty form.
   ///
-  /// Shorter than the store's own timeout so the user is never left looking at
-  /// a disabled screen for long; the restore is a convenience, and typing the
-  /// credentials again is a worse outcome than waiting but not a broken one.
+  /// Deliberately shorter than the store's own caller timeout, and not layered
+  /// with it: this is how long the *screen* stays disabled, and re-typing
+  /// credentials is a better outcome than waiting longer on a keychain that is
+  /// not answering. Giving up here does not cancel the read — it stays queued —
+  /// so a restore is abandoned rather than aborted.
   static const _restoreTimeout = Duration(seconds: 5);
 
   @override
@@ -101,16 +104,16 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
   }
 
   void _tryInitController() {
-    final awsConfig = _configFromEnvironment();
-    if (awsConfig == null) {
-      // Nothing to report: the manual form is the next screen, and it already
-      // explains what to enter.
-      _needsConfig = true;
-      _configError = null;
-      return;
-    }
-
     try {
+      final awsConfig = _configFromEnvironment();
+      if (awsConfig == null) {
+        // Nothing to report: the manual form is the next screen, and it already
+        // explains what to enter.
+        _needsConfig = true;
+        _configError = null;
+        return;
+      }
+
       _controller = RouterChatController(
         generator: AwsContentGenerator(config: awsConfig),
         commandProvider: ref.read(routerCommandProviderProvider),
@@ -120,11 +123,11 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
       _needsConfig = false;
       _configError = null;
     } catch (e) {
-      // A genuine failure, unlike the branch above: the credentials were there
-      // and building the session still did not work. Full text in the log —
-      // per the error-handling guide detail/code are for the engineer, and only
-      // the UI is restricted to a localized message.
-      aiLog('RouterAssistantView: could not build controller from '
+      // A genuine failure, unlike the early return above: either the config read
+      // failed in a way it is not supposed to, or building the session did.
+      // Full text in the log — per the error-handling guide detail/code are for
+      // the engineer, and only the UI is restricted to a localized message.
+      aiLog('RouterAssistantView: could not start a session from '
           'environment config: $e');
       _needsConfig = true;
       _configError = _ConfigError.failure(UnexpectedError(originalError: e));
@@ -142,14 +145,19 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
   ///   file is gitignored; it is an `Error`, not an `Exception`, so it does not
   ///   match an `on ConfigurationException` clause.
   ///
-  /// Catching broadly is safe here because the function reads environment
-  /// variables and does nothing else — it has no failure mode that represents a
-  /// real fault. Controller construction, which does, stays outside it.
+  /// Anything else is rethrown rather than swallowed, and so becomes a reported
+  /// failure via [_tryInitController]'s catch. `generative_ui` is pinned to a tag
+  /// on a shared repo, so a future version could add a check or a cast whose
+  /// failure is a genuine fault — and "silently show the manual form" would be
+  /// unfalsifiable from the UI. Naming the two expected modes keeps a real
+  /// breakage visible.
   AWSConfig? _configFromEnvironment() {
     try {
       return AWSConfig.fromEnvironment();
     } catch (e) {
-      aiLog('RouterAssistantView: no environment config ($e)');
+      if (e is! ConfigurationException && e is! NotInitializedError) rethrow;
+      // NotInitializedError has no toString override, hence the runtimeType.
+      aiLog('RouterAssistantView: no environment config (${e.runtimeType})');
       return null;
     }
   }
@@ -169,7 +177,7 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
 
     StoredAwsCredentials? stored;
     try {
-      stored = await store.read().timeout(_restoreTimeout);
+      stored = await store.readWithin(_restoreTimeout);
     } catch (e) {
       _logStorageFailure('read saved credentials')(e);
     } finally {
@@ -352,7 +360,12 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
     // what the previous `return error;` fallback did.
     return switch (error) {
       _MissingFields() => loc(context).fillAllRequiredFields,
-      _Failure(:final error) => localizeServiceError(context, error),
+      // Bound to a distinct name rather than `:final error`: that would shadow
+      // this method's own parameter, and because localizeServiceError takes an
+      // `Object`, dropping the binding later would still compile — silently
+      // passing the wrapper and degrading to the generic fallback.
+      _Failure(error: final serviceError) =>
+        localizeServiceError(context, serviceError),
     };
   }
 
@@ -592,10 +605,19 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
               // This is the user's way to remove saved credentials — leaving
               // them in storage would silently restore on the next launch,
               // defeating the change they just asked for.
+              // Unlike a failed save, a failed revocation IS shown: the record
+              // would restore on the next launch, so the user would believe
+              // credentials were removed that are still there. It lands on the
+              // config screen they are about to see.
               ref
                   .read(awsCredentialsStoreProvider)
                   .clear()
-                  .catchError(_logStorageFailure('clear credentials'));
+                  .catchError((Object e) {
+                _logStorageFailure('clear credentials')(e);
+                if (!mounted) return;
+                setState(() => _configError = _ConfigError.failure(
+                    e is ServiceError ? e : UnexpectedError(originalError: e)));
+              });
               setState(() {
                 _controller?.removeListener(_onControllerChanged);
                 _controller = null;

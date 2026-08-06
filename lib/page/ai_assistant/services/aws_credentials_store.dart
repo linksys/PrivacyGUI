@@ -14,12 +14,13 @@ import 'package:privacy_gui/core/errors/service_error.dart';
 /// failure rather than "not configured".
 const _kRecordKey = 'ai_assistant_aws_credentials';
 
-/// How long a single storage operation may take before the chain gives up.
+/// How long a caller waits for its own operation before being told it failed.
 ///
-/// Without this, one hung `write` blocks every operation queued behind it — the
-/// user's `clear()` included, so "change configuration" would never take effect
-/// and the config screen would stay disabled with no error.
-const _kOperationTimeout = Duration(seconds: 10);
+/// This bounds the *reported* wait, not the operation. A stalled platform call
+/// keeps its place in the queue — see [AwsCredentialsStore._serialize] for why
+/// abandoning that place is unsafe — so this only stops a caller (a `View`
+/// awaiting a restore, say) from hanging on a keychain that never answers.
+const _kCallerTimeout = Duration(seconds: 10);
 
 final awsCredentialsStoreProvider = Provider<AwsCredentialsStore>((ref) {
   return AwsCredentialsStore(const FlutterSecureStorage());
@@ -44,8 +45,10 @@ final awsCredentialsStoreProvider = Provider<AwsCredentialsStore>((ref) {
 /// the "change configuration" that followed it — resurrecting credentials the
 /// user had just discarded.
 ///
-/// Each operation is bounded by [_kOperationTimeout] so one that never settles
-/// cannot hold the queue — and with it the user's `clear()` — indefinitely.
+/// Operations never overlap, even when one stalls: [_kCallerTimeout] bounds what
+/// a caller waits for, not the operation itself. See [_serialize] — abandoning a
+/// stalled operation's place in the queue is what makes credentials go missing
+/// or come back.
 ///
 /// The ordering guarantee holds because [awsCredentialsStoreProvider] is a
 /// plain [Provider], i.e. one instance for the session. Making it `autoDispose`
@@ -55,7 +58,7 @@ final awsCredentialsStoreProvider = Provider<AwsCredentialsStore>((ref) {
 ///
 /// Every method throws only [ServiceError] subtypes — [StorageError] for a
 /// platform storage failure, [TimeoutError] when an operation exceeds
-/// [_kOperationTimeout]. `FlutterSecureStorage`'s `PlatformException` never
+/// [_kCallerTimeout]. `FlutterSecureStorage`'s `PlatformException` never
 /// leaves this class, so no caller has to reason about platform-specific error
 /// shapes (constitution Art. XIII §13.1).
 ///
@@ -70,47 +73,49 @@ class AwsCredentialsStore {
   /// Tail of the operation chain; each new operation is appended to it.
   Future<void> _pending = Future.value();
 
-  /// Counts [clear] calls, so a write can tell whether one overtook it.
-  ///
-  /// `Future.timeout` does not cancel the operation it wraps — it only stops
-  /// waiting. A write that exceeds [_kOperationTimeout] therefore keeps running
-  /// after the queue has moved on, and can reach storage *after* a later
-  /// `clear()` has deleted the record — resurrecting credentials the user
-  /// revoked, which is the failure serialising exists to prevent. Timing the
-  /// queue out is what makes that reachable, and not timing it out lets one
-  /// hung write block the `clear()` entirely: same outcome, different route.
-  ///
-  /// So the timeout stays, and this counter gives `clear()` the last word
-  /// instead. See [_undoIfCleared].
-  int _clearGeneration = 0;
-
   /// Run [operation] after every operation requested before it.
   ///
-  /// The chain is never broken by a failure: the tail swallows errors so a
-  /// rejected write cannot stop later operations from running, while the
-  /// returned future still reports the failure to this caller. A timeout counts
-  /// as a failure, which is what stops a stalled operation from blocking the
-  /// queue forever.
+  /// The queue waits for each operation to genuinely settle; only the future
+  /// handed back to the caller is time-bounded.
   ///
-  /// This is also the single place platform errors are converted, so each
-  /// method body can stay free of error handling.
+  /// ## Why the timeout must not apply to the queue
+  ///
+  /// `Future.timeout` does not cancel the operation it wraps — it only stops
+  /// waiting. So timing out the *queue* does not remove a stalled platform call;
+  /// it lets the next operation start while that call is still in flight, and
+  /// whichever finishes last wins at the storage layer. Every ordering
+  /// guarantee this class exists to provide is lost at that moment:
+  ///
+  /// * a stalled `clear()` can delete credentials the user entered afterwards,
+  ///   while their `store()` reports success
+  /// * a stalled `store()` can restore credentials a later `clear()` removed
+  /// * a stalled `storeModelId()` — a read-modify-write — can rewrite the whole
+  ///   record from its stale snapshot over newer credentials, with no `clear()`
+  ///   involved at all
+  ///
+  /// Guarding writes with a "has a clear happened since?" counter cannot fix
+  /// this: it answers a different question than the one that matters, which is
+  /// whether the record in storage is still the one this operation wrote. Since
+  /// the platform gives no way to cancel and `write` is not conditional, the
+  /// only sound answer is to never let two operations overlap.
+  ///
+  /// The cost is that one hung platform call blocks later operations — including
+  /// a `clear()` — for as long as it hangs. That is a genuine downside, accepted
+  /// because the alternative silently loses or resurrects credentials, and
+  /// because the caller is still told promptly via [_kCallerTimeout].
   Future<T> _serialize<T>(Future<T> Function() operation) {
-    final result = _pending
-        .then((_) => operation().timeout(_kOperationTimeout))
+    final settled = _pending.then((_) => operation());
+    // Chained to the real completion, so nothing starts early. This also
+    // handles a late failure: without a listener, an operation that fails after
+    // its caller's timeout has stopped watching becomes an unhandled async
+    // error.
+    _pending = settled.then((_) {}, onError: (Object e) {
+      aiLog('[Credentials] Operation failed after its caller stopped waiting: '
+          '${e.runtimeType}');
+    });
+    return settled
+        .timeout(_kCallerTimeout)
         .onError<Object>((e, _) => throw _asServiceError(e));
-    _pending = result.then((_) {}, onError: (_) {});
-    return result;
-  }
-
-  /// Delete the record if a [clear] happened since [generationAtStart].
-  ///
-  /// Covers the write that lost its place in the queue by timing out: it cannot
-  /// be cancelled, so the record it may have just written is removed instead.
-  /// Called after every write, and cheap when nothing raced.
-  Future<void> _undoIfCleared(int generationAtStart) async {
-    if (_clearGeneration == generationAtStart) return;
-    await _storage.delete(key: _kRecordKey);
-    aiLog('[Credentials] Discarded a write that a clear had superseded');
   }
 
   /// Convert anything storage throws into a [ServiceError].
@@ -135,16 +140,14 @@ class AwsCredentialsStore {
   /// Persist the credentials and the selected model.
   ///
   /// Values are never logged. Throws [StorageError] or [TimeoutError].
+  ///
+  /// A [TimeoutError] means only that the platform has not answered yet — the
+  /// write is still queued and will still be applied in order.
   Future<void> store({
     required String accessKeyId,
     required String secretAccessKey,
     required String modelId,
   }) {
-    // Captured here, synchronously, NOT inside the queued body: the body does
-    // not run until the queue reaches it, by which point a `clear()` issued
-    // right after this call would already have bumped the counter and the
-    // comparison would see no race.
-    final generation = _clearGeneration;
     return _serialize(() async {
       await _storage.write(
         key: _kRecordKey,
@@ -155,7 +158,6 @@ class AwsCredentialsStore {
         }),
       );
       aiLog('[Credentials] Stored');
-      await _undoIfCleared(generation);
     });
   }
 
@@ -165,6 +167,17 @@ class AwsCredentialsStore {
   /// absent, blank, or unparseable — so the caller's "not configured" path
   /// handles it instead of a signing error later. A bad record is therefore not
   /// an error; only storage itself failing is ([StorageError], [TimeoutError]).
+  /// As [read], but giving up after [within] instead of [_kCallerTimeout].
+  ///
+  /// For a caller that is holding UI hostage while it waits — the config screen
+  /// disables itself during a restore — and would rather show an empty form
+  /// sooner than the default allows. Wrapping `read()` in `.timeout()` at the
+  /// call site instead would throw a bare `TimeoutException`, breaking this
+  /// class's guarantee that callers only ever see a [ServiceError].
+  Future<StoredAwsCredentials?> readWithin(Duration within) => read()
+      .timeout(within)
+      .onError<Object>((e, _) => throw _asServiceError(e));
+
   Future<StoredAwsCredentials?> read() {
     return _serialize(() async {
       final record = await _readRecord();
@@ -191,7 +204,6 @@ class AwsCredentialsStore {
   /// Does nothing when there is no record to update — there is no useful
   /// meaning to a model preference without credentials to use it with.
   Future<void> storeModelId(String modelId) {
-    final generation = _clearGeneration; // see store()
     return _serialize(() async {
       final record = await _readRecord();
       if (record == null) return;
@@ -199,17 +211,16 @@ class AwsCredentialsStore {
       record['modelId'] = modelId;
       await _storage.write(key: _kRecordKey, value: jsonEncode(record));
       aiLog('[Credentials] Model updated');
-      await _undoIfCleared(generation);
     });
   }
 
+  /// Remove the stored credentials.
+  ///
+  /// This is the revocation path — the user pressing "change configuration"
+  /// means they want these credentials gone. A [TimeoutError] here means the
+  /// platform has not answered yet, not that the delete was dropped: it stays
+  /// queued, and nothing requested after it can be applied before it.
   Future<void> clear() {
-    // Recorded when the clear is *requested*, not when the queue reaches it, so
-    // the intent is captured at the moment the user expressed it. (Bumping
-    // inside the queued body happens to behave the same today, because the body
-    // runs as soon as a timed-out write lets go — but that equivalence depends
-    // on queue mechanics, and this does not.)
-    _clearGeneration++;
     return _serialize(() async {
       await _storage.delete(key: _kRecordKey);
       aiLog('[Credentials] Cleared');

@@ -30,7 +30,8 @@ class FakeSecureStorage extends Fake implements FlutterSecureStorage {
   /// Keys whose read should throw, as a platform failure would.
   final Set<String> failReadsFor = {};
 
-  /// Keys whose write never completes, to exercise the operation timeout.
+  /// Keys whose write never completes, standing in for a keychain that never
+  /// answers — the case where the caller must be told while the queue waits.
   final Set<String> hangWritesFor = {};
 
   @override
@@ -307,6 +308,54 @@ void main() {
       });
     });
 
+    group('readWithin', () {
+      test('gives up sooner than the default, still as a ServiceError', () {
+        // Exists so a caller that needs a shorter bound does not wrap `read()`
+        // in `.timeout()` itself, which would throw a bare TimeoutException and
+        // break this class's only-ServiceError contract.
+        fakeAsync((async) {
+          storage = FakeSecureStorage();
+          store = AwsCredentialsStore(storage);
+          storage.hangWritesFor.add(recordKey);
+          // Occupy the queue so the read cannot start.
+          store
+              .store(
+                accessKeyId: 'AKIAEXAMPLE',
+                secretAccessKey: 'secret',
+                modelId: 'model-a',
+              )
+              .catchError((Object e) {});
+
+          Object? error;
+          store
+              .readWithin(const Duration(seconds: 2))
+              .then<void>((_) {})
+              .onError<Object>((Object e, _) => error = e);
+
+          async.elapse(const Duration(seconds: 3));
+
+          // What matters to the caller: a shorter bound is honoured, and what
+          // comes out is still the class's own error type. Which of the two
+          // bounds fired is an implementation detail.
+          expect(error, isA<TimeoutError>());
+          expect(error, isNot(isA<TimeoutException>()),
+              reason: 'the dart:async type must not reach the View');
+        });
+      });
+
+      test('returns the record when it arrives in time', () async {
+        await store.store(
+          accessKeyId: 'AKIAEXAMPLE',
+          secretAccessKey: 'secret',
+          modelId: 'model-a',
+        );
+
+        final result = await store.readWithin(const Duration(seconds: 5));
+
+        expect(result?.accessKeyId, 'AKIAEXAMPLE');
+      });
+    });
+
     group('error mapping', () {
       test('a platform failure surfaces as StorageError, not PlatformException',
           () async {
@@ -417,16 +466,17 @@ void main() {
         expect(result?.accessKeyId, 'AKIAEXAMPLE');
       });
 
-      test('a write that times out cannot outlive a later clear', () {
-        // The trap the operation timeout opens: `Future.timeout` does not
-        // cancel the work it wraps, so a slow write keeps running after the
-        // queue has moved on and reaches storage AFTER the delete — putting
-        // back credentials the user revoked. Timing out was the fix for a hung
-        // write blocking `clear()`; this is the hole it left.
+      test('a stalled write cannot be overtaken by the operations behind it',
+          () {
+        // `Future.timeout` does not cancel the operation it wraps. If the
+        // timeout applied to the QUEUE, a stalled write would keep running while
+        // the next operation started, and whichever finished last would win at
+        // the storage layer — the ordering guarantee gone precisely when it is
+        // needed. Storage order must follow request order regardless of latency.
         fakeAsync((async) {
           storage = FakeSecureStorage();
           store = AwsCredentialsStore(storage);
-          // Longer than the store's timeout, but it does eventually finish.
+          // Far longer than the caller timeout, but it does eventually finish.
           storage.writeDelay = const Duration(seconds: 25);
 
           Object? storeError;
@@ -437,24 +487,25 @@ void main() {
                 modelId: 'model-a',
               )
               .catchError((Object e) => storeError = e);
-          store.clear();
+          store.clear().catchError((Object e) {});
 
-          async.elapse(const Duration(seconds: 60));
+          async.elapse(const Duration(seconds: 120));
 
-          expect(storeError, isA<TimeoutError>());
+          expect(storeError, isA<TimeoutError>(),
+              reason: 'the caller is told promptly, even though the write is '
+                  'still queued');
           expect(storage.values, isEmpty,
-              reason: 'the late write must be undone, not left in storage');
+              reason: 'the clear was requested second, so it must be applied '
+                  'second — the revoked record must not survive');
+          expect(storage.log, ['W:$recordKey', 'D:$recordKey'],
+              reason: 'storage order must match request order');
         });
       });
 
-      test('a clear counts from when it is requested, not when it is reached',
-          () {
-        // The distinguishing case for WHERE the clear is recorded. Here the
-        // write is already in flight when `clear()` arrives, so the clear
-        // cannot run until the write finishes. If the clear only counted itself
-        // once the queue reached it, the in-flight write would compare against
-        // the not-yet-bumped value, see no race, and leave the revoked record
-        // behind.
+      test('a clear requested while a write is in flight still wins', () {
+        // Same guarantee from the other direction: here the write has already
+        // reached storage when the clear is requested, so only strict ordering
+        // makes the user's revocation stick.
         fakeAsync((async) {
           storage = FakeSecureStorage();
           store = AwsCredentialsStore(storage);
@@ -467,9 +518,8 @@ void main() {
                 modelId: 'model-a',
               )
               .catchError((Object e) {});
-          // Let the write reach storage before asking for the clear.
           async.elapse(const Duration(seconds: 1));
-          store.clear();
+          store.clear().catchError((Object e) {});
 
           async.elapse(const Duration(seconds: 120));
 
@@ -479,7 +529,9 @@ void main() {
         });
       });
 
-      test('the undo only fires when a clear actually raced', () {
+      test('a slow write with nothing behind it is simply applied', () {
+        // The negative case: latency alone must not cost the user their
+        // credentials. Only a later request may override a write.
         fakeAsync((async) {
           storage = FakeSecureStorage();
           store = AwsCredentialsStore(storage);
@@ -495,22 +547,19 @@ void main() {
 
           async.elapse(const Duration(seconds: 60));
 
-          // A slow write with no clear behind it is still a successful write:
-          // the guard must not delete a record nobody asked to remove.
           expect(storage.values.containsKey(recordKey), isTrue);
           expect(storage.log.where((e) => e.startsWith('D:')), isEmpty,
-              reason: 'no clear was issued, so nothing should be deleted');
+              reason: 'nothing asked for a delete');
         });
       });
 
-      test('a hung operation does not block the queue forever', () {
-        // The failure this guards: the user presses "change configuration"
-        // behind a write that never settles, so the clear never runs and the
-        // revoked credentials are restored on the next launch.
+      test('a hung operation reports to its caller but keeps its place', () {
+        // The accepted trade-off. A platform call that never answers DOES hold
+        // the queue, because the alternative — letting the next operation start
+        // while this one is still in flight — is what allows a late write to
+        // resurrect revoked credentials or a late delete to erase new ones.
+        // What the timeout buys is that the caller is not left hanging.
         fakeAsync((async) {
-          // Built inside the zone: the operation chain starts from a
-          // Future.value(), and one created outside would schedule its
-          // continuations on a microtask queue this zone never flushes.
           storage = FakeSecureStorage();
           store = AwsCredentialsStore(storage);
           storage.hangWritesFor.add(recordKey);
@@ -525,16 +574,22 @@ void main() {
                 modelId: 'model-a',
               )
               .catchError((Object e) => storeError = e);
-          store.clear().then((_) => cleared = true);
+          store
+              .clear()
+              .then<void>((_) => cleared = true)
+              .onError<Object>((Object e, _) {});
 
-          async.elapse(const Duration(seconds: 30));
+          async.elapse(const Duration(minutes: 5));
 
           expect(storeError, isA<TimeoutError>(),
-              reason: 'the stalled write must be abandoned, not awaited, and '
-                  'must reach the caller as a ServiceError');
-          expect(cleared, isTrue,
-              reason: 'the clear must still run once the write times out');
-          expect(storage.values, isEmpty);
+              reason: 'the caller must not wait on a keychain that never '
+                  'answers');
+          expect(cleared, isFalse,
+              reason: 'the clear stays queued behind the hung write rather '
+                  'than running concurrently with it — a delete applied out of '
+                  'order is worse than one that is late');
+          expect(storage.log, ['W…$recordKey'],
+              reason: 'nothing after the hung write reached storage');
         });
       });
     });
