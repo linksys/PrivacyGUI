@@ -322,6 +322,7 @@ class InstantPrivacyView extends ConsumerWidget {
             onTap: () => Navigator.of(ctx).pop(false),
           ),
           AppButton.primary(
+            identifier: 'instant-privacy-enable-confirm',
             label: loc(context).enable,
             onTap: () => Navigator.of(ctx).pop(true),
           ),
