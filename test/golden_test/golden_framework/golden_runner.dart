@@ -379,17 +379,59 @@ void _suppressOverflowErrors() {
 }
 
 /// Writes collected overflow warnings to JSON for report consumption.
+///
+/// Shape is `{records: [...], logs: [...]}` with each record referring to its
+/// diagnostics dump by `logIndex`. The dumps are 2-4KB each and one culprit is
+/// reported in every golden that renders it, so storing them inline made 76% of
+/// the file duplicated text — around 8MB on a full run.
+///
+/// Appends, because each test suite writes at its own tearDownAll. A file left
+/// by a run predating the log table is read back in its flat-list form so the
+/// records already collected are not dropped.
 void _writeOverflowReport() {
   if (_overflowWarnings.isEmpty) return;
   final dir = Directory('goldens');
   if (!dir.existsSync()) dir.createSync(recursive: true);
   final file = File('goldens/overflow_warnings.json');
-  final existing = file.existsSync()
-      ? List<Map<String, dynamic>>.from(
-          jsonDecode(file.readAsStringSync()) as List)
-      : <Map<String, dynamic>>[];
-  existing.addAll(_overflowWarnings);
-  file.writeAsStringSync(JsonEncoder.withIndent('  ').convert(existing));
+
+  final records = <Map<String, dynamic>>[];
+  final logs = <String>[];
+  final logIndexes = <String, int>{};
+
+  if (file.existsSync()) {
+    try {
+      final decoded = jsonDecode(file.readAsStringSync());
+      if (decoded is Map) {
+        records.addAll(List<Map<String, dynamic>>.from(
+            decoded['records'] as List? ?? const []));
+        logs.addAll(List<String>.from(decoded['logs'] as List? ?? const []));
+        // Keep the first index for a repeated log so existing records' indexes
+        // stay valid.
+        for (var i = 0; i < logs.length; i++) {
+          logIndexes[logs[i]] ??= i;
+        }
+      } else {
+        records.addAll(List<Map<String, dynamic>>.from(decoded as List));
+      }
+    } catch (_) {
+      // A corrupt file must not take the run down; start the report over.
+    }
+  }
+
+  for (final warning in _overflowWarnings) {
+    final record = Map<String, dynamic>.from(warning);
+    final log = record.remove('log');
+    if (log is String && log.isNotEmpty) {
+      record['logIndex'] = logIndexes.putIfAbsent(log, () {
+        logs.add(log);
+        return logs.length - 1;
+      });
+    }
+    records.add(record);
+  }
+
+  file.writeAsStringSync(
+      JsonEncoder.withIndent('  ').convert({'records': records, 'logs': logs}));
   _overflowWarnings.clear();
 }
 

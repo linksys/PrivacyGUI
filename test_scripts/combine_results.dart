@@ -165,7 +165,8 @@ void main(List<String> args) {
   final coverage = scanCoverage();
 
   // Load overflow warnings
-  final overflowDetails = loadOverflowDetails();
+  final overflowReport = loadOverflowReport();
+  final overflowDetails = overflowReport.byGolden;
 
   // Annotate tests with overflow info by reconstructing golden name
   for (final test in jsonObjects) {
@@ -194,6 +195,10 @@ void main(List<String> args) {
   // RenderObject, so counting records inflated the stat and disagreed with the
   // gallery report's own count for the same run (#1197).
   resultObj['overflowCount'] = overflowDetails.length;
+  // One table for the whole report, referenced by index from each site: the same
+  // culprit appears in every golden that renders it, and a dump runs 2-4KB
+  // (#1197).
+  resultObj['overflowLogs'] = overflowReport.logs;
   resultObj['version'] = version;
   resultObj['timestamp'] = DateTime.now().toIso8601String();
 

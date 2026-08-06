@@ -222,4 +222,129 @@ Exception caught by rendering library
       );
     });
   });
+
+  group('stripEphemeralIds', () {
+    test('removes the object hash Flutter appends to render object names', () {
+      // The id is a per-object allocation detail: the same overflow reported in
+      // 24 goldens carried 24 different ids, so nothing downstream could tell
+      // that one culprit explained them all, and the recorded JSON changed on
+      // every run.
+      expect(
+        stripEphemeralIds(
+          'The specific RenderFlex in question is: '
+          'RenderFlex#4195b relayoutBoundary=up14 OVERFLOWING:',
+        ),
+        'The specific RenderFlex in question is: '
+        'RenderFlex relayoutBoundary=up14 OVERFLOWING:',
+      );
+    });
+
+    test('removes ids from the creator chain', () {
+      expect(
+        stripEphemeralIds(
+            'creator: Row ← RepaintBoundary-[GlobalKey#18e2d] ← Column'),
+        'creator: Row ← RepaintBoundary-[GlobalKey] ← Column',
+      );
+    });
+
+    test('leaves the geometry that explains the overflow intact', () {
+      // Sibling rows legitimately differ here, and that difference is the
+      // diagnostic — it must survive.
+      const line = '     size: Size(398.0, 532.0)';
+
+      expect(stripEphemeralIds(line), line);
+    });
+
+    test('leaves text that merely looks like an id alone', () {
+      // Only a '#' directly following an identifier is an object id.
+      expect(stripEphemeralIds('Reservation #12345 for host'),
+          'Reservation #12345 for host');
+    });
+  });
+
+  group('buildOverflowRecord', () {
+    /// Triggers a real overflow and returns the record built from it.
+    Future<Map<String, String>> recordFor(WidgetTester tester) async {
+      final records = <Map<String, String>>[];
+      final original = FlutterError.onError;
+      FlutterError.onError = (details) {
+        if (details.exceptionAsString().contains('overflowed')) {
+          records.add(buildOverflowRecord(
+            goldenName: 'demo-data-phone480-fr',
+            details: details,
+            runDirectory: Directory.current.path,
+          ));
+          return;
+        }
+        original?.call(details);
+      };
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Column(
+            children: const [
+              SizedBox(
+                width: 100,
+                child: Row(children: [SizedBox(width: 150, height: 10)]),
+              ),
+            ],
+          ),
+        ),
+      );
+      FlutterError.onError = original;
+
+      return records.single;
+    }
+
+    testWidgets('keeps the full diagnostics dump for the report', (
+      tester,
+    ) async {
+      // The dump is the only lead on an overflow whose location did not resolve
+      // — the ~120 admin cases where the badge was set but nothing was visible
+      // in the image. Computing it and throwing it away left them undiagnosable
+      // (#1197).
+      final record = await recordFor(tester);
+
+      expect(record['log'], contains('A RenderFlex overflowed'));
+      expect(record['log'], contains('The relevant error-causing widget was'));
+      expect(record['log'], contains('constraints:'),
+          reason: 'the deep dump carries the RenderFlex constraints, which is '
+              'what explains an overflow the one-line message does not');
+    });
+
+    testWidgets('strips absolute run paths out of the dump', (tester) async {
+      // The dump embeds the run directory in every creation location. Left in,
+      // a report generated on CI would carry the runner's workspace path, and
+      // two machines would produce different bytes for the same overflow.
+      final record = await recordFor(tester);
+
+      expect(record['log'], isNot(contains(Directory.current.path)));
+      expect(
+          record['log'],
+          contains('test/golden_test/golden_framework/'
+              'overflow_diagnostics_test.dart'));
+    });
+
+    testWidgets('records the amount and location alongside the dump', (
+      tester,
+    ) async {
+      final record = await recordFor(tester);
+
+      expect(record['golden'], 'demo-data-phone480-fr');
+      expect(record['pixels'], '50');
+      expect(record['side'], 'right');
+      expect(record['widget'], 'Row');
+    });
+
+    testWidgets('leaves no per-run object id in the dump', (tester) async {
+      // Object ids are reallocated every run, so leaving them in made the same
+      // overflow record different bytes each time and defeated the report's log
+      // deduplication entirely: 24 records for one culprit stayed 24 distinct
+      // logs (#1197).
+      final record = await recordFor(tester);
+
+      expect(record['log'], contains('RenderFlex relayoutBoundary'));
+      expect(record['log'], isNot(matches(RegExp(r'#[0-9a-f]{5}\b'))));
+    });
+  });
 }

@@ -42,9 +42,9 @@ void main(List<String> args) {
     return a.locale.compareTo(b.locale);
   });
 
-  final overflowDetails = loadOverflowDetails();
+  final overflowReport = loadOverflowReport();
 
-  final html = _generateHtml(entries, version, overflowDetails);
+  final html = _generateHtml(entries, version, overflowReport);
   final outputFile = File('test/golden_test/golden_gallery_report.html');
   outputFile.writeAsStringSync(html);
   print(
@@ -165,8 +165,23 @@ String _escapeHtml(String text) => text
     .replaceAll('>', '&gt;')
     .replaceAll('"', '&quot;');
 
-String _generateHtml(List<_GoldenEntry> entries, String version,
-    Map<String, List<OverflowDetail>> overflowDetails) {
+/// Renders the button that opens [site]'s raw diagnostics dump.
+///
+/// Carries only an index into the report's log table: the same culprit appears
+/// in every golden that renders it, and a dump runs 2-4KB, so inlining it per
+/// card would multiply the report for no added detail. Empty when the record
+/// predates log capture.
+String _rawLogButton(OverflowDetail site) {
+  if (site.logIndex == null) return '';
+  final title =
+      _escapeHtml(site.label.isEmpty ? 'Overflow raw log' : site.label);
+  return '<button class="raw-log-btn" data-log-index="${site.logIndex}" '
+      'data-log-title="$title" onclick="openRawLog(this)">raw log</button>';
+}
+
+String _generateHtml(
+    List<_GoldenEntry> entries, String version, OverflowReport overflowReport) {
+  final overflowDetails = overflowReport.byGolden;
   final features = <String>{};
   final locales = <String>{};
   final devices = <String>{};
@@ -334,6 +349,48 @@ String _generateHtml(List<_GoldenEntry> entries, String version,
     .overflow-site {
       font-size: 0.65rem; color: #92400e; font-family: ui-monospace, monospace;
       word-break: break-all; cursor: help;
+    }
+    .raw-log-btn {
+      font-size: 0.6rem; padding: 0 0.3rem; margin-left: 0.3rem;
+      border: 1px solid currentColor; border-radius: 3px; background: none;
+      color: inherit; cursor: pointer; font-family: inherit; opacity: 0.75;
+      vertical-align: 1px;
+    }
+    .raw-log-btn:hover { opacity: 1; }
+    /* Raw log viewer: an overlay rather than an inline expander, because the
+       cards are a grid — expanding one in place would reflow the whole row. */
+    .log-modal {
+      display: none; position: fixed; inset: 0; z-index: 1100;
+      background: rgba(0,0,0,0.7); align-items: center; justify-content: center;
+      padding: 2rem;
+    }
+    .log-modal.open { display: flex; }
+    .log-modal .lm-panel {
+      background: var(--color-bg); border: 1px solid var(--color-border);
+      border-radius: 0.5rem; width: min(900px, 100%); max-height: 85vh;
+      display: flex; flex-direction: column; overflow: hidden;
+    }
+    .log-modal .lm-head {
+      display: flex; align-items: center; gap: 0.75rem;
+      padding: 0.75rem 1rem; border-bottom: 1px solid var(--color-border);
+    }
+    .log-modal .lm-title {
+      font-size: 0.8rem; font-weight: 600; flex: 1;
+      font-family: ui-monospace, monospace; word-break: break-all;
+    }
+    .log-modal .lm-copy {
+      font-size: 0.7rem; padding: 0.25rem 0.6rem; cursor: pointer;
+      border: 1px solid var(--color-border); border-radius: 0.25rem;
+      background: var(--color-surface); color: inherit; white-space: nowrap;
+    }
+    .log-modal .lm-close {
+      font-size: 1.5rem; line-height: 1; cursor: pointer; opacity: 0.6;
+    }
+    .log-modal .lm-close:hover { opacity: 1; }
+    .log-modal pre {
+      margin: 0; padding: 1rem; overflow: auto; flex: 1;
+      font-size: 0.7rem; line-height: 1.5; white-space: pre-wrap;
+      word-break: break-word; font-family: ui-monospace, monospace;
     }
     @media (prefers-color-scheme: dark) {
       .tag-overflow { background: #78350f; color: #fde68a; }
@@ -524,15 +581,21 @@ String _generateHtml(List<_GoldenEntry> entries, String version,
         // reader to hunt for the culprit in the image (#1197). The full path and
         // raw message go in the tooltip to keep the card narrow.
         buffer.writeln('            <div class="card-overflow-sites">');
-        // An empty label means nothing parsed; the badge above already says an
-        // overflow happened, so skip the blank line rather than render it.
-        for (final site in sites.where((s) => s.label.isNotEmpty)) {
+        // A site with neither a label nor a log has nothing to show beyond the
+        // badge above, so it is skipped rather than rendered as a blank line.
+        for (final site
+            in sites.where((s) => s.label.isNotEmpty || s.logIndex != null)) {
           final tooltip = _escapeHtml(
               '${site.file ?? ''}${site.line == null ? '' : ':${site.line}'}\n'
                       '${site.message}'
                   .trim());
+          // Falls back to a fixed phrase when nothing parsed: the card still
+          // needs something to hang the raw log button on, and that case is
+          // exactly when the log matters most.
+          final text = site.label.isEmpty ? 'location unresolved' : site.label;
           buffer.writeln('              <span class="overflow-site" '
-              'title="$tooltip">${_escapeHtml(site.label)}</span>');
+              'title="$tooltip">${_escapeHtml(text)}'
+              '${_rawLogButton(site)}</span>');
         }
         buffer.writeln('            </div>');
       }
@@ -581,8 +644,21 @@ String _generateHtml(List<_GoldenEntry> entries, String version,
     <div class="lb-zoom-hint">Scroll to zoom &middot; Click image to reset</div>
   </div>
 
+  <div class="log-modal" id="logModal">
+    <div class="lm-panel">
+      <div class="lm-head">
+        <span class="lm-title" id="lm-title"></span>
+        <button class="lm-copy" id="lm-copy" onclick="copyRawLog()">Copy</button>
+        <span class="lm-close" onclick="closeRawLog()">&times;</span>
+      </div>
+      <pre id="lm-body"></pre>
+    </div>
+  </div>
+
   <script>
     const allEntries = [$jsonEntries];
+    // One table for the whole report, referenced by index from each site.
+    const overflowLogs = ${jsonEncode(overflowReport.logs)};
     let currentView = 'feature';
 
     // The comparison view builds its markup by concatenation, and overflow
@@ -592,6 +668,58 @@ String _generateHtml(List<_GoldenEntry> entries, String version,
         .replace(/&/g, '&amp;').replace(/</g, '&lt;')
         .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
+
+    // Raw log viewer.
+    //
+    // The title travels in a data attribute rather than as an inline call
+    // argument: it is generated text that would otherwise need quoting for both
+    // HTML and JavaScript at once.
+    function renderRawLogButton(site) {
+      if (site.logIndex == null) return '';
+      return '<button class="raw-log-btn" data-log-index="' + site.logIndex + '" data-log-title="' + esc(site.label || 'Overflow raw log') + '" onclick="openRawLog(this)">raw log</button>';
+    }
+
+    function openRawLog(btn) {
+      const log = overflowLogs[Number(btn.dataset.logIndex)];
+      if (log == null) return;
+      document.getElementById('lm-title').textContent = btn.dataset.logTitle || 'Overflow raw log';
+      document.getElementById('lm-body').textContent = log;
+      document.getElementById('lm-copy').textContent = 'Copy';
+      document.getElementById('logModal').classList.add('open');
+    }
+
+    function closeRawLog() {
+      document.getElementById('logModal').classList.remove('open');
+    }
+
+    function copyRawLog() {
+      const btn = document.getElementById('lm-copy');
+      const text = document.getElementById('lm-body').textContent;
+      // Reports are opened over file:// as often as over http://, and the async
+      // clipboard API is unavailable on an insecure origin, so fall back to a
+      // throwaway textarea rather than silently doing nothing.
+      const done = () => { btn.textContent = 'Copied'; };
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(done, () => legacyCopy(text, done));
+      } else {
+        legacyCopy(text, done);
+      }
+    }
+
+    function legacyCopy(text, done) {
+      const area = document.createElement('textarea');
+      area.value = text;
+      area.style.position = 'fixed';
+      area.style.opacity = '0';
+      document.body.appendChild(area);
+      area.select();
+      try { document.execCommand('copy'); done(); } catch (e) { /* nothing to do */ }
+      document.body.removeChild(area);
+    }
+
+    document.getElementById('logModal').addEventListener('click', (e) => {
+      if (e.target === document.getElementById('logModal')) closeRawLog();
+    });
 
     function setView(view) {
       currentView = view;
@@ -712,8 +840,8 @@ String _generateHtml(List<_GoldenEntry> entries, String version,
           // Compare view is where locales are read side by side, so naming the
           // overflow site here shows at a glance that one culprit explains a
           // whole row of tagged locales (#1197).
-          for (const site of (item.overflowSites || []).filter(s => s.label)) {
-            html += '<div class="overflow-site" title="' + esc(site.message) + '">' + esc(site.label) + '</div>';
+          for (const site of (item.overflowSites || []).filter(s => s.label || s.logIndex != null)) {
+            html += '<div class="overflow-site" title="' + esc(site.message) + '">' + esc(site.label || 'location unresolved') + renderRawLogButton(site) + '</div>';
           }
           html += '</div>';
         }
@@ -794,6 +922,11 @@ String _generateHtml(List<_GoldenEntry> entries, String version,
     };
 
     document.addEventListener('keydown', (e) => {
+      // The log modal sits above the lightbox, so it claims Escape first.
+      if (document.getElementById('logModal').classList.contains('open')) {
+        if (e.key === 'Escape') closeRawLog();
+        return;
+      }
       const lb = document.getElementById('lightbox');
       if (!lb.classList.contains('open')) return;
       if (e.key === 'Escape') closeLightbox();

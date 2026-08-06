@@ -21,11 +21,15 @@ void main() {
   tearDown(() => tempDir.deleteSync(recursive: true));
 
   /// Writes [records] to a throwaway report file and loads it back.
-  Map<String, List<OverflowDetail>> load(List<Map<String, String>> records) {
+  OverflowReport loadReport(List<Map<String, String>> records) {
     final file = File('${tempDir.path}/overflow_warnings.json');
     file.writeAsStringSync(jsonEncode(records));
-    return loadOverflowDetails(path: file.path);
+    return loadOverflowReport(path: file.path);
   }
+
+  /// Loads [records] and returns only the per-golden details.
+  Map<String, List<OverflowDetail>> load(List<Map<String, String>> records) =>
+      loadReport(records).byGolden;
 
   Map<String, String> record({
     String golden = 'admin-data-phone480-de',
@@ -34,6 +38,7 @@ void main() {
     String widget = 'Row',
     String file = 'lib/page/firmware_update/views/firmware_update_card.dart',
     String line = '77',
+    String? log,
   }) =>
       {
         'golden': golden,
@@ -43,6 +48,7 @@ void main() {
         'widget': widget,
         'file': file,
         'line': line,
+        if (log != null) 'log': log,
       };
 
   group('loadOverflowDetails', () {
@@ -234,6 +240,178 @@ void main() {
           'lib/page/firmware_update/views/firmware_update_card.dart');
       expect(json['line'], '77');
       expect(json['occurrences'], 2);
+    });
+  });
+
+  group('raw log table', () {
+    test('holds the log once and points the site at it by index', () {
+      final report = loadReport([record(log: 'full dump A')]);
+
+      final site = report.byGolden['admin-data-phone480-de']!.single;
+      expect(site.logIndex, 0);
+      expect(report.logs, ['full dump A']);
+    });
+
+    test('stores one entry for a log repeated across goldens', () {
+      // A single culprit shows up in every golden that renders it — 6 goldens
+      // for one card in a real run. Embedding the ~2-4KB dump per golden would
+      // multiply into the report for no added information.
+      final report = loadReport([
+        record(golden: 'a', log: 'same dump'),
+        record(golden: 'b', log: 'same dump'),
+        record(golden: 'c', log: 'same dump'),
+      ]);
+
+      expect(report.logs, hasLength(1));
+      expect(
+        ['a', 'b', 'c'].map((g) => report.byGolden[g]!.single.logIndex),
+        everyElement(0),
+      );
+    });
+
+    test('keeps distinct logs apart', () {
+      final report = loadReport([
+        record(golden: 'a', log: 'dump A'),
+        record(golden: 'b', log: 'dump B'),
+      ]);
+
+      expect(report.logs, hasLength(2));
+      expect(
+        report.byGolden['a']!.single.logIndex,
+        isNot(report.byGolden['b']!.single.logIndex),
+      );
+    });
+
+    test('reuses the first log when a site collapses duplicate records', () {
+      // Sibling rows report the same overflow N times with near-identical
+      // dumps. The site is one site, so it gets one button.
+      final report = loadReport([
+        record(log: 'dump for row 1'),
+        record(log: 'dump for row 2'),
+      ]);
+
+      final site = report.byGolden['admin-data-phone480-de']!.single;
+      expect(site.occurrences, 2);
+      expect(report.logs[site.logIndex!], 'dump for row 1');
+    });
+
+    test('leaves logIndex null when the record carries no log', () {
+      // Records written before the log was captured must still render.
+      final report = loadReport([record()]);
+
+      expect(
+          report.byGolden['admin-data-phone480-de']!.single.logIndex, isNull);
+      expect(report.logs, isEmpty);
+    });
+
+    test('offers a log even when nothing else about the site resolved', () {
+      // This is the case the raw log exists for: the badge was set but no
+      // location parsed, which is exactly when the dump is the only lead.
+      final report = loadReport([
+        {
+          'golden': 'admin-data-phone480-de',
+          'message': 'A RenderFlex overflowed.',
+          'log': 'the only diagnostic left',
+        }
+      ]);
+
+      final site = report.byGolden['admin-data-phone480-de']!.single;
+      expect(site.label, isEmpty);
+      expect(site.logIndex, 0);
+      expect(report.logs.single, 'the only diagnostic left');
+    });
+
+    test('exposes the log index to the report JavaScript', () {
+      final report = loadReport([record(log: 'dump')]);
+
+      expect(
+        report.byGolden['admin-data-phone480-de']!.single.toJson()['logIndex'],
+        0,
+      );
+    });
+
+    test('has no logs when the report file is absent', () {
+      final report =
+          loadOverflowReport(path: '${tempDir.path}/does_not_exist.json');
+
+      expect(report.byGolden, isEmpty);
+      expect(report.logs, isEmpty);
+    });
+  });
+
+  group('deduplicated file format', () {
+    /// Writes the object form the runner produces and loads it back.
+    OverflowReport loadPacked(Map<String, dynamic> json) {
+      final file = File('${tempDir.path}/overflow_warnings.json');
+      file.writeAsStringSync(jsonEncode(json));
+      return loadOverflowReport(path: file.path);
+    }
+
+    test('resolves a logIndex written by the runner', () {
+      // The runner writes the log table itself so the file does not repeat a
+      // 2-4KB dump per record — 76% of the file was duplicated log text, ~8MB
+      // at full-run scale.
+      final report = loadPacked({
+        'logs': ['dump A', 'dump B'],
+        'records': [
+          {
+            'golden': 'g1',
+            'message': 'A RenderFlex overflowed by 50 pixels on the right.',
+            'pixels': '50',
+            'side': 'right',
+            'file': 'lib/a.dart',
+            'line': '10',
+            'logIndex': 1,
+          }
+        ],
+      });
+
+      final site = report.byGolden['g1']!.single;
+      expect(report.logs[site.logIndex!], 'dump B');
+    });
+
+    test('keeps only the logs the records actually reference', () {
+      // Appending across test suites can leave a log whose records were cleared.
+      // Carrying it into the report would inflate it with an entry nothing links
+      // to.
+      final report = loadPacked({
+        'logs': ['referenced', 'orphaned'],
+        'records': [
+          {'golden': 'g1', 'message': 'overflowed', 'logIndex': 0}
+        ],
+      });
+
+      expect(report.logs, ['referenced']);
+      expect(report.byGolden['g1']!.single.logIndex, 0);
+    });
+
+    test('ignores a logIndex pointing outside the table', () {
+      // A truncated or hand-edited file must degrade to "no log", not throw.
+      final report = loadPacked({
+        'logs': ['only one'],
+        'records': [
+          {'golden': 'g1', 'message': 'overflowed', 'logIndex': 7}
+        ],
+      });
+
+      expect(report.byGolden['g1']!.single.logIndex, isNull);
+    });
+
+    test('still reads the flat list an older run wrote', () {
+      // Reports are generated from whatever file is on disk, including one left
+      // by a run that predates the log table.
+      final report = loadReport([record(log: 'inline dump')]);
+
+      expect(report.logs, ['inline dump']);
+      expect(report.byGolden['admin-data-phone480-de']!.single.logIndex, 0);
+    });
+
+    test('returns nothing for an object carrying no records', () {
+      expect(
+          loadPacked({
+            'logs': ['orphaned']
+          }).byGolden,
+          isEmpty);
     });
   });
 }

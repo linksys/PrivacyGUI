@@ -36,6 +36,10 @@ class OverflowDetail {
   /// How many times this exact site was reported for this golden.
   final int occurrences;
 
+  /// Index into [OverflowReport.logs] of this site's full diagnostics dump, or
+  /// null for a record written before the dump was captured.
+  final int? logIndex;
+
   const OverflowDetail({
     required this.message,
     required this.occurrences,
@@ -44,6 +48,7 @@ class OverflowDetail {
     this.line,
     this.pixels,
     this.side,
+    this.logIndex,
   });
 
   /// A one-line summary for the report badge.
@@ -75,7 +80,27 @@ class OverflowDetail {
         'side': side,
         'message': message,
         'occurrences': occurrences,
+        'logIndex': logIndex,
       };
+}
+
+/// Everything the reports need about one run's overflows.
+///
+/// The raw dumps live in [logs] and each site refers to one by index, rather
+/// than every site carrying its own copy. One culprit typically appears in
+/// every golden that renders it — a single card accounted for 6 goldens in a
+/// real run — and a dump runs 2-4KB, so inlining it per site would multiply
+/// the report size without adding information.
+class OverflowReport {
+  /// Collapsed overflow sites, keyed by golden name.
+  final Map<String, List<OverflowDetail>> byGolden;
+
+  /// Distinct diagnostics dumps, indexed by [OverflowDetail.logIndex].
+  final List<String> logs;
+
+  const OverflowReport({required this.byGolden, required this.logs});
+
+  static const empty = OverflowReport(byGolden: {}, logs: []);
 }
 
 /// Identity of an overflow site, used to collapse duplicate reports.
@@ -96,21 +121,43 @@ String _siteKey(Map<String, dynamic> record) => [
     ].join('\u0000');
 
 /// Reads `goldens/overflow_warnings.json` and groups collapsed sites by golden
-/// name.
+/// name, keeping only the per-golden detail.
 ///
-/// Returns an empty map when the file is absent or malformed: a diagnostic
-/// aside must never take a report generator down.
+/// Prefer [loadOverflowReport] when the raw dumps are needed too.
 Map<String, List<OverflowDetail>> loadOverflowDetails({
+  String path = 'goldens/overflow_warnings.json',
+}) =>
+    loadOverflowReport(path: path).byGolden;
+
+/// Reads `goldens/overflow_warnings.json` into collapsed sites plus the table
+/// of distinct raw dumps they point into.
+///
+/// Returns [OverflowReport.empty] when the file is absent or malformed: a
+/// diagnostic aside must never take a report generator down.
+OverflowReport loadOverflowReport({
   String path = 'goldens/overflow_warnings.json',
 }) {
   final file = File(path);
-  if (!file.existsSync()) return {};
+  if (!file.existsSync()) return OverflowReport.empty;
 
   final List<dynamic> list;
+  final List<dynamic> writtenLogs;
   try {
-    list = jsonDecode(file.readAsStringSync()) as List;
+    final decoded = jsonDecode(file.readAsStringSync());
+    if (decoded is Map) {
+      // Current format: the runner writes the log table itself so the file does
+      // not repeat a 2-4KB dump per record.
+      list = decoded['records'] as List? ?? const [];
+      writtenLogs = decoded['logs'] as List? ?? const [];
+    } else {
+      // A run predating the log table wrote a flat list carrying the dump inline
+      // under 'log'. Reports are generated from whatever is on disk, so both
+      // shapes have to load.
+      list = decoded as List;
+      writtenLogs = const [];
+    }
   } catch (_) {
-    return {};
+    return OverflowReport.empty;
   }
 
   // golden name -> site key -> (first record seen, count)
@@ -131,7 +178,36 @@ Map<String, List<OverflowDetail>> loadOverflowDetails({
         : (record: existing.record, count: existing.count + 1);
   }
 
-  return grouped.map((golden, sites) {
+  // Rebuilt rather than passed through, so the report carries only the logs its
+  // records reference. Appending across suites can leave an orphaned entry, and
+  // a flat-list file has no table at all.
+  final logs = <String>[];
+  final logIndexes = <String, int>{};
+
+  /// Interns [log] and returns its index, or null when there is nothing to show.
+  int? indexOfLog(Object? log) {
+    if (log is! String || log.isEmpty) return null;
+    return logIndexes.putIfAbsent(log, () {
+      logs.add(log);
+      return logs.length - 1;
+    });
+  }
+
+  /// Resolves a record's log, from either file format.
+  ///
+  /// An index outside the table degrades to "no log": a truncated or
+  /// hand-edited file must not take the generator down.
+  int? logForRecord(Map<String, dynamic> record) {
+    final index = record['logIndex'];
+    if (index is int) {
+      return index >= 0 && index < writtenLogs.length
+          ? indexOfLog(writtenLogs[index])
+          : null;
+    }
+    return indexOfLog(record['log']);
+  }
+
+  final byGolden = grouped.map((golden, sites) {
     final details = sites.values
         .map((site) => OverflowDetail(
               widget: site.record['widget'] as String?,
@@ -141,6 +217,10 @@ Map<String, List<OverflowDetail>> loadOverflowDetails({
               side: site.record['side'] as String?,
               message: site.record['message'] as String? ?? '',
               occurrences: site.count,
+              // The first record's dump represents the collapsed site: sibling
+              // rows differ only in their own geometry, and one site gets one
+              // button.
+              logIndex: logForRecord(site.record),
             ))
         .toList();
 
@@ -158,4 +238,6 @@ Map<String, List<OverflowDetail>> loadOverflowDetails({
 
     return MapEntry(golden, details);
   });
+
+  return OverflowReport(byGolden: byGolden, logs: logs);
 }

@@ -116,15 +116,53 @@ Map<String, String> parseOverflowSource(
   };
 }
 
+/// Matches the short hash Flutter appends to a diagnosable object's name, e.g.
+/// the `#4195b` in `RenderFlex#4195b` or `GlobalKey#18e2d`.
+///
+/// Anchored on an identifier character so a `#` in ordinary text — a reservation
+/// number in a rendered string, say — is left alone.
+final RegExp _objectIdPattern = RegExp(r'(?<=\w)#[0-9a-f]{5}\b');
+
+/// Rewrites every absolute source path inside a diagnostics dump.
+///
+/// The dump names a creation location for each widget in the `creator:` chain,
+/// each carrying the directory the run happened in. Left as-is, a report built
+/// on CI would embed the runner's workspace and two machines would produce
+/// different text for the same overflow. Applies [normalizeSourcePath] to each,
+/// leaving the rest of the dump untouched.
+String normalizeDumpPaths(String diagnosticsDump,
+        {required String runDirectory}) =>
+    diagnosticsDump.replaceAllMapped(
+      _locationPattern,
+      (match) => '${match.group(1)}:'
+          '${normalizeSourcePath(match.group(2)!, runDirectory: runDirectory)}'
+          ':${match.group(3)}:${match.group(4)}',
+    );
+
+/// Removes the per-run object ids Flutter embeds in a diagnostics dump.
+///
+/// The ids are allocation details, reassigned on every run. Left in, the same
+/// overflow yields different text each time: the recorded JSON churns, and the
+/// reports cannot tell that one culprit explains many goldens — a single card
+/// reported in 24 goldens stayed 24 distinct logs. The geometry that actually
+/// explains an overflow (`constraints:`, `size:`) is untouched.
+String stripEphemeralIds(String diagnosticsDump) =>
+    diagnosticsDump.replaceAll(_objectIdPattern, '');
+
 /// Builds the full record written for one overflow error.
 ///
 /// [runDirectory] is the directory the test process runs in, which is the app
 /// root: `golden_runner` reads and writes `goldens/...` through relative paths.
 ///
 /// `message` is kept verbatim so nothing that reads it today breaks and so
-/// multi-side overflows keep their full text. The two extractions are
-/// independent: if one pattern misses, the fields the other resolved are still
-/// written.
+/// multi-side overflows keep their full text. `log` carries the whole
+/// diagnostics dump — the constraints, the flex configuration and the creator
+/// chain, none of which the one-line message conveys. It is the only lead on an
+/// overflow whose location did not resolve, so it is recorded unconditionally
+/// (#1197).
+///
+/// The extractions are independent: if one pattern misses, the fields the others
+/// resolved are still written.
 Map<String, String> buildOverflowRecord({
   required String goldenName,
   required FlutterErrorDetails details,
@@ -141,10 +179,10 @@ Map<String, String> buildOverflowRecord({
   // creating widget's source location. Guard it: this runs inside an error
   // handler, and a throw here would surface as a test failure.
   try {
-    record.addAll(parseOverflowSource(
-      details.toDiagnosticsNode().toStringDeep(),
-      runDirectory: runDirectory,
-    ));
+    final dump = details.toDiagnosticsNode().toStringDeep();
+    record['log'] =
+        stripEphemeralIds(normalizeDumpPaths(dump, runDirectory: runDirectory));
+    record.addAll(parseOverflowSource(dump, runDirectory: runDirectory));
   } catch (_) {
     // Location unresolved; the amount fields above still stand.
   }
