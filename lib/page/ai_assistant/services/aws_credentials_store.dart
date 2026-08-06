@@ -70,6 +70,20 @@ class AwsCredentialsStore {
   /// Tail of the operation chain; each new operation is appended to it.
   Future<void> _pending = Future.value();
 
+  /// Counts [clear] calls, so a write can tell whether one overtook it.
+  ///
+  /// `Future.timeout` does not cancel the operation it wraps — it only stops
+  /// waiting. A write that exceeds [_kOperationTimeout] therefore keeps running
+  /// after the queue has moved on, and can reach storage *after* a later
+  /// `clear()` has deleted the record — resurrecting credentials the user
+  /// revoked, which is the failure serialising exists to prevent. Timing the
+  /// queue out is what makes that reachable, and not timing it out lets one
+  /// hung write block the `clear()` entirely: same outcome, different route.
+  ///
+  /// So the timeout stays, and this counter gives `clear()` the last word
+  /// instead. See [_undoIfCleared].
+  int _clearGeneration = 0;
+
   /// Run [operation] after every operation requested before it.
   ///
   /// The chain is never broken by a failure: the tail swallows errors so a
@@ -86,6 +100,17 @@ class AwsCredentialsStore {
         .onError<Object>((e, _) => throw _asServiceError(e));
     _pending = result.then((_) {}, onError: (_) {});
     return result;
+  }
+
+  /// Delete the record if a [clear] happened since [generationAtStart].
+  ///
+  /// Covers the write that lost its place in the queue by timing out: it cannot
+  /// be cancelled, so the record it may have just written is removed instead.
+  /// Called after every write, and cheap when nothing raced.
+  Future<void> _undoIfCleared(int generationAtStart) async {
+    if (_clearGeneration == generationAtStart) return;
+    await _storage.delete(key: _kRecordKey);
+    aiLog('[Credentials] Discarded a write that a clear had superseded');
   }
 
   /// Convert anything storage throws into a [ServiceError].
@@ -115,6 +140,11 @@ class AwsCredentialsStore {
     required String secretAccessKey,
     required String modelId,
   }) {
+    // Captured here, synchronously, NOT inside the queued body: the body does
+    // not run until the queue reaches it, by which point a `clear()` issued
+    // right after this call would already have bumped the counter and the
+    // comparison would see no race.
+    final generation = _clearGeneration;
     return _serialize(() async {
       await _storage.write(
         key: _kRecordKey,
@@ -125,6 +155,7 @@ class AwsCredentialsStore {
         }),
       );
       aiLog('[Credentials] Stored');
+      await _undoIfCleared(generation);
     });
   }
 
@@ -160,6 +191,7 @@ class AwsCredentialsStore {
   /// Does nothing when there is no record to update — there is no useful
   /// meaning to a model preference without credentials to use it with.
   Future<void> storeModelId(String modelId) {
+    final generation = _clearGeneration; // see store()
     return _serialize(() async {
       final record = await _readRecord();
       if (record == null) return;
@@ -167,10 +199,17 @@ class AwsCredentialsStore {
       record['modelId'] = modelId;
       await _storage.write(key: _kRecordKey, value: jsonEncode(record));
       aiLog('[Credentials] Model updated');
+      await _undoIfCleared(generation);
     });
   }
 
   Future<void> clear() {
+    // Recorded when the clear is *requested*, not when the queue reaches it, so
+    // the intent is captured at the moment the user expressed it. (Bumping
+    // inside the queued body happens to behave the same today, because the body
+    // runs as soon as a timed-out write lets go — but that equivalence depends
+    // on queue mechanics, and this does not.)
+    _clearGeneration++;
     return _serialize(() async {
       await _storage.delete(key: _kRecordKey);
       aiLog('[Credentials] Cleared');
