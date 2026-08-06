@@ -417,6 +417,92 @@ void main() {
         expect(result?.accessKeyId, 'AKIAEXAMPLE');
       });
 
+      test('a write that times out cannot outlive a later clear', () {
+        // The trap the operation timeout opens: `Future.timeout` does not
+        // cancel the work it wraps, so a slow write keeps running after the
+        // queue has moved on and reaches storage AFTER the delete — putting
+        // back credentials the user revoked. Timing out was the fix for a hung
+        // write blocking `clear()`; this is the hole it left.
+        fakeAsync((async) {
+          storage = FakeSecureStorage();
+          store = AwsCredentialsStore(storage);
+          // Longer than the store's timeout, but it does eventually finish.
+          storage.writeDelay = const Duration(seconds: 25);
+
+          Object? storeError;
+          store
+              .store(
+                accessKeyId: 'AKIA_REVOKED',
+                secretAccessKey: 'secret_revoked',
+                modelId: 'model-a',
+              )
+              .catchError((Object e) => storeError = e);
+          store.clear();
+
+          async.elapse(const Duration(seconds: 60));
+
+          expect(storeError, isA<TimeoutError>());
+          expect(storage.values, isEmpty,
+              reason: 'the late write must be undone, not left in storage');
+        });
+      });
+
+      test('a clear counts from when it is requested, not when it is reached',
+          () {
+        // The distinguishing case for WHERE the clear is recorded. Here the
+        // write is already in flight when `clear()` arrives, so the clear
+        // cannot run until the write finishes. If the clear only counted itself
+        // once the queue reached it, the in-flight write would compare against
+        // the not-yet-bumped value, see no race, and leave the revoked record
+        // behind.
+        fakeAsync((async) {
+          storage = FakeSecureStorage();
+          store = AwsCredentialsStore(storage);
+          storage.writeDelay = const Duration(seconds: 25);
+
+          store
+              .store(
+                accessKeyId: 'AKIA_REVOKED',
+                secretAccessKey: 'secret',
+                modelId: 'model-a',
+              )
+              .catchError((Object e) {});
+          // Let the write reach storage before asking for the clear.
+          async.elapse(const Duration(seconds: 1));
+          store.clear();
+
+          async.elapse(const Duration(seconds: 120));
+
+          expect(storage.values, isEmpty,
+              reason: 'the user asked to discard these credentials after the '
+                  'write began; the request must still win');
+        });
+      });
+
+      test('the undo only fires when a clear actually raced', () {
+        fakeAsync((async) {
+          storage = FakeSecureStorage();
+          store = AwsCredentialsStore(storage);
+          storage.writeDelay = const Duration(seconds: 25);
+
+          store
+              .store(
+                accessKeyId: 'AKIAEXAMPLE',
+                secretAccessKey: 'secret',
+                modelId: 'model-a',
+              )
+              .catchError((Object e) {});
+
+          async.elapse(const Duration(seconds: 60));
+
+          // A slow write with no clear behind it is still a successful write:
+          // the guard must not delete a record nobody asked to remove.
+          expect(storage.values.containsKey(recordKey), isTrue);
+          expect(storage.log.where((e) => e.startsWith('D:')), isEmpty,
+              reason: 'no clear was issued, so nothing should be deleted');
+        });
+      });
+
       test('a hung operation does not block the queue forever', () {
         // The failure this guards: the user presses "change configuration"
         // behind a write that never settles, so the clear never runs and the

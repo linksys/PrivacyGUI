@@ -60,10 +60,10 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
   /// * [_ConfigError.failure] — a real failure, carrying a `ServiceError` that
   ///   `localizeServiceError` turns into the displayed message.
   ///
-  /// Absent from this set on purpose: "environment config is unavailable".
-  /// `AWSConfig.fromEnvironment()` throwing `ConfigurationException` is the
-  /// normal path — it is how the app discovers it should show the manual form —
-  /// so it is logged and never shown as an error.
+  /// Absent from this set on purpose: "this build has no environment
+  /// credentials". That is the normal path — it is how the app discovers it
+  /// should show the manual form — so it is logged and never shown as an error.
+  /// See [_configFromEnvironment].
   _ConfigError? _configError;
   final _accessKeyController = TextEditingController();
   final _secretKeyController = TextEditingController();
@@ -101,32 +101,56 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
   }
 
   void _tryInitController() {
-    final commandProvider = ref.read(routerCommandProviderProvider);
+    final awsConfig = _configFromEnvironment();
+    if (awsConfig == null) {
+      // Nothing to report: the manual form is the next screen, and it already
+      // explains what to enter.
+      _needsConfig = true;
+      _configError = null;
+      return;
+    }
 
     try {
-      final awsConfig = AWSConfig.fromEnvironment();
       _controller = RouterChatController(
         generator: AwsContentGenerator(config: awsConfig),
-        commandProvider: commandProvider,
+        commandProvider: ref.read(routerCommandProviderProvider),
         routerContext: buildRouterContext(ref.read),
       );
       _controller!.addListener(_onControllerChanged);
       _needsConfig = false;
       _configError = null;
-    } on ConfigurationException catch (e) {
-      // Not an error: no environment credentials is the ordinary case, and the
-      // manual form is the correct next screen. Showing "AWS_ACCESS_KEY_ID not
-      // set" would report the app's own configuration as the user's problem.
-      aiLog('RouterAssistantView: No environment config (${e.missingKey})');
-      _needsConfig = true;
-      _configError = null;
     } catch (e) {
-      // Full text in the log: per the error-handling guide, detail/code are
-      // diagnostic material for the engineer. Only the UI is restricted.
+      // A genuine failure, unlike the branch above: the credentials were there
+      // and building the session still did not work. Full text in the log —
+      // per the error-handling guide detail/code are for the engineer, and only
+      // the UI is restricted to a localized message.
       aiLog('RouterAssistantView: could not build controller from '
           'environment config: $e');
       _needsConfig = true;
       _configError = _ConfigError.failure(UnexpectedError(originalError: e));
+    }
+  }
+
+  /// Environment credentials, or null when this build was not given any.
+  ///
+  /// Every failure mode of [AWSConfig.fromEnvironment] means the same thing, so
+  /// they collapse to null rather than being told apart:
+  ///
+  /// * `ConfigurationException` — dotenv loaded, but a key is missing.
+  /// * dotenv's `NotInitializedError` — `assets/agents/.env` was absent at
+  ///   startup so `dotenv.load` failed. This is the **usual** case, because that
+  ///   file is gitignored; it is an `Error`, not an `Exception`, so it does not
+  ///   match an `on ConfigurationException` clause.
+  ///
+  /// Catching broadly is safe here because the function reads environment
+  /// variables and does nothing else — it has no failure mode that represents a
+  /// real fault. Controller construction, which does, stays outside it.
+  AWSConfig? _configFromEnvironment() {
+    try {
+      return AWSConfig.fromEnvironment();
+    } catch (e) {
+      aiLog('RouterAssistantView: no environment config ($e)');
+      return null;
     }
   }
 
