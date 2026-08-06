@@ -194,8 +194,18 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
       border-radius: 3px; background: #fef3c7; color: #92400e;
       font-weight: 600; margin-left: 0.5rem;
     }
+    .overflow-sites {
+      padding: 0.375rem 1rem 0.5rem 2.25rem;
+      background: var(--color-surface);
+      border-top: 1px dashed var(--color-border);
+    }
+    .overflow-site {
+      font-size: 0.7rem; color: #92400e; font-family: ui-monospace, monospace;
+      word-break: break-all; cursor: help;
+    }
     @media (prefers-color-scheme: dark) {
       .overflow-badge { background: #78350f; color: #fde68a; }
+      .overflow-site { color: #fbbf24; }
     }
     .failure-details {
       padding: 1rem;
@@ -610,6 +620,21 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
       html += '<span class="test-meta">' + (t.deviceType || '') + ' / ' + (t.locale || '') + '</span>';
       html += '</div>';
 
+      // Outside the !isPass block: an overflow does not fail the test, so the
+      // detail has to render on passing rows too — that is where it was
+      // previously invisible beyond the badge (#1197).
+      // An empty label means nothing parsed; the badge already says an overflow
+      // happened, so skip the blank line rather than render it.
+      const sites = (t.overflowSites || []).filter(s => s.label);
+      if (sites.length > 0) {
+        html += '<div class="overflow-sites">';
+        for (const site of sites) {
+          const where = (site.file || '') + (site.line ? ':' + site.line : '');
+          html += '<div class="overflow-site" title="' + escapeAttr(where + '\\n' + (site.message || '')) + '">' + escapeHtml(site.label) + '</div>';
+        }
+        html += '</div>';
+      }
+
       if (!isPass) {
         html += '<div class="failure-details">';
         if (t.failureImages) {
@@ -653,6 +678,15 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
       const div = document.createElement('div');
       div.textContent = text;
       return div.innerHTML;
+    }
+
+    // escapeHtml goes through textContent, which leaves quotes intact — fine in
+    // element content, but it would break out of an attribute. Flutter's raw
+    // overflow message is arbitrary text, so tooltips use this instead.
+    function escapeAttr(text) {
+      return String(text == null ? '' : text)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
 
     // Lightbox — holds a list of { src, caption } items

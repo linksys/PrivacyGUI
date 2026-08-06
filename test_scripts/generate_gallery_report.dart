@@ -3,6 +3,8 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'overflow_details.dart';
+
 /// Scans golden PNG files under test/golden_test/page/*/localizations/goldens/
 /// and generates an HTML gallery report at test/golden_test/golden_gallery_report.html.
 ///
@@ -40,9 +42,9 @@ void main(List<String> args) {
     return a.locale.compareTo(b.locale);
   });
 
-  final overflowGoldens = _loadOverflowWarnings();
+  final overflowDetails = loadOverflowDetails();
 
-  final html = _generateHtml(entries, version, overflowGoldens);
+  final html = _generateHtml(entries, version, overflowDetails);
   final outputFile = File('test/golden_test/golden_gallery_report.html');
   outputFile.writeAsStringSync(html);
   print(
@@ -153,24 +155,18 @@ String _entryGoldenName(_GoldenEntry entry) {
   return base;
 }
 
-/// Loads overflow warnings from goldens/overflow_warnings.json.
-/// Returns a Set of golden names that had overflow errors.
-Set<String> _loadOverflowWarnings() {
-  final file = File('goldens/overflow_warnings.json');
-  if (!file.existsSync()) return {};
-  try {
-    final list = jsonDecode(file.readAsStringSync()) as List;
-    return list
-        .map((e) => (e as Map<String, dynamic>)['golden'] as String? ?? '')
-        .where((s) => s.isNotEmpty)
-        .toSet();
-  } catch (_) {
-    return {};
-  }
-}
+/// Escapes text interpolated into HTML.
+///
+/// Overflow detail carries file paths and Flutter's raw message, so it is not
+/// guaranteed free of markup characters.
+String _escapeHtml(String text) => text
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;');
 
-String _generateHtml(
-    List<_GoldenEntry> entries, String version, Set<String> overflowGoldens) {
+String _generateHtml(List<_GoldenEntry> entries, String version,
+    Map<String, List<OverflowDetail>> overflowDetails) {
   final features = <String>{};
   final locales = <String>{};
   final devices = <String>{};
@@ -332,8 +328,16 @@ String _generateHtml(
       border-radius: 3px; background: #fef3c7; color: #92400e;
       font-weight: 600;
     }
+    .card-overflow-sites {
+      margin-top: 0.375rem; display: flex; flex-direction: column; gap: 0.125rem;
+    }
+    .overflow-site {
+      font-size: 0.65rem; color: #92400e; font-family: ui-monospace, monospace;
+      word-break: break-all; cursor: help;
+    }
     @media (prefers-color-scheme: dark) {
       .tag-overflow { background: #78350f; color: #fde68a; }
+      .overflow-site { color: #fbbf24; }
     }
     /* Comparison view */
     .compare-row {
@@ -410,7 +414,7 @@ String _generateHtml(
     <div class="summary-item"><div class="summary-value">${sortedFeatures.length}</div><div class="summary-label">Features</div></div>
     <div class="summary-item"><div class="summary-value">${sortedLocales.length}</div><div class="summary-label">Locales</div></div>
     <div class="summary-item"><div class="summary-value">${sortedDevices.length}</div><div class="summary-label">Devices</div></div>
-    <div class="summary-item"><div class="summary-value" style="color:#f59e0b">${overflowGoldens.length}</div><div class="summary-label">Overflow</div></div>
+    <div class="summary-item"><div class="summary-value" style="color:#f59e0b">${overflowDetails.length}</div><div class="summary-label">Overflow</div></div>
   </div>
 
   <div class="toolbar">
@@ -495,7 +499,8 @@ String _generateHtml(
 
     for (final entry in featureEntries) {
       final goldenName = _entryGoldenName(entry);
-      final hasOverflow = overflowGoldens.contains(goldenName);
+      final sites = overflowDetails[goldenName] ?? const [];
+      final hasOverflow = sites.isNotEmpty;
       buffer.writeln(
           '        <div class="gallery-card" data-locale="${entry.locale}" data-device="${entry.device}" data-feature="${entry.feature}" data-state="${entry.state}" data-overflow="$hasOverflow">');
       buffer.writeln(
@@ -514,6 +519,23 @@ String _generateHtml(
             '              <span class="tag-overflow">OVERFLOW</span>');
       }
       buffer.writeln('            </div>');
+      if (hasOverflow) {
+        // Name every overflow site on the card itself: the badge alone left the
+        // reader to hunt for the culprit in the image (#1197). The full path and
+        // raw message go in the tooltip to keep the card narrow.
+        buffer.writeln('            <div class="card-overflow-sites">');
+        // An empty label means nothing parsed; the badge above already says an
+        // overflow happened, so skip the blank line rather than render it.
+        for (final site in sites.where((s) => s.label.isNotEmpty)) {
+          final tooltip = _escapeHtml(
+              '${site.file ?? ''}${site.line == null ? '' : ':${site.line}'}\n'
+                      '${site.message}'
+                  .trim());
+          buffer.writeln('              <span class="overflow-site" '
+              'title="$tooltip">${_escapeHtml(site.label)}</span>');
+        }
+        buffer.writeln('            </div>');
+      }
       buffer.writeln('          </div>');
       buffer.writeln('        </div>');
     }
@@ -528,11 +550,21 @@ String _generateHtml(
   // Comparison view (built by JS from embedded data)
   buffer.writeln('  <div id="comparison-view"></div>');
 
-  // Embed entry data as JSON for comparison view
+  // Embed entry data as JSON for comparison view. Encoded rather than
+  // hand-built: overflow detail carries file paths and Flutter's raw message,
+  // which are not guaranteed free of quotes.
   final jsonEntries = entries.map((e) {
-    final gn = _entryGoldenName(e);
-    final ov = overflowGoldens.contains(gn) ? 'true' : 'false';
-    return '{"feature":"${e.feature}","state":"${e.state}","device":"${e.device}","locale":"${e.locale}","brightness":"${e.brightness}","path":"${e.relativePath}","overflow":$ov}';
+    final sites = overflowDetails[_entryGoldenName(e)] ?? const [];
+    return jsonEncode({
+      'feature': e.feature,
+      'state': e.state,
+      'device': e.device,
+      'locale': e.locale,
+      'brightness': e.brightness,
+      'path': e.relativePath,
+      'overflow': sites.isNotEmpty,
+      'overflowSites': sites.map((s) => s.toJson()).toList(),
+    });
   }).join(',');
 
   buffer.writeln('''
@@ -552,6 +584,14 @@ String _generateHtml(
   <script>
     const allEntries = [$jsonEntries];
     let currentView = 'feature';
+
+    // The comparison view builds its markup by concatenation, and overflow
+    // detail carries file paths and Flutter's raw message.
+    function esc(text) {
+      return String(text == null ? '' : text)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
 
     function setView(view) {
       currentView = view;
@@ -669,6 +709,12 @@ String _generateHtml(
           html += '<div class="compare-cell">';
           html += '<img src="' + item.path + '" alt="' + item.state + '-' + item.locale + '" loading="lazy" onclick="openLightbox(this)">';
           html += '<div class="cell-label">' + item.locale + (item.brightness === 'dark' ? ' (dark)' : '') + '</div>';
+          // Compare view is where locales are read side by side, so naming the
+          // overflow site here shows at a glance that one culprit explains a
+          // whole row of tagged locales (#1197).
+          for (const site of (item.overflowSites || []).filter(s => s.label)) {
+            html += '<div class="overflow-site" title="' + esc(site.message) + '">' + esc(site.label) + '</div>';
+          }
           html += '</div>';
         }
         html += '</div></div>';

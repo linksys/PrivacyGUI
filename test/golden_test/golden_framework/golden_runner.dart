@@ -15,6 +15,7 @@ import 'package:privacy_gui/theme/theme_json_config.dart';
 import 'golden_interactions.dart';
 import 'golden_test_config.dart';
 import 'mocks/mock_common.dart';
+import 'overflow_diagnostics.dart';
 
 // Re-export so every test file that imports golden_runner.dart gets the shared
 // interaction helpers (switchToTab, settleWithTimeout) without a separate line.
@@ -343,7 +344,12 @@ Widget _buildGoldenWidget(
 /// Tracks which golden file is currently being rendered.
 String _currentGoldenName = '';
 
-/// Collected overflow warnings: golden filename → error message.
+/// Collected overflow records, one per reported error.
+///
+/// Shape is defined by [buildOverflowRecord]: the golden name, the raw message,
+/// and the parsed side/pixels/widget/file/line. Flutter reports overflow per
+/// RenderObject, so sibling rows built from a list produce duplicate records;
+/// the report generators collapse them.
 final List<Map<String, String>> _overflowWarnings = [];
 
 /// Suppresses RenderFlex overflow errors during golden tests but records them.
@@ -357,10 +363,15 @@ void _suppressOverflowErrors() {
   FlutterError.onError = (details) {
     final isOverflow = details.exceptionAsString().contains('overflowed');
     if (isOverflow) {
-      _overflowWarnings.add({
-        'golden': _currentGoldenName,
-        'message': details.exceptionAsString(),
-      });
+      // Record the direction, amount and source location alongside the raw
+      // message so the reports can say where and by how much, not just that it
+      // happened (#1197). The test process runs from the app root, which is why
+      // the relative paths in _writeOverflowReport resolve.
+      _overflowWarnings.add(buildOverflowRecord(
+        goldenName: _currentGoldenName,
+        details: details,
+        runDirectory: Directory.current.path,
+      ));
       return;
     }
     originalHandler?.call(details);
