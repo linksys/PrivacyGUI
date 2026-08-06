@@ -4,6 +4,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/usp/models/sse_notification.dart';
 import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
 import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
+import 'package:privacy_gui/core/usp/providers/wan_interface_path_provider.dart';
 
 import '../mocks.dart';
 
@@ -13,7 +14,13 @@ void main() {
 
   /// Sets up a [ProviderContainer] that overrides [sseManagerProvider] with
   /// [mockManager] and captures the wildcard handler callback.
-  ProviderContainer createContainer() {
+  ///
+  /// [wanPath] overrides the resolved WAN interface path so tests can exercise
+  /// WAN-status classification without a live `Alias` lookup. Defaults to
+  /// [kWanInterfaceFallbackPath] (`Device.IP.Interface.2.`).
+  ProviderContainer createContainer({
+    String wanPath = kWanInterfaceFallbackPath,
+  }) {
     when(() => mockManager.addWildcardHandler(any())).thenAnswer((invocation) {
       capturedHandler =
           invocation.positionalArguments[0] as SseNotificationHandler;
@@ -23,6 +30,7 @@ void main() {
     final container = ProviderContainer(
       overrides: [
         sseManagerProvider.overrideWithValue(mockManager),
+        wanInterfacePathProvider.overrideWith((ref) async => wanPath),
       ],
     );
     // Force the provider to build
@@ -258,6 +266,65 @@ void main() {
 
     test('empty path → null', () async {
       await sendAndExpectEmpty('');
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // WAN status classification (resolved instance, not hardcoded .2.)
+  // ---------------------------------------------------------------------------
+  group('WAN status classification', () {
+    /// Emits a notification for [path] against a container whose resolved WAN
+    /// interface path is [wanPath], and returns the domains produced.
+    ///
+    /// Awaits [wanInterfacePathProvider] first so the classifier reads the
+    /// overridden path synchronously (otherwise it would fall back to
+    /// [kWanInterfaceFallbackPath]).
+    Future<List<InvalidationDomain>> classify(
+      String path, {
+      required String wanPath,
+    }) async {
+      final container = createContainer(wanPath: wanPath);
+      addTearDown(container.dispose);
+      await container.read(wanInterfacePathProvider.future);
+
+      final domains = <InvalidationDomain>[];
+      container.listen(sseInvalidationProvider, (_, next) {
+        if (next.hasValue) domains.add(next.value!);
+      });
+
+      capturedHandler(notification(type: 'ValueChange', paramPath: path));
+      await Future.delayed(Duration.zero);
+      return domains;
+    }
+
+    test('default WAN (Interface.2) → wanStatus', () async {
+      expect(
+        await classify('Device.IP.Interface.2.Status',
+            wanPath: 'Device.IP.Interface.2.'),
+        [InvalidationDomain.wanStatus],
+      );
+    });
+
+    test('WAN resolved to a non-2 instance still classifies as wanStatus',
+        () async {
+      // Proves the hardcoded `.2.` assumption is gone: a firmware whose WAN
+      // lands on Interface.4 must still trigger wanStatus.
+      expect(
+        await classify('Device.IP.Interface.4.Status',
+            wanPath: 'Device.IP.Interface.4.'),
+        [InvalidationDomain.wanStatus],
+      );
+    });
+
+    test('non-WAN IP.Interface instance does NOT classify as wanStatus',
+        () async {
+      // LAN (Interface.1) changes arrive on the same subtree subscription but
+      // must not be mistaken for WAN status.
+      expect(
+        await classify('Device.IP.Interface.1.Status',
+            wanPath: 'Device.IP.Interface.2.'),
+        isEmpty,
+      );
     });
   });
 

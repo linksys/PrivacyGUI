@@ -4,7 +4,7 @@
 
 const coreSubscriptions = [
   ('ethernet-valuechange', 'ValueChange', 'Device.Ethernet.Interface.'),
-  ('wan-status-valuechange', 'ValueChange', 'Device.IP.Interface'),
+  ('wan-status-valuechange', 'ValueChange', 'Device.IP.Interface.'),
   ('dhcp-clients-01', 'ObjectCreation', 'Device.DHCPv4.Server.Pool.1.Client.'),
   ('wifi-clients-01', 'ObjectCreation', 'Device.WiFi.AccessPoint.'),
   ('connected-devices-objectcreation', 'ObjectCreation', 'Device.Hosts.Host.'),

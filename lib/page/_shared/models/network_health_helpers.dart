@@ -29,6 +29,28 @@ class NetworkHealthHelpers {
     return _scoreFromLoss(lossPercent);
   }
 
+  /// Compute the effective WAN health score, accounting for physical link
+  /// state.
+  ///
+  /// A disconnected WAN (link down) always scores 0 regardless of traffic
+  /// stats. This is required because a down link carries no traffic, so
+  /// packet loss computes to 0% and [computeHealthScore] would otherwise
+  /// report a perfect score of 100 ("Excellent") for a WAN that is actually
+  /// disconnected — contradicting the page-top connection banner.
+  /// See linksys/PrivacyGUI#1143.
+  ///
+  /// [wanIsUp] mirrors `WanStatusUIModel.isUp` (the same signal the banner
+  /// uses). It defaults to `true` so that, when link state is momentarily
+  /// unavailable (provider still loading), behaviour matches the prior
+  /// loss-only scoring rather than falsely reporting a disconnect.
+  static int computeWanScore(
+    InterfaceTrafficSnapshot? wan, {
+    bool wanIsUp = true,
+  }) {
+    if (!wanIsUp) return 0;
+    return wan != null ? computeHealthScore(wan) : 100;
+  }
+
   static int _scoreFromLoss(double lossPercent) {
     if (lossPercent <= 0) return 100;
     if (lossPercent < 0.01) return 95;
