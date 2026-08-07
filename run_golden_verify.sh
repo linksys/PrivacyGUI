@@ -37,6 +37,13 @@ echo "Locales: $locales"
 echo "Screens: $screens"
 echo "Version: $version"
 
+# The golden runner appends to this file, so a previous run's records would be
+# attributed to this one — reporting overflows at line numbers that have since
+# moved, or on goldens this run never touched. Cleared before, not after, so the
+# file is still readable for debugging once the run ends. Placed ahead of the
+# branch below because both paths generate a report.
+rm -f goldens/overflow_warnings.json
+
 if [ -z "$file" ]; then
   IFS=',' read -ra LOCS <<< "$locales"
   for locale in "${LOCS[@]}"; do
