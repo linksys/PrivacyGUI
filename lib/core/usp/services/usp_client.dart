@@ -300,25 +300,12 @@ class UspClient {
         logger.w('$_tag$label GET response EMPTY for paths: $paths');
       }
 
-      final Map<String, dynamic> result = {};
-
-      for (final entry in rawMap.entries) {
-        result[entry.key] = _coerceValue(entry.key, entry.value);
-      }
-
-      // Ensure all requested non-wildcard paths exist in the result to prevent
-      // Null Cast errors in codegen. Wildcard search paths (containing '*') are
-      // expanded by the router into concrete instance paths, so the original
-      // wildcard path won't appear in the response — skip those.
-      for (final path in paths) {
-        if (path.contains('*')) continue;
-        if (!result.containsKey(path)) {
-          logger.w('$_tag$label GET missing path in response: "$path"');
-        }
-        result.putIfAbsent(path, () => null);
-      }
-
-      return result;
+      return normalizeGetResponse(
+        paths,
+        rawMap,
+        onMissingPath: (path) =>
+            logger.w('$_tag$label GET missing path in response: "$path"'),
+      );
     } catch (e) {
       sw.stop();
       final label = _idLabel(id);
@@ -327,13 +314,48 @@ class UspClient {
     }
   }
 
+  /// Normalizes a raw USP GET response into the map consumed by codegen models.
+  ///
+  /// Two responsibilities, kept as pure logic so it is unit-testable without a
+  /// live WASM client:
+  /// 1. Coerce every returned value via [_coerceValue].
+  /// 2. Warn (via [onMissingPath]) for each requested non-wildcard path absent
+  ///    from the response — but deliberately do NOT back-fill it. Back-filling
+  ///    absent paths with null used to silently suppress the codegen
+  ///    required-leaf check (code 9998 → ServiceErrorView), because it flipped
+  ///    `containsKey` to true without preventing any Null Cast (the real guard
+  ///    is the `?? ''` on each codegen assignment). Leaving the key absent lets
+  ///    the required-leaf contract fire as designed (#1184).
+  ///
+  /// Wildcard search paths (containing '*') are expanded by the router into
+  /// concrete instance paths, so the original wildcard path won't appear in the
+  /// response — those are skipped by the missing-path warning.
+  @visibleForTesting
+  static Map<String, dynamic> normalizeGetResponse(
+    List<String> paths,
+    Map<String, String?> rawMap, {
+    void Function(String path)? onMissingPath,
+  }) {
+    final Map<String, dynamic> result = {};
+    for (final entry in rawMap.entries) {
+      result[entry.key] = _coerceValue(entry.key, entry.value);
+    }
+    for (final path in paths) {
+      if (path.contains('*')) continue;
+      if (!result.containsKey(path)) {
+        onMissingPath?.call(path);
+      }
+    }
+    return result;
+  }
+
   /// Coerce a raw string value from USP into the appropriate Dart type.
   /// - "true" / "false" →bool (any path)
   /// - "1" / "0" →bool (for known boolean suffixes: Enable, Active)
   /// - null →null (key absent from response)
   /// - Empty string →'' (preserve String type for generated code)
   /// - Everything else stays as String (generated code handles int parsing)
-  dynamic _coerceValue(String path, String? raw) {
+  static dynamic _coerceValue(String path, String? raw) {
     if (raw == null) return null;
     if (raw.isEmpty) return '';
 

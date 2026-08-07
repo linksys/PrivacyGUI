@@ -1,0 +1,164 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
+
+/// Regression tests for issue #1184.
+///
+/// `UspClient._rawGet` used to back-fill every absent non-wildcard requested
+/// path with `null` before returning. That silently defeated the codegen
+/// required-leaf check (`code: 9998` → `ServiceErrorView`) for models that GET
+/// with concrete paths: a back-filled key made `response.containsKey(path)`
+/// return true, so the `missing` list stayed empty and 9998 never fired.
+///
+/// The fix removes the back-fill. These tests pin that behaviour on the pure,
+/// testable [UspClient.normalizeGetResponse] seam (the real `_rawGet` cannot be
+/// unit-tested directly — its constructor throws off-Web and the WASM client is
+/// not injectable, which is exactly why the back-fill was never covered).
+void main() {
+  group('UspClient.normalizeGetResponse — no back-fill (#1184)', () {
+    test('absent concrete path is NOT added to the result', () {
+      // The router omitted a requested concrete leaf entirely.
+      final result = UspClient.normalizeGetResponse(
+        ['Device.DHCPv4.Server.Pool.1.MinAddress'],
+        <String, String?>{},
+      );
+
+      // The load-bearing assertion: adding `putIfAbsent(path, () => null)` back
+      // makes containsKey true and fails this test.
+      expect(
+        result.containsKey('Device.DHCPv4.Server.Pool.1.MinAddress'),
+        isFalse,
+      );
+      expect(result, isEmpty);
+    });
+
+    test('present paths are kept and value-coerced', () {
+      final result = UspClient.normalizeGetResponse(
+        [
+          'Device.DHCPv4.Server.Pool.1.Enable', // bool suffix
+          'Device.DHCPv4.Server.Pool.1.MinAddress', // plain string
+        ],
+        <String, String?>{
+          'Device.DHCPv4.Server.Pool.1.Enable': '1',
+          'Device.DHCPv4.Server.Pool.1.MinAddress': '192.168.1.100',
+        },
+      );
+
+      expect(result['Device.DHCPv4.Server.Pool.1.Enable'], isTrue);
+      expect(
+        result['Device.DHCPv4.Server.Pool.1.MinAddress'],
+        '192.168.1.100',
+      );
+    });
+
+    test(
+        'a path present with an empty string stays present (not treated as '
+        'missing)', () {
+      final result = UspClient.normalizeGetResponse(
+        ['Device.DHCPv4.Server.Pool.1.DNSServers'],
+        <String, String?>{'Device.DHCPv4.Server.Pool.1.DNSServers': ''},
+      );
+
+      // Empty string is a real value → key present, coerced to ''.
+      expect(
+          result.containsKey('Device.DHCPv4.Server.Pool.1.DNSServers'), isTrue);
+      expect(result['Device.DHCPv4.Server.Pool.1.DNSServers'], '');
+    });
+
+    test('wildcard request paths never trigger a missing-path warning', () {
+      final missing = <String>[];
+      // Router expands the wildcard into a concrete instance; the original
+      // wildcard path is absent from the response but must be ignored.
+      UspClient.normalizeGetResponse(
+        ['Device.DNS.Client.Server.*.DNSServer'],
+        <String, String?>{'Device.DNS.Client.Server.1.DNSServer': '8.8.8.8'},
+        onMissingPath: missing.add,
+      );
+
+      expect(missing, isEmpty);
+    });
+
+    test('absent concrete path invokes onMissingPath; present one does not',
+        () {
+      final missing = <String>[];
+      UspClient.normalizeGetResponse(
+        [
+          'Device.DHCPv4.Server.Pool.1.MinAddress', // absent
+          'Device.DHCPv4.Server.Pool.1.MaxAddress', // present
+        ],
+        <String, String?>{
+          'Device.DHCPv4.Server.Pool.1.MaxAddress': '192.168.1.200',
+        },
+        onMissingPath: missing.add,
+      );
+
+      expect(missing, ['Device.DHCPv4.Server.Pool.1.MinAddress']);
+    });
+  });
+
+  group('Codegen required-leaf contract is reachable again (#1184)', () {
+    // Ties the normalize seam to a real concrete-path model. When a required
+    // leaf is omitted, normalizeGetResponse leaves it absent, so the model's
+    // `containsKey` required-check adds it to `missing` and throws 9998.
+    // (Before the fix the back-fill made this branch unreachable.)
+    const instancePath = 'Device.IP.Interface.1.';
+
+    List<String> lanPaths() => [
+          '${instancePath}IPv4Address.1.IPAddress',
+          '${instancePath}IPv4Address.1.SubnetMask',
+          'Device.DHCPv4.Server.Pool.1.Enable',
+          'Device.DHCPv4.Server.Pool.1.MinAddress',
+          'Device.DHCPv4.Server.Pool.1.MaxAddress',
+          'Device.DHCPv4.Server.Pool.1.LeaseTime',
+          'Device.DHCPv4.Server.Pool.1.DNSServers',
+          'Device.DeviceInfo.HostName',
+          '${instancePath}IPv6Enable',
+        ];
+
+    Map<String, String?> fullLanResponse() => <String, String?>{
+          '${instancePath}IPv4Address.1.IPAddress': '192.168.1.1',
+          '${instancePath}IPv4Address.1.SubnetMask': '255.255.255.0',
+          'Device.DHCPv4.Server.Pool.1.Enable': '1',
+          'Device.DHCPv4.Server.Pool.1.MinAddress': '192.168.1.100',
+          'Device.DHCPv4.Server.Pool.1.MaxAddress': '192.168.1.200',
+          'Device.DHCPv4.Server.Pool.1.LeaseTime': '86400',
+          'Device.DHCPv4.Server.Pool.1.DNSServers': '8.8.8.8',
+          'Device.DeviceInfo.HostName': 'router',
+          '${instancePath}IPv6Enable': 'true',
+        };
+
+    test(
+        'normalized response omitting a required leaf makes the codegen check '
+        'see it as missing (→ 9998)', () {
+      final withMissing = fullLanResponse()
+        ..remove('Device.DHCPv4.Server.Pool.1.MinAddress');
+
+      final normalized =
+          UspClient.normalizeGetResponse(lanPaths(), withMissing);
+
+      // This is precisely the predicate the generated `_fromResponse` evaluates;
+      // false here means `missing.add(...)` runs and 9998 is thrown.
+      expect(
+        normalized.containsKey('Device.DHCPv4.Server.Pool.1.MinAddress'),
+        isFalse,
+      );
+    });
+
+    test(
+        'complete normalized response keeps every required leaf present '
+        '(no false 9998)', () {
+      final normalized =
+          UspClient.normalizeGetResponse(lanPaths(), fullLanResponse());
+
+      // Every required leaf the generated check inspects must be present, so
+      // `missing` stays empty and the model builds normally.
+      for (final path in lanPaths()) {
+        expect(normalized.containsKey(path), isTrue,
+            reason: 'required leaf $path must survive normalization');
+      }
+      // Spot-check coercion feeding the generated assignments.
+      expect(normalized['Device.DHCPv4.Server.Pool.1.Enable'], isTrue);
+      expect(normalized['Device.DHCPv4.Server.Pool.1.MinAddress'],
+          '192.168.1.100');
+    });
+  });
+}
