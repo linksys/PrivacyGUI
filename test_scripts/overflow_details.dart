@@ -120,15 +120,6 @@ String _siteKey(Map<String, dynamic> record) => [
       // makes git treat this source file as binary.
     ].join('\u0000');
 
-/// Reads `goldens/overflow_warnings.json` and groups collapsed sites by golden
-/// name, keeping only the per-golden detail.
-///
-/// Prefer [loadOverflowReport] when the raw dumps are needed too.
-Map<String, List<OverflowDetail>> loadOverflowDetails({
-  String path = 'goldens/overflow_warnings.json',
-}) =>
-    loadOverflowReport(path: path).byGolden;
-
 /// Reads `goldens/overflow_warnings.json` into collapsed sites plus the table
 /// of distinct raw dumps they point into.
 ///
@@ -140,24 +131,32 @@ OverflowReport loadOverflowReport({
   final file = File(path);
   if (!file.existsSync()) return OverflowReport.empty;
 
-  final List<dynamic> list;
-  final List<dynamic> writtenLogs;
+  // Guards the whole parse, not just the decode: every field read below casts a
+  // value the runner wrote, so a type-mismatched one would otherwise escape as a
+  // TypeError and take the report generator down — the opposite of what this
+  // function promises.
   try {
-    final decoded = jsonDecode(file.readAsStringSync());
-    if (decoded is Map) {
-      // Current format: the runner writes the log table itself so the file does
-      // not repeat a 2-4KB dump per record.
-      list = decoded['records'] as List? ?? const [];
-      writtenLogs = decoded['logs'] as List? ?? const [];
-    } else {
-      // A run predating the log table wrote a flat list carrying the dump inline
-      // under 'log'. Reports are generated from whatever is on disk, so both
-      // shapes have to load.
-      list = decoded as List;
-      writtenLogs = const [];
-    }
+    return _parseReport(jsonDecode(file.readAsStringSync()));
   } catch (_) {
     return OverflowReport.empty;
+  }
+}
+
+/// Collapses one decoded report file into sites plus the logs they index.
+OverflowReport _parseReport(Object? decoded) {
+  final List<dynamic> list;
+  final List<dynamic> writtenLogs;
+  if (decoded is Map) {
+    // Current format: the runner writes the log table itself so the file does
+    // not repeat a 2-4KB dump per record.
+    list = decoded['records'] as List? ?? const [];
+    writtenLogs = decoded['logs'] as List? ?? const [];
+  } else {
+    // A run predating the log table wrote a flat list carrying the dump inline
+    // under 'log'. Reports are generated from whatever is on disk, so both
+    // shapes have to load.
+    list = decoded as List;
+    writtenLogs = const [];
   }
 
   // golden name -> site key -> (first record seen, count)
@@ -196,10 +195,11 @@ OverflowReport loadOverflowReport({
   /// Resolves a record's log, from either file format.
   ///
   /// An index outside the table degrades to "no log": a truncated or
-  /// hand-edited file must not take the generator down.
+  /// hand-edited file must not take the generator down. Read as [num] rather
+  /// than [int] so a re-serialized file carrying `1.0` still resolves.
   int? logForRecord(Map<String, dynamic> record) {
-    final index = record['logIndex'];
-    if (index is int) {
+    final index = (record['logIndex'] as num?)?.toInt();
+    if (index != null) {
       return index >= 0 && index < writtenLogs.length
           ? indexOfLog(writtenLogs[index])
           : null;

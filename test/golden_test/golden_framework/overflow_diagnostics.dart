@@ -15,9 +15,10 @@ import 'package:flutter/foundation.dart';
 ///
 /// The pixel group tolerates a decimal point: Flutter's `_formatPixels` emits
 /// one decimal for values in (1, 10] and three significant digits at or below
-/// 1.0.
+/// 1.0. It is one number, not a run of digits and dots — the value reaches the
+/// report badge verbatim and is parsed back as a double when sorting sites.
 final RegExp _amountPattern =
-    RegExp(r'overflowed by ([\d.]+) pixels on the (\w+)');
+    RegExp(r'overflowed by (\d+(?:\.\d+)?) pixels on the (\w+)');
 
 /// Matches the creation location Flutter appends after a widget name, e.g.
 /// `Row:file:///abs/path/to/lib/page/foo/bar.dart:47:12`.
@@ -56,16 +57,23 @@ Map<String, String> parseOverflowAmount(String message) {
 /// An unrecognized path is returned unchanged — better a long path than none.
 String normalizeSourcePath(String absolutePath,
     {required String runDirectory}) {
+  // The reported path came out of a `file://` URI, so anything outside the
+  // unreserved set arrives percent-encoded: a space in the developer's home
+  // directory reaches here as `%20`. Compared raw against the run directory it
+  // never matches, and the whole absolute path — account name included — would
+  // land in the JSON and the HTML report.
+  final path = _decodePathOrSelf(absolutePath);
+
   final root = runDirectory.endsWith('/') ? runDirectory : '$runDirectory/';
-  if (absolutePath.startsWith(root)) {
-    return absolutePath.substring(root.length);
+  if (path.startsWith(root)) {
+    return path.substring(root.length);
   }
 
   const cacheMarkers = ['/.pub-cache/git/', '/.pub-cache/hosted/'];
   for (final marker in cacheMarkers) {
-    final index = absolutePath.indexOf(marker);
+    final index = path.indexOf(marker);
     if (index == -1) continue;
-    var tail = absolutePath.substring(index + marker.length);
+    var tail = path.substring(index + marker.length);
     // The hosted layout inserts a registry segment (pub.dev/) before the
     // package directory; the git layout does not.
     if (marker.endsWith('hosted/')) {
@@ -83,7 +91,22 @@ String normalizeSourcePath(String absolutePath,
     return '$name/${tail.substring(slash + 1)}';
   }
 
-  return absolutePath;
+  return path;
+}
+
+/// Percent-decodes [path], falling back to the original on invalid encoding.
+///
+/// A literal `%` in a directory name is not valid encoding and makes
+/// [Uri.decodeFull] throw. This runs inside `FlutterError.onError`, where an
+/// escaping throw would turn a diagnostic into a test failure — so an
+/// undecodable path is passed through untouched instead.
+String _decodePathOrSelf(String path) {
+  if (!path.contains('%')) return path;
+  try {
+    return Uri.decodeFull(path);
+  } on ArgumentError {
+    return path;
+  }
 }
 
 /// Parses the offending widget's name and source location out of a deep

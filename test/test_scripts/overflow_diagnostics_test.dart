@@ -1,18 +1,21 @@
-@Tags(['ui'])
-library;
-
 import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'overflow_diagnostics.dart';
+import '../golden_test/golden_framework/overflow_diagnostics.dart';
 
 /// Guards the parsing of Flutter's overflow error message and diagnostics dump.
 ///
 /// Both formats are Flutter implementation details rather than API contracts,
 /// so an SDK upgrade can change them silently. These tests pin the shapes this
 /// code depends on (#1197).
+///
+/// Lives here rather than beside the code it tests: everything under
+/// `test/golden_test/` is excluded from `run_tests.sh`
+/// (`--exclude-tags="golden||loc||ui"`), and a parser guarding an
+/// implementation detail is worthless if CI never runs it. It needs no golden
+/// baseline, no fonts and no `AlchemistConfig` — only `pumpWidget`.
 void main() {
   group('parseOverflowAmount', () {
     test('reads the pixel count and side from a whole-pixel message', () {
@@ -50,6 +53,17 @@ void main() {
 
     test('returns empty fields when the message does not match', () {
       expect(parseOverflowAmount('Some unrelated error.'), <String, String>{});
+    });
+
+    test('reads a well-formed number, not a run of digits and dots', () {
+      // The amount is rendered into the report badge and parsed back as a double
+      // when sorting sites; `[\d.]+` would accept '1.2.3' and yield a badge
+      // reading "1.2.3px" that sorts as 0.
+      expect(
+        parseOverflowAmount('A RenderFlex overflowed by 1.2.3 pixels on the '
+            'right.'),
+        <String, String>{},
+      );
     });
   });
 
@@ -100,6 +114,51 @@ void main() {
       );
     });
 
+    test('strips a run directory whose path contains a space', () {
+      // Flutter records creation locations as URIs, so a space in the developer's
+      // home directory arrives percent-encoded. Compared raw against the
+      // run directory it never matches, and the untouched absolute path — user
+      // account name included — reaches the JSON and the HTML report.
+      expect(
+        normalizeSourcePath(
+          '/Users/John%20Smith/dev/PrivacyGUI/lib/page/admin/x.dart',
+          runDirectory: '/Users/John Smith/dev/PrivacyGUI',
+        ),
+        'lib/page/admin/x.dart',
+      );
+    });
+
+    test('strips a pub-cache path containing a space', () {
+      expect(
+        normalizeSourcePath(
+          '/Users/John%20Smith/.pub-cache/git/privacyGUI-UI-kit-628f62fd51c9dd39b127843d41fcb4c9c07c937f/lib/src/x.dart',
+          runDirectory: '/Users/John Smith/dev/PrivacyGUI',
+        ),
+        'privacyGUI-UI-kit/lib/src/x.dart',
+      );
+    });
+
+    test('leaves a path carrying a literal percent sign alone', () {
+      // A bare '%' is not valid percent-encoding. Decoding throws on it, and
+      // this runs inside an error handler where a throw would surface as a test
+      // failure — so an undecodable path must fall through, not blow up.
+      expect(
+        normalizeSourcePath('/Users/dev/100%/x.dart',
+            runDirectory: '/Users/dev/PrivacyGUI'),
+        '/Users/dev/100%/x.dart',
+      );
+    });
+
+    test('decodes a non-ASCII run directory', () {
+      expect(
+        normalizeSourcePath(
+          '/Users/dev/%E4%B8%AD%E6%96%87/PrivacyGUI/lib/x.dart',
+          runDirectory: '/Users/dev/中文/PrivacyGUI',
+        ),
+        'lib/x.dart',
+      );
+    });
+
     test('returns an unrecognized path unchanged', () {
       expect(
         normalizeSourcePath('/opt/elsewhere/x.dart',
@@ -144,9 +203,7 @@ void main() {
 
       expect(parsed['widget'], 'Row');
       expect(
-          parsed['file'],
-          'test/golden_test/golden_framework/'
-          'overflow_diagnostics_test.dart');
+          parsed['file'], 'test/test_scripts/overflow_diagnostics_test.dart');
       expect(parsed['line'], isNotEmpty);
     });
 
@@ -319,10 +376,8 @@ Exception caught by rendering library
       final record = await recordFor(tester);
 
       expect(record['log'], isNot(contains(Directory.current.path)));
-      expect(
-          record['log'],
-          contains('test/golden_test/golden_framework/'
-              'overflow_diagnostics_test.dart'));
+      expect(record['log'],
+          contains('test/test_scripts/overflow_diagnostics_test.dart'));
     });
 
     testWidgets('records the amount and location alongside the dump', (

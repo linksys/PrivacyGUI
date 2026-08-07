@@ -51,7 +51,7 @@ void main() {
         if (log != null) 'log': log,
       };
 
-  group('loadOverflowDetails', () {
+  group('loadOverflowReport – byGolden', () {
     test('groups details under the golden they belong to', () {
       final details = load([
         record(golden: 'admin-data-phone480-de'),
@@ -140,7 +140,8 @@ void main() {
 
     test('returns no details when the report file is absent', () {
       expect(
-        loadOverflowDetails(path: '${tempDir.path}/does_not_exist.json'),
+        loadOverflowReport(path: '${tempDir.path}/does_not_exist.json')
+            .byGolden,
         isEmpty,
       );
     });
@@ -150,7 +151,7 @@ void main() {
       final file = File('${tempDir.path}/overflow_warnings.json');
       file.writeAsStringSync('[{"golden": "x",');
 
-      expect(loadOverflowDetails(path: file.path), isEmpty);
+      expect(loadOverflowReport(path: file.path).byGolden, isEmpty);
     });
 
     test('skips records carrying no golden name', () {
@@ -395,6 +396,55 @@ void main() {
       });
 
       expect(report.byGolden['g1']!.single.logIndex, isNull);
+    });
+
+    test('resolves a logIndex that decoded as a double', () {
+      // A hand-edited or re-serialized file can carry 1.0 where the runner wrote
+      // 1; an `is int` test would silently drop the dump.
+      final report = loadPacked({
+        'logs': ['dump A', 'dump B'],
+        'records': [
+          {'golden': 'g1', 'message': 'overflowed', 'logIndex': 1.0}
+        ],
+      });
+
+      final site = report.byGolden['g1']!.single;
+      expect(report.logs[site.logIndex!], 'dump B');
+    });
+
+    test('survives a field whose type is not what the runner writes', () {
+      // The loader promises the report generators an empty report over a throw.
+      // The casts have to sit inside that guarantee, not outside it.
+      final report = loadPacked({
+        'logs': ['dump A'],
+        'records': [
+          {'golden': 'g1', 'message': 'overflowed', 'line': 42}
+        ],
+      });
+
+      expect(report.byGolden, isEmpty);
+      expect(report.logs, isEmpty);
+    });
+
+    test('keeps two records apart when neither resolved anything', () {
+      // Joining the key fields renders a null as "null", so a record whose file
+      // is literally the string "null" must not collapse into an unresolved one.
+      final report = loadPacked({
+        'records': [
+          {'golden': 'g1', 'message': 'overflowed'},
+          {
+            'golden': 'g1',
+            'message': 'overflowed',
+            'file': 'null',
+            'line': 'null',
+            'widget': 'null',
+            'pixels': 'null',
+            'side': 'null',
+          },
+        ],
+      });
+
+      expect(report.byGolden['g1'], hasLength(2));
     });
 
     test('still reads the flat list an older run wrote', () {

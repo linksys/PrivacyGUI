@@ -326,37 +326,6 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
     .lightbox .lb-nav:hover { opacity: 1; }
     .lightbox .lb-prev { left: 1.5rem; }
     .lightbox .lb-next { right: 1.5rem; }
-    /* Overlay slider */
-    .overlay-container {
-      position: relative; display: inline-block; margin: 0 auto;
-      max-width: 100%; overflow: hidden; border-radius: 0.25rem;
-      border: 1px solid var(--color-border);
-    }
-    .overlay-container img {
-      display: block; max-width: 100%; height: auto;
-    }
-    .overlay-actual {
-      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-      overflow: hidden;
-    }
-    .overlay-actual img {
-      position: absolute; top: 0; left: 0; width: var(--full-width); height: auto;
-    }
-    .overlay-slider {
-      position: absolute; top: 0; bottom: 0; width: 3px;
-      background: var(--color-accent); cursor: ew-resize; z-index: 2;
-    }
-    .overlay-slider::after {
-      content: ''; position: absolute; top: 50%; left: 50%;
-      transform: translate(-50%, -50%);
-      width: 20px; height: 20px; border-radius: 50%;
-      background: var(--color-accent); border: 2px solid #fff;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-    }
-    .overlay-labels {
-      display: flex; justify-content: space-between; padding: 0.25rem 0.5rem;
-      font-size: 0.65rem; color: var(--color-text-muted); text-transform: uppercase;
-    }
     /* Locale grouping in failures */
     .locale-group-header {
       padding: 0.5rem 1rem; font-size: 0.8rem; font-weight: 600;
@@ -652,7 +621,6 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
       });
 
       document.getElementById('resultsContainer').innerHTML = html;
-      initOverlaySliders();
     }
 
     function renderTestRow(t) {
@@ -701,17 +669,6 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
           html += renderImage('Actual', t.failureImages.actual);
           html += renderImage('Diff', t.failureImages.diff);
           html += '</div>';
-          // Overlay slider (expected vs actual)
-          if (t.failureImages.expected && t.failureImages.actual) {
-            html += '<div style="margin-top:0.75rem;">';
-            html += '<div class="overlay-labels"><span>Expected</span><span>Actual</span></div>';
-            html += '<div class="overlay-container" data-overlay>';
-            html += '<img src="' + t.failureImages.expected + '" class="overlay-base" alt="Expected">';
-            html += '<div class="overlay-actual" style="width:50%"><img src="' + t.failureImages.actual + '" alt="Actual"></div>';
-            html += '<div class="overlay-slider" style="left:50%"></div>';
-            html += '</div>';
-            html += '</div>';
-          }
         }
         if (t.messages && t.messages.length > 0) {
           html += '<div class="error-message">' + escapeHtml(t.messages.join('\\n')) + '</div>';
@@ -872,40 +829,6 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
     document.getElementById('lightbox').addEventListener('click', (e) => {
       if (e.target === document.getElementById('lightbox')) closeLightbox();
     });
-
-    // Overlay slider interaction
-    function initOverlaySliders() {
-      document.querySelectorAll('[data-overlay]').forEach(container => {
-        const slider = container.querySelector('.overlay-slider');
-        const actualLayer = container.querySelector('.overlay-actual');
-        if (!slider || !actualLayer) return;
-
-        let dragging = false;
-        const onMove = (e) => {
-          if (!dragging) return;
-          const rect = container.getBoundingClientRect();
-          let x = (e.clientX || e.touches[0].clientX) - rect.left;
-          x = Math.max(0, Math.min(x, rect.width));
-          const pct = (x / rect.width) * 100;
-          slider.style.left = pct + '%';
-          actualLayer.style.width = pct + '%';
-        };
-        slider.addEventListener('mousedown', () => { dragging = true; });
-        slider.addEventListener('touchstart', () => { dragging = true; });
-        document.addEventListener('mouseup', () => { dragging = false; });
-        document.addEventListener('touchend', () => { dragging = false; });
-        document.addEventListener('mousemove', onMove);
-        document.addEventListener('touchmove', onMove);
-
-        // Set actual image width to container full width
-        const baseImg = container.querySelector('.overlay-base');
-        baseImg.addEventListener('load', () => {
-          const actualImg = actualLayer.querySelector('img');
-          actualImg.style.width = baseImg.offsetWidth + 'px';
-          container.style.setProperty('--full-width', baseImg.offsetWidth + 'px');
-        });
-      });
-    }
 
     function toggleAll(name, checked) {
       document.querySelectorAll('input[name="' + name + '"]').forEach(cb => {

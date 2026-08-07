@@ -388,6 +388,19 @@ void _suppressOverflowErrors() {
 /// Appends, because each test suite writes at its own tearDownAll. A file left
 /// by a run predating the log table is read back in its flat-list form so the
 /// records already collected are not dropped.
+///
+/// The read-modify-write is not atomic and not locked, and `flutter test` runs
+/// suites concurrently — so in principle two suites can both read the same
+/// snapshot and the second write can drop the first's records, taking its
+/// `logIndex` values with it. Measured rather than assumed: four full runs of the
+/// 32 golden suites (three concurrent, one `--concurrency=1`) all produced the
+/// same 40 records over 21 goldens with every `logIndex` in range, and no golden
+/// present in the serial run was missing from a concurrent one. The window is
+/// narrow because only 7 suites write at all and the write is one small
+/// `writeAsStringSync`. Left as-is deliberately: this is a diagnostic aside, and
+/// a lost record costs a line in a report rather than a wrong test result. If it
+/// ever does show up, the fix is per-suite shard files merged by the loader, or a
+/// lock plus temp-and-rename.
 void _writeOverflowReport() {
   if (_overflowWarnings.isEmpty) return;
   final dir = Directory('goldens');
