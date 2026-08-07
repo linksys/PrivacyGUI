@@ -497,8 +497,10 @@ void main() {
           expect(storage.values, isEmpty,
               reason: 'the clear was requested second, so it must be applied '
                   'second — the revoked record must not survive');
-          expect(storage.log, ['W:$recordKey', 'D:$recordKey'],
-              reason: 'storage order must match request order');
+          expect(storage.log.where((e) => !e.startsWith('R:')).toList(),
+              ['W:$recordKey', 'D:$recordKey'],
+              reason: 'storage order must match request order (reads excluded: '
+                  'clear() checks whether its delete landed before escalating)');
         });
       });
 
@@ -553,12 +555,76 @@ void main() {
         });
       });
 
-      test('a hung operation reports to its caller but keeps its place', () {
-        // The accepted trade-off. A platform call that never answers DOES hold
-        // the queue, because the alternative — letting the next operation start
-        // while this one is still in flight — is what allows a late write to
-        // resurrect revoked credentials or a late delete to erase new ones.
-        // What the timeout buys is that the caller is not left hanging.
+      test('a merely slow queue is left to apply the clear in order', () {
+        // Escalating is a concession, so it must not happen just because the
+        // caller's bound elapsed. A queue that is still moving applies the
+        // delete in its proper place, and the out-of-band path checks for that
+        // before acting.
+        fakeAsync((async) {
+          storage = FakeSecureStorage();
+          store = AwsCredentialsStore(storage);
+          // Slower than the caller bound, faster than the grace period.
+          storage.writeDelay = const Duration(seconds: 15);
+
+          store
+              .store(
+                accessKeyId: 'AKIAEXAMPLE',
+                secretAccessKey: 'secret',
+                modelId: 'model-a',
+              )
+              .catchError((Object e) {});
+          store.clear().catchError((Object e) {});
+
+          async.elapse(const Duration(minutes: 2));
+
+          expect(storage.values, isEmpty);
+          expect(storage.log.where((e) => e.startsWith('D:')).length, 1,
+              reason: 'one delete, applied in order — no out-of-band retry');
+        });
+      });
+
+      test('a revocation escapes a queue a hung write has stalled', () {
+        // A platform call that never returns holds the queue for the rest of
+        // the session, since nothing ever reports back. For writes that only
+        // means a stale record. For a revocation it would mean the credentials
+        // silently return on the next launch, so `clear()` falls back to
+        // deleting outside the queue.
+        fakeAsync((async) {
+          storage = FakeSecureStorage();
+          store = AwsCredentialsStore(storage);
+          storage.hangWritesFor.add(recordKey);
+          storage.values[recordKey] = 'stale';
+
+          store
+              .store(
+                accessKeyId: 'AKIAEXAMPLE',
+                secretAccessKey: 'secret',
+                modelId: 'model-a',
+              )
+              .catchError((Object e) {});
+
+          var cleared = false;
+          store
+              .clear()
+              .then<void>((_) => cleared = true)
+              .onError<Object>((Object e, _) {});
+
+          async.elapse(const Duration(minutes: 2));
+
+          expect(cleared, isTrue,
+              reason: 'the user asked for these credentials to be gone');
+          expect(storage.values, isEmpty,
+              reason: 'and they must actually be gone, not merely queued');
+        });
+      });
+
+      test('a hung write blocks the writes behind it, but not a revocation',
+          () {
+        // The trade-off, stated exactly. A platform call that never answers does
+        // hold the queue — letting the next write start alongside it is what
+        // allows a late write to resurrect revoked credentials. A stale record
+        // is an acceptable outcome for that; a revocation that never applies is
+        // not, so `clear()` is the one operation allowed out.
         fakeAsync((async) {
           storage = FakeSecureStorage();
           store = AwsCredentialsStore(storage);
@@ -566,7 +632,6 @@ void main() {
           storage.values[recordKey] = 'stale';
 
           Object? storeError;
-          var cleared = false;
           store
               .store(
                 accessKeyId: 'AKIAEXAMPLE',
@@ -574,22 +639,23 @@ void main() {
                 modelId: 'model-a',
               )
               .catchError((Object e) => storeError = e);
+
+          var modelUpdated = false;
           store
-              .clear()
-              .then<void>((_) => cleared = true)
+              .storeModelId('model-b')
+              .then<void>((_) => modelUpdated = true)
               .onError<Object>((Object e, _) {});
 
-          async.elapse(const Duration(minutes: 5));
+          async.elapse(const Duration(minutes: 2));
 
           expect(storeError, isA<TimeoutError>(),
               reason: 'the caller must not wait on a keychain that never '
                   'answers');
-          expect(cleared, isFalse,
-              reason: 'the clear stays queued behind the hung write rather '
-                  'than running concurrently with it — a delete applied out of '
-                  'order is worse than one that is late');
+          expect(modelUpdated, isFalse,
+              reason: 'a write stays queued rather than running concurrently '
+                  'with the hung one');
           expect(storage.log, ['W…$recordKey'],
-              reason: 'nothing after the hung write reached storage');
+              reason: 'no later write reached storage');
         });
       });
     });

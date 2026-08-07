@@ -99,10 +99,11 @@ class AwsCredentialsStore {
   /// the platform gives no way to cancel and `write` is not conditional, the
   /// only sound answer is to never let two operations overlap.
   ///
-  /// The cost is that one hung platform call blocks later operations — including
-  /// a `clear()` — for as long as it hangs. That is a genuine downside, accepted
-  /// because the alternative silently loses or resurrects credentials, and
-  /// because the caller is still told promptly via [_kCallerTimeout].
+  /// The cost is that one hung platform call blocks the operations behind it for
+  /// as long as it hangs, and since the platform never reports back, that can be
+  /// the rest of the session. Accepted for writes, whose worst case is a stale
+  /// record. NOT accepted for [clear] — see [_forceClear], because a revocation
+  /// that can never be applied is the one failure this class must not have.
   Future<T> _serialize<T>(Future<T> Function() operation) {
     final settled = _pending.then((_) => operation());
     // Chained to the real completion, so nothing starts early. This also
@@ -161,23 +162,31 @@ class AwsCredentialsStore {
     });
   }
 
-  /// The stored credentials, or null when nothing usable is saved.
-  ///
-  /// Returns null rather than a half-built record for anything unusable —
-  /// absent, blank, or unparseable — so the caller's "not configured" path
-  /// handles it instead of a signing error later. A bad record is therefore not
-  /// an error; only storage itself failing is ([StorageError], [TimeoutError]).
-  /// As [read], but giving up after [within] instead of [_kCallerTimeout].
+  /// As [read], but giving up after `min(within, _kCallerTimeout)`.
   ///
   /// For a caller that is holding UI hostage while it waits — the config screen
   /// disables itself during a restore — and would rather show an empty form
   /// sooner than the default allows. Wrapping `read()` in `.timeout()` at the
   /// call site instead would throw a bare `TimeoutException`, breaking this
   /// class's guarantee that callers only ever see a [ServiceError].
-  Future<StoredAwsCredentials?> readWithin(Duration within) => read()
-      .timeout(within)
-      .onError<Object>((e, _) => throw _asServiceError(e));
+  ///
+  /// The bound is a minimum, not a replacement: `read()` is already bounded by
+  /// [_kCallerTimeout], so a [within] longer than that has no effect. Asserted
+  /// rather than left as a trap for a future caller.
+  Future<StoredAwsCredentials?> readWithin(Duration within) {
+    assert(within <= _kCallerTimeout,
+        'readWithin cannot extend the bound past _kCallerTimeout');
+    return read()
+        .timeout(within)
+        .onError<Object>((e, _) => throw _asServiceError(e));
+  }
 
+  /// The stored credentials, or null when nothing usable is saved.
+  ///
+  /// Returns null rather than a half-built record for anything unusable —
+  /// absent, blank, or unparseable — so the caller's "not configured" path
+  /// handles it instead of a signing error later. A bad record is therefore not
+  /// an error; only storage itself failing is ([StorageError], [TimeoutError]).
   Future<StoredAwsCredentials?> read() {
     return _serialize(() async {
       final record = await _readRecord();
@@ -217,14 +226,70 @@ class AwsCredentialsStore {
   /// Remove the stored credentials.
   ///
   /// This is the revocation path — the user pressing "change configuration"
-  /// means they want these credentials gone. A [TimeoutError] here means the
-  /// platform has not answered yet, not that the delete was dropped: it stays
-  /// queued, and nothing requested after it can be applied before it.
+  /// means they want these credentials gone.
+  ///
+  /// Ordinarily queued like everything else, so it cannot be undone by a write
+  /// requested before it. But a queue held by a platform call that never returns
+  /// would mean a revocation is never applied and the record silently restores
+  /// on the next launch, so this one operation escapes that: see [_forceClear].
   Future<void> clear() {
-    return _serialize(() async {
+    final queued = _serialize(() async {
       await _storage.delete(key: _kRecordKey);
       aiLog('[Credentials] Cleared');
     });
+    return queued
+        .onError<TimeoutError>((_, __) => _clearOutOfBand().then((_) {}));
+  }
+
+  /// Delete outside the queue, unless the queued delete already landed.
+  ///
+  /// The check first, because a slow-but-moving queue often applies its delete
+  /// while the caller's bound is elapsing — and skipping the queue is a
+  /// concession that should not be made when it is not needed.
+  Future<void> _clearOutOfBand() async {
+    if (await _isRecordAbsent()) {
+      aiLog('[Credentials] Queued clear landed after its caller gave up');
+      return;
+    }
+    return _forceClear();
+  }
+
+  Future<bool> _isRecordAbsent() async {
+    try {
+      final raw =
+          await _storage.read(key: _kRecordKey).timeout(_kCallerTimeout);
+      return raw == null || raw.isEmpty;
+    } catch (_) {
+      // Cannot tell; assume it is still there so the delete is attempted.
+      return false;
+    }
+  }
+
+  /// Delete the record without waiting for the queue.
+  ///
+  /// Reached only when a queued [clear] timed out, which means some earlier
+  /// platform call has not returned. Skipping the queue reintroduces the overlap
+  /// [_serialize] exists to prevent — deliberately, and only here:
+  ///
+  /// * the racing operation can only be a write, and the user has since asked
+  ///   for the record to be gone, so if the delete loses the race the outcome is
+  ///   the same stale record we already had, not a worse one
+  /// * whereas not trying at all means the revocation is never applied and the
+  ///   credentials come back on the next launch
+  ///
+  /// The queued attempt is left running: if it eventually completes, it deletes
+  /// an already-deleted key, which is a no-op.
+  Future<void> _forceClear() async {
+    aiLog('[Credentials] Queue stalled; deleting outside it');
+    try {
+      await _storage.delete(key: _kRecordKey).timeout(_kCallerTimeout);
+      aiLog('[Credentials] Cleared out of band');
+    } catch (e) {
+      // The caller shows this one, unlike other storage failures: the user
+      // believes these credentials are gone and they are not.
+      aiLog('[Credentials] Out-of-band clear failed: ${e.runtimeType}');
+      throw _asServiceError(e);
+    }
   }
 
   /// The stored record as a map, or null when there is nothing usable.
