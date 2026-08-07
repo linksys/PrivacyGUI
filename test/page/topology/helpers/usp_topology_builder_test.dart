@@ -551,5 +551,113 @@ void main() {
         expect(link.linkQuality, LinkQuality.unknown);
       });
     });
+
+    // =========================================================================
+    // E2E Semantics identifiers (Article XVI §16.3) — data-derived, stable,
+    // decoupled from the human display label.
+    // =========================================================================
+
+    group('E2E node identifiers', () {
+      test('master node carries the fixed, key-less identifier', () {
+        final topology = UspTopologyBuilder.buildFromMeshNetwork(
+          meshNetwork: DevicesTestData.createSingleNodeNetwork(),
+          info: sysInfo,
+        );
+
+        final gateway =
+            topology.nodes.firstWhere((n) => n.type == MeshNodeType.gateway);
+        expect(gateway.identifier, 'topology-node-master');
+      });
+
+      test('slave / client identifiers embed the MAC suffix key', () {
+        final topology = UspTopologyBuilder.buildFromMeshNetwork(
+          meshNetwork: DevicesTestData.createMultiSlaveMeshNetwork(),
+          info: sysInfo,
+        );
+
+        // slaveMac1 = AA:BB:CC:DD:EE:01, slaveMac2 = ...EE:02 → unique at 4.
+        final slaves =
+            topology.nodes.where((n) => n.type == MeshNodeType.extender);
+        expect(
+          slaves.map((n) => n.identifier),
+          containsAll(
+              <String>['topology-node-slave-EE01', 'topology-node-slave-EE02']),
+        );
+
+        // client MACs 11:22:33:44:55:0X → unique at 4.
+        final clients =
+            topology.nodes.where((n) => n.type == MeshNodeType.client);
+        for (final client in clients) {
+          expect(client.identifier, startsWith('topology-node-client-'));
+        }
+      });
+
+      test('every node identifier is present and unique across the graph', () {
+        final topology = UspTopologyBuilder.buildFromMeshNetwork(
+          meshNetwork: DevicesTestData.createMultiSlaveMeshNetwork(),
+          info: sysInfo,
+        );
+
+        final ids = topology.nodes.map((n) => n.identifier).toList();
+        expect(ids.every((id) => id != null && id.isNotEmpty), isTrue);
+        expect(ids.toSet().length, ids.length,
+            reason: 'identifiers must be unique per node');
+      });
+
+      test('identifier is decoupled from the display label', () {
+        // Two nodes with identical display names must still get distinct
+        // identifiers (identity comes from the MAC, not the label).
+        final network = DevicesTestData.createMeshNetwork(
+          master: DevicesTestData.createMaster(hostName: 'Living Room'),
+          slave: DevicesTestData.createWifiSlave(
+            deviceId: DevicesTestData.slaveMac1,
+            hostName: 'Living Room',
+          ),
+        );
+
+        final topology = UspTopologyBuilder.buildFromMeshNetwork(
+          meshNetwork: network,
+          info: sysInfo,
+        );
+
+        final gateway =
+            topology.nodes.firstWhere((n) => n.type == MeshNodeType.gateway);
+        final slave =
+            topology.nodes.firstWhere((n) => n.type == MeshNodeType.extender);
+        expect(gateway.name, slave.name); // labels collide
+        expect(gateway.identifier, isNot(slave.identifier)); // ids do not
+      });
+
+      test('identifier is stable regardless of client signal quality', () {
+        // Same node, different quality% → identifier must not change.
+        final strong = UspTopologyBuilder.buildFromMeshNetwork(
+          meshNetwork: DevicesTestData.createSingleNodeNetwork(
+            masterClients: [
+              DevicesTestData.createWifiClient(
+                mac: DevicesTestData.clientMac1,
+                wifi: DevicesTestData.createExcellentSignal(),
+              ),
+            ],
+          ),
+          info: sysInfo,
+        );
+        final weak = UspTopologyBuilder.buildFromMeshNetwork(
+          meshNetwork: DevicesTestData.createSingleNodeNetwork(
+            masterClients: [
+              DevicesTestData.createWifiClient(
+                mac: DevicesTestData.clientMac1,
+                wifi: DevicesTestData.createPoorSignal(),
+              ),
+            ],
+          ),
+          info: sysInfo,
+        );
+
+        String clientId(MeshTopology t) => t.nodes
+            .firstWhere((n) => n.type == MeshNodeType.client)
+            .identifier!;
+        expect(clientId(strong), clientId(weak));
+      });
+    });
   });
 }

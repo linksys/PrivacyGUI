@@ -7,6 +7,7 @@ import 'package:privacy_gui/page/_shared/models/client_device.dart'
     hide ConnectionType;
 import 'package:privacy_gui/page/_shared/models/mesh_network.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
+import 'package:privacy_gui/page/topology/helpers/node_identifier.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Builds a [MeshTopology] from USP dashboard state for [AppTopology] widget.
@@ -35,6 +36,7 @@ class UspTopologyBuilder {
     );
     nodes.add(MeshNode(
       id: gatewayId,
+      identifier: kTopologyMasterIdentifier,
       name:
           master.displayName.isNotEmpty ? master.displayName : info.gatewayName,
       type: MeshNodeType.gateway,
@@ -95,6 +97,12 @@ class UspTopologyBuilder {
           'backhaulParentDeviceId: ${slave.backhaul.parentNodeId}');
     }
 
+    // Stable, data-derived E2E identifier keys (Article XVI §16.3): shortest
+    // MAC suffix that stays unique within each node group, independent of the
+    // display label / node order.
+    final slaveIdKeys =
+        shortestUniqueMacSuffixes(meshNetwork.slaves.map((s) => s.deviceId));
+
     // Slave nodes
     for (final slave in meshNetwork.slaves) {
       final extenderId = 'extender-${slave.deviceId}';
@@ -111,6 +119,7 @@ class UspTopologyBuilder {
       final extenderIconName = routerIconTestByModel(modelNumber: slave.model);
       nodes.add(MeshNode(
         id: extenderId,
+        identifier: topologySlaveIdentifier(slaveIdKeys[slave.deviceId] ?? ''),
         name: slave.displayName,
         type: MeshNodeType.extender,
         status: MeshNodeStatus.online,
@@ -148,6 +157,8 @@ class UspTopologyBuilder {
     }
 
     // Client devices — use allClients which includes master + slave clients
+    final clientIdKeys =
+        shortestUniqueMacSuffixes(meshNetwork.allClients.map((c) => c.mac));
     for (final client in meshNetwork.allClients) {
       final clientId = 'client-${client.mac}';
       final isEthernet = !client.isWifi;
@@ -178,6 +189,7 @@ class UspTopologyBuilder {
 
       nodes.add(MeshNode(
         id: clientId,
+        identifier: topologyClientIdentifier(clientIdKeys[client.mac] ?? ''),
         name: client.displayName,
         type: MeshNodeType.client,
         status:
