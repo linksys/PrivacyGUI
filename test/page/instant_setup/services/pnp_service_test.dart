@@ -202,14 +202,14 @@ void main() {
       // - Ipv6Settings._resolveInstance() + fetch() = 2 calls
       // - PppInterface.fetch() = 1 call
       // - VlanTermination.fetch() = 1 call
-      // - GreTunnel.fetch() = 1 call
-      // - L2tpTunnel.fetch() = 1 call
       // - _fetchHostName() (Device.DeviceInfo.HostName) = 1 call
+      // No GRE/L2TP fetch: tunnels are fetched only for the pptp/l2tp
+      // connection types, not for Static IP.
       // saveAll:
       // - WanStaticIp.updateOrdered() → _resolveInstance() = 1 call
       // - Ipv6Settings.update() → _resolveInstance() = 1 call
-      // Total = 11 get calls
-      verify(() => mockUsp.get(any())).called(11);
+      // Total = 9 get calls
+      verify(() => mockUsp.get(any())).called(9);
 
       // Verify setOrdered was called for Static IP mode switch
       final capturedOrdered = verify(() => mockUsp.setOrdered(captureAny(),
@@ -246,13 +246,14 @@ void main() {
       await service.saveIspSettings(config);
 
       // Verify fetchSettings + saveAll get calls:
-      // fetchSettings: 9 calls (WanSettings x2, Ipv6 x2, PPP, VLAN, GRE, L2TP,
-      //   _fetchHostName = Device.DeviceInfo.HostName)
+      // fetchSettings: 7 calls (WanSettings x2, Ipv6 x2, PPP, VLAN,
+      //   _fetchHostName = Device.DeviceInfo.HostName). No GRE/L2TP fetch:
+      //   tunnels are fetched only for the pptp/l2tp connection types.
       // saveAll:
       // - WanPppoe.update() → _resolveInstance() = 1 call
       // - Ipv6Settings.update() → _resolveInstance() = 1 call
-      // Total = 11 get calls
-      verify(() => mockUsp.get(any())).called(11);
+      // Total = 9 get calls
+      verify(() => mockUsp.get(any())).called(9);
 
       // Verify PppInterface.add was called (new PPP instance created)
       final addCaptures = verify(() => mockUsp.add(captureAny())).captured;

@@ -46,28 +46,45 @@ class UspInternetSettingsService {
   // Fetch
   // ---------------------------------------------------------------------------
 
-  /// Fetch WAN, IPv6, PPP, VLAN, and tunnel settings in parallel.
+  /// Fetch WAN, IPv6, PPP, and VLAN settings in parallel, then the tunnel that
+  /// the resolved connection type actually uses.
   Future<InternetSettingsFetchResult> fetchSettings() async {
     try {
+      // Phase 1 — always needed, fetched in parallel.
       final results = await Future.wait([
         WanSettings.fetch(_usp),
         Ipv6Settings.fetch(_usp),
         PppInterface.fetch(_usp),
         VlanTermination.fetch(_usp),
-        GreTunnel.fetch(_usp),
-        L2tpTunnel.fetch(_usp),
         _fetchHostName(),
       ]);
       final wan = results[0] as WanSettings;
       final ipv6 = results[1] as Ipv6Settings;
       final ppp = results[2] as PppInterface;
       final vlan = results[3] as VlanTermination;
-      final gre = results[4] as GreTunnel;
-      final l2tp = results[5] as L2tpTunnel;
-      final hostName = results[6] as String;
+      final hostName = results[4] as String;
 
       final pppInstance = ppp.items.isNotEmpty ? ppp.items.first : null;
       final vlanInstance = vlan.items.isNotEmpty ? vlan.items.first : null;
+
+      // Phase 2 — tunnel is connection-type-specific. A DHCP/PPPoE/Static WAN
+      // has zero GRE/L2TP tunnel instances, so fetching them would trip the
+      // generated required-leaf check (code 9998) on an absent Tunnel.1. Only
+      // fetch the tunnel the current connection type actually uses.
+      final connectionType = UspWanConnectionType.fromRawFields(
+        addressingType: wan.addressingType,
+        lowerLayers: pppInstance?.lowerLayers ?? '',
+      );
+      GreTunnel? gre;
+      L2tpTunnel? l2tp;
+      switch (connectionType) {
+        case UspWanConnectionType.pptp:
+          gre = await GreTunnel.fetch(_usp);
+        case UspWanConnectionType.l2tp:
+          l2tp = await L2tpTunnel.fetch(_usp);
+        default:
+          break;
+      }
 
       return InternetSettingsFetchResult(
         form: _buildForm(wan, ipv6, pppInstance, vlanInstance, gre, l2tp),
@@ -101,8 +118,8 @@ class UspInternetSettingsService {
     Ipv6Settings ipv6,
     PppInterfaceInstance? ppp,
     VlanTerminationInstance? vlan,
-    GreTunnel gre,
-    L2tpTunnel l2tp,
+    GreTunnel? gre,
+    L2tpTunnel? l2tp,
   ) {
     // Split comma-separated DNS into 3 fields
     final dnsParts = wan.dnsServers
@@ -119,8 +136,8 @@ class UspInternetSettingsService {
 
     // Resolve server address from the appropriate tunnel
     final serverAddress = switch (connectionType) {
-      UspWanConnectionType.pptp => gre.remoteEndpoints,
-      UspWanConnectionType.l2tp => l2tp.remoteEndpoints,
+      UspWanConnectionType.pptp => gre?.remoteEndpoints ?? '',
+      UspWanConnectionType.l2tp => l2tp?.remoteEndpoints ?? '',
       _ => '',
     };
 
