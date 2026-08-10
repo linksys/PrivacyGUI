@@ -131,15 +131,22 @@ class UspInternetSettingsService {
         .toList();
 
     // Resolve server address from the tunnel that fetchSettings' phase 2 loaded
-    // for this connection type. The tunnel is non-null by contract: pptp always
-    // fetches GRE.Tunnel.1, l2tp always fetches L2TPv2.Tunnel.1 (both concrete
-    // paths the firmware guarantees exist once LowerLayers references them). If
-    // that contract were ever violated, GreTunnel/L2tpTunnel.fetch would already
-    // have thrown 9998 upstream, so `!` here documents the invariant rather than
-    // guarding a reachable null.
+    // for this connection type. gre/l2tp are nullable because DHCP/Static/PPPoE
+    // WANs pass null — but on the pptp/l2tp branches the tunnel is non-null by
+    // contract: phase 2 fetched the matching tunnel, and GreTunnel/L2tpTunnel
+    // .fetch throws 9998 upstream if the concrete row is absent. The throw
+    // documents that invariant with a diagnosable message instead of a bare `!`
+    // NPE (which would surface only as "Null check operator used on a null
+    // value" with no context).
     final serverAddress = switch (connectionType) {
-      UspWanConnectionType.pptp => gre!.remoteEndpoints,
-      UspWanConnectionType.l2tp => l2tp!.remoteEndpoints,
+      UspWanConnectionType.pptp => (gre ??
+              (throw StateError('PPTP WAN but GRE tunnel absent — '
+                  'fetchSettings phase-2 contract violated')))
+          .remoteEndpoints,
+      UspWanConnectionType.l2tp => (l2tp ??
+              (throw StateError('L2TP WAN but L2TPv2 tunnel absent — '
+                  'fetchSettings phase-2 contract violated')))
+          .remoteEndpoints,
       _ => '',
     };
 
