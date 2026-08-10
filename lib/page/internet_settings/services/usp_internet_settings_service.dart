@@ -134,19 +134,23 @@ class UspInternetSettingsService {
     // for this connection type. gre/l2tp are nullable because DHCP/Static/PPPoE
     // WANs pass null — but on the pptp/l2tp branches the tunnel is non-null by
     // contract: phase 2 fetched the matching tunnel, and GreTunnel/L2tpTunnel
-    // .fetch throws 9998 upstream if the concrete row is absent. The throw
-    // documents that invariant with a diagnosable message instead of a bare `!`
-    // NPE (which would surface only as "Null check operator used on a null
-    // value" with no context).
+    // .fetch throws 9998 upstream (caught in fetchSettings → ServiceErrorView)
+    // if the concrete Tunnel.1 row is absent, so _buildForm is never reached
+    // with a null tunnel on the matching branch. The asserts document that
+    // invariant in dev; the `?? ''` keeps the (release-only, contract-violating)
+    // fallback graceful — an empty serverAddress fails form validation, which
+    // prompts the user to re-enter rather than surfacing a bare NPE.
+    assert(
+      connectionType != UspWanConnectionType.pptp || gre != null,
+      'PPTP WAN but GRE tunnel absent — fetchSettings phase-2 contract violated',
+    );
+    assert(
+      connectionType != UspWanConnectionType.l2tp || l2tp != null,
+      'L2TP WAN but L2TPv2 tunnel absent — fetchSettings phase-2 contract violated',
+    );
     final serverAddress = switch (connectionType) {
-      UspWanConnectionType.pptp => (gre ??
-              (throw StateError('PPTP WAN but GRE tunnel absent — '
-                  'fetchSettings phase-2 contract violated')))
-          .remoteEndpoints,
-      UspWanConnectionType.l2tp => (l2tp ??
-              (throw StateError('L2TP WAN but L2TPv2 tunnel absent — '
-                  'fetchSettings phase-2 contract violated')))
-          .remoteEndpoints,
+      UspWanConnectionType.pptp => gre?.remoteEndpoints ?? '',
+      UspWanConnectionType.l2tp => l2tp?.remoteEndpoints ?? '',
       _ => '',
     };
 

@@ -987,6 +987,37 @@ void main() {
         reason: 'DHCP WAN must not fetch the L2TPv2 tunnel',
       );
     });
+
+    test(
+        'PPTP WAN with absent GRE Tunnel.1 row surfaces a ServiceError (not a crash)',
+        () async {
+      // Companion to the DHCP guard: the item-1 residual-risk path. If the
+      // firmware classifies the WAN as PPTP but has not provisioned
+      // Device.GRE.Tunnel.1 (LowerLayers references it but the row is absent),
+      // Phase-2's GreTunnel.fetch hits the codegen required-leaf check (9998).
+      // That must surface as a mapped ServiceError (→ ServiceErrorView), NOT an
+      // uncaught StateError / NPE — this is the reachable-error contract #1184
+      // is about. An empty greResponse omits the required RemoteEndpoints leaf.
+      final wanIpcp = Map<String, dynamic>.from(_wanResponse);
+      wanIpcp['Device.IP.Interface.2.IPv4Address.1.AddressingType'] = 'IPCP';
+
+      final handler = createFetchMockHandler(
+        wanResponse: wanIpcp,
+        pppResponse: _pppPptpResponse,
+        greResponse: const {}, // Tunnel.1 row absent → 9998 upstream
+      );
+      when(() => mockUsp.get(any())).thenAnswer((invocation) async {
+        final paths = invocation.positionalArguments[0] as List<String>;
+        return handler(paths);
+      });
+
+      await expectLater(
+        service.fetchSettings(),
+        throwsA(isA<ServiceError>()),
+        reason: 'absent Tunnel.1 must map to a ServiceError, not escape as a '
+            'StateError or NPE',
+      );
+    });
   });
 
   group('renewDhcpLease', () {
