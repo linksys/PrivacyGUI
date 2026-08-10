@@ -67,26 +67,32 @@ class UspAdvancedSettingsView extends StatelessWidget {
   List<AppSectionItemData> _buildItems(BuildContext context) {
     return [
       AppSectionItemData(
+        identifier: 'advanced-settings-internet',
         title: loc(context).internetSettings,
         onTap: () => context.pushNamed(RouteNamed.uspInternetSettings),
       ),
       AppSectionItemData(
+        identifier: 'advanced-settings-local-network',
         title: loc(context).localNetwork,
         onTap: () => context.pushNamed(RouteNamed.uspLocalNetwork),
       ),
       AppSectionItemData(
+        identifier: 'advanced-settings-firewall',
         title: loc(context).firewall,
         onTap: () => context.pushNamed(RouteNamed.uspFirewall),
       ),
       AppSectionItemData(
+        identifier: 'advanced-settings-dmz',
         title: loc(context).dmz,
         onTap: () => context.pushNamed(RouteNamed.uspDmz),
       ),
       AppSectionItemData(
+        identifier: 'advanced-settings-port-forwarding',
         title: loc(context).portForwarding,
         onTap: () => context.pushNamed(RouteNamed.uspPortForwardingDetail),
       ),
       AppSectionItemData(
+        identifier: 'advanced-settings-static-routing',
         title: loc(context).staticRouting,
         onTap: () => context.pushNamed(RouteNamed.uspStaticRouting),
       ),
@@ -95,6 +101,7 @@ class UspAdvancedSettingsView extends StatelessWidget {
 
   Widget _buildCard(AppSectionItemData item) {
     return LayoutBlock(
+      identifier: item.identifier,
       onTap: item.onTap,
       padding: const EdgeInsets.symmetric(
         vertical: AppSpacing.md,

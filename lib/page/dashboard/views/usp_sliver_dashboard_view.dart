@@ -290,6 +290,7 @@ class _UspSliverDashboardViewState
 
   Widget _buildOfflineBanner(BuildContext context) {
     return AppCard(
+      identifier: 'dashboard-offline-banner',
       child: InkWell(
         onTap: () {
           context.goNamed(RouteNamed.uspUnifiedDiagnostics);

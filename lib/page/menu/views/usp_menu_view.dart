@@ -144,6 +144,7 @@ class UspMenuView extends ConsumerWidget {
       ),
       if (kDebugMode)
         AppSectionItemData(
+          identifier: 'menu-usp-console',
           title: loc(context).uspConsole,
           description: 'Raw USP CRUD, SSE, subscription & turbo debug tool',
           iconData: Icons.terminal,

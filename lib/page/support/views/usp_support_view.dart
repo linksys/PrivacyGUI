@@ -141,6 +141,7 @@ class _QuickLinkFooter extends ConsumerWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     return LayoutBlock(
+      identifier: 'support-visit-linksys',
       onTap: () => gotoOfficialWebUrl(
         linkSupport,
         locale: ref.read(appSettingsProvider).locale,
@@ -190,6 +191,7 @@ class _RemoteAssistanceCard extends ConsumerWidget {
     final credentials = ref.watch(deviceCredentialsProvider);
 
     return LayoutBlock(
+      identifier: 'support-remote-assistance',
       onTap: credentials != null
           ? () =>
               showRemoteAssistanceDialog(context, ref, credentials: credentials)
