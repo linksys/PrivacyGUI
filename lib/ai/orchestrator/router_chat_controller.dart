@@ -6,6 +6,12 @@ import 'package:privacy_gui/ai/ai_logging.dart';
 import 'package:privacy_gui/ai/abstraction/_abstraction.dart';
 import 'package:privacy_gui/ai/prompts/router_system_prompt.dart';
 
+/// Most LLM round-trips one exchange may take before it is cut off.
+///
+/// A fuse against a model that keeps requesting data instead of answering, not
+/// a budget the user is meant to feel.
+const int _maxLoops = 5;
+
 /// Results accumulated for one assistant turn, owned by the exchange that
 /// opened it.
 ///
@@ -144,6 +150,22 @@ class RouterChatController extends ChangeNotifier {
   /// Whether the controller is currently loading.
   bool get isLoading => _state.isLoading;
 
+  /// Which round-trip of the current exchange is in flight, or 0 when idle.
+  ///
+  /// Exists so the view can say something true while the user waits. A single
+  /// question can take several LLM calls — each round asks for data the previous
+  /// round revealed it needed — and the intermediate responses are invisible
+  /// (they carry only `tool_use`, which is not for the user to read). Without
+  /// this the wait is indistinguishable from a hang.
+  int get currentRound => _currentRound;
+  int _currentRound = 0;
+
+  /// The most rounds one exchange may take before it is cut off.
+  ///
+  /// Exposed so the view can show progress relative to a known bound rather
+  /// than an open-ended counter.
+  static const int maxRounds = _maxLoops;
+
   /// Whether there's an error.
   bool get hasError => _state.hasError;
 
@@ -246,6 +268,21 @@ class RouterChatController extends ChangeNotifier {
   /// - Detecting confirmation requirements
   /// - Looping for multi-turn tool use
   Future<void> _processConversation() async {
+    // Wrapped rather than guarded inline: the body has eleven exit paths, and
+    // clearing the round at each one is the kind of bookkeeping that gets
+    // forgotten when a twelfth is added. A `finally` here covers every return
+    // and every throw, without reindenting the body.
+    try {
+      await _runConversation();
+    } finally {
+      if (_currentRound != 0) {
+        _currentRound = 0;
+        notifyListeners();
+      }
+    }
+  }
+
+  Future<void> _runConversation() async {
     // This exchange owns its own batch, stamped with the generation it belongs
     // to. Every await below is a point where the user can reset the
     // conversation; because results live on the batch rather than in shared
@@ -266,13 +303,17 @@ class RouterChatController extends ChangeNotifier {
     if (_isStale(batch)) return;
 
     var loopCount = 0;
-    const maxLoops = 5;
+    const maxLoops = _maxLoops;
 
     _log(
         '_processConversation: starting loop (${tools.length} tools available)');
 
     while (loopCount < maxLoops) {
       loopCount++;
+      // Published before the call so the view can describe the wait it is
+      // about to sit through, not the one that just ended.
+      _currentRound = loopCount;
+      notifyListeners();
       _log('_processConversation: loop $loopCount/$maxLoops');
 
       // Declared outside the try so the catch blocks can still surface a
