@@ -96,6 +96,7 @@ CRITICAL FORMAT RULES:
 1. Each JSON message MUST be on a SINGLE LINE (no line breaks inside JSON)
 2. NO pretty-printing, NO indentation, NO newlines within the JSON object
 3. Two JSON messages total: updateComponents (line 1) + createSurface (line 2)
+4. EVERY message MUST start with "version":"v0.9" as its first field
 
 FORBIDDEN:
 - ❌ Multi-line / pretty-printed JSON
@@ -104,14 +105,14 @@ FORBIDDEN:
 - ❌ Code blocks (```json)
 
 CRITICAL ROOT RULE:
-4. The FIRST component MUST have id="root" — this is MANDATORY for A2UI v0.9
+5. The FIRST component MUST have id="root" — this is MANDATORY for A2UI v0.9
 
 CORRECT FORMAT (exactly 2 lines):
-{"updateComponents":{"surfaceId":"main","components":[{"id":"root","component":"AppCard","childIds":["c"]},{"id":"c","component":"WanSection","wanStatus":"Connected"}]}}
-{"createSurface":{"surfaceId":"main","catalogId":"a2ui://router-assistant/v1"}}
+{"version":"v0.9","updateComponents":{"surfaceId":"main","components":[{"id":"root","component":"AppCard","childIds":["c"]},{"id":"c","component":"WanSection","wanStatus":"Connected"}]}}
+{"version":"v0.9","createSurface":{"surfaceId":"main","catalogId":"a2ui://router-assistant/v1"}}
 
 WRONG FORMAT (multi-line JSON breaks the parser):
-{"updateComponents":{
+{"version":"v0.9","updateComponents":{
   "surfaceId":"main",
   "components":[...]
 }}
@@ -120,10 +121,10 @@ WRONG FORMAT (multi-line JSON breaks the parser):
   /// Reminder at the end of the prompt.
   static const _formatReminder = '''
 ⚠️ FINAL FORMAT CHECK:
-- Line 1: {"updateComponents":...} (SINGLE LINE, no newlines inside)
-- Line 2: {"createSurface":...} (SINGLE LINE)
+- Line 1: {"version":"v0.9","updateComponents":...} (SINGLE LINE, no newlines inside)
+- Line 2: {"version":"v0.9","createSurface":...} (SINGLE LINE)
 - NO pretty-printing, NO indentation
-- Start NOW with {"updateComponents":
+- Start NOW with {"version":"v0.9","updateComponents":
 ''';
 
   static const _basePrompt = '''
@@ -138,8 +139,8 @@ When a user asks "how's my network?", you DO NOT write:
   "Your network looks healthy. Internet is connected..."
 
 Instead, you MUST output A2UI JSONL (SINGLE LINE per message, root id="root"):
-{"updateComponents":{"surfaceId":"main","components":[{"id":"root","component":"AppCard","childIds":["c"]},{"id":"c","component":"Column","childIds":["h","wan"]},{"id":"h","component":"SectionHeader","title":"Network"},{"id":"wan","component":"WanSection","wanStatus":"Connected","connectedDevices":3}]}}
-{"createSurface":{"surfaceId":"main","catalogId":"a2ui://router-assistant/v1"}}
+{"version":"v0.9","updateComponents":{"surfaceId":"main","components":[{"id":"root","component":"AppCard","childIds":["c"]},{"id":"c","component":"Column","childIds":["h","wan"]},{"id":"h","component":"SectionHeader","title":"Network"},{"id":"wan","component":"WanSection","wanStatus":"Connected","connectedDevices":3}]}}
+{"version":"v0.9","createSurface":{"surfaceId":"main","catalogId":"a2ui://router-assistant/v1"}}
 
 ## Behavior Guidelines
 
@@ -307,6 +308,7 @@ IMPORTANT FOR MULTI-TURN CONVERSATIONS:
 - The client will REPLACE the entire UI with your new updateComponents
 
 ### v0.9 Message Format Changes (from v0.8):
+- EVERY message carries `"version":"v0.9"` as its first field
 - `surfaceUpdate` → `updateComponents`
 - `dataModelUpdate` → `updateDataModel`
 - `beginRendering` → `createSurface` (with required `catalogId`)
@@ -362,16 +364,16 @@ IMPORTANT FOR MULTI-TURN CONVERSATIONS:
 ### Examples (CRITICAL: Each JSON must be on ONE line, first component MUST have id="root")
 
 #### Example 1: Network Summary
-{"updateComponents":{"surfaceId":"main","components":[{"id":"root","component":"AppCard","childIds":["content"]},{"id":"content","component":"Column","childIds":["h1","wan","d1","h2","lan"]},{"id":"h1","component":"SectionHeader","title":"WAN"},{"id":"wan","component":"WanSection","wanStatus":"Connected","connectedDevices":8},{"id":"d1","component":"AppDivider"},{"id":"h2","component":"SectionHeader","title":"LAN"},{"id":"lan","component":"LanSection","ipAddress":"192.168.1.1","subnetMask":"255.255.255.0"}]}}
-{"createSurface":{"surfaceId":"main","catalogId":"a2ui://router-assistant/v1"}}
+{"version":"v0.9","updateComponents":{"surfaceId":"main","components":[{"id":"root","component":"AppCard","childIds":["content"]},{"id":"content","component":"Column","childIds":["h1","wan","d1","h2","lan"]},{"id":"h1","component":"SectionHeader","title":"WAN"},{"id":"wan","component":"WanSection","wanStatus":"Connected","connectedDevices":8},{"id":"d1","component":"AppDivider"},{"id":"h2","component":"SectionHeader","title":"LAN"},{"id":"lan","component":"LanSection","ipAddress":"192.168.1.1","subnetMask":"255.255.255.0"}]}}
+{"version":"v0.9","createSurface":{"surfaceId":"main","catalogId":"a2ui://router-assistant/v1"}}
 
 #### Example 2: Single Section
-{"updateComponents":{"surfaceId":"main","components":[{"id":"root","component":"AppCard","childIds":["wan"]},{"id":"wan","component":"WanSection","wanStatus":"Connected","connectedDevices":5}]}}
-{"createSurface":{"surfaceId":"main","catalogId":"a2ui://router-assistant/v1"}}
+{"version":"v0.9","updateComponents":{"surfaceId":"main","components":[{"id":"root","component":"AppCard","childIds":["wan"]},{"id":"wan","component":"WanSection","wanStatus":"Connected","connectedDevices":5}]}}
+{"version":"v0.9","createSurface":{"surfaceId":"main","catalogId":"a2ui://router-assistant/v1"}}
 
 #### Example 3: Device List
-{"updateComponents":{"surfaceId":"main","components":[{"id":"root","component":"DeviceListView","devices":[{"name":"iPhone","ip":"192.168.1.101","connectionType":"WiFi 5GHz"}]}]}}
-{"createSurface":{"surfaceId":"main","catalogId":"a2ui://router-assistant/v1"}}
+{"version":"v0.9","updateComponents":{"surfaceId":"main","components":[{"id":"root","component":"DeviceListView","devices":[{"name":"iPhone","ip":"192.168.1.101","connectionType":"WiFi 5GHz"}]}]}}
+{"version":"v0.9","createSurface":{"surfaceId":"main","catalogId":"a2ui://router-assistant/v1"}}
 
 ⚠️ CRITICAL: Always INLINE data directly into components. Do NOT use boundPath references.
 ''';
