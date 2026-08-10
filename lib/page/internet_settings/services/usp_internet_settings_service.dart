@@ -556,6 +556,13 @@ class UspInternetSettingsService {
     UspInternetSettingsForm original,
     UspInternetSettingsForm edited,
   ) async {
+    // IPv6 settings span three USP services (IP.Interface, DHCPv6.Client,
+    // IPv6rd.InterfaceSetting). The OBUSPA broker rejects an atomic SET
+    // (allow_partial=false) that touches more than one service — it returns
+    // 7005 "Allow partial=false not supported across more than one USP
+    // Service", failing the whole save. A cross-service SET cannot be atomic on
+    // this router, so allow partial application; _handleSetResult still surfaces
+    // any per-parameter failure as a UspPartialFailureError.
     _handleSetResult(await Ipv6Settings.update(
       _usp,
       ipv6Enabled: _diff(original.ipv6Enabled, edited.ipv6Enabled),
@@ -566,6 +573,7 @@ class UspInternetSettingsService {
           _diff(original.ipv6rdIpv4MaskLength, edited.ipv6rdIpv4MaskLength),
       ipv6rdBorderRelay:
           _diff(original.ipv6rdBorderRelay, edited.ipv6rdBorderRelay),
+      allowPartial: true,
     ));
   }
 

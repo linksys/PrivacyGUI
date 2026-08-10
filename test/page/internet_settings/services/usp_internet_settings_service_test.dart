@@ -334,6 +334,46 @@ void main() {
       );
     });
 
+    test('IPv6 save uses allowPartial (cross-USP-service SET cannot be atomic)',
+        () async {
+      // IPv6 settings span IP.Interface, DHCPv6.Client and IPv6rd.Interface-
+      // Setting. The OBUSPA broker rejects an atomic SET (allow_partial=false)
+      // touching more than one service with 7005, failing the whole save.
+      // Regression guard for that: the IPv6 SET must be sent with allowPartial.
+      final original = UspInternetSettingsForm(
+        connectionType: UspWanConnectionType.dhcp,
+        ipv6Enabled: true,
+        dhcpv6Enabled: true,
+      );
+      final edited = original.copyWith(
+        ipv6Enabled: false,
+        dhcpv6Enabled: false,
+      );
+
+      await service.saveAll(original, edited);
+
+      // Find the SET carrying IPv6/DHCPv6 params and assert it passed
+      // allowPartial: true (not the default false that triggers 7005).
+      final captured = verify(
+        () => mockUsp.set(
+          captureAny(),
+          allowPartial: captureAny(named: 'allowPartial'),
+        ),
+      ).captured;
+      var found = false;
+      for (var i = 0; i < captured.length; i += 2) {
+        final params = captured[i] as Map<String, dynamic>;
+        final allowPartial = captured[i + 1] as bool;
+        if (params.keys
+            .any((k) => k.contains('IPv6') || k.contains('DHCPv6'))) {
+          found = true;
+          expect(allowPartial, isTrue,
+              reason: 'IPv6 SET must use allowPartial to avoid 7005');
+        }
+      }
+      expect(found, isTrue, reason: 'an IPv6 SET should have been issued');
+    });
+
     test('adds PPP instance when switching to PPPoE without existing instance',
         () async {
       when(() => mockUsp.add(any())).thenAnswer((_) async => {
