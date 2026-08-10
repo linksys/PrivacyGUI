@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:generative_ui/generative_ui.dart';
 import 'package:privacy_gui/ai/prompts/router_system_prompt.dart';
 
 /// Guards the A2UI envelope the prompt teaches the model to emit.
@@ -14,7 +15,10 @@ void main() {
     late String prompt;
 
     setUp(() {
-      prompt = RouterSystemPrompt.staticPrompt;
+      // `build()` rather than `staticPrompt`: the latter omits the trailing
+      // format reminder, which IS sent to the model and repeats the message
+      // shape. Asserting on the smaller string would leave that copy unguarded.
+      prompt = RouterSystemPrompt.build();
     });
 
     /// Whole-message example lines, i.e. those carrying a message-type key.
@@ -23,6 +27,11 @@ void main() {
     /// are entries inside a message's `components` array and correctly carry no
     /// version of their own.
     List<String> messageExamples(String text) {
+      // The v0.9 message types. Mirrors the set in ui_kit's `_messageStart`
+      // pattern; if the protocol gains a message type, both need it — but the
+      // consequence of drift here is only that a new example goes unchecked,
+      // and the renderer-recognition test below would still catch a shape it
+      // cannot parse.
       const messageKeys = [
         'updateComponents',
         'createSurface',
@@ -56,6 +65,26 @@ void main() {
       // has to appear as a rule.
       expect(prompt, contains('"version":"v0.9"'));
       expect(prompt, contains('EVERY message'));
+    });
+
+    test('the closing reminder shows the versioned shape too', () {
+      // The reminder is the last thing the model reads before generating, so a
+      // stale shape here competes with the rules above it. It is not part of
+      // `staticPrompt`, which is why this asserts against `build()`.
+      expect(prompt, contains('Start NOW with {"version":"v0.9"'),
+          reason: 'the final instruction must not demonstrate the old shape');
+    });
+
+    test('the renderer recognises every example the prompt teaches', () {
+      // The string assertions above cannot catch the failure that matters: the
+      // renderer detects a message by pattern, so a shape the prompt teaches but
+      // the renderer does not recognise is displayed to the user as raw JSONL.
+      // This is the cross-repo contract, asserted here rather than trusted —
+      // it is what makes the ui_kit ref bump verifiable in CI.
+      for (final example in messageExamples(prompt)) {
+        expect(A2UIResponseRenderer.containsA2UI(example), isTrue,
+            reason: 'renderer would treat this as plain text: $example');
+      }
     });
 
     test('each correct-format example stays on one line', () {

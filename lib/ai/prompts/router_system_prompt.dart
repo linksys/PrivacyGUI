@@ -3,6 +3,19 @@ import 'package:generative_ui/generative_ui.dart';
 /// System prompt template for the Router AI Assistant.
 ///
 /// This defines how the AI should behave and what components it can generate.
+///
+/// ## Upgrading the A2UI protocol version
+///
+/// `v0.9` appears throughout the prompt below — in the message examples, in the
+/// format rules, and in section headings. It is written out rather than
+/// interpolated because these are `const` strings: interpolating would make
+/// every one of them `static final`, losing the compile-time constant that lets
+/// them be assembled without runtime work on each request.
+///
+/// So a protocol upgrade is a deliberate find-and-replace across this file, and
+/// `router_system_prompt_test.dart` is the safety net — it asserts the version
+/// appears on every whole-message example and that the renderer recognises the
+/// shape, so a partial replacement fails rather than silently shipping a mix.
 class RouterSystemPrompt {
   RouterSystemPrompt._();
 
