@@ -87,7 +87,8 @@ class UspInternetSettingsService {
       }
 
       return InternetSettingsFetchResult(
-        form: _buildForm(wan, ipv6, pppInstance, vlanInstance, gre, l2tp),
+        form: _buildForm(
+            wan, ipv6, pppInstance, vlanInstance, gre, l2tp, connectionType),
         readOnlyInfo: _buildReadOnlyInfo(wan, pppInstance, hostName),
         pppInstancePath: pppInstance?.instancePath,
         vlanInstancePath: vlanInstance?.instancePath,
@@ -120,6 +121,7 @@ class UspInternetSettingsService {
     VlanTerminationInstance? vlan,
     GreTunnel? gre,
     L2tpTunnel? l2tp,
+    UspWanConnectionType connectionType,
   ) {
     // Split comma-separated DNS into 3 fields
     final dnsParts = wan.dnsServers
@@ -128,16 +130,16 @@ class UspInternetSettingsService {
         .where((s) => s.isNotEmpty)
         .toList();
 
-    final lowerLayers = ppp?.lowerLayers ?? '';
-    final connectionType = UspWanConnectionType.fromRawFields(
-      addressingType: wan.addressingType,
-      lowerLayers: lowerLayers,
-    );
-
-    // Resolve server address from the appropriate tunnel
+    // Resolve server address from the tunnel that fetchSettings' phase 2 loaded
+    // for this connection type. The tunnel is non-null by contract: pptp always
+    // fetches GRE.Tunnel.1, l2tp always fetches L2TPv2.Tunnel.1 (both concrete
+    // paths the firmware guarantees exist once LowerLayers references them). If
+    // that contract were ever violated, GreTunnel/L2tpTunnel.fetch would already
+    // have thrown 9998 upstream, so `!` here documents the invariant rather than
+    // guarding a reachable null.
     final serverAddress = switch (connectionType) {
-      UspWanConnectionType.pptp => gre?.remoteEndpoints ?? '',
-      UspWanConnectionType.l2tp => l2tp?.remoteEndpoints ?? '',
+      UspWanConnectionType.pptp => gre!.remoteEndpoints,
+      UspWanConnectionType.l2tp => l2tp!.remoteEndpoints,
       _ => '',
     };
 

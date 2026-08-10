@@ -949,6 +949,44 @@ void main() {
       expect(result.form.serverAddress, equals('l2tp.example.com'));
       expect(result.form.pppUsername, equals('l2tpuser'));
     });
+
+    test(
+        'DHCP WAN fetch issues NO GRE/L2TP tunnel GET (#1184 regression guard)',
+        () async {
+      // The load-bearing regression this PR fixes. GreTunnel/L2tpTunnel are
+      // generated with concrete paths (Device.GRE.Tunnel.1.*), so — now that
+      // #1198 removed _rawGet's null back-fill — fetching them on a DHCP WAN
+      // (zero tunnel instances) fires the codegen required-leaf check (9998).
+      // Phase-2 must fetch ONLY the tunnel the connectionType uses; a DHCP WAN
+      // must fetch none. If someone reverts the conditional fetch to an
+      // unconditional one, a tunnel path appears here and this fails.
+      final handler = createFetchMockHandler(); // default DHCP WAN
+      when(() => mockUsp.get(any())).thenAnswer((invocation) async {
+        final paths = invocation.positionalArguments[0] as List<String>;
+        return handler(paths);
+      });
+
+      final result = await service.fetchSettings();
+      expect(result.form.connectionType, equals(UspWanConnectionType.dhcp));
+
+      // Directly assert intent (not just the handler's fail-fast): no GET this
+      // fetch issued touched a GRE or L2TPv2 tunnel path.
+      final allRequestedPaths = verify(() => mockUsp.get(captureAny()))
+          .captured
+          .cast<List<String>>()
+          .expand((paths) => paths)
+          .toList();
+      expect(
+        allRequestedPaths,
+        isNot(contains(contains('GRE.Tunnel'))),
+        reason: 'DHCP WAN must not fetch the GRE tunnel',
+      );
+      expect(
+        allRequestedPaths,
+        isNot(contains(contains('L2TPv2.Tunnel'))),
+        reason: 'DHCP WAN must not fetch the L2TPv2 tunnel',
+      );
+    });
   });
 
   group('renewDhcpLease', () {

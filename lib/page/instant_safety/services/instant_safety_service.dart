@@ -46,6 +46,13 @@ class UspInstantSafetyService {
   Future<void> save(SafeBrowsingType type) async {
     try {
       final dnsValue = dnsValueForType(type);
+      // Uses the default allow_partial=false (atomic). Safe here because this
+      // SET touches a single USP micro-service (DHCPv4.Server.Pool DNSServers).
+      // The OBUSPA broker only rejects atomic SETs that span more than one
+      // service with 7005 — see _saveIpv6Settings in
+      // usp_internet_settings_service.dart, which must relax this. Keep this SET
+      // single-service; if it ever grows to touch another service, switch to
+      // allowPartial: true.
       final result = await LanNetworkInfo.update(_usp, dnsServers: dnsValue);
       final parsed = UspResultParser.parseSetResult(result);
       switch (parsed) {
