@@ -77,6 +77,24 @@ void main() {
       expect(missing, isEmpty);
     });
 
+    test(
+        'trailing-dot object/table request paths never trigger a missing-path '
+        'warning', () {
+      final missing = <String>[];
+      // A path ending in '.' is an object/table GET (e.g. IPv6Address.); the
+      // router expands it into instance paths, so the requested key itself is
+      // absent from the response and must NOT be reported as missing.
+      UspClient.normalizeGetResponse(
+        ['Device.IP.Interface.1.IPv6Address.'],
+        <String, String?>{
+          'Device.IP.Interface.1.IPv6Address.1.IPAddress': '::1',
+        },
+        onMissingPath: missing.add,
+      );
+
+      expect(missing, isEmpty);
+    });
+
     test('absent concrete path invokes onMissingPath; present one does not',
         () {
       final missing = <String>[];
@@ -92,6 +110,74 @@ void main() {
       );
 
       expect(missing, ['Device.DHCPv4.Server.Pool.1.MinAddress']);
+    });
+
+    test(
+        'onMissingPath collects every absent concrete leaf so the caller can '
+        'emit a single aggregated warning', () {
+      // Underpins _rawGet's aggregation: a partial response with several
+      // absent leaves must surface all of them through the callback, so the
+      // caller logs one "missing N paths" line instead of one line per path.
+      final missing = <String>[];
+      UspClient.normalizeGetResponse(
+        [
+          'Device.DHCPv4.Server.Pool.1.MinAddress', // absent
+          'Device.DHCPv4.Server.Pool.1.MaxAddress', // absent
+          'Device.DHCPv4.Server.Pool.1.LeaseTime', // absent
+          'Device.DHCPv4.Server.Pool.1.Enable', // present
+        ],
+        <String, String?>{
+          'Device.DHCPv4.Server.Pool.1.Enable': '1',
+        },
+        onMissingPath: missing.add,
+      );
+
+      expect(missing, [
+        'Device.DHCPv4.Server.Pool.1.MinAddress',
+        'Device.DHCPv4.Server.Pool.1.MaxAddress',
+        'Device.DHCPv4.Server.Pool.1.LeaseTime',
+      ]);
+    });
+  });
+
+  group('UspClient.isWildcardOnlyRequest — empty-GET log classification', () {
+    // An empty GET response to a wildcard-only request means a multi-instance
+    // table has zero rows (a normal outcome), so _rawGet logs it at debug
+    // instead of warn. This seam is what that decision is pinned on, because
+    // _rawGet itself is not unit-testable (see the file header).
+    test('all-wildcard request is classified as wildcard-only', () {
+      expect(
+        UspClient.isWildcardOnlyRequest([
+          'Device.Firewall.DMZ.*.Enable',
+          'Device.NAT.PortMapping.*.Protocol',
+        ]),
+        isTrue,
+      );
+    });
+
+    test('a single concrete path makes the request NOT wildcard-only', () {
+      expect(
+        UspClient.isWildcardOnlyRequest([
+          'Device.Firewall.DMZ.*.Enable', // wildcard
+          'Device.GRE.Tunnel.1.RemoteEndpoints', // concrete → must still warn
+        ]),
+        isFalse,
+      );
+    });
+
+    test('all-concrete request is NOT wildcard-only', () {
+      expect(
+        UspClient.isWildcardOnlyRequest(
+          ['Device.GRE.Tunnel.1.RemoteEndpoints'],
+        ),
+        isFalse,
+      );
+    });
+
+    test('an empty path list is NOT treated as a wildcard-only request', () {
+      // Nothing was requested — an empty response is not a "no rows" table
+      // outcome, so it should not be silently downgraded.
+      expect(UspClient.isWildcardOnlyRequest(const []), isFalse);
     });
   });
 
