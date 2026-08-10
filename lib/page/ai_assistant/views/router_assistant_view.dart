@@ -714,6 +714,7 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
                       _AnimatedThinkingText(
                         color:
                             theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                        round: _controller?.currentRound ?? 0,
                       ),
                     ],
                   ),
@@ -917,7 +918,17 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
 class _AnimatedThinkingText extends StatefulWidget {
   final Color color;
 
-  const _AnimatedThinkingText({required this.color});
+  /// Which round-trip is in flight, or 0 when that is not known.
+  ///
+  /// Shown because the phrases below are decoration — they rotate on a timer and
+  /// say nothing about progress. A single question can take several rounds while
+  /// the assistant fetches what it needs, and those intermediate responses are
+  /// never rendered, so without this the wait looks identical to a hang.
+  /// Suppressed on the first round: "1" alongside a spinner tells the user
+  /// nothing they cannot already see.
+  final int round;
+
+  const _AnimatedThinkingText({required this.color, this.round = 0});
 
   static const _phrases = [
     'Thinking',
@@ -976,8 +987,13 @@ class _AnimatedThinkingTextState extends State<_AnimatedThinkingText>
   Widget build(BuildContext context) {
     final phrase = _AnimatedThinkingText._phrases[_phraseIndex];
     final dots = '.' * _dotCount;
+    // Digits only, so no new localized string is needed — and the label stays
+    // correct if the tool list is reorganised later.
+    final step = widget.round > 1
+        ? ' (${widget.round}/${RouterChatController.maxRounds})'
+        : '';
     return AppText.body(
-      '$phrase$dots',
+      '$phrase$dots$step',
       color: widget.color,
     );
   }

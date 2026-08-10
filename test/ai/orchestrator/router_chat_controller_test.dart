@@ -309,6 +309,59 @@ void main() {
     // follows it.
     // =========================================================================
 
+    group('round reporting', () {
+      test('is 0 while idle', () {
+        expect(controller.currentRound, 0);
+      });
+
+      test('reports the round in flight, and clears when the answer arrives',
+          () async {
+        // Two rounds: the model asks for data, then answers with it. The view
+        // shows this so a multi-round wait is distinguishable from a hang.
+        final roundsSeen = <int>[];
+        controller.addListener(() => roundsSeen.add(controller.currentRound));
+
+        var call = 0;
+        when(() => mockGenerator.generateWithHistory(
+              any(),
+              tools: any(named: 'tools'),
+              systemPromptParts: any(named: 'systemPromptParts'),
+            )).thenAnswer((_) async {
+          call++;
+          return call == 1
+              ? _toolUseResponse('getSystemInfo', {})
+              : _textResponse('Your router is a TestRouter.');
+        });
+        when(() => mockCommandProvider.execute('getSystemInfo', any()))
+            .thenAnswer((_) async =>
+                RouterCommandResult.success(const {'model': 'TestRouter'}));
+
+        await controller.sendMessage('what router is this?');
+
+        expect(roundsSeen, contains(1),
+            reason: 'the first round must be published');
+        expect(roundsSeen, contains(2),
+            reason: 'a second round means the assistant needed data first');
+        expect(controller.currentRound, 0,
+            reason: 'an idle controller must not claim a round is running, or '
+                'the view keeps showing progress after the answer');
+      });
+
+      test('clears the round even when the exchange fails', () async {
+        // The reset lives in a `finally`, because the body has many exits and
+        // a stuck counter would leave the view describing work that has stopped.
+        when(() => mockGenerator.generateWithHistory(
+              any(),
+              tools: any(named: 'tools'),
+              systemPromptParts: any(named: 'systemPromptParts'),
+            )).thenThrow(Exception('network down'));
+
+        await controller.sendMessage('hello');
+
+        expect(controller.currentRound, 0);
+      });
+    });
+
     group('tool result batching', () {
       test('answers parallel read tools in one message', () async {
         when(() => mockCommandProvider.execute(any(), any())).thenAnswer(
