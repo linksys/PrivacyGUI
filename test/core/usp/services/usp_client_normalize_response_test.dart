@@ -140,14 +140,16 @@ void main() {
     });
   });
 
-  group('UspClient.isWildcardOnlyRequest — empty-GET log classification', () {
-    // An empty GET response to a wildcard-only request means a multi-instance
+  group('UspClient.isTableQueryOnlyRequest — empty-GET log classification', () {
+    // An empty GET response to a table-query-only request means a multi-instance
     // table has zero rows (a normal outcome), so _rawGet logs it at debug
-    // instead of warn. This seam is what that decision is pinned on, because
-    // _rawGet itself is not unit-testable (see the file header).
-    test('all-wildcard request is classified as wildcard-only', () {
+    // instead of warn. A table query is either a wildcard ('*') OR an
+    // object/table path (trailing '.') — both are expanded by the router. This
+    // seam is what that decision is pinned on, because _rawGet itself is not
+    // unit-testable (see the file header).
+    test('all-wildcard request is classified as table-query-only', () {
       expect(
-        UspClient.isWildcardOnlyRequest([
+        UspClient.isTableQueryOnlyRequest([
           'Device.Firewall.DMZ.*.Enable',
           'Device.NAT.PortMapping.*.Protocol',
         ]),
@@ -155,9 +157,35 @@ void main() {
       );
     });
 
-    test('a single concrete path makes the request NOT wildcard-only', () {
+    test(
+        'all trailing-dot object/table request is classified as '
+        'table-query-only', () {
+      // Regression guard: a trailing-dot object GET (e.g. IPv6Address.) is also
+      // router-expanded, so an empty response is a normal zero-row outcome and
+      // must NOT emit a spurious "GET response EMPTY" warning. Before the fix
+      // isWildcardOnlyRequest only matched '*', so this returned false.
       expect(
-        UspClient.isWildcardOnlyRequest([
+        UspClient.isTableQueryOnlyRequest([
+          'Device.IP.Interface.1.IPv6Address.',
+          'Device.IP.Interface.1.IPv6Prefix.',
+        ]),
+        isTrue,
+      );
+    });
+
+    test('a mix of wildcard and trailing-dot paths is table-query-only', () {
+      expect(
+        UspClient.isTableQueryOnlyRequest([
+          'Device.Firewall.DMZ.*.Enable', // wildcard
+          'Device.IP.Interface.1.IPv6Address.', // trailing-dot table
+        ]),
+        isTrue,
+      );
+    });
+
+    test('a single concrete path makes the request NOT table-query-only', () {
+      expect(
+        UspClient.isTableQueryOnlyRequest([
           'Device.Firewall.DMZ.*.Enable', // wildcard
           'Device.GRE.Tunnel.1.RemoteEndpoints', // concrete → must still warn
         ]),
@@ -165,19 +193,19 @@ void main() {
       );
     });
 
-    test('all-concrete request is NOT wildcard-only', () {
+    test('all-concrete request is NOT table-query-only', () {
       expect(
-        UspClient.isWildcardOnlyRequest(
+        UspClient.isTableQueryOnlyRequest(
           ['Device.GRE.Tunnel.1.RemoteEndpoints'],
         ),
         isFalse,
       );
     });
 
-    test('an empty path list is NOT treated as a wildcard-only request', () {
+    test('an empty path list is NOT treated as a table-query-only request', () {
       // Nothing was requested — an empty response is not a "no rows" table
       // outcome, so it should not be silently downgraded.
-      expect(UspClient.isWildcardOnlyRequest(const []), isFalse);
+      expect(UspClient.isTableQueryOnlyRequest(const []), isFalse);
     });
   });
 

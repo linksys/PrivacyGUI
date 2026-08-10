@@ -71,15 +71,6 @@ const _l2tpResponse = <String, dynamic>{
   'Device.L2TPv2.Tunnel.1.RemoteEndpoints': 'l2tp.example.com',
 };
 
-// Test data — GRE/L2TP empty
-const _greEmptyResponse = <String, dynamic>{
-  'Device.GRE.Tunnel.1.RemoteEndpoints': '',
-};
-
-const _l2tpEmptyResponse = <String, dynamic>{
-  'Device.L2TPv2.Tunnel.1.RemoteEndpoints': '',
-};
-
 // Test data — PPP empty (no instances)
 const _pppEmptyResponse = <String, dynamic>{};
 
@@ -118,8 +109,12 @@ Map<String, dynamic> Function(List<String>) createFetchMockHandler({
   Map<String, dynamic> wanResponse = _wanResponse,
   Map<String, dynamic> pppResponse = _pppResponse,
   Map<String, dynamic> vlanResponse = _vlanResponse,
-  Map<String, dynamic> greResponse = _greEmptyResponse,
-  Map<String, dynamic> l2tpResponse = _l2tpEmptyResponse,
+  // Tunnel responses default to null: a tunnel GET is only expected when the
+  // resolved connectionType is PPTP/L2TP (Phase-2 conditional fetch). A test
+  // exercising that path passes the matching response explicitly; any other
+  // tunnel GET is a regression (unconditional fetch) and fails fast below.
+  Map<String, dynamic>? greResponse,
+  Map<String, dynamic>? l2tpResponse,
 }) {
   return (List<String> paths) {
     // Alias resolution (must be checked first)
@@ -129,12 +124,18 @@ Map<String, dynamic> Function(List<String>) createFetchMockHandler({
     if (paths.any((p) => p.contains('IP.Interface.*.Alias'))) {
       return _ipAliasResponse;
     }
-    // Tunnel fetches
+    // Tunnel fetches — fail fast if requested without an expected response, so
+    // a regression re-introducing an unconditional GRE/L2TP fetch cannot pass
+    // silently on empty tunnel data.
     if (paths.any((p) => p.contains('GRE.Tunnel'))) {
-      return greResponse;
+      return greResponse ??
+          (throw StateError('Unexpected GRE.Tunnel GET: Phase-2 must only '
+              'fetch the tunnel matching connectionType (paths: $paths)'));
     }
     if (paths.any((p) => p.contains('L2TPv2.Tunnel'))) {
-      return l2tpResponse;
+      return l2tpResponse ??
+          (throw StateError('Unexpected L2TPv2.Tunnel GET: Phase-2 must only '
+              'fetch the tunnel matching connectionType (paths: $paths)'));
     }
     // Other fetches
     if (paths.any((p) => p.contains('AddressingType'))) {
@@ -237,11 +238,13 @@ void main() {
         if (paths.any((p) => p.contains('IP.Interface.*.Alias'))) {
           return _ipAliasResponse;
         }
+        // This test's PPP instance is empty → connectionType is not PPTP/L2TP,
+        // so Phase-2 fetches no tunnel. A tunnel GET here is a regression.
         if (paths.any((p) => p.contains('GRE.Tunnel'))) {
-          return _greEmptyResponse;
+          throw StateError('Unexpected GRE.Tunnel GET in DNS-split test');
         }
         if (paths.any((p) => p.contains('L2TPv2.Tunnel'))) {
-          return _l2tpEmptyResponse;
+          throw StateError('Unexpected L2TPv2.Tunnel GET in DNS-split test');
         }
         if (paths.any((p) => p.contains('AddressingType'))) return wanWith3Dns;
         if (paths.any((p) => p.contains('IPv6Enable'))) return _ipv6Response;
@@ -904,11 +907,12 @@ void main() {
       final wanIpcp = Map<String, dynamic>.from(_wanResponse);
       wanIpcp['Device.IP.Interface.2.IPv4Address.1.AddressingType'] = 'IPCP';
 
+      // Only GRE is expected; leaving l2tpResponse null asserts (via the
+      // handler's fail-fast) that a PPTP connection never fetches L2TP.
       final handler = createFetchMockHandler(
         wanResponse: wanIpcp,
         pppResponse: _pppPptpResponse,
         greResponse: _greResponse,
-        l2tpResponse: _l2tpEmptyResponse,
       );
       when(() => mockUsp.get(any())).thenAnswer((invocation) async {
         final paths = invocation.positionalArguments[0] as List<String>;
@@ -927,10 +931,11 @@ void main() {
       final wanIpcp = Map<String, dynamic>.from(_wanResponse);
       wanIpcp['Device.IP.Interface.2.IPv4Address.1.AddressingType'] = 'IPCP';
 
+      // Only L2TP is expected; leaving greResponse null asserts (via the
+      // handler's fail-fast) that an L2TP connection never fetches GRE.
       final handler = createFetchMockHandler(
         wanResponse: wanIpcp,
         pppResponse: _pppL2tpResponse,
-        greResponse: _greEmptyResponse,
         l2tpResponse: _l2tpResponse,
       );
       when(() => mockUsp.get(any())).thenAnswer((invocation) async {

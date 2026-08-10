@@ -93,15 +93,14 @@ void main() {
       if (paths.any((p) => p.contains('VLANTermination'))) {
         return vlanResponse;
       }
+      // PnP setup never configures a PPTP/L2TP WAN, so connectionType is never
+      // PPTP/L2TP and Phase-2 fetches no tunnel. A tunnel GET here means an
+      // unconditional fetch regressed — fail fast instead of returning empty.
       if (paths.any((p) => p.contains('GRE.Tunnel'))) {
-        return <String, dynamic>{
-          'Device.GRE.Tunnel.1.RemoteEndpoints': '',
-        };
+        throw StateError('Unexpected GRE.Tunnel GET in PnP fetch');
       }
       if (paths.any((p) => p.contains('L2TPv2.Tunnel'))) {
-        return <String, dynamic>{
-          'Device.L2TPv2.Tunnel.1.RemoteEndpoints': '',
-        };
+        throw StateError('Unexpected L2TPv2.Tunnel GET in PnP fetch');
       }
       return {};
     });
@@ -306,15 +305,13 @@ void main() {
         if (paths.any((p) => p.contains('VLANTermination'))) {
           return vlanExistingResponse;
         }
+        // PPPoE connection → no tunnel fetch in Phase-2; a tunnel GET is a
+        // regression (unconditional fetch).
         if (paths.any((p) => p.contains('GRE.Tunnel'))) {
-          return <String, dynamic>{
-            'Device.GRE.Tunnel.1.RemoteEndpoints': '',
-          };
+          throw StateError('Unexpected GRE.Tunnel GET in PnP PPPoE fetch');
         }
         if (paths.any((p) => p.contains('L2TPv2.Tunnel'))) {
-          return <String, dynamic>{
-            'Device.L2TPv2.Tunnel.1.RemoteEndpoints': '',
-          };
+          throw StateError('Unexpected L2TPv2.Tunnel GET in PnP PPPoE fetch');
         }
         return {};
       });
@@ -377,15 +374,13 @@ void main() {
         if (paths.any((p) => p.contains('VLANTermination'))) {
           return vlanDisabledResponse;
         }
+        // PPPoE connection → no tunnel fetch in Phase-2; a tunnel GET is a
+        // regression (unconditional fetch).
         if (paths.any((p) => p.contains('GRE.Tunnel'))) {
-          return <String, dynamic>{
-            'Device.GRE.Tunnel.1.RemoteEndpoints': '',
-          };
+          throw StateError('Unexpected GRE.Tunnel GET in PnP PPPoE fetch');
         }
         if (paths.any((p) => p.contains('L2TPv2.Tunnel'))) {
-          return <String, dynamic>{
-            'Device.L2TPv2.Tunnel.1.RemoteEndpoints': '',
-          };
+          throw StateError('Unexpected L2TPv2.Tunnel GET in PnP PPPoE fetch');
         }
         return {};
       });

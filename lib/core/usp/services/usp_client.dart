@@ -297,14 +297,16 @@ class UspClient {
           '${_prettyMap(rawMap)}');
 
       if (rawMap.isEmpty) {
-        if (isWildcardOnlyRequest(paths)) {
-          // A wildcard GET (e.g. Device.Firewall.DMZ.*) is expanded by the
-          // router across the discovered instances of a multi-instance table.
-          // When that table has zero instances the response is legitimately
-          // empty — the generated model iterates the (empty) instance set and
-          // returns an empty list, so this is a normal "no rows" outcome, not
-          // a fault. Log it at debug so it does not drown real warnings.
-          logger.d('$_tag$label GET empty (wildcard table, no instances): '
+        if (isTableQueryOnlyRequest(paths)) {
+          // A table query — a wildcard GET (e.g. Device.Firewall.DMZ.*) or an
+          // object/table path (e.g. Device.IP.Interface.1.IPv6Address.) — is
+          // expanded by the router across the discovered instances of a
+          // multi-instance table. When that table has zero instances the
+          // response is legitimately empty — the generated model iterates the
+          // (empty) instance set and returns an empty list, so this is a normal
+          // "no rows" outcome, not a fault. Log it at debug so it does not
+          // drown real warnings.
+          logger.d('$_tag$label GET empty (table query, no instances): '
               '$paths');
         } else {
           // At least one concrete path was requested — an empty response there
@@ -365,7 +367,7 @@ class UspClient {
       result[entry.key] = _coerceValue(entry.key, entry.value);
     }
     for (final path in paths) {
-      if (path.contains('*') || path.endsWith('.')) continue;
+      if (_isTableExpandedPath(path)) continue;
       if (!result.containsKey(path)) {
         onMissingPath?.call(path);
       }
@@ -373,18 +375,30 @@ class UspClient {
     return result;
   }
 
-  /// Whether every requested path is a wildcard query (contains '*').
+  /// Whether a requested path is one the router expands into concrete instance
+  /// paths, so the requested key itself never appears verbatim in the response.
   ///
-  /// A wildcard GET targets a multi-instance table and the router expands it
-  /// across the discovered instances. When that table has zero instances the
-  /// response is legitimately empty (the generated model returns an empty
-  /// list), so an empty response to a wildcard-only request is a normal
-  /// "no rows" outcome rather than a fault. Callers use this to decide whether
-  /// an empty GET response deserves a warning. An empty [paths] list is not a
-  /// wildcard request.
+  /// Two shapes qualify, and they must be treated identically everywhere:
+  /// - a wildcard search path (contains '*', e.g. Device.Firewall.DMZ.*)
+  /// - an object/table path (ends in '.', e.g. Device.IP.Interface.1.IPv6Address.)
+  ///
+  /// Both target a multi-instance set; an absent requested key is expected, not
+  /// missing, and an empty response means the set has zero rows — not a fault.
+  static bool _isTableExpandedPath(String path) =>
+      path.contains('*') || path.endsWith('.');
+
+  /// Whether every requested path is a table query the router expands
+  /// (see [_isTableExpandedPath]).
+  ///
+  /// When such a query hits a table with zero instances the response is
+  /// legitimately empty (the generated model returns an empty list), so an
+  /// empty response to a table-query-only request is a normal "no rows"
+  /// outcome rather than a fault. Callers use this to decide whether an empty
+  /// GET response deserves a warning. An empty [paths] list is not a table
+  /// query.
   @visibleForTesting
-  static bool isWildcardOnlyRequest(List<String> paths) =>
-      paths.isNotEmpty && paths.every((p) => p.contains('*'));
+  static bool isTableQueryOnlyRequest(List<String> paths) =>
+      paths.isNotEmpty && paths.every(_isTableExpandedPath);
 
   /// Coerce a raw string value from USP into the appropriate Dart type.
   /// - "true" / "false" →bool (any path)
