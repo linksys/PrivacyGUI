@@ -148,15 +148,37 @@ void main() {
         locale: const Locale('en'),
       );
 
-      // The two totals carry the up/down arrows; find them by that prefix so the
-      // assertion does not depend on the formatted byte value.
-      Finder arrowText(String arrow) => find.byWidgetPredicate(
-            (w) => w is Text && (w.data?.startsWith(arrow) ?? false),
-          );
-      expect(arrowText('↑'), findsOneWidget,
-          reason: 'upload total must survive degradation — it is content');
-      expect(arrowText('↓'), findsOneWidget,
-          reason: 'download total must survive degradation — it is content');
+      // Assert on the formatted byte values from the fixture, not on the
+      // direction markers. Those markers are icons (Icons.arrow_upward /
+      // arrow_downward) rather than U+2191/U+2193 characters, so a text-prefix
+      // finder would pass or fail on how the arrow is drawn rather than on
+      // whether the total survived.
+      final totals = find.byWidgetPredicate(
+        (w) =>
+            w is Text &&
+            (w.data?.isNotEmpty ?? false) &&
+            RegExp(r'^[\d.]+\s*(B|KB|MB|GB|TB)$').hasMatch(w.data!),
+      );
+      expect(totals, findsNWidgets(2),
+          reason: 'both byte totals must survive degradation — they are '
+              'content, not chrome, so they never shrink or ellipsize');
+
+      // And the icons that label them are still there, so the surviving numbers
+      // are still attributable to a direction.
+      expect(
+        find.byWidgetPredicate(
+          (w) => w is Icon && w.icon == Icons.arrow_upward,
+        ),
+        findsWidgets,
+        reason: 'upload direction marker must survive',
+      );
+      expect(
+        find.byWidgetPredicate(
+          (w) => w is Icon && w.icon == Icons.arrow_downward,
+        ),
+        findsWidgets,
+        reason: 'download direction marker must survive',
+      );
     });
   });
 

@@ -98,13 +98,28 @@ class StatsTrafficMonitorSection extends ConsumerWidget {
             AppText.labelSmall(loc(context).download),
             const Spacer(),
             if (wan != null) ...[
+              // Icons, not U+2191/U+2193 characters \u2014 matches the dashboard's
+              // Traffic Analysis card, which draws the same two directions with
+              // Icons.arrow_upward/downward.
+              AppIcon.font(
+                Icons.arrow_upward,
+                size: 12,
+                color: colorScheme.onSurfaceVariant,
+              ),
+              AppGap.xs(),
               AppText.labelSmall(
-                '\u2191 ${UspFormatters.formatBytes(wan.totalBytesSent)}',
+                UspFormatters.formatBytes(wan.totalBytesSent),
                 color: colorScheme.onSurfaceVariant,
               ),
               AppGap.md(),
+              AppIcon.font(
+                Icons.arrow_downward,
+                size: 12,
+                color: colorScheme.onSurfaceVariant,
+              ),
+              AppGap.xs(),
               AppText.labelSmall(
-                '\u2193 ${UspFormatters.formatBytes(wan.totalBytesReceived)}',
+                UspFormatters.formatBytes(wan.totalBytesReceived),
                 color: colorScheme.onSurfaceVariant,
               ),
             ],

@@ -307,13 +307,32 @@ class _MonitorView extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 if (wan != null) ...[
+                  // Icons, not the U+2191/U+2193 characters these used to be.
+                  // The speed tiles above label the same two directions with
+                  // Icons.arrow_upward/downward, so the card was drawing one
+                  // concept two ways; and neither the primary font nor any
+                  // bundled fallback maps those codepoints, which made the
+                  // glyph's presence depend on whatever font happened to
+                  // resolve it.
+                  AppIcon.font(
+                    Icons.arrow_upward,
+                    size: 12,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                  AppGap.xs(),
                   AppText.labelSmall(
-                    '\u2191 ${UspFormatters.formatBytes(wan.totalBytesSent)}',
+                    UspFormatters.formatBytes(wan.totalBytesSent),
                     color: colorScheme.onSurfaceVariant,
                   ),
                   AppGap.md(),
+                  AppIcon.font(
+                    Icons.arrow_downward,
+                    size: 12,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                  AppGap.xs(),
                   AppText.labelSmall(
-                    '\u2193 ${UspFormatters.formatBytes(wan.totalBytesReceived)}',
+                    UspFormatters.formatBytes(wan.totalBytesReceived),
                     color: colorScheme.onSurfaceVariant,
                   ),
                   AppGap.md(),
