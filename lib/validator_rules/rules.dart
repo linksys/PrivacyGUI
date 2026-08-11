@@ -182,6 +182,9 @@ class IPv6Rule extends RegExValidationRule {
 
   @override
   bool validate(String input) {
+    // The unspecified address is syntactically valid but never a usable target:
+    // this rule only guards the IPv6 port-forwarding rule's device address,
+    // where :: names no host. Rejected deliberately, not by oversight.
     if (input == '::') {
       return false;
     }
