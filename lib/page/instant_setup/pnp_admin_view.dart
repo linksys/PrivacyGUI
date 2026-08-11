@@ -447,20 +447,55 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
       _processing = true;
     });
     _examineAdminPassword(_textEditController.text)
+        // Gate on Auto Master before entering config, consistent with the
+        // auto-login and default-password paths. Without this, a user manually
+        // re-logging in after make-Master rotated the credential is dropped
+        // straight into the WiFi form while Auto Master is still `running`, then
+        // bounced again by the pre-save check — filling the form twice.
+        .then((_) => _checkAutoMasterStatus())
         .then((_) => _checkInternetConnection())
         .then((_) {
       logger.i(
           '[PnP]: Logged in successfully by tapping Login, go to Setup page');
-      context.goNamed(RouteNamed.pnpConfig);
-    }).onError((error, stackTrace) {
+      if (mounted) {
+        context.goNamed(RouteNamed.pnpConfig);
+      }
+    }).catchError((error, stackTrace) {
+      // Auto Master finished (make-Master rotated the credential) — send the
+      // user back to re-login with the new password instead of into the WiFi
+      // form. Consistent with the auto-login and default-password paths; this
+      // is the primary running→complete outcome and without it the flow would
+      // fall through to the catch-all below and surface a bogus error.
+      final route = (error as ExceptionInterruptAndExit).route;
+      logger.e('[PnP]: Interrupted, go to: $route');
+      if (mounted) {
+        context.goNamed(route);
+      }
+    }, test: (error) => error is ExceptionInterruptAndExit).catchError(
+        (error, stackTrace) {
+      // Auto Master rotated the credential again mid-check → back to login.
+      logger.e('[PnP]: Auto Master check unauthorized, redirect to login');
+      if (mounted) {
+        context.goNamed(RouteNamed.localLoginPassword);
+      }
+    }, test: (error) => error is ExceptionAutoMasterUnauthorized).catchError(
+        (error, stackTrace) {
+      // PnpAutoMasterWaitingView already shows the error + retry button.
+      logger.e('[PnP]: Auto Master polling failed, stay on error view');
+    }, test: (error) => error is ExceptionAutoMasterPollingFailed).onError(
+        (error, stackTrace) {
       logger.e('[PnP]: The input admin password is invalid');
       setState(() {
         _error = error;
       });
     }).whenComplete(() {
-      setState(() {
-        _processing = false;
-      });
+      // A redirect above may have already disposed this view; guard the
+      // setState so it doesn't fire after dispose.
+      if (mounted) {
+        setState(() {
+          _processing = false;
+        });
+      }
     });
   }
 
@@ -545,6 +580,10 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
     logger.i('[PnP]: Auto Master status check result: $status');
 
     if (status == AutoMasterStatus.running) {
+      // Every setState below follows an await, and the make-Master window is
+      // exactly when the router bounces us between routes — so this view can be
+      // disposed mid-flow. Guard each one instead of crashing on a defunct State.
+      if (!mounted) return;
       setState(() {
         _isWaitingForAutoMaster = true;
         _showAutoMasterConnectionError = false;
@@ -564,9 +603,11 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
           if (consecutiveFailures >= maxConsecutiveFailures) {
             logger.e(
                 '[PnP]: Auto Master polling failed $maxConsecutiveFailures times, showing connection error');
-            setState(() {
-              _showAutoMasterConnectionError = true;
-            });
+            if (mounted) {
+              setState(() {
+                _showAutoMasterConnectionError = true;
+              });
+            }
             throw ExceptionAutoMasterPollingFailed();
           }
         } else {
@@ -575,9 +616,11 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
           if (pollStatus == AutoMasterStatus.complete ||
               pollStatus == AutoMasterStatus.idle) {
             // Auto Master completed successfully, password may have changed
-            setState(() {
-              _isWaitingForAutoMaster = false;
-            });
+            if (mounted) {
+              setState(() {
+                _isWaitingForAutoMaster = false;
+              });
+            }
             throw ExceptionInterruptAndExit(
                 route: RouteNamed.localLoginPassword);
           }
@@ -586,9 +629,11 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
             // Auto Master failed (e.g., found another Master), password is still admin
             // Continue normal PnP flow
             logger.i('[PnP]: Auto Master failed, continuing PnP flow');
-            setState(() {
-              _isWaitingForAutoMaster = false;
-            });
+            if (mounted) {
+              setState(() {
+                _isWaitingForAutoMaster = false;
+              });
+            }
             return;
           }
         }
@@ -600,15 +645,19 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
       try {
         await pnp.testConnectionReconnected();
         logger.i('[PnP]: Router connected after timeout, proceed to next step');
-        setState(() {
-          _isWaitingForAutoMaster = false;
-        });
+        if (mounted) {
+          setState(() {
+            _isWaitingForAutoMaster = false;
+          });
+        }
         // Continue normal flow
       } catch (e) {
         logger.e('[PnP]: Router not connected after timeout');
-        setState(() {
-          _showAutoMasterConnectionError = true;
-        });
+        if (mounted) {
+          setState(() {
+            _showAutoMasterConnectionError = true;
+          });
+        }
         throw ExceptionAutoMasterPollingFailed();
       }
     }
