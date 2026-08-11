@@ -1,6 +1,6 @@
 # Dashboard Card Density — Design Decisions
 
-**Last Updated: 2026-08-11** · Follow-up to #1183 · Status: **agreed, not yet implemented**
+**Last Updated: 2026-08-11** · Follow-up to #1183 · Status: **agreed; tickets #1225–#1240 published, implementation not started**
 
 ## Purpose
 
@@ -71,6 +71,29 @@ only goes green when every one of its incidents is resolved):
 - **`stats_panel` — 26**: `stat_blocks.dart:34` **and** `:40`
 - **`connected_devices` — 26**: `card_skeleton.dart:153` **and**
   `usp_connected_devices_card.dart:61` **and** ui_kit `app_list_tile.dart:109`
+
+#### The largest pattern the greedy cover hides — legend rows, 181 coordinates
+
+Ranking sites individually is the wrong lens for one group. **Seven rows across
+three files are the same shape** — a centred `Row` of colour dot, gap, and
+unconstrained label — and together they are **181 coordinates, 32% of the whole
+baseline**, three times the top shared-block site:
+
+| Card | Sites | Coordinates |
+|---|---|---:|
+| `network_health` | `:143`, `:381`, `:424` | 81 |
+| `system_status` | `:314`, `:378`, `:464` | 51 |
+| `traffic_analysis` | `:258` | 49 |
+
+The greedy table above scatters these across ranks 1–16, so the pattern is
+invisible there. It is one fix replicated seven times, and it is where the
+batching leverage actually is.
+
+The private colour-dot widget is additionally duplicated **verbatim in four
+files** (the three above plus `device_analytics`). De-duplicating it, or
+extracting a shared legend entry, would be a **new shared widget** and therefore
+needs approval under Article XIV — so the fix is applied in place, and the
+extraction raised separately rather than blocking on that conversation.
 
 **Blocked on a dependency we do not own — 45 coordinates (8%)**: fl_chart 19
 (`firewall_overview`), ui_kit `AppListTile` 26 (`connected_devices`).
@@ -171,8 +194,22 @@ minimum. An exhaustive 1px sweep (240–2560px) gives:
 | ≥ 4 | **208.0px** | 240px (clamped to full grid) |
 
 The list also omits 240–319px entirely and real device widths 375 / 390 / 430px.
-Consequences: the gate under-measures (§2.7), and the contract floor is a product
-decision rather than a geometric fact (§2.3).
+The contract floor is therefore a product decision rather than a geometric fact
+(§2.3).
+
+**But the sample is not actually lossy above 320px.** Compared against an
+exhaustive 320–2560px sweep, the 19-screen list finds the *identical* narrowest
+width for **every one of the 12 spans**:
+
+| Span | Sampled min | Exhaustive min | Δ |
+|---:|---:|---:|---:|
+| 1–4 | 53.1 / 122.2 / 191.4 / 260.5 @ 601px | same | **0.0** |
+| 5–12 | 288.0 @ 320px | same | **0.0** |
+
+The omitted widths are nobody's worst case: 375 / 390 / 430px all sit inside the
+4-column low-margin band where 320px already dominates. So replacing the sample
+(§2.7) buys a **guarantee, not a new baseline** — it is expected to be a
+behavioural no-op.
 
 Counter-intuitively, **mobile is not the narrowest case**: a 3-column card is
 212px at a 320px phone but 191.4px at a 601px tablet.
@@ -345,28 +382,46 @@ through the UI Kit proposal path.
 
 ### 2.7 The gate enumerates widths instead of sampling them
 
-`_scanScreens`'s hand-written 19-width list violates the gate's own stated
-invariant that "narrowest realization = worst case" (§1.6). It will be replaced
-by an exhaustive search for each span's true narrowest realization, keeping the
-current one-case-per-span reduction.
+`_scanScreens`'s hand-written 19-width list *asserts* the gate's stated invariant
+("narrowest realization = worst case") rather than guaranteeing it. It will be
+replaced by an exhaustive search over the supported range, keeping the current
+one-case-per-span reduction.
 
 The frozen-geometry warning in `SKILL.md` applies to the **formulas** — which
 mirror production and must not change — not to the sample list.
 
-This will shift the 560 baseline. That shift is itself the information: it
-quantifies how much the current baseline under-measures — which is why it goes
-**first**, before anything that eliminates coordinates (see Part 4).
+**Expected to be a behavioural no-op**, per §1.6: sampled and exhaustive minima
+agree to 0.1px on all 12 spans. It still goes **first** (Part 4) for two reasons:
+the invariant then holds by construction, and if the baseline *does* move, the
+cause is unambiguous because nothing else has changed yet.
 
-### 2.8 `system_status`'s `colWidth` bug is fixed before its threshold is set
+### 2.8 The `colWidth` bug is silent truncation, and gates only the threshold
 
 `usp_info_row.dart:29` uses `context.colWidth(labelColumns)`, which is
-screen-derived, so the label column does not shrink when the card does. Its
-measured 360px fit width is therefore an underestimate (§1.2), and it is the
-largest single card in the baseline at 85 coordinates.
+screen-derived, so the label column does not shrink when the card does. At the
+narrowest realization the label claims ~122px of ~159px usable.
+
+**It accounts for zero of the 560 coordinates.** Its `SizedBox` + `Expanded`
+structure always technically fits — an `Expanded` compressed to a few pixels is
+not a RenderFlex overflow — so the value text is clipped by the card surface's
+`Clip.antiAlias` with no error raised. Users see cut-off text; CI sees nothing.
+That is **worse** than an overflow, not better, and it is exactly the failure mode
+the gate is blind to.
+
+So this fix moves no coordinate. What it gates is `system_status`'s **threshold**:
+that card's measured 360px fit width is an underestimate, because the harness held
+the screen wide while shrinking the card, so its label column never shrank (§1.2).
+Its 85 coordinates are unrelated and are cleared by its own layout fixes.
 
 Fix by reading the real available width (`LayoutBuilder`), **not** by introducing
-`PageLayoutScope`: `usp_info_row.dart` has exactly one consumer, so a scope
-wrapper is disproportionate. Then re-measure, then set the threshold.
+`PageLayoutScope`: this widget has one label-sizing decision to make, so a scope
+wrapper is disproportionate. Verify its non-dashboard consumers (statistics,
+internet settings, WiFi status, the ethernet port dialog) still render correctly.
+
+> Generalising: **the gate cannot see clipping, only overflow.** Every fix that
+> replaces an overflow with an unconstrained `Expanded` trades a visible failure
+> for an invisible one. Prefer `maxLines` + `ellipsis`, which is visible as
+> truncation the reader can recognise.
 
 ### 2.9 The existing gate is the validation mechanism
 
@@ -451,39 +506,63 @@ triggers on phones (§2.1); a phone-reaching threshold would need ≥ 212px.
 
 ## Part 4 — Order of work
 
-**Instruments before measurements.** Two changes *raise* the baseline (the gate
-enumerating widths; fixing `colWidth`, after which `system_status`'s label column
-finally shrinks with the card) and every subsequent change *lowers* it. Interleave
-them and the deltas cancel, leaving no way to attribute a shift to the change that
-caused it. So both re-baselining steps land first, each committed on its own.
+Published as issues #1225–#1240 under #1183, with native blocking dependencies.
 
-1. **Gate enumerates widths** (§2.7) — test-only, so the entire baseline shift is
-   attributable to the instrument.
-2. **`system_status` `colWidth` fix** (§2.8) — expected to raise its count;
-   unblocks its threshold. 85 coordinates, the largest single card.
-3. **`traffic_analysis:258`** (§2.10) — 49 coordinates at one site; the first
-   *elimination*, and the only card broken at mainstream desktop widths.
-4. **Blocks made overflow-safe** (§2.6) — `metric_blocks.dart:31` alone clears
-   58; `stat_blocks.dart:34`+`:40` clears 26 more.
-5. **Density plumbing** (§2.1, §2.6) — Provider injection, `normalAbove` on
-   `WidgetSpec`, form selection.
-6. **Per-card thresholds and compact forms**, batched by site (§1.1).
+**Two tracks that do not block each other.** Track A makes the gate green; Track B
+makes narrow cards readable. The gate cannot measure readability, so B does not
+wait for A. `normalAbove` defaulting to absent (§2.4) means B's mechanism is pure
+addition — it changes no card's rendering until a threshold is declared.
 
-Steps 1–3 are independent of the threshold values: fit width is a property of card
-content, measured by driving card width directly, so it does not depend on grid
-margins or the scan list. Only *which screen widths reach a threshold* depends on
-those.
+### Track A — eliminate coordinates (ratchet)
+
+| # | Work | Clears |
+|---|---|---:|
+| #1225 | Gate enumerates widths (§2.7) | 0 |
+| #1226 | `traffic_analysis` legend row (§2.10) | 49 |
+| #1233 | The other six legend rows (§1.1) | 132 |
+| #1227 | Shared blocks made overflow-safe (§2.6) | 101 |
+| #1228 | `ethernet_ports` ×2 sites | 52 |
+| #1229 | `wifi_performance` ×2 sites | 45 |
+| #1230 | `firewall_overview` own sites (§2.11) | 48 |
+| #1234 | `system_status` remaining ×3 sites | 34 |
+| #1236 | `lan_info` + `device_info` card-own | 29 |
+| #1237 | `time_settings` card-own | 21 |
+| #1235 | `network_health` gauge centre | 3 |
+| #1238 | `connected_devices` card-own (§2.6) | 1 |
+
+Ceiling **515 / 560**. The other 45 are the dependency-blocked ones (§1.1).
+
+#1225 lands first — not because it re-baselines (it does not, §1.6) but so that
+the invariant holds by construction and any future shift is attributable. #1226
+precedes #1233 because it settles the legend shape the six others replicate.
+#1236/#1237/#1238 genuinely depend on #1227: those coordinates need both a shared
+and a card-own fix, so card-own work done first shows zero allowlist progress.
+#1234/#1235 follow #1233 only to avoid editing the same files concurrently.
+
+### Track B — make narrow cards readable
+
+| # | Work |
+|---|---|
+| #1231 | `usp_info_row` reads real width (§2.8) — fixes silent truncation, clears 0 |
+| #1232 | Density plumbing (§2.1, §2.4, §2.6) — the one ticket needing red-first tests |
+| #1239 | Popup form + dialog reuse (§2.1) |
+| #1240 | Per-card thresholds and compact forms (§2.4, §2.5) — split after fit widths settle |
+
+#1240 waits on all of Track A: thresholds are meaningless while fit widths are
+still moving, and the point of the layout fixes is to lower them. **Re-measure
+before declaring any threshold** — a card whose fit width drops to its narrowest
+realization needs no threshold at all, and absent is the correct value.
 
 ### How each step is verified
 
-The steps do not share a single verification method, and treating them as if they
-did is the likeliest way to get this wrong.
+The steps do not share a verification method, and treating them as if they did is
+the likeliest way to get this wrong.
 
-| Steps | Method | Why |
+| Work | Method | Why |
 |---|---|---|
-| 3, 4, 6 | **Ratchet, not TDD** | The failing assertions are *already committed* — the 560 entries in `known_overflows.json`. The red→green move is: fix the layout, delete the allowlist entry, gate passes. Deleting an entry that still overflows fails that test, so it cannot be faked. |
-| 5 | **TDD** | The gate asserts only "no overflow"; it cannot detect *wrong density*. Threshold selection, popup cut-off, and absent-`normalAbove` behaviour can all be broken while the gate stays green. These need tests written red first. |
-| 1, 2 | **Neither** | Re-measurement, not assertion. There is no "should pass" to write — the output is a new baseline, reviewed as a number. |
+| All of Track A except #1225 | **Ratchet, not TDD** | The failing assertions are *already committed* — the 560 entries in `known_overflows.json`. The red→green move is: fix the layout, delete the allowlist entry, gate passes. Deleting an entry that still overflows fails that test, so it cannot be faked. |
+| #1232 | **TDD** | The gate asserts only "no overflow"; it cannot detect *wrong density*. Threshold selection, popup cut-off, and absent-`normalAbove` behaviour can all break while the gate stays green. Tests go red first. |
+| #1225, #1231 | **Neither** | Not assertions. #1225 converts a sampled invariant into a guaranteed one; #1231 fixes a failure the gate is structurally blind to (§2.8) and is verified by eye or golden. |
 
 The gate does **not** need to know a card's measured fit width to enforce
 §2.4's `normalAbove >= fitWidth`: it applies the density rule at the card's
