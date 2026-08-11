@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/constants/build_config.dart';
+import 'package:privacy_gui/constants/error_code.dart';
 import 'package:privacy_gui/core/cache/linksys_cache_manager.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
@@ -132,8 +133,16 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
             ))
         .onError((error, stackTrace) {
       logger.e('Polling error: $error, $stackTrace');
-      logger.f('[Auth]: Force to log out because of failed polling');
-      ref.read(authProvider.notifier).logout();
+      // Only a rejected credential justifies logging the user out. A single
+      // failed poll used to do it, so anything that briefly took the router's
+      // HTTP service away - a service restart, the make-Master credential
+      // rotation - kicked the user back to the login page even though their
+      // password was still good. Leave the state in error and let the next
+      // poll tick recover.
+      if (_isAuthFailure(error)) {
+        logger.f('[Auth]: Force to log out because polling was unauthorized');
+        ref.read(authProvider.notifier).logout();
+      }
 
       throw error ?? '';
     });
@@ -169,6 +178,15 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
 
     benchMark.end();
   }
+
+  /// Whether the router rejected our credential, as opposed to never having
+  /// answered. Only the former means the session is really gone.
+  ///
+  /// Cloud-side session invalidation is not checked here on purpose:
+  /// [LinksysHttpClient.onError] already routes `INVALID_SESSION_TOKEN` through
+  /// [AuthNotifier], which re-checks the session token before logging out.
+  bool _isAuthFailure(Object? error) =>
+      error is JNAPError && error.result == errorJNAPUnauthorized;
 
   Future _additionalPolling() async {
     if (serviceHelper.isSupportLedMode()) {
