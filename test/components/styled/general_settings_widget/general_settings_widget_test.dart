@@ -1,0 +1,111 @@
+@Tags(['ui'])
+library;
+
+import 'package:flutter/material.dart';
+import 'package:flutter_portal/flutter_portal.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:get_it/get_it.dart';
+import 'package:privacy_gui/components/styled/general_settings_widget/general_settings_widget.dart';
+import 'package:privacy_gui/components/styled/general_settings_widget/language_tile.dart';
+import 'package:privacy_gui/components/styled/general_settings_widget/theme_mode_tile.dart';
+import 'package:privacy_gui/l10n/gen/app_localizations.dart';
+import 'package:privacy_gui/theme/theme_json_config.dart';
+
+/// Coverage for the language picker's visibility in an English-only build (see
+/// docs/adr/0001-english-only-build-by-build-time-stripping.md).
+///
+/// A build stripped to one language pack has nothing to pick between, so the
+/// picker must not be offered — and because the parent wraps it in a fixed-height
+/// SizedBox, the tile cannot hide itself without leaving a 44px hole in the popup.
+/// The decision therefore belongs to the parent, which is what these tests pin.
+void main() {
+  setUpAll(() {
+    final getIt = GetIt.instance;
+    final config = ThemeJsonConfig.defaultConfig();
+    if (!getIt.isRegistered<ThemeJsonConfig>()) {
+      getIt.registerSingleton<ThemeJsonConfig>(config);
+    }
+    // GeneralSettingsWidget reads the dark theme out of getIt for its icon
+    // colour, so the host has to provide one.
+    if (!getIt.isRegistered<ThemeData>(instanceName: 'darkThemeData')) {
+      getIt.registerSingleton<ThemeData>(
+        config.createDarkTheme(),
+        instanceName: 'darkThemeData',
+      );
+    }
+  });
+
+  Widget buildHost({List<Locale>? supportedLocales}) {
+    // Portal: AppPopupButton renders its content through flutter_portal.
+    return Portal(
+      child: ProviderScope(
+        child: MaterialApp(
+          theme: GetIt.instance.get<ThemeData>(instanceName: 'darkThemeData'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: GeneralSettingsWidget(supportedLocales: supportedLocales),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Opens the settings popup, which is where the language picker lives.
+  Future<void> openPopup(WidgetTester tester) async {
+    await tester.tap(find.byType(Icon).first);
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('offers the language picker when the build ships several locales',
+      (tester) async {
+    await tester.pumpWidget(buildHost(
+      supportedLocales: const [Locale('en'), Locale('ja')],
+    ));
+
+    await openPopup(tester);
+
+    expect(find.byType(LanguageTile), findsOneWidget);
+  });
+
+  testWidgets('omits the language picker when the build ships one locale',
+      (tester) async {
+    await tester.pumpWidget(buildHost(
+      supportedLocales: const [Locale('en')],
+    ));
+
+    await openPopup(tester);
+
+    expect(find.byType(LanguageTile), findsNothing);
+  });
+
+  testWidgets('keeps the rest of the popup when the language picker is omitted',
+      (tester) async {
+    // Guards against the omission taking a sibling with it: everything below the
+    // picker still has to be reachable in an English-only build.
+    await tester.pumpWidget(buildHost(
+      supportedLocales: const [Locale('en')],
+    ));
+
+    await openPopup(tester);
+
+    expect(find.byType(ThemeModeTile), findsOneWidget);
+  });
+
+  testWidgets('offers the picker by default, for the retail build',
+      (tester) async {
+    // No explicit list: the widget falls back to what the build actually
+    // compiled, which is every language pack that survived the strip.
+    await tester.pumpWidget(buildHost());
+
+    await openPopup(tester);
+
+    expect(
+      find.byType(LanguageTile),
+      AppLocalizations.supportedLocales.length > 1
+          ? findsOneWidget
+          : findsNothing,
+    );
+  });
+}
