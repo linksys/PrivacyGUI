@@ -124,7 +124,16 @@ final routerProvider = Provider<GoRouter>((ref) {
       if (state.matchedLocation == '/') {
         return router._autoConfigurationLogic(state);
       } else if (state.matchedLocation == RoutePath.localLoginPassword) {
-        router._autoConfigurationLogic(state);
+        // Deliberately NOT re-running _autoConfigurationLogic here. It was
+        // fired without await and its result discarded, but the damage was the
+        // side effect, not the lost return value: when it elects PnP (which it
+        // does whenever userAcknowledgedAutoConfiguration is false, i.e. all of
+        // first-time setup) it calls authProvider.logout(), and _redirectLogic
+        // watches authProvider — so the redirect re-ran and elected PnP again,
+        // bouncing pnp -> localLoginPassword -> pnp in a self-driving loop.
+        // Awaiting it would only serialise that loop, not break it.
+        // The '/' branch above already owns the pnp-vs-login election; once we
+        // have matched localLoginPassword the destination is settled.
         return router._redirectLogic(state);
       } else if (state.matchedLocation.startsWith('/pnp')) {
         return router._goPnpPath(state);
