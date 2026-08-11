@@ -52,9 +52,11 @@ function buildWebApp() {
 # has to fail loudly, even if the build itself succeeded.
 function restoreLocales() {
   local buildStatus=$?
-  echo "restoring all language packs"
+  echo "===== restoring all language packs (build exited ${buildStatus}) ====="
   if ! $DART run tools/locale_strip.dart restore; then
     echo "FAILED to restore language packs — the working tree is still stripped"
+    echo "git status of the strippable paths:"
+    git status --porcelain -- lib/l10n assets/fonts/fallback pubspec.yaml
     exit 1
   fi
   # lib/l10n/gen is gitignored, so `verify` cannot see a stale English-only
@@ -98,18 +100,33 @@ if [ "$FlutterVersion" == "3.27.1" ]; then
 fi
 
 locales=${LOCALES:-all}
+echo "===== language packs: LOCALES=${LOCALES:-<unset>} -> ${locales} ====="
 if [ "$locales" != "all" ]; then
-    echo "stripping language packs down to: ${locales}"
+    # Logged before the strip because the strip's own gate reads git status, and
+    # a dirty workspace is the failure that is impossible to diagnose without it.
+    echo "workspace state before stripping:"
+    echo "  HEAD:   $(git rev-parse --short HEAD 2> /dev/null || echo unknown)"
+    echo "  branch: $(git rev-parse --abbrev-ref HEAD 2> /dev/null || echo unknown)"
+    echo "  git status --porcelain:"
+    git status --porcelain | sed 's/^/    /'
+    echo "  language packs present: $(ls lib/l10n/app_*.arb 2> /dev/null | wc -l | tr -d ' ')"
+    echo "  fallback fonts present: $(ls assets/fonts/fallback 2> /dev/null | wc -l | tr -d ' ')"
+
     if ! $DART run tools/locale_strip.dart keep "$locales"; then
         echo "language pack strip failed — nothing was built"
         exit 1
     fi
     # From here on the working tree is modified, so every exit path restores it.
     trap restoreLocales EXIT
+    echo "  language packs kept:    $(ls lib/l10n/app_*.arb 2> /dev/null | wc -l | tr -d ' ')"
+    echo "  fallback fonts kept:    $(ls assets/fonts/fallback 2> /dev/null | wc -l | tr -d ' ')"
     if ! $FLUTTER gen-l10n; then
         echo "gen-l10n failed after stripping to ${locales}"
         exit 1
     fi
+    # The single line that says which flavour was actually compiled, so a console
+    # log is enough to tell an English-only build from a retail one.
+    echo "  locales compiled in:    $(grep -c 'Locale(' lib/l10n/gen/app_localizations.dart)"
 fi
 
 if ! buildWebApp "$buildNumber"; then

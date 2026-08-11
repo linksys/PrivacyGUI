@@ -66,10 +66,21 @@ by the parent (`GeneralSettingsWidget`) rather than the tile hiding itself, beca
 tile sits in a fixed-height `SizedBox` that would otherwise leave a 44px hole.
 
 The strip is restored by an `EXIT` trap, which a `SIGKILL` (what a Jenkins abort escalates
-to) would skip. This is harmless on CI because the job wipes its workspace and re-clones
-every build, so a stripped tree cannot survive into the next one — a fact worth re-checking
-before switching any job to reusing its workspace. Locally it matters, and the next build's
-own pre-strip gate is what catches it.
+to) would skip. On CI the restore buys nothing either way: the job wipes its workspace and
+re-clones every build, and the payload is already in `build/web` by then, so a stripped
+source tree cannot reach the next build — a fact worth re-checking before switching any job
+to reusing its workspace. It exists for the developer who runs an English-only build in
+their own working tree, where an unrestored strip means the next `git commit -a` commits the
+deletion of 25 language packs.
+
+`pubspec.yaml` is not in the path list that restore checks out of git, even though the strip
+rewrites its `fonts:` block. A CI job stamps the version into the pubspec before building,
+so checking the file out would silently revert that stamp — and the pre-strip gate, which
+refuses to run when a restorable path has local changes, failed every CI build for exactly
+that reason. Restore swaps in the committed `fonts:` block by line range instead, bounded by
+the next key at two-space indent, leaving every other line — the version among them —
+untouched. The gate still refuses when a *language pack* is edited, which is the case it was
+built for.
 
 Firmware image size is verified outside this repo. What this repo delivers and can prove
 is the reduction in delivered payload, which `tools/measure_payload.sh` prints at the end

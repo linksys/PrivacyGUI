@@ -267,6 +267,44 @@ void main() {
       expect(remainingFontFiles(), allFonts);
     });
 
+    test('puts back the comments interleaved between font families', () {
+      // The real pubspec explains why Roboto is declared with a bare family name
+      // in comments inside the fonts: block. Restoring the block by line range
+      // has to bring those back, not just the declarations.
+      givenProject(locales: ['en', 'ja'], fonts: allFonts);
+      final pubspec = File('${project.path}/pubspec.yaml');
+      pubspec.writeAsStringSync(pubspec.readAsStringSync().replaceFirst(
+            '    - family: packages/ui_kit_library/Roboto',
+            '    # Roboto is the engine default global fallback\n'
+                '    - family: packages/ui_kit_library/Roboto',
+          ));
+      commitEverything();
+      final stripper = LocaleStripper(projectRoot: project.path);
+      stripper.keep(['en']);
+
+      stripper.restore();
+
+      expect(pubspecContent(),
+          contains('# Roboto is the engine default global fallback'));
+      expect(pubspecContent(), contains('NotoSansCJKsc'));
+    });
+
+    test('leaves the rest of the pubspec untouched when it restores', () {
+      // The block swap is bounded by the next key at two-space indent, so
+      // everything after the fonts: block has to survive it verbatim.
+      givenProject(locales: ['en', 'ja'], fonts: allFonts);
+      final pubspec = File('${project.path}/pubspec.yaml');
+      pubspec.writeAsStringSync('${pubspec.readAsStringSync()}'
+          '  assets:\n    - assets/config/\n');
+      commitEverything();
+      final stripper = LocaleStripper(projectRoot: project.path);
+      stripper.keep(['en']);
+
+      stripper.restore();
+
+      expect(pubspecContent(), contains('    - assets/config/'));
+    });
+
     test('leaves files outside its own paths alone', () {
       // restore is a `git checkout --` over a fixed path list, never a reset, so
       // unrelated work in progress must survive it.
@@ -282,11 +320,77 @@ void main() {
     });
   });
 
+  group('a CI job that edits pubspec.yaml', () {
+    const allFonts = ['NotoSans-Latin.woff2', 'NotoSansCJKsc.subset.woff2'];
+
+    /// Mimics the build step that stamps a version or build number into the
+    /// pubspec before building, which leaves it modified (` M `) in git.
+    void givenTheJobStampedTheVersion() {
+      final pubspec = File('${project.path}/pubspec.yaml');
+      pubspec.writeAsStringSync(
+        pubspec.readAsStringSync().replaceFirst(
+              'name: test_app',
+              'name: test_app\nversion: 9.9.9+42',
+            ),
+      );
+    }
+
+    test('strips anyway, instead of refusing to build', () {
+      // The Jenkins job stamps the version before building, so pubspec.yaml is
+      // always modified by the time the strip runs. Refusing on that basis fails
+      // every CI build.
+      givenProject(locales: ['en', 'ja'], fonts: allFonts);
+      givenTheJobStampedTheVersion();
+
+      expect(
+        () => LocaleStripper(projectRoot: project.path).keep(['en']),
+        returnsNormally,
+      );
+      expect(remainingArbFiles(), ['app_en.arb']);
+    });
+
+    test('keeps the version the job stamped when it restores', () {
+      // Restoring pubspec.yaml with `git checkout --` would revert the version
+      // along with the font declarations, silently un-stamping the build.
+      givenProject(locales: ['en', 'ja'], fonts: allFonts);
+      givenTheJobStampedTheVersion();
+      final stripper = LocaleStripper(projectRoot: project.path);
+      stripper.keep(['en']);
+
+      stripper.restore();
+
+      expect(pubspecContent(), contains('version: 9.9.9+42'));
+      expect(pubspecContent(), contains('NotoSansCJKsc'));
+    });
+
+    test('still refuses when a language pack itself is edited', () {
+      // The gate that matters is unchanged: an edited ARB is inside the blast
+      // radius of the git checkout that restore performs.
+      givenProject(locales: ['en', 'ja'], fonts: allFonts);
+      File('${project.path}/lib/l10n/app_ja.arb')
+          .writeAsStringSync('{"@@locale":"ja","edited":"yes"}');
+
+      expect(
+        () => LocaleStripper(projectRoot: project.path).keep(['en']),
+        throwsA(isA<LocaleStripException>()),
+      );
+    });
+  });
+
   group('verify', () {
     const allFonts = ['NotoSans-Latin.woff2', 'NotoSansCJKsc.subset.woff2'];
 
     test('passes on a tree with nothing stripped', () {
       givenProject(locales: ['en', 'ja'], fonts: allFonts);
+
+      expect(LocaleStripper(projectRoot: project.path).verify, returnsNormally);
+    });
+
+    test('passes when only pubspec.yaml is modified', () {
+      // What a CI job's version stamp looks like — not something to fail on.
+      givenProject(locales: ['en', 'ja'], fonts: allFonts);
+      File('${project.path}/pubspec.yaml')
+          .writeAsStringSync('${pubspecContent()}\nversion: 9.9.9+42\n');
 
       expect(LocaleStripper(projectRoot: project.path).verify, returnsNormally);
     });

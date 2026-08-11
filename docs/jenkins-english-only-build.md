@@ -34,8 +34,38 @@ variable, and `build_web.sh` reads `LOCALES` from the environment:
 ./build_web.sh "${BUILD_NUMBER}" false "/" prod false true
 ```
 
-The script strips before building and restores afterwards. It prints the delivered payload
-size at the end, so the reduction shows up in the console log:
+The script strips before building and restores afterwards, logging enough at each step that
+the console log alone is diagnostic:
+
+```
+===== language packs: LOCALES=en -> en =====
+workspace state before stripping:
+  HEAD:   4427f822
+  branch: austin/en-only
+  git status --porcelain:
+     M pubspec.yaml
+  language packs present: 26
+  fallback fonts present: 9
+locale_strip: keeping en in /var/lib/jenkins/workspace/privacygui
+  no local changes in lib/l10n, assets/fonts/fallback
+  language packs: dropped 25 of 26 (ar, da, de, ...)
+  fallback fonts: deleted NotoSansArabic.woff2, ...
+  pubspec.yaml: removed 7 font declaration(s)
+locale_strip: strip complete
+  language packs kept:    1
+  fallback fonts kept:    2
+  locales compiled in:    2
+```
+
+The `git status --porcelain` block is printed before the strip because the strip's own gate
+reads git status, and a dirty workspace is the one failure that cannot be diagnosed without
+it. ` M pubspec.yaml` there is expected — that is the version stamp, and it does not block
+the strip.
+
+`locales compiled in: 2` means one locale: the count is `Locale(` occurrences in the
+generated file, and one of them is the list's type annotation. A retail build prints 27.
+
+Then the delivered payload size, so the reduction shows up in the same log:
 
 ```
 Delivered payload: 25908 KB (25.30 MB)
@@ -78,7 +108,8 @@ echo "built ${actual} locale(s), as asked"
 **A cleanup step.** The strip is restored by an `EXIT` trap, so a failed build restores
 too. More importantly this job wipes its workspace and re-clones every build, so nothing
 can survive to the next one — a Jenkins abort escalates to `SIGKILL`, which would skip the
-trap, and the fresh clone is what makes that harmless.
+trap, and the fresh clone is what makes that harmless. The restore on CI is belt-and-braces;
+it exists for developers running the flavour in their own working tree.
 
 If the job is ever switched to reusing its workspace, that changes: an aborted English-only
 build would leave the tree stripped, and the next build — retail included — would ship
@@ -91,6 +122,24 @@ the strip and `pub get` however suits the job.
 
 **A separate `gen-l10n` step.** `build_web.sh` runs it after stripping, and again after
 restoring.
+
+## When the build fails at the strip
+
+```
+language pack strip failed — nothing was built
+```
+
+The line above it says which condition tripped. Read the `git status --porcelain` block the
+script prints just before, and match:
+
+| Message | Cause | Fix |
+| --- | --- | --- |
+| `local changes in lib/l10n, assets/fonts/fallback` | A build step edits a language pack or a fallback font, so restoring would discard its work | Have that step write somewhere else, or commit its output |
+| `no language pack for xx — available: ...` | Typo in `LOCALES` | Use a Choice Parameter so a typo is impossible |
+| `pubspec.yaml declares fonts that are not on disk` | The pubspec's `fonts:` block no longer matches the three-line shape the strip expects | Restore the shape, or teach `_removeFontDeclarations` the new one |
+
+A ` M pubspec.yaml` in that block is **not** a cause — the strip ignores the pubspec's
+modification state on purpose, because CI stamps the version into it.
 
 ## Verifying the parameter works
 

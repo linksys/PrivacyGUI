@@ -73,15 +73,16 @@ class LocaleStripper {
   /// The sentinel that means "ship everything" — the retail build.
   static const keepAll = 'all';
 
-  /// Every path this script is allowed to touch.
+  /// The paths [restore] checks out of git, so the list doubles as the promise
+  /// that unrelated work in progress is never reverted.
   ///
-  /// `restore` checks out exactly these, so the list doubles as the promise that
-  /// unrelated work in progress is never reverted. Keep it in sync with what
-  /// [keep] modifies.
+  /// `pubspec.yaml` is deliberately absent even though [keep] rewrites it: a CI
+  /// job stamps the version into it before building, and checking it out would
+  /// silently revert that stamp. Its `fonts:` block is put back by reinstating the
+  /// declarations instead — see [_restoreFontDeclarations].
   static const strippablePaths = [
     'lib/l10n',
     'assets/fonts/fallback',
-    'pubspec.yaml',
   ];
 
   /// The only fallback fonts an English-only build can use: extended Latin for
@@ -116,8 +117,11 @@ class LocaleStripper {
           'no locales given — pass at least one, or "all"');
     }
     if (locales.contains(keepAll)) {
+      stdout.writeln('locale_strip: "all" requested — nothing stripped');
       return;
     }
+    stdout
+        .writeln('locale_strip: keeping ${locales.join(', ')} in $projectRoot');
     verify();
     final available = _availableLocales();
     final unknown = locales.where((l) => !available.contains(l)).toList();
@@ -127,13 +131,20 @@ class LocaleStripper {
         'available: ${available.join(', ')}',
       );
     }
+    final dropped = <String>[];
     for (final entity in _arbFiles()) {
-      if (!_isKept(_localeOf(entity), locales)) {
+      final locale = _localeOf(entity);
+      if (!_isKept(locale, locales)) {
         entity.deleteSync();
+        dropped.add(locale);
       }
     }
+    dropped.sort();
+    stdout.writeln('  language packs: dropped ${dropped.length} of '
+        '${available.length} (${dropped.join(', ')})');
     _stripFallbackFonts();
     verifyDeclaredFontsExist();
+    stdout.writeln('locale_strip: strip complete');
   }
 
   /// Deletes the non-Latin fallback fonts and their pubspec declarations.
@@ -150,8 +161,12 @@ class LocaleStripper {
         removed.add(name);
       }
     }
+    removed.sort();
     if (removed.isNotEmpty) {
+      stdout.writeln('  fallback fonts: deleted ${removed.join(', ')}');
       _removeFontDeclarations(removed);
+    } else {
+      stdout.writeln('  fallback fonts: nothing to delete');
     }
   }
 
@@ -185,6 +200,8 @@ class LocaleStripper {
         if (!dropped.contains(i)) lines[i],
     ];
     _pubspec.writeAsStringSync('${kept.join('\n')}\n');
+    stdout.writeln('  pubspec.yaml: removed ${dropped.length ~/ 3} '
+        'font declaration(s)');
   }
 
   /// Throws unless every font the pubspec declares is present on disk.
@@ -216,12 +233,19 @@ class LocaleStripper {
       ? _fontDir.listSync().whereType<File>().toList()
       : <File>[];
 
-  /// Puts every stripped file back, by checking out [strippablePaths] from git.
+  /// Puts every stripped file back: [strippablePaths] by checking them out of
+  /// git, and the pubspec's `fonts:` block by reinstating the committed one.
   ///
   /// Idempotent, so it is safe from an exit handler that may already have run.
   /// On CI a killed build cannot leak anyway, because the job re-clones its
   /// workspace; this matters for the developer who runs a stripped build locally.
   void restore() {
+    stdout.writeln('locale_strip: restoring ${strippablePaths.join(', ')} '
+        'in $projectRoot');
+    final stripped = _localChanges();
+    stdout.writeln(stripped.isEmpty
+        ? '  nothing was stripped'
+        : '  putting back:\n${stripped.split('\n').map((l) => '    $l').join('\n')}');
     final result = Process.runSync(
       'git',
       ['checkout', '--', ...strippablePaths],
@@ -232,6 +256,76 @@ class LocaleStripper {
         'could not restore ${strippablePaths.join(', ')}: ${result.stderr}',
       );
     }
+    _restoreFontDeclarations();
+    stdout.writeln('locale_strip: restore complete');
+  }
+
+  /// Replaces the pubspec's `fonts:` block with the committed one, leaving the
+  /// rest of the file — notably a CI job's version stamp — exactly as it is.
+  void _restoreFontDeclarations() {
+    final committed = _committedPubspecLines();
+    final current = _pubspec.readAsLinesSync();
+    final wanted = _fontsBlockOf(committed, 'the committed pubspec.yaml');
+    final present = _fontsBlockOf(current, 'pubspec.yaml');
+    if (_sameLines(wanted, present)) {
+      stdout.writeln('  pubspec.yaml already declares every fallback font');
+      return;
+    }
+    final restored = [
+      ...current.take(present.start),
+      ...wanted.lines,
+      ...current.skip(present.end),
+    ];
+    _pubspec.writeAsStringSync('${restored.join('\n')}\n');
+    stdout.writeln('  reinstated the pubspec.yaml fonts: block '
+        '(${present.lines.length} lines -> ${wanted.lines.length})');
+  }
+
+  bool _sameLines(_FontsBlock a, _FontsBlock b) =>
+      a.lines.length == b.lines.length &&
+      Iterable.generate(a.lines.length).every((i) => a.lines[i] == b.lines[i]);
+
+  List<String> _committedPubspecLines() {
+    final result = Process.runSync(
+      'git',
+      ['show', 'HEAD:./pubspec.yaml'],
+      workingDirectory: projectRoot,
+    );
+    if (result.exitCode != 0) {
+      throw LocaleStripException(
+        'could not read the committed pubspec.yaml: ${result.stderr}',
+      );
+    }
+    final lines = (result.stdout as String).split('\n');
+    if (lines.isNotEmpty && lines.last.isEmpty) {
+      lines.removeLast(); // the trailing newline, which is not a line
+    }
+    return lines;
+  }
+
+  /// Locates the `fonts:` block in [lines], for the [what] named in errors.
+  ///
+  /// The block runs from `  fonts:` to the next non-blank line indented two
+  /// spaces or less, which is the next key or comment in the `flutter:` section.
+  /// Everything more deeply indented belongs to the block, including the
+  /// comments interleaved between families.
+  _FontsBlock _fontsBlockOf(List<String> lines, String what) {
+    final start = lines.indexWhere((line) => line.trimRight() == '  fonts:');
+    if (start < 0) {
+      throw LocaleStripException('no "  fonts:" line in $what');
+    }
+    var end = lines.length;
+    for (var i = start + 1; i < lines.length; i++) {
+      final line = lines[i];
+      if (line.trim().isEmpty) {
+        continue;
+      }
+      if (line.length - line.trimLeft().length <= 2) {
+        end = i;
+        break;
+      }
+    }
+    return _FontsBlock(start, end, lines.sublist(start, end));
   }
 
   /// Throws unless none of [strippablePaths] has local changes.
@@ -239,6 +333,20 @@ class LocaleStripper {
   /// Runs before a strip so uncommitted work is never inside the blast radius of
   /// the [restore] that follows, and after a build to prove nothing leaked.
   void verify() {
+    final changes = _localChanges();
+    if (changes.isNotEmpty) {
+      throw LocaleStripException(
+        'local changes in ${strippablePaths.join(', ')} — commit or stash them '
+        'first, because restoring would discard them:\n$changes',
+      );
+    }
+    stdout.writeln('  no local changes in ${strippablePaths.join(', ')}');
+  }
+
+  /// `git status --porcelain` over [strippablePaths] — empty when they are all
+  /// as committed. Deliberately blind to `pubspec.yaml`, which a CI job stamps
+  /// the version into on every build.
+  String _localChanges() {
     final result = Process.runSync(
       'git',
       ['status', '--porcelain', '--', ...strippablePaths],
@@ -247,13 +355,7 @@ class LocaleStripper {
     if (result.exitCode != 0) {
       throw LocaleStripException('could not read git status: ${result.stderr}');
     }
-    final changes = (result.stdout as String).trim();
-    if (changes.isNotEmpty) {
-      throw LocaleStripException(
-        'local changes in ${strippablePaths.join(', ')} — commit or stash them '
-        'first, because restoring would discard them:\n$changes',
-      );
-    }
+    return (result.stdout as String).trim();
   }
 
   /// Whether [locale] survives a strip that keeps [kept], counting a regional
@@ -279,4 +381,18 @@ class LocaleStripper {
   }
 
   String _fileNameOf(FileSystemEntity entity) => entity.uri.pathSegments.last;
+}
+
+/// Where the pubspec's `fonts:` block is and what it says, so a restore can swap
+/// the committed block in without disturbing a line outside it.
+class _FontsBlock {
+  _FontsBlock(this.start, this.end, this.lines);
+
+  /// Index of the `  fonts:` line.
+  final int start;
+
+  /// Index one past the block's last line.
+  final int end;
+
+  final List<String> lines;
 }
