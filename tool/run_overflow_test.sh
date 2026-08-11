@@ -32,7 +32,9 @@ Options:
                           1 = Markdown bulleted list (build/overflow_testing/overflow_report.md)
                           2 = HTML visual report + PNG screenshots (default)
                           3 = Markdown + HTML + PNG screenshots
-  -m, --min-screen PX   Filter test cases to screen widths >= PX (e.g. 400). Default: 0 (scan all).
+  -m, --min-screen PX   Raise the floor of the enumerated screen-width range to PX (e.g. 400),
+                        so each span's narrowest width is the narrowest at or above PX.
+                        Default: 0 = no filter; the 320px supported floor still applies.
   -c, --card CARD_ID    Target a specific card spec ID (e.g. stats_panel, network_health).
   -L, --locale LOCALE   Target specific locale(s) (e.g. ru or ru,zh_TW). Default: all 26 locales.
   -o, --open            Automatically open HTML report in default browser after test completes.

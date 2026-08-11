@@ -30,9 +30,12 @@ import '../../../util/overflow_probe.dart';
 ///     new cards are gated automatically, including ones with no golden.
 ///   * Pumps each card at the **real pixel widths the production grid yields**
 ///     (see [widthCasesFor]): the narrowest realization of its min / preferred
-///     / max column span across every breakpoint. Overflow is monotonic in
-///     width and height-independent (measured), so the narrowest realization of
-///     each span is that span's worst case.
+///     / max column span. Overflow is monotonic in width and height-independent
+///     (measured), so the narrowest realization of each span is that span's
+///     worst case. That narrowest width is found by **enumerating** the
+///     supported screen-width range (`kMinSupportedScreenWidth` upward), not by
+///     sampling a list of screen widths — so the worst case is guaranteed by
+///     construction rather than asserted (#1225).
 ///   * **Sweeps every tab** (via [cardTabIndexProvider], not geometric taps),
 ///     so overflow that only appears on a non-default tab is caught — several
 ///     cards overflow *worse* on a non-default tab than on tab 0.

@@ -1,6 +1,6 @@
 # Dashboard Card Density — Design Decisions
 
-**Last Updated: 2026-08-11** · Follow-up to #1183 · Status: **agreed; tickets #1225–#1240 published, implementation not started**
+**Last Updated: 2026-08-11** · Follow-up to #1183 · Status: **agreed; tickets #1225–#1240 published; #1225 implemented (not yet merged), rest not started**
 
 ## Purpose
 
@@ -184,9 +184,15 @@ wider than span 12 @ 320px = 288px.
 
 ### 1.6 The 191px "floor" was a sampling artifact
 
-`dashboard_card_probe.dart:154` scans a **hand-written list of 19 screen widths**
-(minimum 320). 191.4px is the narrowest value in that sample, not the geometric
-minimum. An exhaustive 1px sweep (240–2560px) gives:
+> **Superseded by #1225** (implemented; not yet merged). The probe now enumerates the supported range
+> (`narrowestRealizationOf`, 320–2560px) instead of scanning a list. The
+> measurements below are what justified that change and are kept as its record;
+> the no-op claim they predicted was confirmed on the full sweep — 560
+> coordinates across 36 keys, byte-identical before and after.
+
+`dashboard_card_probe.dart` used to scan a **hand-written list of 19 screen
+widths** (minimum 320). 191.4px is the narrowest value in that sample, not the
+geometric minimum. An exhaustive 1px sweep (240–2560px) gives:
 
 | Span | True narrowest | At screen |
 |---:|---:|---:|
@@ -208,8 +214,15 @@ width for **every one of the 12 spans**:
 
 The omitted widths are nobody's worst case: 375 / 390 / 430px all sit inside the
 4-column low-margin band where 320px already dominates. So replacing the sample
-(§2.7) buys a **guarantee, not a new baseline** — it is expected to be a
-behavioural no-op.
+(§2.7) bought a **guarantee, not a new baseline** — confirmed as a behavioural
+no-op when #1225 was implemented.
+
+**Where the sample *was* lossy: a raised floor.** With `MIN_SCREEN=602` the list
+held nothing in 602–904, so it fell through to 1241px and reported a 3-column
+card as 198.25px — 6.5px wider than the real 191.75px @ 602px. That path is not
+what the PR gate runs (the gate uses no floor), which is why the committed
+baseline never saw it, but it is the concrete reason "sampling happens to be
+correct here" was not a safe place to leave the invariant.
 
 Counter-intuitively, **mobile is not the narrowest case**: a 3-column card is
 212px at a 320px phone but 191.4px at a 601px tablet.
@@ -312,6 +325,12 @@ Rather than design every popup form to survive a width no user has, the framewor
 follows. This is an explicit product commitment, not a side effect of a test's
 scan list.
 
+Recorded in code as `kMinSupportedScreenWidth` in
+[dashboard_card_probe.dart](../../test/util/dashboard/dashboard_card_probe.dart),
+carrying this rationale, so the next person to change it knows it is a decision
+(#1225). Lowering it adds overflow coordinates and requires a deliberate
+re-baseline.
+
 > Revisit if narrower targets appear (automotive head units, embedded panels).
 
 ### 2.4 `normalAbove` is per-card, declared on `WidgetSpec`, defaulting to absent
@@ -382,18 +401,45 @@ through the UI Kit proposal path.
 
 ### 2.7 The gate enumerates widths instead of sampling them
 
-`_scanScreens`'s hand-written 19-width list *asserts* the gate's stated invariant
-("narrowest realization = worst case") rather than guaranteeing it. It will be
-replaced by an exhaustive search over the supported range, keeping the current
-one-case-per-span reduction.
+**Implemented in #1225** (not yet merged). `_scanScreens`'s hand-written 19-width list *asserted* the
+gate's stated invariant ("narrowest realization = worst case") rather than
+guaranteeing it. It is replaced by `narrowestRealizationOf(span)`, which
+enumerates every screen width from `kMinSupportedScreenWidth` (§2.3) to
+`kMaxScannedScreenWidth`, keeping the one-case-per-span reduction.
 
 The frozen-geometry warning in `SKILL.md` applies to the **formulas** — which
-mirror production and must not change — not to the sample list.
+mirror production and must not change — not to how widths are chosen.
 
-**Expected to be a behavioural no-op**, per §1.6: sampled and exhaustive minima
-agree to 0.1px on all 12 spans. It still goes **first** (Part 4) for two reasons:
-the invariant then holds by construction, and if the baseline *does* move, the
-cause is unambiguous because nothing else has changed yet.
+**The guarantee is exact over integer screen widths, and within 0.5px of the
+continuum.** Card width is piecewise-linear and increasing in screen width within
+each (columns, margin) regime, so each regime's narrowest width is at its left
+edge, and enumerating every integer visits every regime. But the breakpoints are
+**exclusive** (`screenWidth <= 600` is still 4 columns), so four regimes open
+just *above* an integer and their infimum is approached, not attained: a 3-column
+card tends to 191.0px as the screen tends down to 600px, versus the 191.375px @
+601px the gate pumps. Fractional logical widths are realizable in production
+(1080 / 2.75 = 392.7), so the gap is real; it is bounded at **0.5px** (worst case,
+span 4), recorded as `kEnumerationSlackPx`, and a quarter of the gate's 2.0px
+tolerance — so it cannot flip a verdict. Closing it entirely would mean
+enumerating breakpoint+ε as well, which buys nothing measurable.
+
+2560px is a sufficient upper bound because the regime never changes again above
+1680px.
+
+**Confirmed a behavioural no-op**, as §1.6 predicted: the full sweep reports the
+same 560 coordinates across the same 36 keys, and the allowlist fixture is
+unchanged. Because it landed **first** (Part 4), any future shift in that count
+is attributable to the ticket that causes it.
+
+Verified by
+[dashboard_card_probe_test.dart](../../test/util/dashboard/dashboard_card_probe_test.dart).
+Its central test compares the search against an **independently derived
+infimum** — computed from the breakpoint list, including the open edges, rather
+than by walking integers — so it catches a search whose *domain* is wrong, not
+just one whose step is coarse. (Verified by mutation: starting the walk above
+601px fails it. An earlier version of the test re-enumerated the same integers
+the implementation does and passed that mutation — a property test whose oracle
+shares the implementation's blind spot pins the step, not the property.)
 
 ### 2.8 The `colWidth` bug is silent truncation, and gates only the threshold
 
@@ -517,7 +563,7 @@ addition — it changes no card's rendering until a threshold is declared.
 
 | # | Work | Clears |
 |---|---|---:|
-| #1225 | Gate enumerates widths (§2.7) | 0 |
+| #1225 | Gate enumerates widths (§2.7) — **implemented** | 0 |
 | #1226 | `traffic_analysis` legend row (§2.10) | 49 |
 | #1233 | The other six legend rows (§1.1) | 132 |
 | #1227 | Shared blocks made overflow-safe (§2.6) | 101 |
@@ -562,7 +608,8 @@ the likeliest way to get this wrong.
 |---|---|---|
 | All of Track A except #1225 | **Ratchet, not TDD** | The failing assertions are *already committed* — the 560 entries in `known_overflows.json`. The red→green move is: fix the layout, delete the allowlist entry, gate passes. Deleting an entry that still overflows fails that test, so it cannot be faked. |
 | #1232 | **TDD** | The gate asserts only "no overflow"; it cannot detect *wrong density*. Threshold selection, popup cut-off, and absent-`normalAbove` behaviour can all break while the gate stays green. Tests go red first. |
-| #1225, #1231 | **Neither** | Not assertions. #1225 converts a sampled invariant into a guaranteed one; #1231 fixes a failure the gate is structurally blind to (§2.8) and is verified by eye or golden. |
+| #1231 | **Neither** | Not an assertion — it fixes a failure the gate is structurally blind to (§2.8), so it is verified by eye or golden. |
+| #1225 | **Property tests + no-op diff** | Planned as "neither", since converting a sampled invariant into a guaranteed one changes no assertion. In the event it had a testable seam after all: the search is pinned by a property (no supported width is narrower than the one pumped, which fails on a coarser step) and the no-op claim by diffing the full sweep's 560 allowlisted hits before and after — they matched exactly. |
 
 The gate does **not** need to know a card's measured fit width to enforce
 §2.4's `normalAbove >= fitWidth`: it applies the density rule at the card's
