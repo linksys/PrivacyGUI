@@ -6,12 +6,6 @@ import 'package:privacy_gui/ai/ai_logging.dart';
 import 'package:privacy_gui/ai/abstraction/_abstraction.dart';
 import 'package:privacy_gui/ai/prompts/router_system_prompt.dart';
 
-/// Most LLM round-trips one exchange may take before it is cut off.
-///
-/// A fuse against a model that keeps requesting data instead of answering, not
-/// a budget the user is meant to feel.
-const int _maxLoops = 5;
-
 /// Results accumulated for one assistant turn, owned by the exchange that
 /// opened it.
 ///
@@ -160,11 +154,12 @@ class RouterChatController extends ChangeNotifier {
   int get currentRound => _currentRound;
   int _currentRound = 0;
 
-  /// The most rounds one exchange may take before it is cut off.
+  /// Most LLM round-trips one exchange may take before it is cut off.
   ///
-  /// Exposed so the view can show progress relative to a known bound rather
-  /// than an open-ended counter.
-  static const int maxRounds = _maxLoops;
+  /// A fuse against a model that keeps requesting data instead of answering,
+  /// not a budget the user is meant to feel. Exposed so the view can show
+  /// progress against a known bound rather than an open-ended counter.
+  static const int maxRounds = 5;
 
   /// Whether there's an error.
   bool get hasError => _state.hasError;
@@ -303,7 +298,7 @@ class RouterChatController extends ChangeNotifier {
     if (_isStale(batch)) return;
 
     var loopCount = 0;
-    const maxLoops = _maxLoops;
+    const maxLoops = maxRounds;
 
     _log(
         '_processConversation: starting loop (${tools.length} tools available)');
@@ -845,6 +840,12 @@ class RouterChatController extends ChangeNotifier {
     _totalOutputTokens = 0;
     _totalCacheReadTokens = 0;
     _totalCacheWriteTokens = 0;
+
+    // A clear is a forced end to the exchange, so the round must read idle from
+    // this notification onward. The `finally` in _processConversation also
+    // clears it, but not until the in-flight call yields — leaving a frame where
+    // the view sees `isLoading == false` alongside a non-zero round.
+    _currentRound = 0;
 
     // Refresh router context
     _initializeSystemPrompt();

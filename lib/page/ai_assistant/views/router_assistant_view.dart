@@ -715,6 +715,7 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
                         color:
                             theme.colorScheme.onSurface.withValues(alpha: 0.7),
                         round: _controller?.currentRound ?? 0,
+                        totalRounds: RouterChatController.maxRounds,
                       ),
                     ],
                   ),
@@ -928,7 +929,15 @@ class _AnimatedThinkingText extends StatefulWidget {
   /// nothing they cannot already see.
   final int round;
 
-  const _AnimatedThinkingText({required this.color, this.round = 0});
+  /// The bound [round] counts against, so the widget does not have to know
+  /// where that number comes from.
+  final int totalRounds;
+
+  const _AnimatedThinkingText({
+    required this.color,
+    this.round = 0,
+    this.totalRounds = 0,
+  });
 
   static const _phrases = [
     'Thinking',
@@ -989,8 +998,11 @@ class _AnimatedThinkingTextState extends State<_AnimatedThinkingText>
     final dots = '.' * _dotCount;
     // Digits only, so no new localized string is needed — and the label stays
     // correct if the tool list is reorganised later.
-    final step = widget.round > 1
-        ? ' (${widget.round}/${RouterChatController.maxRounds})'
+    // Read live from the widget on every build: copying either value into State
+    // would freeze the display at whatever round was current when this widget
+    // was first created.
+    final step = widget.round > 1 && widget.totalRounds > 0
+        ? ' (${widget.round}/${widget.totalRounds})'
         : '';
     return AppText.body(
       '$phrase$dots$step',
