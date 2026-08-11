@@ -1,6 +1,6 @@
 # Dashboard Card Density — Design Decisions
 
-**Last Updated: 2026-08-11** · Follow-up to #1183 · Status: **agreed; tickets #1225–#1240 published; #1225 implemented (not yet merged), rest not started**
+**Last Updated: 2026-08-11** · Follow-up to #1183 · Status: **agreed; tickets #1225–#1240 published; #1225 + #1226 implemented (not yet merged), rest not started**
 
 ## Purpose
 
@@ -496,6 +496,37 @@ site** (`usp_traffic_analysis_card.dart:258`), the second-highest-leverage fix i
 the whole set. Fix the layout; do not raise its default span, which would squeeze
 neighbouring cards and still leave manual shrinking broken.
 
+**Fixed in #1226** (not yet merged). All 49 coordinates cleared; the card is
+clean across 26 locales × 4 tabs, and its two allowlist keys are gone
+(560 → 511 coordinates, 36 → 34 keys). Default span unchanged at 6.
+
+Two corrections that measurement forced, recorded because T03 inherits this
+shape and because both were stated confidently above:
+
+1. **The default-layout break was one locale, not a general desktop break.** A
+   26-locale sweep at the default span-6 widths found **only `fr`** overflowing
+   (+92px @ 432, +44 @ 480, +28 @ 496, +12 @ 512) — `Téléversement` /
+   `Téléchargement`. §1.7's "40.6% clean" is a *fit-width* figure (worst locale ×
+   worst tab, §1.2), so it is consistent with this; but it reads as though every
+   desktop user sees the break, and only French users did. The conclusion
+   survives — a shipped locale broken at 1024px is still a normal-form bug, and
+   the compact-form argument is still unavailable — but the blast radius was
+   narrower than the ticket implies. An English-only regression test passed
+   *before* the fix existed, which is how this surfaced.
+2. **The widths named in #1226 are mis-paired.** At a 1024px screen the
+   12-column grid uses a 24px margin and yields **480px**, not 512px; 512px is
+   the 1440px screen, and 496px occurs at 1408/1520/1712px. The test covers 432 /
+   480 / 496 / 512 so the intent holds as a superset.
+
+**The degradation shape T03 replicates**: a `Wrap` with `spaceBetween` replaces
+`Row` + `Spacer` — identical rendering while the content fits, and the totals
+drop to a second line instead of overflowing when it does not. Legend labels are
+`Flexible` + one-line ellipsis (a legend keys an already colour-coded chart, so a
+clipped label still communicates); dot and label stay in one `Row` so a label
+never separates from its colour. The byte totals get no `Flexible` and no
+ellipsis — they are content, not chrome, and a truncated byte count cannot be
+recovered from the chart the way a legend label can.
+
 ### 2.11 fl_chart's 19 coordinates get a primary plan and a documented fallback
 
 `firewall_overview`'s 19 coordinates originate inside fl_chart
@@ -564,7 +595,7 @@ addition — it changes no card's rendering until a threshold is declared.
 | # | Work | Clears |
 |---|---|---:|
 | #1225 | Gate enumerates widths (§2.7) — **implemented** | 0 |
-| #1226 | `traffic_analysis` legend row (§2.10) | 49 |
+| #1226 | `traffic_analysis` legend row (§2.10) — **implemented** | 49 |
 | #1233 | The other six legend rows (§1.1) | 132 |
 | #1227 | Shared blocks made overflow-safe (§2.6) | 101 |
 | #1228 | `ethernet_ports` ×2 sites | 52 |

@@ -54,12 +54,6 @@
       "it", "nb", "nl", "pl", "pt", "pt_PT", "ru", "sv", "th", "tr",
       "vi"
     ],
-    "traffic_analysis|min|0": ["*"],
-    "traffic_analysis|preferred|0": [
-      "da", "de", "el", "en", "es", "es_AR", "fi", "fr", "fr_CA", "id",
-      "it", "ja", "ko", "nb", "nl", "pl", "pt", "pt_PT", "ru", "sv",
-      "th", "tr", "vi"
-    ],
     "wifi_performance|min|0": [
       "da", "de", "el", "en", "es", "es_AR", "fi", "fr", "fr_CA", "id",
       "it", "nl", "pl", "pt", "pt_PT", "ru", "sv", "th", "vi"
