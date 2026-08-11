@@ -734,17 +734,10 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
 
     // Check Auto Master status before save (Second Defense)
     final statusOnEntry = ref.read(pnpProvider).autoMasterStatusOnEntry;
-    final AutoMasterStatus? currentStatus;
-    try {
-      currentStatus =
-          await ref.read(pnpProvider.notifier).checkAutoMasterStatus();
-    } on ExceptionAutoMasterUnauthorized {
-      logger.e('[PnP]: Auto Master check unauthorized, redirect to login');
-      if (mounted) {
-        context.goNamed(RouteNamed.localLoginPassword);
-      }
-      return;
-    }
+    // null when the status is unavailable (unreachable, or firmware that does
+    // not serve GetAutoMasterStatus unauthed) → fall through to the save.
+    final AutoMasterStatus? currentStatus =
+        await ref.read(pnpProvider.notifier).checkAutoMasterStatus();
 
     logger.d('[PnP]: Auto Master check before save - '
         'entry status: $statusOnEntry, current: $currentStatus');
@@ -760,55 +753,43 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
       const maxConsecutiveFailures = 3;
       bool autoMasterFailed = false;
 
-      try {
-        await for (final pollStatus
-            in ref.read(pnpProvider.notifier).pollAutoMasterStatus()) {
-          logger.d('[PnP]: Auto Master polling status: $pollStatus');
+      await for (final pollStatus
+          in ref.read(pnpProvider.notifier).pollAutoMasterStatus()) {
+        logger.d('[PnP]: Auto Master polling status: $pollStatus');
 
-          if (pollStatus == null) {
-            consecutiveFailures++;
-            logger.w(
-                '[PnP]: Auto Master polling failed, consecutive failures: $consecutiveFailures');
+        if (pollStatus == null) {
+          consecutiveFailures++;
+          logger.w(
+              '[PnP]: Auto Master polling failed, consecutive failures: $consecutiveFailures');
 
-            if (consecutiveFailures >= maxConsecutiveFailures) {
-              logger.e(
-                  '[PnP]: Auto Master polling failed $maxConsecutiveFailures times, showing connection error');
-              setState(() {
-                _showAutoMasterConnectionError = true;
-              });
-              return;
+          if (consecutiveFailures >= maxConsecutiveFailures) {
+            logger.e(
+                '[PnP]: Auto Master polling failed $maxConsecutiveFailures times, showing connection error');
+            setState(() {
+              _showAutoMasterConnectionError = true;
+            });
+            return;
+          }
+        } else {
+          consecutiveFailures = 0;
+
+          if (pollStatus == AutoMasterStatus.complete ||
+              pollStatus == AutoMasterStatus.idle) {
+            // Redirect to login page - password changed
+            if (mounted) {
+              context.goNamed(RouteNamed.localLoginPassword);
             }
-          } else {
-            consecutiveFailures = 0;
+            return;
+          }
 
-            if (pollStatus == AutoMasterStatus.complete ||
-                pollStatus == AutoMasterStatus.idle) {
-              // Redirect to login page - password changed
-              if (mounted) {
-                context.goNamed(RouteNamed.localLoginPassword);
-              }
-              return;
-            }
-
-            if (pollStatus == AutoMasterStatus.failed) {
-              // Auto Master failed (e.g., found another Master), password is still admin
-              // Continue normal save flow
-              logger.i('[PnP]: Auto Master failed, continuing save flow');
-              autoMasterFailed = true;
-              break;
-            }
+          if (pollStatus == AutoMasterStatus.failed) {
+            // Auto Master failed (e.g., found another Master), password is still admin
+            // Continue normal save flow
+            logger.i('[PnP]: Auto Master failed, continuing save flow');
+            autoMasterFailed = true;
+            break;
           }
         }
-      } on ExceptionAutoMasterUnauthorized {
-        // Stream terminated on the first 401: make-Master rotated the admin
-        // password mid-poll. Go to login instead of re-polling with the stale
-        // credential (which would burn the CGI auth-attempt budget).
-        logger.w(
-            '[PnP]: Auto Master polling unauthorized → redirect to login');
-        if (mounted) {
-          context.goNamed(RouteNamed.localLoginPassword);
-        }
-        return;
       }
 
       // Skip timeout handling if Auto Master failed - continue to save logic

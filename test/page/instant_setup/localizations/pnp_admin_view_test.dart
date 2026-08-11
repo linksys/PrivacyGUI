@@ -294,78 +294,6 @@ void main() async {
     await tester.pumpAndSettle();
   });
 
-  testLocalizations(
-      'Instant Setup - PnP: Auto Master check unauthorized redirects to login',
-      (tester, locale) async {
-    when(mockPnpNotifier.build()).thenReturn(
-      PnpState(
-        deviceInfo: NodeDeviceInfo.fromJson(
-          jsonDecode(testDeviceInfo)['output'],
-        ),
-      ),
-    );
-    when(mockPnpNotifier.fetchDeviceInfo()).thenAnswer((_) async {});
-    when(mockPnpNotifier.checkRouterConfigured()).thenAnswer((_) async {});
-    when(mockPnpNotifier.checkAdminPassword(any)).thenAnswer((_) async {});
-    when(mockPnpNotifier.checkAutoMasterStatus())
-        .thenThrow(ExceptionAutoMasterUnauthorized());
-
-    await tester.pumpWidget(
-      testableSingleRoute(
-        config: LinksysRouteConfig(
-          column: ColumnGrid(column: 6, centered: true),
-          noNaviRail: true,
-        ),
-        child: const PnpAdminView(),
-        locale: locale,
-        overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
-      ),
-    );
-    await tester.pump(const Duration(seconds: 2));
-    await tester.pumpAndSettle();
-  });
-
-  // Regression: the poll STREAM (not just the pre-check Future) now terminates
-  // on the first 401. make-Master rotates the admin password mid-poll; the
-  // stream throws ExceptionAutoMasterUnauthorized, which the caller chain routes
-  // to login instead of flattening to null and re-polling with stale creds.
-  testLocalizations(
-      'Instant Setup - PnP: Auto Master poll stream unauthorized redirects to login',
-      (tester, locale) async {
-    when(mockPnpNotifier.build()).thenReturn(
-      PnpState(
-        deviceInfo: NodeDeviceInfo.fromJson(
-          jsonDecode(testDeviceInfo)['output'],
-        ),
-      ),
-    );
-    when(mockPnpNotifier.fetchDeviceInfo()).thenAnswer((_) async {});
-    when(mockPnpNotifier.checkRouterConfigured()).thenAnswer((_) async {});
-    when(mockPnpNotifier.checkAdminPassword(any)).thenAnswer((_) async {});
-    when(mockPnpNotifier.checkAutoMasterStatus())
-        .thenAnswer((_) async => AutoMasterStatus.running);
-    when(mockPnpNotifier.pollAutoMasterStatus())
-        .thenAnswer((_) => Stream.error(ExceptionAutoMasterUnauthorized()));
-
-    await tester.pumpWidget(
-      testableSingleRoute(
-        config: LinksysRouteConfig(
-          column: ColumnGrid(column: 6, centered: true),
-          noNaviRail: true,
-        ),
-        child: const PnpAdminView(),
-        locale: locale,
-        overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
-        extraRoutes: [_loginStubRoute()],
-      ),
-    );
-    await tester.pump(const Duration(seconds: 2));
-    await tester.pumpAndSettle();
-    // The poll-stream 401 must land on the login page, not leave the waiting
-    // spinner up (which would hang pumpAndSettle) nor stay on the admin view.
-    expect(find.byKey(const Key('loginStub')), findsOneWidget);
-  });
-
   // ---------------------------------------------------------------------------
   // `_doLogin` (manual "tap Login") Auto Master gate — A/B/C.
   //
@@ -552,15 +480,18 @@ void main() async {
     expect(find.byKey(const Key('pnpConfigStub')), findsNothing);
   });
 
-  // C: the initial `checkAutoMasterStatus()` gate itself 401s (credential
-  // already rotated by the time the user tapped Login) → redirect to login.
+  // C: the `checkAutoMasterStatus()` gate cannot determine the status (null) —
+  // the router is unreachable, or its firmware still requires auth for
+  // GetAutoMasterStatus and answers 401 to the unauthed read. There is nothing
+  // to wait for, so the gate must not block: `_doLogin` proceeds into config.
+  // If Auto Master then does rotate the credential, PnP's own second pass (the
+  // pre-save check) is what recovers.
   testWidgets(
-      'Instant Setup - PnP: Tap Login with Auto Master check unauthorized redirects to login',
+      'Instant Setup - PnP: Tap Login with Auto Master status unavailable enters config',
       (tester) async {
     useLargeScreen(tester);
     stubConfiguredRouter();
-    when(mockPnpNotifier.checkAutoMasterStatus())
-        .thenThrow(ExceptionAutoMasterUnauthorized());
+    when(mockPnpNotifier.checkAutoMasterStatus()).thenAnswer((_) async => null);
 
     await tester.pumpWidget(
       testableSingleRoute(
@@ -575,9 +506,14 @@ void main() async {
     );
     await tester.pump(const Duration(seconds: 1));
     await tapLogin(tester);
+    // Same two-clock dance as B: mock futures resolve on real microtasks
+    // (runAsync), the 1s internet-connected view on the fake timer (pump).
+    await tester.runAsync(() => Future.delayed(const Duration(seconds: 1)));
+    await tester.pump(const Duration(seconds: 1));
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const Key('loginStub')), findsOneWidget);
-    expect(find.byKey(const Key('pnpConfigStub')), findsNothing);
+    expect(find.byKey(const Key('pnpConfigStub')), findsOneWidget);
+    // Never polled: null is not `running`, so there was nothing to wait on.
+    verifyNever(mockPnpNotifier.pollAutoMasterStatus());
   });
 }

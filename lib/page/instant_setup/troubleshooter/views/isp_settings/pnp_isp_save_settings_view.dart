@@ -63,20 +63,14 @@ class _PnpIspSaveSettingsViewState extends ConsumerState<PnpIspSaveSettingsView>
   /// Check Auto Master status before saving ISP settings.
   /// Returns true if save should continue, false if redirected or waiting.
   Future<bool> _checkAndWaitForAutoMaster() async {
-    AutoMasterStatus? status;
-    try {
-      status = await ref.read(pnpProvider.notifier).checkAutoMasterStatus();
-    } on ExceptionAutoMasterUnauthorized {
-      // Session expired, redirect to PnP entry
-      logger.w('[PnP]: Troubleshooter - Auto Master check unauthorized');
-      if (mounted) context.goNamed(RouteNamed.pnp);
-      return false;
-    }
+    final status = await ref.read(pnpProvider.notifier).checkAutoMasterStatus();
 
-    // null means Auto Master not supported, continue save
+    // null means the status is unavailable — unreachable router, or firmware
+    // that does not serve GetAutoMasterStatus unauthed. Either way there is
+    // nothing to wait for, so continue the save.
     if (status == null) {
       logger.d(
-          '[PnP]: Troubleshooter - Auto Master not supported, continue save');
+          '[PnP]: Troubleshooter - Auto Master status unavailable, continue save');
       return true;
     }
 

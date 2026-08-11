@@ -3,14 +3,16 @@
 // These bypass the widget layer entirely: a ProviderContainer hosts the real
 // notifier with routerRepositoryProvider overridden by a MockRouterRepository,
 // so we can assert exactly how each JNAP result is translated:
-//   - checkAutoMasterStatus()      : Future<AutoMasterStatus?>, 401 -> throw
-//   - pollAutoMasterStatus()       : Stream, terminal statuses, 401 -> stream error
-//   - pollAutoMasterUntilRunning() : Stream, running/complete/failed, 401 -> error
+//   - checkAutoMasterStatus()      : Future<AutoMasterStatus?>, 401 -> null
+//   - pollAutoMasterStatus()       : Stream, terminal statuses, 401 -> null
+//   - pollAutoMasterUntilRunning() : Stream, running/complete/failed, 401 -> null
 //   - testConnectionReconnected()  : SN match -> ok, mismatch/send-fail -> throw
 //
 // This is the layer the widget/flow tests mock out, so it is the only place the
-// JNAP-result-to-status mapping (including the first-401 terminator that the
-// #1180 fix hinges on) is exercised against the real code.
+// JNAP-result-to-status mapping is exercised against the real code. All three
+// Auto Master calls send `auth: false`, so an unauthorized result means the
+// firmware still requires auth for GetAutoMasterStatus — indistinguishable from
+// the action being unsupported, and mapped to null like any other failure.
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -34,6 +36,21 @@ JNAPSuccess _statusSuccess(String? raw) => JNAPSuccess(
     );
 
 JNAPError _unauthorized() => const JNAPError(result: errorJNAPUnauthorized);
+
+/// The `auth` value the notifier passed to the last `scheduledCommand` call.
+bool _capturedScheduledAuth(MockRouterRepository repo) => verify(
+      repo.scheduledCommand(
+        action: anyNamed('action'),
+        retryDelayInMilliSec: anyNamed('retryDelayInMilliSec'),
+        maxRetry: anyNamed('maxRetry'),
+        firstDelayInMilliSec: anyNamed('firstDelayInMilliSec'),
+        data: anyNamed('data'),
+        condition: anyNamed('condition'),
+        onCompleted: anyNamed('onCompleted'),
+        requestTimeoutOverride: anyNamed('requestTimeoutOverride'),
+        auth: captureAnyNamed('auth'),
+      ),
+    ).captured.single as bool;
 
 void main() {
   late MockRouterRepository mockRepo;
@@ -101,12 +118,12 @@ void main() {
       }
     });
 
-    test('401 throws ExceptionAutoMasterUnauthorized', () async {
+    test('401 maps to null (firmware still requires auth)', () async {
+      // The request is sent unauthed, so a 401 cannot mean make-Master rotated
+      // the password — it means this firmware has not moved
+      // GetAutoMasterStatus to no-auth yet. Same degradation as unsupported.
       whenSend(() async => throw _unauthorized());
-      expect(
-        () => notifier.checkAutoMasterStatus(),
-        throwsA(isA<ExceptionAutoMasterUnauthorized>()),
-      );
+      expect(await notifier.checkAutoMasterStatus(), isNull);
     });
 
     test('non-401 JNAPError is swallowed to null (feature unsupported)',
@@ -124,6 +141,28 @@ void main() {
       whenSend(() async => _statusSuccess('SomethingNew'));
       expect(await notifier.checkAutoMasterStatus(), isNull);
     });
+
+    test('sends the request unauthed', () async {
+      // Load-bearing: sending a credential here is what let a mid-flow
+      // rotation burn the CGI auth-attempt budget and lock the user out.
+      whenSend(() async => _statusSuccess('Idle'));
+      await notifier.checkAutoMasterStatus();
+      expect(
+        verify(mockRepo.send(
+          any,
+          data: anyNamed('data'),
+          extraHeaders: anyNamed('extraHeaders'),
+          auth: captureAnyNamed('auth'),
+          type: anyNamed('type'),
+          fetchRemote: anyNamed('fetchRemote'),
+          cacheLevel: anyNamed('cacheLevel'),
+          timeoutMs: anyNamed('timeoutMs'),
+          retries: anyNamed('retries'),
+          sideEffectOverrides: anyNamed('sideEffectOverrides'),
+        )).captured.single,
+        isFalse,
+      );
+    });
   });
 
   group('pollAutoMasterStatus', () {
@@ -138,28 +177,21 @@ void main() {
       );
     });
 
-    test('terminates on the FIRST 401 (make-Master rotated the credential)',
-        () async {
-      // The first-401 fix: a 401 in the stream must surface as an error the
-      // consumer's await-for catches, NOT be flattened to null and re-polled.
+    test('401 flattens to null and the stream keeps going', () async {
+      // No credential is sent, so a 401 is not a rotation signal and cannot
+      // burn the CGI auth-attempt budget — it needs no early terminator.
       whenScheduled(Stream.fromIterable([_unauthorized()]));
-      expect(
-        notifier.pollAutoMasterStatus(),
-        emitsInOrder([emitsError(isA<ExceptionAutoMasterUnauthorized>())]),
-      );
+      expect(await notifier.pollAutoMasterStatus().toList(), [null]);
     });
 
-    test('a Running before a 401 is emitted, then the stream errors', () async {
+    test('a Running before a 401 keeps both in the stream', () async {
       whenScheduled(Stream.fromIterable([
         _statusSuccess('Running'),
         _unauthorized(),
       ]));
       expect(
-        notifier.pollAutoMasterStatus(),
-        emitsInOrder([
-          AutoMasterStatus.running,
-          emitsError(isA<ExceptionAutoMasterUnauthorized>()),
-        ]),
+        await notifier.pollAutoMasterStatus().toList(),
+        [AutoMasterStatus.running, null],
       );
     });
 
@@ -168,6 +200,12 @@ void main() {
         const JNAPError(result: '_SomethingElse'),
       ]));
       expect(await notifier.pollAutoMasterStatus().toList(), [null]);
+    });
+
+    test('polls unauthed', () async {
+      whenScheduled(Stream.fromIterable([_statusSuccess('Complete')]));
+      await notifier.pollAutoMasterStatus().toList();
+      expect(_capturedScheduledAuth(mockRepo), isFalse);
     });
   });
 
@@ -178,12 +216,9 @@ void main() {
           [AutoMasterStatus.running]);
     });
 
-    test('terminates on the first 401', () async {
+    test('401 flattens to null', () async {
       whenScheduled(Stream.fromIterable([_unauthorized()]));
-      expect(
-        notifier.pollAutoMasterUntilRunning(),
-        emitsInOrder([emitsError(isA<ExceptionAutoMasterUnauthorized>())]),
-      );
+      expect(await notifier.pollAutoMasterUntilRunning().toList(), [null]);
     });
 
     test('non-success / non-401 results flatten to null', () async {
@@ -191,6 +226,12 @@ void main() {
         const JNAPError(result: '_SomethingElse'),
       ]));
       expect(await notifier.pollAutoMasterUntilRunning().toList(), [null]);
+    });
+
+    test('polls unauthed', () async {
+      whenScheduled(Stream.fromIterable([_statusSuccess('Running')]));
+      await notifier.pollAutoMasterUntilRunning().toList();
+      expect(_capturedScheduledAuth(mockRepo), isFalse);
     });
   });
 

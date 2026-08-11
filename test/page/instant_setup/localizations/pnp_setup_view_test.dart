@@ -752,57 +752,6 @@ void main() async {
     await tester.pump(const Duration(seconds: 2));
   });
 
-  // Regression: the poll stream terminates on the first 401 (make-Master
-  // rotated the admin password mid-poll). Instead of flattening to null and
-  // re-polling with the stale credential, the save flow catches
-  // ExceptionAutoMasterUnauthorized and routes to login. This exercises the new
-  // try/catch around the await-for in _saveChanges.
-  testLocalizations('Instant Setup - PnP: Auto Master poll stream unauthorized',
-      (tester, locale) async {
-    var callCount = 0;
-    when(mockPnpNotifier.checkAutoMasterStatus()).thenAnswer((_) async {
-      callCount++;
-      return callCount == 1 ? AutoMasterStatus.idle : AutoMasterStatus.running;
-    });
-    when(mockPnpNotifier.pollAutoMasterStatus()).thenAnswer((_) {
-      return Stream<AutoMasterStatus?>.error(ExceptionAutoMasterUnauthorized());
-    });
-
-    await tester.pumpWidget(
-      testableSingleRoute(
-        child: const PnpSetupView(),
-        config: LinksysRouteConfig(
-            column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
-        locale: locale,
-        overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
-        extraRoutes: [_loginStubRoute()],
-      ),
-    );
-    await tester.pump(const Duration(seconds: 6));
-    final state =
-        tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
-    state.setState(() {});
-    await tester.pumpAndSettle();
-    final ssidEditFinder = find.byType(TextField).first;
-    final passwordEditFinder = find.byType(TextField).last;
-    await tester.enterText(ssidEditFinder, 'MyAwesomeWiFiName');
-    await tester.pumpAndSettle();
-    await tester.enterText(passwordEditFinder, 'MyAwesomeWiFiPassword!');
-    await tester.pumpAndSettle();
-    final btnFinder = find.byType(FilledButton);
-    await tester.tap(btnFinder.first);
-    await tester.pumpAndSettle();
-    final btnFinder2 = find.byType(FilledButton);
-    await tester.tap(btnFinder2.first);
-    await tester.pumpAndSettle();
-    final btnFinder3 = find.byType(FilledButton);
-    await tester.tap(btnFinder3.first);
-    await tester.pumpAndSettle();
-    // The poll-stream 401 during save must route to login instead of
-    // re-polling with the stale credential.
-    expect(find.byKey(const Key('loginStub')), findsOneWidget);
-  });
-
   // ---------------------------------------------------------------------------
   // `_saveChanges` Auto Master "second defense" — behavior/flow tests.
   //
@@ -955,27 +904,32 @@ void main() async {
     verify(mockPnpNotifier.save()).called(1);
   });
 
-  // Pre-save-check 401: the credential was already rotated by the time the user
-  // reached save, so the checkAutoMasterStatus() gate itself 401s. Route to
-  // login without polling or saving. (Distinct from the poll-stream 401 test
-  // above, which exercises the await-for terminator.)
+  // Pre-save check undetermined (null): the router is unreachable, or its
+  // firmware still requires auth for GetAutoMasterStatus and answers 401 to the
+  // unauthed read. The gate cannot tell, so it must not block the user — the
+  // save proceeds. If the credential really was rotated, the save itself 401s
+  // and the ExceptionSavingChanges handler routes back to PnP.
   testWidgets(
-      'Instant Setup - PnP: Auto Master pre-save check unauthorized redirects to login',
+      'Instant Setup - PnP: Auto Master status unavailable before save continues to save',
       (tester) async {
     useLargeScreen(tester);
-    var callCount = 0;
-    when(mockPnpNotifier.checkAutoMasterStatus()).thenAnswer((_) async {
-      callCount++;
-      if (callCount == 1) return AutoMasterStatus.idle; // keep initState benign
-      throw ExceptionAutoMasterUnauthorized();
-    });
+    stubCheckAutoMaster(entry: AutoMasterStatus.idle, duringSave: null);
+    // Left pending so the whenComplete tail (which schedules a post-save timer)
+    // never runs; we only assert save was reached.
+    final saveCompleter = Completer<void>();
+    when(mockPnpNotifier.save()).thenAnswer((_) => saveCompleter.future);
 
     await pumpSetup(tester, extraRoutes: [_loginStubRoute()]);
     await driveToSave(tester);
-    await tester.pumpAndSettle();
+    // Not pumpAndSettle: setState(saving) starts an endless AppSpinner.
+    await tester
+        .runAsync(() => Future.delayed(const Duration(milliseconds: 50)));
+    await tester.pump();
 
-    expect(find.byKey(const Key('loginStub')), findsOneWidget);
-    verifyNever(mockPnpNotifier.save());
+    verify(mockPnpNotifier.save()).called(1);
+    // null is not `running`, so there was nothing to poll or wait for.
+    verifyNever(mockPnpNotifier.pollAutoMasterStatus());
+    expect(find.byKey(const Key('loginStub')), findsNothing);
   });
 
   // Edge case (idle on entry, complete now): Auto Master was idle when PnP

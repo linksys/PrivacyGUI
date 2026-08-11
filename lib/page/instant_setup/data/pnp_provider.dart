@@ -739,7 +739,7 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
     try {
       final result = await ref.read(routerRepositoryProvider).send(
             JNAPAction.getAutoMasterStatus,
-            auth: true,
+            auth: false,
             fetchRemote: true,
             cacheLevel: CacheLevel.noCache,
             retries: 0,
@@ -748,14 +748,15 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
       final response = GetAutoMasterStatusResponse.fromMap(result.output);
       logger.d('[PnP]: Auto Master status: ${response.autoMasterStatus}');
       return response.autoMasterStatus;
-    } on JNAPError catch (e) {
-      if (e.result == errorJNAPUnauthorized) {
-        logger.w('[PnP]: Auto Master status check unauthorized');
-        throw ExceptionAutoMasterUnauthorized();
-      }
-      logger.d('[PnP]: GetAutoMasterStatus not supported or failed: $e');
-      return null;
     } catch (e) {
+      // 401 is deliberately in here with the rest. The request carries no
+      // credential (auth: false), so an unauthorized result cannot mean
+      // make-Master rotated the admin password — it means this firmware still
+      // serves GetAutoMasterStatus as auth-required. That is indistinguishable
+      // from the action being unsupported, and both degrade the same way: no
+      // Auto Master detection, PnP runs twice. Returning null keeps that
+      // degradation; throwing would send the user to login on the very first
+      // check.
       logger.d('[PnP]: GetAutoMasterStatus not supported or failed: $e');
       return null;
     }
@@ -767,7 +768,7 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
         .read(routerRepositoryProvider)
         .scheduledCommand(
           action: JNAPAction.getAutoMasterStatus,
-          auth: true,
+          auth: false,
           maxRetry: 60,
           retryDelayInMilliSec: 5000,
           firstDelayInMilliSec: 1000,
@@ -787,14 +788,13 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
           },
         )
         .map((result) {
-      // A 401 here means make-Master rotated the admin password mid-poll. Surface
-      // it as an error so the consumer's await-for terminates on the FIRST 401
-      // instead of flattening it to null and re-polling with the now-stale
-      // credential (which burns the CGI auth-attempt budget → login lockout).
-      if (result is JNAPError && result.result == errorJNAPUnauthorized) {
-        logger.w('[PnP]: Auto Master polling unauthorized → terminate stream');
-        throw ExceptionAutoMasterUnauthorized();
-      }
+      // Unauthorized is not special-cased here. The poll sends no credential
+      // (auth: false), so a 401 means the firmware still requires auth for this
+      // action rather than that make-Master rotated the password. It falls
+      // through to null below, same as an unsupported action: no detection, and
+      // PnP runs its second pass. Since no credential is sent, re-polling
+      // cannot burn the CGI auth-attempt budget, so no early terminator is
+      // needed to protect it.
       if (result is JNAPSuccess) {
         final status = AutoMasterStatus.fromValue(
             result.output['autoMasterStatus'] as String?);
@@ -819,7 +819,7 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
         .read(routerRepositoryProvider)
         .scheduledCommand(
           action: JNAPAction.getAutoMasterStatus,
-          auth: true,
+          auth: false,
           maxRetry: 18,
           retryDelayInMilliSec: 5000,
           firstDelayInMilliSec: 1000,
@@ -839,13 +839,8 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
           },
         )
         .map((result) {
-      // See pollAutoMasterStatus: terminate on the first 401 (make-Master
-      // rotated the credential) rather than re-polling with stale credentials.
-      if (result is JNAPError && result.result == errorJNAPUnauthorized) {
-        logger.w(
-            '[PnP]: Auto Master wait-for-running unauthorized → terminate stream');
-        throw ExceptionAutoMasterUnauthorized();
-      }
+      // See pollAutoMasterStatus: unauthorized falls through to null because
+      // this poll sends no credential.
       if (result is JNAPSuccess) {
         final status = AutoMasterStatus.fromValue(
             result.output['autoMasterStatus'] as String?);

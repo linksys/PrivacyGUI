@@ -108,12 +108,6 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
           });
         }, test: (error) => error is ExceptionInvalidAdminPassword)
         .catchError((error, stackTrace) {
-          logger.e('[PnP]: Auto Master check unauthorized, redirect to login');
-          if (mounted) {
-            context.goNamed(RouteNamed.localLoginPassword);
-          }
-        }, test: (error) => error is ExceptionAutoMasterUnauthorized)
-        .catchError((error, stackTrace) {
           logger.e('[PnP]: Auto Master polling failed, stay on error view');
           // Do nothing - UI already showing error view with retry button
         }, test: (error) => error is ExceptionAutoMasterPollingFailed)
@@ -356,15 +350,6 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
               }
             }, test: (error) => error is ExceptionInterruptAndExit).catchError(
                     (error, stackTrace) {
-              logger.e(
-                  '[PnP]: Auto Master check unauthorized, redirect to login');
-              if (mounted) {
-                context.goNamed(RouteNamed.localLoginPassword);
-              }
-            },
-                    test: (error) =>
-                        error is ExceptionAutoMasterUnauthorized).catchError(
-                    (error, stackTrace) {
               logger.e('[PnP]: Auto Master polling failed, stay on error view');
               // Do nothing - UI already showing error view with retry button
             },
@@ -472,13 +457,6 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
         context.goNamed(route);
       }
     }, test: (error) => error is ExceptionInterruptAndExit).catchError(
-        (error, stackTrace) {
-      // Auto Master rotated the credential again mid-check → back to login.
-      logger.e('[PnP]: Auto Master check unauthorized, redirect to login');
-      if (mounted) {
-        context.goNamed(RouteNamed.localLoginPassword);
-      }
-    }, test: (error) => error is ExceptionAutoMasterUnauthorized).catchError(
         (error, stackTrace) {
       // PnpAutoMasterWaitingView already shows the error + retry button.
       logger.e('[PnP]: Auto Master polling failed, stay on error view');
@@ -679,12 +657,6 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
         context.goNamed(route);
       }
     }, test: (error) => error is ExceptionInterruptAndExit).catchError(
-        (error, stackTrace) {
-      logger.e('[PnP]: Auto Master check unauthorized, redirect to login');
-      if (mounted) {
-        context.goNamed(RouteNamed.localLoginPassword);
-      }
-    }, test: (error) => error is ExceptionAutoMasterUnauthorized).catchError(
         (error, stackTrace) {
       logger.e('[PnP]: Auto Master polling failed, stay on error view');
       // Do nothing - UI already showing error view with retry button

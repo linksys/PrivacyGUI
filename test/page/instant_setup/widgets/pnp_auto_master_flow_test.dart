@@ -171,21 +171,7 @@ void main() {
     });
   });
 
-  group('PnpAutoMasterFlowMixin - null-threshold unauthorized probe', () {
-    testWidgets('3 nulls then probe unauthorized -> completed (recover)',
-        (tester) async {
-      when(mockPnpNotifier.pollAutoMasterStatus())
-          .thenAnswer((_) => Stream.fromIterable([null, null, null]));
-      // Session died mid make-Master.
-      when(mockPnpNotifier.checkAutoMasterStatus())
-          .thenThrow(ExceptionAutoMasterUnauthorized());
-
-      final r = await pumpFlow(tester, waitForRunningFirst: false);
-
-      expect(r.result, AutoMasterFlowResult.completed);
-      verify(mockPnpNotifier.checkAutoMasterStatus()).called(1);
-    });
-
+  group('PnpAutoMasterFlowMixin - null-threshold probe', () {
     testWidgets('3 nulls then probe Complete -> completed', (tester) async {
       when(mockPnpNotifier.pollAutoMasterStatus())
           .thenAnswer((_) => Stream.fromIterable([null, null, null]));
@@ -197,7 +183,8 @@ void main() {
       expect(r.result, AutoMasterFlowResult.completed);
     });
 
-    testWidgets('3 nulls then probe null (undetermined) -> connectionError',
+    testWidgets(
+        'Phase B: 3 nulls then probe null (undetermined) -> connectionError',
         (tester) async {
       when(mockPnpNotifier.pollAutoMasterStatus())
           .thenAnswer((_) => Stream.fromIterable([null, null, null]));
@@ -208,6 +195,27 @@ void main() {
 
       expect(r.result, AutoMasterFlowResult.connectionError);
       expect(r.state.events, ['enter', 'error']);
+    });
+
+    testWidgets('Phase A: 3 nulls then probe null (undetermined) -> proceed',
+        (tester) async {
+      // Firmware that still requires auth for GetAutoMasterStatus answers 401
+      // to the unauthed poll, which the notifier flattens to null — so every
+      // poll AND the probe come back undetermined. Phase A runs right after the
+      // ISP save + internet check proved the session alive, so this must not
+      // surface "router not found"; it proceeds and lets PnP's second pass
+      // recover.
+      when(mockPnpNotifier.pollAutoMasterUntilRunning())
+          .thenAnswer((_) => Stream.fromIterable([null, null, null]));
+      when(mockPnpNotifier.checkAutoMasterStatus())
+          .thenAnswer((_) async => null);
+
+      final r = await pumpFlow(tester, waitForRunningFirst: true);
+
+      expect(r.result, AutoMasterFlowResult.proceed);
+      expect(r.state.events, ['enter', 'exit']);
+      // Phase A resolved it; the completion poll is never reached.
+      verifyNever(mockPnpNotifier.pollAutoMasterStatus());
     });
 
     testWidgets('probe Running resets counter, then Complete -> completed',
@@ -225,48 +233,23 @@ void main() {
     });
   });
 
-  group('PnpAutoMasterFlowMixin - stream terminates on first 401', () {
-    testWidgets(
-        'Phase A: wait-for-running stream throws 401 -> completed (recover)',
+  group('PnpAutoMasterFlowMixin - mid-flow password rotation', () {
+    testWidgets('Phase A Running, then rotation mid-completion -> completed',
         (tester) async {
-      // make-Master rotated the admin password mid-poll: the stream terminates
-      // on the FIRST 401 (no null-flatten, no probe round-trip).
-      when(mockPnpNotifier.pollAutoMasterUntilRunning())
-          .thenAnswer((_) => Stream.error(ExceptionAutoMasterUnauthorized()));
-
-      final r = await pumpFlow(tester, waitForRunningFirst: true);
-
-      expect(r.result, AutoMasterFlowResult.completed);
-      expect(r.state.events, ['enter', 'exit']);
-      // The 401 is handled by the stream terminator, not the null-threshold probe.
-      verifyNever(mockPnpNotifier.checkAutoMasterStatus());
-    });
-
-    testWidgets('Phase B: polling stream throws 401 -> completed (recover)',
-        (tester) async {
-      when(mockPnpNotifier.pollAutoMasterStatus())
-          .thenAnswer((_) => Stream.error(ExceptionAutoMasterUnauthorized()));
-
-      final r = await pumpFlow(tester, waitForRunningFirst: false);
-
-      expect(r.result, AutoMasterFlowResult.completed);
-      expect(r.state.events, ['enter', 'exit']);
-      verifyNever(mockPnpNotifier.checkAutoMasterStatus());
-    });
-
-    testWidgets(
-        'Phase A Running then Phase B stream throws 401 -> completed (recover)',
-        (tester) async {
-      // Running is observed in Phase A, then completion-poll dies on 401.
+      // The polls are unauthed, so make-Master rotating the admin password no
+      // longer breaks them — nothing throws. Rotation is observed the normal
+      // way: the status reaches Complete.
       when(mockPnpNotifier.pollAutoMasterUntilRunning())
           .thenAnswer((_) => Stream.value(AutoMasterStatus.running));
-      when(mockPnpNotifier.pollAutoMasterStatus())
-          .thenAnswer((_) => Stream.error(ExceptionAutoMasterUnauthorized()));
+      when(mockPnpNotifier.pollAutoMasterStatus()).thenAnswer(
+          (_) => Stream.fromIterable([null, AutoMasterStatus.complete]));
 
       final r = await pumpFlow(tester, waitForRunningFirst: true);
 
       expect(r.result, AutoMasterFlowResult.completed);
       expect(r.state.events, ['enter', 'exit']);
+      // Below the null threshold, so no probe round-trip was needed.
+      verifyNever(mockPnpNotifier.checkAutoMasterStatus());
     });
   });
 }

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/jnap/models/auto_master_status.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
-import 'package:privacy_gui/page/instant_setup/data/pnp_exception.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_provider.dart';
 
 /// Outcome of [PnpAutoMasterFlowMixin.runAutoMasterFlow].
@@ -13,9 +12,8 @@ import 'package:privacy_gui/page/instant_setup/data/pnp_provider.dart';
 /// (`userAcknowledgedAutoConfiguration`) rather than hardcoding a redirect here.
 enum AutoMasterFlowResult {
   /// Auto Master finished making this router the Master (status reached
-  /// `complete`/`idle`), or the authenticated session died mid make-Master
-  /// (unauthorized) — which likewise means make-Master happened. The router's
-  /// admin state changed, so the caller should route onward to recover.
+  /// `complete`/`idle`). The router's admin state changed, so the caller should
+  /// route onward to recover.
   completed,
 
   /// Auto Master did not change anything: it `failed`, or it timed out with the
@@ -88,40 +86,44 @@ mixin PnpAutoMasterFlowMixin<T extends ConsumerStatefulWidget>
   /// observed, proceed to wait for completion".
   Future<AutoMasterFlowResult?> _waitForRunning(int threshold) async {
     int consecutiveNulls = 0;
-    try {
-      await for (final status
-          in ref.read(pnpProvider.notifier).pollAutoMasterUntilRunning()) {
-        if (!mounted) return AutoMasterFlowResult.proceed;
+    await for (final status
+        in ref.read(pnpProvider.notifier).pollAutoMasterUntilRunning()) {
+      if (!mounted) return AutoMasterFlowResult.proceed;
 
-        if (status == AutoMasterStatus.running) {
-          return null; // → wait for completion
-        }
-        if (status == AutoMasterStatus.complete) {
-          return AutoMasterFlowResult.completed;
-        }
-        if (status == AutoMasterStatus.failed) {
-          return AutoMasterFlowResult.proceed;
-        }
-        if (status == null) {
-          consecutiveNulls++;
-          logger.w(
-              '[PnP]: Auto Master wait-for-running null, consecutive: $consecutiveNulls');
-          if (consecutiveNulls >= threshold) {
-            final probe = await _probeUnauthorized();
-            if (!mounted) return AutoMasterFlowResult.proceed;
-            if (probe != null) return probe;
-            consecutiveNulls = 0; // probe saw Running → keep waiting
-          }
-        } else {
-          // idle → not started yet, keep waiting
-          consecutiveNulls = 0;
-        }
+      if (status == AutoMasterStatus.running) {
+        return null; // → wait for completion
       }
-    } on ExceptionAutoMasterUnauthorized {
-      // The stream terminated on the first 401: make-Master rotated the admin
-      // password mid-poll → Auto Master effectively completed → recover.
-      logger.i('[PnP]: Auto Master wait-for-running unauthorized → completed');
-      return AutoMasterFlowResult.completed;
+      if (status == AutoMasterStatus.complete) {
+        return AutoMasterFlowResult.completed;
+      }
+      if (status == AutoMasterStatus.failed) {
+        return AutoMasterFlowResult.proceed;
+      }
+      if (status == null) {
+        consecutiveNulls++;
+        logger.w(
+            '[PnP]: Auto Master wait-for-running null, consecutive: $consecutiveNulls');
+        if (consecutiveNulls >= threshold) {
+          final probe = await _probe();
+          if (!mounted) return AutoMasterFlowResult.proceed;
+          // An undetermined probe means Auto Master status is unavailable — on
+          // firmware that does not serve it unauthed, every poll lands here.
+          // Phase A runs after ISP settings saved and WAN came up, so the
+          // session was just proven alive; treating that as a connection error
+          // would show "router not found" right after a successful setup.
+          // Proceed instead and let PnP's own second pass handle recovery.
+          if (probe == AutoMasterFlowResult.connectionError) {
+            logger.w(
+                '[PnP]: Auto Master wait-for-running undetermined, proceed');
+            return AutoMasterFlowResult.proceed;
+          }
+          if (probe != null) return probe;
+          consecutiveNulls = 0; // probe saw Running → keep waiting
+        }
+      } else {
+        // idle → not started yet, keep waiting
+        consecutiveNulls = 0;
+      }
     }
 
     // Stream ended without Running (timeout). The session was just proven alive
@@ -133,38 +135,31 @@ mixin PnpAutoMasterFlowMixin<T extends ConsumerStatefulWidget>
   /// Phase B — wait for Auto Master to *finish*.
   Future<AutoMasterFlowResult> _waitForCompletion(int threshold) async {
     int consecutiveNulls = 0;
-    try {
-      await for (final status
-          in ref.read(pnpProvider.notifier).pollAutoMasterStatus()) {
-        if (!mounted) return AutoMasterFlowResult.proceed;
+    await for (final status
+        in ref.read(pnpProvider.notifier).pollAutoMasterStatus()) {
+      if (!mounted) return AutoMasterFlowResult.proceed;
 
-        if (status == AutoMasterStatus.complete ||
-            status == AutoMasterStatus.idle) {
-          return AutoMasterFlowResult.completed;
-        }
-        if (status == AutoMasterStatus.failed) {
-          return AutoMasterFlowResult.proceed;
-        }
-        if (status == null) {
-          consecutiveNulls++;
-          logger.w(
-              '[PnP]: Auto Master polling null, consecutive: $consecutiveNulls');
-          if (consecutiveNulls >= threshold) {
-            final probe = await _probeUnauthorized();
-            if (!mounted) return AutoMasterFlowResult.proceed;
-            if (probe != null) return probe;
-            consecutiveNulls = 0; // probe saw Running → keep waiting
-          }
-        } else {
-          // running → keep waiting for completion
-          consecutiveNulls = 0;
-        }
+      if (status == AutoMasterStatus.complete ||
+          status == AutoMasterStatus.idle) {
+        return AutoMasterFlowResult.completed;
       }
-    } on ExceptionAutoMasterUnauthorized {
-      // The stream terminated on the first 401: make-Master rotated the admin
-      // password mid-poll → Auto Master effectively completed → recover.
-      logger.i('[PnP]: Auto Master polling unauthorized → completed');
-      return AutoMasterFlowResult.completed;
+      if (status == AutoMasterStatus.failed) {
+        return AutoMasterFlowResult.proceed;
+      }
+      if (status == null) {
+        consecutiveNulls++;
+        logger.w(
+            '[PnP]: Auto Master polling null, consecutive: $consecutiveNulls');
+        if (consecutiveNulls >= threshold) {
+          final probe = await _probe();
+          if (!mounted) return AutoMasterFlowResult.proceed;
+          if (probe != null) return probe;
+          consecutiveNulls = 0; // probe saw Running → keep waiting
+        }
+      } else {
+        // running → keep waiting for completion
+        consecutiveNulls = 0;
+      }
     }
 
     // Stream ended (timeout). Verify the session survived make-Master.
@@ -177,33 +172,30 @@ mixin PnpAutoMasterFlowMixin<T extends ConsumerStatefulWidget>
     }
   }
 
-  /// Disambiguate a run of null poll results. `pollAutoMasterStatus`/
-  /// `pollAutoMasterUntilRunning` flatten an unauthorized error to `null`, so a
-  /// dead session (caused by make-Master) looks identical to a connection loss.
-  /// This explicit probe tells them apart.
+  /// Disambiguate a run of null poll results with one direct status read.
+  ///
+  /// The polls flatten every non-success result to `null`, so a router that is
+  /// genuinely unreachable looks the same as firmware that will not serve the
+  /// status. This probe re-reads the status once to see which it is.
   ///
   /// Returns a terminal [AutoMasterFlowResult], or `null` to signal "keep
-  /// polling" (Auto Master is still Running).
-  Future<AutoMasterFlowResult?> _probeUnauthorized() async {
-    try {
-      final status =
-          await ref.read(pnpProvider.notifier).checkAutoMasterStatus();
-      switch (status) {
-        case AutoMasterStatus.complete:
-        case AutoMasterStatus.idle:
-          return AutoMasterFlowResult.completed;
-        case AutoMasterStatus.failed:
-          return AutoMasterFlowResult.proceed;
-        case AutoMasterStatus.running:
-          return null; // reset + keep polling
-        case null:
-          // Could not determine the status → treat as a real connection error.
-          return AutoMasterFlowResult.connectionError;
-      }
-    } on ExceptionAutoMasterUnauthorized {
-      // Session died mid make-Master → Auto Master effectively completed.
-      logger.i('[PnP]: Auto Master probe unauthorized → completed (recover)');
-      return AutoMasterFlowResult.completed;
+  /// polling" (Auto Master is still Running). Callers decide what an
+  /// undetermined status ([AutoMasterFlowResult.connectionError]) means for
+  /// their phase — Phase A downgrades it to `proceed`.
+  Future<AutoMasterFlowResult?> _probe() async {
+    final status = await ref.read(pnpProvider.notifier).checkAutoMasterStatus();
+    switch (status) {
+      case AutoMasterStatus.complete:
+      case AutoMasterStatus.idle:
+        return AutoMasterFlowResult.completed;
+      case AutoMasterStatus.failed:
+        return AutoMasterFlowResult.proceed;
+      case AutoMasterStatus.running:
+        return null; // reset + keep polling
+      case null:
+        // Status unavailable: unreachable router, or firmware that does not
+        // serve GetAutoMasterStatus unauthed.
+        return AutoMasterFlowResult.connectionError;
     }
   }
 }
