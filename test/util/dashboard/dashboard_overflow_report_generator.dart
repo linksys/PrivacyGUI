@@ -78,20 +78,30 @@ class OverflowReportItem {
   String get recGridSpanKey => '${recCols}x$recRows';
   String get tabSuffix => tabCount > 1 ? '_t$tabIndex' : '';
   String get relativePngPath =>
-      'png/$cardId/screen${screenKey}_card${widthKey}_${gridSpanKey}${tabSuffix}_$localeTag.png';
+      'png/$cardId/screen${screenKey}_card${widthKey}_$gridSpanKey${tabSuffix}_$localeTag.png';
   String get relativeAdjustedPngPath =>
-      'png/adjust/$cardId/screen${screenKey}_card${widthKey}_${gridSpanKey}${tabSuffix}_${localeTag}_adjusted.png';
+      'png/adjust/$cardId/screen${screenKey}_card${widthKey}_$gridSpanKey${tabSuffix}_${localeTag}_adjusted.png';
 }
 
 /// Simple, pragmatic report generator for dashboard layout overflow sweeps.
 class DashboardOverflowReportGenerator {
-  /// Generates both Markdown and HTML visual reports in [baseDir].
+  /// Generates the reports selected by the caller's dump mode into [baseDir].
+  ///
+  /// [markdown] / [html] mirror the runner's dump modes (1 = Markdown only,
+  /// 2 = HTML + PNG, 3 = both), so a mode-1 run doesn't leave a stale HTML
+  /// report next to the fresh Markdown one.
   static Future<void> generateAll(
     List<OverflowReportItem> items, {
     required String baseDir,
+    bool markdown = true,
+    bool html = true,
   }) async {
-    await generateMarkdown(items, '$baseDir/overflow_report.md');
-    await generateHtml(items, '$baseDir/overflow_report.html');
+    if (markdown) {
+      await generateMarkdown(items, '$baseDir/overflow_report.md');
+    }
+    if (html) {
+      await generateHtml(items, '$baseDir/overflow_report.html');
+    }
   }
 
   /// Generates the Markdown summary report.
@@ -226,7 +236,8 @@ class DashboardOverflowReportGenerator {
         '.modal-header { padding: 1rem 1.25rem; background: #1e293b; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; }');
     sb.writeln(
         '.modal-title { font-weight: 600; font-size: 0.95rem; color: #f8fafc; font-family: monospace; }');
-    sb.writeln('.modal-actions { display: flex; gap: 8px; align-items: center; }');
+    sb.writeln(
+        '.modal-actions { display: flex; gap: 8px; align-items: center; }');
     sb.writeln(
         '.modal-copy-btn { background: #2563eb; color: #fff; border: none; border-radius: 6px; padding: 4px 10px; font-size: 0.8rem; cursor: pointer; font-weight: 500; }');
     sb.writeln('.modal-copy-btn:hover { background: #1d4ed8; }');
@@ -291,7 +302,8 @@ class DashboardOverflowReportGenerator {
       sb.writeln('<span class="filter-label">🎴 Card:</span>');
       sb.writeln(
           '<select id="filterCard" class="filter-select" onchange="applyFilters()">');
-      sb.writeln('<option value="all">All Cards (${allCardIds.length})</option>');
+      sb.writeln(
+          '<option value="all">All Cards (${allCardIds.length})</option>');
       for (final c in allCardIds) {
         sb.writeln('<option value="$c">$c</option>');
       }
@@ -428,7 +440,8 @@ class DashboardOverflowReportGenerator {
         '<div id="modalOverlay" class="modal-overlay" onclick="if(event.target===this)closeModal()">');
     sb.writeln('<div class="modal-card">');
     sb.writeln('<div class="modal-header">');
-    sb.writeln('<div id="modalTitle" class="modal-title">📄 Raw Error Log</div>');
+    sb.writeln(
+        '<div id="modalTitle" class="modal-title">📄 Raw Error Log</div>');
     sb.writeln('<div class="modal-actions">');
     sb.writeln(
         '<button id="copyBtn" class="modal-copy-btn" onclick="copyModalLog()">📋 Copy Log</button>');

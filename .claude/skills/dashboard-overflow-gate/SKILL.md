@@ -186,7 +186,7 @@ The gate's own failure message tells the operator exactly what to do:
 
 ### B. Edit the allowlist (defer a known overflow)
 
-1. Confirm it's genuinely deferred (has/《needs》a tracking issue), not a
+1. Confirm it's genuinely deferred (has, or needs, a tracking issue), not a
    regression you should fix now.
 2. Add the locale tag to the matching `cardId|widthLabel|tabIndex` array in
    `known_overflows.json` (create the entry if absent). Use `"*"` only when it
