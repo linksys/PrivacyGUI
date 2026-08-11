@@ -1,14 +1,22 @@
 #!/usr/bin/env dart
 
-/// Strips language packs and fallback fonts to produce an English-only build.
+/// Strips language packs and fallback fonts to produce an English-only build,
+/// which saves 3,904 KB (3.81 MB) of delivered payload on flash-constrained
+/// firmware. Measured, not estimated: 29,812 KB -> 25,908 KB.
 ///
-/// See docs/adr/0001-english-only-build-by-build-time-stripping.md for why this
-/// is a build-time script rather than a branch, and why on-demand language packs
-/// were rejected.
+/// A script rather than a branch because `app_en.arb` changes with nearly every
+/// feature, so a branch whose diff is "delete the other 25 ARB files" pays a
+/// merge conflict on every sync. A script also beats every compile-flag route: a
+/// `--dart-define` cannot shrink anything, because `supportedLocales` references
+/// every generated locale class, and deferred loading (`use-deferred-loading`)
+/// makes the payload 72 KB *larger* while turning `lookupAppLocalizations` into
+/// a `Future`. Deleting the ARB files before `gen-l10n` runs is the only thing
+/// that removes the string tables.
 ///
 /// The files it deletes are all tracked by git, so `restore` is a plain
 /// `git checkout --` over a fixed path list — there is no backup directory to
-/// leak.
+/// leak. Never `git reset --hard`, and never a bare `git checkout`: the fixed
+/// list is what promises unrelated work in progress survives.
 ///
 /// Usage:
 ///   dart run tools/locale_strip.dart keep en        # strip to English only
@@ -78,8 +86,10 @@ class LocaleStripper {
   ///
   /// `pubspec.yaml` is deliberately absent even though [keep] rewrites it: a CI
   /// job stamps the version into it before building, and checking it out would
-  /// silently revert that stamp. Its `fonts:` block is put back by reinstating the
-  /// declarations instead — see [_restoreFontDeclarations].
+  /// silently revert that stamp. Listing it here made the pre-strip gate see that
+  /// stamp as local work and refuse, which failed every CI build. Its `fonts:`
+  /// block is put back by reinstating the declarations instead — see
+  /// [_restoreFontDeclarations].
   static const strippablePaths = [
     'lib/l10n',
     'assets/fonts/fallback',
@@ -149,9 +159,16 @@ class LocaleStripper {
 
   /// Deletes the non-Latin fallback fonts and their pubspec declarations.
   ///
-  /// `FallbackFontResolver` is deliberately left alone — see ADR 0001: it goes on
-  /// naming families that no longer exist, which costs nothing because the engine
-  /// keys its CDN fallback off unresolved code points, not family names.
+  /// `FallbackFontResolver` is deliberately left alone: it goes on naming
+  /// families that no longer exist, which costs nothing because the engine keys
+  /// its CDN fallback off unresolved *code points*, not family names — the
+  /// resolver returning null instead would not change a single request. Do not
+  /// add a build flag to teach it which fonts survived; it would buy nothing and
+  /// create a second source of truth alongside this script.
+  ///
+  /// The cost of this strip lands on user-supplied non-Latin text (a CJK SSID, a
+  /// device name), which shows as tofu while the router is offline.
+  /// `fontFallbackBaseUrl` still renders it once the client has internet.
   void _stripFallbackFonts() {
     final removed = <String>[];
     for (final font in _fontFiles()) {

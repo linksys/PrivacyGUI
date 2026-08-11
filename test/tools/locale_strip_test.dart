@@ -6,8 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../../tools/locale_strip.dart';
 
-/// Tests for the English-only build flavour stripper (see
-/// docs/adr/0001-english-only-build-by-build-time-stripping.md).
+/// Tests for the English-only build flavour stripper.
 ///
 /// The seam under test is [LocaleStripper]'s behaviour against a real directory
 /// tree: given a project layout, what does the filesystem look like afterwards.

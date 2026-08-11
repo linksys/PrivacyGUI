@@ -12,8 +12,8 @@ import 'package:privacy_gui/components/styled/general_settings_widget/theme_mode
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/theme/theme_json_config.dart';
 
-/// Coverage for the language picker's visibility in an English-only build (see
-/// docs/adr/0001-english-only-build-by-build-time-stripping.md).
+/// Coverage for the language picker's visibility in an English-only build, the
+/// flavour `tools/locale_strip.dart` produces.
 ///
 /// A build stripped to one language pack has nothing to pick between, so the
 /// picker must not be offered — and because the parent wraps it in a fixed-height

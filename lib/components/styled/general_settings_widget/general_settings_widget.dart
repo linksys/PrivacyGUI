@@ -19,9 +19,9 @@ class GeneralSettingsWidget extends ConsumerStatefulWidget {
   const GeneralSettingsWidget({super.key, this.supportedLocales});
 
   /// The locales this build shipped. Defaults to what was compiled in, which an
-  /// English-only build has stripped down to one — see
-  /// docs/adr/0001-english-only-build-by-build-time-stripping.md. Injectable so
-  /// tests can exercise both flavours without rebuilding.
+  /// English-only build has stripped down to one (see
+  /// `tools/locale_strip.dart`). Injectable so tests can exercise both flavours
+  /// without rebuilding.
   final List<Locale>? supportedLocales;
 
   @override

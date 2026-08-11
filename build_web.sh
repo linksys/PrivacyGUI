@@ -12,7 +12,12 @@
 #   LOCALES  Which language packs to ship. Unset or "all" builds exactly what it
 #            has always built. Anything else strips the other language packs and
 #            the fallback fonts they need before building, and restores them
-#            afterwards — see docs/adr/0001-english-only-build-by-build-time-stripping.md
+#            afterwards. English-only saves 3,904 KB (3.81 MB) of delivered
+#            payload; see tools/locale_strip.dart for how and why.
+#
+#            On a Jenkins freestyle job this needs ONE string parameter named
+#            LOCALES (default "all") and no change to any shell step, because
+#            Jenkins exports build parameters as environment variables.
 #
 #   LOCALES=en ./build_web.sh 100 false "/" prod false true             # English-only
 
