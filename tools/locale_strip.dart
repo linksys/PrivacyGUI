@@ -218,9 +218,9 @@ class LocaleStripper {
 
   /// Puts every stripped file back, by checking out [strippablePaths] from git.
   ///
-  /// Idempotent, because each build runs it before stripping: a run that was
-  /// killed mid-build cannot leak into the next one, and that — not the exit
-  /// handler — is what actually guarantees a clean tree.
+  /// Idempotent, so it is safe from an exit handler that may already have run.
+  /// On CI a killed build cannot leak anyway, because the job re-clones its
+  /// workspace; this matters for the developer who runs a stripped build locally.
   void restore() {
     final result = Process.runSync(
       'git',

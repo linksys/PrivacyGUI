@@ -43,9 +43,10 @@ function buildWebApp() {
 # Puts back the language packs and fonts the strip deleted, and regenerates the
 # localization sources so the working tree is coherent again.
 #
-# Runs from a trap, so it also covers a build that fails or is interrupted. Only
-# an unstoppable kill can get past it, and the next stripped build's own gate
-# catches that, because the leftovers show up as local changes.
+# Runs from a trap, so it also covers a build that fails or is interrupted. A
+# SIGKILL gets past it, which is harmless on CI because the job re-clones its
+# workspace — it matters for the developer running a stripped build locally, who
+# gets told to run `restore` by the next build's own gate.
 #
 # Takes over the exit code on failure: a build that leaves a stripped tree behind
 # has to fail loudly, even if the build itself succeeded.

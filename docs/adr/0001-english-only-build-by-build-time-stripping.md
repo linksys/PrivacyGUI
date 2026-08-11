@@ -5,16 +5,22 @@ status: accepted
 # English-only builds strip localization at build time, not in a branch
 
 ISP builds on SDK14.0 have a tight firmware flash budget, and localization is the largest
-part of the delivered payload we can give up: 1.65 MB of translated strings compiled into
-`main.dart.js` plus 2.23 MB of fallback fonts, 3.88 MB in total out of ~29 MB. We produce
-these builds by having a script delete the non-English ARB files and the CJK/Arabic/Thai
-fallback fonts before the build and restore them after, exposed as a Jenkins build
-parameter — so English-only is a build flavour, not a branch that has to be maintained.
+part of the delivered payload we can give up. Measured on real builds: 29,812 KB → 25,908 KB,
+a 3,904 KB (3.81 MB) reduction out of ~29 MB — 1,608 KB of translated strings compiled into
+`main.dart.js` plus 2,296 KB of fallback fonts. We produce these builds by having a script
+delete the non-English ARB files and the CJK/Arabic/Thai fallback fonts before the build and
+restore them after, exposed as a Jenkins build parameter — so English-only is a build
+flavour, not a branch that has to be maintained.
+
+This is short of the 5 MB the request asks for, and the remaining ~1.2 MB is not in
+localization: the next candidates are `NOTICES` (1,488 KB) and `oui_database.json`
+(1,440 KB), both of which need agreement outside this repo.
 
 The flavour is selected by a `LOCALES` environment variable on `build_web.sh`, not by a
 tenth positional parameter: unset or `all` builds byte-for-byte what it built before, so
-every existing caller — Jenkins included — is untouched, and the Jenkins job adds one
-parameter that sets it.
+every existing caller — Jenkins included — is untouched. The Jenkins freestyle job adds one
+string parameter and no new shell step, because Jenkins exports build parameters as
+environment variables; see [Jenkins wiring](../jenkins-english-only-build.md).
 
 ## Considered Options
 
@@ -58,6 +64,12 @@ source of truth alongside the strip script.
 The settings popup omits the language picker when only one language pack shipped, decided
 by the parent (`GeneralSettingsWidget`) rather than the tile hiding itself, because the
 tile sits in a fixed-height `SizedBox` that would otherwise leave a 44px hole.
+
+The strip is restored by an `EXIT` trap, which a `SIGKILL` (what a Jenkins abort escalates
+to) would skip. This is harmless on CI because the job wipes its workspace and re-clones
+every build, so a stripped tree cannot survive into the next one — a fact worth re-checking
+before switching any job to reusing its workspace. Locally it matters, and the next build's
+own pre-strip gate is what catches it.
 
 Firmware image size is verified outside this repo. What this repo delivers and can prove
 is the reduction in delivered payload, which `tools/measure_payload.sh` prints at the end
