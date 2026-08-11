@@ -28,9 +28,12 @@ import 'package:privacy_gui/page/instant_setup/data/pnp_state.dart';
 
 import '../../../mocks/router_repository_mocks.dart';
 
-/// Builds a getAutoMasterStatus JNAPSuccess with the given raw status string
+/// Builds a getAutoMasterStatus JNAPSuccess with the given raw status payload
 /// (matching the firmware's `{ "autoMasterStatus": "Running" }` shape).
-JNAPSuccess _statusSuccess(String? raw) => JNAPSuccess(
+///
+/// [raw] is [Object?] so tests can feed a non-String payload and prove the
+/// parse degrades to null instead of throwing a TypeError.
+JNAPSuccess _statusSuccess(Object? raw) => JNAPSuccess(
       result: 'OK',
       output: {if (raw != null) 'autoMasterStatus': raw},
     );
@@ -142,6 +145,15 @@ void main() {
       expect(await notifier.checkAutoMasterStatus(), isNull);
     });
 
+    test('non-String status payload maps to null instead of throwing',
+        () async {
+      // The parse takes Object? rather than casting to String?. A cast would
+      // raise a TypeError, which scheduledCommand does not catch — it would
+      // escape the polling stream and strand the waiting spinner.
+      whenSend(() async => _statusSuccess(42));
+      expect(await notifier.checkAutoMasterStatus(), isNull);
+    });
+
     test('sends the request unauthed', () async {
       // Load-bearing: sending a credential here is what let a mid-flow
       // rotation burn the CGI auth-attempt budget and lock the user out.
@@ -206,6 +218,22 @@ void main() {
       whenScheduled(Stream.fromIterable([_statusSuccess('Complete')]));
       await notifier.pollAutoMasterStatus().toList();
       expect(_capturedScheduledAuth(mockRepo), isFalse);
+    });
+
+    test('non-String status payload flattens to null, stream survives',
+        () async {
+      // A TypeError from casting the payload would escape the stream (
+      // scheduledCommand catches JNAPError/TimeoutException, not TypeError) and
+      // leave the caller's waiting spinner up forever. It must degrade to null
+      // and keep delivering.
+      whenScheduled(Stream.fromIterable([
+        _statusSuccess(42),
+        _statusSuccess('Complete'),
+      ]));
+      expect(
+        await notifier.pollAutoMasterStatus().toList(),
+        [null, AutoMasterStatus.complete],
+      );
     });
   });
 

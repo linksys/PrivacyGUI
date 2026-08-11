@@ -774,8 +774,8 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
           firstDelayInMilliSec: 1000,
           condition: (result) {
             if (result is JNAPSuccess) {
-              final status = AutoMasterStatus.fromValue(
-                  result.output['autoMasterStatus'] as String?);
+              final status =
+                  AutoMasterStatus.fromValue(result.output['autoMasterStatus']);
               return status == AutoMasterStatus.complete ||
                   status == AutoMasterStatus.idle ||
                   status == AutoMasterStatus.failed;
@@ -796,8 +796,8 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
       // cannot burn the CGI auth-attempt budget, so no early terminator is
       // needed to protect it.
       if (result is JNAPSuccess) {
-        final status = AutoMasterStatus.fromValue(
-            result.output['autoMasterStatus'] as String?);
+        final status =
+            AutoMasterStatus.fromValue(result.output['autoMasterStatus']);
         logger.d('[PnP]: Auto Master polling status: $status');
         return status;
       }
@@ -825,8 +825,8 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
           firstDelayInMilliSec: 1000,
           condition: (result) {
             if (result is JNAPSuccess) {
-              final status = AutoMasterStatus.fromValue(
-                  result.output['autoMasterStatus'] as String?);
+              final status =
+                  AutoMasterStatus.fromValue(result.output['autoMasterStatus']);
               return status == AutoMasterStatus.running ||
                   status == AutoMasterStatus.complete ||
                   status == AutoMasterStatus.failed;
@@ -842,8 +842,8 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
       // See pollAutoMasterStatus: unauthorized falls through to null because
       // this poll sends no credential.
       if (result is JNAPSuccess) {
-        final status = AutoMasterStatus.fromValue(
-            result.output['autoMasterStatus'] as String?);
+        final status =
+            AutoMasterStatus.fromValue(result.output['autoMasterStatus']);
         logger.d('[PnP]: Auto Master wait-for-running status: $status');
         return status;
       }
