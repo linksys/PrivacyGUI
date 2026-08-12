@@ -345,8 +345,8 @@ class _ErrorsChart extends StatelessWidget {
         Wrap(
           alignment: WrapAlignment.center,
           crossAxisAlignment: WrapCrossAlignment.center,
-          spacing: 16,
-          runSpacing: 4,
+          spacing: AppSpacing.lg,
+          runSpacing: AppSpacing.xs,
           children: [
             _LegendEntry(
               color: colorScheme.error,
@@ -426,8 +426,8 @@ class _LossChart extends StatelessWidget {
         Wrap(
           alignment: WrapAlignment.center,
           crossAxisAlignment: WrapCrossAlignment.center,
-          spacing: 16,
-          runSpacing: 4,
+          spacing: AppSpacing.lg,
+          runSpacing: AppSpacing.xs,
           children: [
             _LegendEntry(
               color: colorScheme.error,
