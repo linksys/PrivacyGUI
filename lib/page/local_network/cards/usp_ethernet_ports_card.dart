@@ -163,9 +163,11 @@ class _SummaryTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Colour ownership splits on whether the value differs per tile: [accent]
+    // does (one is `colorScheme.primary`, the other `semanticSuccess` from an
+    // extension), so it travels in the spec; the subtitle colour is the same for
+    // both tiles, so it is resolved here and stays out of the spec.
     final colorScheme = Theme.of(context).colorScheme;
-    final icon = spec.icon;
-    final accent = spec.accent;
 
     return LayoutBlock(
       padding: EdgeInsets.all(compact ? AppSpacing.sm : AppSpacing.md),
@@ -175,10 +177,10 @@ class _SummaryTile extends StatelessWidget {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: accent.withValues(alpha: 0.15),
+              color: spec.accent.withValues(alpha: 0.15),
               shape: BoxShape.circle,
             ),
-            child: AppIcon.font(icon, color: accent, size: 20),
+            child: AppIcon.font(spec.icon, color: spec.accent, size: 20),
           ),
           AppGap.md(),
           Expanded(

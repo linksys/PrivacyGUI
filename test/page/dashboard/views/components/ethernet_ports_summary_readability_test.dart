@@ -95,10 +95,28 @@ void main() {
 
   /// The card's own content viewport — the shorter of the two scroll views in
   /// the tree (the pump harness wraps the whole card in one as well).
+  ///
+  /// The count is asserted rather than assumed. Picking "the shortest" out of an
+  /// empty finder would return [Rect.largest], and every visibility assertion
+  /// below would then pass against an infinite viewport — the failure mode is a
+  /// silently green test, not a red one, so it has to be caught here. Two is the
+  /// exact expected number: one from the harness, one from
+  /// `DashboardCardTemplate`. If the template stops scrolling its content, or
+  /// anything inside the card starts, this fails loudly and the reader learns
+  /// which assumption broke.
   Rect contentViewport(WidgetTester tester) {
     final finder = find.byType(SingleChildScrollView);
+    final count = finder.evaluate().length;
+    expect(
+      count,
+      2,
+      reason: 'expected exactly two scroll views — the pump harness and the '
+          'card content. Found $count, so "the shortest" no longer identifies '
+          'the card\'s own viewport and these measurements are meaningless.',
+    );
+
     var best = Rect.largest;
-    for (var i = 0; i < finder.evaluate().length; i++) {
+    for (var i = 0; i < count; i++) {
       final r = tester.getRect(finder.at(i));
       if (r.height < best.height) best = r;
     }
@@ -164,6 +182,16 @@ void main() {
 
     // Locales whose labels exceed the budget at these widths, so the label fills
     // whatever it is given and its box measures the budget itself.
+    //
+    // Three locales, not all 26, and that is deliberate: a locale whose label
+    // *fits* measures its own text width, not the budget, so it cannot detect a
+    // shrinking budget at all — adding the other 23 would add 23 tests that pass
+    // for the wrong reason. `el`/`nl`/`fi` are the three longest `connected` /
+    // `disconnected` / `lanConnected` renderings at `titleSmall`+`bodySmall`,
+    // measured 2026-08-12 against the current ARB set. Overflow safety for all
+    // 26 is the gate's job (the `"*"` wildcard); this group measures legibility
+    // only. If `AppLocalizations.supportedLocales` or those three strings
+    // change, re-measure which locales overflow the budget.
     for (final tag in ['el', 'nl', 'fi']) {
       for (final wc in narrowCases) {
         testWidgets(
