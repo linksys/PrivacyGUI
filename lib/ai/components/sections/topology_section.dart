@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:privacy_gui/ai/utils/speed_markers.dart';
 import 'package:privacy_gui/core/utils/wifi.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -111,18 +112,8 @@ class TopologySection extends StatelessWidget {
 
   /// The speed row, built directly rather than through [_popupRow], because its
   /// value is icon + text pairs rather than a plain string.
-  ///
-  /// The direction markers are icons, not the U+2193/U+2191 characters this used
-  /// to interpolate into a string: no bundled font maps those codepoints, so the
-  /// arrow only appeared if some font happened to resolve it.
   Widget _speedRow(BuildContext context, int? downlink, int? uplink) {
-    final pairs = <({IconData icon, String text})>[
-      for (final entry in [
-        (icon: Icons.arrow_downward, speed: _formatSpeed(downlink)),
-        (icon: Icons.arrow_upward, speed: _formatSpeed(uplink)),
-      ])
-        if (entry.speed != null) (icon: entry.icon, text: entry.speed!),
-    ];
+    final pairs = speedMarkersFor(downlink: downlink, uplink: uplink);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.xxs),
@@ -153,14 +144,6 @@ class TopologySection extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  String? _formatSpeed(int? bps) {
-    if (bps == null || bps == 0) return null;
-    final mbps = bps / 1000000;
-    if (mbps >= 1000) return '${(mbps / 1000).toStringAsFixed(1)} Gbps';
-    if (mbps >= 1) return '${mbps.toStringAsFixed(1)} Mbps';
-    return '${(bps / 1000).toStringAsFixed(0)} Kbps';
   }
 
   Widget _withTopologyAnimation(BuildContext context, Widget child) {

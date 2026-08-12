@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:privacy_gui/ai/utils/speed_markers.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Connected devices list section.
@@ -46,17 +47,8 @@ class DevicesSection extends StatelessWidget {
     final downlinkRate = device['downlinkRate'] as int?; // bps
     final uplinkRate = device['uplinkRate'] as int?; // bps
 
-    // Speed, as icon + text pairs. The direction markers are icons rather than
-    // the U+2193/U+2191 characters this used to interpolate into a string: no
-    // bundled font maps those codepoints, so the arrow only appeared if some
-    // font happened to resolve it.
-    final speedPairs = <({IconData icon, String text})>[
-      for (final entry in [
-        (icon: Icons.arrow_downward, speed: _formatSpeed(downlinkRate)),
-        (icon: Icons.arrow_upward, speed: _formatSpeed(uplinkRate)),
-      ])
-        if (entry.speed != null) (icon: entry.icon, text: entry.speed!),
-    ];
+    final speedPairs =
+        speedMarkersFor(downlink: downlinkRate, uplink: uplinkRate);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
@@ -90,18 +82,6 @@ class DevicesSection extends StatelessWidget {
             connectionType.isNotEmpty ? AppBadge(label: connectionType) : null,
       ),
     );
-  }
-
-  String? _formatSpeed(int? bps) {
-    if (bps == null || bps == 0) return null;
-    final mbps = bps / 1000000;
-    if (mbps >= 1000) {
-      return '${(mbps / 1000).toStringAsFixed(1)} Gbps';
-    } else if (mbps >= 1) {
-      return '${mbps.toStringAsFixed(1)} Mbps';
-    } else {
-      return '${(bps / 1000).toStringAsFixed(0)} Kbps';
-    }
   }
 
   IconData _getDeviceIcon(String name) {
