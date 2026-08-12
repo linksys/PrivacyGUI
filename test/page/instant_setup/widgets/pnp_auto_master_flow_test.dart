@@ -102,7 +102,7 @@ void main() {
       expect(r.state.events, ['enter', 'exit']);
     });
 
-    testWidgets('Idle only then stream closes (timeout) -> proceed',
+    testWidgets('Idle only then stream closes (budget spent) -> proceed',
         (tester) async {
       // Never starts; session already proven alive upstream, so no reconnect
       // test is attempted.
@@ -113,6 +113,26 @@ void main() {
 
       expect(r.result, AutoMasterFlowResult.proceed);
       verifyNever(mockPnpNotifier.testConnectionReconnected());
+    });
+
+    testWidgets('nulls only then stream closes (budget spent) -> proceed',
+        (tester) async {
+      // Firmware that still requires auth for GetAutoMasterStatus answers 401
+      // to the unauthed poll, which the notifier flattens to null — so every
+      // poll comes back undetermined. Phase A runs right after the ISP save +
+      // internet check proved the session alive, so this must not surface
+      // "router not found"; it proceeds and lets PnP's second pass recover.
+      when(mockPnpNotifier.pollAutoMasterUntilRunning())
+          .thenAnswer((_) => Stream.fromIterable([null, null, null]));
+
+      final r = await pumpFlow(tester, waitForRunningFirst: true);
+
+      expect(r.result, AutoMasterFlowResult.proceed);
+      expect(r.state.events, ['enter', 'exit']);
+      // Phase A resolved it in place: no completion poll, and no extra probe
+      // round-trip — the stream's own budget is the only give-up rule.
+      verifyNever(mockPnpNotifier.pollAutoMasterStatus());
+      verifyNever(mockPnpNotifier.checkAutoMasterStatus());
     });
   });
 
@@ -144,8 +164,12 @@ void main() {
       expect(r.result, AutoMasterFlowResult.proceed);
     });
 
-    testWidgets('Timeout with session alive -> proceed', (tester) async {
-      // Stream closes with no terminal status; reconnect test succeeds.
+    testWidgets('Budget spent with router alive -> budgetExhausted',
+        (tester) async {
+      // Stream closes with no terminal status; reconnect test succeeds. The
+      // router is there but Auto Master's outcome was never observed, so the
+      // result is explicitly "unknown" rather than proceed — callers with a
+      // pending save need to tell the two apart.
       when(mockPnpNotifier.pollAutoMasterStatus())
           .thenAnswer((_) => const Stream.empty());
       when(mockPnpNotifier.testConnectionReconnected())
@@ -153,11 +177,12 @@ void main() {
 
       final r = await pumpFlow(tester, waitForRunningFirst: false);
 
-      expect(r.result, AutoMasterFlowResult.proceed);
+      expect(r.result, AutoMasterFlowResult.budgetExhausted);
+      expect(r.state.events, ['enter', 'exit']);
       verify(mockPnpNotifier.testConnectionReconnected()).called(1);
     });
 
-    testWidgets('Timeout with reconnect failure -> connectionError',
+    testWidgets('Budget spent with reconnect failure -> connectionError',
         (tester) async {
       when(mockPnpNotifier.pollAutoMasterStatus())
           .thenAnswer((_) => const Stream.empty());
@@ -171,65 +196,51 @@ void main() {
     });
   });
 
-  group('PnpAutoMasterFlowMixin - null-threshold probe', () {
-    testWidgets('3 nulls then probe Complete -> completed', (tester) async {
-      when(mockPnpNotifier.pollAutoMasterStatus())
-          .thenAnswer((_) => Stream.fromIterable([null, null, null]));
-      when(mockPnpNotifier.checkAutoMasterStatus())
-          .thenAnswer((_) async => AutoMasterStatus.complete);
+  group('PnpAutoMasterFlowMixin - nulls during the make-Master outage', () {
+    // make-Master takes the router's HTTP service down for the better part of a
+    // minute; while it is gone the router may time out, refuse, or answer
+    // something unrecognised — all of which flatten to null. These lock in that
+    // nulls are never treated as evidence: the poll runs its full budget, and
+    // only the reachability test at the end decides.
+    testWidgets('nulls then Complete -> completed, without probing',
+        (tester) async {
+      when(mockPnpNotifier.pollAutoMasterStatus()).thenAnswer((_) =>
+          Stream.fromIterable([null, null, null, AutoMasterStatus.complete]));
 
       final r = await pumpFlow(tester, waitForRunningFirst: false);
 
       expect(r.result, AutoMasterFlowResult.completed);
+      // No mid-poll probe: a run of nulls no longer triggers anything.
+      verifyNever(mockPnpNotifier.checkAutoMasterStatus());
+      verifyNever(mockPnpNotifier.testConnectionReconnected());
     });
 
-    testWidgets(
-        'Phase B: 3 nulls then probe null (undetermined) -> connectionError',
+    testWidgets('nulls to the end, router alive -> budgetExhausted',
+        (tester) async {
+      // The regression from #1180: three nulls used to be enough to declare
+      // "router not found" ~15s before the router's HTTP service came back.
+      when(mockPnpNotifier.pollAutoMasterStatus())
+          .thenAnswer((_) => Stream.fromIterable([null, null, null]));
+      when(mockPnpNotifier.testConnectionReconnected())
+          .thenAnswer((_) async {});
+
+      final r = await pumpFlow(tester, waitForRunningFirst: false);
+
+      expect(r.result, AutoMasterFlowResult.budgetExhausted);
+      expect(r.state.events, ['enter', 'exit']);
+    });
+
+    testWidgets('nulls to the end, router gone -> connectionError',
         (tester) async {
       when(mockPnpNotifier.pollAutoMasterStatus())
           .thenAnswer((_) => Stream.fromIterable([null, null, null]));
-      when(mockPnpNotifier.checkAutoMasterStatus())
-          .thenAnswer((_) async => null);
+      when(mockPnpNotifier.testConnectionReconnected())
+          .thenThrow(ExceptionNeedToReconnect());
 
       final r = await pumpFlow(tester, waitForRunningFirst: false);
 
       expect(r.result, AutoMasterFlowResult.connectionError);
       expect(r.state.events, ['enter', 'error']);
-    });
-
-    testWidgets('Phase A: 3 nulls then probe null (undetermined) -> proceed',
-        (tester) async {
-      // Firmware that still requires auth for GetAutoMasterStatus answers 401
-      // to the unauthed poll, which the notifier flattens to null — so every
-      // poll AND the probe come back undetermined. Phase A runs right after the
-      // ISP save + internet check proved the session alive, so this must not
-      // surface "router not found"; it proceeds and lets PnP's second pass
-      // recover.
-      when(mockPnpNotifier.pollAutoMasterUntilRunning())
-          .thenAnswer((_) => Stream.fromIterable([null, null, null]));
-      when(mockPnpNotifier.checkAutoMasterStatus())
-          .thenAnswer((_) async => null);
-
-      final r = await pumpFlow(tester, waitForRunningFirst: true);
-
-      expect(r.result, AutoMasterFlowResult.proceed);
-      expect(r.state.events, ['enter', 'exit']);
-      // Phase A resolved it; the completion poll is never reached.
-      verifyNever(mockPnpNotifier.pollAutoMasterStatus());
-    });
-
-    testWidgets('probe Running resets counter, then Complete -> completed',
-        (tester) async {
-      when(mockPnpNotifier.pollAutoMasterStatus()).thenAnswer((_) =>
-          Stream.fromIterable([null, null, null, AutoMasterStatus.complete]));
-      // Probe fires at the 3rd null: still Running -> reset and keep polling.
-      when(mockPnpNotifier.checkAutoMasterStatus())
-          .thenAnswer((_) async => AutoMasterStatus.running);
-
-      final r = await pumpFlow(tester, waitForRunningFirst: false);
-
-      expect(r.result, AutoMasterFlowResult.completed);
-      verify(mockPnpNotifier.checkAutoMasterStatus()).called(1);
     });
   });
 
@@ -248,7 +259,6 @@ void main() {
 
       expect(r.result, AutoMasterFlowResult.completed);
       expect(r.state.events, ['enter', 'exit']);
-      // Below the null threshold, so no probe round-trip was needed.
       verifyNever(mockPnpNotifier.checkAutoMasterStatus());
     });
   });

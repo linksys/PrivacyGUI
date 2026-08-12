@@ -669,13 +669,18 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
   @override
   Future testConnectionReconnected() async {
     // Test connect to the propor router
+    //
+    // This is the sole arbiter of "router not found" once the Auto Master poll
+    // exhausts its budget, so it must not hinge on a single packet: retry a
+    // couple of times before condemning the connection. A router that is still
+    // finishing its restart answers on the second or third try.
     final result = await ref
         .read(routerRepositoryProvider)
         .send(JNAPAction.getDeviceInfo,
             fetchRemote: true,
             cacheLevel: CacheLevel.noCache,
-            retries: 0,
-            timeoutMs: 3000)
+            retries: 2,
+            timeoutMs: 5000)
         .onError((error, stackTrace) {
       // Can't get device info
       throw ExceptionNeedToReconnect();
@@ -769,7 +774,15 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
         .scheduledCommand(
           action: JNAPAction.getAutoMasterStatus,
           auth: false,
-          maxRetry: 60,
+          // The stream's own length IS the give-up rule, so its duration has to
+          // be predictable: make-Master takes the router's HTTP service away for
+          // the better part of a minute, and while it is gone the router may
+          // answer anything or nothing at all. Counting failures would be
+          // reading noise; instead every attempt is capped so the total is
+          // bounded — 24 x (3s request + 5s delay) = 192s, against ~65s of
+          // observed downtime and ~115s for Auto Master end to end.
+          maxRetry: 24,
+          requestTimeoutOverride: 3000,
           retryDelayInMilliSec: 5000,
           firstDelayInMilliSec: 1000,
           condition: (result) {
@@ -821,6 +834,10 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
           action: JNAPAction.getAutoMasterStatus,
           auth: false,
           maxRetry: 18,
+          // Same reasoning as pollAutoMasterStatus: cap each attempt so the
+          // stream's duration is bounded and a slow answer costs one 8s round
+          // rather than stalling the wait.
+          requestTimeoutOverride: 3000,
           retryDelayInMilliSec: 5000,
           firstDelayInMilliSec: 1000,
           condition: (result) {

@@ -4,10 +4,16 @@
 > [LinksysWRT#449](https://github.com/linksys/LinksysWRT/issues/449)
 > 目標分支：`fix/pnp-pppoe-auto-master-wan-up-1180`（base `dev-1.3.1`）· PR [#1181](https://github.com/linksys/PrivacyGUI/pull/1181)
 
-> **本文件已於 review 後改寫。** 初版的修法是「poll 收到第一個 401 就終止串流」
-> （commit `371dbbf8`）。該機制在 `05d2529a` 被**移除並取代**為「Auto Master 狀態讀取一律
-> 不送憑證（`auth: false`）」。本文件描述的是**現行**設計；被取代的設計及其理由記錄在 §8,
-> 以免未來維護者從 git log 讀到 `371dbbf8` 時誤以為它還在。
+> **本文件已改寫三次,描述的都是現行設計。**
+> ① 初版修法為「poll 收到第一個 401 就終止串流」（commit `371dbbf8`）,在 `05d2529a` 被
+> **移除並取代**為「Auto Master 狀態讀取一律不送憑證（`auth: false`）」;被取代的設計
+> 及其理由記錄在 §8,以免未來維護者從 git log 讀到 `371dbbf8` 時誤以為它還在。
+> ② QA 實機 log 顯示還有第二個放棄得太早的機制:「連續 N 個 null 就判定路由器不見了」。
+> 該門檻與其 probe 已**整組移除**,改為有界時間預算 + 單一連線裁判,見 **§2.4**
+> （該節原本記錄的 F1 修法建立在門檻之上,已隨之作廢）。
+> ③ 同一份 QA log 還顯示 reconnect 後被導到 `localLoginPassword`。該落點屬於
+> **已完成**的 PnP(`userAcknowledgedAutoConfiguration == true`),用在未完成的流程上是錯的;
+> 三處硬編已改為一律回 PnP,見 **§2.7**（§3.2 原本把此不一致判為「刻意保留」,該判斷已作廢）。
 
 ---
 
@@ -47,7 +53,8 @@ WAN 是在使用者送出 ISP 帳密**之後**才起來。WAN-up 觸發韌體 Au
    當成 yielded result（不是 exception）。
 2. `condition` 只認 `running/complete/idle/failed`,401 → 回 `false`
    → 每 5 秒**繼續用失效的 `admin:admin` 重打**。
-3. `.map()` 又把 401 壓平成 `null`;消費端要**累積 3 個 null** 才會 probe。
+3. `.map()` 又把 401 壓平成 `null`;消費端當時要**累積 3 個 null** 才會 probe
+   （該門檻機制後來因另一個原因整組移除,見 §2.4）。
 
 結果:**還沒等使用者輸入任何東西,poll 就燒光 5 次額度**。計數器只在「登入成功」時由 HDK
 `AuthFn_Default` 自動清零（Vinh 確認),但鎖定後正確密碼也回 401 →「成功登入」永遠無法發生 →
@@ -126,27 +133,84 @@ WAN 是在使用者送出 ISP 帳密**之後**才起來。WAN-up 觸發韌體 Au
 `on ExceptionAutoMasterUnauthorized` 包裝、`pnp_setup_view` 一處 try/catch、
 `pnp_admin_view` 四處 `.catchError(test: e is ExceptionAutoMasterUnauthorized)`。
 
-### 2.4 Phase A 的 null probe 改判 `proceed`（review F1）
+### 2.4 放棄「數 null」,改用**有界時間預算**（QA log 實測後改寫）
 
-mixin 的 `_waitForRunning`（Phase A）累積 3 個 null 後會 `_probe()` 一次。
-probe 回 `null`（狀態無法判定）時,舊碼一律映射成 `connectionError`。
+> 本節取代初版的「Phase A null probe 改判 `proceed`（review F1）」。
+> 該修法建立在「累積 N 個 null 就 probe 一次」的門檻機制上,而**門檻機制本身已被移除**,
+> 因此 F1 的修法連同 `_probe()` 一併刪除。理由如下。
 
-在**不支援 no-auth 的韌體**上,每一次 poll 與 probe 都會落在 null,
-於是 Phase A 必然回 `connectionError` → 使用者在「ISP 設定剛存成功、internet check 剛通過」
-之後,看到「找不到路由器」。
+#### 症狀
 
-Phase A 的前提是**session 剛被 internet check 證明活著**,所以「狀態讀不到」不該解讀為連線問題:
+QA 在 PPPoE 設定完成後看到:internet connected → **Router Not Found** → 重連路由器後
+被丟回 login 畫面。前半段（偵測 `running`、進等待畫面）都對,錯在**提早放棄**。
+
+#### 根因：把雜訊當訊號
+
+舊碼在 `_waitForRunning` / `_waitForCompletion` 都用
+`consecutiveNullThreshold`（3 個 null）作為「路由器可能不見了」的判準。但 make-Master
+**會把路由器的 HTTP 服務整段拿掉**,而這正是 null 的來源。從 QA log 對時間軸:
+
+| 時間點 | 事件 |
+|-------|------|
+| T+0s | make-Master 開始,HTTP 服務中斷 |
+| ~T+50s | 連續 3 個 null 達標 → 舊碼判定 router not found |
+| ~T+65s | 路由器 HTTP 服務**才真正回來** |
+| ~T+115s | Auto Master 全程結束 |
+
+也就是說,舊碼在服務恢復前約 **15 秒**就宣告失敗。中斷期間路由器可能 timeout、
+拒連、或回一個無法解析的東西 —— 全部壓平成 `null`。**數 null 等於數雜訊**,
+而且愈是正常的 make-Master,null 愈多。
+
+#### 修法：讓「串流自己的長度」成為唯一的放棄條件
+
+null 一律**繼續等**。放棄與否改由 poll 的**總時長**決定,而總時長靠三個參數釘死
+（`pnp_provider.dart`）:
 
 ```dart
-if (probe == AutoMasterFlowResult.connectionError) {
-  logger.w('[PnP]: Auto Master wait-for-running undetermined, proceed');
-  return AutoMasterFlowResult.proceed;
+maxRetry: 24,                  // 24 輪
+requestTimeoutOverride: 3000,  // 每次請求最多 3s（local web,3s 已相當寬鬆）
+retryDelayInMilliSec: 5000,    // 每輪間隔 5s
+```
+
+24 × (3s + 5s) = **192s**,對照上表的 ~65s 中斷與 ~115s 全程,餘裕充足。
+關鍵是**上界可預測**：沒有 request timeout 時,單一次慢回應就能讓整段等待失控。
+
+串流耗盡而仍無終局狀態時,才問唯一能被可靠回答的問題 —— **路由器在不在**：
+
+```dart
+logger.w('[PnP]: Auto Master polling budget spent, verifying connection');
+try {
+  await ref.read(pnpProvider.notifier).testConnectionReconnected();
+  return AutoMasterFlowResult.budgetExhausted;  // 活著,但 Auto Master 結果未知
+} catch (_) {
+  return AutoMasterFlowResult.connectionError;  // 真的不見了
 }
 ```
 
-Phase B（`_waitForCompletion`）**維持** `connectionError`：它的前提不同 —— 已經觀察到
-`running`,狀態突然讀不到確實可能是路由器不見了,且該路徑末端還有
-`testConnectionReconnected()` 收尾。因此 `_probe()` 自身回傳「未判定」,由各 phase 決定意義。
+`testConnectionReconnected` 因此成為「router not found」的**唯一裁判**,並強化為
+`retries: 2, timeoutMs: 5000` —— 它不該押在單一個封包上,還在重啟收尾的路由器
+常常是第二、三次才回應。
+
+#### 新增 `budgetExhausted`：用 IoC 換掉三份重複實作
+
+「時間到了但路由器活著」與「Auto Master 明確沒動作」是**不同的事實**,舊碼把兩者都
+壓成 `proceed`,所以每個呼叫端只能自己寫一份 poll loop 來拿到足夠資訊。
+`AutoMasterFlowResult` 因此增加第四個值,讓 mixin 只負責**陳述發生了什麼**,
+由呼叫端決定意義:
+
+| 呼叫端 | 對 `budgetExhausted` 的處置 | 為什麼 |
+|-------|---------------------------|-------|
+| `pnp_admin_view` | 當 `proceed` 繼續 | 手上沒有待辦;後續 internet check / `pnpConfig` 都會重讀即時狀態,密碼真被輪替就走既有錯誤路徑 |
+| ISP-save pre-save | 照樣存檔 | 已等滿整個預算;若存檔時密碼被輪替,會以 `JNAPError` 落到既有錯誤處理 |
+| ISP-save post-WAN-up | 進 PnP,交給 entry precheck | 設定已存好,沒有待辦 |
+| `pnp_setup_view` | **從頭重查一次**（上限 2 次） | **唯一有客製流程者**:手上有一個待存的 save,一旦密碼被輪替就會 401 |
+
+`pnp_setup_view` 的計數器語意也隨之改變 —— 一次「等待」現在要價約 192s,
+所以必須**在花掉時就記帳**（先加再比),而非事後才檢查:
+`_maxAutoMasterSaveAttempts` → `_maxAutoMasterWaits`。
+
+三份 bespoke poll loop（admin_view ~85 行、setup_view ~75 行、mixin 自己一份）
+因此收斂為一份實作。
 
 ### 2.5 ISP-save pre-save 檢查的 null 早退
 
@@ -188,6 +252,64 @@ static AutoMasterStatus? fromValue(Object? value) {
 
 放寬型別而非在 5 個點各加一道 guard：一次改動消除全部呼叫點的風險,且非字串值自然
 miss 掉所有 case、回 `null` —— 正是呼叫端已經在處理的「狀態無法取得」。
+
+### 2.7 Auto Master 完成後的落點:一律回 PnP,不再去 `localLoginPassword`（QA log 實測後新增）
+
+#### 症狀
+
+QA log(18:29–18:30)在 ISP 重連後出現:
+
+```
+18:30:45  [PnP]: Start PNP setup without admin password
+18:30:57  [PnP]: Interrupted and go to: localLoginPassword
+```
+
+reconnect 後**應該回到 PnP 輸入新密碼**,實際卻被丟到 local login 密碼頁。
+
+#### 根因:把「PnP 沒跑完」當成「PnP 跑完了」
+
+`localLoginPassword` 是 **`userAcknowledgedAutoConfiguration == true`** —— 也就是
+**PnP 確實走完**才會到的畫面。Auto Master 完成確實會改密碼、確實需要重新登入,
+但在 PnP **還沒走完**的情況下,使用者必須回到 **PnP admin**、用 **PnP 自己的**登入輸入密碼。
+硬編去 local login 等於宣告「這輪 setup 已完成」,把使用者留在一個他還沒走完的流程之外。
+
+這個硬編是 #980 時期的慣例,在 §2.4 的 mixin 重構中被原封不動沿用 —— 諷刺的是
+`pnp_auto_master_flow.dart` 的檔頭註解**當時就寫對了**設計意圖
+（「pnp-vs-login 的決定留給 router 的 `userAcknowledgedAutoConfiguration`,不在此硬編 redirect」),
+是呼叫端做了它警告的事。
+
+第二個缺陷同源:`case completed` 這條分支**也會被剛進入的 view 打到** —— 它只是
+「發現 Auto Master 已經是 `complete`」（正是 log 中 reconnect 後的情境,`Start PNP setup
+without admin password` 就在前 12 秒）。這種 view 從來沒有 session 可失去,但它同樣
+不可能知道現在的密碼,所以該去的地方也是同一個密碼輸入提示。
+
+#### 修法
+
+| 位置 | 原本 | 現在 |
+|------|------|------|
+| `pnp_admin_view.dart` `case completed` | `throw ExceptionInterruptAndExit(route: localLoginPassword)` | `throw ExceptionAutoMasterRotatedPassword()` → `_promptForRotatedPassword()` |
+| `pnp_setup_view.dart` `case completed` | `goNamed(localLoginPassword)` | `goNamed(RouteNamed.pnp)` |
+| `pnp_setup_view.dart` idle-on-entry → `complete` 邊緣 | `goNamed(localLoginPassword)` | `goNamed(RouteNamed.pnp)` |
+
+新增 `ExceptionAutoMasterRotatedPassword`(`pnp_exception.dart`),
+**刻意不是** 帶 route 的 `ExceptionInterruptAndExit` —— 去向不該由拋出點決定。
+`pnp_admin_view` 的 4 條 `.catchError` 鏈(initState / `_unconfiguredView` / `_doLogin` /
+`_retryAutoMasterCheck`)各加一個分支接它。
+
+`_promptForRotatedPassword()` **不導航**:這裡就是 PnP 的入口 view,提示只差一次 `setState`。
+真正關鍵的是**清掉 `_password`** —— 它存的是我們帶進來的憑證（route 參數 `p`,或原廠預設值）,
+而輪替剛剛讓它失效。不清掉,下一輪 precheck 會拿它再試一次,白燒一次 CGI 額度
+（§3 額度表那唯一的 1 次就是這條;留著會變 2 次）。同時 `pnp.setAttachedPassword(null)`,
+避免 provider 端的殘留值繞過這道清除。
+
+`goNamed(RouteNamed.pnp)` 這個落點不是新發明的:`pnp_setup_view.dart` 的
+「存檔時 401」handler **本來就**這樣做。這次是把另外三條路徑收斂到同一個既有落點。
+
+#### 順帶查清:log 中重複的 `Auto Master polling status`
+
+同一則 log 出現兩次,**不是**遞迴或重複訂閱:舊版 `pnp_admin_view` 的 bespoke poll loop
+在自己的 `await for` 裡也印一次,與 `pnp_provider.dart:814` 的 `.map` 各印一次 ——
+一個事件兩個 log 敘述。該 loop 已在 §2.4 隨 mixin 重構刪除,**現行程式碼已無此重複**。
 
 ---
 
@@ -234,27 +356,30 @@ ISP-save 導航時 `deviceInfo` 早已填好 —— **被走的就是這個繞�
   → `PnpAdminView._examineAdminPassword` 會用它試一次,燒掉 1 次額度。
   這就是 §3 表中那一列的來源。實際總計約 **2**,仍 < 5,死結結論不變,只是餘裕比初版所述少一格。
 
-### 3.2 落點不一致 —— 已知、刻意保留
+### 3.2 落點已收斂 —— 全部回 PnP
 
-Auto Master 完成後三條路徑落在不同地方,且**去向由不同機制決定**:
+Auto Master 完成後,**四條路徑落在同一個地方**（§2.7）:
 
 | 路徑 | `goNamed(...)` | redirect 分支 | 實際決定去向者 |
 |------|---------------|--------------|--------------|
 | ISP-save（mixin,#449 主場景） | `pnp` | L139 `startsWith('/pnp')` → `_goPnpPath` | **`_goPnpPath` 自己**:`deviceInfo != null` → 原路放行,直接落在 `PnpAdminView`,由該 view 自己的 precheck 鏈決定後續 |
-| setup view | `localLoginPassword` | L127 → `_redirectLogic`（L138） | 停在 local login 密碼頁 |
-| admin view | `localLoginPassword` | 同上 | 停在 local login 密碼頁 |
+| setup view（`completed` / idle-on-entry 邊緣） | `pnp` | 同上 | 同上 |
+| setup view（存檔時 401） | `pnp` | 同上 | 同上（此路徑**本來就**如此,是收斂的目標） |
+| admin view | **不導航** | — | 就地 `setState` 回到 PnP 自己的密碼提示（§2.7） |
 
-- 初版文件在此處寫 ISP-save 的 pnp-vs-login「由 router 依
-  `userAcknowledgedAutoConfiguration` 判斷」—— **對這條路徑不成立**（同 §3.1,
-  `_autoConfigurationLogic` 不會被呼叫)。實際是落進 `PnpAdminView`,由 view 自己判斷。
-- 此不一致**非本次引入**：mixin 路徑（#1180）刻意不硬編 redirect;setup/admin（#980）
-  早已硬編去 login。
-- **維持現狀**。理由:各自沿用該路徑既有且經測試的慣例,回歸面最小;
-  三條路徑最終都讓使用者回到「用新密碼登入」,差別僅中間多繞一跳。
+- 前一版此節記載 setup / admin 兩條路徑硬編去 `localLoginPassword`,並判斷為
+  「已知、刻意保留」的不一致 —— **該判斷是錯的,已於 §2.7 修掉**。
+  那個落點屬於 `userAcknowledgedAutoConfiguration == true`(PnP 已完成)的情境,
+  用在未完成的 PnP 上會把使用者留在流程之外,正是 QA 回報的症狀。
+- 「pnp-vs-login 由 router 依 `userAcknowledgedAutoConfiguration` 判斷」這句話,
+  現在對四條路徑**都成立**:呼叫端一律回 PnP,不自行判讀 ack 旗標。
+  （注意這與 §3.1 不衝突:`_goPnpPath` 繞過 `_autoConfigurationLogic` 而原路放行,
+  最終仍是落進 `PnpAdminView` 由它的 precheck 鏈決定,而非呼叫端硬編。)
+- `grep localLoginPassword lib/page/instant_setup/` 現在**只剩註解**,無任何硬編 redirect。
 
 > 註:`10b7881e` 已修掉 `localLoginPassword` 分支原本 fire-and-forget 呼叫
 > `_autoConfigurationLogic` 造成的 pnp ↔ login 迴圈。該分支現在只走 `_redirectLogic`,
-> 原因見 `router_provider.dart:128-137` 的註解。
+> 原因見 `router_provider.dart:128-137` 的註解。本次修法讓 PnP 不再進入該分支。
 
 ---
 
@@ -262,15 +387,19 @@ Auto Master 完成後三條路徑落在不同地方,且**去向由不同機制�
 
 | # | 情境 | 修法後行為 | 判斷 |
 |---|------|-----------|------|
-| E1 | **韌體已開放 no-auth**（目標狀態) | 全程 unauthed 讀到真實狀態;`running` → 等待畫面 → `complete` → 依路徑導向 | ✅ 主要場景 |
-| E2 | **韌體尚未開放 no-auth** | 每次 poll 與 probe 都回 401 → 全部壓平成 `null` → Auto Master 偵測**完全失效** | ⚠️ **見 §4.1** |
+| E1 | **韌體已開放 no-auth**（目標狀態) | 全程 unauthed 讀到真實狀態;`running` → 等待畫面 → `complete` → 回 PnP 要新密碼（§2.7) | ✅ 主要場景 |
+| E2 | **韌體尚未開放 no-auth** | 每次 poll 都回 401 → 全部壓平成 `null` → 等滿預算 → 連線測試通過 → `budgetExhausted` → 各呼叫端繼續（見 §2.4 表）→ Auto Master 偵測**完全失效但不擋路** | ⚠️ **見 §4.1** |
 | E3 | **老韌體不支援 GetAutoMasterStatus** | 同 E2（`_ErrorUnknownAction` → `null`) | ⚠️ 同 §4.1 |
-| E4 | **真連線中斷** | poll 回 `null` → null-threshold → probe 也 `null` → Phase A `proceed`、Phase B `connectionError` | ✅ Phase B 末端另有 `testConnectionReconnected()` 把關 |
+| E4 | **真連線中斷** | poll 全程 `null` → 等滿 192s 預算 → `testConnectionReconnected` 失敗 → `connectionError` | ✅ 唯一裁判是連線測試,不是 null 的個數（§2.4） |
+| E4b | **make-Master 期間的正常中斷** | 同樣全程 `null`,但預算耗盡時服務已恢復 → 連線測試通過 → `budgetExhausted` | ✅ **這正是 #1180 的回歸點**:舊碼在此判 `connectionError` |
+| E4c | **路由器卡在 `running` 不動** | 等滿預算 → 活著 → `budgetExhausted`;`setup_view` 最多重查 2 次後顯示錯誤畫面 | ✅ 有界,不會無限迴圈 |
 | E5 | **make-Master 極快,錯過 running 邊緣** | `condition` 仍認 `complete/failed` → 提早停;Phase A 直接看到 `complete` → `completed` | ✅ 既有行為保留 |
 | E6 | **make-Master 在等待期間輪替密碼** | poll 不帶憑證,**不受影響**;狀態照常走到 `Complete` | ✅ 這正是本修法要達成的 |
 | E7 | **非字串 `autoMasterStatus` payload** | `fromValue(Object?)` → `null`,串流存活 | ✅ §2.6 |
 | E8 | **view 在 make-Master 期間被 dispose** | mixin 每個 `await` 後都檢查 `mounted`;`_checkAutoMasterStatus` 每個 `setState` 都有 guard（`c4b7acc4`) | ✅ |
 | E9 | **非 local 模式重用這三個方法** | `auth: false` 被靜默忽略,憑證照送,§1.3 的保證失效 | ⚠️ **見 §2.2**;目前無此呼叫端 |
+| E10 | **reconnect 後剛進 view,Auto Master 已是 `complete`** | 走 `case completed` → 回 PnP 密碼提示,`_password` 清空 | ✅ **#1180 QA log 的落點**:舊碼在此跳 `localLoginPassword`（§2.7) |
+| E11 | **使用者輸入舊密碼的瞬間 Auto Master 完成** | `_doLogin` 的 gate 攔下 → 剛打的密碼已作廢 → 同樣回密碼提示,不落進 WiFi 表單 | ✅ 否則會落到 catch-all 顯示假的「密碼錯誤」 |
 
 ### 4.1 韌體未開放 no-auth 時的降級行為（必須與 FW/QA 對齊）
 
@@ -282,8 +411,10 @@ E2 / E3 下,Auto Master 偵測**靜默失效**,PnP 退回它原本的**兩趟流
 - 這是**已知且可接受**的降級（Jamie 已認可兩趟流程作為 fallback),不是回歸。
 - 但**它與修法前的症狀長得一樣** —— 差別在於現在**不會**再燒 CGI 額度、不會鎖死登入。
   也就是說:**#1180 的死結解除了,#449 的「填兩次」在這種韌體上仍會出現。**
-- 因此 §2.4 的 Phase A `proceed` 是必要的:沒有它,這種韌體上使用者會在 ISP 設定成功後
-  看到「找不到路由器」,比兩趟流程更糟。
+- 因此 §2.4 的「null 不作為判準」是必要的:沒有它,這種韌體上每一次 poll 都是 null,
+  使用者會在 ISP 設定成功後看到「找不到路由器」,比兩趟流程更糟。
+  現在這種韌體只會安靜地等滿預算、連線測試通過、以 `budgetExhausted` 放行 ——
+  代價是多等一段時間,而非一個假的錯誤畫面。
 
 > **待確認項**：測試韌體 `FW_Pinnacle2.0_v1.2.4.26080716_PW` 是否包含 dennisnltran 的
 > `GetAutoMasterStatus` no-auth 改動。若否,這一輪 QA 會落在 E2,量測到的行為即為上述降級。
@@ -292,7 +423,7 @@ E2 / E3 下,Auto Master 偵測**靜默失效**,PnP 退回它原本的**兩趟流
 
 ## 5. 測試
 
-### 5.1 `test/page/instant_setup/data/pnp_provider_auto_master_test.dart`（20 案例,全綠）
+### 5.1 `test/page/instant_setup/data/pnp_provider_auto_master_test.dart`（23 案例,全綠）
 
 以 `ProviderContainer` + `MockRouterRepository` 驅動**真的** `PnpNotifier`,
 是唯一直接驗證「JNAP result → status」映射的地方。
@@ -306,6 +437,14 @@ E2 / E3 下,Auto Master 偵測**靜默失效**,PnP 退回它原本的**兩趟流
 | `a Running before a 401 keeps both in the stream` | 401 不會吃掉先前已 yield 的狀態 |
 | `non-String status payload maps to null instead of throwing` | §2.6,payload 餵 `42` |
 | `non-String status payload flattens to null, stream survives` | §2.6 的**真正後果**:`[42, 'Complete']` → `[null, complete]`,串流沒有被 TypeError 打斷 |
+| `bounds its own duration: 24 rounds of 3s request + 5s delay` | **§2.4 的三個數字**。門檻機制拿掉之後,這串流的長度**就是**放棄條件,任一參數被改小就會重現 #1180 |
+| `bounds its own duration, shorter than the wait-for-completion poll` | `pollAutoMasterUntilRunning` 的 `maxRetry: 18` + 同樣的 3s/5s 上限 |
+| `retries before condemning the connection` | `testConnectionReconnected` 送 `retries: 2, timeoutMs: 5000` —— 它是 router-not-found 的唯一裁判,不能押在單一封包上 |
+
+> 這三個參數斷言改用**讀取 mock 收到的 `Invocation` 具名引數**（`lastScheduled` / `lastSend`
+> 搭配 `sendArg` / `scheduledArg`),而非 `captureAnyNamed`。原因:`captured` 的順序跟著
+> **呼叫端實際的具名引數順序**跑,對這種「數字本身就是設計」的斷言太隱晦 ——
+> 參數順序一改,斷言會靜靜地比錯對象。
 
 ### 5.2 `test/page/instant_setup/widgets/pnp_auto_master_flow_test.dart`（14 案例,全綠）
 
@@ -313,13 +452,21 @@ E2 / E3 下,Auto Master 偵測**靜默失效**,PnP 退回它原本的**兩趟流
 
 | 案例 | 鎖住什麼 |
 |------|---------|
-| `Phase A: 3 nulls then probe null (undetermined) -> proceed` | **§2.4 的 F1 修正**;同時 `verifyNever(pollAutoMasterStatus())` 確認 Phase A 就地解決 |
-| `Phase B: 3 nulls then probe null (undetermined) -> connectionError` | Phase B **不**跟著改,兩者前提不同 |
+| `nulls during the make-Master outage`（3 案例) | **§2.4 的核心**:①nulls 後 `Complete` → `completed`;②nulls 到底 + 路由器活著 → `budgetExhausted`（**#1180 的回歸鎖**);③nulls 到底 + 路由器不見 → `connectionError` |
+| `Budget spent with router alive -> budgetExhausted` / `Budget spent with reconnect failure -> connectionError` | 預算耗盡後的分岔,唯一裁判是連線測試 |
+| `Phase A: nulls only then stream closes (budget spent) -> proceed` | Phase A 就地解決,`verifyNever(pollAutoMasterStatus())` + `verifyNever(checkAutoMasterStatus())` |
 | `Phase A Running, then rotation mid-completion -> completed` | 取代舊的 3 個「stream 拋 401」案例:輪替現在是**普通路徑**（狀態走到 `Complete`),不再是 exception |
 
-**刪除**的案例及理由:舊有 3 個 `Stream.error(ExceptionAutoMasterUnauthorized())` 案例
-與 1 個 `probe unauthorized -> completed` 案例,其前提（poll 會因輪替而 error）
-在 `auth: false` 之後**不可能發生**,該 exception 型別亦已刪除。
+**刪除**的案例及理由:
+
+- 舊有 3 個 `Stream.error(ExceptionAutoMasterUnauthorized())` 案例與 1 個
+  `probe unauthorized -> completed`:前提（poll 會因輪替而 error）在 `auth: false`
+  之後**不可能發生**,該 exception 型別亦已刪除。
+- 4 個 null-threshold / probe 案例（`3 nulls then probe Complete -> completed`、
+  `Phase B: 3 nulls then probe null -> connectionError`、
+  `Phase A: 3 nulls then probe null -> proceed`、
+  `probe Running resets counter, then Complete -> completed`）：
+  門檻與 `_probe()` 皆已移除（§2.4),前提消失。
 
 ### 5.3 View 層 loc 測試
 
@@ -333,27 +480,63 @@ E2 / E3 下,Auto Master 偵測**靜默失效**,PnP 退回它原本的**兩趟流
 同樣刪除 3 個 `unauthorized → login` 的 golden 案例（前提已不存在）。
 `test/**/goldens/*` 在 `.gitignore:89`,無 orphan golden 需清理。
 
+§2.4 之後另有三處調整:
+
+- 兩個 `Auto Master connection error` 案例改 stub `testConnectionReconnected` 拋
+  `ExceptionNeedToReconnect`。3 個 null 不再能產生那個畫面 —— 連線測試失敗才行。
+- `Auto Master poll complete before save redirects to pnp` 的收尾從 `pumpAndSettle()`
+  改為 `runAsync(Future.delayed(100ms))` + 兩次 `pump()`。這類測試同時存在**兩個時鐘**:
+  mock 的 future/stream 在**真** microtask 上解析,動畫與 delay 在 fake timer 上;
+  串流訂閱的取消只在真事件迴圈的 turn 上完成,`pumpAndSettle` 推不動它。
+- 三個 retry 分支案例改以預算機制與 `_maxAutoMasterWaits` 命名
+  （`Auto Master budget spent then reconnect re-checks and saves` 等)。
+
+**修掉一個既有的 golden 檔名衝突。** `pnp_admin_view_test.dart` 與
+`pnp_setup_view_test.dart` 都叫 `Instant Setup - PnP: Auto Master connection error` ——
+而 golden 路徑**只由描述字串決定**,兩者共用 `localizations/goldens/`。
+兩個同名案例會互相覆蓋截圖,後跑的那個必定比對失敗(130 個 variant 全滅,
+差異僅頁面底色 `#FFFFFF` vs `#F9F9F9`)。setup 的那個依同檔慣例改名為
+`... connection error before save`。此衝突由本分支自己引入（兩案例都是本分支新增的)。
+
+§2.7 之後的落點測試改動（4 個案例、2 個 helper）:
+
+| 案例 | 改為鎖住什麼 |
+|------|------------|
+| admin view `Tap Login with Auto Master complete asks for the new password`（原 `... redirects to login`) | **不導航**:`PnpAdminView` + `AppPasswordField` 仍在、`PnpAutoMasterWaitingView` 已離開、沒進 `pnpConfigStub`,且 `verify(setAttachedPassword(null))` 釘住輪替憑證被丟棄 |
+| setup view `Auto Master poll complete before save redirects to pnp`（原 `... to login`) | 落在 `pnpStub` |
+| setup view `Auto Master idle on entry but complete during config redirects to pnp`（原 `... to login`) | 同上 |
+| setup view `Auto Master status unavailable before save continues to save` | `findsNothing` 的對象由 `loginStub` 改為 `pnpStub` |
+
+兩檔的 `_loginStubRoute()` helper 一併處理:admin 檔**整個刪除**(已無任何路徑導向 login),
+setup 檔改名為 `_pnpStubRoute()`,並吸收原本「存檔時 401」案例裡**行內重複**的同一份 stub。
+
+admin view 那個案例特意保留 `expect(find.byKey(Key('pnpConfigStub')), findsNothing)` 之外
+**不再註冊 login stub** —— 若未來有人把 redirect 加回去,harness 會直接拋
+"unknown route name" 而不是安靜地通過。
+
 ### 5.4 測試結果
 
 | 範圍 | 結果 |
 |------|------|
-| `pnp_provider_auto_master_test.dart` | **20/20** |
+| `pnp_provider_auto_master_test.dart` | **23/23** |
 | `pnp_auto_master_flow_test.dart` | **14/14** |
-| `test/page/instant_setup/ --exclude-tags loc` | **47/47** |
-| 全專案 `--exclude-tags loc` | **560 passed**（baseline 557,新增 3) |
-| `fvm flutter analyze` | 淨新增 **0** 個 issue（stash 前後對照皆 60） |
-| `test/page/instant_setup/ --tags loc --update-goldens` | **6107 passed / 3 failed — 未查清** |
+| `test/page/instant_setup/ --exclude-tags loc` | **50/50** |
+| 全專案 `--exclude-tags loc` | **563 passed**（baseline 557,新增 6) |
+| `fvm flutter analyze` | 淨新增 **0** 個 issue（改動 5 檔共 19 issue,全為既有的 deprecated `background` / unused import / `use_build_context_synchronously`,且不在本次 diff 的行上）|
+| loc 兩檔 `--tags loc --update-goldens` | **3247 passed / 3 failed（既有,已查清 — 見下）** |
 
-> **`--tags loc` 的 3 個失敗未查清。** compact reporter 以 `\r` 覆蓋同一行,輸出檔僅存
-> 1153 bytes,失敗案例名與斷言訊息均已遺失。已排除 `pnp_waiting_modem_view_test.dart`
-> （單獨跑全綠）。尚未逐檔確認的候選為本分支動過的 3 個 loc 檔:
-> `pnp_admin_view_test.dart`、`pnp_setup_view_test.dart`、
-> `troubleshooter/localizations/pnp_auto_master_waiting_view_test.dart`。
+> **前一版記錄的「3 個失敗未查清」已查清,與本修法無關。**
+> 用 `--reporter json` 取代 compact reporter（後者以 `\r` 覆蓋同一行,失敗案例名會遺失)
+> 後可定位到:`Instant Setup - PnP: Wifi ready (split SSID)` 在 da / de 三個 variant 失敗,
+> 原因是 `pnp_setup_view.dart:538` 的 `Row`(Print / Download QR 兩顆按鈕)
+> `RenderFlex overflowed by 16 pixels` —— 長字語系在窄版面下擠不下。
+> 該 `Row` 不在本分支的 diff 內（本分支只動 27 / 67 / 730+ 行),屬既有版面問題,**未處理**。
 >
-> 判讀準則（供後續查證）：`testLocalizations` 每案例跑遍 device × locale 矩陣,
-> 因此**邏輯壞掉會讓同一案例的整組 variant（20+）一起失敗**。只有 3 個更像是少數 variant
-> 的 timing 抖動 —— 這類測試同時存在兩個時鐘（mock future 走 `runAsync` 的真 microtask、
-> 內部 1 秒動畫走 fake timer),特定尺寸/語系下容易差一個 pump。此推論**尚未驗證**。
+> 另外釘住一項判讀準則:此 loc suite **沒有 baseline** ——
+> `test/**/goldens/*` 在 `.gitignore`,repo 內不存在任何 golden 圖檔,
+> 這套測試實際用途是**產生截圖**。因此在乾淨 checkout 上首跑必定全綠(檔案不存在即寫入),
+> 而本機殘留的舊截圖會讓比對失敗看起來像回歸。判斷有無回歸要看**例外內容**
+> （layout / assertion）而非 pixel diff 百分比。
 
 ---
 
@@ -361,13 +544,13 @@ E2 / E3 下,Auto Master 偵測**靜默失效**,PnP 退回它原本的**兩趟流
 
 | 檔案 | 改動 |
 |------|------|
-| `lib/page/instant_setup/data/pnp_provider.dart` | 三處 `auth: true` → `false`;兩處 `.map` 的 401→throw 刪除;`checkAutoMasterStatus` 的 401 分支併入通用 catch;4 處解析改用 `fromValue`（§2.1 / §2.3 / §2.6） |
+| `lib/page/instant_setup/data/pnp_provider.dart` | 三處 `auth: true` → `false`;兩處 `.map` 的 401→throw 刪除;`checkAutoMasterStatus` 的 401 分支併入通用 catch;4 處解析改用 `fromValue`（§2.1 / §2.3 / §2.6）;兩個 poll 加上有界預算參數、`testConnectionReconnected` 改 `retries: 2, timeoutMs: 5000`（§2.4） |
 | `lib/core/jnap/models/auto_master_status.dart` | `fromValue` 參數 `String?` → `Object?`（§2.6） |
-| `lib/page/instant_setup/widgets/pnp_auto_master_flow.dart` | 移除兩處 `on ExceptionAutoMasterUnauthorized`;`_probeUnauthorized` → `_probe`（去掉 unauthorized 分支);Phase A 的 undetermined → `proceed`（§2.4） |
-| `lib/page/instant_setup/pnp_admin_view.dart` | 移除 4 處 `.catchError(test: e is ExceptionAutoMasterUnauthorized)`（§2.3） |
-| `lib/page/instant_setup/pnp_setup_view.dart` | 移除 pre-check 與 `await for` 外層的 `on ExceptionAutoMasterUnauthorized`（§2.3） |
-| `lib/page/instant_setup/troubleshooter/views/isp_settings/pnp_isp_save_settings_view.dart` | `_checkAndWaitForAutoMaster` 增加 `status == null` 顯式早退（§2.5） |
-| `lib/page/instant_setup/data/pnp_exception.dart` | 刪除 `ExceptionAutoMasterUnauthorized`（§2.3） |
+| `lib/page/instant_setup/widgets/pnp_auto_master_flow.dart` | 移除兩處 `on ExceptionAutoMasterUnauthorized`;**刪除 `consecutiveNullThreshold` 與 `_probe()`**;新增 `AutoMasterFlowResult.budgetExhausted`（§2.4) |
+| `lib/page/instant_setup/pnp_admin_view.dart` | 移除 4 處 `.catchError(test: e is ExceptionAutoMasterUnauthorized)`（§2.3);**改用 mixin**,~85 行 bespoke poll loop 刪除（§2.4);`case completed` 改拋 `ExceptionAutoMasterRotatedPassword`,新增 `_promptForRotatedPassword()`,4 條 `.catchError` 鏈各加一個分支（§2.7) |
+| `lib/page/instant_setup/pnp_setup_view.dart` | 移除 pre-check 與 `await for` 外層的 `on ExceptionAutoMasterUnauthorized`（§2.3);**改用 mixin**,~75 行 bespoke poll loop 刪除;計數器改為 `_maxAutoMasterWaits`(先加再比)（§2.4);兩處 `localLoginPassword` → `RouteNamed.pnp`（§2.7) |
+| `lib/page/instant_setup/troubleshooter/views/isp_settings/pnp_isp_save_settings_view.dart` | `_checkAndWaitForAutoMaster` 增加 `status == null` 顯式早退（§2.5);兩處呼叫點處理 `budgetExhausted`（§2.4) |
+| `lib/page/instant_setup/data/pnp_exception.dart` | 刪除 `ExceptionAutoMasterUnauthorized`（§2.3);新增 `ExceptionAutoMasterRotatedPassword`（§2.7） |
 | 測試 4 檔 | 見 §5 |
 
 > 韌體側:`GetAutoMasterStatus` 需開放 no-auth（dennisnltran)。**這是本修法的前置依賴**,
@@ -382,6 +565,8 @@ E2 / E3 下,Auto Master 偵測**靜默失效**,PnP 退回它原本的**兩趟流
 | 項目 | 為何延後 |
 |------|---------|
 | `pollAutoMasterStatus` / `pollAutoMasterUntilRunning` 高度重複 | 兩者僅 `condition` 與 `maxRetry` 不同,可合併。屬重構,不在 hotfix 範圍 |
+| `pnp_setup_view.dart:538` 的 `Row` 在 da / de 窄版面 overflow 16px | 既有版面問題,與 Auto Master 無關（見 §5.4） |
+| 三個 view 的呼叫端各自的 `budgetExhausted` 處置 | §2.4 表中四種處置**刻意不同**,是 IoC 的目的而非重複。不需再收斂 |
 | `fromValue(result.output['autoMasterStatus'])` 在 4 處重複 | 同上 |
 | mixin 放在 `widgets/` 目錄 | 它不是 widget。搬移會動到 import 面,延後 |
 | `_autoMasterPostWanUp` 這個暫態欄位 | 可用參數傳遞取代。延後 |
@@ -439,8 +624,9 @@ poll 的 `.map` 在遇到 401 時 throw `ExceptionAutoMasterUnauthorized`,
 
 | 方案 | 當時不採用的理由 |
 |------|-----------|
-| null-threshold 降為 1,首個 null 就 probe | probe 當時是 authed call（再燒 1 次);且對 transient null 過度反應 |
+| null-threshold 降為 1,首個 null 就 probe | probe 當時是 authed call（再燒 1 次);且對 transient null 過度反應 —— 後者正是 §2.4 最終把整個門檻機制移除的原因,只是當時低估了它的嚴重性 |
 | 新增 `AutoMasterStatus.unauthorized` enum 值,用 yield sentinel 取代 throw | 比 throw 更侵入（改 enum + 全 switch);且無法被 admin_view 既有的 `.catchError` 接住 |
 | poll 加 `terminateOnUnauthorized` 參數（只限 ISP 路徑) | 已選共用改法;setup_view 當時對串流 401 無防護,本就是隱性 bug |
 
-> 三者在現行設計下均已無意義:probe 現在是 unauthed;已無 unauthorized 訊號需要表達。
+> 三者在現行設計下均已無意義:`_probe()` 與 null-threshold 已整組移除（§2.4);
+> 已無 unauthorized 訊號需要表達。

@@ -40,27 +40,21 @@ JNAPSuccess _statusSuccess(Object? raw) => JNAPSuccess(
 
 JNAPError _unauthorized() => const JNAPError(result: errorJNAPUnauthorized);
 
-/// The `auth` value the notifier passed to the last `scheduledCommand` call.
-bool _capturedScheduledAuth(MockRouterRepository repo) => verify(
-      repo.scheduledCommand(
-        action: anyNamed('action'),
-        retryDelayInMilliSec: anyNamed('retryDelayInMilliSec'),
-        maxRetry: anyNamed('maxRetry'),
-        firstDelayInMilliSec: anyNamed('firstDelayInMilliSec'),
-        data: anyNamed('data'),
-        condition: anyNamed('condition'),
-        onCompleted: anyNamed('onCompleted'),
-        requestTimeoutOverride: anyNamed('requestTimeoutOverride'),
-        auth: captureAnyNamed('auth'),
-      ),
-    ).captured.single as bool;
-
 void main() {
   late MockRouterRepository mockRepo;
   late ProviderContainer container;
   late PnpNotifier notifier;
 
+  // The last call the notifier made to each repository method. Read by name
+  // (see [scheduledArg] / [sendArg]) rather than through captureAnyNamed, whose
+  // `captured` ordering follows the invocation's own named-argument order — too
+  // implicit for assertions this design leans on.
+  Invocation? lastScheduled;
+  Invocation? lastSend;
+
   setUp(() {
+    lastScheduled = null;
+    lastSend = null;
     mockRepo = MockRouterRepository();
     container = ProviderContainer(overrides: [
       routerRepositoryProvider.overrideWithValue(mockRepo),
@@ -89,8 +83,19 @@ void main() {
       timeoutMs: anyNamed('timeoutMs'),
       retries: anyNamed('retries'),
       sideEffectOverrides: anyNamed('sideEffectOverrides'),
-    )).thenAnswer((_) => answer());
+    )).thenAnswer((invocation) {
+      lastSend = invocation;
+      return answer();
+    });
   }
+
+  /// A named argument of the notifier's last `send` call, by name.
+  T sendArg<T>(String name) =>
+      lastSend!.namedArguments[Symbol(name)] as T;
+
+  /// A named argument of the notifier's last `scheduledCommand` call, by name.
+  T scheduledArg<T>(String name) =>
+      lastScheduled!.namedArguments[Symbol(name)] as T;
 
   // Stubs RouterRepository.scheduledCommand(...) (the polling streams).
   void whenScheduled(Stream<JNAPResult> stream) {
@@ -104,7 +109,10 @@ void main() {
       onCompleted: anyNamed('onCompleted'),
       requestTimeoutOverride: anyNamed('requestTimeoutOverride'),
       auth: anyNamed('auth'),
-    )).thenAnswer((_) => stream);
+    )).thenAnswer((invocation) {
+      lastScheduled = invocation;
+      return stream;
+    });
   }
 
   group('checkAutoMasterStatus', () {
@@ -159,21 +167,7 @@ void main() {
       // rotation burn the CGI auth-attempt budget and lock the user out.
       whenSend(() async => _statusSuccess('Idle'));
       await notifier.checkAutoMasterStatus();
-      expect(
-        verify(mockRepo.send(
-          any,
-          data: anyNamed('data'),
-          extraHeaders: anyNamed('extraHeaders'),
-          auth: captureAnyNamed('auth'),
-          type: anyNamed('type'),
-          fetchRemote: anyNamed('fetchRemote'),
-          cacheLevel: anyNamed('cacheLevel'),
-          timeoutMs: anyNamed('timeoutMs'),
-          retries: anyNamed('retries'),
-          sideEffectOverrides: anyNamed('sideEffectOverrides'),
-        )).captured.single,
-        isFalse,
-      );
+      expect(sendArg<bool>('auth'), isFalse);
     });
   });
 
@@ -217,7 +211,23 @@ void main() {
     test('polls unauthed', () async {
       whenScheduled(Stream.fromIterable([_statusSuccess('Complete')]));
       await notifier.pollAutoMasterStatus().toList();
-      expect(_capturedScheduledAuth(mockRepo), isFalse);
+      expect(scheduledArg<bool>('auth'), isFalse);
+    });
+
+    test('bounds its own duration: 24 rounds of 3s request + 5s delay',
+        () async {
+      // These three numbers ARE the give-up rule. Since #1180 nothing counts
+      // failures any more: the flow waits until this stream ends, so how long
+      // it runs decides when the UI declares "router not found". 24 x (3s + 5s)
+      // = 192s, which has to stay comfortably clear of ~65s of make-Master
+      // downtime and ~115s for Auto Master end to end. Shrink any of them and
+      // the flow starts giving up before the router is back — exactly the
+      // regression #1180 reported.
+      whenScheduled(Stream.fromIterable([_statusSuccess('Complete')]));
+      await notifier.pollAutoMasterStatus().toList();
+      expect(scheduledArg<int>('maxRetry'), 24);
+      expect(scheduledArg<int?>('requestTimeoutOverride'), 3000);
+      expect(scheduledArg<int>('retryDelayInMilliSec'), 5000);
     });
 
     test('non-String status payload flattens to null, stream survives',
@@ -259,7 +269,20 @@ void main() {
     test('polls unauthed', () async {
       whenScheduled(Stream.fromIterable([_statusSuccess('Running')]));
       await notifier.pollAutoMasterUntilRunning().toList();
-      expect(_capturedScheduledAuth(mockRepo), isFalse);
+      expect(scheduledArg<bool>('auth'), isFalse);
+    });
+
+    test('bounds its own duration, shorter than the wait-for-completion poll',
+        () async {
+      // Same per-attempt caps as pollAutoMasterStatus, fewer rounds: this one
+      // only has to cover make-Master's delay before it *starts* (a Running
+      // edge), not the whole run, and giving up here merely proceeds with the
+      // flow. 18 x (3s + 5s) = 144s.
+      whenScheduled(Stream.fromIterable([_statusSuccess('Running')]));
+      await notifier.pollAutoMasterUntilRunning().toList();
+      expect(scheduledArg<int>('maxRetry'), 18);
+      expect(scheduledArg<int?>('requestTimeoutOverride'), 3000);
+      expect(scheduledArg<int>('retryDelayInMilliSec'), 5000);
     });
   });
 
@@ -314,6 +337,19 @@ void main() {
         () => notifier.testConnectionReconnected(),
         throwsA(isA<ExceptionNeedToReconnect>()),
       );
+    });
+
+    test('retries before condemning the connection', () async {
+      // This call is the sole arbiter of "router not found" once the poll's
+      // budget is spent, so it must not hinge on one packet: a router still
+      // finishing its restart answers on the second or third try. Deciding off
+      // a single attempt is what would put the user back on the login screen
+      // while the router was merely slow.
+      seedStateSn();
+      whenSend(() async => deviceInfoSuccess(knownSn));
+      await notifier.testConnectionReconnected();
+      expect(sendArg<int>('retries'), 2);
+      expect(sendArg<int>('timeoutMs'), 5000);
     });
   });
 }

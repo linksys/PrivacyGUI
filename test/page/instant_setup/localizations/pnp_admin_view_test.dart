@@ -22,16 +22,6 @@ import '../../../common/test_responsive_widget.dart';
 import '../../../common/testable_router.dart';
 import '../../../test_data/device_info_test_data.dart';
 
-/// A stub destination for `RouteNamed.localLoginPassword` so redirect-to-login
-/// paths can navigate inside the single-route test harness (which otherwise
-/// only knows the '/' route and throws "unknown route name").
-LinksysRoute _loginStubRoute() => LinksysRoute(
-      name: RouteNamed.localLoginPassword,
-      path: RoutePath.localLoginPassword,
-      config: const LinksysRouteConfig(noNaviRail: true),
-      builder: (context, state) => const SizedBox.shrink(key: Key('loginStub')),
-    );
-
 void main() async {
   late Mock.MockPnpNotifier mockPnpNotifier;
 
@@ -274,10 +264,15 @@ void main() async {
     when(mockPnpNotifier.checkAutoMasterStatus()).thenAnswer((_) async {
       return AutoMasterStatus.running;
     });
-    // Return null 3 times to trigger connection error
+    // Nulls alone no longer condemn the connection — the poll runs its whole
+    // budget and only then does the reachability test decide. Spend the budget
+    // (stream ends with no terminal status) and fail that test, which is what
+    // actually renders this view.
     when(mockPnpNotifier.pollAutoMasterStatus()).thenAnswer((_) {
       return Stream.fromIterable([null, null, null]);
     });
+    when(mockPnpNotifier.testConnectionReconnected())
+        .thenAnswer((_) async => throw ExceptionNeedToReconnect());
 
     await tester.pumpWidget(
       testableSingleRoute(
@@ -444,12 +439,21 @@ void main() async {
   });
 
   // B': Auto Master resolves to `complete` (make-Master finished → credential
-  // rotated) → `_checkAutoMasterStatus` throws ExceptionInterruptAndExit and
-  // `_doLogin` must send the user to re-login, NOT into config with a stale
-  // session. Without the ExceptionInterruptAndExit handler this fell through to
-  // the catch-all and showed a bogus error on the password screen.
+  // rotated) → `_checkAutoMasterStatus` throws
+  // ExceptionAutoMasterRotatedPassword and `_doLogin` must ask for the new
+  // password, NOT enter config with a stale session.
+  //
+  // The prompt is this very view, so the correct outcome is *no navigation*:
+  // `_promptForRotatedPassword` leaves the waiting view and comes back to the
+  // password field. Asserting that here is what pins #1180's second defect —
+  // this branch used to redirect to `localLoginPassword`, which belongs to a
+  // setup that finished (`userAcknowledgedAutoConfiguration == true`) and
+  // stranded the user outside the flow they were still in. Hence
+  // `findsNothing` on a login stub that is no longer even registered: if some
+  // future change re-adds the redirect, the harness throws "unknown route
+  // name" rather than passing quietly.
   testWidgets(
-      'Instant Setup - PnP: Tap Login with Auto Master complete redirects to login',
+      'Instant Setup - PnP: Tap Login with Auto Master complete asks for the new password',
       (tester) async {
     useLargeScreen(tester);
     stubConfiguredRouter();
@@ -466,18 +470,23 @@ void main() async {
         ),
         child: const PnpAdminView(),
         overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
-        extraRoutes: [_loginStubRoute(), pnpConfigStubRoute()],
+        extraRoutes: [pnpConfigStubRoute()],
       ),
     );
     await tester.pump(const Duration(seconds: 1));
     await tapLogin(tester);
     // Drive the real event loop so the poll `await for` runs to `complete`
-    // (throwing ExceptionInterruptAndExit) and the redirect resolves.
+    // (throwing ExceptionAutoMasterRotatedPassword) and the handler runs.
     await tester.runAsync(() => Future.delayed(const Duration(seconds: 2)));
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const Key('loginStub')), findsOneWidget);
+    // Back on PnP's own password prompt, off the waiting view, still inside PnP.
+    expect(find.byType(PnpAdminView), findsOneWidget);
+    expect(find.byType(AppPasswordField), findsOneWidget);
+    expect(find.byType(PnpAutoMasterWaitingView), findsNothing);
     expect(find.byKey(const Key('pnpConfigStub')), findsNothing);
+    // The rotated credential must be dropped, not retried on the next pass.
+    verify(mockPnpNotifier.setAttachedPassword(null)).called(1);
   });
 
   // C: the `checkAutoMasterStatus()` gate cannot determine the status (null) —
@@ -501,7 +510,7 @@ void main() async {
         ),
         child: const PnpAdminView(),
         overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
-        extraRoutes: [_loginStubRoute(), pnpConfigStubRoute()],
+        extraRoutes: [pnpConfigStubRoute()],
       ),
     );
     await tester.pump(const Duration(seconds: 1));

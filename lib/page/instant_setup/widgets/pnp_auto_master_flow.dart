@@ -16,14 +16,20 @@ enum AutoMasterFlowResult {
   /// route onward to recover.
   completed,
 
-  /// Auto Master did not change anything: it `failed`, or it timed out with the
-  /// session still alive, or it never engaged. The session is valid and the
-  /// caller may proceed with whatever it was doing (e.g. resume a pending save,
-  /// or continue to the next step).
+  /// Auto Master did not change anything: it `failed`, or it never engaged. The
+  /// session is valid and the caller may proceed with whatever it was doing
+  /// (e.g. resume a pending save, or continue to the next step).
   proceed,
 
-  /// A genuine connection error was detected (repeated polling failures that a
-  /// probe could not attribute to a completed / dead-session state). The caller
+  /// The wait ran out of time, but the router is still reachable — so Auto
+  /// Master's outcome is simply unknown. Distinct from [proceed], where Auto
+  /// Master is known to have left the credential alone: here it may still be
+  /// mid-flight, and a caller about to do something the rotation would break
+  /// (saving settings) may want another look before committing. Callers with
+  /// nothing at stake can treat it as [proceed].
+  budgetExhausted,
+
+  /// The router could not be reached after the wait ran out of time. The caller
   /// should surface the error and offer a retry.
   connectionError,
 }
@@ -55,7 +61,6 @@ mixin PnpAutoMasterFlowMixin<T extends ConsumerStatefulWidget>
   /// All callbacks are only invoked while `mounted`.
   Future<AutoMasterFlowResult> runAutoMasterFlow({
     bool waitForRunningFirst = false,
-    int consecutiveNullThreshold = 3,
     required VoidCallback onEnterWaiting,
     required VoidCallback onShowConnectionError,
     VoidCallback? onExitWaiting,
@@ -64,11 +69,11 @@ mixin PnpAutoMasterFlowMixin<T extends ConsumerStatefulWidget>
 
     AutoMasterFlowResult result;
     if (waitForRunningFirst) {
-      final phaseA = await _waitForRunning(consecutiveNullThreshold);
+      final phaseA = await _waitForRunning();
       // null => observed Running, fall through to waiting for completion.
-      result = phaseA ?? await _waitForCompletion(consecutiveNullThreshold);
+      result = phaseA ?? await _waitForCompletion();
     } else {
-      result = await _waitForCompletion(consecutiveNullThreshold);
+      result = await _waitForCompletion();
     }
 
     if (!mounted) return result;
@@ -84,8 +89,7 @@ mixin PnpAutoMasterFlowMixin<T extends ConsumerStatefulWidget>
   ///
   /// Returns a terminal [AutoMasterFlowResult], or `null` to signal "Running
   /// observed, proceed to wait for completion".
-  Future<AutoMasterFlowResult?> _waitForRunning(int threshold) async {
-    int consecutiveNulls = 0;
+  Future<AutoMasterFlowResult?> _waitForRunning() async {
     await for (final status
         in ref.read(pnpProvider.notifier).pollAutoMasterUntilRunning()) {
       if (!mounted) return AutoMasterFlowResult.proceed;
@@ -99,42 +103,28 @@ mixin PnpAutoMasterFlowMixin<T extends ConsumerStatefulWidget>
       if (status == AutoMasterStatus.failed) {
         return AutoMasterFlowResult.proceed;
       }
-      if (status == null) {
-        consecutiveNulls++;
-        logger.w(
-            '[PnP]: Auto Master wait-for-running null, consecutive: $consecutiveNulls');
-        if (consecutiveNulls >= threshold) {
-          final probe = await _probe();
-          if (!mounted) return AutoMasterFlowResult.proceed;
-          // An undetermined probe means Auto Master status is unavailable — on
-          // firmware that does not serve it unauthed, every poll lands here.
-          // Phase A runs after ISP settings saved and WAN came up, so the
-          // session was just proven alive; treating that as a connection error
-          // would show "router not found" right after a successful setup.
-          // Proceed instead and let PnP's own second pass handle recovery.
-          if (probe == AutoMasterFlowResult.connectionError) {
-            logger.w(
-                '[PnP]: Auto Master wait-for-running undetermined, proceed');
-            return AutoMasterFlowResult.proceed;
-          }
-          if (probe != null) return probe;
-          consecutiveNulls = 0; // probe saw Running → keep waiting
-        }
-      } else {
-        // idle → not started yet, keep waiting
-        consecutiveNulls = 0;
-      }
+      // null (unreachable, unsupported, or a firmware that will not serve the
+      // status) and idle both mean "not started yet" — keep waiting until the
+      // stream's own budget runs out.
     }
 
-    // Stream ended without Running (timeout). The session was just proven alive
-    // by the upstream internet check, so we do NOT re-test the connection here.
-    logger.w('[PnP]: Auto Master wait-for-running timeout, proceed');
+    // Stream ended without Running (budget spent). The session was just proven
+    // alive by the upstream internet check, so we do NOT re-test the connection
+    // here: Auto Master simply never announced itself.
+    logger.w('[PnP]: Auto Master wait-for-running budget spent, proceed');
     return AutoMasterFlowResult.proceed;
   }
 
   /// Phase B — wait for Auto Master to *finish*.
-  Future<AutoMasterFlowResult> _waitForCompletion(int threshold) async {
-    int consecutiveNulls = 0;
+  ///
+  /// A `null` status is not evidence of anything here. make-Master takes the
+  /// router's HTTP service down for the better part of a minute, and during that
+  /// window the router may time out, refuse, or answer something unrecognised —
+  /// so counting nulls to decide the router is gone reads noise as signal, and
+  /// gives up (~50s) before the service is even back (~65s). The poll's own
+  /// bounded length is the give-up rule instead, and only then does an actual
+  /// reachability test decide.
+  Future<AutoMasterFlowResult> _waitForCompletion() async {
     await for (final status
         in ref.read(pnpProvider.notifier).pollAutoMasterStatus()) {
       if (!mounted) return AutoMasterFlowResult.proceed;
@@ -146,56 +136,19 @@ mixin PnpAutoMasterFlowMixin<T extends ConsumerStatefulWidget>
       if (status == AutoMasterStatus.failed) {
         return AutoMasterFlowResult.proceed;
       }
-      if (status == null) {
-        consecutiveNulls++;
-        logger.w(
-            '[PnP]: Auto Master polling null, consecutive: $consecutiveNulls');
-        if (consecutiveNulls >= threshold) {
-          final probe = await _probe();
-          if (!mounted) return AutoMasterFlowResult.proceed;
-          if (probe != null) return probe;
-          consecutiveNulls = 0; // probe saw Running → keep waiting
-        }
-      } else {
-        // running → keep waiting for completion
-        consecutiveNulls = 0;
-      }
+      // running / null → keep waiting.
     }
 
-    // Stream ended (timeout). Verify the session survived make-Master.
-    logger.w('[PnP]: Auto Master polling timeout, verifying connection');
+    // Budget spent without a terminal status. Ask the one question that can be
+    // answered reliably: is the router there?
+    logger.w('[PnP]: Auto Master polling budget spent, verifying connection');
     try {
       await ref.read(pnpProvider.notifier).testConnectionReconnected();
-      return AutoMasterFlowResult.proceed;
+      // Reachable, but Auto Master's outcome is unknown — it may still be
+      // running. Report that honestly and let the caller decide.
+      return AutoMasterFlowResult.budgetExhausted;
     } catch (_) {
       return AutoMasterFlowResult.connectionError;
-    }
-  }
-
-  /// Disambiguate a run of null poll results with one direct status read.
-  ///
-  /// The polls flatten every non-success result to `null`, so a router that is
-  /// genuinely unreachable looks the same as firmware that will not serve the
-  /// status. This probe re-reads the status once to see which it is.
-  ///
-  /// Returns a terminal [AutoMasterFlowResult], or `null` to signal "keep
-  /// polling" (Auto Master is still Running). Callers decide what an
-  /// undetermined status ([AutoMasterFlowResult.connectionError]) means for
-  /// their phase — Phase A downgrades it to `proceed`.
-  Future<AutoMasterFlowResult?> _probe() async {
-    final status = await ref.read(pnpProvider.notifier).checkAutoMasterStatus();
-    switch (status) {
-      case AutoMasterStatus.complete:
-      case AutoMasterStatus.idle:
-        return AutoMasterFlowResult.completed;
-      case AutoMasterStatus.failed:
-        return AutoMasterFlowResult.proceed;
-      case AutoMasterStatus.running:
-        return null; // reset + keep polling
-      case null:
-        // Status unavailable: unreachable router, or firmware that does not
-        // serve GetAutoMasterStatus unauthed.
-        return AutoMasterFlowResult.connectionError;
     }
   }
 }

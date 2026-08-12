@@ -34,14 +34,19 @@ import '../../../common/test_responsive_widget.dart';
 import '../../../common/testable_router.dart';
 import '../../../test_data/device_info_test_data.dart';
 
-/// A stub destination for `RouteNamed.localLoginPassword` so redirect-to-login
-/// paths can navigate inside the single-route test harness (which otherwise
-/// only knows the '/' route and throws "unknown route name").
-LinksysRoute _loginStubRoute() => LinksysRoute(
-      name: RouteNamed.localLoginPassword,
-      path: RoutePath.localLoginPassword,
+/// A stub destination for `RouteNamed.pnp` so the back-to-PnP paths can
+/// navigate inside the single-route test harness (which otherwise only knows
+/// the '/' route and throws "unknown route name").
+///
+/// Every abandoned-save path in this view lands here — a credential rotation
+/// mid-setup, and a 401 from the write itself. Not `localLoginPassword`: that
+/// page belongs to a setup that finished
+/// (`userAcknowledgedAutoConfiguration == true`), and none of these did.
+LinksysRoute _pnpStubRoute() => LinksysRoute(
+      name: RouteNamed.pnp,
+      path: RoutePath.pnp,
       config: const LinksysRouteConfig(noNaviRail: true),
-      builder: (context, state) => const SizedBox.shrink(key: Key('loginStub')),
+      builder: (context, state) => const SizedBox.shrink(key: Key('pnpStub')),
     );
 
 void main() async {
@@ -707,7 +712,13 @@ void main() async {
     await tester.pump(const Duration(seconds: 2));
   });
 
-  testLocalizations('Instant Setup - PnP: Auto Master connection error',
+  // Named "before save" like its sibling above, and not just "connection
+  // error": the golden filename is derived from this description alone, and
+  // pnp_admin_view_test.dart has its own connection-error screenshot in the
+  // same goldens/ directory. Two tests sharing a description quietly overwrite
+  // each other's screenshot, and whichever runs second fails the comparison.
+  testLocalizations(
+      'Instant Setup - PnP: Auto Master connection error before save',
       (tester, locale) async {
     // First call returns idle (for initState), subsequent calls return running (for save)
     var callCount = 0;
@@ -715,10 +726,15 @@ void main() async {
       callCount++;
       return callCount == 1 ? AutoMasterStatus.idle : AutoMasterStatus.running;
     });
-    // Return null to simulate connection failure during polling (3 consecutive failures)
+    // Nulls alone no longer condemn the connection — the poll runs its whole
+    // budget and only then does the reachability test decide. Spend the budget
+    // (stream ends with no terminal status) and fail that test, which is what
+    // actually renders this view.
     when(mockPnpNotifier.pollAutoMasterStatus()).thenAnswer((_) {
       return Stream<AutoMasterStatus?>.fromIterable([null, null, null]);
     });
+    when(mockPnpNotifier.testConnectionReconnected())
+        .thenAnswer((_) async => throw ExceptionNeedToReconnect());
 
     await tester.pumpWidget(
       testableSingleRoute(
@@ -859,9 +875,9 @@ void main() async {
 
   // running -> poll resolves complete: make-Master finished and rotated the
   // admin password. The GUI session is dead, so save must NOT be attempted;
-  // route to login instead.
+  // go back to PnP so its precheck can ask for the new password.
   testWidgets(
-      'Instant Setup - PnP: Auto Master poll complete before save redirects to login',
+      'Instant Setup - PnP: Auto Master poll complete before save redirects to pnp',
       (tester) async {
     useLargeScreen(tester);
     stubCheckAutoMaster(
@@ -869,11 +885,18 @@ void main() async {
     when(mockPnpNotifier.pollAutoMasterStatus())
         .thenAnswer((_) => Stream.value(AutoMasterStatus.complete));
 
-    await pumpSetup(tester, extraRoutes: [_loginStubRoute()]);
+    await pumpSetup(tester, extraRoutes: [_pnpStubRoute()]);
     await driveToSave(tester);
-    await tester.pumpAndSettle();
+    // Drain on the real event loop, as the sibling tests below do. The flow
+    // leaves the poll by returning out of its `await for`, which cancels the
+    // subscription — and the mock's Stream.value only settles that cancellation
+    // on real event-loop turns, so pumping fake time alone never gets past it.
+    await tester
+        .runAsync(() => Future.delayed(const Duration(milliseconds: 100)));
+    await tester.pump();
+    await tester.pump();
 
-    expect(find.byKey(const Key('loginStub')), findsOneWidget);
+    expect(find.byKey(const Key('pnpStub')), findsOneWidget);
     verifyNever(mockPnpNotifier.save());
   });
 
@@ -919,7 +942,7 @@ void main() async {
     final saveCompleter = Completer<void>();
     when(mockPnpNotifier.save()).thenAnswer((_) => saveCompleter.future);
 
-    await pumpSetup(tester, extraRoutes: [_loginStubRoute()]);
+    await pumpSetup(tester, extraRoutes: [_pnpStubRoute()]);
     await driveToSave(tester);
     // Not pumpAndSettle: setState(saving) starts an endless AppSpinner.
     await tester
@@ -929,16 +952,16 @@ void main() async {
     verify(mockPnpNotifier.save()).called(1);
     // null is not `running`, so there was nothing to poll or wait for.
     verifyNever(mockPnpNotifier.pollAutoMasterStatus());
-    expect(find.byKey(const Key('loginStub')), findsNothing);
+    expect(find.byKey(const Key('pnpStub')), findsNothing);
   });
 
   // Edge case (idle on entry, complete now): Auto Master was idle when PnP
   // started but completed during the WiFi-config step, so it never showed as
   // running at save time. The entry-vs-current comparison must still catch the
-  // credential rotation and route to login. The entry status lives in PnpState
+  // credential rotation and go back to PnP. The entry status lives in PnpState
   // (the mock's setAutoMasterStatusOnEntry is a no-op), so seed build() with it.
   testWidgets(
-      'Instant Setup - PnP: Auto Master idle on entry but complete during config redirects to login',
+      'Instant Setup - PnP: Auto Master idle on entry but complete during config redirects to pnp',
       (tester) async {
     useLargeScreen(tester);
     when(mockPnpNotifier.build()).thenReturn(PnpState(
@@ -955,11 +978,11 @@ void main() async {
     stubCheckAutoMaster(
         entry: AutoMasterStatus.idle, duringSave: AutoMasterStatus.complete);
 
-    await pumpSetup(tester, extraRoutes: [_loginStubRoute()]);
+    await pumpSetup(tester, extraRoutes: [_pnpStubRoute()]);
     await driveToSave(tester);
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const Key('loginStub')), findsOneWidget);
+    expect(find.byKey(const Key('pnpStub')), findsOneWidget);
     verifyNever(mockPnpNotifier.save());
   });
 
@@ -989,13 +1012,7 @@ void main() async {
           const JNAPError(result: errorJNAPUnauthorized));
     });
 
-    final pnpStub = LinksysRoute(
-      name: RouteNamed.pnp,
-      path: RoutePath.pnp,
-      config: const LinksysRouteConfig(noNaviRail: true),
-      builder: (context, state) => const SizedBox.shrink(key: Key('pnpStub')),
-    );
-    await pumpSetup(tester, extraRoutes: [pnpStub]);
+    await pumpSetup(tester, extraRoutes: [_pnpStubRoute()]);
     await driveToSave(tester);
     await tester.pumpAndSettle();
 
@@ -1003,28 +1020,33 @@ void main() async {
   });
 
   // ---------------------------------------------------------------------------
-  // Timeout / reconnect-retry branch of `_saveChanges` (pnp_setup_view.dart
-  // L818-846). Reached when the poll stream ends WITHOUT a terminal status —
-  // make-Master neither finished (complete/idle), gave up (failed), nor tripped
-  // the 3-consecutive-failures guard within the poll window:
-  //   - timeout -> testConnectionReconnected() OK    -> retry _saveChanges once;
-  //       on the retry Auto Master has settled (idle), so the write proceeds
-  //   - timeout -> testConnectionReconnected() throws -> connection error view,
-  //       never save (router unreachable)
-  //   - timeout on every attempt until the retry limit
-  //       (_maxAutoMasterSaveAttempts == 2) -> connection error view, never save
-  // The connection-error sub-view is identified by its wifi-off icon, which only
-  // the error branch of PnpAutoMasterWaitingView renders.
+  // Budget-exhausted branch of `_saveChanges`. Reached when the poll stream ends
+  // WITHOUT a terminal status — Auto Master neither finished (complete/idle) nor
+  // gave up (failed) inside the poll's bounded budget. Nulls along the way are
+  // NOT a trigger: the poll's own length is the only give-up rule, and only then
+  // does testConnectionReconnected() decide.
+  //
+  //   - budget spent -> testConnectionReconnected() OK -> re-check from the top;
+  //       on the second pass Auto Master has settled (idle), so the write goes
+  //   - budget spent -> testConnectionReconnected() throws -> connection error
+  //       view, never save (router unreachable)
+  //   - still unresolved after _maxAutoMasterWaits (2) waits -> connection error
+  //       view, never save
+  //
+  // This caller is the only one that re-checks rather than proceeding on
+  // budgetExhausted: it has a save pending that a credential rotation would
+  // break. The connection-error sub-view is identified by its wifi-off icon,
+  // which only the error branch of PnpAutoMasterWaitingView renders.
   // ---------------------------------------------------------------------------
 
-  // poll ends on `running` (never a terminal status) -> timeout. Reconnect
-  // succeeds, so the flow retries _saveChanges; on the retry the status has
-  // settled to idle, so it falls through and actually writes settings.
+  // Poll ends on `running` (never a terminal status) -> budget spent. Reconnect
+  // succeeds, so the flow re-checks; the status has settled to idle by then, so
+  // it falls through and actually writes settings.
   testWidgets(
-      'Instant Setup - PnP: Auto Master poll timeout then reconnect retries and saves',
+      'Instant Setup - PnP: Auto Master budget spent then reconnect re-checks and saves',
       (tester) async {
     useLargeScreen(tester);
-    // initState -> idle; first save -> running (enters the poll); retry save ->
+    // initState -> idle; first save -> running (enters the poll); re-check ->
     // idle (Auto Master settled) so the write proceeds. stubCheckAutoMaster
     // can't express three distinct answers, so stub the call counter inline.
     var callCount = 0;
@@ -1032,22 +1054,22 @@ void main() async {
       callCount++;
       if (callCount == 1) return AutoMasterStatus.idle; // initState
       if (callCount == 2) return AutoMasterStatus.running; // first save
-      return AutoMasterStatus.idle; // retry save
+      return AutoMasterStatus.idle; // re-check
     });
     // Emits one running then completes -> the await-for ends without a terminal
-    // status -> timeout branch.
+    // status -> budget-spent branch.
     when(mockPnpNotifier.pollAutoMasterStatus())
         .thenAnswer((_) => Stream.value(AutoMasterStatus.running));
     // testConnectionReconnected returns Future.value() (success) by default.
     // Leave save() pending so the whenComplete tail (and its post-save 3s timer)
-    // never runs; we only assert save() was reached on the retry.
+    // never runs; we only assert save() was reached on the second pass.
     final saveCompleter = Completer<void>();
     when(mockPnpNotifier.save()).thenAnswer((_) => saveCompleter.future);
 
     await pumpSetup(tester);
     await driveToSave(tester);
-    // Drain poll-end -> timeout -> reconnect -> retry -> save on the real event
-    // loop. No pumpAndSettle: the retry ends in setState(saving), whose endless
+    // Drain poll-end -> reconnect -> re-check -> save on the real event loop. No
+    // pumpAndSettle: the second pass ends in setState(saving), whose endless
     // AppSpinner animation would time out pumpAndSettle.
     await tester
         .runAsync(() => Future.delayed(const Duration(milliseconds: 100)));
@@ -1057,11 +1079,11 @@ void main() async {
     verify(mockPnpNotifier.save()).called(1);
   });
 
-  // poll ends on `running` -> timeout, but the router is unreachable
+  // Poll ends on `running` -> budget spent, but the router is unreachable
   // (testConnectionReconnected throws). The flow must surface the connection
   // error view and never write settings.
   testWidgets(
-      'Instant Setup - PnP: Auto Master poll timeout then reconnect fails shows connection error',
+      'Instant Setup - PnP: Auto Master budget spent then reconnect fails shows connection error',
       (tester) async {
     useLargeScreen(tester);
     stubCheckAutoMaster(
@@ -1082,23 +1104,22 @@ void main() async {
     verifyNever(mockPnpNotifier.save());
   });
 
-  // Every attempt times out (status stays running and reconnect keeps
-  // succeeding), so _saveChanges recurses until autoMasterSaveAttempt reaches
-  // _maxAutoMasterSaveAttempts (2) and gives up with the connection error view.
-  // Exercises the retry-limit short-circuit (L822-828), distinct from the
-  // reconnect-failure branch (L839-844) above.
+  // Every wait ends with the status still `running` while reconnect keeps
+  // succeeding, so _saveChanges re-checks until autoMasterWaitsSpent reaches
+  // _maxAutoMasterWaits (2) and gives up with the connection error view. Each
+  // wait costs a full poll budget (~3 min), which is why the cap is this low.
   testWidgets(
-      'Instant Setup - PnP: Auto Master poll timeout exhausts retries shows connection error',
+      'Instant Setup - PnP: Auto Master unresolved after the wait limit shows connection error',
       (tester) async {
     useLargeScreen(tester);
-    // idle on entry, running on every save-time check so each retry re-enters
-    // the poll -> timeout loop.
+    // idle on entry, running on every save-time check so each pass re-enters the
+    // poll and spends another wait.
     stubCheckAutoMaster(
         entry: AutoMasterStatus.idle, duringSave: AutoMasterStatus.running);
     when(mockPnpNotifier.pollAutoMasterStatus())
         .thenAnswer((_) => Stream.value(AutoMasterStatus.running));
     // Reconnect succeeds each time, so the only thing that stops the recursion
-    // is the retry limit.
+    // is the wait limit.
     when(mockPnpNotifier.testConnectionReconnected()).thenAnswer((_) async {});
 
     await pumpSetup(tester);
@@ -1108,7 +1129,7 @@ void main() async {
     await tester.pump();
 
     expect(find.byIcon(LinksysIcons.signalWifiOff), findsOneWidget);
-    // Reconnected on attempts 0 and 1; attempt 2 short-circuits on the limit.
+    // One reconnect test per wait; the 2nd wait hits the limit and stops there.
     verify(mockPnpNotifier.testConnectionReconnected()).called(2);
     verifyNever(mockPnpNotifier.save());
   });

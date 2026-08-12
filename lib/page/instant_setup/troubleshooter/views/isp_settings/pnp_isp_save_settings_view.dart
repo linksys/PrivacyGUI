@@ -95,6 +95,15 @@ class _PnpIspSaveSettingsViewState extends ConsumerState<PnpIspSaveSettingsView>
         case AutoMasterFlowResult.proceed:
           logger.i('[PnP]: Troubleshooter - Auto Master done, continue save');
           return true;
+        case AutoMasterFlowResult.budgetExhausted:
+          // Out of time but the router answers, so Auto Master may still be
+          // mid-flight. Save anyway: we have already waited out the full
+          // budget, and if the credential does get rotated under us the save
+          // fails as a JNAPError, which _saveNewSettings' error path already
+          // turns into a message the user can act on.
+          logger.w(
+              '[PnP]: Troubleshooter - Auto Master outcome unknown, continue save');
+          return true;
         case AutoMasterFlowResult.connectionError:
           // Waiting view already shows the error + retry.
           return false;
@@ -170,8 +179,11 @@ class _PnpIspSaveSettingsViewState extends ConsumerState<PnpIspSaveSettingsView>
                   );
                   if (!mounted) return;
                   if (result != AutoMasterFlowResult.connectionError) {
-                    // proceed / completed → let the router decide pnp-vs-login
-                    // via userAcknowledgedAutoConfiguration.
+                    // completed / proceed / budgetExhausted → go to PnP and let
+                    // its entry precheck decide. Nothing is pending here (the
+                    // settings are already saved), so an unknown Auto Master
+                    // outcome needs no special handling: PnP re-reads whatever
+                    // state the router is actually in.
                     context.goNamed(RouteNamed.pnp);
                   }
                   // connectionError → waiting view shows error + retry.

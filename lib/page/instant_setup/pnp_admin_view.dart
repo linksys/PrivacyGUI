@@ -12,6 +12,7 @@ import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/core/jnap/models/auto_master_status.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_exception.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_provider.dart';
+import 'package:privacy_gui/page/instant_setup/widgets/pnp_auto_master_flow.dart';
 import 'package:privacy_gui/page/instant_setup/widgets/pnp_auto_master_waiting_view.dart';
 import 'package:privacy_gui/page/instant_setup/troubleshooter/providers/pnp_troubleshooter_provider.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
@@ -33,7 +34,8 @@ class PnpAdminView extends ArgumentsBaseConsumerStatefulView {
   ConsumerState<PnpAdminView> createState() => _PnpAdminViewState();
 }
 
-class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
+class _PnpAdminViewState extends ConsumerState<PnpAdminView>
+    with PnpAutoMasterFlowMixin<PnpAdminView> {
   late final TextEditingController _textEditController;
   late final BasePnpNotifier pnp;
   final InputValidator _validator = InputValidator([
@@ -111,6 +113,9 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
           logger.e('[PnP]: Auto Master polling failed, stay on error view');
           // Do nothing - UI already showing error view with retry button
         }, test: (error) => error is ExceptionAutoMasterPollingFailed)
+        .catchError((error, stackTrace) {
+          _promptForRotatedPassword();
+        }, test: (error) => error is ExceptionAutoMasterRotatedPassword)
         // .catchError((error, stackTrace) {
         //   logger.e(
         //       '[PnP Troubleshooter]: Internet connection failed - initiate the troubleshooter');
@@ -354,7 +359,12 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
               // Do nothing - UI already showing error view with retry button
             },
                     test: (error) =>
-                        error is ExceptionAutoMasterPollingFailed).onError(
+                        error is ExceptionAutoMasterPollingFailed).catchError(
+                    (error, stackTrace) {
+              _promptForRotatedPassword();
+            },
+                    test: (error) =>
+                        error is ExceptionAutoMasterRotatedPassword).onError(
                     (error, stackTrace) {
               logger.e(
                 '[PnP]: ${_password == null ? 'There is no admin password, bring up the input view' : 'The given password is invalid'}',
@@ -446,11 +456,6 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
         context.goNamed(RouteNamed.pnpConfig);
       }
     }).catchError((error, stackTrace) {
-      // Auto Master finished (make-Master rotated the credential) — send the
-      // user back to re-login with the new password instead of into the WiFi
-      // form. Consistent with the auto-login and default-password paths; this
-      // is the primary running→complete outcome and without it the flow would
-      // fall through to the catch-all below and surface a bogus error.
       final route = (error as ExceptionInterruptAndExit).route;
       logger.e('[PnP]: Interrupted, go to: $route');
       if (mounted) {
@@ -460,7 +465,15 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
         (error, stackTrace) {
       // PnpAutoMasterWaitingView already shows the error + retry button.
       logger.e('[PnP]: Auto Master polling failed, stay on error view');
-    }, test: (error) => error is ExceptionAutoMasterPollingFailed).onError(
+    }, test: (error) => error is ExceptionAutoMasterPollingFailed).catchError(
+        (error, stackTrace) {
+      // Auto Master finished while the user was logging in, so the password they
+      // just typed is already obsolete. Ask again rather than dropping them into
+      // the WiFi form — this is the primary running→complete outcome here, and
+      // without an explicit branch it would fall through to the catch-all below
+      // and surface a bogus "invalid password" error.
+      _promptForRotatedPassword();
+    }, test: (error) => error is ExceptionAutoMasterRotatedPassword).onError(
         (error, stackTrace) {
       logger.e('[PnP]: The input admin password is invalid');
       setState(() {
@@ -557,88 +570,72 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
     final status = await pnp.checkAutoMasterStatus();
     logger.i('[PnP]: Auto Master status check result: $status');
 
-    if (status == AutoMasterStatus.running) {
-      // Every setState below follows an await, and the make-Master window is
+    if (status != AutoMasterStatus.running) return;
+    if (!mounted) return;
+
+    final result = await runAutoMasterFlow(
+      // Every setState here follows an await, and the make-Master window is
       // exactly when the router bounces us between routes — so this view can be
-      // disposed mid-flow. Guard each one instead of crashing on a defunct State.
-      if (!mounted) return;
-      setState(() {
+      // disposed mid-flow. The mixin only fires these while mounted.
+      onEnterWaiting: () => setState(() {
         _isWaitingForAutoMaster = true;
         _showAutoMasterConnectionError = false;
-      });
+      }),
+      onShowConnectionError: () =>
+          setState(() => _showAutoMasterConnectionError = true),
+      onExitWaiting: () => setState(() => _isWaitingForAutoMaster = false),
+    );
 
-      int consecutiveFailures = 0;
-      const maxConsecutiveFailures = 3;
-
-      await for (final pollStatus in pnp.pollAutoMasterStatus()) {
-        logger.d('[PnP]: Auto Master polling status: $pollStatus');
-
-        if (pollStatus == null) {
-          consecutiveFailures++;
-          logger.w(
-              '[PnP]: Auto Master polling failed, consecutive failures: $consecutiveFailures');
-
-          if (consecutiveFailures >= maxConsecutiveFailures) {
-            logger.e(
-                '[PnP]: Auto Master polling failed $maxConsecutiveFailures times, showing connection error');
-            if (mounted) {
-              setState(() {
-                _showAutoMasterConnectionError = true;
-              });
-            }
-            throw ExceptionAutoMasterPollingFailed();
-          }
-        } else {
-          consecutiveFailures = 0;
-
-          if (pollStatus == AutoMasterStatus.complete ||
-              pollStatus == AutoMasterStatus.idle) {
-            // Auto Master completed successfully, password may have changed
-            if (mounted) {
-              setState(() {
-                _isWaitingForAutoMaster = false;
-              });
-            }
-            throw ExceptionInterruptAndExit(
-                route: RouteNamed.localLoginPassword);
-          }
-
-          if (pollStatus == AutoMasterStatus.failed) {
-            // Auto Master failed (e.g., found another Master), password is still admin
-            // Continue normal PnP flow
-            logger.i('[PnP]: Auto Master failed, continuing PnP flow');
-            if (mounted) {
-              setState(() {
-                _isWaitingForAutoMaster = false;
-              });
-            }
-            return;
-          }
-        }
-      }
-
-      // Polling exceeded max retry (timeout)
-      logger
-          .w('[PnP]: Auto Master polling timeout, checking router connection');
-      try {
-        await pnp.testConnectionReconnected();
-        logger.i('[PnP]: Router connected after timeout, proceed to next step');
-        if (mounted) {
-          setState(() {
-            _isWaitingForAutoMaster = false;
-          });
-        }
-        // Continue normal flow
-      } catch (e) {
-        logger.e('[PnP]: Router not connected after timeout');
-        if (mounted) {
-          setState(() {
-            _showAutoMasterConnectionError = true;
-          });
-        }
+    switch (result) {
+      case AutoMasterFlowResult.completed:
+        // make-Master rotated the admin password, so whatever credential got us
+        // here is dead and the user has to supply the new one.
+        //
+        // That means PnP's own password prompt, not `localLoginPassword`: the
+        // local login page is where a *finished* setup lands
+        // (userAcknowledgedAutoConfiguration == true). Reaching it from inside
+        // PnP strands the user on a page for a flow they have not completed —
+        // which is exactly the reported symptom, a reconnect landing on login
+        // instead of back in PnP.
+        //
+        // Note this branch is also hit by a freshly-entered view that merely
+        // *finds* Auto Master already `complete` (the post-reconnect case): it
+        // never had a session to lose, but it equally cannot know the current
+        // password, so the same prompt is the right destination.
+        throw ExceptionAutoMasterRotatedPassword();
+      case AutoMasterFlowResult.proceed:
+      case AutoMasterFlowResult.budgetExhausted:
+        // Nothing is pending here — the next steps (internet check, then
+        // pnpConfig) re-read live router state, so an unknown Auto Master
+        // outcome needs no extra handling: if the credential did rotate, the
+        // next authed call fails and the existing error paths take over.
+        logger.i('[PnP]: Auto Master not blocking, continuing PnP flow');
+        return;
+      case AutoMasterFlowResult.connectionError:
+        // The waiting view is showing the error + retry button.
         throw ExceptionAutoMasterPollingFailed();
-      }
     }
+  }
+
+  /// Auto Master rotated the admin password — put this view back on its own
+  /// password prompt so the user can enter the new one.
+  ///
+  /// No navigation: this *is* the PnP entry view, so the prompt is one setState
+  /// away. Clearing [_password] is the load-bearing part — it holds the
+  /// credential we arrived with (the `p` route arg, or the factory default),
+  /// which the rotation has just invalidated. Leaving it set would let the next
+  /// precheck retry it and spend another CGI auth attempt on a password that
+  /// cannot work.
+  void _promptForRotatedPassword() {
+    logger.i('[PnP]: Auto Master rotated the password, prompt for the new one');
+    if (!mounted) return;
+    setState(() {
+      _isWaitingForAutoMaster = false;
+      _password = null;
+      _inputError = '';
+      _processing = false;
+    });
+    pnp.setAttachedPassword(null);
   }
 
   void _retryAutoMasterCheck() {
@@ -660,7 +657,10 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
         (error, stackTrace) {
       logger.e('[PnP]: Auto Master polling failed, stay on error view');
       // Do nothing - UI already showing error view with retry button
-    }, test: (error) => error is ExceptionAutoMasterPollingFailed);
+    }, test: (error) => error is ExceptionAutoMasterPollingFailed).catchError(
+        (error, stackTrace) {
+      _promptForRotatedPassword();
+    }, test: (error) => error is ExceptionAutoMasterRotatedPassword);
   }
 
   _showRouterPasswordModal() {
