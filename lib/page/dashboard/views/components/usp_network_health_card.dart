@@ -139,20 +139,41 @@ class _HealthOverview extends StatelessWidget {
           ),
         ),
         AppGap.sm(),
-        // WAN / LAN traffic light row
+        // WAN / LAN traffic light row.
+        //
+        // DELIBERATE DEVIATION from #1226's shape, which the other five rows in
+        // this ticket follow. #1226 uses a `Wrap` and pays for the extra run with
+        // height, explicitly because "the chart above is `Expanded`, so it yields
+        // the height". That precondition fails here: what sits above is an
+        // `Expanded` holding a gauge of **fixed** 120px, so it yields nothing —
+        // a second run just pushes the gauge's own centre column past its
+        // circle. Measured: a `Wrap` here trades this row's 26 right-overflowing
+        // coordinates for 12 *new* bottom-overflowing ones at the gauge
+        // (`_HealthOverview` gauge centre, 3 → 15), which is a fix on paper only.
+        //
+        // So the row stays a `Row` and gives horizontally instead: both lights
+        // are `Flexible`, so the row's height is exactly one line at every width
+        // and the gauge keeps its space. What gives is label length — sound here
+        // because the tier is *also* the dot's colour, so a clipped word still
+        // reads (#1226 rule 2). Widest case is `ru`: 'Глобальная сеть' +
+        // 'Удовлетворительный'.
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _TrafficLight(
-              label: loc(parentContext).wan,
-              tier: wanTier,
-              colorScheme: colorScheme,
+            Flexible(
+              child: _TrafficLight(
+                label: loc(parentContext).wan,
+                tier: wanTier,
+                colorScheme: colorScheme,
+              ),
             ),
             AppGap.xl(),
-            _TrafficLight(
-              label: loc(parentContext).lan,
-              tier: lanTier,
-              colorScheme: colorScheme,
+            Flexible(
+              child: _TrafficLight(
+                label: loc(parentContext).lan,
+                tier: lanTier,
+                colorScheme: colorScheme,
+              ),
             ),
           ],
         ),
@@ -210,7 +231,26 @@ class _TrafficLight extends StatelessWidget {
           decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
         AppGap.xs(),
-        AppText.labelSmall('$label: ${tier.resolveLabel(context)}'),
+        // `Flexible` so the label can give at all: a `Row` gives non-flex
+        // children unbounded width, so without it 'Глобальная сеть:
+        // Удовлетворительный' overflows however the enclosing `Wrap` arranges the
+        // lights.
+        //
+        // One line + ellipsis, unlike the chart-tab legends which soft-wrap. Two
+        // reasons. The tier is *also* encoded as the dot's colour
+        // (`NetworkHealthHelpers.tierColor`), so a clipped word still reads —
+        // this is #1226 rule 2, not a statistic being cut. And this tab is the
+        // one place where extra height is not free: the gauge above sits in an
+        // `Expanded` with a fixed 120px size, so a taller row here pushes the
+        // gauge's own centre column into a bottom overflow (measured: letting
+        // these labels wrap turns 3 bottom-overflowing coordinates into 15).
+        Flexible(
+          child: AppText.labelSmall(
+            '$label: ${tier.resolveLabel(context)}',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
       ],
     );
   }
@@ -378,8 +418,16 @@ class _LossChart extends StatelessWidget {
           ),
         ),
         AppGap.sm(),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+        // A single entry, but its composed 'Loss  Avg: 0.00%  Peak: 0.00%' label
+        // is the longest legend string in the card, so it needs the same `Wrap`
+        // as the Errors tab (#1226) — with one child the `Wrap` contributes no
+        // run-breaking, it just lets the entry keep its intrinsic width while
+        // `_LegendEntry` soft-wraps the label.
+        Wrap(
+          alignment: WrapAlignment.center,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 16,
+          runSpacing: 4,
           children: [
             _LegendEntry(
               color: colorScheme.error,
@@ -414,6 +462,14 @@ class _LegendDot extends StatelessWidget {
   }
 }
 
+/// One legend entry: colour dot, gap, label — the unit that must never split, so
+/// a label never separates from the colour it explains (#1226 rule 2).
+///
+/// File-private on purpose. The same shape exists in `usp_system_status_card` (as
+/// `_StatLegendEntry`) and `usp_traffic_analysis_card`, and extracting one shared
+/// widget from the four copies needs Article XIV approval — #1233 deliberately
+/// does not block on that conversation, so the shape is replicated in place and
+/// the extraction raised separately.
 class _LegendEntry extends StatelessWidget {
   final Color color;
   final String label;
@@ -426,7 +482,16 @@ class _LegendEntry extends StatelessWidget {
       children: [
         _LegendDot(color: color),
         AppGap.xs(),
-        AppText.labelSmall(label),
+        // `Flexible`, because a `Row` hands non-flex children unbounded width: a
+        // bare label takes its full intrinsic width on one line and overflows no
+        // matter how the enclosing `Wrap` arranges the entries. Loose fit, so a
+        // short label still hugs and two entries share one run when they fit.
+        //
+        // No ellipsis, unlike #1226's bare series names: every label here is the
+        // composed 'series, average, peak' string, so clipping it would cut a
+        // statistic in half — an unreadable number is worse than a second line,
+        // and the chart above is `Expanded` so it yields the height.
+        Flexible(child: AppText.labelSmall(label)),
       ],
     );
   }

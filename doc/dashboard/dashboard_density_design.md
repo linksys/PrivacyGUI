@@ -1,6 +1,6 @@
 # Dashboard Card Density — Design Decisions
 
-**Last Updated: 2026-08-11** · Follow-up to #1183 · Status: **agreed; tickets #1225–#1240 published; #1225 + #1226 implemented (not yet merged), rest not started**
+**Last Updated: 2026-08-12** · Follow-up to #1183 · Status: **agreed; tickets #1225–#1240 published; #1225 + #1226 + #1233 implemented (not yet merged), rest not started**
 
 ## Purpose
 
@@ -88,6 +88,19 @@ baseline**, three times the top shared-block site:
 The greedy table above scatters these across ranks 1–16, so the pattern is
 invisible there. It is one fix replicated seven times, and it is where the
 batching leverage actually is.
+
+> Re-measured during #1233 and confirmed: the six #1233 sites clear exactly 132
+> coordinates. Note the counting convention — those two cards carry **169**
+> allowlisted coordinates between them, but 37 of those also have incidents at
+> non-legend sites, so they stay allowlisted until #1234/#1235 land. "Clears" here
+> means *fully* cleared, as in the greedy table above.
+>
+> The sweep also found an **eighth** row of this shape that the table omits:
+> `usp_system_status_card.dart:218`, the Monitor tab's legend row, in 28
+> coordinates. It is not a #1233 site — it is one of the three #1234 clears
+> ("a legend-adjacent row on the first tab"), and #1234's 34 = `:196` (26) +
+> `:118` (8) + `:218` where those are the coordinate's only remaining cause. So
+> the pattern is really eight rows, and #1234 finishes it.
 
 The private colour-dot widget is additionally duplicated **verbatim in four
 files** (the three above plus `device_analytics`). De-duplicating it, or
@@ -527,6 +540,50 @@ never separates from its colour. The byte totals get no `Flexible` and no
 ellipsis — they are content, not chrome, and a truncated byte count cannot be
 recovered from the chart the way a legend label can.
 
+### 2.10a What replicating the shape six times taught us (#1233 — implemented)
+
+All 132 coordinates cleared as predicted (511 → 379). Three things the shape did
+not say, found by measuring each row after it was changed:
+
+1. **`Flexible` is load-bearing, not decoration for the ellipsis.** A `Row` gives
+   non-flex children *unbounded* width, so a bare `AppText` takes its full
+   intrinsic width on one line and overflows however the enclosing `Wrap`
+   arranges the entries. Wrapping a row in `Wrap` alone fixed nothing for the
+   single-entry legends (System Status Distribution, Network Health Loss) — the
+   `Wrap` can move a whole entry to the next run, but only `Flexible` lets the
+   label itself give. #1226's row happened to have two entries and two
+   already-`Flexible` labels, so this never surfaced there.
+2. **Ellipsis vs. soft-wrap is decided by what the label *is*, not by the row.**
+   Bare series names take #1226's one-line ellipsis (the colour identifies the
+   series, so a clipped name still keys the chart). Composed statistics —
+   `Avg: 42%  Peak: 87%`, and Network Health's `series, average, peak` — get no
+   ellipsis and no `maxLines`: an ellipsis lands mid-number, and a half-shown
+   statistic misinforms in a way a missing one does not. They soft-wrap onto a
+   second line instead. Both cards therefore carry a per-entry flag rather than
+   one blanket rule.
+3. **#1226's shape has an unstated precondition, and one row violates it.** The
+   shape pays for its extra run with height, "because the chart above is
+   `Expanded`, so it yields the height". Network Health's Health tab has an
+   `Expanded` holding a **fixed 120px** gauge, so it yields nothing: a `Wrap`
+   there traded that row's 26 right-overflows for **12 new bottom-overflows at
+   the gauge centre** (`:128`, 3 → 15) — a fix on paper only, and it would have
+   landed as one had the ratchet been edited to the predicted numbers instead of
+   the measured ones. That row stays a one-line `Row` of `Flexible` lights and
+   gives horizontally; the deviation is commented at the site and pinned by a
+   test that fails if someone "restores consistency".
+
+**#1235 is a functional dependency on #1233, not just conflict avoidance** (both
+tickets say otherwise). Its 3 gauge-centre coordinates are height-coupled to this
+row: they are what is left *because* the row was kept to one line, and they are
+the reason it had to be.
+
+The two readability ACs — labels not truncated to uselessness, colours still
+associable — are invisible to the gate, which cannot distinguish a row that fits
+from a row that truncated its content to nothing. They are covered by
+`test/page/dashboard/views/components/dashboard_legend_readability_test.dart`,
+tagged `dashboard-card` so it gates; each of its three groups was verified to
+fail under a mutation of the code it guards.
+
 ### 2.11 fl_chart's 19 coordinates get a primary plan and a documented fallback
 
 `firewall_overview`'s 19 coordinates originate inside fl_chart
@@ -596,7 +653,7 @@ addition — it changes no card's rendering until a threshold is declared.
 |---|---|---:|
 | #1225 | Gate enumerates widths (§2.7) — **implemented** | 0 |
 | #1226 | `traffic_analysis` legend row (§2.10) — **implemented** | 49 |
-| #1233 | The other six legend rows (§1.1) | 132 |
+| #1233 | The other six legend rows (§1.1, §2.10a) — **implemented** | 132 |
 | #1227 | Shared blocks made overflow-safe (§2.6) | 101 |
 | #1228 | `ethernet_ports` ×2 sites | 52 |
 | #1229 | `wifi_performance` ×2 sites | 45 |
@@ -614,7 +671,10 @@ the invariant holds by construction and any future shift is attributable. #1226
 precedes #1233 because it settles the legend shape the six others replicate.
 #1236/#1237/#1238 genuinely depend on #1227: those coordinates need both a shared
 and a card-own fix, so card-own work done first shows zero allowlist progress.
-#1234/#1235 follow #1233 only to avoid editing the same files concurrently.
+#1234 follows #1233 only to avoid editing the same file concurrently. **#1235 is
+a real functional dependency** — measured during #1233, see §2.10a point 3: its 3
+coordinates are height-coupled to the WAN/LAN row, which is why that row is the
+one deviation from the legend shape.
 
 ### Track B — make narrow cards readable
 
