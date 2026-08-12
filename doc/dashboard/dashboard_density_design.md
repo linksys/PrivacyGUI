@@ -106,7 +106,11 @@ The private colour-dot widget is additionally duplicated **verbatim in four
 files** (the three above plus `device_analytics`). De-duplicating it, or
 extracting a shared legend entry, would be a **new shared widget** and therefore
 needs approval under Article XIV — so the fix is applied in place, and the
-extraction raised separately rather than blocking on that conversation.
+extraction raised separately rather than blocking on that conversation. That
+raise is **#1245**, filed after #1233; it carries the constraint #1233 measured,
+namely that any shared entry must express the ellipsize-vs-soft-wrap distinction
+per label kind (§2.10a point 2) and must not absorb the WAN/LAN row, which
+deviates for a reason (§2.10a point 3).
 
 **Blocked on a dependency we do not own — 45 coordinates (8%)**: fl_chart 19
 (`firewall_overview`), ui_kit `AppListTile` 26 (`connected_devices`).
