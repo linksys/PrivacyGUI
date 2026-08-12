@@ -7,8 +7,6 @@
     "connected_devices|min|0": ["*"],
     "connected_devices|preferred|0": ["el"],
     "device_info|min|0": ["el", "ru"],
-    "ethernet_ports|min|0": ["*"],
-    "ethernet_ports|preferred|0": ["*"],
     "firewall_overview|min|0": [
       "ar", "el", "es", "es_AR", "fi", "fr", "fr_CA", "id", "nb", "pl",
       "pt", "pt_PT", "ru", "tr", "vi"

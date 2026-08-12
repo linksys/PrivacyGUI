@@ -651,6 +651,52 @@ fail*, and without a stated exit someone will reach for the allowlist mid-fix.
 Forking or patching the dependency is rejected — a vendored patch dies silently
 on the next upgrade.
 
+### 2.12 What the first *rearrangement* taught us (#1228 — implemented)
+
+All 52 coordinates cleared as predicted (278 → 226). #1226/#1233/#1227 all made
+existing rows *give*; this is the first ticket where the row had to be taken
+apart, and three things only showed up in the measurements.
+
+1. **A residual under the gate's tolerance is a silent pass, and the narrowest
+   card produces one.** The gate ignores overflows below 2.0px. At the narrowest
+   realization `ethernet_ports` ever gets — a 191px card, 157px of content — each
+   summary tile's row has **50.69px** for chrome that costs **52px** (a 40px
+   status disc plus a 12px gap). Constraining the text is therefore not a fix
+   *and not a failure either*: the text column goes to zero, the row still
+   overflows by **1.31px**, and the gate goes green on a tile that renders no
+   label at all. The reflex from the three preceding tickets — wrap the label in
+   `Flexible`/`Expanded` and move on — would have produced exactly that. **Check
+   the row's fixed cost against the available width before choosing "make the
+   text give"**; where fixed cost alone exceeds it, the arrangement has to change.
+2. **Rearranging spends vertical budget the gate cannot see.** `ethernet_ports`
+   gives its content a **121px** viewport (measured at both narrow
+   realizations). Stacking the two tiles at the standard 12px padding needs 136px
+   — it clears every coordinate and slices the second tile by 15px, because
+   `DashboardCardTemplate` scrolls rather than clips, so nothing overflows and
+   the gate cannot tell. Stacking therefore tightens the tile padding to 8px
+   (2 × 56 + 8 = 120px). Generalisation for the remaining Track A tickets: a fix
+   that changes a card's *arrangement* must be measured against the content
+   viewport, not only against the gate.
+3. **The port list's initially-visible sliver is a measured, accepted loss —
+   and #1228's AC5 is not met by this ticket.** The port `Wrap` needs 514px (min)
+   / 318px (preferred) against that 121px viewport, so it required scrolling
+   before this change and after it; the port *labels and speeds* sat below the
+   viewport bottom already (wrap top 137 + a 38px glyph = 175, labels from ~183,
+   viewport ends at 178). What changed is the glyph row: stacking moves the wrap
+   from y=137 to y=193, so the 41px of port glyphs that were visible without
+   scrolling become 0px — at the two narrow realizations only, desktop untouched.
+   The loss is forced, not chosen: preserving 41px needs 64px back, which even a
+   disc-less stacked pair (2 × 52px) cannot return. So AC5 ("port state remains
+   readable at the narrowest clean width") is unreachable by *any* arrangement of
+   the summary tiles; it needs a compact port list, which is #1240's job. Track B
+   inherits it rather than #1228 claiming it.
+
+The AC that *is* gate-invisible and satisfiable — the two tiles being a matched
+pair — plus the label-legibility floor are covered by
+`test/page/dashboard/views/components/ethernet_ports_summary_readability_test.dart`,
+tagged `dashboard-card` so it gates; each of its four groups was verified to fail
+under a mutation of the code it guards (the mutations are tabulated in the file).
+
 ---
 
 ## Part 3 — Deferred
@@ -705,7 +751,7 @@ addition — it changes no card's rendering until a threshold is declared.
 | #1226 | `traffic_analysis` legend row (§2.10) — **implemented** | 49 |
 | #1233 | The other six legend rows (§1.1, §2.10a) — **implemented** | 132 |
 | #1227 | Shared blocks made overflow-safe (§2.6, §2.6a) — **implemented** | 101 |
-| #1228 | `ethernet_ports` ×2 sites | 52 |
+| #1228 | `ethernet_ports` ×2 sites (§2.12) — **implemented** | 52 |
 | #1229 | `wifi_performance` ×2 sites | 45 |
 | #1230 | `firewall_overview` own sites (§2.11) | 48 |
 | #1234 | `system_status` remaining ×3 sites | 34 |
@@ -733,7 +779,7 @@ one deviation from the legend shape.
 | #1231 | `usp_info_row` reads real width (§2.8) — fixes silent truncation, clears 0 |
 | #1232 | Density plumbing (§2.1, §2.4, §2.6) — the one ticket needing red-first tests |
 | #1239 | Popup form + dialog reuse (§2.1) |
-| #1240 | Per-card thresholds and compact forms (§2.4, §2.5) — split after fit widths settle |
+| #1240 | Per-card thresholds and compact forms (§2.4, §2.5) — split after fit widths settle; inherits #1228's port-list readability AC (§2.12) |
 
 #1240 waits on all of Track A: thresholds are meaningless while fit widths are
 still moving, and the point of the layout fixes is to lower them. **Re-measure
