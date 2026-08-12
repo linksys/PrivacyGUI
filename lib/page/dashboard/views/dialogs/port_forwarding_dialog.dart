@@ -186,88 +186,85 @@ class _PortForwardingDialogState extends State<PortForwardingDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text(_isEdit
+    return AppDialog(
+      title: AppText.titleLarge(_isEdit
           ? loc(context).editPortForwarding
           : loc(context).addPortForwarding),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AppTextField(
-              controller: _descController,
-              focusNode: _descFocus,
-              identifier: 'pf-single-description',
-              hintText: loc(context).description,
-              errorText: _errors['description'],
-              onChanged: (_) => _onInputChanged(),
-            ),
-            AppGap.lg(),
-            AppTextField(
-              controller: _extPortController,
-              focusNode: _extPortFocus,
-              identifier: 'pf-single-external-port',
-              hintText: loc(context).externalPort,
-              keyboardType: TextInputType.number,
-              errorText: _errors['externalPort'],
-              onChanged: (_) => _onInputChanged(),
-            ),
-            AppGap.lg(),
-            AppTextField(
-              controller: _intPortController,
-              focusNode: _intPortFocus,
-              identifier: 'pf-single-internal-port',
-              hintText: loc(context).internalPort,
-              keyboardType: TextInputType.number,
-              errorText: _errors['internalPort'],
-              onChanged: (_) => _onInputChanged(),
-            ),
-            AppGap.lg(),
-            AppSelectAutoComplete(
-              options: widget.deviceOptions,
+      scrollable: true,
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AppTextField(
+            controller: _descController,
+            focusNode: _descFocus,
+            identifier: 'pf-single-description',
+            hintText: loc(context).description,
+            errorText: _errors['description'],
+            onChanged: (_) => _onInputChanged(),
+          ),
+          AppGap.lg(),
+          AppTextField(
+            controller: _extPortController,
+            focusNode: _extPortFocus,
+            identifier: 'pf-single-external-port',
+            hintText: loc(context).externalPort,
+            keyboardType: TextInputType.number,
+            errorText: _errors['externalPort'],
+            onChanged: (_) => _onInputChanged(),
+          ),
+          AppGap.lg(),
+          AppTextField(
+            controller: _intPortController,
+            focusNode: _intPortFocus,
+            identifier: 'pf-single-internal-port',
+            hintText: loc(context).internalPort,
+            keyboardType: TextInputType.number,
+            errorText: _errors['internalPort'],
+            onChanged: (_) => _onInputChanged(),
+          ),
+          AppGap.lg(),
+          AppSelectAutoComplete(
+            options: widget.deviceOptions,
+            controller: _intClientController,
+            onSelected: (_) => _validate(context),
+            child: AppTextField(
               controller: _intClientController,
-              onSelected: (_) => _validate(context),
-              child: AppTextField(
-                controller: _intClientController,
-                focusNode: _intClientFocus,
-                identifier: 'pf-single-internal-ip',
-                hintText: loc(context).internalIpHint,
-                errorText: _errors['internalClient'],
-                onChanged: (_) => _onInputChanged(),
+              focusNode: _intClientFocus,
+              identifier: 'pf-single-internal-ip',
+              hintText: loc(context).internalIpHint,
+              errorText: _errors['internalClient'],
+              onChanged: (_) => _onInputChanged(),
+            ),
+          ),
+          AppGap.lg(),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              AppText.bodyMedium(loc(context).protocol),
+              SegmentedButton<String>(
+                segments: [
+                  ButtonSegment(value: 'TCP', label: Text(loc(context).tcp)),
+                  ButtonSegment(value: 'UDP', label: Text(loc(context).udp)),
+                  ButtonSegment(value: 'Both', label: Text(loc(context).both)),
+                ],
+                selected: {_protocol},
+                onSelectionChanged: (v) => setState(() => _protocol = v.first),
               ),
-            ),
-            AppGap.lg(),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                AppText.bodyMedium(loc(context).protocol),
-                SegmentedButton<String>(
-                  segments: [
-                    ButtonSegment(value: 'TCP', label: Text(loc(context).tcp)),
-                    ButtonSegment(value: 'UDP', label: Text(loc(context).udp)),
-                    ButtonSegment(
-                        value: 'Both', label: Text(loc(context).both)),
-                  ],
-                  selected: {_protocol},
-                  onSelectionChanged: (v) =>
-                      setState(() => _protocol = v.first),
-                ),
-              ],
-            ),
-            AppGap.lg(),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                AppText.bodyMedium(loc(context).enabled),
-                AppSwitch(
-                  identifier: 'pf-single-enabled',
-                  value: _enabled,
-                  onChanged: (value) => setState(() => _enabled = value),
-                ),
-              ],
-            ),
-          ],
-        ),
+            ],
+          ),
+          AppGap.lg(),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              AppText.bodyMedium(loc(context).enabled),
+              AppSwitch(
+                identifier: 'pf-single-enabled',
+                value: _enabled,
+                onChanged: (value) => setState(() => _enabled = value),
+              ),
+            ],
+          ),
+        ],
       ),
       actions: [
         AppButton.text(
