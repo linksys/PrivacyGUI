@@ -6,8 +6,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/localization/fallback_font_resolver.dart';
+import 'package:privacy_gui/page/_shared/models/traffic_analysis_state.dart';
+import 'package:privacy_gui/page/_shared/utils/usp_formatters.dart';
 import 'package:privacy_gui/page/statistics/views/sections/stats_traffic_monitor_section.dart';
 import 'package:privacy_gui/theme/theme_json_config.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../../golden_test/golden_framework/mocks/mock_dashboard_cards.dart';
 import '../../../../golden_test/page/dashboard/cards/fixtures/cards_test_data.dart';
@@ -36,6 +39,23 @@ import '../../../../util/overflow_probe.dart';
 ///
 /// Tagged `dashboard-card` so it gates PRs — `run_tests.sh` excludes
 /// `golden||loc||ui`, and a `ui`-tagged regression test would not block anything.
+///
+/// ## Mutation ledger
+///
+/// Every group here was shown to fail under a mutation of the code it guards —
+/// an overflow test that cannot fail is worse than no test, because it reports
+/// the shape as pinned (precedent: `dashboard_legend_readability_test.dart`).
+///
+///   | mutation                                       | what failed              |
+///   |------------------------------------------------|--------------------------|
+///   | `Wrap` reverted to the pre-fix `Row` + `Spacer` | no overflow @288px (4)   |
+///   | totals wrapped in `Flexible` + 1-line ellipsis  | totals legible (2)       |
+///   | totals wrapped in `Flexible` only               | totals legible (2)       |
+///   | both totals replaced by `SizedBox.shrink()`     | totals legible (2)       |
+///
+/// The pre-fix mutation leaves the totals group green, which is correct: under
+/// `Row` + `Spacer` the totals are still whole and unflexed, they merely
+/// overflow — that is the other group's job. The two groups are independent.
 void main() {
   setUpAll(() async {
     // Real fonts: text widths — and therefore overflow — are meaningless under
@@ -43,24 +63,17 @@ void main() {
     await loadAppFonts();
   });
 
-  /// The page margin `AppLayoutConfig.margin(width)` applies at each breakpoint.
-  /// Mirrors ui_kit `app_layout_config.dart`; the Statistics page pads each
-  /// section by `context.layoutMargin` on both edges
-  /// (`usp_statistics_view.dart:86`).
-  double pageMarginFor(double screenWidth) {
-    if (screenWidth > 1680) return 352.0;
-    if (screenWidth > 1440) return 256.0;
-    if (screenWidth > 1240) return 200.0; // D1: the big-margin regime.
-    if (screenWidth > 905) return 24.0;
-    if (screenWidth > 600) return 32.0;
-    return 16.0;
-  }
-
   /// The width a single Statistics section renders to on a [screenWidth] screen:
   /// full content width minus the page margin on both edges. The section card's
   /// own padding then reduces this further, exactly as in production.
+  ///
+  /// The margin comes from ui_kit's own [AppLayoutConfig.margin] rather than a
+  /// copy of its breakpoint table: the Statistics page pads each section by
+  /// `context.layoutMargin` (`usp_statistics_view.dart:86`), which is that same
+  /// function. A local copy is correct only until ui_kit moves a breakpoint, and
+  /// then this test measures the wrong widths and still passes.
   double sectionWidthFor(double screenWidth) =>
-      screenWidth - pageMarginFor(screenWidth) * 2;
+      screenWidth - AppLayoutConfig.margin(screenWidth) * 2;
 
   final baseTheme = ThemeJsonConfig.defaultConfig().createLightTheme();
 
@@ -175,32 +188,81 @@ void main() {
   });
 
   group('byte totals stay legible (#1252)', () {
-    testWidgets('both totals are still rendered at the narrowest width',
-        (tester) async {
-      // The legend is a key to the chart, but the byte totals are the section's
-      // actual content — degrading the layout must not drop them. The `Wrap`
-      // moves them to a second line; it must not clip or discard them.
-      await overflowsAt(
-        tester: tester,
-        screenWidth: 320.0,
-        locale: const Locale('de'),
-      );
+    // The legend keys a chart that is already colour-coded, so a clipped legend
+    // label still communicates. The byte totals are the section's content: an
+    // ellipsis lands mid-number, and a half-shown statistic misinforms in a way
+    // a missing one does not (§2.10a point 2). So the AC is not "the totals are
+    // somewhere in the tree" — it is that they are present, unellipsized, and
+    // not flex children that could shrink.
+    //
+    // Located by their exact formatted values, derived from the same fixture the
+    // widget renders. A substring test cannot work here: `_formatSpeed` uses
+    // `['B/s', 'KB/s', 'MB/s', 'GB/s']`, so the two speed tiles above the chart
+    // and every y-axis label also contain a `B`, and a `contains('B')` count
+    // stays satisfied even with both totals deleted.
+    final wanSnapshot =
+        testTrafficWithHistory.history.last.interfaces[TrafficInterface.wan]!;
+    final totalsLabels = <String, int>{
+      'sent': wanSnapshot.totalBytesSent,
+      'received': wanSnapshot.totalBytesReceived,
+    }.map((kind, bytes) => MapEntry(kind, UspFormatters.formatBytes(bytes)));
 
-      // The two totals are formatted byte counts; find them by the AppIcon
-      // arrows that precede each so the assertion does not depend on the exact
-      // formatted value. testTrafficWithHistory carries a non-null WAN snapshot,
-      // so both totals must be present.
-      final texts = find.byType(Text).evaluate().map((e) {
-        final w = e.widget as Text;
-        return w.data ?? w.textSpan?.toPlainText() ?? '';
-      }).toList();
-      final byteTotals = texts.where((t) => t.contains('B')).toList();
-      expect(
-        byteTotals.length,
-        greaterThanOrEqualTo(2),
-        reason: 'both byte totals (sent + received) must survive degradation — '
-            'they are content, not chrome. Found: $texts',
+    /// True if a [Flexible] (or [Expanded], its subclass) sits between the total
+    /// and the legend [Wrap] — i.e. the total can be squeezed below its
+    /// intrinsic width.
+    bool canShrink(Finder totalFinder) {
+      var flexed = false;
+      totalFinder.evaluate().single.visitAncestorElements((ancestor) {
+        if (ancestor.widget is Wrap) return false;
+        if (ancestor.widget is Flexible) {
+          flexed = true;
+          return false;
+        }
+        return true;
+      });
+      return flexed;
+    }
+
+    for (final entry in totalsLabels.entries) {
+      testWidgets(
+        'the ${entry.key} total is whole and unshrinkable at the narrowest width',
+        (tester) async {
+          await overflowsAt(
+            tester: tester,
+            screenWidth: 320.0,
+            locale: const Locale('de'),
+          );
+
+          final finder = find.text(entry.value);
+          expect(
+            finder,
+            findsOneWidget,
+            reason: 'the ${entry.key} byte total (${entry.value}) must survive '
+                'the degradation — the `Wrap` moves it to a second line, it may '
+                'not discard it',
+          );
+
+          final text = tester.widget<Text>(finder);
+          expect(
+            text.overflow,
+            isNot(TextOverflow.ellipsis),
+            reason: 'the ${entry.key} total must never ellipsize: an ellipsis '
+                'lands mid-number',
+          );
+          expect(
+            text.maxLines,
+            isNull,
+            reason: 'the ${entry.key} total must not be line-capped',
+          );
+          expect(
+            canShrink(finder),
+            isFalse,
+            reason:
+                'the ${entry.key} total must not be a flex child — it keeps '
+                'its intrinsic width and the whole totals group wraps instead',
+          );
+        },
       );
-    });
+    }
   });
 }
