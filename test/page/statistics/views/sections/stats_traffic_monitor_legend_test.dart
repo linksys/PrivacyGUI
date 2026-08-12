@@ -200,12 +200,29 @@ void main() {
     // `['B/s', 'KB/s', 'MB/s', 'GB/s']`, so the two speed tiles above the chart
     // and every y-axis label also contain a `B`, and a `contains('B')` count
     // stays satisfied even with both totals deleted.
-    final wanSnapshot =
-        testTrafficWithHistory.history.last.interfaces[TrafficInterface.wan]!;
-    final totalsLabels = <String, int>{
-      'sent': wanSnapshot.totalBytesSent,
-      'received': wanSnapshot.totalBytesReceived,
-    }.map((kind, bytes) => MapEntry(kind, UspFormatters.formatBytes(bytes)));
+    /// The formatted totals the widget must render, read from the same fixture
+    /// it is pumped with.
+    ///
+    /// Resolved inside each test rather than at group level: a fixture that
+    /// stopped carrying a `wan` snapshot would make the lookup throw while the
+    /// group body is still being built, which reports as a load failure for the
+    /// whole file instead of naming the fixture. Loud either way, but only one of
+    /// the two says what to fix.
+    String totalFor(String kind) {
+      final wan =
+          testTrafficWithHistory.history.last.interfaces[TrafficInterface.wan];
+      expect(
+        wan,
+        isNotNull,
+        reason:
+            'testTrafficWithHistory must carry a wan snapshot — the section '
+            'renders totals only when it does, so without one these tests would '
+            'assert against a legend that never had any',
+      );
+      final bytes =
+          kind == 'sent' ? wan!.totalBytesSent : wan!.totalBytesReceived;
+      return UspFormatters.formatBytes(bytes);
+    }
 
     /// True if a [Flexible] (or [Expanded], its subclass) sits between the total
     /// and the legend [Wrap] — i.e. the total can be squeezed below its
@@ -213,6 +230,11 @@ void main() {
     bool canShrink(Finder totalFinder) {
       var flexed = false;
       totalFinder.evaluate().single.visitAncestorElements((ancestor) {
+        // Stop at the `Wrap`: it is the layout that decides this total's width,
+        // so a `Flexible` above it constrains the whole legend row, not the
+        // total within the row. Reaching the `Wrap` means "nothing between here
+        // and the layout can squeeze it", which is the property under test — not
+        // "not found yet".
         if (ancestor.widget is Wrap) return false;
         if (ancestor.widget is Flexible) {
           flexed = true;
@@ -223,21 +245,22 @@ void main() {
       return flexed;
     }
 
-    for (final entry in totalsLabels.entries) {
+    for (final kind in ['sent', 'received']) {
       testWidgets(
-        'the ${entry.key} total is whole and unshrinkable at the narrowest width',
+        'the $kind total is whole and unshrinkable at the narrowest width',
         (tester) async {
+          final expected = totalFor(kind);
           await overflowsAt(
             tester: tester,
             screenWidth: 320.0,
             locale: const Locale('de'),
           );
 
-          final finder = find.text(entry.value);
+          final finder = find.text(expected);
           expect(
             finder,
             findsOneWidget,
-            reason: 'the ${entry.key} byte total (${entry.value}) must survive '
+            reason: 'the $kind byte total ($expected) must survive '
                 'the degradation — the `Wrap` moves it to a second line, it may '
                 'not discard it',
           );
@@ -246,19 +269,18 @@ void main() {
           expect(
             text.overflow,
             isNot(TextOverflow.ellipsis),
-            reason: 'the ${entry.key} total must never ellipsize: an ellipsis '
+            reason: 'the $kind total must never ellipsize: an ellipsis '
                 'lands mid-number',
           );
           expect(
             text.maxLines,
             isNull,
-            reason: 'the ${entry.key} total must not be line-capped',
+            reason: 'the $kind total must not be line-capped',
           );
           expect(
             canShrink(finder),
             isFalse,
-            reason:
-                'the ${entry.key} total must not be a flex child — it keeps '
+            reason: 'the $kind total must not be a flex child — it keeps '
                 'its intrinsic width and the whole totals group wraps instead',
           );
         },
