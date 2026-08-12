@@ -51,8 +51,7 @@ Future<void> loadAppFonts() async {
   final linksysFontFile = File('$uiKitRoot/assets/fonts/LinksysIcons.otf');
   if (linksysFontFile.existsSync()) {
     final bytes = linksysFontFile.readAsBytesSync();
-    final linksysLoaderPkg =
-        FontLoader('packages/ui_kit_library/LinksysIcons');
+    final linksysLoaderPkg = FontLoader('packages/ui_kit_library/LinksysIcons');
     linksysLoaderPkg.addFont(Future.value(ByteData.view(bytes.buffer)));
     await linksysLoaderPkg.load();
 
@@ -64,8 +63,8 @@ Future<void> loadAppFonts() async {
   final matFile = _findMaterialIconsFile();
   if (matFile != null && matFile.existsSync()) {
     final matLoader = FontLoader('MaterialIcons');
-    matLoader.addFont(
-        Future.value(ByteData.view(matFile.readAsBytesSync().buffer)));
+    matLoader
+        .addFont(Future.value(ByteData.view(matFile.readAsBytesSync().buffer)));
     await matLoader.load();
   }
 
