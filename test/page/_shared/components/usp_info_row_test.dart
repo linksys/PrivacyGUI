@@ -150,14 +150,22 @@ void main() {
   });
 
   group('the label yields first, by ellipsis rather than by wrapping', () {
-    testWidgets('a label that fits stays on one line at 288px', (tester) async {
-      // Regression guard: sizing the column as a flat fraction of the row gave
-      // the label 48px here, wrapping "IP Address" onto a second line and
-      // doubling the row height at a width the product actually ships.
-      await pumpRow(tester, rowWidth: 288);
-      expect(isSingleLine(tester, 'IP Address'), isTrue);
-      expect(paragraphOf(tester, 'IP Address').didExceedMaxLines, isFalse);
-    });
+    // A common label must survive intact at every width the grid produces.
+    // 288px is the regression guard: a flat 2/12 of the row gave the label 48px
+    // there, wrapping "IP Address" onto a second line and doubling the row
+    // height at a width the product actually ships. 191px is the tightest case
+    // the constants have to clear — the column is 76.4px against a 74.6px
+    // label, so this test is what stops _kLabelShare from being tuned down
+    // without noticing the label starts truncating.
+    for (final rowWidth in <double>[191, 288, 480]) {
+      testWidgets(
+          'a common label is neither wrapped nor truncated at '
+          '${rowWidth.toInt()}px', (tester) async {
+        await pumpRow(tester, rowWidth: rowWidth);
+        expect(isSingleLine(tester, 'IP Address'), isTrue);
+        expect(paragraphOf(tester, 'IP Address').didExceedMaxLines, isFalse);
+      });
+    }
 
     testWidgets('a label too long for the column ellipsizes, never wraps',
         (tester) async {
