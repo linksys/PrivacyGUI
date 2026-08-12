@@ -103,6 +103,7 @@ class NodeDetailPopup extends StatelessWidget {
               child: AppButton.text(
                 label: loc(context).details,
                 onTap: onDetailsTap,
+                identifier: 'topology-node-detail-button',
               ),
             ),
           ),
