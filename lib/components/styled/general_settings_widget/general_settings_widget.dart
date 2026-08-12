@@ -101,8 +101,10 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
                     ),
                   ),
 
-                  // Mascot toggle (hidden in remote mode)
-                  if (GlobalConfig.remote.showMascotSetting)
+                  // Mascot toggle — gated by the same flag as the overlay so
+                  // the two never diverge (hidden in remote mode and E2E mock
+                  // builds; a toggle for a hidden mascot would be dead). (P0-2)
+                  if (GlobalConfig.remote.mascotEnabled)
                     SizedBox(
                       height: 44,
                       child: _buildMascotToggle(showMascot),

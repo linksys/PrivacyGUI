@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/usp/models/invalidation_domain.dart';
 import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
+import 'package:privacy_gui/core/usp/providers/wan_interface_path_provider.dart';
 import 'package:privacy_gui/core/usp/services/sse_event_router.dart';
 
 export 'package:privacy_gui/core/usp/models/invalidation_domain.dart';
@@ -27,7 +28,12 @@ final sseInvalidationProvider = StreamProvider<InvalidationDomain>((ref) {
   final controller = StreamController<InvalidationDomain>.broadcast();
 
   final removeHandler = manager.addWildcardHandler((notification) {
-    final domain = _mapToDomain(notification);
+    // Resolved WAN interface path (e.g. 'Device.IP.Interface.2.'), read
+    // synchronously with a fallback while resolution is still pending. See
+    // [wanInterfacePathProvider].
+    final wanPath = ref.read(wanInterfacePathProvider).valueOrNull ??
+        kWanInterfaceFallbackPath;
+    final domain = _mapToDomain(notification, wanPath);
     if (domain != null && !controller.isClosed) {
       controller.add(domain);
     }
@@ -47,7 +53,11 @@ final sseInvalidationProvider = StreamProvider<InvalidationDomain>((ref) {
 /// Filters out high-frequency `.Stats.` counter changes (e.g.,
 /// `Device.WiFi.SSID.2.Stats.UnicastPacketsReceived`) that fire constantly
 /// but carry no configuration-relevant information.
-InvalidationDomain? _mapToDomain(SseNotification notification) {
+///
+/// [wanPath] is the resolved WAN interface path (e.g.
+/// `Device.IP.Interface.2.`) used to classify WAN status changes without
+/// hardcoding the instance index.
+InvalidationDomain? _mapToDomain(SseNotification notification, String wanPath) {
   final path = _extractPath(notification);
   if (path == null || path.isEmpty) return null;
 
@@ -98,7 +108,7 @@ InvalidationDomain? _mapToDomain(SseNotification notification) {
   if (path.startsWith('Device.Ethernet.Interface.')) {
     return InvalidationDomain.ethernetInterfaces;
   }
-  if (path.startsWith('Device.IP.Interface.2.')) {
+  if (path.startsWith(wanPath)) {
     return InvalidationDomain.wanStatus;
   }
 

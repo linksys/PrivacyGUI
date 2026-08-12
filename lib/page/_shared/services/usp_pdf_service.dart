@@ -236,18 +236,28 @@ class UspPdfService {
     final wan = latest.interfaces[TrafficInterface.wan];
     if (wan == null) return [];
 
-    final score = NetworkHealthHelpers.computeHealthScore(wan);
+    // Consult the physical WAN link state (already carried by the report's
+    // WAN status section). Without this a disconnected WAN scored 100 /
+    // "Excellent" — carrying no traffic means 0% loss — directly contradicting
+    // the "Status: Down" printed a few lines below. See #1143.
+    final wanIsUp = data.wanStatus?.isUp ?? true;
+    final score = NetworkHealthHelpers.computeWanScore(wan, wanIsUp: wanIsUp);
     final tier = NetworkHealthHelpers.tierFromScore(score);
-    final lossPercent = NetworkHealthHelpers.computeLossPercent(wan);
-    final faultRate =
-        NetworkHealthHelpers.formatFaultRate(wan.totalFaultsPerSec);
+
+    // A down link carries no traffic, so loss/fault would read 0 and mislead.
+    final lossValue = wanIsUp
+        ? '${NetworkHealthHelpers.computeLossPercent(wan).toStringAsFixed(3)}%'
+        : 'N/A';
+    final faultValue = wanIsUp
+        ? NetworkHealthHelpers.formatFaultRate(wan.totalFaultsPerSec)
+        : 'N/A';
 
     return [
       _sectionTitle('Network Health'),
       _keyValue('Health Score', '$score / 100'),
       _keyValue('Tier', NetworkHealthHelpers.tierLabel(tier)),
-      _keyValue('Packet Loss', '${lossPercent.toStringAsFixed(3)}%'),
-      _keyValue('Fault Rate', faultRate),
+      _keyValue('Packet Loss', lossValue),
+      _keyValue('Fault Rate', faultValue),
       pw.SizedBox(height: 12),
     ];
   }

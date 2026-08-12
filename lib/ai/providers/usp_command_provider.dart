@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/ai/abstraction/_abstraction.dart';
-import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/ai/ai_logging.dart';
 import 'package:privacy_gui/page/_shared/models/traffic_analysis_state.dart';
 import 'package:privacy_gui/page/_shared/providers/usp_device_analytics_notifier.dart';
 import 'package:privacy_gui/page/_shared/providers/usp_system_monitor_notifier.dart';
@@ -16,9 +16,7 @@ import 'package:privacy_gui/page/local_network/providers/lan_data_provider.dart'
 import 'package:privacy_gui/page/port_forwarding/providers/port_forwarding_data_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_data_provider.dart';
 
-void _log(String message) {
-  logger.d('[AI]: $message');
-}
+void _log(String message) => aiLog(message);
 
 /// USP-based implementation of [IRouterCommandProvider].
 ///
@@ -330,8 +328,12 @@ class UspCommandProvider implements IRouterCommandProvider {
       'cpuUsage': model.cpuPercent,
       'memoryUsage': model.memoryPercent,
     };
-    _log(
-        '_getSystemInfo: modelName=${model.modelName}, cpu=${model.cpuPercent}%, mem=${model.memoryPercent}%');
+    aiLogSensitive(
+      () => '_getSystemInfo: modelName=${model.modelName}, '
+          'cpu=${model.cpuPercent}%, mem=${model.memoryPercent}%',
+      orElse: () =>
+          '_getSystemInfo: cpu=${model.cpuPercent}%, mem=${model.memoryPercent}%',
+    );
     return RouterCommandResult.success(result);
   }
 
@@ -359,10 +361,11 @@ class UspCommandProvider implements IRouterCommandProvider {
 
     _log(
         '_getConnectedDevices: total=${data.totalClientCount}, online=${data.onlineClientCount}');
-    for (final d in devices) {
-      _log(
-          '  - ${d['name']} (${d['ip']}) ${d['connectionType']} signal=${d['signalStrength']}');
-    }
+    // Names, IPs and MACs identify the user's household. Debug builds only.
+    aiLogSensitive(() => devices
+        .map((d) =>
+            '  - ${d['name']} (${d['ip']}) ${d['connectionType']} signal=${d['signalStrength']}')
+        .join('\n'));
 
     // Mesh extenders (slave nodes)
     final extenders = data.slaves
@@ -378,9 +381,9 @@ class UspCommandProvider implements IRouterCommandProvider {
 
     if (extenders.isNotEmpty) {
       _log('_getConnectedDevices: extenders=${extenders.length}');
-      for (final e in extenders) {
-        _log('  - extender: ${e['name']} (${e['mac']})');
-      }
+      aiLogSensitive(() => extenders
+          .map((e) => '  - extender: ${e['name']} (${e['mac']})')
+          .join('\n'));
     }
 
     return RouterCommandResult.success({
@@ -832,7 +835,7 @@ String buildRouterContext(ProviderReader read) {
       'buildRouterContext: systemInfo=${sysInfo != null ? "present" : "null"}');
   if (sysInfo != null) {
     final model = sysInfo.model;
-    _log(
+    aiLogSensitive(() =>
         'buildRouterContext: model=${model.modelName}, fw=${model.softwareVersion}');
     buffer.writeln('## Router');
     buffer.writeln('- Model: ${model.modelName}');
@@ -848,7 +851,10 @@ String buildRouterContext(ProviderReader read) {
   _log('buildRouterContext: wan=${wan != null ? "present" : "null"}');
   if (wan != null) {
     final m = wan.model;
-    _log('buildRouterContext: wan.isUp=${m.isUp}, ip=${m.ipAddress}');
+    aiLogSensitive(
+      () => 'buildRouterContext: wan.isUp=${m.isUp}, ip=${m.ipAddress}',
+      orElse: () => 'buildRouterContext: wan.isUp=${m.isUp}',
+    );
     buffer.writeln('## Internet Connection');
     buffer.writeln('- Status: ${m.isUp ? "Connected" : "Disconnected"}');
     if (m.isUp) {
@@ -874,8 +880,11 @@ String buildRouterContext(ProviderReader read) {
     if (extenders.isNotEmpty) {
       _log('buildRouterContext: extenders=${extenders.length}');
       buffer.writeln('## Mesh Extenders');
+      aiLogSensitive(() => extenders
+          .map((ext) =>
+              'buildRouterContext:   - ${ext.displayName} (${ext.deviceId})')
+          .join('\n'));
       for (final ext in extenders) {
-        _log('buildRouterContext:   - ${ext.displayName} (${ext.deviceId})');
         buffer.writeln(
             '- ${ext.displayName}: ${ext.model}, backhaul=${ext.backhaul.mediaType}, rssi=${ext.backhaul.signalStrength ?? "N/A"}');
       }
@@ -893,7 +902,10 @@ String buildRouterContext(ProviderReader read) {
       final ssid = radio.accessPoints.isNotEmpty
           ? radio.accessPoints.first.ssidName
           : 'N/A';
-      _log('buildRouterContext: ${radio.band}: $status, SSID="$ssid"');
+      aiLogSensitive(
+        () => 'buildRouterContext: ${radio.band}: $status, SSID="$ssid"',
+        orElse: () => 'buildRouterContext: ${radio.band}: $status',
+      );
       buffer.writeln('- ${radio.band}: $status, SSID: "$ssid"');
     }
     buffer.writeln();

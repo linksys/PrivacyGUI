@@ -45,6 +45,14 @@ class _PortForwardingDialogState extends State<PortForwardingDialog> {
   late TextEditingController _extPortController;
   late TextEditingController _intPortController;
   late TextEditingController _intClientController;
+  // One focus node per text field: validation runs on focus-loss, not on every
+  // keystroke. Validating in onChanged calls setState → rebuild → the CanvasKit
+  // <input> is torn down mid-edit, dropping focus and the value being typed.
+  // (Same focus-loss pattern as usp_local_network_view.)
+  final _descFocus = FocusNode();
+  final _extPortFocus = FocusNode();
+  final _intPortFocus = FocusNode();
+  final _intClientFocus = FocusNode();
   late String _protocol;
   late bool _enabled;
 
@@ -64,6 +72,17 @@ class _PortForwardingDialogState extends State<PortForwardingDialog> {
     _intClientController = TextEditingController(text: r?.internalClient ?? '');
     _protocol = r?.protocol ?? 'TCP';
     _enabled = r?.enabled ?? true;
+    // Validate when each field loses focus (updates the shown errorText).
+    for (final f in [
+      _descFocus,
+      _extPortFocus,
+      _intPortFocus,
+      _intClientFocus
+    ]) {
+      f.addListener(() {
+        if (!f.hasFocus && mounted) _validate(context);
+      });
+    }
   }
 
   @override
@@ -72,6 +91,10 @@ class _PortForwardingDialogState extends State<PortForwardingDialog> {
     _extPortController.dispose();
     _intPortController.dispose();
     _intClientController.dispose();
+    _descFocus.dispose();
+    _extPortFocus.dispose();
+    _intPortFocus.dispose();
+    _intClientFocus.dispose();
     super.dispose();
   }
 
@@ -83,12 +106,23 @@ class _PortForwardingDialogState extends State<PortForwardingDialog> {
   static final _ipNoReservedRule = IpAddressNoReservedRule();
   static final _noWhitespaceRule = NoSurroundWhitespaceRule();
 
+  /// Rebuild to re-evaluate the Add-button enable state (_isFormValid) WITHOUT
+  /// surfacing errors mid-edit — validation (and thus error text) runs on
+  /// focus-loss so the CanvasKit <input> isn't torn down while typing.
+  void _onInputChanged() {
+    setState(() {});
+  }
+
   void _validate(BuildContext context) {
     setState(() {
       _errors = _validateFields(context);
     });
   }
 
+  /// Format-only validation: an EMPTY field never reports an error (so no
+  /// error text appears while the form is still being filled, which would
+  /// rebuild the field and drop focus mid-edit). Emptiness is handled by the
+  /// Add-button enable gate (_hasRequiredInput) and re-checked on submit.
   Map<String, String> _validateFields(BuildContext context) {
     final errors = <String, String>{};
     final desc = _descController.text.trim();
@@ -96,44 +130,55 @@ class _PortForwardingDialogState extends State<PortForwardingDialog> {
     final intPort = _intPortController.text.trim();
     final client = _intClientController.text.trim();
 
-    // Description
-    if (desc.isEmpty) {
-      errors['description'] = loc(context).descriptionRequired;
-    } else if (!_noWhitespaceRule.validate(desc)) {
-      errors['description'] = loc(context).noLeadingTrailingSpaces;
-    } else if (desc.length > 32) {
-      errors['description'] = loc(context).mustBe32CharsOrLess;
+    // Description — only when non-empty.
+    if (desc.isNotEmpty) {
+      if (!_noWhitespaceRule.validate(desc)) {
+        errors['description'] = loc(context).noLeadingTrailingSpaces;
+      } else if (desc.length > 32) {
+        errors['description'] = loc(context).mustBe32CharsOrLess;
+      }
     }
 
-    // External port
-    final ext = int.tryParse(extPort);
-    if (extPort.isEmpty) {
-      errors['externalPort'] = loc(context).externalPortRequired;
-    } else if (ext == null || ext < 1 || ext > 65535) {
-      errors['externalPort'] = loc(context).portMustBe1To65535;
+    // External port — only when non-empty.
+    if (extPort.isNotEmpty) {
+      final ext = int.tryParse(extPort);
+      if (ext == null || ext < 1 || ext > 65535) {
+        errors['externalPort'] = loc(context).portMustBe1To65535;
+      }
     }
 
-    // Internal port
-    final intP = int.tryParse(intPort);
-    if (intPort.isEmpty) {
-      errors['internalPort'] = loc(context).internalPortRequired;
-    } else if (intP == null || intP < 1 || intP > 65535) {
-      errors['internalPort'] = loc(context).portMustBe1To65535;
+    // Internal port — only when non-empty.
+    if (intPort.isNotEmpty) {
+      final intP = int.tryParse(intPort);
+      if (intP == null || intP < 1 || intP > 65535) {
+        errors['internalPort'] = loc(context).portMustBe1To65535;
+      }
     }
 
-    // Internal client (IPv4)
-    if (client.isEmpty) {
-      errors['internalClient'] = loc(context).ipAddressRequired;
-    } else if (!_ipAddressRule.validate(client)) {
-      errors['internalClient'] = loc(context).invalidIpv4Format;
-    } else if (!_ipNoReservedRule.validate(client)) {
-      errors['internalClient'] = loc(context).reservedIpNotAllowed;
+    // Internal client (IPv4) — only when non-empty.
+    if (client.isNotEmpty) {
+      if (!_ipAddressRule.validate(client)) {
+        errors['internalClient'] = loc(context).invalidIpv4Format;
+      } else if (!_ipNoReservedRule.validate(client)) {
+        errors['internalClient'] = loc(context).reservedIpNotAllowed;
+      }
     }
 
     return errors;
   }
 
-  bool _isFormValid(BuildContext context) => _validateFields(context).isEmpty;
+  /// All required fields present.
+  bool get _hasRequiredInput =>
+      _descController.text.trim().isNotEmpty &&
+      _extPortController.text.trim().isNotEmpty &&
+      _intPortController.text.trim().isNotEmpty &&
+      _intClientController.text.trim().isNotEmpty;
+
+  /// Enable submit: every required field filled AND no format errors. Uses the
+  /// format-only validator so an in-progress (partly empty) form doesn't show
+  /// errors, but submit stays disabled until complete + valid.
+  bool _isFormValid(BuildContext context) =>
+      _hasRequiredInput && _validateFields(context).isEmpty;
 
   // ---------------------------------------------------------------------------
   // Build
@@ -141,88 +186,96 @@ class _PortForwardingDialogState extends State<PortForwardingDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text(_isEdit
+    return AppDialog(
+      title: AppText.titleLarge(_isEdit
           ? loc(context).editPortForwarding
           : loc(context).addPortForwarding),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AppTextField(
-              controller: _descController,
-              hintText: loc(context).description,
-              errorText: _errors['description'],
-              onChanged: (_) => _validate(context),
-            ),
-            AppGap.lg(),
-            AppTextField(
-              controller: _extPortController,
-              hintText: loc(context).externalPort,
-              keyboardType: TextInputType.number,
-              errorText: _errors['externalPort'],
-              onChanged: (_) => _validate(context),
-            ),
-            AppGap.lg(),
-            AppTextField(
-              controller: _intPortController,
-              hintText: loc(context).internalPort,
-              keyboardType: TextInputType.number,
-              errorText: _errors['internalPort'],
-              onChanged: (_) => _validate(context),
-            ),
-            AppGap.lg(),
-            AppSelectAutoComplete(
-              options: widget.deviceOptions,
+      scrollable: true,
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AppTextField(
+            controller: _descController,
+            focusNode: _descFocus,
+            identifier: 'pf-single-description',
+            hintText: loc(context).description,
+            errorText: _errors['description'],
+            onChanged: (_) => _onInputChanged(),
+          ),
+          AppGap.lg(),
+          AppTextField(
+            controller: _extPortController,
+            focusNode: _extPortFocus,
+            identifier: 'pf-single-external-port',
+            hintText: loc(context).externalPort,
+            keyboardType: TextInputType.number,
+            errorText: _errors['externalPort'],
+            onChanged: (_) => _onInputChanged(),
+          ),
+          AppGap.lg(),
+          AppTextField(
+            controller: _intPortController,
+            focusNode: _intPortFocus,
+            identifier: 'pf-single-internal-port',
+            hintText: loc(context).internalPort,
+            keyboardType: TextInputType.number,
+            errorText: _errors['internalPort'],
+            onChanged: (_) => _onInputChanged(),
+          ),
+          AppGap.lg(),
+          AppSelectAutoComplete(
+            options: widget.deviceOptions,
+            controller: _intClientController,
+            onSelected: (_) => _validate(context),
+            child: AppTextField(
               controller: _intClientController,
-              onSelected: (_) => _validate(context),
-              child: AppTextField(
-                controller: _intClientController,
-                hintText: loc(context).internalIpHint,
-                errorText: _errors['internalClient'],
-                onChanged: (_) => _validate(context),
+              focusNode: _intClientFocus,
+              identifier: 'pf-single-internal-ip',
+              hintText: loc(context).internalIpHint,
+              errorText: _errors['internalClient'],
+              onChanged: (_) => _onInputChanged(),
+            ),
+          ),
+          AppGap.lg(),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              AppText.bodyMedium(loc(context).protocol),
+              SegmentedButton<String>(
+                segments: [
+                  ButtonSegment(value: 'TCP', label: Text(loc(context).tcp)),
+                  ButtonSegment(value: 'UDP', label: Text(loc(context).udp)),
+                  ButtonSegment(value: 'Both', label: Text(loc(context).both)),
+                ],
+                selected: {_protocol},
+                onSelectionChanged: (v) => setState(() => _protocol = v.first),
               ),
-            ),
-            AppGap.lg(),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                AppText.bodyMedium(loc(context).protocol),
-                SegmentedButton<String>(
-                  segments: [
-                    ButtonSegment(value: 'TCP', label: Text(loc(context).tcp)),
-                    ButtonSegment(value: 'UDP', label: Text(loc(context).udp)),
-                    ButtonSegment(
-                        value: 'Both', label: Text(loc(context).both)),
-                  ],
-                  selected: {_protocol},
-                  onSelectionChanged: (v) =>
-                      setState(() => _protocol = v.first),
-                ),
-              ],
-            ),
-            AppGap.lg(),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                AppText.bodyMedium(loc(context).enabled),
-                AppSwitch(
-                  value: _enabled,
-                  onChanged: (value) => setState(() => _enabled = value),
-                ),
-              ],
-            ),
-          ],
-        ),
+            ],
+          ),
+          AppGap.lg(),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              AppText.bodyMedium(loc(context).enabled),
+              AppSwitch(
+                identifier: 'pf-single-enabled',
+                value: _enabled,
+                onChanged: (value) => setState(() => _enabled = value),
+              ),
+            ],
+          ),
+        ],
       ),
       actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text(loc(context).cancel),
+        AppButton.text(
+          identifier: 'pf-single-cancel',
+          label: loc(context).cancel,
+          onTap: () => Navigator.of(context).pop(),
         ),
-        FilledButton(
-          onPressed: _isFormValid(context) ? _submit : null,
-          child: Text(_isEdit ? loc(context).save : loc(context).add),
+        AppButton.text(
+          identifier: 'pf-single-submit',
+          label: _isEdit ? loc(context).save : loc(context).add,
+          onTap: _isFormValid(context) ? _submit : null,
         ),
       ],
     );

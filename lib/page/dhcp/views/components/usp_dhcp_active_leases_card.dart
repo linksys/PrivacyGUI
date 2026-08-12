@@ -7,6 +7,15 @@ import 'package:privacy_gui/page/_shared/models/dhcp_client_ui_model.dart';
 import 'package:privacy_gui/page/dhcp/providers/dhcp_client_filter_provider.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
+/// Flex weights of the lease row's three text columns (#1140).
+///
+/// The name column carries the longest strings (a host name, or a MAC when
+/// there is none), so it gets the largest share; the IP and lease columns hold
+/// fixed-length values and split the rest evenly.
+const _nameColumnFlex = 4;
+const _ipColumnFlex = 3;
+const _leaseColumnFlex = 3;
+
 /// Read-only card displaying DHCP client leases with filter chips.
 class UspDhcpActiveLeasesCard extends ConsumerWidget {
   final List<DhcpClientUIModel> clients;
@@ -98,6 +107,10 @@ class UspDhcpActiveLeasesCard extends ConsumerWidget {
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: LayoutBlock(
         padding: const EdgeInsets.all(AppSpacing.md),
+        // Columns are sized by flex, not `context.colWidth()`: colWidth is
+        // measured against the page grid, so on a 4-column mobile grid two
+        // colWidth(2) boxes exceed this row's own width, starving the name
+        // column to zero and overflowing the row (#1140).
         child: Row(
           children: [
             Icon(
@@ -108,27 +121,40 @@ class UspDhcpActiveLeasesCard extends ConsumerWidget {
             ),
             AppGap.sm(),
             Expanded(
+              flex: _nameColumnFlex,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  AppText.bodyMedium(client.displayName),
+                  AppText.bodyMedium(
+                    client.displayName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  // displayName already falls back to the MAC when there is no
+                  // host name, so only show it again when it is the subtitle.
                   if (client.hostName.isNotEmpty)
                     AppText.bodySmall(
                       client.mac,
                       color: colorScheme.onSurfaceVariant,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                 ],
               ),
             ),
-            SizedBox(
-              width: context.colWidth(2),
+            AppGap.sm(),
+            Expanded(
+              flex: _ipColumnFlex,
               child: AppText.bodySmall(
                 client.ip,
                 color: colorScheme.onSurfaceVariant,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
-            SizedBox(
-              width: context.colWidth(2),
+            AppGap.sm(),
+            Expanded(
+              flex: _leaseColumnFlex,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
@@ -136,11 +162,17 @@ class UspDhcpActiveLeasesCard extends ConsumerWidget {
                     AppText.bodySmall(
                       lease,
                       color: colorScheme.onSurfaceVariant,
+                      textAlign: TextAlign.end,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   if (client.leaseExpiryFormatted.isNotEmpty)
                     AppText.bodySmall(
                       client.leaseExpiryFormatted,
                       color: colorScheme.onSurfaceVariant,
+                      textAlign: TextAlign.end,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                 ],
               ),

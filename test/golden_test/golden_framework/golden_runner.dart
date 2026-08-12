@@ -15,6 +15,7 @@ import 'package:privacy_gui/theme/theme_json_config.dart';
 import 'golden_interactions.dart';
 import 'golden_test_config.dart';
 import 'mocks/mock_common.dart';
+import 'overflow_diagnostics.dart';
 
 // Re-export so every test file that imports golden_runner.dart gets the shared
 // interaction helpers (switchToTab, settleWithTimeout) without a separate line.
@@ -343,7 +344,12 @@ Widget _buildGoldenWidget(
 /// Tracks which golden file is currently being rendered.
 String _currentGoldenName = '';
 
-/// Collected overflow warnings: golden filename → error message.
+/// Collected overflow records, one per reported error.
+///
+/// Shape is defined by [buildOverflowRecord]: the golden name, the raw message,
+/// and the parsed side/pixels/widget/file/line. Flutter reports overflow per
+/// RenderObject, so sibling rows built from a list produce duplicate records;
+/// the report generators collapse them.
 final List<Map<String, String>> _overflowWarnings = [];
 
 /// Suppresses RenderFlex overflow errors during golden tests but records them.
@@ -357,10 +363,15 @@ void _suppressOverflowErrors() {
   FlutterError.onError = (details) {
     final isOverflow = details.exceptionAsString().contains('overflowed');
     if (isOverflow) {
-      _overflowWarnings.add({
-        'golden': _currentGoldenName,
-        'message': details.exceptionAsString(),
-      });
+      // Record the direction, amount and source location alongside the raw
+      // message so the reports can say where and by how much, not just that it
+      // happened (#1197). The test process runs from the app root, which is why
+      // the relative paths in _writeOverflowReport resolve.
+      _overflowWarnings.add(buildOverflowRecord(
+        goldenName: _currentGoldenName,
+        details: details,
+        runDirectory: Directory.current.path,
+      ));
       return;
     }
     originalHandler?.call(details);
@@ -368,17 +379,72 @@ void _suppressOverflowErrors() {
 }
 
 /// Writes collected overflow warnings to JSON for report consumption.
+///
+/// Shape is `{records: [...], logs: [...]}` with each record referring to its
+/// diagnostics dump by `logIndex`. The dumps are 2-4KB each and one culprit is
+/// reported in every golden that renders it, so storing them inline made 76% of
+/// the file duplicated text — around 8MB on a full run.
+///
+/// Appends, because each test suite writes at its own tearDownAll. A file left
+/// by a run predating the log table is read back in its flat-list form so the
+/// records already collected are not dropped.
+///
+/// The read-modify-write is not atomic and not locked, and `flutter test` runs
+/// suites concurrently — so in principle two suites can both read the same
+/// snapshot and the second write can drop the first's records, taking its
+/// `logIndex` values with it. Measured rather than assumed: four full runs of the
+/// 32 golden suites (three concurrent, one `--concurrency=1`) all produced the
+/// same 40 records over 21 goldens with every `logIndex` in range, and no golden
+/// present in the serial run was missing from a concurrent one. The window is
+/// narrow because only 7 suites write at all and the write is one small
+/// `writeAsStringSync`. Left as-is deliberately: this is a diagnostic aside, and
+/// a lost record costs a line in a report rather than a wrong test result. If it
+/// ever does show up, the fix is per-suite shard files merged by the loader, or a
+/// lock plus temp-and-rename.
 void _writeOverflowReport() {
   if (_overflowWarnings.isEmpty) return;
   final dir = Directory('goldens');
   if (!dir.existsSync()) dir.createSync(recursive: true);
   final file = File('goldens/overflow_warnings.json');
-  final existing = file.existsSync()
-      ? List<Map<String, dynamic>>.from(
-          jsonDecode(file.readAsStringSync()) as List)
-      : <Map<String, dynamic>>[];
-  existing.addAll(_overflowWarnings);
-  file.writeAsStringSync(JsonEncoder.withIndent('  ').convert(existing));
+
+  final records = <Map<String, dynamic>>[];
+  final logs = <String>[];
+  final logIndexes = <String, int>{};
+
+  if (file.existsSync()) {
+    try {
+      final decoded = jsonDecode(file.readAsStringSync());
+      if (decoded is Map) {
+        records.addAll(List<Map<String, dynamic>>.from(
+            decoded['records'] as List? ?? const []));
+        logs.addAll(List<String>.from(decoded['logs'] as List? ?? const []));
+        // Keep the first index for a repeated log so existing records' indexes
+        // stay valid.
+        for (var i = 0; i < logs.length; i++) {
+          logIndexes[logs[i]] ??= i;
+        }
+      } else {
+        records.addAll(List<Map<String, dynamic>>.from(decoded as List));
+      }
+    } catch (_) {
+      // A corrupt file must not take the run down; start the report over.
+    }
+  }
+
+  for (final warning in _overflowWarnings) {
+    final record = Map<String, dynamic>.from(warning);
+    final log = record.remove('log');
+    if (log is String && log.isNotEmpty) {
+      record['logIndex'] = logIndexes.putIfAbsent(log, () {
+        logs.add(log);
+        return logs.length - 1;
+      });
+    }
+    records.add(record);
+  }
+
+  file.writeAsStringSync(
+      JsonEncoder.withIndent('  ').convert({'records': records, 'logs': logs}));
   _overflowWarnings.clear();
 }
 

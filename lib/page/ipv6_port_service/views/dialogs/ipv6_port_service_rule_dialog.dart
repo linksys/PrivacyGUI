@@ -46,6 +46,14 @@ class _Ipv6PortServiceRuleDialogState extends State<Ipv6PortServiceRuleDialog> {
   late TextEditingController _ipv6Controller;
   late TextEditingController _startPortController;
   late TextEditingController _endPortController;
+  // Validate on focus-loss, not per keystroke: validating in onChanged setState's
+  // a changed _errors map, which on CanvasKit rebuilds the field with an error
+  // slot mid-edit and drops focus + the value being typed. (Same fix as the
+  // port-forwarding dialogs / usp_local_network_view.)
+  final _descriptionFocus = FocusNode();
+  final _ipv6Focus = FocusNode();
+  final _startPortFocus = FocusNode();
+  final _endPortFocus = FocusNode();
   late String _protocol;
   late bool _enabled;
 
@@ -67,6 +75,16 @@ class _Ipv6PortServiceRuleDialogState extends State<Ipv6PortServiceRuleDialog> {
     );
     _protocol = r?.protocol ?? 'Both';
     _enabled = r?.enabled ?? true;
+    for (final f in [
+      _descriptionFocus,
+      _ipv6Focus,
+      _startPortFocus,
+      _endPortFocus
+    ]) {
+      f.addListener(() {
+        if (!f.hasFocus && mounted) _validate();
+      });
+    }
   }
 
   @override
@@ -75,9 +93,14 @@ class _Ipv6PortServiceRuleDialogState extends State<Ipv6PortServiceRuleDialog> {
     _ipv6Controller.dispose();
     _startPortController.dispose();
     _endPortController.dispose();
+    _descriptionFocus.dispose();
+    _ipv6Focus.dispose();
+    _startPortFocus.dispose();
+    _endPortFocus.dispose();
     super.dispose();
   }
 
+  /// Full validation (shows error text) — only run on focus-loss.
   void _validate() {
     setState(() {
       _errors = UspIpv6PortServiceService.validateRule(
@@ -88,6 +111,11 @@ class _Ipv6PortServiceRuleDialogState extends State<Ipv6PortServiceRuleDialog> {
       );
     });
   }
+
+  /// Lightweight rebuild to re-evaluate the submit-enable state (_isFormValid)
+  /// WITHOUT surfacing errors mid-edit — so no error text appears while typing
+  /// and focus is preserved.
+  void _onInputChanged() => setState(() {});
 
   bool get _isFormValid {
     final errors = UspIpv6PortServiceService.validateRule(
@@ -101,77 +129,87 @@ class _Ipv6PortServiceRuleDialogState extends State<Ipv6PortServiceRuleDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text(_isEdit ? loc(context).editRule : loc(context).addRule),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AppTextField(
-              controller: _descriptionController,
-              hintText: loc(context).ruleName,
-              errorText: _errors['description'],
-              onChanged: (_) => _validate(),
-            ),
-            AppGap.lg(),
-            AppSelectAutoComplete(
-              options: widget.deviceOptions,
+    return AppDialog(
+      title: AppText.titleLarge(
+          _isEdit ? loc(context).editRule : loc(context).addRule),
+      scrollable: true,
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AppTextField(
+            controller: _descriptionController,
+            focusNode: _descriptionFocus,
+            identifier: 'ipv6-rule-description',
+            hintText: loc(context).ruleName,
+            errorText: _errors['description'],
+            onChanged: (_) => _onInputChanged(),
+          ),
+          AppGap.lg(),
+          AppSelectAutoComplete(
+            options: widget.deviceOptions,
+            controller: _ipv6Controller,
+            onSelected: (_) => _validate(),
+            child: AppTextField(
               controller: _ipv6Controller,
-              onSelected: (_) => _validate(),
-              child: AppTextField(
-                controller: _ipv6Controller,
-                hintText: loc(context).ipv6AddressSearchHint,
-                errorText: _errors['ipv6Address'],
-                onChanged: (_) => _validate(),
+              focusNode: _ipv6Focus,
+              identifier: 'ipv6-rule-address',
+              hintText: loc(context).ipv6AddressSearchHint,
+              errorText: _errors['ipv6Address'],
+              onChanged: (_) => _onInputChanged(),
+            ),
+          ),
+          AppGap.lg(),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              AppText.bodyMedium(loc(context).protocol),
+              SegmentedButton<String>(
+                segments: UspIpv6PortServiceService.protocolOptions
+                    .map(
+                        (name) => ButtonSegment(value: name, label: Text(name)))
+                    .toList(),
+                selected: {_protocol},
+                onSelectionChanged: (v) => setState(() => _protocol = v.first),
               ),
-            ),
-            AppGap.lg(),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                AppText.bodyMedium(loc(context).protocol),
-                SegmentedButton<String>(
-                  segments: UspIpv6PortServiceService.protocolOptions
-                      .map((name) =>
-                          ButtonSegment(value: name, label: Text(name)))
-                      .toList(),
-                  selected: {_protocol},
-                  onSelectionChanged: (v) =>
-                      setState(() => _protocol = v.first),
-                ),
-              ],
-            ),
-            AppGap.lg(),
-            AppRangeInput(
-              startController: _startPortController,
-              endController: _endPortController,
-              startLabel: loc(context).startPort,
-              endLabel: loc(context).endPort,
-              errorText: _errors['startPort'] ?? _errors['endPort'],
-              onChanged: (_, __) => _validate(),
-            ),
-            AppGap.lg(),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                AppText.bodyMedium(loc(context).enabled),
-                AppSwitch(
-                  value: _enabled,
-                  onChanged: (value) => setState(() => _enabled = value),
-                ),
-              ],
-            ),
-          ],
-        ),
+            ],
+          ),
+          AppGap.lg(),
+          AppRangeInput(
+            startController: _startPortController,
+            endController: _endPortController,
+            startFocusNode: _startPortFocus,
+            endFocusNode: _endPortFocus,
+            startLabel: loc(context).startPort,
+            endLabel: loc(context).endPort,
+            startIdentifier: 'ipv6-rule-start-port',
+            endIdentifier: 'ipv6-rule-end-port',
+            errorText: _errors['startPort'] ?? _errors['endPort'],
+            onChanged: (_, __) => _onInputChanged(),
+          ),
+          AppGap.lg(),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              AppText.bodyMedium(loc(context).enabled),
+              AppSwitch(
+                identifier: 'ipv6-rule-enabled',
+                value: _enabled,
+                onChanged: (value) => setState(() => _enabled = value),
+              ),
+            ],
+          ),
+        ],
       ),
       actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text(loc(context).cancel),
+        AppButton.text(
+          identifier: 'ipv6-rule-cancel',
+          label: loc(context).cancel,
+          onTap: () => Navigator.of(context).pop(),
         ),
-        FilledButton(
-          onPressed: _isFormValid ? _submit : null,
-          child: Text(_isEdit ? loc(context).save : loc(context).add),
+        AppButton.text(
+          identifier: 'ipv6-rule-submit',
+          label: _isEdit ? loc(context).save : loc(context).add,
+          onTap: _isFormValid ? _submit : null,
         ),
       ],
     );

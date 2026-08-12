@@ -639,7 +639,6 @@
   "factoryResetInProgress": "Reposição de fábrica em curso",
   "factoryResetWaitMessage": "O router está a repor as predefinições de fábrica. Terá de o configurar e iniciar sessão novamente.",
   "failed": "Falhou",
-  "failedToInitialize": "Falha ao inicializar: {error}",
   "failedToLoadSettings": "Falha ao carregar as definições",
   "failedToRenew": "Falha ao renovar: {error}",
   "failedToStartOtaUpdate": "Falha ao iniciar a atualização OTA",

@@ -639,7 +639,6 @@
   "factoryResetInProgress": "Redefinição de fábrica em andamento",
   "factoryResetWaitMessage": "O roteador está sendo restaurado para os padrões de fábrica. Você precisará configurá-lo e fazer login novamente.",
   "failed": "Falhou",
-  "failedToInitialize": "Falha ao inicializar: {error}",
   "failedToLoadSettings": "Falha ao carregar as configurações",
   "failedToRenew": "Falha ao renovar: {error}",
   "failedToStartOtaUpdate": "Falha ao iniciar a atualização OTA",

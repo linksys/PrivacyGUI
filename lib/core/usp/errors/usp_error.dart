@@ -140,7 +140,7 @@ UspError? parseUspError(Object error) {
 /// | code | meaning                          | → ServiceError          |
 /// |------|----------------------------------|-------------------------|
 /// | 7004 | parameter not writable           | InvalidInputError       |
-/// | 7005 | invalid parameter name           | InvalidInputError       |
+/// | 7005 | invalid parameter name¹          | InvalidInputError       |
 /// | 7006 | invalid parameter value          | InvalidInputError       |
 /// | 7026 | parameter (path) not found       | ResourceNotFoundError   |
 /// | 7027 | object not found                 | ResourceNotFoundError   |
@@ -148,6 +148,15 @@ UspError? parseUspError(Object error) {
 /// | 9005 | bbfdm: invalid/unimplemented param | ResourceNotFoundError |
 /// | 9007 | bbfdm: (resource not found)      | ResourceNotFoundError   |
 /// | 9008 | bbfdm: non-writable parameter    | InvalidInputError       |
+///
+/// ¹ 7005 has a second, broker-level meaning on OBUSPA: an atomic SET
+/// (`allow_partial=false`) that spans more than one USP micro-service is
+/// rejected with 7005 "Allow partial=false not supported across more than one
+/// USP Service". This is NOT an invalid parameter name — it is a cross-service
+/// atomicity limit. The fix is on the caller (pass `allowPartial: true` for
+/// multi-service SETs), not this mapping; InvalidInputError remains a reasonable
+/// surface if it ever reaches here. See `_saveIpv6Settings` in
+/// usp_internet_settings_service.dart.
 ///
 /// ### Source 3 — Dart codegen (`lib/generated/*.g.dart`), NOT from Rust
 ///

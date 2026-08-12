@@ -216,6 +216,7 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
             child: Column(
               children: [
                 AppTextFormField(
+                  identifier: 'local-network-hostname',
                   controller: _hostNameController,
                   focusNode: _hostNameFocus,
                   label: loc(context).hostname,
@@ -226,6 +227,7 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
                 ),
                 AppGap.md(),
                 AppIpv4TextField(
+                  identifier: 'local-network-ip-address',
                   controller: _ipAddressController,
                   label: loc(context).ipAddress,
                   onChanged: (v) =>
@@ -236,6 +238,7 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
                 ),
                 AppGap.md(),
                 AppIpv4TextField(
+                  identifier: 'local-network-subnet-mask',
                   controller: _subnetMaskController,
                   label: loc(context).subnetMask,
                   onChanged: (v) =>
@@ -281,6 +284,7 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
               children: [
                 AppText.titleSmall(loc(context).dhcpServer),
                 AppSwitch(
+                  identifier: 'local-network-dhcp-enable',
                   value: pending.dhcpEnabled,
                   onChanged: disabled
                       ? null
@@ -302,6 +306,7 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
                   AppText.labelMedium(loc(context).addressPool),
                   AppGap.md(),
                   AppIpv4TextField(
+                    identifier: 'local-network-pool-start',
                     controller: _minAddressController,
                     label: loc(context).poolStart,
                     onChanged: (v) => notifier
@@ -313,6 +318,7 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
                   ),
                   AppGap.md(),
                   AppIpv4TextField(
+                    identifier: 'local-network-pool-end',
                     controller: _maxAddressController,
                     label: loc(context).poolEnd,
                     onChanged: (v) => notifier
@@ -324,6 +330,7 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
                   ),
                   AppGap.md(),
                   AppTextFormField(
+                    identifier: 'local-network-lease-time',
                     controller: _leaseTimeController,
                     focusNode: _leaseTimeFocus,
                     label: loc(context).leaseTimeMinutes,
@@ -349,6 +356,7 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
                   AppText.labelMedium(loc(context).dnsServers),
                   AppGap.md(),
                   AppIpv4TextField(
+                    identifier: 'local-network-dns1',
                     controller: _dns1Controller,
                     label: loc(context).dnsServer1,
                     onChanged: (v) => notifier
@@ -359,6 +367,7 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
                   ),
                   AppGap.md(),
                   AppIpv4TextField(
+                    identifier: 'local-network-dns2',
                     controller: _dns2Controller,
                     label: loc(context).dnsServer2,
                     onChanged: (v) => notifier
@@ -369,6 +378,7 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
                   ),
                   AppGap.md(),
                   AppIpv4TextField(
+                    identifier: 'local-network-dns3',
                     controller: _dns3Controller,
                     label: loc(context).dnsServer3,
                     onChanged: (v) => notifier
@@ -383,6 +393,7 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
             AppGap.sm(),
             // Reservations Link Block
             LayoutBlock(
+              identifier: 'local-network-dhcp-reservations',
               onTap: () => context.goNamed(RouteNamed.uspDhcpDetail),
               padding: const EdgeInsets.all(AppSpacing.md),
               child: Row(

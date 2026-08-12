@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ui_kit_library/ui_kit.dart';
-import 'package:privacy_gui/demo/providers/demo_theme_config_provider.dart';
+import 'package:privacy_gui/demo/providers/theme_studio_config_provider.dart';
+import 'package:privacy_gui/providers/theme_config_provider.dart';
 import '../widgets/section_header.dart';
 
 class DesignTab extends ConsumerWidget {
@@ -9,14 +10,27 @@ class DesignTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final config = ref.watch(demoThemeConfigProvider);
+    final config = ref.watch(themeStudioConfigProvider);
+
+    // Base theme (device / THEME_JSON) — used as the display fallback when the
+    // studio config still inherits (style / visualEffects are null).
+    final baseJson =
+        ref.watch(themeConfigProvider).valueOrNull?.lightJson ?? const {};
+    final baseStyle = baseJson['style'] as String?;
+    final baseVisualEffects = baseJson['visualEffects'] as int?;
+
+    // Effective values shown in the panel: explicit studio value if set,
+    // otherwise the inherited base value.
+    final effectiveStyle = config.style ?? baseStyle;
+    final effectiveVisualEffects =
+        config.visualEffects ?? baseVisualEffects ?? 0;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SectionHeader(title: 'Visual Style'),
         const SizedBox(height: 8),
-        _buildStyleSelector(context, ref, config),
+        _buildStyleSelector(context, ref, effectiveStyle),
         const SizedBox(height: 24),
         const SectionHeader(title: 'Global Overlay'),
         const SizedBox(height: 8),
@@ -24,13 +38,13 @@ class DesignTab extends ConsumerWidget {
         const SizedBox(height: 24),
         const SectionHeader(title: 'Visual Effects'),
         const SizedBox(height: 8),
-        _buildVisualEffectsToggles(context, ref, config),
+        _buildVisualEffectsToggles(context, ref, effectiveVisualEffects),
       ],
     );
   }
 
   Widget _buildStyleSelector(
-      BuildContext context, WidgetRef ref, DemoThemeConfig config) {
+      BuildContext context, WidgetRef ref, String? effectiveStyle) {
     final styles = [
       'glass',
       'aurora',
@@ -47,9 +61,9 @@ class DesignTab extends ConsumerWidget {
       children: styles.map((style) {
         return AppTag(
           label: _formatStyleLabel(style),
-          isSelected: config.style == style,
+          isSelected: effectiveStyle == style,
           onTap: () {
-            ref.read(demoThemeConfigProvider.notifier).setStyle(style);
+            ref.read(themeStudioConfigProvider.notifier).setStyle(style);
           },
         );
       }).toList(),
@@ -64,7 +78,7 @@ class DesignTab extends ConsumerWidget {
   }
 
   Widget _buildOverlaySelector(
-      BuildContext context, WidgetRef ref, DemoThemeConfig config) {
+      BuildContext context, WidgetRef ref, ThemeStudioConfig config) {
     final overlays = [
       (null, 'None'),
       (GlobalOverlayType.snow, 'Snow'),
@@ -85,7 +99,7 @@ class DesignTab extends ConsumerWidget {
           isSelected: config.globalOverlay == overlay,
           onTap: () {
             ref
-                .read(demoThemeConfigProvider.notifier)
+                .read(themeStudioConfigProvider.notifier)
                 .setGlobalOverlay(overlay);
           },
         );
@@ -94,7 +108,7 @@ class DesignTab extends ConsumerWidget {
   }
 
   Widget _buildVisualEffectsToggles(
-      BuildContext context, WidgetRef ref, DemoThemeConfig config) {
+      BuildContext context, WidgetRef ref, int effectiveVisualEffects) {
     final effects = [
       (AppThemeConfig.effectDirectionalShadow, 'Shadow'),
       (AppThemeConfig.effectGradientBorder, 'Gradient'),
@@ -109,12 +123,14 @@ class DesignTab extends ConsumerWidget {
       runSpacing: 8,
       children: effects.map((item) {
         final (flag, label) = item;
-        final isEnabled = (config.visualEffects & flag) != 0;
+        final isEnabled = (effectiveVisualEffects & flag) != 0;
         return AppTag(
           label: label,
           isSelected: isEnabled,
           onTap: () {
-            ref.read(demoThemeConfigProvider.notifier).toggleVisualEffect(flag);
+            ref
+                .read(themeStudioConfigProvider.notifier)
+                .toggleVisualEffect(flag);
           },
         );
       }).toList(),

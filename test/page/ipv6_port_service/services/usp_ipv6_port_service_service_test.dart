@@ -18,7 +18,7 @@ Ipv6PortServiceRule _rule({
   int destPortRangeMax = 80,
   int protocol = 6,
   String target = 'Accept',
-  String creationDate = '2026-01-15T12:00:00Z',
+  DateTime? creationDate,
 }) =>
     Ipv6PortServiceRule(
       instancePath: instancePath,
@@ -30,7 +30,7 @@ Ipv6PortServiceRule _rule({
       destPortRangeMax: destPortRangeMax,
       protocol: protocol,
       target: target,
-      creationDate: creationDate,
+      creationDate: creationDate ?? DateTime.parse('2026-01-15T12:00:00Z'),
     );
 
 void main() {
@@ -90,7 +90,7 @@ void main() {
           instancePath: 'p.29.',
           ipVersion: 6,
           target: 'Accept',
-          creationDate: '0001-01-01T00:00:00Z',
+          creationDate: DateTime.parse('0001-01-01T00:00:00Z'),
         ), // filtered: system rule
       ]);
 

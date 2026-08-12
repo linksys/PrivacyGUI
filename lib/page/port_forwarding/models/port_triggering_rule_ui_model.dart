@@ -1,5 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:privacy_gui/framework/diagnostic_loggable.dart';
+import 'package:privacy_gui/page/_shared/models/port_forwarding_rule_ui_model.dart'
+    show ruleIdentifierKey;
 
 /// Presentation Layer Model for a single forwarded-port rule
 /// within a port trigger entry (child of `Device.NAT.PortTrigger.{i}.Rule.{i}`).
@@ -84,6 +86,11 @@ class PortTriggeringRuleUIModel extends Equatable with DiagnosticLoggable {
   /// Display name: description if available, otherwise "Unnamed trigger".
   String get displayName =>
       description.isNotEmpty ? description : 'Unnamed trigger';
+
+  /// Stable, kebab-case key for E2E `identifier` hooks (e.g. `pf-edit-<key>`).
+  /// See [ruleIdentifierKey] — description slug, then instance number, then
+  /// "unnamed"; always non-empty and collision-free across rows.
+  String get identifierKey => ruleIdentifierKey(description, instancePath);
 
   /// Trigger port display: "21" or "21-25".
   String get triggerPortDisplay =>

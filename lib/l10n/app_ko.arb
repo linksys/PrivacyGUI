@@ -637,7 +637,6 @@
   "factoryResetInProgress": "공장 초기화 진행 중",
   "factoryResetWaitMessage": "라우터를 공장 기본값으로 복원하는 중입니다. 다시 설정하고 로그인해야 합니다.",
   "failed": "실패",
-  "failedToInitialize": "초기화 실패: {error}",
   "failedToLoadSettings": "설정 로드 실패",
   "failedToRenew": "갱신 실패: {error}",
   "failedToStartOtaUpdate": "OTA 업데이트 시작 실패",

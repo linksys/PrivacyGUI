@@ -6,19 +6,29 @@ import 'package:ui_kit_library/ui_kit.dart';
 
 const _kThemeConfigKey = 'demo_theme_config';
 
-/// Provider for dynamic theme configuration in demo mode.
-final demoThemeConfigProvider =
-    StateNotifierProvider<DemoThemeConfigNotifier, DemoThemeConfig>((ref) {
-  final notifier = DemoThemeConfigNotifier();
+/// Provider for the Theme Studio configuration (runtime theme overrides).
+///
+/// Used by both the production app and the demo app. In production it is only
+/// mutated when Theme Studio is enabled; otherwise it stays at its inherit
+/// default (all fields null / no override).
+final themeStudioConfigProvider =
+    StateNotifierProvider<ThemeStudioConfigNotifier, ThemeStudioConfig>((ref) {
+  final notifier = ThemeStudioConfigNotifier();
   ref.keepAlive();
   return notifier;
 });
 
-/// Demo theme configuration state.
-class DemoThemeConfig {
-  final String style;
+/// Theme Studio configuration state.
+///
+/// [style] and [visualEffects] are nullable: `null` means "inherit from the
+/// base [ThemeJsonConfig]" (device theme / THEME_JSON). They are only set to a
+/// concrete value when the user explicitly changes them in Theme Studio.
+/// This prevents the frozen defaults from clobbering the build-time theme in
+/// production / E2E builds where Theme Studio is never touched.
+class ThemeStudioConfig {
+  final String? style;
   final GlobalOverlayType? globalOverlay;
-  final int visualEffects;
+  final int? visualEffects;
   final Color? seedColor;
 
   // Granular Material Colors (Standard Layer)
@@ -32,10 +42,10 @@ class DemoThemeConfig {
   // Advanced Overrides (Semantic & Component Layer)
   final AppThemeOverrides? overrides;
 
-  const DemoThemeConfig({
-    this.style = 'glass',
+  const ThemeStudioConfig({
+    this.style,
     this.globalOverlay,
-    this.visualEffects = AppThemeConfig.effectAll,
+    this.visualEffects,
     this.seedColor,
     this.primary,
     this.secondary,
@@ -47,7 +57,7 @@ class DemoThemeConfig {
   });
 
   /// Creates a copy of this config with the given fields replaced.
-  DemoThemeConfig copyWith({
+  ThemeStudioConfig copyWith({
     String? style,
     GlobalOverlayType? globalOverlay,
     bool clearOverlay = false,
@@ -69,7 +79,7 @@ class DemoThemeConfig {
     AppThemeOverrides? overrides,
     bool clearOverrides = false,
   }) {
-    return DemoThemeConfig(
+    return ThemeStudioConfig(
       style: style ?? this.style,
       globalOverlay:
           clearOverlay ? null : (globalOverlay ?? this.globalOverlay),
@@ -108,7 +118,7 @@ class DemoThemeConfig {
   }
 
   /// deserialize from JSON for import
-  factory DemoThemeConfig.fromJson(Map<String, dynamic> json) {
+  factory ThemeStudioConfig.fromJson(Map<String, dynamic> json) {
     Color? parseHex(dynamic value) {
       if (value is String) {
         try {
@@ -159,15 +169,17 @@ class DemoThemeConfig {
       }
     }
 
-    return DemoThemeConfig(
-      style: json['style'] as String? ?? 'glass',
+    return ThemeStudioConfig(
+      // Null (or missing) style/visualEffects mean "inherit from base theme".
+      // Keep them null on restore so a saved inherit-state is preserved.
+      style: json['style'] as String?,
       globalOverlay: json['globalOverlay'] != null
           ? GlobalOverlayType.values.firstWhere(
               (e) => e.name == json['globalOverlay'],
               orElse: () => GlobalOverlayType.none,
             )
           : null,
-      visualEffects: json['visualEffects'] as int? ?? AppThemeConfig.effectAll,
+      visualEffects: json['visualEffects'] as int?,
       seedColor: parseHex(json['seedColor']),
       primary: parseHex(json['primary']),
       secondary: parseHex(json['secondary']),
@@ -180,9 +192,9 @@ class DemoThemeConfig {
   }
 }
 
-/// Notifier for demo theme configuration.
-class DemoThemeConfigNotifier extends StateNotifier<DemoThemeConfig> {
-  DemoThemeConfigNotifier() : super(const DemoThemeConfig()) {
+/// Notifier for the Theme Studio configuration.
+class ThemeStudioConfigNotifier extends StateNotifier<ThemeStudioConfig> {
+  ThemeStudioConfigNotifier() : super(const ThemeStudioConfig()) {
     _loadFromStorage();
   }
 
@@ -193,7 +205,7 @@ class DemoThemeConfigNotifier extends StateNotifier<DemoThemeConfig> {
       final jsonStr = prefs.getString(_kThemeConfigKey);
       if (jsonStr != null) {
         final json = jsonDecode(jsonStr);
-        state = DemoThemeConfig.fromJson(json);
+        state = ThemeStudioConfig.fromJson(json);
       }
     } catch (e) {
       debugPrint('Error loading theme config: $e');
@@ -212,7 +224,7 @@ class DemoThemeConfigNotifier extends StateNotifier<DemoThemeConfig> {
   }
 
   /// Update state and persist to storage.
-  void _updateState(DemoThemeConfig newState) {
+  void _updateState(ThemeStudioConfig newState) {
     state = newState;
     _saveToStorage();
   }
@@ -221,7 +233,7 @@ class DemoThemeConfigNotifier extends StateNotifier<DemoThemeConfig> {
 
   void importConfig(Map<String, dynamic> json) {
     try {
-      _updateState(DemoThemeConfig.fromJson(json));
+      _updateState(ThemeStudioConfig.fromJson(json));
     } catch (e) {
       debugPrint('Error importing theme config: $e');
     }
@@ -237,7 +249,7 @@ class DemoThemeConfigNotifier extends StateNotifier<DemoThemeConfig> {
   }
 
   void reset() {
-    _updateState(const DemoThemeConfig());
+    _updateState(const ThemeStudioConfig());
   }
 
   // === Basic ===
@@ -258,7 +270,9 @@ class DemoThemeConfigNotifier extends StateNotifier<DemoThemeConfig> {
   }
 
   void toggleVisualEffect(int flag) {
-    final current = state.visualEffects;
+    // When still inheriting (null), start editing from "all effects on" so the
+    // first toggle removes just that one flag — matching the legacy default.
+    final current = state.visualEffects ?? AppThemeConfig.effectAll;
     final newEffects = (current & flag) != 0
         ? current & ~flag // Remove flag
         : current | flag; // Add flag

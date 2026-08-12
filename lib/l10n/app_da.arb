@@ -639,7 +639,6 @@
   "factoryResetInProgress": "Fabriksnulstilling i gang",
   "factoryResetWaitMessage": "Routeren gendannes til fabriksindstillingerne. Du skal opsætte og logge ind igen.",
   "failed": "Mislykkedes",
-  "failedToInitialize": "Initialisering mislykkedes: {error}",
   "failedToLoadSettings": "Indlæsning af indstillinger mislykkedes",
   "failedToRenew": "Fornyelse mislykkedes: {error}",
   "failedToStartOtaUpdate": "Start af OTA-opdatering mislykkedes",

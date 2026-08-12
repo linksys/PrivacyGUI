@@ -111,9 +111,7 @@ class MeshTopologyBuilder {
             parentBssid: node.backhaulMacAddressMultiAp.trim().isNotEmpty
                 ? node.backhaulMacAddressMultiAp.trim()
                 : null,
-            lastContactTime: node.multiApLastContactTime.trim().isNotEmpty
-                ? node.multiApLastContactTime.trim()
-                : null,
+            lastContactTime: node.multiApLastContactTime?.toIso8601String(),
             backhaulAlId: node.backhaulAlId.trim(),
             backhaulMacAddress: node.backhaulMacAddress.trim(),
           ),

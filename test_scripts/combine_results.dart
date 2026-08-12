@@ -3,6 +3,8 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'overflow_details.dart';
+
 part 'html_generate_functions.dart';
 
 const _coverageIgnore = ['apps', 'system_log', 'test_console'];
@@ -13,17 +15,6 @@ String _relativeToReport(String path, String folderStr) {
     return path.substring(folderStr.length + 1);
   }
   return path;
-}
-
-List<Map<String, dynamic>> _loadOverflowWarnings() {
-  final file = File('goldens/overflow_warnings.json');
-  if (!file.existsSync()) return [];
-  try {
-    final list = jsonDecode(file.readAsStringSync()) as List;
-    return list.cast<Map<String, dynamic>>();
-  } catch (_) {
-    return [];
-  }
 }
 
 Map<String, dynamic> scanCoverage() {
@@ -174,9 +165,8 @@ void main(List<String> args) {
   final coverage = scanCoverage();
 
   // Load overflow warnings
-  final overflowWarnings = _loadOverflowWarnings();
-  final overflowGoldenNames =
-      overflowWarnings.map((w) => w['golden'] as String? ?? '').toSet();
+  final overflowReport = loadOverflowReport();
+  final overflowDetails = overflowReport.byGolden;
 
   // Annotate tests with overflow info by reconstructing golden name
   for (final test in jsonObjects) {
@@ -184,7 +174,11 @@ void main(List<String> args) {
     final deviceType = test['deviceType'] as String? ?? '';
     final locale = test['locale'] as String? ?? '';
     final goldenName = '$tsName-$deviceType-$locale';
-    test['hasOverflow'] = overflowGoldenNames.contains(goldenName);
+    final sites = overflowDetails[goldenName] ?? const [];
+    test['hasOverflow'] = sites.isNotEmpty;
+    // Carry the site detail so the row can name the culprit instead of only
+    // flagging that something overflowed (#1197).
+    test['overflowSites'] = sites.map((s) => s.toJson()).toList();
   }
 
   final resultObj = <String, dynamic>{};
@@ -197,7 +191,14 @@ void main(List<String> args) {
   resultObj['locales'] = locales;
   resultObj['devices'] = devices;
   resultObj['coverage'] = coverage;
-  resultObj['overflowCount'] = overflowWarnings.length;
+  // Count affected goldens, not raw records: Flutter reports an overflow per
+  // RenderObject, so counting records inflated the stat and disagreed with the
+  // gallery report's own count for the same run (#1197).
+  resultObj['overflowCount'] = overflowDetails.length;
+  // One table for the whole report, referenced by index from each site: the same
+  // culprit appears in every golden that renders it, and a dump runs 2-4KB
+  // (#1197).
+  resultObj['overflowLogs'] = overflowReport.logs;
   resultObj['version'] = version;
   resultObj['timestamp'] = DateTime.now().toIso8601String();
 

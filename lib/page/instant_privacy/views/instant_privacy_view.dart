@@ -106,6 +106,7 @@ class InstantPrivacyView extends ConsumerWidget {
               ),
             ),
             AppSwitch(
+              identifier: 'instant-privacy-enable',
               value: state.isEnabled,
               onChanged: state.isToggleDisabled
                   ? null
@@ -321,6 +322,7 @@ class InstantPrivacyView extends ConsumerWidget {
             onTap: () => Navigator.of(ctx).pop(false),
           ),
           AppButton.primary(
+            identifier: 'instant-privacy-enable-confirm',
             label: loc(context).enable,
             onTap: () => Navigator.of(ctx).pop(true),
           ),
@@ -514,6 +516,7 @@ class _AddMacDialogState extends State<_AddMacDialog> {
             controller: _controller,
             onSelected: (_) => _validate(),
             child: AppTextField(
+              identifier: 'instant-privacy-add-mac-input',
               controller: _controller,
               focusNode: _focusNode,
               hintText: 'AA:BB:CC:DD:EE:FF',
@@ -525,10 +528,12 @@ class _AddMacDialogState extends State<_AddMacDialog> {
       ),
       actions: [
         AppButton.text(
+          identifier: 'instant-privacy-add-mac-cancel',
           label: loc(context).cancel,
           onTap: () => Navigator.of(context).pop(),
         ),
         AppButton.primary(
+          identifier: 'instant-privacy-add-mac-confirm',
           label: _isConfirming ? loc(context).adding : loc(context).add,
           onTap: (_canConfirm && !_isConfirming) ? _confirm : null,
         ),

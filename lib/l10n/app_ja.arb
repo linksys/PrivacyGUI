@@ -640,7 +640,6 @@
   "factoryResetInProgress": "工場出荷時設定へのリセット中",
   "factoryResetWaitMessage": "ルーターを工場出荷時設定に復元しています。再度セットアップしてログインする必要があります。",
   "failed": "失敗",
-  "failedToInitialize": "初期化に失敗しました: {error}",
   "failedToLoadSettings": "設定の読み込みに失敗しました",
   "failedToRenew": "更新に失敗しました: {error}",
   "failedToStartOtaUpdate": "OTA 更新の開始に失敗しました",

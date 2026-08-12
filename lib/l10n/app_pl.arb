@@ -637,7 +637,6 @@
   "factoryResetInProgress": "Trwa przywracanie ustawień fabrycznych",
   "factoryResetWaitMessage": "Router przywraca ustawienia fabryczne. Trzeba będzie ponownie skonfigurować i zalogować się.",
   "failed": "Niepowodzenie",
-  "failedToInitialize": "Nie udało się zainicjować: {error}",
   "failedToLoadSettings": "Nie udało się załadować ustawień",
   "failedToRenew": "Nie udało się odnowić: {error}",
   "failedToStartOtaUpdate": "Nie udało się rozpocząć aktualizacji OTA",

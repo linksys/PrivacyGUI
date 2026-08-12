@@ -98,6 +98,7 @@ class UspStaticRoutingView extends ConsumerWidget {
           children: [
             AppText.titleMedium(loc(context).staticRoutes),
             AppIconButton(
+              identifier: 'static-route-add',
               icon: AppIcon.font(Icons.add, size: 20),
               onTap: isSaving ? null : () => _showAddDialog(context, ref),
             ),
@@ -167,12 +168,14 @@ class UspStaticRoutingView extends ConsumerWidget {
               ),
             ),
             AppIconButton(
+              identifier: 'static-route-edit-${route.identifierKey}',
               icon: AppIcon.font(Icons.edit, size: 18),
               onTap: isSaving
                   ? null
                   : () => _showEditDialog(context, ref, index, route),
             ),
             AppIconButton(
+              identifier: 'static-route-delete-${route.identifierKey}',
               icon: AppIcon.font(Icons.delete_outline, size: 18),
               onTap: isSaving
                   ? null
