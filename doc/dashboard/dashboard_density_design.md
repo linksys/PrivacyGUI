@@ -416,6 +416,52 @@ Per Article XIV, adding `Flexible`/`maxLines` to an existing block is a bug fix.
 Should a genuinely new shared widget emerge (e.g. `OverflowSafeRow`), it must go
 through the UI Kit proposal path.
 
+### 2.6a What making the seven shared sites safe taught us (#1227 — implemented)
+
+All 101 coordinates cleared as predicted (379 → 278), and re-attribution before
+starting confirmed the four intervening tickets had not moved them: still exactly
+101, still exactly the seven named sites, and 0 shared-layer sites afterwards.
+Four things the responsibility split did not say:
+
+1. **`Flexible` is a share, not a negotiation — so it is the wrong tool for a
+   header trailing.** A `Row` hands each loose flex child `freeSpace / totalFlex`
+   and does *not* give one child's unused share to another; the remainder is
+   placed by `MainAxisAlignment`. Making the card header's `trailing` `Flexible`
+   next to the `Expanded` title therefore does two unwanted things: the title is
+   capped at half the row even when the trailing wants 40px, and the trailing's
+   leftover share is stranded *after* it under the default `start` alignment, so
+   it stops being flush right. The trailing stays inflexible and gets a
+   `LayoutBuilder` + `ConstrainedBox` cap of half the row instead — an upper
+   bound rather than an allotment. The detail footer *can* use `Flexible`,
+   because its row is `MainAxisAlignment.end` and the leftover falls at the
+   start, where it is invisible.
+
+2. **Which child receives the `Flexible` is a priority decision, and flexing both
+   regresses coordinates that pass today.** In `N items · View all →`, making
+   both the count and the link `Flexible` splits the free space evenly and
+   ellipsizes the *English* link at 191px — a width where the whole row currently
+   fits. Only the link is `Flexible`: as the last child of an end-aligned row it
+   absorbs whatever the count leaves, a row that fits is laid out exactly as
+   before, and it also covers the cards that pass `detailRoute` without
+   `itemCount`, where the link is the only child. Measured at 191px `pl`:
+   `6 elementów · Poka… →` — count intact, link shortened, arrow kept.
+
+3. **A leaf block's bottom overflow is a height budget, and only `Flexible` states
+   it.** `StatTile` needed `Flexible` around its label, not just `ellipsis`:
+   `maxLines` bounds how many lines the *text* takes, but an unconstrained
+   `Column` still grows to whatever the wrap produced — 98px past the tile's
+   height at the narrowest width, where five tiles across one card leave ~17px of
+   content each. `Flexible` is what forbids the `Column` from exceeding what the
+   grid gave it; `maxLines: 2` then decides how the remaining space is spent.
+
+4. **Skeletons carry the same bug as the content they stand in for, and they are
+   the cheapest possible fix.** `card_skeleton.dart:153` is 212px of fixed widths
+   in a 157px content box — the one site in the baseline that overflows by an
+   identical 51px in all 26 locales, because a grey rectangle has no localized
+   text to vary. Three sibling rows in the same file have the same shape and 0
+   coordinates only because those cards are not realized at the narrowest width;
+   they were fixed too, since a placeholder loses nothing by shrinking.
+
 ### 2.7 The gate enumerates widths instead of sampling them
 
 **Implemented in #1225** (not yet merged). `_scanScreens`'s hand-written 19-width list *asserted* the
@@ -658,7 +704,7 @@ addition — it changes no card's rendering until a threshold is declared.
 | #1225 | Gate enumerates widths (§2.7) — **implemented** | 0 |
 | #1226 | `traffic_analysis` legend row (§2.10) — **implemented** | 49 |
 | #1233 | The other six legend rows (§1.1, §2.10a) — **implemented** | 132 |
-| #1227 | Shared blocks made overflow-safe (§2.6) | 101 |
+| #1227 | Shared blocks made overflow-safe (§2.6, §2.6a) — **implemented** | 101 |
 | #1228 | `ethernet_ports` ×2 sites | 52 |
 | #1229 | `wifi_performance` ×2 sites | 45 |
 | #1230 | `firewall_overview` own sites (§2.11) | 48 |
