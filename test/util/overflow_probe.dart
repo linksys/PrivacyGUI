@@ -25,19 +25,50 @@ class OverflowIncident {
     this.fullLog = '',
   });
 
+  /// Matches one `"<n> pixels on the <side>"` clause.
+  ///
+  /// The exponent alternative covers Flutter's own formatting: sub-pixel
+  /// overflows go through `toStringAsPrecision(3)`, which yields `1.00e-7` for
+  /// very small values. Without it the number parses as `1.00` — 10 million
+  /// times too large, though still under any sane tolerance.
   static final _re = RegExp(
-    r'overflowed by ([\d.]+) pixels on the (\w+)',
+    r'([\d.]+(?:e-?\d+)?) pixels on the (\w+)',
     caseSensitive: false,
   );
 
-  /// Parses [errorString]; falls back to `pixels: 0, side: 'unknown'` if the
-  /// message shape ever changes so we still record that *something* overflowed.
+  /// Marks a message this parser could not read. Deliberately not `0`: every
+  /// caller filters incidents by `pixels > tolerance`, so a zero would be
+  /// dropped and the unreadable overflow would disappear — the gate would read
+  /// clean precisely when it has stopped understanding Flutter's output.
+  /// Infinity survives every threshold and fails loudly instead.
+  static const double unparseablePixels = double.infinity;
+
+  /// Parses [errorString], reporting the **worst** side it overflowed on.
+  ///
+  /// One report can name several sides — Flutter emits them in the fixed order
+  /// left, top, bottom, right ("0.5 pixels on the bottom and 41 pixels on the
+  /// right"), so taking the *first* clause would have reported that row as
+  /// +0.5px bottom and a 2px tolerance would then have dropped a 41px right
+  /// overflow. [OverflowIncident] carries a single measurement, so it carries
+  /// the largest one.
+  ///
+  /// Falls back to [unparseablePixels] and `side: 'unknown'` if no clause parses,
+  /// so a change in Flutter's message shape surfaces as a failure rather than as
+  /// silence.
   factory OverflowIncident.parse(String errorString, {String fullLog = ''}) {
     final firstLine = errorString.split('\n').first.trim();
-    final m = _re.firstMatch(errorString);
+    var worst = -1.0;
+    var worstSide = '';
+    for (final m in _re.allMatches(errorString)) {
+      final pixels = double.tryParse(m.group(1)!);
+      if (pixels != null && pixels > worst) {
+        worst = pixels;
+        worstSide = m.group(2)!.toLowerCase();
+      }
+    }
     return OverflowIncident(
-      pixels: m == null ? 0 : double.tryParse(m.group(1)!) ?? 0,
-      side: m == null ? 'unknown' : m.group(2)!.toLowerCase(),
+      pixels: worst < 0 ? unparseablePixels : worst,
+      side: worst < 0 ? 'unknown' : worstSide,
       message: firstLine,
       fullLog: fullLog.isNotEmpty ? fullLog : errorString,
     );
@@ -46,6 +77,20 @@ class OverflowIncident {
   @override
   String toString() => '+${pixels}px $side';
 }
+
+/// Whether [exceptionAsString] is Flutter's own overflow report, i.e. the one
+/// message [runWithOverflowCollection] is entitled to intercept.
+///
+/// `debug_overflow_indicator.dart` emits exactly
+/// `A <RenderObject> overflowed by <n> pixels on the <side>.`, so both markers
+/// must be present. A bare `contains('overflowed')` would also swallow any
+/// unrelated `FlutterError` that happens to use the word — a provider throwing
+/// "buffer overflowed", a hint sentence quoting the term — and swallowed errors
+/// do not fail the test they occurred in. Everything that fails this test is
+/// forwarded to the original handler, which is what turns it into a failure.
+bool isOverflowError(String exceptionAsString) =>
+    exceptionAsString.contains('overflowed by') &&
+    exceptionAsString.contains('pixels on the');
 
 /// Runs [body] with a RenderFlex-overflow collector installed, returning
 /// [body]'s result.
@@ -72,7 +117,7 @@ Future<T> runWithOverflowCollection<T>(
   final original = FlutterError.onError;
   FlutterError.onError = (FlutterErrorDetails details) {
     final asString = details.exceptionAsString();
-    if (asString.contains('overflowed')) {
+    if (isOverflowError(asString)) {
       incidents.add(
         OverflowIncident.parse(asString, fullLog: details.toString()),
       );

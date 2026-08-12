@@ -56,6 +56,30 @@ EOF
   exit 0
 }
 
+die() {
+  echo "Error: $1"
+  echo "Use -h or --help for usage details."
+  exit 1
+}
+
+# Option values are validated here rather than left to the Dart side, because a
+# missing value silently swallows the *next* flag as its argument: `-c -o` would
+# run with card id "-o" and no auto-open, and a `--dart-define` is happy to carry
+# any string, so the run just quietly tests nothing.
+require_value() {
+  # A leading dash means the next flag landed here, i.e. this option's own value
+  # was omitted. No card id or locale tag legitimately starts with one.
+  if [ -z "$2" ] || [[ "$2" == -* ]]; then
+    die "$1 requires a value."
+  fi
+}
+
+require_number() {
+  if ! [[ "$2" =~ ^[0-9]+$ ]]; then
+    die "$1 expects a non-negative integer, got '$2'."
+  fi
+}
+
 # Parse CLI flags
 while [[ $# -gt 0 ]]; do
   case $1 in
@@ -64,18 +88,29 @@ while [[ $# -gt 0 ]]; do
       shift
       ;;
     -d|--dump)
+      require_number "$1" "$2"
+      # Out-of-range modes are rejected rather than clamped: `-d 4` most likely
+      # means a mode the caller believes exists, and a silent fallback to the
+      # default would hand them a report they did not ask for.
+      case "$2" in
+        0|1|2|3) ;;
+        *) die "$1 must be 0, 1, 2, or 3, got '$2'." ;;
+      esac
       DUMP_MODE="$2"
       shift 2
       ;;
     -m|--min-screen)
+      require_number "$1" "$2"
       MIN_SCREEN="$2"
       shift 2
       ;;
     -c|--card)
+      require_value "$1" "$2"
       CARD_ID="$2"
       shift 2
       ;;
     -L|--locale)
+      require_value "$1" "$2"
       LOCALE_FILTER="$2"
       shift 2
       ;;
@@ -95,7 +130,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [ "$LIST_ONLY" = true ]; then
-  fvm flutter test $TARGET_TEST --dart-define=LIST_CARDS=true
+  fvm flutter test "$TARGET_TEST" --dart-define=LIST_CARDS=true
   exit 0
 fi
 
@@ -118,22 +153,26 @@ if [ -d "$OUTPUT_DIR" ]; then
   rm -rf "$OUTPUT_DIR"
 fi
 
-# Build test execution command
-CMD="fvm flutter test $TARGET_TEST"
+# Build test execution command as an array, not a string: -c and -L carry
+# arbitrary user text, and a string command would have to be re-expanded with
+# `eval` to run — a second round of word splitting and glob expansion over that
+# text. As an array each element stays one argument no matter what is in it.
+CMD=(fvm flutter test "$TARGET_TEST")
 if [ -n "$CARD_ID" ]; then
-  CMD="$CMD --name \"$CARD_ID\""
+  CMD+=(--name "$CARD_ID")
 fi
-CMD="$CMD --dart-define=DUMP=$DUMP_MODE --dart-define=MIN_SCREEN=$MIN_SCREEN"
+CMD+=(--dart-define=DUMP="$DUMP_MODE" --dart-define=MIN_SCREEN="$MIN_SCREEN")
 if [ -n "$LOCALE_FILTER" ]; then
-  CMD="$CMD --dart-define=LOCALE=$LOCALE_FILTER"
+  CMD+=(--dart-define=LOCALE="$LOCALE_FILTER")
 fi
 
-echo "▶ Executing: $CMD"
+# `${CMD[*]}` here is display only — the run below uses `"${CMD[@]}"`.
+echo "▶ Executing: ${CMD[*]}"
 echo ""
 
 # Run tests (allow non-zero exit code so reports are still surfaced if tests fail)
 set +e
-eval $CMD
+"${CMD[@]}"
 TEST_EXIT_CODE=$?
 set -e
 
