@@ -93,9 +93,15 @@ class PortForwardingRuleUIModel extends Equatable with DiagnosticLoggable {
   String get portRangeDisplay =>
       isSinglePort ? '$externalPort' : '$externalPort-$externalPortEndRange';
 
-  /// Summary: "8080 → 192.168.1.100:80" or "3074-3080 → 192.168.1.50:3074".
-  String get portSummary =>
-      '$portRangeDisplay \u2192 $internalClient:$internalPort';
+  /// Summary: "8080 -> 192.168.1.100:80" or "3074-3080 -> 192.168.1.50:3074".
+  ///
+  /// Diagnostics and other non-UI callers only. UI draws the arrow as an icon
+  /// via `MapsToRow(source: portRangeDisplay, target: internalTargetDisplay)`,
+  /// because U+2192 has no glyph in the app's declared font set.
+  String get portSummary => '$portRangeDisplay -> $internalTargetDisplay';
+
+  /// Internal target display: "192.168.1.100:80".
+  String get internalTargetDisplay => '$internalClient:$internalPort';
 
   @override
   String get diagnosticName => 'PortForwardingRuleUIModel';

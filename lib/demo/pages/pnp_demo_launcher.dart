@@ -134,7 +134,9 @@ class PnpDemoLauncher extends ConsumerWidget {
       _DemoEntry(
         icon: Icons.power_off,
         title: 'Modem Restart',
-        subtitle: 'Unplug → Lights off → Wait',
+        // Three-step sequence, not a two-part mapping, so MapsToRow does not
+        // fit; U+2013 is covered by every font in the declared set.
+        subtitle: 'Unplug – Lights off – Wait',
         onTap: () {
           ref.invalidate(pnpProvider);
           ref.read(pnpProvider.notifier).setDemoPhase(

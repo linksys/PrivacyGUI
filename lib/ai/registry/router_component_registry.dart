@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:generative_ui/generative_ui.dart';
+import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 import '../components/_components.dart';
@@ -852,8 +853,9 @@ class _DhcpCard extends StatelessWidget {
   Widget _buildReservationTile(Map<String, dynamic> reservation) {
     return AppListTile(
       title: AppText.body(reservation['hostname'] as String? ?? 'Unknown'),
-      subtitle: AppText.caption(
-        '${reservation['mac'] ?? ''} → ${reservation['ip'] ?? ''}',
+      subtitle: MapsToRow(
+        source: reservation['mac'] as String? ?? '',
+        target: reservation['ip'] as String? ?? '',
       ),
       leading: const Icon(Icons.bookmark, size: 20),
     );
@@ -862,8 +864,9 @@ class _DhcpCard extends StatelessWidget {
   Widget _buildClientTile(Map<String, dynamic> client) {
     return AppListTile(
       title: AppText.body(client['hostname'] as String? ?? 'Unknown'),
-      subtitle: AppText.caption(
-        '${client['mac'] ?? ''} → ${client['ip'] ?? ''}',
+      subtitle: MapsToRow(
+        source: client['mac'] as String? ?? '',
+        target: client['ip'] as String? ?? '',
       ),
       leading: const Icon(Icons.devices, size: 20),
     );
@@ -1002,8 +1005,9 @@ class _PortForwardingCard extends StatelessWidget {
 
     return AppListTile(
       title: AppText.body(description),
-      subtitle: AppText.caption(
-        'Port $port ($protocol) → $internalIp',
+      subtitle: MapsToRow(
+        source: 'Port $port ($protocol)',
+        target: internalIp,
       ),
       leading: Icon(
         enabled ? Icons.check_circle : Icons.cancel,

@@ -127,6 +127,66 @@ class NetworkBadgeWidget extends StatelessWidget {
 }
 
 // =============================================================================
+// MapsToRow - "source maps to target" pair
+// =============================================================================
+
+/// A "maps to" pair — `8080 -> 192.168.1.100:80` — drawn with an arrow icon
+/// instead of a U+2192 character.
+///
+/// U+2192 has no glyph in the primary font, in any of the nine fallbacks under
+/// `assets/fonts/fallback/`, or in the union of all eleven; the app's declared
+/// font set cannot render it, and browsers only do so by resolving a host font
+/// outside that set — the exact dependency those fallbacks exist to remove.
+/// [AppIcon.font] draws from the icon font, so coverage is guaranteed offline.
+///
+/// [source] and [target] stay Strings: the arrow is composed here in the widget
+/// layer, so UI models keep returning Strings rather than widgets.
+///
+/// Sized to match the surrounding [AppText.bodySmall]. [target] is the part
+/// that ellipsizes, since the source (a port or port range) is short and
+/// bounded while the target (an IP, optionally with a port) is not.
+class MapsToRow extends StatelessWidget {
+  final String source;
+  final String target;
+  final Color? color;
+
+  const MapsToRow({
+    super.key,
+    required this.source,
+    required this.target,
+    this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Flexible(
+          child: AppText.bodySmall(
+            source,
+            color: color,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        AppGap.xs(),
+        AppIcon.font(Icons.arrow_forward, size: 12, color: color),
+        AppGap.xs(),
+        Flexible(
+          child: AppText.bodySmall(
+            target,
+            color: color,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// =============================================================================
 // ToggleRow - Row with leading switch toggle
 // =============================================================================
 
@@ -141,6 +201,10 @@ class ToggleRow extends StatelessWidget {
   final ValueChanged<bool>? onChanged;
   final String title;
   final String? subtitle;
+
+  /// Widget subtitle, for rows whose subtitle is not plain text (e.g. a
+  /// [MapsToRow] with an arrow icon). Takes precedence over [subtitle].
+  final Widget? subtitleContent;
   final Widget? trailing;
   final VoidCallback? onTap;
   final bool isLoading;
@@ -151,6 +215,7 @@ class ToggleRow extends StatelessWidget {
     this.onChanged,
     required this.title,
     this.subtitle,
+    this.subtitleContent,
     this.trailing,
     this.onTap,
     this.isLoading = false,
@@ -183,14 +248,15 @@ class ToggleRow extends StatelessWidget {
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
-      subtitle: subtitle != null
-          ? AppText.bodySmall(
-              subtitle!,
-              color: colorScheme.onSurfaceVariant,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            )
-          : null,
+      subtitle: subtitleContent ??
+          (subtitle != null
+              ? AppText.bodySmall(
+                  subtitle!,
+                  color: colorScheme.onSurfaceVariant,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                )
+              : null),
       trailing: trailing,
       onTap: onTap,
     );
