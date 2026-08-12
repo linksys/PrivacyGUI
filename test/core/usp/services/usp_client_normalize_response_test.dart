@@ -77,6 +77,24 @@ void main() {
       expect(missing, isEmpty);
     });
 
+    test(
+        'trailing-dot object/table request paths never trigger a missing-path '
+        'warning', () {
+      final missing = <String>[];
+      // A path ending in '.' is an object/table GET (e.g. IPv6Address.); the
+      // router expands it into instance paths, so the requested key itself is
+      // absent from the response and must NOT be reported as missing.
+      UspClient.normalizeGetResponse(
+        ['Device.IP.Interface.1.IPv6Address.'],
+        <String, String?>{
+          'Device.IP.Interface.1.IPv6Address.1.IPAddress': '::1',
+        },
+        onMissingPath: missing.add,
+      );
+
+      expect(missing, isEmpty);
+    });
+
     test('absent concrete path invokes onMissingPath; present one does not',
         () {
       final missing = <String>[];
@@ -92,6 +110,102 @@ void main() {
       );
 
       expect(missing, ['Device.DHCPv4.Server.Pool.1.MinAddress']);
+    });
+
+    test(
+        'onMissingPath collects every absent concrete leaf so the caller can '
+        'emit a single aggregated warning', () {
+      // Underpins _rawGet's aggregation: a partial response with several
+      // absent leaves must surface all of them through the callback, so the
+      // caller logs one "missing N paths" line instead of one line per path.
+      final missing = <String>[];
+      UspClient.normalizeGetResponse(
+        [
+          'Device.DHCPv4.Server.Pool.1.MinAddress', // absent
+          'Device.DHCPv4.Server.Pool.1.MaxAddress', // absent
+          'Device.DHCPv4.Server.Pool.1.LeaseTime', // absent
+          'Device.DHCPv4.Server.Pool.1.Enable', // present
+        ],
+        <String, String?>{
+          'Device.DHCPv4.Server.Pool.1.Enable': '1',
+        },
+        onMissingPath: missing.add,
+      );
+
+      expect(missing, [
+        'Device.DHCPv4.Server.Pool.1.MinAddress',
+        'Device.DHCPv4.Server.Pool.1.MaxAddress',
+        'Device.DHCPv4.Server.Pool.1.LeaseTime',
+      ]);
+    });
+  });
+
+  group('UspClient.isTableQueryOnlyRequest — empty-GET log classification', () {
+    // An empty GET response to a table-query-only request means a multi-instance
+    // table has zero rows (a normal outcome), so _rawGet logs it at debug
+    // instead of warn. A table query is either a wildcard ('*') OR an
+    // object/table path (trailing '.') — both are expanded by the router. This
+    // seam is what that decision is pinned on, because _rawGet itself is not
+    // unit-testable (see the file header).
+    test('all-wildcard request is classified as table-query-only', () {
+      expect(
+        UspClient.isTableQueryOnlyRequest([
+          'Device.Firewall.DMZ.*.Enable',
+          'Device.NAT.PortMapping.*.Protocol',
+        ]),
+        isTrue,
+      );
+    });
+
+    test(
+        'all trailing-dot object/table request is classified as '
+        'table-query-only', () {
+      // Regression guard: a trailing-dot object GET (e.g. IPv6Address.) is also
+      // router-expanded, so an empty response is a normal zero-row outcome and
+      // must NOT emit a spurious "GET response EMPTY" warning. Before the fix
+      // isWildcardOnlyRequest only matched '*', so this returned false.
+      expect(
+        UspClient.isTableQueryOnlyRequest([
+          'Device.IP.Interface.1.IPv6Address.',
+          'Device.IP.Interface.1.IPv6Prefix.',
+        ]),
+        isTrue,
+      );
+    });
+
+    test('a mix of wildcard and trailing-dot paths is table-query-only', () {
+      expect(
+        UspClient.isTableQueryOnlyRequest([
+          'Device.Firewall.DMZ.*.Enable', // wildcard
+          'Device.IP.Interface.1.IPv6Address.', // trailing-dot table
+        ]),
+        isTrue,
+      );
+    });
+
+    test('a single concrete path makes the request NOT table-query-only', () {
+      expect(
+        UspClient.isTableQueryOnlyRequest([
+          'Device.Firewall.DMZ.*.Enable', // wildcard
+          'Device.GRE.Tunnel.1.RemoteEndpoints', // concrete → must still warn
+        ]),
+        isFalse,
+      );
+    });
+
+    test('all-concrete request is NOT table-query-only', () {
+      expect(
+        UspClient.isTableQueryOnlyRequest(
+          ['Device.GRE.Tunnel.1.RemoteEndpoints'],
+        ),
+        isFalse,
+      );
+    });
+
+    test('an empty path list is NOT treated as a table-query-only request', () {
+      // Nothing was requested — an empty response is not a "no rows" table
+      // outcome, so it should not be silently downgraded.
+      expect(UspClient.isTableQueryOnlyRequest(const []), isFalse);
     });
   });
 

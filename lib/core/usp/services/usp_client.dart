@@ -297,15 +297,39 @@ class UspClient {
           '${_prettyMap(rawMap)}');
 
       if (rawMap.isEmpty) {
-        logger.w('$_tag$label GET response EMPTY for paths: $paths');
+        if (isTableQueryOnlyRequest(paths)) {
+          // A table query — a wildcard GET (e.g. Device.Firewall.DMZ.*) or an
+          // object/table path (e.g. Device.IP.Interface.1.IPv6Address.) — is
+          // expanded by the router across the discovered instances of a
+          // multi-instance table. When that table has zero instances the
+          // response is legitimately empty — the generated model iterates the
+          // (empty) instance set and returns an empty list, so this is a normal
+          // "no rows" outcome, not a fault. Log it at debug so it does not
+          // drown real warnings.
+          logger.d('$_tag$label GET empty (table query, no instances): '
+              '$paths');
+        } else {
+          // At least one concrete path was requested — an empty response there
+          // is genuinely unexpected and worth a warning.
+          logger.w('$_tag$label GET response EMPTY for paths: $paths');
+        }
+        // Every requested path is absent, but the single warning above already
+        // says so. Skip the per-path missing warnings (they would just repeat
+        // the same paths — e.g. 9 lines for lan_network_info's concrete GET).
+        return normalizeGetResponse(paths, rawMap);
       }
 
-      return normalizeGetResponse(
-        paths,
-        rawMap,
-        onMissingPath: (path) =>
-            logger.w('$_tag$label GET missing path in response: "$path"'),
-      );
+      // Non-empty (possibly partial) response: collect any absent concrete
+      // leaves and emit ONE aggregated warning rather than one per path, so a
+      // genuine partial-response warning is not diluted into a wall of lines.
+      final missing = <String>[];
+      final normalized =
+          normalizeGetResponse(paths, rawMap, onMissingPath: missing.add);
+      if (missing.isNotEmpty) {
+        logger.w('$_tag$label GET missing ${missing.length} path(s) in '
+            'response: $missing');
+      }
+      return normalized;
     } catch (e) {
       sw.stop();
       final label = _idLabel(id);
@@ -327,9 +351,11 @@ class UspClient {
   ///    is the `?? ''` on each codegen assignment). Leaving the key absent lets
   ///    the required-leaf contract fire as designed (#1184).
   ///
-  /// Wildcard search paths (containing '*') are expanded by the router into
-  /// concrete instance paths, so the original wildcard path won't appear in the
-  /// response — those are skipped by the missing-path warning.
+  /// Wildcard search paths (containing '*') and object/table paths (ending in
+  /// '.', e.g. Device.IP.Interface.1.IPv6Address.) are expanded by the router
+  /// into concrete instance paths, so the original requested key never appears
+  /// in the response. Both are skipped by the missing-path warning — only a
+  /// requested *concrete leaf* that is absent is genuinely missing.
   @visibleForTesting
   static Map<String, dynamic> normalizeGetResponse(
     List<String> paths,
@@ -341,13 +367,38 @@ class UspClient {
       result[entry.key] = _coerceValue(entry.key, entry.value);
     }
     for (final path in paths) {
-      if (path.contains('*')) continue;
+      if (_isTableExpandedPath(path)) continue;
       if (!result.containsKey(path)) {
         onMissingPath?.call(path);
       }
     }
     return result;
   }
+
+  /// Whether a requested path is one the router expands into concrete instance
+  /// paths, so the requested key itself never appears verbatim in the response.
+  ///
+  /// Two shapes qualify, and they must be treated identically everywhere:
+  /// - a wildcard search path (contains '*', e.g. Device.Firewall.DMZ.*)
+  /// - an object/table path (ends in '.', e.g. Device.IP.Interface.1.IPv6Address.)
+  ///
+  /// Both target a multi-instance set; an absent requested key is expected, not
+  /// missing, and an empty response means the set has zero rows — not a fault.
+  static bool _isTableExpandedPath(String path) =>
+      path.contains('*') || path.endsWith('.');
+
+  /// Whether every requested path is a table query the router expands
+  /// (see [_isTableExpandedPath]).
+  ///
+  /// When such a query hits a table with zero instances the response is
+  /// legitimately empty (the generated model returns an empty list), so an
+  /// empty response to a table-query-only request is a normal "no rows"
+  /// outcome rather than a fault. Callers use this to decide whether an empty
+  /// GET response deserves a warning. An empty [paths] list is not a table
+  /// query.
+  @visibleForTesting
+  static bool isTableQueryOnlyRequest(List<String> paths) =>
+      paths.isNotEmpty && paths.every(_isTableExpandedPath);
 
   /// Coerce a raw string value from USP into the appropriate Dart type.
   /// - "true" / "false" →bool (any path)

@@ -71,15 +71,6 @@ const _l2tpResponse = <String, dynamic>{
   'Device.L2TPv2.Tunnel.1.RemoteEndpoints': 'l2tp.example.com',
 };
 
-// Test data — GRE/L2TP empty
-const _greEmptyResponse = <String, dynamic>{
-  'Device.GRE.Tunnel.1.RemoteEndpoints': '',
-};
-
-const _l2tpEmptyResponse = <String, dynamic>{
-  'Device.L2TPv2.Tunnel.1.RemoteEndpoints': '',
-};
-
 // Test data — PPP empty (no instances)
 const _pppEmptyResponse = <String, dynamic>{};
 
@@ -118,8 +109,12 @@ Map<String, dynamic> Function(List<String>) createFetchMockHandler({
   Map<String, dynamic> wanResponse = _wanResponse,
   Map<String, dynamic> pppResponse = _pppResponse,
   Map<String, dynamic> vlanResponse = _vlanResponse,
-  Map<String, dynamic> greResponse = _greEmptyResponse,
-  Map<String, dynamic> l2tpResponse = _l2tpEmptyResponse,
+  // Tunnel responses default to null: a tunnel GET is only expected when the
+  // resolved connectionType is PPTP/L2TP (Phase-2 conditional fetch). A test
+  // exercising that path passes the matching response explicitly; any other
+  // tunnel GET is a regression (unconditional fetch) and fails fast below.
+  Map<String, dynamic>? greResponse,
+  Map<String, dynamic>? l2tpResponse,
 }) {
   return (List<String> paths) {
     // Alias resolution (must be checked first)
@@ -129,12 +124,18 @@ Map<String, dynamic> Function(List<String>) createFetchMockHandler({
     if (paths.any((p) => p.contains('IP.Interface.*.Alias'))) {
       return _ipAliasResponse;
     }
-    // Tunnel fetches
+    // Tunnel fetches — fail fast if requested without an expected response, so
+    // a regression re-introducing an unconditional GRE/L2TP fetch cannot pass
+    // silently on empty tunnel data.
     if (paths.any((p) => p.contains('GRE.Tunnel'))) {
-      return greResponse;
+      return greResponse ??
+          (throw StateError('Unexpected GRE.Tunnel GET: Phase-2 must only '
+              'fetch the tunnel matching connectionType (paths: $paths)'));
     }
     if (paths.any((p) => p.contains('L2TPv2.Tunnel'))) {
-      return l2tpResponse;
+      return l2tpResponse ??
+          (throw StateError('Unexpected L2TPv2.Tunnel GET: Phase-2 must only '
+              'fetch the tunnel matching connectionType (paths: $paths)'));
     }
     // Other fetches
     if (paths.any((p) => p.contains('AddressingType'))) {
@@ -237,11 +238,13 @@ void main() {
         if (paths.any((p) => p.contains('IP.Interface.*.Alias'))) {
           return _ipAliasResponse;
         }
+        // This test's PPP instance is empty → connectionType is not PPTP/L2TP,
+        // so Phase-2 fetches no tunnel. A tunnel GET here is a regression.
         if (paths.any((p) => p.contains('GRE.Tunnel'))) {
-          return _greEmptyResponse;
+          throw StateError('Unexpected GRE.Tunnel GET in DNS-split test');
         }
         if (paths.any((p) => p.contains('L2TPv2.Tunnel'))) {
-          return _l2tpEmptyResponse;
+          throw StateError('Unexpected L2TPv2.Tunnel GET in DNS-split test');
         }
         if (paths.any((p) => p.contains('AddressingType'))) return wanWith3Dns;
         if (paths.any((p) => p.contains('IPv6Enable'))) return _ipv6Response;
@@ -332,6 +335,46 @@ void main() {
         params['Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DNSServers'],
         equals('1.1.1.1,9.9.9.9'),
       );
+    });
+
+    test('IPv6 save uses allowPartial (cross-USP-service SET cannot be atomic)',
+        () async {
+      // IPv6 settings span IP.Interface, DHCPv6.Client and IPv6rd.Interface-
+      // Setting. The OBUSPA broker rejects an atomic SET (allow_partial=false)
+      // touching more than one service with 7005, failing the whole save.
+      // Regression guard for that: the IPv6 SET must be sent with allowPartial.
+      final original = UspInternetSettingsForm(
+        connectionType: UspWanConnectionType.dhcp,
+        ipv6Enabled: true,
+        dhcpv6Enabled: true,
+      );
+      final edited = original.copyWith(
+        ipv6Enabled: false,
+        dhcpv6Enabled: false,
+      );
+
+      await service.saveAll(original, edited);
+
+      // Find the SET carrying IPv6/DHCPv6 params and assert it passed
+      // allowPartial: true (not the default false that triggers 7005).
+      final captured = verify(
+        () => mockUsp.set(
+          captureAny(),
+          allowPartial: captureAny(named: 'allowPartial'),
+        ),
+      ).captured;
+      var found = false;
+      for (var i = 0; i < captured.length; i += 2) {
+        final params = captured[i] as Map<String, dynamic>;
+        final allowPartial = captured[i + 1] as bool;
+        if (params.keys
+            .any((k) => k.contains('IPv6') || k.contains('DHCPv6'))) {
+          found = true;
+          expect(allowPartial, isTrue,
+              reason: 'IPv6 SET must use allowPartial to avoid 7005');
+        }
+      }
+      expect(found, isTrue, reason: 'an IPv6 SET should have been issued');
     });
 
     test('adds PPP instance when switching to PPPoE without existing instance',
@@ -864,11 +907,12 @@ void main() {
       final wanIpcp = Map<String, dynamic>.from(_wanResponse);
       wanIpcp['Device.IP.Interface.2.IPv4Address.1.AddressingType'] = 'IPCP';
 
+      // Only GRE is expected; leaving l2tpResponse null asserts (via the
+      // handler's fail-fast) that a PPTP connection never fetches L2TP.
       final handler = createFetchMockHandler(
         wanResponse: wanIpcp,
         pppResponse: _pppPptpResponse,
         greResponse: _greResponse,
-        l2tpResponse: _l2tpEmptyResponse,
       );
       when(() => mockUsp.get(any())).thenAnswer((invocation) async {
         final paths = invocation.positionalArguments[0] as List<String>;
@@ -887,10 +931,11 @@ void main() {
       final wanIpcp = Map<String, dynamic>.from(_wanResponse);
       wanIpcp['Device.IP.Interface.2.IPv4Address.1.AddressingType'] = 'IPCP';
 
+      // Only L2TP is expected; leaving greResponse null asserts (via the
+      // handler's fail-fast) that an L2TP connection never fetches GRE.
       final handler = createFetchMockHandler(
         wanResponse: wanIpcp,
         pppResponse: _pppL2tpResponse,
-        greResponse: _greEmptyResponse,
         l2tpResponse: _l2tpResponse,
       );
       when(() => mockUsp.get(any())).thenAnswer((invocation) async {
@@ -903,6 +948,75 @@ void main() {
       expect(result.form.connectionType, equals(UspWanConnectionType.l2tp));
       expect(result.form.serverAddress, equals('l2tp.example.com'));
       expect(result.form.pppUsername, equals('l2tpuser'));
+    });
+
+    test(
+        'DHCP WAN fetch issues NO GRE/L2TP tunnel GET (#1184 regression guard)',
+        () async {
+      // The load-bearing regression this PR fixes. GreTunnel/L2tpTunnel are
+      // generated with concrete paths (Device.GRE.Tunnel.1.*), so — now that
+      // #1198 removed _rawGet's null back-fill — fetching them on a DHCP WAN
+      // (zero tunnel instances) fires the codegen required-leaf check (9998).
+      // Phase-2 must fetch ONLY the tunnel the connectionType uses; a DHCP WAN
+      // must fetch none. If someone reverts the conditional fetch to an
+      // unconditional one, a tunnel path appears here and this fails.
+      final handler = createFetchMockHandler(); // default DHCP WAN
+      when(() => mockUsp.get(any())).thenAnswer((invocation) async {
+        final paths = invocation.positionalArguments[0] as List<String>;
+        return handler(paths);
+      });
+
+      final result = await service.fetchSettings();
+      expect(result.form.connectionType, equals(UspWanConnectionType.dhcp));
+
+      // Directly assert intent (not just the handler's fail-fast): no GET this
+      // fetch issued touched a GRE or L2TPv2 tunnel path.
+      final allRequestedPaths = verify(() => mockUsp.get(captureAny()))
+          .captured
+          .cast<List<String>>()
+          .expand((paths) => paths)
+          .toList();
+      expect(
+        allRequestedPaths,
+        isNot(contains(contains('GRE.Tunnel'))),
+        reason: 'DHCP WAN must not fetch the GRE tunnel',
+      );
+      expect(
+        allRequestedPaths,
+        isNot(contains(contains('L2TPv2.Tunnel'))),
+        reason: 'DHCP WAN must not fetch the L2TPv2 tunnel',
+      );
+    });
+
+    test(
+        'PPTP WAN with absent GRE Tunnel.1 row surfaces a ServiceError (not a crash)',
+        () async {
+      // Companion to the DHCP guard: the item-1 residual-risk path. If the
+      // firmware classifies the WAN as PPTP but has not provisioned
+      // Device.GRE.Tunnel.1 (LowerLayers references it but the row is absent),
+      // Phase-2's GreTunnel.fetch hits the codegen required-leaf check (9998).
+      // That must surface as a mapped ServiceError (→ ServiceErrorView), NOT an
+      // uncaught StateError / NPE — this is the reachable-error contract #1184
+      // is about. An empty greResponse omits the required RemoteEndpoints leaf.
+      final wanIpcp = Map<String, dynamic>.from(_wanResponse);
+      wanIpcp['Device.IP.Interface.2.IPv4Address.1.AddressingType'] = 'IPCP';
+
+      final handler = createFetchMockHandler(
+        wanResponse: wanIpcp,
+        pppResponse: _pppPptpResponse,
+        greResponse: const {}, // Tunnel.1 row absent → 9998 upstream
+      );
+      when(() => mockUsp.get(any())).thenAnswer((invocation) async {
+        final paths = invocation.positionalArguments[0] as List<String>;
+        return handler(paths);
+      });
+
+      await expectLater(
+        service.fetchSettings(),
+        throwsA(isA<ServiceError>()),
+        reason: 'absent Tunnel.1 must map to a ServiceError, not escape as a '
+            'StateError or NPE',
+      );
     });
   });
 
