@@ -1,25 +1,41 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
+/// Fraction of the row the label column may claim.
+///
+/// At the narrowest card realization (191px) this leaves the value ~115px,
+/// enough for the longest common value on one line. The split favours the
+/// value on purpose: per density design §2.10a the label is a name and the
+/// value is the payload, so the label is what yields.
+const double _kLabelShare = 0.4;
+
+/// Ceiling for the label column, so a wide row does not open an absurd
+/// gutter before the value. Sits inside the 130–187px band that the old
+/// screen-derived `context.colWidth(2)` produced across desktop breakpoints,
+/// so rows that were already wide enough keep roughly the column they had.
+const double _kLabelMaxWidth = 150.0;
+
 /// A label–value row used throughout the USP Dashboard cards.
 ///
-/// The label column is sized from the width the row is actually given
-/// (read via a [LayoutBuilder]), not from screen width. [labelColumns]
-/// controls the fraction of a nominal 12-column grid the label occupies
-/// (default 2 of 12). Sizing against the real available width keeps the
-/// value legible when the row lives inside a shrunken card, where a
-/// screen-derived width would over-claim the label column and clip the
-/// value against the card surface with no overflow raised.
+/// The label column is sized from the width the row is actually given (read
+/// via a [LayoutBuilder]), never from screen width: inside a shrunken card
+/// the two are unrelated, and a screen-derived column over-claims and clips
+/// the value against the card surface without raising an overflow.
+///
+/// Degradation follows the shape settled in #1226 and applied in #1233 — the
+/// label yields first with a one-line ellipsis, while the value never shrinks
+/// and never ellipsizes. A clipped label is still recoverable from context; a
+/// half-shown value misinforms.
 class UspInfoRow extends StatelessWidget {
   final String label;
   final String value;
-  final int labelColumns;
 
   const UspInfoRow({
     super.key,
     required this.label,
     required this.value,
-    this.labelColumns = 2,
   });
 
   @override
@@ -28,13 +44,18 @@ class UspInfoRow extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: AppSpacing.md),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final labelWidth = constraints.maxWidth * labelColumns / 12;
+          final labelWidth =
+              math.min(constraints.maxWidth * _kLabelShare, _kLabelMaxWidth);
           return Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               SizedBox(
                 width: labelWidth,
-                child: AppText.labelLarge(label),
+                child: AppText.labelLarge(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
               Expanded(child: AppText.bodyMedium(value)),
             ],
