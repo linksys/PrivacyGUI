@@ -34,8 +34,11 @@ allowlist correctly, and keep the gate exhaustive when cards change.
 
 - Writing golden/screenshot tests → use `golden-test-review`.
 - Generic pre-PR checks → use `review-pr-readiness`.
-- Rewriting the probe/grid-geometry engine — that is intentionally frozen to
-  mirror production; changing it silently changes what the gate measures.
+- Rewriting the probe's grid-geometry **formulas** (column count, margin, slot
+  width, card width) — those are intentionally frozen to mirror production;
+  changing them silently changes what the gate measures. The *width-selection*
+  step (`narrowestRealizationOf`) is separate and is not frozen, but it is
+  covered by tests — see the enumeration invariant below.
 
 ## Step 0: Read the Implementation (BLOCKING PREREQUISITE)
 
@@ -47,6 +50,7 @@ below may drift:
 3. Runner — [tool/run_overflow_test.sh](../../../tool/run_overflow_test.sh)
 4. Probe + grid math + tab registry — [test/util/dashboard/dashboard_card_probe.dart](../../../test/util/dashboard/dashboard_card_probe.dart)
 5. Report generator (Status SSoT) — [test/util/dashboard/dashboard_overflow_report_generator.dart](../../../test/util/dashboard/dashboard_overflow_report_generator.dart)
+6. Width-selection tests — [test/util/dashboard/dashboard_card_probe_test.dart](../../../test/util/dashboard/dashboard_card_probe_test.dart)
 
 ## Architecture — Data Flow
 
@@ -54,6 +58,7 @@ below may drift:
 UspWidgetSpecs.all ──┐  (card registry: id + min/pref/max column span)
 UspWidgetFactory   ──┤→ dashboard_card_probe.dart
 cardTabIndexProvider ┘     • widthCasesFor(spec): narrowest real grid px per span
+                           •   (enumerated over 320px..2560px, not sampled)
                            • buildDashboardCardApp(): pumps ONE card at real
                              screen/card width, pinned tab, locale, real fonts
                            • kTabbedCardTabCounts: tabs to sweep per card
@@ -84,6 +89,14 @@ Key invariants (do not "fix" these):
   height is measured, so testing each span's narrowest grid width is exhaustive
   (~5× fewer tests, identical coverage). Grid geometry is mirrored from
   `UspSliverDashboardView` + ui_kit `AppLayoutConfig`.
+- **Narrowest is enumerated, not sampled** (#1225). `narrowestRealizationOf()`
+  walks every screen width from `kMinSupportedScreenWidth` (320px — a *product*
+  commitment, see density design §2.3) to `kMaxScannedScreenWidth`, so the
+  worst-case claim above holds by construction. Do not reintroduce a scan list:
+  the retired 19-width sample was lossy under `MIN_SCREEN` (a floor of 602px
+  reported a 3-column card 6.5px wider than reality). Lowering the 320px floor
+  **moves the baseline** and requires a deliberate re-baseline.
+  Covered by [dashboard_card_probe_test.dart](../../../test/util/dashboard/dashboard_card_probe_test.dart).
 - **Tag must stay `dashboard-card`.** `run_tests.sh` excludes `golden||loc||ui`;
   `dashboard-card` is NOT excluded, so it runs in the PR gate. Retagging it
   golden/loc/ui silently drops it from the gate.
@@ -97,7 +110,7 @@ Always run via `fvm flutter` (the script does). Output dir: `build/overflow_test
 |------|---------|---------|
 | `-l`, `--list` | List every registered card ID + column spans + tab count (from `UspWidgetSpecs.all`); runs nothing else | off |
 | `-d`, `--dump MODE` | `0`=no output (clean PR-gate mode) · `1`=Markdown · `2`=HTML + PNG · `3`=MD+HTML+PNG | `2` |
-| `-m`, `--min-screen PX` | Only test screen widths ≥ PX (fewer cases, faster) | `0` (all) |
+| `-m`, `--min-screen PX` | Raise the enumerated range's floor to PX, so each span's narrowest width is the narrowest at or above PX (narrower screens are skipped, not the widths themselves) | `0` = no filter (the 320px product floor still applies) |
 | `-c`, `--card CARD_ID` | Target one card (passed as `--name`, matches the card's test group) | all |
 | `-L`, `--locale LOCALES` | Comma-separated locale tags, e.g. `ru` or `ru,zh_TW` | all 26 |
 | `-o`, `--open` | Open the HTML report in the browser when done | off |
@@ -186,7 +199,7 @@ The gate's own failure message tells the operator exactly what to do:
 
 ### B. Edit the allowlist (defer a known overflow)
 
-1. Confirm it's genuinely deferred (has/《needs》a tracking issue), not a
+1. Confirm it's genuinely deferred (has, or needs, a tracking issue), not a
    regression you should fix now.
 2. Add the locale tag to the matching `cardId|widthLabel|tabIndex` array in
    `known_overflows.json` (create the entry if absent). Use `"*"` only when it
@@ -256,4 +269,6 @@ Markdown report (`-d 1`) is the same data as a flat bulleted list —
 | Multi-pumping to sweep widths/tabs in one test | Each case must be its own `testWidgets` (only the first overflow is reported per render object) |
 | Editing the grid constants to change results | They mirror production geometry on purpose; changing them changes what "overflow" means |
 | Removing an allowlist locale without fixing layout | The ratchet fails that exact test — fix the card first, then remove |
+| Replacing the width enumeration with a "faster" sampled list | Sampling makes the worst-case invariant an assertion again, and is lossy under `MIN_SCREEN`; enumeration is pure arithmetic and costs nothing next to the pumps |
+| Lowering `kMinSupportedScreenWidth` to "test more" | It is a product commitment (§2.3), and lowering it adds overflow coordinates — re-baseline deliberately, with the shift explained |
 ```

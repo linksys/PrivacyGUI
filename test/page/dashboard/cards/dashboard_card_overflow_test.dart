@@ -30,9 +30,12 @@ import '../../../util/overflow_probe.dart';
 ///     new cards are gated automatically, including ones with no golden.
 ///   * Pumps each card at the **real pixel widths the production grid yields**
 ///     (see [widthCasesFor]): the narrowest realization of its min / preferred
-///     / max column span across every breakpoint. Overflow is monotonic in
-///     width and height-independent (measured), so the narrowest realization of
-///     each span is that span's worst case.
+///     / max column span. Overflow is monotonic in width and height-independent
+///     (measured), so the narrowest realization of each span is that span's
+///     worst case. That narrowest width is found by **enumerating** the
+///     supported screen-width range (`kMinSupportedScreenWidth` upward), not by
+///     sampling a list of screen widths — so the worst case is guaranteed by
+///     construction rather than asserted (#1225).
 ///   * **Sweeps every tab** (via [cardTabIndexProvider], not geometric taps),
 ///     so overflow that only appears on a non-default tab is caught — several
 ///     cards overflow *worse* on a non-default tab than on tab 0.
@@ -64,7 +67,9 @@ List<Locale> get _targetLocales {
   const d = String.fromEnvironment('LOCALE', defaultValue: '');
   const d2 = String.fromEnvironment('locale', defaultValue: '');
   final env = Platform.environment;
-  final filterStr = d.isNotEmpty ? d : (d2.isNotEmpty ? d2 : (env['LOCALE'] ?? env['locale'] ?? ''));
+  final filterStr = d.isNotEmpty
+      ? d
+      : (d2.isNotEmpty ? d2 : (env['LOCALE'] ?? env['locale'] ?? ''));
 
   if (filterStr.isEmpty || filterStr == 'all') {
     return AppLocalizations.supportedLocales;
@@ -120,11 +125,12 @@ bool _isAllowlisted(String card, String width, int tab, String tag) {
   return locales.contains('*') || locales.contains(tag);
 }
 
-/// 改為 true 即可在檔案內直接開啟截圖輸出至 `build/overflow_png/`
-/// 0: 預設 — 不產出任何檔案 (最高效模式)
-/// 1: 產出精簡 Markdown 條列式報告 (build/overflow_report.md) — 無圖片、無總覽
-/// 2: 產出 HTML 詳盡視覺報告 (build/overflow_report.html) + PNG 截圖 (build/overflow_png/...)
-/// 3: 產出 1 + 2 (Markdown 條列 + HTML 視覺報告 + PNG 截圖)
+/// Report output mode. Set this in-file to dump locally without passing
+/// `--dart-define=DUMP=...`; see [dumpMode] for the override precedence.
+/// 0: default — emit nothing (fastest; what the PR gate runs)
+/// 1: terse Markdown list only (build/overflow_testing/overflow_report.md)
+/// 2: visual HTML report (build/overflow_testing/overflow_report.html) + PNGs
+/// 3: both 1 and 2
 const int _dumpMode = 0;
 
 int get dumpMode {
@@ -206,6 +212,8 @@ void main() {
       await DashboardOverflowReportGenerator.generateAll(
         _collectedReportItems,
         baseDir: 'build/overflow_testing',
+        markdown: _shouldDumpMd,
+        html: _shouldDumpHtml,
       );
     }
   });
@@ -308,7 +316,7 @@ void main() {
                 if (_shouldDumpPng && repaintKey != null) {
                   final tabSuffix = tabCount > 1 ? '_t$tab' : '';
                   final path =
-                      'build/overflow_testing/png/${spec.id}/screen${wc.screenKey}_card${wc.widthKey}_${wc.columnSpan}x${rows}${tabSuffix}_$tag.png';
+                      'build/overflow_testing/png/${spec.id}/screen${wc.screenKey}_card${wc.widthKey}_${wc.columnSpan}x$rows${tabSuffix}_$tag.png';
                   await saveCardScreenshot(
                     tester,
                     repaintKey,
@@ -316,7 +324,7 @@ void main() {
                   );
 
                   final adjustPath =
-                      'build/overflow_testing/png/adjust/${spec.id}/screen${wc.screenKey}_card${wc.widthKey}_${wc.columnSpan}x${rows}${tabSuffix}_${tag}_adjusted.png';
+                      'build/overflow_testing/png/adjust/${spec.id}/screen${wc.screenKey}_card${wc.widthKey}_${wc.columnSpan}x$rows${tabSuffix}_${tag}_adjusted.png';
                   adjustedIncidents = await captureAdjustedCardScreenshot(
                     tester,
                     cardId: spec.id,
@@ -376,7 +384,9 @@ void main() {
                   'Fix the layout (Flexible/Expanded/maxLines/ellipsis), or if '
                   'this is knowingly deferred, add "$tag" to the\n'
                   "  '${spec.id}|${wc.label}|$tab'\n"
-                  'entry in _knownOverflowAllowlist with the tracking issue.',
+                  'entry of the "allowlist" map in\n'
+                  '  test/fixtures/known_overflows.json\n'
+                  'along with a "tracking" note for the card.',
                 );
               },
             );

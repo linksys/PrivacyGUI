@@ -148,37 +148,97 @@ double get minScreenFilter {
   return 0.0;
 }
 
-/// Screen widths scanned to find each span's **narrowest** realization. Covers
-/// every (columns, margin) regime plus the band edges where the narrowest slot
-/// occurs (e.g. 601 = first tablet width, still low margin ⇒ tightest slots).
-const List<double> _scanScreens = [
-  320,
-  360,
-  414,
-  480,
-  600,
-  601,
-  720,
-  768,
-  905,
-  906,
-  1024,
-  1240,
-  1241,
-  1366,
-  1440,
-  1441,
-  1680,
-  1681,
-  1920,
-];
+/// Narrowest screen width the framework commits to supporting, in logical px.
+///
+/// **This is a product decision, not a geometric one** (density design §2.3).
+/// Geometry alone permits narrower cards — a 240px screen yields a 152px
+/// 3-column card — but no shipping device is that narrow, and designing every
+/// card to survive a width no user has is not worth the cost. So the framework
+/// declares 320px as its floor and the narrowest card width follows from it.
+///
+/// Lowering this **moves the gate's baseline**: narrower cards overflow more, so
+/// entries would have to be added to `test/fixtures/known_overflows.json`.
+/// Revisit only if narrower targets appear (automotive head units, embedded
+/// panels), and re-baseline deliberately when you do.
+const double kMinSupportedScreenWidth = 320.0;
+
+/// Upper bound of the enumerated screen-width range, in logical px.
+///
+/// Not a supported-hardware limit — just where enumeration can stop. Above the
+/// last margin breakpoint (1680px) the (columns, margin) regime never changes
+/// again, so card width grows monotonically with screen width and no wider
+/// screen can be any span's narrowest realization. 2560px (5K half-width) is
+/// comfortably past that edge.
+const double kMaxScannedScreenWidth = 2560.0;
+
+/// How far the enumerated narrowest width can sit *above* the true continuum
+/// infimum, in logical px. See [narrowestRealizationOf] — the bound is 0.5px,
+/// which is a quarter of the gate's 2.0px overflow tolerance, so it cannot flip
+/// a verdict.
+const double kEnumerationSlackPx = 0.5;
+
+/// The narrowest realization of a [span] over integer screen widths in the
+/// supported range: the smallest card width the grid produces for it, and the
+/// screen width that produces it. Null when [minScreen] is above
+/// [kMaxScannedScreenWidth], i.e. the range holds no realization at all.
+///
+/// ## Why enumerate instead of sampling
+///
+/// The gate pumps one width per span and claims that is exhaustive, because
+/// overflow is monotonic in width — so the *narrowest* realization is the worst
+/// case. That argument is only sound if the width really is the narrowest. This
+/// used to be found by scanning a hand-written list of 19 screen widths, which
+/// made the invariant an assertion rather than a guarantee: the list happened to
+/// contain each span's true minimum, but nothing enforced that, and it was
+/// demonstrably lossy once [minScreen] excluded the widths it did contain (a
+/// floor of 602px sent a 3-column span to 198.25px, 6.5px wide of the real
+/// 191.75px). Enumerating the range makes the invariant hold by construction
+/// (#1225).
+///
+/// ## What the enumeration guarantees — and the 0.5px it does not
+///
+/// Card width is piecewise-linear and *increasing* in screen width within each
+/// (columns, margin) regime, so each regime's narrowest width is at its left
+/// edge. Enumerating every integer from the floor up — plus the floor itself,
+/// which is the left edge of whichever regime it lands in — therefore evaluates
+/// every regime. A coarser step would not: a 3px step from 320 lands on 602 and
+/// reports a 3-column card as 191.75px instead of 191.375px.
+///
+/// But the breakpoints are **exclusive** (`screenWidth <= 600` is still 4
+/// columns), so four regimes open just *above* an integer and their infimum is
+/// approached rather than attained: a 3-column card tends to 191.0px as the
+/// screen tends down to 600px, while the narrowest integer width is 191.375px @
+/// 601px. The enumeration is therefore exact over integer screen widths and
+/// within [kEnumerationSlackPx] (0.5px, worst case span 4) of the continuum
+/// infimum. Fractional logical widths do occur in production
+/// (1080 / 2.75 = 392.7), so this is a real if tiny gap — bounded well inside
+/// the gate's 2.0px tolerance, and pinned by a test.
+({double screenWidth, double cardWidth})? narrowestRealizationOf(
+  int span, {
+  double? minScreen,
+}) {
+  final floor =
+      math.max(minScreen ?? minScreenFilter, kMinSupportedScreenWidth);
+  if (floor > kMaxScannedScreenWidth) return null;
+
+  var bestScreen = floor;
+  var bestWidth = cardWidthAt(floor, span);
+  for (var screen = floor.ceilToDouble();
+      screen <= kMaxScannedScreenWidth;
+      screen += 1.0) {
+    final width = cardWidthAt(screen, span);
+    if (width < bestWidth) {
+      bestWidth = width;
+      bestScreen = screen;
+    }
+  }
+  return (screenWidth: bestScreen, cardWidth: bestWidth);
+}
 
 /// The [CardWidthCase]s to test [spec] at: the narrowest realization of each of
 /// its min / preferred / max column spans, de-duplicated by resulting width.
 List<CardWidthCase> widthCasesFor(WidgetSpec spec, {double? minScreen}) {
-  final minWidth = minScreen ?? minScreenFilter;
-  final validScreens = _scanScreens.where((s) => s >= minWidth).toList();
-  if (validScreens.isEmpty) return [];
+  final floor = minScreen ?? minScreenFilter;
 
   final c = spec.getConstraints(DisplayMode.normal);
   final spans = <String, int>{
@@ -189,20 +249,13 @@ List<CardWidthCase> widthCasesFor(WidgetSpec spec, {double? minScreen}) {
 
   final byWidth = <String, CardWidthCase>{};
   for (final entry in spans.entries) {
-    // Find the screen (>= minScreen) that makes this span narrowest.
-    double? bestScreen;
-    double bestWidth = double.infinity;
-    for (final screen in validScreens) {
-      final w = cardWidthAt(screen, entry.value);
-      if (w < bestWidth) {
-        bestWidth = w;
-        bestScreen = screen;
-      }
-    }
-    if (bestScreen == null) continue;
+    // Null means the floor is past the enumerated range, so no span has a
+    // realization and the card gets no cases at all.
+    final narrowest = narrowestRealizationOf(entry.value, minScreen: floor);
+    if (narrowest == null) return [];
     final wc = CardWidthCase(
-      screenWidth: bestScreen,
-      cardWidth: bestWidth,
+      screenWidth: narrowest.screenWidth,
+      cardWidth: narrowest.cardWidth,
       columnSpan: entry.value,
       label: entry.key,
     );

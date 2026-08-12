@@ -46,19 +46,17 @@ class DevicesSection extends StatelessWidget {
     final downlinkRate = device['downlinkRate'] as int?; // bps
     final uplinkRate = device['uplinkRate'] as int?; // bps
 
-    // Format speed for display
-    String? speedText;
-    if (downlinkRate != null || uplinkRate != null) {
-      final down = _formatSpeed(downlinkRate);
-      final up = _formatSpeed(uplinkRate);
-      if (down != null && up != null) {
-        speedText = '↓$down ↑$up';
-      } else if (down != null) {
-        speedText = '↓$down';
-      } else if (up != null) {
-        speedText = '↑$up';
-      }
-    }
+    // Speed, as icon + text pairs. The direction markers are icons rather than
+    // the U+2193/U+2191 characters this used to interpolate into a string: no
+    // bundled font maps those codepoints, so the arrow only appeared if some
+    // font happened to resolve it.
+    final speedPairs = <({IconData icon, String text})>[
+      for (final entry in [
+        (icon: Icons.arrow_downward, speed: _formatSpeed(downlinkRate)),
+        (icon: Icons.arrow_upward, speed: _formatSpeed(uplinkRate)),
+      ])
+        if (entry.speed != null) (icon: entry.icon, text: entry.speed!),
+    ];
 
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
@@ -69,8 +67,23 @@ class DevicesSection extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (ip.isNotEmpty) AppText.bodySmall(ip),
-            if (speedText != null)
-              AppText.bodySmall(speedText, color: Colors.grey),
+            if (speedPairs.isNotEmpty)
+              Wrap(
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: AppSpacing.sm,
+                runSpacing: AppSpacing.xxs,
+                children: [
+                  for (final pair in speedPairs)
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        AppIcon.font(pair.icon, size: 12, color: Colors.grey),
+                        AppGap.xxs(),
+                        AppText.bodySmall(pair.text, color: Colors.grey),
+                      ],
+                    ),
+                ],
+              ),
           ],
         ),
         trailing:

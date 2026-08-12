@@ -89,11 +89,7 @@ class TopologySection extends StatelessWidget {
         if (band.isNotEmpty) _popupRow(context, 'Band', band),
         if (rssi != null) _popupRow(context, 'Signal', '$rssi dBm'),
         if (downlinkRate != null || uplinkRate != null)
-          _popupRow(
-            context,
-            'Speed',
-            _formatSpeedPair(downlinkRate, uplinkRate),
-          ),
+          _speedRow(context, downlinkRate, uplinkRate),
       ],
     );
   }
@@ -113,13 +109,50 @@ class TopologySection extends StatelessWidget {
     );
   }
 
-  String _formatSpeedPair(int? downlink, int? uplink) {
-    final down = _formatSpeed(downlink);
-    final up = _formatSpeed(uplink);
-    if (down != null && up != null) return '↓$down ↑$up';
-    if (down != null) return '↓$down';
-    if (up != null) return '↑$up';
-    return '';
+  /// The speed row, built directly rather than through [_popupRow], because its
+  /// value is icon + text pairs rather than a plain string.
+  ///
+  /// The direction markers are icons, not the U+2193/U+2191 characters this used
+  /// to interpolate into a string: no bundled font maps those codepoints, so the
+  /// arrow only appeared if some font happened to resolve it.
+  Widget _speedRow(BuildContext context, int? downlink, int? uplink) {
+    final pairs = <({IconData icon, String text})>[
+      for (final entry in [
+        (icon: Icons.arrow_downward, speed: _formatSpeed(downlink)),
+        (icon: Icons.arrow_upward, speed: _formatSpeed(uplink)),
+      ])
+        if (entry.speed != null) (icon: entry.icon, text: entry.speed!),
+    ];
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.xxs),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 80,
+            child: AppText.bodySmall('Speed', color: Colors.grey),
+          ),
+          Expanded(
+            child: Wrap(
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: AppSpacing.sm,
+              runSpacing: AppSpacing.xxs,
+              children: [
+                for (final pair in pairs)
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      AppIcon.font(pair.icon, size: 12, color: Colors.grey),
+                      AppGap.xxs(),
+                      AppText.bodySmall(pair.text),
+                    ],
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   String? _formatSpeed(int? bps) {

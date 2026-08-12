@@ -311,16 +311,27 @@ class _TrendsView extends StatelessWidget {
           ),
         ),
         AppGap.sm(),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+        // Legend. Degradation shape per #1226 (see usp_traffic_analysis_card.dart
+        // for the full reasoning), adapted: this row has no totals to keep at
+        // full size, so every child is a legend entry and the `Wrap` is centred
+        // rather than `spaceBetween`. Entries stay glued dot-to-label, and the
+        // whole entry wraps to a second run before any label truncates — these
+        // labels are `Avg: 42%  Peak: 87%`, statistics rather than a series
+        // name, so an ellipsis would cut a number in half.
+        Wrap(
+          alignment: WrapAlignment.center,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: AppSpacing.lg,
+          runSpacing: AppSpacing.xs,
           children: [
-            _LegendDot(color: colorScheme.primary),
-            AppGap.xs(),
-            AppText.labelSmall(loc(context).avgPeak(avgCpu, peakCpu)),
-            AppGap.lg(),
-            _LegendDot(color: colorScheme.secondary),
-            AppGap.xs(),
-            AppText.labelSmall(loc(context).avg(avgMem)),
+            _StatLegendEntry(
+              color: colorScheme.primary,
+              label: loc(context).avgPeak(avgCpu, peakCpu),
+            ),
+            _StatLegendEntry(
+              color: colorScheme.secondary,
+              label: loc(context).avg(avgMem),
+            ),
           ],
         ),
       ],
@@ -375,12 +386,21 @@ class _DistributionView extends StatelessWidget {
           ),
         ),
         AppGap.sm(),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+        // A single entry, so there is nothing to wrap between — but the label is
+        // the longest of the four tabs ('CPU-Auslastungsstichproben: 37'), and a
+        // bare centred `Row` overflows on it. `Wrap` lets the entry keep its
+        // intrinsic width and `_StatLegendEntry` lets the label take a second
+        // line rather than truncate the sample count.
+        Wrap(
+          alignment: WrapAlignment.center,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: AppSpacing.lg,
+          runSpacing: AppSpacing.xs,
           children: [
-            _LegendDot(color: colorScheme.primary),
-            AppGap.xs(),
-            AppText.labelSmall(loc(context).cpuUsageSamples(history.length)),
+            _StatLegendEntry(
+              color: colorScheme.primary,
+              label: loc(context).cpuUsageSamples(history.length),
+            ),
           ],
         ),
       ],
@@ -461,16 +481,26 @@ class _CorrelationView extends StatelessWidget {
           ),
         ),
         AppGap.sm(),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+        // Unlike the other three tabs these labels are bare series names, not
+        // statistics — so this is #1226's case exactly, and the entries carry its
+        // one-line ellipsis: a clipped 'Traffic rate' still keys the chart,
+        // because the colour does the identifying and no digits are lost.
+        Wrap(
+          alignment: WrapAlignment.center,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: AppSpacing.lg,
+          runSpacing: AppSpacing.xs,
           children: [
-            _LegendDot(color: colorScheme.primary),
-            AppGap.xs(),
-            AppText.labelSmall(loc(context).cpu),
-            AppGap.lg(),
-            _LegendDot(color: colorScheme.tertiary),
-            AppGap.xs(),
-            AppText.labelSmall(loc(context).trafficRate),
+            _StatLegendEntry(
+              color: colorScheme.primary,
+              label: loc(context).cpu,
+              ellipsize: true,
+            ),
+            _StatLegendEntry(
+              color: colorScheme.tertiary,
+              label: loc(context).trafficRate,
+              ellipsize: true,
+            ),
           ],
         ),
       ],
@@ -518,6 +548,62 @@ class _LegendDot extends StatelessWidget {
       width: 8,
       height: 8,
       decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+    );
+  }
+}
+
+/// One legend entry: colour dot, gap, label — the unit that must never split, so
+/// a label never separates from the colour it explains (#1226 rule 2).
+///
+/// File-private on purpose. The same shape exists in `usp_network_health_card`
+/// (as `_LegendEntry`) and `usp_traffic_analysis_card`, and extracting one shared
+/// widget from the four copies needs Article XIV approval — #1233 deliberately
+/// does not block on that conversation, so the shape is replicated in place and
+/// the extraction raised separately.
+class _StatLegendEntry extends StatelessWidget {
+  final Color color;
+  final String label;
+
+  /// Whether the label may be clipped to one line to make the entry fit.
+  ///
+  /// Only safe when the label is a bare **series name** — the chart is already
+  /// colour-coded, so a clipped name still keys it (#1226 rule 2). Off by
+  /// default because most of this card's legend labels are composed statistics
+  /// (`Avg: 42%  Peak: 87%`), where an ellipsis would cut a number in half; those
+  /// soft-wrap onto a second line instead, which the `Expanded` chart above pays
+  /// for.
+  final bool ellipsize;
+
+  const _StatLegendEntry({
+    required this.color,
+    required this.label,
+    this.ellipsize = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _LegendDot(color: color),
+        AppGap.xs(),
+        // `Flexible`, not a bare `AppText`, and not for the ellipsis alone: a
+        // `Row` hands non-flex children *unbounded* width, so a bare label takes
+        // its full intrinsic width on one line and overflows regardless of the
+        // enclosing `Wrap`. The `Wrap` can move a whole entry to the next run,
+        // but only `Flexible` lets the label itself give.
+        //
+        // Flexible is loose-fit, so the `Row` still hugs a short label and two
+        // entries share one run whenever they fit — the wide-layout rendering is
+        // unchanged.
+        Flexible(
+          child: AppText.labelSmall(
+            label,
+            maxLines: ellipsize ? 1 : null,
+            overflow: ellipsize ? TextOverflow.ellipsis : null,
+          ),
+        ),
+      ],
     );
   }
 }
