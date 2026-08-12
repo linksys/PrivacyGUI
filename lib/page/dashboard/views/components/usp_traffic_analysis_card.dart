@@ -254,37 +254,99 @@ class _MonitorView extends StatelessWidget {
           ),
         ),
         AppGap.sm(),
-        // Legend + totals
-        Row(
+        // Legend + totals.
+        //
+        // DEGRADATION SHAPE (#1226) \u2014 T03 replicates this in the six other legend
+        // rows, so the reasoning matters as much as the code:
+        //
+        //  1. A `Wrap`, not a `Row` + `Spacer`. At every width where the content
+        //     fits it renders exactly as before: one run, `spaceBetween` puts the
+        //     legend left and the totals right, which is what the `Spacer` did.
+        //     When it does not fit, the totals drop to a second line instead of
+        //     overflowing. The chart above is `Expanded`, so it yields the height.
+        //  2. The legend yields before anything else \u2014 its labels are `Flexible`
+        //     with a one-line ellipsis. A legend is a *key* to a chart that is
+        //     already colour-coded, so a clipped label still communicates; each
+        //     dot+label pair stays glued together so a label never separates from
+        //     the colour it explains.
+        //  3. The byte totals never shrink: no `Flexible`, no ellipsis, so they
+        //     keep their intrinsic width and wrap as a unit. They are the card's
+        //     content, not chrome \u2014 a truncated byte count is worse than no byte
+        //     count, and unlike the legend it cannot be recovered from the chart.
+        Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: AppSpacing.lg,
+          runSpacing: AppSpacing.xs,
           children: [
-            _LegendDot(color: colorScheme.primary),
-            AppGap.xs(),
-            AppText.labelSmall(loc(context).upload),
-            AppGap.lg(),
-            _LegendDot(color: colorScheme.secondary),
-            AppGap.xs(),
-            AppText.labelSmall(loc(context).download),
-            const Spacer(),
-            if (wan != null) ...[
-              AppText.labelSmall(
-                '\u2191 ${UspFormatters.formatBytes(wan.totalBytesSent)}',
-                color: colorScheme.onSurfaceVariant,
-              ),
-              AppGap.md(),
-              AppText.labelSmall(
-                '\u2193 ${UspFormatters.formatBytes(wan.totalBytesReceived)}',
-                color: colorScheme.onSurfaceVariant,
-              ),
-              AppGap.md(),
-            ],
-            AppIcon.font(
-              Icons.autorenew,
-              size: 12,
-              color: colorScheme.onSurfaceVariant,
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _LegendDot(color: colorScheme.primary),
+                AppGap.xs(),
+                Flexible(
+                  child: AppText.labelSmall(
+                    loc(context).upload,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                AppGap.lg(),
+                _LegendDot(color: colorScheme.secondary),
+                AppGap.xs(),
+                Flexible(
+                  child: AppText.labelSmall(
+                    loc(context).download,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
             ),
-            AppText.labelSmall(
-              intervalLabel,
-              color: colorScheme.onSurfaceVariant,
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (wan != null) ...[
+                  // Icons, not the U+2191/U+2193 characters these used to be.
+                  // The speed tiles above label the same two directions with
+                  // Icons.arrow_upward/downward, so the card was drawing one
+                  // concept two ways; and neither the primary font nor any
+                  // bundled fallback maps those codepoints, which made the
+                  // glyph's presence depend on whatever font happened to
+                  // resolve it.
+                  AppIcon.font(
+                    Icons.arrow_upward,
+                    size: 12,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                  AppGap.xs(),
+                  AppText.labelSmall(
+                    UspFormatters.formatBytes(wan.totalBytesSent),
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                  AppGap.md(),
+                  AppIcon.font(
+                    Icons.arrow_downward,
+                    size: 12,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                  AppGap.xs(),
+                  AppText.labelSmall(
+                    UspFormatters.formatBytes(wan.totalBytesReceived),
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                  AppGap.md(),
+                ],
+                AppIcon.font(
+                  Icons.autorenew,
+                  size: 12,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+                AppText.labelSmall(
+                  intervalLabel,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ],
             ),
           ],
         ),

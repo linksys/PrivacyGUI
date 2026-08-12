@@ -1,6 +1,7 @@
 {
   "tracking": {
-    "network_health": "legend fix #1145/#1174"
+    "network_health": "gauge centre #1235 (legend rows cleared by #1233)",
+    "system_status": "gauge row + action row + tab-0 legend-adjacent row #1234 (legend rows cleared by #1233)"
   },
   "allowlist": {
     "connected_devices|min|0": ["*"],
@@ -24,12 +25,7 @@
       "da", "de", "el", "es", "es_AR", "fi", "fr", "fr_CA", "it", "ja",
       "nb", "nl", "pl", "pt", "pt_PT", "ru", "tr", "vi"
     ],
-    "network_health|min|0": ["*"],
-    "network_health|min|1": ["*"],
-    "network_health|min|2": ["*"],
-    "network_health|preferred|0": ["fr_CA", "pl", "ru", "th"],
-    "network_health|preferred|1": ["id"],
-    "network_health|preferred|2": ["id"],
+    "network_health|min|0": ["de", "ru", "th"],
     "network_status|min|0": [
       "da", "de", "el", "en", "es", "es_AR", "fi", "fr", "fr_CA", "id",
       "it", "ja", "ko", "nb", "nl", "pl", "pt", "pt_PT", "ru", "sv",
@@ -40,25 +36,14 @@
     "port_forwarding|preferred|0": ["pt", "pt_PT"],
     "stats_panel|min|0": ["*"],
     "system_status|min|0": ["*"],
-    "system_status|min|1": ["*"],
-    "system_status|min|2": [
-      "de", "el", "es", "es_AR", "fi", "fr", "fr_CA", "id", "it", "nl",
-      "pt", "pt_PT", "ru", "sv", "tr"
-    ],
-    "system_status|min|3": ["de", "el", "fi", "fr", "fr_CA", "it", "ja", "nb", "ru", "vi"],
+    "system_status|min|1": ["el", "ru"],
+    "system_status|min|2": ["el", "ru"],
+    "system_status|min|3": ["el", "ru"],
     "system_status|preferred|0": ["fr", "fr_CA"],
-    "system_status|preferred|1": ["de", "fi", "id", "nb"],
-    "system_status|preferred|2": ["fr", "fr_CA"],
     "time_settings|min|0": [
       "da", "de", "el", "en", "es", "es_AR", "fi", "fr", "fr_CA", "id",
       "it", "nb", "nl", "pl", "pt", "pt_PT", "ru", "sv", "th", "tr",
       "vi"
-    ],
-    "traffic_analysis|min|0": ["*"],
-    "traffic_analysis|preferred|0": [
-      "da", "de", "el", "en", "es", "es_AR", "fi", "fr", "fr_CA", "id",
-      "it", "ja", "ko", "nb", "nl", "pl", "pt", "pt_PT", "ru", "sv",
-      "th", "tr", "vi"
     ],
     "wifi_performance|min|0": [
       "da", "de", "el", "en", "es", "es_AR", "fi", "fr", "fr_CA", "id",

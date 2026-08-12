@@ -1,6 +1,6 @@
 # Dashboard Card Density — Design Decisions
 
-**Last Updated: 2026-08-11** · Follow-up to #1183 · Status: **agreed; tickets #1225–#1240 published, implementation not started**
+**Last Updated: 2026-08-12** · Follow-up to #1183 · Status: **agreed; tickets #1225–#1240 published; #1225 + #1226 + #1233 implemented (not yet merged), rest not started**
 
 ## Purpose
 
@@ -89,11 +89,28 @@ The greedy table above scatters these across ranks 1–16, so the pattern is
 invisible there. It is one fix replicated seven times, and it is where the
 batching leverage actually is.
 
+> Re-measured during #1233 and confirmed: the six #1233 sites clear exactly 132
+> coordinates. Note the counting convention — those two cards carry **169**
+> allowlisted coordinates between them, but 37 of those also have incidents at
+> non-legend sites, so they stay allowlisted until #1234/#1235 land. "Clears" here
+> means *fully* cleared, as in the greedy table above.
+>
+> The sweep also found an **eighth** row of this shape that the table omits:
+> `usp_system_status_card.dart:218`, the Monitor tab's legend row, in 28
+> coordinates. It is not a #1233 site — it is one of the three #1234 clears
+> ("a legend-adjacent row on the first tab"), and #1234's 34 = `:196` (26) +
+> `:118` (8) + `:218` where those are the coordinate's only remaining cause. So
+> the pattern is really eight rows, and #1234 finishes it.
+
 The private colour-dot widget is additionally duplicated **verbatim in four
 files** (the three above plus `device_analytics`). De-duplicating it, or
 extracting a shared legend entry, would be a **new shared widget** and therefore
 needs approval under Article XIV — so the fix is applied in place, and the
-extraction raised separately rather than blocking on that conversation.
+extraction raised separately rather than blocking on that conversation. That
+raise is **#1245**, filed after #1233; it carries the constraint #1233 measured,
+namely that any shared entry must express the ellipsize-vs-soft-wrap distinction
+per label kind (§2.10a point 2) and must not absorb the WAN/LAN row, which
+deviates for a reason (§2.10a point 3).
 
 **Blocked on a dependency we do not own — 45 coordinates (8%)**: fl_chart 19
 (`firewall_overview`), ui_kit `AppListTile` 26 (`connected_devices`).
@@ -184,9 +201,15 @@ wider than span 12 @ 320px = 288px.
 
 ### 1.6 The 191px "floor" was a sampling artifact
 
-`dashboard_card_probe.dart:154` scans a **hand-written list of 19 screen widths**
-(minimum 320). 191.4px is the narrowest value in that sample, not the geometric
-minimum. An exhaustive 1px sweep (240–2560px) gives:
+> **Superseded by #1225** (implemented; not yet merged). The probe now enumerates the supported range
+> (`narrowestRealizationOf`, 320–2560px) instead of scanning a list. The
+> measurements below are what justified that change and are kept as its record;
+> the no-op claim they predicted was confirmed on the full sweep — 560
+> coordinates across 36 keys, byte-identical before and after.
+
+`dashboard_card_probe.dart` used to scan a **hand-written list of 19 screen
+widths** (minimum 320). 191.4px is the narrowest value in that sample, not the
+geometric minimum. An exhaustive 1px sweep (240–2560px) gives:
 
 | Span | True narrowest | At screen |
 |---:|---:|---:|
@@ -208,8 +231,15 @@ width for **every one of the 12 spans**:
 
 The omitted widths are nobody's worst case: 375 / 390 / 430px all sit inside the
 4-column low-margin band where 320px already dominates. So replacing the sample
-(§2.7) buys a **guarantee, not a new baseline** — it is expected to be a
-behavioural no-op.
+(§2.7) bought a **guarantee, not a new baseline** — confirmed as a behavioural
+no-op when #1225 was implemented.
+
+**Where the sample *was* lossy: a raised floor.** With `MIN_SCREEN=602` the list
+held nothing in 602–904, so it fell through to 1241px and reported a 3-column
+card as 198.25px — 6.5px wider than the real 191.75px @ 602px. That path is not
+what the PR gate runs (the gate uses no floor), which is why the committed
+baseline never saw it, but it is the concrete reason "sampling happens to be
+correct here" was not a safe place to leave the invariant.
 
 Counter-intuitively, **mobile is not the narrowest case**: a 3-column card is
 212px at a 320px phone but 191.4px at a 601px tablet.
@@ -312,6 +342,12 @@ Rather than design every popup form to survive a width no user has, the framewor
 follows. This is an explicit product commitment, not a side effect of a test's
 scan list.
 
+Recorded in code as `kMinSupportedScreenWidth` in
+[dashboard_card_probe.dart](../../test/util/dashboard/dashboard_card_probe.dart),
+carrying this rationale, so the next person to change it knows it is a decision
+(#1225). Lowering it adds overflow coordinates and requires a deliberate
+re-baseline.
+
 > Revisit if narrower targets appear (automotive head units, embedded panels).
 
 ### 2.4 `normalAbove` is per-card, declared on `WidgetSpec`, defaulting to absent
@@ -382,18 +418,45 @@ through the UI Kit proposal path.
 
 ### 2.7 The gate enumerates widths instead of sampling them
 
-`_scanScreens`'s hand-written 19-width list *asserts* the gate's stated invariant
-("narrowest realization = worst case") rather than guaranteeing it. It will be
-replaced by an exhaustive search over the supported range, keeping the current
-one-case-per-span reduction.
+**Implemented in #1225** (not yet merged). `_scanScreens`'s hand-written 19-width list *asserted* the
+gate's stated invariant ("narrowest realization = worst case") rather than
+guaranteeing it. It is replaced by `narrowestRealizationOf(span)`, which
+enumerates every screen width from `kMinSupportedScreenWidth` (§2.3) to
+`kMaxScannedScreenWidth`, keeping the one-case-per-span reduction.
 
 The frozen-geometry warning in `SKILL.md` applies to the **formulas** — which
-mirror production and must not change — not to the sample list.
+mirror production and must not change — not to how widths are chosen.
 
-**Expected to be a behavioural no-op**, per §1.6: sampled and exhaustive minima
-agree to 0.1px on all 12 spans. It still goes **first** (Part 4) for two reasons:
-the invariant then holds by construction, and if the baseline *does* move, the
-cause is unambiguous because nothing else has changed yet.
+**The guarantee is exact over integer screen widths, and within 0.5px of the
+continuum.** Card width is piecewise-linear and increasing in screen width within
+each (columns, margin) regime, so each regime's narrowest width is at its left
+edge, and enumerating every integer visits every regime. But the breakpoints are
+**exclusive** (`screenWidth <= 600` is still 4 columns), so four regimes open
+just *above* an integer and their infimum is approached, not attained: a 3-column
+card tends to 191.0px as the screen tends down to 600px, versus the 191.375px @
+601px the gate pumps. Fractional logical widths are realizable in production
+(1080 / 2.75 = 392.7), so the gap is real; it is bounded at **0.5px** (worst case,
+span 4), recorded as `kEnumerationSlackPx`, and a quarter of the gate's 2.0px
+tolerance — so it cannot flip a verdict. Closing it entirely would mean
+enumerating breakpoint+ε as well, which buys nothing measurable.
+
+2560px is a sufficient upper bound because the regime never changes again above
+1680px.
+
+**Confirmed a behavioural no-op**, as §1.6 predicted: the full sweep reports the
+same 560 coordinates across the same 36 keys, and the allowlist fixture is
+unchanged. Because it landed **first** (Part 4), any future shift in that count
+is attributable to the ticket that causes it.
+
+Verified by
+[dashboard_card_probe_test.dart](../../test/util/dashboard/dashboard_card_probe_test.dart).
+Its central test compares the search against an **independently derived
+infimum** — computed from the breakpoint list, including the open edges, rather
+than by walking integers — so it catches a search whose *domain* is wrong, not
+just one whose step is coarse. (Verified by mutation: starting the walk above
+601px fails it. An earlier version of the test re-enumerated the same integers
+the implementation does and passed that mutation — a property test whose oracle
+shares the implementation's blind spot pins the step, not the property.)
 
 ### 2.8 The `colWidth` bug is silent truncation, and gates only the threshold
 
@@ -449,6 +512,81 @@ normal is not the primary form. All 49 of its coordinates are at a **single
 site** (`usp_traffic_analysis_card.dart:258`), the second-highest-leverage fix in
 the whole set. Fix the layout; do not raise its default span, which would squeeze
 neighbouring cards and still leave manual shrinking broken.
+
+**Fixed in #1226** (not yet merged). All 49 coordinates cleared; the card is
+clean across 26 locales × 4 tabs, and its two allowlist keys are gone
+(560 → 511 coordinates, 36 → 34 keys). Default span unchanged at 6.
+
+Two corrections that measurement forced, recorded because T03 inherits this
+shape and because both were stated confidently above:
+
+1. **The default-layout break was one locale, not a general desktop break.** A
+   26-locale sweep at the default span-6 widths found **only `fr`** overflowing
+   (+92px @ 432, +44 @ 480, +28 @ 496, +12 @ 512) — `Téléversement` /
+   `Téléchargement`. §1.7's "40.6% clean" is a *fit-width* figure (worst locale ×
+   worst tab, §1.2), so it is consistent with this; but it reads as though every
+   desktop user sees the break, and only French users did. The conclusion
+   survives — a shipped locale broken at 1024px is still a normal-form bug, and
+   the compact-form argument is still unavailable — but the blast radius was
+   narrower than the ticket implies. An English-only regression test passed
+   *before* the fix existed, which is how this surfaced.
+2. **The widths named in #1226 are mis-paired.** At a 1024px screen the
+   12-column grid uses a 24px margin and yields **480px**, not 512px; 512px is
+   the 1440px screen, and 496px occurs at 1408/1520/1712px. The test covers 432 /
+   480 / 496 / 512 so the intent holds as a superset.
+
+**The degradation shape T03 replicates**: a `Wrap` with `spaceBetween` replaces
+`Row` + `Spacer` — identical rendering while the content fits, and the totals
+drop to a second line instead of overflowing when it does not. Legend labels are
+`Flexible` + one-line ellipsis (a legend keys an already colour-coded chart, so a
+clipped label still communicates); dot and label stay in one `Row` so a label
+never separates from its colour. The byte totals get no `Flexible` and no
+ellipsis — they are content, not chrome, and a truncated byte count cannot be
+recovered from the chart the way a legend label can.
+
+### 2.10a What replicating the shape six times taught us (#1233 — implemented)
+
+All 132 coordinates cleared as predicted (511 → 379). Three things the shape did
+not say, found by measuring each row after it was changed:
+
+1. **`Flexible` is load-bearing, not decoration for the ellipsis.** A `Row` gives
+   non-flex children *unbounded* width, so a bare `AppText` takes its full
+   intrinsic width on one line and overflows however the enclosing `Wrap`
+   arranges the entries. Wrapping a row in `Wrap` alone fixed nothing for the
+   single-entry legends (System Status Distribution, Network Health Loss) — the
+   `Wrap` can move a whole entry to the next run, but only `Flexible` lets the
+   label itself give. #1226's row happened to have two entries and two
+   already-`Flexible` labels, so this never surfaced there.
+2. **Ellipsis vs. soft-wrap is decided by what the label *is*, not by the row.**
+   Bare series names take #1226's one-line ellipsis (the colour identifies the
+   series, so a clipped name still keys the chart). Composed statistics —
+   `Avg: 42%  Peak: 87%`, and Network Health's `series, average, peak` — get no
+   ellipsis and no `maxLines`: an ellipsis lands mid-number, and a half-shown
+   statistic misinforms in a way a missing one does not. They soft-wrap onto a
+   second line instead. Both cards therefore carry a per-entry flag rather than
+   one blanket rule.
+3. **#1226's shape has an unstated precondition, and one row violates it.** The
+   shape pays for its extra run with height, "because the chart above is
+   `Expanded`, so it yields the height". Network Health's Health tab has an
+   `Expanded` holding a **fixed 120px** gauge, so it yields nothing: a `Wrap`
+   there traded that row's 26 right-overflows for **12 new bottom-overflows at
+   the gauge centre** (`:128`, 3 → 15) — a fix on paper only, and it would have
+   landed as one had the ratchet been edited to the predicted numbers instead of
+   the measured ones. That row stays a one-line `Row` of `Flexible` lights and
+   gives horizontally; the deviation is commented at the site and pinned by a
+   test that fails if someone "restores consistency".
+
+**#1235 is a functional dependency on #1233, not just conflict avoidance** (both
+tickets say otherwise). Its 3 gauge-centre coordinates are height-coupled to this
+row: they are what is left *because* the row was kept to one line, and they are
+the reason it had to be.
+
+The two readability ACs — labels not truncated to uselessness, colours still
+associable — are invisible to the gate, which cannot distinguish a row that fits
+from a row that truncated its content to nothing. They are covered by
+`test/page/dashboard/views/components/dashboard_legend_readability_test.dart`,
+tagged `dashboard-card` so it gates; each of its three groups was verified to
+fail under a mutation of the code it guards.
 
 ### 2.11 fl_chart's 19 coordinates get a primary plan and a documented fallback
 
@@ -517,9 +655,9 @@ addition — it changes no card's rendering until a threshold is declared.
 
 | # | Work | Clears |
 |---|---|---:|
-| #1225 | Gate enumerates widths (§2.7) | 0 |
-| #1226 | `traffic_analysis` legend row (§2.10) | 49 |
-| #1233 | The other six legend rows (§1.1) | 132 |
+| #1225 | Gate enumerates widths (§2.7) — **implemented** | 0 |
+| #1226 | `traffic_analysis` legend row (§2.10) — **implemented** | 49 |
+| #1233 | The other six legend rows (§1.1, §2.10a) — **implemented** | 132 |
 | #1227 | Shared blocks made overflow-safe (§2.6) | 101 |
 | #1228 | `ethernet_ports` ×2 sites | 52 |
 | #1229 | `wifi_performance` ×2 sites | 45 |
@@ -537,7 +675,10 @@ the invariant holds by construction and any future shift is attributable. #1226
 precedes #1233 because it settles the legend shape the six others replicate.
 #1236/#1237/#1238 genuinely depend on #1227: those coordinates need both a shared
 and a card-own fix, so card-own work done first shows zero allowlist progress.
-#1234/#1235 follow #1233 only to avoid editing the same files concurrently.
+#1234 follows #1233 only to avoid editing the same file concurrently. **#1235 is
+a real functional dependency** — measured during #1233, see §2.10a point 3: its 3
+coordinates are height-coupled to the WAN/LAN row, which is why that row is the
+one deviation from the legend shape.
 
 ### Track B — make narrow cards readable
 
@@ -562,7 +703,8 @@ the likeliest way to get this wrong.
 |---|---|---|
 | All of Track A except #1225 | **Ratchet, not TDD** | The failing assertions are *already committed* — the 560 entries in `known_overflows.json`. The red→green move is: fix the layout, delete the allowlist entry, gate passes. Deleting an entry that still overflows fails that test, so it cannot be faked. |
 | #1232 | **TDD** | The gate asserts only "no overflow"; it cannot detect *wrong density*. Threshold selection, popup cut-off, and absent-`normalAbove` behaviour can all break while the gate stays green. Tests go red first. |
-| #1225, #1231 | **Neither** | Not assertions. #1225 converts a sampled invariant into a guaranteed one; #1231 fixes a failure the gate is structurally blind to (§2.8) and is verified by eye or golden. |
+| #1231 | **Neither** | Not an assertion — it fixes a failure the gate is structurally blind to (§2.8), so it is verified by eye or golden. |
+| #1225 | **Property tests + no-op diff** | Planned as "neither", since converting a sampled invariant into a guaranteed one changes no assertion. In the event it had a testable seam after all: the search is pinned by a property (no supported width is narrower than the one pumped, which fails on a coarser step) and the no-op claim by diffing the full sweep's 560 allowlisted hits before and after — they matched exactly. |
 
 The gate does **not** need to know a card's measured fit width to enforce
 §2.4's `normalAbove >= fitWidth`: it applies the density rule at the card's
