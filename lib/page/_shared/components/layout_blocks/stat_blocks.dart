@@ -41,7 +41,17 @@ class StatTile extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              AppText.titleSmall(value, color: colorScheme.onSurface),
+              // The trend indicator keeps its intrinsic size; the figure yields.
+              // A trend arrow with no number beside it is meaningless, whereas
+              // an ellipsized figure still reads as "there is a value here".
+              Flexible(
+                child: AppText.titleSmall(
+                  value,
+                  color: colorScheme.onSurface,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
               if (trend != null) ...[
                 AppGap.xxs(),
                 _TrendIndicator(trend: trend!),
@@ -49,9 +59,19 @@ class StatTile extends StatelessWidget {
             ],
           ),
           AppGap.xs(),
-          AppText.bodySmall(
-            label,
-            color: colorScheme.onSurfaceVariant,
+          // Flexible so the enclosing Column cannot exceed the height the grid
+          // gives it, and bounded to two lines so a narrow tile wraps instead of
+          // growing without limit. The stats panel lays five of these across one
+          // card, so at the narrowest grid width each tile is ~17px wide — the
+          // label used to wrap to as many lines as it needed and push the Column
+          // 98px past its budget (#1227).
+          Flexible(
+            child: AppText.bodySmall(
+              label,
+              color: colorScheme.onSurfaceVariant,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
         ],
       ),

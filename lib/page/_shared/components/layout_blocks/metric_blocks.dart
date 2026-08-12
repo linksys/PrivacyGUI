@@ -32,7 +32,20 @@ class MetricTile extends StatelessWidget {
             children: [
               AppIcon.font(icon, size: 14, color: color),
               AppGap.xs(),
-              AppText.labelSmall(label, color: colorScheme.onSurfaceVariant),
+              // Flexible + ellipsis, not a fixed width: this tile is laid out
+              // two-across inside a dashboard card, so at the narrowest grid
+              // width each one gets ~42px of content box and every localized
+              // label is wider than that. Unconstrained it was the single
+              // largest overflow site in the baseline — 95 coordinates across
+              // device_info, lan_info and network_status (#1227).
+              Flexible(
+                child: AppText.labelSmall(
+                  label,
+                  color: colorScheme.onSurfaceVariant,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
             ],
           ),
           AppGap.xs(),

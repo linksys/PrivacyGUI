@@ -231,31 +231,52 @@ class DashboardCardTemplate extends StatelessWidget {
   }
 
   Widget _buildHeader(BuildContext context) {
-    return Row(
-      children: [
-        if (leading != null) ...[
-          leading!,
-          AppGap.sm(),
-        ],
-        Expanded(
-          child: Row(
-            children: [
-              Flexible(
-                child: AppText.titleMedium(
-                  title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+    // LayoutBuilder so the trailing cap below is a fraction of the row rather
+    // than a magic pixel width.
+    return LayoutBuilder(
+      builder: (context, constraints) => Row(
+        children: [
+          if (leading != null) ...[
+            leading!,
+            AppGap.sm(),
+          ],
+          Expanded(
+            child: Row(
+              children: [
+                Flexible(
+                  child: AppText.titleMedium(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
-              ),
-              if (titleBadge != null) ...[
-                AppGap.sm(),
-                titleBadge!,
+                if (titleBadge != null) ...[
+                  AppGap.sm(),
+                  titleBadge!,
+                ],
               ],
-            ],
+            ),
           ),
-        ),
-        if (trailing != null) trailing!,
-      ],
+          if (trailing != null) _boundTrailing(trailing!, constraints.maxWidth),
+        ],
+      ),
+    );
+  }
+
+  /// Bounds a header's trailing widget to half of the header row.
+  ///
+  /// The trailing stays *inflexible*, so it keeps its intrinsic width, stays
+  /// flush right, and leaves every unneeded pixel to the `Expanded` title —
+  /// making it `Flexible` instead would split the row 50/50 with the title and
+  /// strand the trailing's unused share between the two. The cap only binds
+  /// when a trailing is genuinely oversized: nearly every one is a ~40px icon
+  /// button, and the one text button (network_status' renew-lease) was the sole
+  /// cause of this row's overflow at the narrowest grid width (#1227).
+  /// `AppButton` already ellipsizes its own label once bounded.
+  Widget _boundTrailing(Widget trailing, double rowWidth) {
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxWidth: rowWidth / 2),
+      child: trailing,
     );
   }
 
@@ -320,21 +341,34 @@ class DashboardCardTemplate extends StatelessWidget {
   }
 
   Widget _buildSectionHeader(BuildContext context, CardSection section) {
-    return Row(
-      children: [
-        Expanded(
-          child: Row(
-            children: [
-              AppText.titleSmall(section.title),
-              if (section.titleBadge != null) ...[
-                AppGap.sm(),
-                section.titleBadge!,
+    return LayoutBuilder(
+      builder: (context, constraints) => Row(
+        children: [
+          Expanded(
+            child: Row(
+              children: [
+                // Same treatment the card title gets above: the section title
+                // is the part that yields, so the badge beside it stays whole.
+                Flexible(
+                  child: AppText.titleSmall(
+                    section.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                if (section.titleBadge != null) ...[
+                  AppGap.sm(),
+                  section.titleBadge!,
+                ],
               ],
-            ],
+            ),
           ),
-        ),
-        if (section.trailing != null) section.trailing!,
-      ],
+          // `trailing` is caller-supplied and can be a text button here too, so
+          // it gets the same cap as the card header's.
+          if (section.trailing != null)
+            _boundTrailing(section.trailing!, constraints.maxWidth),
+        ],
+      ),
     );
   }
 
@@ -380,26 +414,40 @@ class DashboardCardTemplate extends StatelessWidget {
                 ),
                 AppGap.sm(),
               ],
-              Semantics(
-                button: true,
-                label: label,
-                child: InkWell(
-                  onTap: () => context.pushNamed(detailRoute!),
-                  borderRadius: BorderRadius.circular(4),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      AppText.labelMedium(
-                        label,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                      AppGap.xs(),
-                      Icon(
-                        Icons.arrow_forward,
-                        size: 14,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                    ],
+              // Only the link is Flexible, and deliberately so: it is the last
+              // child of an end-aligned row, so it absorbs whatever the item
+              // count and the separators leave behind and nothing overflows —
+              // while a row that already fits is laid out exactly as before.
+              // Making both children Flexible would instead hand each a fixed
+              // half of the free space and clip them at widths where the whole
+              // row still fits (#1227).
+              Flexible(
+                child: Semantics(
+                  button: true,
+                  label: label,
+                  child: InkWell(
+                    onTap: () => context.pushNamed(detailRoute!),
+                    borderRadius: BorderRadius.circular(4),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // The arrow keeps its 14px; the label is what shortens.
+                        Flexible(
+                          child: AppText.labelMedium(
+                            label,
+                            color: Theme.of(context).colorScheme.primary,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        AppGap.xs(),
+                        Icon(
+                          Icons.arrow_forward,
+                          size: 14,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
