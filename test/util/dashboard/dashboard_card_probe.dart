@@ -250,7 +250,11 @@ List<CardWidthCase> widthCasesFor(WidgetSpec spec, {double? minScreen}) {
   final byWidth = <String, CardWidthCase>{};
   for (final entry in spans.entries) {
     // Null means the floor is past the enumerated range, so no span has a
-    // realization and the card gets no cases at all.
+    // realization and the card gets no cases at all. Bailing out of the whole
+    // loop (rather than skipping this span) is only sound because the floor is
+    // the sole null cause and every span here shares the same floor — if one is
+    // null they all are. Give `narrowestRealizationOf` a second null path and
+    // this must become a `continue`, or spans will be dropped silently.
     final narrowest = narrowestRealizationOf(entry.value, minScreen: floor);
     if (narrowest == null) return [];
     final wc = CardWidthCase(

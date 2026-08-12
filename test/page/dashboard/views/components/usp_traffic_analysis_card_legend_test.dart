@@ -185,6 +185,13 @@ void main() {
   group('every tab is clean at the narrowest realization (#1226)', () {
     // The card has 4 tabs; the baseline's 49 coordinates were all on tab 0, but
     // the other three carry legend rows of the same shape and must stay clean.
+    //
+    // One locale, not 26, and deliberately: `de` was the widest of the 26 at
+    // this realization (+75px before the fix, ahead of ru's +61px — see the
+    // sweep above), so it is the worst case rather than a convenient pick. The
+    // 26 × 4 obligation in #1226's AC is carried by the gate
+    // (`dashboard_card_overflow_test.dart`), which pumps every locale on every
+    // tab; this group exists to fail fast and locally when a tab regresses.
     for (var tab = 0; tab < 4; tab++) {
       testWidgets('tab $tab at the narrowest realization', (tester) async {
         final narrowest = narrowestRealizationOf(4, minScreen: 0)!;
