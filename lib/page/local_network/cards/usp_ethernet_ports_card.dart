@@ -9,6 +9,29 @@ import 'package:privacy_gui/page/_shared/components/dashboard_card_template.dart
 import 'package:privacy_gui/page/dashboard/views/dialogs/ethernet_port_detail_dialog.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
+/// Content width below which the two summary tiles stack instead of sitting side
+/// by side.
+///
+/// Derived, not chosen. Each tile spends a fixed 76px on chrome — 24px of
+/// [LayoutBlock] padding, the 40px status disc, and the 12px gap after it — and
+/// the source-locale labels need 96px (`Disconnected` measures 95.4px at
+/// `titleSmall`, `LAN connected` 89.4px). Two of those plus the 8px between them
+/// is 352px.
+///
+/// Below that, side by side is measurably worse than stacked rather than merely
+/// tighter. At the narrowest width the grid ever yields — a 191px card, 157px of
+/// content — each tile's row has **50.7px** for a disc and gap that cost 52px, so
+/// the text column is squeezed to zero and the row *still* overflows by 1.3px.
+/// That is under the gate's 2px tolerance, so constraining the text alone would
+/// have passed the gate while rendering no label at all (#1228). Stacked, the
+/// same card gives each label 81px, and 288px gives it 178px.
+///
+/// This threshold only decides *readability*: [_SummaryTile] is overflow-safe at
+/// any width on its own, so getting it wrong costs an ellipsis, never an
+/// overflow. It is a local degradation, not a form selection — Track B (#1240)
+/// may later replace it with a declared `normalAbove` threshold.
+const double _kSideBySideMinWidth = 352;
+
 class UspEthernetPortsCard extends ConsumerWidget {
   final List<EthernetPortUIModel>? ports;
 
@@ -33,79 +56,21 @@ class UspEthernetPortsCard extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Summary tiles - WAN first
-          Row(
-            children: [
-              Expanded(
-                child: LayoutBlock(
-                  padding: const EdgeInsets.all(AppSpacing.md),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: colorScheme.primary.withValues(alpha: 0.15),
-                          shape: BoxShape.circle,
-                        ),
-                        child: AppIcon.font(
-                          Icons.public,
-                          color: colorScheme.primary,
-                          size: 20,
-                        ),
-                      ),
-                      AppGap.md(),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          AppText.titleSmall(wanConnected > 0
-                              ? loc(context).connected
-                              : loc(context).disconnected),
-                          AppText.bodySmall(
-                            'WAN',
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              AppGap.sm(),
-              Expanded(
-                child: LayoutBlock(
-                  padding: const EdgeInsets.all(AppSpacing.md),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: (appColors?.semanticSuccess ?? Colors.green)
-                              .withValues(alpha: 0.15),
-                          shape: BoxShape.circle,
-                        ),
-                        child: AppIcon.font(
-                          Icons.lan,
-                          color: appColors?.semanticSuccess ?? Colors.green,
-                          size: 20,
-                        ),
-                      ),
-                      AppGap.md(),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          AppText.titleSmall('$lanConnected'),
-                          AppText.bodySmall(
-                            loc(context).lanConnected,
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
+          _SummaryTiles(
+            wan: _TileSpec(
+              icon: Icons.public,
+              accent: colorScheme.primary,
+              title: wanConnected > 0
+                  ? loc(context).connected
+                  : loc(context).disconnected,
+              subtitle: 'WAN',
+            ),
+            lan: _TileSpec(
+              icon: Icons.lan,
+              accent: appColors?.semanticSuccess ?? Colors.green,
+              title: '$lanConnected',
+              subtitle: loc(context).lanConnected,
+            ),
           ),
           AppGap.lg(),
           // Port icons
@@ -113,6 +78,128 @@ class UspEthernetPortsCard extends ConsumerWidget {
             spacing: AppSpacing.xl,
             runSpacing: AppSpacing.lg,
             children: ports.map((p) => _PortItem(port: p)).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// What one summary tile shows. The four values travel together everywhere, so
+/// they are one type rather than four parameters repeated per tile.
+class _TileSpec {
+  const _TileSpec({
+    required this.icon,
+    required this.accent,
+    required this.title,
+    required this.subtitle,
+  });
+
+  final IconData icon;
+  final Color accent;
+  final String title;
+  final String subtitle;
+}
+
+/// Lays the WAN and LAN summary tiles out side by side, or stacks them once the
+/// card is narrower than [_kSideBySideMinWidth].
+///
+/// The two tiles are a matched pair — same chrome, same treatment — so they are
+/// one widget rendered twice from [_TileSpec] rather than two copies of the same
+/// markup, and no change can reach one without the other (#1228).
+class _SummaryTiles extends StatelessWidget {
+  const _SummaryTiles({required this.wan, required this.lan});
+
+  final _TileSpec wan;
+  final _TileSpec lan;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth >= _kSideBySideMinWidth) {
+          return Row(
+            children: [
+              Expanded(child: _SummaryTile(spec: wan)),
+              AppGap.sm(),
+              Expanded(child: _SummaryTile(spec: lan)),
+            ],
+          );
+        }
+        // Stacked, the pair has to fit the height the card gives its content —
+        // measured at **121px** for this card's 3 rows, at both narrow
+        // realizations. Two tiles at the standard 12px padding are 136px and cut
+        // the second one off, so stacking tightens the padding to 8px: 2 × 56 +
+        // 8 = 120px, and both tiles stay whole. Stretch keeps each one
+        // full-width; the height beyond the viewport scrolls rather than clips,
+        // so this cannot trade right-overflows for bottom ones (#1228).
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _SummaryTile(spec: wan, compact: true),
+            AppGap.sm(),
+            _SummaryTile(spec: lan, compact: true),
+          ],
+        );
+      },
+    );
+  }
+}
+
+/// One summary tile: a coloured status disc, then a value over its label.
+///
+/// Overflow-safe at any width regardless of the arrangement above it. The disc
+/// keeps its 40px design size and the text is what yields, because the disc's
+/// colour and glyph are the only things identifying which port group the tile
+/// describes, while a clipped `Disconnec…` still reads as a state (#1228).
+class _SummaryTile extends StatelessWidget {
+  const _SummaryTile({required this.spec, this.compact = false});
+
+  final _TileSpec spec;
+
+  /// Trades 4px of padding per side for vertical budget when stacked; see
+  /// [_SummaryTiles].
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    // Colour ownership splits on whether the value differs per tile: [accent]
+    // does (one is `colorScheme.primary`, the other `semanticSuccess` from an
+    // extension), so it travels in the spec; the subtitle colour is the same for
+    // both tiles, so it is resolved here and stays out of the spec.
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return LayoutBlock(
+      padding: EdgeInsets.all(compact ? AppSpacing.sm : AppSpacing.md),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: spec.accent.withValues(alpha: 0.15),
+              shape: BoxShape.circle,
+            ),
+            child: AppIcon.font(spec.icon, color: spec.accent, size: 20),
+          ),
+          AppGap.md(),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AppText.titleSmall(
+                  spec.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                AppText.bodySmall(
+                  spec.subtitle,
+                  color: colorScheme.onSurfaceVariant,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
           ),
         ],
       ),
