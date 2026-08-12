@@ -46,7 +46,11 @@ void main() {
     await tester.binding.setSurfaceSize(wideSurface);
     tester.view.physicalSize = wideSurface;
     tester.view.devicePixelRatio = 1.0;
-    addTearDown(() => tester.binding.setSurfaceSize(null));
+    addTearDown(() async {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+      await tester.binding.setSurfaceSize(null);
+    });
 
     await tester.pumpWidget(
       MaterialApp(
