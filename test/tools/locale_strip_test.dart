@@ -60,6 +60,10 @@ void main() {
       File('${project.path}/lib/l10n/app_$locale.arb')
           .writeAsStringSync('{"@@locale":"$locale"}');
     }
+    // The real repo gitignores the gen-l10n output, which is why restore has to
+    // delete it rather than check it out. Without this the directory reads as
+    // untracked, i.e. as a strip that never happened.
+    File('${project.path}/.gitignore').writeAsStringSync('lib/l10n/gen/\n');
     Directory('${project.path}/assets/fonts/fallback')
         .createSync(recursive: true);
     for (final font in fonts) {
@@ -165,10 +169,16 @@ void main() {
   });
 
   group('keep, fallback fonts', () {
+    /// Every fallback font the real repo ships, so a test that keeps a locale is
+    /// asserting against the same set of candidates a real build strips from.
     const allFonts = [
       'NotoSans-Latin.woff2',
       'NotoSansArabic.woff2',
+      'NotoSansCJKhk.subset.woff2',
+      'NotoSansCJKjp.subset.woff2',
+      'NotoSansCJKkr.subset.woff2',
       'NotoSansCJKsc.subset.woff2',
+      'NotoSansCJKtc.subset.woff2',
       'NotoSansThai.woff2',
       'Roboto.woff2',
     ];
@@ -179,6 +189,86 @@ void main() {
       LocaleStripper(projectRoot: project.path).keep(['en']);
 
       expect(remainingFontFiles(), ['NotoSans-Latin.woff2', 'Roboto.woff2']);
+    });
+
+    test('keeps the font a second kept locale needs', () {
+      // The build ships the whole Japanese UI, so deleting its only CJK font
+      // renders that UI as tofu boxes. There is no recovery on the router this
+      // targets: the bundle is served offline from firmware, and the engine's CDN
+      // fallback needs internet.
+      givenProject(locales: ['en', 'ja', 'zh'], fonts: allFonts);
+
+      LocaleStripper(projectRoot: project.path).keep(['en', 'ja']);
+
+      expect(remainingFontFiles(), [
+        'NotoSans-Latin.woff2',
+        'NotoSansCJKjp.subset.woff2',
+        'Roboto.woff2',
+      ]);
+    });
+
+    test('keeps the pubspec declaration of a second kept locale\'s font', () {
+      givenProject(locales: ['en', 'ja'], fonts: allFonts);
+
+      LocaleStripper(projectRoot: project.path).keep(['en', 'ja']);
+
+      expect(
+        pubspecContent(),
+        contains('- asset: assets/fonts/fallback/NotoSansCJKjp.subset.woff2'),
+      );
+    });
+
+    test('keeps every Han subset when a Chinese pack survives', () {
+      // A zh pack carries every regional variant's strings, and the stripper keeps
+      // them together, so all three Han subsets have to survive rather than the
+      // one a guess at the selected variant would pick.
+      givenProject(locales: ['en', 'zh', 'zh_TW'], fonts: allFonts);
+
+      LocaleStripper(projectRoot: project.path).keep(['en', 'zh']);
+
+      expect(remainingFontFiles(), [
+        'NotoSans-Latin.woff2',
+        'NotoSansCJKhk.subset.woff2',
+        'NotoSansCJKsc.subset.woff2',
+        'NotoSansCJKtc.subset.woff2',
+        'Roboto.woff2',
+      ]);
+    });
+
+    test('keeps the Han subsets when only a regional variant is kept', () {
+      // zh_TW is a Han locale in its own right, so its font cannot depend on the
+      // parent pack being named explicitly.
+      givenProject(locales: ['en', 'zh', 'zh_TW'], fonts: allFonts);
+
+      LocaleStripper(projectRoot: project.path).keep(['en', 'zh_TW']);
+
+      expect(remainingFontFiles(), contains('NotoSansCJKtc.subset.woff2'));
+    });
+
+    test('keeps Thai and Arabic when those locales are kept', () {
+      givenProject(locales: ['en', 'th', 'ar', 'ja'], fonts: allFonts);
+
+      LocaleStripper(projectRoot: project.path).keep(['en', 'th', 'ar']);
+
+      expect(remainingFontFiles(), [
+        'NotoSans-Latin.woff2',
+        'NotoSansArabic.woff2',
+        'NotoSansThai.woff2',
+        'Roboto.woff2',
+      ]);
+    });
+
+    test('keeps a font no language claims rather than guessing', () {
+      // A font added to the repo without a _fontsByLanguage entry is wasted bytes
+      // if kept and tofu if deleted, so the recoverable failure is the right one.
+      givenProject(
+        locales: ['en', 'ja'],
+        fonts: [...allFonts, 'NotoSansDevanagari.woff2'],
+      );
+
+      LocaleStripper(projectRoot: project.path).keep(['en']);
+
+      expect(remainingFontFiles(), contains('NotoSansDevanagari.woff2'));
     });
 
     test('removes the pubspec declaration of every deleted font', () {
@@ -218,6 +308,75 @@ void main() {
       LocaleStripper(projectRoot: project.path).keep(['all']);
 
       expect(remainingFontFiles(), allFonts);
+    });
+
+    test('parses a family that declares more than one weight', () {
+      // Line arithmetic on a fixed three-line shape rejected this legal YAML, and
+      // rejected it *after* deleting, which is what left a half-stripped tree
+      // behind. The scan is indentation-aware so the extra lines travel with the
+      // family they belong to.
+      givenProject(locales: ['en', 'th'], fonts: allFonts);
+      final pubspec = File('${project.path}/pubspec.yaml');
+      pubspec.writeAsStringSync(pubspec.readAsStringSync().replaceFirst(
+            '        - asset: assets/fonts/fallback/NotoSansThai.woff2',
+            '        - asset: assets/fonts/fallback/NotoSansThai.woff2\n'
+                '        - asset: assets/fonts/fallback/NotoSansThai.woff2\n'
+                '          weight: 700',
+          ));
+      commitEverything();
+
+      LocaleStripper(projectRoot: project.path).keep(['en']);
+
+      expect(pubspecContent(), isNot(contains('NotoSansThai')));
+      expect(pubspecContent(), isNot(contains('weight: 700')));
+    });
+
+    test('reads an asset path that is quoted or trailed by a comment', () {
+      // Both are legal YAML the repo does not happen to use. Failing to read the
+      // path used to abort the strip after the deletions, via the
+      // "declares fonts that are not on disk" guard.
+      givenProject(locales: ['en', 'th', 'ar'], fonts: allFonts);
+      final pubspec = File('${project.path}/pubspec.yaml');
+      pubspec.writeAsStringSync(pubspec
+          .readAsStringSync()
+          .replaceFirst(
+            '- asset: assets/fonts/fallback/NotoSansThai.woff2',
+            '- asset: "assets/fonts/fallback/NotoSansThai.woff2"',
+          )
+          .replaceFirst(
+            '- asset: assets/fonts/fallback/NotoSansArabic.woff2',
+            '- asset: assets/fonts/fallback/NotoSansArabic.woff2  # RTL',
+          ));
+      commitEverything();
+
+      LocaleStripper(projectRoot: project.path).keep(['en']);
+
+      expect(pubspecContent(), isNot(contains('NotoSansThai')));
+      expect(pubspecContent(), isNot(contains('NotoSansArabic')));
+    });
+
+    test('deletes nothing when it cannot make sense of the fonts: block', () {
+      // The guarantee behind arming the build's restore trap: a pubspec this
+      // cannot parse aborts while the tree is still intact, rather than leaving
+      // deleted language packs behind while the caller reports nothing was built.
+      givenProject(locales: ['en', 'ja', 'zh'], fonts: allFonts);
+      final pubspec = File('${project.path}/pubspec.yaml');
+      // One family declaring both a doomed and a surviving font: removing it would
+      // drop Roboto's declaration too, keeping it would point at a deleted file.
+      pubspec.writeAsStringSync(pubspec.readAsStringSync().replaceFirst(
+            '        - asset: assets/fonts/fallback/NotoSansThai.woff2',
+            '        - asset: assets/fonts/fallback/NotoSansThai.woff2\n'
+                '        - asset: assets/fonts/fallback/Roboto.woff2',
+          ));
+      commitEverything();
+
+      expect(
+        () => LocaleStripper(projectRoot: project.path).keep(['en']),
+        throwsA(isA<LocaleStripException>()),
+      );
+      expect(remainingArbFiles(), ['app_en.arb', 'app_ja.arb', 'app_zh.arb']);
+      expect(remainingFontFiles(), allFonts);
+      expect(pubspecContent(), contains('NotoSansCJKsc'));
     });
 
     test('refuses to leave the pubspec declaring a font that is gone', () {
@@ -424,6 +583,75 @@ void main() {
         () => LocaleStripper(projectRoot: project.path).keep(['en']),
         returnsNormally,
       );
+    });
+
+    test('refuses when the pubspec fonts: block itself is edited', () {
+      // The narrow half of the pubspec exclusion. restore rewrites this block
+      // from `git show HEAD`, so an uncommitted edit inside it is inside the
+      // blast radius even though the whole-file gate cannot be used.
+      givenProject(locales: ['en', 'ja'], fonts: allFonts);
+      final pubspec = File('${project.path}/pubspec.yaml');
+      pubspec.writeAsStringSync(pubspec.readAsStringSync().replaceFirst(
+            '  fonts:\n',
+            '  fonts:\n    - family: packages/ui_kit_library/MyNewFont\n'
+                '      fonts:\n'
+                '        - asset: assets/fonts/fallback/NotoSans-Latin.woff2\n',
+          ));
+
+      expect(
+        () => LocaleStripper(projectRoot: project.path).verify(),
+        throwsA(isA<LocaleStripException>()),
+      );
+    });
+
+    test('still passes when the job stamps a version below the fonts block',
+        () {
+      // The gate has to stay blind to everything outside the block, including a
+      // blank line the stamp lands after it when fonts: is the file's last key.
+      givenProject(locales: ['en', 'ja'], fonts: allFonts);
+      final pubspec = File('${project.path}/pubspec.yaml');
+      pubspec.writeAsStringSync('${pubspec.readAsStringSync()}\n'
+          'version: 9.9.9+42\n');
+
+      expect(LocaleStripper(projectRoot: project.path).verify, returnsNormally);
+    });
+  });
+
+  group('generated localizations', () {
+    const allFonts = ['NotoSans-Latin.woff2', 'NotoSansCJKsc.subset.woff2'];
+
+    /// `lib/l10n/gen` as `flutter gen-l10n` leaves it — gitignored, so git cannot
+    /// restore it and only the stripper can clear it.
+    File givenGeneratedLocalizations() {
+      final generated = File('${project.path}/lib/l10n/gen/'
+          'app_localizations.dart')
+        ..createSync(recursive: true)
+        ..writeAsStringSync('// generated for every locale');
+      return generated;
+    }
+
+    test('deletes the generated sources a strip made English-only', () {
+      // Left in place, a gen-l10n that fails after the restore keeps a stripped
+      // tree's generated output while `git status` says the tree is clean, so the
+      // app silently compiles English-only.
+      givenProject(locales: ['en', 'ja'], fonts: allFonts);
+      final generated = givenGeneratedLocalizations();
+      final stripper = LocaleStripper(projectRoot: project.path);
+      stripper.keep(['en']);
+
+      stripper.restore();
+
+      expect(generated.existsSync(), isFalse);
+    });
+
+    test('leaves them alone when nothing was stripped', () {
+      // A bare `restore` on a clean tree must not break the next `flutter run`.
+      givenProject(locales: ['en', 'ja'], fonts: allFonts);
+      final generated = givenGeneratedLocalizations();
+
+      LocaleStripper(projectRoot: project.path).restore();
+
+      expect(generated.existsSync(), isTrue);
     });
   });
 }

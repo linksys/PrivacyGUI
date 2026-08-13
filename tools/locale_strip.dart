@@ -18,6 +18,10 @@
 /// leak. Never `git reset --hard`, and never a bare `git checkout`: the fixed
 /// list is what promises unrelated work in progress survives.
 ///
+/// `keep` computes and validates its whole plan — which packs, which fonts, and
+/// the rewritten pubspec — before it deletes the first file, so a pubspec shape
+/// it cannot parse aborts on an intact tree instead of half way through.
+///
 /// Usage:
 ///   dart run tools/locale_strip.dart keep en        # strip to English only
 ///   dart run tools/locale_strip.dart keep en,fr     # keep a second locale
@@ -95,12 +99,40 @@ class LocaleStripper {
     'assets/fonts/fallback',
   ];
 
-  /// The only fallback fonts an English-only build can use: extended Latin for
-  /// the European scripts, and Roboto because the engine treats it as the global
-  /// default fallback.
-  static const _fontsSurvivingEnglishOnly = {
+  /// The fallback fonts every build keeps regardless of which language packs it
+  /// ships: extended Latin for the European scripts, and Roboto because the
+  /// engine treats it as the global default fallback.
+  static const _fontsSurvivingEveryStrip = {
     'NotoSans-Latin.woff2',
     'Roboto.woff2',
+  };
+
+  /// Which language needs which fallback font, so a strip that keeps a locale
+  /// keeps the font that locale cannot render without.
+  ///
+  /// Mirrors `FallbackFontResolver.bareFamilyForLocale` in
+  /// `lib/localization/fallback_font_resolver.dart`, which is the source of truth
+  /// for the locale to family mapping the app resolves at runtime. This map is
+  /// the same decision expressed over *file names*, because that is what a strip
+  /// deletes. Keep the two in step: a language whose font is missing here ships
+  /// its strings and renders them as tofu.
+  ///
+  /// `el`/`ru`/`vi` resolve to NotoSans-Latin, which every build keeps, so they
+  /// need no entry. Languages absent from both this map and the resolver are
+  /// covered by the primary Latin font.
+  static const _fontsByLanguage = {
+    'ja': {'NotoSansCJKjp.subset.woff2'},
+    'ko': {'NotoSansCJKkr.subset.woff2'},
+    // A `zh` pack carries every regional variant's strings (zh, zh_TW), and
+    // `_isKept` keeps them together, so keeping zh has to keep all three
+    // Han subsets rather than guessing which variant will be selected.
+    'zh': {
+      'NotoSansCJKsc.subset.woff2',
+      'NotoSansCJKtc.subset.woff2',
+      'NotoSansCJKhk.subset.woff2',
+    },
+    'th': {'NotoSansThai.woff2'},
+    'ar': {'NotoSansArabic.woff2'},
   };
 
   Directory get _arbDir => Directory('$projectRoot/lib/l10n');
@@ -141,23 +173,82 @@ class LocaleStripper {
         'available: ${available.join(', ')}',
       );
     }
-    final dropped = <String>[];
-    for (final entity in _arbFiles()) {
-      final locale = _localeOf(entity);
-      if (!_isKept(locale, locales)) {
-        entity.deleteSync();
-        dropped.add(locale);
-      }
+    // Everything below is computed and validated before the first deletion, so a
+    // rejected pubspec shape aborts on an intact tree. Deleting first and
+    // validating afterwards left a half-stripped working tree behind whenever the
+    // pubspec rewrite threw, while the caller reported nothing was built.
+    final doomedArbs = [
+      for (final entity in _arbFiles())
+        if (!_isKept(_localeOf(entity), locales)) entity,
+    ];
+    final doomedFonts = _fontsToStrip(locales);
+    final pubspecWithoutThem = _pubspecWithout(
+      doomedFonts.map(_fileNameOf).toList(),
+    );
+
+    final dropped = doomedArbs.map(_localeOf).toList()..sort();
+    for (final entity in doomedArbs) {
+      entity.deleteSync();
     }
-    dropped.sort();
     stdout.writeln('  language packs: dropped ${dropped.length} of '
         '${available.length} (${dropped.join(', ')})');
-    _stripFallbackFonts();
+    _stripFallbackFonts(doomedFonts, pubspecWithoutThem);
     verifyDeclaredFontsExist();
     stdout.writeln('locale_strip: strip complete');
   }
 
-  /// Deletes the non-Latin fallback fonts and their pubspec declarations.
+  /// The fallback font files no kept locale needs.
+  ///
+  /// Driven by [_fontsByLanguage] rather than by "everything but English",
+  /// because `keep en,ja` ships the whole Japanese UI and deleting its only CJK
+  /// font renders that UI as tofu boxes. There is no recovery on the router this
+  /// build targets: the bundle is served offline from firmware `/www/`, and
+  /// `fontFallbackBaseUrl` needs internet.
+  ///
+  /// A font on disk that no language claims is kept, not deleted. A new language
+  /// pack whose entry is missing from the map is then a build that ships an
+  /// unused font — wasted bytes, which is recoverable — instead of one that
+  /// renders tofu.
+  List<File> _fontsToStrip(List<String> locales) {
+    // A regional variant needs its parent language's font, in both directions:
+    // `keep zh` also keeps zh_TW's strings, and `keep zh_TW` is a Han locale in
+    // its own right. Mapping every kept locale to its parent language covers both.
+    final keptLanguages = locales.map(_parentLanguageOf).toSet();
+    final needed = {
+      ..._fontsSurvivingEveryStrip,
+      for (final language in keptLanguages) ...?_fontsByLanguage[language],
+    };
+    final unclaimed = <String>[];
+    final claimed = {
+      ..._fontsSurvivingEveryStrip,
+      for (final fonts in _fontsByLanguage.values) ...fonts,
+    };
+    final doomed = <File>[];
+    for (final font in _fontFiles()) {
+      final name = _fileNameOf(font);
+      if (needed.contains(name)) {
+        continue;
+      }
+      if (!claimed.contains(name)) {
+        unclaimed.add(name);
+        continue;
+      }
+      doomed.add(font);
+    }
+    if (unclaimed.isNotEmpty) {
+      unclaimed.sort();
+      stdout.writeln('  fallback fonts: kept ${unclaimed.join(', ')} — no '
+          'language claims them, so this script will not delete them. Add them '
+          'to _fontsByLanguage or _fontsSurvivingEveryStrip to make the '
+          'decision explicit.');
+    }
+    return doomed;
+  }
+
+  /// Deletes [doomed] and writes the [pubspecWithoutThem] computed for them.
+  ///
+  /// Both arguments are computed by [keep] before it deletes anything, so this
+  /// method cannot fail partway and leave the tree and the pubspec disagreeing.
   ///
   /// `FallbackFontResolver` is deliberately left alone: it goes on naming
   /// families that no longer exist, which costs nothing because the engine keys
@@ -166,59 +257,136 @@ class LocaleStripper {
   /// add a build flag to teach it which fonts survived; it would buy nothing and
   /// create a second source of truth alongside this script.
   ///
-  /// The cost of this strip lands on user-supplied non-Latin text (a CJK SSID, a
-  /// device name), which shows as tofu while the router is offline.
-  /// `fontFallbackBaseUrl` still renders it once the client has internet.
-  void _stripFallbackFonts() {
-    final removed = <String>[];
-    for (final font in _fontFiles()) {
-      final name = _fileNameOf(font);
-      if (!_fontsSurvivingEnglishOnly.contains(name)) {
-        font.deleteSync();
-        removed.add(name);
-      }
-    }
-    removed.sort();
-    if (removed.isNotEmpty) {
-      stdout.writeln('  fallback fonts: deleted ${removed.join(', ')}');
-      _removeFontDeclarations(removed);
-    } else {
+  /// The cost of this strip lands on user-supplied text in a script no kept
+  /// locale uses (a CJK SSID on an English-only build), which shows as tofu while
+  /// the router is offline. `fontFallbackBaseUrl` still renders it once the client
+  /// has internet.
+  void _stripFallbackFonts(List<File> doomed, _PubspecEdit pubspecWithoutThem) {
+    if (doomed.isEmpty) {
       stdout.writeln('  fallback fonts: nothing to delete');
+      return;
     }
+    for (final font in doomed) {
+      font.deleteSync();
+    }
+    final removed = doomed.map(_fileNameOf).toList()..sort();
+    stdout.writeln('  fallback fonts: deleted ${removed.join(', ')}');
+    pubspecWithoutThem.write(_pubspec);
+    stdout.writeln('  pubspec.yaml: removed '
+        '${pubspecWithoutThem.familiesRemoved} font declaration(s)');
   }
 
-  /// Rewrites the pubspec without the `fonts:` entries for [fontFileNames].
+  /// Computes the pubspec contents without the `fonts:` families that declare
+  /// [fontFileNames], without writing anything.
   ///
-  /// Each entry is a fixed three-line group, so the asset line identifies the
-  /// group and the two lines above it are the family header:
+  /// Throws if the block cannot be parsed, which is what lets [keep] reject a
+  /// pubspec shape it does not understand while the tree is still intact.
+  ///
+  /// A family is a `- family:` line plus every following line indented more
+  /// deeply, so a family with two weights or an interleaved comment parses the
+  /// same as the single-asset shape the repo happens to use today:
   ///
   ///     - family: packages/ui_kit_library/NotoSansSC
   ///       fonts:
   ///         - asset: assets/fonts/fallback/NotoSansCJKsc.subset.woff2
-  void _removeFontDeclarations(List<String> fontFileNames) {
+  ///         - asset: assets/fonts/fallback/NotoSansCJKsc.bold.woff2
+  ///           weight: 700
+  _PubspecEdit _pubspecWithout(List<String> fontFileNames) {
     final lines = _pubspec.readAsLinesSync();
+    final block = _fontsBlockOf(lines, 'pubspec.yaml');
     final dropped = <int>{};
-    for (var i = 0; i < lines.length; i++) {
-      final isDoomedAsset = lines[i].contains('- asset:') &&
-          fontFileNames.any((name) => lines[i].endsWith('/$name'));
-      if (!isDoomedAsset) {
+    var familiesRemoved = 0;
+    final unmatched = {...fontFileNames};
+
+    for (var i = block.start + 1; i < block.end; i++) {
+      if (!_isFamilyHeader(lines[i])) {
         continue;
       }
-      if (i < 2 || !lines[i - 2].contains('- family:')) {
+      final familyEnd = _familyEndFrom(lines, i, block.end);
+      final declared = <String>[];
+      for (var j = i; j < familyEnd; j++) {
+        final asset = _assetPathOf(lines[j]);
+        if (asset != null) {
+          declared.add(asset.split('/').last);
+        }
+      }
+      final doomedHere =
+          declared.where((name) => fontFileNames.contains(name)).toList();
+      if (doomedHere.isEmpty) {
+        continue;
+      }
+      // A family whose assets are only partly doomed would leave a declaration
+      // pointing at a deleted file, which fails the Flutter build with an error
+      // that never mentions this script.
+      if (doomedHere.length != declared.length) {
         throw LocaleStripException(
-          'pubspec.yaml line ${i + 1} declares a stripped font in an '
-          'unexpected shape — expected a "- family:" line two lines above',
+          'pubspec.yaml line ${i + 1} declares both stripped and surviving '
+          'fonts in one family (${declared.join(', ')}) — split the family or '
+          'add the surviving fonts to the strip',
         );
       }
-      dropped.addAll([i - 2, i - 1, i]);
+      unmatched.removeAll(doomedHere);
+      familiesRemoved++;
+      for (var j = i; j < familyEnd; j++) {
+        dropped.add(j);
+      }
     }
+
+    if (unmatched.isNotEmpty) {
+      final missing = unmatched.toList()..sort();
+      throw LocaleStripException(
+        'pubspec.yaml has no fonts: declaration for ${missing.join(', ')} — '
+        'the fonts: block shape is not what this script understands, so it '
+        'stopped before deleting anything',
+      );
+    }
+
     final kept = [
       for (var i = 0; i < lines.length; i++)
         if (!dropped.contains(i)) lines[i],
     ];
-    _pubspec.writeAsStringSync('${kept.join('\n')}\n');
-    stdout.writeln('  pubspec.yaml: removed ${dropped.length ~/ 3} '
-        'font declaration(s)');
+    return _PubspecEdit(kept, familiesRemoved);
+  }
+
+  bool _isFamilyHeader(String line) => line.trimLeft().startsWith('- family:');
+
+  /// Index one past the last line belonging to the family starting at [start].
+  ///
+  /// The family owns every following line indented more deeply than its own
+  /// `- family:` line, which is what makes the scan tolerate extra weights and
+  /// comments inside the family.
+  int _familyEndFrom(List<String> lines, int start, int blockEnd) {
+    final indent = _indentOf(lines[start]);
+    for (var i = start + 1; i < blockEnd; i++) {
+      if (lines[i].trim().isEmpty) {
+        continue;
+      }
+      if (_indentOf(lines[i]) <= indent) {
+        return i;
+      }
+    }
+    return blockEnd;
+  }
+
+  int _indentOf(String line) => line.length - line.trimLeft().length;
+
+  /// The path an `- asset:` line points at, or null if [line] is not one.
+  ///
+  /// Tolerates the quoting and trailing comments YAML allows, because a path this
+  /// failed to read used to abort the strip *after* the deletions.
+  String? _assetPathOf(String line) {
+    var trimmed = line.trim();
+    if (trimmed.startsWith('#') || !trimmed.startsWith('- asset:')) {
+      return null;
+    }
+    trimmed = trimmed.substring('- asset:'.length).trim();
+    if (trimmed.startsWith('"') || trimmed.startsWith("'")) {
+      final quote = trimmed[0];
+      final close = trimmed.indexOf(quote, 1);
+      return close < 0 ? trimmed.substring(1) : trimmed.substring(1, close);
+    }
+    final comment = trimmed.indexOf(' #');
+    return (comment < 0 ? trimmed : trimmed.substring(0, comment)).trim();
   }
 
   /// Throws unless every font the pubspec declares is present on disk.
@@ -227,13 +395,16 @@ class LocaleStripper {
   /// mentions this script, so catching it here is what keeps a mis-stripped
   /// pubspec debuggable.
   void verifyDeclaredFontsExist() {
+    final lines = _pubspec.readAsLinesSync();
+    final block = _fontsBlockOf(lines, 'pubspec.yaml');
     final missing = <String>[];
-    for (final line in _pubspec.readAsLinesSync()) {
-      final trimmed = line.trim();
-      if (!trimmed.startsWith('- asset:')) {
+    // Scoped to the fonts: block so an `- asset:` line elsewhere in the pubspec
+    // cannot be mistaken for a font declaration.
+    for (var i = block.start + 1; i < block.end; i++) {
+      final assetPath = _assetPathOf(lines[i]);
+      if (assetPath == null) {
         continue;
       }
-      final assetPath = trimmed.substring('- asset:'.length).trim();
       if (!File('$projectRoot/$assetPath').existsSync()) {
         missing.add(assetPath);
       }
@@ -274,7 +445,32 @@ class LocaleStripper {
       );
     }
     _restoreFontDeclarations();
+    // Only when something was actually stripped: on a clean tree the generated
+    // sources are already correct, and deleting them would make a bare `restore`
+    // break the next `flutter run` for no reason.
+    if (stripped.isNotEmpty) {
+      _deleteGeneratedLocalizations();
+    }
     stdout.writeln('locale_strip: restore complete');
+  }
+
+  /// Deletes `lib/l10n/gen`, which holds English-only generated output after a
+  /// strip.
+  ///
+  /// The `git checkout` above cannot: the directory is gitignored, so it is not
+  /// git's to restore. Leaving it means a `gen-l10n` that fails after this point
+  /// keeps a stripped tree's generated sources, which [verify] is deliberately
+  /// blind to — the app would compile and show English only, with a clean
+  /// `git status` to say nothing is wrong. Deleting is safe because the caller
+  /// regenerates, and a missing directory fails the build loudly.
+  void _deleteGeneratedLocalizations() {
+    final generated = Directory('$projectRoot/lib/l10n/gen');
+    if (!generated.existsSync()) {
+      return;
+    }
+    generated.deleteSync(recursive: true);
+    stdout.writeln('  deleted lib/l10n/gen — run `flutter gen-l10n` to '
+        'regenerate it');
   }
 
   /// Replaces the pubspec's `fonts:` block with the committed one, leaving the
@@ -299,8 +495,7 @@ class LocaleStripper {
   }
 
   bool _sameLines(_FontsBlock a, _FontsBlock b) =>
-      a.lines.length == b.lines.length &&
-      Iterable.generate(a.lines.length).every((i) => a.lines[i] == b.lines[i]);
+      _sameStrings(a.lines, b.lines);
 
   List<String> _committedPubspecLines() {
     final result = Process.runSync(
@@ -345,10 +540,11 @@ class LocaleStripper {
     return _FontsBlock(start, end, lines.sublist(start, end));
   }
 
-  /// Throws unless none of [strippablePaths] has local changes.
+  /// Throws unless nothing inside the blast radius of [restore] has local
+  /// changes: [strippablePaths], plus the pubspec's `fonts:` block.
   ///
-  /// Runs before a strip so uncommitted work is never inside the blast radius of
-  /// the [restore] that follows, and after a build to prove nothing leaked.
+  /// Runs before a strip so uncommitted work is never inside that blast radius,
+  /// and after a build to prove nothing leaked.
   void verify() {
     final changes = _localChanges();
     if (changes.isNotEmpty) {
@@ -357,8 +553,61 @@ class LocaleStripper {
         'first, because restoring would discard them:\n$changes',
       );
     }
-    stdout.writeln('  no local changes in ${strippablePaths.join(', ')}');
+    _verifyFontsBlockIsCommitted();
+    stdout.writeln('  no local changes in ${strippablePaths.join(', ')} '
+        'or the pubspec.yaml fonts: block');
   }
+
+  /// Throws when the pubspec's `fonts:` block differs from the committed one.
+  ///
+  /// [strippablePaths] cannot cover this: `pubspec.yaml` is excluded from it
+  /// because a CI job stamps the version in before every build, and a
+  /// whole-file gate refused every one of those builds. But [restore] rewrites
+  /// the `fonts:` block from `git show HEAD`, so uncommitted edits *inside that
+  /// block* are still inside the blast radius — the exact failure the exclusion
+  /// was meant to avoid, just narrower. Comparing only the block closes the hole
+  /// without ever seeing the version stamp.
+  ///
+  /// A stripped tree never reaches here: its deleted language packs make
+  /// [_localChanges] non-empty, so [verify] has already thrown. [restore] reads
+  /// [_localChanges] directly and is unaffected either way.
+  void _verifyFontsBlockIsCommitted() {
+    if (!_pubspec.existsSync()) {
+      return;
+    }
+    final committed = _fontsBlockOf(
+      _committedPubspecLines(),
+      'the committed pubspec.yaml',
+    );
+    final current = _fontsBlockOf(_pubspec.readAsLinesSync(), 'pubspec.yaml');
+    // Compared without trailing blank lines: when `fonts:` is the last key in the
+    // file its block runs to EOF, so appending anything below it — a CI version
+    // stamp, say — lands a blank line inside the block's range without touching a
+    // single declaration.
+    final committedLines = _withoutTrailingBlanks(committed.lines);
+    final currentLines = _withoutTrailingBlanks(current.lines);
+    if (_sameStrings(committedLines, currentLines)) {
+      return;
+    }
+    throw LocaleStripException(
+      'the pubspec.yaml fonts: block has local changes — commit or stash them '
+      'first, because restoring would discard them:\n'
+      '  committed: ${committedLines.length} lines\n'
+      '  working:   ${currentLines.length} lines',
+    );
+  }
+
+  List<String> _withoutTrailingBlanks(List<String> lines) {
+    var end = lines.length;
+    while (end > 0 && lines[end - 1].trim().isEmpty) {
+      end--;
+    }
+    return lines.sublist(0, end);
+  }
+
+  bool _sameStrings(List<String> a, List<String> b) =>
+      a.length == b.length &&
+      Iterable.generate(a.length).every((i) => a[i] == b[i]);
 
   /// `git status --porcelain` over [strippablePaths] — empty when they are all
   /// as committed. Deliberately blind to `pubspec.yaml`, which a CI job stamps
@@ -398,6 +647,20 @@ class LocaleStripper {
   }
 
   String _fileNameOf(FileSystemEntity entity) => entity.uri.pathSegments.last;
+}
+
+/// A pubspec rewrite that has been computed but not yet written, so the caller
+/// can validate the whole plan before it deletes the first file.
+class _PubspecEdit {
+  _PubspecEdit(this.lines, this.familiesRemoved);
+
+  final List<String> lines;
+
+  /// How many `fonts:` families the rewrite drops, for the log line.
+  final int familiesRemoved;
+
+  void write(File pubspec) =>
+      pubspec.writeAsStringSync('${lines.join('\n')}\n');
 }
 
 /// Where the pubspec's `fonts:` block is and what it says, so a restore can swap

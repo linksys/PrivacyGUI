@@ -117,12 +117,16 @@ if [ "$locales" != "all" ]; then
     echo "  language packs present: $(ls lib/l10n/app_*.arb 2> /dev/null | wc -l | tr -d ' ')"
     echo "  fallback fonts present: $(ls assets/fonts/fallback 2> /dev/null | wc -l | tr -d ' ')"
 
+    # Installed BEFORE the strip, not after: `keep` deletes files as it goes, so a
+    # failure partway through leaves a stripped tree that only this trap puts
+    # back. `restore` is idempotent and prints "nothing was stripped" on an intact
+    # tree, so arming it early costs nothing when the strip never starts.
+    trap restoreLocales EXIT
     if ! $DART run tools/locale_strip.dart keep "$locales"; then
-        echo "language pack strip failed — nothing was built"
+        echo "language pack strip failed — nothing was built; the working tree"
+        echo "may be partially stripped, which the restore below puts back"
         exit 1
     fi
-    # From here on the working tree is modified, so every exit path restores it.
-    trap restoreLocales EXIT
     echo "  language packs kept:    $(ls lib/l10n/app_*.arb 2> /dev/null | wc -l | tr -d ' ')"
     echo "  fallback fonts kept:    $(ls assets/fonts/fallback 2> /dev/null | wc -l | tr -d ' ')"
     if ! $FLUTTER gen-l10n; then
