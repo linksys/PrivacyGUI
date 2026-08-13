@@ -875,6 +875,162 @@ all 18 cards doubles 1644 cases and will surface coordinates nobody has looked a
 shape (opt-in per card / second allowlist keyed by profile / one allowlist) is an
 explicit decision in that ticket rather than an implementation detail.
 
+### 2.10d What closing the four card-own tickets taught us (#1234–#1237 — implemented)
+
+87 coordinates → **0**, on one branch, one commit per shape. §1.1's decomposition
+held to the coordinate, including its uncomfortable prediction that the two
+`system_status` sites sharing `min|0`'s 26 coordinates would each clear **none**
+of them alone — the legend row moved only the 2 outside that key, and the 26 fell
+in one step when the gauge row followed:
+
+| Commit (shape) | Sites | Coordinates |
+|---|---|---:|
+| "View details" footer | `system_status:118`, `device_info:140` | 34→28, 2→0 |
+| Hero inner row | `lan_info:56`, `time_settings:108` | 27→0, 21→0 |
+| Legend row | `system_status:218` | 28→26 |
+| Twin gauge row | `system_status:196` | 26→**0** |
+| Gauge centre | `network_health:150` | 3→0 |
+
+The ratchet now stands at **94 coordinates**, all owned by #1230 (67,
+`firewall_overview`) and #1238 (27, `connected_devices`).
+
+**1. One shape, two techniques — and sometimes the technique is deletion.** The
+hero inner row is the same idiom in two files and **48 of the 84 coordinates**,
+the largest single shape in the baseline, with the same measured cause in both: a
+fixed 56px avatar plus `AppGap.lg` leaves the `Expanded` column **61.4px**, and a
+`Row` hands its non-flex children *unbounded* width. `lan_info` overflowed in all
+26 locales including `en` (+47.7px), so this was never a translation-length
+defect. But the two fixes diverge, per §2.10a point 2: a composed status
+soft-wraps (`DHCP Enabled` ellipsized to `DHCP…` drops the only word the row
+exists to show), while `time_settings`' child is an `AppBadge` and **a capsule
+cannot take a second line**. That badge already ellipsized correctly and only ever
+failed because a single-child `Row` handed it infinity — so the `Row` was
+*deleted*, not flexed. Removing a `RenderFlex` beats constraining one when it had
+no other effect; the enclosing `Column` was already `start`-aligned.
+
+**2. A `Wrap` under an `Expanded` is clipped in silence.** #1234's design
+alternative (stack the two gauges instead of shrinking them) was expected to fail
+loudly: two 100px runs need ~208px against the 201px (`en`) / 181px (`de`) the
+`Expanded` offers. It fails *silently* — `RenderWrap` has no overflow indicator of
+its own and the `Expanded` pins its height, so the second circle is simply cut
+(108px between gauge centres in a 181px box, all 209 gate cases green). §2.10a
+point 3 says a `Wrap` must have height to spend; the sharper form is: **the gate
+cannot tell you when it doesn't**, so the precondition is measured *before* the
+conversion or not at all. #1233's and #1266's conversions were safe for a reason
+that has to be checked, not inherited.
+
+**3. Every fix is one of three things to the gate — and a green gate is not a
+green criterion.**
+
+| Fix class | Example | The gate afterwards |
+|---|---|---|
+| Constrain (`Flexible`, `maxLines`, bound a size) | all of #1236, #1237 | still sees a revert |
+| Convert to a `Wrap`/`Column` inside a pinned box | rejected stacking | blind to the *new* failure |
+| Scale (`FittedBox`) | #1235's centre | blind to it **for good** |
+
+`FittedBox(fit: BoxFit.scaleDown)` is the right fix for #1235's centre and it
+permanently removes the signal: once a subtree may shrink, no future squeeze can
+ever produce a coordinate. The mutation ledger makes that concrete — shrinking the
+score's font unconditionally clears **all 209** gate cases. So a self-relaxing fix
+has to ship its own floor: `usp_gauge_center_readability_test.dart` asserts a 12px
+painted minimum, which is the replacement for what `scaleDown` took away.
+
+That table is the *revert* axis, and it is not the only one. A constraining fix
+keeps the signal, so the gate does own its revert — but it never owned the
+**choice**: `maxLines: 1` and a soft-wrap clear the same coordinates, and at three
+of these sites one of them destroys the string. Measured on this branch:
+ellipsizing `lan_info`'s router IP, its DHCP status, or the shared InfoGrid value
+renderer leaves **all 1644** gate cases green. #1236 AC 4 and #1237 AC 5 name those
+readings ("truncating an IP in the middle makes it useless"; "timezone names stay
+identifiable"), so `usp_hero_row_readability_test.dart` asserts them across four
+locales each — and each mutation kills exactly its own group, so a failure says
+which criterion broke. The rule that falls out is narrower than "constraining
+fixes need tests", which would be licence to test every `Flexible` on the branch:
+**a fix owes a test when the gate stays green through both the right and the wrong
+version of it** — whether because the fix removed the signal (#1234, #1235) or
+because the signal never told the two apart (#1236, #1237). Where the gate does
+discriminate, the allowlist entry it deletes *is* the assertion.
+
+The same test covers the one place this branch made a reading *worse*: #1237's
+badge now ellipsizes (`de` paints 45.4px of an 85.1px label), which §2.10a point 2
+requires of a capsule but which no coordinate can report, since a narrower badge
+overflows *less*. That gets a floor too, not a fidelity claim — enough glyphs to
+key the state, with the colour carrying the rest.
+
+**4. A ticket's diagnosis is a report, not a measurement.** #1235 states the tier
+label is wider than the space inside the circle. The three coordinates are
+**bottom** overflows (+21.0 `de`, +11.0 `ru`, +9.0 `th`): `AppGauge` respects its
+incoming constraints, so the gauge lays out 120×67 (`en`) and 120×**23** (`de`)
+against a 44px centre column. Worse, the cause is two levels up — `_MetricChip`'s
+three ~23.1px label columns soft-wrap (`Discards` over 3 lines, `Verworfene
+Pakete` over **6**), so the height left for the gauge is a function of translation
+length. Acting on the ticket's text would have produced a fix that is both lossy
+and incomplete: ellipsizing the tier truncates it *and* leaves 2 of 3 coordinates
+standing (ledger row 2). §1.1's per-line attribution is what turned this up, and
+it belongs on the *cause*, not on the symptom's line number.
+
+**5. A cleared allowlist is not a readability claim — and #1240 must not read it
+as one.** Track A's target is "nothing is clipped or overflowing". Both cards
+closed here are green at 191px and unusable there:
+
+- `time_settings`: the hero clock is a 222.5px string in a 61.4px column, so it
+  paints **5 lines / 140px** — in every locale, `en` included — while the sync
+  badge shows ~6 glyphs plus an ellipsis. Nothing overflows; everything that could
+  give, gave. §1.2 puts this card's fit width at 288px.
+- `network_health`: the centre scales to **0.52** in `de` (14.6px score, 8.4px
+  tier) because the metric labels below take 48px (`en`) to 96px (`de`) of the
+  height. §1.2 puts its fit width at 420px; it is being asked to render at 191px.
+
+Those two numbers are direct #1240 input, not defects to paper over. Related
+caveat on §1.2 itself: that table measures the narrowest width at which a card is
+*clean*, and Track A has now moved that number for five cards while leaving the
+width at which they are *readable* exactly where it was. #1240 must re-measure,
+not read §1.2's column.
+
+**6. §2.10c finding 1's grep pass, executed over these five cards.** Six
+hardcoded English strings; five are protocol acronyms that do not vary by locale
+(`CPU`, `DNS`, `IPv6`, `MAC`, and `DST`, which is arguable and left alone). One is
+a real bug: `usp_lan_info_card.dart:144` renders `value: 'Enabled'` while line 85
+of the same file uses `loc(context).enabled`, a key that exists in all 26 locales
+(`Ενεργοποιήθηκε`, `Ingeschakeld`, …). It is **not** the one-line fix #1266 was,
+because it is gate-invisible twice over: a hardcoded string cannot vary in a
+locale sweep, *and* the branch never renders at all — it is the `else` of
+`if (info.ipv6Addresses.isNotEmpty)`, and the gate's fixture supplies
+`ipv6Addresses: ['fd00::1']`. Verifying a localization there needs #1267's
+`overrides` parameter first, so it is recorded here rather than folded into these
+four tickets. This is §2.10c finding 2 in its purest form: the data decides what
+the instrument can see.
+
+**7. Two entries for #1245's de-duplication inventory.** There are **three**
+hand-rolled "View details" footers, not two — `usp_system_status_card.dart:118`,
+`usp_device_info_card.dart:134` and `usp_traffic_analysis_card.dart:141` — plus
+the template's own at `dashboard_card_template.dart:393`, so four copies of one
+shape. They exist for one reason: `detailRoute` cannot carry query parameters
+(`?tab=`, `?deviceId=`), so none of the three can use
+`DashboardCardTemplate._buildDetailFooter`. #1227 fixed the template's copy and
+could not fix theirs. The fix here was replicated *verbatim* rather than
+extracted, because extracting it would make a fifth copy of the widget while
+leaving the cause in place. The cause — `detailRoute`'s signature — is the
+inventory entry. The second entry is the footer shape itself.
+
+These four tickets hardened two of the three. `traffic_analysis`'s is left
+unflexed on purpose: its `minColumns` is **4**, not 3, so the width enumeration
+never realizes it at the 157.4px where this shape bites, and it carries no
+allowlist entry in any of its 26 locales. That is the ratchet doing its job in
+the other direction — it says which copies actually need the change, and this one
+does not yet. It is also why the copy is worth recording rather than patched
+prophylactically: if the floor ever drops to 3, the gate raises coordinates for
+it and the fix is the same three-line `Flexible` used twice above. Hardening it
+blind today would spend the signal that tells us it is needed.
+
+**8. Widening was genuinely available once, and was declined.** `time_settings`
+is the only card in the baseline where §1.3's arithmetic permits the other fix
+(fit width 288px, so `minColumns` 3 → 5 would have worked). It stays 3, with the
+reasoning recorded at the declaration site: the floor is the user's, it costs 5 of
+12 columns in every layout to buy headroom in a handful of locales, and the
+card-own fix cleared all 21 coordinates by deleting a single-child `Row` that
+had no other effect — the cheapest fix on the branch.
+
 ### 2.11 fl_chart's 19 coordinates get a primary plan and a documented fallback
 
 `firewall_overview`'s 19 coordinates originate inside fl_chart
@@ -995,14 +1151,28 @@ addition — it changes no card's rendering until a threshold is declared.
 | #1228 | `ethernet_ports` ×2 sites (§2.12) — **implemented** | 52 |
 | #1229 | `wifi_performance` ×2 sites (§2.10b) — **implemented** | 45 |
 | #1266 | `wifi_performance` Channels tab: localize `'Ch '` + harden (§2.10c) — **implemented** | 0 (net) |
+| #1234 | `system_status` remaining ×3 sites (§2.10d) — **implemented** | 34 |
+| #1236 | `lan_info` + `device_info` card-own (§2.10d) — **implemented** | 29 |
+| #1237 | `time_settings` card-own (§2.10d) — **implemented** | 21 |
+| #1235 | `network_health` gauge centre (§2.10d) — **implemented** | 3 |
 | #1230 | `firewall_overview` own sites (§2.11) | 48 |
-| #1234 | `system_status` remaining ×3 sites | 34 |
-| #1236 | `lan_info` + `device_info` card-own | 29 |
-| #1237 | `time_settings` card-own | 21 |
-| #1235 | `network_health` gauge centre | 3 |
 | #1238 | `connected_devices` card-own (§2.6) | 1 |
 
 Ceiling **515 / 560**. The other 45 are the dependency-blocked ones (§1.1).
+
+After #1234–#1237 the allowlist holds **94** coordinates: 67 `firewall_overview`
+(#1230) and 27 `connected_devices` (#1238). **49 of those are still card-own and
+clearable in this repo** — #1230's three own sites carry 48 (a rules/DMZ list
+column, an info-grid summary row, a pie-chart centre label) and #1238's
+device-count row carries 1. Only the other **45** are dependency-blocked, exactly
+as §1.1 classified them: fl_chart's 19 axis-title coordinates and the 26 that need
+a ui_kit `AppListTile` change. What these four tickets complete is the *four-shape*
+group, not Track A's card-own work — #1230 is the largest single block of
+clearable coordinates left in the epic.
+
+Their `tracking` notes are left as the epic requires: a ticket touches only the
+notes of cards it closes, so both cards keep the `baseline #1183` default until
+their own ticket names an owner.
 
 #1266 is in this track despite clearing nothing: it is the only entry that *adds*
 coordinates (3, by localizing a hardcoded string) and removes them again in the
@@ -1041,6 +1211,7 @@ the likeliest way to get this wrong.
 | Work | Method | Why |
 |---|---|---|
 | All of Track A except #1225 | **Ratchet, not TDD** | The failing assertions are *already committed* — the 560 entries in `known_overflows.json`. The red→green move is: fix the layout, delete the allowlist entry, gate passes. Deleting an entry that still overflows fails that test, so it cannot be faked. |
+| …plus two readability tests, added by #1234–#1237 | **Ratchet + a floor test** | The ratchet verifies that the overflow is gone. It cannot verify what the fix *chose*, in two situations, and both occurred on that branch (§2.10d point 3). (a) The fix makes a subtree self-relaxing, so the signal is gone for good: measured, shrinking the health score's font unconditionally clears all 209 of its gate cases. (b) Two fixes clear the same coordinates and only one preserves the reading: measured, `maxLines: 1` on the router IP, the DHCP status, or the InfoGrid value renderer leaves all 1644 cases green while cutting a string #1236 AC 4 / #1237 AC 5 require whole. The test is owed when **the gate stays green through both the right and the wrong fix** — not whenever a fix constrains. A plain `Flexible` is fully verified by the entry it deletes. |
 | #1232 | **TDD** | The gate asserts only "no overflow"; it cannot detect *wrong density*. Threshold selection, popup cut-off, and absent-`normalAbove` behaviour can all break while the gate stays green. Tests go red first. |
 | #1231 | **Neither** | Not an assertion — it fixes a failure the gate is structurally blind to (§2.8), so it is verified by eye or golden. |
 | #1225 | **Property tests + no-op diff** | Planned as "neither", since converting a sampled invariant into a guaranteed one changes no assertion. In the event it had a testable seam after all: the search is pinned by a property (no supported width is narrower than the one pumped, which fails on a coarser step) and the no-op claim by diffing the full sweep's 560 allowlisted hits before and after — they matched exactly. |

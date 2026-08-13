@@ -53,13 +53,38 @@ class UspLanInfoCard extends ConsumerWidget {
                     children: [
                       AppText.titleLarge(info.ipAddress),
                       AppGap.xxs(),
+                      // The hero's 56px avatar + `AppGap.lg` leave this
+                      // `Expanded` column just **61.4px** at the card's
+                      // narrowest realization (measured), and a `Row` hands a
+                      // non-flex child unbounded width — so the status label
+                      // painted at its full intrinsic width and the row
+                      // overflowed in every locale, `en` included (+47.7px), up
+                      // to +101.8px in `el`.
+                      //
+                      // Soft-wrap, not ellipsis: `DHCP Enabled` is a composed
+                      // *status*, and ~49px of text column would ellipsize it to
+                      // `DHCP…` — dropping the one word the row exists to show.
+                      // §2.10a point 2's rule, applied to a status instead of a
+                      // statistic. The height a second run costs is free here:
+                      // this card's content sits in the card template's
+                      // `SingleChildScrollView`, so it yields, unlike the fixed
+                      // gauge of §2.10a point 3. `start` keeps the dot on the
+                      // label's first line rather than floating it to the
+                      // vertical middle of a wrapped block.
                       Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          UspStatusDot(isActive: info.dhcpEnabled, size: 8),
+                          Padding(
+                            padding: const EdgeInsets.only(top: AppSpacing.xs),
+                            child: UspStatusDot(
+                                isActive: info.dhcpEnabled, size: 8),
+                          ),
                           AppGap.xs(),
-                          AppText.bodyMedium(
-                            '${loc(context).dhcp} ${info.dhcpEnabled ? loc(context).enabled : loc(context).disabled}',
-                            color: colorScheme.onSurfaceVariant,
+                          Flexible(
+                            child: AppText.bodyMedium(
+                              '${loc(context).dhcp} ${info.dhcpEnabled ? loc(context).enabled : loc(context).disabled}',
+                              color: colorScheme.onSurfaceVariant,
+                            ),
                           ),
                         ],
                       ),
@@ -116,7 +141,16 @@ class UspLanInfoCard extends ConsumerWidget {
                         : null,
                   )
                 else if (info.ipv6Enabled)
-                  InfoGridItem(label: 'IPv6', value: 'Enabled'),
+                  // `IPv6` is a protocol name and stays as it is, like `DHCP`
+                  // above; the *value* is prose and was not. Localizing it is
+                  // safe here without new measurement, which is not usually
+                  // true of a hardcoded string (#1266): this branch never
+                  // renders under the gate's fixture, but the cell it renders
+                  // into is the shared `InfoGrid` value, which soft-wraps since
+                  // #1236 and is measured in all 26 locales via the sibling
+                  // branch — and that sibling paints a full IPv6 address, far
+                  // longer than the longest `enabled` translation.
+                  InfoGridItem(label: 'IPv6', value: loc(context).enabled),
               ],
             ),
           ],

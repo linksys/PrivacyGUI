@@ -140,29 +140,42 @@ class UspDeviceInfoCard extends ConsumerWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
-            Semantics(
-              button: true,
-              label: label,
-              child: InkWell(
-                onTap: () => context.pushNamed(
-                  RouteNamed.uspNodeDetail,
-                  queryParameters: {'deviceId': deviceId},
-                ),
-                borderRadius: BorderRadius.circular(4),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    AppText.labelMedium(
-                      label,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                    AppGap.xs(),
-                    Icon(
-                      Icons.arrow_forward,
-                      size: 14,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                  ],
+            // Both `Flexible`s are #1227's detail-footer shape, replicated
+            // verbatim from `DashboardCardTemplate._buildDetailFooter`. Safe to
+            // flex the link here for the reason given there: the row is
+            // end-aligned, so a short link's unused share is stranded at the
+            // *start* where it is invisible, and a row that already fits lays
+            // out exactly as before.
+            Flexible(
+              child: Semantics(
+                button: true,
+                label: label,
+                child: InkWell(
+                  onTap: () => context.pushNamed(
+                    RouteNamed.uspNodeDetail,
+                    queryParameters: {'deviceId': deviceId},
+                  ),
+                  borderRadius: BorderRadius.circular(4),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // The arrow keeps its 14px; the label is what shortens.
+                      Flexible(
+                        child: AppText.labelMedium(
+                          label,
+                          color: Theme.of(context).colorScheme.primary,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      AppGap.xs(),
+                      Icon(
+                        Icons.arrow_forward,
+                        size: 14,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),

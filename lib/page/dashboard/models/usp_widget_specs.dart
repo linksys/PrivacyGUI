@@ -174,6 +174,19 @@ abstract class UspWidgetSpecs {
     displayName: 'Time Settings',
     constraints: {
       DisplayMode.normal: WidgetGridConstraints(
+        // `minColumns` stays 3 deliberately. This is the one card in the whole
+        // baseline where raising it would have worked: its fit width is 288px
+        // (§1.2), so 3 → 5 columns would have covered every locale, while the
+        // other 12 cards need more than the 12 columns that exist (§1.3).
+        //
+        // Declined anyway, and #1237 exists partly to record why. The floor is
+        // the user's, not ours — it decides how narrow they may make this card on
+        // their own dashboard — and 5 of 12 columns is a permanent charge against
+        // every layout to buy headroom in a handful of long-timezone locales. The
+        // card-own fix (`usp_time_settings_card.dart:108`) cleared all 21
+        // coordinates by deleting a single-child `Row` that had no other effect
+        // than handing the badge unbounded width, so the widening bought nothing
+        // that constraining the content did not.
         minColumns: 3,
         maxColumns: 8,
         preferredColumns: 6,

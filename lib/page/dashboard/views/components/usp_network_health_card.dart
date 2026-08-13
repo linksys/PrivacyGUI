@@ -154,22 +154,62 @@ class _HealthOverview extends StatelessWidget {
             child: AppGauge(
               value: overallScore.toDouble(),
               size: 120,
-              centerBuilder: (ctx, v) => Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // When the WAN is down the score gauge shows the neutral
-                  // placeholder + "Disconnected" so it speaks the same
-                  // vocabulary as the traffic-light row and the banner, rather
-                  // than "0 / Critical". See #1143.
-                  AppText.titleLarge(
-                      wanIsUp ? '$overallScore' : _kNoTrafficPlaceholder),
-                  AppText.labelSmall(
-                    wanIsUp
-                        ? tier.resolveLabel(ctx)
-                        : loc(parentContext).disconnected,
-                    color: tierClr,
-                  ),
-                ],
+              // The centre is a non-positioned `Stack` child inside `AppGauge`,
+              // so it is handed the gauge's *laid* box loose — and that box is
+              // not 120×120 here. `AppGauge` respects its incoming constraints,
+              // and this `Expanded` is squeezed hard enough that the gauge lays
+              // out at 120×67 in `en` and 120×**23** in `de`. The centre column
+              // needs 44px (28 for the score, 16 for the tier), so it reported
+              // +21.0px (`de`), +11.0px (`ru`) and +9.0px (`th`) — #1235's three
+              // coordinates. Bottom overflow, not the too-wide tier label the
+              // ticket assumed; measuring first is what turned that up.
+              //
+              // The squeeze comes from `_MetricChip`, three columns of ~23.1px
+              // of text at this width, whose labels soft-wrap: `Discards` takes
+              // 3 lines (48px) and `Verworfene Pakete` takes **6** (96px). So
+              // the height left for the gauge is a function of translation
+              // length, and the three failing locales are exactly the three with
+              // the longest metric labels — #1183's premise ("translation length
+              // must not decide whether the layout is valid") violated one level
+              // up from where it showed.
+              //
+              // `BoxFit.scaleDown` is the fix that fits AC 4 as written: "a tier
+              // abbreviated past recognition is worse than a smaller font". It
+              // never drops or truncates the tier — in `ru` it stops the label
+              // wrapping to two lines and shrinks it 3% instead — and it scales
+              // nothing at any width where the centre already fitted, so the
+              // wide layouts are byte-identical. It is also self-relaxing: the
+              // moment the metric row stops eating the height (Track B), the
+              // scale returns to 1.0 with no code change, which a hardcoded
+              // abbreviation or a dropped label would not.
+              //
+              // What it does NOT fix, deliberately: at 191px those metric labels
+              // are illegible in every locale, `en` included — `Discards` breaks
+              // mid-word across 3 lines today. That is this card being rendered
+              // at 191px when §1.2 measures its fit width at 420px, so it is a
+              // threshold question for #1240 and not something to paper over
+              // here by ellipsizing a label to `V…`. The worst scale this leaves
+              // is 0.52 in `de`, and that number is the density defect's
+              // measurement, not a design choice.
+              centerBuilder: (ctx, v) => FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // When the WAN is down the score gauge shows the neutral
+                    // placeholder + "Disconnected" so it speaks the same
+                    // vocabulary as the traffic-light row and the banner, rather
+                    // than "0 / Critical". See #1143.
+                    AppText.titleLarge(
+                        wanIsUp ? '$overallScore' : _kNoTrafficPlaceholder),
+                    AppText.labelSmall(
+                      wanIsUp
+                          ? tier.resolveLabel(ctx)
+                          : loc(parentContext).disconnected,
+                      color: tierClr,
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

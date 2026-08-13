@@ -105,17 +105,25 @@ class _UspTimeSettingsCardState extends ConsumerState<UspTimeSettingsCard>
                     children: [
                       AppText.titleLarge(timeDisplay),
                       AppGap.xxs(),
-                      Row(
-                        children: [
-                          AppBadge(
-                            label: time.isSynchronized
-                                ? loc(context).synchronized
-                                : time.status,
-                            color: time.isSynchronized
-                                ? appColors?.semanticSuccess
-                                : appColors?.semanticWarning,
-                          ),
-                        ],
+                      // Same shape as `usp_lan_info_card`'s hero row and the
+                      // same 61.4px column, but the fix is the opposite one,
+                      // because a capsule cannot take a second line: `AppBadge`
+                      // already ellipsizes its own label (`Flexible` +
+                      // `maxLines: 1` inside it) and only ever failed to,
+                      // because this single-child `Row` handed it *unbounded*
+                      // width and its inner `Flexible` had nothing to bind
+                      // against. The `Row` did nothing else — the enclosing
+                      // `Column` is already `CrossAxisAlignment.start`, so the
+                      // badge shrink-wraps identically without it — so it is
+                      // removed rather than given a `Flexible`. §2.10a point 2's
+                      // ellipsis-vs-wrap choice, decided by what the child *is*.
+                      AppBadge(
+                        label: time.isSynchronized
+                            ? loc(context).synchronized
+                            : time.status,
+                        color: time.isSynchronized
+                            ? appColors?.semanticSuccess
+                            : appColors?.semanticWarning,
                       ),
                     ],
                   ),
@@ -133,6 +141,13 @@ class _UspTimeSettingsCardState extends ConsumerState<UspTimeSettingsCard>
                     label: loc(context).utcOffset, value: offsetDisplay),
               if (tzInfo != null && tzInfo.observesDST)
                 InfoGridItem(
+                  // Deliberately unlocalized, and recorded as arguable in
+                  // §2.10d point 6 rather than fixed here: unlike the `Enabled`
+                  // value on `lan_info`, `DST` has no ARB key, so localizing it
+                  // means adding one plus 26 translations — and several locales
+                  // spell it as a word rather than an initialism
+                  // (`Sommerzeit`), which is a width change in a cell this
+                  // branch has not measured. The value beside it is localized.
                   label: 'DST',
                   value: inferDstEnabled(time.localTimeZone)
                       ? loc(context).on

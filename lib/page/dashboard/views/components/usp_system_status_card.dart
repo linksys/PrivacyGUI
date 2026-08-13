@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -15,6 +17,11 @@ import 'package:privacy_gui/page/_shared/components/dashboard_card_template.dart
 import 'package:privacy_gui/page/_shared/components/usp_info_row.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:ui_kit_library/ui_kit.dart';
+
+/// The diameter the Monitor tab's CPU/memory gauges are drawn at whenever the
+/// card is wide enough to hold two of them side by side. Narrower realizations
+/// scale down from here; see `_MonitorView.build`.
+const double _kMonitorGaugeSize = 100;
 
 /// System Performance Dashboard — 4-tab card (F-021).
 ///
@@ -118,29 +125,42 @@ class _UspSystemStatusCardState extends ConsumerState<UspSystemStatusCard> {
         Row(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
-            Semantics(
-              button: true,
-              label: label,
-              child: InkWell(
-                onTap: () => context.pushNamed(
-                  RouteNamed.uspStatistics,
-                  queryParameters: {'tab': tabIndex.toString()},
-                ),
-                borderRadius: BorderRadius.circular(4),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    AppText.labelMedium(
-                      label,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                    AppGap.xs(),
-                    Icon(
-                      Icons.arrow_forward,
-                      size: 14,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                  ],
+            // Both `Flexible`s are #1227's detail-footer shape, replicated
+            // verbatim from `DashboardCardTemplate._buildDetailFooter`. Safe to
+            // flex the link here for the reason given there: the row is
+            // end-aligned, so a short link's unused share is stranded at the
+            // *start* where it is invisible, and a row that already fits lays
+            // out exactly as before.
+            Flexible(
+              child: Semantics(
+                button: true,
+                label: label,
+                child: InkWell(
+                  onTap: () => context.pushNamed(
+                    RouteNamed.uspStatistics,
+                    queryParameters: {'tab': tabIndex.toString()},
+                  ),
+                  borderRadius: BorderRadius.circular(4),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // The arrow keeps its 14px; the label is what shortens.
+                      Flexible(
+                        child: AppText.labelMedium(
+                          label,
+                          color: Theme.of(context).colorScheme.primary,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      AppGap.xs(),
+                      Icon(
+                        Icons.arrow_forward,
+                        size: 14,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -192,19 +212,80 @@ class _MonitorView extends StatelessWidget {
           value: latest?.formattedUptime ?? info.formattedUptime,
         ),
         AppGap.md(),
+        // Two `AppGauge(size: 100)` in a `spaceEvenly` row is the one overflow
+        // on this branch that no amount of `Flexible` can fix: the children are
+        // not text that can give, they are two circles asking for 200px inside
+        // a box measured at **157.4px** at the card's narrowest realization.
+        // Hence the constant +43.0px in all 26 locales — this shape is
+        // geometry-bound, not translation-bound, and `en` overflows exactly as
+        // much as `el`.
+        //
+        // Stacking them (a `Wrap`) was measured and rejected, and the
+        // measurement is worth keeping: two 100px runs plus spacing need ~208px
+        // against the 201px (`en`) / 181px (`de`) this `Expanded` offers, and
+        // **nothing reports the difference**. `RenderWrap` has no overflow
+        // indicator of its own, and the `Expanded` pins its height, so the
+        // second circle is simply clipped — 108px between centres inside a
+        // 181px box, with all 209 gate cases green. So the circles shrink
+        // instead, which is the only option that keeps both readings side by
+        // side at every width, and the guard for that lives in
+        // `usp_gauge_center_readability_test.dart` rather than in the gate.
+        //
+        // `math.min` against the natural size makes this an upper bound rather
+        // than an allotment (§2.6a point 1's idiom): every width that already
+        // fitted two 100px gauges still renders them at exactly 100px, so the
+        // wide layouts are untouched and only the narrow one changes. The
+        // height term is what protects the fix from #1266's failure mode — the
+        // row enumeration can hand this `Expanded` less height than the gauge's
+        // own diameter, and a circle taller than its box would overflow the
+        // bottom instead. Both `Infinity` cases (unbounded width, unbounded
+        // height) degrade to the natural size.
         Expanded(
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _buildGauge(context,
-                  value: cpuPercent.toDouble(),
-                  label: loc(context).cpu,
-                  display: '$cpuPercent%'),
-              _buildGauge(context,
-                  value: memPercent.toDouble(),
-                  label: loc(context).memory,
-                  display: '$memPercent%'),
-            ],
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              // `math.max` floors the result at zero. The width term goes
+              // negative below `AppSpacing.md` of available width, and while no
+              // realization the grid produces comes near that (the narrowest is
+              // 157.4px), a `LayoutBuilder` can be given a zero-width box
+              // transiently — mid-drag, or during a collapse animation — and a
+              // negative `size` would assert inside `AppGauge` rather than
+              // degrade. A zero-diameter gauge is invisible for one frame; a
+              // failed assertion is a red screen.
+              final gaugeSize = math.max(
+                0.0,
+                math.min(
+                  _kMonitorGaugeSize,
+                  math.min(
+                    // `AppSpacing.md` of slack, so two circles can never touch.
+                    // `spaceEvenly` then splits that reserve into three equal
+                    // gaps, so what is actually drawn between the circles is
+                    // md/3 = 4px (measured: 72.7px circles at x=21.0 and x=97.7
+                    // in a 157.4px box). Tight on purpose — reserving a full
+                    // 12px *between* them costs 12px of diameter, and #1234's
+                    // AC 4 is about the reading inside the circle staying
+                    // legible. Air between two rings is the cheaper thing to
+                    // give up.
+                    (constraints.maxWidth - AppSpacing.md) / 2,
+                    constraints.maxHeight,
+                  ),
+                ),
+              );
+              return Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _buildGauge(context,
+                      value: cpuPercent.toDouble(),
+                      label: loc(context).cpu,
+                      display: '$cpuPercent%',
+                      size: gaugeSize),
+                  _buildGauge(context,
+                      value: memPercent.toDouble(),
+                      label: loc(context).memory,
+                      display: '$memPercent%',
+                      size: gaugeSize),
+                ],
+              );
+            },
           ),
         ),
         AppGap.sm(),
@@ -215,25 +296,66 @@ class _MonitorView extends StatelessWidget {
           ),
         ),
         AppGap.md(),
-        Row(
-          children: [
-            _LegendDot(color: colorScheme.primary),
-            AppGap.xs(),
-            AppText.labelSmall(
-                loc(context).cpuPercent('${latest?.cpuPercent ?? '--'}')),
-            AppGap.lg(),
-            _LegendDot(color: colorScheme.secondary),
-            AppGap.xs(),
-            AppText.labelSmall(
-                loc(context).memoryPercent('${latest?.memoryPercent ?? '--'}')),
-            const Spacer(),
-            if (monitorState.refreshInterval != null) ...[
-              AppIcon.font(Icons.autorenew,
-                  size: 12, color: colorScheme.onSurfaceVariant),
-              AppText.labelSmall(intervalLabel,
-                  color: colorScheme.onSurfaceVariant),
+        // The fourth legend row on this card, and the last to get #1226's shape
+        // — #1233 converted the other three (Trends / Distribution /
+        // Correlation) and left this one because it also carries the refresh
+        // chrome. Labels are composed statistics (`CPU: 47%`), so they
+        // soft-wrap rather than ellipsize (§2.10a point 2), which is what
+        // `_StatLegendEntry` does by default.
+        //
+        // §2.10a point 3's precondition holds here, and was measured rather
+        // than assumed: the `Expanded` above hands the gauge row **221px**
+        // (202px in `ru`) for 100px of gauge, so it can pay for a second and
+        // third run out of slack without squeezing the gauges — the opposite of
+        // `network_health`, whose `Expanded` holds a gauge of exactly its own
+        // fixed height and yields nothing.
+        //
+        // `SizedBox(width: double.infinity)` is load-bearing, per §2.10c
+        // finding 3: a `Wrap` sizes itself to its widest run, and this `Column`
+        // is `CrossAxisAlignment.center`, so without a tight width the legend
+        // would shrink-wrap and drift to the centre of the card at every width
+        // — a pure visual regression that overflows nothing and that the gate
+        // would pass either way.
+        //
+        // What this row does give up: the interval chip's flush-right position.
+        // A `Wrap` cannot hold a `Spacer`, and `WrapAlignment.spaceBetween`
+        // would distribute space between *all three* children, pulling the two
+        // legend entries apart instead — a bigger change to the wide layout
+        // than moving a 20px chip. So the chip joins the flow as the last
+        // entry, and every width down to the narrowest keeps the same reading
+        // order.
+        SizedBox(
+          width: double.infinity,
+          child: Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: AppSpacing.lg,
+            runSpacing: AppSpacing.xs,
+            children: [
+              _StatLegendEntry(
+                color: colorScheme.primary,
+                label: loc(context).cpuPercent('${latest?.cpuPercent ?? '--'}'),
+              ),
+              _StatLegendEntry(
+                color: colorScheme.secondary,
+                label: loc(context)
+                    .memoryPercent('${latest?.memoryPercent ?? '--'}'),
+              ),
+              // Grouped in a `mainAxisSize: min` `Row` for the same reason a
+              // legend entry is: as two bare `Wrap` children the icon and its
+              // interval would be separated by `spacing` and could land on
+              // different runs.
+              if (monitorState.refreshInterval != null)
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    AppIcon.font(Icons.autorenew,
+                        size: 12, color: colorScheme.onSurfaceVariant),
+                    AppText.labelSmall(intervalLabel,
+                        color: colorScheme.onSurfaceVariant),
+                  ],
+                ),
             ],
-          ],
+          ),
         ),
       ],
     );
@@ -244,15 +366,38 @@ class _MonitorView extends StatelessWidget {
     required double value,
     required String label,
     required String display,
+    required double size,
   }) {
     return AppGauge(
       value: value,
-      size: 100,
+      size: size,
+      // `centerBuilder`'s widget becomes a non-positioned `Stack` child inside
+      // `AppGauge`, so it is handed loose `size × size` constraints — this
+      // `Column` is the app's own closure and the whole fix lives at this call
+      // site, with no ui_kit change to ask for.
+      //
+      // Since the circle now shrinks with the card, the label has to be told
+      // what to do when it no longer fits: `Arbeitsspeicher` is 88.1px of
+      // `bodySmall` and the narrowest circle is 72.7px across. Left alone it
+      // soft-wraps mid-word inside the arc — a degradation the gate cannot see,
+      // because a `Column` reports overflow only in its own axis and this one
+      // has 72.7px of height for ~40px of text. Ellipsis, not wrap, per §2.10a
+      // point 2: the label is a bare series *name*, and the reading it names is
+      // `display` right above it, which keeps its own style unshrunk and its
+      // text uncut. (`titleMedium` here against `network_health`'s `titleLarge`
+      // predates this work and is not part of the fix — the point is only that
+      // #1234 takes nothing away from the reading.) The full label is still on
+      // screen unabbreviated too — the legend row below spells out
+      // `Arbeitsspeicher: 73%` and soft-wraps to do it.
       centerBuilder: (ctx, v) => Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           AppText.titleMedium(display),
-          AppText.bodySmall(label),
+          AppText.bodySmall(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
         ],
       ),
     );
