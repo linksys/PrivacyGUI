@@ -807,10 +807,24 @@ that height the donut is visually useless whether or not it reports an overflow,
 "shrink the donut to fit" would silence the gate without fixing anything. Deciding
 what the tab drops at that density (the donut, or the whole tab becoming
 scrollable like the Signal tab's `ListView`) is a density decision, and it is not
-verifiable at all until the gate can express a second data profile. **Filed
-against the #1235 shape rather than fixed here; recorded because the fix does trade
-a right-overflow for a bottom-overflow on that unshipped profile, which is exactly
-the trade §2.10a point 3 warns about.**
+verifiable at all until the gate can express a second data profile.
+
+**Filed as #1267**, which pairs the density decision with the gate change that
+makes it measurable: an `overrides` parameter on `buildDashboardCardApp()` /
+`kitchenSinkOverrides()` plus a tri-band fixture. It is deliberately *not* folded
+into #1235 — same family (fixed-size gauge in an `Expanded` that cannot pay), but
+different axis (vertical vs horizontal), different trigger (data vs translation
+length) and different visibility (invisible until #1267's Part 1 lands vs 3 live
+coordinates), and #1235's acceptance criteria are executable ratchet claims that an
+unverifiable AC would make unclosable. Recorded here because the #1266 fix does
+trade a right-overflow for a bottom-overflow on that unshipped profile, which is
+exactly the trade §2.10a point 3 warns about.
+
+Note also what #1267's Part 1 costs: adding a second profile to the sweep across
+all 18 cards doubles 1644 cases and will surface coordinates nobody has looked at
+— an allowlist *addition*, against the ratchet's direction. Which is why the sweep
+shape (opt-in per card / second allowlist keyed by profile / one allowlist) is an
+explicit decision in that ticket rather than an implementation detail.
 
 ### 2.11 fl_chart's 19 coordinates get a primary plan and a documented fallback
 
