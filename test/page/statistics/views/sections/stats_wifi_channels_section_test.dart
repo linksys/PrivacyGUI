@@ -44,14 +44,14 @@ import '../../../../util/overflow_probe.dart';
 /// realization. The AC is therefore a measurement of the rows, not "N gate
 /// coordinates removed".
 ///
-/// ## Two kinds of assertion, and why the stress widths are below production
+/// ## Three kinds of assertion, and why the stress widths are below production
 ///
 /// Both rows have headroom at every *production* width (line 110: 47px at the
-/// 288px floor; line 121's `fi` crossing is 219px, 69px below the floor). A
-/// test that only pumped production widths could therefore never fail — it
-/// would report the shape as pinned while quietly guarding nothing, exactly the
-/// dead-overflow-test trap `dashboard_legend_readability_test.dart` warned
-/// about. So each row is checked two ways:
+/// 288px floor; line 121's pre-fix `fi` crossing is 219px, 69px below the
+/// floor). A test that only pumped production widths could therefore never fail
+/// — it would report the shape as pinned while quietly guarding nothing, exactly
+/// the dead-overflow-test trap `dashboard_legend_readability_test.dart` warned
+/// about. So each row is checked three ways:
 ///
 ///   1. **Regression guard (production widths).** The `Wrap` renders identically
 ///      to the old `Row` while content fits, so these pin that the current data
@@ -64,6 +64,11 @@ import '../../../../util/overflow_probe.dart';
 ///      deliberately narrower than any supported screen — the point is not that
 ///      this width ships, but that the shape degrades by wrapping rather than
 ///      clipping when the headroom is finally spent.
+///   3. **AC-1 ladder (288 / 256 / 224 / 192px sections).** The widths #1258's
+///      AC-1 names, in the locales that break first. A single degradation guard
+///      at one width can sit in a pocket of cleanliness: this file's 219px guard
+///      passed while a nested `Row(min)` clipped at 216px, 3px away. Walking the
+///      ladder is what closes that gap, and it is the group that caught it.
 ///
 /// Tagged `dashboard-card` so it gates PRs — `run_tests.sh` excludes
 /// `golden||loc||ui`, and a `ui`-tagged regression test would not block
@@ -71,20 +76,35 @@ import '../../../../util/overflow_probe.dart';
 ///
 /// ## Mutation ledger
 ///
-/// Every degradation-guard group here was shown to fail under a mutation of the
-/// code it guards — an overflow test that cannot fail is worse than no test
-/// (precedent: `stats_traffic_monitor_legend_test.dart`). Measured on this
-/// worktree with the fixtures below:
+/// Every guard group here was shown to fail under a mutation of the code it
+/// guards — an overflow test that cannot fail is worse than no test (precedent:
+/// `stats_traffic_monitor_legend_test.dart`). Measured on this worktree with the
+/// fixtures below; each mutation was applied alone, against an otherwise clean
+/// tree:
 ///
-///   | mutation                                            | measured                    |
-///   |-----------------------------------------------------|-----------------------------|
-///   | line 110 `Wrap` -> pre-fix `Row`+`Spacer`           | +28px @200px section (grp 1)|
-///   | line 121 `Wrap` -> pre-fix `Row`+`Expanded`         | +6.9px @219px section (grp 2)|
-///   | signal bar `SizedBox(96)` -> `Expanded` (keep `Wrap`)| ParentDataWidget error (grp 2)|
-///   | count -> `Flexible` + 1-line ellipsis               | stats legible fails (grp 3) |
+///   | mutation                                             | measured                     |
+///   |------------------------------------------------------|------------------------------|
+///   | line 110 `Wrap` -> pre-fix `Row`+`Spacer`            | 10 tests fail (grp 1, 3)     |
+///   | line 121 outer `Wrap` -> pre-fix `Row`+`Expanded`    | 5 tests fail (grp 2)         |
+///   | stats `Wrap` -> `Row(min)`+`AppGap.md` (see below)   | 4 tests fail (grp 2 ladder)  |
+///   | signal bar `SizedBox(96)` -> `Expanded` (keep `Wrap`)| ParentDataWidget error, all  |
+///   | count -> `Flexible` + 1-line ellipsis                | all fail (grp 3 + layout)    |
+///   | `snrValue` -> 1-line ellipsis (no `Flexible`)        | grp 3 fails                  |
+///   | `snrValue` -> `Flexible` + 1-line ellipsis           | all fail (grp 3 + layout)    |
 ///
-/// The `Wrap` fix is clean at both stress widths (line 110 clean to 180px; line
-/// 121 clean at 219px), so each row is clean where its pre-fix shape clips.
+/// The two `snrValue` rows are the reason group 3 asserts on **both** stats. An
+/// earlier revision of this file checked only `clientsCount`, and both of those
+/// mutations passed it: the group's own doc comment promised "the count **and**
+/// SNR", while the SNR was unguarded.
+///
+/// The `Row(min)` row is the shape this file's first revision shipped. A
+/// `Row(min)` hands its children unbounded width just as a `Row` does — it only
+/// changes what the row asks of *its* parent — so nesting one inside the `Wrap`
+/// reproduced #1258's own failure mode one level down: with the signal bar
+/// already on its own run, the two stats clipped at a **216px** section in `fi`,
+/// and at 192px in `fi`, `ja`, `ko` and `vi`. That is above the 192px floor AC-1
+/// requires, and it sat 3px below the 219px degradation guard, which therefore
+/// never saw it.
 
 /// Two radios whose channel string is the widest #1258 named: a 3-digit 6GHz
 /// channel in auto mode (`Ch 233 (Auto)`) at a 3-digit bandwidth. This is the
@@ -314,7 +334,14 @@ void main() {
     // (`{count} asiakaslaitetta`) is the worst. `_wifiDataWithClients` gives it
     // real, non-zero client counts across both radios so the row renders the
     // state #1258 measured overflowing (+27px in `fi` at a 192px section).
-    for (final tag in ['fi', 'de', 'ru']) {
+    //
+    // `nl` is the fourth locale #1258's AC-1 names. It is dominated by `fi` and
+    // `de` here (`{count} clients`, the same string as `en`), so it adds no
+    // coverage at these widths — it is pumped because the AC names it, and
+    // because a future ARB edit could make it the worst without anyone
+    // re-deriving which locale dominates. `_widestStatLocales` below covers the
+    // locales that actually break first.
+    for (final tag in ['fi', 'de', 'ru', 'nl']) {
       for (final screen in narrowScreens) {
         testWidgets(
           'no overflow at ${sectionWidthFor(screen).toStringAsFixed(0)}px '
@@ -366,6 +393,52 @@ void main() {
         );
       },
     );
+
+    // AC-1's own width ladder: 288px / 256px / 224px / 192px sections, "clean at
+    // every width down to at least 192px".
+    //
+    // This is the group that caught the nested `Row(min)`: with the signal bar
+    // already dropped to its own run, `clientsCount` + `snrValue` inside a
+    // `Row(min)` still took unbounded width and clipped at a **216px** section in
+    // `fi` — above the 192px floor the AC asks for, and only 3px below the 219px
+    // degradation guard above, which is why that guard did not see it. Nesting a
+    // `Wrap` instead of a `Row(min)` moves the crossing off the ladder entirely.
+    //
+    // The locale list is not AC-1's four. `fi` is the worst of those, but the
+    // stats row's real worst cases are `ja`, `ko` and `vi`, which the AC does not
+    // name and which broke at 192px alongside `fi` under the `Row(min)`. They are
+    // pumped here so the ladder is guarded by whatever actually breaks first
+    // rather than by the four locales the ticket happened to sample.
+    const widestStatLocales = <String>['fi', 'ja', 'ko', 'vi'];
+    for (final tag in widestStatLocales) {
+      for (final section in [288.0, 256.0, 224.0, 192.0]) {
+        testWidgets(
+          'AC-1 ladder: clean at a ${section.toStringAsFixed(0)}px section '
+          'in $tag',
+          (tester) async {
+            final overflows = await overflowsAt(
+              tester: tester,
+              // 320px keeps ui_kit's narrowest layout regime while the explicit
+              // section width walks below the 288px production floor.
+              screenWidth: 320.0,
+              sectionWidth: section,
+              locale: localeFor(tag),
+              wifiData: _wifiDataWithClients,
+            );
+            expect(
+              overflows,
+              isEmpty,
+              reason: 'AC-1 requires the client+SNR row to be clean down to a '
+                  '192px section: it overflows in $tag at '
+                  '${section.toStringAsFixed(0)}px. A `Row(min)` anywhere in '
+                  'this subtree hands its children unbounded width and '
+                  'reintroduces the shape #1258 removes: '
+                  '${overflows.join(', ')}',
+            );
+          },
+        );
+      }
+    }
   });
 
   group('client-count and SNR stats stay legible (#1258)', () {
@@ -410,34 +483,58 @@ void main() {
       // strings are the localized stats. Assert on every rendered stat rather
       // than one exact value so the check does not encode the fixture's counts.
       final l10n = await AppLocalizations.delegate.load(locale);
-      // 4 clients on 2.4GHz, 4 on 6GHz -> clientsCount(4) rendered twice.
-      final countText = l10n.clientsCount(4);
-      final countFinder = find.text(countText);
-      expect(
-        countFinder,
-        findsWidgets,
-        reason: 'the client-count stat ($countText) must survive the '
-            'degradation — the `Wrap` moves the signal bar to a second line, '
-            'it may not discard the count',
-      );
 
-      for (final element in countFinder.evaluate()) {
-        final text = element.widget as Text;
+      // Both stats are checked, not just the count. AC-2 names `clientsCount`
+      // **and** `snrValue`, and the two are independently editable: a `maxLines`
+      // or an `Expanded` added to one is invisible to a check on the other, so
+      // asserting on the count alone leaves the SNR unguarded (a mutation adding
+      // `Flexible` + `overflow: ellipsis` to `snrValue` passed the count-only
+      // version of this test).
+      //
+      // 4 clients on 2.4GHz, 4 on 6GHz -> each stat is rendered twice, once per
+      // radio, with the same value.
+      //
+      // The SNR is the average of `computeSNR(signalStrength, noise)` over a
+      // band's clients: signal -55..-62 against noise -95 gives 40..33 dB, and
+      // the per-band averages land on `snrValue(36)` for both radios (2.4GHz
+      // takes the even indices, 6GHz the odd). Asserting the exact string keeps
+      // the finder honest — a stat rendered as something else would read as
+      // "absent" and fail below rather than silently pass.
+      final stats = <String, String>{
+        'client count': l10n.clientsCount(4),
+        'SNR': l10n.snrValue(36),
+      };
+
+      for (final entry in stats.entries) {
+        final label = entry.key;
+        final text = entry.value;
+        final finder = find.text(text);
         expect(
-          text.overflow,
-          isNot(TextOverflow.ellipsis),
-          reason: 'the client count must never ellipsize: an ellipsis lands '
-              'mid-number',
+          finder,
+          findsWidgets,
+          reason: 'the $label stat ($text) must survive the degradation — the '
+              '`Wrap` moves the signal bar to its own run, it may not discard '
+              'or reformat a stat',
         );
-        expect(text.maxLines, isNull,
-            reason: 'the client count must not be line-capped');
+
+        for (final element in finder.evaluate()) {
+          final widget = element.widget as Text;
+          expect(
+            widget.overflow,
+            isNot(TextOverflow.ellipsis),
+            reason: 'the $label must never ellipsize: an ellipsis lands '
+                'mid-number',
+          );
+          expect(widget.maxLines, isNull,
+              reason: 'the $label must not be line-capped');
+        }
+        expect(
+          canShrink(finder.first),
+          isFalse,
+          reason: 'the $label must not be a flex child — it keeps its '
+              'intrinsic width and the stats group wraps instead',
+        );
       }
-      expect(
-        canShrink(countFinder.first),
-        isFalse,
-        reason: 'the client count must not be a flex child — it keeps its '
-            'intrinsic width and the whole stats group wraps instead',
-      );
     });
   });
 }

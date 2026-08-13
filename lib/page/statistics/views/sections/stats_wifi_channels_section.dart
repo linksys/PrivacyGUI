@@ -148,23 +148,37 @@ class StatsWifiChannelsSection extends ConsumerWidget {
                 //     section).
                 //  2. The two stats never shrink: no `Flexible`, no `maxLines`,
                 //     no ellipsis (§2.10a point 2) — a half-shown count or SNR
-                //     misinforms. They stay glued together in a `Row(min)` so a
-                //     value never separates from its label.
-                //  3. The signal bar is the decoration and the thing that yields
-                //     (§2.10a point 2): it takes a fixed intrinsic width via a
-                //     `SizedBox`, and when the stats no longer leave room for it
-                //     the `Wrap` drops it to its own run rather than overflowing.
+                //     misinforms.
+                //  3. The stats group is itself a nested `Wrap`, not a
+                //     `Row(min)`. A `Row(min)` still hands its children
+                //     unbounded width, so it reintroduces the very shape this
+                //     ticket removes one level down: with the signal bar already
+                //     on its own run, `clientsCount` + `snrValue` alone overflow
+                //     a 216px section in `fi` (and 192px in `fi`/`ja`/`ko`/`vi`),
+                //     which is above the 192px floor AC-1 asks for. As a `Wrap`
+                //     the SNR drops to a third run instead, and each stat still
+                //     keeps its full intrinsic width — nothing is clipped or
+                //     ellipsized, which is what §2.10a point 2 actually
+                //     requires. Splitting the pair across runs is a weaker cost
+                //     than clipping a number: both labels stay attached to their
+                //     own values.
+                //  4. The signal bar is the decoration and the thing that yields
+                //     first (§2.10a point 2): it takes a fixed intrinsic width
+                //     via a `SizedBox`, and when the stats no longer leave room
+                //     for it the outer `Wrap` drops it to its own run rather
+                //     than overflowing.
                 Wrap(
                   crossAxisAlignment: WrapCrossAlignment.center,
                   spacing: AppSpacing.sm,
                   runSpacing: AppSpacing.xs,
                   children: [
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
+                    Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: AppSpacing.md,
+                      runSpacing: AppSpacing.xs,
                       children: [
                         AppText.bodySmall(
                             loc(context).clientsCount(clientCount)),
-                        AppGap.md(),
                         AppText.bodySmall(loc(context).snrValue(snr.toInt())),
                       ],
                     ),
