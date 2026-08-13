@@ -12,6 +12,7 @@ import 'package:privacy_gui/demo/theme_studio/studio_theme_builder.dart';
 import 'package:privacy_gui/theme/theme_json_config.dart';
 import 'package:privacy_gui/localization/fallback_font_resolver.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/localization/supported_locales_provider.dart';
 import 'package:privacy_gui/components/layouts/root_container.dart';
 import 'package:privacy_gui/providers/app_settings/app_settings.dart';
 import 'package:privacy_gui/providers/app_settings/app_settings_provider.dart';
@@ -174,13 +175,23 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
       userThemeColor: userThemeColor,
     );
 
+    // Normalized against what this build shipped, not taken as given: a locale
+    // persisted before a strip removed its language pack would otherwise leak
+    // into everything derived from the locale while the strings fell back to
+    // English. See resolveSupportedLocale.
+    final supportedLocales = ref.watch(supportedLocalesProvider);
+    final activeLocale = resolveSupportedLocale(
+      appSettings.locale ?? systemLocale,
+      supportedLocales,
+    );
+
     // CJK / non-Latin fallback for the active locale. The subset fonts are
     // eager-loaded via pubspec `fonts:` (registered before first frame). Adding
     // the fallback family to ThemeData.textTheme covers raw `Text` / third-party
     // widgets; ui_kit's AppText.resolve() injects the same family per-locale for
     // AppText. Without the family in the TextStyle, the engine treats CJK code
     // points as missing and probes the CDN. Null for Latin-covered locales.
-    final effectiveLocale = appSettings.locale ?? systemLocale;
+    final effectiveLocale = activeLocale;
     final cjkFallback =
         FallbackFontResolver.prefixedFallbackFor(effectiveLocale);
     if (cjkFallback != null) {
@@ -199,9 +210,9 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
       theme: appLightTheme,
       darkTheme: appDarkTheme,
       themeMode: appSettings.themeMode,
-      locale: appSettings.locale ?? systemLocale,
+      locale: activeLocale,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
-      supportedLocales: AppLocalizations.supportedLocales,
+      supportedLocales: supportedLocales,
       builder: (context, child) => Material(
         child: Shortcuts(
           shortcuts: {

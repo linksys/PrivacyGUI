@@ -10,6 +10,7 @@ import 'package:privacy_gui/components/styled/general_settings_widget/general_se
 import 'package:privacy_gui/components/styled/general_settings_widget/language_tile.dart';
 import 'package:privacy_gui/components/styled/general_settings_widget/theme_mode_tile.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
+import 'package:privacy_gui/localization/supported_locales_provider.dart';
 import 'package:privacy_gui/theme/theme_json_config.dart';
 
 /// Coverage for the language picker's visibility in an English-only build, the
@@ -40,12 +41,16 @@ void main() {
     // Portal: AppPopupButton renders its content through flutter_portal.
     return Portal(
       child: ProviderScope(
+        overrides: [
+          if (supportedLocales != null)
+            supportedLocalesProvider.overrideWithValue(supportedLocales),
+        ],
         child: MaterialApp(
           theme: GetIt.instance.get<ThemeData>(instanceName: 'darkThemeData'),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            body: GeneralSettingsWidget(supportedLocales: supportedLocales),
+          home: const Scaffold(
+            body: GeneralSettingsWidget(),
           ),
         ),
       ),
@@ -95,8 +100,8 @@ void main() {
 
   testWidgets('offers the picker by default, for the retail build',
       (tester) async {
-    // No explicit list: the widget falls back to what the build actually
-    // compiled, which is every language pack that survived the strip.
+    // No override: the widget falls back to what the build actually compiled,
+    // which is every language pack that survived the strip.
     await tester.pumpWidget(buildHost());
 
     await openPopup(tester);
@@ -107,5 +112,25 @@ void main() {
           ? findsOneWidget
           : findsNothing,
     );
+  });
+
+  testWidgets('lists only the locales the build shipped', (tester) async {
+    // The visibility gate and the picker's contents have to come from the same
+    // place. They did not: the gate was injectable while the list was read from
+    // the compile-time static, so a two-locale build would have shown the tile
+    // and then offered all 26 — and no test could see it, because asserting on
+    // visibility alone gave more confidence than it covered.
+    await tester.pumpWidget(buildHost(
+      supportedLocales: const [Locale('en'), Locale('ja')],
+    ));
+
+    await openPopup(tester);
+    await tester.tap(find.byType(LanguageTile));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('locale_item_en')), findsOneWidget);
+    expect(find.byKey(const Key('locale_item_ja')), findsOneWidget);
+    expect(find.byKey(const Key('locale_item_fr')), findsNothing);
+    expect(find.byKey(const Key('locale_item_zh-TW')), findsNothing);
   });
 }

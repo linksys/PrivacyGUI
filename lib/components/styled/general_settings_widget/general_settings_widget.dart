@@ -8,7 +8,7 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 
 import 'package:privacy_gui/components/styled/general_settings_widget/language_tile.dart';
 import 'package:privacy_gui/components/styled/general_settings_widget/theme_mode_tile.dart';
-import 'package:privacy_gui/l10n/gen/app_localizations.dart';
+import 'package:privacy_gui/localization/supported_locales_provider.dart';
 import 'package:privacy_gui/providers/app_settings/app_settings_provider.dart';
 import 'package:privacy_gui/providers/auth/_auth.dart';
 import 'package:privacy_gui/config/global_config.dart';
@@ -16,13 +16,7 @@ import 'package:privacy_gui/config/global_config.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 class GeneralSettingsWidget extends ConsumerStatefulWidget {
-  const GeneralSettingsWidget({super.key, this.supportedLocales});
-
-  /// The locales this build shipped. Defaults to what was compiled in, which an
-  /// English-only build has stripped down to one (see
-  /// `tools/locale_strip.dart`). Injectable so tests can exercise both flavours
-  /// without rebuilding.
-  final List<Locale>? supportedLocales;
+  const GeneralSettingsWidget({super.key});
 
   @override
   ConsumerState<GeneralSettingsWidget> createState() =>
@@ -30,9 +24,6 @@ class GeneralSettingsWidget extends ConsumerStatefulWidget {
 }
 
 class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
-  List<Locale> get _supportedLocales =>
-      widget.supportedLocales ?? AppLocalizations.supportedLocales;
-
   @override
   Widget build(BuildContext context) {
     final isLoggedIn = ref.watch(
@@ -78,7 +69,7 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
                   // pack, because there is nothing to pick between. The parent
                   // has to make this call rather than the tile self-hiding, or
                   // the fixed-height SizedBox leaves a 44px hole behind.
-                  if (_supportedLocales.length > 1)
+                  if (ref.watch(canPickLanguageProvider))
                     SizedBox(
                       height: 44,
                       child: LanguageTile(

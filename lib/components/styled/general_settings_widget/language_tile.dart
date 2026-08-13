@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/util/extensions.dart';
-import 'package:privacy_gui/l10n/gen/app_localizations.dart';
+import 'package:privacy_gui/localization/supported_locales_provider.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 class LanguageTile extends ConsumerStatefulWidget {
@@ -66,9 +66,11 @@ class _LanguageTileState extends ConsumerState<LanguageTile> {
           );
   }
 
-  // NEED TO revisit
   Widget _localeList() {
-    const localeList = AppLocalizations.supportedLocales;
+    // The locales this build shipped, not the ones the app was written to
+    // support: an English-only build strips the rest away, and offering a
+    // language whose strings are gone would fall back to English silently.
+    final localeList = ref.read(supportedLocalesProvider);
     // Calculate height based on number of items (56px per ListTile, capped at 400px)
     final listHeight = (localeList.length * 56.0).clamp(100.0, 400.0);
 
