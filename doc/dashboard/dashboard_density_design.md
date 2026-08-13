@@ -1148,11 +1148,18 @@ addition — it changes no card's rendering until a threshold is declared.
 Ceiling **515 / 560**. The other 45 are the dependency-blocked ones (§1.1).
 
 After #1234–#1237 the allowlist holds **94** coordinates: 67 `firewall_overview`
-(#1230) and 27 `connected_devices` (#1238). Both are the dependency-blocked kind —
-fl_chart's internals and a ui_kit `AppListTile` change — so Track A's card-own
-work is complete. Their `tracking` notes are left as the epic requires: a ticket
-touches only the notes of cards it closes, so both cards keep the `baseline #1183`
-default until their own ticket names an owner.
+(#1230) and 27 `connected_devices` (#1238). **49 of those are still card-own and
+clearable in this repo** — #1230's three own sites carry 48 (a rules/DMZ list
+column, an info-grid summary row, a pie-chart centre label) and #1238's
+device-count row carries 1. Only the other **45** are dependency-blocked, exactly
+as §1.1 classified them: fl_chart's 19 axis-title coordinates and the 26 that need
+a ui_kit `AppListTile` change. What these four tickets complete is the *four-shape*
+group, not Track A's card-own work — #1230 is the largest single block of
+clearable coordinates left in the epic.
+
+Their `tracking` notes are left as the epic requires: a ticket touches only the
+notes of cards it closes, so both cards keep the `baseline #1183` default until
+their own ticket names an owner.
 
 #1266 is in this track despite clearing nothing: it is the only entry that *adds*
 coordinates (3, by localizing a hardcoded string) and removes them again in the
