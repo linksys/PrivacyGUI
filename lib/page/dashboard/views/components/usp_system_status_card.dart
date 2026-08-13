@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -15,6 +17,11 @@ import 'package:privacy_gui/page/_shared/components/dashboard_card_template.dart
 import 'package:privacy_gui/page/_shared/components/usp_info_row.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:ui_kit_library/ui_kit.dart';
+
+/// The diameter the Monitor tab's CPU/memory gauges are drawn at whenever the
+/// card is wide enough to hold two of them side by side. Narrower realizations
+/// scale down from here; see `_MonitorView.build`.
+const double _kMonitorGaugeSize = 100;
 
 /// System Performance Dashboard — 4-tab card (F-021).
 ///
@@ -205,19 +212,62 @@ class _MonitorView extends StatelessWidget {
           value: latest?.formattedUptime ?? info.formattedUptime,
         ),
         AppGap.md(),
+        // Two `AppGauge(size: 100)` in a `spaceEvenly` row is the one overflow
+        // on this branch that no amount of `Flexible` can fix: the children are
+        // not text that can give, they are two circles asking for 200px inside
+        // a box measured at **157.4px** at the card's narrowest realization.
+        // Hence the constant +43.0px in all 26 locales — this shape is
+        // geometry-bound, not translation-bound, and `en` overflows exactly as
+        // much as `el`.
+        //
+        // Stacking them (a `Wrap`) was measured and rejected, and the
+        // measurement is worth keeping: two 100px runs plus spacing need ~208px
+        // against the 201px (`en`) / 181px (`de`) this `Expanded` offers, and
+        // **nothing reports the difference**. `RenderWrap` has no overflow
+        // indicator of its own, and the `Expanded` pins its height, so the
+        // second circle is simply clipped — 108px between centres inside a
+        // 181px box, with all 209 gate cases green. So the circles shrink
+        // instead, which is the only option that keeps both readings side by
+        // side at every width, and the guard for that lives in
+        // `usp_gauge_center_readability_test.dart` rather than in the gate.
+        //
+        // `math.min` against the natural size makes this an upper bound rather
+        // than an allotment (§2.6a point 1's idiom): every width that already
+        // fitted two 100px gauges still renders them at exactly 100px, so the
+        // wide layouts are untouched and only the narrow one changes. The
+        // height term is what protects the fix from #1266's failure mode — the
+        // row enumeration can hand this `Expanded` less height than the gauge's
+        // own diameter, and a circle taller than its box would overflow the
+        // bottom instead. Both `Infinity` cases (unbounded width, unbounded
+        // height) degrade to the natural size.
         Expanded(
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _buildGauge(context,
-                  value: cpuPercent.toDouble(),
-                  label: loc(context).cpu,
-                  display: '$cpuPercent%'),
-              _buildGauge(context,
-                  value: memPercent.toDouble(),
-                  label: loc(context).memory,
-                  display: '$memPercent%'),
-            ],
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final gaugeSize = math.min(
+                _kMonitorGaugeSize,
+                math.min(
+                  // `AppSpacing.md` is the narrowest gap that still reads as
+                  // two separate gauges rather than a figure of eight.
+                  (constraints.maxWidth - AppSpacing.md) / 2,
+                  constraints.maxHeight,
+                ),
+              );
+              return Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _buildGauge(context,
+                      value: cpuPercent.toDouble(),
+                      label: loc(context).cpu,
+                      display: '$cpuPercent%',
+                      size: gaugeSize),
+                  _buildGauge(context,
+                      value: memPercent.toDouble(),
+                      label: loc(context).memory,
+                      display: '$memPercent%',
+                      size: gaugeSize),
+                ],
+              );
+            },
           ),
         ),
         AppGap.sm(),
@@ -298,15 +348,35 @@ class _MonitorView extends StatelessWidget {
     required double value,
     required String label,
     required String display,
+    required double size,
   }) {
     return AppGauge(
       value: value,
-      size: 100,
+      size: size,
+      // `centerBuilder`'s widget becomes a non-positioned `Stack` child inside
+      // `AppGauge`, so it is handed loose `size × size` constraints — this
+      // `Column` is the app's own closure and the whole fix lives at this call
+      // site, with no ui_kit change to ask for.
+      //
+      // Since the circle now shrinks with the card, the label has to be told
+      // what to do when it no longer fits: `Arbeitsspeicher` is 88.1px of
+      // `bodySmall` and the narrowest circle is 70.7px across. Left alone it
+      // soft-wraps mid-word inside the arc — a degradation the gate cannot see,
+      // because a `Column` reports overflow only in its own axis and this one
+      // has 70.7px of height for ~40px of text. Ellipsis, not wrap, per §2.10a
+      // point 2: the label is a bare series *name*, and the reading it names is
+      // `display` right above it, which keeps its full size and full text. The
+      // full label is still on screen unabbreviated — the legend row below
+      // spells out `Arbeitsspeicher: 73%` and soft-wraps to do it.
       centerBuilder: (ctx, v) => Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           AppText.titleMedium(display),
-          AppText.bodySmall(label),
+          AppText.bodySmall(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
         ],
       ),
     );
