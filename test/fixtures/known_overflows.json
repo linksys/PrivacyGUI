@@ -25,18 +25,6 @@
       "da", "de", "el", "en", "es", "es_AR", "fi", "fr", "fr_CA", "id",
       "it", "nb", "nl", "pl", "pt", "pt_PT", "ru", "sv", "th", "tr",
       "vi"
-    ],
-    "wifi_performance|min|0": [
-      "da", "de", "el", "en", "es", "es_AR", "fi", "fr", "fr_CA", "id",
-      "it", "nl", "pl", "pt", "pt_PT", "ru", "sv", "th", "vi"
-    ],
-    "wifi_performance|min|1": [
-      "es", "es_AR", "fr", "fr_CA", "pt_PT", "ru", "tr"
-    ],
-    "wifi_performance|preferred|0": [
-      "de", "es", "es_AR", "fi", "fr", "id", "it", "nl", "pl", "pt",
-      "pt_PT", "ru", "sv", "th"
-    ],
-    "wifi_performance|preferred|1": ["es", "fr", "fr_CA", "pt_PT", "ru"]
+    ]
   }
 }
