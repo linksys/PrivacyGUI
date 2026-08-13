@@ -159,24 +159,34 @@ class MapsToRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // The arrow must track the text, and text and icons resolve colour from
+    // different inherited widgets: [AppText] reads [DefaultTextStyle] while
+    // [AppIcon] falls back to `IconTheme.of(context).color ?? Colors.black`.
+    // Containers commonly set only one of the two — `AppListTile` wraps its
+    // subtitle in a `DefaultTextStyle` and no `IconTheme` — so leaving the icon
+    // to its own chain lets it pick up an ambient icon colour, or black, while
+    // the text beside it renders in the container's content colour. Resolving
+    // one colour here and passing it to both keeps the pair consistent.
+    final effectiveColor = color ?? DefaultTextStyle.of(context).style.color;
+
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         Flexible(
           child: AppText.bodySmall(
             source,
-            color: color,
+            color: effectiveColor,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
         ),
         AppGap.xs(),
-        AppIcon.font(Icons.arrow_forward, size: 12, color: color),
+        AppIcon.font(Icons.arrow_forward, size: 12, color: effectiveColor),
         AppGap.xs(),
         Flexible(
           child: AppText.bodySmall(
             target,
-            color: color,
+            color: effectiveColor,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -203,7 +213,8 @@ class ToggleRow extends StatelessWidget {
   final String? subtitle;
 
   /// Widget subtitle, for rows whose subtitle is not plain text (e.g. a
-  /// [MapsToRow] with an arrow icon). Takes precedence over [subtitle].
+  /// [MapsToRow] with an arrow icon). Mutually exclusive with [subtitle] —
+  /// passing both is asserted against, and in release builds this one wins.
   final Widget? subtitleContent;
   final Widget? trailing;
   final VoidCallback? onTap;
@@ -219,7 +230,8 @@ class ToggleRow extends StatelessWidget {
     this.trailing,
     this.onTap,
     this.isLoading = false,
-  });
+  }) : assert(subtitle == null || subtitleContent == null,
+            'ToggleRow: pass subtitle or subtitleContent, not both');
 
   @override
   Widget build(BuildContext context) {

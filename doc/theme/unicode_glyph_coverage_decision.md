@@ -71,13 +71,19 @@ Icon fonts ship with the app, so coverage is guaranteed offline. This extends
 
 Chosen over two cheaper alternatives:
 
-- **Re-subsetting `Roboto` to add the Arrows block** would fix all sites with no
-  code change, since Roboto is the one fallback declared for every locale. It
-  was rejected because `tools/font_subset/regenerate.sh` regenerates only the
-  five CJK subsets and treats the non-CJK fallbacks as fixed committed
-  artifacts; adding Roboto to that pipeline makes a vendored binary a
-  maintenance surface for a separator. Still the right move if arrow coverage
-  is ever wanted in bulk.
+- **Adding the Arrows block to the CJK subsets** — the ticket's first choice —
+  cannot work at all, and this is the more fundamental objection than any cost
+  argument. Those subsets are only loaded for CJK locales; for en/fr/de/es/pt
+  the chain is NeueHaas → Roboto only, and all eight U+2192 sites are hardcoded
+  English strings with no U+2192 in any ARB file. Patching a CJK subset would
+  not affect a single one of them.
+- **Re-subsetting `Roboto` to add the Arrows block** is the only viable form of
+  that idea — Roboto is the one fallback declared for every locale, so it would
+  fix all sites with no code change. Rejected on cost, not validity:
+  `tools/font_subset/regenerate.sh` regenerates only the five CJK subsets and
+  treats the non-CJK fallbacks as fixed committed artifacts; adding Roboto to
+  that pipeline makes a vendored binary a maintenance surface for a separator.
+  Still the right move if arrow coverage is ever wanted in bulk.
 - **An ASCII/en-dash separator** is zero-risk (U+2013 is in all eleven) but
   loses the direction the arrow carries, and leaves the app inconsistent with
   the icon treatment `31d71e0f` established.
@@ -87,6 +93,13 @@ Chosen over two cheaper alternatives:
 1. A rendered UI string **must not** depend on a codepoint outside the union
    above. Direction markers are drawn with `AppIcon.font`; U+2013/U+2014 are
    safe as separators.
+1. **An icon standing in for a character must be given the text's colour
+   explicitly.** `AppText` resolves colour from `DefaultTextStyle`; `AppIcon`
+   falls back to `IconTheme.of(context).color ?? Colors.black`. Containers set
+   one or the other, not both — `AppListTile` wraps its subtitle in a
+   `DefaultTextStyle` at 0.7 alpha and no `IconTheme` — so an icon left to its
+   own chain diverges from the text beside it. Resolve once
+   (`color ?? DefaultTextStyle.of(context).style.color`) and pass it to both.
 2. **Logger, console and LLM-prompt strings are out of scope.** They never pass
    through Flutter's font stack. `lib/ai/prompts/` and `[USP]`-prefixed log
    strings keep their arrows deliberately.
@@ -107,8 +120,8 @@ halves (`portRangeDisplay`/`internalTargetDisplay`,
 remain for diagnostics and now use ASCII `->`.
 
 `ToggleRow` gained `subtitleContent` (a `Widget?`) alongside its String
-`subtitle`, because two of the sites are `ToggleRow` subtitles. Existing String
-callers are unaffected.
+`subtitle`, because two of the sites are `ToggleRow` subtitles. The two are
+mutually exclusive and asserted as such; existing String callers are unaffected.
 
 **One deliberate visual change.** `usp_firewall_overview_card.dart:255` read
 `'${rule.portSummary} → ${rule.internalClient}'`, rendering
@@ -137,6 +150,11 @@ for duplicate information.
   operands ellipsize without overflow. Tagged `dashboard-card` (not `ui`) so
   `run_tests.sh` includes it. Mutation-checked: reverting `MapsToRow` to a
   character arrow fails 3 of its 5 tests.
+- `test/page/_shared/components/layout_blocks/toggle_row_test.dart` covers the
+  two `ToggleRow` subtitle channels, that passing both asserts, and that the
+  arrow icon matches the colour of the text beside it. Mutation-checked:
+  dropping the `DefaultTextStyle` fallback makes the icon render at alpha 1.0
+  against text at 0.7, and the colour test fails.
 - `./run_tests.sh` — 5352 passing.
 - `dashboard_card_overflow_test.dart` — 1644 passing, allowlist unchanged.
   Both `port_forwarding` and `firewall_overview` are gate-probed, and the icon
