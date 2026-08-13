@@ -1,6 +1,6 @@
 # Dashboard Card Density — Design Decisions
 
-**Last Updated: 2026-08-12** · Follow-up to #1183 · Status: **agreed; tickets #1225–#1240 published; #1225 + #1226 + #1233 implemented (not yet merged), rest not started**
+**Last Updated: 2026-08-13** · Follow-up to #1183 · Status: **agreed; tickets #1225–#1240 published; #1225 + #1226 + #1233 + #1227 + #1228 + #1229 implemented (not yet merged), rest not started. Allowlist 560 → 181.**
 
 ## Purpose
 
@@ -102,20 +102,81 @@ batching leverage actually is.
 > `:118` (8) + `:218` where those are the coordinate's only remaining cause. So
 > the pattern is really eight rows, and #1234 finishes it.
 
-The private colour-dot widget is additionally duplicated **verbatim in four
-files** (the three above plus `device_analytics`). De-duplicating it, or
-extracting a shared legend entry, would be a **new shared widget** and therefore
-needs approval under Article XIV — so the fix is applied in place, and the
-extraction raised separately rather than blocking on that conversation. That
-raise is **#1245**, filed after #1233; it carries the constraint #1233 measured,
-namely that any shared entry must express the ellipsize-vs-soft-wrap distinction
-per label kind (§2.10a point 2) and must not absorb the WAN/LAN row, which
-deviates for a reason (§2.10a point 3).
+> Re-measured again during #1229: `wifi_performance`'s two sites (`:190` Signal,
+> `:275` Speed) are this same shape, and they are that card's **entire** 45
+> coordinates. So the pattern is **ten rows across four files, 181 + 45 = 226
+> coordinates — 40% of the whole baseline** (not to be confused with the
+> allowlist standing at 226 just before #1229; the two numbers coincide by
+> accident), and it is the only structure in this epic that
+> accounts for a plurality of it. §1.1's greedy table hides `:275` as well as the
+> other nine: it credits `:190` with 33 and never names the Speed tab at all
+> (see §2.10b for why a "×2 sites" ticket still needs its own attribution run).
+
+The private colour-dot widget is additionally duplicated **verbatim in five
+files** (the three above plus `device_analytics` and, per #1229,
+`wifi_performance`). De-duplicating it, or extracting a shared legend entry,
+would be a **new shared widget** and therefore needs approval under Article XIV —
+so the fix is applied in place, and the extraction raised separately rather than
+blocking on that conversation. That raise is **#1245**, filed after #1233; it
+carries the constraint #1233 measured, namely that any shared entry must express
+the ellipsize-vs-soft-wrap distinction per label kind (§2.10a point 2) and must
+not absorb the WAN/LAN row, which deviates for a reason (§2.10a point 3).
+**#1245's inventory is written against four files and needs `wifi_performance`
+added to it.**
 
 **Blocked on a dependency we do not own — 45 coordinates (8%)**: fl_chart 19
 (`firewall_overview`), ui_kit `AppListTile` 26 (`connected_devices`).
 
 **Axis split**: 464 right-only, 63 bottom-only, 33 both.
+
+#### Track A's four remaining card-own tickets reduce to four shapes across six sites (#1234–#1237, measured before implementation)
+
+**Method.** §1.1's `fullLog` attribution, re-run at per-line resolution over the
+four cards of #1234 / #1236 / #1237 (`system_status`, `lan_info`, `device_info`,
+`time_settings`). 112 incidents → the 84 allowlisted coordinates those three
+tickets own; adding #1235's 3 makes 87.
+
+| Shape | Sites | Worst | Tickets |
+|---|---|---:|---|
+| "View details" footer — `AppDivider` + `Row(mainAxisAlignment: end)` + `Semantics`/`InkWell` | `usp_system_status_card.dart:118`, `usp_device_info_card.dart:140` | +5.2px | **#1234 + #1236** |
+| Hero inner row — `Row` inside `Expanded(Column(start, [titleLarge, AppGap.xxs, Row]))` | `usp_lan_info_card.dart:56`, `usp_time_settings_card.dart:108` | +102 / +67px | **#1236 + #1237** |
+| Twin gauges — `Expanded(Row(spaceEvenly, [AppGauge(size: 100) ×2]))` | `usp_system_status_card.dart:196` | +43px | #1234 |
+| Legend row — `_LegendDot` ×2 + `Spacer` + refresh chrome | `usp_system_status_card.dart:218` | +107px | #1234 |
+
+**Two of the four shapes straddle ticket boundaries.** The footer is
+near-identical code in two files (`_buildStatisticsFooter` / `_buildNodeDetailFooter`),
+and the hero inner row is the same idiom in two more — and that idiom alone is
+**48 of the 84 coordinates**. Split across separate branches, each shape gets its
+fix invented twice and #1245's de-duplication inventory grows by two more entries.
+This is the #1249 situation again (§2.10a), so the four are best done as one
+branch with a commit per shape.
+
+**`system_status`'s 26 widest coordinates have two causes each, so neither site
+clears them alone.** The exact decomposition of #1234's 34:
+
+- `min|0` tab 0, all 26 locales — caused by **both** `:196` and `:218`; `el`/`ru`
+  additionally by `:118`
+- `min|0` tabs 1–3, `el`+`ru` — 6, `:118`
+- `preferred|0`, `fr`+`fr_CA` — 2, `:218`
+
+So `:196` alone clears 0 and `:218` alone clears 0; the pair clears 26; adding
+`:118` clears all 34. Expect zero allowlist movement until both gauge-row and
+legend-row fixes are in — the same trap §2.6a's shared-plus-card-own coordinates
+set, one file down.
+
+**`AppGauge`'s centre is fixable at the call site — no ui_kit change, so no
+Article XIV question.** `AppGauge` renders
+`SizedBox(width: size, height: size, child: Stack(alignment: center, children: [CustomPaint, …, centerBuilder(…)]))`.
+The centre is a *non-positioned* `Stack` child, so it receives loose `size × size`
+constraints and the overflowing `Column(mainAxisSize: min, …)` is the app's own
+closure. This holds for both #1235's `network_health` gauge (`size: 120`) and
+`system_status._buildGauge` (`size: 100`), which is why #1235's 3 coordinates are
+a cheap add-on to #1234 rather than a separate ui_kit conversation.
+
+> Sequencing note: these four tickets, #1229 and #1266 all edit
+> `test/fixtures/known_overflows.json` and this file. Until #1229/#1266's PR
+> merges, branch the four-ticket work from *its* head rather than from the epic
+> gate branch, or the fixture conflicts.
 
 ### 1.2 Fit width — the narrowest width at which each card is clean
 
@@ -634,6 +695,186 @@ from a row that truncated its content to nothing. They are covered by
 tagged `dashboard-card` so it gates; each of its three groups was verified to
 fail under a mutation of the code it guards.
 
+### 2.10b What the eighth and ninth replications taught us (#1229 — implemented)
+
+All 45 coordinates cleared as predicted (226 → 181). By this point the shape is
+routine — the interesting findings are about *method*, not about legends.
+
+1. **A "×N sites" scope still needs its own attribution run.** §1.1's greedy
+   cover is greedy: it credits each coordinate to one site, so it named
+   `:190` (33) and never mentioned the Speed tab's legend at all. The remaining
+   12 were only located by re-running §1.1's method scoped to this card, which
+   returned an unambiguous split — `:190` → 33, `:275` → 12, no coordinate
+   needing both, total exactly 45. Inferring the second site from the ticket
+   title would have been a guess with a 12-coordinate blast radius.
+2. **Same shape, same fix, different cause — and the locale footprint says
+   which.** `:190` (four entries, 261px) overflows in `en` too: it is
+   *geometry*-bound, and `ru` missed by 149px. `:275` (two entries) overflows
+   only in the long-translation locales (`es`, `fr`, `pt_PT`, `ru`, `tr`): it is
+   *translation-length*-bound. The distinction is free to read off the allowlist
+   — an `["*"]` entry means the card is too narrow for the content in any
+   language, a locale list means the layout is fine and one translation is long
+   — and it predicts which sites will regress when a string changes versus when
+   spacing changes.
+3. **§2.10a point 3's precondition was checked here, not assumed.** The
+   `Expanded` above both rows holds a `ListView`/`AppBarChart`, so it yields the
+   height a second run costs. Confirmed by re-running attribution after the fix:
+   **0 incidents at any site, any tab, any locale** — no bottom-overflow was
+   traded in, which is the exact failure Network Health's fixed 120px gauge
+   produced. Measured, because the shape's cost is paid in a currency the gate
+   only sometimes charges for.
+4. **The mutation that validates a readability test must itself be run against
+   the gate.** #1233 and #1228 recorded "verified to fail under a mutation"; that
+   is necessary but not sufficient. Here the *obvious* mutation — revert `Wrap` to
+   a bare `Row` — turns out to be **invisible to the readability test and caught
+   by the gate** (33 failures): a `Row` hands non-flex children unbounded width,
+   so the inner `Flexible` never binds, every label paints full-width, and the
+   *outer* row overflows. The genuinely gate-invisible regression is the one that
+   *succeeds* at fitting: keep the single `Row` and wrap each entry in
+   `Flexible`. Every tier name then ellipsizes to a stub — in `en`, not just the
+   long translations — and all **157** `wifi_performance` gate cases stay green.
+   That is the shape a well-meaning "just make it fit" edit lands on. **Rule for
+   the remaining Track A tickets: run each candidate mutation against the gate as
+   well: if the gate already fails it, the mutation proves nothing about the
+   readability test and a different one is needed.**
+
+The gate-invisible ACs are covered by
+`test/page/dashboard/views/components/wifi_performance_readability_test.dart`,
+tagged `dashboard-card` so it gates; its three groups were verified to fail under
+the mutations tabulated in the file, each with its gate result beside it.
+
+**AC4 was already true before this ticket, and is now pinned rather than earned.**
+"Per-band metrics stay distinguishable at the narrowest clean width" is about the
+Channels tab, which contributed none of the 45 and which #1229 does not modify. At
+the 261px narrowest realization both bands show band, channel, bandwidth, client
+count and SNR with nothing clipped. It is asserted anyway, because "already clean"
+is not "checked" and nothing else in the suite would notice a later fix collapsing
+those rows.
+
+Two observations were left deliberately unfixed here, and **both were wrong** —
+#1266 (§2.10c) measured them and inverted the conclusion. They are quoted rather
+than deleted because the way they were wrong is the finding:
+
+- `_ChannelsTab`'s two per-radio rows use the same unconstrained shape this epic
+  keeps fixing (`Row` + `Spacer`, non-flex `AppText`), and measure clean only by
+  about **48px** of headroom. That is the #1258 situation exactly — hardening a
+  site that is not currently failing — so it belongs there, not in a ratchet
+  ticket whose contract is a coordinate count.
+- The channel readout is **data**-dependent, not translation-dependent:
+  `Ch 197 (Auto) · 320MHz` on a tri-band router is materially wider than the
+  mock's two-radio output. No amount of locale sweeping reaches it, so that
+  headroom is unmeasured rather than measured-safe — a limit of the gate's fixed
+  mock, worth stating where the 48px figure is quoted.
+
+The 48px was real and the reasoning from it was not: it was measured with `'Ch '`,
+a hardcoded English abbreviation, in the row. The abbreviation *was* the bug, and
+it was concealing the geometry problem rather than the row not having one. "Clean
+by 48px" and "hardening a site that is not currently failing" both describe a
+string that was never going to ship.
+
+### 2.10c An English abbreviation was hiding a geometry problem (#1266 — implemented)
+
+#1229 left the Channels tab alone on the strength of the two bullets above.
+Localizing `'Ch '` to the existing `channel` ARB key — which was already
+translated in all 26 locales, so this was a one-line change with no ARB work —
+turns the tab's band/channel row into **3 gate coordinates on the fixture the gate
+actually ships**:
+
+| locale | `channel` | 261px (min) | 288px (preferred) |
+|--------|-----------|-------------|-------------------|
+| `tr`   | `Channel (Kanal)` (15 chars) | +4.1px, +41.0px | +14.0px |
+| `th`   | `ช่องสัญญาณ`   | +17.0px         | clean   |
+| other 24 | — | clean | clean |
+
+So the two halves cannot be separated, and the *ordering* is the point:
+
+- **Localizing alone runs the ratchet backwards.** It adds 3 coordinates to a
+  mechanism whose entire purpose (§2.9) is that the count only falls. It would
+  have to be booked as an allowlist *addition*, which nothing in Part 4 permits.
+- **Hardening alone is gate-invisible.** With `'Ch '` in place the row is clean
+  everywhere, so the `Wrap` changes no coordinate and the gate cannot tell whether
+  it worked. That is the #1258 shape, and it is why #1229's bullet reached for
+  #1258.
+- **Together they are self-verifying**: the localization supplies the failure the
+  hardening has to clear, on the shipped fixture, at both widths. Net coordinate
+  change **0**, and the honest string ships. This is the #1249 bundling precedent
+  (ratchet work travels together), not the #1258 one.
+
+Four further findings, all about method:
+
+1. **An abbreviation in `lib/` is a measurement hazard, not just an i18n bug.**
+   Any hardcoded English string makes every width measurement at that site
+   optimistic by however much the translation is longer, and the gate reports the
+   optimistic number in all 26 locales — a locale sweep cannot find a string that
+   never varies. Worth a grep pass over the remaining Track A sites: an
+   abbreviation is the one defect this epic's instrument is structurally blind to.
+2. **Two `testWifiData` fixtures exist and only one reaches the gate.** The
+   dashboard gate reads `test/golden_test/page/dashboard/cards/fixtures/`
+   `cards_test_data.dart` (via `kitchenSinkOverrides()`); the Statistics page reads
+   `test/golden_test/page/statistics/fixtures/statistics_test_data.dart`. Editing
+   the latter and re-running the gate produces a confident, meaningless "clean".
+   Caught only by dumping the rendered `Text` list and noticing the added radio was
+   absent. **Rule: when a measurement depends on fixture data, verify the render
+   contains the data, not just that the verdict is green.**
+3. **`WrapAlignment.spaceBetween` is a silent no-op under loose width
+   constraints.** `RenderWrap` sizes itself to its widest run, so
+   `freeMainAxisSpace` is 0 and there is nothing to distribute; the second child
+   lands one `spacing` gap after the first instead of at the right edge. The
+   enclosing `Column` must hand it a tight width
+   (`CrossAxisAlignment.stretch`) for `spaceBetween` to reproduce what a `Spacer`
+   did. This is a **pure visual regression that overflows nothing**, so the gate
+   passes all 157 cases either way — it is pinned in the readability test instead.
+   **This applies retroactively: #1226's and #1233's `spaceBetween` legends should
+   be checked for the same precondition, since a shrink-wrapped legend is
+   indistinguishable from a correct one in a green gate.**
+4. **Attribution scoped the fix to one of the two rows.** Regexing
+   `usp_wifi_performance_card.dart:(\d+)` over `OverflowIncident.fullLog`
+   attributed every single incident — both fixtures, all locales, both widths — to
+   the band/channel row, and none to the clients/SNR/loader row below it (whose
+   `Expanded` loader already binds). §1.1's method at per-line resolution, and it
+   halved the change: #1229's bullet had assumed "two per-radio rows" needed the
+   same treatment.
+
+**Tri-band data: what the fix costs on a profile the gate cannot produce.** The
+gate's data domain is one hardcoded profile — `testRadios` is 2 radios, 2-digit
+channels, `160MHz` widest — and `buildDashboardCardApp()` takes no overrides, so no
+card can be measured against different data without editing the fixture. Measured
+by temporarily adding a third tri-band radio (`Channel 233 (Auto) · 320MHz`) and
+reverting:
+
+| | before #1266 (`'Ch '`) | localized, old `Row` | localized + `Wrap` (shipped) |
+|---|---|---|---|
+| 2 radios (the gate's fixture) | clean | 3 coordinates | **clean, 26 locales × both widths** |
+| 3 radios, tri-band | clean | `en` +8.3px, plus `fi`, `ja` and the two above | one **+9.0px bottom** (`tr` @261 only) |
+
+The remaining tri-band incident is not the band/channel row: it is the donut's
+centre label at `:575`, squeezed once three two-run blocks have taken enough of the
+column that its `Expanded` no longer fits the label's two lines. That is §2.10a
+point 3's failure mode — the same
+fixed-size-gauge-in-an-`Expanded` shape as #1235's `network_health` gauge — and at
+that height the donut is visually useless whether or not it reports an overflow, so
+"shrink the donut to fit" would silence the gate without fixing anything. Deciding
+what the tab drops at that density (the donut, or the whole tab becoming
+scrollable like the Signal tab's `ListView`) is a density decision, and it is not
+verifiable at all until the gate can express a second data profile.
+
+**Filed as #1267**, which pairs the density decision with the gate change that
+makes it measurable: an `overrides` parameter on `buildDashboardCardApp()` /
+`kitchenSinkOverrides()` plus a tri-band fixture. It is deliberately *not* folded
+into #1235 — same family (fixed-size gauge in an `Expanded` that cannot pay), but
+different axis (vertical vs horizontal), different trigger (data vs translation
+length) and different visibility (invisible until #1267's Part 1 lands vs 3 live
+coordinates), and #1235's acceptance criteria are executable ratchet claims that an
+unverifiable AC would make unclosable. Recorded here because the #1266 fix does
+trade a right-overflow for a bottom-overflow on that unshipped profile, which is
+exactly the trade §2.10a point 3 warns about.
+
+Note also what #1267's Part 1 costs: adding a second profile to the sweep across
+all 18 cards doubles 1644 cases and will surface coordinates nobody has looked at
+— an allowlist *addition*, against the ratchet's direction. Which is why the sweep
+shape (opt-in per card / second allowlist keyed by profile / one allowlist) is an
+explicit decision in that ticket rather than an implementation detail.
+
 ### 2.11 fl_chart's 19 coordinates get a primary plan and a documented fallback
 
 `firewall_overview`'s 19 coordinates originate inside fl_chart
@@ -752,7 +993,8 @@ addition — it changes no card's rendering until a threshold is declared.
 | #1233 | The other six legend rows (§1.1, §2.10a) — **implemented** | 132 |
 | #1227 | Shared blocks made overflow-safe (§2.6, §2.6a) — **implemented** | 101 |
 | #1228 | `ethernet_ports` ×2 sites (§2.12) — **implemented** | 52 |
-| #1229 | `wifi_performance` ×2 sites | 45 |
+| #1229 | `wifi_performance` ×2 sites (§2.10b) — **implemented** | 45 |
+| #1266 | `wifi_performance` Channels tab: localize `'Ch '` + harden (§2.10c) — **implemented** | 0 (net) |
 | #1230 | `firewall_overview` own sites (§2.11) | 48 |
 | #1234 | `system_status` remaining ×3 sites | 34 |
 | #1236 | `lan_info` + `device_info` card-own | 29 |
@@ -761,6 +1003,11 @@ addition — it changes no card's rendering until a threshold is declared.
 | #1238 | `connected_devices` card-own (§2.6) | 1 |
 
 Ceiling **515 / 560**. The other 45 are the dependency-blocked ones (§1.1).
+
+#1266 is in this track despite clearing nothing: it is the only entry that *adds*
+coordinates (3, by localizing a hardcoded string) and removes them again in the
+same change. It belongs here rather than in Track B because the ratchet is what
+constrains it — see §2.10c for why the two halves cannot ship separately.
 
 #1225 lands first — not because it re-baselines (it does not, §1.6) but so that
 the invariant holds by construction and any future shift is attributable. #1226

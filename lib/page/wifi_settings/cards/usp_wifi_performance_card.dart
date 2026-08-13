@@ -187,27 +187,42 @@ class _SignalTab extends StatelessWidget {
           ),
         ),
         AppGap.sm(),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+        // Legend. Degradation shape per #1226 (the full reasoning lives in
+        // usp_traffic_analysis_card.dart), adapted as #1233 adapted it: there
+        // are no totals to keep at full size, so every child is a legend entry
+        // and the `Wrap` is centred rather than `spaceBetween`.
+        //
+        // Four entries at this card's narrowest realization (261px) is the
+        // widest legend in the epic — `ru` overflowed the old `Row` by 149px —
+        // so entries wrap to a second run here routinely rather than
+        // exceptionally. The `Expanded` above holds a `ListView`, which yields
+        // that height freely (contrast §2.10a point 3, where a fixed 120px
+        // gauge could not).
+        //
+        // Two spacing deltas, both deliberate. The old `Row` emitted a trailing
+        // `AppGap.md()` after the *last* entry, so `MainAxisAlignment.center`
+        // was centring 12px of empty space along with the content; `Wrap`'s
+        // `spacing` has no trailing run, so the legend shifts slightly right.
+        // And the gap between entries goes 12px → 16px, because `AppSpacing.lg`
+        // is what all six #1233 legends and #1226's use — conforming to the
+        // shared shape matters more here than preserving this one row's 12px,
+        // and the measurement says 16px is affordable even at 261px.
+        Wrap(
+          alignment: WrapAlignment.center,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: AppSpacing.lg,
+          runSpacing: AppSpacing.xs,
           children: [
             for (final tier in [
               SignalTier.excellent,
               SignalTier.good,
               SignalTier.fair,
               SignalTier.weak,
-            ]) ...[
-              Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(
-                  color: tier.resolveColor(colorScheme),
-                  shape: BoxShape.circle,
-                ),
+            ])
+              _LegendEntry(
+                color: tier.resolveColor(colorScheme),
+                label: tier.resolveLabel(context),
               ),
-              AppGap.xs(),
-              AppText.labelSmall(tier.resolveLabel(context)),
-              AppGap.md(),
-            ],
           ],
         ),
       ],
@@ -272,31 +287,89 @@ class _SpeedTab extends StatelessWidget {
           ),
         ),
         AppGap.sm(),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+        // Legend — the Signal tab's shape with two entries instead of four.
+        // Only the long-translation locales overflowed the old `Row` here
+        // (`es`, `fr`, `pt_PT`, `ru`, `tr`), which is what two entries versus
+        // four looks like: this one is translation-length bound where the
+        // Signal tab's is geometry bound (it overflowed in `en` too).
+        Wrap(
+          alignment: WrapAlignment.center,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: AppSpacing.lg,
+          runSpacing: AppSpacing.xs,
           children: [
-            Container(
-              width: 8,
-              height: 8,
-              decoration: BoxDecoration(
-                color: colorScheme.primary,
-                shape: BoxShape.circle,
-              ),
+            _LegendEntry(
+              color: colorScheme.primary,
+              label: loc(context).downlink,
             ),
-            AppGap.xs(),
-            AppText.labelSmall(loc(context).downlink),
-            AppGap.lg(),
-            Container(
-              width: 8,
-              height: 8,
-              decoration: BoxDecoration(
-                color: colorScheme.secondary,
-                shape: BoxShape.circle,
-              ),
+            _LegendEntry(
+              color: colorScheme.secondary,
+              label: loc(context).uplink,
             ),
-            AppGap.xs(),
-            AppText.labelSmall(loc(context).uplink),
           ],
+        ),
+      ],
+    );
+  }
+}
+
+// =============================================================================
+// Legend primitives (shared by the Signal and Speed tabs)
+// =============================================================================
+
+class _LegendDot extends StatelessWidget {
+  final Color color;
+  const _LegendDot({required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 8,
+      height: 8,
+      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+    );
+  }
+}
+
+/// One legend entry: colour dot, gap, label — the unit that must never split, so
+/// a label never separates from the colour it explains (#1226 rule 2).
+///
+/// File-private on purpose, and this is now the **fifth** copy of the shape
+/// (`usp_network_health_card`, `usp_system_status_card` as `_StatLegendEntry`,
+/// `usp_traffic_analysis_card`, `device_analytics`). Extracting one shared
+/// widget from them needs Article XIV approval, which #1245 is raised to have;
+/// #1233 deliberately chose not to block on that conversation and #1229 follows
+/// it, so the shape is replicated in place. #1245's inventory needs this file
+/// added to it.
+class _LegendEntry extends StatelessWidget {
+  final Color color;
+  final String label;
+  const _LegendEntry({required this.color, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _LegendDot(color: color),
+        AppGap.xs(),
+        // `Flexible`, because a `Row` hands non-flex children unbounded width: a
+        // bare label takes its full intrinsic width on one line and overflows no
+        // matter how the enclosing `Wrap` arranges the entries (§2.10a point 1).
+        // Loose fit, so a short label still hugs and entries share a run.
+        //
+        // One-line ellipsis, unlike system_status/network_health: every label
+        // here is a bare tier or series name keying an already-colour-coded bar
+        // or chart, so a clipped label still communicates and the colour carries
+        // the identification. Those two cards compose statistics into their
+        // labels and therefore soft-wrap instead — an ellipsis would cut a
+        // number in half (§2.10a point 2).
+        Flexible(
+          child: AppText.labelSmall(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
         ),
       ],
     );
@@ -374,14 +447,53 @@ class _ChannelsTab extends StatelessWidget {
 
             return LayoutBlock(
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                // `stretch`, not `start`, and it is load-bearing for the `Wrap`
+                // below: a `Wrap` under loose width constraints shrink-wraps to
+                // its widest run, which leaves `spaceBetween` zero free space to
+                // distribute — the alignment silently becomes a no-op and the
+                // channel string sits one `spacing` gap after the band instead of
+                // at the block's right edge. `stretch` hands both rows a tight
+                // width, so `spaceBetween` reproduces what the old `Spacer` did.
+                // (The second row is unaffected: its `Expanded` loader already
+                // forced full width.)
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Row(
+                  // Band + channel. The #1226 shape, and `spaceBetween` is what
+                  // makes it a drop-in: with both children on one run a `Wrap`
+                  // spaces them to the edges exactly as the old `Spacer` did, so
+                  // nothing moves at the widths where the row already fit.
+                  //
+                  // Neither side yields, because neither is chrome: `band` is the
+                  // block's identity and the channel string is composed data
+                  // (§2.10a point 2 — an ellipsis landing inside `320MHz`
+                  // misinforms in a way a wrapped line does not). So both keep
+                  // their intrinsic width and the row spends a second run.
+                  //
+                  // Why this changed now, when the row shipped clean for months:
+                  // `'Ch '` was a hardcoded English abbreviation, and it was
+                  // hiding a geometry problem rather than not having one. With
+                  // the real `channel` key the old `Row` overflowed at the 261px
+                  // card in `th` (+17.0px) and `tr` (+4.1/+41.0px, and +14.0px
+                  // even at the *preferred* 288px width), on the two-radio
+                  // fixture the gate ships. Given a third tri-band radio —
+                  // `Ch 233 (Auto) · 320MHz`, which the gate's fixture cannot
+                  // produce — `en` (+8.3px), `fi` and `ja` break too. Measured
+                  // per #1266; every incident attributed to this one row.
+                  //
+                  // The extra run is paid out of the donut's `Expanded` below,
+                  // which yields it (contrast §2.10a point 3, where Network
+                  // Health's fixed 120px gauge could not) — verified by
+                  // re-measuring for bottom overflows, not assumed.
+                  Wrap(
+                    alignment: WrapAlignment.spaceBetween,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: AppSpacing.lg,
+                    runSpacing: AppSpacing.xxs,
                     children: [
                       AppText.labelLarge(radio.band),
-                      const Spacer(),
                       AppText.bodySmall(
-                        'Ch ${radio.channelDisplay}  \u00b7  ${radio.channelBandwidth}',
+                        '${loc(context).channel} ${radio.channelDisplay}'
+                        '  \u00b7  ${radio.channelBandwidth}',
                         color: colorScheme.onSurfaceVariant,
                       ),
                     ],
