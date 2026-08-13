@@ -702,7 +702,9 @@ count and SNR with nothing clipped. It is asserted anyway, because "already clea
 is not "checked" and nothing else in the suite would notice a later fix collapsing
 those rows.
 
-Two observations left deliberately unfixed:
+Two observations were left deliberately unfixed here, and **both were wrong** —
+#1266 (§2.10c) measured them and inverted the conclusion. They are quoted rather
+than deleted because the way they were wrong is the finding:
 
 - `_ChannelsTab`'s two per-radio rows use the same unconstrained shape this epic
   keeps fixing (`Row` + `Spacer`, non-flex `AppText`), and measure clean only by
@@ -714,6 +716,101 @@ Two observations left deliberately unfixed:
   mock's two-radio output. No amount of locale sweeping reaches it, so that
   headroom is unmeasured rather than measured-safe — a limit of the gate's fixed
   mock, worth stating where the 48px figure is quoted.
+
+The 48px was real and the reasoning from it was not: it was measured with `'Ch '`,
+a hardcoded English abbreviation, in the row. The abbreviation *was* the bug, and
+it was concealing the geometry problem rather than the row not having one. "Clean
+by 48px" and "hardening a site that is not currently failing" both describe a
+string that was never going to ship.
+
+### 2.10c An English abbreviation was hiding a geometry problem (#1266 — implemented)
+
+#1229 left the Channels tab alone on the strength of the two bullets above.
+Localizing `'Ch '` to the existing `channel` ARB key — which was already
+translated in all 26 locales, so this was a one-line change with no ARB work —
+turns the tab's band/channel row into **3 gate coordinates on the fixture the gate
+actually ships**:
+
+| locale | `channel` | 261px (min) | 288px (preferred) |
+|--------|-----------|-------------|-------------------|
+| `tr`   | `Channel (Kanal)` (15 chars) | +4.1px, +41.0px | +14.0px |
+| `th`   | `ช่องสัญญาณ`   | +17.0px         | clean   |
+| other 24 | — | clean | clean |
+
+So the two halves cannot be separated, and the *ordering* is the point:
+
+- **Localizing alone runs the ratchet backwards.** It adds 3 coordinates to a
+  mechanism whose entire purpose (§2.9) is that the count only falls. It would
+  have to be booked as an allowlist *addition*, which nothing in Part 4 permits.
+- **Hardening alone is gate-invisible.** With `'Ch '` in place the row is clean
+  everywhere, so the `Wrap` changes no coordinate and the gate cannot tell whether
+  it worked. That is the #1258 shape, and it is why #1229's bullet reached for
+  #1258.
+- **Together they are self-verifying**: the localization supplies the failure the
+  hardening has to clear, on the shipped fixture, at both widths. Net coordinate
+  change **0**, and the honest string ships. This is the #1249 bundling precedent
+  (ratchet work travels together), not the #1258 one.
+
+Four further findings, all about method:
+
+1. **An abbreviation in `lib/` is a measurement hazard, not just an i18n bug.**
+   Any hardcoded English string makes every width measurement at that site
+   optimistic by however much the translation is longer, and the gate reports the
+   optimistic number in all 26 locales — a locale sweep cannot find a string that
+   never varies. Worth a grep pass over the remaining Track A sites: an
+   abbreviation is the one defect this epic's instrument is structurally blind to.
+2. **Two `testWifiData` fixtures exist and only one reaches the gate.** The
+   dashboard gate reads `test/golden_test/page/dashboard/cards/fixtures/`
+   `cards_test_data.dart` (via `kitchenSinkOverrides()`); the Statistics page reads
+   `test/golden_test/page/statistics/fixtures/statistics_test_data.dart`. Editing
+   the latter and re-running the gate produces a confident, meaningless "clean".
+   Caught only by dumping the rendered `Text` list and noticing the added radio was
+   absent. **Rule: when a measurement depends on fixture data, verify the render
+   contains the data, not just that the verdict is green.**
+3. **`WrapAlignment.spaceBetween` is a silent no-op under loose width
+   constraints.** `RenderWrap` sizes itself to its widest run, so
+   `freeMainAxisSpace` is 0 and there is nothing to distribute; the second child
+   lands one `spacing` gap after the first instead of at the right edge. The
+   enclosing `Column` must hand it a tight width
+   (`CrossAxisAlignment.stretch`) for `spaceBetween` to reproduce what a `Spacer`
+   did. This is a **pure visual regression that overflows nothing**, so the gate
+   passes all 157 cases either way — it is pinned in the readability test instead.
+   **This applies retroactively: #1226's and #1233's `spaceBetween` legends should
+   be checked for the same precondition, since a shrink-wrapped legend is
+   indistinguishable from a correct one in a green gate.**
+4. **Attribution scoped the fix to one of the two rows.** Regexing
+   `usp_wifi_performance_card.dart:(\d+)` over `OverflowIncident.fullLog`
+   attributed every single incident — both fixtures, all locales, both widths — to
+   the band/channel row, and none to the clients/SNR/loader row below it (whose
+   `Expanded` loader already binds). §1.1's method at per-line resolution, and it
+   halved the change: #1229's bullet had assumed "two per-radio rows" needed the
+   same treatment.
+
+**Tri-band data: what the fix costs on a profile the gate cannot produce.** The
+gate's data domain is one hardcoded profile — `testRadios` is 2 radios, 2-digit
+channels, `160MHz` widest — and `buildDashboardCardApp()` takes no overrides, so no
+card can be measured against different data without editing the fixture. Measured
+by temporarily adding a third tri-band radio (`Channel 233 (Auto) · 320MHz`) and
+reverting:
+
+| | before #1266 (`'Ch '`) | localized, old `Row` | localized + `Wrap` (shipped) |
+|---|---|---|---|
+| 2 radios (the gate's fixture) | clean | 3 coordinates | **clean, 26 locales × both widths** |
+| 3 radios, tri-band | clean | `en` +8.3px, plus `fi`, `ja` and the two above | one **+9.0px bottom** (`tr` @261 only) |
+
+The remaining tri-band incident is not the band/channel row: it is the donut's
+centre label at `:575`, squeezed once three two-run blocks have taken enough of the
+column that its `Expanded` no longer fits the label's two lines. That is §2.10a
+point 3's failure mode — the same
+fixed-size-gauge-in-an-`Expanded` shape as #1235's `network_health` gauge — and at
+that height the donut is visually useless whether or not it reports an overflow, so
+"shrink the donut to fit" would silence the gate without fixing anything. Deciding
+what the tab drops at that density (the donut, or the whole tab becoming
+scrollable like the Signal tab's `ListView`) is a density decision, and it is not
+verifiable at all until the gate can express a second data profile. **Filed
+against the #1235 shape rather than fixed here; recorded because the fix does trade
+a right-overflow for a bottom-overflow on that unshipped profile, which is exactly
+the trade §2.10a point 3 warns about.**
 
 ### 2.11 fl_chart's 19 coordinates get a primary plan and a documented fallback
 
@@ -834,6 +931,7 @@ addition — it changes no card's rendering until a threshold is declared.
 | #1227 | Shared blocks made overflow-safe (§2.6, §2.6a) — **implemented** | 101 |
 | #1228 | `ethernet_ports` ×2 sites (§2.12) — **implemented** | 52 |
 | #1229 | `wifi_performance` ×2 sites (§2.10b) — **implemented** | 45 |
+| #1266 | `wifi_performance` Channels tab: localize `'Ch '` + harden (§2.10c) — **implemented** | 0 (net) |
 | #1230 | `firewall_overview` own sites (§2.11) | 48 |
 | #1234 | `system_status` remaining ×3 sites | 34 |
 | #1236 | `lan_info` + `device_info` card-own | 29 |
@@ -842,6 +940,11 @@ addition — it changes no card's rendering until a threshold is declared.
 | #1238 | `connected_devices` card-own (§2.6) | 1 |
 
 Ceiling **515 / 560**. The other 45 are the dependency-blocked ones (§1.1).
+
+#1266 is in this track despite clearing nothing: it is the only entry that *adds*
+coordinates (3, by localizing a hardcoded string) and removes them again in the
+same change. It belongs here rather than in Track B because the ratchet is what
+constrains it — see §2.10c for why the two halves cannot ship separately.
 
 #1225 lands first — not because it re-baselines (it does not, §1.6) but so that
 the invariant holds by construction and any future shift is attributable. #1226

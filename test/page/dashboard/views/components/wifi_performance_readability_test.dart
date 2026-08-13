@@ -11,7 +11,7 @@ import 'package:privacy_gui/page/dashboard/models/usp_widget_specs.dart';
 import '../../../../util/app_test_fonts.dart';
 import '../../../../util/dashboard/dashboard_card_probe.dart';
 
-/// WiFi Performance readability (#1229).
+/// WiFi Performance readability (#1229, extended by #1266).
 ///
 /// ## Why this file exists alongside the #1183 gate
 ///
@@ -28,9 +28,13 @@ import '../../../../util/dashboard/dashboard_card_probe.dart';
 /// The card's fourth acceptance criterion is the other blind spot — "per-band
 /// metrics stay distinguishable at the narrowest clean width — the card's value
 /// is the comparison between bands". That one is about the **Channels** tab,
-/// which #1229 does not modify: those coordinates were already clean. It is
-/// asserted here anyway, because "already clean" is not the same as "checked",
-/// and because nothing else in the suite would notice if a later fix to this file
+/// which #1229 did not modify: those coordinates were already clean. It was
+/// asserted here anyway, because "already clean" is not the same as "checked" —
+/// and that turned out to be the point. #1266 found the tab's band/channel row
+/// was only clean because `'Ch '` was a hardcoded English abbreviation, gave it
+/// the same `Wrap` treatment, and rewrote this group's invariant accordingly
+/// (see the group's own comment). So the tab is now guarded here for the ordinary
+/// reason as well: nothing else in the suite would notice if a later fix
 /// collapsed the per-band rows.
 ///
 /// Tagged `dashboard-card` so it gates PRs: `run_tests.sh` excludes
@@ -43,14 +47,17 @@ import '../../../../util/dashboard/dashboard_card_probe.dart';
 /// mutation was also run against the gate, because a mutation the gate already
 /// catches proves nothing about *this* file.
 ///
-///   | mutation                                     | this file | the gate |
-///   |----------------------------------------------|-----------|----------|
-///   | drop `SignalTier.fair` from the legend list   | 5 fail    | green    |
-///   | `Row` + `Flexible` entries, no `Wrap`         | 3 fail    | green    |
-///   | drop the per-radio SNR readout               | 2 fail    | green    |
-///   | `Wrap` back to a bare `Row` (pre-#1229)      | green     | 33 fail  |
+///   | mutation                                          | this file | the gate |
+///   |---------------------------------------------------|-----------|----------|
+///   | drop `SignalTier.fair` from the legend list        | 5 fail    | green    |
+///   | `Row` + `Flexible` entries, no `Wrap`             | 3 fail    | green    |
+///   | drop the per-radio SNR readout                    | 2 fail    | green    |
+///   | `Wrap` back to a bare `Row` (pre-#1229, tab 0)    | green     | 33 fail  |
+///   | Channels `Column`: `stretch` → `start` (#1266)    | 1 fail    | green    |
+///   | `loc(context).channel` → `'Ch '` (#1266)         | 4 fail    | green    |
+///   | Channels `Wrap` → `Row` + `Spacer`, localized     | 1 fail    | 3 fail   |
 ///
-/// The last row is the instructive one, and it is why the second differs from
+/// The fourth row is the instructive one, and it is why the second differs from
 /// the obvious guess. Reverting to a bare `Row` does **not** clip anything: a
 /// `Row` hands its non-flex children unbounded width, so each entry's inner
 /// `Flexible` never binds, every label paints at full intrinsic width, and the
@@ -64,6 +71,20 @@ import '../../../../util/dashboard/dashboard_card_probe.dart';
 /// translations. All 157 wifi_performance gate cases stay green. That is the
 /// shape a well-meaning "just make it fit" edit lands on, and only this file
 /// fails it.
+///
+/// The three #1266 rows say the same thing about the Channels tab, and the last
+/// two are a pair worth reading together. Localizing `'Ch '` on its own costs 3
+/// gate coordinates (`th` @261, `tr` @261 and @288) — the ratchet forbids it.
+/// Hardening on its own costs nothing and gains nothing the gate can see. Only
+/// the two together are both green and honest, which is why they shipped as one
+/// change and why the middle row matters: with the abbreviation back, this file
+/// fails in every locale while the gate notices nothing at all.
+///
+/// The `stretch` → `start` row is the subtlest of the set. `spaceBetween` is a
+/// no-op under loose width constraints, so dropping the `stretch` slides the
+/// channel readout left to sit one `spacing` gap after the band label, in every
+/// locale, while overflowing nothing — a pure visual regression that all 157
+/// gate cases pass.
 void main() {
   setUpAll(() async {
     // Real fonts: under the Ahem block font every glyph is one square em, so what
@@ -93,6 +114,31 @@ void main() {
         cardWidth: narrowest.cardWidth,
         columnSpan: constraints.minColumns,
         label: 'min',
+      ),
+      cardHeightRows: constraints.minHeightRows,
+      tabIndex: tabIndex,
+      locale: locale,
+    );
+  }
+
+  /// Pumps the card at the narrowest realization of its *preferred* span — the
+  /// width the grid gives it by default, and the only place where "this fits on
+  /// one line" is a claim about the design rather than about degradation.
+  Future<void> pumpPreferred(
+    WidgetTester tester, {
+    required int tabIndex,
+    required Locale locale,
+  }) async {
+    final narrowest =
+        narrowestRealizationOf(constraints.preferredColumns, minScreen: 0)!;
+    await probeCardOverflow(
+      tester,
+      cardId: cardId,
+      widthCase: CardWidthCase(
+        screenWidth: narrowest.screenWidth,
+        cardWidth: narrowest.cardWidth,
+        columnSpan: constraints.preferredColumns,
+        label: 'preferred',
       ),
       cardHeightRows: constraints.minHeightRows,
       tabIndex: tabIndex,
@@ -234,17 +280,29 @@ void main() {
     });
   });
 
-  group('per-band metrics stay distinguishable (#1229 AC4)', () {
-    // AC4 covers the Channels tab, which #1229 does not touch — those
-    // coordinates were already clean. Asserted anyway: the AC is gate-invisible,
-    // and this pins what "distinguishable" was verified to mean at 261px, namely
-    // that each radio keeps its own band / channel line and its own client-count
-    // / SNR line, with nothing clipped.
-    for (final tag in ['en', 'ru']) {
-      testWidgets('each radio keeps its own channel and SNR line in $tag',
+  group('per-band metrics stay distinguishable (#1229 AC4, #1266)', () {
+    // AC4 covers the Channels tab. #1229 left it alone — those coordinates were
+    // already clean — and asserted it anyway, because the AC is gate-invisible.
+    //
+    // #1266 then overturned the design decision this group originally pinned.
+    // #1229 recorded "band label and channel share a line" as the meaning of
+    // distinguishable, which was true of the `Row` + `Spacer` it measured. But
+    // that row only fit because `'Ch '` was a hardcoded English abbreviation:
+    // with the real `channel` key it overflowed in `th` and `tr` on the shipped
+    // fixture, so #1266 localized it and gave the row the #1226 `Wrap`. The
+    // channel readout may now take a second run.
+    //
+    // So the invariant weakens from *same line* to *attributable*: each radio's
+    // band and channel must be adjacent and belong to the same block, separated
+    // from the next radio's. That is what actually carries AC4 — "the card's
+    // value is the comparison between bands" survives a two-line block, and does
+    // not survive a channel readout that cannot be assigned to a band.
+    for (final tag in ['en', 'ru', 'tr']) {
+      testWidgets('each radio keeps its own channel and SNR readout in $tag',
           (tester) async {
         final locale = _localeFor(tag);
         await pumpNarrowest(tester, tabIndex: 2, locale: locale);
+        final l = await AppLocalizations.delegate.load(locale);
 
         final texts = renderedTexts(tester);
         final bands =
@@ -255,15 +313,23 @@ void main() {
                 'least two radios must be named. Rendered: '
                 '${texts.map((t) => t.data).toList()}');
 
-        // `Ch <n> · <bandwidth>` and the SNR readout are unique to the per-radio
-        // rows (the header badge and the donut centre also mention clients, so a
-        // client-count match alone would not be).
-        final channels = texts.where((t) => t.data!.startsWith('Ch ')).toList();
+        // `<channel> <n> · <bandwidth>` and the SNR readout are unique to the
+        // per-radio rows (the header badge and the donut centre also mention
+        // clients, so a client-count match alone would not be).
+        //
+        // Matched on the localized `channel` string, not on `'Ch '`: that literal
+        // is exactly what #1266 removed, and a test that still recognised it
+        // would silently match nothing and pass on `hasLength(0)` if the band
+        // regex also stopped matching.
+        final channels =
+            texts.where((t) => t.data!.startsWith('${l.channel} ')).toList();
         final snrs = texts.where((t) => t.data!.contains(_snrMarker)).toList();
         expect(channels, hasLength(bands.length),
             reason:
                 'every radio needs its channel and bandwidth — that is what '
-                'makes the bands comparable rather than merely listed.');
+                'makes the bands comparable rather than merely listed. Looked '
+                'for a "${l.channel} " prefix in: '
+                '${texts.map((t) => t.data).toList()}');
         expect(snrs, hasLength(bands.length),
             reason: 'every radio needs its own SNR readout.');
 
@@ -273,9 +339,8 @@ void main() {
                   'band\'s reading cannot be compared with the others\'.');
         }
 
-        // Band label and channel share a line; each radio's rows are disjoint
-        // from the next radio's, which is what keeps two readings from reading as
-        // one.
+        // Each radio's block is disjoint from the next radio's, which is what
+        // keeps two readings from reading as one.
         final bandTops = bands.map((t) => rectOf(tester, t).top).toList()
           ..sort();
         for (var i = 1; i < bandTops.length; i++) {
@@ -283,16 +348,98 @@ void main() {
               reason: 'two band rows are within 16px of each other, so their '
                   'readouts visually merge.');
         }
+
+        // Attribution, post-#1266: the channel readout may sit on the band's
+        // line or on the run directly below it, but it must be nearer to its own
+        // band than to any other — a readout that drifts closer to the next
+        // radio's block is worse than a missing one, because it reads as that
+        // radio's channel.
         for (final band in bands) {
           final bandRect = rectOf(tester, band);
-          final onSameLine = channels.where((c) =>
-              (rectOf(tester, c).center.dy - bandRect.center.dy).abs() < 2.0);
-          expect(onSameLine, isNotEmpty,
-              reason: 'band "${band.data}" has no channel readout on its own '
-                  'line, so the channel cannot be attributed to it.');
+          final nearest = channels.reduce((a, b) =>
+              (rectOf(tester, a).center.dy - bandRect.center.dy).abs() <
+                      (rectOf(tester, b).center.dy - bandRect.center.dy).abs()
+                  ? a
+                  : b);
+          final nearestRect = rectOf(tester, nearest);
+          expect(nearestRect.top, greaterThanOrEqualTo(bandRect.top - 1.0),
+              reason: 'the channel readout nearest band "${band.data}" sits '
+                  'above it, so it belongs to the block before this one.');
+
+          final otherBandTops = bands
+              .where((b) => b != band)
+              .map((b) => rectOf(tester, b).top)
+              .where((top) => top > bandRect.top);
+          for (final nextTop in otherBandTops) {
+            expect(nearestRect.top, lessThan(nextTop),
+                reason: 'the channel readout for band "${band.data}" is below '
+                    'the next band label, so it reads as that band\'s channel.');
+          }
         }
       });
     }
+
+    testWidgets('the channel readout is right-aligned while it fits (#1266)',
+        (tester) async {
+      // `Wrap(alignment: spaceBetween)` is only a drop-in for the old `Spacer`
+      // while the row is width-bounded: a `Wrap` under loose constraints
+      // shrink-wraps to its widest run, leaving `spaceBetween` no free space to
+      // distribute, and the channel string silently slides left to sit one
+      // `spacing` gap after the band label. The `CrossAxisAlignment.stretch` on
+      // the enclosing Column is what prevents that, and nothing else would
+      // notice if it were reverted to `start` — the gate cannot see it, because
+      // a shrink-wrapped row overflows nothing.
+      //
+      // `en` at the preferred width, where every radio's block is comfortably
+      // one run: both children share a run, so the right edges must line up.
+      final locale = _localeFor('en');
+      await pumpPreferred(tester, tabIndex: 2, locale: locale);
+      final l = await AppLocalizations.delegate.load(locale);
+
+      final texts = renderedTexts(tester);
+      final bands = texts.where((t) => _bandRe.hasMatch(t.data!.trim()));
+      final channels =
+          texts.where((t) => t.data!.startsWith('${l.channel} ')).toList();
+      expect(channels, isNotEmpty);
+
+      for (final band in bands) {
+        final bandRect = rectOf(tester, band);
+        final sameRun = channels.where((c) =>
+            (rectOf(tester, c).center.dy - bandRect.center.dy).abs() < 2);
+        expect(sameRun, isNotEmpty,
+            reason: 'at the preferred width every block should still be one '
+                'run, so band "${band.data}" should share its line with its '
+                'channel readout.');
+
+        // The measurement that actually detects a lost `stretch`, and the reason
+        // it is not "the channel sits well right of the band": the channel string
+        // is ~100px wide, so it clears the band by a wide margin even when the
+        // row has shrink-wrapped. The comparison has to be against the width the
+        // row was *offered*.
+        //
+        // The block's `Column` is that reference under either alignment: the
+        // second row holds an `Expanded` loader, so it takes the full offered
+        // width regardless, and the `Column` shrink-wraps to it. So the `Wrap`
+        // matching the `Column`'s width is exactly the claim "the Wrap was handed
+        // a tight width", and it is what `spaceBetween` needs to do anything.
+        final wrapRect = tester.getRect(find.ancestor(
+            of: find.byWidget(band), matching: find.byType(Wrap)));
+        // Ancestor finders walk outward from the descendant, so `.first` is the
+        // innermost — the per-radio block's own Column, not the tab's.
+        final columnRect = tester.getRect(find
+            .ancestor(of: find.byWidget(band), matching: find.byType(Column))
+            .first);
+        expect(wrapRect.width, greaterThanOrEqualTo(columnRect.width - 1.0),
+            reason: 'the band/channel row for "${band.data}" is narrower than '
+                'its own block (${wrapRect.width} vs ${columnRect.width}), so '
+                'the Wrap shrink-wrapped and `spaceBetween` had no free space '
+                'to distribute. The enclosing Column has stopped stretching.');
+        expect(rectOf(tester, sameRun.first).right,
+            greaterThanOrEqualTo(wrapRect.right - 1.0),
+            reason: 'the channel readout does not reach the right edge of its '
+                'row, so it is no longer where the old `Spacer` put it.');
+      }
+    });
   });
 }
 

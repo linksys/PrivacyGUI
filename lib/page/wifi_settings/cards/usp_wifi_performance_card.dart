@@ -447,14 +447,53 @@ class _ChannelsTab extends StatelessWidget {
 
             return LayoutBlock(
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                // `stretch`, not `start`, and it is load-bearing for the `Wrap`
+                // below: a `Wrap` under loose width constraints shrink-wraps to
+                // its widest run, which leaves `spaceBetween` zero free space to
+                // distribute — the alignment silently becomes a no-op and the
+                // channel string sits one `spacing` gap after the band instead of
+                // at the block's right edge. `stretch` hands both rows a tight
+                // width, so `spaceBetween` reproduces what the old `Spacer` did.
+                // (The second row is unaffected: its `Expanded` loader already
+                // forced full width.)
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Row(
+                  // Band + channel. The #1226 shape, and `spaceBetween` is what
+                  // makes it a drop-in: with both children on one run a `Wrap`
+                  // spaces them to the edges exactly as the old `Spacer` did, so
+                  // nothing moves at the widths where the row already fit.
+                  //
+                  // Neither side yields, because neither is chrome: `band` is the
+                  // block's identity and the channel string is composed data
+                  // (§2.10a point 2 — an ellipsis landing inside `320MHz`
+                  // misinforms in a way a wrapped line does not). So both keep
+                  // their intrinsic width and the row spends a second run.
+                  //
+                  // Why this changed now, when the row shipped clean for months:
+                  // `'Ch '` was a hardcoded English abbreviation, and it was
+                  // hiding a geometry problem rather than not having one. With
+                  // the real `channel` key the old `Row` overflowed at the 261px
+                  // card in `th` (+17.0px) and `tr` (+4.1/+41.0px, and +14.0px
+                  // even at the *preferred* 288px width), on the two-radio
+                  // fixture the gate ships. Given a third tri-band radio —
+                  // `Ch 233 (Auto) · 320MHz`, which the gate's fixture cannot
+                  // produce — `en` (+8.3px), `fi` and `ja` break too. Measured
+                  // per #1266; every incident attributed to this one row.
+                  //
+                  // The extra run is paid out of the donut's `Expanded` below,
+                  // which yields it (contrast §2.10a point 3, where Network
+                  // Health's fixed 120px gauge could not) — verified by
+                  // re-measuring for bottom overflows, not assumed.
+                  Wrap(
+                    alignment: WrapAlignment.spaceBetween,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: AppSpacing.lg,
+                    runSpacing: AppSpacing.xxs,
                     children: [
                       AppText.labelLarge(radio.band),
-                      const Spacer(),
                       AppText.bodySmall(
-                        'Ch ${radio.channelDisplay}  \u00b7  ${radio.channelBandwidth}',
+                        '${loc(context).channel} ${radio.channelDisplay}'
+                        '  \u00b7  ${radio.channelBandwidth}',
                         color: colorScheme.onSurfaceVariant,
                       ),
                     ],
