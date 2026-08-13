@@ -1,5 +1,7 @@
 {
-  "tracking": {},
+  "tracking": {
+    "connected_devices": "26 of these 27 coordinates need three sites fixed together, and one of them is upstream: ui_kit AppListTile lays `trailing` out as a non-flex child with maxWidth: Infinity, so it paints at intrinsic width and the tile's Row overflows by +25.6px while the Expanded title column is starved to 0px first. Filed as linksys/privacyGUI-UI-kit#20. Not avoidable from the call site: the slot is never told the budget, so a LayoutBuilder there sees infinity and only a hardcoded magic number can fit. Measured — substituting a narrower trailing variant (75.0 -> 16.5px) fixed one row and moved the binding constraint to the next-widest trailing child, leaving the count at 27. The two card-own sites (usp_connected_devices_card.dart:61 and :79, #1226's unconstrained centred-Row shape) are tracked by #1238; `preferred|0 el` is the single coordinate that needs only :79 and has no upstream dependency."
+  },
   "allowlist": {
     "connected_devices|min|0": ["*"],
     "connected_devices|preferred|0": ["el"],
