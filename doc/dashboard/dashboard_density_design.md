@@ -875,6 +875,123 @@ all 18 cards doubles 1644 cases and will surface coordinates nobody has looked a
 shape (opt-in per card / second allowlist keyed by profile / one allowlist) is an
 explicit decision in that ticket rather than an implementation detail.
 
+### 2.10d What closing the four card-own tickets taught us (#1234–#1237 — implemented)
+
+87 coordinates → **0**, on one branch, one commit per shape. §1.1's decomposition
+held to the coordinate, including its uncomfortable prediction that two of the
+four commits would move nothing on their own:
+
+| Commit (shape) | Sites | Coordinates |
+|---|---|---:|
+| "View details" footer | `system_status:118`, `device_info:140` | 34→28, 2→0 |
+| Hero inner row | `lan_info:56`, `time_settings:108` | 27→0, 21→0 |
+| Legend row | `system_status:218` | 28→26 |
+| Twin gauge row | `system_status:196` | 26→**0** |
+| Gauge centre | `network_health:150` | 3→0 |
+
+The ratchet now stands at **94 coordinates**, all owned by #1230 (67,
+`firewall_overview`) and #1238 (27, `connected_devices`).
+
+**1. One shape, two techniques — and sometimes the technique is deletion.** The
+hero inner row is the same idiom in two files and **48 of the 84 coordinates**,
+the largest single shape in the baseline, with the same measured cause in both: a
+fixed 56px avatar plus `AppGap.lg` leaves the `Expanded` column **61.4px**, and a
+`Row` hands its non-flex children *unbounded* width. `lan_info` overflowed in all
+26 locales including `en` (+47.7px), so this was never a translation-length
+defect. But the two fixes diverge, per §2.10a point 2: a composed status
+soft-wraps (`DHCP Enabled` ellipsized to `DHCP…` drops the only word the row
+exists to show), while `time_settings`' child is an `AppBadge` and **a capsule
+cannot take a second line**. That badge already ellipsized correctly and only ever
+failed because a single-child `Row` handed it infinity — so the `Row` was
+*deleted*, not flexed. Removing a `RenderFlex` beats constraining one when it had
+no other effect; the enclosing `Column` was already `start`-aligned.
+
+**2. A `Wrap` under an `Expanded` is clipped in silence.** #1234's design
+alternative (stack the two gauges instead of shrinking them) was expected to fail
+loudly: two 100px runs need ~208px against the 201px (`en`) / 181px (`de`) the
+`Expanded` offers. It fails *silently* — `RenderWrap` has no overflow indicator of
+its own and the `Expanded` pins its height, so the second circle is simply cut
+(108px between gauge centres in a 181px box, all 209 gate cases green). §2.10a
+point 3 says a `Wrap` must have height to spend; the sharper form is: **the gate
+cannot tell you when it doesn't**, so the precondition is measured *before* the
+conversion or not at all. #1233's and #1266's conversions were safe for a reason
+that has to be checked, not inherited.
+
+**3. Every fix is one of three things to the gate, and two of them owe a test.**
+
+| Fix class | Example | The gate afterwards |
+|---|---|---|
+| Constrain (`Flexible`, `maxLines`, bound a size) | all of #1236, #1237 | still sees a revert |
+| Convert to a `Wrap`/`Column` inside a pinned box | rejected stacking | blind to the *new* failure |
+| Scale (`FittedBox`) | #1235's centre | blind to it **for good** |
+
+`FittedBox(fit: BoxFit.scaleDown)` is the right fix for #1235's centre and it
+permanently removes the signal: once a subtree may shrink, no future squeeze can
+ever produce a coordinate. The mutation ledger makes that concrete — shrinking the
+score's font unconditionally clears **all 209** gate cases. So a self-relaxing fix
+has to ship its own floor: `usp_gauge_center_readability_test.dart` asserts a 12px
+painted minimum, which is the replacement for what `scaleDown` took away.
+
+**4. A ticket's diagnosis is a report, not a measurement.** #1235 states the tier
+label is wider than the space inside the circle. The three coordinates are
+**bottom** overflows (+21.0 `de`, +11.0 `ru`, +9.0 `th`): `AppGauge` respects its
+incoming constraints, so the gauge lays out 120×67 (`en`) and 120×**23** (`de`)
+against a 44px centre column. Worse, the cause is two levels up — `_MetricChip`'s
+three ~23.1px label columns soft-wrap (`Discards` over 3 lines, `Verworfene
+Pakete` over **6**), so the height left for the gauge is a function of translation
+length. Acting on the ticket's text would have produced a fix that is both lossy
+and incomplete: ellipsizing the tier truncates it *and* leaves 2 of 3 coordinates
+standing (ledger row 2). §1.1's per-line attribution is what turned this up, and
+it belongs on the *cause*, not on the symptom's line number.
+
+**5. A cleared allowlist is not a readability claim — and #1240 must not read it
+as one.** Track A's target is "nothing is clipped or overflowing". Both cards
+closed here are green at 191px and unusable there:
+
+- `time_settings`: the hero clock is a 222.5px string in a 61.4px column, so it
+  paints **5 lines / 140px** — in every locale, `en` included — while the sync
+  badge shows ~6 glyphs plus an ellipsis. Nothing overflows; everything that could
+  give, gave. §1.2 puts this card's fit width at 288px.
+- `network_health`: the centre scales to **0.52** in `de` (14.6px score, 8.4px
+  tier) because the metric labels below take 48px (`en`) to 96px (`de`) of the
+  height. §1.2 puts its fit width at 420px; it is being asked to render at 191px.
+
+Those two numbers are direct #1240 input, not defects to paper over. Related
+caveat on §1.2 itself: that table measures the narrowest width at which a card is
+*clean*, and Track A has now moved that number for five cards while leaving the
+width at which they are *readable* exactly where it was. #1240 must re-measure,
+not read §1.2's column.
+
+**6. §2.10c finding 1's grep pass, executed over these five cards.** Six
+hardcoded English strings; five are protocol acronyms that do not vary by locale
+(`CPU`, `DNS`, `IPv6`, `MAC`, and `DST`, which is arguable and left alone). One is
+a real bug: `usp_lan_info_card.dart:144` renders `value: 'Enabled'` while line 85
+of the same file uses `loc(context).enabled`, a key that exists in all 26 locales
+(`Ενεργοποιήθηκε`, `Ingeschakeld`, …). It is **not** the one-line fix #1266 was,
+because it is gate-invisible twice over: a hardcoded string cannot vary in a
+locale sweep, *and* the branch never renders at all — it is the `else` of
+`if (info.ipv6Addresses.isNotEmpty)`, and the gate's fixture supplies
+`ipv6Addresses: ['fd00::1']`. Verifying a localization there needs #1267's
+`overrides` parameter first, so it is recorded here rather than folded into these
+four tickets. This is §2.10c finding 2 in its purest form: the data decides what
+the instrument can see.
+
+**7. Two entries for #1245's de-duplication inventory.** The two hand-rolled
+"View details" footers exist for one reason: `detailRoute` cannot carry query
+parameters (`?tab=`, `?deviceId=`), so neither card can use
+`DashboardCardTemplate._buildDetailFooter`. #1227 fixed the template's copy and
+could not fix theirs. The fix here was replicated *verbatim* rather than extracted,
+because extracting it would make a third copy of the widget while leaving the
+cause in place. The cause — `detailRoute`'s signature — is the inventory entry.
+The second entry is the footer shape itself, now identical in three places.
+
+**8. Widening was genuinely available once, and was declined.** `time_settings`
+is the only card in the baseline where §1.3's arithmetic permits the other fix
+(fit width 288px, so `minColumns` 3 → 5 would have worked). It stays 3, with the
+reasoning recorded at the declaration site: the floor is the user's, it costs 5 of
+12 columns in every layout to buy headroom in a handful of locales, and the
+card-own fix cleared all 21 coordinates for one `Flexible` and a soft-wrap.
+
 ### 2.11 fl_chart's 19 coordinates get a primary plan and a documented fallback
 
 `firewall_overview`'s 19 coordinates originate inside fl_chart
@@ -995,14 +1112,19 @@ addition — it changes no card's rendering until a threshold is declared.
 | #1228 | `ethernet_ports` ×2 sites (§2.12) — **implemented** | 52 |
 | #1229 | `wifi_performance` ×2 sites (§2.10b) — **implemented** | 45 |
 | #1266 | `wifi_performance` Channels tab: localize `'Ch '` + harden (§2.10c) — **implemented** | 0 (net) |
+| #1234 | `system_status` remaining ×3 sites (§2.10d) — **implemented** | 34 |
+| #1236 | `lan_info` + `device_info` card-own (§2.10d) — **implemented** | 29 |
+| #1237 | `time_settings` card-own (§2.10d) — **implemented** | 21 |
+| #1235 | `network_health` gauge centre (§2.10d) — **implemented** | 3 |
 | #1230 | `firewall_overview` own sites (§2.11) | 48 |
-| #1234 | `system_status` remaining ×3 sites | 34 |
-| #1236 | `lan_info` + `device_info` card-own | 29 |
-| #1237 | `time_settings` card-own | 21 |
-| #1235 | `network_health` gauge centre | 3 |
 | #1238 | `connected_devices` card-own (§2.6) | 1 |
 
 Ceiling **515 / 560**. The other 45 are the dependency-blocked ones (§1.1).
+
+After #1234–#1237 the allowlist holds **94** coordinates: 67 `firewall_overview`
+(#1230) and 27 `connected_devices` (#1238). Both remaining entries are the
+dependency-blocked kind — fl_chart's internals and a ui_kit `AppListTile` change —
+so Track A's card-own work is complete.
 
 #1266 is in this track despite clearing nothing: it is the only entry that *adds*
 coordinates (3, by localizing a hardcoded string) and removes them again in the

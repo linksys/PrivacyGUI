@@ -1,30 +1,16 @@
 {
   "tracking": {
-    "network_health": "gauge centre #1235 (legend rows cleared by #1233)",
-    "system_status": "gauge row + action row + tab-0 legend-adjacent row #1234 (legend rows cleared by #1233)"
+    "connected_devices": "#1238 (blocked on a ui_kit AppListTile change)",
+    "firewall_overview": "#1230 (card-own sites + the fl_chart fallback)"
   },
   "allowlist": {
     "connected_devices|min|0": ["*"],
     "connected_devices|preferred|0": ["el"],
-    "device_info|min|0": ["el", "ru"],
     "firewall_overview|min|0": [
       "ar", "el", "es", "es_AR", "fi", "fr", "fr_CA", "id", "nb", "pl",
       "pt", "pt_PT", "ru", "tr", "vi"
     ],
     "firewall_overview|min|1": ["*"],
-    "firewall_overview|preferred|1": ["*"],
-    "lan_info|min|0": ["*"],
-    "lan_info|preferred|0": ["el"],
-    "network_health|min|0": ["de", "ru", "th"],
-    "system_status|min|0": ["*"],
-    "system_status|min|1": ["el", "ru"],
-    "system_status|min|2": ["el", "ru"],
-    "system_status|min|3": ["el", "ru"],
-    "system_status|preferred|0": ["fr", "fr_CA"],
-    "time_settings|min|0": [
-      "da", "de", "el", "en", "es", "es_AR", "fi", "fr", "fr_CA", "id",
-      "it", "nb", "nl", "pl", "pt", "pt_PT", "ru", "sv", "th", "tr",
-      "vi"
-    ]
+    "firewall_overview|preferred|1": ["*"]
   }
 }
