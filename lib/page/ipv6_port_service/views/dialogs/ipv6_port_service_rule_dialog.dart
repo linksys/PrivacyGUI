@@ -135,6 +135,11 @@ class _Ipv6PortServiceRuleDialogState extends State<Ipv6PortServiceRuleDialog> {
       scrollable: true,
       content: Column(
         mainAxisSize: MainAxisSize.min,
+        // Left-align the children. The text fields already fill the content
+        // width so they look the same either way, but an intrinsically-sized
+        // child (the protocol block below) would be centred by the default
+        // CrossAxisAlignment.center and sit indented from the fields (#1261).
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           AppTextField(
             controller: _descriptionController,
@@ -159,14 +164,35 @@ class _Ipv6PortServiceRuleDialogState extends State<Ipv6PortServiceRuleDialog> {
             ),
           ),
           AppGap.lg(),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          // Stack the protocol label above the segmented control (Column, not a
+          // spaceBetween Row) so a long localized label (e.g. fi "Protokolla" +
+          // "Molemmat", tr "Her İkisi") can't squeeze the control and clip its
+          // last segment in a narrow AppDialog (#1261). The control gets the
+          // full content width. A Wrap can't be used here because SegmentedButton
+          // has no dry-layout support and Wrap measures its children.
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               AppText.bodyMedium(loc(context).protocol),
+              AppGap.sm(),
               SegmentedButton<String>(
+                // Drop the check icon: SegmentedButton sizes all segments
+                // equally, and the icon eats ~24px of the selected one. This
+                // dialog defaults to 'Both' — the longest label — so with the
+                // icon the fi "Molemmat" wraps to "Molemm/at". The selected
+                // segment is still distinguished by its fill colour.
+                showSelectedIcon: false,
+                // The value stays the raw option name — UspIpv6PortServiceService
+                // maps it to an IANA number ('Both' -> 255), so it must not be
+                // localized. Only the label is translated, and only for 'Both';
+                // TCP/UDP are protocol names that stay as-is in every locale
+                // (matching the other port-forwarding dialogs).
                 segments: UspIpv6PortServiceService.protocolOptions
-                    .map(
-                        (name) => ButtonSegment(value: name, label: Text(name)))
+                    .map((name) => ButtonSegment(
+                          value: name,
+                          label:
+                              Text(name == 'Both' ? loc(context).both : name),
+                        ))
                     .toList(),
                 selected: {_protocol},
                 onSelectionChanged: (v) => setState(() => _protocol = v.first),
