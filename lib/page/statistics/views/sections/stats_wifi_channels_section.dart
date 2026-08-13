@@ -107,10 +107,30 @@ class StatsWifiChannelsSection extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
+                // Band + channel string.
+                //
+                // DEGRADATION SHAPE (#1258, the third instance of the #1226 /
+                // #1252 shape on this page) — design §2.10, §2.10a:
+                //
+                //  1. A `Wrap`, not a `Row` + `Spacer`. While the content fits it
+                //     renders exactly as before: one run, `spaceBetween` puts the
+                //     band left and the channel string right, which is what the
+                //     `Spacer` did. When it does not fit — a localized `'Ch '`
+                //     prefix or a 3-digit 6GHz channel would eat the 47px of
+                //     headroom #1258 measured — the channel string drops to a
+                //     second line instead of overflowing.
+                //  2. Neither side yields to an ellipsis: the band is the
+                //     identity of the block and the channel string is composed
+                //     data (§2.10a point 2). Both are content, not chrome, so
+                //     they keep their intrinsic width and the row wraps as a
+                //     unit — an ellipsis mid-channel-string misinforms.
+                Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: AppSpacing.lg,
+                  runSpacing: AppSpacing.xs,
                   children: [
                     AppText.labelLarge(radio.band),
-                    const Spacer(),
                     AppText.bodySmall(
                       'Ch ${radio.channelDisplay}  \u00b7  ${radio.channelBandwidth}',
                       color: colorScheme.onSurfaceVariant,
@@ -118,13 +138,38 @@ class StatsWifiChannelsSection extends ConsumerWidget {
                   ],
                 ),
                 AppGap.xs(),
-                Row(
+                // Client count + SNR + signal bar.
+                //
+                //  1. A `Wrap`, not a `Row` + `Expanded`. The `Expanded` on the
+                //     progress bar is the same cliff as the `Spacer` above: it
+                //     absorbs slack while the stats fit and collapses to zero
+                //     when they do not, at which point the unconstrained stats
+                //     overflow right (#1258 measured +27px in `fi` at a 192px
+                //     section).
+                //  2. The two stats never shrink: no `Flexible`, no `maxLines`,
+                //     no ellipsis (§2.10a point 2) — a half-shown count or SNR
+                //     misinforms. They stay glued together in a `Row(min)` so a
+                //     value never separates from its label.
+                //  3. The signal bar is the decoration and the thing that yields
+                //     (§2.10a point 2): it takes a fixed intrinsic width via a
+                //     `SizedBox`, and when the stats no longer leave room for it
+                //     the `Wrap` drops it to its own run rather than overflowing.
+                Wrap(
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: AppSpacing.sm,
+                  runSpacing: AppSpacing.xs,
                   children: [
-                    AppText.bodySmall(loc(context).clientsCount(clientCount)),
-                    AppGap.md(),
-                    AppText.bodySmall(loc(context).snrValue(snr.toInt())),
-                    AppGap.sm(),
-                    Expanded(
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        AppText.bodySmall(
+                            loc(context).clientsCount(clientCount)),
+                        AppGap.md(),
+                        AppText.bodySmall(loc(context).snrValue(snr.toInt())),
+                      ],
+                    ),
+                    SizedBox(
+                      width: 96,
                       child: AppLoader(
                         variant: LoaderVariant.linear,
                         value: snrNorm,
