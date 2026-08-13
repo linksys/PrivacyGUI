@@ -526,7 +526,8 @@ void main() async {
     verifyNever(mockPnpNotifier.pollAutoMasterStatus());
   });
 
-  // D: Auto Master is ALREADY `complete` when the gate first reads it — the
+  // D: Auto Master is ALREADY `complete` when the gate first reads it AND a
+  // rotation has been recorded since our last accepted password — the
   // post-reconnect case from #1180's QA log. make-Master finished while the
   // router was rebooting, so by the time this view loaded there was nothing left
   // to wait for, but the admin password had been rotated regardless.
@@ -538,11 +539,24 @@ void main() async {
   // `return` on anything that was not `running`, so `complete` fell straight
   // through to the internet check, which 401'd on the dead credential and sent
   // the user to the troubleshooter with a working internet connection.
+  //
+  // `autoMasterRotatedSinceLogin` is seeded through `build()` because the mock's
+  // own state writers are no-ops — same reason pnp_setup_view_test.dart seeds
+  // `autoMasterStatusOnEntry` that way.
   testWidgets(
       'Instant Setup - PnP: Auto Master already complete on entry asks for the new password',
       (tester) async {
     useLargeScreen(tester);
     stubConfiguredRouter();
+    when(mockPnpNotifier.build()).thenReturn(
+      PnpState(
+        deviceInfo: NodeDeviceInfo.fromJson(
+          jsonDecode(testDeviceInfo)['output'],
+        ),
+        isUnconfigured: false,
+        autoMasterRotatedSinceLogin: true,
+      ),
+    );
     when(mockPnpNotifier.checkAutoMasterStatus())
         .thenAnswer((_) async => AutoMasterStatus.complete);
 
@@ -573,6 +587,50 @@ void main() async {
     // "no internet".
     verifyNever(mockPnpNotifier.pollAutoMasterStatus());
     verifyNever(mockPnpNotifier.checkInternetConnection());
+  });
+
+  // D': the same `complete` reading, but with NO rotation recorded since our
+  // last accepted password — so it is the *latched* status of a router that was
+  // auto-mastered at some earlier point, not news about our credential.
+  //
+  // The gate must let this through. `Complete` never reverts to `Idle`, so
+  // reading it alone as "your password is stale" fired on every single login:
+  // #1180's log has CheckAdminPassword2 returning 200 with the correct new
+  // password, immediately followed by the gate throwing and `[Prepare]: Logout`
+  // dropping the session that login had just created. The user could never get
+  // past this screen. This test is the regression lock for that loop — it is the
+  // exact counterpart of D, differing only in the flag.
+  testWidgets(
+      'Instant Setup - PnP: latched Auto Master complete does not block a fresh login',
+      (tester) async {
+    useLargeScreen(tester);
+    stubConfiguredRouter(); // build() leaves the flag at its false default
+    when(mockPnpNotifier.checkAutoMasterStatus())
+        .thenAnswer((_) async => AutoMasterStatus.complete);
+
+    await tester.pumpWidget(
+      testableSingleRoute(
+        config: LinksysRouteConfig(
+          column: ColumnGrid(column: 6, centered: true),
+          noNaviRail: true,
+        ),
+        child: const PnpAdminView(),
+        overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
+        extraRoutes: [pnpConfigStubRoute()],
+      ),
+    );
+    await tester.pump(const Duration(seconds: 1));
+    await tapLogin(tester);
+    // Two clocks, as in B/C: mock futures on real microtasks (runAsync), the 1s
+    // internet-connected view on the fake timer (pump).
+    await tester.runAsync(() => Future.delayed(const Duration(seconds: 1)));
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpAndSettle();
+
+    // Into config, and the credential the router just accepted is left alone.
+    expect(find.byKey(const Key('pnpConfigStub')), findsOneWidget);
+    verifyNever(mockPnpNotifier.setAttachedPassword(null));
+    verifyNever(mockPnpNotifier.pollAutoMasterStatus());
   });
 
   // E: the internet check itself reports a rejected credential rather than a

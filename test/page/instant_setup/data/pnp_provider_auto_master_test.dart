@@ -14,6 +14,7 @@
 // firmware still requires auth for GetAutoMasterStatus — indistinguishable from
 // the action being unsupported, and mapped to null like any other failure.
 
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
@@ -41,6 +42,17 @@ JNAPSuccess _statusSuccess(Object? raw) => JNAPSuccess(
 JNAPError _unauthorized() => const JNAPError(result: errorJNAPUnauthorized);
 
 void main() {
+  // checkAdminPassword goes through authProvider.localLogin, which persists the
+  // accepted password to flutter_secure_storage — a platform channel with no
+  // implementation under the test binding. Stub it so the login can complete and
+  // the post-success bookkeeping (which is what the rotation tests assert on) is
+  // actually reached.
+  TestWidgetsFlutterBinding.ensureInitialized();
+  const secureStorageChannel =
+      MethodChannel('plugins.it_nomads.com/flutter_secure_storage');
+  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+      .setMockMethodCallHandler(secureStorageChannel, (_) async => null);
+
   late MockRouterRepository mockRepo;
   late ProviderContainer container;
   late PnpNotifier notifier;
@@ -168,6 +180,99 @@ void main() {
       whenSend(() async => _statusSuccess('Idle'));
       await notifier.checkAutoMasterStatus();
       expect(sendArg<bool>('auth'), isFalse);
+    });
+  });
+
+  // The fourth #1180 defect: `Complete` is a LATCHED firmware state. Once
+  // make-Master has run, GetAutoMasterStatus answers `Complete` for the rest of
+  // the router's life — so "the status is complete" only means "this router was
+  // auto-mastered at some point", which is true for ever and cannot tell anyone
+  // whether the password they are holding still works. The gates that read it as
+  // "your credential is stale" therefore fired on every visit: the user typed the
+  // correct new password, CheckAdminPassword returned 200, and the gate threw
+  // anyway and logged the fresh session back out — an unescapable loop.
+  //
+  // `running` is the reading that dates the rotation (firmware reports it only
+  // while make-Master is actually working), so that is what gets recorded, and a
+  // password the router accepts is what clears it.
+  group('autoMasterRotatedSinceLogin', () {
+    test('a running status records the rotation', () async {
+      expect(notifier.state.autoMasterRotatedSinceLogin, isFalse);
+      whenSend(() async => _statusSuccess('Running'));
+      await notifier.checkAutoMasterStatus();
+      expect(notifier.state.autoMasterRotatedSinceLogin, isTrue);
+    });
+
+    test('a latched complete status on its own records nothing', () async {
+      // The heart of the defect. Reading `Complete` must NOT set the flag:
+      // every visit to an already-auto-mastered router reads it, and treating
+      // that as evidence is what created the login loop.
+      whenSend(() async => _statusSuccess('Complete'));
+      await notifier.checkAutoMasterStatus();
+      expect(notifier.state.autoMasterRotatedSinceLogin, isFalse);
+    });
+
+    test('idle and failed record nothing either', () async {
+      for (final raw in ['Idle', 'Failed']) {
+        whenSend(() async => _statusSuccess(raw));
+        await notifier.checkAutoMasterStatus();
+        expect(notifier.state.autoMasterRotatedSinceLogin, isFalse,
+            reason: '"$raw" is not evidence of a rotation');
+      }
+    });
+
+    test('the completion poll records a running it sees', () async {
+      // All three status reads funnel through the same observation point, so
+      // whichever one happens to catch the window records it. Which matters:
+      // the single-shot read is the only one the admin view's gate makes, but
+      // the polls are what run through the ~2 minutes make-Master takes.
+      whenScheduled(Stream.fromIterable([
+        _statusSuccess('Running'),
+        _statusSuccess('Complete'),
+      ]));
+      await notifier.pollAutoMasterStatus().toList();
+      expect(notifier.state.autoMasterRotatedSinceLogin, isTrue);
+    });
+
+    test('the wait-for-running poll records a running it sees', () async {
+      whenScheduled(Stream.fromIterable([_statusSuccess('Running')]));
+      await notifier.pollAutoMasterUntilRunning().toList();
+      expect(notifier.state.autoMasterRotatedSinceLogin, isTrue);
+    });
+
+    test('a poll that only ever sees complete records nothing', () async {
+      whenScheduled(Stream.fromIterable([_statusSuccess('Complete')]));
+      await notifier.pollAutoMasterStatus().toList();
+      expect(notifier.state.autoMasterRotatedSinceLogin, isFalse);
+    });
+
+    test('an accepted password clears the record', () async {
+      // The other endpoint, and the one the loop hinged on. The router accepting
+      // a password is proof that the credential we now hold post-dates the
+      // rotation, so the sticky `complete` must stop meaning "stale" from here.
+      notifier.state = const PnpState(
+        deviceInfo: null,
+        autoMasterRotatedSinceLogin: true,
+      );
+      whenSend(() async => JNAPSuccess(result: 'OK', output: const {}));
+      await notifier.checkAdminPassword('the-new-one');
+      expect(notifier.state.autoMasterRotatedSinceLogin, isFalse);
+    });
+
+    test('a rejected password leaves the record standing', () async {
+      // Only success is proof. A wrong guess says nothing about whether the
+      // rotation happened, so clearing here would let the next `complete` read
+      // pass the gate with a credential that is still stale.
+      notifier.state = const PnpState(
+        deviceInfo: null,
+        autoMasterRotatedSinceLogin: true,
+      );
+      whenSend(() async => throw _unauthorized());
+      await expectLater(
+        notifier.checkAdminPassword('a-wrong-guess'),
+        throwsA(isA<ExceptionInvalidAdminPassword>()),
+      );
+      expect(notifier.state.autoMasterRotatedSinceLogin, isTrue);
     });
   });
 

@@ -110,7 +110,17 @@ class _PnpIspSaveSettingsViewState extends ConsumerState<PnpIspSaveSettingsView>
       }
     }
 
-    if (status == AutoMasterStatus.complete) {
+    // Only when the rotation happened *since* our last accepted password. The
+    // firmware latches this status at `complete` permanently, so read on its own
+    // it says "this router was auto-mastered at some point" — which, on any
+    // router that has ever been auto-mastered, is true on every subsequent
+    // visit. That made this branch a trap: entering the ISP-save view would
+    // bounce to PnP before saving anything, PnP would find no internet and route
+    // back into the troubleshooter, and the user could never get their PPPoE
+    // settings saved at all. The flag narrows it to the case that needs the
+    // redirect: a credential older than the rotation.
+    if (status == AutoMasterStatus.complete &&
+        ref.read(pnpProvider).autoMasterRotatedSinceLogin) {
       logger.i(
           '[PnP]: Troubleshooter - Auto Master already completed, redirect to PnP');
       if (mounted) context.goNamed(RouteNamed.pnp);

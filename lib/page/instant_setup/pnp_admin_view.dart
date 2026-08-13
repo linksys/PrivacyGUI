@@ -590,6 +590,17 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView>
     // `completed` branch: that flow only runs when the status is `running`, so a
     // status that is *already* `complete` never reaches it.
     //
+    // `complete` alone is NOT enough to conclude that, though: firmware latches
+    // the status there for the rest of the router's life, so on its own it only
+    // says "this router was auto-mastered at some point" — true for ever after,
+    // including on every later visit with a perfectly good password. Pairing it
+    // with `autoMasterRotatedSinceLogin` asks the question that actually
+    // matters: is the credential we hold older than the rotation? The flag is
+    // set when a status read sees `running` and cleared when the router accepts
+    // a password. Without it the user could never get in: they typed the correct
+    // new password, CheckAdminPassword returned 200, and this gate threw anyway
+    // and logged the fresh session straight back out.
+    //
     // The other statuses deliberately fall through to the early return below:
     // - `failed` — Auto Master gave up (it found another Master), and firmware
     //   leaves the admin password untouched. The credential still works.
@@ -598,7 +609,8 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView>
     //   reset"; that reading is only valid once `running` has been observed.
     // - `null` — status unavailable (unreachable, or firmware that will not
     //   serve it unauthed). Nothing is known, so nothing is assumed.
-    if (status == AutoMasterStatus.complete) {
+    if (status == AutoMasterStatus.complete &&
+        ref.read(pnpProvider).autoMasterRotatedSinceLogin) {
       throw ExceptionAutoMasterRotatedPassword();
     }
     if (status != AutoMasterStatus.running) return;

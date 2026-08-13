@@ -4,7 +4,7 @@
 > [LinksysWRT#449](https://github.com/linksys/LinksysWRT/issues/449)
 > 目標分支：`fix/pnp-pppoe-auto-master-wan-up-1180`（base `dev-1.3.1`）· PR [#1181](https://github.com/linksys/PrivacyGUI/pull/1181)
 
-> **本文件已改寫四次,描述的都是現行設計。**
+> **本文件已改寫五次,描述的都是現行設計。**
 > ① 初版修法為「poll 收到第一個 401 就終止串流」（commit `371dbbf8`）,在 `05d2529a` 被
 > **移除並取代**為「Auto Master 狀態讀取一律不送憑證（`auth: false`）」;被取代的設計
 > 及其理由記錄在 §8,以免未來維護者從 git log 讀到 `371dbbf8` 時誤以為它還在。
@@ -18,6 +18,11 @@
 > gate 讀到 `complete` 卻直接放過（§2.7 寫的「`case completed` 也會接到它」是**錯的前提**）,
 > 舊憑證因此被帶進 internet check,其 401 又被讀成「沒網路」而跳 troubleshooter。
 > 見 **§2.8**。
+> ⑤ 第三份 QA log 片段證實 ④ 生效,同時暴露 ④ 的前提錯了:`complete` 是 **latch**
+> （韌體跑過 make-Master 之後餘生一直回它),所以「讀到 `complete` 就等於密碼被輪替」
+> 在**每一次**進 PnP 都成立 —— 使用者輸入正確新密碼後又被立刻登出。改為
+> 「`complete` **且**本 session 觀察到過 `running`」,見 **§2.9**
+> （§2.8 ① 修法表那格的無條件 throw 已作廢)。
 
 ---
 
@@ -371,7 +376,7 @@ if (status != AutoMasterStatus.running) return;   // complete 從這裡直接 re
 
 | # | 位置 | 修法 |
 |---|------|------|
-| ① | `pnp_admin_view.dart` `_checkAutoMasterStatus` | 在 `!= running` 早退**之前**加 `if (status == complete) throw ExceptionAutoMasterRotatedPassword();`。既有的 4 條 `.catchError` 鏈已能接住 |
+| ① | `pnp_admin_view.dart` `_checkAutoMasterStatus` | 在 `!= running` 早退**之前**加 `if (status == complete) throw ExceptionAutoMasterRotatedPassword();`。既有的 4 條 `.catchError` 鏈已能接住。**條件已由 §2.9 修正** —— 單看 `complete` 會在每次進 PnP 都成立 |
 | ② | `pnp_provider.dart` `checkInternetConnection` | 改用 `try/catch`:401 → `ExceptionInvalidAdminPassword` 並**立即中止**（不重試,見下）;其餘錯誤照舊進重試迴圈 |
 | ② | `pnp_admin_view.dart` `_checkInternetConnection` | 新增一條 `ExceptionInvalidAdminPassword` 分支:清 spinner 後 rethrow,交給呼叫端的密碼提示,**不去 troubleshooter** |
 | ② | `pnp_isp_save_settings_view.dart` / `pnp_waiting_modem_view.dart` | 同一個例外會逃出這兩處（原本只 catch `ExceptionNoInternetConnection`）。兩處都改為 `goNamed(pnp)` —— 這兩個呼叫是 `checkInternetConnection(30)`(≈90s 視窗),Auto Master 從 WAN-up 起算約 115s,輪替落在視窗內是**成功**而非設定失敗 |
@@ -397,6 +402,101 @@ if (status != AutoMasterStatus.running) return;   // complete 從這裡直接 re
 `defaultAdminPassword` = `'admin'`,恰好就是 log 中那個失效憑證。所以 ③ 的價值不是
 「停止送舊 header」,而是讓 `isLoggedIn()` 回 false,使下一輪 precheck **真的會驗密碼**。
 真正的安全網是 ②:任何路徑帶著死憑證走到 authed 呼叫,401 都會被正確歸類。
+
+---
+
+### 2.9 `complete` 是 latched 狀態:輪替必須由 `running` 定年（第三份 QA log 實測後新增）
+
+#### 症狀
+
+`5e7f5fe8` 之後同日 13:40 的重測片段先證實 §2.8 ① 生效了 —— 進來就是 `complete`
+確實會導到密碼提示,不再帶著死憑證去打 internet check。但使用者輸入**正確的新密碼**之後:
+
+```
+13:40:35.169  [PnP]: Auto Master status check result: AutoMasterStatus.complete
+13:40:35.169  [PnP]: Auto Master rotated the password, prompt for the new one
+13:40:35.170  [Prepare]: Logout                      ← §2.8 ③ 的 logout,正確
+...使用者輸入新密碼...
+13:41:21.481  REQUEST  CheckAdminPassword2 ... X-JNAP-Authorization: Basic ************
+13:41:22.164  RESPONSE 200, {"result": "OK"}         ← 密碼是對的
+13:41:22.167  [Auth]: Local login done: ... LoginType.local
+13:41:22.723  RESPONSE 200, {"output": {"autoMasterStatus": "Complete"}}
+13:41:22.725  [PnP]: Auto Master status check result: AutoMasterStatus.complete
+```
+
+最後這一行之後就是同一條路徑:gate 再次 throw → `_promptForRotatedPassword()` → `logout()`
+—— 把**剛剛才建立的 session 清掉**,再要一次密碼。使用者回報的
+「checkAdminPassword 過了 但還是會被登出」就是這個迴圈,而且**無法脫離**:
+密碼再正確也一樣。
+
+#### 根因:`complete` 是 latch,它不會回到 `idle`
+
+韌體跑完 make-Master 之後,`GetAutoMasterStatus` 會**餘生一直回 `Complete`**。
+所以單看這個狀態,它說的只是「這台路由器曾經被 auto-master 過」——
+這句話在該路由器上**永遠為真**,對「我手上的密碼還有效嗎」一個字都沒回答。
+
+§2.8 ① 因此不只在這個 QA 情境出錯:**任何曾經跑過 make-Master 的路由器,
+在後續每一次進 PnP 都會被那個 gate 攔下來**,即使密碼完全正確。
+使用者回報的登出迴圈只是這個缺陷最顯眼的一種表現。
+
+`running` 是唯一能**定年**的讀值:韌體只在 make-Master 真的在工作時回它。
+「有沒有走過 `running`」正是使用者提出的機制。
+
+#### 修法:記錄 + 清除兩個端點,gate 改看「輪替是否晚於我的憑證」
+
+| # | 位置 | 修法 |
+|---|------|------|
+| 記錄欄位 | `pnp_state.dart` | 新增 `autoMasterRotatedSinceLogin`(預設 `false`),加入 `props` |
+| **設** | `pnp_provider.dart` `_observeAutoMasterStatus()` | 新增私有 helper:讀到 `running` 就設旗標。`checkAutoMasterStatus` 與兩個 poll 的 `.map` **三處讀取全部匯流到它** |
+| **清** | `pnp_provider.dart` `checkAdminPassword` 成功分支 | `CheckAdminPassword` 回 200 就是路由器親口保證「這個憑證有效」,旗標歸零 |
+| gate | `pnp_admin_view.dart` `_checkAutoMasterStatus` | `status == complete` → `status == complete && autoMasterRotatedSinceLogin` |
+| gate | `pnp_isp_save_settings_view.dart` `_checkAndWaitForAutoMaster` | 同上（該處的 latch bug 是既有的,見下） |
+
+**為何記錄點放在 provider 而不是各 view。** 狀態有三個讀取入口(單次 `checkAutoMasterStatus`
+＋ 兩個 poll)、五個呼叫點(admin gate、ISP-save pre-check、setup-view pre-save、
+mixin Phase A、mixin Phase B)。把記錄放在 provider 的單一 choke point,
+記錄結果就**不取決於是哪一次讀取剛好撞進 `running` 的時間窗**,呼叫點也不必記得要記。
+這個 helper 刻意**不**加進 `BasePnpNotifier` 的抽象介面 —— 它是實作細節,
+加了還得重新產生 mockito mock。
+
+**`runAutoMasterFlow` 的 `case completed:` 刻意維持無條件 throw。** 那條路徑只有在
+已經觀察到 `running` 之後才會進入,輪替**由結構本身證明**,再檢查旗標是多餘的。
+
+#### 順帶修掉兩個既有缺陷（非本次要求,查證時發現)
+
+**① ISP-save 的 `complete → goNamed(pnp)` 有同一個 latch bug,而且後果更糟。**
+該分支自 `61bef92f Release 1.3.0` 就存在。在任何曾被 auto-master 過的路由器上:
+進 ISP-save view → 還沒存檔就跳回 PnP → PnP 查無網路 → 又回 troubleshooter → 再進 ISP-save,
+**PPPoE 設定永遠存不進去**。加上旗標之後才收斂到真正需要 redirect 的情況。
+
+**② `PnpState.copyWith` 讓 `setAttachedPassword(null)` 變成 no-op。**
+`attachedPassword` 原本是 `String?`,`copyWith` 用 `x ?? this.x`,所以傳 `null`
+被讀成「不要動它」而不是「清掉」。兩處 `setAttachedPassword` 實作因此**什麼都沒做**:
+§2.7 的「丟棄被輪替的憑證」與 `checkAdminPassword` 成功後的「清掉密碼」都沒有發生。
+這不只是無害的殘留 —— `pnp_no_internet_connection_view.dart:145-157` 會**不經詢問**
+把 `attachedPassword` 再送一次 `checkAdminPassword`,等於拿一個必定失敗的密碼
+去燒掉路由器 5 次 CGI 額度中的一次。
+改法沿用同檔 `autoMasterStatusOnEntry` 既有的 `ValueGetter<String?>?` 慣例,
+讓 `null` 可以被**指派**而不是被讀成「保持原值」。
+
+#### 降級行為:沒觀察到 `running` 的情況
+
+旗標活在 `pnpProvider` 上,而它**不是 autoDispose**,所以同一個 app process 內
+跨路由來回都留著（QA log 的 `[RouteChanged]:<pnp>` 重進 PnP 期間沒有重啟,
+旗標存活）。真正看不到 `running` 的是**輪替之後才冷啟動 app**:此時旗標為 `false`,
+gate 放行,舊憑證的 401 由 §2.8 ② 的 `checkInternetConnection` 接成
+`ExceptionInvalidAdminPassword`,**落在同一個密碼提示畫面**。
+代價是花掉 5 次 CGI 額度中的 1 次,且不重試（§2.8「為何 401 不重試」)。
+換句話說:gate 是**省下那一次額度的最佳化**,不是唯一防線;誤放行會退回安全網,
+而誤攔下來會做出一個進不去的 app —— 兩種錯誤的代價不對稱,這也是旗標該怎麼預設的理由。
+
+#### 為何 `pnp_setup_view` 的 `idle → complete` 分支不加旗標
+
+該分支的條件是 `statusOnEntry == idle && currentStatus == complete`。
+`idle`-on-entry 這一半**本身就在定年**:它證明 latch 是在**這一段 session 內**發生的。
+而早就被 auto-master 過的路由器一進來就讀到 `complete`,永遠滿足不了這個條件 ——
+它對 latch **由結構免疫**。兩者是互補的判別式(它還能抓到「沒有人 poll 的時間窗內
+發生的輪替」,那是旗標看不到的),所以刻意保留,只補上註解說明,不做統一。
 
 ---
 
@@ -513,7 +613,7 @@ E2 / E3 下,Auto Master 偵測**靜默失效**,PnP 退回它原本的**兩趟流
 
 ## 5. 測試
 
-### 5.1 `test/page/instant_setup/data/pnp_provider_auto_master_test.dart`（28 案例,全綠）
+### 5.1 `test/page/instant_setup/data/pnp_provider_auto_master_test.dart`（36 案例,全綠）
 
 以 `ProviderContainer` + `MockRouterRepository` 驅動**真的** `PnpNotifier`,
 是唯一直接驗證「JNAP result → status」映射的地方。
@@ -534,6 +634,22 @@ E2 / E3 下,Auto Master 偵測**靜默失效**,PnP 退回它原本的**兩趟流
 | `checkInternetConnection unauthorized does not retry` | 401 是終局。斷言只送了 **1** 次(`retries` 傳 30) —— 每輪重試都燒一次 CGI 額度,正是 §2.3 修掉的鎖定 |
 | `checkInternetConnection a transient failure still retries` | 只有 401 終局:timeout 照舊重試（第 3 次成功) |
 | `checkInternetConnection InternetConnected -> completes` / `a non-connected status -> ExceptionNoInternetConnection` | 原有語意未被新分支破壞 |
+
+§2.9 新增 `group('autoMasterRotatedSinceLogin')`,8 個案例把旗標的**每一條進出路徑**釘住:
+
+| 案例 | 鎖住什麼 |
+|------|---------|
+| `a running status records the rotation` | 設的唯一條件 |
+| `a latched complete on its own records nothing` | **§2.9 的核心**:latch 不算證據。這個案例失敗就等於登出迴圈回來了 |
+| `an idle status records nothing` / `a failed status records nothing` | 另兩個非 `running` 讀值同樣不算 |
+| `the completion poll records a running` / `the wait-for-running poll records a running` | 記錄點在 provider 的 choke point,**三處讀取都算**,不只單次讀取 |
+| `a poll that only sees complete records nothing` | poll 路徑上的 latch 一樣不算證據 |
+| `an accepted password clears the record` | 清的唯一條件:`CheckAdminPassword` 回 200 |
+| `a rejected password leaves the record standing` | 401 **不**清 —— 路由器沒有為這個憑證背書 |
+
+> 這一組要能跑,得先給 `flutter_secure_storage` 掛一個 `MethodChannel` mock handler:
+> `checkAdminPassword` 會經 `authProvider.localLogin` 把密碼寫進 secure storage,
+> 那是個平台通道,在 test binding 下沒有實作,不掛就 `MissingPluginException`。
 
 > 這三個參數斷言改用**讀取 mock 收到的 `Invocation` 具名引數**（`lastScheduled` / `lastSend`
 > 搭配 `sendArg` / `scheduledArg`),而非 `captureAnyNamed`。原因:`captured` 的順序跟著
@@ -615,22 +731,35 @@ admin view 那個案例特意保留 `expect(find.byKey(Key('pnpConfigStub')), fi
 | `Auto Master already complete on entry asks for the new password` | **§2.8 ① 的回歸鎖**。與既有的 `Tap Login with Auto Master complete ...` 是**不同分支**:那個先看到 `running` 再輪到 `complete`,這個進來就是 `complete` —— 故 `verifyNever(pollAutoMasterStatus())`,並且 `verifyNever(checkInternetConnection())` 釘住「不再帶著死憑證去打 internet check」 |
 | `Unauthorized internet check does not go to the troubleshooter` | **§2.8 ② 的 view 層安全網**。`checkInternetConnection` 拋 `ExceptionInvalidAdminPassword` 時停在 PnP;此案例**刻意不註冊** troubleshooter 路由,導過去就會拋 "unknown route name" |
 
+§2.9 之後 admin view 改 1 個、新增 1 個:
+
+| 案例 | 鎖住什麼 |
+|------|---------|
+| `Auto Master already complete on entry asks for the new password`（§2.8 新增,現改) | 前提補上 `autoMasterRotatedSinceLogin: true`,斷言不變 |
+| `latched Auto Master complete does not block a fresh login`（新增) | **§2.9 的回歸鎖**:旗標為 `false` + 狀態 `complete` → 直接進 config(`pnpConfigStub`),且 `verifyNever(setAttachedPassword(null))`。這個案例失敗就代表「進不去的 app」回來了 |
+
+> 這兩個案例都用 `when(mock.build()).thenReturn(PnpState(...))` 餵前提,而不是呼叫 setter:
+> `MockPnpNotifier` 的每個方法都是 `noSuchMethod` no-op,狀態寫入不會生效。
+> 這是 `pnp_setup_view_test.dart` 餵 `autoMasterStatusOnEntry` 時就已經在用的同一個手法。
+
 ### 5.4 測試結果
 
 | 範圍 | 結果 |
 |------|------|
-| `pnp_provider_auto_master_test.dart` | **28/28**（原 23 + §2.8 新增 5) |
+| `pnp_provider_auto_master_test.dart` | **36/36**（原 23 → §2.8 +5 → §2.9 +8) |
 | `pnp_auto_master_flow_test.dart` | **14/14** |
-| `test/page/instant_setup/ --exclude-tags loc` | **52/52**（原 50 + §2.8 新增 2) |
-| 全專案 `--exclude-tags loc` | **570 passed / 0 failed**（baseline 557;以 `--reporter json` 逐案清點:635 個 testDone、0 失敗) |
-| `flutter analyze lib/ test/` | **564**,對 §2.7 的 563 淨增 **1**:`pnp_waiting_modem_view.dart:132` 新增的 `goNamed` 帶一個 `use_build_context_synchronously` info。已加 `if (mounted)` 保護,但 `context` 是跨 `Future.delayed().then()` 從外層 closure 捕獲,分析器追不到（同檔既有的 119 / 123 兩行是同一情形)|
+| `test/page/instant_setup/ --exclude-tags loc` | **66/66**（36 + 14 + admin view 7 + setup view 9 —— 後兩檔的 `loc` tag 是**逐案**掛的,非 golden 的案例照跑) |
+| `test/page/instant_setup/`（**含** loc,即產生截圖) | **6188 testDone / 3 failed** —— 3 個失敗全是既有的 `Wifi ready (split SSID)` 版面 overflow（de / es / es_AR 的 480w:`A RenderFlex overflowed by 16 / 2.4 pixels`),見下方判讀準則 |
+| 全專案 `--exclude-tags loc` | **579 passed / 0 failed**（§2.8 時 570;+9 = provider 8 + admin view 1。以 `--reporter json` 逐案清點:644 個 testDone 含 hidden 的 loading,0 失敗) |
+| `flutter analyze lib/ test/` | **564**,與 §2.8 相同(§2.9 淨增 0),對 §2.7 的 563 淨增 **1**:`pnp_waiting_modem_view.dart:132` 新增的 `goNamed` 帶一個 `use_build_context_synchronously` info。已加 `if (mounted)` 保護,但 `context` 是跨 `Future.delayed().then()` 從外層 closure 捕獲,分析器追不到（同檔既有的 119 / 123 兩行是同一情形)|
 | loc 兩檔 `--tags loc --update-goldens` | **3247 passed / 3 failed（既有,已查清 — 見下）** |
 
 > **前一版記錄的「3 個失敗未查清」已查清,與本修法無關。**
 > 用 `--reporter json` 取代 compact reporter（後者以 `\r` 覆蓋同一行,失敗案例名會遺失)
-> 後可定位到:`Instant Setup - PnP: Wifi ready (split SSID)` 在 da / de 三個 variant 失敗,
-> 原因是 `pnp_setup_view.dart:538` 的 `Row`(Print / Download QR 兩顆按鈕)
-> `RenderFlex overflowed by 16 pixels` —— 長字語系在窄版面下擠不下。
+> 後可定位到:`Instant Setup - PnP: Wifi ready (split SSID)` 在三個 480w variant 失敗
+> （§2.8 當時是 da / de,§2.9 重跑是 de / es / es_AR —— 差多少 pixel 隨語系字串長度浮動,
+> 從 2.4px 到 16px),原因是 `pnp_setup_view.dart:538` 的 `Row`(Print / Download QR 兩顆按鈕)
+> `RenderFlex overflowed` —— 長字語系在窄版面下擠不下。
 > 該 `Row` 不在本分支的 diff 內（本分支只動 27 / 67 / 730+ 行),屬既有版面問題,**未處理**。
 >
 > 另外釘住一項判讀準則:此 loc suite **沒有 baseline** ——
@@ -645,12 +774,13 @@ admin view 那個案例特意保留 `expect(find.byKey(Key('pnpConfigStub')), fi
 
 | 檔案 | 改動 |
 |------|------|
-| `lib/page/instant_setup/data/pnp_provider.dart` | 三處 `auth: true` → `false`;兩處 `.map` 的 401→throw 刪除;`checkAutoMasterStatus` 的 401 分支併入通用 catch;4 處解析改用 `fromValue`（§2.1 / §2.3 / §2.6）;兩個 poll 加上有界預算參數、`testConnectionReconnected` 改 `retries: 2, timeoutMs: 5000`（§2.4）;`checkInternetConnection` 改 `try/catch`,401 → `ExceptionInvalidAdminPassword` 且不重試（§2.8 ②) |
+| `lib/page/instant_setup/data/pnp_state.dart` | 新增 `autoMasterRotatedSinceLogin`;`copyWith` 的 `attachedPassword` 改 `ValueGetter<String?>?`,讓清除真的生效（§2.9） |
+| `lib/page/instant_setup/data/pnp_provider.dart` | 三處 `auth: true` → `false`;兩處 `.map` 的 401→throw 刪除;`checkAutoMasterStatus` 的 401 分支併入通用 catch;4 處解析改用 `fromValue`（§2.1 / §2.3 / §2.6）;兩個 poll 加上有界預算參數、`testConnectionReconnected` 改 `retries: 2, timeoutMs: 5000`（§2.4）;`checkInternetConnection` 改 `try/catch`,401 → `ExceptionInvalidAdminPassword` 且不重試（§2.8 ②) ;新增 `_observeAutoMasterStatus()`(三處讀取匯流,`running` → 設旗標),`checkAdminPassword` 成功時清旗標,兩處 `setAttachedPassword` 改傳 `() => password`（§2.9) |
 | `lib/core/jnap/models/auto_master_status.dart` | `fromValue` 參數 `String?` → `Object?`（§2.6） |
 | `lib/page/instant_setup/widgets/pnp_auto_master_flow.dart` | 移除兩處 `on ExceptionAutoMasterUnauthorized`;**刪除 `consecutiveNullThreshold` 與 `_probe()`**;新增 `AutoMasterFlowResult.budgetExhausted`（§2.4) |
-| `lib/page/instant_setup/pnp_admin_view.dart` | 移除 4 處 `.catchError(test: e is ExceptionAutoMasterUnauthorized)`（§2.3);**改用 mixin**,~85 行 bespoke poll loop 刪除（§2.4);`case completed` 改拋 `ExceptionAutoMasterRotatedPassword`,新增 `_promptForRotatedPassword()`,4 條 `.catchError` 鏈各加一個分支（§2.7);gate 加 `complete` 分支、`_promptForRotatedPassword` 加 `logout()`、`_checkInternetConnection` 加 `ExceptionInvalidAdminPassword` 分支（§2.8) |
-| `lib/page/instant_setup/pnp_setup_view.dart` | 移除 pre-check 與 `await for` 外層的 `on ExceptionAutoMasterUnauthorized`（§2.3);**改用 mixin**,~75 行 bespoke poll loop 刪除;計數器改為 `_maxAutoMasterWaits`(先加再比)（§2.4);兩處 `localLoginPassword` → `RouteNamed.pnp`（§2.7) |
-| `lib/page/instant_setup/troubleshooter/views/isp_settings/pnp_isp_save_settings_view.dart` | `_checkAndWaitForAutoMaster` 增加 `status == null` 顯式早退（§2.5);兩處呼叫點處理 `budgetExhausted`（§2.4);接住 `ExceptionInvalidAdminPassword` → `goNamed(pnp)`（§2.8 ②) |
+| `lib/page/instant_setup/pnp_admin_view.dart` | 移除 4 處 `.catchError(test: e is ExceptionAutoMasterUnauthorized)`（§2.3);**改用 mixin**,~85 行 bespoke poll loop 刪除（§2.4);`case completed` 改拋 `ExceptionAutoMasterRotatedPassword`,新增 `_promptForRotatedPassword()`,4 條 `.catchError` 鏈各加一個分支（§2.7);gate 加 `complete` 分支、`_promptForRotatedPassword` 加 `logout()`、`_checkInternetConnection` 加 `ExceptionInvalidAdminPassword` 分支（§2.8) ;gate 條件改為 `complete && autoMasterRotatedSinceLogin`（§2.9) |
+| `lib/page/instant_setup/pnp_setup_view.dart` | 移除 pre-check 與 `await for` 外層的 `on ExceptionAutoMasterUnauthorized`（§2.3);**改用 mixin**,~75 行 bespoke poll loop 刪除;計數器改為 `_maxAutoMasterWaits`(先加再比)（§2.4);兩處 `localLoginPassword` → `RouteNamed.pnp`（§2.7) ;`idle → complete` 分支加註解說明為何**不需要**旗標（§2.9) |
+| `lib/page/instant_setup/troubleshooter/views/isp_settings/pnp_isp_save_settings_view.dart` | `_checkAndWaitForAutoMaster` 增加 `status == null` 顯式早退（§2.5);兩處呼叫點處理 `budgetExhausted`（§2.4);接住 `ExceptionInvalidAdminPassword` → `goNamed(pnp)`（§2.8 ②);`complete → goNamed(pnp)` 加上 `autoMasterRotatedSinceLogin` 條件（§2.9,修既有 bug) |
 | `lib/page/instant_setup/troubleshooter/views/pnp_waiting_modem_view.dart` | 接住 `ExceptionInvalidAdminPassword` → `goNamed(pnp)`（§2.8 ②) |
 | `lib/page/instant_setup/data/pnp_exception.dart` | 刪除 `ExceptionAutoMasterUnauthorized`（§2.3);新增 `ExceptionAutoMasterRotatedPassword`（§2.7） |
 | 測試 4 檔 | 見 §5 |
@@ -676,6 +806,7 @@ admin view 那個案例特意保留 `expect(find.byKey(Key('pnpConfigStub')), fi
 | `_isAuthFailure` / `_isRouterTemporarilyUnreachable` 缺單元測試 | 純 predicate,可加 `@visibleForTesting` 直接測。另開 issue |
 | `behind` / `others` 分支不尊重 `needAuth` | 見 §2.2:共用路徑,blast radius 遠大於 #1180 |
 | `docs/` 與 `doc/` 兩個目錄並存 | 與本議題無關 |
+| 輪替之後才**冷啟動** app → 旗標為 `false`,gate 放行 | **刻意接受**。落點相同(密碼提示),代價是 5 次 CGI 額度中的 1 次且不重試。要跨 process 記住輪替就得把它持久化,而持久化一個「我的密碼可能過期了」的推測,在使用者換過密碼、或換了另一台路由器之後會變成錯的前提 —— 誤攔的代價遠大於誤放（見 §2.9 降級一節） |
 | **PnP 之外**的 authed 呼叫在 make-Master 視窗內帶著 stale 憑證 | §2.8 只處理了 PnP 流程內的 `checkInternetConnection`(②)與 session 殘留(③)。核心 polling 已由 `polling_provider.dart` 的「只有憑證被拒才登出」擋住最糟的後果,但**其他** authed 呼叫仍可能在該視窗吃到 401。要普遍解決需在 `router_repository` 層區辨,blast radius 遠大於 #1180 |
 
 ---

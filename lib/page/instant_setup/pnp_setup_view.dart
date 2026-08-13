@@ -803,7 +803,14 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
       }
     }
 
-    // Edge case: Was Idle on entry but now Complete
+    // Edge case: Was Idle on entry but now Complete.
+    //
+    // The `statusOnEntry == idle` half is what dates the transition, and is why
+    // this branch does not need the `autoMasterRotatedSinceLogin` guard the two
+    // gates outside this view carry: `complete` latches for ever, but `idle` on
+    // entry proves it latched *during* this session rather than on some earlier
+    // day. A router that was auto-mastered long ago reads `complete` on entry
+    // too, so it never satisfies this condition.
     if (statusOnEntry == AutoMasterStatus.idle &&
         currentStatus == AutoMasterStatus.complete) {
       logger.w(

@@ -228,7 +228,7 @@ class MockPnpNotifier extends BasePnpNotifier {
 
   @override
   void setAttachedPassword(String? password) {
-    state = state.copyWith(attachedPassword: password);
+    state = state.copyWith(attachedPassword: () => password);
   }
 
   @override
@@ -300,6 +300,14 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
         .then((value) {
       // Clear the password in pnp state once logging in successfully
       setAttachedPassword(null);
+      // The router has just vouched for this credential, so whatever rotation
+      // we had recorded is now behind us. Without this clear, the sticky
+      // `complete` status keeps reading as "your password is stale" for ever:
+      // the gate would throw again on the very next check, drop the session
+      // this login just created, and ask for the password again — the #1180
+      // login loop, where CheckAdminPassword returns 200 and the user is
+      // logged out anyway.
+      state = state.copyWith(autoMasterRotatedSinceLogin: false);
     }).catchError((error) => throw ExceptionInvalidAdminPassword(),
             test: (error) =>
                 error is JNAPError && error.result == errorJNAPUnauthorized);
@@ -750,12 +758,28 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
 
   @override
   void setAttachedPassword(String? password) {
-    state = state.copyWith(attachedPassword: password);
+    state = state.copyWith(attachedPassword: () => password);
   }
 
   @override
   void setForceLogin(bool force) {
     state = state.copyWith(forceLogin: force);
+  }
+
+  /// Notes a freshly-read status and returns it unchanged.
+  ///
+  /// `running` is the only reading that *dates* the rotation — firmware reports
+  /// it just while make-Master is working, whereas `complete` latches on for
+  /// good. Every status read in this class funnels through here so no call site
+  /// has to remember to record it, and so the record cannot depend on which of
+  /// the three reads (single-shot or either poll) happened to catch the window.
+  AutoMasterStatus? _observeAutoMasterStatus(AutoMasterStatus? status) {
+    if (status == AutoMasterStatus.running &&
+        !state.autoMasterRotatedSinceLogin) {
+      logger.i('[PnP]: Auto Master is running - our credential is now stale');
+      state = state.copyWith(autoMasterRotatedSinceLogin: true);
+    }
+    return status;
   }
 
   @override
@@ -771,7 +795,7 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
           );
       final response = GetAutoMasterStatusResponse.fromMap(result.output);
       logger.d('[PnP]: Auto Master status: ${response.autoMasterStatus}');
-      return response.autoMasterStatus;
+      return _observeAutoMasterStatus(response.autoMasterStatus);
     } catch (e) {
       // 401 is deliberately in here with the rest. The request carries no
       // credential (auth: false), so an unauthorized result cannot mean
@@ -831,7 +855,7 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
         final status =
             AutoMasterStatus.fromValue(result.output['autoMasterStatus']);
         logger.d('[PnP]: Auto Master polling status: $status');
-        return status;
+        return _observeAutoMasterStatus(status);
       }
       return null;
     });
@@ -881,7 +905,7 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
         final status =
             AutoMasterStatus.fromValue(result.output['autoMasterStatus']);
         logger.d('[PnP]: Auto Master wait-for-running status: $status');
-        return status;
+        return _observeAutoMasterStatus(status);
       }
       return null;
     });

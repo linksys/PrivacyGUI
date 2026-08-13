@@ -20,6 +20,22 @@ class PnpState extends Equatable {
   final bool isPrePaired;
   final AutoMasterStatus? autoMasterStatusOnEntry;
 
+  /// Whether Auto Master has been seen rotating the admin password since the
+  /// last time the router accepted a credential from us.
+  ///
+  /// Set when a status read returns `running` — the one reading that *dates* the
+  /// rotation, because firmware reports it only while make-Master is actually
+  /// working. Cleared when `CheckAdminPassword` succeeds, since the router has
+  /// then just vouched for the credential we hold.
+  ///
+  /// This exists because `complete` is sticky: firmware leaves the status at
+  /// `complete` for good once make-Master has run, so "the status is complete"
+  /// says nothing about *when* it happened. Read on its own it means "this
+  /// router was auto-mastered at some point", which is true forever and of no
+  /// use to anyone. Paired with this flag it becomes the question that matters:
+  /// is the credential we are about to send older than the rotation?
+  final bool autoMasterRotatedSinceLogin;
+
   const PnpState({
     required this.deviceInfo,
     this.attachedPassword,
@@ -30,11 +46,18 @@ class PnpState extends Equatable {
     this.forceLogin = false,
     this.isPrePaired = false,
     this.autoMasterStatusOnEntry,
+    this.autoMasterRotatedSinceLogin = false,
   });
 
   PnpState copyWith({
     NodeDeviceInfo? deviceInfo,
-    String? attachedPassword,
+    // A ValueGetter, not a plain String?, so `null` can be *assigned* rather
+    // than read as "leave it alone". Clearing this is load-bearing: it holds the
+    // credential PnP arrived with, and the no-internet troubleshooter re-sends
+    // it unprompted — so a credential Auto Master has invalidated has to be
+    // droppable, or that resend spends one of the router's 5 CGI auth attempts
+    // on a password that cannot work.
+    ValueGetter<String?>? attachedPassword,
     Map<int, PnpStepState>? stepStateList,
     bool? isUnconfigured,
     Map<JNAPAction, JNAPResult>? data,
@@ -42,10 +65,12 @@ class PnpState extends Equatable {
     bool? forceLogin,
     bool? isPrePaired,
     ValueGetter<AutoMasterStatus?>? autoMasterStatusOnEntry,
+    bool? autoMasterRotatedSinceLogin,
   }) {
     return PnpState(
       deviceInfo: deviceInfo ?? this.deviceInfo,
-      attachedPassword: attachedPassword ?? this.attachedPassword,
+      attachedPassword:
+          attachedPassword != null ? attachedPassword() : this.attachedPassword,
       stepStateList: stepStateList ?? this.stepStateList,
       isUnconfigured: isUnconfigured ?? this.isUnconfigured,
       data: data ?? this.data,
@@ -55,6 +80,8 @@ class PnpState extends Equatable {
       autoMasterStatusOnEntry: autoMasterStatusOnEntry != null
           ? autoMasterStatusOnEntry()
           : this.autoMasterStatusOnEntry,
+      autoMasterRotatedSinceLogin:
+          autoMasterRotatedSinceLogin ?? this.autoMasterRotatedSinceLogin,
     );
   }
 
@@ -69,6 +96,7 @@ class PnpState extends Equatable {
         forceLogin,
         isPrePaired,
         autoMasterStatusOnEntry,
+        autoMasterRotatedSinceLogin,
       ];
 
   bool get isRouterUnConfigured => isUnconfigured ?? false;
