@@ -240,10 +240,17 @@ class _PortRangeForwardingDialogState extends State<PortRangeForwardingDialog> {
             onChanged: (_) => _onInputChanged(),
           ),
           AppGap.lg(),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          // Stack the protocol label above the segmented control (Column, not a
+          // spaceBetween Row) so a long localized label (e.g. fi "Protokolla" +
+          // "Molemmat") can't squeeze the control and clip its last segment in a
+          // narrow AppDialog (#1261). The control gets the full content width. A
+          // Wrap can't be used here because SegmentedButton has no dry-layout
+          // support and Wrap measures its children.
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               AppText.bodyMedium(loc(context).protocol),
+              AppGap.sm(),
               SegmentedButton<String>(
                 segments: [
                   const ButtonSegment(value: 'TCP', label: Text('TCP')),

@@ -127,10 +127,16 @@ class _PortTriggeringDialogState extends State<PortTriggeringDialog> {
               ],
             ),
             AppGap.md(),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            // Stack the protocol label above the segmented control so a long
+            // localized label (e.g. fi "Protokolla" + "Molemmat") can't squeeze
+            // the control and clip its last segment in a narrow AppDialog
+            // (#1261). A Wrap can't be used here because SegmentedButton has no
+            // dry-layout support and Wrap measures its children.
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 AppText.bodyMedium(loc(context).protocol),
+                AppGap.sm(),
                 SegmentedButton<String>(
                   segments: [
                     const ButtonSegment(value: 'TCP', label: Text('TCP')),
@@ -169,10 +175,16 @@ class _PortTriggeringDialogState extends State<PortTriggeringDialog> {
               ],
             ),
             AppGap.md(),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            // Stack the protocol label above the segmented control so a long
+            // localized label (e.g. fi "Protokolla" + "Molemmat") can't squeeze
+            // the control and clip its last segment in a narrow AppDialog
+            // (#1261). A Wrap can't be used here because SegmentedButton has no
+            // dry-layout support and Wrap measures its children.
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 AppText.bodyMedium(loc(context).protocol),
+                AppGap.sm(),
                 SegmentedButton<String>(
                   segments: [
                     const ButtonSegment(value: 'TCP', label: Text('TCP')),
