@@ -1,6 +1,6 @@
 # Dashboard Card Density — Design Decisions
 
-**Last Updated: 2026-08-12** · Follow-up to #1183 · Status: **agreed; tickets #1225–#1240 published; #1225 + #1226 + #1233 implemented (not yet merged), rest not started**
+**Last Updated: 2026-08-13** · Follow-up to #1183 · Status: **agreed; tickets #1225–#1240 published; #1225 + #1226 + #1233 + #1227 + #1228 + #1229 implemented (not yet merged), rest not started. Allowlist 560 → 181.**
 
 ## Purpose
 
@@ -102,15 +102,27 @@ batching leverage actually is.
 > `:118` (8) + `:218` where those are the coordinate's only remaining cause. So
 > the pattern is really eight rows, and #1234 finishes it.
 
-The private colour-dot widget is additionally duplicated **verbatim in four
-files** (the three above plus `device_analytics`). De-duplicating it, or
-extracting a shared legend entry, would be a **new shared widget** and therefore
-needs approval under Article XIV — so the fix is applied in place, and the
-extraction raised separately rather than blocking on that conversation. That
-raise is **#1245**, filed after #1233; it carries the constraint #1233 measured,
-namely that any shared entry must express the ellipsize-vs-soft-wrap distinction
-per label kind (§2.10a point 2) and must not absorb the WAN/LAN row, which
-deviates for a reason (§2.10a point 3).
+> Re-measured again during #1229: `wifi_performance`'s two sites (`:190` Signal,
+> `:275` Speed) are this same shape, and they are that card's **entire** 45
+> coordinates. So the pattern is **ten rows across four files, 181 + 45 = 226
+> coordinates — 40% of the whole baseline** (not to be confused with the
+> allowlist standing at 226 just before #1229; the two numbers coincide by
+> accident), and it is the only structure in this epic that
+> accounts for a plurality of it. §1.1's greedy table hides `:275` as well as the
+> other nine: it credits `:190` with 33 and never names the Speed tab at all
+> (see §2.10b for why a "×2 sites" ticket still needs its own attribution run).
+
+The private colour-dot widget is additionally duplicated **verbatim in five
+files** (the three above plus `device_analytics` and, per #1229,
+`wifi_performance`). De-duplicating it, or extracting a shared legend entry,
+would be a **new shared widget** and therefore needs approval under Article XIV —
+so the fix is applied in place, and the extraction raised separately rather than
+blocking on that conversation. That raise is **#1245**, filed after #1233; it
+carries the constraint #1233 measured, namely that any shared entry must express
+the ellipsize-vs-soft-wrap distinction per label kind (§2.10a point 2) and must
+not absorb the WAN/LAN row, which deviates for a reason (§2.10a point 3).
+**#1245's inventory is written against four files and needs `wifi_performance`
+added to it.**
 
 **Blocked on a dependency we do not own — 45 coordinates (8%)**: fl_chart 19
 (`firewall_overview`), ui_kit `AppListTile` 26 (`connected_devices`).
@@ -634,6 +646,75 @@ from a row that truncated its content to nothing. They are covered by
 tagged `dashboard-card` so it gates; each of its three groups was verified to
 fail under a mutation of the code it guards.
 
+### 2.10b What the eighth and ninth replications taught us (#1229 — implemented)
+
+All 45 coordinates cleared as predicted (226 → 181). By this point the shape is
+routine — the interesting findings are about *method*, not about legends.
+
+1. **A "×N sites" scope still needs its own attribution run.** §1.1's greedy
+   cover is greedy: it credits each coordinate to one site, so it named
+   `:190` (33) and never mentioned the Speed tab's legend at all. The remaining
+   12 were only located by re-running §1.1's method scoped to this card, which
+   returned an unambiguous split — `:190` → 33, `:275` → 12, no coordinate
+   needing both, total exactly 45. Inferring the second site from the ticket
+   title would have been a guess with a 12-coordinate blast radius.
+2. **Same shape, same fix, different cause — and the locale footprint says
+   which.** `:190` (four entries, 261px) overflows in `en` too: it is
+   *geometry*-bound, and `ru` missed by 149px. `:275` (two entries) overflows
+   only in the long-translation locales (`es`, `fr`, `pt_PT`, `ru`, `tr`): it is
+   *translation-length*-bound. The distinction is free to read off the allowlist
+   — an `["*"]` entry means the card is too narrow for the content in any
+   language, a locale list means the layout is fine and one translation is long
+   — and it predicts which sites will regress when a string changes versus when
+   spacing changes.
+3. **§2.10a point 3's precondition was checked here, not assumed.** The
+   `Expanded` above both rows holds a `ListView`/`AppBarChart`, so it yields the
+   height a second run costs. Confirmed by re-running attribution after the fix:
+   **0 incidents at any site, any tab, any locale** — no bottom-overflow was
+   traded in, which is the exact failure Network Health's fixed 120px gauge
+   produced. Measured, because the shape's cost is paid in a currency the gate
+   only sometimes charges for.
+4. **The mutation that validates a readability test must itself be run against
+   the gate.** #1233 and #1228 recorded "verified to fail under a mutation"; that
+   is necessary but not sufficient. Here the *obvious* mutation — revert `Wrap` to
+   a bare `Row` — turns out to be **invisible to the readability test and caught
+   by the gate** (33 failures): a `Row` hands non-flex children unbounded width,
+   so the inner `Flexible` never binds, every label paints full-width, and the
+   *outer* row overflows. The genuinely gate-invisible regression is the one that
+   *succeeds* at fitting: keep the single `Row` and wrap each entry in
+   `Flexible`. Every tier name then ellipsizes to a stub — in `en`, not just the
+   long translations — and all **157** `wifi_performance` gate cases stay green.
+   That is the shape a well-meaning "just make it fit" edit lands on. **Rule for
+   the remaining Track A tickets: run each candidate mutation against the gate as
+   well: if the gate already fails it, the mutation proves nothing about the
+   readability test and a different one is needed.**
+
+The gate-invisible ACs are covered by
+`test/page/dashboard/views/components/wifi_performance_readability_test.dart`,
+tagged `dashboard-card` so it gates; its three groups were verified to fail under
+the mutations tabulated in the file, each with its gate result beside it.
+
+**AC4 was already true before this ticket, and is now pinned rather than earned.**
+"Per-band metrics stay distinguishable at the narrowest clean width" is about the
+Channels tab, which contributed none of the 45 and which #1229 does not modify. At
+the 261px narrowest realization both bands show band, channel, bandwidth, client
+count and SNR with nothing clipped. It is asserted anyway, because "already clean"
+is not "checked" and nothing else in the suite would notice a later fix collapsing
+those rows.
+
+Two observations left deliberately unfixed:
+
+- `_ChannelsTab`'s two per-radio rows use the same unconstrained shape this epic
+  keeps fixing (`Row` + `Spacer`, non-flex `AppText`), and measure clean only by
+  about **48px** of headroom. That is the #1258 situation exactly — hardening a
+  site that is not currently failing — so it belongs there, not in a ratchet
+  ticket whose contract is a coordinate count.
+- The channel readout is **data**-dependent, not translation-dependent:
+  `Ch 197 (Auto) · 320MHz` on a tri-band router is materially wider than the
+  mock's two-radio output. No amount of locale sweeping reaches it, so that
+  headroom is unmeasured rather than measured-safe — a limit of the gate's fixed
+  mock, worth stating where the 48px figure is quoted.
+
 ### 2.11 fl_chart's 19 coordinates get a primary plan and a documented fallback
 
 `firewall_overview`'s 19 coordinates originate inside fl_chart
@@ -752,7 +833,7 @@ addition — it changes no card's rendering until a threshold is declared.
 | #1233 | The other six legend rows (§1.1, §2.10a) — **implemented** | 132 |
 | #1227 | Shared blocks made overflow-safe (§2.6, §2.6a) — **implemented** | 101 |
 | #1228 | `ethernet_ports` ×2 sites (§2.12) — **implemented** | 52 |
-| #1229 | `wifi_performance` ×2 sites | 45 |
+| #1229 | `wifi_performance` ×2 sites (§2.10b) — **implemented** | 45 |
 | #1230 | `firewall_overview` own sites (§2.11) | 48 |
 | #1234 | `system_status` remaining ×3 sites | 34 |
 | #1236 | `lan_info` + `device_info` card-own | 29 |
