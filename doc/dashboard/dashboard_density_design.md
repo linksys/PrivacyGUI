@@ -129,6 +129,55 @@ added to it.**
 
 **Axis split**: 464 right-only, 63 bottom-only, 33 both.
 
+#### Track A's four remaining card-own tickets reduce to four shapes across six sites (#1234–#1237, measured before implementation)
+
+**Method.** §1.1's `fullLog` attribution, re-run at per-line resolution over the
+four cards of #1234 / #1236 / #1237 (`system_status`, `lan_info`, `device_info`,
+`time_settings`). 112 incidents → the 84 allowlisted coordinates those three
+tickets own; adding #1235's 3 makes 87.
+
+| Shape | Sites | Worst | Tickets |
+|---|---|---:|---|
+| "View details" footer — `AppDivider` + `Row(mainAxisAlignment: end)` + `Semantics`/`InkWell` | `usp_system_status_card.dart:118`, `usp_device_info_card.dart:140` | +5.2px | **#1234 + #1236** |
+| Hero inner row — `Row` inside `Expanded(Column(start, [titleLarge, AppGap.xxs, Row]))` | `usp_lan_info_card.dart:56`, `usp_time_settings_card.dart:108` | +102 / +67px | **#1236 + #1237** |
+| Twin gauges — `Expanded(Row(spaceEvenly, [AppGauge(size: 100) ×2]))` | `usp_system_status_card.dart:196` | +43px | #1234 |
+| Legend row — `_LegendDot` ×2 + `Spacer` + refresh chrome | `usp_system_status_card.dart:218` | +107px | #1234 |
+
+**Two of the four shapes straddle ticket boundaries.** The footer is
+near-identical code in two files (`_buildStatisticsFooter` / `_buildNodeDetailFooter`),
+and the hero inner row is the same idiom in two more — and that idiom alone is
+**48 of the 84 coordinates**. Split across separate branches, each shape gets its
+fix invented twice and #1245's de-duplication inventory grows by two more entries.
+This is the #1249 situation again (§2.10a), so the four are best done as one
+branch with a commit per shape.
+
+**`system_status`'s 26 widest coordinates have two causes each, so neither site
+clears them alone.** The exact decomposition of #1234's 34:
+
+- `min|0` tab 0, all 26 locales — caused by **both** `:196` and `:218`; `el`/`ru`
+  additionally by `:118`
+- `min|0` tabs 1–3, `el`+`ru` — 6, `:118`
+- `preferred|0`, `fr`+`fr_CA` — 2, `:218`
+
+So `:196` alone clears 0 and `:218` alone clears 0; the pair clears 26; adding
+`:118` clears all 34. Expect zero allowlist movement until both gauge-row and
+legend-row fixes are in — the same trap §2.6a's shared-plus-card-own coordinates
+set, one file down.
+
+**`AppGauge`'s centre is fixable at the call site — no ui_kit change, so no
+Article XIV question.** `AppGauge` renders
+`SizedBox(width: size, height: size, child: Stack(alignment: center, children: [CustomPaint, …, centerBuilder(…)]))`.
+The centre is a *non-positioned* `Stack` child, so it receives loose `size × size`
+constraints and the overflowing `Column(mainAxisSize: min, …)` is the app's own
+closure. This holds for both #1235's `network_health` gauge (`size: 120`) and
+`system_status._buildGauge` (`size: 100`), which is why #1235's 3 coordinates are
+a cheap add-on to #1234 rather than a separate ui_kit conversation.
+
+> Sequencing note: these four tickets, #1229 and #1266 all edit
+> `test/fixtures/known_overflows.json` and this file. Until #1229/#1266's PR
+> merges, branch the four-ticket work from *its* head rather than from the epic
+> gate branch, or the fixture conflicts.
+
 ### 1.2 Fit width — the narrowest width at which each card is clean
 
 **Method.** Card width was driven directly through a 14-rung ladder
