@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/topology/helpers/node_identifier.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/util/network_utils.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -103,6 +104,15 @@ class NodeDetailPopup extends StatelessWidget {
               child: AppButton.text(
                 label: loc(context).details,
                 onTap: onDetailsTap,
+                // Fixed slug with no per-instance key — unlike the node
+                // identifiers in node_identifier.dart, which need one because
+                // N nodes coexist in the Semantics tree. This button lives in
+                // the graph view's singleton detail panel (one `_selectedNodeId`
+                // at a time), so it is unique by construction. Wiring this
+                // popup into `TopologyTreeConfiguration.detailBuilder`, which
+                // renders per row, would break that: derive the key from the
+                // node's MAC first (see shortestUniqueMacSuffixes).
+                identifier: kTopologyNodeDetailButtonIdentifier,
               ),
             ),
           ),
