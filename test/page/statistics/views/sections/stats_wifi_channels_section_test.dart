@@ -44,7 +44,7 @@ import '../../../../util/overflow_probe.dart';
 /// realization. The AC is therefore a measurement of the rows, not "N gate
 /// coordinates removed".
 ///
-/// ## Three kinds of assertion, and why the stress widths are below production
+/// ## Four kinds of assertion, and why the stress widths are below production
 ///
 /// Both rows have headroom at every *production* width (line 110: 47px at the
 /// 288px floor; line 121's pre-fix `fi` crossing is 219px, 69px below the
@@ -69,6 +69,10 @@ import '../../../../util/overflow_probe.dart';
 ///      at one width can sit in a pocket of cleanliness: this file's 219px guard
 ///      passed while a nested `Row(min)` clipped at 216px, 3px away. Walking the
 ///      ladder is what closes that gap, and it is the group that caught it.
+///   4. **Geometry guard (production widths).** The three above all read
+///      `RenderFlex` overflow, which cannot see *where* a child landed. A
+///      `Wrap` under a loose width constraint lays out visibly wrong and
+///      overflows nothing, so the row's horizontal span is asserted directly.
 ///
 /// Tagged `dashboard-card` so it gates PRs — `run_tests.sh` excludes
 /// `golden||loc||ui`, and a `ui`-tagged regression test would not block
@@ -91,11 +95,33 @@ import '../../../../util/overflow_probe.dart';
 ///   | count -> `Flexible` + 1-line ellipsis                | all fail (grp 3 + layout)    |
 ///   | `snrValue` -> 1-line ellipsis (no `Flexible`)        | grp 3 fails                  |
 ///   | `snrValue` -> `Flexible` + 1-line ellipsis           | all fail (grp 3 + layout)    |
+///   | `snrValue` -> 1-line ellipsis on **2.4GHz only**     | grp 4 fails                  |
+///   | per-radio `Column` `stretch` -> `start`              | 3 tests fail (grp 3)         |
+///   | band+channel `Wrap`: drop `spaceBetween`             | 3 tests fail (grp 3)         |
 ///
-/// The two `snrValue` rows are the reason group 3 asserts on **both** stats. An
-/// earlier revision of this file checked only `clientsCount`, and both of those
-/// mutations passed it: the group's own doc comment promised "the count **and**
-/// SNR", while the SNR was unguarded.
+/// The last two rows are group 3, and they are a different *kind* of guard from
+/// everything above them. Every other assertion in this file reads `RenderFlex`
+/// overflow, which is blind to position — the `Wrap` was for one revision
+/// laid out visibly wrong (channel string no longer right-aligned, whole radio
+/// block drifted to the centre of the section) while all 43 overflow tests
+/// stayed green. `spaceBetween` needs a **tight** width to have anything to
+/// distribute, and the per-radio `Column`'s `CrossAxisAlignment.start` handed
+/// the `Wrap` a loose one. Group 3 asserts the geometry directly; see its own
+/// header for the measured before/after table.
+///
+/// The `snrValue` rows are the reason group 4 asserts on **both** stats. An
+/// earlier revision of this file checked only `clientsCount`, and the first two
+/// of those mutations passed it: the group's own doc comment promised "the count
+/// **and** SNR", while the SNR was unguarded.
+///
+/// The last row is the reason group 4 pins an **exact instance count per string**
+/// and checks every element the finder returns. The two radios do not render the
+/// same SNR — 2.4GHz averages to `snrValue(37)`, 6GHz to `snrValue(36)` — so a
+/// revision that listed only `snrValue(36)` under `findsWidgets` (>= 1) matched
+/// the 6GHz widget and never looked at 2.4GHz: an ellipsis on that radio alone
+/// passed 43/43. A `Flexible` on one radio is caught only incidentally, by
+/// `Flexible`-inside-`Wrap` throwing a ParentDataWidget error; the bare ellipsis
+/// had nothing catching it.
 ///
 /// The `Row(min)` row is the shape this file's first revision shipped. A
 /// `Row(min)` hands its children unbounded width just as a `Row` does — it only
@@ -339,7 +365,7 @@ void main() {
     // `de` here (`{count} clients`, the same string as `en`), so it adds no
     // coverage at these widths — it is pumped because the AC names it, and
     // because a future ARB edit could make it the worst without anyone
-    // re-deriving which locale dominates. `_widestStatLocales` below covers the
+    // re-deriving which locale dominates. `widestStatLocales` below covers the
     // locales that actually break first.
     for (final tag in ['fi', 'de', 'ru', 'nl']) {
       for (final screen in narrowScreens) {
@@ -441,6 +467,110 @@ void main() {
     }
   });
 
+  group('the band+channel row still spans the section (#1258)', () {
+    // WHY THIS GROUP EXISTS
+    //
+    // Every other guard in this file reads `RenderFlex` overflow, which is blind
+    // to *position*: a row can be laid out completely wrong and still be clean.
+    // The `Wrap` that replaced the `Row` + `Spacer` was, for one revision,
+    // exactly that — visually broken and green on all 43 tests.
+    //
+    // `WrapAlignment.spaceBetween` only has an effect when the `Wrap` gets a
+    // **tight** width. The per-radio `Column` handed it `CrossAxisAlignment
+    // .start`, i.e. a loose constraint, so the `Wrap` shrink-wrapped to its
+    // intrinsic width, `spaceBetween` had no free space to distribute, and it
+    // silently degraded to a plain `spacing: AppSpacing.lg` gap. Measured
+    // against the pre-#1258 `Row` + `Spacer` at 288 / 537 / 841px sections:
+    //
+    //   |                        | band left      | channel right   |
+    //   |------------------------|----------------|-----------------|
+    //   | pre-fix `Row`+`Spacer` | 25 / 25 / 25   | 263 / 512 / 816 |
+    //   | `Wrap` under `start`   | 30 / 154 / 306 | 238 / 363 / 515 |
+    //   | `Wrap` under `stretch` | 25 / 25 / 25   | 263 / 512 / 816 |
+    //
+    // So under `start` the channel string stopped being right-aligned and the
+    // whole radio block drifted to the centre of the section — at 841px the band
+    // sat 281px from where it belonged. `stretch` restores the pre-fix geometry
+    // exactly. Reverting either `stretch` or `spaceBetween` leaves all 43 other
+    // tests green, which is why this is asserted directly.
+    //
+    // The assertion is "the row spans the section", not a pixel table: it pins
+    // the property the `Spacer` provided without freezing font metrics, so a
+    // theme or font change does not fail it.
+    for (final section in [288.0, 537.0, 841.0]) {
+      testWidgets(
+        'channel string stays right-aligned at a ${section.toStringAsFixed(0)}px '
+        'section',
+        (tester) async {
+          final overflows = await overflowsAt(
+            tester: tester,
+            screenWidth: 320.0,
+            sectionWidth: section,
+            locale: localeFor('en'),
+            wifiData: _wideChannelWifiData,
+          );
+          expect(overflows, isEmpty,
+              reason: 'precondition: the row must be clean at this width');
+
+          // The `Wrap` is the parent of the band text. Its own width is the
+          // measurement that matters: shrink-wrapped means `spaceBetween` is
+          // dead, tight means it is doing the `Spacer`'s job.
+          final bandFinder = find.text('2.4GHz');
+          expect(bandFinder, findsOneWidget);
+
+          Element? wrapElement;
+          bandFinder.evaluate().single.visitAncestorElements((a) {
+            if (a.widget is Wrap) {
+              wrapElement = a;
+              return false;
+            }
+            return true;
+          });
+          expect(wrapElement, isNotNull,
+              reason: 'the band text must sit inside the band+channel `Wrap`');
+
+          final wrapBox = wrapElement!.renderObject as RenderBox;
+          final parentBox =
+              wrapElement!.findAncestorRenderObjectOfType<RenderBox>()!;
+
+          // A shrink-wrapped `Wrap` is narrower than the column that holds it;
+          // a stretched one matches it. This is the `start`-vs-`stretch`
+          // difference, expressed without hardcoding text widths.
+          expect(
+            wrapBox.size.width,
+            closeTo(parentBox.size.width, 1.0),
+            reason: 'the band+channel `Wrap` must be stretched to the full '
+                'section width, not shrink-wrapped to its intrinsic width — '
+                'under a loose constraint `WrapAlignment.spaceBetween` has no '
+                'free space to distribute and degrades to a plain `spacing` '
+                'gap, which drifts the whole radio block to the centre of the '
+                'section (measured: band at 154px instead of 25px on a 537px '
+                'section). Check the per-radio `Column` is '
+                '`CrossAxisAlignment.stretch`.',
+          );
+
+          // And the channel string is actually pushed to the far edge, which is
+          // what the `Spacer` did. Guards `alignment: spaceBetween` itself:
+          // removing it leaves the `Wrap` stretched but packs both texts left.
+          final chanBox = tester
+              .renderObject<RenderBox>(find.textContaining('Ch 11').first);
+          final chanRight =
+              chanBox.localToGlobal(Offset.zero).dx + chanBox.size.width;
+          final wrapRight =
+              wrapBox.localToGlobal(Offset.zero).dx + wrapBox.size.width;
+          expect(
+            chanRight,
+            closeTo(wrapRight, 1.0),
+            reason: 'the channel string must end flush with the right edge of '
+                'the row, as it did under the pre-#1258 `Row` + `Spacer`. '
+                'Check `alignment: WrapAlignment.spaceBetween` is still on the '
+                'band+channel `Wrap`.',
+          );
+        },
+      );
+    }
+  });
+
   group('client-count and SNR stats stay legible (#1258)', () {
     // The signal bar keys nothing on its own — a client that drops it to a
     // second line still reads. The count and SNR are the section's content: an
@@ -452,9 +582,15 @@ void main() {
     /// True if a [Flexible] (or [Expanded], its subclass) sits between the stat
     /// and its enclosing [Wrap] — i.e. the stat can be squeezed below its
     /// intrinsic width.
-    bool canShrink(Finder statFinder) {
+    ///
+    /// Takes the [Element] rather than a [Finder] so the caller can check
+    /// **every** rendered instance. A `Finder`-shaped version invites
+    /// `canShrink(finder.first)`, which checks one radio's widget and leaves the
+    /// others unguarded — the same one-instance blind spot the `snrValue` fixture
+    /// note below records.
+    bool canShrink(Element stat) {
       var flexed = false;
-      statFinder.evaluate().single.visitAncestorElements((ancestor) {
+      stat.visitAncestorElements((ancestor) {
         // Stop at the `Wrap`: it is the layout that decides this stat's width,
         // so reaching it means "nothing between here and the layout can squeeze
         // it" — the property under test, not "not found yet".
@@ -491,32 +627,48 @@ void main() {
       // `Flexible` + `overflow: ellipsis` to `snrValue` passed the count-only
       // version of this test).
       //
-      // 4 clients on 2.4GHz, 4 on 6GHz -> each stat is rendered twice, once per
-      // radio, with the same value.
+      // ## Every rendered instance, and why the count matters
       //
-      // The SNR is the average of `computeSNR(signalStrength, noise)` over a
-      // band's clients: signal -55..-62 against noise -95 gives 40..33 dB, and
-      // the per-band averages land on `snrValue(36)` for both radios (2.4GHz
-      // takes the even indices, 6GHz the odd). Asserting the exact string keeps
-      // the finder honest — a stat rendered as something else would read as
-      // "absent" and fail below rather than silently pass.
-      final stats = <String, String>{
-        'client count': l10n.clientsCount(4),
-        'SNR': l10n.snrValue(36),
-      };
+      // The section renders one block per radio, so each stat appears **twice**.
+      // The two radios do not necessarily render the *same* string, and the SNR
+      // does not:
+      //
+      //   `computeSNR(signal, noise) = signal - noise` over a band's clients.
+      //   `signalStrength: -55 - i` against `noise: -95` gives 40..33 dB, and
+      //   the bands split by parity of `i`:
+      //
+      //     2.4GHz (even i = 0,2,4,6): 40, 38, 36, 34 -> avg 37 -> `snrValue(37)`
+      //     6GHz   (odd  i = 1,3,5,7): 39, 37, 35, 33 -> avg 36 -> `snrValue(36)`
+      //
+      // An earlier revision listed only `snrValue(36)` and asserted with
+      // `findsWidgets` (>= 1). That matched the 6GHz widget alone and left the
+      // 2.4GHz SNR entirely unguarded: an `overflow: ellipsis` applied to just
+      // that radio passed 43/43. Both strings are therefore listed, and each is
+      // pinned with `findsNWidgets(1)` rather than `findsWidgets` — an exact
+      // count is what makes a missing or reformatted instance fail here instead
+      // of being absorbed by its sibling.
+      //
+      // `clientsCount(4)` is genuinely the same on both radios (4 clients each),
+      // so it is the one stat that legitimately appears twice.
+      final stats = <({String label, String text, int instances})>[
+        (label: 'client count', text: l10n.clientsCount(4), instances: 2),
+        (label: '2.4GHz SNR', text: l10n.snrValue(37), instances: 1),
+        (label: '6GHz SNR', text: l10n.snrValue(36), instances: 1),
+      ];
 
-      for (final entry in stats.entries) {
-        final label = entry.key;
-        final text = entry.value;
-        final finder = find.text(text);
+      for (final stat in stats) {
+        final label = stat.label;
+        final finder = find.text(stat.text);
         expect(
           finder,
-          findsWidgets,
-          reason: 'the $label stat ($text) must survive the degradation — the '
-              '`Wrap` moves the signal bar to its own run, it may not discard '
-              'or reformat a stat',
+          findsNWidgets(stat.instances),
+          reason: 'the $label stat (${stat.text}) must survive the degradation '
+              'exactly ${stat.instances}x — the `Wrap` moves the signal bar to '
+              'its own run, it may not discard or reformat a stat',
         );
 
+        // Every instance, not just the first: the radios are rendered by the
+        // same builder but a per-radio conditional would only break one of them.
         for (final element in finder.evaluate()) {
           final widget = element.widget as Text;
           expect(
@@ -527,13 +679,13 @@ void main() {
           );
           expect(widget.maxLines, isNull,
               reason: 'the $label must not be line-capped');
+          expect(
+            canShrink(element),
+            isFalse,
+            reason: 'the $label must not be a flex child — it keeps its '
+                'intrinsic width and the stats group wraps instead',
+          );
         }
-        expect(
-          canShrink(finder.first),
-          isFalse,
-          reason: 'the $label must not be a flex child — it keeps its '
-              'intrinsic width and the stats group wraps instead',
-        );
       }
     });
   });

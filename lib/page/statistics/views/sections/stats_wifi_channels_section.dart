@@ -105,7 +105,15 @@ class StatsWifiChannelsSection extends ConsumerWidget {
           return Padding(
             padding: const EdgeInsets.only(bottom: AppSpacing.md),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              // `stretch`, not `start`, and it is load-bearing for the `Wrap`
+              // below. `start` hands children a *loose* width constraint, so a
+              // `Wrap` shrink-wraps to its intrinsic width and
+              // `WrapAlignment.spaceBetween` has no free space to distribute —
+              // it silently degrades to `spacing` and the whole block sits
+              // centred in the section instead of spanning it. `stretch` makes
+              // the width tight, which is what the pre-#1258 `Row` + `Spacer`
+              // had, so `spaceBetween` reproduces the `Spacer` exactly.
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // Band + channel string.
                 //
@@ -115,10 +123,13 @@ class StatsWifiChannelsSection extends ConsumerWidget {
                 //  1. A `Wrap`, not a `Row` + `Spacer`. While the content fits it
                 //     renders exactly as before: one run, `spaceBetween` puts the
                 //     band left and the channel string right, which is what the
-                //     `Spacer` did. When it does not fit — a localized `'Ch '`
-                //     prefix or a 3-digit 6GHz channel would eat the 47px of
-                //     headroom #1258 measured — the channel string drops to a
-                //     second line instead of overflowing.
+                //     `Spacer` did — but only because the `Column` above
+                //     stretches it. Under a loose width `spaceBetween` is a
+                //     no-op; see the `crossAxisAlignment` note there. When it
+                //     does not fit — a localized `'Ch '` prefix or a 3-digit
+                //     6GHz channel would eat the 47px of headroom #1258
+                //     measured — the channel string drops to a second line
+                //     instead of overflowing.
                 //  2. Neither side yields to an ellipsis: the band is the
                 //     identity of the block and the channel string is composed
                 //     data (§2.10a point 2). Both are content, not chrome, so
