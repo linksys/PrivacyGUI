@@ -105,17 +105,25 @@ class _UspTimeSettingsCardState extends ConsumerState<UspTimeSettingsCard>
                     children: [
                       AppText.titleLarge(timeDisplay),
                       AppGap.xxs(),
-                      Row(
-                        children: [
-                          AppBadge(
-                            label: time.isSynchronized
-                                ? loc(context).synchronized
-                                : time.status,
-                            color: time.isSynchronized
-                                ? appColors?.semanticSuccess
-                                : appColors?.semanticWarning,
-                          ),
-                        ],
+                      // Same shape as `usp_lan_info_card`'s hero row and the
+                      // same 61.4px column, but the fix is the opposite one,
+                      // because a capsule cannot take a second line: `AppBadge`
+                      // already ellipsizes its own label (`Flexible` +
+                      // `maxLines: 1` inside it) and only ever failed to,
+                      // because this single-child `Row` handed it *unbounded*
+                      // width and its inner `Flexible` had nothing to bind
+                      // against. The `Row` did nothing else — the enclosing
+                      // `Column` is already `CrossAxisAlignment.start`, so the
+                      // badge shrink-wraps identically without it — so it is
+                      // removed rather than given a `Flexible`. §2.10a point 2's
+                      // ellipsis-vs-wrap choice, decided by what the child *is*.
+                      AppBadge(
+                        label: time.isSynchronized
+                            ? loc(context).synchronized
+                            : time.status,
+                        color: time.isSynchronized
+                            ? appColors?.semanticSuccess
+                            : appColors?.semanticWarning,
                       ),
                     ],
                   ),
