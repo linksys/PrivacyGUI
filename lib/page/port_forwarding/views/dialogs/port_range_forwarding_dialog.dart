@@ -183,6 +183,11 @@ class _PortRangeForwardingDialogState extends State<PortRangeForwardingDialog> {
       scrollable: true,
       content: Column(
         mainAxisSize: MainAxisSize.min,
+        // Left-align the children. The text fields already fill the content
+        // width so they look the same either way, but an intrinsically-sized
+        // child (the protocol block below) would be centred by the default
+        // CrossAxisAlignment.center and sit indented from the fields (#1261).
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           AppTextField(
             controller: _descController,
