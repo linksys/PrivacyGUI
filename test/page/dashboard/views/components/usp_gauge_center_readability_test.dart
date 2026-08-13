@@ -2,7 +2,6 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/page/dashboard/models/display_mode.dart';
@@ -11,6 +10,7 @@ import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../../util/app_test_fonts.dart';
 import '../../../../util/dashboard/dashboard_card_probe.dart';
+import '../../../../util/dashboard/text_readability_probe.dart';
 
 /// Gauge-centre readability (#1234, extended by #1235).
 ///
@@ -134,8 +134,9 @@ void main() {
     required bool preferred,
     required Locale locale,
   }) async {
-    final constraints = UspWidgetSpecs.all
-        .firstWhere((s) => s.id == cardId)
+    final constraints = (UspWidgetSpecs.getById(cardId) ??
+            (throw ArgumentError.value(
+                cardId, 'cardId', 'no such card in UspWidgetSpecs.all')))
         .getConstraints(DisplayMode.normal);
     final columns =
         preferred ? constraints.preferredColumns : constraints.minColumns;
@@ -150,6 +151,14 @@ void main() {
         label: preferred ? 'preferred' : 'min',
       ),
       cardHeightRows: constraints.minHeightRows,
+      // Tab 0 only, and that is the whole of AC 1 rather than a sample of it.
+      // #1235 says "all 3 tabs", but `network_health` builds its `AppGauge` in
+      // `_HealthOverview`, which `_buildTabContent`'s `switch` reaches for
+      // `selectedTab == 0` alone — tabs 1 and 2 are `_ErrorsChart` and
+      // `_LossChart`, with no gauge and so no centre to overflow. Likewise
+      // `system_status`'s pair belongs to tab 0, Monitor. The gate still sweeps
+      // all three tabs of both cards for overflow; what this file adds is the
+      // part of AC 1 that has a gauge in it.
       tabIndex: 0,
       locale: locale,
     );
@@ -169,29 +178,6 @@ void main() {
       .where((t) => t.data != null && t.data!.isNotEmpty)
       .toList();
 
-  RenderParagraph paragraphOf(WidgetTester tester, Text text) =>
-      tester.renderObject<RenderParagraph>(find.byWidget(text));
-
-  /// Whether [text] had to drop content to fit. `didExceedMaxLines` is the
-  /// renderer's own verdict, so this does not re-derive metrics the layout
-  /// already computed.
-  bool isClipped(WidgetTester tester, Text text) =>
-      paragraphOf(tester, text).didExceedMaxLines;
-
-  /// How many lines [text] actually painted, counted off the renderer's own
-  /// glyph boxes. This is the only measurement that distinguishes "ellipsized
-  /// onto one line" — by design, for a label longer than the circle — from
-  /// "wrapped mid-word", since both leave the widget's `data` intact and both
-  /// fit inside the box the gate measures.
-  int lineCount(WidgetTester tester, Text text) {
-    final boxes = paragraphOf(tester, text).getBoxesForSelection(
-      TextSelection(baseOffset: 0, extentOffset: text.data!.length),
-    );
-    expect(boxes, isNotEmpty,
-        reason: '"${text.data}" painted no glyphs at all');
-    return boxes.map((b) => b.top.round()).toSet().length;
-  }
-
   group('the reading survives the shrunken circle (#1234 AC4)', () {
     // The gauges are the tab's headline: the label names a series, the reading
     // *is* the datum. So the two are held to different standards below — the
@@ -200,7 +186,9 @@ void main() {
       testWidgets('both gauges show their full percentage in $tag',
           (tester) async {
         await pumpAt(tester,
-            cardId: _kSystemStatus, preferred: false, locale: _localeFor(tag));
+            cardId: _kSystemStatus,
+            preferred: false,
+            locale: supportedLocaleFor(tag));
 
         expect(find.byType(AppGauge), findsNWidgets(2),
             reason: 'the Monitor tab compares CPU against memory, so both '
@@ -217,11 +205,11 @@ void main() {
           expect(reading.data, matches(RegExp(r'^\d+%$')),
               reason: 'gauge $i\'s first centre line should be the percentage, '
                   'not "${reading.data}"');
-          expect(isClipped(tester, reading), isFalse,
+          expect(tester.isTextClipped(find.byWidget(reading)), isFalse,
               reason: 'gauge $i\'s reading "${reading.data}" is clipped at the '
                   'narrowest width. The circle has been bounded below the size '
                   'of the number it exists to show.');
-          expect(lineCount(tester, reading), 1,
+          expect(tester.textLineCount(find.byWidget(reading)), 1,
               reason: 'gauge $i\'s reading "${reading.data}" wrapped onto a '
                   'second line inside the arc.');
         }
@@ -230,8 +218,10 @@ void main() {
       testWidgets('neither gauge label wraps inside the arc in $tag',
           (tester) async {
         await pumpAt(tester,
-            cardId: _kSystemStatus, preferred: false, locale: _localeFor(tag));
-        final l = await AppLocalizations.delegate.load(_localeFor(tag));
+            cardId: _kSystemStatus,
+            preferred: false,
+            locale: supportedLocaleFor(tag));
+        final l = await AppLocalizations.delegate.load(supportedLocaleFor(tag));
 
         final labels = [
           for (var i = 0; i < 2; i++) centreTexts(tester, i).last,
@@ -243,13 +233,13 @@ void main() {
         for (final label in labels) {
           // One line, clipped or not. `de`'s `Arbeitsspeicher` is 88.1px of
           // `bodySmall` inside a 72.7px circle, so the ellipsis is *expected*
-          // there and asserting `isClipped == false` would be a lie. What must
+          // there and asserting `isTextClipped == false` would be a lie. What must
           // not happen is the soft wrap: a mid-word break inside a 72.7px arc
           // costs the label its readability and the centre its shape, and every
           // gate case stays green through it.
-          expect(lineCount(tester, label), 1,
+          expect(tester.textLineCount(find.byWidget(label)), 1,
               reason: 'gauge label "${label.data}" painted '
-                  '${lineCount(tester, label)} lines inside the arc. The label '
+                  '${tester.textLineCount(find.byWidget(label))} lines inside the arc. The label '
                   'is a series name: it ellipsizes to one line, and the full '
                   'string stays available in the legend row below.');
 
@@ -277,7 +267,9 @@ void main() {
       // the tab's value is the CPU-against-memory comparison, and two circles
       // of different diameters or on different rows no longer make it.
       await pumpAt(tester,
-          cardId: _kSystemStatus, preferred: false, locale: _localeFor('de'));
+          cardId: _kSystemStatus,
+          preferred: false,
+          locale: supportedLocaleFor('de'));
 
       final first = tester.getRect(find.byType(AppGauge).at(0));
       final second = tester.getRect(find.byType(AppGauge).at(1));
@@ -310,12 +302,14 @@ void main() {
       // biting at widths it should not or a translation has outgrown the circle
       // outright, and both want a look rather than a silent ellipsis.
       await pumpAt(tester,
-          cardId: _kSystemStatus, preferred: true, locale: _localeFor('de'));
-      final l = await AppLocalizations.delegate.load(_localeFor('de'));
+          cardId: _kSystemStatus,
+          preferred: true,
+          locale: supportedLocaleFor('de'));
+      final l = await AppLocalizations.delegate.load(supportedLocaleFor('de'));
 
       for (var i = 0; i < 2; i++) {
         final label = centreTexts(tester, i).last;
-        expect(isClipped(tester, label), isFalse,
+        expect(tester.isTextClipped(find.byWidget(label)), isFalse,
             reason: 'gauge label "${label.data}" is ellipsized at the '
                 'preferred width, where the circle is at its natural size. '
                 'The centre is now degrading in the layout the grid hands the '
@@ -346,7 +340,9 @@ void main() {
       testWidgets('the score and its tier both stay whole in $tag',
           (tester) async {
         await pumpAt(tester,
-            cardId: _kNetworkHealth, preferred: false, locale: _localeFor(tag));
+            cardId: _kNetworkHealth,
+            preferred: false,
+            locale: supportedLocaleFor(tag));
 
         final texts = centreTexts(tester, 0);
         expect(texts, hasLength(2),
@@ -365,12 +361,13 @@ void main() {
         // circles: a tier name is the *reading* here, not a series label, so it
         // may shrink but may not lose characters.
         for (final t in texts) {
-          expect(isClipped(tester, t), isFalse,
+          expect(tester.isTextClipped(find.byWidget(t)), isFalse,
               reason: '"${t.data}" is ellipsized inside the gauge. The centre '
                   'is supposed to scale down, not truncate — a clipped tier is '
                   'exactly what AC 4 rules out.');
-          expect(lineCount(tester, t), 1,
-              reason: '"${t.data}" wrapped onto ${lineCount(tester, t)} lines '
+          expect(tester.textLineCount(find.byWidget(t)), 1,
+              reason:
+                  '"${t.data}" wrapped onto ${tester.textLineCount(find.byWidget(t))} lines '
                   'inside the gauge. `FittedBox` lays its child out unbounded, '
                   'so a wrap here means something re-imposed a width.');
         }
@@ -392,7 +389,9 @@ void main() {
       // that 12px is comfortable; it is the tripwire for the squeeze getting
       // *worse*, which is now invisible to everything else in the suite.
       await pumpAt(tester,
-          cardId: _kNetworkHealth, preferred: false, locale: _localeFor('de'));
+          cardId: _kNetworkHealth,
+          preferred: false,
+          locale: supportedLocaleFor('de'));
 
       final score = centreTexts(tester, 0).first;
       final painted = tester.getRect(find.byWidget(score));
@@ -412,7 +411,9 @@ void main() {
       // reach scale 1.0 at the *narrowest* width, so a failure here means the
       // squeeze has spread to the layout the grid hands the card by default.
       await pumpAt(tester,
-          cardId: _kNetworkHealth, preferred: true, locale: _localeFor('de'));
+          cardId: _kNetworkHealth,
+          preferred: true,
+          locale: supportedLocaleFor('de'));
 
       final texts = centreTexts(tester, 0);
       final scoreRect = tester.getRect(find.byWidget(texts.first));
@@ -421,7 +422,7 @@ void main() {
               'its natural 28px, so the centre is being scaled down at the '
               'preferred width and not just at the narrowest one.');
       for (final t in texts) {
-        expect(isClipped(tester, t), isFalse);
+        expect(tester.isTextClipped(find.byWidget(t)), isFalse);
       }
     });
   });
@@ -429,11 +430,3 @@ void main() {
 
 const _kSystemStatus = 'system_status';
 const _kNetworkHealth = 'network_health';
-
-Locale _localeFor(String tag) =>
-    AppLocalizations.supportedLocales.firstWhere((l) {
-      final t = l.countryCode == null || l.countryCode!.isEmpty
-          ? l.languageCode
-          : '${l.languageCode}_${l.countryCode}';
-      return t == tag;
-    });

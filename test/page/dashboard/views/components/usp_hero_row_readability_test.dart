@@ -2,7 +2,6 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/page/dashboard/models/display_mode.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_widget_specs.dart';
@@ -10,6 +9,7 @@ import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../../util/app_test_fonts.dart';
 import '../../../../util/dashboard/dashboard_card_probe.dart';
+import '../../../../util/dashboard/text_readability_probe.dart';
 
 /// Hero-row readability (#1236 AC 4, #1237 AC 5).
 ///
@@ -81,8 +81,9 @@ void main() {
     required String cardId,
     required Locale locale,
   }) async {
-    final constraints = UspWidgetSpecs.all
-        .firstWhere((s) => s.id == cardId)
+    final constraints = (UspWidgetSpecs.getById(cardId) ??
+            (throw ArgumentError.value(
+                cardId, 'cardId', 'no such card in UspWidgetSpecs.all')))
         .getConstraints(DisplayMode.normal);
     final narrowest =
         narrowestRealizationOf(constraints.minColumns, minScreen: 0)!;
@@ -101,28 +102,6 @@ void main() {
     );
   }
 
-  RenderParagraph paragraphOf(WidgetTester tester, String data) =>
-      tester.renderObject<RenderParagraph>(find.text(data));
-
-  /// Whether the renderer had to drop content to fit — its own verdict, so this
-  /// does not re-derive metrics the layout already computed.
-  bool isClipped(WidgetTester tester, String data) =>
-      paragraphOf(tester, data).didExceedMaxLines;
-
-  /// How many lines [data] actually painted on.
-  int lineCount(WidgetTester tester, String data) {
-    final boxes = paragraphOf(tester, data).getBoxesForSelection(
-      TextSelection(baseOffset: 0, extentOffset: data.length),
-    );
-    expect(boxes, isNotEmpty, reason: '"$data" painted no glyphs at all');
-    return boxes.map((b) => b.top.round()).toSet().length;
-  }
-
-  Locale localeFor(String tag) => switch (tag.split('_')) {
-        [final l, final c] => Locale(l, c),
-        _ => Locale(tag),
-      };
-
   const kLanInfo = 'lan_info';
   const kTimeSettings = 'time_settings';
 
@@ -131,13 +110,14 @@ void main() {
     // the English rendering is as much of a test case as `el` is.
     for (final tag in ['en', 'de', 'el', 'ru']) {
       testWidgets('$tag — the router IP is never cut', (tester) async {
-        await pumpNarrowest(tester, cardId: kLanInfo, locale: localeFor(tag));
+        await pumpNarrowest(tester,
+            cardId: kLanInfo, locale: supportedLocaleFor(tag));
 
         // Measured: 105.8px of `titleLarge` in a 61.4px column, so it paints on
         // two lines. Two lines is fine — `192.168.1.1` split after a dot is
         // still the address. `192.16…` is not, and that is what any `maxLines`
         // here would produce.
-        expect(isClipped(tester, '192.168.1.1'), isFalse,
+        expect(tester.isTextClipped(find.text('192.168.1.1')), isFalse,
             reason: 'the router IP was truncated. An address that has lost its '
                 'last octet cannot be typed into a browser, which is the one '
                 'thing this hero exists for (#1236 AC 4).');
@@ -145,7 +125,8 @@ void main() {
       });
 
       testWidgets('$tag — the DHCP status keeps both words', (tester) async {
-        await pumpNarrowest(tester, cardId: kLanInfo, locale: localeFor(tag));
+        await pumpNarrowest(tester,
+            cardId: kLanInfo, locale: supportedLocaleFor(tag));
 
         // The composed status, per §2.10a point 2: ~49px of column would
         // ellipsize `DHCP Enabled` to `DHCP…`, dropping the word that carries
@@ -159,7 +140,7 @@ void main() {
                 orElse: () => throw TestFailure(
                     'no DHCP status text found on the card at all'));
 
-        expect(isClipped(tester, status), isFalse,
+        expect(tester.isTextClipped(find.text(status)), isFalse,
             reason: 'the DHCP status "$status" was truncated, so the row now '
                 'shows a protocol name and no state.');
         expect(status.trim().split(RegExp(r'\s+')).length, greaterThan(1),
@@ -173,12 +154,12 @@ void main() {
     for (final tag in ['en', 'de', 'ru', 'th']) {
       testWidgets('$tag — the timezone value is never cut', (tester) async {
         await pumpNarrowest(tester,
-            cardId: kTimeSettings, locale: localeFor(tag));
+            cardId: kTimeSettings, locale: supportedLocaleFor(tag));
 
         // Measured: 137.8px of value in a 133.4px cell, so it wraps to 2 lines
         // and stays whole. `America/Los_Ang…` and `America/…` are both
         // ambiguous between real zones, which is what "identifiable" rules out.
-        expect(isClipped(tester, 'America/Los_Angeles'), isFalse,
+        expect(tester.isTextClipped(find.text('America/Los_Angeles')), isFalse,
             reason: 'the timezone name was truncated. Zone names share long '
                 'prefixes, so a cut one names a region and not a zone '
                 '(#1237 AC 5).');
@@ -190,7 +171,7 @@ void main() {
     for (final tag in ['en', 'de', 'ru']) {
       testWidgets('$tag — the badge keeps enough to read', (tester) async {
         await pumpNarrowest(tester,
-            cardId: kTimeSettings, locale: localeFor(tag));
+            cardId: kTimeSettings, locale: supportedLocaleFor(tag));
 
         // The badge label is whichever `bodySmall`-sized text sits inside the
         // capsule; find it by the widget rather than by string, since every
@@ -211,7 +192,7 @@ void main() {
         // it ellipsizes is locale-dependent (`de`'s `Synchronisiert` is 85.1px
         // in a 45.4px capsule and does; `en`'s `Synced` does not), so clipping
         // is permitted and *emptying* is not.
-        expect(lineCount(tester, data), 1,
+        expect(tester.textLineCount(find.text(data)), 1,
             reason: 'the badge label "$data" wrapped to a second line, which a '
                 'capsule cannot hold — it will paint outside its own pill.');
 
@@ -220,7 +201,7 @@ void main() {
         // which point the badge says nothing and the colour is carrying the
         // whole state. Nothing in the gate can see that happen, because a
         // narrower badge overflows *less*.
-        final painted = paragraphOf(tester, data).size.width;
+        final painted = tester.paragraphOf(find.text(data)).size.width;
         expect(painted, greaterThan(24.0),
             reason: 'the sync badge label "$data" painted only '
                 '${painted.toStringAsFixed(1)}px, so it has been squeezed past '
