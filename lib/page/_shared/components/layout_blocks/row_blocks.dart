@@ -127,6 +127,76 @@ class NetworkBadgeWidget extends StatelessWidget {
 }
 
 // =============================================================================
+// MapsToRow - "source maps to target" pair
+// =============================================================================
+
+/// A "maps to" pair — `8080 -> 192.168.1.100:80` — drawn with an arrow icon
+/// instead of a U+2192 character.
+///
+/// U+2192 has no glyph in the primary font, in any of the nine fallbacks under
+/// `assets/fonts/fallback/`, or in the union of all eleven; the app's declared
+/// font set cannot render it, and browsers only do so by resolving a host font
+/// outside that set — the exact dependency those fallbacks exist to remove.
+/// [AppIcon.font] draws from the icon font, so coverage is guaranteed offline.
+///
+/// [source] and [target] stay Strings: the arrow is composed here in the widget
+/// layer, so UI models keep returning Strings rather than widgets.
+///
+/// Sized to match the surrounding [AppText.bodySmall]. [target] is the part
+/// that ellipsizes, since the source (a port or port range) is short and
+/// bounded while the target (an IP, optionally with a port) is not.
+class MapsToRow extends StatelessWidget {
+  final String source;
+  final String target;
+  final Color? color;
+
+  const MapsToRow({
+    super.key,
+    required this.source,
+    required this.target,
+    this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    // The arrow must track the text, and text and icons resolve colour from
+    // different inherited widgets: [AppText] reads [DefaultTextStyle] while
+    // [AppIcon] falls back to `IconTheme.of(context).color ?? Colors.black`.
+    // Containers commonly set only one of the two — `AppListTile` wraps its
+    // subtitle in a `DefaultTextStyle` and no `IconTheme` — so leaving the icon
+    // to its own chain lets it pick up an ambient icon colour, or black, while
+    // the text beside it renders in the container's content colour. Resolving
+    // one colour here and passing it to both keeps the pair consistent.
+    final effectiveColor = color ?? DefaultTextStyle.of(context).style.color;
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Flexible(
+          child: AppText.bodySmall(
+            source,
+            color: effectiveColor,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        AppGap.xs(),
+        AppIcon.font(Icons.arrow_forward, size: 12, color: effectiveColor),
+        AppGap.xs(),
+        Flexible(
+          child: AppText.bodySmall(
+            target,
+            color: effectiveColor,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// =============================================================================
 // ToggleRow - Row with leading switch toggle
 // =============================================================================
 
@@ -141,6 +211,11 @@ class ToggleRow extends StatelessWidget {
   final ValueChanged<bool>? onChanged;
   final String title;
   final String? subtitle;
+
+  /// Widget subtitle, for rows whose subtitle is not plain text (e.g. a
+  /// [MapsToRow] with an arrow icon). Mutually exclusive with [subtitle] —
+  /// passing both is asserted against, and in release builds this one wins.
+  final Widget? subtitleContent;
   final Widget? trailing;
   final VoidCallback? onTap;
   final bool isLoading;
@@ -151,10 +226,12 @@ class ToggleRow extends StatelessWidget {
     this.onChanged,
     required this.title,
     this.subtitle,
+    this.subtitleContent,
     this.trailing,
     this.onTap,
     this.isLoading = false,
-  });
+  }) : assert(subtitle == null || subtitleContent == null,
+            'ToggleRow: pass subtitle or subtitleContent, not both');
 
   @override
   Widget build(BuildContext context) {
@@ -183,14 +260,15 @@ class ToggleRow extends StatelessWidget {
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
-      subtitle: subtitle != null
-          ? AppText.bodySmall(
-              subtitle!,
-              color: colorScheme.onSurfaceVariant,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            )
-          : null,
+      subtitle: subtitleContent ??
+          (subtitle != null
+              ? AppText.bodySmall(
+                  subtitle!,
+                  color: colorScheme.onSurfaceVariant,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                )
+              : null),
       trailing: trailing,
       onTap: onTap,
     );

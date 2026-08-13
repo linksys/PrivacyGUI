@@ -106,9 +106,20 @@ class PortTriggeringRuleUIModel extends Equatable with DiagnosticLoggable {
   String get forwardProtocolDisplay =>
       forwardRules.isNotEmpty ? forwardRules.first.forwardProtocol : '—';
 
-  /// Summary: "Trigger: 21 TCP → Forward: 1024-1030 TCP".
-  String get summary => 'Trigger: $triggerPortDisplay $triggerProtocol '
-      '→ Forward: $forwardPortDisplay $forwardProtocolDisplay';
+  /// Trigger half of the summary: "Trigger: 21 TCP".
+  String get triggerSummaryPart =>
+      'Trigger: $triggerPortDisplay $triggerProtocol';
+
+  /// Forward half of the summary: "Forward: 1024-1030 TCP".
+  String get forwardSummaryPart =>
+      'Forward: $forwardPortDisplay $forwardProtocolDisplay';
+
+  /// Summary: "Trigger: 21 TCP -> Forward: 1024-1030 TCP".
+  ///
+  /// Diagnostics and other non-UI callers only. UI draws the arrow as an icon
+  /// via `MapsToRow(source: triggerSummaryPart, target: forwardSummaryPart)`,
+  /// because U+2192 has no glyph in the app's declared font set.
+  String get summary => '$triggerSummaryPart -> $forwardSummaryPart';
 
   @override
   String get diagnosticName => 'PortTriggeringRuleUIModel';

@@ -251,8 +251,9 @@ class _PortsTab extends StatelessWidget {
                     _ProtocolBadge(protocol: rule.protocol),
                     AppGap.sm(),
                     Expanded(
-                      child: AppText.bodySmall(
-                        '${rule.portSummary} → ${rule.internalClient}',
+                      child: MapsToRow(
+                        source: rule.portRangeDisplay,
+                        target: rule.internalTargetDisplay,
                       ),
                     ),
                   ],

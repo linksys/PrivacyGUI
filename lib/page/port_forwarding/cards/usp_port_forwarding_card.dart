@@ -87,7 +87,11 @@ class UspPortForwardingCard extends ConsumerWidget {
                     .immediateToggleForwarding(rule.instancePath!, value),
               ),
       title: rule.displayName,
-      subtitle: rule.portSummary,
+      subtitleContent: MapsToRow(
+        source: rule.portRangeDisplay,
+        target: rule.internalTargetDisplay,
+        color: Theme.of(context).colorScheme.onSurfaceVariant,
+      ),
       trailing: ProtocolBadge(protocol: rule.protocol),
     );
   }
@@ -108,7 +112,11 @@ class UspPortForwardingCard extends ConsumerWidget {
                     .immediateToggleTriggering(trigger.instancePath!, value),
               ),
       title: trigger.displayName,
-      subtitle: '${trigger.triggerPortDisplay} → ${trigger.forwardPortDisplay}',
+      subtitleContent: MapsToRow(
+        source: trigger.triggerPortDisplay,
+        target: trigger.forwardPortDisplay,
+        color: Theme.of(context).colorScheme.onSurfaceVariant,
+      ),
       trailing: ProtocolBadge(protocol: trigger.triggerProtocol),
     );
   }
