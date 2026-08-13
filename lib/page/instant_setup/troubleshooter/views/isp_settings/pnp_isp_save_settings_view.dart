@@ -192,7 +192,17 @@ class _PnpIspSaveSettingsViewState extends ConsumerState<PnpIspSaveSettingsView>
                       '[PnP]: Troubleshooter - Check internet connection with new settings - Failed');
                   // Internet connection is Not OK
                   context.pop(_getErrorMessage(wanType));
-                }, test: (error) => error is ExceptionNoInternetConnection);
+                }, test: (error) => error is ExceptionNoInternetConnection).catchError(
+                    (error) {
+                  // The credential was rotated while we were checking. This
+                  // window is 30 retries wide (~90s) and Auto Master runs for
+                  // ~115s from WAN-up, so a rotation can land inside it — and
+                  // that is *success*, not a settings failure. Popping an ISP
+                  // error here would blame the settings the user just got right.
+                  logger.i(
+                      '[PnP]: Troubleshooter - Auto Master rotated the password mid-check, back to PnP');
+                  if (mounted) context.goNamed(RouteNamed.pnp);
+                }, test: (error) => error is ExceptionInvalidAdminPassword);
               }
               subscription?.cancel();
             },

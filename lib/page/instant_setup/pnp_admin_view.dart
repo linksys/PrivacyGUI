@@ -543,7 +543,17 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView>
         extra: ssid.isEmpty ? null : {'ssid': ssid},
       );
       throw error;
-    }, test: (error) => error is ExceptionNoInternetConnection);
+    }, test: (error) => error is ExceptionNoInternetConnection).catchError(
+        (error, stackTrace) {
+      // A stale credential, not a WAN fault — the internet check now tells the
+      // two apart. Leave the spinner behind and rethrow so the caller's own
+      // handler asks for the password; going to the troubleshooter here is
+      // exactly the wrong answer (#1180: the ISP settings were fine).
+      setState(() {
+        _isCheckingInternet = false;
+      });
+      throw error;
+    }, test: (error) => error is ExceptionInvalidAdminPassword);
   }
 
   List<Widget> _checkError(BuildContext context, Object? error) {
@@ -570,6 +580,27 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView>
     final status = await pnp.checkAutoMasterStatus();
     logger.i('[PnP]: Auto Master status check result: $status');
 
+    // make-Master already finished before this view even loaded — the
+    // post-reconnect case: the router bounced us back to PnP and by the time we
+    // got here the status was already `complete`. There is nothing to wait for,
+    // but the admin password has been rotated all the same, so whatever
+    // credential we hold is dead and the next authed call would 401.
+    //
+    // This has to be caught here rather than by `runAutoMasterFlow`'s
+    // `completed` branch: that flow only runs when the status is `running`, so a
+    // status that is *already* `complete` never reaches it.
+    //
+    // The other statuses deliberately fall through to the early return below:
+    // - `failed` — Auto Master gave up (it found another Master), and firmware
+    //   leaves the admin password untouched. The credential still works.
+    // - `idle` — it has not started. Note this is the opposite of `idle` inside
+    //   `_waitForCompletion`, where it means "was running, now finished and
+    //   reset"; that reading is only valid once `running` has been observed.
+    // - `null` — status unavailable (unreachable, or firmware that will not
+    //   serve it unauthed). Nothing is known, so nothing is assumed.
+    if (status == AutoMasterStatus.complete) {
+      throw ExceptionAutoMasterRotatedPassword();
+    }
     if (status != AutoMasterStatus.running) return;
     if (!mounted) return;
 
@@ -598,10 +629,10 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView>
         // which is exactly the reported symptom, a reconnect landing on login
         // instead of back in PnP.
         //
-        // Note this branch is also hit by a freshly-entered view that merely
-        // *finds* Auto Master already `complete` (the post-reconnect case): it
-        // never had a session to lose, but it equally cannot know the current
-        // password, so the same prompt is the right destination.
+        // This is the running -> complete transition only: the flow above is
+        // entered exclusively from a `running` status. A view that finds Auto
+        // Master already `complete` on entry is caught by the gate before this
+        // point, and lands on the same prompt from there.
         throw ExceptionAutoMasterRotatedPassword();
       case AutoMasterFlowResult.proceed:
       case AutoMasterFlowResult.budgetExhausted:
@@ -636,6 +667,18 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView>
       _processing = false;
     });
     pnp.setAttachedPassword(null);
+    // Drop the stale local session too. `_password` and the pnp state are not
+    // where the JNAP auth header comes from: it is built from the auth session's
+    // stored local password, so a session left behind by a login that happened
+    // *before* the rotation keeps `isLoggedIn()` true. The entry precheck then
+    // skips `_examineAdminPassword` entirely — observed in #1180's QA log, where
+    // no CheckAdminPassword went out at all after the reconnect — and the very
+    // next authed call goes out with the dead credential.
+    //
+    // Logging out is safe from here: the `/pnp*` redirect branch does not watch
+    // authProvider, and it leaves pnpProvider (hence `deviceInfo`) intact, so
+    // this view stays put instead of being re-elected elsewhere.
+    ref.read(authProvider.notifier).logout();
   }
 
   void _retryAutoMasterCheck() {
@@ -660,7 +703,15 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView>
     }, test: (error) => error is ExceptionAutoMasterPollingFailed).catchError(
         (error, stackTrace) {
       _promptForRotatedPassword();
-    }, test: (error) => error is ExceptionAutoMasterRotatedPassword);
+    },
+        test: (error) =>
+            // Both land on the password prompt. The second arrives from the
+            // internet check rather than the Auto Master gate — the status read
+            // came back inconclusive, so the check ran and its 401 revealed the
+            // rotation the status could not. Without this branch it would escape
+            // this chain entirely as an unhandled error.
+            error is ExceptionAutoMasterRotatedPassword ||
+            error is ExceptionInvalidAdminPassword);
   }
 
   _showRouterPasswordModal() {

@@ -525,4 +525,93 @@ void main() async {
     // Never polled: null is not `running`, so there was nothing to wait on.
     verifyNever(mockPnpNotifier.pollAutoMasterStatus());
   });
+
+  // D: Auto Master is ALREADY `complete` when the gate first reads it — the
+  // post-reconnect case from #1180's QA log. make-Master finished while the
+  // router was rebooting, so by the time this view loaded there was nothing left
+  // to wait for, but the admin password had been rotated regardless.
+  //
+  // This is a distinct branch from B': there, `running` was observed and the
+  // poll ran to `complete`. Here the poll must never start (`verifyNever`) —
+  // which is exactly why `runAutoMasterFlow`'s `completed` case could not cover
+  // this: that flow is only entered on a `running` status. The gate used to
+  // `return` on anything that was not `running`, so `complete` fell straight
+  // through to the internet check, which 401'd on the dead credential and sent
+  // the user to the troubleshooter with a working internet connection.
+  testWidgets(
+      'Instant Setup - PnP: Auto Master already complete on entry asks for the new password',
+      (tester) async {
+    useLargeScreen(tester);
+    stubConfiguredRouter();
+    when(mockPnpNotifier.checkAutoMasterStatus())
+        .thenAnswer((_) async => AutoMasterStatus.complete);
+
+    await tester.pumpWidget(
+      testableSingleRoute(
+        config: LinksysRouteConfig(
+          column: ColumnGrid(column: 6, centered: true),
+          noNaviRail: true,
+        ),
+        child: const PnpAdminView(),
+        overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
+        extraRoutes: [pnpConfigStubRoute()],
+      ),
+    );
+    await tester.pump(const Duration(seconds: 1));
+    await tapLogin(tester);
+    await tester.runAsync(() => Future.delayed(const Duration(seconds: 2)));
+    await tester.pumpAndSettle();
+
+    // Back on PnP's own password prompt — not in config, not waiting.
+    expect(find.byType(PnpAdminView), findsOneWidget);
+    expect(find.byType(AppPasswordField), findsOneWidget);
+    expect(find.byType(PnpAutoMasterWaitingView), findsNothing);
+    expect(find.byKey(const Key('pnpConfigStub')), findsNothing);
+    verify(mockPnpNotifier.setAttachedPassword(null)).called(1);
+    // Nothing to poll, and — the actual #1180 defect — the internet check must
+    // not run: it would go out with the rotated credential and read its 401 as
+    // "no internet".
+    verifyNever(mockPnpNotifier.pollAutoMasterStatus());
+    verifyNever(mockPnpNotifier.checkInternetConnection());
+  });
+
+  // E: the internet check itself reports a rejected credential rather than a
+  // dead WAN (`ExceptionInvalidAdminPassword`, not
+  // `ExceptionNoInternetConnection`). The view must NOT go to the troubleshooter
+  // — the WAN is fine, only the password is stale. This is the safety net for
+  // every path that reaches an authed call with a credential Auto Master
+  // rotated, including the ones the gate cannot see.
+  testWidgets(
+      'Instant Setup - PnP: Unauthorized internet check does not go to the troubleshooter',
+      (tester) async {
+    useLargeScreen(tester);
+    stubConfiguredRouter();
+    when(mockPnpNotifier.checkAutoMasterStatus()).thenAnswer((_) async => null);
+    when(mockPnpNotifier.checkInternetConnection()).thenAnswer((_) async {
+      throw ExceptionInvalidAdminPassword();
+    });
+
+    await tester.pumpWidget(
+      testableSingleRoute(
+        config: LinksysRouteConfig(
+          column: ColumnGrid(column: 6, centered: true),
+          noNaviRail: true,
+        ),
+        child: const PnpAdminView(),
+        overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
+        extraRoutes: [pnpConfigStubRoute()],
+      ),
+    );
+    await tester.pump(const Duration(seconds: 1));
+    await tapLogin(tester);
+    await tester.runAsync(() => Future.delayed(const Duration(seconds: 2)));
+    await tester.pumpAndSettle();
+
+    // Still in PnP with a password field, and the spinner has been cleared.
+    expect(find.byType(PnpAdminView), findsOneWidget);
+    expect(find.byType(AppPasswordField), findsOneWidget);
+    expect(find.byKey(const Key('pnpConfigStub')), findsNothing);
+    // No troubleshooter route is registered here on purpose: navigating to it
+    // would throw "unknown route name" rather than pass quietly.
+  });
 }

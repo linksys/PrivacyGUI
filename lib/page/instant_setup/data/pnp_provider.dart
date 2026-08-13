@@ -306,6 +306,13 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
   }
 
   /// check internet connection within 30 seconds
+  ///
+  /// Throws [ExceptionInvalidAdminPassword] if the router rejects the
+  /// credential, and [ExceptionNoInternetConnection] if it answers but the WAN
+  /// is down. Conflating the two is what sent #1180 to the troubleshooter: after
+  /// Auto Master rotated the admin password, this call went out with the stale
+  /// credential, got a 401, and reported "no internet" — so the user was told
+  /// their brand-new ISP settings had failed.
   @override
   Future checkInternetConnection([int retries = 1]) async {
     Future<bool> isInternetConnected() async {
@@ -313,20 +320,32 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
       for (int i = 0; i < retries; i++) {
         logger.i(
             '[PnP]: Check internet connections MAX retries <$retries>, i=$i');
-        isConnected = await ref
-            .read(routerRepositoryProvider)
-            .send(
-              JNAPAction.getInternetConnectionStatus,
-              fetchRemote: true,
-              auth: true,
-              retries: 0,
-              cacheLevel: CacheLevel.noCache,
-            )
-            .then((result) {
-          return result.output['connectionStatus'] == 'InternetConnected';
-        }).onError((error, stackTrece) {
-          return false;
-        });
+        try {
+          final result = await ref.read(routerRepositoryProvider).send(
+                JNAPAction.getInternetConnectionStatus,
+                fetchRemote: true,
+                auth: true,
+                retries: 0,
+                cacheLevel: CacheLevel.noCache,
+              );
+          isConnected =
+              result.output['connectionStatus'] == 'InternetConnected';
+        } on JNAPError catch (error) {
+          // A rejected credential says nothing about the WAN. Retrying cannot
+          // help either — the password will not become correct — and each round
+          // spends one of the router's 5 CGI auth attempts before it locks the
+          // account, so bail out immediately instead of looping.
+          if (error.result == errorJNAPUnauthorized) {
+            logger.e(
+                '[PnP]: Internet check was unauthorized - the credential is stale, not the WAN');
+            throw ExceptionInvalidAdminPassword();
+          }
+          isConnected = false;
+        } catch (_) {
+          // Anything else (timeout, unreachable, unparseable) is genuinely
+          // inconclusive about the WAN, so let the retry loop have another go.
+          isConnected = false;
+        }
         if (isConnected) {
           break;
         }

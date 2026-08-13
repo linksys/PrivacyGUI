@@ -352,4 +352,69 @@ void main() {
       expect(sendArg<int>('timeoutMs'), 5000);
     });
   });
+
+  // The third #1180 defect: a rotated credential's 401 was read as "the WAN is
+  // down". GetInternetConnectionStatus goes out authed, so once make-Master
+  // rotates the admin password this call 401s — and the old code flattened every
+  // error to `isConnected = false`, then threw ExceptionNoInternetConnection.
+  // The user was sent to the troubleshooter to fix an internet connection that
+  // was working, right after the ISP settings they had just entered succeeded.
+  group('checkInternetConnection', () {
+    JNAPSuccess connectionStatus(String status) => JNAPSuccess(
+          result: 'OK',
+          output: {'connectionStatus': status},
+        );
+
+    test('InternetConnected -> completes', () async {
+      whenSend(() async => connectionStatus('InternetConnected'));
+      await expectLater(notifier.checkInternetConnection(), completes);
+    });
+
+    test('a non-connected status -> ExceptionNoInternetConnection', () async {
+      whenSend(() async => connectionStatus('InternetDisconnected'));
+      await expectLater(
+        notifier.checkInternetConnection(),
+        throwsA(isA<ExceptionNoInternetConnection>()),
+      );
+    });
+
+    test('unauthorized -> ExceptionInvalidAdminPassword, not NoInternet',
+        () async {
+      whenSend(() async => throw _unauthorized());
+      await expectLater(
+        notifier.checkInternetConnection(),
+        throwsA(isA<ExceptionInvalidAdminPassword>()),
+      );
+    });
+
+    test('unauthorized does not retry', () async {
+      // Each retry spends one of the router's 5 CGI auth attempts before it
+      // locks the admin account — the very lockout §2.3 fixed elsewhere. A
+      // password does not become correct by being sent again, so the first 401
+      // has to be terminal.
+      var calls = 0;
+      whenSend(() async {
+        calls++;
+        throw _unauthorized();
+      });
+      await expectLater(
+        notifier.checkInternetConnection(30),
+        throwsA(isA<ExceptionInvalidAdminPassword>()),
+      );
+      expect(calls, 1);
+    });
+
+    test('a transient failure still retries', () async {
+      // Only 401 is terminal. A timeout says nothing about the WAN, so the loop
+      // must keep trying — the router may still be finishing its restart.
+      var calls = 0;
+      whenSend(() async {
+        calls++;
+        if (calls < 3) throw Exception('timeout');
+        return connectionStatus('InternetConnected');
+      });
+      await expectLater(notifier.checkInternetConnection(5), completes);
+      expect(calls, 3);
+    });
+  });
 }
