@@ -1439,7 +1439,7 @@ Code Review MUST check:
 
 ## Article XVI: E2E Test Hooks (Semantics Identifiers)
 
-**Rationale**: The app is a Flutter CanvasKit web build tested end-to-end with Playwright. CanvasKit renders to a single canvas, so tests can only reach a widget through the Semantics tree it projects to the DOM. When a control has no stable, unique anchor, tests fall back to positional selectors (`.nth()`, row index) that silently break when copy, order, or layout changes. This Article makes the stable anchor a first-class, reviewable property of E2E-critical widgets.
+**Rationale**: The app is a Flutter CanvasKit web build tested end-to-end with Playwright. CanvasKit renders to a single canvas, so tests can only reach a widget through the Semantics tree it projects to the DOM. When a control has no stable, unique anchor, tests fall back to selectors that silently break for reasons unrelated to identity — positional (`.nth()`, row index) when order or layout changes, and accessible-name matching when display copy changes. This Article makes the stable anchor a first-class, reviewable property of every widget on an E2E interaction path.
 
 **Section 16.1: `identifier` is the Preferred E2E Anchor — Not `semanticLabel`**
 
@@ -1475,16 +1475,19 @@ AppIconButton(
 
 **Section 16.2: When an `identifier` Is Required**
 
-An `identifier` MUST be added when, and only when, a control lacks a stable, unique anchor that a test can already reach:
+The test is **interaction path, not anchor quality**. An `identifier` MUST be added to any control that sits on an E2E interaction path — one a spec taps, types into, or reads state from:
 
-* ✅ **Required** — icon-only buttons (`AppIconButton`) whose accessible name is a generic fallback (e.g. "Icon button"), making sibling instances indistinguishable.
-* ✅ **Required** — toggles/switches, and form inputs, that a test must set or read but that carry no unique role+name.
+* ✅ **Required** — any control a spec acts on: buttons (labelled or icon-only), toggles/switches, form inputs, tabs, CRUD row actions, and the entry points into a flow.
 * ✅ **Required** — any control a test currently reaches only via `.nth()` / positional index.
-* ❌ **Not required** — controls already uniquely addressable by role + accessible name, or by stable visible content text (e.g. a labelled `AppButton`, a device row keyed on its name). Do not add redundant identifiers to anchorable controls.
+* ❌ **Not required** — presentational content no spec interacts with: static text, headings, decorative icons, layout containers, and rows a test only reads through their visible text.
 
-**Locale caveat**: "addressable by accessible name" counts as a stable anchor **only while the E2E suite is locked to a single locale**. An accessible name is localized display copy — `getByRole(role, { name: 'Save' })` targets the English string. The current suite has no locale lock (`playwright.config.ts` sets none) and matches localized names directly, so it is implicitly English-only. The moment E2E must run across locales — or the app's default locale changes — such a control is reachable only through copy that varies, which is the same silent-break failure mode this Article exists to kill (locale-triggered rather than layout-triggered). In that case the control moves back to ✅ **Required**: give it an `identifier`. A cross-locale test matrix is therefore a trigger to re-audit every ❌ decision made under this section.
+A labelled `AppButton` on an interaction path is ✅ **Required**. Its accessible name is a stable *anchor* but not a stable *contract*: the name is ARB copy, so a rename silently converts a passing spec into a count-0 timeout — the same failure mode positional selectors have, differently triggered. An `identifier` is the one anchor that is neither positional nor localized.
 
-**Principle**: The `identifier` exists to eliminate selectors that break on things unrelated to identity — positional index, and (under a cross-locale matrix) localized copy. If a control is already stably anchorable *for the locales the suite runs*, adding an `identifier` is noise — Article V (Simplicity) applies.
+**Cost asymmetry — why identifier-first:** the cost of a redundant identifier is one line, no runtime cost, and no a11y cost (unlike a `semanticLabel` slug, an `identifier` is never announced — Rule 16.1.2). The cost of a missing one is a cross-repo round trip: E2E discovers the gap, files an app issue, waits on an app PR and review, then regenerates the selector map. The E2E repo cannot unblock itself. When in doubt, add it.
+
+**Principle**: The `identifier` decouples test identity from everything that legitimately changes without changing identity — position, layout, and copy. Article V (Simplicity) still governs the ❌ case: do not blanket every widget, because a selector map full of never-used entries is noise. Scope by interaction path, not by anchor quality.
+
+**Backwards compatibility (per Article II §2.2)**: this section replaces an earlier rule that treated a labelled `AppButton` as ❌ *not required*, subject to a locale caveat. That caveat is now absorbed by the interaction-path test and removed. The change is **forward-applying**: existing labelled controls without an identifier are not retroactively violations, and no sweep is mandated. Add the hook when a spec next needs the control, or when the surrounding code is touched. A cross-locale matrix is no longer a trigger to re-audit past decisions — under this section the answer no longer depends on the locales the suite runs.
 
 **Section 16.3: Naming Convention**
 
@@ -1520,12 +1523,12 @@ The derivation helper (e.g. `ruleIdentifierKey`) MUST be a pure, unit-tested fun
 **Section 16.5: Code Review Checklist**
 
 Code Review MUST check:
-- ✅ Every E2E-critical control (icon buttons, toggles, targeted inputs, CRUD row actions) has a stable hook — `identifier` where the host widget forwards it (Rule 16.1.1)
+- ✅ Every control on an E2E interaction path — labelled buttons included — has a stable hook: `identifier` where the host widget forwards it (Rule 16.1.1, §16.2)
 - ✅ Where a widget forwards `identifier`, no test slug appears in `semanticLabel`, and no widget carries both an `identifier` and a redundant test-slug `semanticLabel`
 - ✅ A `semanticLabel` test slug appears only where the host widget exposes no `identifier` passthrough (Rule 16.1.2), and such cases are flagged as tech debt to migrate
 - ✅ Identifier values are `kebab-case`, follow `{page}-{control}[-{instance-key}]`, and per-instance keys derive from data (not row index)
 - ✅ Per-instance key derivation is a pure, unit-tested function
-- ✅ No redundant identifier added to a control already anchorable by role+name or stable content text — but any ❌-"not required" call is sound only for the locales the suite runs; a cross-locale matrix re-opens it (16.2 locale caveat)
+- ✅ No identifier added to presentational content no spec interacts with (§16.2 ❌) — but a labelled control on an interaction path is ✅ Required, not redundant
 - ✅ Raw `Semantics` test hooks use `identifier:`, not `label:` (a bare `label` is announced aloud AND invisible to the generator)
 - ✅ Any `semanticLabel`→`identifier` migration — even with an unchanged slug — regenerated the map AND migrated every spec from `getByRole({name})` to `byIdentifier()` (16.4)
 
