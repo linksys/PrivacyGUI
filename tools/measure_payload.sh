@@ -43,12 +43,24 @@ echo
 echo "Largest contributors:"
 # `awk NR<=10` rather than `head -10`: head closes the pipe early, which under
 # pipefail turns sort's SIGPIPE into a non-zero exit for the whole script.
+#
+# `du` is allowed to fail quietly: xargs splits past ARG_MAX, so on a large tree
+# du runs in several batches and one unreadable file would otherwise take the
+# whole pipeline down under pipefail — discarding the nine contributors it did
+# measure. The Top-10 is diagnostic output, not a gate.
 find "$buildDir" -path "$buildDir/canvaskit" -prune -o -type f -print0 |
-  xargs -0 du -k |
+  xargs -0 du -k 2> /dev/null |
   sort -rn |
   awk 'NR <= 10 { printf "  %8d KB  %s\n", $1, $2 }'
 
 if [ -n "$baseline" ]; then
+  # Validated before the arithmetic: `$(( ))` on a non-numeric baseline aborts
+  # with "unbound variable" under `set -u`, which reads as a broken script rather
+  # than the mistyped argument it is.
+  if ! [[ "$baseline" =~ ^[0-9]+$ ]]; then
+    echo "baseline must be a whole number of KB, got: ${baseline}" >&2
+    exit 2
+  fi
   echo
   deltaKB=$((baseline - payloadKB))
   echo "Reduction vs ${baseline} KB baseline: ${deltaKB} KB ($(toMB "$deltaKB") MB)"
