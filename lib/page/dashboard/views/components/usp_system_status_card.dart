@@ -228,25 +228,66 @@ class _MonitorView extends StatelessWidget {
           ),
         ),
         AppGap.md(),
-        Row(
-          children: [
-            _LegendDot(color: colorScheme.primary),
-            AppGap.xs(),
-            AppText.labelSmall(
-                loc(context).cpuPercent('${latest?.cpuPercent ?? '--'}')),
-            AppGap.lg(),
-            _LegendDot(color: colorScheme.secondary),
-            AppGap.xs(),
-            AppText.labelSmall(
-                loc(context).memoryPercent('${latest?.memoryPercent ?? '--'}')),
-            const Spacer(),
-            if (monitorState.refreshInterval != null) ...[
-              AppIcon.font(Icons.autorenew,
-                  size: 12, color: colorScheme.onSurfaceVariant),
-              AppText.labelSmall(intervalLabel,
-                  color: colorScheme.onSurfaceVariant),
+        // The fourth legend row on this card, and the last to get #1226's shape
+        // — #1233 converted the other three (Trends / Distribution /
+        // Correlation) and left this one because it also carries the refresh
+        // chrome. Labels are composed statistics (`CPU: 47%`), so they
+        // soft-wrap rather than ellipsize (§2.10a point 2), which is what
+        // `_StatLegendEntry` does by default.
+        //
+        // §2.10a point 3's precondition holds here, and was measured rather
+        // than assumed: the `Expanded` above hands the gauge row **221px**
+        // (202px in `ru`) for 100px of gauge, so it can pay for a second and
+        // third run out of slack without squeezing the gauges — the opposite of
+        // `network_health`, whose `Expanded` holds a gauge of exactly its own
+        // fixed height and yields nothing.
+        //
+        // `SizedBox(width: double.infinity)` is load-bearing, per §2.10c
+        // finding 3: a `Wrap` sizes itself to its widest run, and this `Column`
+        // is `CrossAxisAlignment.center`, so without a tight width the legend
+        // would shrink-wrap and drift to the centre of the card at every width
+        // — a pure visual regression that overflows nothing and that the gate
+        // would pass either way.
+        //
+        // What this row does give up: the interval chip's flush-right position.
+        // A `Wrap` cannot hold a `Spacer`, and `WrapAlignment.spaceBetween`
+        // would distribute space between *all three* children, pulling the two
+        // legend entries apart instead — a bigger change to the wide layout
+        // than moving a 20px chip. So the chip joins the flow as the last
+        // entry, and every width down to the narrowest keeps the same reading
+        // order.
+        SizedBox(
+          width: double.infinity,
+          child: Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: AppSpacing.lg,
+            runSpacing: AppSpacing.xs,
+            children: [
+              _StatLegendEntry(
+                color: colorScheme.primary,
+                label: loc(context).cpuPercent('${latest?.cpuPercent ?? '--'}'),
+              ),
+              _StatLegendEntry(
+                color: colorScheme.secondary,
+                label: loc(context)
+                    .memoryPercent('${latest?.memoryPercent ?? '--'}'),
+              ),
+              // Grouped in a `mainAxisSize: min` `Row` for the same reason a
+              // legend entry is: as two bare `Wrap` children the icon and its
+              // interval would be separated by `spacing` and could land on
+              // different runs.
+              if (monitorState.refreshInterval != null)
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    AppIcon.font(Icons.autorenew,
+                        size: 12, color: colorScheme.onSurfaceVariant),
+                    AppText.labelSmall(intervalLabel,
+                        color: colorScheme.onSurfaceVariant),
+                  ],
+                ),
             ],
-          ],
+          ),
         ),
       ],
     );
