@@ -141,6 +141,13 @@ class _UspTimeSettingsCardState extends ConsumerState<UspTimeSettingsCard>
                     label: loc(context).utcOffset, value: offsetDisplay),
               if (tzInfo != null && tzInfo.observesDST)
                 InfoGridItem(
+                  // Deliberately unlocalized, and recorded as arguable in
+                  // §2.10d point 6 rather than fixed here: unlike the `Enabled`
+                  // value on `lan_info`, `DST` has no ARB key, so localizing it
+                  // means adding one plus 26 translations — and several locales
+                  // spell it as a word rather than an initialism
+                  // (`Sommerzeit`), which is a width change in a cell this
+                  // branch has not measured. The value beside it is localized.
                   label: 'DST',
                   value: inferDstEnabled(time.localTimeZone)
                       ? loc(context).on

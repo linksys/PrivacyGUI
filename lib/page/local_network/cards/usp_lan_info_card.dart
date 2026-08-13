@@ -141,7 +141,16 @@ class UspLanInfoCard extends ConsumerWidget {
                         : null,
                   )
                 else if (info.ipv6Enabled)
-                  InfoGridItem(label: 'IPv6', value: 'Enabled'),
+                  // `IPv6` is a protocol name and stays as it is, like `DHCP`
+                  // above; the *value* is prose and was not. Localizing it is
+                  // safe here without new measurement, which is not usually
+                  // true of a hardcoded string (#1266): this branch never
+                  // renders under the gate's fixture, but the cell it renders
+                  // into is the shared `InfoGrid` value, which soft-wraps since
+                  // #1236 and is measured in all 26 locales via the sibling
+                  // branch — and that sibling paints a full IPv6 address, far
+                  // longer than the longest `enabled` translation.
+                  InfoGridItem(label: 'IPv6', value: loc(context).enabled),
               ],
             ),
           ],

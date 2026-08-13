@@ -1001,14 +1001,27 @@ locale sweep, *and* the branch never renders at all — it is the `else` of
 four tickets. This is §2.10c finding 2 in its purest form: the data decides what
 the instrument can see.
 
-**7. Two entries for #1245's de-duplication inventory.** The two hand-rolled
-"View details" footers exist for one reason: `detailRoute` cannot carry query
-parameters (`?tab=`, `?deviceId=`), so neither card can use
+**7. Two entries for #1245's de-duplication inventory.** There are **three**
+hand-rolled "View details" footers, not two — `usp_system_status_card.dart:118`,
+`usp_device_info_card.dart:134` and `usp_traffic_analysis_card.dart:141` — plus
+the template's own at `dashboard_card_template.dart:393`, so four copies of one
+shape. They exist for one reason: `detailRoute` cannot carry query parameters
+(`?tab=`, `?deviceId=`), so none of the three can use
 `DashboardCardTemplate._buildDetailFooter`. #1227 fixed the template's copy and
-could not fix theirs. The fix here was replicated *verbatim* rather than extracted,
-because extracting it would make a third copy of the widget while leaving the
-cause in place. The cause — `detailRoute`'s signature — is the inventory entry.
-The second entry is the footer shape itself, now identical in three places.
+could not fix theirs. The fix here was replicated *verbatim* rather than
+extracted, because extracting it would make a fifth copy of the widget while
+leaving the cause in place. The cause — `detailRoute`'s signature — is the
+inventory entry. The second entry is the footer shape itself.
+
+These four tickets hardened two of the three. `traffic_analysis`'s is left
+unflexed on purpose: its `minColumns` is **4**, not 3, so the width enumeration
+never realizes it at the 157.4px where this shape bites, and it carries no
+allowlist entry in any of its 26 locales. That is the ratchet doing its job in
+the other direction — it says which copies actually need the change, and this one
+does not yet. It is also why the copy is worth recording rather than patched
+prophylactically: if the floor ever drops to 3, the gate raises coordinates for
+it and the fix is the same three-line `Flexible` used twice above. Hardening it
+blind today would spend the signal that tells us it is needed.
 
 **8. Widening was genuinely available once, and was declined.** `time_settings`
 is the only card in the baseline where §1.3's arithmetic permits the other fix

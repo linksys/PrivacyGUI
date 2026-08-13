@@ -243,20 +243,31 @@ class _MonitorView extends StatelessWidget {
         Expanded(
           child: LayoutBuilder(
             builder: (context, constraints) {
-              final gaugeSize = math.min(
-                _kMonitorGaugeSize,
+              // `math.max` floors the result at zero. The width term goes
+              // negative below `AppSpacing.md` of available width, and while no
+              // realization the grid produces comes near that (the narrowest is
+              // 157.4px), a `LayoutBuilder` can be given a zero-width box
+              // transiently — mid-drag, or during a collapse animation — and a
+              // negative `size` would assert inside `AppGauge` rather than
+              // degrade. A zero-diameter gauge is invisible for one frame; a
+              // failed assertion is a red screen.
+              final gaugeSize = math.max(
+                0.0,
                 math.min(
-                  // `AppSpacing.md` of slack, so two circles can never touch.
-                  // `spaceEvenly` then splits that reserve into three equal
-                  // gaps, so what is actually drawn between the circles is
-                  // md/3 = 4px (measured: 72.7px circles at x=21.0 and x=97.7
-                  // in a 157.4px box). Tight on purpose — reserving a full
-                  // 12px *between* them costs 12px of diameter, and #1234's
-                  // AC 4 is about the reading inside the circle staying
-                  // legible. Air between two rings is the cheaper thing to
-                  // give up.
-                  (constraints.maxWidth - AppSpacing.md) / 2,
-                  constraints.maxHeight,
+                  _kMonitorGaugeSize,
+                  math.min(
+                    // `AppSpacing.md` of slack, so two circles can never touch.
+                    // `spaceEvenly` then splits that reserve into three equal
+                    // gaps, so what is actually drawn between the circles is
+                    // md/3 = 4px (measured: 72.7px circles at x=21.0 and x=97.7
+                    // in a 157.4px box). Tight on purpose — reserving a full
+                    // 12px *between* them costs 12px of diameter, and #1234's
+                    // AC 4 is about the reading inside the circle staying
+                    // legible. Air between two rings is the cheaper thing to
+                    // give up.
+                    (constraints.maxWidth - AppSpacing.md) / 2,
+                    constraints.maxHeight,
+                  ),
                 ),
               );
               return Row(
@@ -372,9 +383,12 @@ class _MonitorView extends StatelessWidget {
       // because a `Column` reports overflow only in its own axis and this one
       // has 72.7px of height for ~40px of text. Ellipsis, not wrap, per §2.10a
       // point 2: the label is a bare series *name*, and the reading it names is
-      // `display` right above it, which keeps its full size and full text. The
-      // full label is still on screen unabbreviated — the legend row below
-      // spells out `Arbeitsspeicher: 73%` and soft-wraps to do it.
+      // `display` right above it, which keeps its own style unshrunk and its
+      // text uncut. (`titleMedium` here against `network_health`'s `titleLarge`
+      // predates this work and is not part of the fix — the point is only that
+      // #1234 takes nothing away from the reading.) The full label is still on
+      // screen unabbreviated too — the legend row below spells out
+      // `Arbeitsspeicher: 73%` and soft-wraps to do it.
       centerBuilder: (ctx, v) => Column(
         mainAxisSize: MainAxisSize.min,
         children: [
