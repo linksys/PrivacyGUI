@@ -126,6 +126,9 @@ added to it.**
 
 **Blocked on a dependency we do not own — 45 coordinates (8%)**: fl_chart 19
 (`firewall_overview`), ui_kit `AppListTile` 26 (`connected_devices`).
+*Superseded as a planning figure* — later measurement puts the blocked set at
+**32** (fl_chart 6, ui_kit 26); see §2.9a. The 19 is retained here as the
+baseline record.
 
 **Axis split**: 464 right-only, 63 bottom-only, 33 both.
 
@@ -611,6 +614,44 @@ Raising `minColumns` is therefore not allowlisting in disguise: with §2.9 in
 place it becomes a testable assertion that the card fits at N columns, recorded
 in the spec with its rationale (both the number and the note are required).
 
+### 2.9a The ratchet cannot be cheated, but it can go stale
+
+The gate is asymmetric, and only one direction is guarded:
+
+- **Deleting an entry that still overflows fails the gate.** Progress cannot be
+  faked. This is the property §2.9 relies on.
+- **An entry that stops being needed fails nothing.** It keeps printing
+  `KNOWN OVERFLOW (allowlisted)` for an overflow that no longer happens, and the
+  gate is happy either way.
+
+So the allowlist only ever measures *coordinates someone remembered to delete* —
+which is not the same number as *coordinates that are broken*. The two drift
+apart silently, always in the direction of overstating the remaining work.
+
+Measured on the tip after #1234–#1237: **94 exempted, 48 live — 46 dead.** None of
+the four tickets removed them and the gate never asked for them back. #1247
+replaced a composed `Expanded(AppText('$portSummary → $internalClient'))` on
+`firewall_overview` with the two-`Flexible` `MapsToRow`, which stopped that row
+overflowing as a side effect of glyph work; all 26 of
+`firewall_overview|preferred|1` and 20 of `firewall_overview|min|1` had been
+exempting an overflow that ended there. **Attribution credits #1247, not
+#1234–#1237.**
+
+Two consequences worth carrying forward:
+
+1. **A dead exemption is not harmless.** It masks the sites underneath it. A
+   coordinate is live if *any* of its sites overflows, so the widest failure hides
+   every narrower one at the same coordinate — which is how fl_chart's footprint
+   came to be recorded at 19 when it is 6 (§2.10d).
+2. **Counting exempted entries is not measuring the ratchet.** The live number
+   comes from counting `KNOWN OVERFLOW (allowlisted)` lines in a gate run. Any
+   claim about "coordinates remaining" that was not measured that way is an
+   estimate, and should say so.
+
+The cheap discipline this argues for: after any layout change lands, re-run the
+gate and compare exempted-vs-live per allowlist key. Where they disagree, the
+entry is dead and should be deleted in the same sweep.
+
 ### 2.10 `traffic_analysis` is a normal-form bug, not a compact case
 
 It overflows on the **default** layout at 1024px and 1440px — mainstream desktop
@@ -891,8 +932,12 @@ in one step when the gauge row followed:
 | Twin gauge row | `system_status:196` | 26→**0** |
 | Gauge centre | `network_health:150` | 3→0 |
 
-The ratchet now stands at **94 coordinates**, all owned by #1230 (67,
+The ratchet now stands at **48 coordinates**, all owned by #1230 (21,
 `firewall_overview`) and #1238 (27, `connected_devices`).
+
+That 48 replaces the 94 these four tickets left behind. The 46 that went were not
+removed by any of them — they were dead exemptions, and the credit belongs to
+#1247; see §2.9a for the measurement and what the asymmetry costs.
 
 **1. One shape, two techniques — and sometimes the technique is deletion.** The
 hero inner row is the same idiom in two files and **48 of the 84 coordinates**,
@@ -1031,10 +1076,13 @@ reasoning recorded at the declaration site: the floor is the user's, it costs 5 
 card-own fix cleared all 21 coordinates by deleting a single-child `Row` that
 had no other effect — the cheapest fix on the branch.
 
-### 2.11 fl_chart's 19 coordinates get a primary plan and a documented fallback
+### 2.11 fl_chart's coordinates get a primary plan and a documented fallback
 
-`firewall_overview`'s 19 coordinates originate inside fl_chart
-(`side_titles_widget.dart:245` — axis labels overflow at narrow widths).
+Six of `firewall_overview`'s remaining coordinates originate inside fl_chart
+(`side_titles_widget.dart:245` — axis labels overflow at narrow widths), all at
+`min` tab 1 in `da pl pt pt_PT ru sv`, by 5–10px on the **bottom**. This section
+was written against an estimate of 19; 6 is the measured figure and the
+discrepancy is discussed in §2.10d.
 
 - **Primary**: constrain at the call site — suppress axis labels below the
   threshold, as part of that card's compact design. Reducing information density
@@ -1047,6 +1095,28 @@ The fallback is written down deliberately: this is the one fix whose *method can
 fail*, and without a stated exit someone will reach for the allowlist mid-fix.
 Forking or patching the dependency is rejected — a vendored patch dies silently
 on the next upgrade.
+
+**#1230's other 15 coordinates are a height problem, so none of the four shapes
+apply.** After #1247, what remains card-own is two sites, both overflowing on the
+**bottom**, both at `min` tab 0:
+
+| Site | Coordinates | Overflow |
+|---|---:|---|
+| `usp_firewall_overview_card.dart:157` — the donut's `centerWidget` `Column` | 8 | bottom, 15–31px |
+| `usp_firewall_overview_card.dart:136` — the card's outer `Column` | 7 | bottom, 7–26px |
+
+§2.10d's four shapes were all *width* fixes — make a `Row`'s non-flex child give.
+A vertical overflow is a different failure: the card's declared height is too
+small for the content it stacks, and no amount of `Flexible` on a horizontal axis
+touches it. The two sites are also nested — `:136` is the outer `Column` that
+holds the donut whose centre label is `:157` — so they must be measured together;
+fixing the inner one changes what the outer one is asked to fit. The likely
+levers are the declared `minHeightRows` for this card (an assertion to make, per
+§2.9's last paragraph, not an allowlist in disguise) and dropping the donut's
+centre caption at narrow width, which is the same information-density argument as
+the axis labels above. **Not yet measured** — unlike the four shapes, this one has
+no double-factor decomposition behind it, and that measurement is #1230's first
+step.
 
 ### 2.12 What the first *rearrangement* taught us (#1228 — implemented)
 
@@ -1155,20 +1225,51 @@ addition — it changes no card's rendering until a threshold is declared.
 | #1236 | `lan_info` + `device_info` card-own (§2.10d) — **implemented** | 29 |
 | #1237 | `time_settings` card-own (§2.10d) — **implemented** | 21 |
 | #1235 | `network_health` gauge centre (§2.10d) — **implemented** | 3 |
-| #1230 | `firewall_overview` own sites (§2.11) | 48 |
+| #1247 | `firewall_overview` `MapsToRow` — side effect, not its brief (§2.9a) — **implemented** | 46 |
+| #1230 | `firewall_overview` remaining ×2 sites (§2.11) | 15 |
 | #1238 | `connected_devices` card-own (§2.6) | 1 |
 
-Ceiling **515 / 560**. The other 45 are the dependency-blocked ones (§1.1).
+Ceiling **528 / 560**. The other 32 are the dependency-blocked ones (§1.1).
 
-After #1234–#1237 the allowlist holds **94** coordinates: 67 `firewall_overview`
-(#1230) and 27 `connected_devices` (#1238). **49 of those are still card-own and
-clearable in this repo** — #1230's three own sites carry 48 (a rules/DMZ list
-column, an info-grid summary row, a pie-chart centre label) and #1238's
-device-count row carries 1. Only the other **45** are dependency-blocked, exactly
-as §1.1 classified them: fl_chart's 19 axis-title coordinates and the 26 that need
-a ui_kit `AppListTile` change. What these four tickets complete is the *four-shape*
-group, not Track A's card-own work — #1230 is the largest single block of
-clearable coordinates left in the epic.
+After #1234–#1237, and after #1247's side effect was collected (§2.9a), the
+allowlist holds **48** coordinates: 21 `firewall_overview` (#1230) and 27
+`connected_devices` (#1238). Attributed per line rather than estimated:
+
+| owner | coordinates | site | side |
+|---|---:|---|---|
+| #1230 | 8 | `usp_firewall_overview_card.dart:157` — the donut's `centerWidget` `Column` | bottom, 15–31px |
+| #1230 | 7 | `usp_firewall_overview_card.dart:136` — the card's outer `Column` | bottom, 7–26px |
+| #1230 | 6 | fl_chart `side_titles_widget.dart:245` | bottom, 5–10px |
+| #1238 | 26 | three sites at once, one of them ui_kit `app_list_tile.dart:115` | right, 25–26px |
+| #1238 | 1 | `usp_connected_devices_card.dart:79` only | right |
+
+**16 are card-own and clearable in this repo** — #1230's 15 and #1238's 1. The
+other **32** are dependency-blocked: fl_chart's 6 and the 26 that cannot go green
+without a ui_kit change (they need the card's own two rows fixed as well, so
+"blocked" means necessary-but-not-sufficient, not untouched).
+
+Two figures earlier in this document are contradicted by that attribution, both
+downward:
+
+- #1230 was scoped at 67 coordinates over "three own sites". Two sites remain;
+  the third was the composed `portSummary → internalClient` row #1247 replaced.
+- §1.1 classifies **19** coordinates as third-party-only (fl_chart). Measured,
+  fl_chart names **6**, all at `min` tab 1, in `da pl pt pt_PT ru sv` — exactly
+  the set `min|1` now narrows to. The two cannot both be right: a coordinate that
+  *only* fl_chart breaks cannot be cleared by a card-own change, yet #1247's
+  `MapsToRow` cleared 13 of the tab-1 coordinates the 19 was drawn from. So
+  either those 13 were misclassified, or they had a card-own site §1.1's census
+  did not record. Which one is no longer decidable — the baseline was measured
+  against a tree that is 14 commits of layout work behind us, and re-deriving it
+  would mean reverting all of them. **6 is the number to plan against**; §1.1's
+  19 is left as written because its table is a record of what was believed at
+  baseline and its rows sum to 560.
+
+So the dependency-blocked share of the baseline is **32 of 560, not 45**, and
+`firewall_overview` is a *height* problem now — all 21 of its coordinates are
+bottom overflows, a different class from the four width shapes these tickets
+settled. #1230 is still the largest single block of clearable coordinates left,
+at 15 rather than 48.
 
 Their `tracking` notes are left as the epic requires: a ticket touches only the
 notes of cards it closes, so both cards keep the `baseline #1183` default until
