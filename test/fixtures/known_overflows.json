@@ -1,8 +1,5 @@
 {
-  "tracking": {
-    "connected_devices": "#1238 (blocked on a ui_kit AppListTile change)",
-    "firewall_overview": "#1230 (card-own sites + the fl_chart fallback)"
-  },
+  "tracking": {},
   "allowlist": {
     "connected_devices|min|0": ["*"],
     "connected_devices|preferred|0": ["el"],

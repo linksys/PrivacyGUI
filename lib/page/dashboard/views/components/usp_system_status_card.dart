@@ -246,8 +246,15 @@ class _MonitorView extends StatelessWidget {
               final gaugeSize = math.min(
                 _kMonitorGaugeSize,
                 math.min(
-                  // `AppSpacing.md` is the narrowest gap that still reads as
-                  // two separate gauges rather than a figure of eight.
+                  // `AppSpacing.md` of slack, so two circles can never touch.
+                  // `spaceEvenly` then splits that reserve into three equal
+                  // gaps, so what is actually drawn between the circles is
+                  // md/3 = 4px (measured: 72.7px circles at x=21.0 and x=97.7
+                  // in a 157.4px box). Tight on purpose — reserving a full
+                  // 12px *between* them costs 12px of diameter, and #1234's
+                  // AC 4 is about the reading inside the circle staying
+                  // legible. Air between two rings is the cheaper thing to
+                  // give up.
                   (constraints.maxWidth - AppSpacing.md) / 2,
                   constraints.maxHeight,
                 ),
@@ -360,10 +367,10 @@ class _MonitorView extends StatelessWidget {
       //
       // Since the circle now shrinks with the card, the label has to be told
       // what to do when it no longer fits: `Arbeitsspeicher` is 88.1px of
-      // `bodySmall` and the narrowest circle is 70.7px across. Left alone it
+      // `bodySmall` and the narrowest circle is 72.7px across. Left alone it
       // soft-wraps mid-word inside the arc — a degradation the gate cannot see,
       // because a `Column` reports overflow only in its own axis and this one
-      // has 70.7px of height for ~40px of text. Ellipsis, not wrap, per §2.10a
+      // has 72.7px of height for ~40px of text. Ellipsis, not wrap, per §2.10a
       // point 2: the label is a bare series *name*, and the reading it names is
       // `display` right above it, which keeps its full size and full text. The
       // full label is still on screen unabbreviated — the legend row below

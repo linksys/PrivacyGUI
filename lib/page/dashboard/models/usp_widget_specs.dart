@@ -184,8 +184,9 @@ abstract class UspWidgetSpecs {
         // their own dashboard — and 5 of 12 columns is a permanent charge against
         // every layout to buy headroom in a handful of long-timezone locales. The
         // card-own fix (`usp_time_settings_card.dart:108`) cleared all 21
-        // coordinates for the price of one `Flexible` and a soft-wrap, so the
-        // widening bought nothing that constraining the content did not.
+        // coordinates by deleting a single-child `Row` that had no other effect
+        // than handing the badge unbounded width, so the widening bought nothing
+        // that constraining the content did not.
         minColumns: 3,
         maxColumns: 8,
         preferredColumns: 6,

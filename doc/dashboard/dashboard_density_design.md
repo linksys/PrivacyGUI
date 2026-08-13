@@ -878,8 +878,10 @@ explicit decision in that ticket rather than an implementation detail.
 ### 2.10d What closing the four card-own tickets taught us (#1234–#1237 — implemented)
 
 87 coordinates → **0**, on one branch, one commit per shape. §1.1's decomposition
-held to the coordinate, including its uncomfortable prediction that two of the
-four commits would move nothing on their own:
+held to the coordinate, including its uncomfortable prediction that the two
+`system_status` sites sharing `min|0`'s 26 coordinates would each clear **none**
+of them alone — the legend row moved only the 2 outside that key, and the 26 fell
+in one step when the gauge row followed:
 
 | Commit (shape) | Sites | Coordinates |
 |---|---|---:|
@@ -917,7 +919,8 @@ cannot tell you when it doesn't**, so the precondition is measured *before* the
 conversion or not at all. #1233's and #1266's conversions were safe for a reason
 that has to be checked, not inherited.
 
-**3. Every fix is one of three things to the gate, and two of them owe a test.**
+**3. Every fix is one of three things to the gate — and a green gate is not a
+green criterion.**
 
 | Fix class | Example | The gate afterwards |
 |---|---|---|
@@ -931,6 +934,28 @@ ever produce a coordinate. The mutation ledger makes that concrete — shrinking
 score's font unconditionally clears **all 209** gate cases. So a self-relaxing fix
 has to ship its own floor: `usp_gauge_center_readability_test.dart` asserts a 12px
 painted minimum, which is the replacement for what `scaleDown` took away.
+
+That table is the *revert* axis, and it is not the only one. A constraining fix
+keeps the signal, so the gate does own its revert — but it never owned the
+**choice**: `maxLines: 1` and a soft-wrap clear the same coordinates, and at three
+of these sites one of them destroys the string. Measured on this branch:
+ellipsizing `lan_info`'s router IP, its DHCP status, or the shared InfoGrid value
+renderer leaves **all 1644** gate cases green. #1236 AC 4 and #1237 AC 5 name those
+readings ("truncating an IP in the middle makes it useless"; "timezone names stay
+identifiable"), so `usp_hero_row_readability_test.dart` asserts them across four
+locales each — and each mutation kills exactly its own group, so a failure says
+which criterion broke. The rule that falls out is narrower than "constraining
+fixes need tests", which would be licence to test every `Flexible` on the branch:
+**a fix owes a test when the gate stays green through both the right and the wrong
+version of it** — whether because the fix removed the signal (#1234, #1235) or
+because the signal never told the two apart (#1236, #1237). Where the gate does
+discriminate, the allowlist entry it deletes *is* the assertion.
+
+The same test covers the one place this branch made a reading *worse*: #1237's
+badge now ellipsizes (`de` paints 45.4px of an 85.1px label), which §2.10a point 2
+requires of a capsule but which no coordinate can report, since a narrower badge
+overflows *less*. That gets a floor too, not a fidelity claim — enough glyphs to
+key the state, with the colour carrying the rest.
 
 **4. A ticket's diagnosis is a report, not a measurement.** #1235 states the tier
 label is wider than the space inside the circle. The three coordinates are
@@ -990,7 +1015,8 @@ is the only card in the baseline where §1.3's arithmetic permits the other fix
 (fit width 288px, so `minColumns` 3 → 5 would have worked). It stays 3, with the
 reasoning recorded at the declaration site: the floor is the user's, it costs 5 of
 12 columns in every layout to buy headroom in a handful of locales, and the
-card-own fix cleared all 21 coordinates for one `Flexible` and a soft-wrap.
+card-own fix cleared all 21 coordinates by deleting a single-child `Row` that
+had no other effect — the cheapest fix on the branch.
 
 ### 2.11 fl_chart's 19 coordinates get a primary plan and a documented fallback
 
@@ -1122,9 +1148,11 @@ addition — it changes no card's rendering until a threshold is declared.
 Ceiling **515 / 560**. The other 45 are the dependency-blocked ones (§1.1).
 
 After #1234–#1237 the allowlist holds **94** coordinates: 67 `firewall_overview`
-(#1230) and 27 `connected_devices` (#1238). Both remaining entries are the
-dependency-blocked kind — fl_chart's internals and a ui_kit `AppListTile` change —
-so Track A's card-own work is complete.
+(#1230) and 27 `connected_devices` (#1238). Both are the dependency-blocked kind —
+fl_chart's internals and a ui_kit `AppListTile` change — so Track A's card-own
+work is complete. Their `tracking` notes are left as the epic requires: a ticket
+touches only the notes of cards it closes, so both cards keep the `baseline #1183`
+default until their own ticket names an owner.
 
 #1266 is in this track despite clearing nothing: it is the only entry that *adds*
 coordinates (3, by localizing a hardcoded string) and removes them again in the
@@ -1163,6 +1191,7 @@ the likeliest way to get this wrong.
 | Work | Method | Why |
 |---|---|---|
 | All of Track A except #1225 | **Ratchet, not TDD** | The failing assertions are *already committed* — the 560 entries in `known_overflows.json`. The red→green move is: fix the layout, delete the allowlist entry, gate passes. Deleting an entry that still overflows fails that test, so it cannot be faked. |
+| …plus two readability tests, added by #1234–#1237 | **Ratchet + a floor test** | The ratchet verifies that the overflow is gone. It cannot verify what the fix *chose*, in two situations, and both occurred on that branch (§2.10d point 3). (a) The fix makes a subtree self-relaxing, so the signal is gone for good: measured, shrinking the health score's font unconditionally clears all 209 of its gate cases. (b) Two fixes clear the same coordinates and only one preserves the reading: measured, `maxLines: 1` on the router IP, the DHCP status, or the InfoGrid value renderer leaves all 1644 cases green while cutting a string #1236 AC 4 / #1237 AC 5 require whole. The test is owed when **the gate stays green through both the right and the wrong fix** — not whenever a fix constrains. A plain `Flexible` is fully verified by the entry it deletes. |
 | #1232 | **TDD** | The gate asserts only "no overflow"; it cannot detect *wrong density*. Threshold selection, popup cut-off, and absent-`normalAbove` behaviour can all break while the gate stays green. Tests go red first. |
 | #1231 | **Neither** | Not an assertion — it fixes a failure the gate is structurally blind to (§2.8), so it is verified by eye or golden. |
 | #1225 | **Property tests + no-op diff** | Planned as "neither", since converting a sampled invariant into a guaranteed one changes no assertion. In the event it had a testable seam after all: the search is pinned by a property (no supported width is narrower than the one pumped, which fails on a coarser step) and the no-op claim by diffing the full sweep's 560 allowlisted hits before and after — they matched exactly. |

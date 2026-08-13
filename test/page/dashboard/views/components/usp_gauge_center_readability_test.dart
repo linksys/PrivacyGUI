@@ -24,7 +24,7 @@ import '../../../../util/dashboard/dashboard_card_probe.dart';
 /// ## Why this file exists alongside the #1183 gate
 ///
 /// `system_status`'s Monitor tab drew two `AppGauge(size: 100)` in a
-/// `spaceEvenly` row inside a box measured at 161.4px, so it overflowed by a
+/// `spaceEvenly` row inside a box measured at 157.4px, so it overflowed by a
 /// constant +43.0px in all 26 locales. #1234 fixes it by bounding the diameter
 /// with a `LayoutBuilder` — at the narrowest realization the circles come out at
 /// 72.7px each.
@@ -253,17 +253,19 @@ void main() {
                   'is a series name: it ellipsizes to one line, and the full '
                   'string stays available in the legend row below.');
 
-          // The centre is a `Stack` child with loose `size × size` constraints,
-          // and `Stack` clips by default — so a centre that outgrew its circle
-          // would vanish at the edges rather than report anything.
+          // The centre is a non-positioned `Stack` child under loose
+          // `size × size` constraints, and `AppGauge` builds that `Stack` with
+          // `clipBehavior: Clip.none` — so a centre wider than its circle is
+          // neither clipped nor reported: it paints straight over the arc and
+          // into the neighbouring gauge. Bounds have to be asserted because
+          // nothing else objects.
           final gauge = tester.getRect(find.ancestor(
               of: find.byWidget(label), matching: find.byType(AppGauge)));
           final rect = tester.getRect(find.byWidget(label));
           expect(rect.left, greaterThanOrEqualTo(gauge.left - 1.0));
           expect(rect.right, lessThanOrEqualTo(gauge.right + 1.0),
-              reason:
-                  'gauge label "${label.data}" extends past its own circle, '
-                  'so the Stack is clipping it.');
+              reason: 'gauge label "${label.data}" paints outside its own '
+                  'circle, over the arc.');
         }
       });
     }
@@ -285,8 +287,15 @@ void main() {
               '${second.center.dy}), so the comparison they exist for now needs '
               'a vertical scan. #1234 shrinks the circles instead of stacking '
               'them precisely to avoid this.');
-      expect(second.left, greaterThanOrEqualTo(first.right - 1.0),
-          reason: 'the gauges overlap horizontally.');
+      // The `AppSpacing.md` reserve exists so the two rings cannot touch, and
+      // `spaceEvenly` leaves a third of it between them: 4.0px as measured. A
+      // gap that has collapsed to nothing means the reserve was dropped or
+      // spent elsewhere, which no gate case can see — two touching circles
+      // overflow nothing.
+      expect(second.left - first.right, greaterThan(3.0),
+          reason: 'the drawn gap between the two rings is '
+              '${second.left - first.right}px; they read as one figure of eight '
+              'well before they overlap.');
       expect((first.width - second.width).abs(), lessThan(1.0),
           reason: 'the gauges have different diameters (${first.width} vs '
               '${second.width}), so their arcs are no longer comparable.');
