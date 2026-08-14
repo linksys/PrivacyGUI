@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/framework/preservable_contract.dart';
@@ -52,14 +53,25 @@ class UspInstantSafetyNotifier
     bool forceRemote = false,
     bool updateStatusOnly = false,
   }) async {
-    final uiModel = await _svc.fetch();
+    try {
+      final uiModel = await _svc.fetch();
 
-    logger.d('[USP][Safety]: Fetched — type: ${uiModel.type}');
+      logger.d('[USP][Safety]: Fetched — type: ${uiModel.type}');
 
-    final newSettings = InstantSafetySettings(type: uiModel.type);
-    const newStatus = InstantSafetyStatus(isLoading: false);
+      final newSettings = InstantSafetySettings(type: uiModel.type);
+      const newStatus = InstantSafetyStatus(isLoading: false);
 
-    return (newSettings, newStatus);
+      return (newSettings, newStatus);
+    } on ServiceError catch (e) {
+      logger.e('[USP][Safety]: Fetch failed', error: e);
+      // isLoading must be set explicitly — InstantSafetyStatus defaults it to
+      // true, so omitting it would leave the view stuck on its loader and the
+      // ServiceErrorView (and its Retry) unreachable.
+      return (
+        null,
+        InstantSafetyStatus(isLoading: false, error: e),
+      );
+    }
   }
 
   // ---------------------------------------------------------------------------

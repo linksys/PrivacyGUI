@@ -152,6 +152,50 @@ void main() {
     });
 
     // -----------------------------------------------------------------------
+    // fetch — error path (#1274)
+    // -----------------------------------------------------------------------
+
+    test('fetch failure surfaces the error on status', () async {
+      const error = NetworkError(detail: 'fetch failed');
+      when(() => mockService.fetch()).thenThrow(error);
+
+      final container = createContainer();
+      await Future.delayed(Duration.zero);
+
+      final state = container.read(uspInstantSafetyProvider);
+      expect(state.status.error, error);
+      container.dispose();
+    });
+
+    test('fetch failure clears isLoading so the error view is reachable',
+        () async {
+      when(() => mockService.fetch())
+          .thenThrow(const NetworkError(detail: 'fetch failed'));
+
+      final container = createContainer();
+      await Future.delayed(Duration.zero);
+
+      // The view checks isLoading before error; leaving it true hangs the page
+      // on its loader and the Retry button never renders.
+      final state = container.read(uspInstantSafetyProvider);
+      expect(state.status.isLoading, isFalse);
+      container.dispose();
+    });
+
+    test('fetch failure leaves settings untouched and clean', () async {
+      when(() => mockService.fetch())
+          .thenThrow(const NetworkError(detail: 'fetch failed'));
+
+      final container = createContainer();
+      await Future.delayed(Duration.zero);
+
+      final state = container.read(uspInstantSafetyProvider);
+      expect(state.settings.current, InstantSafetySettings.empty());
+      expect(state.isDirty, isFalse);
+      container.dispose();
+    });
+
+    // -----------------------------------------------------------------------
     // save
     // -----------------------------------------------------------------------
 
