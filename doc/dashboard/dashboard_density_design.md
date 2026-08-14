@@ -71,6 +71,8 @@ only goes green when every one of its incidents is resolved):
 - **`stats_panel` — 26**: `stat_blocks.dart:34` **and** `:40`
 - **`connected_devices` — 26**: `card_skeleton.dart:153` **and**
   `usp_connected_devices_card.dart:61` **and** ui_kit `app_list_tile.dart:109`
+  — all three closed by #1238; the ui_kit one by the **v2.34.10** upgrade rather
+  than by anything in this repo (§2.10e)
 
 #### The largest pattern the greedy cover hides — legend rows, 181 coordinates
 
@@ -128,7 +130,8 @@ added to it.**
 (`firewall_overview`), ui_kit `AppListTile` 26 (`connected_devices`).
 *Superseded as a planning figure* — later measurement puts the blocked set at
 **32** (fl_chart 6, ui_kit 26); see §2.9a. The 19 is retained here as the
-baseline record.
+baseline record. *Superseded again* — the ui_kit 26 were unblocked upstream by
+v2.34.10 and closed by #1238, leaving **6** (fl_chart only); see §2.10e.
 
 **Axis split**: 464 right-only, 63 bottom-only, 33 both.
 
@@ -211,6 +214,11 @@ independent of width.
 `context.colWidth` (screen-derived), and the harness held the screen at 1920px,
 so its label column did not shrink with the card. Its threshold must be set only
 after that is fixed — see §2.8.
+
+⚠️ **`connected_devices` is clean at 191px since #1238**, so its 320 is stale by
+129px. Track A has moved this column for every card it has closed and *only* this
+column — the width at which each is readable has not moved at all (§2.10d point 5,
+§2.10e point 4). #1240 re-measures; it must not read this table.
 
 ### 1.3 Raising `minColumns` is arithmetically impossible for 12 of 13 cards
 
@@ -933,7 +941,8 @@ in one step when the gauge row followed:
 | Gauge centre | `network_health:150` | 3→0 |
 
 The ratchet now stands at **48 coordinates**, all owned by #1230 (21,
-`firewall_overview`) and #1238 (27, `connected_devices`).
+`firewall_overview`) and #1238 (27, `connected_devices`). *Since superseded* —
+#1238 closed its 27 (§2.10e), leaving **21**, all #1230's.
 
 That 48 replaces the 94 these four tickets left behind. The 46 that went were not
 removed by any of them — they were dead exemptions, and the credit belongs to
@@ -1075,6 +1084,173 @@ reasoning recorded at the declaration site: the floor is the user's, it costs 5 
 12 columns in every layout to buy headroom in a handful of locales, and the
 card-own fix cleared all 21 coordinates by deleting a single-child `Row` that
 had no other effect — the cheapest fix on the branch.
+
+### 2.10e What the ui_kit dependency actually blocked (#1238 — implemented)
+
+27 coordinates → **0**, and 26 of them were the epic's largest
+"dependency-blocked" block. They were not unblocked by a workaround: ui_kit
+**v2.34.10** replaced `AppListTile`'s `Row` with `ListTileContentLayout`, a
+slotted render object that guarantees the content column 25% of the row and caps
+each slot.
+
+Neither AC 3 nor AC 4 describes the path taken, and it is worth being exact about
+which. AC 3's precondition ("if avoidable at the call site") was false on the
+version this ticket was written against — the `trailing` slot was laid out at
+`maxWidth: Infinity`, so no call-site fix existed — which is why the escalation
+was filed as linksys/privacyGUI-UI-kit#20. AC 4's remedy (leave the 26
+allowlisted, with a tracking note naming the request) then became moot, because the
+upstream layer had already changed: consuming v2.34.10 made the call-site fix
+possible and the coordinates went green. So the ticket's **outcome** is AC 3's —
+the 26 removed, the gate passing — reached by the upstream route AC 4 anticipated.
+#20 itself is still open upstream; this branch comments the v2.34.10 resolution on
+it rather than assuming it was answered. Both card-own sites went with the upgrade,
+in the two shapes below.
+
+**1. The two status counts stack; the threshold comes from one Greek word.** Side
+by side, each count gets `(content − 8) / 2` minus 24px of padding, and it has to
+hold a 10px dot, an 8px gap, the number, a 4px gap and the state word. The binding
+locale is `el`: «Χωρίς σύνδεση» needs **116.7px** all in, against `en`'s 66.8px
+and `zh`'s 52.2px — so side by side needs `2 × (116.7 + 24) + 8` = **289.4px** of
+content, and the threshold is 296. Neither narrow realization has it (157.4px at a
+191px card, 254.0px at 288px), and stacked, each block gets the full inner width
+and every locale fits with ≥16.7px to spare. The realized widths either side of
+the threshold are 254px and ~600px, so nothing lands within 200px of it.
+
+This is now the second card using the shape (`ethernet_ports` is the first,
+§2.12), and it is deliberately **not** extracted into
+`lib/page/_shared/components/layout_blocks/` yet. What the two share is ~15 lines
+of `LayoutBuilder`/`Row`/`Column`; what they do not share is everything that
+matters — each threshold is measured from its own card's labels, and
+`ethernet_ports` additionally tightens tile padding when stacked to buy vertical
+budget. #1240 replaces both arrangements with a declared compact form, so the
+abstraction would be born to be deleted. A third card needing the shape is the
+trigger to extract it; recorded here so the next reader does not have to re-derive
+the decision.
+
+A stacked pair occupies 96px of a 261px content viewport (52px more than the 44px
+it takes side by side), which the gate cannot see at all
+— the template *scrolls*, so a stacked pair that pushed the device list below the
+fold would overflow nothing. Measured: the two 44px blocks occupy y=57–153 and the
+first 68px device row ends at 233, against a viewport bottom of 318.
+
+**2. A demand-derived slot cap is not a budget.** This is the finding worth
+carrying forward. v2.34.10 makes a `LayoutBuilder` legal in the `trailing` slot
+(before it, the slot was laid out at `maxWidth: Infinity` and a call-site fix was
+impossible — which is what "blocked" meant), and the finite number it now sees
+looks like the row's spare room. It is not. The allocator reserves 25% of the row
+for the content column, splits the rest in two, and then **lends each side whatever
+the other did not want**:
+
+```
+available   = tile width − 2 × 16px gap        // tile width = content − 32px padding
+share       = 0.375 × available
+trailingCap = share + max(0, share − leadingDemand)
+```
+
+Two consequences, and they pull in opposite directions. The cap is bounded by what
+*this row* demanded in the first pass, so it cannot be read as spare room — and it
+is *raised* by the leading slot under-asking, so it is not a fixed fraction of the
+card either. Measured on the gate's fixture at a **512px** card, all three rows
+carrying a badge and an indicator:
+
+| row | trailing cap | outcome under a slot-derived rule |
+|---|---:|---|
+| `iPhone-15` | 75.0px | keeps `-45 dBm` |
+| `MacBook-Air` | 64.8px | loses it |
+| `Smart-Speaker` | 22.0px | loses it |
+
+The cap tracks the *device name's* length, so the first cut of this fix deleted
+the signal reading on a 1440px screen for the rows with the longest names and kept
+it one row above — for a reason no user can see. Nothing overflowed, so the gate
+called it fixed, and the readability test called it fixed too, because it asserted
+`labels.isNotEmpty` and one surviving label satisfies that. A desktop screenshot is
+what caught it: two bare bar groups under a labelled one. The rule that falls out:
+*a demand-derived cap answers "may this child have what it asked for", never "how
+much room is there"* — so a decision every row must agree on is taken once from the
+card's content width, and only a decision whose own width **is** the demand may
+read the slot. Here that splits cleanly:
+
+- the `-NN dBm` label cannot yield (4 fixed bars, 3 gaps, a 4px gap, an unwrapped
+  `AppText`: **80.8px** at `-100 dBm`, 75.0px at a 2-digit reading, 22.0px with the
+  label off), so it is decided from the card. Substituting into the allocator with
+  the fixed 44px leading icon: `0.75 × (content − 64) − 44 ≥ 80.8` ⇒ **content ≥
+  230.4px**, hence a threshold of 231. The realizations are 157.4px and 254.0px, so
+  the label goes at the min realization only.
+- the parent-node badge ellipsizes, so its own label width *is* what it demands.
+  It is measured with a `TextPainter` — through ui_kit's own `AppTextVariant.resolve`,
+  because `AppText` re-applies the design theme's body font bare and prepends the
+  locale fallback, and measuring in the raw theme style measures a different font —
+  and dropped exactly where it could only ellipsize, which is genuinely per-row:
+  `N1` is 30.1px and its row is handed 32.6px at 191px, 288px **and** 512px, while
+  `Extender-1` is 78.3px against 22.0px at 191px and 78.3px above it. Any fixed
+  floor that rejects the second also rejects the first on a 1440px screen. A
+  truncated node name is dropped rather than shown as `Ex…`, which names nothing and
+  costs the device name beside it.
+
+**2b. The gate is blind between the realizations, and that is where 175 shipped.**
+The first threshold here was 174.7px, derived from the 25% content floor alone —
+i.e. from the allocator's `floor`, ignoring the lend-back and the tile's own 32px of
+padding. It is green on the gate at both realizations and overflows everywhere
+between them, because the gate pumps only the *narrowest* realization of each span
+(157.4px and 254.0px of content) and never the continuum a user reaches by dragging
+a card:
+
+| content | trailing cap | label kept at 175 | result |
+|---:|---:|---|---|
+| 175 | 39.3px | yes | **+33.0px right** |
+| 200 | 58.0px | yes | **+17.0px right** |
+| 216 | 70.0px | yes | **+5.0px right** |
+| 229 | 79.8px | yes | **+1.0px right** |
+| 230 | 80.5px | yes | **+0.287px right** |
+| 231 | 81.3px | yes | clean |
+
+Two lessons for the remaining tickets. First, **a threshold derived from a layout
+rule must be derived from the whole rule** — the 25% floor is one of three terms,
+and the two omitted ones (the lend-back, the tile padding) moved the answer by 56px.
+Second, **a card-width threshold needs a test at widths the gate skips**: the
+`connected_devices` readability file pumps 209/234/250/264/265px card widths and
+asserts zero overflow, which is the only check on the branch that would have caught
+this. `_tolerancePx` is 2.0, so the 230px case (+0.287px) would have passed the gate
+even if it had pumped it.
+
+Also worth carrying: the worst case is the *reading*, not just the width. A fixture
+showing only `-45 dBm` (75.0px) clears at content 223 and would have justified 223;
+`-100 dBm` is 80.8px and does not clear until 231. The readability fixture pins the
+3-digit reading for that reason.
+
+**3. The corollary for the readability tests: assert the count, not the
+existence.** §2.10d point 3 said a fix owes a test when the gate stays green
+through both the right and the wrong version. This branch adds the sharper form —
+**a presence assertion is green through a partial deletion**. `isNotEmpty` over
+five rows passes on one. The assertion that catches it is `labels.length ==
+indicators.length`, and it is the only one of the file's 29 that mutation N (label
+decided from the slot) kills. Fourteen mutations were run and every assertion in the
+file is killed by at least one. Only three of the fourteen would also fail the gate;
+mutation Q — the shipped-then-corrected 231 → 175 threshold — leaves overflow the
+gate is *structurally* unable to see (point 2b), and the other ten take content away
+without overflowing anything.
+
+**4. Direct #1240 input: this card is green at 191px and unreadable there.** The
+tile gives the device name **23.3px** (27.4px for the one row without a badge) —
+one glyph and an ellipsis — and the IP the same, because the 44px leading icon and
+the 22.0–32.6px trailing take 66px of a 141px row before the name is measured.
+Both narrow realizations were screenshotted for the record. This is the third card
+in a row to close its coordinates while staying unusable at its narrowest width
+(§2.10d point 5), and it is the strongest case yet for #1240's compact form: the
+degradation here is not the label or the badge, both of which were affordable —
+it is the name.
+
+So **#1238's AC 7 ("device names and connection details stay readable at the
+narrowest clean width") is not met, and is not reachable from this call site** —
+recorded here and on the issue rather than left unticked. What the fix owed AC 7 it
+paid: nothing this branch does costs the name a pixel, and both things that could
+have (the dBm label, the badge) are dropped at 191px precisely so they don't. The
+23.3px that remains is the tile's own division of a 141px row between a fixed 44px
+leading icon, a trailing slot, and the content column — the row's *shape*, not its
+overflow — and changing it means a different row for narrow cards. That is #1240's
+AC 1, the same conclusion #1228 reached about its own AC 5 (§2.12 point 3): a
+readability AC that needs a compact form is inherited by Track B, not claimed by the
+overflow ticket.
 
 ### 2.11 fl_chart's coordinates get a primary plan and a documented fallback
 
@@ -1227,9 +1403,11 @@ addition — it changes no card's rendering until a threshold is declared.
 | #1235 | `network_health` gauge centre (§2.10d) — **implemented** | 3 |
 | #1247 | `firewall_overview` `MapsToRow` — side effect, not its brief (§2.9a) — **implemented** | 46 |
 | #1230 | `firewall_overview` remaining ×2 sites (§2.11) | 15 |
-| #1238 | `connected_devices` card-own (§2.6) | 1 |
+| #1238 | `connected_devices` ×2 card-own sites + the ui_kit v2.34.10 upgrade (§2.10e) — **implemented** | 27 |
 
-Ceiling **528 / 560**. The other 32 are the dependency-blocked ones (§1.1).
+Ceiling **528 / 560**, on the assumption that ui_kit's 26 stay blocked. They did
+not: #1238 cleared all 27 after the v2.34.10 upgrade, so the ceiling is **554 /
+560** and the only dependency-blocked coordinates left are fl_chart's 6.
 
 After #1234–#1237, and after #1247's side effect was collected (§2.9a), the
 allowlist holds **48** coordinates: 21 `firewall_overview` (#1230) and 27
@@ -1247,6 +1425,14 @@ allowlist holds **48** coordinates: 21 `firewall_overview` (#1230) and 27
 other **32** are dependency-blocked: fl_chart's 6 and the 26 that cannot go green
 without a ui_kit change (they need the card's own two rows fixed as well, so
 "blocked" means necessary-but-not-sufficient, not untouched).
+
+That split held for exactly as long as the dependency did. ui_kit **v2.34.10**
+shipped the `AppListTile` change (linksys/privacyGUI-UI-kit#20), and with it the 26
+became call-site-fixable; #1238 cleared all 27 together, so the allowlist now holds
+**21** — #1230's — and the blocked set is fl_chart's **6**. The
+necessary-but-not-sufficient reading is what made this cheap: the two card-own
+sites had to be fixed regardless, and they were the whole of the work once the
+slot stopped being unbounded (§2.10e).
 
 Two figures earlier in this document are contradicted by that attribution, both
 downward:
@@ -1269,11 +1455,14 @@ So the dependency-blocked share of the baseline is **32 of 560, not 45**, and
 `firewall_overview` is a *height* problem now — all 21 of its coordinates are
 bottom overflows, a different class from the four width shapes these tickets
 settled. #1230 is still the largest single block of clearable coordinates left,
-at 15 rather than 48.
+at 15 rather than 48. (And **6 of 560** after #1238, which is the whole of
+fl_chart's; `firewall_overview` is the only card left in the allowlist.)
 
 Their `tracking` notes are left as the epic requires: a ticket touches only the
 notes of cards it closes, so both cards keep the `baseline #1183` default until
-their own ticket names an owner.
+their own ticket names an owner. #1238 has since deleted `connected_devices`'
+note along with its two keys, which is the same rule applied in the other
+direction: the note exists to name a live blocker, so it goes when the block does.
 
 #1266 is in this track despite clearing nothing: it is the only entry that *adds*
 coordinates (3, by localizing a hardcoded string) and removes them again in the

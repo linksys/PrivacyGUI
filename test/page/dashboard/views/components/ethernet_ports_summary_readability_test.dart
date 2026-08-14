@@ -76,52 +76,13 @@ void main() {
   final narrowCases = widthCasesFor(spec);
 
   /// A mainstream desktop realization — 1440px screen, the card's default span.
-  final desktopCase = CardWidthCase(
-    screenWidth: 1440,
-    cardWidth: cardWidthAt(1440, 6),
-    columnSpan: 6,
-    label: 'desktop',
-  );
+  /// Taken from the spec via [desktopCaseFor] rather than hardcoding the span,
+  /// which is what the local copy of this used to do (#1238).
+  final desktopCase = desktopCaseFor(spec);
 
   /// The two summary tiles, in order (WAN, LAN). They are the card's only
-  /// [LayoutBlock]s.
-  List<Rect> tileRects(WidgetTester tester) {
-    final finder = find.byType(LayoutBlock);
-    return [
-      for (var i = 0; i < finder.evaluate().length; i++)
-        tester.getRect(finder.at(i)),
-    ];
-  }
-
-  /// The card's own content viewport — the shorter of the two scroll views in
-  /// the tree (the pump harness wraps the whole card in one as well).
-  ///
-  /// The count is asserted rather than assumed. Picking "the shortest" out of an
-  /// empty finder would return [Rect.largest], and every visibility assertion
-  /// below would then pass against an infinite viewport — the failure mode is a
-  /// silently green test, not a red one, so it has to be caught here. Two is the
-  /// exact expected number: one from the harness, one from
-  /// `DashboardCardTemplate`. If the template stops scrolling its content, or
-  /// anything inside the card starts, this fails loudly and the reader learns
-  /// which assumption broke.
-  Rect contentViewport(WidgetTester tester) {
-    final finder = find.byType(SingleChildScrollView);
-    final count = finder.evaluate().length;
-    expect(
-      count,
-      2,
-      reason: 'expected exactly two scroll views — the pump harness and the '
-          'card content. Found $count, so "the shortest" no longer identifies '
-          'the card\'s own viewport and these measurements are meaningless.',
-    );
-
-    var best = Rect.largest;
-    for (var i = 0; i < count; i++) {
-      final r = tester.getRect(finder.at(i));
-      if (r.height < best.height) best = r;
-    }
-    return best;
-  }
+  /// [LayoutBlock]s, so the shared helper returns exactly them.
+  List<Rect> tileRects(WidgetTester tester) => layoutBlockRects(tester);
 
   group('both summary tiles stay whole where the card is narrow (#1228)', () {
     // The vertical budget is the point. A tile that overflows nothing but is
@@ -132,7 +93,7 @@ void main() {
           (tester) async {
         await pumpAt(tester, widthCase: wc, locale: const Locale('en'));
 
-        final viewport = contentViewport(tester);
+        final viewport = cardContentViewport(tester);
         final tiles = tileRects(tester);
 
         expect(tiles.length, 2,
