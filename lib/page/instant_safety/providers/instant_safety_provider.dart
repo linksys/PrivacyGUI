@@ -62,14 +62,25 @@ class UspInstantSafetyNotifier
       const newStatus = InstantSafetyStatus(isLoading: false);
 
       return (newSettings, newStatus);
-    } on ServiceError catch (e) {
-      logger.e('[USP][Safety]: Fetch failed', error: e);
+    } catch (e) {
+      // The service maps every USP failure to ServiceError, so a non-ServiceError
+      // here came from outside that contract (e.g. the uspClientProvider null
+      // assertion in the service provider). It still has to become a status —
+      // escaping build()'s unawaited microtask is the exact hang this guards.
+      final error = e is ServiceError ? e : UnexpectedError(originalError: e);
+
+      logger.e('[USP][Safety]: Fetch failed (forceRemote: $forceRemote)',
+          error: error);
       // isLoading must be set explicitly — InstantSafetyStatus defaults it to
       // true, so omitting it would leave the view stuck on its loader and the
       // ServiceErrorView (and its Retry) unreachable.
+      //
+      // Returning a status rather than throwing is right for the two display
+      // paths (initial load, pull-to-refresh) but wrong for the post-save
+      // re-fetch — save() below converts it back into a throw.
       return (
         null,
-        InstantSafetyStatus(isLoading: false, error: e),
+        InstantSafetyStatus(isLoading: false, error: error),
       );
     }
   }
@@ -87,6 +98,21 @@ class UspInstantSafetyNotifier
     );
     try {
       final result = await super.save();
+      // performFetch turns a failed re-fetch into status.error instead of
+      // throwing (it has to, for the initial load). super.save() therefore
+      // returns normally even when the post-save re-fetch failed, which would
+      // show the "settings saved" snackbar and a full-page ServiceErrorView at
+      // once. Restore the mixin's documented contract: the SET succeeded, but
+      // the caller must still hear about the re-fetch failure.
+      final refetchError = result.status.error;
+      if (refetchError != null) {
+        // Only the refresh failed, so the page must not turn into a full-page
+        // error: settings already hold the value that was written. Clear the
+        // status and let the caller report the failure as a snackbar.
+        state = state.copyWith(status: state.status.copyWith(clearError: true));
+        throw refetchError;
+      }
+
       // Invalidate L1 LAN data to refresh applied state for menu badge.
       ref.invalidate(lanDataProvider);
       return result;
