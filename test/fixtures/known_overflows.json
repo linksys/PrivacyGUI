@@ -1,15 +1,9 @@
 {
   "tracking": {
-    "connected_devices": "26 of these 27 coordinates need three sites fixed together, and one of them is upstream: ui_kit AppListTile lays `trailing` out as a non-flex child with maxWidth: Infinity, so it paints at intrinsic width and the tile's Row overflows by +25.6px while the Expanded title column is starved to 0px first. Filed as linksys/privacyGUI-UI-kit#20. Not avoidable from the call site: the slot is never told the budget, so a LayoutBuilder there sees infinity and only a hardcoded magic number can fit. Measured — substituting a narrower trailing variant (75.0 -> 16.5px) fixed one row and moved the binding constraint to the next-widest trailing child, leaving the count at 27. The two card-own sites (usp_connected_devices_card.dart:61 and :79, #1226's unconstrained centred-Row shape) are tracked by #1238; `preferred|0 el` is the single coordinate that needs only :79 and has no upstream dependency.",
-    "firewall_overview": "Two groups, and they are not the same kind of problem. `min|0` (15 coordinates) is card-own and clearable here: usp_firewall_overview_card.dart:157 carries 8 (the donut's centerWidget Column, bottom 15-31px) and :136 carries 7 (the card's outer Column, bottom 7-26px). Both are HEIGHT overflows, so none of the four width shapes from #1234-#1237 apply -- see doc/dashboard/dashboard_density_design.md section 2.11. Tracked by #1230, whose first step is measuring them together, because :136 is the Column that holds the donut whose centre label is :157. `min|1` (6 coordinates, da pl pt pt_PT ru sv) is upstream: fl_chart side_titles_widget.dart:245, bottom 5-10px. Those 6 were masked until #1247 fixed the card-own MapsToRow above them, which is why section 1.1 records fl_chart at 19."
+    "connected_devices": "26 of these 27 coordinates need three sites fixed together, and one of them is upstream: ui_kit AppListTile lays `trailing` out as a non-flex child with maxWidth: Infinity, so it paints at intrinsic width and the tile's Row overflows by +25.6px while the Expanded title column is starved to 0px first. Filed as linksys/privacyGUI-UI-kit#20. Not avoidable from the call site: the slot is never told the budget, so a LayoutBuilder there sees infinity and only a hardcoded magic number can fit. Measured — substituting a narrower trailing variant (75.0 -> 16.5px) fixed one row and moved the binding constraint to the next-widest trailing child, leaving the count at 27. The two card-own sites (usp_connected_devices_card.dart:61 and :79, #1226's unconstrained centred-Row shape) are tracked by #1238; `preferred|0 el` is the single coordinate that needs only :79 and has no upstream dependency."
   },
   "allowlist": {
     "connected_devices|min|0": ["*"],
-    "connected_devices|preferred|0": ["el"],
-    "firewall_overview|min|0": [
-      "ar", "el", "es", "es_AR", "fi", "fr", "fr_CA", "id", "nb", "pl",
-      "pt", "pt_PT", "ru", "tr", "vi"
-    ],
-    "firewall_overview|min|1": ["da", "pl", "pt", "pt_PT", "ru", "sv"]
+    "connected_devices|preferred|0": ["el"]
   }
 }
