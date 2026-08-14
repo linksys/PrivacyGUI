@@ -53,6 +53,11 @@ function buildWebApp() {
 # workspace — it matters for the developer running a stripped build locally, who
 # gets told to run `restore` by the next build's own gate.
 #
+# The trap is `EXIT` alone, deliberately. bash runs an EXIT trap on SIGINT and
+# SIGTERM too, so naming them adds no coverage — measured: `trap ... EXIT` fires
+# on both, and `trap ... EXIT INT TERM` fires the handler *twice* on either
+# signal, which would run a second `restore` over an already-restored tree.
+#
 # Takes over the exit code on failure: a build that leaves a stripped tree behind
 # has to fail loudly, even if the build itself succeeded.
 function restoreLocales() {

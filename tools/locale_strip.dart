@@ -590,8 +590,10 @@ class LocaleStripper {
   /// Throws unless nothing inside the blast radius of [restore] has local
   /// changes: [strippablePaths], plus the pubspec's `fonts:` block.
   ///
-  /// Runs before a strip so uncommitted work is never inside that blast radius,
-  /// and after a build to prove nothing leaked.
+  /// Runs before a strip, so uncommitted work is never inside that blast radius.
+  /// Also the `verify` subcommand, for asserting by hand or from CI that a tree
+  /// is intact — `build_web.sh` does not call it after the build, because the
+  /// restore runs from an EXIT trap that a post-build check would sit inside.
   void verify() {
     final changes = _localChanges();
     if (changes.isNotEmpty) {
