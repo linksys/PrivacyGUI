@@ -123,10 +123,15 @@ double _nodeBadgeNaturalWidth(BuildContext context, String nodeName) {
     textScaler: MediaQuery.textScalerOf(context),
     maxLines: 1,
   )..layout();
-  return math.min(
+  final width = math.min(
     painter.width + AppSpacing.sm * 2,
     _kNodeBadgeMaxWidth,
   );
+  // This runs inside a `LayoutBuilder.builder`, once per device row per layout
+  // pass, so the paragraph handle has to be released here rather than left to
+  // the finalizer.
+  painter.dispose();
+  return width;
 }
 
 class UspConnectedDevicesCard extends ConsumerWidget {
