@@ -1,6 +1,6 @@
 # Dashboard Card Density — Design Decisions
 
-**Last Updated: 2026-08-13** · Follow-up to #1183 · Status: **agreed; tickets #1225–#1240 published; #1225 + #1226 + #1233 + #1227 + #1228 + #1229 implemented (not yet merged), rest not started. Allowlist 560 → 181.**
+**Last Updated: 2026-08-14** · Follow-up to #1183 · Status: **agreed; tickets #1225–#1240 published; Track A implemented through #1230 (#1225, #1226, #1233, #1227, #1228, #1229, #1266, #1234, #1236, #1237, #1235, #1247, #1230 — not all merged), #1238 remaining; Track B not started. Allowlist 560 → 27.**
 
 ## Purpose
 
@@ -941,8 +941,9 @@ in one step when the gauge row followed:
 | Gauge centre | `network_health:150` | 3→0 |
 
 The ratchet now stands at **48 coordinates**, all owned by #1230 (21,
-`firewall_overview`) and #1238 (27, `connected_devices`). *Since superseded* —
-#1238 closed its 27 (§2.10e), leaving **21**, all #1230's.
+`firewall_overview`) and #1238 (27, `connected_devices`). *Both have since
+cleared* — #1230 its 21 (§2.11a) and #1238 its 27 (§2.10e) — leaving **0**:
+`known_overflows.json` now carries an empty allowlist.
 
 That 48 replaces the 94 these four tickets left behind. The 46 that went were not
 removed by any of them — they were dead exemptions, and the credit belongs to
@@ -1294,6 +1295,146 @@ the axis labels above. **Not yet measured** — unlike the four shapes, this one
 no double-factor decomposition behind it, and that measurement is #1230's first
 step.
 
+Measured since, and both guessed levers were wrong: the declared height stayed at
+3 rows and the caption goes only because the whole donut does. The cause is a
+width one. See **§2.11a**.
+
+### 2.11a What the two height sites taught us (#1230 — implemented)
+
+All **21** cleared, not the 15 §2.11 scoped: fl_chart's 6 went with them, from the
+call site, with the package untouched. `minHeightRows` stays 3. Six things only
+showed up in the measurement.
+
+1. **Both bottom overflows had a *width* cause, and neither of §2.11's guessed
+   levers was one of them.** The card's height was never short. What overflowed is
+   the three-across metric grid: at the narrowest realization the tab body is
+   **157.4px wide and 205px tall** (203px where the tab bar wraps), and three
+   `InfoGrid` tiles leave each label `(157.4 − 16) / 3 − 24` = **23.1px** of text —
+   one character per line, `ru` wanting **8 lines** (129px) for one label. Those
+   three tiles measured **108px** in `en` and up to **173px** in `ru`, inside a
+   205px viewport that already owed 20px to gaps and 36px to the legend, so 15 of
+   the 26 locales overflowed and the outer `Column` (`:136`) reported up to +26px.
+   Stacking the metrics into full-width rows — a *width* decision — is what closes
+   a *height* overflow: each label gets 111.4-127.6px and the whole stack
+   112-130px, which the donut's `Expanded` absorbs. §1.8's "a
+   bottom overflow is often a width symptom" holds here in its strongest form, and
+   the ticket's AC 4 (do not raise the declared height) was never a constraint to
+   work around — it was the diagnosis.
+2. **Nested sites are mutually exclusive, which is why the two counts summed to 15
+   over 15 locales rather than 26.** `RenderFlex` reports where it is asked to
+   paint: where the grid grew tall enough to starve the donut's `Expanded` to 0,
+   the inner `centerWidget` (`:157`) had no box to overflow and only `:136`
+   reported (7 locales, grids of 156-173px); where the grid left the `Expanded`
+   20-25px, `:157` overflowed by exactly `40 − slot` — +15px to +21px, the caption
+   needing 40px — and the outer `Column` fit (8 locales). One site per locale,
+   never both. So
+   §2.11's "they must be measured together" was not caution, it was necessary:
+   fixing either alone moves the report to the other instead of clearing it.
+3. **fl_chart's 6 were not dependency-blocked; they were unmeasured.** §1.1
+   counted them as third-party and §2.11 reserved a fallback allowlist entry with
+   a tracking note for them. Measured, fl_chart's bottom `SideTitles` asks a
+   constant `reservedSize: 22` whatever the chart's height is, and `AppBarChart`'s
+   vertical path does not override it, so the strip's own `Flex` overflows by
+   `22 − slot`: +5px at 17px slots, +10px in `ru`'s 12px. Two call-site levers
+   close that, and the cheaper-looking one is the worse one. `AppBarChart.xLabels`
+   is nullable and its vertical path passes `showTitles: xLabels != null`, so
+   `xLabels: null` deletes the 22px strip outright — measured, that alone takes all
+   105 of this card's gate cases green with no height guard at all. It is not what
+   shipped: the value axis keeps drawing, so in `ru`'s 12px slot its "2" and "0"
+   overlap above two 8px pills, and the only threshold that would admit the
+   labelless chart where it reads (`en`, 37px) and reject it where it does not
+   (`da`, 17px) sits between 37 and 40px — a knife edge between two shipped
+   locales. So the card declines to draw a chart with no room to be one: below
+   **70px** (22px axis + 24px always-on value labels + 24px
+   `AppBarChart.minBarArea`, leaving every locale 33px clear) it is not built,
+   which is §2.11's Primary path applied one level up. Either way the fallback note
+   was never needed and `known_overflows.json` now holds nothing for this card.
+   Generalisation: a "third-party site" names where the exception is *thrown*, not
+   where the fix has to live.
+4. **Suppression is a fix the gate actively rewards, and the ratchet has no
+   vocabulary to constrain it.** Every earlier Track A ticket made a row give or
+   rearranged one; #1230 is the first to *remove* content below a threshold, and
+   absent content never overflows. A threshold accidentally set above the height
+   the dashboard actually gives the card leaves all 105 of its gate cases green
+   (2 widths × 2 tabs × 26 locales, plus the tab-registry check) and the card blank — verified, not feared: `_kProtocolChartMinHeight` 70 → 200 and
+   `_kDonutMinRingThickness` 10 → 60 each delete a chart at the shipped height
+   with the gate still green. So the guard test asserts *presence* at the 4 rows
+   `HeightStrategy.strict(4)` gives (chart slot 148-173px) as well as absence at
+   the 3 rows the gate pumps (12-37px). Any later ticket that clears a coordinate
+   by not drawing something owes the same pair.
+5. **Where a card overflows, look for what it also clips.** ui_kit ≤ v2.34.10's
+   `AppPieChart` took the ring radius from the call site but the centre-hole radius
+   from the theme (`ChartStyle.pieCenterRadius`, 60px here), so the drawn diameter
+   was `2 × (centre + ring)` and did not follow `size`. The card's `size: 160` with
+   the default 40px ring drew a **200px donut into a 160px box** — 20px clipped off
+   every side at *every* width including desktop, invisible to the gate because a
+   clip is not an overflow. Measured by pixel extent, the painted diameter was 200px
+   at every `size` from 120 to 300, so `size` bounded the drawing in neither
+   direction; filed upstream as linksys/privacyGUI-UI-kit#22 and **fixed in
+   v2.34.11**, which derives both radii from the box. This branch bumps to it and
+   deletes the `sectionRadius: size / 2 - pieCenterRadius` workaround the fix makes
+   redundant — ui_kit's own dartdoc says the two now draw identically. Measured
+   after removal: 191px card → 153px box, **57.4px hole + 19.1px ring**; 288px and
+   512px → 160px box, 60px hole + 20px ring; the caption's half-diagonal is 32.0px
+   at all three, so it clears even the shrunk hole by 25.4px. The one thing the
+   upstream fix changes for a *tight* box is which radius gives: it shrinks the
+   **hole**, not the ring, so a `centerWidget` sized against the themed value can
+   overhang — which is the second reason `_kDonutMinRingThickness` suppresses rather
+   than shrinks. The card's cap is now written as a ring thickness measured outward
+   from the same themed hole as that floor, so no theme's `pieCenterRadius` can
+   invert the two and close the window (a flat 160px would leave `neumorphic`'s 65px
+   hole only 150-160px, and any hole past 70px nothing at all). The app's other four
+   `AppPieChart` call sites (`size: 180` ×2, `size: 120`, one caller-supplied) are
+   fixed by the bump without touching them. Second instance of the pattern §2.10d
+   found in `network_health`'s gauge centre.
+6. **AC 5 is a claim about the card, and a tab with no coordinates on it can still
+   fail it.** Both #1230 sites are on the Rules tab, so the Ports tab was outside
+   the coordinate list entirely — and its port-forwarding rows fit at 191px, which
+   the gate reads as fine. Swept across all 26 locales, its localized text is clean
+   (6 locales wrap the heading to 2 lines, `pt_PT` wanting 230.1px of a 157.4px
+   row; nothing clips). Its **mapping target does not read**: 36.9-38.5px of room
+   for 82.3-103.7px of "host:port", so every rule shows about two characters of its
+   destination in every locale. The cause is not this card. `MapsToRow` gives its
+   source and target a `Flexible` each, and `RenderFlex` splits the room **evenly**
+   between equal flexes without handing back what the shorter half declines —
+   measured, the source takes its 30.7px and the target still gets exactly half,
+   38.5px of the pair's 77px. So the target's ceiling is half the mapping row
+   whatever else that row spends, and no width this card can give it is enough:
+   103.7px of target needs 227.4px of mapping, more than a 191px card is wide. Both
+   card-side fixes were measured and neither suffices alone — putting the mapping on
+   a full-width line of its own still leaves the target 68.7px, and it costs 20px a
+   rule, which overflows the 3-row minimum AC 4 forbids raising by +11px to +36px
+   unless the DMZ list goes with it. What clears it is the combination: that line,
+   the DMZ list dropped at narrow width, **and** `MapsToRow` giving its bounded half
+   its intrinsic width instead of half the row — measured green on this card's whole
+   readability suite. That last part contradicts the widget's own docstring
+   ("[target] is the part that ellipsizes, since the source is short and bounded
+   while the target is not") and is shared with seven other call sites, so it is a
+   `row_blocks.dart` change and not #1230's; the readability suite records the
+   limitation as a failing-when-fixed expectation rather than a comment. **A shared
+   layout block's flex distribution is a density decision** — the even split is
+   invisible until a card is narrow enough for the two halves to want different
+   amounts, and then it is the whole difference between "19…" and the address.
+
+The claims the gate cannot make — both arrangements legible, both tabs legible in
+all 26 locales, both charts present at the shipped height, the donut never wider
+than its box, no slice label painted into the ring — are covered by
+`test/page/dashboard/views/components/firewall_overview_readability_test.dart`,
+tagged `dashboard-card` so it gates; each of its eight groups was verified to fail
+under a mutation of the code it guards (eleven mutations, tabulated in the file,
+seven of which leave the #1183 gate green). It also re-asserts plain overflow at
+every realization it pumps, which is not redundant with the gate: the gate pumps
+`minHeightRows` only, and the shipped 4 rows is the one height at which the donut's
+caption and fl_chart's axis strip are built at all — the two sites #1230 fixed were
+otherwise measured by nothing at the height they actually render.
+
+Three follow-ups left open rather than folded into #1230: the narrow arrangement's
+tile is `_InfoGridTile` in a `Row`, which `layout_blocks` has no variant for and
+`ethernet_ports` hand-rolls too (**#1275**); the helpers these readability
+tests share are now cloned across up to seven files (noted on **#1238**, the next
+card to need them); and `MapsToRow`'s even flex split (item 6), which no card can
+work around and which needs the shared block changed.
+
 ### 2.12 What the first *rearrangement* taught us (#1228 — implemented)
 
 All 52 coordinates cleared as predicted (278 → 226). #1226/#1233/#1227 all made
@@ -1402,12 +1543,14 @@ addition — it changes no card's rendering until a threshold is declared.
 | #1237 | `time_settings` card-own (§2.10d) — **implemented** | 21 |
 | #1235 | `network_health` gauge centre (§2.10d) — **implemented** | 3 |
 | #1247 | `firewall_overview` `MapsToRow` — side effect, not its brief (§2.9a) — **implemented** | 46 |
-| #1230 | `firewall_overview` remaining ×2 sites (§2.11) | 15 |
+| #1230 | `firewall_overview` remaining ×2 sites (§2.11, §2.11a) — **implemented** | 21 |
 | #1238 | `connected_devices` ×2 card-own sites + the ui_kit v2.34.10 upgrade (§2.10e) — **implemented** | 27 |
 
-Ceiling **528 / 560**, on the assumption that ui_kit's 26 stay blocked. They did
-not: #1238 cleared all 27 after the v2.34.10 upgrade, so the ceiling is **554 /
-560** and the only dependency-blocked coordinates left are fl_chart's 6.
+Ceiling **528 / 560** as planned, on the assumption that ui_kit's 26 and
+fl_chart's 6 both stay blocked. Neither did: #1238 cleared all 27 after the
+v2.34.10 upgrade (§2.10e), and #1230 closed fl_chart's 6 from the call site by
+declining to draw into a slot shorter than the axis strip (§2.11a). The ceiling
+is **560 / 560**, and no coordinate is dependency-blocked.
 
 After #1234–#1237, and after #1247's side effect was collected (§2.9a), the
 allowlist holds **48** coordinates: 21 `firewall_overview` (#1230) and 27
@@ -1426,13 +1569,16 @@ other **32** are dependency-blocked: fl_chart's 6 and the 26 that cannot go gree
 without a ui_kit change (they need the card's own two rows fixed as well, so
 "blocked" means necessary-but-not-sufficient, not untouched).
 
-That split held for exactly as long as the dependency did. ui_kit **v2.34.10**
-shipped the `AppListTile` change (linksys/privacyGUI-UI-kit#20), and with it the 26
-became call-site-fixable; #1238 cleared all 27 together, so the allowlist now holds
-**21** — #1230's — and the blocked set is fl_chart's **6**. The
-necessary-but-not-sufficient reading is what made this cheap: the two card-own
-sites had to be fixed regardless, and they were the whole of the work once the
-slot stopped being unbounded (§2.10e).
+That split held for exactly as long as the two dependencies did, and neither
+held. ui_kit **v2.34.10** shipped the `AppListTile` change
+(linksys/privacyGUI-UI-kit#20), so the 26 became call-site-fixable and #1238
+cleared all 27 together — the necessary-but-not-sufficient reading is what made
+that cheap, since the two card-own sites had to be fixed regardless and were the
+whole of the work once the slot stopped being unbounded (§2.10e). #1230 then
+cleared all **21**, fl_chart's 6 included, by declining to draw a chart into a
+slot shorter than its own axis strip (§2.11a). So 22 of the 48 were clearable
+here rather than 16, the other 26 needed one upstream tag and no call-site
+compromise, and the allowlist now holds **0**.
 
 Two figures earlier in this document are contradicted by that attribution, both
 downward:
@@ -1451,18 +1597,23 @@ downward:
   19 is left as written because its table is a record of what was believed at
   baseline and its rows sum to 560.
 
-So the dependency-blocked share of the baseline is **32 of 560, not 45**, and
-`firewall_overview` is a *height* problem now — all 21 of its coordinates are
-bottom overflows, a different class from the four width shapes these tickets
-settled. #1230 is still the largest single block of clearable coordinates left,
-at 15 rather than 48. (And **6 of 560** after #1238, which is the whole of
-fl_chart's; `firewall_overview` is the only card left in the allowlist.)
+So the dependency-blocked share of the baseline ended at **0 of 560, not 45** —
+32 as planned, 26 once #1230 measured fl_chart's 6 and closed them at the call
+site (§2.11a), and none once ui_kit v2.34.10 released #1238's 26 (§2.10e). And
+`firewall_overview` was a *height* problem, all 21 of its coordinates bottom
+overflows, a different class from the four width shapes these tickets settled.
 
-Their `tracking` notes are left as the epic requires: a ticket touches only the
-notes of cards it closes, so both cards keep the `baseline #1183` default until
-their own ticket names an owner. #1238 has since deleted `connected_devices`'
+Neither card kept the epic's `baseline #1183` default in the end, and the rule
+that a ticket touches only the notes of the cards it closes is why. #1230 closed
+`firewall_overview` outright, so both its keys and its note are gone from
+`known_overflows.json` — including the fl_chart fallback entry §2.11 had reserved,
+which measurement made unnecessary (§2.11a). #1238 deleted `connected_devices`'
 note along with its two keys, which is the same rule applied in the other
 direction: the note exists to name a live blocker, so it goes when the block does.
+Between them the file is left with an **empty `tracking` and an empty
+`allowlist`** — the ratchet's floor, and the state the gate has to hold from here:
+every future overflow is a new entry, and there is no longer any exempt
+coordinate to hide behind.
 
 #1266 is in this track despite clearing nothing: it is the only entry that *adds*
 coordinates (3, by localizing a hardcoded string) and removes them again in the

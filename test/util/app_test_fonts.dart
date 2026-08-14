@@ -19,10 +19,22 @@ import 'package:flutter_test/flutter_test.dart';
 ///   than the golden-tagged set) can't inherit it. Extracting the logic here
 ///   lets both callers share one implementation — call it from `setUpAll`.
 ///
-/// Idempotent-ish: safe to call once per test file in `setUpAll`. Missing font
-/// files are skipped silently (CI without the ui_kit checkout still runs, just
-/// with fewer fallbacks) — the primary NeueHaas + NotoSans covers Latin scripts,
-/// which is what the long-word overflow locales (de/fi/ru/fr) need.
+/// Idempotent-ish: safe to call once per test file in `setUpAll`.
+///
+/// A MISSING TEXT FONT THROWS, IT IS NOT SKIPPED
+///   This used to skip missing files silently so that "CI without the ui_kit
+///   checkout" could still run. That is not a state worth running in: it is the
+///   state where every pixel measurement is quietly Ahem's, and a suite that
+///   passes there passes for the wrong reason. Nor is it a real condition —
+///   `ui_kit_library` is a pub dependency, present after `flutter pub get`, and
+///   the five Noto files are committed under `test/fonts/`. What *is* real is a
+///   ui_kit ref bump moving the pub-cache path (resolved here from
+///   `package_config.json`) or renaming an `.otf`, which is exactly the failure
+///   that must be loud.
+///
+///   The icon fonts stay tolerant: glyph advances in an icon font are one em by
+///   definition and Flutter sizes icons from the widget, so a missing icon font
+///   costs a tofu box, not a wrong measurement.
 import 'package:privacy_gui/localization/fallback_font_resolver.dart';
 
 Future<void> loadAppFonts() async {
@@ -30,6 +42,9 @@ Future<void> loadAppFonts() async {
   FallbackFontResolver.install();
 
   final uiKitRoot = _resolveUiKitPath();
+
+  /// Text fonts whose absence would silently turn every measurement into Ahem's.
+  final missing = <String>[];
 
   // Primary font, shipped inside the ui_kit_library package.
   final mainFont = FontLoader('packages/ui_kit_library/NeueHaasGrotTextRound');
@@ -43,7 +58,11 @@ Future<void> loadAppFonts() async {
     if (boldFile.existsSync()) {
       mainFont.addFont(
           Future.value(ByteData.view(boldFile.readAsBytesSync().buffer)));
+    } else {
+      missing.add(boldFile.path);
     }
+  } else {
+    missing.add(mainFontFile.path);
   }
   await mainFont.load();
 
@@ -69,6 +88,12 @@ Future<void> loadAppFonts() async {
   }
 
   // CJK / Arabic / Thai / Russian fallbacks mapping.
+  //
+  // NotoSansTC/JP/HK all point at the SC file. Measured, that substitution is
+  // metric-neutral for these scripts — one CJK string came out at 177.6px under
+  // SC, TC and KR alike, because the advance is one em per ideograph in all of
+  // them — so it changes no measurement; it only avoids committing three more
+  // multi-megabyte files.
   final fontMap = <String, String>{
     'NotoSans': 'test/fonts/NotoSans-Regular.ttf',
     'NotoSansLatinExt': 'test/fonts/NotoSans-Regular.ttf',
@@ -83,7 +108,10 @@ Future<void> loadAppFonts() async {
 
   for (final entry in fontMap.entries) {
     final file = File(entry.value);
-    if (!file.existsSync()) continue;
+    if (!file.existsSync()) {
+      missing.add(file.path);
+      continue;
+    }
     final bytes = file.readAsBytesSync();
 
     final loaderPkg = FontLoader('packages/ui_kit_library/${entry.key}');
@@ -107,6 +135,19 @@ Future<void> loadAppFonts() async {
       }
     }
     await fallbackLoader.load();
+  }
+
+  if (missing.isNotEmpty) {
+    throw StateError(
+      'loadAppFonts() could not find ${missing.length} text font file(s):\n'
+      '  ${missing.join('\n  ')}\n'
+      'Without them the test engine substitutes its own block font — every '
+      'glyph one em wide — so any test that measures text passes or fails on '
+      'fictional metrics. Fix the paths rather than tolerating this: the ui_kit '
+      'fonts live in the pub-cache checkout resolved from '
+      '.dart_tool/package_config.json (a ref bump moves it, so run '
+      '"flutter pub get"), and the Noto files are committed under test/fonts/.',
+    );
   }
 }
 
