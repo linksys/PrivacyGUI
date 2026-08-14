@@ -47,7 +47,7 @@ final activeLocaleProvider = Provider<Locale>((ref) {
   );
 });
 
-/// [wanted] if [supported] ships it, otherwise the first locale it does.
+/// [wanted] if [supported] ships it, otherwise English.
 ///
 /// A locale the user picked before a build stripped its language pack is no
 /// longer supported. Flutter would silently fall back to English for the strings
@@ -60,6 +60,12 @@ final activeLocaleProvider = Provider<Locale>((ref) {
 /// The match follows Flutter's own resolution: an exact hit wins, and failing
 /// that a locale of the same language does, so a persisted `zh_TW` still
 /// resolves against a build shipping only `zh`.
+///
+/// The last resort is English, not `supported.first`. That distinction only
+/// shows on the retail build, where the list is alphabetical and begins with
+/// `ar` — an unresolvable locale used to land the whole app in Arabic, RTL and
+/// all. English is `l10n.yaml`'s template locale, the one language every build
+/// is guaranteed to ship, which is what makes it the safe floor here.
 Locale resolveSupportedLocale(Locale wanted, List<Locale> supported) {
   for (final locale in supported) {
     if (locale == wanted) {
@@ -71,5 +77,10 @@ Locale resolveSupportedLocale(Locale wanted, List<Locale> supported) {
       return locale;
     }
   }
-  return supported.first;
+  return supported.firstWhere(
+    (locale) => locale.languageCode == 'en',
+    // Only reachable if a build strips English out, which the stripper now
+    // refuses to do — gen-l10n cannot run without its template locale.
+    orElse: () => supported.first,
+  );
 }

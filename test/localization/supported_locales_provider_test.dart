@@ -58,6 +58,39 @@ void main() {
       );
     });
 
+    test('falls back to English, not to the first locale in the list', () {
+      // The retail list is alphabetical, so `supported.first` is `ar`: an
+      // unresolvable locale used to put the whole app in Arabic, RTL and all.
+      expect(
+        resolveSupportedLocale(
+          const Locale('xx'),
+          const [Locale('ar'), Locale('en'), Locale('ja')],
+        ),
+        const Locale('en'),
+      );
+    });
+
+    test('falls back on the real shipped list, not a hand-written one', () {
+      // Pinned against the generated list, because the ordering is what made the
+      // bug: nothing here is true by construction.
+      expect(
+        resolveSupportedLocale(
+          const Locale('xx'),
+          AppLocalizations.supportedLocales,
+        ),
+        const Locale('en'),
+      );
+    });
+
+    test('still falls back within the set when English was stripped out', () {
+      // Unreachable in practice — locale_strip refuses to drop the gen-l10n
+      // template — but the function must not throw if it ever happens.
+      expect(
+        resolveSupportedLocale(const Locale('xx'), const [Locale('ja')]),
+        const Locale('ja'),
+      );
+    });
+
     test('never returns a locale outside the shipped set', () {
       // The property the legal links depend on, stated directly.
       const shipped = [Locale('en')];
