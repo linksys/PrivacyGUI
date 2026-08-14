@@ -181,9 +181,7 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
     // widgets; ui_kit's AppText.resolve() injects the same family per-locale for
     // AppText. Without the family in the TextStyle, the engine treats CJK code
     // points as missing and probes the CDN. Null for Latin-covered locales.
-    final effectiveLocale = activeLocale;
-    final cjkFallback =
-        FallbackFontResolver.prefixedFallbackFor(effectiveLocale);
+    final cjkFallback = FallbackFontResolver.prefixedFallbackFor(activeLocale);
     if (cjkFallback != null) {
       appLightTheme = appLightTheme.copyWith(
         textTheme:
