@@ -47,6 +47,13 @@ void main() {
       overrides: [
         uspInstantSafetyServiceProvider.overrideWithValue(mockService),
         uspMutationLockProvider.overrideWithValue(UspMutationLock()),
+        // save() invalidates lanDataProvider, which builds it and reaches
+        // uspLanDataServiceProvider — no lanDataProvider listener needed. Today
+        // that fails safe (the real provider throws ServiceNotInitializedError
+        // because uspClientProvider is null in tests, and the throw is captured
+        // as an AsyncValue error), but the moment a test here overrides
+        // uspClientProvider it would silently hit the real service instead.
+        uspLanDataServiceProvider.overrideWithValue(mockLanService),
       ],
     );
     container.listen(uspInstantSafetyProvider, (_, __) {});
@@ -378,16 +385,12 @@ void main() {
       });
       when(() => mockService.save(any())).thenAnswer((_) async {});
 
-      final container = ProviderContainer(
-        overrides: [
-          uspInstantSafetyServiceProvider.overrideWithValue(mockService),
-          uspMutationLockProvider.overrideWithValue(UspMutationLock()),
-          uspLanDataServiceProvider.overrideWithValue(mockLanService),
-        ],
-      );
-      container.listen(uspInstantSafetyProvider, (_, __) {});
+      final container = createContainer();
       // The invalidate is observed through the L1 service: LanDataNotifier
       // calls fetch() on every build, so a rebuild shows up as a second call.
+      // The listener keeps lanDataProvider alive between the two verifies —
+      // without it the autoDispose provider is torn down after each read and
+      // the counts stop meaning "was it invalidated".
       container.listen(lanDataProvider, (_, __) {});
 
       await pumpEventQueue();

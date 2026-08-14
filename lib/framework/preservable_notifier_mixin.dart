@@ -77,18 +77,21 @@ class _PreservableDelegate<
     return s;
   }
 
-  /// Saves the current settings, marks the state as clean, and then re-fetches from source.
+  /// Saves the current settings, marks the state as clean, and then re-fetches
+  /// from source.
   ///
-  /// If the post-save re-fetch fails, the error is logged and rethrown so
-  /// callers can reliably clear transient UI flags (e.g. `isSaving`).
+  /// A failure in [performSave] propagates. A failure in the post-save
+  /// re-fetch does NOT: `performFetch` implementations have to turn a fetch
+  /// error into a status rather than throw, because the initial load runs from
+  /// `build()` with no caller to catch it. So this method returns normally even
+  /// when the confirming read failed, and the returned state carries the error
+  /// on `status.error`.
   ///
-  /// NOTE: that rethrow is not actually guaranteed here. `performFetch` has to
-  /// turn a failure into a status rather than throw — the initial load has no
-  /// caller to catch it — so this method returns normally even when the
-  /// re-fetch failed, and the error only reaches the caller if the notifier
-  /// inspects `status.error` after `super.save()`. `instant_safety` is
-  /// currently the only one that does. Tracked in #1279; until it is fixed,
-  /// do not rely on this paragraph.
+  /// Callers that need to distinguish "written and confirmed" from "written but
+  /// not confirmed" must therefore inspect `result.status.error` themselves —
+  /// `instant_safety` is currently the only one that does. Overriding `save()`
+  /// with `try/catch` alone is not enough. Moving that decision in here is
+  /// tracked in #1279.
   Future<TState> save() async {
     await _performSave();
     markAsSaved();
@@ -147,6 +150,11 @@ mixin PreservableNotifierMixin<
       _delegate.fetch(
           forceRemote: forceRemote, updateStatusOnly: updateStatusOnly);
 
+  /// Saves, marks clean, then re-fetches to confirm.
+  ///
+  /// A failed post-save re-fetch does not throw — it lands on
+  /// `status.error` of the returned state. Inspect it if the caller needs to
+  /// know the confirming read failed. See `_PreservableDelegate.save()`.
   Future<TState> save() => _delegate.save();
 
   void onSseInvalidation() => _delegate.onSseInvalidation();
@@ -182,6 +190,11 @@ mixin PreservableAutoDisposeNotifierMixin<
       _delegate.fetch(
           forceRemote: forceRemote, updateStatusOnly: updateStatusOnly);
 
+  /// Saves, marks clean, then re-fetches to confirm.
+  ///
+  /// A failed post-save re-fetch does not throw — it lands on
+  /// `status.error` of the returned state. Inspect it if the caller needs to
+  /// know the confirming read failed. See `_PreservableDelegate.save()`.
   Future<TState> save() => _delegate.save();
 
   void onSseInvalidation() => _delegate.onSseInvalidation();
