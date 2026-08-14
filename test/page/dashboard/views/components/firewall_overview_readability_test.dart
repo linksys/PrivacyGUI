@@ -336,7 +336,12 @@ void main() {
             reason: 'at the height the dashboard actually gives this card '
                 '($shippedRows rows) the target-distribution donut must be '
                 'drawn — the ring guard is for slots that cannot hold one, not '
-                'for the shipped card (#1230)');
+                'for the shipped card (#1230). `ru` is the locale to assert on: '
+                'measured across all 26, its two-line label makes it the only '
+                'one under 157px here, and the box it gets at the narrowest '
+                'width is 153px against a 140px floor. 13px is the whole '
+                'margin, so anything that grows the metrics or the legend by '
+                'more than that deletes the donut silently');
       });
 
       testWidgets(
@@ -365,9 +370,11 @@ void main() {
             tabIndex: 0,
             locale: const Locale('ru'));
         expect(find.byType(AppPieChart), findsNothing,
-            reason: 'at the declared minimum height the donut slot is 9-25px '
-                'tall, which is a clipped arc and a caption that does not fit — '
-                'so nothing is drawn (#1230)');
+            reason: 'at the declared minimum height the donut slot measures '
+                '17-37px at 191px and 52-57px at 288px across the 26 locales, '
+                'against the 140px this theme needs for a ring at all — a '
+                'clipped arc and a caption that does not fit, so nothing is '
+                'drawn (#1230)');
       });
 
       testWidgets(
