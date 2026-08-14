@@ -278,6 +278,125 @@ void main() {
     );
   }
 
+  testWidgets('the fonts these measurements were taken in are the app\'s own',
+      (tester) async {
+    // Every claim in this file is a claim about pixels, so every one of them
+    // rests on the card having been laid out in the fonts it ships with. Two
+    // things can take that away, and neither shows up as a failure anywhere
+    // else — the suite would stay green while measuring a different typeface.
+    //
+    //   - The font *file* is gone: a ui_kit ref bump moves the pub-cache path,
+    //     or an `.otf` gets renamed. `loadAppFonts` throws on that, which is the
+    //     right place for it — one check protects every caller — and it is not
+    //     catchable from here, because `FontLoader` registers the family even
+    //     with no bytes in it, after which the engine serves its own block font.
+    //   - The *family name* no longer matches: the file loads under a name
+    //     nothing asks for, the style's family is unresolvable, and the engine
+    //     substitutes silently. That is this test.
+    //
+    // Two measurements, because the substitution has two shapes. Both were taken
+    // by renaming `loadAppFonts`'s registration to
+    // `NeueHaasGrotTextRoundRENAMED` and reading what the card then measured:
+    //
+    //   - Nothing to substitute — none of this card's styles carries a
+    //     `fontFamilyFallback` — so the block font is what gets served, at one em
+    //     per glyph: `192.168.1.101:80` went from 83.3px to exactly 192.0px
+    //     (12.0 x 16 characters). Across the whole Ports tab the mutation
+    //     measured 1.000-1.045 em per glyph, so the assertion is a ratio rather
+    //     than an exact signature — the real font is at 0.43 em, nowhere near.
+    //   - Something to substitute — `lib/app.dart` does hand the text theme a CJK
+    //     `fontFamilyFallback`, and if it reaches these styles the same rename
+    //     lands on Noto instead, which measures like any proportional font and
+    //     would slip past a ratio check. So the width is also required to differ
+    //     from what Noto measures the same string at (95.2px against NeueHaas's
+    //     83.3px — both real fonts, ~14% apart, and only one of them the app's).
+    //
+    // `en`, and the mapping target specifically, because it is pure ASCII: for
+    // Cyrillic, Arabic, Thai and CJK the app falls back to Noto *by design*, and
+    // one em per ideograph is what CJK legitimately measures — both assertions
+    // would be backwards there.
+    //
+    // Pumped through the probe rather than `pumpAt`, dropping the overflow
+    // incidents: a wrong typeface reflows the card, so `pumpAt` would fail on the
+    // overflow before reaching the identification, which is the one failure that
+    // says *why*. Overflow at this coordinate is asserted below, so ignoring it
+    // here loses nothing.
+    await probeCardOverflow(
+      tester,
+      cardId: cardId,
+      widthCase: narrowest,
+      cardHeightRows: minRows,
+      tabIndex: 1,
+      locale: const Locale('en'),
+    );
+
+    final target = find
+        .descendant(
+            of: find.byType(MapsToRow).first, matching: find.byType(Text))
+        .last;
+    final paragraph = tester.renderObject<RenderParagraph>(target);
+    final content = tester.widget<Text>(target).data ?? '';
+    final style = paragraph.text.style;
+    expect(style?.fontSize, isNotNull,
+        reason: 'the mapping target must carry a resolved style with a font '
+            'size, or there is nothing here to identify');
+
+    double widthUnder(TextStyle textStyle) {
+      final painter = TextPainter(
+        text: TextSpan(text: content, style: textStyle),
+        textDirection: paragraph.textDirection,
+        textScaler: paragraph.textScaler,
+      )..layout();
+      final width = painter.maxIntrinsicWidth;
+      painter.dispose();
+      return width;
+    }
+
+    final measured = widthUnder(style!);
+    // `copyWith` keeps the style's `package` and the `fontFamily` getter
+    // re-composes the prefix, so this asks for whichever of `NotoSans` /
+    // `packages/ui_kit_library/NotoSans` the style's own package implies —
+    // `loadAppFonts` registers both.
+    final noto = widthUnder(
+      style.copyWith(fontFamily: 'NotoSans', fontFamilyFallback: const []),
+    );
+    final oneEm = style.fontSize! * content.length;
+
+    expect(
+      measured,
+      lessThan(oneEm * 0.9),
+      reason: '"$content" measured ${measured.toStringAsFixed(1)}px, which is '
+          '${(measured / oneEm).toStringAsFixed(3)} em per glyph — a block font, '
+          'not a proportional one. The style asks for '
+          '${style.fontFamily} and nothing is registered under that name, so '
+          'every pixel in this file is fiction. `loadAppFonts` throws when a '
+          'font *file* is missing, so what is left is a name mismatch: check '
+          'that ui_kit still calls its family NeueHaasGrotTextRound (#1230).',
+    );
+
+    expect(
+      noto,
+      lessThan(oneEm * 0.9),
+      reason: 'the reference measurement is itself fictional: "$content" under '
+          'NotoSans came out at ${noto.toStringAsFixed(1)}px, '
+          '${(noto / oneEm).toStringAsFixed(3)} em per glyph. The Noto files '
+          'under test/fonts/ did not load, so the check below cannot identify '
+          'anything (#1230).',
+    );
+
+    expect(
+      measured,
+      isNot(closeTo(noto, 0.5)),
+      reason: '"$content" measured ${measured.toStringAsFixed(1)}px, which is '
+          'what NotoSans measures it at — the app\'s own family did not '
+          'resolve and the engine fell back to the CJK fallback chain. It is a '
+          'real font, so the numbers look plausible, but they are the wrong '
+          'typeface: check that ui_kit still calls its family '
+          'NeueHaasGrotTextRound and that `loadAppFonts` registers that name '
+          '(#1230).',
+    );
+  });
+
   group('the rule metrics stack where three across cannot read (#1230)', () {
     for (final wc in narrowCases) {
       testWidgets('@${wc.label} ${wc.widthKey}px the three metrics stack',
@@ -532,6 +651,7 @@ void main() {
       );
 
       final target = tester.renderObject<RenderParagraph>(texts.last);
+
       expect(
         target.didExceedMaxLines,
         isTrue,
