@@ -81,6 +81,14 @@ class _PreservableDelegate<
   ///
   /// If the post-save re-fetch fails, the error is logged and rethrown so
   /// callers can reliably clear transient UI flags (e.g. `isSaving`).
+  ///
+  /// NOTE: that rethrow is not actually guaranteed here. `performFetch` has to
+  /// turn a failure into a status rather than throw — the initial load has no
+  /// caller to catch it — so this method returns normally even when the
+  /// re-fetch failed, and the error only reaches the caller if the notifier
+  /// inspects `status.error` after `super.save()`. `instant_safety` is
+  /// currently the only one that does. Tracked in #1279; until it is fixed,
+  /// do not rely on this paragraph.
   Future<TState> save() async {
     await _performSave();
     markAsSaved();
