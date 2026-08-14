@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/localization/supported_locales_provider.dart';
+import 'package:privacy_gui/providers/app_settings/app_settings.dart';
+import 'package:privacy_gui/providers/app_settings/app_settings_provider.dart';
 
 /// Coverage for the locale a build is allowed to run in.
 ///
@@ -100,4 +102,68 @@ void main() {
       expect(container.read(canPickLanguageProvider), isTrue);
     });
   });
+
+  group('activeLocaleProvider', () {
+    /// A container whose persisted locale is [persisted] and whose build ships
+    /// [shipped].
+    ProviderContainer given({
+      required Locale? persisted,
+      required List<Locale> shipped,
+    }) {
+      final container = ProviderContainer(overrides: [
+        supportedLocalesProvider.overrideWithValue(shipped),
+        appSettingsProvider.overrideWith(
+            () => _FixedAppSettings(AppSettings(locale: persisted))),
+      ]);
+      addTearDown(container.dispose);
+      return container;
+    }
+
+    test('normalizes a persisted locale the build no longer ships', () {
+      // The whole point of the provider: every reader of this — the legal links
+      // above all — used to read the raw `ja` and open linksys.com/jp/… on a build
+      // whose picker is hidden, leaving no way back.
+      final container =
+          given(persisted: const Locale('ja'), shipped: const [Locale('en')]);
+
+      expect(container.read(activeLocaleProvider), const Locale('en'));
+    });
+
+    test('keeps a persisted locale the build does ship', () {
+      final container = given(
+        persisted: const Locale('ja'),
+        shipped: const [Locale('en'), Locale('ja')],
+      );
+
+      expect(container.read(activeLocaleProvider), const Locale('ja'));
+    });
+
+    test('never leaves the shipped set, whatever was persisted', () {
+      // Stated as a property, because this is what the legal links depend on: the
+      // country segment is derived from whatever this returns.
+      for (final persisted in const [
+        Locale('ja'),
+        Locale('zh', 'TW'),
+        Locale('ar'),
+        null,
+      ]) {
+        const shipped = [Locale('en')];
+        final container = given(persisted: persisted, shipped: shipped);
+
+        expect(shipped, contains(container.read(activeLocaleProvider)),
+            reason: 'persisted $persisted');
+      }
+    });
+  });
+}
+
+/// An [AppSettingsNotifier] pinned to one value, so a test can state what was
+/// persisted without reaching SharedPreferences.
+class _FixedAppSettings extends AppSettingsNotifier {
+  _FixedAppSettings(this._settings);
+
+  final AppSettings _settings;
+
+  @override
+  AppSettings build() => _settings;
 }

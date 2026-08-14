@@ -4,7 +4,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:privacy_gui/constants/_constants.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/demo/providers/theme_studio_config_provider.dart';
@@ -23,7 +22,6 @@ import 'package:privacy_gui/providers/theme_config_provider.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacy_gui/route/router_provider.dart';
 import 'package:privacy_gui/util/debug_mixin.dart';
-import 'package:privacy_gui/util/languages.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/util/app_utils.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -101,8 +99,6 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
     logger.t('[App]: build: $_currentRoute');
 
     final appSettings = ref.watch(appSettingsProvider);
-    final systemLocaleStr = Intl.getCurrentLocale();
-    final systemLocale = Locale(getLanguageData(systemLocaleStr)['value']);
     final router = ref.watch(routerProvider);
     router.routerDelegate.removeListener(_onReceiveRouteChanged);
     router.routerDelegate.addListener(_onReceiveRouteChanged);
@@ -123,7 +119,6 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
       data: (themeConfig) => _buildMaterialApp(
         router: router,
         appSettings: appSettings,
-        systemLocale: systemLocale,
         themeConfig: themeConfig,
         demoConfig: demoConfig,
         userThemeColor: userThemeColor,
@@ -131,7 +126,6 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
       loading: () => _buildMaterialApp(
         router: router,
         appSettings: appSettings,
-        systemLocale: systemLocale,
         themeConfig: ThemeJsonConfig.defaultConfig(),
         demoConfig: demoConfig,
         userThemeColor: userThemeColor,
@@ -142,7 +136,6 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
         return _buildMaterialApp(
           router: router,
           appSettings: appSettings,
-          systemLocale: systemLocale,
           themeConfig: ThemeJsonConfig.defaultConfig(),
           demoConfig: demoConfig,
           userThemeColor: userThemeColor,
@@ -157,7 +150,6 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
   Widget _buildMaterialApp({
     required GoRouter router,
     required AppSettings appSettings,
-    required Locale systemLocale,
     required ThemeJsonConfig themeConfig,
     required ThemeStudioConfig demoConfig,
     required Color? userThemeColor,
@@ -178,12 +170,10 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
     // Normalized against what this build shipped, not taken as given: a locale
     // persisted before a strip removed its language pack would otherwise leak
     // into everything derived from the locale while the strings fell back to
-    // English. See resolveSupportedLocale.
+    // English. Every other reader goes through the same provider, so the legal
+    // links cannot disagree with the strings. See activeLocaleProvider.
     final supportedLocales = ref.watch(supportedLocalesProvider);
-    final activeLocale = resolveSupportedLocale(
-      appSettings.locale ?? systemLocale,
-      supportedLocales,
-    );
+    final activeLocale = ref.watch(activeLocaleProvider);
 
     // CJK / non-Latin fallback for the active locale. The subset fonts are
     // eager-loaded via pubspec `fonts:` (registered before first frame). Adding

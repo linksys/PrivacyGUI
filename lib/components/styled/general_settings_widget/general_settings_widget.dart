@@ -50,8 +50,10 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
       ),
       borderRadius: const BorderRadius.all(Radius.circular(10)),
       builder: (controller) {
-        final locale =
-            ref.watch(appSettingsProvider.select((value) => value.locale));
+        // Normalized, so the tile cannot read "日本語" with no row check-marked
+        // while the app renders English — which is what a persisted `ja` did on a
+        // build that no longer ships it.
+        final locale = ref.watch(activeLocaleProvider);
         final showMascot =
             ref.watch(appSettingsProvider.select((value) => value.showMascot));
         return Semantics(
@@ -73,7 +75,7 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
                     SizedBox(
                       height: 44,
                       child: LanguageTile(
-                        locale: locale ?? const Locale('en'),
+                        locale: locale,
                         onTap: () {
                           controller.close();
                         },
@@ -194,7 +196,9 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
   }
 
   Widget _buildLegalLinks() {
-    final locale = ref.read(appSettingsProvider).locale;
+    // The normalized locale, not the raw setting: an English-only build reading a
+    // leftover `ja` would open linksys.com/jp/… for a user whose picker is hidden.
+    final locale = ref.read(activeLocaleProvider);
 
     return Wrap(
       spacing: 4,

@@ -6,7 +6,7 @@ import 'package:privacy_gui/components/styled/menus/widgets/menu_holder.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/components/views/arguments_view.dart';
 import 'package:flutter/material.dart';
-import 'package:privacy_gui/providers/app_settings/app_settings_provider.dart';
+import 'package:privacy_gui/localization/supported_locales_provider.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 import 'package:privacy_gui/page/support/faq_data.dart';
 import 'package:privacy_gui/page/support/shared_widgets/faq_agent/faq_agent.dart';
@@ -55,7 +55,7 @@ class _FaqListViewState extends ConsumerState<FaqListView> {
                       label: loc(context).faqVisitLinksysSupport,
                       onTap: () {
                         gotoOfficialWebUrl(FaqItem.faqVisitLinksysSupport.url,
-                            locale: ref.read(appSettingsProvider).locale);
+                            locale: ref.read(activeLocaleProvider));
                       },
                     ),
                   ],
@@ -82,8 +82,7 @@ class _FaqListViewState extends ConsumerState<FaqListView> {
                                         onTap: () {
                                           gotoOfficialWebUrl(item.url,
                                               locale: ref
-                                                  .read(appSettingsProvider)
-                                                  .locale);
+                                                  .read(activeLocaleProvider));
                                         },
                                       ))
                                   .toList(),
