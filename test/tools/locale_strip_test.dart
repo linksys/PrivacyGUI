@@ -51,14 +51,25 @@ void main() {
 
   /// Builds a minimal project layout: [locales] ARB files and [fonts] fallback
   /// font files, plus the pubspec that declares them, all committed to git.
+  ///
+  /// [templateLocale] writes the `l10n.yaml` that names gen-l10n's template, the
+  /// same way the real repo does. Pass null for a tree without one.
   void givenProject({
     required List<String> locales,
     List<String> fonts = const [],
+    String? templateLocale = 'en',
   }) {
     Directory('${project.path}/lib/l10n').createSync(recursive: true);
     for (final locale in locales) {
       File('${project.path}/lib/l10n/app_$locale.arb')
           .writeAsStringSync('{"@@locale":"$locale"}');
+    }
+    if (templateLocale != null) {
+      File('${project.path}/l10n.yaml').writeAsStringSync(
+        'arb-dir: lib/l10n\n'
+        'template-arb-file: app_$templateLocale.arb\n'
+        'output-localization-file: app_localizations.dart\n',
+      );
     }
     // The real repo gitignores the gen-l10n output, which is why restore has to
     // delete it rather than check it out. Without this the directory reads as
@@ -155,6 +166,65 @@ void main() {
       LocaleStripper(projectRoot: project.path).keep(['all']);
 
       expect(remainingArbFiles(), ['app_en.arb', 'app_ja.arb', 'app_zh.arb']);
+    });
+
+    test('refuses a locale list that drops the gen-l10n template', () {
+      // l10n.yaml names app_en.arb as its template, so `keep fr` deletes the one
+      // file gen-l10n cannot run without. It fails loudly and the trap restores,
+      // but its error names neither this script nor LOCALES, so the whole CI
+      // build is spent to learn what this check says for free.
+      givenProject(locales: ['en', 'fr', 'ja']);
+
+      expect(
+        () => LocaleStripper(projectRoot: project.path).keep(['fr']),
+        throwsA(isA<LocaleStripException>()),
+      );
+      expect(remainingArbFiles(), ['app_en.arb', 'app_fr.arb', 'app_ja.arb']);
+    });
+
+    test('keeps the parent language a kept regional variant needs', () {
+      // gen-l10n requires a base locale as the fallback for any locale carrying a
+      // country code, so keeping zh_TW alone deletes app_zh.arb and fails the
+      // generation. The variant is a reasonable thing to ask for — it just cannot
+      // travel without its parent.
+      givenProject(locales: ['en', 'zh', 'zh_TW', 'ja']);
+
+      LocaleStripper(projectRoot: project.path).keep(['en', 'zh_TW']);
+
+      expect(
+          remainingArbFiles(), ['app_en.arb', 'app_zh.arb', 'app_zh_TW.arb']);
+    });
+
+    test('keeps the fonts a regional variant pulls its parent in for', () {
+      // The parent came back for gen-l10n's sake, so the Han fonts have to come
+      // with it or zh_TW ships its strings and renders them as tofu.
+      givenProject(locales: [
+        'en',
+        'zh',
+        'zh_TW'
+      ], fonts: [
+        'NotoSans-Latin.woff2',
+        'NotoSansCJKtc.subset.woff2',
+        'Roboto.woff2',
+      ]);
+
+      LocaleStripper(projectRoot: project.path).keep(['en', 'zh_TW']);
+
+      expect(remainingFontFiles(), [
+        'NotoSans-Latin.woff2',
+        'NotoSansCJKtc.subset.woff2',
+        'Roboto.woff2',
+      ]);
+    });
+
+    test('strips normally in a tree with no l10n.yaml to read', () {
+      // The template check gives itself up rather than guessing when there is no
+      // l10n.yaml, so a tree without one still strips.
+      givenProject(locales: ['en', 'ja', 'fr'], templateLocale: null);
+
+      LocaleStripper(projectRoot: project.path).keep(['ja']);
+
+      expect(remainingArbFiles(), ['app_ja.arb']);
     });
 
     test('tolerates the whitespace a Jenkins parameter arrives with', () {

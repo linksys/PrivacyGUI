@@ -144,13 +144,18 @@ class LocaleStripper {
   /// Deletes every language pack except those for [locales], plus the fallback
   /// fonts those locales cannot use.
   ///
-  /// A regional variant travels with its parent language, so keeping `zh` keeps
-  /// `zh_TW` too. Passing [keepAll] does nothing.
+  /// A regional variant travels with its parent language in both directions:
+  /// keeping `zh` keeps `zh_TW` too, and keeping `zh_TW` pulls `zh` back in
+  /// because gen-l10n requires a base locale as the fallback for any locale with
+  /// a country code. Passing [keepAll] does nothing.
+  ///
+  /// Refuses a list that drops `l10n.yaml`'s template locale, which gen-l10n
+  /// cannot run without.
   ///
   /// Entries are trimmed, because the list reaches this script as one string a
   /// human typed into a Jenkins build parameter, where `en, fr` is ordinary.
   void keep(List<String> requested) {
-    final locales = [
+    var locales = [
       for (final locale in requested)
         if (locale.trim().isNotEmpty) locale.trim(),
     ];
@@ -173,6 +178,38 @@ class LocaleStripper {
         'available: ${available.join(', ')}',
       );
     }
+    // Refused here rather than left to gen-l10n. Both of the shapes below make it
+    // fail, loudly and with the trap putting everything back — but its error names
+    // neither this script nor the LOCALES parameter that caused it, so the cost is
+    // a whole CI build spent to learn what a check here says for free.
+    final templateLocale = _templateLocale();
+    if (templateLocale != null && !_isKept(templateLocale, locales)) {
+      throw LocaleStripException(
+        'l10n.yaml names app_$templateLocale.arb as its template-arb-file, so '
+        'gen-l10n cannot run without it — add $templateLocale to the locale '
+        'list',
+      );
+    }
+    // A regional variant needs its parent language's pack: gen-l10n requires a
+    // base locale as the fallback for any locale carrying a country code, so
+    // `keep en,zh_TW` without this drops app_zh.arb and fails the generation.
+    // Kept rather than rejected, because shipping zh_TW is a reasonable thing to
+    // ask for — it just cannot travel alone.
+    final withParents = <String>[
+      ...locales,
+      for (final locale in locales)
+        if (_parentLanguageOf(locale) != locale &&
+            !locales.contains(_parentLanguageOf(locale)) &&
+            available.contains(_parentLanguageOf(locale)))
+          _parentLanguageOf(locale),
+    ];
+    final addedParents = withParents.skip(locales.length).toList();
+    if (addedParents.isNotEmpty) {
+      stdout.writeln(
+          '  language packs: also keeping ${addedParents.join(', ')} '
+          '— gen-l10n needs a base locale as the fallback for a regional variant');
+    }
+    locales = withParents;
     // Everything below is computed and validated before the first deletion, so a
     // rejected pubspec shape aborts on an intact tree. Deleting first and
     // validating afterwards left a half-stripped working tree behind whenever the
@@ -632,6 +669,32 @@ class LocaleStripper {
       throw LocaleStripException('could not read git status: ${result.stderr}');
     }
     return (result.stdout as String).trim();
+  }
+
+  /// The locale of `l10n.yaml`'s `template-arb-file`, or null when there is no
+  /// `l10n.yaml` to read — a throwaway test tree, say.
+  ///
+  /// Parsed by hand rather than with a YAML package: this is a script run by a
+  /// shell build step, and one top-level key does not justify a dependency. A
+  /// shape this cannot read is treated as "no template", which only gives up the
+  /// check — [keep] never depends on it to decide what to delete.
+  String? _templateLocale() {
+    final config = File('$projectRoot/l10n.yaml');
+    if (!config.existsSync()) {
+      return null;
+    }
+    for (final line in config.readAsLinesSync()) {
+      final match = RegExp(r'^template-arb-file:\s*(\S+)\s*$').firstMatch(line);
+      if (match == null) {
+        continue;
+      }
+      final fileName = match.group(1)!;
+      if (!fileName.startsWith('app_') || !fileName.endsWith('.arb')) {
+        return null;
+      }
+      return fileName.substring('app_'.length, fileName.length - '.arb'.length);
+    }
+    return null;
   }
 
   /// Whether [locale] survives a strip that keeps [kept], counting a regional
