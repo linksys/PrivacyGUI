@@ -61,6 +61,25 @@ void main() {
   });
 
   // ---------------------------------------------------------------------------
+  // InstantSafetyStatus
+  // ---------------------------------------------------------------------------
+
+  group('InstantSafetyStatus', () {
+    test('isLoading defaults to false so an omitted flag fails safe', () {
+      // The view checks isLoading before error, so a default of true would turn
+      // any status that carries an error into an endless loader (#1274).
+      const status = InstantSafetyStatus(error: _fetchError);
+      expect(status.isLoading, isFalse);
+      expect(status.error, _fetchError);
+    });
+
+    test('copyWith(clearError: true) drops the error', () {
+      const status = InstantSafetyStatus(error: _fetchError);
+      expect(status.copyWith(clearError: true).error, isNull);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
   // InstantSafetyFeatureState
   // ---------------------------------------------------------------------------
 

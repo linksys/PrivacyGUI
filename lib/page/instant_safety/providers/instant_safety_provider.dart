@@ -71,13 +71,13 @@ class UspInstantSafetyNotifier
 
       logger.e('[USP][Safety]: Fetch failed (forceRemote: $forceRemote)',
           error: error);
-      // isLoading must be set explicitly — InstantSafetyStatus defaults it to
-      // true, so omitting it would leave the view stuck on its loader and the
-      // ServiceErrorView (and its Retry) unreachable.
-      //
       // Returning a status rather than throwing is right for the two display
       // paths (initial load, pull-to-refresh) but wrong for the post-save
       // re-fetch — save() below converts it back into a throw.
+      //
+      // isLoading stays spelled out even though it now defaults to false: the
+      // view checks it before error, so this line is what makes the error view
+      // reachable at all.
       return (
         null,
         InstantSafetyStatus(isLoading: false, error: error),
