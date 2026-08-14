@@ -34,23 +34,34 @@ import '../../../../util/dashboard/dashboard_card_probe.dart';
 ///     gate green and the card empty. Nothing in `known_overflows.json` can
 ///     express "the picture is still there at 4 rows".
 ///
+/// AC 5 is a claim about the whole card, so the Ports tab is swept for the same
+/// two failures even though none of the 21 coordinates were there — its rows fit
+/// at 191px, and fitting is not reading. One thing on it does not read, and the
+/// cause is outside this card; the last test in the file records it with its
+/// measurement rather than leaving it to a comment.
+///
 /// So each group below asserts on the rendered tree. Each was run against a
 /// mutation of the code it guards, and each fired:
 ///
 ///   | mutation                                       | what failed                                                  |
 ///   |------------------------------------------------|--------------------------------------------------------------|
-///   | `_kMetricsSideBySideMinWidth` 328 → 0 (i.e. the pre-#1230 card) | 33: shredded text (26 — every locale), three across @min and @preferred (2), footer + donut + ring + legend @min (5); 10 of the 33 trip `pumpAt`'s overflow first, by +7px to +26px |
-///   | `_kMetricsSideBySideMinWidth` 328 → 600        | three across @desktop (1)                                    |
-///   | `_kProtocolChartMinHeight` 70 → 200            | chart drawn @shipped height (3)                              |
-///   | `_kDonutMinRingThickness` 10 → 60              | donut drawn @shipped height (3), ring fits its box (3)        |
-///   | `sectionRadius:` → ui_kit's default 40         | ring fits its box (3)                                        |
-///   | `_StackedMetrics` padding `sm` → block default | 12: `pumpAt` overflow @min in 6 locales (+3px `fi` to +7px `ru`, 10 tests), donut starved out even @shipped height (2) |
-///   | stacked label `maxLines` 2 → 1                 | shredded text (5 — `es`, `es-AR`, `fi`, `nb`, `ru`)           |
+///   | 1. `_kMetricsSideBySideMinWidth` 328 → 0 (i.e. the pre-#1230 card) | 33: shredded text (26 — every locale), three across @min and @preferred (2), footer + donut + ring + legend @min (5); 10 of the 33 trip `pumpAt`'s overflow first, by +7px to +26px |
+///   | 2. `_kMetricsSideBySideMinWidth` 328 → 600     | three across @desktop (1)                                    |
+///   | 3. `_kProtocolChartMinHeight` 70 → 200         | chart drawn @shipped height (3)                              |
+///   | 4. `_kDonutMinRingThickness` 10 → 60           | donut drawn @shipped height (3), ring fits its box (3)        |
+///   | 5. `size: diameter` → the themed design diameter, ignoring the slot | ring fits its box (1 — @min only; 191px is the one width whose slot, 157.4px, is under the 160px this theme designs for) |
+///   | 6. `showLabels: false` → `true`                | ring fits its box (3)                                        |
+///   | 7. `_StackedMetrics` padding `sm` → block default | 12: `pumpAt` overflow @min in 6 locales (+3px `fi` to +7px `ru`, 10 tests), donut starved out even @shipped height (2) |
+///   | 8. stacked label `maxLines` 2 → 1              | shredded text (5 — `es`, `es-AR`, `fi`, `nb`, `ru`)          |
+///   | 9. Ports heading `maxLines: 1`                 | Ports tab shredded text (6 — `da`, `pl`, `pt`, `pt-PT`, `ru`, `sv`, the locales whose heading wraps) |
+///   | 10. the mapping on a full-width line of its own | 29: `pumpAt` overflow @min in all 26 locales (+11px to +36px bottom) and @preferred in one, chart suppression @min (2) — the +20px a rule costs is what AC 4 forbids |
+///   | 11. 10, plus the DMZ list dropped, plus `MapsToRow`'s source given its intrinsic width instead of half the row | mapping target ratchet (1), and nothing else — the combination that would let this card show a target whole, measured clean |
 ///
-/// Five of those seven leave the #1183 gate green while the card loses a chart
-/// (2, 3, 4), draws a donut 40px wider than its box (5), or clips five locales'
-/// labels mid-glyph (7) — clipping and absence are not overflow. Only 1 and 6
-/// report an overflow, and 1 is simply the pre-#1230 card.
+/// Seven of those eleven leave the #1183 gate green while the card loses a chart
+/// (3, 4), asks for a 160px donut in a 157.4px slot (5), prints a clipped slice
+/// label into a 20px ring (6), or clips text mid-glyph (8, 9) — clipping and
+/// absence are not overflow. Only 1, 7 and 10 report an overflow, and 1 is simply
+/// the pre-#1230 card.
 ///
 /// Overflow itself is the gate's job — both `firewall_overview` keys are gone
 /// from `known_overflows.json` — with one exception, in `pumpAt`: the gate pumps
@@ -193,6 +204,80 @@ void main() {
     return tester.getRect(wrap);
   }
 
+  /// Every [Text] in the Ports tab's own content, tab bar and footer excluded.
+  ///
+  /// Anchored on a `MapsToRow` and walked up to the innermost enclosing [Column],
+  /// which is the tab's root: taking the whole card instead would measure the tab
+  /// labels and the detail link, which the template owns and which every card
+  /// shares — a failure there is not this card's to fix.
+  Finder portsTabTexts() => find.descendant(
+        of: find
+            .ancestor(
+                of: find.byType(MapsToRow).first, matching: find.byType(Column))
+            .first,
+        matching: find.byType(Text),
+      );
+
+  /// The two halves of every mapping row, in tree order: `source -> target`.
+  ///
+  /// `MapsToRow` renders exactly two [Text]s and the count is asserted here, so a
+  /// third one appearing inside it cannot quietly be read as a target.
+  ({List<Text> sources, List<Text> targets}) mappingHalves(
+      WidgetTester tester) {
+    final rows = find.byType(MapsToRow);
+    expect(rows, findsWidgets,
+        reason: 'the Ports tab renders one MapsToRow per port-forwarding rule; '
+            'without any there is nothing here to measure');
+    final sources = <Text>[];
+    final targets = <Text>[];
+    for (var i = 0; i < rows.evaluate().length; i++) {
+      final texts =
+          find.descendant(of: rows.at(i), matching: find.byType(Text));
+      expect(texts, findsNWidgets(2),
+          reason: 'MapsToRow $i must render exactly a source and a target');
+      sources.add(tester.widget<Text>(texts.first));
+      targets.add(tester.widget<Text>(texts.last));
+    }
+    return (sources: sources, targets: targets);
+  }
+
+  /// The card's `_kDonutMinRingThickness`, mirrored — it is private to `lib/`.
+  const minRingThicknessPx = 10.0;
+
+  /// What fl_chart was actually handed: the hole and ring radii in logical px,
+  /// and the per-slice titles.
+  ///
+  /// Since ui_kit v2.34.11 both radii are derived from the box inside
+  /// `AppPieChart`, so the card's own arguments no longer describe the drawing:
+  /// reading `AppPieChart.sectionRadius` back would assert only that this file
+  /// agrees with itself. The titles come from here for a related reason —
+  /// `showLabels` becomes `title: ''` on every section and fl_chart paints slice
+  /// labels onto its canvas rather than as [Text] widgets, so nothing in the
+  /// widget tree can see them.
+  ///
+  /// fl_chart is ui_kit's dependency and not this app's, so its types are reached
+  /// dynamically rather than imported — the price of measuring the drawing instead
+  /// of the request.
+  ({double hole, double ring, List<String> titles}) drawnDonut(
+      WidgetTester tester) {
+    final pie = find.byWidgetPredicate(
+        (w) => w.runtimeType.toString() == 'PieChart',
+        description: 'fl_chart PieChart');
+    expect(pie, findsOneWidget,
+        reason: 'AppPieChart draws through exactly one fl_chart PieChart; '
+            'without it there is nothing here to measure');
+    final dynamic data = (tester.widget(pie) as dynamic).data;
+    final sections = data.sections as List;
+    final rings =
+        sections.map<double>((s) => (s as dynamic).radius as double).toList();
+    return (
+      hole: data.centerSpaceRadius as double,
+      ring: rings.reduce(math.max),
+      titles:
+          sections.map<String>((s) => (s as dynamic).title as String).toList(),
+    );
+  }
+
   group('the rule metrics stack where three across cannot read (#1230)', () {
     for (final wc in narrowCases) {
       testWidgets('@${wc.label} ${wc.widthKey}px the three metrics stack',
@@ -314,6 +399,148 @@ void main() {
           }
         }
       });
+    }
+  });
+
+  group('no Ports tab text is shredded at the narrowest width (#1230)', () {
+    // AC 5 is about the card, and the card has two tabs. The sweep above covers
+    // the Rules tab because that is where the 15 card-own coordinates were; this
+    // one covers the other half of the same claim, where the gate again says
+    // nothing — the Ports tab's rows fit at 191px, and fitting is not reading.
+    //
+    // Everything the tab renders except the mapping target: the heading and the
+    // DMZ target line are localized, and the port numbers and protocol badges are
+    // not but a clipped port number is as unreadable as a clipped word. The one
+    // thing *allowed* to wrap is the heading — 6 locales do, `pt_PT` wanting
+    // 230.1px of a 157.4px row — so the same two-line budget as the metrics
+    // applies.
+    //
+    // The mapping *target* is excluded, and not because it passes: at 191px it
+    // gets 36.9-38.5px for 82.3-103.7px of text and is ellipsized in every locale.
+    // That belongs to the test below it rather than here, for two reasons. It is
+    // an IP and a port, byte-identical in all 26 locales, so a localization sweep
+    // is the wrong instrument — one measurement proves as much as 26. And the
+    // ellipsis is `MapsToRow`'s documented contract ("[target] is the part that
+    // ellipsizes, since the source is short and bounded while the target is not"),
+    // shared with seven other call sites; asserting it whole here would fail this
+    // card for a decision taken in `row_blocks.dart`.
+    const maxLines = 2;
+
+    for (final locale in AppLocalizations.supportedLocales) {
+      final tag = locale.toLanguageTag();
+      testWidgets('@${narrowest.widthKey}px $tag renders every row whole',
+          (tester) async {
+        await pumpAt(tester,
+            widthCase: narrowest, rows: minRows, tabIndex: 1, locale: locale);
+
+        final targets = mappingHalves(tester).targets;
+        final texts = portsTabTexts();
+        expect(texts, findsWidgets,
+            reason: 'the Ports tab rendered no text at all — the fixture must '
+                'carry port-forwarding rules for this to measure anything');
+
+        for (var i = 0; i < texts.evaluate().length; i++) {
+          final widget = tester.widget<Text>(texts.at(i));
+          if (targets.any((t) => identical(t, widget))) continue;
+          final content = widget.data ?? '';
+          if (content.isEmpty) continue;
+          final paragraph = tester.renderObject<RenderParagraph>(texts.at(i));
+          final room = paragraph.size.width;
+
+          final wanted = TextPainter(
+            text: TextSpan(text: content, style: paragraph.text.style),
+            textDirection: paragraph.textDirection,
+            textScaler: paragraph.textScaler,
+            locale: locale,
+          )..layout(maxWidth: room);
+          final lines = wanted.computeLineMetrics().length;
+          wanted.dispose();
+
+          expect(
+            lines,
+            lessThanOrEqualTo(maxLines),
+            reason: '"$content" needs $lines lines in the '
+                '${room.toStringAsFixed(1)}px it is given on the Ports tab at '
+                '${narrowest.widthKey}px. Beyond $maxLines the row is a column '
+                'of fragments (#1230).',
+          );
+          expect(
+            paragraph.didExceedMaxLines,
+            isFalse,
+            reason: '"$content" is ellipsized on the Ports tab at '
+                '${narrowest.widthKey}px (${room.toStringAsFixed(1)}px of room, '
+                '$lines lines wanted) — clipped, which the gate cannot see '
+                '(#1230).',
+          );
+        }
+      });
+    }
+  });
+
+  testWidgets(
+      '@${narrowest.widthKey}px the mapping target is the one thing the row '
+      'cannot show whole (#1230)', (tester) async {
+    // The measurement the sweep above deliberately does not make, kept as a
+    // ratchet rather than left to a comment. `en` alone: the strings are IPs and
+    // ports, identical in every locale.
+    //
+    // The cause is not this card's leading. `MapsToRow` gives its two halves a
+    // `Flexible` each and `RenderFlex` splits the room **evenly** between equal
+    // flexes without handing back what the shorter one declines — measured: the
+    // source takes its 30.7px and the target still gets exactly half, 38.5px of
+    // the 77px the pair has. So the target's ceiling is half the row, whatever
+    // else the row spends, and "192.168.1.105:27015" wants 103.7px: reading it
+    // whole needs 227.4px of mapping, more than the whole 191px card. Measured
+    // against the two card-side fixes and neither is enough on its own — the
+    // mapping on a full-width line of its own still leaves the target 68.7px
+    // (half of 137.4), and it costs 20px a rule, which overflows the 3-row
+    // minimum this ticket may not raise (AC 4) by +11px to +36px unless the DMZ
+    // list goes too.
+    //
+    // That makes it a `row_blocks.dart` decision, not a #1230 one, and it
+    // contradicts `MapsToRow`'s own docstring: "[target] is the part that
+    // ellipsizes, since the source is short and bounded while the target is not"
+    // describes a layout that gives the bounded half its intrinsic width, not
+    // half the row. Seven other call sites share it. This expectation is what
+    // stops the limitation from being forgotten; the header table records the
+    // combination that clears it.
+    //
+    // Both halves are asserted, in opposite directions. The source is the rule's
+    // identity — which external port this row is about — and must survive; if it
+    // ever ellipsizes the row has stopped saying anything at all.
+    await pumpAt(tester,
+        widthCase: narrowest,
+        rows: minRows,
+        tabIndex: 1,
+        locale: const Locale('en'));
+
+    final rows = find.byType(MapsToRow);
+    final halves = mappingHalves(tester);
+
+    for (var i = 0; i < halves.sources.length; i++) {
+      final texts =
+          find.descendant(of: rows.at(i), matching: find.byType(Text));
+      final source = tester.renderObject<RenderParagraph>(texts.first);
+      expect(
+        source.didExceedMaxLines,
+        isFalse,
+        reason:
+            '"${halves.sources[i].data}" — the external port of rule $i — is '
+            'ellipsized at ${narrowest.widthKey}px. It is 28.7-33.3px of text: '
+            'if the leading dot and badge have grown enough to clip it, the row '
+            'no longer identifies its rule (#1230).',
+      );
+
+      final target = tester.renderObject<RenderParagraph>(texts.last);
+      expect(
+        target.didExceedMaxLines,
+        isTrue,
+        reason: '"${halves.targets[i].data}" now renders whole at '
+            '${narrowest.widthKey}px — the known limitation this expectation '
+            'records is fixed. Delete this test and drop the mapping-target '
+            'exclusion from the sweep above, which then covers it in all 26 '
+            'locales (#1230).',
+      );
     }
   });
 
@@ -447,11 +674,15 @@ void main() {
 
   group('the donut is never drawn larger than the box it was given (#1230)',
       () {
-    // ui_kit takes the section radius from the call site and the centre-hole
-    // radius from the theme, so the drawn diameter is `2 × (centre + ring)` and
-    // ignores `size`. The default 40px ring against this theme's 60px centre
-    // draws 200px into a 160px box — clipped on every side, and clipping is not
-    // overflow, so the gate reports nothing.
+    // Measured on what fl_chart was handed, not on what this card passed in.
+    // ui_kit ≤ v2.34.10 took the ring from the call site and the hole from the
+    // theme, so the drawn diameter was `2 × (centre + ring)` and ignored `size` —
+    // the default 40px ring against a 60px hole drew 200px into a 160px box,
+    // clipped on every side, and clipping is not overflow so the gate reported
+    // nothing. v2.34.11 derives both radii from the box
+    // (linksys/privacyGUI-UI-kit#22), which is why the `sectionRadius` this card
+    // used to compute is gone — and why reading the card's own inputs back would
+    // now assert nothing about what is painted.
     for (final wc in [...narrowCases, desktopCase]) {
       testWidgets('@${wc.label} ${wc.widthKey}px the ring fits the box',
           (tester) async {
@@ -462,24 +693,75 @@ void main() {
             locale: const Locale('ru'));
 
         final finder = find.byType(AppPieChart);
-        final chart = tester.widget<AppPieChart>(finder);
         final box = tester.getRect(finder);
-        final centreRadius = AppDesignTheme.of(tester.element(finder))
-            .chartStyle
-            .pieCenterRadius;
-        final sectionRadius = chart.sectionRadius;
-        expect(sectionRadius, isNotNull,
-            reason: 'the ring thickness must be sized from the slot, not left '
-                'to ui_kit\'s default, or the drawn donut ignores its box');
+        final slot = tester.getRect(
+            find.ancestor(of: finder, matching: find.byType(Center)).first);
+        final geometry = drawnDonut(tester);
+        final drawn = 2 * (geometry.hole + geometry.ring);
 
-        final drawn = 2 * (centreRadius + sectionRadius!);
+        expect(
+          math.max(box.width, box.height),
+          lessThanOrEqualTo(math.min(slot.width, slot.height) + 0.01),
+          reason: 'the donut asked for a '
+              '${box.width.toStringAsFixed(1)}x${box.height.toStringAsFixed(1)} '
+              'box inside a '
+              '${slot.width.toStringAsFixed(1)}x${slot.height.toStringAsFixed(1)} '
+              'slot — the size must come from the slot, not from the theme '
+              '(#1230)',
+        );
         expect(
           drawn,
           lessThanOrEqualTo(math.min(box.width, box.height) + 0.01),
-          reason: 'the donut draws ${drawn.toStringAsFixed(1)}px into a '
+          reason: 'the donut draws ${drawn.toStringAsFixed(1)}px '
+              '(${geometry.hole.toStringAsFixed(1)}px hole + '
+              '${geometry.ring.toStringAsFixed(1)}px ring) into a '
               '${box.width.toStringAsFixed(1)}x${box.height.toStringAsFixed(1)} '
               'box, so the ring is clipped (#1230)',
         );
+        expect(
+          geometry.ring,
+          greaterThanOrEqualTo(minRingThicknessPx - 0.01),
+          reason: 'the ring is ${geometry.ring.toStringAsFixed(1)}px thick, '
+              'below the ${minRingThicknessPx.toStringAsFixed(0)}px the card '
+              'draws a donut for at all — at this thickness it reads as an '
+              'outline and should have been suppressed instead (#1230)',
+        );
+
+        expect(
+          geometry.titles,
+          everyElement(isEmpty),
+          reason: 'a slice label is painted inside the ring, which at '
+              '${geometry.ring.toStringAsFixed(1)}px would be a clipped '
+              'duplicate of the legend below — `showLabels: false` is what '
+              'suppresses it, and fl_chart paints these onto its canvas rather '
+              'than as widgets, so the tree cannot see them (#1230)',
+        );
+
+        // v2.34.11 shrinks the *hole* when the box cannot hold the themed
+        // radius, so the caption is no longer guaranteed the 60px it is sized
+        // against — ui_kit says as much on `centerWidget`. The caption is the
+        // only text inside the chart, so its two [Text]s are the whole of what
+        // must fit in the hole.
+        final texts = find.descendant(of: finder, matching: find.byType(Text));
+        expect(texts, findsNWidgets(2),
+            reason: 'the only text inside the donut is its own caption — a '
+                'count and the word for it. ${texts.evaluate().length} found, '
+                'so the caption has changed and the radius measured below is no '
+                'longer the one that matters (#1230)');
+        var caption = tester.getRect(texts.at(0));
+        for (var i = 1; i < texts.evaluate().length; i++) {
+          caption = caption.expandToInclude(tester.getRect(texts.at(i)));
+        }
+        final halfDiagonal = math.sqrt(
+            math.pow(caption.width / 2, 2) + math.pow(caption.height / 2, 2));
+        expect(
+          halfDiagonal,
+          lessThanOrEqualTo(geometry.hole + 0.01),
+          reason: 'the caption needs a ${halfDiagonal.toStringAsFixed(1)}px '
+              'radius and the hole is ${geometry.hole.toStringAsFixed(1)}px, so '
+              'it spills onto the ring it is centred in (#1230)',
+        );
+
         expect(box.bottom, lessThanOrEqualTo(contentBottom(tester) + 0.01),
             reason: 'the donut must sit above the footer rule');
       });

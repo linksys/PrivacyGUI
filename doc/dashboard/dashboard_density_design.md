@@ -1126,7 +1126,7 @@ width one. See **§2.11a**.
 ### 2.11a What the two height sites taught us (#1230 — implemented)
 
 All **21** cleared, not the 15 §2.11 scoped: fl_chart's 6 went with them, from the
-call site, with the package untouched. `minHeightRows` stays 3. Five things only
+call site, with the package untouched. `minHeightRows` stays 3. Six things only
 showed up in the measurement.
 
 1. **Both bottom overflows had a *width* cause, and neither of §2.11's guessed
@@ -1186,36 +1186,78 @@ showed up in the measurement.
    `HeightStrategy.strict(4)` gives (chart slot 148-173px) as well as absence at
    the 3 rows the gate pumps (12-37px). Any later ticket that clears a coordinate
    by not drawing something owes the same pair.
-5. **Where a card overflows, look for what it also clips.** ui_kit's `AppPieChart`
-   takes the ring radius from the call site but the centre-hole radius from the
-   theme (`ChartStyle.pieCenterRadius`, 60px here), so the drawn diameter is
-   `2 × (centre + ring)` and does not follow `size`. The card's `size: 160` with
+5. **Where a card overflows, look for what it also clips.** ui_kit ≤ v2.34.10's
+   `AppPieChart` took the ring radius from the call site but the centre-hole radius
+   from the theme (`ChartStyle.pieCenterRadius`, 60px here), so the drawn diameter
+   was `2 × (centre + ring)` and did not follow `size`. The card's `size: 160` with
    the default 40px ring drew a **200px donut into a 160px box** — 20px clipped off
    every side at *every* width including desktop, invisible to the gate because a
-   clip is not an overflow. Measured by pixel extent, the painted diameter is 200px
-   at every `size` from 120 to 300, so `size` does not bound the drawing in either
-   direction; filed upstream as linksys/privacyGUI-UI-kit#22, and the app's other
-   four `AppPieChart` call sites (`size: 180` ×2, `size: 120`, one caller-supplied)
-   still paint 200px. Sizing the ring from the slot fixes it here and makes the
-   suppression threshold exact. Second instance of the pattern §2.10d found in
-   `network_health`'s gauge centre.
+   clip is not an overflow. Measured by pixel extent, the painted diameter was 200px
+   at every `size` from 120 to 300, so `size` bounded the drawing in neither
+   direction; filed upstream as linksys/privacyGUI-UI-kit#22 and **fixed in
+   v2.34.11**, which derives both radii from the box. This branch bumps to it and
+   deletes the `sectionRadius: size / 2 - pieCenterRadius` workaround the fix makes
+   redundant — ui_kit's own dartdoc says the two now draw identically. Measured
+   after removal: 191px card → 153px box, **57.4px hole + 19.1px ring**; 288px and
+   512px → 160px box, 60px hole + 20px ring; the caption's half-diagonal is 32.0px
+   at all three, so it clears even the shrunk hole by 25.4px. The one thing the
+   upstream fix changes for a *tight* box is which radius gives: it shrinks the
+   **hole**, not the ring, so a `centerWidget` sized against the themed value can
+   overhang — which is the second reason `_kDonutMinRingThickness` suppresses rather
+   than shrinks. The card's cap is now written as a ring thickness measured outward
+   from the same themed hole as that floor, so no theme's `pieCenterRadius` can
+   invert the two and close the window (a flat 160px would leave `neumorphic`'s 65px
+   hole only 150-160px, and any hole past 70px nothing at all). The app's other four
+   `AppPieChart` call sites (`size: 180` ×2, `size: 120`, one caller-supplied) are
+   fixed by the bump without touching them. Second instance of the pattern §2.10d
+   found in `network_health`'s gauge centre.
+6. **AC 5 is a claim about the card, and a tab with no coordinates on it can still
+   fail it.** Both #1230 sites are on the Rules tab, so the Ports tab was outside
+   the coordinate list entirely — and its port-forwarding rows fit at 191px, which
+   the gate reads as fine. Swept across all 26 locales, its localized text is clean
+   (6 locales wrap the heading to 2 lines, `pt_PT` wanting 230.1px of a 157.4px
+   row; nothing clips). Its **mapping target does not read**: 36.9-38.5px of room
+   for 82.3-103.7px of "host:port", so every rule shows about two characters of its
+   destination in every locale. The cause is not this card. `MapsToRow` gives its
+   source and target a `Flexible` each, and `RenderFlex` splits the room **evenly**
+   between equal flexes without handing back what the shorter half declines —
+   measured, the source takes its 30.7px and the target still gets exactly half,
+   38.5px of the pair's 77px. So the target's ceiling is half the mapping row
+   whatever else that row spends, and no width this card can give it is enough:
+   103.7px of target needs 227.4px of mapping, more than a 191px card is wide. Both
+   card-side fixes were measured and neither suffices alone — putting the mapping on
+   a full-width line of its own still leaves the target 68.7px, and it costs 20px a
+   rule, which overflows the 3-row minimum AC 4 forbids raising by +11px to +36px
+   unless the DMZ list goes with it. What clears it is the combination: that line,
+   the DMZ list dropped at narrow width, **and** `MapsToRow` giving its bounded half
+   its intrinsic width instead of half the row — measured green on this card's whole
+   readability suite. That last part contradicts the widget's own docstring
+   ("[target] is the part that ellipsizes, since the source is short and bounded
+   while the target is not") and is shared with seven other call sites, so it is a
+   `row_blocks.dart` change and not #1230's; the readability suite records the
+   limitation as a failing-when-fixed expectation rather than a comment. **A shared
+   layout block's flex distribution is a density decision** — the even split is
+   invisible until a card is narrow enough for the two halves to want different
+   amounts, and then it is the whole difference between "19…" and the address.
 
-The claims the gate cannot make — both arrangements legible, both charts present
-at the shipped height, the donut never wider than its box — are covered by
+The claims the gate cannot make — both arrangements legible, both tabs legible in
+all 26 locales, both charts present at the shipped height, the donut never wider
+than its box, no slice label painted into the ring — are covered by
 `test/page/dashboard/views/components/firewall_overview_readability_test.dart`,
-tagged `dashboard-card` so it gates; each of its six groups was verified to fail
-under a mutation of the code it guards (seven mutations, tabulated in the file,
-five of which leave the #1183 gate green). It also re-asserts plain overflow at
+tagged `dashboard-card` so it gates; each of its eight groups was verified to fail
+under a mutation of the code it guards (eleven mutations, tabulated in the file,
+seven of which leave the #1183 gate green). It also re-asserts plain overflow at
 every realization it pumps, which is not redundant with the gate: the gate pumps
 `minHeightRows` only, and the shipped 4 rows is the one height at which the donut's
 caption and fl_chart's axis strip are built at all — the two sites #1230 fixed were
 otherwise measured by nothing at the height they actually render.
 
-Two follow-ups left open rather than folded into #1230: the narrow arrangement's
+Three follow-ups left open rather than folded into #1230: the narrow arrangement's
 tile is `_InfoGridTile` in a `Row`, which `layout_blocks` has no variant for and
-`ethernet_ports` hand-rolls too (**#1275**), and the helpers these readability
+`ethernet_ports` hand-rolls too (**#1275**); the helpers these readability
 tests share are now cloned across up to seven files (noted on **#1238**, the next
-card to need them).
+card to need them); and `MapsToRow`'s even flex split (item 6), which no card can
+work around and which needs the shared block changed.
 
 ### 2.12 What the first *rearrangement* taught us (#1228 — implemented)
 

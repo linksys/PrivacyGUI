@@ -7,6 +7,7 @@ import 'package:privacy_gui/page/_shared/providers/card_tab_state_provider.dart'
 import 'package:privacy_gui/page/_shared/components/usp_status_dot.dart';
 import 'package:privacy_gui/page/_shared/components/dashboard_card_template.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
+import 'package:privacy_gui/page/_shared/models/port_forwarding_rule_ui_model.dart';
 import 'package:privacy_gui/page/firewall/providers/firewall_data_provider.dart';
 import 'package:privacy_gui/page/_shared/components/card_skeleton.dart';
 import 'package:privacy_gui/page/port_forwarding/providers/port_forwarding_data_provider.dart';
@@ -105,32 +106,53 @@ const double _kMetricsSideBySideMinWidth = 328;
 
 /// Thinnest ring the target-distribution donut is drawn with, in logical px.
 ///
-/// ui_kit's `AppPieChart` takes the section radius from the call site but the
-/// centre-hole radius from the theme (`ChartStyle.pieCenterRadius`, 60px here),
-/// so the drawn diameter is `2 × (centre + ring)` and does **not** follow the
-/// `size` box. The old `size: 160` with the default 40px ring therefore drew a
-/// 200px donut into a 160px box — measured, the painted extent is 200px at every
-/// `size` from 120 to 300 — and the card surface clipped 20px off every side.
-/// Filed upstream as linksys/privacyGUI-UI-kit#22; the other four `AppPieChart`
-/// call sites in this app still paint 200px.
-/// [_TargetDonut] sizes the ring from the slot it is actually given instead, and
-/// draws nothing once that slot cannot hold this much ring — a 140px square with
-/// this theme. That guard is also what makes the donut's `centerWidget` Column
-/// unreachable at the realizations that used to overflow it: the caption is 40px
-/// tall, and the `Expanded` holding it was 20-25px in the 8 locales that reported
-/// there (`ar el fr fr_CA pt pt_PT tr vi`), so the overflow was exactly
-/// `40 − slot` — +15px to +21px.
+/// Below this [_TargetDonut] draws nothing — a 140px square with this theme's
+/// 60px hole. Two things make suppression the right call rather than shrinking:
+///
+/// * **The caption.** ui_kit v2.34.11 derives both radii from the box, and in a
+///   box too small for the themed hole it shrinks the *hole* rather than the
+///   ring — so a `centerWidget` sized against the themed value can overhang a
+///   tight one, which ui_kit documents on `centerWidget` itself. This card's
+///   caption is a 40px-tall count and word, and this floor is what keeps it
+///   inside the hole it is centred in.
+/// * **The overflow.** Suppression is also what makes that caption unreachable
+///   at the realizations that used to overflow it: the caption is 40px tall, and
+///   the `Expanded` holding it was 20-25px in the 8 locales that reported there
+///   (`ar el fr fr_CA pt pt_PT tr vi`), so the overflow was exactly `40 − slot`
+///   — +15px to +21px.
 ///
 /// The other 7 (`es es_AR fi id nb pl ru`) never reported here at all: their grid
 /// grew to 156-173px, which starves this `Expanded` to 0, and `RenderFlex` skips
 /// an empty box — so the outer `Column` reported instead, by +7px to +26px. One
 /// site per locale, never both, which is why the two sites sum to 15 coordinates
 /// over 15 locales rather than 26 (#1230).
+///
+/// ## What this guard used to also carry
+///
+/// ui_kit ≤ v2.34.10 took the section radius from the call site but the
+/// centre-hole radius from the theme, so the drawn diameter was
+/// `2 × (centre + ring)` and did **not** follow the `size` box: `size: 160` with
+/// the default 40px ring drew a 200px donut — measured, 200px at every `size`
+/// from 120 to 300 — and the card surface clipped 20px off every side. Filed as
+/// linksys/privacyGUI-UI-kit#22 and fixed in v2.34.11, which derives the drawing
+/// from the box. The `sectionRadius: diameter / 2 - centreRadius` this card
+/// carried against the old behaviour is gone with the bump: the drawn diameter is
+/// the box by construction now, and the only thing left to decide here is whether
+/// a donut is worth drawing at all.
 const double _kDonutMinRingThickness = 10;
 
-/// Diameter the donut is drawn at when the slot is at least this big, preserving
-/// the card's designed size.
-const double _kDonutMaxDiameter = 160;
+/// Ring thickness the donut is drawn with when the slot allows it, in logical px.
+///
+/// The donut's diameter is `2 × (centre + this)` — 160px against this theme's
+/// 60px hole, the card's designed size — capped by the slot it is given.
+///
+/// Written as a ring rather than as a flat 160px diameter so it cannot contradict
+/// [_kDonutMinRingThickness]: both are measured outward from the same themed hole,
+/// so the cap is always the wider of the two. A flat 160 silently narrows the
+/// window instead — a 65px hole under `neumorphic` would leave only 150-160px —
+/// and past a 70px hole closes it altogether, drawing no donut in any locale at
+/// any width with nothing failing to say so (#1230).
+const double _kDonutDesignRingThickness = 20;
 
 /// Localizes a firewall rule target value for display. The raw value (from the
 /// device) is still used as the aggregation map key; only the legend label is
@@ -173,7 +195,7 @@ class _RulesTab extends StatelessWidget {
     if (ruleSummaries.isEmpty) {
       return Center(
         child: AppText.bodyMedium(
-          'No firewall rules configured',
+          loc(context).noFirewallRulesConfigured,
           color: colorScheme.onSurfaceVariant,
         ),
       );
@@ -340,10 +362,10 @@ class _StackedMetrics extends StatelessWidget {
 /// The target-distribution donut, sized to the slot the tab has left for it —
 /// and absent when that slot is too small to draw a ring in.
 ///
-/// Absent rather than shrunk because the centre-hole radius is a theme value the
-/// call site cannot lower (see [_kDonutMinRingThickness]), so below ~140px there
-/// is no donut to draw, only a clipped arc. The legend underneath keeps carrying
-/// every target and its count, so nothing is lost but the picture.
+/// Absent rather than shrunk because below ~140px what is left is not a smaller
+/// donut but an outline with a caption spilling out of its hole (see
+/// [_kDonutMinRingThickness]). The legend underneath keeps carrying every target
+/// and its count, so nothing is lost but the picture.
 class _TargetDonut extends StatelessWidget {
   const _TargetDonut({required this.sections, required this.total});
 
@@ -355,13 +377,17 @@ class _TargetDonut extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final centreRadius = AppDesignTheme.of(context).chartStyle.pieCenterRadius;
 
     return LayoutBuilder(
       builder: (context, constraints) {
+        // Read here rather than in the outer build so the size the donut asks
+        // for and the floor that admits it come off the same theme in the same
+        // place — they are two readings of one hole and must not drift apart.
+        final centreRadius =
+            AppDesignTheme.of(context).chartStyle.pieCenterRadius;
         final diameter = math.min(
           math.min(constraints.maxWidth, constraints.maxHeight),
-          _kDonutMaxDiameter,
+          2 * (centreRadius + _kDonutDesignRingThickness),
         );
         if (diameter < 2 * (centreRadius + _kDonutMinRingThickness)) {
           return const SizedBox.shrink();
@@ -373,9 +399,9 @@ class _TargetDonut extends StatelessWidget {
             // The legend already names every slice; a title painted inside a
             // 20px ring would be a clipped duplicate of it.
             showLabels: false,
-            // Keeps the drawn diameter equal to the box, which the ui_kit
-            // default does not — see [_kDonutMinRingThickness].
-            sectionRadius: diameter / 2 - centreRadius,
+            // No `sectionRadius`: since v2.34.11 ui_kit derives the ring from
+            // this box, so asking for one only makes it thinner than it needs to
+            // be — see [_kDonutMinRingThickness].
             size: diameter,
             centerWidget: Column(
               mainAxisSize: MainAxisSize.min,
@@ -432,7 +458,7 @@ class _TargetDonut extends StatelessWidget {
 const double _kProtocolChartMinHeight = 70;
 
 class _PortsTab extends StatelessWidget {
-  final List portForwardingRules;
+  final List<PortForwardingRuleUIModel> portForwardingRules;
   final List<DmzEntrySummary> dmzSummaries;
 
   const _PortsTab({
@@ -456,7 +482,7 @@ class _PortsTab extends StatelessWidget {
     // Protocol distribution
     final protocolCounts = <String, int>{};
     for (final rule in portForwardingRules) {
-      final proto = rule.protocol as String;
+      final proto = rule.protocol;
       protocolCounts[proto] = (protocolCounts[proto] ?? 0) + 1;
     }
 
