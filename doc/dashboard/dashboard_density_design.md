@@ -1192,7 +1192,11 @@ showed up in the measurement.
    `2 × (centre + ring)` and does not follow `size`. The card's `size: 160` with
    the default 40px ring drew a **200px donut into a 160px box** — 20px clipped off
    every side at *every* width including desktop, invisible to the gate because a
-   clip is not an overflow. Sizing the ring from the slot fixes it and makes the
+   clip is not an overflow. Measured by pixel extent, the painted diameter is 200px
+   at every `size` from 120 to 300, so `size` does not bound the drawing in either
+   direction; filed upstream as linksys/privacyGUI-UI-kit#22, and the app's other
+   four `AppPieChart` call sites (`size: 180` ×2, `size: 120`, one caller-supplied)
+   still paint 200px. Sizing the ring from the slot fixes it here and makes the
    suppression threshold exact. Second instance of the pattern §2.10d found in
    `network_health`'s gauge centre.
 
@@ -1206,6 +1210,12 @@ every realization it pumps, which is not redundant with the gate: the gate pumps
 `minHeightRows` only, and the shipped 4 rows is the one height at which the donut's
 caption and fl_chart's axis strip are built at all — the two sites #1230 fixed were
 otherwise measured by nothing at the height they actually render.
+
+Two follow-ups left open rather than folded into #1230: the narrow arrangement's
+tile is `_InfoGridTile` in a `Row`, which `layout_blocks` has no variant for and
+`ethernet_ports` hand-rolls too (**#1275**), and the helpers these readability
+tests share are now cloned across up to seven files (noted on **#1238**, the next
+card to need them).
 
 ### 2.12 What the first *rearrangement* taught us (#1228 — implemented)
 

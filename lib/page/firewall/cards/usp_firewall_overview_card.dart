@@ -109,7 +109,10 @@ const double _kMetricsSideBySideMinWidth = 328;
 /// centre-hole radius from the theme (`ChartStyle.pieCenterRadius`, 60px here),
 /// so the drawn diameter is `2 × (centre + ring)` and does **not** follow the
 /// `size` box. The old `size: 160` with the default 40px ring therefore drew a
-/// 200px donut into a 160px box and the `Stack` clipped 20px off every side.
+/// 200px donut into a 160px box — measured, the painted extent is 200px at every
+/// `size` from 120 to 300 — and the card surface clipped 20px off every side.
+/// Filed upstream as linksys/privacyGUI-UI-kit#22; the other four `AppPieChart`
+/// call sites in this app still paint 200px.
 /// [_TargetDonut] sizes the ring from the slot it is actually given instead, and
 /// draws nothing once that slot cannot hold this much ring — a 140px square with
 /// this theme. That guard is also what makes the donut's `centerWidget` Column
@@ -282,6 +285,11 @@ class _RuleMetric {
 ///
 /// Label left, value right, and the label is what yields: the number *is* the
 /// metric, while a wrapped or ellipsized label still names which one it is.
+///
+/// Composition-wise this is `_InfoGridTile` in a `Row` at 8px padding, which
+/// `layout_blocks` has no variant for; `usp_ethernet_ports_card.dart`'s
+/// `_SummaryTile` is the same shape again. Folding all three into a shared
+/// compact variant is #1275.
 class _StackedMetrics extends StatelessWidget {
   const _StackedMetrics({required this.metrics});
 
