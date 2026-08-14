@@ -135,7 +135,13 @@ if [ "$locales" != "all" ]; then
     fi
     # The single line that says which flavour was actually compiled, so a console
     # log is enough to tell an English-only build from a retail one.
-    echo "  locales compiled in:    $(grep -c 'Locale(' lib/l10n/gen/app_localizations.dart)"
+    #
+    # Anchored to the indented Locale entries of the supportedLocales list. A bare
+    # 'Locale(' also matches intl.Intl.canonicalizedLocale( elsewhere in the
+    # generated file, which reported 27 for the retail build's 26 packs — and 2
+    # for an English-only one, reading as if a language pack had leaked in.
+    compiledLocales=$(grep -cE "^ +Locale" lib/l10n/gen/app_localizations.dart)
+    echo "  locales compiled in:    ${compiledLocales}"
 fi
 
 if ! buildWebApp "$buildNumber"; then
