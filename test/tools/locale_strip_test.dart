@@ -425,6 +425,31 @@ void main() {
       expect(remainingFontFiles(), allFonts);
     });
 
+    test(
+        'leaves an uncommitted fonts: block edit alone when nothing was '
+        'stripped', () {
+      // The exact sequence build_web.sh produces, because it arms the restore
+      // from an EXIT trap *before* the strip: the developer has an uncommitted
+      // edit inside the fonts: block, `keep` refuses it — that gate exists to
+      // protect this edit — and then the trap runs restore. Rewriting the block
+      // from HEAD at that point destroys what the gate just declined to build
+      // over.
+      givenProject(locales: ['en', 'ja'], fonts: allFonts);
+      final pubspec = File('${project.path}/pubspec.yaml');
+      const edit = '    # WIP: an uncommitted edit inside the fonts: block';
+      pubspec.writeAsStringSync(
+        pubspec
+            .readAsStringSync()
+            .replaceFirst('  fonts:\n', '  fonts:\n$edit\n'),
+      );
+      final stripper = LocaleStripper(projectRoot: project.path);
+      expect(() => stripper.keep(['en']), throwsA(isA<LocaleStripException>()));
+
+      stripper.restore();
+
+      expect(pubspecContent(), contains(edit));
+    });
+
     test('puts back the comments interleaved between font families', () {
       // The real pubspec explains why Roboto is declared with a bare family name
       // in comments inside the fonts: block. Restoring the block by line range

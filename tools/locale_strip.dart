@@ -424,6 +424,10 @@ class LocaleStripper {
   /// Puts every stripped file back: [strippablePaths] by checking them out of
   /// git, and the pubspec's `fonts:` block by reinstating the committed one.
   ///
+  /// A no-op on a tree nothing was stripped from — it does not touch the pubspec
+  /// at all in that case, which is what keeps it out of an uncommitted `fonts:`
+  /// edit's way.
+  ///
   /// Idempotent, so it is safe from an exit handler that may already have run.
   /// On CI a killed build cannot leak anyway, because the job re-clones its
   /// workspace; this matters for the developer who runs a stripped build locally.
@@ -444,11 +448,17 @@ class LocaleStripper {
         'could not restore ${strippablePaths.join(', ')}: ${result.stderr}',
       );
     }
-    _restoreFontDeclarations();
-    // Only when something was actually stripped: on a clean tree the generated
-    // sources are already correct, and deleting them would make a bare `restore`
-    // break the next `flutter run` for no reason.
+    // Both only when something was actually stripped. An empty [_localChanges]
+    // means no language pack is missing, so no strip reached the `fonts:` block
+    // either and there is nothing to put back — while rewriting it anyway would
+    // *destroy* an uncommitted edit to that block. That is not hypothetical:
+    // build_web.sh arms this from an EXIT trap before the strip, so a developer
+    // with such an edit gets refused by [_verifyFontsBlockIsCommitted] — the gate
+    // built to protect the edit — and then the trap reaches here and discards it.
+    // The generated sources are likewise already correct on a clean tree, and
+    // deleting them would break the next `flutter run` for no reason.
     if (stripped.isNotEmpty) {
+      _restoreFontDeclarations();
       _deleteGeneratedLocalizations();
     }
     stdout.writeln('locale_strip: restore complete');
