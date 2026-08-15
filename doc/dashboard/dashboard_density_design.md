@@ -186,39 +186,89 @@ a cheap add-on to #1234 rather than a separate ui_kit conversation.
 
 ### 1.2 Fit width — the narrowest width at which each card is clean
 
-**Method.** Card width was driven directly through a 14-rung ladder
-(191 → 1216px) for every (card, tab, locale), holding the screen at 1920px.
-Overflow is monotonic in width, so the narrowest clean rung is that case's fit
-width. 624 cases; **every one is clean at some width** — no card is broken
-independent of width.
+**Re-measured after Track A (#1240 AC 1).** The table below is the post-Track-A
+measurement. The pre-Track-A numbers that drove this design are kept underneath it,
+because several sections still argue from them.
 
-`fit width` below is the **worst locale × worst tab** for that card.
+**Method.** Card width driven directly, screen held at 1920px, one card per pump,
+at each card's `minHeightRows` — the same geometry and height the gate pumps.
+**832 cases** = 18 cards × their tab counts × 26 locales. Clean means no incident
+over the gate's own 2.0px tolerance. Fit width is found by continuous bisection to
+4px between a 100px floor and a 1216px ceiling, which is licensed by the same
+monotonicity-in-width that licensed the original ladder.
 
-| Card | Declared min → px | Fit width | Gap |
+The floor is deliberately **below** the 191px the grid yields. Flooring at 191
+censors every card clean there — 13 of 18 — and collapses their headroom to an
+unusable "≥0", which makes `ethernet_ports` (≥91px of room) and `network_health`
+(+3px) read identically. Widths below 191 are unreachable by a user; they are a
+measuring stick, and a fit width at one is not a claim the card is usable there.
+
+`headroom` = narrowest production width − fit width: the room the card has at the
+worst width the grid can actually give it. `≥` marks a value censored by the floor.
+
+| Card | Fit width | Narrowest production | Headroom | Binding (tab/locale) |
+|---|---:|---:|---:|---|
+| `stats_panel` | ≤100 | 288 | ≥188 | all |
+| `topology` | 166 | 261 | +95 | t0/fi |
+| `ethernet_ports` | ≤100 | 191 | ≥91 | all |
+| `port_forwarding` | 170 | 261 | +91 | all |
+| `system_status` | 127 | 191 | +64 | t0/vi |
+| `device_analytics` | 197 | 261 | +64 | t0/de,el,nb,pt_PT |
+| `network_status` | 131 | 191 | +60 | all |
+| `time_settings` | 131 | 191 | +60 | all |
+| `lan_info` | 140 | 191 | +51 | all |
+| `wifi_status` | 217 | 261 | +44 | t0/el |
+| `wifi_performance` | 232 | 261 | +29 | t2/fi |
+| `device_info` | 170 | 191 | +21 | all |
+| `connected_devices` | 173 | 191 | +18 | t0/el |
+| `dhcp_reservations` | 245 | 261 | +16 | all |
+| `wifi_networks` | 252 | 261 | +9 | all |
+| `network_health` | 188 | 191 | **+3** | t0/de |
+| `firewall_overview` | 188 | 191 | **+3** | t1/ja |
+| `traffic_analysis` | 258 | 261 | **+3** | t1/zh,zh_TW |
+
+**Every card fits at its narrowest production realization**, so per #1240 AC 2
+("absent is the correct value, not a number") **no card declares a `normalAbove`
+threshold**. Five cards appear here that §1.2 never covered, because they never had
+coordinates: `topology`, `device_analytics`, `wifi_status`, `dhcp_reservations`,
+`wifi_networks`.
+
+⚠️ **Three cards sit +3px from overflowing** — `network_health` (t0 `de`),
+`firewall_overview` (t1 `ja`), `traffic_analysis` (t1 `zh`/`zh_TW`) — against a
+2.0px measurement tolerance, i.e. 1px outside the noise floor. A new locale, a font
+bump or a padding change in a shared block flips any of them to a gate failure. The
+gate reports pass/fail, not margin, so it cannot see this coming.
+
+#### Pre-Track-A measurement (superseded, kept for the sections that cite it)
+
+14-rung ladder (191 → 1216px), floored at 191, 624 cases. Rung-quantized and
+censored at the floor, so a `760 → ≤100` move is not a precise −660.
+
+| Card | Declared min → px | Fit width | Now |
 |---|---:|---:|---:|
-| `stats_panel` | 6 → 288 | **760** | +472 |
-| `traffic_analysis` | 4 → 260 | **560** | +300 |
-| `device_info` | 3 → 191 | **480** | +289 |
-| `lan_info` | 3 → 191 | **420** | +229 |
-| `wifi_performance` | 3 → 191 | **420** | +229 |
-| `ethernet_ports` | 4 → 260 | **420** | +160 |
-| `network_health` | 4 → 260 | **420** | +160 |
-| `firewall_overview` | 3 → 191 | **360** | +169 |
-| `system_status` | 4 → 260 | **360** | +100 |
-| `connected_devices` | 4 → 260 | **320** | +60 |
-| `network_status` | 3 → 191 | **320** | +129 |
-| `port_forwarding` | 3 → 191 | **320** | +129 |
-| `time_settings` | 3 → 191 | **288** | +97 |
+| `stats_panel` | 6 → 288 | 760 | ≤100 |
+| `traffic_analysis` | 4 → 260 | 560 | 258 |
+| `device_info` | 3 → 191 | 480 | 170 |
+| `lan_info` | 3 → 191 | 420 | 140 |
+| `wifi_performance` | 3 → 191 | 420 | 232 |
+| `ethernet_ports` | 4 → 260 | 420 | ≤100 |
+| `network_health` | 4 → 260 | 420 | 188 |
+| `firewall_overview` | 3 → 191 | 360 | 188 |
+| `system_status` | 4 → 260 | 360 | 127 |
+| `connected_devices` | 4 → 260 | 320 | 173 |
+| `network_status` | 3 → 191 | 320 | 131 |
+| `port_forwarding` | 3 → 191 | 320 | 170 |
+| `time_settings` | 3 → 191 | 288 | 131 |
 
-⚠️ **`system_status`'s 360px is an underestimate.** It reads
-`context.colWidth` (screen-derived), and the harness held the screen at 1920px,
-so its label column did not shrink with the card. Its threshold must be set only
-after that is fixed — see §2.8.
+Both caveats this table used to carry are discharged. `system_status`'s 360 was an
+underestimate because it read `context.colWidth` while the harness held the screen
+wide; #1231/#1251 landed and no card reads a screen-derived width any more (the only
+remaining reader is `usp_sliver_dashboard_view.dart`, the grid host). Its measured
+fit is 127. `connected_devices`' 320 was flagged stale by 129px; measured, it is 173.
 
-⚠️ **`connected_devices` is clean at 191px since #1238**, so its 320 is stale by
-129px. Track A has moved this column for every card it has closed and *only* this
-column — the width at which each is readable has not moved at all (§2.10d point 5,
-§2.10e point 4). #1240 re-measures; it must not read this table.
+**Track A moved this column and *only* this column.** The width at which each card
+is *readable* has not moved at all (§2.10d point 5, §2.10e point 4) — see §2.6,
+§2.11a and §2.12 for the three readability limits that survive at full strength.
 
 ### 1.3 Raising `minColumns` is arithmetically impossible for 12 of 13 cards
 
@@ -235,6 +285,20 @@ fits" has no solution for any card whose fit width exceeds 288px:
 > 13 cards, no column count exists that fits the content. Graceful degradation is
 > not the preferred option; it is the **only** option.
 
+⚠️ **This section's premise no longer holds after Track A, and it was the
+load-bearing argument for the whole design.** It was true of the fit widths above
+it; it is false of the re-measured ones. Every card now fits at its own narrowest
+column count (§1.2), so widening is not the unavailable option — it is unnecessary,
+and no card declares a threshold.
+
+What survives is the distinction §1.2 drew before the measurement was taken: Track A
+moved the *overflow* column and only that column. The width at which each card is
+**readable** has not moved, so the remaining density work (#1232, #1239, #1240) is
+readability-driven and can no longer cite overflow as its justification. The three
+live limits are `connected_devices`' 23-27px device name (§2.6), `ethernet_ports`'
+0px port-state sliver (§2.12) and `firewall_overview`'s unbreakable `fi`/`nb` metric
+labels (§2.11a).
+
 ### 1.4 A single global threshold cannot make the set safe
 
 | Threshold | Cases still overflowing | Cards |
@@ -248,6 +312,11 @@ fits" has no solution for any card whose fit width exceeds 288px:
 Zero overflow via one global number requires T = 760px (`stats_panel`'s fit
 width), which would put nearly every card into the degraded form at nearly every
 width — abolishing the normal form in practice. Hence per-card thresholds (§2.4).
+
+⚠️ Pre-Track-A, like §1.3. On the re-measured fit widths every card is clean at
+every width the grid can produce, so the question this section answers — which
+global threshold makes the set safe — no longer has a live case. Kept as the record
+of why per-card thresholds beat a global one, should a threshold ever be needed.
 
 ### 1.5 Column count is a lossy proxy for card width — 2.2× distortion
 
