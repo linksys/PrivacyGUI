@@ -654,6 +654,102 @@ first card that needs it; nothing degrades until one does.
    but it should be decided in #1239, not inherited by accident from this ticket's
    precedence rule.
 
+   **Settled in #1239 as opt-in** (§2.6c), which also found that the band is
+   unreachable for half the cards regardless — see §2.6c item 1 before reading
+   "compact has no consumers" above as a verdict on the middle band.
+
+### 2.6c What building the popup form taught us (#1239 — implemented)
+
+Built as specified: `CardPopupForm` (icon + one value + tap target) selected inside
+`DashboardCardTemplate.build`, and `showCardNormalForm` presenting the card's full
+form in an `AppDialog` — or an `AppBottomSheet` where a dialog cannot serve. No
+card's rendering changed and `known_overflows.json` is untouched (gate 1644/1644).
+16 behaviour tests plus a 265-case sweep of the popup form and the dialog it
+opens.
+
+**Popup is opt-in — §2.6b item 4 is settled that way.** A card reaches the popup
+form only through a declared `normalAbove`, which keeps §2.4's "absent asserts
+this card needs no degraded form" true. The 200px constant still describes a band
+nothing enters today, and that is now a decision rather than an accident.
+
+1. **Nine of the eighteen widgets can never reach the popup band at all, and it is
+   `minColumns` that decides.** Selection compares the *rendered* width against
+   200px, so a card the grid cannot make narrow enough has no popup form at any
+   width, whatever it declares. The grid's narrowest realizations are **191.4px
+   for a 3-column floor, 260.5px for a 4-column floor, and 288px for anything
+   wider** (a full-width card clamped to the 4-column mobile grid). Only the first
+   is under 200. So the popup form applies to exactly the nine `minColumns: 3`
+   cards — `device_info`, `network_status`, `lan_info`, `ethernet_ports`,
+   `system_status`, `connected_devices`, `time_settings`, `network_health`,
+   `firewall_overview` — and the other nine (`stats_panel`, `topology`,
+   `wifi_status`, `wifi_networks`, `dhcp_reservations`, `port_forwarding`,
+   `wifi_performance`, `traffic_analysis`, `device_analytics`) are floored above
+   it.
+
+   **This is what the compact band is for.** §2.6b recorded that compact had no
+   consumers and read that as the measurement's verdict; it is more specific than
+   that. Compact is the *only* degraded form those nine cards can ever reach — so
+   the middle band is not dead by construction, it is the sole degradation
+   available to half the dashboard. #1240 should therefore not treat compact as
+   the band to skip: for a `minColumns: 4` card it is the only option there is.
+
+   Found by writing the sweep over `UspWidgetSpecs.all` and having exactly one
+   card fail the "did the popup form render?" assertion — which is the assertion
+   catching a card that bypasses the template, doing its job on the one widget
+   that legitimately does. Chasing it produced the width table above.
+
+2. **`stats_panel` is not a card, and the exemption is worth two assertions.** It
+   is the full-width summary strip — five `StatTile`s in a `Row`, no title, no
+   icon, no single value, and no `DashboardCardTemplate`. It is skipped for the
+   geometric reason above *and* for that structural one, and it is the only widget
+   of which the second is true: the other eight would gain a popup form the moment
+   their `minColumns` allowed a 3-column span. Both halves are pinned, so the skip
+   list cannot be read as "these cards may bypass the template".
+
+3. **The dialog's max width has to be a width for the *card*, not for the
+   dialog.** `AppDialog` constrains its own box, then spends `padding.horizontal`
+   inside it, and `AppSurface` draws its border *inside* that too — so asking for
+   `normalAbove` yields a card `padding.horizontal + 2·borderWidth` narrower than
+   it just said it needs, which reproduces the exact overflow the popup form
+   exists to avoid. Chrome is counted from `DialogStyle` and added on, and the
+   test asserts the presented form measures **exactly 400.0** for a card declaring
+   400 (§1.9's theme override is the injection point, caller-side per Article
+   XIV — nothing in ui_kit changes).
+
+4. **The sheet branch is a relationship, not a breakpoint — and no dialog is ever
+   squeezed.** The switch fires when what a dialog can offer (`screen − 2·24 −
+   chrome`) is narrower than the card's declared fit width, so it is reachable at
+   the 320px floor by construction rather than at an invented pixel threshold. The
+   consequence only became visible through a test written wrong: "the dialog never
+   grows past the screen" was pumped at a 2000px fit width on a 600px screen and
+   found *no dialog at all*, because that is precisely the sheet case. A wide card
+   on a mid-size screen takes the sheet too. The presentation never narrows a
+   dialog below what the card asked for; it changes presentation instead. The test
+   now asserts that.
+
+5. **The normal form requires a bounded height, so the presentation must supply
+   one — and the popup form already knows it.** `DashboardCardTemplate` puts its
+   content in an `Expanded`, so presenting the card in a dialog with unbounded
+   height cannot lay out. The height needed is the one the grid gave this card,
+   and the popup form occupies that whole grid cell — so it is read from
+   `context.size?.height` at tap time (after layout), rather than by looking the
+   spec's `minHeightRows` up or introducing a slot-height constant into
+   production. `_slotHeight` stays private in `UspSliverDashboardView`.
+
+6. **`normalForm: this` is what keeps the two forms from drifting.** The template
+   passes itself as the widget the tap opens, re-rendered under a normal-density
+   scope. Nothing is rebuilt or re-specified, so there is no second definition of
+   the card to keep in sync — and no duplicate-`GlobalKey` hazard, since the
+   normal form's children are not mounted while the popup form is displayed.
+
+7. **The probe needed an `after` hook, and it does not weaken the one-pump
+   rule.** Opening the dialog is itself a layout event, occurring after
+   `probeCardOverflow` would have returned — so its overflow would be raised with
+   no handler installed and lost. The hook runs the tap inside the collection. It
+   pumps no second widget tree, so §2.9's one-pump-per-test property (a RenderFlex
+   reports its overflow once per render-object lifetime) still holds: the dialog's
+   render objects are new and the card's are untouched.
+
 ### 2.7 The gate enumerates widths instead of sampling them
 
 **Implemented in #1225** (not yet merged). `_scanScreens`'s hand-written 19-width list *asserted* the
@@ -1636,6 +1732,13 @@ clamps to 288px and 12 of 13 cards overflow on the default layout at 320px
 Agreed as a starting value. It makes popup a tablet/desktop safety net that never
 triggers on phones (§2.1); a phone-reaching threshold would need ≥ 212px.
 
+#1239 measured how narrow that band actually is: 200px is reached only by a
+`minColumns: 3` card, and only near a 601px screen, where its realization is
+191.4px. A 4-column floor is 260.5px and a full-width card 288px, so nine of the
+eighteen widgets sit above the threshold at every width (§2.6c item 1). Raising
+the constant past 260.5px would pull those nine in — which is a different decision
+from this one, since for them popup would replace compact rather than backstop it.
+
 ---
 
 ## Part 4 — Order of work
@@ -1756,8 +1859,8 @@ one deviation from the legend shape.
 |---|---|
 | #1231 | `usp_info_row` reads real width (§2.8) — fixes silent truncation, clears 0 |
 | #1232 | Density plumbing (§2.1, §2.4, §2.6) — the one ticket needing red-first tests |
-| #1239 | Popup form + dialog reuse (§2.1) |
-| #1240 | Per-card thresholds and compact forms (§2.4, §2.5) — split after fit widths settle; inherits #1228's port-list readability AC (§2.12) |
+| #1239 | Popup form + dialog reuse (§2.1) — **implemented**, lessons in §2.6c |
+| #1240 | Per-card thresholds and compact forms (§2.4, §2.5) — split after fit widths settle; inherits #1228's port-list readability AC (§2.12). Note §2.6c item 1: compact is the only degraded form the nine `minColumns: 4+` cards can reach |
 
 #1240 waits on all of Track A: thresholds are meaningless while fit widths are
 still moving, and the point of the layout fixes is to lower them. **Re-measure

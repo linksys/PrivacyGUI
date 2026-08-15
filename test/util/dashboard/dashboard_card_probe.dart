@@ -474,6 +474,14 @@ Widget buildDashboardCardApp({
 ///
 /// [cardOverride] is forwarded to [buildDashboardCardApp] — see there for when
 /// passing it is legitimate and when it defeats the point.
+///
+/// [after] runs once the card has settled, still inside the overflow collection.
+/// It exists for interactions that are themselves layout events — #1239's popup
+/// form opens the card's full form in a dialog, and an overflow raised while that
+/// dialog lays out happens after this function would otherwise have returned, so
+/// it would be reported with no handler installed and lost. It does not pump a
+/// second widget tree, so the one-pump-per-test property above still holds: the
+/// dialog's render objects are new, and the card's are untouched.
 Future<List<OverflowIncident>> probeCardOverflow(
   WidgetTester tester, {
   required String cardId,
@@ -484,6 +492,7 @@ Future<List<OverflowIncident>> probeCardOverflow(
   Key? repaintKey,
   Widget? cardOverride,
   CardDensity? density,
+  Future<void> Function(WidgetTester tester)? after,
 }) {
   final surface =
       Size(widthCase.screenWidth, dashboardCardHeight(cardHeightRows));
@@ -505,6 +514,7 @@ Future<List<OverflowIncident>> probeCardOverflow(
       ),
     );
     await settleIgnoringAnimations(tester);
+    if (after != null) await after(tester);
     return sink;
   });
 }

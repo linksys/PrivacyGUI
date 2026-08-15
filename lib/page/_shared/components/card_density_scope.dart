@@ -15,10 +15,19 @@ class CardDensityScope extends InheritedWidget {
   const CardDensityScope({
     super.key,
     required this.density,
+    this.normalAbove,
     required super.child,
   });
 
   final CardDensity density;
+
+  /// The card's declared threshold, carried down alongside the density.
+  ///
+  /// The popup form needs it, not just the band it selected: when the user taps
+  /// to read the card, the presentation has to know how wide the card says it
+  /// needs to be (#1239). Null means the card never declared one, and the
+  /// presentation then falls back to the widest width it can offer.
+  final double? normalAbove;
 
   /// The density in effect at [context], or [CardDensity.normal] outside any
   /// card.
@@ -33,9 +42,14 @@ class CardDensityScope extends InheritedWidget {
     return scope?.density ?? CardDensity.normal;
   }
 
+  /// The declared threshold in effect at [context], or null outside any card.
+  static double? normalAboveOf(BuildContext context) => context
+      .dependOnInheritedWidgetOfExactType<CardDensityScope>()
+      ?.normalAbove;
+
   @override
   bool updateShouldNotify(CardDensityScope oldWidget) =>
-      oldWidget.density != density;
+      oldWidget.density != density || oldWidget.normalAbove != normalAbove;
 }
 
 /// Wraps a dashboard card, measures the width it was actually given, and
@@ -71,7 +85,11 @@ class CardDensityHost extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final override = ref.watch(cardDensityOverrideProvider(cardId));
     if (override != null) {
-      return CardDensityScope(density: override, child: child);
+      return CardDensityScope(
+        density: override,
+        normalAbove: normalAbove,
+        child: child,
+      );
     }
 
     // No threshold declared means the density is a constant: normal at every
@@ -96,6 +114,7 @@ class CardDensityHost extends ConsumerWidget {
           width: constraints.maxWidth,
           normalAbove: normalAbove,
         ),
+        normalAbove: normalAbove,
         child: child,
       ),
     );
