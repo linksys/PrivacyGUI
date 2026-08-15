@@ -3,9 +3,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/page/dashboard/mascot/mascot_providers.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_domain_ready_provider.dart';
-import 'package:privacy_gui/providers/app_settings/app_settings.dart';
 import 'package:privacy_gui/providers/app_settings/app_settings_provider.dart';
 import 'package:ui_kit_library/ui_kit.dart';
+
+import '../../../mocks/fake_app_settings_notifier.dart';
 
 class MockMascotController extends Mock implements MascotController {}
 
@@ -28,7 +29,7 @@ void main() {
         overrides: [
           mascotControllerProvider.overrideWithValue(mockController),
           appSettingsProvider.overrideWith(
-            () => _TestAppSettingsNotifier(showMascot: false),
+            () => FakeAppSettingsNotifier.of(showMascot: false),
           ),
           dashboardDomainReadyProvider.overrideWith((ref) async {}),
         ],
@@ -47,7 +48,7 @@ void main() {
         overrides: [
           mascotControllerProvider.overrideWithValue(mockController),
           appSettingsProvider.overrideWith(
-            () => _TestAppSettingsNotifier(showMascot: true),
+            () => FakeAppSettingsNotifier.of(showMascot: true),
           ),
           dashboardDomainReadyProvider.overrideWith(
             (ref) => Future.error('Not ready'),
@@ -71,7 +72,7 @@ void main() {
         overrides: [
           mascotControllerProvider.overrideWithValue(mockController),
           appSettingsProvider.overrideWith(
-            () => _TestAppSettingsNotifier(showMascot: true),
+            () => FakeAppSettingsNotifier.of(showMascot: true),
           ),
           dashboardDomainReadyProvider.overrideWith((ref) async {}),
         ],
@@ -92,7 +93,7 @@ void main() {
         overrides: [
           mascotControllerProvider.overrideWithValue(mockController),
           appSettingsProvider.overrideWith(
-            () => _TestAppSettingsNotifier(showMascot: true),
+            () => FakeAppSettingsNotifier.of(showMascot: true),
           ),
           dashboardDomainReadyProvider.overrideWith((ref) async {}),
         ],
@@ -107,14 +108,4 @@ void main() {
       verify(() => mockController.removeListener(any())).called(1);
     });
   });
-}
-
-class _TestAppSettingsNotifier extends AppSettingsNotifier {
-  _TestAppSettingsNotifier({required bool showMascot})
-      : _settings = AppSettings(showMascot: showMascot);
-
-  final AppSettings _settings;
-
-  @override
-  AppSettings build() => _settings;
 }

@@ -3,8 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/localization/supported_locales_provider.dart';
-import 'package:privacy_gui/providers/app_settings/app_settings.dart';
 import 'package:privacy_gui/providers/app_settings/app_settings_provider.dart';
+
+import '../mocks/fake_app_settings_notifier.dart';
 
 /// Coverage for the locale a build is allowed to run in.
 ///
@@ -145,8 +146,8 @@ void main() {
     }) {
       final container = ProviderContainer(overrides: [
         supportedLocalesProvider.overrideWithValue(shipped),
-        appSettingsProvider.overrideWith(
-            () => _FixedAppSettings(AppSettings(locale: persisted))),
+        appSettingsProvider
+            .overrideWith(() => FakeAppSettingsNotifier.of(locale: persisted)),
       ]);
       addTearDown(container.dispose);
       return container;
@@ -188,15 +189,4 @@ void main() {
       }
     });
   });
-}
-
-/// An [AppSettingsNotifier] pinned to one value, so a test can state what was
-/// persisted without reaching SharedPreferences.
-class _FixedAppSettings extends AppSettingsNotifier {
-  _FixedAppSettings(this._settings);
-
-  final AppSettings _settings;
-
-  @override
-  AppSettings build() => _settings;
 }
