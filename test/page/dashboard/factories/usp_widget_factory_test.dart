@@ -1,11 +1,18 @@
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/page/_shared/components/card_density_scope.dart';
 import 'package:privacy_gui/page/dashboard/factories/usp_widget_factory.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_widget_specs.dart';
 import 'package:privacy_gui/page/dashboard/views/components/_components.dart';
 import 'package:privacy_gui/page/admin/cards/usp_device_info_card.dart';
 import 'package:privacy_gui/page/internet_settings/cards/usp_network_status_card.dart';
 import 'package:privacy_gui/page/topology/cards/usp_network_topology_card.dart';
+
+/// Unwraps the [CardDensityHost] the factory wraps every card in (#1232), so
+/// these tests keep asserting which *card* an ID maps to. That the wrapper is
+/// there at all is asserted in `card_density_scope_test.dart`.
+Widget? cardOf(Widget? built) => built is CardDensityHost ? built.child : built;
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -17,7 +24,7 @@ void main() {
   });
 
   group('buildWidget', () {
-    test('returns non-null for all 17 valid IDs', () {
+    test('returns non-null for all 18 valid IDs', () {
       for (final spec in UspWidgetSpecs.all) {
         expect(
           factory.buildWidget(spec.id),
@@ -28,20 +35,22 @@ void main() {
     });
 
     test('stats_panel returns UspStatsPanel', () {
-      expect(factory.buildWidget('stats_panel'), isA<UspStatsPanel>());
+      expect(cardOf(factory.buildWidget('stats_panel')), isA<UspStatsPanel>());
     });
 
     test('device_info returns UspDeviceInfoCard', () {
-      expect(factory.buildWidget('device_info'), isA<UspDeviceInfoCard>());
+      expect(
+          cardOf(factory.buildWidget('device_info')), isA<UspDeviceInfoCard>());
     });
 
     test('network_status returns UspNetworkStatusCard', () {
-      expect(
-          factory.buildWidget('network_status'), isA<UspNetworkStatusCard>());
+      expect(cardOf(factory.buildWidget('network_status')),
+          isA<UspNetworkStatusCard>());
     });
 
     test('topology returns UspNetworkTopologyCard', () {
-      expect(factory.buildWidget('topology'), isA<UspNetworkTopologyCard>());
+      expect(cardOf(factory.buildWidget('topology')),
+          isA<UspNetworkTopologyCard>());
     });
 
     test('returns null for unknown ID', () {

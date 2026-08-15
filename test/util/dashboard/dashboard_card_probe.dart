@@ -8,8 +8,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
+import 'package:privacy_gui/page/_shared/providers/card_density_provider.dart';
 import 'package:privacy_gui/page/_shared/providers/card_tab_state_provider.dart';
 import 'package:privacy_gui/page/dashboard/factories/usp_widget_factory.dart';
+import 'package:privacy_gui/page/dashboard/models/card_density.dart';
 import 'package:privacy_gui/page/dashboard/models/display_mode.dart';
 import 'package:privacy_gui/page/dashboard/models/widget_spec.dart';
 import 'package:privacy_gui/localization/fallback_font_resolver.dart';
@@ -382,6 +384,13 @@ int visibleTabCount(WidgetTester tester) {
 /// cannot get one from the dashboard's kitchen-sink fixture. The card id is still
 /// required, because everything else here — tab pinning, the spec-derived
 /// geometry — is keyed off it.
+///
+/// [density] pins the card's [CardDensity] via [cardDensityOverrideProvider],
+/// for the same reason [tabIndex] is pinned rather than tapped: the alternative
+/// is contriving a width that happens to fall in the band you want, which
+/// couples the test to whatever threshold the spec currently declares. Left
+/// null, the card selects its own form from the width it is given — which is
+/// what the gate's own sweep must keep doing, since that is the production path.
 Widget buildDashboardCardApp({
   required String cardId,
   required Locale locale,
@@ -391,6 +400,7 @@ Widget buildDashboardCardApp({
   int tabIndex = 0,
   Key? repaintKey,
   Widget? cardOverride,
+  CardDensity? density,
 }) {
   final card = cardOverride ?? UspWidgetFactory().buildWidget(cardId);
   if (card == null) {
@@ -412,6 +422,8 @@ Widget buildDashboardCardApp({
     overrides: [
       ...kitchenSinkOverrides(),
       cardTabIndexProvider(cardId).overrideWith((ref) => tabIndex),
+      if (density != null)
+        cardDensityOverrideProvider(cardId).overrideWith((ref) => density),
     ],
     child: Portal(
       child: MaterialApp(
@@ -471,6 +483,7 @@ Future<List<OverflowIncident>> probeCardOverflow(
   required Locale locale,
   Key? repaintKey,
   Widget? cardOverride,
+  CardDensity? density,
 }) {
   final surface =
       Size(widthCase.screenWidth, dashboardCardHeight(cardHeightRows));
@@ -488,6 +501,7 @@ Future<List<OverflowIncident>> probeCardOverflow(
         tabIndex: tabIndex,
         repaintKey: repaintKey,
         cardOverride: cardOverride,
+        density: density,
       ),
     );
     await settleIgnoringAnimations(tester);

@@ -603,6 +603,57 @@ Four things the responsibility split did not say:
    coordinates only because those cards are not realized at the narrowest width;
    they were fixed too, since a placeholder loses nothing by shrinking.
 
+### 2.6b What building the mechanism taught us (#1232 — implemented)
+
+Built as specified: `CardDensity` (popup / compact / normal) with
+`densityForWidth`, `normalAbove` on `WidgetSpec`, `cardDensityOverrideProvider`,
+and `CardDensityScope` / `CardDensityHost` applied inside
+`UspWidgetFactory.buildWidget` — the one place production and the gate both
+construct cards. No card's rendering changed and `known_overflows.json` is
+untouched (gate 1644/1644).
+
+**It has no consumers, and that is the measurement's verdict, not an omission.**
+§1.2's re-measurement found all 18 cards clean at their narrowest realization, so
+by §2.4 every spec declares absent — which means the selection returns `normal`
+at every width for every card in the app today. The mechanism is in place for the
+first card that needs it; nothing degrades until one does.
+
+1. **`normalAbove` has to dominate the 200px popup constant, or a threshold below
+   200px is undefined.** Two plausible orders disagree: check popup first and a
+   card declaring `normalAbove: 180` renders popup at 190px *even though it just
+   said it is whole at 180*. The declared threshold wins, so such a card has an
+   empty compact band and degrades straight to popup below 200px. Declaring one is
+   almost certainly a mistake, but the behaviour is now stated and pinned rather
+   than emergent.
+
+2. **The measurement is skipped when no threshold is declared — and the skip is
+   not load-bearing.** With `normalAbove` absent the density is a constant, so
+   wrapping the card in a `LayoutBuilder` would rebuild its whole subtree once per
+   layout pass during a drag-resize to recompute a value that cannot change. To
+   check that the skip is an optimization and not a crutch, the gate was also run
+   with it removed, so all 18 cards rendered through the `LayoutBuilder`: still
+   1644/1644. **Inserting the measurement is layout-neutral**, which matters for
+   whichever ticket declares the first threshold — it will not be taking on that
+   risk at the same time as a rendering change.
+
+3. **A density test under a bounded ancestor can assert nothing.** The test that
+   proves selection reads the *card* and not the *screen* pumps a 600px card on a
+   320px screen. Under a normal ancestor `SizedBox(width: 600)` silently resolves
+   to `constraints.constrain(600)` = 320, so the card is handed the screen width
+   and a screen-reading implementation passes. It only became a real test once the
+   ancestor was made width-unbounded. Same family as §1.6's sampling artifact: the
+   harness quietly supplied the number the test was trying to vary.
+
+4. **Whether popup is opt-in is now #1239's to settle.** §2.1 states popup applies
+   below 200px, but selection is reached only through a declared `normalAbove`, so
+   as things stand no card gets a popup form either — the 200px constant currently
+   describes a band nothing enters. #1239 has to choose: popup stays opt-in (a card
+   wanting it declares a threshold), or it becomes universal below 200px
+   independent of `normalAbove`. The second reading conflicts with §2.4's "absent
+   asserts this card needs no degraded form", so the first is the consistent one —
+   but it should be decided in #1239, not inherited by accident from this ticket's
+   precedence rule.
+
 ### 2.7 The gate enumerates widths instead of sampling them
 
 **Implemented in #1225** (not yet merged). `_scanScreens`'s hand-written 19-width list *asserted* the

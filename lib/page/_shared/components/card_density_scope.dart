@@ -1,0 +1,103 @@
+import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/page/_shared/providers/card_density_provider.dart';
+import 'package:privacy_gui/page/dashboard/models/card_density.dart';
+
+/// Carries the current [CardDensity] down a card's subtree.
+///
+/// Density is *injected*, not threaded through constructors: a card's blocks are
+/// several levels deep and mostly shared, so a parameter would have to be added
+/// to every one of them and passed by every caller, including the ones that have
+/// no density to give. Reading it from context means a block that cares can ask,
+/// and a block that does not is untouched — which is the stated shape of #1232:
+/// leaf blocks stay density-free.
+class CardDensityScope extends InheritedWidget {
+  const CardDensityScope({
+    super.key,
+    required this.density,
+    required super.child,
+  });
+
+  final CardDensity density;
+
+  /// The density in effect at [context], or [CardDensity.normal] outside any
+  /// card.
+  ///
+  /// Defaults rather than throws on purpose. Shared blocks are also built by
+  /// non-card callers (settings pages, dialogs), and those have no card width to
+  /// measure; making the read an assertion would turn every such call site into
+  /// a crash the moment a block starts consulting density.
+  static CardDensity of(BuildContext context) {
+    final scope =
+        context.dependOnInheritedWidgetOfExactType<CardDensityScope>();
+    return scope?.density ?? CardDensity.normal;
+  }
+
+  @override
+  bool updateShouldNotify(CardDensityScope oldWidget) =>
+      oldWidget.density != density;
+}
+
+/// Wraps a dashboard card, measures the width it was actually given, and
+/// publishes the resulting [CardDensity] to its subtree.
+///
+/// Applied in `UspWidgetFactory.buildWidget`, the one place both production and
+/// the #1183 overflow gate construct cards — so the two cannot disagree about
+/// which form is on screen.
+///
+/// The width comes from a `LayoutBuilder`, i.e. from the constraints the grid
+/// hands this card, never from `MediaQuery` or `context.colWidth`. #1231 and
+/// #1251 were spent removing screen-derived widths from cards for the reason
+/// that makes them wrong here too: a card is resizable independently of the
+/// window, so the screen says nothing about how much room this card has.
+class CardDensityHost extends ConsumerWidget {
+  const CardDensityHost({
+    super.key,
+    required this.cardId,
+    required this.normalAbove,
+    required this.child,
+  });
+
+  /// Widget spec ID, used to look up an override.
+  final String cardId;
+
+  /// The card's declared threshold, from its `WidgetSpec`. Null means the card
+  /// has no degraded form.
+  final double? normalAbove;
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final override = ref.watch(cardDensityOverrideProvider(cardId));
+    if (override != null) {
+      return CardDensityScope(density: override, child: child);
+    }
+
+    // No threshold declared means the density is a constant: normal at every
+    // width. Measuring a constant would still cost a rebuild of the whole card
+    // subtree on every layout pass while a card is being drag-resized, so the
+    // measurement is skipped rather than performed and discarded. Pinned by
+    // test, because "no LayoutBuilder above the card" is also what keeps this
+    // ticket's output byte-identical for all 18 cards, none of which declares a
+    // threshold (#1240 AC 1/2).
+    //
+    // Not a correctness crutch: the gate was also run once with this branch
+    // removed, so every card rendered through the LayoutBuilder, and stayed at
+    // 1644/1644. Inserting the measurement is layout-neutral — so the first card
+    // to declare a threshold is not taking on that risk at the same time.
+    if (normalAbove == null) {
+      return CardDensityScope(density: CardDensity.normal, child: child);
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) => CardDensityScope(
+        density: densityForWidth(
+          width: constraints.maxWidth,
+          normalAbove: normalAbove,
+        ),
+        child: child,
+      ),
+    );
+  }
+}
