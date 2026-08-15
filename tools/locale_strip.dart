@@ -102,7 +102,10 @@ class LocaleStripper {
   /// The fallback fonts every build keeps regardless of which language packs it
   /// ships: extended Latin for the European scripts, and Roboto because the
   /// engine treats it as the global default fallback.
-  static const _fontsSurvivingEveryStrip = {
+  ///
+  /// Public so `test/tools/font_coverage_test.dart` can assert this and
+  /// [fontsByLanguage] together cover every family the app's own resolver names.
+  static const fontsSurvivingEveryStrip = {
     'NotoSans-Latin.woff2',
     'Roboto.woff2',
   };
@@ -114,13 +117,19 @@ class LocaleStripper {
   /// `lib/localization/fallback_font_resolver.dart`, which is the source of truth
   /// for the locale to family mapping the app resolves at runtime. This map is
   /// the same decision expressed over *file names*, because that is what a strip
-  /// deletes. Keep the two in step: a language whose font is missing here ships
-  /// its strings and renders them as tofu.
+  /// deletes.
   ///
-  /// `el`/`ru`/`vi` resolve to NotoSans-Latin, which every build keeps, so they
-  /// need no entry. Languages absent from both this map and the resolver are
+  /// The two are held in step by `test/tools/font_coverage_test.dart` rather than
+  /// by this comment: it walks the ARB files, asks the resolver for each locale's
+  /// family, and resolves that family to a file through the pubspec's own
+  /// `fonts:` block — so a language the resolver covers but this map forgets
+  /// fails CI instead of shipping tofu. Do not hand-maintain a third mapping to
+  /// make that check possible; the pubspec already is the family-to-file one.
+  ///
+  /// `el`/`ru`/`vi` resolve to NotoSansLatinExt, whose file every build keeps, so
+  /// they need no entry. Languages absent from both this map and the resolver are
   /// covered by the primary Latin font.
-  static const _fontsByLanguage = {
+  static const fontsByLanguage = {
     'ja': {'NotoSansCJKjp.subset.woff2'},
     'ko': {'NotoSansCJKkr.subset.woff2'},
     // A `zh` pack carries every regional variant's strings (zh, zh_TW), and
@@ -236,7 +245,7 @@ class LocaleStripper {
 
   /// The fallback font files no kept locale needs.
   ///
-  /// Driven by [_fontsByLanguage] rather than by "everything but English",
+  /// Driven by [fontsByLanguage] rather than by "everything but English",
   /// because `keep en,ja` ships the whole Japanese UI and deleting its only CJK
   /// font renders that UI as tofu boxes. There is no recovery on the router this
   /// build targets: the bundle is served offline from firmware `/www/`, and
@@ -252,13 +261,13 @@ class LocaleStripper {
     // its own right. Mapping every kept locale to its parent language covers both.
     final keptLanguages = locales.map(_parentLanguageOf).toSet();
     final needed = {
-      ..._fontsSurvivingEveryStrip,
-      for (final language in keptLanguages) ...?_fontsByLanguage[language],
+      ...fontsSurvivingEveryStrip,
+      for (final language in keptLanguages) ...?fontsByLanguage[language],
     };
     final unclaimed = <String>[];
     final claimed = {
-      ..._fontsSurvivingEveryStrip,
-      for (final fonts in _fontsByLanguage.values) ...fonts,
+      ...fontsSurvivingEveryStrip,
+      for (final fonts in fontsByLanguage.values) ...fonts,
     };
     final doomed = <File>[];
     for (final font in _fontFiles()) {
@@ -276,7 +285,7 @@ class LocaleStripper {
       unclaimed.sort();
       stdout.writeln('  fallback fonts: kept ${unclaimed.join(', ')} — no '
           'language claims them, so this script will not delete them. Add them '
-          'to _fontsByLanguage or _fontsSurvivingEveryStrip to make the '
+          'to fontsByLanguage or fontsSurvivingEveryStrip to make the '
           'decision explicit.');
     }
     return doomed;
