@@ -43,6 +43,20 @@ double _dialogChromeOf(ThemeData theme) {
   return style.padding.horizontal + style.containerStyle.borderWidth * 2;
 }
 
+/// A card whose normal form cannot fit a narrow width, for the one claim no
+/// production card can support any more: after #1240's re-measurement all 18 fit
+/// at every width the grid produces, so a threshold set too low leaves them
+/// *readable-or-not* but never overflowing. This one overflows by construction —
+/// a 400px child in a `Row` — so the failure a too-low threshold causes is
+/// something a test can still see.
+Widget _overflowingCard() => DashboardCardTemplate(
+      title: _kTitle,
+      popupValue: _kValue,
+      content: Row(
+        children: const [SizedBox(width: 400, height: 20)],
+      ),
+    );
+
 /// A card whose two forms are distinguishable: [_kValue] is what the popup form
 /// is supposed to show, [_kNormalOnly] is what only the full form has.
 Widget _card({
@@ -423,6 +437,62 @@ void main() {
     test('is one named constant', () {
       // AC: "changeable in one place". The form does not carry its own copy.
       expect(kPopupBelow, 200.0);
+    });
+  });
+
+  group('a threshold set too low', () {
+    // #1240 AC 4: "the gate fails when a threshold is set too low — verified by
+    // deliberately lowering one." Exercised on `_overflowingCard` rather than on
+    // a registered card because #1240's re-measurement found all 18 clean at
+    // every width the grid produces: no threshold any of them could declare
+    // produces an overflow for the gate to catch. What the pair below shows is
+    // the mechanism's half of the claim — that the density selection, not the
+    // probe, is what decides whether the overflowing form is on screen — and it
+    // is the same overflow report `dashboard_card_overflow_test.dart` asserts on.
+    //
+    // 191px is the narrowest width the grid produces, and both cases pump it; the
+    // only difference is the number the card declares.
+    List<OverflowIncident> significant(List<OverflowIncident> incidents) =>
+        incidents.where((i) => i.pixels > 2.0).toList();
+
+    testWidgets(
+        'leaves the card in the form that overflows, and it is reported',
+        (tester) async {
+      // 150 < 191, so the card claims to be whole at a width it is not: density
+      // selects normal and the 400px child overflows the 191px cell.
+      final incidents = await _pump(
+        tester,
+        screenWidth: 1200,
+        cardWidth: 191,
+        normalAbove: 150,
+        density: null,
+        card: _overflowingCard(),
+      );
+
+      expect(
+        find.byType(CardPopupForm),
+        findsNothing,
+        reason: 'a threshold below the pumped width selects the normal form — '
+            'that is what makes the threshold too low',
+      );
+      expect(significant(incidents), isNotEmpty);
+    });
+
+    testWidgets('and the same card is clean once the threshold is honest',
+        (tester) async {
+      // The control. Without it the test above passes on a card that overflows
+      // in every form, which would prove nothing about the threshold.
+      final incidents = await _pump(
+        tester,
+        screenWidth: 1200,
+        cardWidth: 191,
+        normalAbove: 400,
+        density: null,
+        card: _overflowingCard(),
+      );
+
+      expect(find.byType(CardPopupForm), findsOneWidget);
+      expect(significant(incidents), isEmpty);
     });
   });
 }

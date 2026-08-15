@@ -753,6 +753,94 @@ nothing enters today, and that is now a decision rather than an accident.
    reports its overflow once per render-object lifetime) still holds: the dialog's
    render objects are new and the card's are untouched.
 
+### 2.6d What re-measuring every fit width taught us (#1240 — implemented)
+
+The umbrella ticket, whose output is a decision and a split rather than a card
+fix. Its full fit-width table lives on the issue (#1240, AC 1 comment); five
+things came out of the measurement that belong in the design.
+
+1. **All 18 cards fit, so no card declares a threshold — and the ticket's own
+   headline deliverable evaporates.** #1240 was written as *"each card that needs
+   one declares a `normalAbove` threshold and gains a compact form"*, from a table
+   whose worst entry was `stats_panel` at 760px. Re-measured after Track A, the
+   widest fit width in the registry is `wifi_networks` at 252px against a 261px
+   floor, and `stats_panel` is the *best* card in the set (clean below 100px,
+   ≥188px of room). AC 2 — *"cards that fit at their narrowest realization declare
+   **no** threshold"* — therefore decides every card in the registry, and §1.3's
+   load-bearing claim (*"graceful degradation is not the preferred option; it is
+   the only option"*) is false of the code as it now stands. `densityForWidth`
+   records this in its dartdoc so the next reader does not have to re-derive it.
+
+2. **Overflow and readability moved apart, and only one of them moved.** §1.2 said
+   this would happen — *"Track A has moved this column for every card it has
+   closed and only this column"* — and the zero-coordinate ratchet is what makes
+   it visible: six cards render content that cannot be read at a width where
+   nothing overflows. Re-shot at this branch head, not inherited from the earlier
+   measurement:
+
+   | card | locale | at 191px | at 288px |
+   |---|---|---|---|
+   | `device_info` | `ru` | `MR7500` one glyph per line, clipped after `M R 7 5` | reads |
+   | `lan_info` | `ru` | IP split `192.1`/`68.1.1`; `Включено` cut mid-word | reads |
+   | `time_settings` | `ru` | timestamp over 5 lines; `America/…` clipped mid-glyph | reads |
+   | `network_health` | `de` | ring shrunk to ~40px, `Mittelmäßig` painted over it, labels `Ver/wor/fen/e/Pak/ete` | tier still overlaps the ring; legend ellipsized |
+   | `connected_devices` | `el` | device names are `D…` and `i…` — one glyph and an ellipsis | reads |
+   | `ethernet_ports` | `en` | port grid entirely below the viewport — 0px of glyph | still 0px |
+
+   The first three are one shape hand-rolled three times (a `LayoutBlock` holding
+   a 56-72px icon, an `AppGap.lg` and an `Expanded` hero value, which leaves the
+   value 61.4px), which is why they are batched together below. `ethernet_ports`
+   is the only card unreadable at **both** narrow realizations, and the only one
+   whose fix cannot be a threshold alone.
+
+3. **The remaining work needs a compact form, not just a threshold — because the
+   band that needs one is reachable and the popup form does not cover it.** Below
+   200px the popup form (#1239) is a complete answer: it replaces an unreadable
+   card with an icon, one value and a tap. But five of the six cards above read at
+   288px and not at 191px, so an honest threshold sits between them, and §1.5's
+   range (a 3-column card spans 191.4-422.0px) says every width in that interval
+   is reachable. So each card owes a compact form for `[200, normalAbove)` —
+   exactly #1240's original deliverable, arriving with a readability justification
+   instead of an overflow one.
+
+4. **AC 4 is only exercisable on a synthetic card now, which is itself the
+   finding.** *"The gate fails when a threshold is set too low — verified by
+   deliberately lowering one"* assumed a too-low threshold leaves a card in a form
+   that overflows. With every card clean at every reachable width, no threshold any
+   of them could declare produces an overflow: the failure mode a wrong threshold
+   causes today is *illegibility*, which the gate cannot see, and its mirror image
+   — a threshold set too **high**, which blanks a card into a popup form and turns
+   the gate green — is the one §2.11a point 4 warned about. So the AC is honoured
+   in `card_popup_form_test.dart` on a card built to overflow (a 400px child in a
+   `Row`), as a pair: threshold 150 at a 191px width keeps the normal form and the
+   overflow is reported; threshold 400 selects popup and is clean. The control
+   matters — without it the test passes on a card that overflows in every form.
+
+5. **One claim this epic carried was wrong, and measuring it retired it.** #1183's
+   body and #1240's AC 1 comment both said `firewall_overview`'s Finnish and
+   Norwegian metric labels *"are single words that can only break mid-word"*, and
+   treated that as a readability defect on par with the six above. Measured across
+   all 26 locales at both label-column widths the stacked arrangement produces
+   (111.4px and 127.6px, §2.11a point 1): `didExceedMaxLines` is **false in all 78
+   cases**. `PALOMUURISÄÄNNÖT` is 131.0px and does break mid-word, onto two lines
+   that both render in full; `BRANNMURREGLER` (118.6px) takes two lines at 111.4px
+   and one at 127.6px; the widest label in the registry is `ru`'s 143.2px, also
+   over two lines. `maxLines: 2` is what makes the difference, and #1230 chose it
+   deliberately. So the break is real and the loss is not — a hyphenation nicety,
+   not a legibility defect, and not batched below. The general form: *"wraps
+   mid-word"* names how text broke, not whether it can be read; the question is
+   whether anything was **cut**, and only the ellipsis flag answers that.
+
+The split AC 8 asks for, batched by shared site per §1.1, with the measurement each
+batch inherits recorded on it:
+
+| batch | ticket | what it owes beyond a threshold |
+|---|---|---|
+| hero row — `device_info`, `lan_info`, `time_settings` | #1288 | a compact hero for one shape hand-rolled three times, without reaching for the ellipsis `usp_hero_row_readability_test.dart` forbids |
+| `connected_devices` device row | #1289 | a compact row; carries #1238's AC 7 |
+| `ethernet_ports` port list | #1290 | the **first real compact form**, and a threshold above 288px; carries #1240 AC 9 = #1228 AC 5 |
+| `network_health` gauge centre + metric chips | #1291 | a compact metric row that gives the gauge its height back, so #1235's `scaleDown` relaxes toward 1.0 |
+
 ### 2.7 The gate enumerates widths instead of sampling them
 
 **Implemented in #1225** (not yet merged). `_scanScreens`'s hand-written 19-width list *asserted* the
@@ -1863,12 +1951,17 @@ one deviation from the legend shape.
 | #1231 | `usp_info_row` reads real width (§2.8) — fixes silent truncation, clears 0 |
 | #1232 | Density plumbing (§2.1, §2.4, §2.6) — the one ticket needing red-first tests |
 | #1239 | Popup form + dialog reuse (§2.1) — **implemented**, lessons in §2.6c |
-| #1240 | Per-card thresholds and compact forms (§2.4, §2.5) — split after fit widths settle; inherits #1228's port-list readability AC (§2.12). Note §2.6c item 1: compact is the only degraded form the nine `minColumns: 4+` cards can reach |
+| #1240 | Per-card thresholds and compact forms (§2.4, §2.5) — **implemented as a decision and a split**, lessons in §2.6d. Measured: all 18 cards fit, so no card declares a threshold; the six that are unreadable at 191px are split into four batch tickets (#1288, #1289, #1290, #1291), `ethernet_ports`' inherited port-list AC (§2.12) among them |
 
-#1240 waits on all of Track A: thresholds are meaningless while fit widths are
-still moving, and the point of the layout fixes is to lower them. **Re-measure
-before declaring any threshold** — a card whose fit width drops to its narrowest
-realization needs no threshold at all, and absent is the correct value.
+#1240 waited on all of Track A: thresholds are meaningless while fit widths are
+still moving, and the point of the layout fixes is to lower them. Re-measured
+after they landed, every card fits at its narrowest realization, so **absent is
+the correct value for all 18** — see §2.6d. What remains of the track is
+readability, tracked per batch rather than per threshold (#1288, #1289, #1290,
+#1291, tabulated at the end of §2.6d), and each batch owes a
+compact form for `[200, normalAbove)` as well as the threshold itself: the popup
+form covers below 200px, and §1.5's 191.4-422.0px span for a 3-column card means
+the interval between is reachable.
 
 ### How each step is verified
 
@@ -1888,3 +1981,11 @@ The gate does **not** need to know a card's measured fit width to enforce
 narrowest realization and pumps. A threshold set too low leaves the card in the
 normal form at a width where it overflows, and the gate fails on that. No
 fit-width measurement harness needs to exist at runtime or in CI.
+
+**Superseded in one direction by §2.6d point 4.** That reasoning holds for a card
+that overflows in its normal form, and after Track A **no registered card does** —
+so a too-low threshold now produces illegibility, which the gate cannot see, and
+the claim survives only on a synthetic card (`card_popup_form_test.dart`). The
+mirror case, a threshold set too **high**, was never covered by it: it blanks a
+readable card into a popup form and the gate goes *greener*. That is why every
+batch ticket above owes the two-sided assertion of §2.11a point 4.
