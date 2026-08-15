@@ -57,9 +57,18 @@ final activeLocaleProvider = Provider<Locale>((ref) {
 /// the picker now being hidden. Normalizing once keeps the whole app on one
 /// locale — see [activeLocaleProvider], which is how the app reaches this.
 ///
-/// The match follows Flutter's own resolution: an exact hit wins, and failing
-/// that a locale of the same language does, so a persisted `zh_TW` still
-/// resolves against a build shipping only `zh`.
+/// The match is deliberately narrower than Flutter's own resolution: an exact hit
+/// wins, and failing that the first locale of the same language does. It reads
+/// `languageCode` and `countryCode` only.
+///
+/// `scriptCode` is ignored, so `zh_Hant_TW` would resolve to whichever `zh*`
+/// comes first rather than to `zh_TW`. Unreachable as the app stands — a locale
+/// only enters through the picker, which stores `Locale.toLanguageTag()` output
+/// for a shipped locale, and none of the 26 carries a script subtag, so the
+/// three-subtag branch in `LocaleExt.fromLanguageTag` has no writer. Left alone
+/// rather than fixed speculatively: `basicLocaleListResolution` would handle it,
+/// but `MaterialApp` already runs that over this function's result, and adding a
+/// second full resolver to chase an unreachable case buys less than it risks.
 ///
 /// The last resort is English, not `supported.first`. That distinction only
 /// shows on the retail build, where the list is alphabetical and begins with
