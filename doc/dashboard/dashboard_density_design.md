@@ -693,10 +693,13 @@ nothing enters today, and that is now a decision rather than an accident.
    available to half the dashboard. #1240 should therefore not treat compact as
    the band to skip: for a `minColumns: 4` card it is the only option there is.
 
-   Found by writing the sweep over `UspWidgetSpecs.all` and having exactly one
-   card fail the "did the popup form render?" assertion — which is the assertion
-   catching a card that bypasses the template, doing its job on the one widget
-   that legitimately does. Chasing it produced the width table above.
+   The widths are not new — #1239's own "Reachability, for expectation-setting"
+   paragraph states them, and D3 already said popup never fires on a phone. What
+   the sweep added is the per-card inventory and the conclusion drawn from it: the
+   ticket framed reachability as *when* popup triggers (manual shrinking on
+   tablet/desktop), and the inventory shows it is also *which cards* can trigger
+   it at all — half of them cannot, which is what reassigns the compact band from
+   "no consumers" to "the only option for these nine".
 
 2. **`stats_panel` is not a card, and the exemption is worth two assertions.** It
    is the full-width summary strip — five `StatTile`s in a `Row`, no title, no
