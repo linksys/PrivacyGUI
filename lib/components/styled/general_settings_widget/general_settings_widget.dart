@@ -198,7 +198,11 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
   Widget _buildLegalLinks() {
     // The normalized locale, not the raw setting: an English-only build reading a
     // leftover `ja` would open linksys.com/jp/… for a user whose picker is hidden.
-    final locale = ref.read(activeLocaleProvider);
+    //
+    // Watched, not read: this runs inside the popup's builder, so a language
+    // change while the popup is open has to reach the links. The picker's own
+    // `ref.read` is correct by contrast — it sits in an onTap callback.
+    final locale = ref.watch(activeLocaleProvider);
 
     return Wrap(
       spacing: 4,

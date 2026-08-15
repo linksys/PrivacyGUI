@@ -48,7 +48,13 @@ void main() {
         child: MaterialApp(
           theme: GetIt.instance.get<ThemeData>(instanceName: 'darkThemeData'),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
+          // The same list the provider is overridden with, so `Localizations`
+          // and the widget cannot disagree about which build this is. They did:
+          // the host always offered all 26 while the override said one, and the
+          // tests passed only because they assert on `locale_item_*` keys rather
+          // than on rendered strings.
+          supportedLocales:
+              supportedLocales ?? AppLocalizations.supportedLocales,
           home: const Scaffold(
             body: GeneralSettingsWidget(),
           ),
@@ -102,16 +108,23 @@ void main() {
       (tester) async {
     // No override: the widget falls back to what the build actually compiled,
     // which is every language pack that survived the strip.
+    //
+    // The precondition is asserted rather than branched on. Written as a
+    // conditional (`length > 1 ? findsOneWidget : findsNothing`) this test could
+    // not fail — run against a stripped tree it asserted the opposite of its own
+    // name and still passed.
+    expect(
+      AppLocalizations.supportedLocales.length,
+      greaterThan(1),
+      reason: 'this test covers the retail build; run it on an unstripped tree '
+          '(dart run tools/locale_strip.dart restore)',
+    );
+
     await tester.pumpWidget(buildHost());
 
     await openPopup(tester);
 
-    expect(
-      find.byType(LanguageTile),
-      AppLocalizations.supportedLocales.length > 1
-          ? findsOneWidget
-          : findsNothing,
-    );
+    expect(find.byType(LanguageTile), findsOneWidget);
   });
 
   testWidgets('lists only the locales the build shipped', (tester) async {
