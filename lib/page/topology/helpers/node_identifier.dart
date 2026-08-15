@@ -20,6 +20,14 @@ String topologySlaveIdentifier(String macSuffix) =>
 String topologyClientIdentifier(String macSuffix) =>
     'topology-node-client-$macSuffix';
 
+/// Identifier for the `Details` action inside the node-detail popup.
+///
+/// Carries no per-instance key: the popup renders in the graph view's
+/// singleton detail panel, so only one instance is ever mounted. See the note
+/// at the call site in `node_detail_popup.dart`.
+const String kTopologyNodeDetailButtonIdentifier =
+    'topology-node-detail-button';
+
 /// Normalizes a MAC / device id to uppercase hex with every separator removed.
 ///
 /// `aa:bb:cc:dd:ee:ff` → `AABBCCDDEEFF`. Any non-hex character (`:`, `-`, `.`,

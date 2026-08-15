@@ -193,6 +193,11 @@ class _PortForwardingDialogState extends State<PortForwardingDialog> {
       scrollable: true,
       content: Column(
         mainAxisSize: MainAxisSize.min,
+        // Left-align the children. The text fields already fill the content
+        // width so they look the same either way, but an intrinsically-sized
+        // child (the protocol block below) would be centred by the default
+        // CrossAxisAlignment.center and sit indented from the fields (#1261).
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           AppTextField(
             controller: _descController,
@@ -237,10 +242,17 @@ class _PortForwardingDialogState extends State<PortForwardingDialog> {
             ),
           ),
           AppGap.lg(),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          // Stack the protocol label above the segmented control (Column, not a
+          // spaceBetween Row) so a long localized label (e.g. fi "Protokolla" +
+          // "Molemmat", tr "Her İkisi") can't squeeze the control and clip its
+          // last segment in a narrow AppDialog (#1261). The control gets the
+          // full content width. A Wrap can't be used here because SegmentedButton
+          // has no dry-layout support and Wrap measures its children.
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               AppText.bodyMedium(loc(context).protocol),
+              AppGap.sm(),
               SegmentedButton<String>(
                 segments: [
                   ButtonSegment(value: 'TCP', label: Text(loc(context).tcp)),
