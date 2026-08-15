@@ -7,6 +7,7 @@ import 'package:flutter_portal/flutter_portal.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
+import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/_shared/providers/card_tab_state_provider.dart';
 import 'package:privacy_gui/page/dashboard/factories/usp_widget_factory.dart';
 import 'package:privacy_gui/page/dashboard/models/display_mode.dart';
@@ -269,6 +270,74 @@ List<CardWidthCase> widthCasesFor(WidgetSpec spec, {double? minScreen}) {
   return byWidth.values.toList();
 }
 
+/// A mainstream desktop realization of [spec] — the card's preferred span on a
+/// 1440px screen.
+///
+/// The readability tests that accompany the #1183 gate all need one width the
+/// card is *not* cramped at, because every narrow-width degradation they guard
+/// has a second half: it must not fire where the card has room. The gate itself
+/// only ever pumps narrowest realizations ([widthCasesFor]), so this width is
+/// measured by nothing else.
+///
+/// Taken from the spec rather than hardcoded so a card whose preferred span
+/// changes moves this with it (#1238).
+CardWidthCase desktopCaseFor(WidgetSpec spec, {double screenWidth = 1440}) {
+  final span = spec.getConstraints(DisplayMode.normal).preferredColumns;
+  return CardWidthCase(
+    screenWidth: screenWidth,
+    cardWidth: cardWidthAt(screenWidth, span),
+    columnSpan: span,
+    label: 'desktop',
+  );
+}
+
+/// Every [LayoutBlock] in the pumped tree, in paint order.
+///
+/// [LayoutBlock] is the app's card-section container, so on most cards this is
+/// "the sections", and their rects are what an arrangement assertion (stacked vs
+/// side by side) is made of.
+List<Rect> layoutBlockRects(WidgetTester tester) {
+  final finder = find.byType(LayoutBlock);
+  return [
+    for (var i = 0; i < finder.evaluate().length; i++)
+      tester.getRect(finder.at(i)),
+  ];
+}
+
+/// The pumped card's own content viewport — the shorter of the two scroll views
+/// in the tree ([buildDashboardCardApp] wraps the whole card in one as well).
+///
+/// The count is asserted rather than assumed. Picking "the shortest" out of an
+/// empty finder would return [Rect.largest], and every visibility assertion made
+/// against it would then pass against an infinite viewport — the failure mode is
+/// a silently green test, not a red one, so it has to be caught here. Two is the
+/// exact expected number: one from the harness, one from `DashboardCardTemplate`.
+/// If the template stops scrolling its content, or anything inside the card
+/// starts, this fails loudly and the reader learns which assumption broke.
+///
+/// Use this — not the content column's own bottom — when asking whether
+/// something is *visible*: `DashboardCardTemplate` scrolls, so a section can sit
+/// below the viewport while overflowing nothing, which is precisely the failure
+/// the gate cannot see.
+Rect cardContentViewport(WidgetTester tester) {
+  final finder = find.byType(SingleChildScrollView);
+  final count = finder.evaluate().length;
+  expect(
+    count,
+    2,
+    reason: 'expected exactly two scroll views — the pump harness and the card '
+        'content. Found $count, so "the shortest" no longer identifies the '
+        'card\'s own viewport and these measurements are meaningless.',
+  );
+
+  var best = Rect.largest;
+  for (var i = 0; i < count; i++) {
+    final r = tester.getRect(finder.at(i));
+    if (r.height < best.height) best = r;
+  }
+  return best;
+}
+
 // --- Tab registry ------------------------------------------------------------
 
 /// Number of tabs each tabbed card exposes. Non-listed cards are single-view
@@ -305,6 +374,14 @@ int visibleTabCount(WidgetTester tester) {
 /// requested [tabIndex] is pinned via [cardTabIndexProvider] so tabbed cards
 /// render the tab we want without a geometric tap (long localized labels make
 /// taps flaky).
+///
+/// [cardOverride] replaces the factory lookup with a hand-built card. The gate
+/// itself must never pass it — going through the factory is what makes a renamed
+/// or unregistered card fail loudly. It exists for the readability tests, which
+/// need a *specific* row shape (a long device name, a 3-digit signal reading) and
+/// cannot get one from the dashboard's kitchen-sink fixture. The card id is still
+/// required, because everything else here — tab pinning, the spec-derived
+/// geometry — is keyed off it.
 Widget buildDashboardCardApp({
   required String cardId,
   required Locale locale,
@@ -313,8 +390,9 @@ Widget buildDashboardCardApp({
   required double cardHeight,
   int tabIndex = 0,
   Key? repaintKey,
+  Widget? cardOverride,
 }) {
-  final card = UspWidgetFactory().buildWidget(cardId);
+  final card = cardOverride ?? UspWidgetFactory().buildWidget(cardId);
   if (card == null) {
     throw StateError(
       'UspWidgetFactory has no widget for id "$cardId". '
@@ -381,6 +459,9 @@ Widget buildDashboardCardApp({
 /// multiple widths/tabs in one test: each (card, width, tab, locale) is its own
 /// `testWidgets`, giving every measurement a fresh tree. This function does the
 /// single pump for one such test.
+///
+/// [cardOverride] is forwarded to [buildDashboardCardApp] — see there for when
+/// passing it is legitimate and when it defeats the point.
 Future<List<OverflowIncident>> probeCardOverflow(
   WidgetTester tester, {
   required String cardId,
@@ -389,6 +470,7 @@ Future<List<OverflowIncident>> probeCardOverflow(
   required int tabIndex,
   required Locale locale,
   Key? repaintKey,
+  Widget? cardOverride,
 }) {
   final surface =
       Size(widthCase.screenWidth, dashboardCardHeight(cardHeightRows));
@@ -405,6 +487,7 @@ Future<List<OverflowIncident>> probeCardOverflow(
         cardHeight: dashboardCardHeight(cardHeightRows),
         tabIndex: tabIndex,
         repaintKey: repaintKey,
+        cardOverride: cardOverride,
       ),
     );
     await settleIgnoringAnimations(tester);
