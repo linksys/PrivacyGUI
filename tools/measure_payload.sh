@@ -42,7 +42,14 @@ payloadKB=$((totalKB - prunedKB))
 
 echo "Delivered payload: ${payloadKB} KB ($(toMB "$payloadKB") MB)"
 echo "  build output:    ${totalKB} KB"
-echo "  pruned by CI:    ${prunedKB} KB (canvaskit/)"
+# Says "already pruned" rather than "0 KB" when the directory is gone. Under
+# build_web.sh it always is, and a bare 0 there reads as "nothing was pruned"
+# immediately after the prune step reported removing 37 MB.
+if [ "$prunedKB" -eq 0 ]; then
+  echo "  canvaskit/:      already pruned"
+else
+  echo "  excluded:        ${prunedKB} KB (canvaskit/, pruned before packaging)"
+fi
 
 echo
 echo "Largest contributors:"
