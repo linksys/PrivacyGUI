@@ -457,6 +457,41 @@ class _TargetDonut extends StatelessWidget {
 /// dropped and the list above it keeps the information.
 const double _kProtocolChartMinHeight = 70;
 
+/// Content width below which a port-forwarding rule breaks into two lines —
+/// status dot and protocol badge on the first, the whole mapping on the second —
+/// and the DMZ list is dropped to pay for the height that costs.
+///
+/// Derived from the mapping, which is the one thing on this tab whose width is
+/// set by router data rather than by a localized string. Inline, the leading
+/// spends 60.3px of the content width (an 8px dot, a 36.3px protocol badge and
+/// two 8px gaps) and the rest goes to the mapping; the longest mapping the tab
+/// can be asked to draw wants **157.0px** — `27015` at 33.3px, the arrow and its
+/// two gaps at 20px, and `192.168.1.105:27015` at 103.7px. So inline needs
+/// 217.3px of content, and this sits at 232 for ~15px of slack.
+///
+/// Below it, inline is not merely tight. At the narrowest width the grid yields —
+/// a 191px card, 157.4px of content — the mapping gets **97.1px**, and since
+/// #1286 laid the pair out as one paragraph that is 97.1px shared between an
+/// operand of 33.3px and one of 103.7px: the target is painted 41.4px and the
+/// rest is an ellipsis. No arrangement that keeps the leading on the same line
+/// fixes it, because deleting the *entire* leading would only recover 60.3px of a
+/// 59.9px shortfall — the mapping has to have the row to itself.
+///
+/// The DMZ list goes with it, and that is the honest cost rather than a
+/// side-effect. A second line per rule is +20px, ~60px over three rules, which
+/// overflows the tab's 3-row minimum by +11px to +36px in all 26 locales (#1230
+/// measured this as its mutation 10, and AC 4 forbids raising `minHeightRows`).
+/// The DMZ section is a heading, two gaps and one row per entry — enough to pay
+/// for it, and the least information lost per pixel of the alternatives: dropping
+/// port-forwarding rules instead costs two of the three rules for the same
+/// height, and the protocol chart is already suppressed at this height by
+/// [_kProtocolChartMinHeight]. `el` is the locale this leaves the least room:
+/// +4px of overflow if the heading takes one more line than it does today.
+///
+/// Above it nothing changes: 288px — the only other width the grid realizes for
+/// this card — leaves the inline mapping 194.1px, and the DMZ list stays.
+const double _kMappingInlineMinWidth = 232;
+
 class _PortsTab extends StatelessWidget {
   final List<PortForwardingRuleUIModel> portForwardingRules;
   final List<DmzEntrySummary> dmzSummaries;
@@ -489,6 +524,27 @@ class _PortsTab extends StatelessWidget {
     // Active DMZ entries
     final activeDmz = dmzSummaries.where((d) => d.enable).toList();
 
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final inlineMapping = constraints.maxWidth >= _kMappingInlineMinWidth;
+        return _portsContent(
+          context,
+          colorScheme: colorScheme,
+          protocolCounts: protocolCounts,
+          activeDmz: activeDmz,
+          inlineMapping: inlineMapping,
+        );
+      },
+    );
+  }
+
+  Widget _portsContent(
+    BuildContext context, {
+    required ColorScheme colorScheme,
+    required Map<String, int> protocolCounts,
+    required List<DmzEntrySummary> activeDmz,
+    required bool inlineMapping,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -499,24 +555,15 @@ class _PortsTab extends StatelessWidget {
           AppGap.sm(),
           ...portForwardingRules.take(5).map((rule) => Padding(
                 padding: const EdgeInsets.only(bottom: 4),
-                child: Row(
-                  children: [
-                    UspStatusDot(isActive: rule.enabled),
-                    AppGap.sm(),
-                    _ProtocolBadge(protocol: rule.protocol),
-                    AppGap.sm(),
-                    Expanded(
-                      child: MapsToRow(
-                        source: rule.portRangeDisplay,
-                        target: rule.internalTargetDisplay,
-                      ),
-                    ),
-                  ],
+                child: _RuleRow(
+                  rule: rule,
+                  inlineMapping: inlineMapping,
                 ),
               )),
         ],
-        // DMZ section
-        if (activeDmz.isNotEmpty) ...[
+        // DMZ section — dropped where a rule needs two lines, see
+        // [_kMappingInlineMinWidth].
+        if (inlineMapping && activeDmz.isNotEmpty) ...[
           AppGap.md(),
           AppText.labelLarge('DMZ'),
           AppGap.sm(),
@@ -565,6 +612,68 @@ class _PortsTab extends StatelessWidget {
 // =============================================================================
 // Shared widgets
 // =============================================================================
+
+/// One port-forwarding rule: enabled dot, protocol badge, and the port mapping.
+///
+/// [inlineMapping] chooses between the two arrangements — see
+/// [_kMappingInlineMinWidth] for which width picks which and why. Inline, the
+/// mapping takes whatever the leading leaves. Stacked, the leading keeps its own
+/// line and the mapping gets the whole of the next one.
+///
+/// The stacked mapping is deliberately **not** indented under the badge, which
+/// would read better and is not worth what it costs. A 16px indent leaves 141.4px
+/// where the tab's longest rule wants 157.0px, so that rule takes a second line —
+/// 16px on a card that had to drop its DMZ list to afford this arrangement at all.
+/// Grouping is carried by the 2px gap inside a rule against the 4px between rules
+/// instead.
+///
+/// Without the indent the same rule fits one line with 0.4px to spare, and that
+/// 0.4px is *not* what makes this safe — [MapsToRow.maxLines] is. Longer router
+/// data than the fixture's is reachable, and a mapping that outgrows its line
+/// breaks at the arrow and keeps the target whole on the next one. So the choice
+/// here is only about which arrangement is shorter for the data at hand, and the
+/// unindented one is shorter by a line.
+class _RuleRow extends StatelessWidget {
+  final PortForwardingRuleUIModel rule;
+  final bool inlineMapping;
+
+  const _RuleRow({required this.rule, required this.inlineMapping});
+
+  @override
+  Widget build(BuildContext context) {
+    if (inlineMapping) {
+      return Row(
+        children: [
+          UspStatusDot(isActive: rule.enabled),
+          AppGap.sm(),
+          _ProtocolBadge(protocol: rule.protocol),
+          AppGap.sm(),
+          Expanded(child: _mapping(maxLines: 1)),
+        ],
+      );
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            UspStatusDot(isActive: rule.enabled),
+            AppGap.sm(),
+            _ProtocolBadge(protocol: rule.protocol),
+          ],
+        ),
+        const SizedBox(height: 2),
+        _mapping(maxLines: 2),
+      ],
+    );
+  }
+
+  Widget _mapping({required int maxLines}) => MapsToRow(
+        source: rule.portRangeDisplay,
+        target: rule.internalTargetDisplay,
+        maxLines: maxLines,
+      );
+}
 
 class _ProtocolBadge extends StatelessWidget {
   final String protocol;

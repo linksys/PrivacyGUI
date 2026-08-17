@@ -38,6 +38,22 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  /// The single paragraph a [MapsToRow] subtitle renders as.
+  ///
+  /// Since #1286 the pair is one [AppText.rich] run rather than two [Text]s in a
+  /// `Row`, so `find.text('8080')` matches nothing here: the paragraph's plain
+  /// text is the source, U+FFFC for the arrow placeholder, then the target.
+  Text mapsToText(WidgetTester tester) {
+    final texts = find.descendant(
+      of: find.byType(MapsToRow),
+      matching: find.byType(Text),
+    );
+    expect(texts, findsOneWidget,
+        reason: 'MapsToRow renders the pair as one paragraph (#1286); '
+            'found ${texts.evaluate().length} Texts');
+    return tester.widget<Text>(texts);
+  }
+
   group('subtitle channels are mutually exclusive', () {
     testWidgets('a String subtitle renders as text', (tester) async {
       await pumpToggleRow(
@@ -68,8 +84,8 @@ void main() {
 
       expect(find.byType(MapsToRow), findsOneWidget);
       expect(find.byIcon(Icons.arrow_forward), findsOneWidget);
-      expect(find.text('8080'), findsOneWidget);
-      expect(find.text('192.168.1.100:80'), findsOneWidget);
+      expect(mapsToText(tester).textSpan?.toPlainText(),
+          '8080\u{FFFC}192.168.1.100:80');
     });
 
     testWidgets('passing both is a programming error', (tester) async {
@@ -98,10 +114,14 @@ void main() {
   group('the arrow in a subtitle tracks the surrounding text colour', () {
     testWidgets('an unstyled MapsToRow does not fall back to black',
         (tester) async {
-      // AppListTile wraps its subtitle in a DefaultTextStyle but no IconTheme.
-      // Without resolving one colour for both, AppIcon would land on its own
-      // fallback chain and could render black against the tile's content
-      // colour. Asserting they match is what pins that behaviour down.
+      // AppListTile wraps its subtitle in a DefaultTextStyle but no IconTheme,
+      // and AppIcon's own chain ends at `IconTheme.of(context).color ??
+      // Colors.black` — so an arrow next to this text could render black against
+      // the tile's content colour. #1286 moved who closes that gap: MapsToRow used
+      // to resolve one colour and hand it to both children, and now [AppText.rich]
+      // publishes its resolved colour as an IconTheme around the paragraph, which
+      // the WidgetSpan'd arrow inherits. The assertion is the same either way, and
+      // it is the reason MapsToRow can leave the arrow colourless.
       await pumpToggleRow(
         tester,
         ToggleRow(
@@ -120,16 +140,14 @@ void main() {
           matching: find.byIcon(Icons.arrow_forward),
         ),
       );
-      final text = tester.widget<Text>(
-        find.descendant(
-          of: find.byType(MapsToRow),
-          matching: find.text('8080'),
-        ),
-      );
+      // On the rich path the resolved style rides on the root span, not on the
+      // widget — `mapsToText(tester).style` is null here.
+      final textColor = mapsToText(tester).textSpan?.style?.color;
 
-      final textColor = text.style?.color ??
-          DefaultTextStyle.of(tester.element(find.text('8080'))).style.color;
-
+      expect(textColor, isNotNull,
+          reason: 'AppText.rich resolves a colour onto the root span and '
+              'publishes the same one as an IconTheme; a null here means there '
+              'was nothing for the arrow to agree with');
       expect(icon.color, isNotNull);
       expect(icon.color, equals(textColor));
     });

@@ -14,6 +14,7 @@ import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../../util/app_test_fonts.dart';
 import '../../../../util/dashboard/dashboard_card_probe.dart';
+import '../../../../util/text_run_metrics.dart';
 
 /// Firewall Overview readability (#1230).
 ///
@@ -36,9 +37,12 @@ import '../../../../util/dashboard/dashboard_card_probe.dart';
 ///
 /// AC 5 is a claim about the whole card, so the Ports tab is swept for the same
 /// two failures even though none of the 21 coordinates were there — its rows fit
-/// at 191px, and fitting is not reading. One thing on it does not read, and the
-/// cause is outside this card; the last test in the file records it with its
-/// measurement rather than leaving it to a comment.
+/// at 191px, and fitting is not reading. One thing on it did not read: the port
+/// mapping's target was ellipsized in every locale, by a cap that `MapsToRow`
+/// imposed on all ten of its render sites. #1286 fixed that at the source and
+/// this card gave the mapping a line of its own to spend it on; the last test in
+/// the file is the measurement, kept rather than deleted with the ratchet it
+/// replaced.
 ///
 /// So each group below asserts on the rendered tree. Each was run against a
 /// mutation of the code it guards, and each fired:
@@ -56,12 +60,17 @@ import '../../../../util/dashboard/dashboard_card_probe.dart';
 ///   | 9. Ports heading `maxLines: 1`                 | Ports tab shredded text (6 — `da`, `pl`, `pt`, `pt-PT`, `ru`, `sv`, the locales whose heading wraps) |
 ///   | 10. the mapping on a full-width line of its own | 29: `pumpAt` overflow @min in all 26 locales (+11px to +36px bottom) and @preferred in one, chart suppression @min (2) — the +20px a rule costs is what AC 4 forbids |
 ///   | 11. 10, plus the DMZ list dropped, plus `MapsToRow`'s source given its intrinsic width instead of half the row | mapping target ratchet (1), and nothing else — the combination that would let this card show a target whole, measured clean |
+///   | 12. `_kMappingInlineMinWidth` → 0, i.e. the mapping back inline at 191px | 27: Ports tab shredded text (26 — every locale), and the half-the-row measurement, which reports 41.4px of a 97.1px run |
+///   | 13. the stacked mapping indented 16px under the badge, `MapsToRow.maxLines` back at 1 | 27: Ports tab shredded text (26), and target-whole — 86.1px of the 103.7px `192.168.1.105:27015` asks for, in a 141.4px run |
+///   | 14. 13 with `maxLines` left at 2                | **nothing** — the run breaks after the arrow instead, and the target renders whole on the second line (measured: all its boxes at `top: 18`, one line, paragraph 32px tall). Recorded because it is the reason `maxLines: 2` is what makes the one-line fit safe rather than the 0.4px of slack |
+///   | 15. the Ports heading boxed to 72px             | `pumpAt` overflow @min in 26 locales (+4px `el`) — it never reaches the text assertions, which is why 13 rather than this proves the target-whole one |
+///   | 16. the protocol badge label boxed to 12px      | `pumpAt` overflow @min in 26 locales — Flutter breaks an over-long token per grapheme rather than overflowing its line, so the badge grew taller instead of spilling sideways |
 ///
-/// Seven of those eleven leave the #1183 gate green while the card loses a chart
+/// Nine of those sixteen leave the #1183 gate green while the card loses a chart
 /// (3, 4), asks for a 160px donut in a 157.4px slot (5), prints a clipped slice
-/// label into a 20px ring (6), or clips text mid-glyph (8, 9) — clipping and
-/// absence are not overflow. Only 1, 7 and 10 report an overflow, and 1 is simply
-/// the pre-#1230 card.
+/// label into a 20px ring (6), or clips text mid-glyph (8, 9, 12, 13) — clipping
+/// and absence are not overflow, and an ellipsized target overflows nothing. Only
+/// 1, 7, 10, 15 and 16 report an overflow, and 1 is simply the pre-#1230 card.
 ///
 /// Overflow itself is the gate's job — both `firewall_overview` keys are gone
 /// from `known_overflows.json` — with one exception, in `pumpAt`: the gate pumps
@@ -206,40 +215,82 @@ void main() {
 
   /// Every [Text] in the Ports tab's own content, tab bar and footer excluded.
   ///
-  /// Anchored on a `MapsToRow` and walked up to the innermost enclosing [Column],
-  /// which is the tab's root: taking the whole card instead would measure the tab
-  /// labels and the detail link, which the template owns and which every card
-  /// shares — a failure there is not this card's to fix.
-  Finder portsTabTexts() => find.descendant(
-        of: find
-            .ancestor(
-                of: find.byType(MapsToRow).first, matching: find.byType(Column))
-            .first,
-        matching: find.byType(Text),
-      );
-
-  /// The two halves of every mapping row, in tree order: `source -> target`.
+  /// Anchored on the `MapsToRow`s and walked up to the innermost [Column] that
+  /// encloses *all* of them, which is the tab's root: taking the whole card
+  /// instead would measure the tab labels and the detail link, which the template
+  /// owns and which every card shares — a failure there is not this card's to fix.
   ///
-  /// `MapsToRow` renders exactly two [Text]s and the count is asserted here, so a
-  /// third one appearing inside it cannot quietly be read as a target.
-  ({List<Text> sources, List<Text> targets}) mappingHalves(
+  /// "All of them" is the part that has to be said out loud. This used to take the
+  /// innermost enclosing `Column` of the first row full stop, and #1286 made a
+  /// rule render as a `Column` of its own below `_kMappingInlineMinWidth` — a
+  /// leading line, then the mapping. So the innermost `Column` became *one rule*,
+  /// and the sweep silently narrowed from the whole tab to rule 1 of 3. It passed
+  /// while rule 2's target was ellipsized by 17.6px, which is precisely the defect
+  /// it exists to catch. Counting the rows in scope is what makes that a failure
+  /// rather than a green run.
+  Finder portsTabTexts() {
+    final rows = find.byType(MapsToRow);
+    final rowCount = rows.evaluate().length;
+    expect(rowCount, greaterThan(0),
+        reason: 'the Ports tab rendered no mapping rows to anchor on');
+    // `find.ancestor` returns ancestors innermost-first, so this walks outwards.
+    final columns =
+        find.ancestor(of: rows.first, matching: find.byType(Column));
+    for (var i = 0; i < columns.evaluate().length; i++) {
+      final scope = columns.at(i);
+      if (find.descendant(of: scope, matching: rows).evaluate().length ==
+          rowCount) {
+        return find.descendant(of: scope, matching: find.byType(Text));
+      }
+    }
+    fail('no Column encloses all $rowCount mapping rows — the Ports tab must '
+        'render its rules under one Column for this sweep to be scoped to it');
+  }
+
+  /// One record per mapping row on the Ports tab: the paragraph it renders as,
+  /// and the two operands that went into it.
+  ///
+  /// Since #1286 a `MapsToRow` is **one** paragraph — `source`, an arrow
+  /// [WidgetSpan], `target` — and not two [Text]s. That is the fix itself: a
+  /// single run lays the source out at its intrinsic width and leaves the rest to
+  /// the target, where two equal-flex `Flexible`s capped the target at half the
+  /// row whatever the source spent. So there is no `.first`/`.last` half to take
+  /// any more, and the count is asserted at 1 so that a `Text` reappearing inside
+  /// the row cannot quietly be measured as if it were the target.
+  ///
+  /// The operands come off the widget rather than out of the span tree: they are
+  /// the same strings either way, and reading them from the widget keeps the
+  /// helper independent of how many spans the arrow costs.
+  List<({RenderParagraph paragraph, String source, String target})> mappingRuns(
       WidgetTester tester) {
     final rows = find.byType(MapsToRow);
     expect(rows, findsWidgets,
         reason: 'the Ports tab renders one MapsToRow per port-forwarding rule; '
             'without any there is nothing here to measure');
-    final sources = <Text>[];
-    final targets = <Text>[];
+    final runs =
+        <({RenderParagraph paragraph, String source, String target})>[];
     for (var i = 0; i < rows.evaluate().length; i++) {
+      final row = tester.widget<MapsToRow>(rows.at(i));
       final texts =
           find.descendant(of: rows.at(i), matching: find.byType(Text));
-      expect(texts, findsNWidgets(2),
-          reason: 'MapsToRow $i must render exactly a source and a target');
-      sources.add(tester.widget<Text>(texts.first));
-      targets.add(tester.widget<Text>(texts.last));
+      expect(texts, findsOneWidget,
+          reason: 'MapsToRow $i must render the pair as a single paragraph — '
+              'that is what stops the target being capped at half the row '
+              '(#1286); found ${texts.evaluate().length} Texts');
+      runs.add((
+        paragraph: tester.renderObject<RenderParagraph>(texts),
+        source: row.source,
+        target: row.target,
+      ));
     }
-    return (sources: sources, targets: targets);
+    return runs;
   }
+
+  // `paintedWidth` and `intrinsicWidth` come from `test/util/text_run_metrics.dart`.
+  // They lived here first, and moved out when `maps_to_row_test.dart` needed the
+  // same three functions — including `operandStyle`, whose trap (the root span
+  // carries the container's 14px, not the 12px the operands are drawn in) both
+  // files walked into independently.
 
   /// The card's `_kDonutMinRingThickness`, mirrored — it is private to `lib/`.
   const minRingThicknessPx = 10.0;
@@ -330,14 +381,14 @@ void main() {
       locale: const Locale('en'),
     );
 
-    final target = find
-        .descendant(
-            of: find.byType(MapsToRow).first, matching: find.byType(Text))
-        .last;
-    final paragraph = tester.renderObject<RenderParagraph>(target);
-    final content = tester.widget<Text>(target).data ?? '';
-    final style = paragraph.text.style;
-    expect(style?.fontSize, isNotNull,
+    final run = mappingRuns(tester).first;
+    final paragraph = run.paragraph;
+    final content = run.target;
+    // Since #1286 the pair is one paragraph, and the style the operands render in
+    // is one level below its root — see [operandStyle]. Reading the root instead
+    // would identify the *container's* typeface, which is not what drew this.
+    final style = operandStyle(paragraph);
+    expect(style.fontSize, isNotNull,
         reason: 'the mapping target must carry a resolved style with a font '
             'size, or there is nothing here to identify');
 
@@ -352,7 +403,7 @@ void main() {
       return width;
     }
 
-    final measured = widthUnder(style!);
+    final measured = widthUnder(style);
     // `copyWith` keeps the style's `package` and the `fontFamily` getter
     // re-composes the prefix, so this asks for whichever of `NotoSans` /
     // `packages/ui_kit_library/NotoSans` the style's own package implies —
@@ -527,22 +578,20 @@ void main() {
     // one covers the other half of the same claim, where the gate again says
     // nothing — the Ports tab's rows fit at 191px, and fitting is not reading.
     //
-    // Everything the tab renders except the mapping target: the heading and the
-    // DMZ target line are localized, and the port numbers and protocol badges are
-    // not but a clipped port number is as unreadable as a clipped word. The one
-    // thing *allowed* to wrap is the heading — 6 locales do, `pt_PT` wanting
-    // 230.1px of a 157.4px row — so the same two-line budget as the metrics
-    // applies.
+    // Everything the tab renders, mapping run included: the heading and the DMZ
+    // target line are localized, and the port numbers and protocol badges are not
+    // but a clipped port number is as unreadable as a clipped word. The one thing
+    // *allowed* to wrap is the heading — 6 locales do, `pt_PT` wanting 230.1px of
+    // a 157.4px row — so the same two-line budget as the metrics applies.
     //
-    // The mapping *target* is excluded, and not because it passes: at 191px it
-    // gets 36.9-38.5px for 82.3-103.7px of text and is ellipsized in every locale.
-    // That belongs to the test below it rather than here, for two reasons. It is
-    // an IP and a port, byte-identical in all 26 locales, so a localization sweep
-    // is the wrong instrument — one measurement proves as much as 26. And the
-    // ellipsis is `MapsToRow`'s documented contract ("[target] is the part that
-    // ellipsizes, since the source is short and bounded while the target is not"),
-    // shared with seven other call sites; asserting it whole here would fail this
-    // card for a decision taken in `row_blocks.dart`.
+    // The mapping target used to be **excluded** here, with the measurement kept
+    // as a ratchet below: at 191px it got 36.9-38.5px for 82.3-103.7px of text and
+    // was ellipsized in every locale, because `MapsToRow` split its row between
+    // two equal-flex `Flexible`s. #1286 fixed that in `row_blocks.dart` and the
+    // card gave the mapping a line of its own to spend, so the exclusion is gone.
+    // Whether the target is whole is asserted *by width* in the test below rather
+    // than by the ellipsis flag here — see `hasPlaceholder` for why the flag
+    // cannot answer it.
     const maxLines = 2;
 
     for (final locale in AppLocalizations.supportedLocales) {
@@ -552,44 +601,74 @@ void main() {
         await pumpAt(tester,
             widthCase: narrowest, rows: minRows, tabIndex: 1, locale: locale);
 
-        final targets = mappingHalves(tester).targets;
         final texts = portsTabTexts();
         expect(texts, findsWidgets,
             reason: 'the Ports tab rendered no text at all — the fixture must '
                 'carry port-forwarding rules for this to measure anything');
 
         for (var i = 0; i < texts.evaluate().length; i++) {
-          final widget = tester.widget<Text>(texts.at(i));
-          if (targets.any((t) => identical(t, widget))) continue;
-          final content = widget.data ?? '';
-          if (content.isEmpty) continue;
           final paragraph = tester.renderObject<RenderParagraph>(texts.at(i));
+          final span = paragraph.text;
+          final content = span.toPlainText(includePlaceholders: false);
+          if (content.isEmpty) continue;
           final room = paragraph.size.width;
 
-          final wanted = TextPainter(
-            text: TextSpan(text: content, style: paragraph.text.style),
-            textDirection: paragraph.textDirection,
-            textScaler: paragraph.textScaler,
-            locale: locale,
-          )..layout(maxWidth: room);
-          final lines = wanted.computeLineMetrics().length;
-          wanted.dispose();
+          // The mapping run carries an inline arrow placeholder, and is measured
+          // by the test below instead of here. Rebuilding it in a `TextPainter`
+          // would mean handing the placeholder's dimensions back in, and the
+          // reason not to fall back on `didExceedMaxLines` alone for it is the
+          // point of the `widest` assertion below: an IP and a port have no break
+          // opportunity in them, so a run that does not fit is not a run that
+          // needs a second line — it stays one line and loses its tail to the
+          // ellipsis, with the flag still false. Measured: at 141.4px of room
+          // `27015 → 192.168.1.105:27015` painted 86.1px of the target's 103.7px
+          // and every locale here passed.
+          final hasPlaceholder = span.toPlainText().length != content.length;
+          if (!hasPlaceholder) {
+            final wanted = TextPainter(
+              text: TextSpan(text: content, style: span.style),
+              textDirection: paragraph.textDirection,
+              textScaler: paragraph.textScaler,
+              locale: locale,
+            )..layout(maxWidth: room);
+            final metrics = wanted.computeLineMetrics();
+            final lines = metrics.length;
+            final widest =
+                metrics.map((m) => m.width).fold<double>(0, math.max);
+            wanted.dispose();
 
-          expect(
-            lines,
-            lessThanOrEqualTo(maxLines),
-            reason: '"$content" needs $lines lines in the '
-                '${room.toStringAsFixed(1)}px it is given on the Ports tab at '
-                '${narrowest.widthKey}px. Beyond $maxLines the row is a column '
-                'of fragments (#1230).',
-          );
+            expect(
+              lines,
+              lessThanOrEqualTo(maxLines),
+              reason: '"$content" needs $lines lines in the '
+                  '${room.toStringAsFixed(1)}px it is given on the Ports tab at '
+                  '${narrowest.widthKey}px. Beyond $maxLines the row is a column '
+                  'of fragments (#1230).',
+            );
+
+            // The other half of "nothing was cut", and the half the ellipsis flag
+            // does not cover: a token with no break opportunity in it — a port, an
+            // IP, a URL — overflows its line rather than taking another, so the
+            // line count stays inside the budget and `didExceedMaxLines` stays
+            // false while the tail is replaced by an ellipsis. Laid out with no
+            // maxLines and no ellipsis, the widest line is what the text really
+            // wants; anything over the room it has was cut on screen.
+            expect(
+              widest,
+              lessThanOrEqualTo(room + 0.5),
+              reason: '"$content" wants ${widest.toStringAsFixed(1)}px on its '
+                  'widest line and has ${room.toStringAsFixed(1)}px on the Ports '
+                  'tab at ${narrowest.widthKey}px — the excess is ellipsized, and '
+                  'it cannot wrap out of it because there is no break opportunity '
+                  'in it (#1230).',
+            );
+          }
           expect(
             paragraph.didExceedMaxLines,
             isFalse,
             reason: '"$content" is ellipsized on the Ports tab at '
-                '${narrowest.widthKey}px (${room.toStringAsFixed(1)}px of room, '
-                '$lines lines wanted) — clipped, which the gate cannot see '
-                '(#1230).',
+                '${narrowest.widthKey}px (${room.toStringAsFixed(1)}px of room) '
+                '— clipped, which the gate cannot see (#1230).',
           );
         }
       });
@@ -597,69 +676,85 @@ void main() {
   });
 
   testWidgets(
-      '@${narrowest.widthKey}px the mapping target is the one thing the row '
-      'cannot show whole (#1230)', (tester) async {
-    // The measurement the sweep above deliberately does not make, kept as a
-    // ratchet rather than left to a comment. `en` alone: the strings are IPs and
-    // ports, identical in every locale.
+      '@${narrowest.widthKey}px the mapping target takes more than half the '
+      'row (#1286)', (tester) async {
+    // The measurement that replaced a ratchet. It used to assert that the target
+    // is ellipsized here and could not be otherwise — `MapsToRow` gave its two
+    // halves a `Flexible` each, and `RenderFlex` splits the room **evenly**
+    // between equal flexes without handing back what the shorter one declines, so
+    // the source took its 30.7px and the target still got exactly half, 38.5px of
+    // the 77px the pair had. Its own failure message asked for this test to be
+    // deleted the day the target rendered whole. #1286 made that day: the pair is
+    // one paragraph now, so the source takes its intrinsic width by document order
+    // and the target gets the rest.
     //
-    // The cause is not this card's leading. `MapsToRow` gives its two halves a
-    // `Flexible` each and `RenderFlex` splits the room **evenly** between equal
-    // flexes without handing back what the shorter one declines — measured: the
-    // source takes its 30.7px and the target still gets exactly half, 38.5px of
-    // the 77px the pair has. So the target's ceiling is half the row, whatever
-    // else the row spends, and "192.168.1.105:27015" wants 103.7px: reading it
-    // whole needs 227.4px of mapping, more than the whole 191px card. Measured
-    // against the two card-side fixes and neither is enough on its own — the
-    // mapping on a full-width line of its own still leaves the target 68.7px
-    // (half of 137.4), and it costs 20px a rule, which overflows the 3-row
-    // minimum this ticket may not raise (AC 4) by +11px to +36px unless the DMZ
-    // list goes too.
+    // "Whole" is asserted by the 26-locale sweep above, which no longer excludes
+    // the target. What is asserted here is the *shape* of the fix rather than the
+    // outcome — that the target holds more than half the run — because a card-side
+    // change that widened the row would satisfy "whole" while leaving the even
+    // split in place, and the split is what has nine other render sites.
     //
-    // That makes it a `row_blocks.dart` decision, not a #1230 one, and it
-    // contradicts `MapsToRow`'s own docstring: "[target] is the part that
-    // ellipsizes, since the source is short and bounded while the target is not"
-    // describes a layout that gives the bounded half its intrinsic width, not
-    // half the row. Seven other call sites share it. This expectation is what
-    // stops the limitation from being forgotten; the header table records the
-    // combination that clears it.
+    // `en` alone: the strings are an IP and a port, byte-identical in all 26
+    // locales, so one measurement proves what 26 would.
     //
-    // Both halves are asserted, in opposite directions. The source is the rule's
-    // identity — which external port this row is about — and must survive; if it
-    // ever ellipsizes the row has stopped saying anything at all.
+    // The source is checked in the other direction. It is the rule's identity —
+    // which external port this row is about — and in a single run an ellipsis can
+    // only reach it once the whole row is narrower than the source itself. Reading
+    // its painted width back is what shows it was laid out at its intrinsic width
+    // and not squeezed to a share.
     await pumpAt(tester,
         widthCase: narrowest,
         rows: minRows,
         tabIndex: 1,
         locale: const Locale('en'));
 
-    final rows = find.byType(MapsToRow);
-    final halves = mappingHalves(tester);
+    final runs = mappingRuns(tester);
 
-    for (var i = 0; i < halves.sources.length; i++) {
-      final texts =
-          find.descendant(of: rows.at(i), matching: find.byType(Text));
-      final source = tester.renderObject<RenderParagraph>(texts.first);
+    for (var i = 0; i < runs.length; i++) {
+      final run = runs[i];
+      final room = run.paragraph.size.width;
+      final sourceWidth = paintedWidth(run.paragraph, 0, run.source.length);
+      // `source`, then one U+FFFC standing in for the arrow, then `target`.
+      final targetStart = run.source.length + 1;
+      final targetWidth = paintedWidth(
+          run.paragraph, targetStart, targetStart + run.target.length);
+
       expect(
-        source.didExceedMaxLines,
-        isFalse,
-        reason:
-            '"${halves.sources[i].data}" — the external port of rule $i — is '
-            'ellipsized at ${narrowest.widthKey}px. It is 28.7-33.3px of text: '
-            'if the leading dot and badge have grown enough to clip it, the row '
-            'no longer identifies its rule (#1230).',
+        sourceWidth,
+        closeTo(intrinsicWidth(run.paragraph, run.source), 0.5),
+        reason: '"${run.source}" — the external port of rule $i — was painted '
+            '${sourceWidth.toStringAsFixed(1)}px wide in a '
+            '${room.toStringAsFixed(1)}px run, not the '
+            '${intrinsicWidth(run.paragraph, run.source).toStringAsFixed(1)}px '
+            'it asks for. In one paragraph the source takes its intrinsic width '
+            'by document order; a shortfall means it is back to being allocated '
+            'a share of the row (#1286).',
       );
 
-      final target = tester.renderObject<RenderParagraph>(texts.last);
-
       expect(
-        target.didExceedMaxLines,
-        isTrue,
-        reason: '"${halves.targets[i].data}" now renders whole at '
-            '${narrowest.widthKey}px — the known limitation this expectation '
-            'records is fixed. Delete this test and drop the mapping-target '
-            'exclusion from the sweep above, which then covers it in all 26 '
-            'locales (#1230).',
+        targetWidth,
+        greaterThan(room / 2),
+        reason: '"${run.target}" was painted '
+            '${targetWidth.toStringAsFixed(1)}px of a '
+            '${room.toStringAsFixed(1)}px run — at or under half, which is the '
+            'ceiling the two equal-flex `Flexible`s used to impose. The source '
+            'spends only ${sourceWidth.toStringAsFixed(1)}px, so the rest '
+            'belongs to the target (#1286).',
+      );
+
+      // AC 1, measured rather than inferred: the target is painted at its own
+      // intrinsic width, i.e. no glyph of it was traded for an ellipsis. The
+      // sweep above reaches the same conclusion from `didExceedMaxLines`; this
+      // says it in pixels, so a failure names the shortfall.
+      expect(
+        targetWidth,
+        closeTo(intrinsicWidth(run.paragraph, run.target), 0.5),
+        reason: '"${run.target}" was painted '
+            '${targetWidth.toStringAsFixed(1)}px of the '
+            '${intrinsicWidth(run.paragraph, run.target).toStringAsFixed(1)}px '
+            'it asks for, in a ${room.toStringAsFixed(1)}px run whose source '
+            'spends ${sourceWidth.toStringAsFixed(1)}px. The rest of it is an '
+            'ellipsis, which is what #1286 exists to remove.',
       );
     }
   });
