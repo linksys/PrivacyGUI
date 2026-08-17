@@ -227,13 +227,13 @@ class _RulesTab extends StatelessWidget {
       );
     }).toList();
 
-    final metrics = <_RuleMetric>[
-      _RuleMetric(
+    final metrics = <InfoGridItem>[
+      InfoGridItem(
         label: loc(context).fwRules,
         value: '$activeCount/${ruleSummaries.length}',
       ),
-      _RuleMetric(label: loc(context).portFwd, value: '$portForwardingCount'),
-      _RuleMetric(label: 'DMZ', value: '$dmzCount'),
+      InfoGridItem(label: loc(context).portFwd, value: '$portForwardingCount'),
+      InfoGridItem(label: 'DMZ', value: '$dmzCount'),
     ];
 
     return LayoutBuilder(
@@ -243,15 +243,31 @@ class _RulesTab extends StatelessWidget {
           // stacked full-width rows below that (see
           // [_kMetricsSideBySideMinWidth]).
           if (constraints.maxWidth >= _kMetricsSideBySideMinWidth)
-            InfoGrid(
-              items: [
-                for (final m in metrics)
-                  InfoGridItem(label: m.label, value: m.value),
-              ],
-              crossAxisCount: 3,
-            )
+            InfoGrid(items: metrics, crossAxisCount: 3)
           else
-            _StackedMetrics(metrics: metrics),
+            InfoGrid(
+              items: metrics,
+              crossAxisCount: 1,
+              // Label left, value right: the number *is* the metric, so the
+              // label is what yields.
+              axis: Axis.horizontal,
+              // 8px, not the block's default 12px: three rows, the 20px of gaps
+              // after them and the 36px legend all have to fit the 205px the tab
+              // gets at the card's 3-row minimum (203px where the tab bar wraps).
+              // At 8px the stack measures 112px (`en`) to 130px (`ru`, where one
+              // label takes two lines); the donut's `Expanded` absorbs the
+              // remaining 17-37px and draws nothing in it, which is why the legend
+              // lands exactly on the content edge. At the block's 12px default each
+              // row grows 8px, the stack becomes 136-154px, and the legend is
+              // pushed 3-7px past that edge onto the footer the template does not
+              // scroll (#1230).
+              compact: true,
+              // Two, not one: the stacked budget is 111.4-127.6px against a
+              // widest label of 143.2px (`ru`), so one line clips `ru`/`fi`/`nb`/
+              // `es` mid-glyph. Not three either — every extra line grows the
+              // stack by 12px into the budget above (#1230).
+              labelMaxLines: 2,
+            ),
           AppGap.md(),
           // Donut chart — drawn only when the slot left over can hold one.
           Expanded(
@@ -289,72 +305,6 @@ class _RulesTab extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-/// One Rules-tab metric. The label and the value travel together through both
-/// arrangements, so they are one type rather than two parallel lists.
-class _RuleMetric {
-  const _RuleMetric({required this.label, required this.value});
-
-  final String label;
-  final String value;
-}
-
-/// The three metrics as full-width rows, for cards narrower than
-/// [_kMetricsSideBySideMinWidth].
-///
-/// Label left, value right, and the label is what yields: the number *is* the
-/// metric, while a wrapped or ellipsized label still names which one it is.
-///
-/// Composition-wise this is `_InfoGridTile` in a `Row` at 8px padding, which
-/// `layout_blocks` has no variant for; `usp_ethernet_ports_card.dart`'s
-/// `_SummaryTile` is the same shape again. Folding all three into a shared
-/// compact variant is #1275.
-class _StackedMetrics extends StatelessWidget {
-  const _StackedMetrics({required this.metrics});
-
-  final List<_RuleMetric> metrics;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        for (var i = 0; i < metrics.length; i++) ...[
-          if (i > 0) AppGap.sm(),
-          LayoutBlock(
-            // 8px, not the block's default 12px: three rows, the 20px of gaps
-            // after them and the 36px legend all have to fit the 205px the tab
-            // gets at the card's 3-row minimum (203px where the tab bar wraps).
-            // At 8px the stack measures 112px (`en`) to 130px (`ru`, where one
-            // label takes two lines); the donut's `Expanded` absorbs the
-            // remaining 17-37px and draws nothing in it, which is why the legend
-            // lands exactly on the content edge. At the block's 12px default each
-            // row grows 8px, the stack becomes 136-154px, and the legend is
-            // pushed 3-7px past that edge onto the footer the template does not
-            // scroll (#1230).
-            padding: BlockConstants.paddingSm,
-            child: Row(
-              children: [
-                Expanded(
-                  child: AppText.labelSmall(
-                    metrics[i].label.toUpperCase(),
-                    color: colorScheme.onSurfaceVariant,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                AppGap.sm(),
-                AppText.labelMedium(metrics[i].value),
-              ],
-            ),
-          ),
-        ],
-      ],
     );
   }
 }

@@ -39,6 +39,11 @@ import '../../../../util/dashboard/dashboard_card_probe.dart';
 ///   | LAN tile given `flex: 2` and no `compact` | matched pair (3)             |
 ///   | `_kSideBySideMinWidth` 352 → 600          | side by side @desktop (1)    |
 ///
+/// #1275 moved the tile itself onto `layout_blocks`' [SummaryTile.stacked], so the
+/// first row's `compact` is now that block's parameter, threaded from this card's
+/// arrangement; the mutation was re-run there and killed the same two tests. The
+/// other three rows mutate the arrangement, which stayed in the card.
+///
 /// Nothing here re-measures overflow — that is the gate's job, and both
 /// `ethernet_ports` keys are gone from `known_overflows.json`.
 ///

@@ -48,7 +48,7 @@ import '../../../../util/overflow_probe.dart';
 ///   |-------------------------------------------------|--------------------------|
 ///   | A `_kSignalLabelContentMinWidth` 231 → 0        | label suppressed @min (1) |
 ///   | B `_kSignalLabelContentMinWidth` 231 → 9999     | every reading labelled @preferred+@desktop (2) |
-///   | C `_StatusCount` gains `EdgeInsets.all(60)`     | el fits @min, list visible @min+@preferred (3) |
+///   | C `SummaryTile.inline` gains `EdgeInsets.all(60)` | el fits @min, list visible @min+@preferred, nothing overflows @between 209px (4) |
 ///   | D interface label gated on `showSignalLabel`    | Wired labelled @min (1) |
 ///   | E `_kStatusCountsSideBySideMinWidth` 296 → 0    | counts stack @min+@preferred, el fits @min+@preferred (4) |
 ///   | F `_kStatusCountsSideBySideMinWidth` 296 → 600  | counts share a row @desktop (1) |
@@ -81,6 +81,13 @@ import '../../../../util/overflow_probe.dart';
 /// pumps, so only those three would also fail it. Q leaves overflow the gate is
 /// structurally unable to see; the other ten take content away or move it out of
 /// view, which is exactly what the gate rewards. That is why this file exists.
+///
+/// Row C named a private widget in the card until #1275 moved the tile onto
+/// `layout_blocks`' [SummaryTile]; the mutation is now applied to
+/// `SummaryTile.inline`. Re-running it killed a fourth test — the 209px `@between`
+/// one — which the row had not recorded: replaying the same mutation against the
+/// pre-#1275 card kills the identical four, so that is a stale count in the row,
+/// not a behaviour change from the extraction.
 ///
 /// ## What this file does NOT claim
 ///

@@ -330,11 +330,32 @@ class _StatusCountSpec {
 /// treatment — `ethernet_ports` tightens padding when stacked, this does not),
 /// and #1240 replaces both arrangements with a declared compact form. A third
 /// card needing it is the trigger to extract.
+///
+/// The *tile* did get extracted, in #1275: it is `layout_blocks`'
+/// [SummaryTile.inline], the same block `ethernet_ports` uses stacked. Only the
+/// arrangement is still here.
 class _StatusCounts extends StatelessWidget {
   const _StatusCounts({required this.online, required this.offline});
 
   final _StatusCountSpec online;
   final _StatusCountSpec offline;
+
+  /// One count from [spec].
+  ///
+  /// A method rather than four `SummaryTile.inline(...)` calls below, so the
+  /// matched pair cannot drift (#1238).
+  ///
+  /// `inline`, and no `compact`: neither the count nor the state word may yield —
+  /// a count is meaningless truncated and `off…` names nothing — so the tile is
+  /// not overflow-safe on its own below ~120px of inner width, which is what the
+  /// arrangement above exists to guarantee. It also has the vertical budget to
+  /// keep the standard 12px padding: the pair costs 96px of a 261px content
+  /// viewport, where `ethernet_ports` has to fit 120px into 121px.
+  Widget _tile(_StatusCountSpec spec) => SummaryTile.inline(
+        leading: UspStatusDot(isActive: spec.isActive, size: 10),
+        value: '${spec.count}',
+        label: spec.label,
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -343,9 +364,9 @@ class _StatusCounts extends StatelessWidget {
         if (constraints.maxWidth >= _kStatusCountsSideBySideMinWidth) {
           return Row(
             children: [
-              Expanded(child: _StatusCount(spec: online)),
+              Expanded(child: _tile(online)),
               AppGap.sm(),
-              Expanded(child: _StatusCount(spec: offline)),
+              Expanded(child: _tile(offline)),
             ],
           );
         }
@@ -357,46 +378,12 @@ class _StatusCounts extends StatelessWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _StatusCount(spec: online),
+            _tile(online),
             AppGap.sm(),
-            _StatusCount(spec: offline),
+            _tile(offline),
           ],
         );
       },
-    );
-  }
-}
-
-/// One status count block, in either arrangement.
-///
-/// Not overflow-safe on its own below ~120px of inner width, which is what
-/// [_StatusCounts] exists to guarantee: the dot is a fixed 10px and the two
-/// texts are unwrapped, because a count is meaningless truncated and a state
-/// word ellipsized to two characters names nothing. The arrangement above gives
-/// this the width instead of making the content give way (#1238).
-class _StatusCount extends StatelessWidget {
-  const _StatusCount({required this.spec});
-
-  final _StatusCountSpec spec;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return LayoutBlock(
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          UspStatusDot(isActive: spec.isActive, size: 10),
-          AppGap.sm(),
-          AppText.titleSmall('${spec.count}'),
-          AppGap.xs(),
-          AppText.bodySmall(
-            spec.label,
-            color: colorScheme.onSurfaceVariant,
-          ),
-        ],
-      ),
     );
   }
 }

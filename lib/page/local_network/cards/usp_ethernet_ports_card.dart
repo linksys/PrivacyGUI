@@ -26,7 +26,7 @@ import 'package:ui_kit_library/ui_kit.dart';
 /// have passed the gate while rendering no label at all (#1228). Stacked, the
 /// same card gives each label 81px, and 288px gives it 178px.
 ///
-/// This threshold only decides *readability*: [_SummaryTile] is overflow-safe at
+/// This threshold only decides *readability*: [SummaryTile] is overflow-safe at
 /// any width on its own, so getting it wrong costs an ellipsis, never an
 /// overflow. It is a local degradation, not a form selection — Track B (#1240)
 /// may later replace it with a declared `normalAbove` threshold.
@@ -107,11 +107,48 @@ class _TileSpec {
 /// The two tiles are a matched pair — same chrome, same treatment — so they are
 /// one widget rendered twice from [_TileSpec] rather than two copies of the same
 /// markup, and no change can reach one without the other (#1228).
+///
+/// Since #1275 the tile itself is `layout_blocks`' [SummaryTile]; only the
+/// arrangement and the 40px disc are still this card's. The arrangement stays
+/// here deliberately — its threshold is measured from this card's own longest
+/// locale and only one other card has one (see §2.10e of the density design).
 class _SummaryTiles extends StatelessWidget {
   const _SummaryTiles({required this.wan, required this.lan});
 
   final _TileSpec wan;
   final _TileSpec lan;
+
+  /// One tile from [spec].
+  ///
+  /// A method rather than four `SummaryTile.stacked(...)` calls below: the pair
+  /// is matched, so no change may reach one tile without the other (#1228).
+  Widget _tile(_TileSpec spec, {bool compact = false}) => SummaryTile.stacked(
+        leading: _disc(spec),
+        value: spec.title,
+        label: spec.subtitle,
+        compact: compact,
+      );
+
+  /// The tinted 40px status disc.
+  ///
+  /// This card's own chrome, not the shared tile's: the disc's colour and glyph
+  /// are the only things identifying which port group a tile describes, which is
+  /// why it keeps its design size while the text is what yields (#1228).
+  ///
+  /// [_TileSpec.accent] travels in the spec because it differs per tile (one is
+  /// `colorScheme.primary`, the other `semanticSuccess` from an extension); the
+  /// caption colour is the same for both, so [SummaryTile] resolves it and it
+  /// stays out of the spec.
+  Widget _disc(_TileSpec spec) => Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: spec.accent
+              .withValues(alpha: BlockConstants.badgeBackgroundAlpha),
+          shape: BoxShape.circle,
+        ),
+        child: AppIcon.font(spec.icon, color: spec.accent, size: 20),
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -120,9 +157,9 @@ class _SummaryTiles extends StatelessWidget {
         if (constraints.maxWidth >= _kSideBySideMinWidth) {
           return Row(
             children: [
-              Expanded(child: _SummaryTile(spec: wan)),
+              Expanded(child: _tile(wan)),
               AppGap.sm(),
-              Expanded(child: _SummaryTile(spec: lan)),
+              Expanded(child: _tile(lan)),
             ],
           );
         }
@@ -136,73 +173,12 @@ class _SummaryTiles extends StatelessWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _SummaryTile(spec: wan, compact: true),
+            _tile(wan, compact: true),
             AppGap.sm(),
-            _SummaryTile(spec: lan, compact: true),
+            _tile(lan, compact: true),
           ],
         );
       },
-    );
-  }
-}
-
-/// One summary tile: a coloured status disc, then a value over its label.
-///
-/// Overflow-safe at any width regardless of the arrangement above it. The disc
-/// keeps its 40px design size and the text is what yields, because the disc's
-/// colour and glyph are the only things identifying which port group the tile
-/// describes, while a clipped `Disconnec…` still reads as a state (#1228).
-class _SummaryTile extends StatelessWidget {
-  const _SummaryTile({required this.spec, this.compact = false});
-
-  final _TileSpec spec;
-
-  /// Trades 4px of padding per side for vertical budget when stacked; see
-  /// [_SummaryTiles].
-  final bool compact;
-
-  @override
-  Widget build(BuildContext context) {
-    // Colour ownership splits on whether the value differs per tile: [accent]
-    // does (one is `colorScheme.primary`, the other `semanticSuccess` from an
-    // extension), so it travels in the spec; the subtitle colour is the same for
-    // both tiles, so it is resolved here and stays out of the spec.
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return LayoutBlock(
-      padding: EdgeInsets.all(compact ? AppSpacing.sm : AppSpacing.md),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: spec.accent.withValues(alpha: 0.15),
-              shape: BoxShape.circle,
-            ),
-            child: AppIcon.font(spec.icon, color: spec.accent, size: 20),
-          ),
-          AppGap.md(),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                AppText.titleSmall(
-                  spec.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                AppText.bodySmall(
-                  spec.subtitle,
-                  color: colorScheme.onSurfaceVariant,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

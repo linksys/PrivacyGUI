@@ -55,8 +55,8 @@ import '../../../../util/text_run_metrics.dart';
 ///   | 4. `_kDonutMinRingThickness` 10 → 60           | donut drawn @shipped height (3), ring fits its box (3)        |
 ///   | 5. `size: diameter` → the themed design diameter, ignoring the slot | ring fits its box (1 — @min only; 191px is the one width whose slot, 157.4px, is under the 160px this theme designs for) |
 ///   | 6. `showLabels: false` → `true`                | ring fits its box (3)                                        |
-///   | 7. `_StackedMetrics` padding `sm` → block default | 12: `pumpAt` overflow @min in 6 locales (+3px `fi` to +7px `ru`, 10 tests), donut starved out even @shipped height (2) |
-///   | 8. stacked label `maxLines` 2 → 1              | shredded text (5 — `es`, `es-AR`, `fi`, `nb`, `ru`)          |
+///   | 7. the stacked `InfoGrid`'s `compact: true` → `false` | 12: `pumpAt` overflow @min in 6 locales (+3px `fi` to +7px `ru`, 10 tests), donut starved out even @shipped height (2) |
+///   | 8. the stacked `InfoGrid`'s `labelMaxLines` 2 → 1 | shredded text (5 — `es`, `es-AR`, `fi`, `nb`, `ru`)        |
 ///   | 9. Ports heading `maxLines: 1`                 | Ports tab shredded text (6 — `da`, `pl`, `pt`, `pt-PT`, `ru`, `sv`, the locales whose heading wraps) |
 ///   | 10. the mapping on a full-width line of its own | 29: `pumpAt` overflow @min in all 26 locales (+11px to +36px bottom) and @preferred in one, chart suppression @min (2) — the +20px a rule costs is what AC 4 forbids |
 ///   | 11. 10, plus the DMZ list dropped, plus `MapsToRow`'s source given its intrinsic width instead of half the row | mapping target ratchet (1), and nothing else — the combination that would let this card show a target whole, measured clean |
@@ -71,6 +71,12 @@ import '../../../../util/text_run_metrics.dart';
 /// label into a 20px ring (6), or clips text mid-glyph (8, 9, 12, 13) — clipping
 /// and absence are not overflow, and an ellipsized target overflows nothing. Only
 /// 1, 7, 10, 15 and 16 report an overflow, and 1 is simply the pre-#1230 card.
+///
+/// Rows 7 and 8 named private widgets in the card until #1275 moved the stacked
+/// form onto `layout_blocks`' [InfoGrid] (`axis: horizontal`, `compact: true`,
+/// `labelMaxLines: 2`). The knobs they mutate are now that grid's parameters; both
+/// were re-run against the relocated code and killed the same 12 and 5 tests, so
+/// the rows are renamed, not re-measured.
 ///
 /// Overflow itself is the gate's job — both `firewall_overview` keys are gone
 /// from `known_overflows.json` — with one exception, in `pumpAt`: the gate pumps
