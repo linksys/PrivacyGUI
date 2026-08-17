@@ -410,13 +410,13 @@ Widget buildDashboardCardApp({
     );
   }
 
-  var theme = ThemeJsonConfig.defaultConfig().createLightTheme();
-  final cjkFallback = FallbackFontResolver.prefixedFallbackFor(locale);
-  if (cjkFallback != null) {
-    theme = theme.copyWith(
-      textTheme: theme.textTheme.apply(fontFamilyFallback: cjkFallback),
-    );
-  }
+  // Through the same function `lib/app.dart` uses, not a copy of its body: the
+  // copy that used to live here reproduced #1285's double prefix, so the harness
+  // measured the defect and could not have seen it fixed.
+  final theme = FallbackFontResolver.withFallbackFont(
+    ThemeJsonConfig.defaultConfig().createLightTheme(),
+    locale,
+  );
 
   return ProviderScope(
     overrides: [

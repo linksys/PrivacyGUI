@@ -10,6 +10,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
+import 'package:privacy_gui/localization/fallback_font_resolver.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacy_gui/theme/theme_json_config.dart';
 import 'golden_interactions.dart';
@@ -317,8 +318,23 @@ Widget _buildGoldenWidget(
             locale: locale,
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
-            theme: themeConfig.createLightTheme(),
-            darkTheme: themeConfig.createDarkTheme(),
+            // Same call `lib/app.dart` makes, not a copy of its body (#1285).
+            // A no-op for the default `en` locale set — `withFallbackFont`
+            // returns the theme itself where the primary font covers the
+            // script — so no existing baseline moves. It matters when a run
+            // opts into a non-Latin locale via `--dart-define=locales`: raw
+            // `Text` reads the family off `ThemeData.textTheme`, and without
+            // this it would shape CJK from a system font while `AppText` next
+            // to it used the bundled subset (ui_kit's own per-locale
+            // injection, installed by `loadAppFonts`).
+            theme: FallbackFontResolver.withFallbackFont(
+              themeConfig.createLightTheme(),
+              locale,
+            ),
+            darkTheme: FallbackFontResolver.withFallbackFont(
+              themeConfig.createDarkTheme(),
+              locale,
+            ),
             themeMode: brightness == Brightness.dark
                 ? ThemeMode.dark
                 : ThemeMode.light,

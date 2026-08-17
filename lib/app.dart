@@ -174,25 +174,14 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
       userThemeColor: userThemeColor,
     );
 
-    // CJK / non-Latin fallback for the active locale. The subset fonts are
-    // eager-loaded via pubspec `fonts:` (registered before first frame). Adding
-    // the fallback family to ThemeData.textTheme covers raw `Text` / third-party
-    // widgets; ui_kit's AppText.resolve() injects the same family per-locale for
-    // AppText. Without the family in the TextStyle, the engine treats CJK code
-    // points as missing and probes the CDN. Null for Latin-covered locales.
+    // CJK / non-Latin fallback for the active locale — see
+    // FallbackFontResolver.withFallbackFont for which spelling reaches the engine
+    // and why. A no-op for Latin-covered locales.
     final effectiveLocale = appSettings.locale ?? systemLocale;
-    final cjkFallback =
-        FallbackFontResolver.prefixedFallbackFor(effectiveLocale);
-    if (cjkFallback != null) {
-      appLightTheme = appLightTheme.copyWith(
-        textTheme:
-            appLightTheme.textTheme.apply(fontFamilyFallback: cjkFallback),
-      );
-      appDarkTheme = appDarkTheme.copyWith(
-        textTheme:
-            appDarkTheme.textTheme.apply(fontFamilyFallback: cjkFallback),
-      );
-    }
+    appLightTheme =
+        FallbackFontResolver.withFallbackFont(appLightTheme, effectiveLocale);
+    appDarkTheme =
+        FallbackFontResolver.withFallbackFont(appDarkTheme, effectiveLocale);
 
     return MaterialApp.router(
       onGenerateTitle: (context) => loc(context).appTitle,

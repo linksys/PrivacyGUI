@@ -233,13 +233,8 @@ void main() {
     final surface = Size(screenWidth, 900.0);
     final width = sectionWidth ?? sectionWidthFor(screenWidth);
 
-    var theme = baseTheme;
-    final cjkFallback = FallbackFontResolver.prefixedFallbackFor(locale);
-    if (cjkFallback != null) {
-      theme = theme.copyWith(
-        textTheme: theme.textTheme.apply(fontFamilyFallback: cjkFallback),
-      );
-    }
+    // Same call as `lib/app.dart`, not a copy of its body — see #1285.
+    final theme = FallbackFontResolver.withFallbackFont(baseTheme, locale);
 
     return runWithOverflowCollection((sink) async {
       await tester.binding.setSurfaceSize(surface);
