@@ -18,20 +18,23 @@ import '../../../util/overflow_probe.dart';
 
 /// Popup-form sweep for every registered card (#1239).
 ///
-/// The #1183 gate (`dashboard_card_overflow_test.dart`) sweeps the **normal**
-/// form: no density is pinned, so every card selects its own, and since no spec
-/// declares a `normalAbove` yet (#1240 AC 1) that selection is always normal.
-/// This file sweeps the form that gate can therefore never reach.
+/// The #1183 gate (`dashboard_card_overflow_test.dart`) pins no density, so
+/// every card selects its own form from the width the grid gives it — which for
+/// 15 of the 18 cards is still always normal, because they declare no
+/// `normalAbove` (#1240 AC 1). This file sweeps the form that selection reaches
+/// for only three of them, and only at their narrowest realization.
 ///
 /// ## Why the form is pinned rather than provoked by a width
 ///
-/// Popup is opt-in: it is reached only through a declared `normalAbove`, so
-/// today no width produces it for any card. Pinning it through
-/// `cardDensityOverrideProvider` (the hook #1232 built) is what makes the sweep
-/// possible at all — and it is also the right shape once thresholds do exist,
-/// for the same reason the gate pins tabs instead of tapping them: the test
-/// states which form it is measuring instead of depending on whatever threshold
-/// the spec currently declares.
+/// Popup is opt-in: it is reached only through a declared `normalAbove`, and
+/// when this file was written no spec declared one, so no width produced it for
+/// any card. Pinning it through `cardDensityOverrideProvider` (the hook #1232
+/// built) is what made the sweep possible at all — and it stayed the right shape
+/// once #1288's three thresholds arrived, for the same reason the gate pins tabs
+/// instead of tapping them: the test states which form it is measuring instead of
+/// depending on whatever threshold the spec currently declares. The complement —
+/// that a declared threshold makes production *select* this form — is
+/// `usp_hero_row_density_test.dart`, which pins nothing.
 ///
 /// ## What the widths mean here
 ///

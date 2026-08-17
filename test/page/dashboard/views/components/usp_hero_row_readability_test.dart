@@ -3,6 +3,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:privacy_gui/page/dashboard/models/card_density.dart';
 import 'package:privacy_gui/page/dashboard/models/display_mode.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_widget_specs.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -51,6 +52,7 @@ import '../../../../util/dashboard/text_readability_probe.dart';
 ///   | `maxLines: 1` + ellipsis on the DHCP status label       | 4 fail    | green    |
 ///   | `maxLines: 1` + ellipsis on the InfoGrid value renderer | 4 fail    | green    |
 ///   | the deleted single-child `Row` restored around the badge | green     | 21 fail  |
+///   | `normalAbove` deleted from either card's `WidgetSpec`    | green     | green    |
 ///
 /// The first three rows are the point: every one of them is a plausible "fix the
 /// overflow" edit, all three are invisible to the gate, and all three destroy a
@@ -66,6 +68,14 @@ import '../../../../util/dashboard/text_readability_probe.dart';
 /// leaving this file green. The two verifications are meant not to overlap. The
 /// gate owns the overflow outright, so this file does not restate it; what it
 /// covers is the readability the gate stays green through either way.
+///
+/// The fifth row is green twice over and says so on purpose. Deleting a
+/// `normalAbove` withdraws the promise that these cards degrade below it, and
+/// neither this file (which pins density — see `pumpNarrowest`) nor the gate
+/// (whose 191.4px normal form fits, which is the whole reason #1288 exists) can
+/// see it go. That defect belongs to `usp_hero_row_density_test.dart`, and the
+/// row is recorded here so the gap is documented from both sides rather than
+/// assumed covered by whichever file the reader happens to open first.
 void main() {
   setUpAll(() async {
     // Real fonts: under Ahem every glyph is one square em, so what wraps —
@@ -76,6 +86,24 @@ void main() {
   /// Pumps [cardId]'s first tab at the narrowest realization of its `minColumns`
   /// span: the worst case the gate measures, and the only width where the hero
   /// row's 61.4px column bites.
+  ///
+  /// Density is pinned to [CardDensity.normal], and that pin is what keeps this
+  /// file measuring what it was written to measure. Since #1288 both cards
+  /// declare a `normalAbove` (250 / 256) well above this 191.4px width, so in
+  /// production the card here renders the *popup* form — one icon and one value,
+  /// no DHCP status and no timezone grid, i.e. none of the strings asserted
+  /// below. Without the pin every assertion in this file would start failing on
+  /// a missing widget, and the honest reading of that failure is not "the
+  /// readability regressed" but "this width no longer shows this content".
+  ///
+  /// Which leaves the question of whether the assertions still mean anything,
+  /// and they do: 191.4px is the narrowest width the *normal* form is ever asked
+  /// to render, so it remains the strictest test of the wrap-not-ellipsis
+  /// choices #1236 and #1237 made — and those choices still govern every width
+  /// from `normalAbove` up. #1288 narrowed where the normal form is *selected*;
+  /// it did not soften what the normal form owes the reader when it is. The
+  /// degraded forms are a different claim with a different test file
+  /// (`usp_hero_row_density_test.dart`).
   Future<void> pumpNarrowest(
     WidgetTester tester, {
     required String cardId,
@@ -99,6 +127,7 @@ void main() {
       cardHeightRows: constraints.minHeightRows,
       tabIndex: 0,
       locale: locale,
+      density: CardDensity.normal,
     );
   }
 

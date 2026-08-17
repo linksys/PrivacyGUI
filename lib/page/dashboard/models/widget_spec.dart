@@ -49,8 +49,10 @@ class WidgetSpec {
   ///
   /// Absent by default, and absent is a claim: *this card needs no degraded
   /// form*. It is the correct value for a card that fits at its narrowest grid
-  /// realization, which #1240's measurement found to be all 18 registered cards
-  /// — so no spec sets this yet.
+  /// realization — which #1240's measurement found to be all 18 registered cards,
+  /// and #1288's found to be a different question: `device_info`, `lan_info` and
+  /// `time_settings` fit and cannot be read, and are the first three specs to
+  /// declare a threshold. Each carries the measurement that produced its number.
   ///
   /// Pixels, never a column count: the same column count is a different width on
   /// every screen size (§1.5), so a threshold expressed in columns does not name

@@ -47,6 +47,47 @@ extension TextReadabilityProbe on WidgetTester {
     expect(boxes, isNotEmpty, reason: '"$plain" painted no glyphs at all');
     return boxes.map((b) => b.top.round()).toSet().length;
   }
+
+  /// The width, in logical pixels, of the widest whitespace-delimited token in
+  /// [finder]'s text, measured in the paragraph's own resolved style.
+  ///
+  /// Measured rather than read off the renderer because no renderer reports it:
+  /// `maxIntrinsicWidth` is the width of the whole string on one line, which is
+  /// a much larger number and answers a different question.
+  double widestTokenWidth(Finder finder) {
+    final paragraph = paragraphOf(finder);
+    final style = paragraph.text.style;
+    var widest = 0.0;
+    for (final token in paragraph.text.toPlainText().split(RegExp(r'\s+'))) {
+      if (token.isEmpty) continue;
+      final painter = TextPainter(
+        text: TextSpan(text: token, style: style),
+        textDirection: paragraph.textDirection,
+        textScaler: paragraph.textScaler,
+      )..layout();
+      if (painter.width > widest) widest = painter.width;
+    }
+    return widest;
+  }
+
+  /// Whether a line break inside [finder]'s text fell *inside a token*.
+  ///
+  /// This is #1288's readability criterion, and it is deliberately narrower than
+  /// "the text wrapped". Wrapping at a space is not damage — it is the exact
+  /// degradation #1236 AC 4 and #1237 AC 5 chose over an ellipsis, so a test that
+  /// forbade it would forbid the fix those tickets shipped. Wrapping inside a
+  /// word is: `Ενεργοποιήθ` / `ηκε` is not a word in any locale, and unlike an
+  /// ellipsis it does not even signal that something was done to it.
+  ///
+  /// A token is split exactly when it is wider than the width the paragraph was
+  /// given, which is [RenderParagraph]'s own laid-out size — so the comparison is
+  /// against the width the production layout actually granted, not a width this
+  /// test computed.
+  ///
+  /// Invisible to the #1183 gate in both directions: a mid-word break makes text
+  /// *narrower*, so it can only ever remove overflow (§2.10d point 3).
+  bool hasSplitToken(Finder finder) =>
+      widestTokenWidth(finder) > paragraphOf(finder).size.width;
 }
 
 /// The supported [Locale] for a `language` or `language_COUNTRY` [tag].

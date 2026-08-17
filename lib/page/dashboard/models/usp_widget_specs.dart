@@ -36,6 +36,14 @@ abstract class UspWidgetSpecs {
     id: 'device_info',
     displayName: 'Device Info',
     canHide: false,
+    // Measured floor, #1288 AC 1: 34.0 card chrome + 136.0 hero fixed cost
+    // (12px block padding ×2 + a 96px icon container + `AppGap.lg`) + 91.6 for
+    // `MR7500`, which has no space to break at = 261.6, confirmed by a 2px sweep
+    // at 262. Locale-invariant: this card's hero strings are device data, so the
+    // worst locale is `ko` only because it has the smallest content viewport
+    // (122.0px) — and fixture-dependent, since a hostname longer than the
+    // fixture's raises it (#1267 measures a second data profile).
+    normalAbove: 262,
     constraints: {
       DisplayMode.normal: WidgetGridConstraints(
         minColumns: 3,
@@ -82,6 +90,13 @@ abstract class UspWidgetSpecs {
   static const lanInfo = WidgetSpec(
     id: 'lan_info',
     displayName: 'LAN Info',
+    // Measured floor, #1288 AC 1: 34.0 card chrome + 96.0 hero fixed cost (12px
+    // block padding ×2 + the 56px avatar + `AppGap.lg`) + 12.0 for the status dot
+    // and its gap + 107.2 for `Ενεργοποιήθηκε` = 249.2, confirmed by a 2px sweep
+    // at 250. The binding string is the *subtitle*'s longest token in `el`, not
+    // the IP address (105.8) — by 1.4px, which is why the floor is measured per
+    // token rather than reasoned from which line looks longest.
+    normalAbove: 250,
     constraints: {
       DisplayMode.normal: WidgetGridConstraints(
         minColumns: 3,
@@ -172,6 +187,19 @@ abstract class UspWidgetSpecs {
   static const timeSettings = WidgetSpec(
     id: 'time_settings',
     displayName: 'Time Settings',
+    // Measured floor, #1288 AC 1: 34.0 card chrome + 96.0 hero fixed cost + 124.6
+    // for `2024-06-15` = 254.6, confirmed by a 2px sweep at 256. The binding
+    // string is the timestamp's *widest token*, not the whole 223.1px stamp: it
+    // has a space, so the normal form breaks it into `2024-06-15` / `21:30:48`
+    // with both tokens whole, which is why this card reads at the 288px
+    // realization and its floor is 32px below it rather than 100px above.
+    //
+    // Locale-invariant, and by construction rather than by luck:
+    // `TimeSettingsUIModel.formatDateTime` hardcodes `yyyy-MM-dd HH:mm:ss`, so
+    // the stamp is byte-identical in all 26 locales. The worst locale, `ru`, is
+    // worst only for the sync badge (`Синхронизировано`, 112.1px), which
+    // ellipsizes by design (#1237) and so does not set the floor.
+    normalAbove: 256,
     constraints: {
       DisplayMode.normal: WidgetGridConstraints(
         // `minColumns` stays 3 deliberately. This is the one card in the whole

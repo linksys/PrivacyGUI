@@ -5,12 +5,14 @@ import 'package:privacy_gui/page/admin/providers/time_data_provider.dart';
 import 'package:privacy_gui/page/admin/providers/usp_admin_notifier.dart';
 import 'package:privacy_gui/page/_shared/models/time_settings_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/timezone_definitions.dart';
+import 'package:privacy_gui/page/_shared/components/card_density_scope.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/_shared/components/usp_mutation_helper.dart';
 import 'package:privacy_gui/page/_shared/components/card_skeleton.dart';
 import 'package:privacy_gui/page/_shared/components/dashboard_card_template.dart';
 import 'package:privacy_gui/page/_shared/utils/local_time_ticker.dart';
 import 'package:privacy_gui/page/admin/views/dialogs/timezone_edit_dialog.dart';
+import 'package:privacy_gui/page/dashboard/models/card_density.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -51,6 +53,7 @@ class _UspTimeSettingsCardState extends ConsumerState<UspTimeSettingsCard>
     final isLoading = ref.watch(uspMutationLoadingProvider) == 'time';
     final colorScheme = Theme.of(context).colorScheme;
     final appColors = Theme.of(context).extension<AppColorScheme>();
+    final density = CardDensityScope.of(context);
 
     _syncIfChanged(timeData);
 
@@ -68,6 +71,18 @@ class _UspTimeSettingsCardState extends ConsumerState<UspTimeSettingsCard>
 
     return DashboardCardTemplate(
       title: loc(context).timeSettings,
+      // Degraded forms only, so nothing changes above the threshold (#1288). See
+      // `usp_lan_info_card.dart` for why the icon lands in the header slot.
+      leading: density == CardDensity.normal
+          ? null
+          : AppIcon.font(
+              Icons.schedule,
+              color: colorScheme.primary,
+              size: BlockConstants.iconMd,
+            ),
+      // The clock reading, not the timezone name: at popup width this card is a
+      // clock face, and the zone is what the full form is for.
+      popupValue: timeDisplay,
       trailing: Semantics(
         label: loc(context).editTimeSettings,
         button: true,
@@ -81,55 +96,48 @@ class _UspTimeSettingsCardState extends ConsumerState<UspTimeSettingsCard>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Hero block - Clock with current time
-          LayoutBlock(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            child: Row(
-              children: [
-                Container(
-                  width: 56,
-                  height: 56,
-                  decoration: BoxDecoration(
-                    color: colorScheme.primaryContainer,
-                    shape: BoxShape.circle,
-                  ),
-                  child: AppIcon.font(
-                    Icons.schedule,
-                    color: colorScheme.primary,
-                    size: 28,
-                  ),
-                ),
-                AppGap.lg(),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      AppText.titleLarge(timeDisplay),
-                      AppGap.xxs(),
-                      // Same shape as `usp_lan_info_card`'s hero row and the
-                      // same 61.4px column, but the fix is the opposite one,
-                      // because a capsule cannot take a second line: `AppBadge`
-                      // already ellipsizes its own label (`Flexible` +
-                      // `maxLines: 1` inside it) and only ever failed to,
-                      // because this single-child `Row` handed it *unbounded*
-                      // width and its inner `Flexible` had nothing to bind
-                      // against. The `Row` did nothing else — the enclosing
-                      // `Column` is already `CrossAxisAlignment.start`, so the
-                      // badge shrink-wraps identically without it — so it is
-                      // removed rather than given a `Flexible`. §2.10a point 2's
-                      // ellipsis-vs-wrap choice, decided by what the child *is*.
-                      AppBadge(
-                        label: time.isSynchronized
-                            ? loc(context).synchronized
-                            : time.status,
-                        color: time.isSynchronized
-                            ? appColors?.semanticSuccess
-                            : appColors?.semanticWarning,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+          HeroBlock(
+            compact: density == CardDensity.compact,
+            leading: Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: colorScheme.primaryContainer,
+                shape: BoxShape.circle,
+              ),
+              child: AppIcon.font(
+                Icons.schedule,
+                color: colorScheme.primary,
+                size: 28,
+              ),
             ),
+            children: [
+              AppText.titleLarge(timeDisplay),
+              AppGap.xxs(),
+              // Same shape as `usp_lan_info_card`'s hero row and the same
+              // 61.4px column, but the fix is the opposite one, because a
+              // capsule cannot take a second line: `AppBadge` already
+              // ellipsizes its own label (`Flexible` + `maxLines: 1` inside it)
+              // and only ever failed to, because a single-child `Row` handed it
+              // *unbounded* width and its inner `Flexible` had nothing to bind
+              // against. That `Row` did nothing else — the enclosing `Column`
+              // is already `CrossAxisAlignment.start`, so the badge
+              // shrink-wraps identically without it — so it was removed rather
+              // than given a `Flexible`. §2.10a point 2's ellipsis-vs-wrap
+              // choice, decided by what the child *is*.
+              //
+              // Which is why the badge does not set this card's threshold
+              // (#1288): it degrades as designed at any width. What does is the
+              // timestamp above it — a token no ellipsis is allowed to touch.
+              AppBadge(
+                label: time.isSynchronized
+                    ? loc(context).synchronized
+                    : time.status,
+                color: time.isSynchronized
+                    ? appColors?.semanticSuccess
+                    : appColors?.semanticWarning,
+              ),
+            ],
           ),
           AppGap.sm(),
           // Timezone info

@@ -177,11 +177,12 @@ void main() {
 
     testWidgets('is not measured at all', (tester) async {
       // With no threshold the density is a constant, so no LayoutBuilder is
-      // inserted. Two things ride on this. It is what makes #1232's "no card's
+      // inserted. Two things ride on this. It is what made #1232's "no card's
       // rendered output changes yet" true by construction rather than by luck,
-      // since all 18 cards are in this branch. And it keeps a drag-resize from
-      // rebuilding every card's whole subtree once per layout pass to recompute
-      // a value that cannot change.
+      // back when all 18 cards were in this branch — 15 still are, since #1288
+      // moved `device_info`, `lan_info` and `time_settings` out of it. And it
+      // keeps a drag-resize from rebuilding those 15 cards' whole subtrees once
+      // per layout pass to recompute a value that cannot change.
       await _pumpHost(
         tester,
         cardWidth: 150,
@@ -307,9 +308,11 @@ void main() {
     });
 
     test('the host carries the threshold its spec declares', () {
-      // No card declares one yet (#1240 AC 1 measured every card as fitting at
-      // its narrowest realization), so this asserts the pass-through is real
-      // rather than hardcoded to null.
+      // Three cards declare one since #1288 and 15 do not, so this now covers
+      // both directions of the pass-through in one loop — when it was written
+      // every spec was null (#1240 AC 1 measured every card as fitting at its
+      // narrowest realization) and the only thing it could rule out was a
+      // hardcoded null.
       final factory = UspWidgetFactory();
       for (final spec in UspWidgetSpecs.all) {
         final host = factory.buildWidget(spec.id) as CardDensityHost;

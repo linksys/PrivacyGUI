@@ -7,9 +7,11 @@ import 'package:privacy_gui/core/utils/icon_rules.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
+import 'package:privacy_gui/page/_shared/components/card_density_scope.dart';
 import 'package:privacy_gui/page/_shared/components/card_skeleton.dart';
 import 'package:privacy_gui/page/_shared/components/dashboard_card_template.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
+import 'package:privacy_gui/page/dashboard/models/card_density.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -35,9 +37,29 @@ class UspDeviceInfoCard extends ConsumerWidget {
       hardwareVersion: info.hardwareVersion,
     );
     final colorScheme = Theme.of(context).colorScheme;
+    final density = CardDensityScope.of(context);
+
+    // The line the hero paints largest, and so the line the degraded forms owe
+    // the reader: the node's own name when it has one, the model otherwise.
+    final heroValue =
+        hostName != null && hostName.isNotEmpty && hostName != info.modelName
+            ? hostName
+            : info.modelName;
 
     return DashboardCardTemplate(
       title: loc(context).deviceInformation,
+      // Only in the degraded forms, so nothing changes above the threshold
+      // (#1288). The same router artwork as the hero, at header size — this card
+      // identifies a specific product, so a generic glyph would be a downgrade
+      // the other two cards do not have to make.
+      leading: density == CardDensity.normal
+          ? null
+          : Image(
+              image: DeviceImageHelper.getRouterImage(iconName),
+              width: BlockConstants.iconMd,
+              height: BlockConstants.iconMd,
+            ),
+      popupValue: heroValue,
       footer: masterNode != null && masterNode.deviceId.isNotEmpty
           ? _buildNodeDetailFooter(context, masterNode.deviceId)
           : null,
@@ -45,45 +67,35 @@ class UspDeviceInfoCard extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Device hero block - model name with icon
-          LayoutBlock(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(AppSpacing.md),
-                  decoration: BoxDecoration(
-                    color: colorScheme.primaryContainer,
-                    borderRadius: BorderRadius.circular(AppSpacing.sm),
-                  ),
-                  child: Image(
-                    image: DeviceImageHelper.getRouterImage(iconName),
-                    width: 72,
-                    height: 72,
-                  ),
-                ),
-                AppGap.lg(),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (hostName != null &&
-                          hostName.isNotEmpty &&
-                          hostName != info.modelName) ...[
-                        AppText.titleLarge(hostName),
-                        AppGap.xxs(),
-                        AppText.bodyMedium(info.modelName),
-                      ] else
-                        AppText.titleLarge(info.modelName),
-                      AppGap.xs(),
-                      AppText.bodySmall(
-                        info.manufacturer,
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+          HeroBlock(
+            compact: density == CardDensity.compact,
+            leading: Container(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              decoration: BoxDecoration(
+                color: colorScheme.primaryContainer,
+                borderRadius: BorderRadius.circular(AppSpacing.sm),
+              ),
+              child: Image(
+                image: DeviceImageHelper.getRouterImage(iconName),
+                width: 72,
+                height: 72,
+              ),
             ),
+            children: [
+              // The two-line/one-line split is `heroValue`'s definition read
+              // backwards: the model gets a subtitle exactly when it is not
+              // already the headline.
+              AppText.titleLarge(heroValue),
+              if (heroValue != info.modelName) ...[
+                AppGap.xxs(),
+                AppText.bodyMedium(info.modelName),
+              ],
+              AppGap.xs(),
+              AppText.bodySmall(
+                info.manufacturer,
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ],
           ),
           AppGap.sm(),
           // Firmware & Hardware - 2 columns
