@@ -41,14 +41,18 @@ import '../../../../util/statistics/stats_section_probe.dart';
 /// realization. The AC is therefore a measurement of the rows, not "N gate
 /// coordinates removed".
 ///
-/// **#1270 spent that headroom.** The prefix is now `loc(context).channel`, whose
-/// widest value (`tr`: 'Channel (Kanal)') is 5 characters longer than the `de`
-/// 'Kanal' this file used to sample. That is affordable *only* because #1264
-/// replaced the `Row` + `Spacer` with a `Wrap` — the pre-fix shape overflows at
-/// the production floor in `tr`/`th` and at every width below it in all 26
-/// locales. So line 110's guard is no longer a courtesy sweep over a couple of
-/// locales: the widest translation is now a layout input, and the AC-1 ladder
-/// group walks all 26 of them.
+/// **#1270 spent that headroom.** The prefix is now `loc(context).channel`, so the
+/// widest `channel` translation is a layout input rather than a curiosity — and
+/// **#1298 changed which locale that is**. `tr` used to ship
+/// `'Channel (Kanal)'`, the English term with the Turkish glossed in parentheses,
+/// and was the widest of the 26 at 212.5px; with the gloss removed it renders
+/// 155.1px and `th` is now the widest at 188.4px. Either way the prefix is
+/// affordable *only* because #1264 replaced the `Row` + `Spacer` with a `Wrap`:
+/// the pre-fix shape overflows the production floor in `th` (and in `tr` too,
+/// before #1298) and in all 26 locales at 224px and below. So line 110's guard is
+/// not a courtesy sweep over a couple of locales — the AC-1 ladder group walks all
+/// 26 of them, and the group above samples the four widest with the ranking
+/// written down where a future ARB change has to re-take it.
 ///
 /// ## Four kinds of assertion, and why the stress widths are below production
 ///
@@ -94,36 +98,62 @@ import '../../../../util/statistics/stats_section_probe.dart';
 /// `stats_traffic_monitor_legend_test.dart`). Groups are numbered in declaration
 /// order: **1** line 110 clean, **2** line 121 clean, **3** geometry, **4** stats
 /// legible. Each mutation was applied alone against an otherwise clean tree, and
-/// the whole table was **re-taken for #1270** — the counts below are of this
-/// file's current 158 tests, not of the 43 it had when #1258 first measured it:
+/// the whole table was **re-taken again for #1298** — the counts are of this
+/// file's current 158 tests, not of the 43 it had when #1258 first measured it.
+/// The `was` column is what the table read before that re-take, kept because
+/// three rows moved and the reasons are the finding:
 ///
-///   | mutation                                             | fails (of 158)              |
-///   |------------------------------------------------------|-----------------------------|
-///   | line 110 `Wrap` -> pre-fix `Row`+`Spacer`            | 87 — grp 1: 73, 2: 11, 3: 3 |
-///   | line 121 outer `Wrap` -> pre-fix `Row`+`Expanded`    | 9 — grp 1: 4, 2: 5          |
-///   | stats `Wrap` -> `Row(min)`+`AppGap.md` (see below)   | 7 — grp 1: 3, 2: 4          |
-///   | signal bar `SizedBox(96)` -> `Expanded` (keep `Wrap`)| 158 — ParentDataWidget      |
-///   | count -> `Flexible` + 1-line ellipsis                | 158 — ParentDataWidget      |
-///   | `snrValue` -> 1-line ellipsis (no `Flexible`)        | 1 — grp 4                   |
-///   | `snrValue` -> `Flexible` + 1-line ellipsis           | 158 — ParentDataWidget      |
-///   | `snrValue` -> 1-line ellipsis on **2.4GHz only**     | 1 — grp 4                   |
-///   | per-radio `Column` `stretch` -> `start`              | 3 — grp 3                   |
-///   | band+channel `Wrap`: drop `spaceBetween`             | 2 — grp 3                   |
+///   | mutation                                             | fails (of 158)              | was |
+///   |------------------------------------------------------|-----------------------------|-----|
+///   | line 110 `Wrap` -> pre-fix `Row`+`Spacer`            | 84 — grp 1: 70, 2: 11, 3: 3 | 87  |
+///   | line 121 outer `Wrap` -> pre-fix `Row`+`Expanded`    | 5 — grp 1: 1, 2: 4          | 9   |
+///   | stats `Wrap` -> `Row(min)`+`AppGap.md` (see below)   | 5 — grp 1: 1, 2: 4          | 7   |
+///   | both of those at once (the real pre-fix line 121)    | 5 — grp 1: 1, 2: 4          | —   |
+///   | signal bar `SizedBox(96)` -> `Expanded` (keep `Wrap`)| 34 — grp 2: 33, 4: 1        | 158 |
+///   | count -> `Flexible` + 1-line ellipsis                | 158 — ParentDataWidget      | 158 |
+///   | `snrValue` -> 1-line ellipsis (no `Flexible`)        | 1 — grp 4                   | 1   |
+///   | `snrValue` -> `Flexible` + 1-line ellipsis           | 158 — ParentDataWidget      | 158 |
+///   | `snrValue` -> 1-line ellipsis on **2.4GHz only**     | 1 — grp 4                   | 1   |
+///   | per-radio `Column` `stretch` -> `start`              | 3 — grp 3                   | 3   |
+///   | band+channel `Wrap`: drop `spaceBetween`             | 2 — grp 3                   | 2   |
 ///
-/// Two things to read out of the attributions rather than guess at:
+/// Five things to read out of the attributions rather than guess at:
 ///
+///  - **Row 1 moved because of #1298, and only by `tr`'s three cases.** Re-running
+///    that mutation with the `tr` gloss put back reproduces the old 87 / grp 1: 73
+///    exactly, so the row was accurate when taken; the three cases it loses are
+///    this file's 288px `tr` sample case and the ladder's 288px and 256px `tr`
+///    cases. See the ladder group's own table for the pixel figures.
+///  - **Rows 2, 3 and 4 moved because of #1271, which was never re-taken.** #1271
+///    made the signal bar conditional (`if (snr != null)`) and the readout
+///    `snrUnavailable`, and `averageSnr` is null for a radio with no clients
+///    (`core/utils/wifi.dart`, `averageSnr`'s own doc). Groups 1 and 3 pump
+///    `_wideChannelWifiData`, which has **no clients** — so those groups now
+///    render no bar at all, and a mutation of the bar or of the stats pair cannot
+///    reach them. That is also why row 4 reads 34 and not 158: the
+///    `Flexible`-inside-`Wrap` framework error throws only where the bar is
+///    built, which after #1271 is groups 2 and 4 alone.
+///  - **Line 121's pre-fix shape is caught at one rung, not at the degradation
+///    width.** Rows 2 and 3 fail the *same* 5 cases, and so does applying both at
+///    once (which is the actual pre-#1258 shape, not a half of it): the 192px rung
+///    in `fi`, `ja`, `ko`, `vi`. Group 2's 219px degradation guard does not
+///    discriminate for any of them, because the nested stats `Wrap` re-flows
+///    internally there and leaves the `Expanded` bar something to shrink into. So
+///    the ladder is what guards that row, not the degradation width — worth
+///    knowing before #1297 touches the same bar.
 ///  - **Groups 1 and 2 do not have separate eyes.** The probe returns *every*
 ///    `RenderFlex` incident in the pumped tree, so a mutation to either row fails
 ///    whichever group pumps the section at a width where that row overflows. The
 ///    two groups differ in fixture and width ladder, not in what they can see —
-///    which is why mutating line 121 also fails 4 of group 1's cases. A future
+///    which is why mutating line 121 still fails one of group 1's cases. A future
 ///    reader chasing one row's regression should read the incident text in the
 ///    failure, not the group name.
 ///  - **A `Flexible` inside a `Wrap` is a framework error, not an overflow.** The
-///    three 158-failure rows all throw `Incorrect use of ParentDataWidget`, which
-///    fails every test in the file including the unrelated ones. That is loud but
-///    undiscriminating, and it is exactly why the two *bare*-ellipsis mutations
-///    (1 failure each, group 4) are the ones that prove group 4 earns its keep.
+///    two remaining 158-failure rows throw `Incorrect use of ParentDataWidget`,
+///    which fails every test in the file including the unrelated ones. That is
+///    loud but undiscriminating, and it is exactly why the two *bare*-ellipsis
+///    mutations (1 failure each, group 4) are the ones that prove group 4 earns
+///    its keep.
 ///
 /// The last two rows are group 3, and they are a different *kind* of guard from
 /// everything above them. Every other assertion in this file reads `RenderFlex`
@@ -289,14 +319,37 @@ void main() {
   group('band + channel row (line 110) is clean under wide data (#1258)', () {
     // Two stressors, not one. `_wideChannelWifiData` carries a 3-digit 6GHz
     // channel in auto mode at 160MHz — the widest *data* #1258 named — and since
-    // #1270 localized the prefix the row is locale-dependent too. `tr` is the
-    // widest of the 26 (`channel` is `'Channel (Kanal)'`), `th` is second, `de`
-    // ("Kanal") is the shortest of the three and is kept because it is what
-    // #1258 pumped. `en` stays as the control.
+    // #1270 localized the prefix the row is locale-dependent too.
+    //
+    // WHICH FOUR, AND WHY THEY CHANGED IN #1298
+    //
+    // Until #1298 the sample was `en, de, th, tr`, because `tr` shipped
+    // `'Channel (Kanal)'` — the English term with the Turkish glossed in
+    // parentheses — and was the widest of the 26 by a wide margin. #1298 fixed
+    // that ARB value to plain `'Kanal'`, which moved `tr` from first to
+    // joint-16th and made the old sample's stated reason false. Re-measured on
+    // this worktree (rendered width of the composed `bodySmall` string
+    // `<channel> 233 (Auto)  ·  160MHz`, real fonts, 6GHz radio):
+    //
+    //   | locale | width   | note                                     |
+    //   |--------|---------|------------------------------------------|
+    //   | `th`   | 188.4px | widest; was second                       |
+    //   | `ja`   | 171.8px | second                                   |
+    //   | `en`   | 170.0px | third **and** the control                |
+    //   | `fi`   | 164.8px | fourth                                   |
+    //   | `tr`   | 155.1px | was 212.5px, first, before #1298         |
+    //   | `de`   | 155.1px | tied with `tr`, `da`, `sv`, `nb`, `id`   |
+    //   | `ko`   | 146.0px | narrowest                                |
+    //
+    // So the sample is now the top four, which happens to include `en`. `de`
+    // (what #1258 originally pumped) and `tr` are dropped from *this* group
+    // rather than kept for continuity: at 155.1px they are neither worst nor
+    // representative, and the 26-locale ladder below covers them at four widths
+    // regardless.
     //
     // These four are the worst cases, not the whole obligation: the full 26 × 4
     // ladder is the `AC-1 ladder` group below.
-    for (final tag in ['en', 'de', 'th', 'tr']) {
+    for (final tag in ['en', 'th', 'ja', 'fi']) {
       for (final screen in narrowScreens) {
         testWidgets(
           'no overflow at ${sectionWidthFor(screen).toStringAsFixed(0)}px '
@@ -362,19 +415,36 @@ void main() {
     // Iterating `supportedLocales` rather than a hardcoded list also means a 27th
     // locale is covered the day it is added, without anyone remembering to.
     //
-    // MEASURED (#1270, this worktree, one pump per case, real fonts, 2px
-    // tolerance, `Ch 233 (Auto)` / 160MHz data):
+    // MEASURED (#1270, re-taken for #1298; one pump per case, real fonts, 2px
+    // tolerance, `<channel> 233 (Auto)` / 160MHz data). The pre-fix rows are the
+    // same mutation run twice, once with #1298's ARB fix and once with the `tr`
+    // gloss put back, so the two are directly comparable:
     //
-    //   | shape                       | 288px      | 256 / 224 / 192px      |
-    //   |-----------------------------|------------|------------------------|
-    //   | `Wrap` (shipped)            | 26 clean   | 26 clean each          |
-    //   | pre-#1264 `Row` + `Spacer`  | tr, th     | **all 26** overflow    |
+    //   | shape                              | 288px  | 256px    | 224 / 192px |
+    //   |------------------------------------|--------|----------|-------------|
+    //   | `Wrap` (shipped)                   | clean  | clean    | clean       |
+    //   | pre-#1264 `Row`+`Spacer`, pre-1298 | tr, th | 16 of 26 | all 26      |
+    //   | pre-#1264 `Row`+`Spacer`, now      | th     | 15 of 26 | all 26      |
     //
-    // So under the pre-fix shape the localized prefix would have overflowed the
-    // production floor in `tr` (+27.0, +13.0) and `th` (+3.0), and every locale
-    // below it — `tr` worst at +123.0/+109.0 at 192px. #1264's `Wrap` is what
-    // makes this ticket a pure correctness change, and this group is what records
-    // that it still is.
+    // Two things to read out of it rather than guess at:
+    //
+    //  - **#1298 took `tr` off the pre-fix shape's failure list at the floor.**
+    //    The three cases it removes are exactly `tr`'s (this group's 288px
+    //    sample case, and the ladder's 288px and 256px cases), so at the
+    //    production floor the pre-fix `Row` would now overflow in `th` alone
+    //    (+3.0) instead of `th` plus `tr` (+27.0/+13.0). At 192px the worst
+    //    locale is now `th` (+99.0/+85.0); it was `tr` (+123.0/+109.0), and `tr`
+    //    reads +66.0/+52.0 with the gloss gone. What #1298 did *not* change is
+    //    the shipped verdict: 26 clean at all four widths, before and after.
+    //  - **The pre-#1298 form of this table over-claimed the 256px column.** It
+    //    merged 256 / 224 / 192px into one cell reading "all 26". Re-running the
+    //    mutation with the old ARB restored gives 16 of 26 at 256px — the 10
+    //    narrowest locales are clean there — and only 224 / 192px are all 26.
+    //    That correction is not #1298's doing; it is what re-taking a merged
+    //    cell exposes, and it is why the column is split here.
+    //
+    // #1264's `Wrap` is still what makes the localized prefix a pure correctness
+    // change, and this group is what records that it stays one.
     for (final locale in AppLocalizations.supportedLocales) {
       for (final section in [288.0, 256.0, 224.0, 192.0]) {
         testWidgets(

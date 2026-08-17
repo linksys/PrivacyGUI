@@ -1405,6 +1405,22 @@ actually ships**:
 | `th`   | `ช่องสัญญาณ`   | +17.0px         | clean   |
 | other 24 | — | clean | clean |
 
+> **Re-measured for #1298 — the table above is #1266's record, and both of its
+> inputs have since changed.** #1267 moved the client count *inside* the row's
+> first `Wrap` child, so child 1 is wider than the bare band `tr`/`th` were
+> measured against; and #1298 removed `tr`'s `Channel (Kanal)` gloss (the English
+> term with the Turkish in parentheses — see §2.10h), so `tr`'s `channel` is now
+> `Kanal` and it is no longer the loudest locale. Restoring `Row` + `Spacer` on
+> today's tree measures **25 of 26 locales overflowing the 261px card** (`th`
+> +44.0px, `ja` +28.0, `en` +26.0, `fi` +21.0 … `zh` +3.8; only `ko` clean) and
+> `th` +17.0 alone at the preferred 288px width. On the `[triband]` profile #1267
+> added — the fixture #1266 could reach only by hand-editing — **all 26** break at
+> 261px (`th` +55.0, mildest `ko` +12.0) and four still break at 288px (`th`
+> +27.0, `ja` +11.0, `en` +8.8, `fi` +3.6). The conclusion is unchanged and
+> stronger: the row had a geometry problem in nearly every locale, not two.
+> #1266's coordinate arithmetic is untouched, because the `Wrap` shipped in the
+> same change and no coordinate was ever booked.
+
 So the two halves cannot be separated, and the *ordering* is the point:
 
 - **Localizing alone runs the ratchet backwards.** It adds 3 coordinates to a
@@ -1959,7 +1975,10 @@ Gate **1644 → 1698** (54 = 26 locales × 2 widths + 2 meta guards), and
    cannot currently say: airtime utilization, or how many neighbouring networks
    share the channel. TR-181 has `Device.WiFi.DataElements.Network.Device.{i}.`
    `Radio.{i}.Utilization`, no provider fetches it and `WifiRadioUIModel` has no
-   field for it, so that is a follow-up ticket and not a layout fix. The tab's
+   field for it, so that is a follow-up ticket and not a layout fix — filed as
+   #1295 and then **deferred** (no new feature work for now), which makes the
+   blank space the intended interim state rather than an unfinished one: the case
+   for removing the chart never depended on something replacing it. The tab's
    linear `AppLoader` went with the donut, for the narrower version of the same
    reason: an unlabelled bar drawn at `snr / 50` restates the number printed
    beside it, and removing it removed an `Expanded`/`Spacer` pair and the
@@ -2065,6 +2084,81 @@ Gate **1644 → 1698** (54 = 26 locales × 2 widths + 2 meta guards), and
      screenshot equivalent bit at the same time: `saveCardScreenshot` returns early
      when the file exists, so the "after" images were the "before" ones until
      `build/shots_1267` was removed.
+
+### 2.10h The widest string in the sweep was not a translation (#1298 — implemented)
+
+§2.10c's table has `tr`'s `channel` as `Channel (Kanal)` (15 chars) and treats it
+as the worst case a locale sweep can throw at the row. It is not a translation. It
+is a glossary entry — the English term with the Turkish beside it in parentheses —
+and it is why `tr` measured as the widest `channel` value in the product at
+**212.5px** where the actual Turkish word renders at **155.1px**. Three `tr` keys
+had the shape; sweeping the other 25 locales for it found six more:
+
+| locale | key | shipped | fixed |
+|---|---|---|---|
+| `tr` | `channel` | `Channel (Kanal)` | `Kanal` |
+| `tr` | `connectionType` | `Connection Type (Bağlantı Tipi)` | `Bağlantı Tipi` |
+| `tr` | `defaultGateway` | `Default Gateway (Varsayılan Ağ Geçidi)` | `Varsayılan Ağ Geçidi` |
+| `ar` | `macAddress` | `MAC Address (عنوان MAC)` | `عنوان MAC` |
+| `pt` | `macAddress` | `MAC Address (Endereço MAC)` | `Endereço MAC` |
+| `da` | `broadcastSSID` | `Broadcast SSID (Udsend SSID)` | `Udsend SSID` |
+| `pl` | `automatic` | `Automatic (Automatyczny)` | `Automatyczny` |
+| `vi` | `automatic` | `Automatic (Tự động)` | `Tự động` |
+| `pt_PT` | `wired` | `Wired (Com fios)` | `Com fios` |
+
+Nine keys across seven files; gate **1698/1698**, `known_overflows.json` empty in
+both directions. Five findings.
+
+1. **The shape is mechanically findable, and two hits are not defects.** The regex
+   is `^<the en value>\s*\(.+\)$` per key against `app_en.arb`, which is what makes
+   it separable from ordinary parentheses in a translation. It leaves two hits
+   standing, and the distinction is the parenthetical's *job*: `ar`
+   `connectionTypePppoe` is `PPPoE (بروتوكول نقطة إلى نقطة عبر Ethernet)` and `it`
+   `dmz` is `DMZ (Demilitarized Zone)`. There the English side is an acronym, so
+   the parenthetical is not a gloss of a term the reader already has — it is the
+   only translated content in the string, and removing it leaves an untranslated
+   acronym. **A gloss is redundant with the English term beside it; an expansion is
+   not.**
+2. **Nothing can regress; documentation can.** All nine replacements are strictly
+   shorter than what shipped, so no layout can newly overflow — which is exactly
+   why the change is dangerous to land quietly. What it invalidates is every
+   *measurement* that quoted a glossed string: §2.10c's table above, the twin
+   card's `Row` + `Spacer` comment, and in
+   `stats_wifi_channels_section_test.dart` the per-locale width ranking, the AC-1
+   ladder and three rows of the mutation ledger. All were re-taken by re-running
+   rather than edited to fit, and re-running caught a pre-existing over-claim:
+   the ladder's `Row` + `Spacer` row had reported "all 26 at 256px" where the
+   measurement is **16 of 26** before this change and **15 of 26** after it.
+   A documented number that nobody re-derives decays into a documented guess.
+3. **Two of the ledger's stale rows had nothing to do with this change.** Rows 2,
+   3 and 4 (`Row` + `Expanded` on the signal bar, `Row(min)` for the stats pair,
+   `Expanded` on the bar alone) reproduce 5 / 5 / 34 failures against 9 / 7 / 158
+   recorded. Re-running them under the *old* sample list with the `tr` gloss
+   restored still gives 5 and 5, so #1298 is not the cause: **#1271** made the bar
+   conditional on `averageSnr != null`, and groups 1 and 3 pump the client-less
+   fixture, so those mutations can no longer reach them. The ledger is a
+   measurement of the tree, not a property of the test — §2.10g finding 8's "re-run
+   the ledger after changing the tree" applies to *other people's* tickets too, and
+   the way you find out is that the numbers stop reproducing.
+4. **A locale sweep cannot see a string that never varies — the same blindness
+   §2.10c named for abbreviations, one layer up.** 205 keys are byte-identical to
+   English in at least one locale. Most are acronyms that legitimately do not
+   translate (`MTU`, `TCP`, `UDP`, `DHCP`, `SSID`), so that is not a defect count.
+   Two that are not: `channelAutoRecommended` (`Auto (recommended)`) is an English
+   sentence in **25 of 26** locales, and `da` `automatic` is the English word
+   `Automatic`. Both render inside this epic's cards, and the gate reports them
+   green in every locale because there is nothing for a locale sweep to vary.
+5. **`(Auto)` is still hardcoded English in `lib/`, and localizing it has a
+   measured gate cost.** `wifi_radio_ui_model.dart:62` and
+   `wifi_network_ui_model.dart:110` append `' (Auto)'` unlocalized — the same
+   defect class as #1266's `'Ch '`, in the same channel string. Substituting the
+   existing `automatic` key measures the worst-case row at `ru` **222.1px** against
+   `en`'s 159.1 (+63.0), then `fi` 220.1, `pl` 208.4, `nl` 205.7, while
+   `ja`/`zh`/`zh_TW`/`ko` get *narrower*. That is 34px past the widest string
+   either surface has ever been measured with, so it is a ticket with a coordinate
+   cost and hardening attached, not a one-line substitution — the coupling §2.10c
+   established (localizing alone runs the ratchet backwards). Recorded here rather
+   than done here.
 
 ### 2.11 fl_chart's coordinates get a primary plan and a documented fallback
 
@@ -2465,6 +2559,16 @@ produced. Two later tickets sit in this track without a row of their own because
 they are the Statistics twins of entries that have one: #1270 (§2.10f) and #1271,
 which is not a layout ticket at all — it is the shared SNR aggregation the two
 surfaces had drifted apart on, found while measuring #1267's tab.
+
+#1298 is the smallest entry in the track and sits here on the same footing: nine
+ARB strings, no change under `lib/`, no coordinate moved, gate 1698/1698 before and
+after. It belongs to the ratchet because it changed the *inputs* the earlier
+measurements were taken with. `tr` is the failing locale in #1258, #1266, #1270 and
+#1267's original `+9.0px`, and it was failing partly on a string that was never
+Turkish (§2.10h). A ticket that touches no assertion can still invalidate the
+evidence for a dozen of them, so the cost of landing it is re-running every
+measurement that quoted the old string — which is where the epic's one documented
+over-claim turned up (§2.10h finding 2).
 
 #1225 lands first — not because it re-baselines (it does not, §1.6) but so that
 the invariant holds by construction and any future shift is attributable. #1226

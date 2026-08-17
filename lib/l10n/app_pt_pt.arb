@@ -375,7 +375,7 @@
   "wifiPassword": "Palavra-passe do WiFi",
   "wifiPasswordLimit": "8 - 64 caracteres",
   "wifiPasswordRuleHex": "PSK hexadecimal necessário (0–9, A–F, a–f)",
-  "wired": "Wired (Com fios)",
+  "wired": "Com fios",
   "accessPoints": "Pontos de acesso",
   "active": "Ativo",
   "activeLeases": "Concessões ativas",

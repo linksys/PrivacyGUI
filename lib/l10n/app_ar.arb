@@ -157,7 +157,7 @@
   "location": "الموقع",
   "login": "تسجيل الدخول",
   "logout": "تسجيل الخروج",
-  "macAddress": "MAC Address (عنوان MAC)",
+  "macAddress": "عنوان MAC",
   "macAddressClone": "نسخ عنوان MAC",
   "main": "رئيسي",
   "manufacturer": "الشركة المصنّعة",

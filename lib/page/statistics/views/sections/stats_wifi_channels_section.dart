@@ -139,13 +139,21 @@ class StatsWifiChannelsSection extends ConsumerWidget {
                     // Performance `_ChannelsTab` twin (#1266). It spends the
                     // 47px of headroom #1258 measured, and the `Wrap` above is
                     // what makes it affordable. Measured against the pre-#1264
-                    // `Row` + `Spacer` with this same string: `tr` +27.0/+13.0
-                    // and `th` +3.0 at a 288px section (the production floor),
-                    // and **all 26 locales** overflowing at 256 / 224 / 192px —
-                    // `tr` worst at +123.0/+109.0. Under the `Wrap` all 26 are
-                    // clean at all four widths. `tr`'s `channel` value is
-                    // `'Channel (Kanal)'`, the widest of the 26, and it wraps to
-                    // a second line instead of overflowing.
+                    // `Row` + `Spacer` with this same string, and re-taken for
+                    // #1298: `th` +3.0 at a 288px section (the production
+                    // floor), 15 of 26 locales overflowing at 256px and all 26
+                    // at 224 / 192px — `th` worst at +99.0/+85.0. Under the
+                    // `Wrap` all 26 are clean at all four widths.
+                    //
+                    // The widest `channel` value is `th`'s at 188.4px. It was
+                    // `tr`'s at 212.5px until #1298: the ARB shipped
+                    // `'Channel (Kanal)'`, the English term with the Turkish
+                    // glossed in parentheses, which also overflowed the floor
+                    // here (+27.0/+13.0) under the pre-fix shape. Either value
+                    // wraps to a second line rather than overflowing, so this
+                    // was never a live defect on this row — but it is why the
+                    // row's guard walks all 26 locales rather than a sample
+                    // (`stats_wifi_channels_section_test.dart`, AC-1 ladder).
                     AppText.bodySmall(
                       '${loc(context).channel} ${radio.channelDisplay}'
                       '  \u00b7  ${radio.channelBandwidth}',

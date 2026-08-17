@@ -457,13 +457,30 @@ class _ChannelsTab extends StatelessWidget {
                   // Why this changed now, when the row shipped clean for months:
                   // `'Ch '` was a hardcoded English abbreviation, and it was
                   // hiding a geometry problem rather than not having one. With
-                  // the real `channel` key the old `Row` overflowed at the 261px
-                  // card in `th` (+17.0px) and `tr` (+4.1/+41.0px, and +14.0px
-                  // even at the *preferred* 288px width), on the two-radio
-                  // fixture the gate ships. Given a third tri-band radio —
-                  // `Ch 233 (Auto) · 320MHz`, which the gate's fixture cannot
-                  // produce — `en` (+8.3px), `fi` and `ja` break too. Measured
-                  // per #1266; every incident attributed to this one row.
+                  // the real `channel` key the old `Row` + `Spacer` overflows
+                  // this row nearly everywhere. Re-measured for #1298 by
+                  // restoring that shape on today's tree — the #1266 figures no
+                  // longer apply on two counts: #1267 moved the client count
+                  // inside the first `Wrap` child (so child 1 is wider than the
+                  // bare band it measured), and #1298 dropped `tr`'s
+                  // `'Channel (Kanal)'` gloss (so `tr` is no longer the loudest
+                  // locale):
+                  //
+                  //  * two-radio, the profile the gate ships: 25 of 26 locales
+                  //    overflow the 261px card — `th` +44.0px, `ja` +28.0,
+                  //    `en` +26.0, `fi` +21.0, down to `zh` +3.8; only `ko` is
+                  //    clean. At the *preferred* 288px width only `th` (+17.0)
+                  //    still breaks.
+                  //  * tri-band, `Ch 233 (Auto) · 320MHz` — the fixture #1266
+                  //    could only produce by hand-editing, and which the gate
+                  //    now sweeps as its `[triband]` profile (#1267): all 26
+                  //    break at 261px (`th` +55.0, mildest `ko` +12.0), and four
+                  //    still break at 288px — `th` +27.0, `ja` +11.0, `en` +8.8,
+                  //    `fi` +3.6. The third radio's row costs ~10px on top of
+                  //    every locale's two-radio figure.
+                  //
+                  // Every incident is attributed to this one row; under the
+                  // `Wrap` all 210 cases of both profiles are clean.
                   //
                   // The extra run used to be paid out of the donut's `Expanded`
                   // below; with the donut gone (#1267) the tab scrolls instead,

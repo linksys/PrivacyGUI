@@ -157,7 +157,7 @@
   "location": "Localização",
   "login": "Login",
   "logout": "Sair da conta",
-  "macAddress": "MAC Address (Endereço MAC)",
+  "macAddress": "Endereço MAC",
   "macAddressClone": "MAC Address Clone (Clone de endereço MAC)",
   "manufacturer": "Fabricante",
   "maxIdleTime": "Tempo máximo de inatividade",
