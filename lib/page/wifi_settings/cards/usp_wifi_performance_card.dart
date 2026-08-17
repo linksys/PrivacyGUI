@@ -402,38 +402,17 @@ class _ChannelsTab extends StatelessWidget {
       );
     }
 
-    // Build band → radio index lookup from WifiRadioUIModel.band
-    final bandToRadioIdx = <String, int>{};
-    for (var i = 0; i < radios.length; i++) {
-      bandToRadioIdx[radios[i].band] = i;
-    }
-
-    // Group clients by radio using resolved band from connectionDetailMap
-    final clientsPerRadio = <int, int>{};
-    final snrSumPerRadio = <int, double>{};
-    final snrCountPerRadio = <int, int>{};
-
-    for (final c in clients) {
-      final radioIdx = bandToRadioIdx[c.band];
-      if (radioIdx == null) continue;
-      clientsPerRadio[radioIdx] = (clientsPerRadio[radioIdx] ?? 0) + 1;
-      // Only clients with real noise data contribute to the average SNR.
-      // Slave-node clients have no noise (they aren't in wifiClientMap), so
-      // computeSNR returns 0; including them would deflate the per-radio
-      // average once #1118 gives them a resolved band. Count them as clients
-      // but exclude them from the SNR aggregation until noise is available.
-      if (c.noise != 0) {
-        final snr = computeSNR(c.signalStrength, c.noise);
-        snrSumPerRadio[radioIdx] = (snrSumPerRadio[radioIdx] ?? 0) + snr;
-        snrCountPerRadio[radioIdx] = (snrCountPerRadio[radioIdx] ?? 0) + 1;
-      }
-    }
-
-    // Compute average SNR per radio
-    final avgSnrPerRadio = <int, double>{};
-    for (final key in snrSumPerRadio.keys) {
-      avgSnrPerRadio[key] = snrSumPerRadio[key]! / snrCountPerRadio[key]!;
-    }
+    // Group clients by radio using the resolved band from connectionDetailMap.
+    // The loop that used to live here — including its `noise == 0` guard, which
+    // the Statistics twin lacked — is now shared (#1271); see
+    // `aggregateRadioClientStats` for why the guard exists and why one copy.
+    final stats = aggregateRadioClientStats(
+      bands: [for (final radio in radios) radio.band],
+      clients: [
+        for (final c in clients)
+          (band: c.band, signalStrength: c.signalStrength, noise: c.noise),
+      ],
+    );
 
     return Column(
       children: [
@@ -441,9 +420,10 @@ class _ChannelsTab extends StatelessWidget {
         for (var i = 0; i < radios.length; i++) ...[
           Builder(builder: (context) {
             final radio = radios[i];
-            final clientCount = clientsPerRadio[i] ?? 0;
-            final snr = avgSnrPerRadio[i] ?? 0;
-            final snrNorm = normalizeSNR(snr.toInt());
+            final clientCount = stats.clientCount(i);
+            // `null` when no client on this radio reported a noise floor — a
+            // distinct state from 0 dB, and rendered as one below (#1271).
+            final snr = stats.averageSnr(i);
 
             return LayoutBlock(
               child: Column(
@@ -503,14 +483,27 @@ class _ChannelsTab extends StatelessWidget {
                     children: [
                       AppText.bodySmall(loc(context).clientsCount(clientCount)),
                       AppGap.md(),
-                      AppText.bodySmall(loc(context).snrValue(snr.toInt())),
+                      AppText.bodySmall(snr == null
+                          ? loc(context).snrUnavailable
+                          : loc(context).snrValue(snr.toInt())),
                       AppGap.sm(),
-                      Expanded(
-                        child: AppLoader(
-                          variant: LoaderVariant.linear,
-                          value: snrNorm,
+                      // With no SNR reading (#1271) the bar is omitted rather
+                      // than drawn empty — an empty bar claims the worst link
+                      // quality for a radio nothing was measured on. A `Spacer`
+                      // takes its place instead of nothing at all: it is the same
+                      // `Expanded` flex child, so it absorbs the slack the loader
+                      // did and this row's overflow behaviour — and the `Column`
+                      // stretch the band/channel `Wrap` above depends on — are
+                      // unchanged in the unmeasured state.
+                      if (snr == null)
+                        const Spacer()
+                      else
+                        Expanded(
+                          child: AppLoader(
+                            variant: LoaderVariant.linear,
+                            value: normalizeSNR(snr.toInt()),
+                          ),
                         ),
-                      ),
                     ],
                   ),
                 ],
@@ -524,7 +517,7 @@ class _ChannelsTab extends StatelessWidget {
           AppGap.md(),
           Expanded(
             child: _BandDistributionDonut(
-              clientsPerRadio: clientsPerRadio,
+              clientsPerRadio: stats.clientCounts,
               radios: radios,
             ),
           ),

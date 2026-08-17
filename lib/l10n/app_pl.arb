@@ -976,6 +976,7 @@
   "sizeBytes": "Rozmiar: {size} bajtów ({mib} MiB)",
   "skipped": "Pominięto",
   "slowHops": "Wolne przeskoki",
+  "snrUnavailable": "SNR: —",
   "snrValue": "SNR: {value} dB",
   "sourceRestriction": "Ograniczenie źródła",
   "specificDeviceConnectionProblems": "Konkretne urządzenie ma problemy z połączeniem",

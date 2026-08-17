@@ -62,30 +62,21 @@ class StatsWifiChannelsSection extends ConsumerWidget {
       List<_ClientInfo> clients) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    // Build band → radio index lookup
-    final bandToRadioIdx = <String, int>{};
-    for (var i = 0; i < radios.length; i++) {
-      bandToRadioIdx[radios[i].band] = i;
-    }
-
-    // Group clients by radio
-    final clientsPerRadio = <int, int>{};
-    final snrSumPerRadio = <int, double>{};
-    final snrCountPerRadio = <int, int>{};
-
-    for (final c in clients) {
-      final radioIdx = bandToRadioIdx[c.band];
-      if (radioIdx == null) continue;
-      clientsPerRadio[radioIdx] = (clientsPerRadio[radioIdx] ?? 0) + 1;
-      final snr = computeSNR(c.client.signalStrength, c.client.noise);
-      snrSumPerRadio[radioIdx] = (snrSumPerRadio[radioIdx] ?? 0) + snr;
-      snrCountPerRadio[radioIdx] = (snrCountPerRadio[radioIdx] ?? 0) + 1;
-    }
-
-    final avgSnrPerRadio = <int, double>{};
-    for (final key in snrSumPerRadio.keys) {
-      avgSnrPerRadio[key] = snrSumPerRadio[key]! / snrCountPerRadio[key]!;
-    }
+    // Group clients by radio. Shared with the WiFi Performance card's Channels
+    // tab since #1271: this file had its own copy of the loop without the
+    // `noise == 0` guard, so the same clients averaged to a *lower* SNR here
+    // than there. One implementation is what keeps the two surfaces equal.
+    final stats = aggregateRadioClientStats(
+      bands: [for (final radio in radios) radio.band],
+      clients: [
+        for (final c in clients)
+          (
+            band: c.band,
+            signalStrength: c.client.signalStrength,
+            noise: c.client.noise,
+          ),
+      ],
+    );
 
     final seriesColors = [
       colorScheme.primary,
@@ -98,9 +89,10 @@ class StatsWifiChannelsSection extends ConsumerWidget {
         // Per-radio info rows
         ...List.generate(radios.length, (i) {
           final radio = radios[i];
-          final clientCount = clientsPerRadio[i] ?? 0;
-          final snr = avgSnrPerRadio[i] ?? 0;
-          final snrNorm = normalizeSNR(snr.toInt());
+          final clientCount = stats.clientCount(i);
+          // `null` when no client on this radio reported a noise floor — a
+          // distinct state from 0 dB, and rendered as one below (#1271).
+          final snr = stats.averageSnr(i);
 
           return Padding(
             padding: const EdgeInsets.only(bottom: AppSpacing.md),
@@ -191,6 +183,14 @@ class StatsWifiChannelsSection extends ConsumerWidget {
                 //     via a `SizedBox`, and when the stats no longer leave room
                 //     for it the outer `Wrap` drops it to its own run rather
                 //     than overflowing.
+                //  5. With no SNR reading (#1271) the readout becomes
+                //     `snrUnavailable` and the bar is **omitted**, not drawn
+                //     empty: a bar at 0 is a claim about link quality, and the
+                //     state this renders is "not measured". Dropping a `Wrap`
+                //     child cannot widen a run, so no width is at risk — and the
+                //     string is shorter than any `snrValue`, so this state is
+                //     strictly easier to lay out than the measured one the widths
+                //     above were taken at.
                 Wrap(
                   crossAxisAlignment: WrapCrossAlignment.center,
                   spacing: AppSpacing.sm,
@@ -203,16 +203,19 @@ class StatsWifiChannelsSection extends ConsumerWidget {
                       children: [
                         AppText.bodySmall(
                             loc(context).clientsCount(clientCount)),
-                        AppText.bodySmall(loc(context).snrValue(snr.toInt())),
+                        AppText.bodySmall(snr == null
+                            ? loc(context).snrUnavailable
+                            : loc(context).snrValue(snr.toInt())),
                       ],
                     ),
-                    SizedBox(
-                      width: 96,
-                      child: AppLoader(
-                        variant: LoaderVariant.linear,
-                        value: snrNorm,
+                    if (snr != null)
+                      SizedBox(
+                        width: 96,
+                        child: AppLoader(
+                          variant: LoaderVariant.linear,
+                          value: normalizeSNR(snr.toInt()),
+                        ),
                       ),
-                    ),
                   ],
                 ),
               ],
@@ -224,7 +227,7 @@ class StatsWifiChannelsSection extends ConsumerWidget {
           AppGap.sm(),
           Expanded(
             child: _BandDistributionDonut(
-              clientsPerRadio: clientsPerRadio,
+              clientsPerRadio: stats.clientCounts,
               radios: radios,
               seriesColors: seriesColors,
             ),

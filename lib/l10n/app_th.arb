@@ -976,6 +976,7 @@
   "sizeBytes": "ขนาด: {size} ไบต์ ({mib} MiB)",
   "skipped": "ข้ามแล้ว",
   "slowHops": "Hops ที่ช้า",
+  "snrUnavailable": "SNR: —",
   "snrValue": "SNR: {value} dB",
   "sourceRestriction": "การจำกัดแหล่งที่มา",
   "specificDeviceConnectionProblems": "อุปกรณ์ที่เฉพาะเจาะจงมีปัญหาการเชื่อมต่อ",

@@ -976,6 +976,7 @@
   "sizeBytes": "Størrelse: {size} bytes ({mib} MiB)",
   "skipped": "Sprunget over",
   "slowHops": "Langsomme hop",
+  "snrUnavailable": "SNR: —",
   "snrValue": "SNR: {value} dB",
   "sourceRestriction": "Kildebegrænsning",
   "specificDeviceConnectionProblems": "En bestemt enhed har forbindelsesproblemer",

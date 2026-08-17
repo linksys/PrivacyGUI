@@ -976,6 +976,7 @@
   "sizeBytes": "Größe: {size} Bytes ({mib} MiB)",
   "skipped": "Übersprungen",
   "slowHops": "Langsame Hops",
+  "snrUnavailable": "SNR: —",
   "snrValue": "SNR: {value} dB",
   "sourceRestriction": "Quellbeschränkung",
   "specificDeviceConnectionProblems": "Bestimmtes Gerät hat Verbindungsprobleme",

@@ -456,6 +456,10 @@
   "signalQuality": "Signal Quality",
   "signalQualitySubtitle": "WiFi signal quality by frequency band",
   "sixrdTunnel": "6rd tunnel",
+  "snrUnavailable": "SNR: —",
+  "@snrUnavailable": {
+    "description": "Average SNR readout when no client on the radio reported a noise floor, so no SNR can be computed. An em dash, not 0, because 0 dB is a real reading."
+  },
   "snrValue": "SNR: {value} dB",
   "@snrValue": {
     "placeholders": {

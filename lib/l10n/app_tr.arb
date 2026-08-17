@@ -976,6 +976,7 @@
   "sizeBytes": "Boyut: {size} bayt ({mib} MiB)",
   "skipped": "Atlandı",
   "slowHops": "Yavaş Atlamalar",
+  "snrUnavailable": "SNR: —",
   "snrValue": "SNR: {value} dB",
   "sourceRestriction": "Kaynak Kısıtlaması",
   "specificDeviceConnectionProblems": "Belirli bir cihazda bağlantı sorunları var",

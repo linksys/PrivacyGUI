@@ -976,6 +976,7 @@
   "sizeBytes": "Grootte: {size} bytes ({mib} MiB)",
   "skipped": "Overgeslagen",
   "slowHops": "Trage hops",
+  "snrUnavailable": "SNR: —",
   "snrValue": "SNR: {value} dB",
   "sourceRestriction": "Bronbeperking",
   "specificDeviceConnectionProblems": "Specifiek apparaat heeft verbindingsproblemen",

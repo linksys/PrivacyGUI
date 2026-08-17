@@ -976,6 +976,7 @@
   "sizeBytes": "Kích thước: {size} byte ({mib} MiB)",
   "skipped": "Đã bỏ qua",
   "slowHops": "Bước nhảy chậm",
+  "snrUnavailable": "SNR: —",
   "snrValue": "SNR: {value} dB",
   "sourceRestriction": "Giới hạn nguồn",
   "specificDeviceConnectionProblems": "Một thiết bị cụ thể gặp sự cố kết nối",

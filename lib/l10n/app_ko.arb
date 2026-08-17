@@ -976,6 +976,7 @@
   "sizeBytes": "크기: {size} bytes ({mib} MiB)",
   "skipped": "건너뜀",
   "slowHops": "느린 홉",
+  "snrUnavailable": "SNR: —",
   "snrValue": "SNR: {value} dB",
   "sourceRestriction": "소스 제한",
   "specificDeviceConnectionProblems": "특정 장치에 연결 문제가 있음",

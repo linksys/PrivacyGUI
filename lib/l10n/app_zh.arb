@@ -976,6 +976,7 @@
   "sizeBytes": "大小：{size} 字节（{mib} MiB）",
   "skipped": "已跳过",
   "slowHops": "慢速跳点",
+  "snrUnavailable": "SNR: —",
   "snrValue": "SNR：{value} dB",
   "sourceRestriction": "来源限制",
   "specificDeviceConnectionProblems": "特定设备存在连接问题",

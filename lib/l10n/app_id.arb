@@ -976,6 +976,7 @@
   "sizeBytes": "Ukuran: {size} byte ({mib} MiB)",
   "skipped": "Dilewati",
   "slowHops": "Hop Lambat",
+  "snrUnavailable": "SNR: —",
   "snrValue": "SNR: {value} dB",
   "sourceRestriction": "Pembatasan Sumber",
   "specificDeviceConnectionProblems": "Perangkat tertentu memiliki masalah koneksi",

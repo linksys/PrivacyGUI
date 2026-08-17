@@ -976,6 +976,7 @@
   "sizeBytes": "Koko: {size} tavua ({mib} MiB)",
   "skipped": "Ohitettu",
   "slowHops": "Hitaat hypyt",
+  "snrUnavailable": "SNR: —",
   "snrValue": "SNR: {value} dB",
   "sourceRestriction": "Lähteen rajoitus",
   "specificDeviceConnectionProblems": "Tietyllä laitteella on yhteysongelmia",

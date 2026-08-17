@@ -976,6 +976,7 @@
   "sizeBytes": "الحجم: {size} بايت ({mib} MiB)",
   "skipped": "تم التخطي",
   "slowHops": "وثبات بطيئة",
+  "snrUnavailable": "SNR: —",
   "snrValue": "SNR: {value} dB",
   "sourceRestriction": "تقييد المصدر",
   "specificDeviceConnectionProblems": "جهاز محدد يواجه مشكلات في الاتصال",

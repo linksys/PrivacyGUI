@@ -391,6 +391,14 @@ int visibleTabCount(WidgetTester tester) {
 /// couples the test to whatever threshold the spec currently declares. Left
 /// null, the card selects its own form from the width it is given — which is
 /// what the gate's own sweep must keep doing, since that is the production path.
+///
+/// [extraOverrides] are appended after [kitchenSinkOverrides], so a provider
+/// listed in both takes the value passed here (Riverpod resolves duplicates
+/// last-wins — verified, not assumed). It exists for tests about *data* rather
+/// than geometry: #1271 needs a client with no noise reading, and the kitchen
+/// sink deliberately gives every client one. The gate must never pass it — the
+/// whole point of one shared fixture is that all 18 cards are measured against
+/// the same data.
 Widget buildDashboardCardApp({
   required String cardId,
   required Locale locale,
@@ -401,6 +409,7 @@ Widget buildDashboardCardApp({
   Key? repaintKey,
   Widget? cardOverride,
   CardDensity? density,
+  List<Override> extraOverrides = const [],
 }) {
   final card = cardOverride ?? UspWidgetFactory().buildWidget(cardId);
   if (card == null) {
@@ -424,6 +433,7 @@ Widget buildDashboardCardApp({
       cardTabIndexProvider(cardId).overrideWith((ref) => tabIndex),
       if (density != null)
         cardDensityOverrideProvider(cardId).overrideWith((ref) => density),
+      ...extraOverrides,
     ],
     child: Portal(
       child: MaterialApp(
