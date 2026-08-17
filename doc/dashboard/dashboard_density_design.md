@@ -1114,6 +1114,22 @@ just one whose step is coarse. (Verified by mutation: starting the walk above
 the implementation does and passed that mutation — a property test whose oracle
 shares the implementation's blind spot pins the step, not the property.)
 
+**Extended in #1267: width and locale were not the only dimensions, only the
+swept ones.** Enumerating widths guarantees the worst *width* per span; it says
+nothing about data, and `kitchenSinkOverrides()` hardcoded one router shape, so
+all 1644 cases were verdicts about two radios with 2-digit channels. #1267 adds a
+**data** dimension — `extraOverrides` on `probeCardOverflow()` /
+`buildDashboardCardApp()`, a tri-band fixture, and `kCardDataProfileSweeps`, an
+opt-in list of (card, tabs, profile) triples. Sweeping the second profile
+everywhere would have doubled the case count and *added* allowlist entries, so the
+list is opt-in and the new cases key as `card|width|tab@profile`: the default
+profile's 1644 cases and every existing key are byte-identical, and the "N
+coordinates cleared" figure every closed ticket in this epic quotes cannot be
+moved by a second profile's findings. The sweep is now **1698** — 1644 default
+plus 54 (`wifi_performance` tab 2 on the tri-band profile: 26 locales × 2 widths,
+plus a marker guard and a tab-exists guard). Full reasoning, and the cost of
+opt-in stated plainly, in §2.10g point 1.
+
 ### 2.8 The `colWidth` bug is silent truncation, and gates only the threshold
 
 `usp_info_row.dart:29` uses `context.colWidth(labelColumns)`, which is
@@ -1159,6 +1175,22 @@ enough.
 Raising `minColumns` is therefore not allowlisting in disguise: with §2.9 in
 place it becomes a testable assertion that the card fits at N columns, recorded
 in the spec with its rationale (both the number and the note are required).
+
+**Two amendments the epic measured into this claim.** The property is "does not
+overflow", and the gate reads it off `RenderFlex` incidents, so it holds only
+where the render objects can report:
+
+- *Data is now part of the domain, for the cards that opt in* (#1267, §2.7). It
+  was not before, and a green verdict on one router shape reads as broader than it
+  is.
+- *Nothing inside a scrolling region can report an overflow.* #1267 gave the
+  `wifi_performance` Channels tab a scrolling content region, and the tri-band
+  fixture that had reported `+9.0px bottom` now reports clean — as it would if the
+  content were 300px too tall. Where a tab converts, the gate stops being the
+  validation mechanism for its *height* and `cardContentScrollShortfall` takes
+  over (§2.10g point 6). This is the same class of blindness as §2.6d's: the gate
+  cannot see a card that is legible-but-scrolled any more than one that is
+  clean-but-illegible.
 
 ### 2.9a The ratchet cannot be cheated, but it can go stale
 
@@ -1442,25 +1474,36 @@ fixed-size-gauge-in-an-`Expanded` shape as #1235's `network_health` gauge — an
 that height the donut is visually useless whether or not it reports an overflow, so
 "shrink the donut to fit" would silence the gate without fixing anything. Deciding
 what the tab drops at that density (the donut, or the whole tab becoming
-scrollable like the Signal tab's `ListView`) is a density decision, and it is not
-verifiable at all until the gate can express a second data profile.
+scrollable like the Signal tab's `ListView`) is a density decision, and it was not
+verifiable at all until the gate could express a second data profile.
 
-**Filed as #1267**, which pairs the density decision with the gate change that
-makes it measurable: an `overrides` parameter on `buildDashboardCardApp()` /
-`kitchenSinkOverrides()` plus a tri-band fixture. It is deliberately *not* folded
-into #1235 — same family (fixed-size gauge in an `Expanded` that cannot pay), but
-different axis (vertical vs horizontal), different trigger (data vs translation
-length) and different visibility (invisible until #1267's Part 1 lands vs 3 live
-coordinates), and #1235's acceptance criteria are executable ratchet claims that an
-unverifiable AC would make unclosable. Recorded here because the #1266 fix does
-trade a right-overflow for a bottom-overflow on that unshipped profile, which is
-exactly the trade §2.10a point 3 warns about.
+**Filed as #1267, and closed — measured, not estimated (§2.10g).** It paired the
+density decision with the gate change that makes it measurable: an `extraOverrides`
+parameter threaded through `probeCardOverflow()` / `buildDashboardCardApp()`, a
+tri-band fixture derived from `testRadios`, and an opt-in sweep list. The gate
+reproduced this exact incident red — `wifi_performance|min|2@triband`, `tr`,
+`+9.0px bottom`, and only there — and the answer turned out to be *both* of the
+options above plus a third: the donut is gone (its slices restated the per-radio
+counts, its centre total the header badge), the tab scrolls, and the client count
+moved onto the band row as an icon and a numeral. The tri-band profile is clean at
+26 locales × both widths with ~120px to spare, and the gate stands at **1698**
+(1644 default + 54 tri-band) with an empty allowlist.
 
-Note also what #1267's Part 1 costs: adding a second profile to the sweep across
-all 18 cards doubles 1644 cases and will surface coordinates nobody has looked at
-— an allowlist *addition*, against the ratchet's direction. Which is why the sweep
-shape (opt-in per card / second allowlist keyed by profile / one allowlist) is an
-explicit decision in that ticket rather than an implementation detail.
+It was deliberately *not* folded into #1235 — same family (fixed-size gauge in an
+`Expanded` that cannot pay), but different axis (vertical vs horizontal), different
+trigger (data vs translation length) and different visibility (invisible until
+#1267's Part 1 landed vs 3 live coordinates), and #1235's acceptance criteria are
+executable ratchet claims that an unverifiable AC would make unclosable. Recorded
+here because the #1266 fix does trade a right-overflow for a bottom-overflow on
+that unshipped profile, which is exactly the trade §2.10a point 3 warns about.
+
+Note also what #1267's Part 1 would have cost done the obvious way: adding a
+second profile to the sweep across all 18 cards doubles 1644 cases and surfaces
+coordinates nobody has looked at — an allowlist *addition*, against the ratchet's
+direction. That is why the sweep shape (opt-in per card / second allowlist keyed by
+profile / one allowlist) was an explicit decision in that ticket rather than an
+implementation detail; it chose the first, and namespaced the second profile's keys
+so the default profile's arithmetic could not move (§2.10g point 1).
 
 ### 2.10d What closing the four card-own tickets taught us (#1234–#1237 — implemented)
 
@@ -1849,6 +1892,180 @@ Four findings, all method:
    *mechanism* (collector, parsing, settling) stays separate from a page's
    *geometry*, so a dashboard test cannot inherit Statistics layout facts.
 
+### 2.10g What giving the gate a second data profile taught us (#1267 — implemented)
+
+§2.10c recorded a `+9.0px bottom` on a tri-band router that the gate had no way to
+express — found by hand-editing `testRadios` and reverting. #1267 gave the gate the
+profile, reproduced the incident red, and then had to decide what the Channels tab
+drops at that density. Both halves shipped:
+
+| `wifi_performance` tab 2, tri-band, `tr` @261px card | verdict |
+|---|---|
+| the gate before #1267 (one hardcoded profile) | unmeasurable — 1644 cases, all green |
+| the tri-band sweep, donut still in place (**red first**) | `+9.0px bottom` at `:575`, `tr` only — 51 of 52 cases green |
+| shipped: donut removed, tab scrolls, client count compressed | clean, 26 locales × both widths, **0.0px** scroll shortfall |
+
+Gate **1644 → 1698** (54 = 26 locales × 2 widths + 2 meta guards), and
+`known_overflows.json` stayed empty in both directions. Eight findings.
+
+1. **Namespacing the keys is what made a second dimension affordable.** The ticket
+   offered three sweep shapes; option 1 (opt-in per card,
+   `kCardDataProfileSweeps`) was chosen for what the other two do to the ratchet.
+   Sweeping a second profile across all 18 cards doubles 1644 cases and surfaces
+   coordinates in cards nobody has examined — an allowlist *addition*, against
+   §2.9's contract, reading as a mass regression the moment the mechanism lands.
+   The mechanical half of the fix is one line: a non-default profile's cases key as
+   `card|width|tab@profile`, so **every pre-#1267 key is byte-identical** and the
+   default profile's arithmetic — the number every closed ticket in this epic
+   quotes — cannot be moved by a second profile's findings. Option 2 (all cards,
+   per-profile allowlist) is the honest full-coverage answer and is what this
+   should grow into; the growth belongs to the ticket that measures each card, not
+   to the one that builds the mechanism. The cost of option 1 is stated in
+   `card_data_profiles.dart` rather than left implicit: **a card is covered on the
+   second profile only once someone adds it**, and one entry is not a claim about
+   the other 17 cards.
+
+   The same argument bounds what gets swept *within* the opted-in card. The
+   tri-band profile varies the radio list, so it cannot change the Signal or Speed
+   tabs, which render clients — sweeping them would buy 104 byte-identical cases
+   (two tabs × 26 locales × two widths) and read as coverage.
+
+2. **A data profile's failure mode is silence, so the profile has to prove it
+   reached the tree.** There are two `testWifiData` fixtures in this repo (the
+   dashboard's and `statistics_test_data.dart`'s), and #1266 already lost a full
+   measurement round to editing the wrong one. Override the wrong provider and
+   every case in the sweep pumps the default fixture, reports green, and reads as
+   52 extra cases of coverage that were never measured. So each profile carries
+   `markers` — locale-independent substrings only it can produce (`233 (Auto)`,
+   `320MHz`) — asserted by one `en` pump at the desktop width before the sweep
+   runs. The general rule for this epic's instruments, alongside §2.10f finding 2:
+   **a harness parameter whose absence is green needs a positive assertion that it
+   arrived.**
+
+3. **The density decision was subtraction, and what justified it was that both
+   halves of the donut were duplicates.** The ticket's preferred option was a
+   height threshold that drops the donut below the height its centre label needs;
+   what shipped drops it unconditionally, because measuring what it *says* is
+   cheaper than measuring how tall it needs to be:
+
+   - its slices are per-band client counts, which the tab already prints once per
+     radio block;
+   - its centre total is the client total, which the card's header badge already
+     carries.
+
+   Re-slicing it by channel was considered and rejected on the same ground — a
+   radio has exactly one channel, so channel-keyed slices are band-keyed slices
+   with a different legend. What *would* earn the space is the one thing this tab
+   cannot currently say: airtime utilization, or how many neighbouring networks
+   share the channel. TR-181 has `Device.WiFi.DataElements.Network.Device.{i}.`
+   `Radio.{i}.Utilization`, no provider fetches it and `WifiRadioUIModel` has no
+   field for it, so that is a follow-up ticket and not a layout fix. The tab's
+   linear `AppLoader` went with the donut, for the narrower version of the same
+   reason: an unlabelled bar drawn at `snr / 50` restates the number printed
+   beside it, and removing it removed an `Expanded`/`Spacer` pair and the
+   zero-bar branch #1271 had to guard.
+
+   This satisfies the AC forbidding a box-adaptive donut by being strictly
+   stronger than it: shrinking the chart to its slot silences the gate while
+   leaving a useless chart on screen, whereas deleting it withdraws the claim.
+   The Statistics twin still has both the bar and its own band-distribution donut;
+   the same two questions on that surface are separate work (§2.10f is the
+   precedent for how much hand measurement it costs).
+
+4. **An overflow number is a lower bound on the visual damage.** The gate reported
+   `+9.0px bottom` and the screenshot was far worse: the donut, fixed at 120px
+   inside an `Expanded` with ~40px to give, was `Center`ed — and `Center` spills an
+   oversized child in **both** directions, so it painted over the 6GHz radio block
+   above it and only the 9px that fell past the card's bottom edge was ever
+   reported. §2.10a point 3's shape (fixed-size gauge inside an `Expanded` that
+   cannot pay) hides most of itself when the gauge is centred. Read the render, not
+   just the incident list — which is why this branch dumps PNGs (`saveCardScreenshot`).
+
+5. **A tab can scroll or it can hold a vertical `Expanded`; there is no third
+   option, and that is why the flag is per tab.** Tabbed cards shipped with
+   `scrollable: false` because their charts and lists sit in `Expanded`, which
+   asserts under the unbounded height a `SingleChildScrollView` hands its child —
+   so content taller than the grid-fixed card had nowhere to go but outside the
+   box. `_ScrollableCardContent` gives tabbed content the viewport height as a
+   **floor** (`ConstrainedBox(minHeight: constraints.maxHeight)`, no ceiling), so a
+   shrink-wrapping `Column` still fills the card exactly as before while being free
+   to grow. What that cannot do is keep flex working, and the apparent third option
+   was measured rather than assumed: `SliverFillRemaining(hasScrollBody: false)`
+   promises a tight `max(viewport, intrinsic)` height, queries
+   `getMaxIntrinsicHeight`, and throws through the `LayoutBuilder`s that
+   `LayoutBlock`, the charts and `CardDensityHost` are built from — **784 gate
+   cases failed** on that assertion before it was reverted. So a tab opts in only
+   after its content has been given real heights, which is a per-tab property:
+   within this one card the Channels tab converts while Signal and Speed still hand
+   a `ListView` and a bar chart the whole box. A card-level flag would have forced
+   all three together, or none.
+
+   The affordance is `Scrollbar(thumbVisibility: true)`, and it is free on cards
+   that fit: `thumbVisibility` pins the fade-out animation open, but
+   `ScrollbarPainter.paint` still returns early unless
+   `maxScrollExtent - minScrollExtent > precisionErrorTolerance`, so nothing is
+   painted while the content fits. Article XIV was searched first: `ui_kit_library`
+   exports no scroll-affordance component (`AppTooltip` is the nearest neighbour,
+   and ui_kit uses the raw `Scrollbar` internally too), so a gradient fade edge is a
+   component to propose upstream, not to invent here.
+
+6. **Converting an overflow into a scroll makes the gate go quiet, so the
+   conversion owes a measurement the gate cannot make.** A scrolling region has
+   unbounded height by construction: nothing inside it can report a `RenderFlex`
+   overflow, ever. The same tri-band fixture that reported `+9.0px` now reports
+   clean at all 26 locales, and it would report clean if the content were 300px
+   too tall. Measured from the other side, `CardTab.scrollable: false` on this tab
+   leaves **all 211** of the card's gate cases green — the ratchet is blind to the
+   mechanism it depends on. This is §2.6d's "the gate cannot see illegibility" in a
+   new place, and it is answered the same way, with an instrument that measures the
+   thing directly: `cardContentScrollShortfall` returns how far the content exceeds
+   the viewport, asserted in the readability suite. Default and tri-band profiles
+   report **0.0px** at every width and locale (tri-band fits with ~120px to spare
+   once the donut is gone), so a six-radio profile — 177–275px short across the
+   four width × locale combinations — supplies the load the net is verified under.
+   It is deliberately **not** in `kCardDataProfileSweeps`: coordinates recorded
+   against hardware nobody sells become allowlist entries no ticket can clear.
+
+7. **Compressing the client count moved the wrap, so the geometry expectations had
+   to be re-taken — the same lesson as §2.10f finding 1, one ticket later.** The
+   count is now an icon plus a numeral beside the band (`AppIcon.font`
+   `AppFontIcons.devices` at 14px, `AppGap.xxs`, `bodySmall`) instead of a
+   `clientsCount` sentence on the row below, which is what lets the SNR line be a
+   plain `AppText` with no sibling — no `Expanded`, no `Spacer`, and none of
+   #1258's spaceBetween cliff. Two measured consequences: the sentence was costing
+   ~50px of a 235px content width to name the tab's own subject, and the ~29px the
+   icon pair adds to the band row pushes the 5GHz block from one run to two at
+   288px `en` (at 261px both bands already took two). Nothing overflows — that is
+   the `Wrap` working — but the run structure a #1266 assertion depended on is now
+   different, and the test states the new one rather than being relaxed.
+   Accessibility is not the thing compressed: the row is wrapped in
+   `Semantics(label: clientsCount(n), excludeSemantics: true)`, so a screen reader
+   still hears "3 clients", and the parity test's `countIsCompact` branch pins both
+   halves — the visible numeral **and** the label — because an icon with a naked
+   number and no accessible name is exactly the regression that would otherwise
+   pass.
+
+8. **Two ways a mutation ledger lies, both hit on this branch.**
+   - *The oracle stops discriminating without failing.* #1266's `stretch` invariant
+     compared the band row's `Wrap` width against its enclosing `Column`. Removing
+     the SNR bar removed the second row's `Expanded`, and under
+     `CrossAxisAlignment.start` both boxes then shrink-wrap to the same width —
+     measured 204.888px either way, so the assertion passed on the broken tree as
+     well. It now compares the block's **two rows** to each other (Wrap width
+     against the SNR text's width), mutation-verified at 65.207 vs 204.888. §2.10f
+     finding 2 named two ways to write a probe that is blind by construction; this
+     is a third, and the one that does not require writing the probe badly — an
+     unrelated change to the subtree took the independence away. **Re-run the
+     ledger after changing the tree, not only after changing the test.**
+   - *The mutation does not land.* A scripted replace of `scrollable: true` matched
+     nothing (the real indent differed), the suite was re-run, and 15 green was
+     recorded as evidence that the flag was not load-bearing — which is the
+     opposite of the truth. A ledger row is only a measurement if the mutation is
+     shown to have applied; the confirming `grep` is now part of taking one. The
+     screenshot equivalent bit at the same time: `saveCardScreenshot` returns early
+     when the file exists, so the "after" images were the "before" ones until
+     `build/shots_1267` was removed.
+
 ### 2.11 fl_chart's coordinates get a primary plan and a documented fallback
 
 Six of `firewall_overview`'s remaining coordinates originate inside fl_chart
@@ -2156,6 +2373,7 @@ addition — it changes no card's rendering until a threshold is declared.
 | #1228 | `ethernet_ports` ×2 sites (§2.12) — **implemented** | 52 |
 | #1229 | `wifi_performance` ×2 sites (§2.10b) — **implemented** | 45 |
 | #1266 | `wifi_performance` Channels tab: localize `'Ch '` + harden (§2.10c) — **implemented** | 0 (net) |
+| #1267 | Second data profile for the gate + what the Channels tab drops at that density (§2.7, §2.10g) — **implemented** | 0 (+54 cases) |
 | #1234 | `system_status` remaining ×3 sites (§2.10d) — **implemented** | 34 |
 | #1236 | `lan_info` + `device_info` card-own (§2.10d) — **implemented** | 29 |
 | #1237 | `time_settings` card-own (§2.10d) — **implemented** | 21 |
@@ -2237,6 +2455,16 @@ coordinate to hide behind.
 coordinates (3, by localizing a hardcoded string) and removes them again in the
 same change. It belongs here rather than in Track B because the ratchet is what
 constrains it — see §2.10c for why the two halves cannot ship separately.
+
+#1267 clears nothing either, and is here for the same reason from the other
+direction: it grows the gate's *domain* (1644 → 1698 cases, a data dimension
+alongside width and locale) and the ratchet is what constrains how — hence opt-in
+per card and `@profile`-namespaced keys, so no closed ticket's arithmetic moves
+(§2.7, §2.10g). Its own coordinate is one the default profile could never have
+produced. Two later tickets sit in this track without a row of their own because
+they are the Statistics twins of entries that have one: #1270 (§2.10f) and #1271,
+which is not a layout ticket at all — it is the shared SNR aggregation the two
+surfaces had drifted apart on, found while measuring #1267's tab.
 
 #1225 lands first — not because it re-baselines (it does not, §1.6) but so that
 the invariant holds by construction and any future shift is attributable. #1226

@@ -3,13 +3,19 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/page/dashboard/models/display_mode.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_widget_specs.dart';
+// Only `AppCard` is wanted here — the card's own root, used to scope finders to
+// the card rather than the pump harness around it.
+import 'package:ui_kit_library/ui_kit.dart' show AppCard;
 
 import '../../../../util/app_test_fonts.dart';
+import '../../../../util/dashboard/card_data_profiles.dart';
 import '../../../../util/dashboard/dashboard_card_probe.dart';
+import '../../../../util/overflow_probe.dart';
 
 /// WiFi Performance readability (#1229, extended by #1266).
 ///
@@ -56,6 +62,11 @@ import '../../../../util/dashboard/dashboard_card_probe.dart';
 ///   | Channels `Column`: `stretch` → `start` (#1266)    | 1 fail    | green    |
 ///   | `loc(context).channel` → `'Ch '` (#1266)         | 4 fail    | green    |
 ///   | Channels `Wrap` → `Row` + `Spacer`, localized     | 1 fail    | 3 fail   |
+///   | `CardTab.scrollable: false` on Channels (#1267)    | 2 fail    | green    |
+///   | drop the band's icon + client count (#1267)        | green     | green    |
+///
+/// The gate column is this card's own 211 cases (157 default-profile + the 54
+/// tri-band ones #1267 added); "green" means all 211 passed.
 ///
 /// The fourth row is the instructive one, and it is why the second differs from
 /// the obvious guess. Reverting to a bare `Row` does **not** clip anything: a
@@ -68,7 +79,7 @@ import '../../../../util/dashboard/dashboard_card_probe.dart';
 /// wrap each entry in `Flexible` and keep the single `Row`. Now the entries are
 /// flex children, each takes a quarter of 261px, the inner `Flexible` binds, and
 /// every tier name ellipsizes to a stub — in `en` too, not just the long
-/// translations. All 157 wifi_performance gate cases stay green. That is the
+/// translations. All 211 wifi_performance gate cases stay green. That is the
 /// shape a well-meaning "just make it fit" edit lands on, and only this file
 /// fails it.
 ///
@@ -83,8 +94,22 @@ import '../../../../util/dashboard/dashboard_card_probe.dart';
 /// The `stretch` → `start` row is the subtlest of the set. `spaceBetween` is a
 /// no-op under loose width constraints, so dropping the `stretch` slides the
 /// channel readout left to sit one `spacing` gap after the band label, in every
-/// locale, while overflowing nothing — a pure visual regression that all 157
+/// locale, while overflowing nothing — a pure visual regression that all 211
 /// gate cases pass.
+///
+/// The two #1267 rows are a matched pair about what a *green* gate means here.
+///
+/// `scrollable: false` fails two tests in this file and nothing in the gate — and
+/// the gate's silence is by construction, not by luck: removing the donut left
+/// every profile the gate sweeps short enough to fit, so no gate case is tall
+/// enough to need the scroll net. The load that exercises it (`sixRadioProfile`)
+/// deliberately lives here instead, because coordinates recorded against a router
+/// nobody sells would be allowlist entries no ticket could ever clear.
+///
+/// Dropping the band's icon and client count is green *here* — deliberately. That
+/// count is the parity claim, and `wifi_snr_render_parity_test.dart` fails on it
+/// (1 test), including the semantics label that keeps a bare numeral accessible.
+/// The row is recorded so the next reader does not assume this file guards it.
 void main() {
   setUpAll(() async {
     // Real fonts: under the Ahem block font every glyph is one square em, so what
@@ -99,14 +124,15 @@ void main() {
   /// Pumps the card at the narrowest width the grid ever gives its min span —
   /// the worst case the gate measures, and where degradation is most aggressive.
   /// One pump, as the gate does.
-  Future<void> pumpNarrowest(
+  Future<List<OverflowIncident>> pumpNarrowest(
     WidgetTester tester, {
     required int tabIndex,
     required Locale locale,
-  }) async {
+    List<Override> extraOverrides = const [],
+  }) {
     final narrowest =
         narrowestRealizationOf(constraints.minColumns, minScreen: 0)!;
-    await probeCardOverflow(
+    return probeCardOverflow(
       tester,
       cardId: cardId,
       widthCase: CardWidthCase(
@@ -118,6 +144,7 @@ void main() {
       cardHeightRows: constraints.minHeightRows,
       tabIndex: tabIndex,
       locale: locale,
+      extraOverrides: extraOverrides,
     );
   }
 
@@ -314,8 +341,8 @@ void main() {
                 '${texts.map((t) => t.data).toList()}');
 
         // `<channel> <n> · <bandwidth>` and the SNR readout are unique to the
-        // per-radio rows (the header badge and the donut centre also mention
-        // clients, so a client-count match alone would not be).
+        // per-radio rows (the header badge also reports clients — a total — so a
+        // client-count match alone would not be).
         //
         // Matched on the localized `channel` string, not on `'Ch '`: that literal
         // is exactly what #1266 removed, and a test that still recognised it
@@ -402,14 +429,16 @@ void main() {
           texts.where((t) => t.data!.startsWith('${l.channel} ')).toList();
       expect(channels, isNotEmpty);
 
+      var sharedRuns = 0;
       for (final band in bands) {
         final bandRect = rectOf(tester, band);
-        final sameRun = channels.where((c) =>
-            (rectOf(tester, c).center.dy - bandRect.center.dy).abs() < 2);
-        expect(sameRun, isNotEmpty,
-            reason: 'at the preferred width every block should still be one '
-                'run, so band "${band.data}" should share its line with its '
-                'channel readout.');
+        // Ancestor finders walk outward from the descendant, so `.first` is the
+        // innermost — the per-radio block's own Column, not the tab's.
+        final block = find
+            .ancestor(of: find.byWidget(band), matching: find.byType(Column))
+            .first;
+        final wrapRect = tester.getRect(find.ancestor(
+            of: find.byWidget(band), matching: find.byType(Wrap)));
 
         // The measurement that actually detects a lost `stretch`, and the reason
         // it is not "the channel sits well right of the band": the channel string
@@ -417,27 +446,200 @@ void main() {
         // row has shrink-wrapped. The comparison has to be against the width the
         // row was *offered*.
         //
-        // The block's `Column` is that reference under either alignment: the
-        // second row holds an `Expanded` loader, so it takes the full offered
-        // width regardless, and the `Column` shrink-wraps to it. So the `Wrap`
-        // matching the `Column`'s width is exactly the claim "the Wrap was handed
-        // a tight width", and it is what `spaceBetween` needs to do anything.
-        final wrapRect = tester.getRect(find.ancestor(
-            of: find.byWidget(band), matching: find.byType(Wrap)));
-        // Ancestor finders walk outward from the descendant, so `.first` is the
-        // innermost — the per-radio block's own Column, not the tab's.
-        final columnRect = tester.getRect(find
-            .ancestor(of: find.byWidget(band), matching: find.byType(Column))
-            .first);
-        expect(wrapRect.width, greaterThanOrEqualTo(columnRect.width - 1.0),
-            reason: 'the band/channel row for "${band.data}" is narrower than '
-                'its own block (${wrapRect.width} vs ${columnRect.width}), so '
-                'the Wrap shrink-wrapped and `spaceBetween` had no free space '
-                'to distribute. The enclosing Column has stopped stretching.');
+        // The block's **other** row is that reference. Under `stretch` the Column
+        // hands both rows a tight width, so the `Wrap` and the SNR text measure
+        // the same; under `start` each shrink-wraps to its own content, and the
+        // SNR readout is ~70px against the row's ~230px. Comparing the two rows
+        // is what makes this local — an earlier revision compared the `Wrap` to
+        // its `Column`, which stopped discriminating the moment #1267 removed the
+        // second row's `Expanded` loader: without a full-width child, `start`
+        // shrinks the Column to the Wrap's own width and the two agree either
+        // way. Mutation-checked below, not assumed.
+        final snrRect = tester.getRect(find.descendant(
+            of: block,
+            matching: find.byWidgetPredicate(
+                (w) => w is Text && (w.data ?? '').contains(_snrMarker))));
+        expect(wrapRect.width, closeTo(snrRect.width, 1.0),
+            reason: 'the band/channel row for "${band.data}" and its SNR row '
+                'were laid out at different widths (${wrapRect.width} vs '
+                '${snrRect.width}), so the block is no longer handing its rows '
+                'a tight width: the Wrap shrink-wrapped and `spaceBetween` has '
+                'no free space to distribute. The enclosing Column has stopped '
+                'stretching.');
+
+        // Whether the channel readout shares the band's line is a function of
+        // how long the translation is — since #1267 the band shares run 1 with
+        // its client count, which costs ~29px, so at 288px `en` the 5GHz block
+        // (`Channel 36 (Auto) · 160MHz`) takes a second run where it used to
+        // fit. That is not a defect: the run below is still inside the same
+        // block, still attributable, and the tab has the height to spend. What
+        // must not happen is the `spaceBetween` silently becoming a no-op, so
+        // the right-edge claim is asserted on every band that *does* share a
+        // run, and at least one must.
+        final sameRun = channels.where((c) =>
+            (rectOf(tester, c).center.dy - bandRect.center.dy).abs() < 2);
+        if (sameRun.isEmpty) continue;
+        sharedRuns++;
         expect(rectOf(tester, sameRun.first).right,
             greaterThanOrEqualTo(wrapRect.right - 1.0),
             reason: 'the channel readout does not reach the right edge of its '
                 'row, so it is no longer where the old `Spacer` put it.');
+      }
+
+      expect(sharedRuns, greaterThan(0),
+          reason:
+              'no block put its band and channel readout on one line at the '
+              'preferred width, so nothing here exercised `spaceBetween` at '
+              'all. Either the rows grew or the width shrank; re-measure before '
+              'relaxing this.');
+    });
+  });
+
+  group('the Channels tab absorbs a taller router (#1267)', () {
+    // This group exists because #1267's fix makes the gate go quiet.
+    //
+    // On a tri-band router at the 261px card in `tr`, this tab overflowed by
+    // `+9.0px` — and the screenshot was worse than the number: the donut, fixed
+    // at 120px inside an `Expanded` that had ~40px to give, was `Center`ed, and a
+    // `Center` spills its oversized child in *both* directions, so it painted
+    // over the 6GHz block and hid that radio's SNR entirely. Only the part that
+    // fell past the bottom edge was ever reported.
+    //
+    // The fix had two halves, and they are measured separately below because they
+    // are not equally strong:
+    //
+    //  1. The donut is gone — its slices restated client counts printed two lines
+    //     above them. That alone closes the incident, and closes it *better* than
+    //     scrolling would have: the tri-band tab now fits, with nothing below the
+    //     fold. `shortfall == 0` is that claim, and it is stronger than the
+    //     gate's "no overflow" — a card whose content sits past its viewport
+    //     overflows nothing at all.
+    //  2. The tab scrolls, which is the net for content no fixture here predicts:
+    //     a fourth radio, a locale nobody has translated yet. A net with no load
+    //     on it is untested, so the second test hangs a six-radio router on it.
+    //
+    // Neither reading is available to the overflow gate: a scrolling region
+    // reports no RenderFlex overflow however tall its content grows, so all 52
+    // tri-band gate cases are green now and would stay green if the content grew
+    // by 200px. `cardContentScrollShortfall` is what replaces that signal.
+    testWidgets('tri-band fits with nothing below the fold', (tester) async {
+      final locale = _localeFor('tr');
+      final incidents = await pumpNarrowest(tester,
+          tabIndex: 2,
+          locale: locale,
+          extraOverrides: triBandProfile.overrides());
+
+      expect(incidents, isEmpty,
+          reason: 'the coordinate #1267 was opened for is overflowing again: '
+              '${incidents.join(', ')}');
+
+      // The profile reached the render. Without this the whole test would pass
+      // just as happily on the two-radio fixture, which fits trivially.
+      for (final marker in triBandProfile.markers) {
+        expect(find.textContaining(marker), findsWidgets,
+            reason: 'the tri-band override did not reach the tree (looked for '
+                '"$marker"), so this test is measuring the default fixture.');
+      }
+
+      final shortfall = cardContentScrollShortfall(tester);
+      expect(shortfall, isNotNull,
+          reason:
+              'the Channels tab has no scrolling content region, so content '
+              'taller than the card has nowhere to go — it is painted outside '
+              'the box again. Check `CardTab.scrollable` at the card\'s '
+              '`DashboardCardTemplate.tabbed(...)` call site.');
+      expect(shortfall, 0.0,
+          reason: 'a tri-band router now has to scroll this tab at the card\'s '
+              'own minimum size, so its third radio is below the fold on '
+              'arrival. Scrolling is the net for shapes no fixture predicts, not '
+              'the reading experience for hardware we ship — if this is '
+              'deliberate, the card\'s `minHeightRows` is the thing to change.');
+
+      // Three radios, three complete readouts, none clipped — the 6GHz one being
+      // the reading the donut used to cover.
+      final texts = renderedTexts(tester);
+      final bands =
+          texts.where((t) => _bandRe.hasMatch(t.data!.trim())).toList();
+      final snrs = texts.where((t) => t.data!.contains(_snrMarker)).toList();
+      expect(bands.map((t) => t.data), containsAll(['2.4GHz', '5GHz', '6GHz']));
+      expect(snrs, hasLength(3),
+          reason: 'each of the three radios needs its own SNR readout. '
+              'Rendered: ${texts.map((t) => t.data).toList()}');
+
+      // Inside the viewport, not merely un-overflowed: the donut's spill is the
+      // reason this is measured against the viewport rect rather than trusted.
+      final viewport = cardContentViewport(tester);
+      for (final t in [...bands, ...snrs]) {
+        expect(isClipped(tester, t), isFalse,
+            reason: '"${t.data}" is clipped at this width.');
+        final rect = rectOf(tester, t);
+        expect(rect.top, greaterThanOrEqualTo(viewport.top - 1.0),
+            reason: '"${t.data}" starts above the content viewport.');
+        expect(rect.bottom, lessThanOrEqualTo(viewport.bottom + 1.0),
+            reason: '"${t.data}" ends ${rect.bottom - viewport.bottom}px below '
+                'the viewport, so it is only readable after scrolling — which '
+                'contradicts the shortfall of 0 measured above.');
+      }
+    });
+
+    testWidgets('a six-radio router scrolls, and every radio stays reachable',
+        (tester) async {
+      // Six radios is one past today's hardware (see `testRadiosSixRadio`), and
+      // that is the point: it is the smallest load that puts this tab clearly
+      // past its viewport, so the net is measured rather than assumed.
+      final incidents = await pumpNarrowest(tester,
+          tabIndex: 2,
+          locale: _localeFor('tr'),
+          extraOverrides: sixRadioProfile.overrides());
+
+      expect(incidents, isEmpty,
+          reason: 'content taller than the card is overflowing instead of '
+              'scrolling — the tab is no longer opted in, or something in it '
+              'fills vertically again: ${incidents.join(', ')}');
+
+      final shortfall = cardContentScrollShortfall(tester);
+      expect(shortfall, isNotNull,
+          reason: 'no scrolling content region, so this router\'s radios are '
+              'painted outside the card.');
+      expect(shortfall, greaterThan(0.0),
+          reason: 'six radio blocks fit the card without scrolling, so this '
+              'test no longer loads the mechanism it exists to test. Add radios '
+              'rather than deleting the assertion.');
+
+      // Silent scrolling is the "clean but unreadable" failure this epic keeps
+      // meeting: nothing looks broken, so nobody knows to look. The thumb only
+      // paints when there is extent to scroll — `ScrollbarPainter.paint` returns
+      // early otherwise — so asserting the widget is present is asserting the
+      // affordance appears exactly here and not on cards that fit.
+      expect(
+          find.descendant(
+              of: find.byType(AppCard), matching: find.byType(Scrollbar)),
+          findsOneWidget,
+          reason:
+              'the scrolling region has no scrollbar, so three of these six '
+              'radios are hidden with nothing on screen saying so.');
+
+      final texts = renderedTexts(tester);
+      final snrs = texts.where((t) => t.data!.contains(_snrMarker)).toList();
+      expect(snrs, hasLength(6),
+          reason:
+              'a radio was dropped from the render rather than scrolled to. '
+              'Rendered: ${texts.map((t) => t.data).toList()}');
+
+      // Reachable = inside the viewport plus what can be scrolled to. Content
+      // past that is laid out and unreachable at every scroll offset, which looks
+      // exactly like scrolling and is not.
+      final viewport = cardContentViewport(tester);
+      final reachableBottom = viewport.bottom + shortfall!;
+      for (final t in snrs) {
+        final rect = rectOf(tester, t);
+        expect(isClipped(tester, t), isFalse,
+            reason: '"${t.data}" is clipped, so scrolling did not give this '
+                'content room — it only moved where it is cut off.');
+        expect(rect.bottom, lessThanOrEqualTo(reachableBottom + 1.0),
+            reason: '"${t.data}" ends ${rect.bottom - reachableBottom}px past '
+                'the furthest the user can scroll, so it cannot be read at any '
+                'offset. Scrollable extent: ${viewport.height + shortfall}px.');
       }
     });
   });

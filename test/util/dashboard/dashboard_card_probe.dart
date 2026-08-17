@@ -306,38 +306,97 @@ List<Rect> layoutBlockRects(WidgetTester tester) {
   ];
 }
 
-/// The pumped card's own content viewport — the shorter of the two scroll views
-/// in the tree ([buildDashboardCardApp] wraps the whole card in one as well).
-///
-/// The count is asserted rather than assumed. Picking "the shortest" out of an
-/// empty finder would return [Rect.largest], and every visibility assertion made
-/// against it would then pass against an infinite viewport — the failure mode is
-/// a silently green test, not a red one, so it has to be caught here. Two is the
-/// exact expected number: one from the harness, one from `DashboardCardTemplate`.
-/// If the template stops scrolling its content, or anything inside the card
-/// starts, this fails loudly and the reader learns which assumption broke.
+/// The pumped card's own content viewport — the rect of the vertical
+/// `SingleChildScrollView` inside [AppCard].
 ///
 /// Use this — not the content column's own bottom — when asking whether
 /// something is *visible*: `DashboardCardTemplate` scrolls, so a section can sit
 /// below the viewport while overflowing nothing, which is precisely the failure
 /// the gate cannot see.
+///
+/// ## Why it is identified this way
+///
+/// This used to be "the shorter of the two scroll views in the tree", asserting a
+/// count of exactly two — the pump harness's page-level one plus the card's. That
+/// held only while tabbed cards did not scroll their content. Since #1267 the WiFi
+/// Performance Channels tab does, and a tabbed card also carries a *horizontal*
+/// scroll view for its tab strip (`AppTabs(isScrollable: true)`), so the count is
+/// three and "the shortest" would have picked the tab strip — a ~40px rect at the
+/// top of the card, against which every "is it visible" assertion fails for the
+/// wrong reason.
+///
+/// Scoping to [AppCard] drops the harness's, and the axis filter drops the tab
+/// strip's. The result is still asserted to be exactly one rather than assumed:
+/// picking from an empty finder would return [Rect.largest] and every visibility
+/// assertion would pass against an infinite viewport — a silently green test,
+/// which is the failure mode worth being loud about.
 Rect cardContentViewport(WidgetTester tester) {
-  final finder = find.byType(SingleChildScrollView);
-  final count = finder.evaluate().length;
-  expect(
-    count,
-    2,
-    reason: 'expected exactly two scroll views — the pump harness and the card '
-        'content. Found $count, so "the shortest" no longer identifies the '
-        'card\'s own viewport and these measurements are meaningless.',
+  final finder = find.descendant(
+    of: find.byType(AppCard),
+    matching: find.byType(SingleChildScrollView),
   );
-
-  var best = Rect.largest;
-  for (var i = 0; i < count; i++) {
-    final r = tester.getRect(finder.at(i));
-    if (r.height < best.height) best = r;
+  final rects = <Rect>[];
+  for (var i = 0; i < finder.evaluate().length; i++) {
+    final scrollView = finder.at(i);
+    final state = tester.state<ScrollableState>(
+      find.descendant(of: scrollView, matching: find.byType(Scrollable)),
+    );
+    if (state.position.axis != Axis.vertical) continue;
+    rects.add(tester.getRect(scrollView));
   }
-  return best;
+
+  expect(
+    rects,
+    hasLength(1),
+    reason: 'expected exactly one vertical scroll view inside the card — its '
+        'content region. Found ${rects.length}, so this no longer identifies '
+        'the card\'s own viewport and these measurements are meaningless.',
+  );
+  return rects.single;
+}
+
+/// How far the pumped card's content exceeds its own viewport, in logical px —
+/// 0.0 when it fits, and `null` when the card has no scrolling content region.
+///
+/// ## Why this number has to be asserted somewhere
+///
+/// A scrolling region cannot report a RenderFlex bottom overflow, because there
+/// is no flex being overflowed: the content simply gets taller and the viewport
+/// scrolls. That is the point of making the region scroll (#1267) — and it is also
+/// how the defect that motivated it becomes *invisible* to the gate. The tri-band
+/// Channels tab overflowed by `+9.0px` before, and now the same fixture reports
+/// clean at every one of the 26 locales it is swept at.
+///
+/// So the two readings are not interchangeable, and green on the gate no longer
+/// means "the content fits". Whichever test cares about that distinction has to
+/// read this instead: > 0 means the user must scroll to see the rest, which is a
+/// design decision when it is deliberate and a regression when it is not.
+///
+/// ## Scoped to the card's own region, on purpose
+///
+/// Only `SingleChildScrollView`s **inside** [AppCard] count, which excludes the
+/// pump harness's page-level scroll view (an ancestor of the card, whose extent is
+/// about the surface, not the card). It also excludes the Signal tab's
+/// `ListView` — a card region that has always scrolled by design, and whose extent
+/// would otherwise be reported here as if it were a shortfall.
+double? cardContentScrollShortfall(WidgetTester tester) {
+  final finder = find.descendant(
+    of: find.byType(AppCard),
+    matching: find.byType(SingleChildScrollView),
+  );
+  final states = tester.stateList<ScrollableState>(
+    find.descendant(of: finder, matching: find.byType(Scrollable)),
+  );
+  if (states.isEmpty) return null;
+
+  var worst = 0.0;
+  for (final state in states) {
+    final position = state.position;
+    if (!position.hasContentDimensions) continue;
+    if (position.axis != Axis.vertical) continue;
+    worst = math.max(worst, position.maxScrollExtent);
+  }
+  return worst;
 }
 
 // --- Tab registry ------------------------------------------------------------
@@ -396,9 +455,13 @@ int visibleTabCount(WidgetTester tester) {
 /// listed in both takes the value passed here (Riverpod resolves duplicates
 /// last-wins — verified, not assumed). It exists for tests about *data* rather
 /// than geometry: #1271 needs a client with no noise reading, and the kitchen
-/// sink deliberately gives every client one. The gate must never pass it — the
-/// whole point of one shared fixture is that all 18 cards are measured against
-/// the same data.
+/// sink deliberately gives every client one.
+///
+/// The gate's own default sweep must never pass it: the whole point of one shared
+/// fixture is that all 18 cards are measured against the same data. Its **named
+/// second profiles** are the one exception, and they are declared in
+/// `card_data_profiles.dart` rather than inline — a data profile the gate sweeps
+/// is a ratchet dimension, not a test-local convenience (#1267).
 Widget buildDashboardCardApp({
   required String cardId,
   required Locale locale,
@@ -485,6 +548,10 @@ Widget buildDashboardCardApp({
 /// [cardOverride] is forwarded to [buildDashboardCardApp] — see there for when
 /// passing it is legitimate and when it defeats the point.
 ///
+/// [extraOverrides] is forwarded to [buildDashboardCardApp] — the gate's second
+/// data profile (#1267) is passed here, and nothing else in the sweep may use it
+/// (see there).
+///
 /// [after] runs once the card has settled, still inside the overflow collection.
 /// It exists for interactions that are themselves layout events — #1239's popup
 /// form opens the card's full form in a dialog, and an overflow raised while that
@@ -502,6 +569,7 @@ Future<List<OverflowIncident>> probeCardOverflow(
   Key? repaintKey,
   Widget? cardOverride,
   CardDensity? density,
+  List<Override> extraOverrides = const [],
   Future<void> Function(WidgetTester tester)? after,
 }) {
   final surface =
@@ -521,6 +589,7 @@ Future<List<OverflowIncident>> probeCardOverflow(
         repaintKey: repaintKey,
         cardOverride: cardOverride,
         density: density,
+        extraOverrides: extraOverrides,
       ),
     );
     await settleIgnoringAnimations(tester);

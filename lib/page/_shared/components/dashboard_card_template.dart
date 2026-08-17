@@ -46,6 +46,7 @@ class CardTab {
   const CardTab({
     required this.label,
     required this.content,
+    this.scrollable = false,
   });
 
   /// Tab label displayed in the tab bar.
@@ -53,6 +54,16 @@ class CardTab {
 
   /// Tab content widget.
   final Widget content;
+
+  /// Whether [content] scrolls when it is taller than the card (#1267).
+  ///
+  /// Per tab, not per card, because the property that decides it is per tab:
+  /// content can only scroll if it shrink-wraps, and a tab that fills the card
+  /// with a vertical `Expanded` cannot (see [_ScrollableCardContent]). Within one
+  /// card, `wifi_performance`'s Channels tab shrink-wraps while its Signal and
+  /// Speed tabs still hand a `ListView` and a bar chart the whole box — a
+  /// card-level flag would have forced all three to convert together, or none.
+  final bool scrollable;
 }
 
 /// Standardized dashboard card template with fixed header, flexible body,
@@ -140,6 +151,9 @@ class DashboardCardTemplate extends StatelessWidget {
     required int selectedTabIndex,
     required ValueChanged<int> onTabChanged,
     TabDisplayMode tabDisplayMode = TabDisplayMode.segmented,
+    // In tabbed mode this is an "all tabs" shortcut; the per-tab
+    // [CardTab.scrollable] is the finer grain and the one #1267 uses, because
+    // whether content *can* scroll is a property of the tab, not the card.
     this.scrollable = false,
     this.scrollPhysics,
     this.contentPadding,
@@ -334,10 +348,22 @@ class DashboardCardTemplate extends StatelessWidget {
 
   Widget _buildScrollableContent(BuildContext context) {
     final Widget bodyContent;
+    // Tabbed content fills the card by design — its charts, donuts and lists sit
+    // in `Expanded`, which asserts under the unbounded height a
+    // `SingleChildScrollView` hands its child. That is why tabbed mode shipped
+    // with `scrollable: false` and why its content had nowhere to go: the card's
+    // height is fixed by the grid, so anything taller was painted outside the
+    // box — over the text above it, since a `Center`ed child spills in *both*
+    // directions (#1267, measured on the tri-band profile at the 261px card).
+    //
+    // So a tab scrolls when *it* says it shrink-wraps, independently of its
+    // neighbours in the same card.
+    bool shouldScroll = scrollable;
 
     if (_isTabbed) {
-      // Tab content - don't wrap in scroll (charts need fixed space)
-      return _tabs![_selectedTabIndex!].content;
+      final tab = _tabs![_selectedTabIndex!];
+      bodyContent = tab.content;
+      shouldScroll = shouldScroll || tab.scrollable;
     } else if (_isMultiSection) {
       bodyContent = _buildMultiSectionContent(context);
     } else {
@@ -347,12 +373,16 @@ class DashboardCardTemplate extends StatelessWidget {
     }
 
     // Return content directly if scrollable is false (e.g., Topology)
-    if (!scrollable) {
+    if (!shouldScroll) {
       return bodyContent;
     }
 
-    return SingleChildScrollView(
-      physics: scrollPhysics ?? const ClampingScrollPhysics(),
+    // [_ScrollableCardContent] takes the fill-viewport route for tabbed content,
+    // so a tab that used to overflow scrolls instead and nothing paints on top of
+    // anything.
+    return _ScrollableCardContent(
+      physics: scrollPhysics,
+      fillViewport: _isTabbed,
       child: bodyContent,
     );
   }
@@ -512,6 +542,118 @@ class DashboardCardTemplate extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// The card's scrolling content region, and the affordance that says so (#1267).
+///
+/// ## Why the region scrolls at all
+///
+/// A dashboard card's height is fixed by the grid, so "the content is taller than
+/// the card" is a state every card can reach — a longer locale, a third radio, one
+/// more port. Single-content and multi-section cards have always scrolled in that
+/// state ([DashboardCardTemplate.scrollable] defaults to `true`); tabbed cards did
+/// not, and paid for it by painting outside their box: at the 261px card in `tr`,
+/// on a tri-band router, the Channels donut was drawn over the radio block above
+/// it and bled 9px out of the bottom (#1267, and a `Center`ed child spills in both
+/// directions, which is why the text above was the casualty). A user who would
+/// rather not scroll can enlarge the card — the grid already allows that, and it
+/// is a choice, where painting over text is not.
+///
+/// ## Why `Expanded` fills and scrolling are mutually exclusive
+///
+/// [fillViewport] gives the content the viewport height as a **floor** so a
+/// shrink-wrapping `Column` still fills the card as it used to, instead of
+/// collapsing to its children. What it cannot do is keep a vertical `Expanded`
+/// working: flex needs a bounded height to divide, and a scroll view's is
+/// unbounded by definition. There is no third option —
+/// `SliverFillRemaining(hasScrollBody: false)` looks like one (tight
+/// `max(viewport, intrinsic)` height), and it was tried and reverted: it queries
+/// `getMaxIntrinsicHeight`, which throws through the `LayoutBuilder`s that
+/// `LayoutBlock`, the charts and `CardDensityHost` are built from. 784 gate cases
+/// failed on that assertion, measured, not guessed.
+///
+/// So a tab opts in **after** its content is given real heights — which is why
+/// [CardTab.scrollable] is per tab. `wifi_performance`'s Channels tab is
+/// converted (#1267). Its Signal and Speed tabs, and every tab of
+/// `firewall_overview`, `network_health`, `device_analytics`, `system_status` and
+/// `traffic_analysis`, still hand a list or a chart the whole box with `Expanded`
+/// and stay opted out. Each needs an explicit height decided by measurement
+/// rather than a mechanical edit, and that is tracked separately.
+///
+/// ## The affordance
+///
+/// A card that scrolls with no sign of it is the "clean but unreadable" failure
+/// this epic keeps meeting: nothing looks broken, so nobody knows to look.
+/// `Scrollbar` with `thumbVisibility` is that sign, and it costs nothing on cards
+/// that fit: `thumbVisibility` pins the fade-out animation open, but
+/// `ScrollbarPainter.paint` still returns early unless
+/// `maxScrollExtent - minScrollExtent > precisionErrorTolerance`, so no thumb is
+/// painted while the content fits. It is the framework's scrollbar rather than a
+/// hand-rolled fade edge because `ui_kit_library` exports no scroll-affordance
+/// component (Article XIV — searched: `AppTooltip` is the only near neighbour, and
+/// ui_kit uses the raw `Scrollbar` internally too). A gradient edge is a component
+/// to propose upstream, not to invent here.
+class _ScrollableCardContent extends StatefulWidget {
+  const _ScrollableCardContent({
+    required this.child,
+    required this.fillViewport,
+    this.physics,
+  });
+
+  final Widget child;
+
+  /// Whether the content gets the viewport's height as a minimum. See the class
+  /// doc: tab content is written to fill the card, and would otherwise collapse
+  /// to its children's height the moment it became scrollable.
+  final bool fillViewport;
+
+  final ScrollPhysics? physics;
+
+  @override
+  State<_ScrollableCardContent> createState() => _ScrollableCardContentState();
+}
+
+class _ScrollableCardContentState extends State<_ScrollableCardContent> {
+  // Owned here rather than passed in: the scrollbar and the scroll view must
+  // share one controller, and the template is a StatelessWidget with no place to
+  // dispose one.
+  final ScrollController _controller = ScrollController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final physics = widget.physics ?? const ClampingScrollPhysics();
+
+    Widget scrollView(Widget child) => SingleChildScrollView(
+          controller: _controller,
+          physics: physics,
+          child: child,
+        );
+
+    return Scrollbar(
+      controller: _controller,
+      thumbVisibility: true,
+      child: widget.fillViewport
+          // `maxHeight` is left unbounded on purpose: the floor is what keeps a
+          // fitting layout identical to the fixed box it replaces, and the
+          // absence of a ceiling is what lets the content grow instead of
+          // overflowing.
+          ? LayoutBuilder(
+              builder: (context, constraints) => scrollView(
+                ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                  child: widget.child,
+                ),
+              ),
+            )
+          : scrollView(widget.child),
     );
   }
 }

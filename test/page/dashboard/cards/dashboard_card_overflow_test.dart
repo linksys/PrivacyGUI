@@ -12,6 +12,7 @@ import 'package:privacy_gui/page/dashboard/models/display_mode.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_widget_specs.dart';
 
 import '../../../util/app_test_fonts.dart';
+import '../../../util/dashboard/card_data_profiles.dart';
 import '../../../util/dashboard/dashboard_card_probe.dart';
 import '../../../util/dashboard/dashboard_overflow_report_generator.dart';
 import '../../../util/overflow_probe.dart';
@@ -117,8 +118,16 @@ void _loadKnownOverflowsFixture() {
 
 /// True if (card, widthLabel, tab, locale) is in the baseline — either its
 /// locale set lists [tag] explicitly, or the set is `{'*'}` (all locales).
-bool _isAllowlisted(String card, String width, int tab, String tag) {
-  final locales = _knownOverflowAllowlist['$card|$width|$tab'];
+///
+/// [profileKey] is null for the default data profile, keeping every pre-#1267 key
+/// byte-identical. A named profile's cases live under `card|width|tab@profile`, so
+/// the default profile's entry count — the number every closed ticket in this epic
+/// quotes as "N coordinates cleared" — cannot be moved by a second profile's
+/// findings (design §2.7).
+bool _isAllowlisted(String card, String width, int tab, String tag,
+    {String? profileKey}) {
+  final suffix = profileKey == null ? '' : '@$profileKey';
+  final locales = _knownOverflowAllowlist['$card|$width|$tab$suffix'];
   if (locales == null) return false;
   return locales.contains('*') || locales.contains(tag);
 }
@@ -391,6 +400,123 @@ void main() {
                   'Fix the layout (Flexible/Expanded/maxLines/ellipsis), or if '
                   'this is knowingly deferred, add "$tag" to the\n'
                   "  '${spec.id}|${wc.label}|$tab'\n"
+                  'entry of the "allowlist" map in\n'
+                  '  test/fixtures/known_overflows.json\n'
+                  'along with a "tracking" note for the card.',
+                );
+              },
+            );
+          }
+        }
+      }
+    });
+  }
+
+  // ─── Named data profiles (#1267) ──────────────────────────────────────────
+  //
+  // The sweep above is one router shape. `kCardDataProfileSweeps` adds the
+  // (card, tab) pairs worth measuring on a second one — see
+  // `card_data_profiles.dart` for why the list is opt-in per card rather than
+  // all 18, and what that deliberately does not claim.
+  //
+  // Same widths, same 26 locales, same one-pump-per-test rule as above; only the
+  // data differs. Two things are deliberately *not* shared with the default
+  // sweep:
+  //
+  //   * Allowlist keys carry an `@profile` suffix, so the default profile's
+  //     arithmetic is untouched by anything found here (see `_isAllowlisted`).
+  //   * No report collection. `OverflowReportItem` has no profile dimension, so a
+  //     second-profile item would render in the HTML report indistinguishable
+  //     from a default-profile one at the same coordinate — a worse outcome than
+  //     its absence. Profile sweeps are measured by reading the failure, which
+  //     names the profile.
+  for (final sweep in kCardDataProfileSweeps) {
+    final spec = UspWidgetSpecs.all.firstWhere((s) => s.id == sweep.cardId);
+    final rows = spec.getConstraints(DisplayMode.normal).minHeightRows;
+    final widthCases = widthCasesFor(spec);
+    final tabCount = tabCountFor(spec.id);
+    final profile = sweep.profile;
+
+    group('${sweep.cardId} overflow [${profile.key}]', () {
+      for (final tab in sweep.tabs) {
+        // A profile pinned to a tab the card no longer has would silently sweep
+        // nothing, which is the same failure mode `kTabbedCardTabCounts` exists
+        // to prevent.
+        test('tab $tab exists on ${sweep.cardId}', () {
+          expect(tab, lessThan(tabCount),
+              reason: 'the ${profile.key} profile sweeps ${sweep.cardId} tab '
+                  '$tab, but the card has $tabCount tab(s). Update '
+                  'kCardDataProfileSweeps in card_data_profiles.dart.');
+        });
+
+        // The profile's data must reach the tree, or the 52 cases below are
+        // pumping the default fixture and reporting green — see
+        // [CardDataProfile.markers]. Measured at the desktop width so nothing is
+        // absent for a density reason, in `en` because the markers are
+        // untranslated.
+        testWidgets('${profile.key} data reaches the render (tab $tab)',
+            (tester) async {
+          await probeCardOverflow(
+            tester,
+            cardId: sweep.cardId,
+            widthCase: desktopCaseFor(spec),
+            cardHeightRows: rows,
+            tabIndex: tab,
+            locale: const Locale('en'),
+            extraOverrides: profile.overrides(),
+          );
+          for (final marker in profile.markers) {
+            expect(find.textContaining(marker), findsWidgets,
+                reason: '"$marker" is absent from ${sweep.cardId} tab $tab, so '
+                    'the "${profile.key}" overrides did not reach the render. '
+                    'The sweep below would then be measuring the default '
+                    'fixture and passing for the wrong reason. Check which '
+                    'provider the card reads and that '
+                    'CardDataProfile.overrides layers over it.');
+          }
+        });
+
+        for (final wc in widthCases) {
+          for (final locale in _targetLocales) {
+            final tag = _localeTag(locale);
+            testWidgets(
+              'no overflow @${wc.label} ${wc.widthKey}px tab$tab ($tag)',
+              (tester) async {
+                final incidents = await probeCardOverflow(
+                  tester,
+                  cardId: sweep.cardId,
+                  widthCase: wc,
+                  cardHeightRows: rows,
+                  tabIndex: tab,
+                  locale: locale,
+                  extraOverrides: profile.overrides(),
+                );
+
+                final significant =
+                    incidents.where((i) => i.pixels > _tolerancePx).toList();
+                if (significant.isEmpty) return;
+
+                if (_isAllowlisted(sweep.cardId, wc.label, tab, tag,
+                    profileKey: profile.key)) {
+                  // ignore: avoid_print
+                  print(
+                    'KNOWN OVERFLOW (allowlisted) ${sweep.cardId} '
+                    '[${profile.key}] @${wc.label} ${wc.widthKey}px tab$tab '
+                    '$tag: ${significant.join(', ')} '
+                    '— ${_trackingFor(sweep.cardId)}',
+                  );
+                  return;
+                }
+
+                fail(
+                  'Dashboard card "${sweep.cardId}" overflows on the '
+                  '"${profile.key}" data profile (${profile.description}) at '
+                  '${wc.label} width (${wc.widthKey}px), tab $tab, locale '
+                  '"$tag": ${significant.join(', ')}.\n'
+                  'This coordinate is clean on the default profile — the data, '
+                  'not the width, is what breaks it.\n'
+                  'Fix the layout, or if knowingly deferred add "$tag" to the\n'
+                  "  '${sweep.cardId}|${wc.label}|$tab@${profile.key}'\n"
                   'entry of the "allowlist" map in\n'
                   '  test/fixtures/known_overflows.json\n'
                   'along with a "tracking" note for the card.',

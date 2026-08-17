@@ -505,6 +505,143 @@ final testWifiEmptyData = WifiData(
   connectionDetailMap: const {},
 );
 
+// ─── Tri-band profile (#1267) ───────────────────────────────────────────────
+
+/// [testRadios] plus a third, tri-band radio — the gate's second data profile.
+///
+/// ## Why a second radio set exists at all
+///
+/// The gate sweeps 26 locales × every width realization × every tab against
+/// **one** router shape, and [testRadios] is two radios with 2-digit channels and
+/// `160MHz` as the widest bandwidth. Every "clean" verdict it issues is a verdict
+/// about that shape, and the sweep's own thoroughness makes it read as broader
+/// than it is: #1266 found the WiFi Performance Channels tab clean in all 26
+/// locales at both widths on this profile, and overflowing on a tri-band router
+/// it had no way to express (#1267).
+///
+/// ## Why these values
+///
+/// Spread out rather than derived from the 5GHz radio, because each field is the
+/// widest thing a shipping router can put in the band/channel string:
+///
+///  - `channel: 233` with `autoChannelEnable` — 3 digits *plus* the ` (Auto)`
+///    suffix `channelDisplay` appends, which is the longest form that getter can
+///    produce ([WifiRadioUIModel.channelDisplay]).
+///  - `channelBandwidth: '320MHz'` — 6GHz-only, and one glyph wider than the
+///    `160MHz` this fixture's other radios cap out at.
+///  - a third radio at all, which is what multiplies the tab's per-radio blocks
+///    from two to three. On the card as #1266 measured it, that squeezed the
+///    band-distribution donut below them into ~40px and it painted over the
+///    block above; #1267 removed the donut, so what a third radio costs now is
+///    just its own block.
+///
+/// Spliced onto [testRadios] rather than restating it: the two profiles must
+/// differ in exactly the third radio, or a later edit to the shared two makes the
+/// comparison between profiles meaningless.
+final testRadiosTriBand = [
+  ...testRadios,
+  const WifiRadioUIModel(
+    instancePath: 'Device.WiFi.Radio.3.',
+    band: '6GHz',
+    enable: true,
+    transmitPower: -1,
+    maxBitRate: 11529,
+    channel: 233,
+    autoChannelEnable: true,
+    channelBandwidth: '320MHz',
+    supportedStandards: '802.11a/n/ac/ax/be',
+    accessPoints: [
+      WifiAccessPointUIModel(
+        enable: true,
+        ssidName: 'HomeNetwork',
+        securityMode: 'WPA3-Personal',
+        encryptionMode: 'AES',
+      ),
+    ],
+  ),
+];
+
+/// [testWifiData] with the tri-band radio set and **the same clients**.
+///
+/// The clients are deliberately unchanged, so the third radio carries none: that
+/// is both the state #1266 measured and a real one (a 6GHz radio nobody has
+/// joined yet), and it keeps the profile's single variable single. Since #1271
+/// that radio's row reads `SNR: —` with no bar rather than `SNR: 0 dB` with an
+/// empty one.
+final testWifiDataTriBand = WifiData(
+  codegenContext: testWifiData.codegenContext,
+  radioModels: testRadiosTriBand,
+  wifiClientMap: testWifiData.wifiClientMap,
+  connectionDetailMap: testWifiData.connectionDetailMap,
+);
+
+// ─── Six-radio profile: the scroll net's test load (#1267) ───────────────────
+
+/// Six radios — a router shape that exists to make the WiFi Performance Channels
+/// tab taller than the card can ever be.
+///
+/// ## Why an unrealistic router is the right fixture here
+///
+/// #1267 made that tab scroll, so content taller than the card has somewhere to
+/// go instead of being painted over the text above it. A mechanism with no load
+/// on it is untested, and after the donut was removed nothing in the repo could
+/// supply the load: three radio blocks leave roughly 120px of slack at the
+/// narrowest card, so [testRadiosTriBand] now *fits*, and the test that used to
+/// overflow is green for a reason that has nothing to do with scrolling.
+///
+/// Shipping hardware reaches four (2.4GHz + two 5GHz + 6GHz) and five with a
+/// dedicated backhaul radio, so the honest description of this fixture is "one
+/// past today's maximum". Five is the first count that overflows, and only by
+/// ~7px — close enough to the gate's 2.0px tolerance that a font-metric change
+/// could flip it, which is no basis for an assertion. Six clears the viewport by
+/// ~80px, so the test measures the mechanism rather than the margin.
+///
+/// It is deliberately **not** in the gate's sweep list (`card_data_profiles.dart`):
+/// coordinates recorded against a router nobody sells would be permanent
+/// allowlist entries nobody can ever clear.
+///
+/// Band strings repeat (three 5GHz, two 6GHz) exactly as a quad-band router
+/// reports them, and client aggregation groups by band — so of two radios both
+/// labelled `5GHz`, one gets the band's clients and the other reads `0 clients` /
+/// `SNR: —`. Irrelevant to a height test, and stated here so the next reader does
+/// not mistake this for a per-radio-attribution fixture: that claim belongs to
+/// `wifi_snr_render_parity_test.dart`, which uses distinct bands.
+final testRadiosSixRadio = [
+  ...testRadiosTriBand,
+  for (final (i, spec) in <({String band, int channel, String bandwidth})>[
+    (band: '5GHz', channel: 149, bandwidth: '160MHz'),
+    (band: '6GHz', channel: 197, bandwidth: '320MHz'),
+    (band: '5GHz', channel: 100, bandwidth: '80MHz'),
+  ].indexed)
+    WifiRadioUIModel(
+      instancePath: 'Device.WiFi.Radio.${4 + i}.',
+      band: spec.band,
+      enable: true,
+      transmitPower: -1,
+      maxBitRate: 11529,
+      channel: spec.channel,
+      autoChannelEnable: true,
+      channelBandwidth: spec.bandwidth,
+      supportedStandards: '802.11a/n/ac/ax/be',
+      accessPoints: const [
+        WifiAccessPointUIModel(
+          enable: true,
+          ssidName: 'HomeNetwork',
+          securityMode: 'WPA3-Personal',
+          encryptionMode: 'AES',
+        ),
+      ],
+    ),
+];
+
+/// [testWifiData] with [testRadiosSixRadio] and the same clients.
+final testWifiDataSixRadio = WifiData(
+  codegenContext: testWifiData.codegenContext,
+  radioModels: testRadiosSixRadio,
+  wifiClientMap: testWifiData.wifiClientMap,
+  connectionDetailMap: testWifiData.connectionDetailMap,
+);
+
 const testRadiosOneDisabled = [
   WifiRadioUIModel(
     instancePath: 'Device.WiFi.Radio.1.',

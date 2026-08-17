@@ -79,6 +79,11 @@ class UspWifiPerformanceCard extends ConsumerWidget {
         ),
         CardTab(
           label: loc(context).channels,
+          // The one tab of this card whose content shrink-wraps, so the one that
+          // can scroll (#1267). A router with a third radio, or a locale with a
+          // long word for "Channel", makes three blocks taller than the card —
+          // the state that used to paint outside the box.
+          scrollable: true,
           content: _ChannelsTab(
             radios: wifiData.radioModels,
             clients: activeClients,
@@ -434,8 +439,8 @@ class _ChannelsTab extends StatelessWidget {
                 // channel string sits one `spacing` gap after the band instead of
                 // at the block's right edge. `stretch` hands both rows a tight
                 // width, so `spaceBetween` reproduces what the old `Spacer` did.
-                // (The second row is unaffected: its `Expanded` loader already
-                // forced full width.)
+                // (The SNR line below is unaffected either way — it is a single
+                // left-aligned text.)
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   // Band + channel. The #1226 shape, and `spaceBetween` is what
@@ -460,17 +465,61 @@ class _ChannelsTab extends StatelessWidget {
                   // produce — `en` (+8.3px), `fi` and `ja` break too. Measured
                   // per #1266; every incident attributed to this one row.
                   //
-                  // The extra run is paid out of the donut's `Expanded` below,
-                  // which yields it (contrast §2.10a point 3, where Network
-                  // Health's fixed 120px gauge could not) — verified by
-                  // re-measuring for bottom overflows, not assumed.
+                  // The extra run used to be paid out of the donut's `Expanded`
+                  // below; with the donut gone (#1267) the tab scrolls instead,
+                  // so a second run costs height the card can now give.
                   Wrap(
                     alignment: WrapAlignment.spaceBetween,
                     crossAxisAlignment: WrapCrossAlignment.center,
                     spacing: AppSpacing.lg,
                     runSpacing: AppSpacing.xxs,
                     children: [
-                      AppText.labelLarge(radio.band),
+                      // Band + its client count, as **one** `Wrap` child: the
+                      // count belongs to this radio, so it reads better beside
+                      // the band than on a line of its own, and keeping the two
+                      // of them in a `Row` preserves the two-child
+                      // `spaceBetween` shape measured above \u2014 a third top-level
+                      // child would have the alignment distribute slack
+                      // *between* band and count too, pulling them apart.
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          AppText.labelLarge(radio.band),
+                          AppGap.xs(),
+                          // Icon + number, not "N clients": the word costs
+                          // ~50px of a 235px content width on every radio, and
+                          // what it names is already the tab's subject. The
+                          // string stays in the semantics tree, so a screen
+                          // reader still hears "3 clients" and E2E can still
+                          // locate the count by it \u2014 an icon with a bare
+                          // numeral beside it is the *visual* compression, not
+                          // a loss of the label.
+                          Semantics(
+                            label: loc(context).clientsCount(clientCount),
+                            excludeSemantics: true,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                // `devices`, not `genericDevice`: the latter is
+                                // an abstract four-square glyph that reads as
+                                // "grid" at 14px, while this one is the
+                                // phone-plus-laptop pictogram the rest of the
+                                // app uses for clients.
+                                AppIcon.font(
+                                  AppFontIcons.devices,
+                                  size: 14,
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
+                                AppGap.xxs(),
+                                AppText.bodySmall(
+                                  '$clientCount',
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                       AppText.bodySmall(
                         '${loc(context).channel} ${radio.channelDisplay}'
                         '  \u00b7  ${radio.channelBandwidth}',
@@ -479,102 +528,64 @@ class _ChannelsTab extends StatelessWidget {
                     ],
                   ),
                   AppGap.xs(),
-                  Row(
-                    children: [
-                      AppText.bodySmall(loc(context).clientsCount(clientCount)),
-                      AppGap.md(),
-                      AppText.bodySmall(snr == null
-                          ? loc(context).snrUnavailable
-                          : loc(context).snrValue(snr.toInt())),
-                      AppGap.sm(),
-                      // With no SNR reading (#1271) the bar is omitted rather
-                      // than drawn empty — an empty bar claims the worst link
-                      // quality for a radio nothing was measured on. A `Spacer`
-                      // takes its place instead of nothing at all: it is the same
-                      // `Expanded` flex child, so it absorbs the slack the loader
-                      // did and this row's overflow behaviour — and the `Column`
-                      // stretch the band/channel `Wrap` above depends on — are
-                      // unchanged in the unmeasured state.
-                      if (snr == null)
-                        const Spacer()
-                      else
-                        Expanded(
-                          child: AppLoader(
-                            variant: LoaderVariant.linear,
-                            value: normalizeSNR(snr.toInt()),
-                          ),
-                        ),
-                    ],
-                  ),
+                  // The SNR, alone on its line, and both of the things that used
+                  // to share it are gone (#1267).
+                  //
+                  // The linear `AppLoader` that followed it drew
+                  // `normalizeSNR(snr)` — `snr / 50`, clamped — with no axis, no
+                  // scale and no units, immediately after the number it encodes,
+                  // so it restated the value it sat beside and taught nothing
+                  // about it. Removing it also removes the `Expanded`/`Spacer`
+                  // pair that made this row's width behaviour depend on whether
+                  // a radio happened to have an SNR reading, and the branch that
+                  // had to exist so an unmeasured radio was not drawn as a bar
+                  // at zero (#1271). The Statistics page's twin still draws its
+                  // 96px bar; that surface is a separate call.
+                  //
+                  // The client count moved up beside the band, which is where it
+                  // belongs, and that is what lets this be a plain `AppText`
+                  // rather than the `Wrap` an interim revision needed: a lone
+                  // text has no sibling to collide with, so there is no #1258
+                  // cliff to wrap away from — a long translation of "SNR" simply
+                  // wraps inside its own paragraph.
+                  AppText.bodySmall(snr == null
+                      ? loc(context).snrUnavailable
+                      : loc(context).snrValue(snr.toInt())),
                 ],
               ),
             );
           }),
           if (i < radios.length - 1) AppGap.sm(),
         ],
-        // Band distribution donut (if we have data)
-        if (clients.isNotEmpty) ...[
-          AppGap.md(),
-          Expanded(
-            child: _BandDistributionDonut(
-              clientsPerRadio: stats.clientCounts,
-              radios: radios,
-            ),
-          ),
-        ],
+        // Where the band-distribution donut used to be (#1267).
+        //
+        // It plotted clients-per-*band* — one slice per radio, sized by that
+        // radio's client count. Every one of those numbers is printed above it,
+        // in the block for the same radio and now on the same line as the band
+        // and its channel, so on a tab whose subject is each radio's channel and
+        // width the donut was a second rendering of data the tab already stated,
+        // and the only thing it added that the text did not was a total.
+        //
+        // Re-slicing it per *channel* was considered and does not help: a radio
+        // has one channel, so channel-keyed slices are band-keyed slices with a
+        // different legend. What would earn this space is something the tab does
+        // not say — airtime utilization or same-channel neighbours
+        // (`…DataElements.Network.Device.{i}.Radio.{i}.Utilization`), which no
+        // provider fetches and `WifiRadioUIModel` has no field for. Follow-up
+        // ticket, not a layout fix.
+        //
+        // It is also what broke the card. Fixed at 120px inside an `Expanded`,
+        // it took whatever height the blocks left; on a tri-band router at the
+        // 261px card in `tr` that was ~40px, and a `Center` spills its
+        // oversized child in *both* directions — so the donut painted over the
+        // 6GHz block above it (hiding that radio's SNR entirely) and reported
+        // only the 9px that happened to fall past the bottom edge. Screenshots
+        // in the #1267 thread; the `+9.0px bottom` the gate saw understated it.
+        //
+        // Removing it is what lets the rest be honest: with no vertical flex
+        // child left, the tab shrink-wraps, so it can scroll, so a fourth radio
+        // or a longer locale has somewhere to go instead of over the text.
       ],
-    );
-  }
-}
-
-class _BandDistributionDonut extends StatelessWidget {
-  final Map<int, int> clientsPerRadio;
-  final List<WifiRadioUIModel> radios;
-
-  const _BandDistributionDonut({
-    required this.clientsPerRadio,
-    required this.radios,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final seriesColors = [
-      colorScheme.primary,
-      colorScheme.secondary,
-      colorScheme.tertiary,
-    ];
-
-    final sections = <AppPieSection>[];
-    for (var i = 0; i < radios.length; i++) {
-      final count = clientsPerRadio[i] ?? 0;
-      if (count > 0) {
-        sections.add(AppPieSection(
-          value: count.toDouble(),
-          label: radios[i].band,
-          color: seriesColors[i % seriesColors.length],
-        ));
-      }
-    }
-
-    if (sections.isEmpty) return const SizedBox.shrink();
-
-    final totalClients = clientsPerRadio.values.fold(0, (a, b) => a + b);
-
-    return Center(
-      child: AppPieChart(
-        sections: sections,
-        donut: true,
-        centerWidget: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AppText.titleMedium('$totalClients'),
-            AppText.labelSmall(loc(context).clients,
-                color: colorScheme.onSurfaceVariant),
-          ],
-        ),
-        size: 120,
-      ),
     );
   }
 }

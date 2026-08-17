@@ -77,7 +77,10 @@ import '../../util/statistics/stats_section_probe.dart';
 ///
 /// The client counts are asserted alongside, in the same blocks: the guard
 /// removes a client from the SNR *average*, not from the network, and 3 clients
-/// on 2.4GHz is what says so.
+/// on 2.4GHz is what says so. Since #1267 the two surfaces *render* that count
+/// differently — the card as an icon plus a numeral beside the band, the section
+/// still as a sentence — so the assertion is parameterized rather than dropped;
+/// see `countIsCompact` on [expectChannelsReadouts].
 ///
 /// ## Mutation ledger
 ///
@@ -89,6 +92,14 @@ import '../../util/statistics/stats_section_probe.dart';
 ///   |---------------------------------------------|--------|-------------------|------------------|
 ///   | drop the `noise == 0` guard (the drift)     | 2 fail | 158 pass          | 13 pass          |
 ///   | `averageSnr` returns 0 instead of `null`    | 2 fail | 158 pass          | 13 pass          |
+///   | drop the card's icon + client count (#1267) | 1 fail | 158 pass          | 15 pass          |
+///
+/// The third row was added when #1267 compressed the card's count to an icon plus
+/// a numeral: the count left the readability suite's field of view entirely, and
+/// neither overflow suite ever had it (a *shorter* row is a cleaner layout), so
+/// this file is now the only place that fails if a radio stops reporting how many
+/// clients are on it. The card's own 211 gate cases — 157 default-profile plus the
+/// 54 tri-band ones #1267 added — are green under the mutation too.
 ///
 /// Neither surface's own suite notices either mutation. The overflow suites
 /// cannot: both mutations make the strings *shorter* (`SNR: 25 dB`, `SNR: 0 dB`
@@ -122,8 +133,7 @@ void main() {
       [l.snrValue(37), l.snrUnavailable];
 
   /// Clients per radio, in the same order — the guard's other half.
-  List<String> expectedCounts(AppLocalizations l) =>
-      [l.clientsCount(3), l.clientsCount(1)];
+  List<int> expectedCounts() => [3, 1];
 
   // ─── Assertions, run identically against either surface ────────────────────
 
@@ -145,8 +155,27 @@ void main() {
       .first;
 
   /// Asserts the pumped surface renders exactly the oracle, radio by radio.
+  ///
+  /// [hasSignalBar] and [countIsCompact] are the only places the two surfaces are
+  /// allowed to differ, and only because what parity is *about* is the number.
+  ///
+  /// [hasSignalBar]: the dashboard card dropped its linear `AppLoader` in #1267
+  /// (an unlabelled `snr / 50` restating the value printed beside it), while the
+  /// Statistics section keeps its 96px bar. Where a bar is drawn, the #1271 claim
+  /// it carries still holds — an unmeasured radio gets no bar rather than one at
+  /// zero — so this flag switches the assertion off, it does not weaken it.
+  ///
+  /// [countIsCompact]: the card renders the count as an icon plus a bare numeral
+  /// beside the band, the section still renders `clientsCount` as a sentence.
+  /// Either way the assertion is that *this radio's block* reports *this radio's
+  /// count*; only the locator changes, and the compact branch checks both halves
+  /// (the visible numeral **and** the semantics label), because an icon with a
+  /// naked number and no accessible name would be a regression this test is
+  /// exactly positioned to catch.
   void expectChannelsReadouts(WidgetTester tester, AppLocalizations l,
-      {required String surface}) {
+      {required String surface,
+      required bool hasSignalBar,
+      required bool countIsCompact}) {
     final texts = renderedTexts(tester);
     final snrs = texts.where((t) => t.data!.contains(_snrMarker)).toList()
       ..sort((a, b) => tester
@@ -167,16 +196,36 @@ void main() {
     // belonging to the wrong radio.
     for (var i = 0; i < snrs.length; i++) {
       final block = blockOf(snrs[i]);
-      expect(
-          find.descendant(of: block, matching: find.text(expectedCounts(l)[i])),
-          findsOneWidget,
-          reason: 'radio $i on $surface should report '
-              '"${expectedCounts(l)[i]}" beside "${snrs[i].data}": a client '
-              'with no noise reading is excluded from the average, not from the '
-              'network.');
+      final count = expectedCounts()[i];
+      final sentence = l.clientsCount(count);
+      // `byWidgetPredicate` on the `Semantics` widget, not `bySemanticsLabel`:
+      // the latter reads the semantics *tree*, which a widget test only builds
+      // under `tester.ensureSemantics()`. The label is a property of the widget
+      // either way, and this keeps the pump identical on both surfaces.
+      for (final locator in countIsCompact
+          ? [
+              find.text('$count'),
+              find.byWidgetPredicate(
+                  (w) => w is Semantics && w.properties.label == sentence),
+            ]
+          : [find.text(sentence)]) {
+        expect(find.descendant(of: block, matching: locator), findsOneWidget,
+            reason:
+                'radio $i on $surface should report $count client(s) beside '
+                '"${snrs[i].data}" — as ${countIsCompact ? '"$count" with '
+                    '"$sentence" in its semantics' : '"$sentence"'}. A client '
+                'with no noise reading is excluded from the average, not from '
+                'the network. Missing locator: '
+                '${locator.describeMatch(Plurality.one)}');
+      }
 
       final bars = find.descendant(of: block, matching: find.byType(AppLoader));
-      if (snrs[i].data == l.snrUnavailable) {
+      if (!hasSignalBar) {
+        expect(bars, findsNothing,
+            reason: 'radio $i on $surface draws a signal bar. This surface '
+                'dropped it (#1267): an unlabelled bar beside the number it '
+                'encodes adds nothing, and a reappearing one is a revert.');
+      } else if (snrs[i].data == l.snrUnavailable) {
         expect(bars, findsNothing,
             reason: 'radio $i on $surface draws a signal bar with no SNR to '
                 'draw. A linear loader at 0 is indistinguishable from a real '
@@ -210,7 +259,10 @@ void main() {
         reason:
             'the section overflowed on this fixture: ${overflows.join(', ')}');
 
-    expectChannelsReadouts(tester, l, surface: 'the Statistics section');
+    expectChannelsReadouts(tester, l,
+        surface: 'the Statistics section',
+        hasSignalBar: true,
+        countIsCompact: false);
   });
 
   // ─── Surface 2: the dashboard's WiFi Performance card, Channels tab ────────
@@ -251,7 +303,10 @@ void main() {
     ));
     await settleIgnoringAnimations(tester);
 
-    expectChannelsReadouts(tester, l, surface: 'the WiFi Performance card');
+    expectChannelsReadouts(tester, l,
+        surface: 'the WiFi Performance card',
+        hasSignalBar: false,
+        countIsCompact: true);
   });
 }
 
