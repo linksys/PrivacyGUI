@@ -1,6 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+/// The overflow every probe in this suite ignores.
+///
+/// Small tolerance for sub-pixel shaping differences between the mac (local) and
+/// ubuntu (CI) font rasterizers. The project bundles fixed font files so the two
+/// load the same glyphs, but borderline cases (~1px) can still flip; anything
+/// meaningfully clipped is many pixels over.
+///
+/// Shared (#1270) because the #1183 gate and its five satellite suites all
+/// filtered on a bare `2.0`. A satellite that drifted to a looser value would
+/// report a coordinate the gate still fails on — and a tighter one would fail on
+/// CI only. [OverflowIncident.unparseablePixels] is deliberately above every
+/// tolerance, so raising this can never silence an unreadable report.
+const double kOverflowTolerancePx = 2.0;
+
 /// A single RenderFlex overflow captured during a pump.
 ///
 /// Parsed from Flutter's overflow error string, e.g.

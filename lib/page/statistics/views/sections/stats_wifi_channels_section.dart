@@ -126,10 +126,11 @@ class StatsWifiChannelsSection extends ConsumerWidget {
                 //     `Spacer` did — but only because the `Column` above
                 //     stretches it. Under a loose width `spaceBetween` is a
                 //     no-op; see the `crossAxisAlignment` note there. When it
-                //     does not fit — a localized `'Ch '` prefix or a 3-digit
-                //     6GHz channel would eat the 47px of headroom #1258
-                //     measured — the channel string drops to a second line
-                //     instead of overflowing.
+                //     does not fit the channel string drops to a second line
+                //     instead of overflowing. That is not hypothetical any more:
+                //     the localized prefix below spent the 47px of headroom
+                //     #1258 measured, and a 3-digit 6GHz channel is still to
+                //     come.
                 //  2. Neither side yields to an ellipsis: the band is the
                 //     identity of the block and the channel string is composed
                 //     data (§2.10a point 2). Both are content, not chrome, so
@@ -142,8 +143,20 @@ class StatsWifiChannelsSection extends ConsumerWidget {
                   runSpacing: AppSpacing.xs,
                   children: [
                     AppText.labelLarge(radio.band),
+                    // Localized prefix (#1270), in the same form as the Wi-Fi
+                    // Performance `_ChannelsTab` twin (#1266). It spends the
+                    // 47px of headroom #1258 measured, and the `Wrap` above is
+                    // what makes it affordable. Measured against the pre-#1264
+                    // `Row` + `Spacer` with this same string: `tr` +27.0/+13.0
+                    // and `th` +3.0 at a 288px section (the production floor),
+                    // and **all 26 locales** overflowing at 256 / 224 / 192px —
+                    // `tr` worst at +123.0/+109.0. Under the `Wrap` all 26 are
+                    // clean at all four widths. `tr`'s `channel` value is
+                    // `'Channel (Kanal)'`, the widest of the 26, and it wraps to
+                    // a second line instead of overflowing.
                     AppText.bodySmall(
-                      'Ch ${radio.channelDisplay}  \u00b7  ${radio.channelBandwidth}',
+                      '${loc(context).channel} ${radio.channelDisplay}'
+                      '  \u00b7  ${radio.channelBandwidth}',
                       color: colorScheme.onSurfaceVariant,
                     ),
                   ],

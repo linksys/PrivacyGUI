@@ -37,6 +37,15 @@ void main() {
   /// One pump per call: Flutter reports a given RenderFlex's overflow only once
   /// per render-object lifetime, so a second pump in the same test would report a
   /// genuinely overflowing width as clean.
+  ///
+  /// #1270 counted this as the third copy of the Statistics sections'
+  /// `overflowsAt` and asked for all three to be folded together. They are not the
+  /// same helper: this one pumps a **card** through [probeCardOverflow] — grid
+  /// geometry, tab index, card height in rows — while those pump a section into a
+  /// fixed-width box on the Statistics page. The only substance they shared was
+  /// the tolerance, which is now [kOverflowTolerancePx]; the section half lives in
+  /// `test/util/statistics/stats_section_probe.dart`. Merging the two shapes would
+  /// mean a helper with two mutually exclusive halves.
   Future<List<OverflowIncident>> overflowsAt({
     required WidgetTester tester,
     required double screenWidth,
@@ -58,7 +67,7 @@ void main() {
       tabIndex: tabIndex,
       locale: locale,
     );
-    return incidents.where((i) => i.pixels > 2.0).toList();
+    return incidents.where((i) => i.pixels > kOverflowTolerancePx).toList();
   }
 
   /// The default preset span is 6 (`w: 6`), and the widths that span realizes on

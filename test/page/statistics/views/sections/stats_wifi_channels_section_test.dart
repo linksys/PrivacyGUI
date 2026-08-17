@@ -2,21 +2,18 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
-import 'package:privacy_gui/localization/fallback_font_resolver.dart';
 import 'package:privacy_gui/page/_shared/models/client_connection_detail.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_client_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_radio_ui_model.dart';
 import 'package:privacy_gui/page/statistics/views/sections/stats_wifi_channels_section.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_data_provider.dart';
-import 'package:privacy_gui/theme/theme_json_config.dart';
-import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../../golden_test/golden_framework/mocks/mock_statistics.dart';
 import '../../../../util/app_test_fonts.dart';
 import '../../../../util/overflow_probe.dart';
+import '../../../../util/statistics/stats_section_probe.dart';
 
 /// Overflow tests for the two rows the WiFi Channels section renders per radio
 /// (#1258 — the third instance of the #1226 / #1252 shape on the Statistics
@@ -28,7 +25,7 @@ import '../../../../util/overflow_probe.dart';
 /// unconstrained rows (`stats_wifi_channels_section.dart`):
 ///
 ///  - **line 110** — `AppText.labelLarge(radio.band)` + `const Spacer()` +
-///    `AppText.bodySmall('Ch <channel>  ·  <bandwidth>')`. `Spacer` is an
+///    `AppText.bodySmall('<Channel> <channel>  ·  <bandwidth>')`. `Spacer` is an
 ///    `Expanded`, so it absorbs slack while the content fits and collapses to
 ///    zero when it does not, at which point both unconstrained texts take their
 ///    intrinsic width and overflow right.
@@ -39,10 +36,19 @@ import '../../../../util/overflow_probe.dart';
 /// so the #1183 overflow gate never scans it — there is no ratchet entry and no
 /// gate failure. This is a hardening ticket: #1258 measured **47px of
 /// headroom** on line 110 at the 288px production floor (241px is the zero
-/// crossing), and three things can eat it — localizing the hardcoded `'Ch '`
+/// crossing), and three things could eat it — localizing the hardcoded `'Ch '`
 /// literal, a 3-digit 6GHz channel (`Ch 233 (Auto)`), or simply a narrower
 /// realization. The AC is therefore a measurement of the rows, not "N gate
 /// coordinates removed".
+///
+/// **#1270 spent that headroom.** The prefix is now `loc(context).channel`, whose
+/// widest value (`tr`: 'Channel (Kanal)') is 5 characters longer than the `de`
+/// 'Kanal' this file used to sample. That is affordable *only* because #1264
+/// replaced the `Row` + `Spacer` with a `Wrap` — the pre-fix shape overflows at
+/// the production floor in `tr`/`th` and at every width below it in all 26
+/// locales. So line 110's guard is no longer a courtesy sweep over a couple of
+/// locales: the widest translation is now a layout input, and the AC-1 ladder
+/// group walks all 26 of them.
 ///
 /// ## Four kinds of assertion, and why the stress widths are below production
 ///
@@ -65,10 +71,13 @@ import '../../../../util/overflow_probe.dart';
 ///      this width ships, but that the shape degrades by wrapping rather than
 ///      clipping when the headroom is finally spent.
 ///   3. **AC-1 ladder (288 / 256 / 224 / 192px sections).** The widths #1258's
-///      AC-1 names, in the locales that break first. A single degradation guard
-///      at one width can sit in a pocket of cleanliness: this file's 219px guard
-///      passed while a nested `Row(min)` clipped at 216px, 3px away. Walking the
-///      ladder is what closes that gap, and it is the group that caught it.
+///      AC-1 names. A single degradation guard at one width can sit in a pocket
+///      of cleanliness: this file's 219px guard passed while a nested `Row(min)`
+///      clipped at 216px, 3px away. Walking the ladder is what closes that gap,
+///      and it is the group that caught it. Line 121 walks it in the locales that
+///      break first (`fi`, `ja`, `ko`, `vi`); line 110 walks it in **all 26**,
+///      because since #1270 the widest `channel` translation is a layout input
+///      and no other suite measures it (see that group's own header).
 ///   4. **Geometry guard (production widths).** The three above all read
 ///      `RenderFlex` overflow, which cannot see *where* a child landed. A
 ///      `Wrap` under a loose width constraint lays out visibly wrong and
@@ -82,22 +91,39 @@ import '../../../../util/overflow_probe.dart';
 ///
 /// Every guard group here was shown to fail under a mutation of the code it
 /// guards — an overflow test that cannot fail is worse than no test (precedent:
-/// `stats_traffic_monitor_legend_test.dart`). Measured on this worktree with the
-/// fixtures below; each mutation was applied alone, against an otherwise clean
-/// tree:
+/// `stats_traffic_monitor_legend_test.dart`). Groups are numbered in declaration
+/// order: **1** line 110 clean, **2** line 121 clean, **3** geometry, **4** stats
+/// legible. Each mutation was applied alone against an otherwise clean tree, and
+/// the whole table was **re-taken for #1270** — the counts below are of this
+/// file's current 158 tests, not of the 43 it had when #1258 first measured it:
 ///
-///   | mutation                                             | measured                     |
-///   |------------------------------------------------------|------------------------------|
-///   | line 110 `Wrap` -> pre-fix `Row`+`Spacer`            | 10 tests fail (grp 1, 3)     |
-///   | line 121 outer `Wrap` -> pre-fix `Row`+`Expanded`    | 5 tests fail (grp 2)         |
-///   | stats `Wrap` -> `Row(min)`+`AppGap.md` (see below)   | 4 tests fail (grp 2 ladder)  |
-///   | signal bar `SizedBox(96)` -> `Expanded` (keep `Wrap`)| ParentDataWidget error, all  |
-///   | count -> `Flexible` + 1-line ellipsis                | all fail (grp 3 + layout)    |
-///   | `snrValue` -> 1-line ellipsis (no `Flexible`)        | grp 3 fails                  |
-///   | `snrValue` -> `Flexible` + 1-line ellipsis           | all fail (grp 3 + layout)    |
-///   | `snrValue` -> 1-line ellipsis on **2.4GHz only**     | grp 4 fails                  |
-///   | per-radio `Column` `stretch` -> `start`              | 3 tests fail (grp 3)         |
-///   | band+channel `Wrap`: drop `spaceBetween`             | 3 tests fail (grp 3)         |
+///   | mutation                                             | fails (of 158)              |
+///   |------------------------------------------------------|-----------------------------|
+///   | line 110 `Wrap` -> pre-fix `Row`+`Spacer`            | 87 — grp 1: 73, 2: 11, 3: 3 |
+///   | line 121 outer `Wrap` -> pre-fix `Row`+`Expanded`    | 9 — grp 1: 4, 2: 5          |
+///   | stats `Wrap` -> `Row(min)`+`AppGap.md` (see below)   | 7 — grp 1: 3, 2: 4          |
+///   | signal bar `SizedBox(96)` -> `Expanded` (keep `Wrap`)| 158 — ParentDataWidget      |
+///   | count -> `Flexible` + 1-line ellipsis                | 158 — ParentDataWidget      |
+///   | `snrValue` -> 1-line ellipsis (no `Flexible`)        | 1 — grp 4                   |
+///   | `snrValue` -> `Flexible` + 1-line ellipsis           | 158 — ParentDataWidget      |
+///   | `snrValue` -> 1-line ellipsis on **2.4GHz only**     | 1 — grp 4                   |
+///   | per-radio `Column` `stretch` -> `start`              | 3 — grp 3                   |
+///   | band+channel `Wrap`: drop `spaceBetween`             | 2 — grp 3                   |
+///
+/// Two things to read out of the attributions rather than guess at:
+///
+///  - **Groups 1 and 2 do not have separate eyes.** The probe returns *every*
+///    `RenderFlex` incident in the pumped tree, so a mutation to either row fails
+///    whichever group pumps the section at a width where that row overflows. The
+///    two groups differ in fixture and width ladder, not in what they can see —
+///    which is why mutating line 121 also fails 4 of group 1's cases. A future
+///    reader chasing one row's regression should read the incident text in the
+///    failure, not the group name.
+///  - **A `Flexible` inside a `Wrap` is a framework error, not an overflow.** The
+///    three 158-failure rows all throw `Incorrect use of ParentDataWidget`, which
+///    fails every test in the file including the unrelated ones. That is loud but
+///    undiscriminating, and it is exactly why the two *bare*-ellipsis mutations
+///    (1 failure each, group 4) are the ones that prove group 4 earns its keep.
 ///
 /// The last two rows are group 3, and they are a different *kind* of guard from
 /// everything above them. Every other assertion in this file reads `RenderFlex`
@@ -108,6 +134,24 @@ import '../../../../util/overflow_probe.dart';
 /// distribute, and the per-radio `Column`'s `CrossAxisAlignment.start` handed
 /// the `Wrap` a loose one. Group 3 asserts the geometry directly; see its own
 /// header for the measured before/after table.
+///
+/// Re-taking those two rows for #1270 is what exposed the two defects group 3
+/// itself had. Both are fixed in this revision and the row counts above are the
+/// numbers *after* the fix; before it, `stretch` -> `start` failed 1 case instead
+/// of 3:
+///
+///  - the span assertion compared the `Wrap` against its **immediate parent**,
+///    and `start` shrink-wraps the parent `Column` together with the `Wrap`
+///    inside it, so the check passed on the one regression it exists to catch;
+///  - the three widths were pumped as `sectionWidth: 288/537/841` on a **320px**
+///    screen, and a section wider than the viewport is clamped to it, so the two
+///    wide cases both measured 270px of content.
+///
+/// Group 3's `spaceBetween` row fails 2 of 3 rather than 3 of 3 for a reason that
+/// is not a gap: at the 288px floor the channel string is expected on its own
+/// run, and a `Wrap` whose runs each hold one child looks identical with and
+/// without `spaceBetween`. That width is covered by the run-arrangement
+/// assertions instead.
 ///
 /// The `snrValue` rows are the reason group 4 asserts on **both** stats. An
 /// earlier revision of this file checked only `clientsCount`, and the first two
@@ -200,105 +244,59 @@ void main() {
     await loadAppFonts();
   });
 
-  /// The width a single Statistics section renders to on a [screenWidth]
-  /// screen: full content width minus the page margin on both edges. Mirrors
-  /// `stats_traffic_monitor_legend_test.dart` — the Statistics page pads each
-  /// section by `context.layoutMargin` (`usp_statistics_view.dart`), which is
-  /// ui_kit's own [AppLayoutConfig.margin], so this reads it from the source of
-  /// truth rather than a copied breakpoint table.
-  double sectionWidthFor(double screenWidth) =>
-      screenWidth - AppLayoutConfig.margin(screenWidth) * 2;
-
-  final baseTheme = ThemeJsonConfig.defaultConfig().createLightTheme();
-
   /// Pumps the real [StatsWifiChannelsSection] once with the section sized to
   /// [sectionWidth] on a [screenWidth] screen, and returns the RenderFlex
-  /// overflows beyond a 2px tolerance (the gate's own tolerance).
+  /// overflows beyond the gate's own tolerance.
   ///
   /// [sectionWidth] defaults to what the Statistics page would give a section
   /// on that screen ([sectionWidthFor]); the degradation-guard tests pass an
   /// explicit narrower value to reach below the production floor while keeping
   /// the screen (and therefore ui_kit's layout regime) realistic.
   ///
-  /// One pump per call: Flutter reports a given RenderFlex's overflow only once
-  /// per render-object lifetime, so a second pump in the same test would report
-  /// a genuinely overflowing width as clean.
+  /// The scaffolding — margin arithmetic, `lib/app.dart`'s theme+locale wiring,
+  /// the one-pump rule — is [probeSectionOverflow] since #1270; this wrapper only
+  /// binds this file's section and swaps in the fixture under test, so every call
+  /// below is unchanged.
   Future<List<OverflowIncident>> overflowsAt({
     required WidgetTester tester,
     required double screenWidth,
     required Locale locale,
     required WifiData wifiData,
     double? sectionWidth,
-  }) async {
-    final surface = Size(screenWidth, 900.0);
-    final width = sectionWidth ?? sectionWidthFor(screenWidth);
-
-    // Same call as `lib/app.dart`, not a copy of its body — see #1285.
-    final theme = FallbackFontResolver.withFallbackFont(baseTheme, locale);
-
-    return runWithOverflowCollection((sink) async {
-      await tester.binding.setSurfaceSize(surface);
-      tester.view.physicalSize = surface;
-      tester.view.devicePixelRatio = 1.0;
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: statisticsOverrides(wifiData: wifiData),
-          child: MaterialApp(
-            locale: locale,
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            theme: theme,
-            builder: (context, child) => MediaQuery(
-              data: MediaQuery.of(context).copyWith(disableAnimations: true),
-              child: child ?? const SizedBox.shrink(),
-            ),
-            home: Scaffold(
-              body: SingleChildScrollView(
-                child: Align(
-                  alignment: Alignment.topLeft,
-                  child: SizedBox(
-                    width: width,
-                    child: const StatsWifiChannelsSection(),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
+  }) =>
+      probeSectionOverflow(
+        tester,
+        section: const StatsWifiChannelsSection(),
+        screenWidth: screenWidth,
+        locale: locale,
+        overrides: statisticsOverrides(wifiData: wifiData),
+        sectionWidth: sectionWidth,
       );
-      await settleIgnoringAnimations(tester);
-      return sink.where((i) => i.pixels > 2.0).toList();
-    });
-  }
+
+  String tagOf(Locale l) => l.countryCode == null || l.countryCode!.isEmpty
+      ? l.languageCode
+      : '${l.languageCode}_${l.countryCode}';
 
   Locale localeFor(String tag) =>
-      AppLocalizations.supportedLocales.firstWhere((l) {
-        final t = l.countryCode == null || l.countryCode!.isEmpty
-            ? l.languageCode
-            : '${l.languageCode}_${l.countryCode}';
-        return t == tag;
-      });
+      AppLocalizations.supportedLocales.firstWhere((l) => tagOf(l) == tag);
 
-  /// The Statistics page is a single-column scroll list, so a section spans the
-  /// full content width. These are the narrow realizations that matter (same
-  /// set as `stats_traffic_monitor_legend_test.dart`):
-  ///
-  /// - 1241px: the D1 desktop-large pinch — 200px margins open just above
-  ///   1240px, so 1241px yields a *narrower* section (841px) than 1240px.
-  /// - 905px tablet: 32px margins, 841px section.
-  /// - 601px: the tablet floor (32px margins), 537px section.
-  /// - 320px: the framework's narrowest supported screen, 16px margins, 288px
-  ///   section — the absolute worst case for these rows (the production floor
-  ///   #1258 measured, where line 110 has only 47px of headroom).
-  const narrowScreens = <double>[1241.0, 905.0, 601.0, 320.0];
+  /// The narrow realizations that matter, and why — see [narrowStatsScreens].
+  /// 320px yields the 288px section that is these rows' worst case: the
+  /// production floor #1258 measured, where line 110 had 47px of headroom before
+  /// #1270 spent it on the localized prefix.
+  const narrowScreens = narrowStatsScreens;
 
   group('band + channel row (line 110) is clean under wide data (#1258)', () {
-    // Line 110's overflow is locale-independent — both texts are data, not
-    // localized strings — so the stressor is wider data, not a wider locale.
-    // `_wideChannelWifiData` carries a 3-digit 6GHz `Ch 233 (Auto)` at 160MHz,
-    // the widest channel string #1258 named. `de` ("Kanal") is pumped too as a
-    // guard against anyone localizing the `'Ch '` prefix without re-checking.
-    for (final tag in ['en', 'de']) {
+    // Two stressors, not one. `_wideChannelWifiData` carries a 3-digit 6GHz
+    // channel in auto mode at 160MHz — the widest *data* #1258 named — and since
+    // #1270 localized the prefix the row is locale-dependent too. `tr` is the
+    // widest of the 26 (`channel` is `'Channel (Kanal)'`), `th` is second, `de`
+    // ("Kanal") is the shortest of the three and is kept because it is what
+    // #1258 pumped. `en` stays as the control.
+    //
+    // These four are the worst cases, not the whole obligation: the full 26 × 4
+    // ladder is the `AC-1 ladder` group below.
+    for (final tag in ['en', 'de', 'th', 'tr']) {
       for (final screen in narrowScreens) {
         testWidgets(
           'no overflow at ${sectionWidthFor(screen).toStringAsFixed(0)}px '
@@ -343,11 +341,70 @@ void main() {
           isEmpty,
           reason: 'the band+channel row must wrap the channel string to a '
               'second line at a 200px section rather than overflow — the '
-              'pre-fix `Row` + `Spacer` clips here (+28px): '
-              '${overflows.join(', ')}',
+              'pre-fix `Row` + `Spacer` clips here: ${overflows.join(', ')}',
         );
       },
     );
+
+    // #1270's AC-1: the localized prefix, re-measured clean at 288 / 256 / 224 /
+    // 192px sections in **all 26 locales**.
+    //
+    // WHY ALL 26 AND NOT THE WORST FEW
+    //
+    // Before #1270 this row was locale-independent — both texts were data — so
+    // the group above samples locales only as a courtesy. Localizing the prefix
+    // makes the widest `channel` translation a *layout input*, and which locale
+    // that is, is an ARB fact that loc can change without touching this repo.
+    // Nothing else guards it: the section is not in `UspWidgetSpecs.all`, so the
+    // #1183 gate never scans it, and the golden suite screenshots neither this
+    // page at 320px nor 25 of these locales.
+    //
+    // Iterating `supportedLocales` rather than a hardcoded list also means a 27th
+    // locale is covered the day it is added, without anyone remembering to.
+    //
+    // MEASURED (#1270, this worktree, one pump per case, real fonts, 2px
+    // tolerance, `Ch 233 (Auto)` / 160MHz data):
+    //
+    //   | shape                       | 288px      | 256 / 224 / 192px      |
+    //   |-----------------------------|------------|------------------------|
+    //   | `Wrap` (shipped)            | 26 clean   | 26 clean each          |
+    //   | pre-#1264 `Row` + `Spacer`  | tr, th     | **all 26** overflow    |
+    //
+    // So under the pre-fix shape the localized prefix would have overflowed the
+    // production floor in `tr` (+27.0, +13.0) and `th` (+3.0), and every locale
+    // below it — `tr` worst at +123.0/+109.0 at 192px. #1264's `Wrap` is what
+    // makes this ticket a pure correctness change, and this group is what records
+    // that it still is.
+    for (final locale in AppLocalizations.supportedLocales) {
+      for (final section in [288.0, 256.0, 224.0, 192.0]) {
+        testWidgets(
+          'AC-1 ladder: clean at a ${section.toStringAsFixed(0)}px section '
+          'in ${tagOf(locale)}',
+          (tester) async {
+            final overflows = await overflowsAt(
+              tester: tester,
+              // 320px keeps ui_kit's narrowest layout regime while the explicit
+              // section width walks below the 288px production floor.
+              screenWidth: 320.0,
+              sectionWidth: section,
+              locale: locale,
+              wifiData: _wideChannelWifiData,
+            );
+            expect(
+              overflows,
+              isEmpty,
+              reason: 'the localized channel prefix overflows the band+channel '
+                  'row in ${tagOf(locale)} at a '
+                  '${section.toStringAsFixed(0)}px section. If a `channel` '
+                  'translation grew, the prefix no longer fits the width this '
+                  'row is given and #1270\'s premise — that #1264\'s `Wrap` '
+                  'absorbs the cost — has stopped holding: '
+                  '${overflows.join(', ')}',
+            );
+          },
+        );
+      }
+    }
   });
 
   group('client + SNR + signal-bar row (line 121) is clean (#1258)', () {
@@ -486,21 +543,63 @@ void main() {
     // So under `start` the channel string stopped being right-aligned and the
     // whole radio block drifted to the centre of the section — at 841px the band
     // sat 281px from where it belonged. `stretch` restores the pre-fix geometry
-    // exactly. Reverting either `stretch` or `spaceBetween` leaves all 43 other
-    // tests green, which is why this is asserted directly.
+    // exactly. Reverting either `stretch` or `spaceBetween` leaves every other
+    // test in this file green (155 of 158 in the re-taken ledger), which is why
+    // this is asserted directly.
     //
     // The assertion is "the row spans the section", not a pixel table: it pins
     // the property the `Spacer` provided without freezing font metrics, so a
-    // theme or font change does not fail it.
-    for (final section in [288.0, 537.0, 841.0]) {
+    // theme or font change does not fail it. Two ways of writing that turned out
+    // to be traps, both live in this group until #1270 re-measured it and both
+    // now guarded in the body: comparing the `Wrap` to its **immediate parent**
+    // (which shrink-wraps with it, so the check tracks the bug instead of
+    // catching it), and pumping a section **wider than the screen** (which the
+    // viewport clamps, collapsing three widths onto one layout).
+    //
+    // ## `oneRun`, and why #1270 had to add it
+    //
+    // Right-alignment is only a property of a row that *is* one run. Localizing
+    // the prefix cost this row its last few pixels at the production floor: with
+    // the wide-6GHz fixture in `en`, `Channel 11  ·  20/40MHz` (171.9px) plus the
+    // band (2.4GHz) plus the `AppSpacing.lg` gap no longer fit the 238px the
+    // `Wrap` gets from a 288px section — it misses by ~3.5px — so the channel
+    // string drops to its own run and ends at 196.9px instead of flush at 263px.
+    //
+    // That is the fix doing its job, not a regression: the alternative at that
+    // width is the pre-#1264 overflow. But it means "flush right" cannot be
+    // asserted unconditionally any more, and skipping the assertion at 288px
+    // would leave the floor — the width that matters most — with no geometry
+    // guard at all. So each width states which arrangement it expects and the
+    // test asserts *that*: still one run above the floor, stacked at it. A change
+    // that shortens the string enough to fit one run at 288px fails here, which
+    // is correct — the expectation is a measurement, and it has to be re-taken.
+    // Stated as **screens**, not section widths, and that is load-bearing. The
+    // probe sizes a section with `SizedBox(width: …)` inside the viewport, so a
+    // section wider than the screen is clamped to the screen and the case
+    // silently becomes a different, narrower measurement. The pre-#1270 form of
+    // this group asked for 288 / 537 / 841px sections on a **320px** screen, so
+    // the two wide cases both rendered 270px of content — three cases, two
+    // layouts, and the names said otherwise. Each screen below is the one the
+    // Statistics page actually produces that section on ([narrowStatsScreens]),
+    // and the harness-sanity assertion in the body now fails if that ever stops
+    // being true.
+    const geometryCases = <({double screen, bool oneRun})>[
+      (screen: 320.0, oneRun: false),
+      (screen: 601.0, oneRun: true),
+      (screen: 905.0, oneRun: true),
+    ];
+    for (final geometry in geometryCases) {
+      final section = sectionWidthFor(geometry.screen);
       testWidgets(
-        'channel string stays right-aligned at a ${section.toStringAsFixed(0)}px '
-        'section',
+        geometry.oneRun
+            ? 'channel string stays right-aligned at a '
+                '${section.toStringAsFixed(0)}px section'
+            : 'channel string drops to its own run at a '
+                '${section.toStringAsFixed(0)}px section',
         (tester) async {
           final overflows = await overflowsAt(
             tester: tester,
-            screenWidth: 320.0,
-            sectionWidth: section,
+            screenWidth: geometry.screen,
             locale: localeFor('en'),
             wifiData: _wideChannelWifiData,
           );
@@ -525,17 +624,61 @@ void main() {
               reason: 'the band text must sit inside the band+channel `Wrap`');
 
           final wrapBox = wrapElement!.renderObject as RenderBox;
-          final parentBox =
-              wrapElement!.findAncestorRenderObjectOfType<RenderBox>()!;
 
-          // A shrink-wrapped `Wrap` is narrower than the column that holds it;
-          // a stretched one matches it. This is the `start`-vs-`stretch`
-          // difference, expressed without hardcoding text widths.
+          // A shrink-wrapped `Wrap` is narrower than the section content box; a
+          // stretched one fills it. This is the `start`-vs-`stretch` difference,
+          // expressed without hardcoding text widths.
+          //
+          // The reference is the **section box the probe built**, not the
+          // `Wrap`'s immediate parent. Comparing against the parent reads like
+          // the same check and is blind: `CrossAxisAlignment.start` shrink-wraps
+          // the per-radio `Column` *together with* the `Wrap` inside it, so the
+          // two stay equal and the assertion passes on precisely the regression
+          // it exists to catch. Measured while re-taking the ledger for #1270:
+          // in the parent-relative form the `stretch` -> `start` mutation failed
+          // only the 288px case (via `oneRun` below, incidentally), leaving
+          // 537/841px green.
+          //
+          // The insets between the two are summed off the tree rather than
+          // hardcoded: `AppCard` and `LayoutBlock` each add an `AppSpacing.md`
+          // today (`stats_section_card.dart:29,53`), and a ui_kit change to
+          // either must not silently re-baseline this test.
+          var inset = 0.0;
+          RenderBox? sectionBox;
+          wrapElement!.visitAncestorElements((a) {
+            final w = a.widget;
+            if (w is SizedBox && w.width == section) {
+              sectionBox = a.renderObject as RenderBox;
+              return false;
+            }
+            if (w is Padding) inset += w.padding.horizontal;
+            return true;
+          });
+          expect(sectionBox, isNotNull,
+              reason: 'the probe wraps every section in a '
+                  '`SizedBox(width: sectionWidth)`; this test measures against '
+                  'it');
+
+          // Harness sanity, and the reason the cases above are screens: a
+          // `SizedBox` wider than the viewport is clamped to the viewport, and a
+          // clamped case measures a narrower layout than its own name claims.
+          expect(
+            sectionBox!.size.width,
+            closeTo(section, 0.5),
+            reason: 'the harness must really render a '
+                '${section.toStringAsFixed(0)}px section on a '
+                '${geometry.screen.toStringAsFixed(0)}px screen. If this fails '
+                'the section is being clamped to the viewport, so this case is '
+                'silently measuring some other width.',
+          );
+
           expect(
             wrapBox.size.width,
-            closeTo(parentBox.size.width, 1.0),
+            closeTo(section - inset, 1.0),
             reason: 'the band+channel `Wrap` must be stretched to the full '
-                'section width, not shrink-wrapped to its intrinsic width — '
+                'section content width (${section - inset}px of the '
+                '${section.toStringAsFixed(0)}px section, after ${inset}px of '
+                'card insets), not shrink-wrapped to its intrinsic width — '
                 'under a loose constraint `WrapAlignment.spaceBetween` has no '
                 'free space to distribute and degrades to a plain `spacing` '
                 'gap, which drifts the whole radio block to the centre of the '
@@ -547,20 +690,59 @@ void main() {
           // And the channel string is actually pushed to the far edge, which is
           // what the `Spacer` did. Guards `alignment: spaceBetween` itself:
           // removing it leaves the `Wrap` stretched but packs both texts left.
-          final chanBox = tester
-              .renderObject<RenderBox>(find.textContaining('Ch 11').first);
-          final chanRight =
-              chanBox.localToGlobal(Offset.zero).dx + chanBox.size.width;
-          final wrapRight =
-              wrapBox.localToGlobal(Offset.zero).dx + wrapBox.size.width;
-          expect(
-            chanRight,
-            closeTo(wrapRight, 1.0),
-            reason: 'the channel string must end flush with the right edge of '
-                'the row, as it did under the pre-#1258 `Row` + `Spacer`. '
-                'Check `alignment: WrapAlignment.spaceBetween` is still on the '
-                'band+channel `Wrap`.',
-          );
+          //
+          // The needle is built from the ARB key rather than hardcoded ('Ch 11'
+          // until #1270 localized the prefix), so a `channel` translation change
+          // cannot silently turn this into a `findsNothing` failure — or worse,
+          // match some other text.
+          final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+          final chanBox = tester.renderObject<RenderBox>(
+              find.textContaining('${l10n.channel} 11').first);
+          final wrapLeft = wrapBox.localToGlobal(Offset.zero).dx;
+          final chanLeft = chanBox.localToGlobal(Offset.zero).dx;
+          final chanRight = chanLeft + chanBox.size.width;
+          final wrapRight = wrapLeft + wrapBox.size.width;
+
+          if (geometry.oneRun) {
+            expect(
+              chanRight,
+              closeTo(wrapRight, 1.0),
+              reason:
+                  'the channel string must end flush with the right edge of '
+                  'the row, as it did under the pre-#1258 `Row` + `Spacer`. '
+                  'Check `alignment: WrapAlignment.spaceBetween` is still on the '
+                  'band+channel `Wrap`.',
+            );
+          } else {
+            // Stacked: the string sits on a second run, so it starts at the left
+            // edge of the `Wrap` and cannot also end flush right. Asserting both
+            // edges is what keeps this a real check — a `Wrap` that had lost
+            // `spaceBetween` *and* wrapped would still satisfy the left edge
+            // alone, but then the band would not be flush left on run 1.
+            final bandBox = tester.renderObject<RenderBox>(bandFinder);
+            expect(
+              chanLeft,
+              closeTo(wrapLeft, 1.0),
+              reason:
+                  'at the production floor the channel string is expected on '
+                  'its own run, flush with the left edge of the row.',
+            );
+            expect(
+              bandBox.localToGlobal(Offset.zero).dx,
+              closeTo(wrapLeft, 1.0),
+              reason: 'the band must stay flush left on the first run.',
+            );
+            expect(
+              chanBox.localToGlobal(Offset.zero).dy,
+              greaterThan(bandBox.localToGlobal(Offset.zero).dy +
+                  bandBox.size.height -
+                  1.0),
+              reason: 'the channel string must be *below* the band, i.e. on a '
+                  'second run. If it is beside it, the row fits one run at a '
+                  '288px section again — re-measure and flip `oneRun`, because '
+                  'the flush-right guard should then cover this width too.',
+            );
+          }
         },
       );
     }

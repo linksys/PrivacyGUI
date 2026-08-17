@@ -1791,6 +1791,64 @@ AC 1, the same conclusion #1228 reached about its own AC 5 (§2.12 point 3): a
 readability AC that needs a compact form is inherited by Track B, not claimed by the
 overflow ticket.
 
+### 2.10f What the Statistics twin of the same abbreviation taught us (#1270 — implemented)
+
+§2.10c localized `'Ch '` on the Wi-Fi Performance tab, where the gate could see it
+(3 coordinates in, 3 out). #1270 is the same one-line change on the Statistics
+page's WiFi Channels section, and everything the gate did for #1266 had to be done
+by hand here, because that page is not in `UspWidgetSpecs.all` (§2.9). Measured on
+the shipped section, all 26 locales × 288 / 256 / 224 / 192px sections, wide-6GHz
+fixture:
+
+| shape | 288px (production floor) | 256 / 224 / 192px |
+|-------|--------------------------|-------------------|
+| `Wrap` (shipped, #1264) | 26 clean | 26 clean at each |
+| pre-#1264 `Row` + `Spacer` | `tr` +27.0/+13.0, `th` +3.0 | **all 26** overflow (`tr` worst +123.0/+109.0) |
+
+Four findings, all method:
+
+1. **A `Wrap` fix converts an overflow into an *arrangement change*, and geometry
+   assertions have to be re-taken when it does.** The prefix spent the 47px of
+   headroom #1258 measured, so at the 288px floor the channel string no longer
+   fits one run: it drops below the band. Nothing overflows — that is the fix
+   working — but "the channel string is flush right", the property the old
+   `Row` + `Spacer` had and the geometry guard asserted, is now false at exactly
+   the width that matters most. Skipping the assertion there would leave the floor
+   unguarded, so each width now *states* which arrangement it expects (one run
+   above the floor, stacked at it) and the test asserts that. A change that buys
+   the string back onto one run fails the test, which is correct: the expectation
+   is a measurement and has to be re-taken.
+2. **Two ways to write a geometry probe that is blind by construction**, both
+   found in the #1258 group while re-taking its ledger, both now guarded in the
+   probe itself:
+   - *Measuring a span against the immediate parent.* `CrossAxisAlignment.start`
+     shrink-wraps the per-radio `Column` **together with** the `Wrap` inside it, so
+     "child width == parent width" holds in both the fixed and the broken tree. The
+     reference has to be a box whose size the harness controls (the section box),
+     with the intervening insets summed off the tree rather than hardcoded.
+   - *Pumping a section wider than the screen.* The box that sizes a section lives
+     inside the viewport, so Flutter clamps it: 288 / 537 / 841px sections on a
+     320px screen render 238 / 270 / 270px of content — three cases, two layouts,
+     and every width in the report wrong. `probeSectionOverflow` now fails loudly
+     when asked for this. The general rule for this epic's instruments: **a width
+     is only measured if it is realizable on the screen it is pumped on.**
+3. **A mutation ledger is a per-revision fact and has to be re-taken, not
+   appended to.** This file's suite grew 43 → 158 tests, so every count in its
+   ledger was stale; re-running all ten mutations is what surfaced finding 2 (one
+   row had quietly dropped from 3 failures to 1). Two corollaries: group
+   attribution is not evidence of isolation — one shared probe returns every
+   `RenderFlex` incident in the tree, so mutating one row fails whichever group
+   pumps a width where it overflows — and a `Flexible` inside a `Wrap` fails all
+   158 tests with a framework error, which is loud but proves nothing about the
+   guard that was meant to catch it.
+4. **Five suites, five copies of `2.0`.** The gate and its four satellites each
+   filtered overflow on a bare 2.0px tolerance. A satellite that drifted looser
+   would report a coordinate the gate still fails on; tighter, and it fails on CI
+   only. It is now one `kOverflowTolerancePx`, and the Statistics-section pump is
+   one `probeSectionOverflow` beside the dashboard's `probeCardOverflow` — the
+   *mechanism* (collector, parsing, settling) stays separate from a page's
+   *geometry*, so a dashboard test cannot inherit Statistics layout facts.
+
 ### 2.11 fl_chart's coordinates get a primary plan and a documented fallback
 
 Six of `firewall_overview`'s remaining coordinates originate inside fl_chart

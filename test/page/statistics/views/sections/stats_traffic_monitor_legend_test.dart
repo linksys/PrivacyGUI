@@ -2,20 +2,17 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
-import 'package:privacy_gui/localization/fallback_font_resolver.dart';
 import 'package:privacy_gui/page/_shared/models/traffic_analysis_state.dart';
 import 'package:privacy_gui/page/_shared/utils/usp_formatters.dart';
 import 'package:privacy_gui/page/statistics/views/sections/stats_traffic_monitor_section.dart';
-import 'package:privacy_gui/theme/theme_json_config.dart';
-import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../../golden_test/golden_framework/mocks/mock_dashboard_cards.dart';
 import '../../../../golden_test/page/dashboard/cards/fixtures/cards_test_data.dart';
 import '../../../../util/app_test_fonts.dart';
 import '../../../../util/overflow_probe.dart';
+import '../../../../util/statistics/stats_section_probe.dart';
 
 /// Overflow tests for the Statistics-page Traffic Monitor legend row (#1252).
 ///
@@ -63,88 +60,31 @@ void main() {
     await loadAppFonts();
   });
 
-  /// The width a single Statistics section renders to on a [screenWidth] screen:
-  /// full content width minus the page margin on both edges. The section card's
-  /// own padding then reduces this further, exactly as in production.
-  ///
-  /// The margin comes from ui_kit's own [AppLayoutConfig.margin] rather than a
-  /// copy of its breakpoint table: the Statistics page pads each section by
-  /// `context.layoutMargin` (`usp_statistics_view.dart:86`), which is that same
-  /// function. A local copy is correct only until ui_kit moves a breakpoint, and
-  /// then this test measures the wrong widths and still passes.
-  double sectionWidthFor(double screenWidth) =>
-      screenWidth - AppLayoutConfig.margin(screenWidth) * 2;
-
-  final baseTheme = ThemeJsonConfig.defaultConfig().createLightTheme();
-
   /// Pumps the real [StatsTrafficMonitorSection] once at [screenWidth] with the
-  /// section sized to the width the page gives it, mirroring how the section
-  /// lays out inside the scrollable Statistics tab, and returns the RenderFlex
-  /// overflows beyond a 2px tolerance (the gate's own tolerance).
+  /// section sized to the width the page gives it, and returns the RenderFlex
+  /// overflows beyond the gate's own tolerance.
   ///
-  /// One pump per call: Flutter reports a given RenderFlex's overflow only once
-  /// per render-object lifetime, so a second pump in the same test would report
-  /// a genuinely overflowing width as clean.
+  /// The scaffolding — margin arithmetic, `lib/app.dart`'s theme+locale wiring,
+  /// the one-pump rule — is [probeSectionOverflow] since #1270; this wrapper only
+  /// binds this file's section and its fixture, so every call below is unchanged.
   Future<List<OverflowIncident>> overflowsAt({
     required WidgetTester tester,
     required double screenWidth,
     required Locale locale,
-  }) async {
-    final surface = Size(screenWidth, 900.0);
-    final sectionWidth = sectionWidthFor(screenWidth);
-
-    // Same call as `lib/app.dart`, not a copy of its body — see #1285.
-    final theme = FallbackFontResolver.withFallbackFont(baseTheme, locale);
-
-    return runWithOverflowCollection((sink) async {
-      await tester.binding.setSurfaceSize(surface);
-      tester.view.physicalSize = surface;
-      tester.view.devicePixelRatio = 1.0;
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: cardOverrides(
-            trafficAnalysisState: testTrafficWithHistory,
-          ),
-          child: MaterialApp(
-            locale: locale,
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            theme: theme,
-            builder: (context, child) => MediaQuery(
-              data: MediaQuery.of(context).copyWith(disableAnimations: true),
-              child: child ?? const SizedBox.shrink(),
-            ),
-            home: Scaffold(
-              body: SingleChildScrollView(
-                child: Align(
-                  alignment: Alignment.topLeft,
-                  child: SizedBox(
-                    width: sectionWidth,
-                    child: const StatsTrafficMonitorSection(),
-                  ),
-                ),
-              ),
-            ),
-          ),
+  }) =>
+      probeSectionOverflow(
+        tester,
+        section: const StatsTrafficMonitorSection(),
+        screenWidth: screenWidth,
+        locale: locale,
+        overrides: cardOverrides(
+          trafficAnalysisState: testTrafficWithHistory,
         ),
       );
-      await settleIgnoringAnimations(tester);
-      return sink.where((i) => i.pixels > 2.0).toList();
-    });
-  }
 
-  /// The Statistics page is a single-column scroll list, so a section spans the
-  /// full content width. These are the narrow realizations that matter:
-  ///
-  /// - 1241px screen: the D1 desktop-large pinch. The 200px page margins open
-  ///   just above 1240px, so a 1241px screen yields a *narrower* section
-  ///   (841px) than a 1240px one (1192px) — the same regime that broke the
-  ///   dashboard twin (density design §D1).
-  /// - 905px tablet: 32px margins, 841px section.
-  /// - 601px: the tablet floor (32px margins), 537px section.
-  /// - 320px: the framework's narrowest supported screen (density design §2.3),
-  ///   16px margins, 288px section — the absolute worst case for this row.
-  const narrowScreens = <double>[1241.0, 905.0, 601.0, 320.0];
+  /// The narrow realizations that matter, and why — see [narrowStatsScreens].
+  /// 320px yields the 288px section that is this row's absolute worst case.
+  const narrowScreens = narrowStatsScreens;
 
   group('legend + totals row is clean (#1252)', () {
     // The widest upload/download locales measured for the #1226 twin: `fr`

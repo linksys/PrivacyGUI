@@ -83,11 +83,9 @@ List<Locale> get _targetLocales {
   }).toList();
 }
 
-/// Small tolerance for sub-pixel shaping differences between the mac (local) and
-/// ubuntu (CI) font rasterizers. The project bundles fixed font files so the two
-/// load the same glyphs, but borderline cases (~1px) can still flip; anything
-/// meaningfully clipped is many pixels over.
-const double _tolerancePx = 2.0;
+/// The gate's tolerance, now shared with the satellite suites so the two cannot
+/// drift apart — see [kOverflowTolerancePx] for why it is 2.0 (#1270).
+const double _tolerancePx = kOverflowTolerancePx;
 
 Map<String, String> _trackingByCard = {};
 Map<String, Set<String>> _knownOverflowAllowlist = {};
