@@ -18,6 +18,19 @@ class DeviceRow extends StatelessWidget {
   final Widget? trailing;
   final VoidCallback? onTap;
 
+  /// Drops the icon block, handing its width to the text column.
+  ///
+  /// `ListTileContentLayout` sizes the content column as whatever the leading
+  /// and trailing slots do not take, so removing the block returns its 44px
+  /// *plus* the 16px gap ui_kit adds per occupied slot — 60px, which is by far
+  /// the largest lever this row has. Everything else in it is either ui_kit's
+  /// own padding or content the row exists to show.
+  ///
+  /// The [icon] is still required, because a card that degrades must be able to
+  /// come back: the caller passes the same row description at every density and
+  /// only the selected form differs (#1289).
+  final bool compact;
+
   const DeviceRow({
     super.key,
     required this.icon,
@@ -25,6 +38,7 @@ class DeviceRow extends StatelessWidget {
     this.subtitle,
     this.trailing,
     this.onTap,
+    this.compact = false,
   });
 
   @override
@@ -34,15 +48,18 @@ class DeviceRow extends StatelessWidget {
     return AppListTile(
       backgroundColor: colorScheme.surfaceContainerHighest
           .withValues(alpha: BlockConstants.backgroundAlpha),
-      leading: Container(
-        width: 44,
-        height: 44,
-        decoration: BoxDecoration(
-          color: colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(BlockConstants.borderRadius),
-        ),
-        child: Center(child: icon),
-      ),
+      leading: compact
+          ? null
+          : Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: colorScheme.surfaceContainerHighest,
+                borderRadius:
+                    BorderRadius.circular(BlockConstants.borderRadius),
+              ),
+              child: Center(child: icon),
+            ),
       title: AppText.bodyLarge(
         title,
         maxLines: 1,

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/_shared/models/client_device.dart';
+import 'package:privacy_gui/page/dashboard/models/card_density.dart';
 import 'package:privacy_gui/page/dashboard/models/display_mode.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_widget_specs.dart';
 import 'package:privacy_gui/page/devices/cards/usp_connected_devices_card.dart';
@@ -118,6 +119,23 @@ void main() {
   final heightRows = spec.getConstraints(DisplayMode.normal).minHeightRows;
 
   /// Pumps the card at one width, as the gate does — one pump, real fonts.
+  ///
+  /// Density is pinned to [CardDensity.normal], added by #1289 and the same pin
+  /// `usp_hero_row_readability_test.dart` took for the same reason. This card now
+  /// declares `normalAbove: 336`, which is above *both* widths the gate realizes,
+  /// so unpinned this helper would render the popup form at 191.4px and the
+  /// compact form at 288px — and 7 of the assertions below would fail on content
+  /// that is no longer on screen rather than on content that stopped fitting. The
+  /// honest reading of those 7 failures is "this width no longer shows this", not
+  /// "the readability regressed", and a test that cannot tell those apart is
+  /// worse than no test.
+  ///
+  /// The assertions keep their meaning under the pin: 191.4px is the narrowest
+  /// width the *normal* form can be asked for, so it stays the strictest test of
+  /// #1238's four removals, and those still govern every width from 336px up —
+  /// where the card is now most of the time it is not on a phone. What #1289
+  /// changed is which form is *selected*; `usp_connected_devices_density_test.dart`
+  /// is the file that asserts that, and it pins nothing.
   Future<void> pumpAt(
     WidgetTester tester, {
     required CardWidthCase widthCase,
@@ -130,6 +148,7 @@ void main() {
         cardHeightRows: heightRows,
         tabIndex: 0,
         locale: locale,
+        density: CardDensity.normal,
       );
 
   /// The widths the gate measures — the narrowest realization of the card's min

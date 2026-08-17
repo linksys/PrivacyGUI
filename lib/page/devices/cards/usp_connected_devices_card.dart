@@ -6,9 +6,11 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/utils/device_classifier.dart';
 import 'package:privacy_gui/page/_shared/models/client_device.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
+import 'package:privacy_gui/page/_shared/components/card_density_scope.dart';
 import 'package:privacy_gui/page/_shared/components/card_skeleton.dart';
 import 'package:privacy_gui/page/_shared/components/dashboard_card_template.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
+import 'package:privacy_gui/page/dashboard/models/card_density.dart';
 import 'package:privacy_gui/page/devices/views/components/device_icon_with_badge.dart';
 import 'package:privacy_gui/page/devices/views/components/usp_signal_strength_indicator.dart';
 import 'package:privacy_gui/route/constants.dart';
@@ -29,10 +31,32 @@ import 'package:privacy_gui/page/_shared/components/usp_status_dot.dart';
 ///
 /// Stacked, each block gets the full 133.4px of inner width at 191px and 230px
 /// at 288px, so every locale fits unbroken with 16.7px to spare in the worst
-/// case. The 6.6px between 289.4 and this threshold is slack, not a knife edge:
-/// the realized content widths either side are 254px and ~600px at a 1440px
-/// desktop, so nothing lands within 200px of it (#1238).
-const double _kStatusCountsSideBySideMinWidth = 296;
+/// case.
+///
+/// ## 297, not the 296 that shipped with #1238
+///
+/// #1238 read the 6.6px between 289.4 and 296 as slack, on the grounds that "the
+/// realized content widths either side are 254px and ~600px, so nothing lands
+/// within 200px of it". Both halves of that were wrong, and #1289's 1px × 26
+/// locale sweep of the card is what caught it:
+///
+///   - the derivation was 6.9px optimistic. At content 296 — the trigger width
+///     itself — `el` overflows its half by **0.264px**. So the true demand is
+///     296.264 and 296 was not slack but a knife edge landed on exactly.
+///   - the *realizations* are 200px apart; the *widths* are not. A user drags a
+///     card to any span the grid offers, and a 3-column span on a 700px screen
+///     is 228.5px. 330px — where this fires — is an ordinary width.
+///
+/// Raised to the widest failing width + 1, which is how every other threshold in
+/// this file was derived. The half grows 0.5px per content px, so 297 seats the
+/// Greek pair with 0.236px to spare — thin, and deliberately the same kind of thin
+/// as [_kSignalLabelContentMinWidth]'s 231 (clean at +0.287px over its own 230).
+///
+/// Not caused by the density work and not fixed by it: nothing here reads
+/// [CardDensity], so this half-pixel was live in the normal form from #1238
+/// onward. The #1183 gate could not see it — 0.264px is inside its 2.0px
+/// tolerance, and it never pumps 330px anyway (#1289).
+const double _kStatusCountsSideBySideMinWidth = 297;
 
 /// Widest the parent-node badge may draw, label and padding included.
 ///
@@ -152,9 +176,33 @@ class UspConnectedDevicesCard extends ConsumerWidget {
     final activeDevices = devices.where((d) => d.isActive).toList();
     final inactiveDevices = devices.where((d) => !d.isActive).toList();
     final displayDevices = activeDevices.take(_maxDisplayCount).toList();
+    final compact = CardDensityScope.of(context) == CardDensity.compact;
 
     return DashboardCardTemplate(
       title: loc(context).connectedDevices,
+      // No `leading`, at any density — unlike #1288's three hero cards, which
+      // gained a header icon in their degraded forms because the icon was lost
+      // from the hero block they collapsed. Nothing leaves this card's header,
+      // and the measurement on #1289 found the title itself already ellipsized
+      // at 288px in `id` and `ru`; an icon there would take width from it.
+      //
+      // Those title floors — 312px in `id`, 300px in `ru` — are deliberately not
+      // folded into the threshold, even though the row floor it was derived from
+      // (336px) now happens to clear both. The header is
+      // `DashboardCardTemplate`'s and no density changes it, so a form this card
+      // selects cannot fix a clipped title at 288px whichever way the number
+      // goes; the title is readable above 336px because the *rows* needed that
+      // width, not because the title was priced in. Rolling it in would encode a
+      // constraint shared by all 18 cards into one card's threshold.
+      //
+      // Both counts rather than just the online one: at popup width this is a
+      // one-line reading of the network, and "3 online" without a total says
+      // nothing about the 3 that are not. `nOnlineOfTotal` is already localized
+      // in all 26 locales for `usp_network_topology_card`.
+      popupValue: loc(context).nOnlineOfTotal(
+        '${activeDevices.length}',
+        '${devices.length}',
+      ),
       titleBadge: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -203,7 +251,7 @@ class UspConnectedDevicesCard extends ConsumerWidget {
               else
                 for (var i = 0; i < displayDevices.length; i++) ...[
                   _buildDeviceRow(context, displayDevices[i],
-                      showSignalLabel: showSignalLabel),
+                      showSignalLabel: showSignalLabel, compact: compact),
                   if (i < displayDevices.length - 1) AppGap.sm(),
                 ],
             ],
@@ -217,6 +265,7 @@ class UspConnectedDevicesCard extends ConsumerWidget {
     BuildContext context,
     ClientDevice device, {
     required bool showSignalLabel,
+    required bool compact,
   }) {
     final scheme = Theme.of(context).colorScheme;
     final deviceCategory = DeviceClassifier.classify(
@@ -225,6 +274,12 @@ class UspConnectedDevicesCard extends ConsumerWidget {
     );
 
     return DeviceRow(
+      // The compact form's whole content is the 60px the icon block gives back —
+      // see [DeviceRow.compact]. The row keeps the device name, the address and
+      // the signal reading, which is the trade the threshold was derived from:
+      // an IPv4 address is the widest *bounded* token here, and truncating it
+      // destroys the value instead of shortening it (#1289).
+      compact: compact,
       icon: DeviceIconWithBadge.multiInterface(
         icon: deviceCategory.icon,
         size: 28,
@@ -233,43 +288,77 @@ class UspConnectedDevicesCard extends ConsumerWidget {
       ),
       title: device.displayName,
       subtitle: device.ip,
-      // The badge is the one decision the slot can answer, because the slot's
-      // cap is this row's own demand and the badge is what demands it: a name
-      // that fits whole is granted the width it asked for, and a name that does
-      // not is the only thing that gets squeezed. So it is dropped exactly where
-      // it could only ellipsize, which differs per row — unlike the dBm label,
-      // which every row must agree on (#1238).
-      trailing: LayoutBuilder(
-        builder: (context, constraints) {
-          final nodeName = device.parentNodeName;
-          final showBadge = nodeName != null &&
-              constraints.maxWidth >= _nodeBadgeNaturalWidth(context, nodeName);
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Dropped rather than ellipsized: a node name clipped to three
-              // characters and a dash names nothing, and the row's own title is
-              // the information here.
-              if (showBadge) _buildParentNodeBadge(context, nodeName),
-              if (device.hasSignalDisplay)
-                UspSignalStrengthIndicator(
+      // The compact form keeps only what carries a *reading*, and that is the
+      // rest of the 93.1px the address needs — the icon block alone does not get
+      // there on the narrowest rows. Both of the things dropped here are demands
+      // this row makes on a column it is simultaneously too narrow for:
+      //
+      //  * the parent-node badge, whose demand is a node *name* — unbounded user
+      //    data, capped at [_kNodeBadgeMaxWidth] — so keeping it would make the
+      //    content column a function of how the user named their extender
+      //    instead of how wide the card is. At the 100px cap it costs the
+      //    address 43px it does not have.
+      //  * the `WiFi`/`Wired` interface label, which is the *widest* fixed
+      //    trailing this row has (34.2px against the four bars' 22.0px) and the
+      //    only one that is pure text. Measured: with it, a wired row's quad is
+      //    granted 85.4px at a 200px card and clips; without it the row has no
+      //    trailing slot at all, so ui_kit's 16px gap goes back too and the
+      //    column is 134.0px.
+      //
+      // The bars stay, because they are a measurement of this device and nothing
+      // else on the row carries it — whereas the interface label is a *type*
+      // statement the row's icon also makes in the normal form, and the device
+      // list page makes in full (#1289).
+      trailing: compact
+          ? (device.hasSignalDisplay
+              ? UspSignalStrengthIndicator(
                   rssi: device.signalStrength!,
-                  // The four bars keep their design size and carry the strength
-                  // on their own; only the numeric label gives way.
                   showLabel: showSignalLabel,
                 )
-              else
-                AppText.bodySmall(
-                  device.isWifi ? 'WiFi' : 'Wired',
-                  color: scheme.onSurfaceVariant,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-            ],
-          );
-        },
-      ),
+              // `null`, not an empty `Column`: an occupied slot costs a 16px gap
+              // whatever it renders, and this is the row the band is tightest
+              // for.
+              : null)
+          // The badge is the one decision the slot itself can answer, because
+          // the slot's cap is this row's own demand and the badge is what
+          // demands it: a name that fits whole is granted the width it asked
+          // for, and a name that does not is the only thing that gets squeezed.
+          // So it is dropped exactly where it could only ellipsize, which
+          // differs per row — unlike the dBm label, which every row must agree
+          // on (#1238).
+          : LayoutBuilder(
+              builder: (context, constraints) {
+                final nodeName = device.parentNodeName;
+                final showBadge = nodeName != null &&
+                    constraints.maxWidth >=
+                        _nodeBadgeNaturalWidth(context, nodeName);
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Dropped rather than ellipsized: a node name clipped to
+                    // three characters and a dash names nothing, and the row's
+                    // own title is the information here.
+                    if (showBadge) _buildParentNodeBadge(context, nodeName),
+                    if (device.hasSignalDisplay)
+                      UspSignalStrengthIndicator(
+                        rssi: device.signalStrength!,
+                        // The four bars keep their design size and carry the
+                        // strength on their own; only the numeric label gives
+                        // way.
+                        showLabel: showSignalLabel,
+                      )
+                    else
+                      AppText.bodySmall(
+                        device.isWifi ? 'WiFi' : 'Wired',
+                        color: scheme.onSurfaceVariant,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                  ],
+                );
+              },
+            ),
     );
   }
 

@@ -841,6 +841,116 @@ batch inherits recorded on it:
 | `ethernet_ports` port list | #1290 | the **first real compact form**, and a threshold above 288px; carries #1240 AC 9 = #1228 AC 5 |
 | `network_health` gauge centre + metric chips | #1291 | a compact metric row that gives the gauge its height back, so #1235's `scaleDown` relaxes toward 1.0 |
 
+What each batch actually cost is recorded as it lands: §2.6e (#1288), §2.6f (#1289).
+
+### 2.6e What declaring the first thresholds taught us (#1288 — implemented)
+
+Three specs — `device_info` 262, `lan_info` 250, `time_settings` 256 — became the
+first in the registry to declare a `normalAbove`, which makes them the first
+evidence about the mechanism §2.4 designed. Four things came out of it.
+
+1. **The first thresholds in the dashboard exist for readability, and §2.6d point 1
+   stands unrevised.** #1240 measured every card as *fitting* at its narrowest
+   realization and correctly left every threshold absent; #1288 asked whether the
+   same cards can be *read* there and found three that cannot. Both are true of the
+   same code, which is the whole reason §1.2 splits the two columns. The practical
+   consequence is that a threshold is now derived from a **token measurement**, so
+   each spec carries its arithmetic decomposition — card chrome + hero fixed cost +
+   widest token — rather than the number alone. `lan_info` is why: its binding
+   string is the *subtitle*'s longest token in `el` (107.2px), beating the IP
+   address by 1.4px. Nobody would have guessed that, and nobody has to, because the
+   decomposition says which term moved when a hero is next edited.
+
+2. **A mid-word break is a defect in a datum and a nicety in a word — the same
+   fact §2.6d point 5 read the other way.** #1240 retired the claim that
+   `firewall_overview`'s `PALOMUURISÄÄNNÖT` is a readability defect: it breaks
+   mid-word onto two lines that both render in full, and nothing is cut. #1288's
+   hero criterion is stricter — a card reads when no line break falls inside a
+   token — and both are right, because a metric *label* is a word the reader
+   reconstructs while a hero value is a *datum* whose reading changes when it
+   breaks. `192.1` / `68.1.1` is not a hyphenated address; it is two numbers. So the
+   criterion attaches to what the string **is**, not to how it broke, and #1289
+   sharpened the same distinction into bounded vs unbounded (§2.6f point 2).
+
+3. **Both directions of this are invisible to the #1183 gate, and one of them
+   inverts it.** `widestTokenWidth` and `hasSplitToken` had to be added to the
+   readability probe because a mid-word break makes text *narrower* — the more
+   badly a hero degrades, the greener the gate gets. This is the same asymmetry
+   §2.11a point 4 warned about from the popup side, now measured from the wrapping
+   side, and it is why every batch in this table owes a readability suite rather
+   than a gate exemption.
+
+4. **Declaring a threshold retro-invalidates the readability suite that motivated
+   it.** `usp_hero_row_readability_test.dart` was written when production rendered
+   the normal form at 191.4px; the moment the spec declared 262, production
+   rendered the *popup* form there and every assertion failed on a missing widget
+   rather than on unreadable content. The fix is a one-line pin (`CardDensity.normal`)
+   and the assertions keep their meaning — 191.4px is still the narrowest width the
+   normal form can be asked for — but the sequencing lesson generalizes: **every**
+   remaining batch should expect its own readability file to break on the commit
+   that fixes the card, and should pin rather than re-measure. #1289 hit exactly
+   this (§2.6f point 5) and cost nothing to fix because #1288 had already named it.
+
+### 2.6f What a threshold above the realization taught us (#1289 — implemented)
+
+`connected_devices` declares `normalAbove: 336` — the first threshold in the
+registry **above** the 288px realization the grid most often hands out, where all
+three of #1288's cards sit below it. That inversion is the section.
+
+1. **A threshold is not "the floor at which a card stops being broken"; it is the
+   width at which the *normal* form earns being selected.** #1288's hero cards read
+   at 288px and only need help at the 191px floor, so their thresholds land below
+   288 and the compact band is a narrow strip nothing realizes. This card ellipsizes
+   four of its five fixture device names at 288px, so 288px is precisely where the
+   compact form has to be chosen for it to be worth having. `usp_connected_devices_density_test.dart`
+   therefore asserts `normalAbove >= widestRealization`, the deliberate inversion of
+   the `<= 288` bound its hero-row counterpart asserts — and the two bounds
+   disagreeing is the correct outcome, not a rule that needs unifying.
+
+2. **The criterion that decides what a threshold protects: a bounded token must
+   never ellipsize, an unbounded one may.** This card's "nothing ellipsizes" width
+   is 330px in all 26 locales, bound by a fixture device *name*. Shipping 330 would
+   have encoded the fixture, because a device name is unbounded router data — no
+   width fits an arbitrary one, and `MacBook-A…` still identifies a device.
+   `192.168.1.…` identifies no host, so the address is what the number protects, and
+   a full 15-character quad (93.1px) is what it was measured against. Locale
+   invariance follows from the same fact rather than from luck: the widest thing on
+   this card is data, not a translated string.
+
+3. **A per-row rule cannot decline a demand that is inside its own budget — which
+   is how you tell a card fix from a threshold.** The parent-node badge is sized
+   `min(nodeName + 16, 100)`, and it has a per-row drop rule: it goes when the
+   trailing slot cannot seat the name **whole**. But a name at the 100px cap *is*
+   whole at 100px by definition, so from 311px up the rule is satisfied, the badge
+   stays, and a capped name leaves the address 69.0px of the 93.1px it needs. The
+   mutation ledger confirms it from the other side: re-admitting the badge clips the
+   address at 200px but not at 288px, because at 288px the slot is too narrow to
+   seat a capped name and the rule fires on its own. **The rule protects the bottom
+   of the band and goes quiet exactly where the problem is.** A bounded demand that
+   some width can retire belongs in the threshold; the alternative — a second rule
+   that declines a demand it already approved — is a rule arguing with itself.
+
+4. **A compact form must be clean across its whole band, not at the widths the grid
+   realizes.** The band `[200, 336)` was swept at 1px in all 26 locales, and so was
+   `[336, 520]` for the normal form. This is more than the two realizations need,
+   and §1.5 is why it is the right amount: a 3-column span is 228.5px on a 700px
+   screen, so the interval is reachable even though no default layout produces it. A
+   band no test enters is a band whose contents were never seen.
+
+5. **The sweep found a half-pixel the gate cannot, and the derivation error behind
+   it is repeatable.** At a 330px card — content exactly 296px — `el`'s status
+   counts overflowed their half by 0.264px, live in the normal form since #1238 and
+   nothing to do with density. #1238 derived 289.4px for that threshold and read the
+   6.6px up to 296 as slack; the true demand is 296.264px, so 296 was a knife edge
+   landed on exactly. Two lessons, both general: derive a threshold as **widest
+   failing + 1**, never as *demand + eyeballed slack*; and when arguing that no
+   width lands near a constant, measure **widths**, not realizations — #1238's
+   justification ("nothing lands within 200px of it") compared the realized content
+   widths either side and a user drags cards to any span the grid offers. The gate
+   was blind twice over: 0.264px is inside its 2.0px tolerance, and it never pumps
+   330px. The test that guards it asserts on *layout* — which line the second count
+   sits on — because a pixel assertion at that scale cannot survive two rasterizers.
+
 ### 2.7 The gate enumerates widths instead of sampling them
 
 **Implemented in #1225** (not yet merged). `_scanScreens`'s hand-written 19-width list *asserted* the
@@ -1952,6 +2062,10 @@ one deviation from the legend shape.
 | #1232 | Density plumbing (§2.1, §2.4, §2.6) — the one ticket needing red-first tests |
 | #1239 | Popup form + dialog reuse (§2.1) — **implemented**, lessons in §2.6c |
 | #1240 | Per-card thresholds and compact forms (§2.4, §2.5) — **implemented as a decision and a split**, lessons in §2.6d. Measured: all 18 cards fit, so no card declares a threshold; the six that are unreadable at 191px are split into four batch tickets (#1288, #1289, #1290, #1291), `ethernet_ports`' inherited port-list AC (§2.12) among them |
+| #1288 | Hero row — `device_info` 262, `lan_info` 250, `time_settings` 256, the registry's first declared thresholds — **implemented**, lessons in §2.6e |
+| #1289 | `connected_devices` device row — `normalAbove: 336`, the first threshold *above* the 288px realization — **implemented**, lessons in §2.6f |
+| #1290 | `ethernet_ports` port list — the first real compact form; reconcile `_kSideBySideMinWidth` |
+| #1291 | `network_health` gauge centre + metric chips — give the gauge its height back |
 
 #1240 waited on all of Track A: thresholds are meaningless while fit widths are
 still moving, and the point of the layout fixes is to lower them. Re-measured
@@ -1962,6 +2076,12 @@ readability, tracked per batch rather than per threshold (#1288, #1289, #1290,
 compact form for `[200, normalAbove)` as well as the threshold itself: the popup
 form covers below 200px, and §1.5's 191.4-422.0px span for a 3-column card means
 the interval between is reachable.
+
+Four cards now declare a threshold (§2.6e, §2.6f), so "absent for all 18" is the
+statement #1240 measured, not the state of the registry. Both batches held the
+gate at 1644/1644 with `known_overflows.json` byte-identical: a threshold changes
+which form is *selected*, and every form was already clean — which is exactly why
+each batch owes a readability suite the gate cannot substitute for.
 
 ### How each step is verified
 

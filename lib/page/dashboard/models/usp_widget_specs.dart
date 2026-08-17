@@ -142,6 +142,62 @@ abstract class UspWidgetSpecs {
   static const connectedDevices = WidgetSpec(
     id: 'connected_devices',
     displayName: 'Connected Devices',
+    // Measured floor, #1289 AC 1: the widest *bounded* token a device row shows
+    // is a full 15-character IPv4 quad at 93.1px, and the floor is the narrowest
+    // card at which the **normal** row seats it — 336px, from a 1px sweep of the
+    // pinned normal form from 200px to 460px (335px grants 93.0px and clips by
+    // 0.1px; 336px and everything above is clean).
+    //
+    // ## Why 336 and not the 311 the fixture's rows suggest
+    //
+    // The same sweep against a row behind `MR7500` puts the floor at 310.4
+    // (`cardWidth − 217.3` content, + 93.1), and shipping that number would have
+    // been wrong for a reason worth recording: the trailing slot takes what it
+    // *demands*, and this row's demand includes a parent-node badge whose width
+    // is `min(nodeName + 16, 100)`. A six-character node name demands 62px; one
+    // at the 100px cap demands 100px, and the extra 38px comes out of the only
+    // column left — the address. Measured at 311px with `Living-Room-Extender-2`
+    // as the node: the quad is granted 69.0px against the 93.1px it needs.
+    //
+    // The badge's own drop rule cannot cover this, and that is the point. It
+    // drops the badge when the slot cannot seat the name *whole*, but a capped
+    // name is whole at 100px by definition, so at every width from 311 up the
+    // rule is satisfied and the badge stays. A per-row rule cannot decline a
+    // demand that is inside its own budget; only the threshold can, which is why
+    // the number carries it. The badge is *bounded* (unlike the node name it
+    // renders), so a width does exist that pays for it — 336px — and a bounded
+    // demand that a width can retire belongs in the floor.
+    //
+    // ## Why the floor is not the 330px "nothing ellipsizes" width
+    //
+    // A 1px sweep from 191px to 520px in all 26 locales puts *that* number at
+    // 330, identically in every one, and the binding token is the fixture's
+    // `Gaming-Console` (124.9px) — a device *name*. Names are unbounded router
+    // data: no width makes an arbitrary one fit, so 330 is a property of the
+    // fixture rather than a threshold, and ellipsis on a name is the designed
+    // behaviour. `MacBook-A…` still identifies a device; `192.168.1.…` does not
+    // identify a host, which is the whole distinction this number is derived
+    // from. Locale-invariance is the same finding from the other side: the
+    // widest thing on this card is data, not a translated string.
+    //
+    // ## What the bands buy
+    //
+    // `widthCasesFor` realizes exactly two widths here — 191.375px (3-column
+    // floor) and 288.000px (6- and 8-column spans both clamped to the 4-column
+    // mobile grid). So this threshold puts the first in popup and the *second* in
+    // compact, and 288px is where it pays: the normal row ellipsizes four of the
+    // five fixture names there, and the compact row's 60px hands `Smart-Speaker`
+    // (113.0px) a column that fits. The band also covers the widths between the
+    // realizations that the grid produces and the gate never pumps — a 3-column
+    // span is 228.5px on a 700px screen.
+    //
+    // The compact form holds the quad across the **whole** band: a 1px sweep of
+    // the pinned compact form from 200px to 340px grants all four worst-case rows
+    // 93.1px at every width, with no clipping anywhere, in all 26 locales. That
+    // is a stronger statement than the band needs (it clears 336) and it is what
+    // makes the [200, 336) span safe to declare rather than a span that merely
+    // happens to work at the two widths the grid realizes.
+    normalAbove: 336,
     constraints: {
       DisplayMode.normal: WidgetGridConstraints(
         minColumns: 3,
