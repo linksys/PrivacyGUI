@@ -221,11 +221,20 @@ void main() {
   // Meta-test: the hardcoded tab counts in kTabbedCardTabCounts must match what
   // each card actually builds. If a card gains/loses a tab, this fails and
   // points at the registry to update (keeping the sweep exhaustive).
+  //
+  // Measured at the **desktop** width, not at the narrowest realization it used
+  // to pump. A card that declares `normalAbove` renders its popup form below
+  // 200px, and the popup form has no tab bar at all — `network_health` was the
+  // first tabbed card to declare one (#1291) and this guard read its 0 visible
+  // tabs as "the card lost its tabs". How many tabs a card *has* is a property
+  // of its whole form; which form a given width selects is a density claim, and
+  // it belongs to the per-card density suites rather than to a registry check
+  // that happens to pump a narrow width (#1291).
   group('tab registry', () {
     for (final entry in kTabbedCardTabCounts.entries) {
       testWidgets('${entry.key} still has ${entry.value} tabs', (tester) async {
         final spec = UspWidgetSpecs.all.firstWhere((s) => s.id == entry.key);
-        final wc = widthCasesFor(spec).first;
+        final wc = desktopCaseFor(spec);
         final rows = spec.getConstraints(DisplayMode.normal).minHeightRows;
         await probeCardOverflow(
           tester,

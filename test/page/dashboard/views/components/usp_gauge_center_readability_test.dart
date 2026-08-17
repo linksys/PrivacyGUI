@@ -4,6 +4,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
+import 'package:privacy_gui/page/dashboard/models/card_density.dart';
 import 'package:privacy_gui/page/dashboard/models/display_mode.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_widget_specs.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -93,19 +94,39 @@ import '../../../../util/dashboard/text_readability_probe.dart';
 ///
 /// ### `network_health` (#1235), same method, `network_health`'s entries stripped
 ///
-///   | mutation                                            | this file | the gate |
-///   |-----------------------------------------------------|-----------|----------|
-///   | `FittedBox` removed entirely                        | 1 fail    | 3 fail   |
-///   | score + tier ellipsized instead of scaled           | 1 fail    | 2 fail   |
-///   | score font shrunk always (`titleLarge`→`bodyMedium`) | 1 fail    | green    |
-///   | `BoxFit.contain` instead of `scaleDown`             | green     | green    |
+/// Re-measured after #1291 declared this card's threshold, because that ticket
+/// changed what the gate is able to see here. The gate column below is the new
+/// measurement; the parenthesised number is what it was when #1235 wrote it:
+///
+///   | mutation                                            | this file | the gate     | density  |
+///   |-----------------------------------------------------|-----------|--------------|----------|
+///   | `FittedBox` removed entirely                        | 1 fail    | green (was 3)| 9 fail   |
+///   | score + tier ellipsized instead of scaled           | 1 fail    | green (was 2)| 9 fail   |
+///   | score font shrunk always (`titleLarge`→`bodyMedium`) | 1 fail    | green        | 1 fail   |
+///   | `BoxFit.contain` instead of `scaleDown`             | green     | green        | green    |
+///
+/// **Rows 1 and 2 lost their gate coverage entirely, and that is by design.**
+/// #1235's three coordinates were all at 191.375px, and after #1291 the
+/// production factory renders the *popup* form there — no gauge, no centre, no
+/// overflow to find. At the one realization that still draws the gauge (288px,
+/// compact) the metric row is gone, so the centre fits at its natural size and
+/// nothing about the fit can overflow either. The gate has not become weaker; the
+/// card stopped being rendered in the shape the gate was catching. What follows
+/// is that this file and `usp_network_health_density_test.dart` are now the only
+/// guard on the centre's fit, so neither may be deleted as "covered by the gate".
+///
+/// The density column is that file's 17 tests, and its 9s are honest but blunt:
+/// they are its `findsOneWidget` precondition on the `FittedBox` refusing to
+/// measure a tree that no longer has one. Loud, and correct to keep, but it is
+/// this file's single failure that is the real kill — «Удовлетворительный»
+/// truncated in `ru`, which is the reading being lost.
 ///
 /// Row 2 is the fix #1235's own text implies ("the tier label is wider than the
-/// space inside the circle" ⇒ ellipsize it). It truncates the tier *and* leaves
-/// two of the three coordinates standing, because the overflow is vertical: one
-/// line saved in `ru` is enough, 28+16px of column in a 23px box in `de` is not.
-/// A wrong diagnosis producing a fix that is both lossy and incomplete is the
-/// cheapest possible argument for measuring first.
+/// space inside the circle" ⇒ ellipsize it). It truncates the tier, and when it
+/// was measured it also left two of the three coordinates standing, because the
+/// overflow was vertical: one line saved in `ru` is enough, 28+16px of column in
+/// a 23px box in `de` is not. A wrong diagnosis producing a fix that is both
+/// lossy and incomplete is the cheapest possible argument for measuring first.
 ///
 /// Row 3 is why the 12px legibility floor and the unscaled-at-preferred canary
 /// are in this file at all. Permanently shrinking the score clears all 209 gate
@@ -128,6 +149,22 @@ void main() {
   /// Pumps [cardId]'s first tab at the narrowest realization of the given span
   /// — for `min`, the worst case the gate measures and the only width where
   /// either fix bites. One pump, as the gate does.
+  ///
+  /// The form is pinned to [CardDensity.normal], which it did not need to be
+  /// before #1291 declared `network_health`'s threshold. Unpinned, six of the
+  /// seven tests in the second group below stopped finding an `AppGauge` at all:
+  /// 191.375px is under `kPopupBelow`, so the production factory renders the
+  /// popup form there and the centre those tests measure is not on screen. That
+  /// is form *selection*, not a layout regression, and reading it as one would
+  /// have been the worst possible outcome — the same trap #1288 and #1289 hit and
+  /// pinned their way out of.
+  ///
+  /// Pinned rather than re-pointed at the new live floor because of what each
+  /// file is for: this one guards the two mechanisms #1234 and #1235 built, at
+  /// the widths they were measured at, and `scaleDown` has to keep working
+  /// wherever a future layout re-squeezes this box. Which form the grid *selects*
+  /// at each width, and that the selected one is clean, is
+  /// `usp_network_health_density_test.dart`'s claim.
   Future<void> pumpAt(
     WidgetTester tester, {
     required String cardId,
@@ -151,6 +188,7 @@ void main() {
         label: preferred ? 'preferred' : 'min',
       ),
       cardHeightRows: constraints.minHeightRows,
+      density: CardDensity.normal,
       // Tab 0 only, and that is the whole of AC 1 rather than a sample of it.
       // #1235 says "all 3 tabs", but `network_health` builds its `AppGauge` in
       // `_HealthOverview`, which `_buildTabContent`'s `switch` reaches for
@@ -382,8 +420,16 @@ void main() {
       // 14.6px score over an 8.4px tier. That is small, and it is a measurement
       // of the density defect rather than a design choice: this card is being
       // rendered at 191px when §1.2 puts its fit width at 420px, and the real
-      // remedy is #1240's threshold, at which point `scaleDown` relaxes back to
-      // 1.0 on its own.
+      // remedy is a threshold, at which point `scaleDown` relaxes back to 1.0 on
+      // its own.
+      //
+      // That remedy landed: #1291 declared `normalAbove: 366` and dropped the
+      // metric row in the compact band, so no width the grid can select renders
+      // this squeeze any more — 191px is the popup form and 200-365px gives the
+      // gauge its full 120x120. This case therefore survives as a **pinned**
+      // one, and its subject changed with it: not "what the user sees at 191px"
+      // but "`scaleDown` still absorbs a starved box", which is the property
+      // #1235 bought and the one a future layout could silently spend.
       //
       // So the floor is set just under today's worst case. It is not a claim
       // that 12px is comfortable; it is the tripwire for the squeeze getting

@@ -3,11 +3,13 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/_shared/components/card_density_scope.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/_shared/models/network_health_helpers.dart';
 import 'package:privacy_gui/page/_shared/models/traffic_analysis_state.dart';
 import 'package:privacy_gui/page/_shared/providers/card_tab_state_provider.dart';
 import 'package:privacy_gui/page/_shared/providers/usp_traffic_analysis_notifier.dart';
+import 'package:privacy_gui/page/dashboard/models/card_density.dart';
 import 'package:privacy_gui/page/_shared/components/dashboard_card_template.dart';
 import 'package:privacy_gui/page/internet_settings/providers/wan_data_provider.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -16,6 +18,29 @@ import 'package:ui_kit_library/ui_kit.dart';
 /// the WAN link is down (a disconnected link carries no traffic, so 0%/0/s
 /// would be misleading). Language-neutral, so no localization key is needed.
 const String _kNoTrafficPlaceholder = '--';
+
+/// The three health scores, computed once for the two places that need them:
+/// the Health tab's gauge and traffic lights, and the card's `popupValue`.
+///
+/// WAN consults physical link state: a disconnected WAN scores 0 ("Critical")
+/// regardless of (absent) traffic, so it can no longer be reported as
+/// "Excellent" while the connection banner says otherwise. See #1143.
+({int wan, int lan, int overall}) _scores(
+  TrafficAnalysisState state, {
+  required bool wanIsUp,
+}) {
+  final wan = state.latest?.interfaces[TrafficInterface.wan];
+  final lan = state.latest?.interfaces[TrafficInterface.lan];
+  final wanScore = NetworkHealthHelpers.computeWanScore(wan, wanIsUp: wanIsUp);
+  final lanScore =
+      lan != null ? NetworkHealthHelpers.computeHealthScore(lan) : 100;
+  return (
+    wan: wanScore,
+    lan: lanScore,
+    // Overall score = min of WAN and LAN.
+    overall: math.min(wanScore, lanScore),
+  );
+}
 
 /// Network Health Monitoring card — 3-tab card (F-022).
 ///
@@ -46,6 +71,23 @@ class _UspNetworkHealthCardState extends ConsumerState<UspNetworkHealthCard> {
 
     return DashboardCardTemplate.tabbed(
       title: loc(context).networkHealth,
+      // The popup form's one value is the **score**, not the tier (#1291).
+      //
+      // Both were on the table. The score wins on two counts: it is the finer
+      // reading of the same fact, and the popup form's own title already names
+      // the metric, so "82" under "Network Health" needs no other word. The tier
+      // would also import the exact problem the popup form exists to escape —
+      // `Mittelmäßig` / `Удовлетворительный` are the widest strings this card
+      // owns, and the popup slot is the narrowest place it has.
+      //
+      // Both no-data states speak the vocabulary the gauge centre speaks, for
+      // the same reason it does (#1143): a down link carries no traffic, so a
+      // score would be a number about nothing.
+      popupValue: !wanIsUp
+          ? loc(context).disconnected
+          : trafficState.history.isEmpty
+              ? _kNoTrafficPlaceholder
+              : '${_scores(trafficState, wanIsUp: wanIsUp).overall}',
       titleBadge: trafficState.isFetching
           ? SizedBox(
               width: 14,
@@ -115,19 +157,13 @@ class _HealthOverview extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final compact = CardDensityScope.of(context) == CardDensity.compact;
     final wan = state.latest?.interfaces[TrafficInterface.wan];
-    final lan = state.latest?.interfaces[TrafficInterface.lan];
 
-    // WAN score consults physical link state: a disconnected WAN scores 0
-    // ("Critical") regardless of (absent) traffic, so it can no longer be
-    // reported as "Excellent" while the connection banner says otherwise.
-    // See #1143.
-    final wanScore =
-        NetworkHealthHelpers.computeWanScore(wan, wanIsUp: wanIsUp);
-    final lanScore =
-        lan != null ? NetworkHealthHelpers.computeHealthScore(lan) : 100;
-    // Overall score = min of WAN and LAN
-    final overallScore = math.min(wanScore, lanScore);
+    final scores = _scores(state, wanIsUp: wanIsUp);
+    final wanScore = scores.wan;
+    final lanScore = scores.lan;
+    final overallScore = scores.overall;
     final tier = NetworkHealthHelpers.tierFromScore(overallScore);
     final tierClr = NetworkHealthHelpers.tierColor(tier, colorScheme);
 
@@ -263,32 +299,68 @@ class _HealthOverview extends StatelessWidget {
             ),
           ],
         ),
-        AppGap.md(),
-        // Summary metrics
-        Row(
-          children: [
-            Expanded(
-              child: _MetricChip(
-                label: loc(parentContext).errors,
-                value: errorText,
+        // Summary metrics — dropped **whole** below the card's threshold (#1291).
+        //
+        // This row is what starves the gauge. The two are exactly complementary:
+        // measured across 26 locales, `gauge + row == 165px` at every width, and
+        // the row's height is a function of translation length, so `de` takes
+        // 142px of it (`Verworfene Pakete` on 6 lines) and leaves the gauge 23px
+        // for a centre column that needs 44 — the 0.52 scale #1235 absorbed with
+        // `BoxFit.scaleDown` and handed here.
+        //
+        // Dropping it returns the whole 165px, so the gauge lays out at its full
+        // 120x120 — a ring rather than a 120x23 sliver — and the centre scales at
+        // 1.000 in all 26 locales (`ru` 0.973, which is its centre being 123px
+        // wide against a 120px gauge: a *width* bind, present at desktop too, and
+        // no threshold can pay for it).
+        //
+        // Dropped rather than degraded, and #1275's narrow `InfoGrid` measured
+        // rather than assumed, because this ticket was told to check it first:
+        //
+        //   | compact form                      | row   | gauge | worst scale |
+        //   |-----------------------------------|-------|-------|-------------|
+        //   | this one (dropped)                | 0     | 120   | 1.000       |
+        //   | #1275 stacked InfoGrid, 25 locales| 112   | 53    | 1.000       |
+        //   | #1275 stacked InfoGrid, `de`      | 128   | 37    | 0.841       |
+        //
+        // The stacked form gives every label the full width, so no label wraps in
+        // 25 locales — but `VERWORFENE PAKETE` still needs two lines at 200-215px,
+        // and 3 tiles cost 112px even at one line each. It buys legibility with
+        // height, which is the right trade for `firewall_overview`'s *width*
+        // defect and the wrong one here.
+        //
+        // What the reader loses is nothing this card does not already show
+        // better one tab across: the Errors tab carries errors **and** discards
+        // as avg + peak, and the Loss tab carries loss the same way. That is why
+        // the whole row can go rather than one metric of three — there is no
+        // metric here whose only home is this row.
+        if (!compact) ...[
+          AppGap.md(),
+          Row(
+            children: [
+              Expanded(
+                child: _MetricChip(
+                  label: loc(parentContext).errors,
+                  value: errorText,
+                ),
               ),
-            ),
-            AppGap.sm(),
-            Expanded(
-              child: _MetricChip(
-                label: loc(parentContext).discards,
-                value: discardText,
+              AppGap.sm(),
+              Expanded(
+                child: _MetricChip(
+                  label: loc(parentContext).discards,
+                  value: discardText,
+                ),
               ),
-            ),
-            AppGap.sm(),
-            Expanded(
-              child: _MetricChip(
-                label: loc(parentContext).loss,
-                value: lossText,
+              AppGap.sm(),
+              Expanded(
+                child: _MetricChip(
+                  label: loc(parentContext).loss,
+                  value: lossText,
+                ),
               ),
-            ),
-          ],
-        ),
+            ],
+          ),
+        ],
       ],
     );
   }

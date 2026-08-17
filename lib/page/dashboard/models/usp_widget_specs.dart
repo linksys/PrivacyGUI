@@ -329,6 +329,56 @@ abstract class UspWidgetSpecs {
   static const networkHealth = WidgetSpec(
     id: 'network_health',
     displayName: 'Network Health',
+    // #1291. The only *height* defect in the six: the Health tab's gauge is a
+    // fixed 120px inside an `Expanded`, so the three-chip metric row below it
+    // takes its height, and how much it takes is a function of translation
+    // length. Measured across 26 locales at 1px, `gauge + row == 165px` at every
+    // width — perfectly complementary — and `de` spends 142px of it on
+    // `Verworfene Pakete` over 6 lines, leaving 23px for a centre column that
+    // needs 44. That is the 0.52 scale #1235 absorbed with `BoxFit.scaleDown`
+    // and explicitly handed to this threshold.
+    //
+    // ## Two floors, and why the higher one is the threshold
+    //
+    // A pinned-normal 1px sweep from 200px to 620px in all 26 locales produces
+    // two different numbers, because two different things are wrong:
+    //
+    //   | floor                                | worst locale        | width |
+    //   |--------------------------------------|---------------------|-------|
+    //   | the centre stops being height-scaled | `de` (`th` 204)     | 231   |
+    //   | no metric label breaks mid-word      | `da`/`nb`           | 366   |
+    //
+    // 231 is where the row stops being *tall* enough to starve the gauge; 366 is
+    // where it stops wrapping at all. They are the same defect at two severities,
+    // and the threshold pays for the second, because a threshold is the width at
+    // which the normal form *earns selection* (§2.6f point 1) and this form has
+    // not earned it while `Forkastninger` is being cut into `Forkastnin`/`ger`.
+    //
+    // That is #1289's rule applied unchanged: a **bounded** token must never be
+    // cut, an unbounded one may. These three labels are bounded — fixed
+    // translated words, not router data — so a width exists that pays for them,
+    // and 366 is it (widest failing + 1, as every threshold in this file is
+    // derived). Unlike #1289's device names, no fixture can make them wider.
+    //
+    // Nothing ellipsizes anywhere in that sweep: the labels wrap instead, which
+    // is why the #1183 gate and #1235 both stayed quiet — a mid-word break makes
+    // text *narrower* (§2.10d point 3).
+    //
+    // ## What the bands buy
+    //
+    // `widthCasesFor` realizes 191.375px and 288.000px here, so this threshold
+    // puts the first in popup (score) and the *second* in compact — which is what
+    // #1291 predicted when it said to "expect the threshold to land above 288px
+    // or expect the compact form to carry 288px too". 366 also stays below
+    // `desktopCaseFor` (512px), so the three-chip row is intact where the tab has
+    // room for it, and §1.2's 420px fit width sits inside the normal band.
+    //
+    // The compact form holds the whole band rather than the two realized widths:
+    // a 1px sweep of the pinned compact form from 200px to 372px gives the gauge
+    // its full 120x120 in all 26 locales, with the centre at 1.000 (`ru` 0.973 —
+    // its centre is 123px wide against a 120px gauge, a *width* bind present at
+    // desktop too, which no threshold can retire).
+    normalAbove: 366,
     constraints: {
       DisplayMode.normal: WidgetGridConstraints(
         minColumns: 3,
