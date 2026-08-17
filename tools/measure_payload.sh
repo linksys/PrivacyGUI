@@ -4,9 +4,14 @@
 # packaged into /www/ on the router, and therefore the only part that consumes
 # firmware flash.
 #
-# The SDK's build/web/canvaskit/ directory is excluded because CI prunes it; the
-# CanvasKit builds that actually ship live under build/web/assets/. Quoting the
+# The SDK's build/web/canvaskit/ directory is excluded because it is never served;
+# the CanvasKit builds that actually ship live under build/web/assets/. Quoting the
 # whole build/web total as a firmware size overstates it by more than 2x.
+#
+# build_web.sh deletes that directory before calling this script, so the pruned
+# line reads 0 KB there. The subtraction stays for the standalone case — a plain
+# `flutter build web` followed by running this by hand — where it is the whole
+# difference between a real payload figure and a doubled one.
 #
 # Usage:
 #   ./tools/measure_payload.sh                  # print the payload size
