@@ -2026,6 +2026,11 @@ Gate **1644 → 1698** (54 = 26 locales × 2 widths + 2 meta guards), and
    a `ListView` and a bar chart the whole box. A card-level flag would have forced
    all three together, or none.
 
+   That per-tab decision was taken for the remaining 19 tabs in #1296, and the
+   membership table lives in **§2.10j** — three more tabs in, four declines with the
+   measurement each rests on. Read the table there rather than assuming this
+   paragraph's "everything else is opted out" still holds.
+
    The affordance is `Scrollbar(thumbVisibility: true)`, and it is free on cards
    that fit: `thumbVisibility` pins the fade-out animation open, but
    `ScrollbarPainter.paint` still returns early unless
@@ -2272,6 +2277,86 @@ what that costs). Six findings.
    11 tests — four because nothing scrolls at all (`Expected: not null`, the
    assertion refusing a card that cannot scroll) and seven on the exact overflow the
    scroll absorbs (`+256.0px bottom` at 8 radios).
+
+### 2.10j Three tabs joined the scroll net and four declined, all on the same measurement (#1296 — implemented)
+
+§2.10g point 5 built `CardTab.scrollable` and converted exactly one tab
+(`wifi_performance` Channels), leaving the sentence "everything else is still
+opted out" true but undecided. #1296 decided the other 19 tabs. The table below
+replaces that sentence and is **executable**: `netTabs` in
+`test/page/dashboard/views/components/card_scroll_net_test.dart` is the same
+table, and a meta-test fails if a tabbed card is missing from it.
+
+| card | tab | verdict | the measurement that decided it |
+|---|---|---|---|
+| `wifi_performance` | t2 Channels | **in** | #1267 (§2.10g point 5) |
+| `device_analytics` | t0 Overview | **in** | donut 180px at 4 rows and at 8, while its slot grew 245 → 789px |
+| `traffic_analysis` | t2 Distribution | **in** | donut 180px, ~67px of slack at the shipped height |
+| `system_status` | t0 Monitor | **in** | gauges width-bound: 72.7px at the narrowest card, 100.0px at desktop |
+| `network_health` | t0 Health | **out** | gauge is 87–103px inside its flex and 120px without it |
+| `firewall_overview` | t0, t1 | **out** | 15–39px of leftover slot — nothing to give |
+| the other 13 (charts, `ListView`s) | — | **out** | the chart's height *is* the card's: 285 → 829px between 4 and 8 rows |
+
+1. **The conversion is only free when the flex was centring air, and that is a
+   property of the widget, not of the layout.** `AppPieChart` derives its geometry
+   from `size:` and ignores the box it is given, so both donuts measured **180px at
+   4 rows and at 8** while their slots grew by ~545px — the `Flexible` above them
+   was distributing leftover height, never sizing the chart, and deleting it
+   changes no pixel. `AppGauge` does the opposite: it **respects incoming
+   constraints**. `network_health`'s single gauge renders 87px in `de` at the
+   narrowest normal-form width and 99–103px at the desktop realization, all below
+   its declared `size: 120` — the flex is load-bearing, so the same instrument that
+   licensed two conversions refused a third. Two widgets, one slot shape, opposite
+   answers; there is no shortcut past measuring the widget.
+
+2. **A decline can cost more than a squeeze.** Dropping `network_health`'s
+   `Expanded` does not overflow — the content that no longer fits simply scrolls,
+   and **all 157** of that card's gate coordinates stay green. What it does is let
+   the gauge grow to its natural 120px and push 17px (desktop) to 33px (narrowest
+   normal form) of the metric row below the fold **on arrival**, at the height the
+   card actually ships. A card that scrolls before the user has touched it has
+   converted a hidden overflow into a visible one; the only fix is a taller card
+   (`minHeightRows`), which #1296 excludes. Measured, and left alone.
+
+3. **`system_status` converted without any flex to delete, which is the cleanest
+   possible form of the claim.** Its Monitor tab sizes gauges from a bare
+   `LayoutBuilder` — `min(72, (maxWidth - AppSpacing.md) / 2, maxHeight)` — so the
+   height term survives the conversion untouched: a non-flex child of a `Column`
+   receives an unbounded height whether or not the region scrolls, and the
+   diameters are identical either way (72.7 / 100.0). This is why its mutation row
+   is **45 fail, not 47**: the two geometry tests are *supposed* to pass under
+   `scrollable: false`. A mutation that moved those numbers would mean the
+   conversion had a cost after all.
+
+4. **The gate is blind to all four flips, in both directions.** Per card, its own
+   gate coordinates (209 / 209 / 209 / 157) stayed green under every mutation:
+   removing a shipped conversion, and adding the declined one. The suite that is
+   not blind fails 47 / 47 / 45 / 41. The decisive assertions are not the shortfall
+   being non-null (which only proves a region exists) but the pair around it — the
+   content arriving with **shortfall == 0.0** at every pumped width and locale, and
+   the same tab carrying real load (**shortfall > 0**, every text still reachable)
+   one row below the card's shipped height. §2.10g point 6 said a conversion owes a
+   measurement the gate cannot make; this is the shape of it.
+
+5. **A net-membership sweep has to run above `normalAbove`, or it measures the
+   wrong card.** 26 of the network_health mutation's 41 failures were an artifact:
+   at its narrowest realization (191px) that card is below its `normalAbove: 366`
+   threshold and renders the degraded score form with **no tabs at all**, so
+   "no scroll region" is correct there rather than a regression. The registry sweep
+   therefore pumps `desktopCaseFor(spec)`, and any future conversion on a card with
+   a degraded form owes its arrival assertions above that threshold. This is the
+   §2.10f finding 2 family again — a probe that is blind by construction — reached
+   from a new direction: the probe was fine, the *coordinate* was outside the
+   subject.
+
+6. **`cardContentScrollShortfall` could not tell "does not scroll" from "has no
+   card".** It returned `null` for both, because `null` meant "found no
+   `SingleChildScrollView`", and the horizontal tab strip is a scroll view — so on
+   a tabbed card the function silently reported the *tab strip's* extent instead of
+   the content's. It now tracks whether a **vertical** region was seen and returns
+   `null` only in that case, which is what makes `isNotNull` a real assertion about
+   net membership. The instrument built in §2.10g to answer the gate's blindness had
+   its own blind spot for one ticket.
 
 ### 2.11 fl_chart's coordinates get a primary plan and a documented fallback
 
@@ -2684,6 +2769,17 @@ Turkish (§2.10h). A ticket that touches no assertion can still invalidate the
 evidence for a dozen of them, so the cost of landing it is re-running every
 measurement that quoted the old string — which is where the epic's one documented
 over-claim turned up (§2.10h finding 2).
+
+#1296 has no row either, and its reason is the inverse of #1266's: it clears
+nothing and adds nothing, because everything it changes is **invisible to the
+ratchet by construction** — three tabs gained a scroll region and one was measured
+and refused, with each card's own coordinates (209 / 209 / 209 / 157) green under
+every mutation in both directions (§2.10j point 4). It belongs to the ratchet as
+the ticket that decided how far #1267's mechanism goes, and it is verified entirely
+outside the gate: `card_scroll_net_test.dart`'s 161 cases, which fail 47 / 47 / 45
+/ 41 on the same four mutations. The gate's role here was only to confirm the
+conversions cost nothing it *can* see — 1698/1698, allowlist empty, before and
+after.
 
 #1225 lands first — not because it re-baselines (it does not, §1.6) but so that
 the invariant holds by construction and any future shift is attributable. #1226

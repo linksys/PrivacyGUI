@@ -82,6 +82,14 @@ class _UspTrafficAnalysisCardState
         ),
         CardTab(
           label: loc(context).distribution,
+          // Opted into the scroll net (#1296): the only tab of this card that
+          // shrink-wraps. The other three hold a chart whose height *is* the
+          // card's height (229 -> 773px between 4 and 8 rows), and pinning those
+          // to a measured minimum would waste 500+px at the sizes users resize to.
+          // This one holds a fixed 180px donut with 67px of slack at the narrowest
+          // realization, so a measured height loses nothing and the net catches the
+          // locale that eats the slack. See the density design §2.10j.
+          scrollable: true,
           content: _buildChartView(context, analysisState, 2),
         ),
         CardTab(
@@ -471,30 +479,33 @@ class _DistributionView extends StatelessWidget {
 
     return Column(
       children: [
-        Flexible(
-          child: Center(
-            child: AppPieChart(
-              sections: [
-                AppPieSection(
-                    value: wanTotal.toDouble(),
-                    label: 'WAN',
-                    color: colorScheme.primary),
-                AppPieSection(
-                    value: lanTotal.toDouble(),
-                    label: 'LAN',
-                    color: colorScheme.secondary),
+        // Not `Flexible`/`Expanded`: this tab scrolls (#1296), so a vertical flex
+        // child here would get unbounded height constraints and throw. The donut
+        // is a fixed 180px whatever it is given — measured 180 at 4 rows and at
+        // 8 rows, where the slot had grown to 793px — so the flex was distributing
+        // air, not sizing the picture.
+        Center(
+          child: AppPieChart(
+            sections: [
+              AppPieSection(
+                  value: wanTotal.toDouble(),
+                  label: 'WAN',
+                  color: colorScheme.primary),
+              AppPieSection(
+                  value: lanTotal.toDouble(),
+                  label: 'LAN',
+                  color: colorScheme.secondary),
+            ],
+            donut: true,
+            centerWidget: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AppText.titleSmall(UspFormatters.formatBytes(grandTotal)),
+                AppText.labelSmall(loc(context).total,
+                    color: colorScheme.onSurfaceVariant),
               ],
-              donut: true,
-              centerWidget: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  AppText.titleSmall(UspFormatters.formatBytes(grandTotal)),
-                  AppText.labelSmall(loc(context).total,
-                      color: colorScheme.onSurfaceVariant),
-                ],
-              ),
-              size: 180,
             ),
+            size: 180,
           ),
         ),
         AppGap.sm(),

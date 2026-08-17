@@ -39,6 +39,17 @@ class _UspDeviceAnalyticsCardState
       tabs: [
         CardTab(
           label: loc(context).distribution,
+          // Opted into the scroll net (#1296). This is the one tab of this card
+          // whose content shrink-wraps: the donut is a fixed 180px at every card
+          // size (measured 180 at 4 rows and at 8 rows, while its slot grew
+          // 245 -> 789px), so the vertical `Flexible` that used to hold it was
+          // only centring air. The four breakdown rows below it are what varies —
+          // 71px in `ar` and 133px in `el` at the 260.5px card — and with the
+          // donut fixed, `el` sat 3px from painting over them with the gate
+          // reporting nothing (a `Center` spills in both directions and a
+          // `RenderFlex` only reports the part that falls past the bottom edge).
+          // See the density design §2.10j.
+          scrollable: true,
           content: _buildChartView(context, analyticsState, 0),
         ),
         CardTab(
@@ -112,33 +123,36 @@ class _OverviewView extends StatelessWidget {
 
     return Column(
       children: [
-        Flexible(
-          child: Center(
-            child: AppPieChart(
-              sections: [
-                AppPieSection(
-                  value: online.toDouble(),
-                  label: loc(context).online,
-                  color: colorScheme.primary,
-                ),
-                if (offline > 0)
-                  AppPieSection(
-                    value: offline.toDouble(),
-                    label: loc(context).offline,
-                    color: colorScheme.outlineVariant,
-                  ),
-              ],
-              donut: true,
-              centerWidget: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  AppText.titleMedium('$total'),
-                  AppText.labelSmall(loc(context).devices,
-                      color: colorScheme.onSurfaceVariant),
-                ],
+        // Not `Flexible`/`Expanded`: this tab scrolls (#1296), so a vertical flex
+        // child here would be a child with unbounded height constraints and throw.
+        // Nothing is lost by dropping it — `AppPieChart` derives its geometry from
+        // `size:`, not from the box it is given, so the flex never sized the donut;
+        // it only distributed leftover height around it.
+        Center(
+          child: AppPieChart(
+            sections: [
+              AppPieSection(
+                value: online.toDouble(),
+                label: loc(context).online,
+                color: colorScheme.primary,
               ),
-              size: 180,
+              if (offline > 0)
+                AppPieSection(
+                  value: offline.toDouble(),
+                  label: loc(context).offline,
+                  color: colorScheme.outlineVariant,
+                ),
+            ],
+            donut: true,
+            centerWidget: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AppText.titleMedium('$total'),
+                AppText.labelSmall(loc(context).devices,
+                    color: colorScheme.onSurfaceVariant),
+              ],
             ),
+            size: 180,
           ),
         ),
         AppGap.md(),

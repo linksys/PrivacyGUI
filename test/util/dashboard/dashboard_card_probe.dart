@@ -379,6 +379,18 @@ Rect cardContentViewport(WidgetTester tester) {
 /// about the surface, not the card). It also excludes the Signal tab's
 /// `ListView` — a card region that has always scrolled by design, and whose extent
 /// would otherwise be reported here as if it were a shortfall.
+///
+/// ## `null` means "no vertical region", not "no scroll view at all" (#1296)
+///
+/// A tabbed card always carries one `SingleChildScrollView` inside [AppCard] — the
+/// *horizontal* tab strip of `AppTabs(isScrollable: true)`. So an "is the finder
+/// empty" test never fires on a tabbed card, and until #1296 this returned `0.0`
+/// for a tabbed card with no scroll net at all: indistinguishable from a net that
+/// is installed and whose content fits. Every `expect(shortfall, isNotNull)`
+/// written against the documented contract was therefore vacuous on exactly the
+/// six cards #1296 is about — it would have passed with the flag flipped back off.
+/// The emptiness test has to be about the *vertical* regions that survive the axis
+/// filter, which is what `sawVertical` tracks.
 double? cardContentScrollShortfall(WidgetTester tester) {
   final finder = find.descendant(
     of: find.byType(AppCard),
@@ -387,16 +399,17 @@ double? cardContentScrollShortfall(WidgetTester tester) {
   final states = tester.stateList<ScrollableState>(
     find.descendant(of: finder, matching: find.byType(Scrollable)),
   );
-  if (states.isEmpty) return null;
 
+  var sawVertical = false;
   var worst = 0.0;
   for (final state in states) {
     final position = state.position;
     if (!position.hasContentDimensions) continue;
     if (position.axis != Axis.vertical) continue;
+    sawVertical = true;
     worst = math.max(worst, position.maxScrollExtent);
   }
-  return worst;
+  return sawVertical ? worst : null;
 }
 
 // --- Tab registry ------------------------------------------------------------

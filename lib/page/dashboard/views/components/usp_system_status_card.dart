@@ -84,6 +84,16 @@ class _UspSystemStatusCardState extends ConsumerState<UspSystemStatusCard> {
       tabs: [
         CardTab(
           label: loc(context).monitor,
+          // Opted into the scroll net (#1296). The gauge row's own `Expanded` was
+          // the slack §2.10a point 3 measured — 221px of box for 100px of circle —
+          // and the gauges are *width*-bound at every realization the grid
+          // produces (72.7px at the 191.4px card, 100px from 288px up, measured
+          // identical before and after this flip). So the flex was holding air,
+          // and the air is now at the bottom of the card where the reader can see
+          // it is spare rather than distributed around the picture. The other
+          // three tabs stay out: each holds a chart whose height *is* the card's
+          // (285 -> 829px between 4 and 8 rows). See the density design §2.10j.
+          scrollable: true,
           content: _MonitorView(info: info, monitorState: monitorState),
         ),
         CardTab(
@@ -240,53 +250,60 @@ class _MonitorView extends StatelessWidget {
         // own diameter, and a circle taller than its box would overflow the
         // bottom instead. Both `Infinity` cases (unbounded width, unbounded
         // height) degrade to the natural size.
-        Expanded(
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              // `math.max` floors the result at zero. The width term goes
-              // negative below `AppSpacing.md` of available width, and while no
-              // realization the grid produces comes near that (the narrowest is
-              // 157.4px), a `LayoutBuilder` can be given a zero-width box
-              // transiently — mid-drag, or during a collapse animation — and a
-              // negative `size` would assert inside `AppGauge` rather than
-              // degrade. A zero-diameter gauge is invisible for one frame; a
-              // failed assertion is a red screen.
-              final gaugeSize = math.max(
-                0.0,
+        //
+        // #1296 flipped this tab into the scroll net, which is why the `Expanded`
+        // is gone: a vertical flex child inside `CardScrollRegion` is a child with
+        // an unbounded height constraint, and it throws. The `LayoutBuilder`
+        // stays because the *width* term is the one that sizes the circles — and
+        // the height term stays with it, now permanently `Infinity` here, because
+        // it is the `math.min` that makes this shape safe to reuse in a bounded
+        // box. Deleting it would leave the next caller with #1266's failure mode
+        // and no comment explaining where it went.
+        LayoutBuilder(
+          builder: (context, constraints) {
+            // `math.max` floors the result at zero. The width term goes
+            // negative below `AppSpacing.md` of available width, and while no
+            // realization the grid produces comes near that (the narrowest is
+            // 157.4px), a `LayoutBuilder` can be given a zero-width box
+            // transiently — mid-drag, or during a collapse animation — and a
+            // negative `size` would assert inside `AppGauge` rather than
+            // degrade. A zero-diameter gauge is invisible for one frame; a
+            // failed assertion is a red screen.
+            final gaugeSize = math.max(
+              0.0,
+              math.min(
+                _kMonitorGaugeSize,
                 math.min(
-                  _kMonitorGaugeSize,
-                  math.min(
-                    // `AppSpacing.md` of slack, so two circles can never touch.
-                    // `spaceEvenly` then splits that reserve into three equal
-                    // gaps, so what is actually drawn between the circles is
-                    // md/3 = 4px (measured: 72.7px circles at x=21.0 and x=97.7
-                    // in a 157.4px box). Tight on purpose — reserving a full
-                    // 12px *between* them costs 12px of diameter, and #1234's
-                    // AC 4 is about the reading inside the circle staying
-                    // legible. Air between two rings is the cheaper thing to
-                    // give up.
-                    (constraints.maxWidth - AppSpacing.md) / 2,
-                    constraints.maxHeight,
-                  ),
+                  // `AppSpacing.md` of slack, so two circles can never touch.
+                  // `spaceEvenly` then splits that reserve into three equal
+                  // gaps, so what is actually drawn between the circles is
+                  // md/3 = 4px (measured: 72.7px circles at x=21.0 and x=97.7
+                  // in a 157.4px box). Tight on purpose — reserving a full
+                  // 12px *between* them costs 12px of diameter, and #1234's
+                  // AC 4 is about the reading inside the circle staying
+                  // legible. Air between two rings is the cheaper thing to
+                  // give up.
+                  (constraints.maxWidth - AppSpacing.md) / 2,
+                  constraints.maxHeight,
                 ),
-              );
-              return Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  _buildGauge(context,
-                      value: cpuPercent.toDouble(),
-                      label: loc(context).cpu,
-                      display: '$cpuPercent%',
-                      size: gaugeSize),
-                  _buildGauge(context,
-                      value: memPercent.toDouble(),
-                      label: loc(context).memory,
-                      display: '$memPercent%',
-                      size: gaugeSize),
-                ],
-              );
-            },
-          ),
+              ),
+            );
+            return Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _buildGauge(context,
+                    value: cpuPercent.toDouble(),
+                    label: loc(context).cpu,
+                    display: '$cpuPercent%',
+                    size: gaugeSize),
+                _buildGauge(context,
+                    value: memPercent.toDouble(),
+                    label: loc(context).memory,
+                    display: '$memPercent%',
+                    size: gaugeSize),
+              ],
+            );
+          },
         ),
         AppGap.sm(),
         Center(
