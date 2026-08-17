@@ -4,6 +4,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
+import 'package:privacy_gui/page/dashboard/models/card_density.dart';
 
 import '../../../../util/app_test_fonts.dart';
 import '../../../../util/dashboard/dashboard_card_probe.dart';
@@ -28,6 +29,23 @@ import '../../../../util/dashboard/dashboard_card_probe.dart';
 /// `golden||loc||ui`, so a `ui`-tagged test here would block nothing. (The older
 /// `usp_network_health_card_legend_test.dart` is `ui`-tagged for that reason —
 /// it covers label *composition* from #1145, not degradation.)
+///
+/// ## Why the `network_health` pumps pin `CardDensity.normal` (#1291)
+///
+/// #1291 gave that card a `normalAbove: 366`, so its narrowest 3-column
+/// realization (191.375px) no longer *selects* the arrangement these groups
+/// measure — it yields the popup form, which has no legend, no interface readout
+/// and no WAN/LAN row to assert on. The claims themselves did not stop being
+/// true: `showCardNormalForm` renders this same normal form in a full-bleed sheet
+/// on a phone too narrow to host a dialog, so a legend row at ~157px of content
+/// is a form that ships and still has to stay readable. The pin is what keeps
+/// these assertions pointed at the form they were written for; which width
+/// selects which form is `usp_network_health_density_test.dart`'s question, not
+/// this file's.
+///
+/// `system_status` is left unpinned deliberately — it declares no `normalAbove`,
+/// so its narrowest realization still renders the normal form on the grid, and
+/// pinning would hide the day someone gives it a threshold.
 void main() {
   setUpAll(() async {
     // Real fonts: under the Ahem block font every glyph is one square em, so
@@ -38,6 +56,10 @@ void main() {
   /// Pumps [cardId] at the narrowest width the grid ever gives its min span —
   /// the worst case the gate measures, and where degradation is at its most
   /// aggressive. One pump, as the gate does.
+  ///
+  /// [density] pins the form under measurement. Pass it for any card that
+  /// declares a `normalAbove`, where this width would otherwise select the popup
+  /// form and there would be no legend to assert on (see the header).
   Future<void> pumpNarrowest(
     WidgetTester tester, {
     required String cardId,
@@ -45,6 +67,7 @@ void main() {
     required int heightRows,
     required int tabIndex,
     required Locale locale,
+    CardDensity? density,
   }) async {
     final narrowest = narrowestRealizationOf(minSpan, minScreen: 0)!;
     await probeCardOverflow(
@@ -59,6 +82,7 @@ void main() {
       cardHeightRows: heightRows,
       tabIndex: tabIndex,
       locale: locale,
+      density: density,
     );
   }
 
@@ -98,6 +122,7 @@ void main() {
             heightRows: 3,
             tabIndex: tab,
             locale: locale,
+            density: CardDensity.normal,
           );
 
           // The composed labels are the ones whose text contains the localized
@@ -187,6 +212,7 @@ void main() {
         heightRows: 3,
         tabIndex: 0,
         locale: locale,
+        density: CardDensity.normal,
       );
       final l = await AppLocalizations.delegate.load(locale);
 
@@ -217,6 +243,7 @@ void main() {
           heightRows: 3,
           tabIndex: 0,
           locale: locale,
+          density: CardDensity.normal,
         );
         final l = await AppLocalizations.delegate.load(locale);
 

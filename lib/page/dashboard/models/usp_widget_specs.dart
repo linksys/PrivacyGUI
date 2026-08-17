@@ -112,6 +112,56 @@ abstract class UspWidgetSpecs {
   static const ethernetPorts = WidgetSpec(
     id: 'ethernet_ports',
     displayName: 'Ethernet Ports',
+    // Measured floor, #1290 AC 1 — and the first one on this card that is *not*
+    // a width at which the content fits, because no such width exists.
+    //
+    // ## What the sweep found
+    //
+    // A pinned-normal 4px sweep from 200px to 700px, plus all 26 locales at
+    // every realization `widthCasesFor` produces: **not one port item seats
+    // inside the content viewport at any width**, in any locale. The viewport is
+    // 121px at this card's minimum height (2 rows) and one port item is 82px
+    // tall starting *below* the summary tiles, so the binding constraint is
+    // vertical and width cannot retire it. The two narrow realizations show
+    // 0.0px of every port glyph; even 512px desktop seats none whole (4 of 5
+    // glyphs are fully visible, all 5 labels sit below the fold — the loss
+    // §2.12 already records as pre-dating #1228).
+    //
+    // So the threshold is not "where it fits". It is the coordinate at which the
+    // normal form stops *costing* the ports their glyphs:
+    //
+    // * **386** — the card width at which the content column first reaches
+    //   352px and the summary tiles stop stacking. From a 1px sweep: stacked at
+    //   385, side by side at 386, so the content column is `cardWidth − 34`
+    //   (16px of card padding plus a 1px border, each side). Stacked, all five
+    //   glyphs measure 0.0px visible; side by side, four measure the full 38px.
+    //   That flip *is* the regression this ticket carries, so its coordinate is
+    //   the threshold, and it subsumes `_kSideBySideMinWidth` from the grid's
+    //   side without deleting it (see that constant for the presentation side).
+    // * **570** — rejected. It is where all five 88px items fit one run
+    //   (5 × 88 + 4 × 24 = 536px of content), i.e. where the *whole* grid shows
+    //   every glyph, and it is above `desktopCaseFor` (512): declaring it would
+    //   put the desktop realization in compact and contradict the requirement
+    //   that the full grid render there.
+    //
+    // 386 clears the ">288px" the ticket demands for a reason that is the
+    // ticket's own: 288 is a realization the grid produces, at which the normal
+    // form shows two tiles, a divider and no ports at all.
+    //
+    // ## What the bands buy
+    //
+    // 191.375px (the 3-column floor) goes to the popup form, so the ports become
+    // readable in the presentation. 288.000px — the realization that cannot be
+    // fixed by a threshold alone — goes to **compact**, which drops the tiles and
+    // seats all five ports as chips in 72px of the 121px viewport. Every width
+    // between, which the grid produces and the gate never pumps (a 3-column span
+    // is 228.5px on a 700px screen), is covered: a pinned-compact 4px sweep of
+    // [200, 386) seats all five chips at every width in all 26 locales — three
+    // runs (112px of the 121px viewport) up to 268px, two runs (72px) from 269px
+    // — so the tightest point in the band still clears by 7px. Chip metrics are
+    // locale-invariant because a port label and a speed are ASCII device data:
+    // 32px tall and 61.8–79.0 wide in every one of the 26.
+    normalAbove: 386,
     constraints: {
       DisplayMode.normal: WidgetGridConstraints(
         minColumns: 3,

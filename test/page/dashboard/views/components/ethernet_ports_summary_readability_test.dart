@@ -4,6 +4,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
+import 'package:privacy_gui/page/dashboard/models/card_density.dart';
 import 'package:privacy_gui/page/dashboard/models/display_mode.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_widget_specs.dart';
 
@@ -47,6 +48,18 @@ import '../../../../util/dashboard/dashboard_card_probe.dart';
 /// Nothing here re-measures overflow — that is the gate's job, and both
 /// `ethernet_ports` keys are gone from `known_overflows.json`.
 ///
+/// ## Why every pump pins `CardDensity.normal` (#1290)
+///
+/// #1290 gave this card a `normalAbove: 386`, so the narrow widths below are no
+/// longer widths at which the *grid* selects this arrangement — 191px yields the
+/// popup form and 288px the compact chip list, neither of which has a summary
+/// tile to measure. The four groups still describe a form that ships: a 320px
+/// phone tapping the popup form gets the normal form back in a full-bleed sheet
+/// (`showCardNormalForm`) with ~284px of content, squarely inside the stacked
+/// band. So the pin is what keeps these assertions pointed at the form they were
+/// written for, and `usp_ethernet_ports_density_test.dart` owns the separate
+/// question of which width selects which form.
+///
 /// Tagged `dashboard-card` so it gates PRs: `run_tests.sh` excludes
 /// `golden||loc||ui`, so a `ui`-tagged test here would block nothing.
 void main() {
@@ -60,7 +73,9 @@ void main() {
   final spec = UspWidgetSpecs.all.firstWhere((s) => s.id == cardId);
   final heightRows = spec.getConstraints(DisplayMode.normal).minHeightRows;
 
-  /// Pumps the card at one width, as the gate does — one pump, real fonts.
+  /// Pumps the card at one width, as the gate does — one pump, real fonts —
+  /// with the normal form pinned (see the header: since #1290 the narrow widths
+  /// here are the *presented* form's, not the grid's).
   Future<void> pumpAt(
     WidgetTester tester, {
     required CardWidthCase widthCase,
@@ -73,6 +88,7 @@ void main() {
         cardHeightRows: heightRows,
         tabIndex: 0,
         locale: locale,
+        density: CardDensity.normal,
       );
 
   /// The width cases the gate measures: the narrowest realization of the card's

@@ -841,7 +841,8 @@ batch inherits recorded on it:
 | `ethernet_ports` port list | #1290 | the **first real compact form**, and a threshold above 288px; carries #1240 AC 9 = #1228 AC 5 |
 | `network_health` gauge centre + metric chips | #1291 | a compact metric row that gives the gauge its height back, so #1235's `scaleDown` relaxes toward 1.0 |
 
-What each batch actually cost is recorded as it lands: §2.6e (#1288), §2.6f (#1289).
+What each batch actually cost is recorded as it lands: §2.6e (#1288), §2.6f (#1289),
+§2.6g (#1291), §2.6h (#1290).
 
 ### 2.6e What declaring the first thresholds taught us (#1288 — implemented)
 
@@ -950,6 +951,126 @@ three of #1288's cards sit below it. That inversion is the section.
    was blind twice over: 0.264px is inside its 2.0px tolerance, and it never pumps
    330px. The test that guards it asserts on *layout* — which line the second count
    sits on — because a pixel assertion at that scale cannot survive two rasterizers.
+
+### 2.6g What the first tabbed threshold taught us (#1291 — implemented)
+
+`network_health` declares `normalAbove: 366` and drops its metric row whole in
+compact, which returns 165px to a gauge that was scaling itself down to fit
+(#1235's `BoxFit.scaleDown`). At 288px in production the gauge is back to 120×120
+at scale **1.000** in 25 locales (`ru` 0.973, width-bound), with no change to the
+centre. Three things came out of it that no earlier batch could have found.
+
+1. **`cardContentViewport` does not answer "visible" on a tabbed card, and it
+   fails by returning the wrong box rather than by throwing.** The helper takes the
+   shorter of exactly two `SingleChildScrollView`s — the pump harness and the
+   template's content — but `DashboardCardTemplate` hands tab content back directly
+   because "charts need fixed space" (`dashboard_card_template.dart:340`). Measured,
+   it returned `53.0–97.0`: `AppTabs`' own horizontal scroller, while the gauge
+   occupied `141.5–261.5`. The frame that is correct here is the card's own box
+   (`CardDensityHost`), and it is correct *because* nothing in this card scrolls —
+   tab content sits in a fixed `Expanded`. So the choice of frame is a per-card
+   measurement, not a house style: use the scrolling viewport where the card
+   scrolls, the card box where it does not, and state which in the test.
+
+2. **Declaring a threshold on a *tabbed* card breaks a gate meta-test that is not
+   about overflow.** The tab-registry guard counted visible tabs at
+   `widthCasesFor(spec).first` = 191.375px; that pump now returns the tab-less popup
+   form, and the guard read 0 tabs as "the card lost its tabs". It counts at
+   `desktopCaseFor(spec)` instead: *how many tabs a card has* is a property of its
+   whole form, while *which form a width selects* is a density claim that belongs to
+   the density suite. Case count unchanged — this is a frame correction, not a
+   suppression.
+
+3. **Coverage does not move when a threshold lands; it leaves.**
+   `usp_gauge_center_readability_test.dart`'s own ledger recorded two mutations
+   (removing the gauge's `FittedBox`; ellipsizing score and tier instead of scaling)
+   as failing the 1644-case gate 3× and 2×. After `normalAbove: 366` both are
+   **green** there — not because the mutations became safe, but because production
+   no longer renders the gauge at 191.375px at all. The density suite and that file
+   are now the only guard on those rows. Generalized: **every mutation ledger that
+   claims a gate column is dated by the thresholds in force when it was measured**,
+   so a batch that declares one owes a re-measurement of the older ledgers on the
+   same card, and the correction belongs in the file rather than in a commit
+   message.
+
+### 2.6h What the first real compact form taught us (#1290 — implemented)
+
+`ethernet_ports` is the card §2.12 point 3 recorded as *losing* 41px of port glyph
+to #1228's tile stacking, and the only one of the six unreadable at **both** narrow
+realizations. It declares `normalAbove: 386`, `popupValue: '3/5'` (ports up over
+ports present), and a compact port list of five 32px chips. Five lessons, the first
+of which invalidates the shape of the acceptance criterion itself.
+
+1. **A card can have no readability *width*, because its binding constraint is
+   vertical — and then the threshold cannot be "the width at which it reads".** AC 1
+   asked for "the width at which the port grid seats inside the content viewport".
+   Measured in the pinned normal form over a 4px sweep of `[200, 700]` in `de`, `ru`
+   and `en`: **0 of 5 port items seat at every one of the 126 widths**, and every
+   glyph measures 0.0px at both narrow realizations in all 26 locales. One 82px item
+   starting below a 96–136px block of summary tiles cannot land inside a 121px
+   viewport at any width; widening the card only reflows the `Wrap`. What the sweep
+   *did* find are two real coordinates, neither of them a floor: **386**, where the
+   content column first reaches 352px and the tiles stop stacking (1px sweep:
+   stacked at 385, side by side at 386) — which is the 41px → 0px regression in a
+   single number — and **570**, where all five items fit one run. 570 is rejected
+   for being above `desktopCaseFor` (512): declaring it would put the mainstream
+   desktop realization in compact and contradict the same ticket's "the full grid is
+   intact at desktop". So the threshold shipped is *the width above which the normal
+   form stops costing the ports their glyphs*, and the compact form — not the
+   threshold — is what makes the card readable. **Where the constraint is height,
+   ask a threshold to stop a loss, not to fix one.**
+
+2. **Two thresholds on one card coexist when they read different boxes — and the
+   one the grid can no longer reach is still reachable from the presentation.**
+   `normalAbove` is read against the width the *grid* gives the card and selects a
+   form; `_kSideBySideMinWidth: 352` is read against the *content column* and
+   arranges the tiles inside whichever box the normal form landed in. From the grid
+   they can no longer disagree (386 is exactly the card width at which content
+   reaches 352), which reads as "the stacked branch is dead code" — and it is not.
+   `showCardNormalForm` renders that same normal form in a dialog, or a full-bleed
+   sheet on a screen too narrow to host one, at up to `normalAbove`: a 320px phone
+   tapping the popup form gets ~284px of content, squarely inside the stacked band.
+   Deleting the constant would put that phone back on the arrangement #1228 measured
+   as overflowing by 1.3px while rendering no label at all. **A branch unreachable
+   from the grid is not unreachable; the popup form's tap target is a second frame
+   in which every card's normal form gets narrow widths on purpose** (§2.6c).
+
+3. **Compact may shed a fact, never a signal.** The chips keep the glyph (whose
+   tint *is* the up/down state) and the speed, because `speedLabel` reads `—` for a
+   port that is down and is therefore the *textual* half of that state — dropping it
+   would leave a colour-blind reader with less than the wide form gave them. What
+   goes is the connected-device line, unbounded router data that the tap shows in
+   full. The two summary tiles go with it, and that is the same test: their content
+   is a count derivable from the chips now visible, where the ports they displaced
+   were not derivable from anything.
+
+4. **A mutation ledger has to name *which* test failed, because an assertion that
+   cannot fail counts as coverage until you check.** The chip's text column is capped
+   at 72px so that a port label from unknown future hardware cannot overflow the
+   `Wrap` — and the mutation that removes the cap killed **nothing**: the fixture's
+   labels are `LAN 1`, so the in-band assertion `chipWidth <= 96` can never fail
+   however the cap is set. It became a real assertion only once the suite grew a pump
+   that injects a pathological label (via `cardOverride` plus a hand-built
+   `CardDensityHost`, since the host is applied inside `UspWidgetFactory`), after
+   which it kills exactly one test. The always-passing loop was deleted with the
+   reason written in its place. The first draft of the ledger read counts off "…and N
+   more" output and got two rows wrong; a ledger is a measurement, so it is read off
+   the `+N -M` summary and the per-test failure names.
+
+5. **§2.6e point 4's retro-invalidation is not confined to the card's own
+   readability file.** This batch's pin was expected on
+   `ethernet_ports_summary_readability_test.dart` and applied there. What was not
+   expected: running the whole `dashboard-card` tag surfaced **12 failures in
+   `dashboard_legend_readability_test.dart`**, all `network_health` — collateral from
+   #1291's threshold, in a file that belongs to #1233 and names neither card in its
+   title. The remedy is the same one-line pin, threaded only through the
+   `network_health` pumps (`system_status` declares no threshold and stays unpinned,
+   so it keeps failing the day someone gives it one). The process lesson: **a batch
+   verifies against the whole tag, not against its own files** — a threshold is a
+   registry-wide change, and the suites it invalidates are indexed by card, not by
+   ticket. And the pin's justification has shifted with point 2: it is no longer
+   "191.4px is still the narrowest width the normal form can be asked for" but "this
+   is the form the presentation shows at that width".
 
 ### 2.7 The gate enumerates widths instead of sampling them
 
@@ -1892,11 +2013,26 @@ apart, and three things only showed up in the measurements.
    the summary tiles; it needs a compact port list, which is #1240's job. Track B
    inherits it rather than #1228 claiming it.
 
+   **Closed by #1290** (§2.6h), and the closure sharpens what was recorded here.
+   The compact form shows all five ports in 72px of the 121px viewport at the 288px
+   realization and the popup form answers 191px with `3/5` plus a tap, so the
+   inherited AC is met at both narrow realizations. But the 41px was never
+   recoverable *as a width*: a 4px sweep of `[200, 700]` in the pinned normal form
+   seats 0 of 5 items at all 126 widths, so "the narrowest clean width at which the
+   port state is readable" does not exist for the normal form and the fix had to be
+   a different rendering. The desktop half of this point stands unchanged and
+   unfixed — at 512px no item seats whole either — and it retires by *height*, not
+   width: at this card's shipped `rows: 3` (257px of viewport) four of the five seat.
+
 The AC that *is* gate-invisible and satisfiable — the two tiles being a matched
 pair — plus the label-legibility floor are covered by
 `test/page/dashboard/views/components/ethernet_ports_summary_readability_test.dart`,
 tagged `dashboard-card` so it gates; each of its four groups was verified to fail
 under a mutation of the code it guards (the mutations are tabulated in the file).
+Since #1290 every pump in it pins `CardDensity.normal`: the narrow widths it names
+are no longer widths at which the grid selects this arrangement, but they are the
+widths at which the *presentation* shows it (§2.6h point 2), so the pin keeps the
+four groups pointed at the form they were written for.
 
 ---
 
@@ -2064,8 +2200,8 @@ one deviation from the legend shape.
 | #1240 | Per-card thresholds and compact forms (§2.4, §2.5) — **implemented as a decision and a split**, lessons in §2.6d. Measured: all 18 cards fit, so no card declares a threshold; the six that are unreadable at 191px are split into four batch tickets (#1288, #1289, #1290, #1291), `ethernet_ports`' inherited port-list AC (§2.12) among them |
 | #1288 | Hero row — `device_info` 262, `lan_info` 250, `time_settings` 256, the registry's first declared thresholds — **implemented**, lessons in §2.6e |
 | #1289 | `connected_devices` device row — `normalAbove: 336`, the first threshold *above* the 288px realization — **implemented**, lessons in §2.6f |
-| #1290 | `ethernet_ports` port list — the first real compact form; reconcile `_kSideBySideMinWidth` |
-| #1291 | `network_health` gauge centre + metric chips — give the gauge its height back |
+| #1290 | `ethernet_ports` port list — `normalAbove: 386`, the registry's first compact form with a *rendering* of its own, and the first card with no readable width at all — **implemented**, lessons in §2.6h |
+| #1291 | `network_health` gauge centre + metric chips — `normalAbove: 366`, the first *tabbed* card to declare a threshold; the gauge is back to scale 1.000 — **implemented**, lessons in §2.6g |
 
 #1240 waited on all of Track A: thresholds are meaningless while fit widths are
 still moving, and the point of the layout fixes is to lower them. Re-measured
@@ -2077,11 +2213,15 @@ compact form for `[200, normalAbove)` as well as the threshold itself: the popup
 form covers below 200px, and §1.5's 191.4-422.0px span for a 3-column card means
 the interval between is reachable.
 
-Four cards now declare a threshold (§2.6e, §2.6f), so "absent for all 18" is the
-statement #1240 measured, not the state of the registry. Both batches held the
-gate at 1644/1644 with `known_overflows.json` byte-identical: a threshold changes
-which form is *selected*, and every form was already clean — which is exactly why
-each batch owes a readability suite the gate cannot substitute for.
+**Six** cards now declare a threshold — `device_info` 262, `lan_info` 250,
+`time_settings` 256 (§2.6e), `connected_devices` 336 (§2.6f), `network_health` 366
+(§2.6g), `ethernet_ports` 386 (§2.6h) — so "absent for all 18" is the statement
+#1240 measured, not the state of the registry. All four batches held the gate at
+1644/1644 with `known_overflows.json` byte-identical: a threshold changes which
+form is *selected*, and every form was already clean — which is exactly why each
+batch owes a readability suite the gate cannot substitute for, and why the
+suites the thresholds invalidate have to be re-pointed rather than re-measured
+(§2.6h point 5).
 
 ### How each step is verified
 
