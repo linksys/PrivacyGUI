@@ -4,7 +4,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:privacy_gui/constants/_constants.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/demo/providers/theme_studio_config_provider.dart';
@@ -12,6 +11,7 @@ import 'package:privacy_gui/demo/theme_studio/studio_theme_builder.dart';
 import 'package:privacy_gui/theme/theme_json_config.dart';
 import 'package:privacy_gui/localization/fallback_font_resolver.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/localization/supported_locales_provider.dart';
 import 'package:privacy_gui/components/layouts/root_container.dart';
 import 'package:privacy_gui/providers/app_settings/app_settings.dart';
 import 'package:privacy_gui/providers/app_settings/app_settings_provider.dart';
@@ -22,7 +22,6 @@ import 'package:privacy_gui/providers/theme_config_provider.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacy_gui/route/router_provider.dart';
 import 'package:privacy_gui/util/debug_mixin.dart';
-import 'package:privacy_gui/util/languages.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/util/app_utils.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -100,8 +99,6 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
     logger.t('[App]: build: $_currentRoute');
 
     final appSettings = ref.watch(appSettingsProvider);
-    final systemLocaleStr = Intl.getCurrentLocale();
-    final systemLocale = Locale(getLanguageData(systemLocaleStr)['value']);
     final router = ref.watch(routerProvider);
     router.routerDelegate.removeListener(_onReceiveRouteChanged);
     router.routerDelegate.addListener(_onReceiveRouteChanged);
@@ -122,7 +119,6 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
       data: (themeConfig) => _buildMaterialApp(
         router: router,
         appSettings: appSettings,
-        systemLocale: systemLocale,
         themeConfig: themeConfig,
         demoConfig: demoConfig,
         userThemeColor: userThemeColor,
@@ -130,7 +126,6 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
       loading: () => _buildMaterialApp(
         router: router,
         appSettings: appSettings,
-        systemLocale: systemLocale,
         themeConfig: ThemeJsonConfig.defaultConfig(),
         demoConfig: demoConfig,
         userThemeColor: userThemeColor,
@@ -141,7 +136,6 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
         return _buildMaterialApp(
           router: router,
           appSettings: appSettings,
-          systemLocale: systemLocale,
           themeConfig: ThemeJsonConfig.defaultConfig(),
           demoConfig: demoConfig,
           userThemeColor: userThemeColor,
@@ -156,7 +150,6 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
   Widget _buildMaterialApp({
     required GoRouter router,
     required AppSettings appSettings,
-    required Locale systemLocale,
     required ThemeJsonConfig themeConfig,
     required ThemeStudioConfig demoConfig,
     required Color? userThemeColor,
@@ -174,23 +167,38 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
       userThemeColor: userThemeColor,
     );
 
+    // Normalized against what this build shipped, not taken as given: a locale
+    // persisted before a strip removed its language pack would otherwise leak
+    // into everything derived from the locale while the strings fell back to
+    // English. Every other reader goes through the same provider, so the legal
+    // links cannot disagree with the strings. See activeLocaleProvider.
+    final supportedLocales = ref.watch(supportedLocalesProvider);
+    final activeLocale = ref.watch(activeLocaleProvider);
+
     // CJK / non-Latin fallback for the active locale — see
     // FallbackFontResolver.withFallbackFont for which spelling reaches the engine
     // and why. A no-op for Latin-covered locales.
-    final effectiveLocale = appSettings.locale ?? systemLocale;
+    //
+    // Merge note (dev-2.7.0 × #1285): both sides changed this block. dev-2.7.0
+    // re-pointed the locale at `activeLocaleProvider`, which is kept; #1285
+    // replaced the hand-rolled `prefixedFallbackFor` + `copyWith` with
+    // `withFallbackFont`, which is also kept — on a style that already declares
+    // `package: 'ui_kit_library'` the prefixed spelling composes the prefix twice
+    // and resolves to no registered family, so applying it to the theme silently
+    // dropped the bundled subset.
     appLightTheme =
-        FallbackFontResolver.withFallbackFont(appLightTheme, effectiveLocale);
+        FallbackFontResolver.withFallbackFont(appLightTheme, activeLocale);
     appDarkTheme =
-        FallbackFontResolver.withFallbackFont(appDarkTheme, effectiveLocale);
+        FallbackFontResolver.withFallbackFont(appDarkTheme, activeLocale);
 
     return MaterialApp.router(
       onGenerateTitle: (context) => loc(context).appTitle,
       theme: appLightTheme,
       darkTheme: appDarkTheme,
       themeMode: appSettings.themeMode,
-      locale: appSettings.locale ?? systemLocale,
+      locale: activeLocale,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
-      supportedLocales: AppLocalizations.supportedLocales,
+      supportedLocales: supportedLocales,
       builder: (context, child) => Material(
         child: Shortcuts(
           shortcuts: {
