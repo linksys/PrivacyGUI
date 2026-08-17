@@ -13,6 +13,7 @@ import 'package:privacy_gui/page/unified_diagnostics/models/diagnostic_state.dar
 import 'package:privacy_gui/page/unified_diagnostics/providers/unified_diagnostics_notifier.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_domain_ready_provider.dart';
 import 'package:privacy_gui/page/support/faq_data.dart';
+import 'package:privacy_gui/localization/supported_locales_provider.dart';
 import 'package:privacy_gui/providers/app_settings/app_settings_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -40,7 +41,7 @@ final mascotControllerProvider = Provider.autoDispose<MascotController>((ref) {
 final mascotDialogProvider =
     Provider.autoDispose.family<DashboardDialogProvider, BuildContext>(
   (ref, context) {
-    final locale = ref.watch(appSettingsProvider.select((s) => s.locale));
+    final locale = ref.watch(activeLocaleProvider);
     final controller = ref.watch(mascotControllerProvider);
 
     return DashboardDialogProvider(
@@ -86,7 +87,7 @@ class HealthDialogProviderArgs {
 final mascotHealthDialogProvider =
     Provider.autoDispose.family<HealthDialogProvider, HealthDialogProviderArgs>(
   (ref, args) {
-    final locale = ref.watch(appSettingsProvider.select((s) => s.locale));
+    final locale = ref.watch(activeLocaleProvider);
     final controller = ref.watch(mascotControllerProvider);
 
     return HealthDialogProvider(

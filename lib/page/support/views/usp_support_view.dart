@@ -8,7 +8,7 @@ import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/remote_assistance/views/remote_assistance_dialog.dart';
 import 'package:privacy_gui/page/support/faq_data.dart';
-import 'package:privacy_gui/providers/app_settings/app_settings_provider.dart';
+import 'package:privacy_gui/localization/supported_locales_provider.dart';
 import 'package:privacy_gui/page/shell/usp_top_bar.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -102,7 +102,7 @@ class _FaqItemRow extends ConsumerWidget {
     return InkWell(
       onTap: () => gotoOfficialWebUrl(
         item.url,
-        locale: ref.read(appSettingsProvider).locale,
+        locale: ref.read(activeLocaleProvider),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(
@@ -144,7 +144,7 @@ class _QuickLinkFooter extends ConsumerWidget {
       identifier: 'support-visit-linksys',
       onTap: () => gotoOfficialWebUrl(
         linkSupport,
-        locale: ref.read(appSettingsProvider).locale,
+        locale: ref.read(activeLocaleProvider),
       ),
       padding: const EdgeInsets.all(AppSpacing.md),
       child: Row(
