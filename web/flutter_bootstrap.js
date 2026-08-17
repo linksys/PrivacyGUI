@@ -18,7 +18,18 @@ _flutter.loader.load({
     // fetched on demand (A+). Offline, these simply don't load — the bundled
     // fonts already cover all interface text.
     fontFallbackBaseUrl: "https://fonts.gstatic.com/s/",
-    canvasKitBaseUrl: "./assets/"
+    // OFFLINE-CRITICAL — do not remove or change. This is the only reason
+    // CanvasKit resolves locally: buildConfig above has no useLocalCanvasKit,
+    // so without this line the loader falls back to
+    // https://www.gstatic.com/flutter-canvaskit/<engineRevision>/ and the GUI
+    // white-screens with no WAN. Guarded by
+    // test/web/canvaskit_variant_test.dart.
+    canvasKitBaseUrl: "./assets/",
+    // Pins every browser to the "full" CanvasKit build so only one variant
+    // ships (#1281). Without this, capability detection routes Chromium-based
+    // browsers to assets/chromium/canvaskit.js — which no longer exists — and
+    // the loader has no 404 fallback, so the app never boots.
+    canvasKitVariant: "full"
   },
   serviceWorkerSettings: {
     serviceWorkerVersion: "3346174710",
