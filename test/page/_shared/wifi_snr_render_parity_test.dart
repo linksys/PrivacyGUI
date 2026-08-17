@@ -77,29 +77,57 @@ import '../../util/statistics/stats_section_probe.dart';
 ///
 /// The client counts are asserted alongside, in the same blocks: the guard
 /// removes a client from the SNR *average*, not from the network, and 3 clients
-/// on 2.4GHz is what says so. Since #1267 the two surfaces *render* that count
-/// differently — the card as an icon plus a numeral beside the band, the section
-/// still as a sentence — so the assertion is parameterized rather than dropped;
-/// see `countIsCompact` on [expectChannelsReadouts].
+/// on 2.4GHz is what says so. From #1267 to #1297 the two surfaces *rendered* that
+/// count differently — the card as an icon plus a numeral beside the band, the
+/// section as a `clientsCount` sentence on the line below — so the assertion was
+/// parameterized by a `countIsCompact` flag rather than dropped.
+///
+/// #1297 removed the divergence instead of inheriting it, and both flags this
+/// helper carried are gone: the section compressed its count to the same icon plus
+/// numeral and deleted its 96px signal bar (§2.10i). Neither assertion was
+/// relaxed to match — both became **unconditional**, which is strictly stronger
+/// than the flag was, and is why re-adding either widget on either surface now
+/// fails this file. What the section's own measurement said, for the record: the
+/// count + SNR pair was 112.0-166.2px of a 238px content box, so it *fitted* —
+/// 71.8px of headroom in its worst locale (`fi`) at the production floor. The
+/// compression is not a width rescue on this surface; it is that a word naming the
+/// tab's own subject, repeated on every radio, is not worth 36.3-90.5px when 23.2px
+/// says the same thing. A flag here records a divergence, and the fix for one is
+/// for the two surfaces to agree.
 ///
 /// ## Mutation ledger
 ///
-/// Both halves of the fix were reverted in `aggregateRadioClientStats` and the
-/// suites re-run, because a parity test that passes on the drifted code is worth
-/// nothing — and because the interesting column is the right-hand one:
+/// Both halves of the fix were reverted in `aggregateRadioClientStats` and all
+/// three suites re-run, because a parity test that passes on the drifted code is
+/// worth nothing — and because the interesting columns are the right-hand two.
+/// Re-taken for #1297, when the channels suite grew to 172 tests and the section
+/// gained two revertible decisions of its own:
 ///
-///   | mutation                                    | here   | channels overflow | perf readability |
-///   |---------------------------------------------|--------|-------------------|------------------|
-///   | drop the `noise == 0` guard (the drift)     | 2 fail | 158 pass          | 13 pass          |
-///   | `averageSnr` returns 0 instead of `null`    | 2 fail | 158 pass          | 13 pass          |
-///   | drop the card's icon + client count (#1267) | 1 fail | 158 pass          | 15 pass          |
+///   | mutation                                       | here   | channels overflow | perf readability |
+///   |------------------------------------------------|--------|-------------------|------------------|
+///   | drop the `noise == 0` guard (the drift)        | 2 fail | 172 pass          | 15 pass          |
+///   | `averageSnr` returns 0 instead of `null`       | 2 fail | 172 pass          | 15 pass          |
+///   | drop the **card's** icon + count (#1267)       | 1 fail | 172 pass          | 15 pass          |
+///   | drop the **section's** icon + count (#1297)    | 1 fail | 4 fail            | 15 pass          |
+///   | re-add the **section's** 96px bar (#1297)      | 1 fail | 3 fail            | 15 pass          |
 ///
-/// The third row was added when #1267 compressed the card's count to an icon plus
-/// a numeral: the count left the readability suite's field of view entirely, and
-/// neither overflow suite ever had it (a *shorter* row is a cleaner layout), so
-/// this file is now the only place that fails if a radio stops reporting how many
-/// clients are on it. The card's own 211 gate cases — 157 default-profile plus the
-/// 54 tri-band ones #1267 added — are green under the mutation too.
+/// Rows 3 and 4 are the same mutation on either surface and each fails **only its
+/// own half** of this file — which is what makes the parity claim testable rather
+/// than decorative. Row 3 fails nothing anywhere else: the count left the
+/// readability suite's field of view when #1267 compressed it, and no overflow
+/// suite ever had it, because a *shorter* row is a cleaner layout. Row 4 costs the
+/// channels suite 4 cases, and not for a width reason either — one legibility case
+/// plus three of its vertical-budget cases, because a band row without the count
+/// fits one run and the section is then 20px per radio shorter than the scroll
+/// extents those cases measured. Row 5 is caught here, by a `findsNothing` and by a
+/// structural assertion in the channels suite, and by nothing that measures pixels:
+/// in `en` the pair is 111.3px, so a 104px bar still fits the row.
+///
+/// So this file remains the only place that fails if *either* surface stops saying
+/// how many clients are on a radio, and the only place that fails if they stop
+/// saying it the same way. The card's own 211 gate cases — 157 default-profile plus
+/// the 54 tri-band ones #1267 added — are green under every row above; the section
+/// has no gate cases at all, which is why its two rows exist.
 ///
 /// Neither surface's own suite notices either mutation. The overflow suites
 /// cannot: both mutations make the strings *shorter* (`SNR: 25 dB`, `SNR: 0 dB`
@@ -156,26 +184,38 @@ void main() {
 
   /// Asserts the pumped surface renders exactly the oracle, radio by radio.
   ///
-  /// [hasSignalBar] and [countIsCompact] are the only places the two surfaces are
-  /// allowed to differ, and only because what parity is *about* is the number.
+  /// **This helper now takes no per-surface flags at all**, and it took two to
+  /// begin with. Both were retired the same way — by the second surface adopting
+  /// what the first had measured, not by the assertion being relaxed:
   ///
-  /// [hasSignalBar]: the dashboard card dropped its linear `AppLoader` in #1267
-  /// (an unlabelled `snr / 50` restating the value printed beside it), while the
-  /// Statistics section keeps its 96px bar. Where a bar is drawn, the #1271 claim
-  /// it carries still holds — an unmeasured radio gets no bar rather than one at
-  /// zero — so this flag switches the assertion off, it does not weaken it.
+  ///  - `hasSignalBar` existed because #1267 dropped the card's linear `AppLoader`
+  ///    — an unlabelled `snr / 50` restating the value printed beside it — while
+  ///    the section still drew its 96px bar. #1297 asked the same question of the
+  ///    section and measured the same answer (1.92px per dB, saturating at 50 dB),
+  ///    so the bar is gone from both and the assertion is unconditional.
+  ///  - `countIsCompact` existed because #1267 compressed the card's count to an
+  ///    icon plus a numeral while the section still printed `clientsCount` as a
+  ///    sentence. #1297 first inherited that divergence on a headroom argument, and
+  ///    then dropped it: fitting is not the same as being worth the width, so the
+  ///    section compressed too and both surfaces are located the same way.
   ///
-  /// [countIsCompact]: the card renders the count as an icon plus a bare numeral
-  /// beside the band, the section still renders `clientsCount` as a sentence.
-  /// Either way the assertion is that *this radio's block* reports *this radio's
-  /// count*; only the locator changes, and the compact branch checks both halves
-  /// (the visible numeral **and** the semantics label), because an icon with a
-  /// naked number and no accessible name would be a regression this test is
-  /// exactly positioned to catch.
+  /// Both retirements are strictly stronger than the flags were. A bar re-added to
+  /// *either* surface fails here, and so does a count that stops being compact on
+  /// either — where a flag could simply have been flipped back to describe the
+  /// regression as a configuration.
+  ///
+  /// The compact locator deliberately checks **both** halves, the visible numeral
+  /// *and* the semantics label: an icon beside a naked number with no accessible
+  /// name is the failure mode a compression invites, and this file is positioned
+  /// exactly where it would show up on either surface.
+  ///
+  /// What the old `hasSignalBar: true` branch carried is not lost either. It
+  /// asserted #1271's claim that an unmeasured radio gets *no* bar rather than one
+  /// at zero; with no bar anywhere, that claim is carried by the oracle's
+  /// `snrUnavailable` entry, which is the assertion that made the branch worth
+  /// having in the first place.
   void expectChannelsReadouts(WidgetTester tester, AppLocalizations l,
-      {required String surface,
-      required bool hasSignalBar,
-      required bool countIsCompact}) {
+      {required String surface}) {
     final texts = renderedTexts(tester);
     final snrs = texts.where((t) => t.data!.contains(_snrMarker)).toList()
       ..sort((a, b) => tester
@@ -202,40 +242,30 @@ void main() {
       // the latter reads the semantics *tree*, which a widget test only builds
       // under `tester.ensureSemantics()`. The label is a property of the widget
       // either way, and this keeps the pump identical on both surfaces.
-      for (final locator in countIsCompact
-          ? [
-              find.text('$count'),
-              find.byWidgetPredicate(
-                  (w) => w is Semantics && w.properties.label == sentence),
-            ]
-          : [find.text(sentence)]) {
+      for (final locator in [
+        find.text('$count'),
+        find.byWidgetPredicate(
+            (w) => w is Semantics && w.properties.label == sentence),
+      ]) {
         expect(find.descendant(of: block, matching: locator), findsOneWidget,
             reason:
                 'radio $i on $surface should report $count client(s) beside '
-                '"${snrs[i].data}" — as ${countIsCompact ? '"$count" with '
-                    '"$sentence" in its semantics' : '"$sentence"'}. A client '
-                'with no noise reading is excluded from the average, not from '
-                'the network. Missing locator: '
+                '"${snrs[i].data}" — as "$count" with "$sentence" in its '
+                'semantics. A client with no noise reading is excluded from the '
+                'average, not from the network. Missing locator: '
                 '${locator.describeMatch(Plurality.one)}');
       }
 
       final bars = find.descendant(of: block, matching: find.byType(AppLoader));
-      if (!hasSignalBar) {
-        expect(bars, findsNothing,
-            reason: 'radio $i on $surface draws a signal bar. This surface '
-                'dropped it (#1267): an unlabelled bar beside the number it '
-                'encodes adds nothing, and a reappearing one is a revert.');
-      } else if (snrs[i].data == l.snrUnavailable) {
-        expect(bars, findsNothing,
-            reason: 'radio $i on $surface draws a signal bar with no SNR to '
-                'draw. A linear loader at 0 is indistinguishable from a real '
-                'reading at the noise floor, which is the claim this state '
-                'exists to avoid.');
-      } else {
-        expect(bars, findsOneWidget,
-            reason: 'radio $i on $surface has an SNR reading '
-                '("${snrs[i].data}") but no bar rendering it.');
-      }
+      expect(bars, findsNothing,
+          reason: 'radio $i on $surface draws a signal bar. Both surfaces '
+              'dropped it — the card in #1267, the section in #1297 — because an '
+              'unlabelled bar beside the number it encodes adds nothing: '
+              '`normalizeSNR` is `(snr / 50).clamp(0, 1)`, which on the '
+              'section\'s 96px track resolved 1.92px per dB and painted 50, 55, '
+              '60 and 70 dB identically. A reappearing one is a revert on '
+              'whichever surface it appears, which is why this is asserted '
+              'unconditionally rather than behind a per-surface flag.');
     }
   }
 
@@ -259,10 +289,7 @@ void main() {
         reason:
             'the section overflowed on this fixture: ${overflows.join(', ')}');
 
-    expectChannelsReadouts(tester, l,
-        surface: 'the Statistics section',
-        hasSignalBar: true,
-        countIsCompact: false);
+    expectChannelsReadouts(tester, l, surface: 'the Statistics section');
   });
 
   // ─── Surface 2: the dashboard's WiFi Performance card, Channels tab ────────
@@ -303,10 +330,7 @@ void main() {
     ));
     await settleIgnoringAnimations(tester);
 
-    expectChannelsReadouts(tester, l,
-        surface: 'the WiFi Performance card',
-        hasSignalBar: false,
-        countIsCompact: true);
+    expectChannelsReadouts(tester, l, surface: 'the WiFi Performance card');
   });
 }
 

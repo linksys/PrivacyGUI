@@ -1894,7 +1894,12 @@ Four findings, all method:
 3. **A mutation ledger is a per-revision fact and has to be re-taken, not
    appended to.** This file's suite grew 43 → 158 tests, so every count in its
    ledger was stale; re-running all ten mutations is what surfaced finding 2 (one
-   row had quietly dropped from 3 failures to 1). Two corollaries: group
+   row had quietly dropped from 3 failures to 1). It has since been re-taken twice
+   more — 168 tests at #1298 and 172 at #1297, where the same unchanged mutation
+   went from 85 failures to 117 because the row it reverts had gained the client
+   count (§2.10i finding 3) — so the rule reads: **a ledger row is only current for
+   the revision it was taken on**, and the tell is that the numbers stop
+   reproducing (§2.10h finding 3). Two corollaries: group
    attribution is not evidence of isolation — one shared probe returns every
    `RenderFlex` incident in the tree, so mutating one row fails whichever group
    pumps a width where it overflows — and a `Flexible` inside a `Wrap` fails all
@@ -1987,9 +1992,9 @@ Gate **1644 → 1698** (54 = 26 locales × 2 widths + 2 meta guards), and
    This satisfies the AC forbidding a box-adaptive donut by being strictly
    stronger than it: shrinking the chart to its slot silences the gate while
    leaving a useless chart on screen, whereas deleting it withdraws the claim.
-   The Statistics twin still has both the bar and its own band-distribution donut;
-   the same two questions on that surface are separate work (§2.10f is the
-   precedent for how much hand measurement it costs).
+   The Statistics twin had both the bar and its own band-distribution donut, and
+   the same two questions were asked of that surface separately, in #1297 — same
+   two answers, weaker overflow evidence and a heavier vertical bill (§2.10i).
 
 4. **An overflow number is a lower bound on the visual damage.** The gate reported
    `+9.0px bottom` and the screenshot was far worse: the donut, fixed at 120px
@@ -2005,7 +2010,9 @@ Gate **1644 → 1698** (54 = 26 locales × 2 widths + 2 meta guards), and
    `scrollable: false` because their charts and lists sit in `Expanded`, which
    asserts under the unbounded height a `SingleChildScrollView` hands its child —
    so content taller than the grid-fixed card had nowhere to go but outside the
-   box. `_ScrollableCardContent` gives tabbed content the viewport height as a
+   box. `CardScrollRegion` (private to the card template until #1297 needed the
+   same net on a Statistics section, then extracted unchanged to
+   `lib/page/_shared/components/`) gives that content the viewport height as a
    **floor** (`ConstrainedBox(minHeight: constraints.maxHeight)`, no ceiling), so a
    shrink-wrapping `Column` still fills the card exactly as before while being free
    to grow. What that cannot do is keep flex working, and the apparent third option
@@ -2059,10 +2066,11 @@ Gate **1644 → 1698** (54 = 26 locales × 2 widths + 2 meta guards), and
    different, and the test states the new one rather than being relaxed.
    Accessibility is not the thing compressed: the row is wrapped in
    `Semantics(label: clientsCount(n), excludeSemantics: true)`, so a screen reader
-   still hears "3 clients", and the parity test's `countIsCompact` branch pins both
-   halves — the visible numeral **and** the label — because an icon with a naked
-   number and no accessible name is exactly the regression that would otherwise
-   pass.
+   still hears "3 clients", and the parity test pins both halves — the visible
+   numeral **and** the label — because an icon with a naked number and no
+   accessible name is exactly the regression that would otherwise pass. That
+   assertion was `countIsCompact`-gated for as long as only this surface was
+   compressed; #1297 compressed the twin and the gate went away (§2.10i finding 4).
 
 8. **Two ways a mutation ledger lies, both hit on this branch.**
    - *The oracle stops discriminating without failing.* #1266's `stretch` invariant
@@ -2159,6 +2167,111 @@ both directions. Five findings.
    cost and hardening attached, not a one-line substitution — the coupling §2.10c
    established (localizing alone runs the ratchet backwards). Recorded here rather
    than done here.
+
+### 2.10i What the same two questions cost on the Statistics twin (#1297 — implemented)
+
+§2.10g finding 3 removed the Wi-Fi Performance card's donut and signal bar and left
+the Statistics twin holding both, on the grounds that "the same two questions on
+that surface are separate work". #1297 is that work. It asked them of
+`stats_wifi_channels_section.dart` and got the same two answers with different
+evidence, plus a third decision the dashboard's version of the ticket did not have
+to make:
+
+| Statistics WiFi Channels, 288px section = 238px content | verdict |
+|---|---|
+| the 96px linear `AppLoader` beside each SNR | **removed** — 1.92px/dB, no tick, no unit, saturating: 50/55/60/70 dB paint the same full bar |
+| the band-distribution donut | **removed** — 40–60px slice titles on a **15px** ring at every width; painted over the rows from 4 radios up with the probe silent |
+| the client count | **compressed** to icon + numeral beside the band, as on the dashboard — 23.2px against a 36.3–90.5px sentence |
+| the fixed 320px chart box | **`scrollable: true`** — 5 radios need 360px there, 6 need 432px |
+
+Gate **1698/1698**, unchanged, and that is the point: this section has no gate
+coordinate, so every figure here was measured by hand (§2.10f is the precedent for
+what that costs). Six findings.
+
+1. **The removal arguments do not transfer between twins — one is stronger here and
+   one is much weaker.** Stronger: on the dashboard the donut was a second
+   rendering of the tab's own rows; here it was the **third**, because
+   `StatsDeviceDistributionSection` — the first card of this same Devices tab —
+   already draws the band distribution as labelled horizontal bars with band names
+   and counts. Weaker: the *evidence*. §2.10g finding 4 said an overflow number is a
+   lower bound on the visual damage; here the bound was **zero**. The donut sat in
+   an `Expanded` inside a fixed 320px box and `AppPieChart` derives its geometry
+   from the `size` it is handed rather than from its slot — measured slot heights in
+   `en` are 188px at 2 radios, 136px at 3, **84px at 4**, 32px at 5, 0px at 6 — so
+   from 4 radios up the 120px drawing was larger than its slot and painted across
+   the last radio's SNR while `probeSectionOverflow` reported nothing at all, at any
+   width. **A surface with no ratchet coordinate is not a surface with no defect**,
+   and the twin that has a gate is the one that got the cheaper argument.
+
+2. **Legibility, not space, is what disqualified the chart — which is why scrolling
+   was the answer to a different question.** "If we really want a chart, can we give
+   it scroll?" was measured rather than argued. `AppPieChart` prints each slice
+   title *on* the slice, and at `size: 120` the themed `pieCenterRadius` (60) is
+   capped to a 45px hole, leaving a 15px ring under titles 40px (`5GHz`, `6GHz`) to
+   60px (`2.4GHz`) wide — up to 18.5px outside the 120px box on a skewed split.
+   Scroll buys height; it cannot widen a ring, and there is no width at which a 60px
+   word fits a 15px one, at 841px as much as at 288px. So the donut is not a
+   space problem and "the same chart, bigger" is not a smaller version of the fix.
+   Where scroll *was* right is the per-radio row list, whose height is set by data
+   and locale rather than by the box — the opposite defect, given the opposite fix,
+   in the same change.
+
+3. **The count's compression is where the two surfaces converged, and the honest
+   reading reversed mid-ticket.** #1297 first kept the sentence on a headroom
+   argument: count + SNR measured 112.0–166.2px of a 238px content box, so it fitted.
+   Fitting is not the same as being worth the width — the word names what the whole
+   Devices tab is about and it repeats on every radio — so the count is now an icon
+   plus a numeral (23.2px: 14px glyph + `xxs` + numeral) against a sentence costing
+   36.3px (`id`) to 90.5px (`fi`). What the dashboard's version of this decision hid
+   is the second-order cost, and it is bigger here: moving the count *up* beside the
+   band adds 27.2px to the band row, which takes that row from one run to two in
+   **all 26** locales at the 288px floor (it was 3 of 26 — `th` 257.3, `ja` 240.8,
+   `en` 239.0 against 238px), so a per-radio block costs 72px instead of 52px. The
+   dashboard paid ~29px on one band at one width (§2.10g finding 7); this is every
+   locale on every radio. **The saving is horizontal, the cost is vertical, and only
+   the second one needed a new mechanism** — the scroll region, not a narrower row.
+
+4. **Both flags in the shared oracle are now retired, and each retirement is
+   strictly stronger than the flag was.** `wifi_snr_render_parity_test.dart` carried
+   `hasSignalBar` and `countIsCompact` so that one oracle could describe two
+   surfaces that had *diverged*. #1267 took the dashboard's bar, #1297 took this
+   one, so `hasSignalBar` went; #1297 compressed this count, so `countIsCompact`
+   went. Neither assertion was dropped — both became unconditional, so both surfaces
+   are now located by the same two things (the visible numeral **and**
+   `Semantics(label: clientsCount(n))`) and a re-added bar fails the parity suite on
+   either. **A flag in a parity test is a record of divergence; the fix for one is
+   for the surfaces to agree, not for the flag to be deleted.** Measured payoff: of
+   13 mutations, the parity column now fails on exactly the four that touch
+   something both surfaces claim — the count as a numeral (either surface), its
+   accessible name, the bar's absence, the donut's absence — and stays green on the
+   nine that are this section's own geometry.
+
+5. **A guard that a lone text cannot overflow does not get deleted; it becomes a
+   guard about the shape.** With the count moved up, the SNR is the only child on
+   its line, and the widest reading of 26 locales (`zh`/`zh_TW` `snrValue`, 69.8px;
+   `snrUnavailable` 41.4px everywhere) clears the 238px content box with 168px to
+   spare — where the pair that used to sit there overflowed a **216.2px** section in
+   `fi` even under `Row(min)`. So the group's width ladder stops being evidence
+   about width and becomes evidence about the shape, and it is joined by a
+   structural assertion: the first `Flex`/`Wrap` ancestor of each SNR text must be
+   the per-radio `Column`. That assertion is not redundant — re-adding the 96px bar
+   fails it, and fails **nothing** on width or height, because in `en` the pair is
+   111.3px so the bar's 104px still fits the row, and its real cost was
+   locale-dependent (7 of 26 at the floor) in groups that pump `en`.
+
+6. **Deleting a chart from a box that now scrolls changed the *class* of the
+   failure, which is what a revert-mutation is for.** Re-adding the donut used to
+   cost 4 test failures and hide the actual defect; on the shipped tree the same
+   code fails **48 of 172** with `RenderFlex children have non-zero flex but
+   incoming height constraints are unbounded` — its `Expanded` is now inside a
+   `SingleChildScrollView`, and §2.10g finding 5's rule ("a tab can scroll or it can
+   hold a vertical `Expanded`") is doing enforcement work rather than describing a
+   tradeoff. The chart cannot come back *at all* while the box scrolls. The net
+   itself is measured from the other side too, which is §2.10g finding 6's blindness
+   answered with a number instead of a mechanism: `scrollable: true → false` fails
+   11 tests — four because nothing scrolls at all (`Expected: not null`, the
+   assertion refusing a card that cannot scroll) and seven on the exact overflow the
+   scroll absorbs (`+256.0px bottom` at 8 radios).
 
 ### 2.11 fl_chart's coordinates get a primary plan and a documented fallback
 
@@ -2555,10 +2668,12 @@ direction: it grows the gate's *domain* (1644 → 1698 cases, a data dimension
 alongside width and locale) and the ratchet is what constrains how — hence opt-in
 per card and `@profile`-namespaced keys, so no closed ticket's arithmetic moves
 (§2.7, §2.10g). Its own coordinate is one the default profile could never have
-produced. Two later tickets sit in this track without a row of their own because
-they are the Statistics twins of entries that have one: #1270 (§2.10f) and #1271,
-which is not a layout ticket at all — it is the shared SNR aggregation the two
-surfaces had drifted apart on, found while measuring #1267's tab.
+produced. Three later tickets sit in this track without a row of their own because
+they are the Statistics twins of entries that have one: #1270 (§2.10f), #1297
+(§2.10i — #1267's two density questions asked of the WiFi Channels section, which
+the gate cannot see at all) and #1271, which is not a layout ticket at all — it is
+the shared SNR aggregation the two surfaces had drifted apart on, found while
+measuring #1267's tab.
 
 #1298 is the smallest entry in the track and sits here on the same footing: nine
 ARB strings, no change under `lib/`, no coordinate moved, gate 1698/1698 before and

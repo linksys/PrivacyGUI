@@ -556,8 +556,9 @@ class _ChannelsTab extends StatelessWidget {
                   // pair that made this row's width behaviour depend on whether
                   // a radio happened to have an SNR reading, and the branch that
                   // had to exist so an unmeasured radio was not drawn as a bar
-                  // at zero (#1271). The Statistics page's twin still draws its
-                  // 96px bar; that surface is a separate call.
+                  // at zero (#1271). The Statistics page's twin kept its own 96px
+                  // bar until #1297 asked the same question there and removed it
+                  // on the same grounds, so neither surface draws one now.
                   //
                   // The client count moved up beside the band, which is where it
                   // belongs, and that is what lets this be a plain `AppText`

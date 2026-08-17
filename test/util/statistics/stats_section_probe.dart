@@ -37,10 +37,25 @@ import '../overflow_probe.dart';
 /// padding then reduces this further, exactly as in production.
 ///
 /// The margin comes from ui_kit's own [AppLayoutConfig.margin] rather than a copy
-/// of its breakpoint table: the Statistics page pads each section by
+/// of its breakpoint table: the Statistics page's Network tab pads its sections by
 /// `context.layoutMargin` (`usp_statistics_view.dart:86`), which is that same
 /// function. A local copy is correct only until ui_kit moves a breakpoint, and
 /// then the tests measure the wrong widths and still pass.
+///
+/// **This models the Network tab, and the Devices tab is padded differently.** The
+/// Devices tab — which is where `StatsWifiChannelsSection` and
+/// `StatsDeviceDistributionSection` live — uses a flat
+/// `EdgeInsets.all(AppSpacing.lg)` (`usp_statistics_view.dart:127`), so its
+/// sections are `screen - 32` at every width. The two agree **exactly at the
+/// production floor**, where `marginMobile` and `AppSpacing.lg` are both 16 (a
+/// 320px screen gives a 288px section either way), and diverge in the safe
+/// direction above it: this function returns 537 / 841 / 841 where the Devices tab
+/// renders 569 / 873 / 1209. So a Devices-tab section pumped through here is
+/// measured 32-368px **narrower** than production everywhere except the one width
+/// every measurement in this epic quotes, and a guard that passes here passes
+/// there. Do not "fix" that by widening: a section wider than the viewport is
+/// clamped to it (see [probeSectionOverflow]'s assertion), so the wide cases are
+/// realizable only because they are narrow.
 double sectionWidthFor(double screenWidth) =>
     screenWidth - AppLayoutConfig.margin(screenWidth) * 2;
 
