@@ -256,7 +256,7 @@ class _MonitorView extends StatelessWidget {
         AppGap.sm(),
         // Legend + totals.
         //
-        // DEGRADATION SHAPE (#1226) \u2014 T03 replicates this in the six other legend
+        // DEGRADATION SHAPE (#1226) — T03 replicates this in the six other legend
         // rows, so the reasoning matters as much as the code:
         //
         //  1. A `Wrap`, not a `Row` + `Spacer`. At every width where the content
@@ -264,14 +264,14 @@ class _MonitorView extends StatelessWidget {
         //     legend left and the totals right, which is what the `Spacer` did.
         //     When it does not fit, the totals drop to a second line instead of
         //     overflowing. The chart above is `Expanded`, so it yields the height.
-        //  2. The legend yields before anything else \u2014 its labels are `Flexible`
+        //  2. The legend yields before anything else — its labels are `Flexible`
         //     with a one-line ellipsis. A legend is a *key* to a chart that is
         //     already colour-coded, so a clipped label still communicates; each
         //     dot+label pair stays glued together so a label never separates from
         //     the colour it explains.
         //  3. The byte totals never shrink: no `Flexible`, no ellipsis, so they
         //     keep their intrinsic width and wrap as a unit. They are the card's
-        //     content, not chrome \u2014 a truncated byte count is worse than no byte
+        //     content, not chrome — a truncated byte count is worse than no byte
         //     count, and unlike the legend it cannot be recovered from the chart.
         Wrap(
           alignment: WrapAlignment.spaceBetween,

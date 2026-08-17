@@ -89,7 +89,7 @@ class StatsTrafficMonitorSection extends ConsumerWidget {
         AppGap.sm(),
         // Legend + totals.
         //
-        // DEGRADATION SHAPE (#1252, the twin of #1226's dashboard card) \u2014 this
+        // DEGRADATION SHAPE (#1252, the twin of #1226's dashboard card) — this
         // row is a near-duplicate of the Traffic Analysis Monitor legend, so it
         // takes the identical treatment (design \u00a72.10, \u00a72.10a):
         //
@@ -100,14 +100,14 @@ class StatsTrafficMonitorSection extends ConsumerWidget {
         //     overflowing. The chart above is `Expanded`, so it yields the height
         //     (\u00a72.10a point 3: this is the unstated precondition #1226 relied on;
         //     unlike Network Health's fixed-height gauge, this chart yields).
-        //  2. The legend yields before anything else \u2014 its labels are `Flexible`
+        //  2. The legend yields before anything else — its labels are `Flexible`
         //     with a one-line ellipsis. A legend keys a chart that is already
         //     colour-coded, so a clipped label still communicates; each dot+label
         //     pair stays glued together so a label never separates from the
         //     colour it explains.
         //  3. The byte totals never shrink: no `Flexible`, no ellipsis, so they
         //     keep their intrinsic width and wrap as a unit. They are the card's
-        //     content, not chrome \u2014 an ellipsis lands mid-number and a half-shown
+        //     content, not chrome — an ellipsis lands mid-number and a half-shown
         //     statistic misinforms in a way a missing one does not.
         Wrap(
           alignment: WrapAlignment.spaceBetween,
@@ -143,7 +143,7 @@ class StatsTrafficMonitorSection extends ConsumerWidget {
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Icons, not U+2191/U+2193 characters \u2014 matches the dashboard's
+                  // Icons, not U+2191/U+2193 characters — matches the dashboard's
                   // Traffic Analysis card, which draws the same two directions
                   // with Icons.arrow_upward/downward.
                   AppIcon.font(
