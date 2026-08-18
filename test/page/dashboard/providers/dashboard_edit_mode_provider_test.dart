@@ -1,6 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/page/dashboard/models/card_density.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_layout_preferences.dart';
+import 'package:privacy_gui/page/dashboard/models/usp_widget_specs.dart';
+import 'package:privacy_gui/page/dashboard/providers/card_forms_provider.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_edit_mode_provider.dart';
 import 'package:privacy_gui/page/dashboard/providers/usp_layout_controller.dart';
 import 'package:privacy_gui/page/dashboard/providers/usp_layout_preferences_provider.dart';
@@ -210,6 +213,130 @@ void main() {
       // bail out instead of stranding the controller in edit mode.
       await enterFuture;
       expect(container.read(dashboardEditModeProvider).isEditing, isFalse);
+    });
+
+    // -------------------------------------------------------------------------
+    // #1299 — a card form is edit-mode state too
+    // -------------------------------------------------------------------------
+    //
+    // The layout settings panel writes the picks, and that panel only opens from
+    // a button that only exists while editing. So exiting edit mode has to treat
+    // a pick the same way it treats a drag: kept on commit, undone on cancel.
+    //
+    // The failure worth pinning is not "the pick came back" on its own but the
+    // *pair* coming back together. Reverting the geometry while keeping the pick
+    // leaves a card in its old box with no resize handles; reverting the pick
+    // while keeping the geometry leaves a 2x1 tile that is resizable again.
+    // Neither is reachable by any sequence of gestures, so each assertion below
+    // checks the pick and the box it justifies in the same test.
+    //
+    // Mutation table — each row is one edit to the real source, run against this
+    // file:
+    //
+    //   | # | mutated                     | mutation                              | killed by |
+    //   |---|-----------------------------|---------------------------------------|-----------|
+    //   | 1 | dashboard_edit_mode_provider| enterEditMode captures no forms snapshot | 5 |
+    //   | 2 | usp_layout_controller       | restoreSnapshot restores the geometry but not the picks | 2 |
+    //   | 3 | dashboard_edit_mode_provider| commitEditMode takes the revert path   | 2 |
+    //
+    // Row 1 killing 5 is the interesting count: two of them are the pre-existing
+    // #1293/#1294 tests, because `_exitEditMode` only restores when *both*
+    // snapshots are non-null — so dropping the forms half silently disables the
+    // geometry revert as well. Rows 2 and 3 are the two halves that a single
+    // "cancel works" test would have conflated: 2 fails only the pick assertions,
+    // 3 fails only on commit.
+
+    test('cancel puts back the form the card was in, and its box', () async {
+      final container = await createContainer();
+      addTearDown(container.dispose);
+
+      final notifier = container.read(dashboardEditModeProvider.notifier);
+      await notifier.enterEditMode();
+
+      final layoutNotifier =
+          container.read(uspSliverDashboardControllerProvider.notifier);
+      final before = container
+          .read(uspSliverDashboardControllerProvider)
+          .exportLayout()
+          .firstWhere((e) => (e as Map)['id'] == 'device_info') as Map;
+      final originalW = before['w'] as int;
+      expect(originalW, greaterThan(UspWidgetSpecs.popupColumns),
+          reason: 'the collapse has to be observable for the restore to be');
+
+      await layoutNotifier.setCardForm('device_info', CardDensity.popup);
+      expect(
+        container.read(cardFormsProvider).densityFor(12, 'device_info'),
+        CardDensity.popup,
+      );
+
+      await notifier.cancelEditMode();
+
+      expect(
+        container.read(cardFormsProvider).densityFor(12, 'device_info'),
+        isNull,
+        reason: 'the pick was made during the edit, so cancel drops it',
+      );
+      final after = container
+          .read(uspSliverDashboardControllerProvider)
+          .exportLayout()
+          .firstWhere((e) => (e as Map)['id'] == 'device_info') as Map;
+      expect(after['w'], originalW);
+      expect(after['isResizable'], isNot(isFalse),
+          reason: 'a card with no pick has its handles back');
+    });
+
+    test('cancel does not drop a pick that was made before the edit', () async {
+      final container = await createContainer();
+      addTearDown(container.dispose);
+
+      // Picked outside edit mode — the snapshot must carry it, so that cancel
+      // reverts *to* it rather than clearing everything.
+      await container
+          .read(uspSliverDashboardControllerProvider.notifier)
+          .setCardForm('device_info', CardDensity.compact);
+
+      final notifier = container.read(dashboardEditModeProvider.notifier);
+      await notifier.enterEditMode();
+      await container
+          .read(uspSliverDashboardControllerProvider.notifier)
+          .setCardForm('device_info', CardDensity.popup);
+      await notifier.cancelEditMode();
+
+      expect(
+        container.read(cardFormsProvider).densityFor(12, 'device_info'),
+        CardDensity.compact,
+      );
+      final item = container
+          .read(uspSliverDashboardControllerProvider)
+          .exportLayout()
+          .firstWhere((e) => (e as Map)['id'] == 'device_info') as Map;
+      expect(item['isResizable'], isNot(isFalse),
+          reason: 'compact can still be enlarged, so the handles stay');
+      expect(item['minW'], greaterThan(1),
+          reason: "the reverted pick's floor is back on the geometry");
+    });
+
+    test('commit keeps a pick made during the edit', () async {
+      final container = await createContainer();
+      addTearDown(container.dispose);
+
+      final notifier = container.read(dashboardEditModeProvider.notifier);
+      await notifier.enterEditMode();
+      await container
+          .read(uspSliverDashboardControllerProvider.notifier)
+          .setCardForm('device_info', CardDensity.popup);
+      await notifier.commitEditMode();
+
+      expect(
+        container.read(cardFormsProvider).densityFor(12, 'device_info'),
+        CardDensity.popup,
+      );
+      final item = container
+          .read(uspSliverDashboardControllerProvider)
+          .exportLayout()
+          .firstWhere((e) => (e as Map)['id'] == 'device_info') as Map;
+      expect(item['w'], UspWidgetSpecs.popupColumns);
+      expect(item['isResizable'], isFalse);
     });
 
     test('multiple enter/commit cycles work correctly', () async {

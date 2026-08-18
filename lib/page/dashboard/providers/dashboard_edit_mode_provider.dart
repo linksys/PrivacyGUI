@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/page/dashboard/models/card_form_choice.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_layout_preferences.dart';
+import 'package:privacy_gui/page/dashboard/providers/card_forms_provider.dart';
 import 'package:privacy_gui/page/dashboard/providers/usp_layout_controller.dart';
 import 'package:privacy_gui/page/dashboard/providers/usp_layout_preferences_provider.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
@@ -18,16 +20,27 @@ class DashboardEditState {
   final List<Map<String, dynamic>>? layoutSnapshot;
   final UspLayoutPreferences? prefsSnapshot;
 
+  /// The forms cards were picked into when edit mode opened (#1299).
+  ///
+  /// A third snapshot alongside the geometry and the prefs, because a pick is
+  /// editable in edit mode too — the layout settings panel writes them — and a
+  /// cancel that reverted only the geometry would leave the two disagreeing.
+  /// Captured in the same assignment as [layoutSnapshot], so the two are non-null
+  /// together.
+  final CardForms? formsSnapshot;
+
   const DashboardEditState({
     this.isEditing = false,
     this.layoutSnapshot,
     this.prefsSnapshot,
+    this.formsSnapshot,
   });
 
   DashboardEditState copyWith({
     bool? isEditing,
     List<Map<String, dynamic>>? layoutSnapshot,
     UspLayoutPreferences? prefsSnapshot,
+    CardForms? formsSnapshot,
     bool clearSnapshots = false,
   }) {
     return DashboardEditState(
@@ -36,6 +49,8 @@ class DashboardEditState {
           clearSnapshots ? null : (layoutSnapshot ?? this.layoutSnapshot),
       prefsSnapshot:
           clearSnapshots ? null : (prefsSnapshot ?? this.prefsSnapshot),
+      formsSnapshot:
+          clearSnapshots ? null : (formsSnapshot ?? this.formsSnapshot),
     );
   }
 }
@@ -100,11 +115,13 @@ class DashboardEditModeNotifier extends Notifier<DashboardEditState> {
     final controller = ref.read(uspSliverDashboardControllerProvider);
     final layoutSnapshot = controller.exportLayout();
     final prefsSnapshot = ref.read(uspLayoutPreferencesProvider);
+    final formsSnapshot = ref.read(cardFormsProvider);
 
     state = DashboardEditState(
       isEditing: true,
       layoutSnapshot: layoutSnapshot,
       prefsSnapshot: prefsSnapshot,
+      formsSnapshot: formsSnapshot,
     );
 
     controller.setEditMode(true);
@@ -129,11 +146,14 @@ class DashboardEditModeNotifier extends Notifier<DashboardEditState> {
 
     try {
       if (revert) {
-        if (state.layoutSnapshot != null) {
-          controller.importLayout(state.layoutSnapshot!);
+        final layoutSnapshot = state.layoutSnapshot;
+        final formsSnapshot = state.formsSnapshot;
+        if (layoutSnapshot != null && formsSnapshot != null) {
+          // One call: the picks and the geometry they justify have to be put back
+          // together — see [UspSliverDashboardControllerNotifier.restoreSnapshot].
           await ref
               .read(uspSliverDashboardControllerProvider.notifier)
-              .saveLayout();
+              .restoreSnapshot(layoutSnapshot, formsSnapshot);
         }
         if (state.prefsSnapshot != null) {
           await ref

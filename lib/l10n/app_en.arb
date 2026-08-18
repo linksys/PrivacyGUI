@@ -1807,5 +1807,12 @@
   "networkNameSsid": "Network Name (SSID)",
   "portForwardingRules": "Port Forwarding Rules",
   "portProtocol": "Port {port} ({protocol})",
-  "@portProtocol": {"placeholders": {"port": {"type": "String"}, "protocol": {"type": "String"}}}
+  "@portProtocol": {"placeholders": {"port": {"type": "String"}, "protocol": {"type": "String"}}},
+  "cardForm": "Card Form",
+  "cardFormNormal": "Normal",
+  "cardFormCompact": "Compact",
+  "cardFormPopup": "Popup",
+  "cardFormDescription": "A smaller form limits how far a card can be resized.",
+  "cardFormForNamed": "Card form for {name}",
+  "@cardFormForNamed": {"placeholders": {"name": {"type": "String"}}}
 }

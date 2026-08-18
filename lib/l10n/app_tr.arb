@@ -1131,5 +1131,11 @@
   "bridgeRedirectButton": "Yönlendiriciye git",
   "lanIpRedirectTitle": "Yönlendiricinize yeniden bağlanın",
   "lanIpRedirectMessage": "Yönlendiricinizin IP adresi değişti. {url} adresinden ona yeniden bağlanın. Cihazınızın yeni bir adres alması için bir süre beklemeniz gerekebilir.",
-  "lanIpRedirectButton": "Yönlendiriciye git"
+  "lanIpRedirectButton": "Yönlendiriciye git",
+  "cardForm": "Kart biçimi",
+  "cardFormNormal": "Normal",
+  "cardFormCompact": "Kompakt",
+  "cardFormPopup": "Açılır pencere",
+  "cardFormDescription": "Daha küçük bir biçim, kartın yeniden boyutlandırılabileceği aralığı sınırlar.",
+  "cardFormForNamed": "{name} için kart biçimi"
 }

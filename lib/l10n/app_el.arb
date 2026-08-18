@@ -1131,5 +1131,11 @@
   "bridgeRedirectButton": "Μετάβαση στον δρομολογητή",
   "lanIpRedirectTitle": "Επανασύνδεση στον δρομολογητή σας",
   "lanIpRedirectMessage": "Η διεύθυνση IP του δρομολογητή σας άλλαξε. Επανασυνδεθείτε σε αυτόν στο {url}. Ίσως χρειαστεί να περιμένετε λίγο μέχρι η συσκευή σας να λάβει νέα διεύθυνση.",
-  "lanIpRedirectButton": "Μετάβαση στον δρομολογητή"
+  "lanIpRedirectButton": "Μετάβαση στον δρομολογητή",
+  "cardForm": "Μορφή κάρτας",
+  "cardFormNormal": "Κανονική",
+  "cardFormCompact": "Συμπαγής",
+  "cardFormPopup": "Αναδυόμενο",
+  "cardFormDescription": "Μια μικρότερη μορφή περιορίζει το πόσο μπορεί να αλλάξει μέγεθος μια κάρτα.",
+  "cardFormForNamed": "Μορφή κάρτας για {name}"
 }

@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:privacy_gui/page/dashboard/models/card_form_choice.dart';
+
 /// The persisted form of the USP dashboard layout: one serialised grid per
 /// breakpoint, keyed by slot count.
 ///
@@ -38,14 +40,30 @@ class UspLayoutEnvelope {
 
   /// Bumped whenever the payload shape changes in a way older builds would
   /// misread. Version 1 is the implicit version of the legacy bare list.
-  static const int currentVersion = 2;
+  ///
+  /// Version 3 adds [forms]. It is a bump rather than an additive field because
+  /// [tryDecode] rejects anything newer than it understands, and a v2 build
+  /// reading a v3 payload would render geometry whose `isResizable` and raised
+  /// `minW` it has no rule for — a card with no handles and no way to explain
+  /// why. Falling back to the default layout is the better failure.
+  static const int currentVersion = 3;
 
-  const UspLayoutEnvelope(this.layouts);
+  const UspLayoutEnvelope(this.layouts, {this.forms = CardForms.empty});
 
   /// Serialised layouts by slot count. Keys outside [persistedSlotCounts] are
   /// preserved on decode so a build that renders fewer breakpoints cannot
   /// silently discard a layout a newer build wrote.
   final Map<int, List<dynamic>> layouts;
+
+  /// The density each card was picked into, per breakpoint (#1299).
+  ///
+  /// Stored beside the geometry rather than in a pref of its own, and keyed by
+  /// the same slot counts, because the geometry it implies — `isResizable`,
+  /// `minW`, `minH` — is re-derived from it on every import. A pick in one file
+  /// and the sizes it justifies in another is how the two drift apart; and a pick
+  /// that was *not* keyed by breakpoint would repeat #1293 exactly, since
+  /// "compact on a phone, normal on a laptop" is the case this exists for.
+  final CardForms forms;
 
   List<dynamic>? operator [](int slotCount) => layouts[slotCount];
 
@@ -53,7 +71,11 @@ class UspLayoutEnvelope {
 
   /// Returns a copy with [slotCount]'s geometry replaced.
   UspLayoutEnvelope withLayout(int slotCount, List<dynamic> layout) =>
-      UspLayoutEnvelope({...layouts, slotCount: layout});
+      UspLayoutEnvelope({...layouts, slotCount: layout}, forms: forms);
+
+  /// Returns a copy carrying [forms] instead.
+  UspLayoutEnvelope withForms(CardForms forms) =>
+      UspLayoutEnvelope(layouts, forms: forms);
 
   String encode() => jsonEncode({
         'version': currentVersion,
@@ -61,6 +83,9 @@ class UspLayoutEnvelope {
           for (final entry in layouts.entries)
             entry.key.toString(): entry.value,
         },
+        // Omitted when nobody has picked a form, so an install that never used
+        // the control writes the same bytes it wrote before #1299.
+        if (forms.isNotEmpty) 'forms': forms.toJson(),
       });
 
   /// Parses [raw], or returns null when it cannot be read as layouts on known
@@ -104,7 +129,12 @@ class UspLayoutEnvelope {
       layouts[slotCount] = layout;
     }
 
-    return UspLayoutEnvelope(layouts);
+    // Absent for every payload written before v3, which decodes as "nobody has
+    // picked a form" — the state every install is already in.
+    return UspLayoutEnvelope(
+      layouts,
+      forms: CardForms.fromJson(decoded['forms']),
+    );
   }
 
   static bool _isItemList(List<dynamic> layout) =>

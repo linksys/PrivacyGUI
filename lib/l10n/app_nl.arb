@@ -1131,5 +1131,11 @@
   "bridgeRedirectButton": "Naar router",
   "lanIpRedirectTitle": "Opnieuw verbinden met uw router",
   "lanIpRedirectMessage": "Het IP-adres van uw router is gewijzigd. Maak opnieuw verbinding via {url}. Mogelijk moet u even wachten totdat uw apparaat een nieuw adres heeft ontvangen.",
-  "lanIpRedirectButton": "Naar router"
+  "lanIpRedirectButton": "Naar router",
+  "cardForm": "Kaartindeling",
+  "cardFormNormal": "Normaal",
+  "cardFormCompact": "Compact",
+  "cardFormPopup": "Pop-up",
+  "cardFormDescription": "Een kleinere indeling beperkt hoe ver een kaart kan worden aangepast.",
+  "cardFormForNamed": "Kaartindeling voor {name}"
 }

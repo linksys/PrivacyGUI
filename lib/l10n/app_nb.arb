@@ -1131,5 +1131,11 @@
   "bridgeRedirectButton": "Gå til ruteren",
   "lanIpRedirectTitle": "Koble til ruteren på nytt",
   "lanIpRedirectMessage": "Ruterens IP-adresse er endret. Koble til den på nytt på {url}. Du må kanskje vente et øyeblikk til enheten får en ny adresse.",
-  "lanIpRedirectButton": "Gå til ruteren"
+  "lanIpRedirectButton": "Gå til ruteren",
+  "cardForm": "Kortformat",
+  "cardFormNormal": "Normal",
+  "cardFormCompact": "Kompakt",
+  "cardFormPopup": "Popup",
+  "cardFormDescription": "Et mindre format begrenser hvor mye et kort kan endre størrelse.",
+  "cardFormForNamed": "Kortformat for {name}"
 }

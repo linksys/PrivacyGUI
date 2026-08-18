@@ -1131,5 +1131,11 @@
   "bridgeRedirectButton": "ไปที่เราเตอร์",
   "lanIpRedirectTitle": "เชื่อมต่อกับเราเตอร์ของคุณอีกครั้ง",
   "lanIpRedirectMessage": "ที่อยู่ IP ของเราเตอร์ของคุณเปลี่ยนแปลงแล้ว เชื่อมต่อกับเราเตอร์อีกครั้งที่ {url} คุณอาจต้องรอสักครู่ให้อุปกรณ์ของคุณได้รับที่อยู่ใหม่",
-  "lanIpRedirectButton": "ไปที่เราเตอร์"
+  "lanIpRedirectButton": "ไปที่เราเตอร์",
+  "cardForm": "รูปแบบการ์ด",
+  "cardFormNormal": "ปกติ",
+  "cardFormCompact": "กระชับ",
+  "cardFormPopup": "ป๊อปอัป",
+  "cardFormDescription": "รูปแบบที่เล็กลงจะจำกัดขนาดที่ปรับได้ของการ์ด",
+  "cardFormForNamed": "รูปแบบการ์ดของ {name}"
 }

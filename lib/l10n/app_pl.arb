@@ -1131,5 +1131,11 @@
   "bridgeRedirectButton": "Przejdź do routera",
   "lanIpRedirectTitle": "Połącz się ponownie z routerem",
   "lanIpRedirectMessage": "Adres IP routera uległ zmianie. Połącz się z nim ponownie pod adresem {url}. Może być konieczne odczekanie chwili, aż urządzenie uzyska nowy adres.",
-  "lanIpRedirectButton": "Przejdź do routera"
+  "lanIpRedirectButton": "Przejdź do routera",
+  "cardForm": "Format karty",
+  "cardFormNormal": "Normalny",
+  "cardFormCompact": "Kompaktowy",
+  "cardFormPopup": "Wyskakujące okno",
+  "cardFormDescription": "Mniejszy format ogranicza zakres zmiany rozmiaru karty.",
+  "cardFormForNamed": "Format karty dla {name}"
 }

@@ -2,6 +2,8 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/page/_shared/providers/card_density_provider.dart';
 import 'package:privacy_gui/page/dashboard/models/card_density.dart';
+import 'package:privacy_gui/page/dashboard/providers/card_forms_provider.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 /// Carries the current [CardDensity] down a card's subtree.
 ///
@@ -64,6 +66,17 @@ class CardDensityScope extends InheritedWidget {
 /// #1251 were spent removing screen-derived widths from cards for the reason
 /// that makes them wrong here too: a card is resizable independently of the
 /// window, so the screen says nothing about how much room this card has.
+///
+/// ## Three sources, in this order
+///
+/// 1. [cardDensityOverrideProvider] — a forced value, used by the #1183 gate to
+///    render a card in a form the width would not have selected.
+/// 2. [cardFormsProvider] — the form the user picked for this card on this grid
+///    (#1299). It wins over the measurement because that is the whole inversion:
+///    the pick has already constrained which widths the card can be, so the width
+///    has nothing left to decide. `normal` is excluded — it is the *removal* of a
+///    pick, so it falls through to the measurement rather than pinning.
+/// 3. the measured width (#1232).
 class CardDensityHost extends ConsumerWidget {
   const CardDensityHost({
     super.key,
@@ -87,6 +100,22 @@ class CardDensityHost extends ConsumerWidget {
     if (override != null) {
       return CardDensityScope(
         density: override,
+        normalAbove: normalAbove,
+        child: child,
+      );
+    }
+
+    // The pick, if there is one for this card on this grid. `currentMaxColumns`
+    // is the breakpoint the picks are keyed by — the view feeds the same value to
+    // `SliverDashboard(breakpoints: …)`, so the grid's slot count and this are the
+    // same number by construction, and it has non-throwing fallbacks so a card
+    // built outside a real MediaQuery still reads something.
+    final picked = ref
+        .watch(cardFormsProvider)
+        .densityFor(context.currentMaxColumns, cardId);
+    if (picked != null && picked != CardDensity.normal) {
+      return CardDensityScope(
+        density: picked,
         normalAbove: normalAbove,
         child: child,
       );

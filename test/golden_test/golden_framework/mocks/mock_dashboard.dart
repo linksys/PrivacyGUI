@@ -134,6 +134,11 @@ class _FixedControllerNotifier extends UspSliverDashboardControllerNotifier {
   // from SharedPreferences (seeded in initDashboardSharedPreferences) and seeds
   // the 4/8-column caches from it. The seeded value is a legacy bare list, which
   // is exactly the migration path UspLayoutEnvelope has to keep working (#1293).
+  //
+  // The `ref` is forwarded rather than stubbed because the parent publishes the
+  // picked card forms through it (#1299); golden tests pick nothing, so what
+  // reaches `cardFormsProvider` is the empty set.
+  _FixedControllerNotifier(super.ref);
 }
 
 /// Initialize SharedPreferences with dashboard defaults to prevent async calls.
@@ -154,7 +159,7 @@ List<Override> dashboardOverrides() {
     dashboardOrchestratorProvider
         .overrideWith(() => _FixedOrchestratorNotifier()),
     uspSliverDashboardControllerProvider.overrideWith(
-      (ref) => _FixedControllerNotifier(),
+      (ref) => _FixedControllerNotifier(ref),
     ),
     uspWidgetFactoryProvider.overrideWithValue(_StubWidgetFactory()),
     uspSystemMonitorProvider.overrideWith(() => _FixedSystemMonitorNotifier()),

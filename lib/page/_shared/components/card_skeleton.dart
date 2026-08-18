@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:privacy_gui/page/_shared/components/card_density_scope.dart';
+import 'package:privacy_gui/page/dashboard/models/card_density.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Reusable skeleton placeholders for individual dashboard cards.
@@ -55,6 +57,23 @@ class CardSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // The loading state degrades with the card (#1299).
+    //
+    // Every variant below is a stack of fixed-height blocks sized for the card's
+    // own footprint — the shortest is 86px of content in a 3-row box. A picked
+    // popup tile is one row, 86px of *box*, and the pick is not a width the grid
+    // chose: it holds while the card's data loads, so on a cold boot these
+    // rectangles overflow the box the pick created. `CardSkeleton.list(rows: 3)`
+    // was 94px over at the narrowest realization.
+    //
+    // Read from the scope for the same reason [DashboardCardTemplate] reads it
+    // there: the density is decided once, above the card, and every card's
+    // loading branch goes through this widget, so none of them can miss the
+    // behaviour or implement it differently.
+    if (CardDensityScope.of(context) == CardDensity.popup) {
+      return _buildPopup();
+    }
+
     return switch (_variant) {
       _SkeletonVariant.stats => _buildStats(),
       _SkeletonVariant.info => _buildInfo(),
@@ -63,6 +82,39 @@ class CardSkeleton extends StatelessWidget {
       _SkeletonVariant.topology => _buildTopology(),
       _SkeletonVariant.status => _buildStatus(),
     };
+  }
+
+  // ---------------------------------------------------------------------------
+  // Popup form — the icon block and the one line it degrades to
+  // ---------------------------------------------------------------------------
+
+  /// [CardPopupForm]'s own shape, in grey.
+  ///
+  /// A centred block over one line, `MainAxisSize.min` and `Flexible` exactly as
+  /// that form has them, so the placeholder and the form it resolves into occupy
+  /// the same space and the transition does not jump. The variant is ignored —
+  /// the popup form is the same on every card, so there is nothing left for the
+  /// variants to distinguish.
+  ///
+  /// The two sizes are approximations of an icon and a value, not promises: a
+  /// skeleton is a grey rectangle, and the only thing that has to hold is that it
+  /// fits in one grid row.
+  Widget _buildPopup() {
+    return AppCard(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          AppSkeleton(
+            width: 24,
+            height: 24,
+            borderRadius: BorderRadius.circular(AppSpacing.sm),
+          ),
+          AppGap.sm(),
+          Flexible(child: AppSkeleton.text(width: 64, height: 16)),
+        ],
+      ),
+    );
   }
 
   // ---------------------------------------------------------------------------

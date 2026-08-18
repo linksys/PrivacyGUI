@@ -1,4 +1,6 @@
 import 'package:ui_kit_library/ui_kit.dart';
+import 'package:privacy_gui/page/dashboard/models/card_density.dart';
+import 'package:privacy_gui/page/dashboard/models/card_form_choice.dart';
 import 'package:privacy_gui/page/dashboard/models/display_mode.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_layout_envelope.dart';
 import 'package:privacy_gui/page/dashboard/models/widget_spec.dart';
@@ -673,6 +675,277 @@ abstract class UspWidgetSpecs {
         'maxW': cols.toDouble(),
       };
     }).toList();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Card Forms (#1299) — the chosen density decides which sizes are legal
+  // ---------------------------------------------------------------------------
+
+  /// Cards that offer no [CardDensity.popup] entry.
+  ///
+  /// popup is central, not per card: [DashboardCardTemplate] renders
+  /// [CardPopupForm] whenever the scope says popup, and its `value` falls back to
+  /// the card title, so forcing popup renders on every card built through the
+  /// template. `stats_panel` is the one registered card that is not — see the
+  /// `'stats_panel' => UspStatsPanel()` arm of `UspWidgetFactory._buildCard` — so
+  /// it has no popup path to force and its entry would be a control that visibly
+  /// does nothing.
+  static const Set<String> cardsWithoutPopupForm = {'stats_panel'};
+
+  /// The footprint a popup tile collapses to on the 8- and 12-column grids.
+  ///
+  /// "Cannot be resized" needs a target. A card selected into popup is whatever
+  /// size the user last dragged it to, and a locked 12-column icon-plus-value is
+  /// both absurd and — with the handles gone — unrecoverable. Two columns is the
+  /// narrowest span that still clears [kPopupBelow] at every screen width the
+  /// 12-column grid is used at, which is the same figure §2.6c derives the
+  /// compact floor from.
+  static const int popupColumns = 2;
+
+  /// The height a popup tile collapses to, on every grid.
+  ///
+  /// One row is the whole form: an icon, a label and a value on one line. On the
+  /// 4-column grid this is the *only* axis popup touches — see [applyCardForms]
+  /// for why the width there belongs to [lockToFullWidth] instead.
+  static const int popupHeightRows = 1;
+
+  /// The narrowest a [CardDensity.compact] card may be shrunk to, in 12-column
+  /// units.
+  ///
+  /// Four columns, not the three every compact consumer declares as its
+  /// `minColumns`: a 3-column card is 191.4px at its narrowest realization (§1.5)
+  /// and so falls *below* [kPopupBelow], which is the width at which §2.1 says a
+  /// label and a value no longer fit side by side in any locale. Four columns is
+  /// the smallest span guaranteed to clear 200px at every screen width, so it is
+  /// the floor at which the reduced form still reads (§2.6c, §D3).
+  static const int compactMinColumns = 4;
+
+  /// The shortest a [CardDensity.compact] card may be shrunk to, in rows.
+  ///
+  /// A floor on the height axis as well, so "shrinking is refused" holds in both
+  /// directions rather than only sideways. The figure is two rows — a title line
+  /// and a content line — and it is deliberately not a *measured* raise: the
+  /// compact form is shorter than normal, so a number above what each card
+  /// already declares could only be invented, and §2.4 is explicit that an
+  /// unmeasured constant must not be frozen into the code. Every one of the six
+  /// compact consumers already declares `minHeightRows` of 2 or 3, so today this
+  /// floor is the mechanism without the raise; the raise it would apply is real
+  /// the moment a card declares less.
+  static const int compactMinHeightRows = 2;
+
+  /// The forms the user may pick for the card [id], in menu order, or an empty
+  /// list when the card offers no choice.
+  ///
+  /// [CardDensity.normal] appears only alongside something to return *from* — on
+  /// its own it is not a choice, just the status quo with a control attached.
+  /// [CardDensity.compact] appears only for the six cards that read the density
+  /// (`normalAbove != null` is the existing predicate); offered anywhere else it
+  /// would render exactly the normal form, which is a control that visibly does
+  /// nothing. Building compact forms for the other twelve is card-own design work
+  /// at #1288-#1291's scale and is out of this ticket's scope.
+  static List<CardDensity> selectableForms(String id) {
+    final spec = getById(id);
+    // Package widgets load from a remote template and are not built through
+    // DashboardCardTemplate, so neither form has a path on them.
+    if (spec == null) return const [];
+
+    final forms = <CardDensity>[
+      if (spec.normalAbove != null) CardDensity.compact,
+      if (!cardsWithoutPopupForm.contains(id)) CardDensity.popup,
+    ];
+    if (forms.isEmpty) return const [];
+    return [CardDensity.normal, ...forms];
+  }
+
+  /// Applies each card's chosen form in [choices] to [layout] on a [cols]-wide
+  /// grid, returning the sizes that form makes legal.
+  ///
+  /// This is the inversion #1299 is about. #1232 runs width → density; this runs
+  /// density → the sizes that are legal, and it runs on *import*, from the stored
+  /// pick, so the flags are never persisted twice and can be re-derived whenever
+  /// the rules change:
+  ///
+  /// | picked | what changes |
+  /// |---|---|
+  /// | [CardDensity.popup] | `isResizable: false`, and the box is pinned to [popupColumns] × [popupHeightRows] |
+  /// | [CardDensity.compact] | `minW`/`minH` raised to the floors, `isResizable` back on; the card grows to the floor if it was under it |
+  /// | [CardDensity.normal] | the spec's own bounds, `isResizable` back on |
+  ///
+  /// `isStatic` is never touched: it also disables dragging, and reordering is the
+  /// one edit a popup tile should keep.
+  ///
+  /// ## Two things this deliberately does not do
+  ///
+  /// It does not own the width on the 4-column grid. There popup asks to be small
+  /// and the #1293 lock pins `x: 0, w: cols`; the two rules would overwrite each
+  /// other, so each takes one axis — popup locks the height and stays full width,
+  /// a short full-width bar, and [lockToFullWidth] runs after this and has the
+  /// last word on `x`/`w`/`minW`/`maxW`. The values written here for mobile agree
+  /// with the lock's on purpose, so the order of the two is not load-bearing.
+  ///
+  /// It does not re-promote a card whose width grew back past `normalAbove`. A
+  /// chosen density is what renders or the choice does not stick, and a wide
+  /// compact card is sparse, not broken.
+  ///
+  /// Returns [layout] itself when [choices] is empty, which is how an install
+  /// with no picks stays byte-identical to one from before this ticket.
+  static List<dynamic> applyCardForms(
+    List<dynamic> layout,
+    int cols,
+    Map<String, CardFormChoice> choices,
+  ) {
+    if (choices.isEmpty) return layout;
+
+    return layout.map((item) {
+      final id = (item as Map)['id'];
+      final choice = choices[id];
+      if (choice == null) return item;
+
+      final map = Map<String, dynamic>.from(item);
+      final constraints = getById('$id')?.constraints[DisplayMode.normal];
+
+      switch (choice.density) {
+        case CardDensity.popup:
+          // Pinned as caps as well as with the flag. isResizable: false is what
+          // removes the handles, but a `w` outside its own [minW, maxW] is the
+          // shape that made #1293 permanent — correctBounds and setSlotCount both
+          // read the caps — so the box states its size in every field that
+          // describes it.
+          final w = cols <= UspLayoutEnvelope.mobileSlotCount
+              ? cols
+              : popupColumns.clamp(1, cols);
+          _pinSpan(map, cols: cols, w: w, h: popupHeightRows);
+          map['isResizable'] = false;
+
+        case CardDensity.compact:
+          _applyFloors(
+            map,
+            cols: cols,
+            constraints: constraints,
+            floorColumns: compactMinColumns,
+            floorHeightRows: compactMinHeightRows,
+          );
+          map['isResizable'] = true;
+
+        case CardDensity.normal:
+          // Not a pin: normal *removes* a constraint, so it puts back exactly the
+          // bounds the card would have had if no form had ever been picked. That
+          // has to be a restore rather than a floor — popup wrote `maxW`/`maxH`
+          // down to pin the tile, and a rule that only ever raises minima would
+          // leave the card un-widenable after it expanded again.
+          _applySpecBounds(map, cols: cols, constraints: constraints);
+          map['isResizable'] = true;
+      }
+
+      return map;
+    }).toList();
+  }
+
+  /// Pins [map]'s box to exactly [w] × [h] on a [cols]-wide grid, caps included.
+  static void _pinSpan(
+    Map<String, dynamic> map, {
+    required int cols,
+    required int w,
+    required int h,
+  }) {
+    map['w'] = w;
+    map['minW'] = w;
+    map['maxW'] = w.toDouble();
+    map['h'] = h;
+    map['minH'] = h;
+    map['maxH'] = h.toDouble();
+    // Shrinking cannot push a card off the right edge, but a stored layout can
+    // arrive already overhanging — the pin is applied to whatever is on disk, not
+    // only to a card the user just picked.
+    final x = map['x'];
+    if (x is! int || x + w > cols) map['x'] = 0;
+  }
+
+  /// Puts back the bounds [constraints] declares, scaled to a [cols]-wide grid,
+  /// and pulls the card's own size inside them.
+  ///
+  /// The undo of [_pinSpan] and of [_applyFloors]: the only bounds a card with no
+  /// constraint on it should carry are its spec's, which is also what
+  /// [LayoutItemFactory.fromSpec] gives a freshly added card. Cards with no spec
+  /// (package widgets, or ids this build does not ship) are left exactly as they
+  /// are — there is nothing to restore them *to*, and inventing bounds for a card
+  /// we cannot describe is how a layout we did not author gets rewritten.
+  static void _applySpecBounds(
+    Map<String, dynamic> map, {
+    required int cols,
+    required WidgetGridConstraints? constraints,
+  }) {
+    if (constraints == null) return;
+
+    // Mobile widths are left to [lockToFullWidth], as in [_applyFloors].
+    if (cols > UspLayoutEnvelope.mobileSlotCount) {
+      final minW = scaleSpan(
+        constraints.minColumns,
+        fromCols: UspLayoutEnvelope.desktopSlotCount,
+        toCols: cols,
+      );
+      final maxW = scaleSpan(
+        constraints.maxColumns,
+        fromCols: UspLayoutEnvelope.desktopSlotCount,
+        toCols: cols,
+      ).clamp(minW, cols);
+      map['minW'] = minW;
+      map['maxW'] = maxW.toDouble();
+      final w = map['w'];
+      if (w is int) map['w'] = w.clamp(minW, maxW);
+    }
+
+    // Rows are absolute — a row is the same height on every grid — so they are
+    // restored as declared.
+    final minH = constraints.minHeightRows;
+    final maxH =
+        constraints.maxHeightRows < minH ? minH : constraints.maxHeightRows;
+    map['minH'] = minH;
+    map['maxH'] = maxH.toDouble();
+    final h = map['h'];
+    if (h is int) map['h'] = h.clamp(minH, maxH);
+  }
+
+  /// Raises [map]'s floors to the greater of its spec's bounds and the given
+  /// floor, growing the card if it was already under the result.
+  static void _applyFloors(
+    Map<String, dynamic> map, {
+    required int cols,
+    required WidgetGridConstraints? constraints,
+    required int floorColumns,
+    required int floorHeightRows,
+  }) {
+    // Mobile widths are not scaled for the same reason [correctedSize] leaves
+    // them alone: there the width is pinned by [lockToFullWidth], so anything
+    // written here could only fight the lock.
+    if (cols > UspLayoutEnvelope.mobileSlotCount) {
+      final specMinW = scaleSpan(
+        constraints?.minColumns ?? 1,
+        fromCols: UspLayoutEnvelope.desktopSlotCount,
+        toCols: cols,
+      );
+      final floorW = scaleSpan(
+        floorColumns,
+        fromCols: UspLayoutEnvelope.desktopSlotCount,
+        toCols: cols,
+      );
+      final minW = (specMinW > floorW ? specMinW : floorW).clamp(1, cols);
+      map['minW'] = minW;
+      final w = map['w'];
+      if (w is int && w < minW) map['w'] = minW;
+      final maxW = (map['maxW'] as num?)?.toDouble() ?? cols.toDouble();
+      if (maxW < minW) map['maxW'] = minW.toDouble();
+    }
+
+    // Row counts are absolute — a row is the same height on every grid — so they
+    // are used as they are, exactly as [correctedSize] does.
+    final specMinH = constraints?.minHeightRows ?? 1;
+    final minH = specMinH > floorHeightRows ? specMinH : floorHeightRows;
+    map['minH'] = minH;
+    final h = map['h'];
+    if (h is int && h < minH) map['h'] = minH;
+    final maxH = (map['maxH'] as num?)?.toDouble() ?? minH.toDouble();
+    if (maxH < minH) map['maxH'] = minH.toDouble();
   }
 
   /// The [lockToFullWidth] geometry applied to live items, or null when every

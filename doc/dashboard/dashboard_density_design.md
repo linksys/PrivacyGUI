@@ -1,6 +1,6 @@
 # Dashboard Card Density — Design Decisions
 
-**Last Updated: 2026-08-14** · Follow-up to #1183 · Status: **agreed; tickets #1225–#1240 published; Track A implemented through #1230 (#1225, #1226, #1233, #1227, #1228, #1229, #1266, #1234, #1236, #1237, #1235, #1247, #1230 — not all merged), #1238 remaining; Track B not started. Allowlist 560 → 27.**
+**Last Updated: 2026-08-18** · Follow-up to #1183 · Status: **agreed; tickets #1225–#1240 published; Track A implemented through #1230 (#1225, #1226, #1233, #1227, #1228, #1229, #1266, #1234, #1236, #1237, #1235, #1247, #1230 — not all merged), #1238 remaining; Track B implemented except #1231 (#1232, #1239, #1240, #1288–#1291, #1299). Allowlist 560 → 27.**
 
 ## Purpose
 
@@ -450,6 +450,21 @@ Selection is **automatic from the card's real pixel width**. It is not a user
 preference: the width is already the consequence of a user action (resizing the
 card, or the screen they are on), so requiring a second, separate choice to avoid
 broken layout would push the framework's responsibility onto the user.
+
+> **Amended in #1299 (implemented).** The width still selects the form wherever
+> nobody has said otherwise, and it is still the only mechanism that *guarantees*
+> a card fits. What the clause got wrong is "the width is already the consequence
+> of a user action": on the 4-column grid the layout pins `x: 0, w: cols` and
+> #1293's left-edge lock forbids horizontal resizing outright, so a phone user has
+> no width to act on — and therefore no access to the two forms this design built
+> for narrow cards. So a card's form is **also selectable, in edit mode**, and the
+> pick then constrains the geometry instead of the geometry selecting the pick.
+> The responsibility does not move onto the user: every reachable pairing of form
+> and box is still one the framework guarantees, because the pick decides which
+> boxes are legal (popup collapses the card and takes its resize handles; compact
+> raises its floor). An explicit `normal` pick is the *removal* of a pick, not a
+> pin, so this table keeps describing every card nobody has chosen a form for.
+> §2.6i records the inversion.
 
 `UspLayoutPreferences.setMode()` / `getMode()` become unused for this purpose.
 
@@ -1074,6 +1089,126 @@ of which invalidates the shape of the acceptance criterion itself.
    ticket. And the pin's justification has shifted with point 2: it is no longer
    "191.4px is still the narrowest width the normal form can be asked for" but "this
    is the form the presentation shows at that width".
+
+### 2.6i What inverting the mechanism taught us (#1299 — implemented)
+
+Every section above runs #1232's arrow: the grid gives a card a width, and the
+width picks the form. This one runs it backwards. A card's form is **selectable in
+edit mode**, and the pick decides which sizes are legal — popup pins the box and
+takes the resize handles, compact raises the floor, normal restores the spec's own
+bounds. §2.1's "not a user preference" clause is amended in place with the reason;
+the short version is that the clause assumed a user who can change a card's width,
+and on a phone there is no such user (§2.1's own "never triggers on a phone" is the
+same fact seen from the other side).
+
+Built as `CardFormChoice` / `CardForms` (`cardFormsProvider`),
+`UspWidgetSpecs.selectableForms` + `applyCardForms`, a per-breakpoint `forms` map in
+`UspLayoutEnvelope`, and one labelled row per card in the layout settings dialog.
+`DisplayMode` is **not** revived: it is the abandoned three-value enum §2.6 replaced,
+and a second spelling of the same idea would be two things to keep in agreement.
+Seven lessons.
+
+1. **Four decisions were recorded on the issue before the code; the fifth only
+   appears once you write the reader.** The recorded four: popup collapses to 2×1 on
+   the 8/12-column grids remembering the previous box; on the 4-column grid popup
+   owns the height only and the card stays full width; widening does not re-promote a
+   card the user set to compact; and compact's left edge becomes a move. What none of
+   them says is what an explicit **`normal`** pick means. Read as a pin it is a hole
+   in §1's whole argument — a user could park `lan_info` at its 191.4px realization
+   in its full form, which is the overflow this epic exists to remove. So normal is
+   the *removal* of a pick and the width rule takes over, and the asymmetry is
+   deliberate: **a pick may only ever narrow the set of boxes the framework
+   considers legal, never widen it.** Pinned in `card_form_control_test.dart` as "an
+   explicit normal pick does not pin".
+
+2. **The placement was gated on a mitigation that does not exist, and only the spike
+   could tell.** The ticket's fallback condition was "if `cancelInteraction()` cannot
+   undo an accidental drag, put the control in the dialog". It cannot:
+   `DashboardOverlay._onPointerUp` commits the drag *after* the restore, so the card
+   moves anyway. Two more findings came with it — a control inside the edit-mode
+   `AbsorbPointer` receives no pointers at all (on-card placement is not "add a
+   button", it is "hoist a button out of the widget that exists to make the card
+   inert"), and the overlay's raw `Listener` is behind `_isMobile`, i.e. **the
+   platform, not the pointer kind**, so on a phone a drag needs a long press and a tap
+   is safe while on desktop pointer-down arms a drag with no slop threshold. The
+   control went to the layout settings dialog, which is outside the gesture region
+   entirely and also dissolves the 191.4px budget that had forced an icon-plus-menu
+   shape. The spike is kept as `density_control_gesture_spike_test.dart` rather than
+   written up and deleted: **a placement justified by package behaviour needs the
+   behaviour asserted, or the next package bump silently removes the justification.**
+
+3. **Store the choice, derive the geometry — but store what the derivation cannot
+   recover.** `isResizable`, `minW` and `minH` are re-derived by `applyCardForms` on
+   every import, so a rule change reaches layouts users already saved and no flag can
+   drift from the pick that implies it. The exception is the box popup collapsed: with
+   the handles gone there is no gesture that could recover it, so `restoreW`/`restoreH`
+   travel *with* the choice, per breakpoint. Compact deliberately records nothing — it
+   only ever grows a card, and to a width the card genuinely needs.
+
+4. **A floor on both axes, with the numeric raise on one of them, is the honest
+   shape.** Compact's floor is **4 columns / 260.5px**, not the 3 columns every
+   compact consumer declares as `minColumns`: 3 columns realizes at 191.4px, below
+   `kPopupBelow`, so a compact card shrunk to its declared minimum would sit in the
+   band §2.1 says a label and a value no longer share. On the height axis
+   `compactMinHeightRows: 2` is the mechanism *without* a raise — all six consumers
+   already declare 2 or 3 rows, and §2.4 forbids freezing a constant nobody measured,
+   so inventing a taller floor to make the two axes look symmetric would be exactly
+   that. It applies the day a card declares less. **A mechanism that does not bite
+   today is not the same as a mechanism that is missing, and the difference belongs in
+   the code's own words rather than in a ticket comment.**
+
+5. **The loading state is a card state, and it degrades with the card.** Found by the
+   forced-form sweep, not reasoned out: `connected_devices` overflowed its picked 2×1
+   tile by **94.0px** and `wifi_performance` by 6.0px, in all three locales — and
+   neither was the popup form, which passed. It was `CardSkeleton`, a stack of
+   fixed-height blocks sized for the footprint the card *used to have*, rendered in
+   the frames before the domain data lands. A picked box is not a width the grid
+   chose, so on a cold boot the skeleton is drawn into a box 69px narrower than the
+   3-column floor and two rows shorter than the three-row box its blocks are sized
+   for — `CardSkeleton.list(rows: 3)` alone is 86px of content. Fixed once, in
+   `CardSkeleton`
+   itself, reading `CardDensityScope` for the same reason `DashboardCardTemplate`
+   does — all 15 cards that show a skeleton go through that one widget, so none of
+   them can miss the behaviour or spell it differently.
+
+6. **Only 2 of those 15 cards had a loading frame to catch, so the finding was
+   luck — and the fix is a pump, not a wider sweep.** The shared fixture resolves
+   most cards' data immediately; 13 of the 15 were "covered" by fixture timing rather
+   than by an assertion. Widening the card sweep would not have helped, because
+   whether a card renders its skeleton at all is a property of the fixture. So the six
+   skeleton variants are pumped directly under a hand-built popup scope, one test each
+   — the claim is about six widgets and has nothing to do with locale or card data,
+   and the two card-level cases are what prove production puts the skeleton under that
+   scope at all. Generalized: **`runWithOverflowCollection` spans every frame of the
+   pump, which is the only reason a pre-data frame ever surfaces; a suite that only
+   asserts on the settled frame is measuring the form, not the card.**
+
+7. **A forced geometry is a new worst case only where it is not dominated, and the
+   domination is a test, not a paragraph.** Two boxes exist now that no drag could
+   produce: the popup collapse (**122.3px × 1 row**, against the 191.4px 3-column
+   floor that was the narrowest width any card had ever been pumped at) and compact's
+   4-column floor (**260.5px**, a span the #1183 gate never pumps, since it pumps each
+   spec's min / preferred / max — 3, 6 and 8 for all six consumers). The two other
+   pairings are skipped: the mobile popup tile is 288px at the same one row, and
+   compact above `normalAbove` is wider at the same height, so both are dominated
+   because overflow is monotonic in width. That premise is load-bearing for every
+   "one case per span" claim in this suite, so
+   `dashboard_card_forced_form_overflow_test.dart` **asserts each skip** against the
+   live geometry instead of asserting it in prose. Two more facts it pins rather than
+   states: the popup inventory is all 18 ids minus `cardsWithoutPopupForm`, and the
+   two cards whose thresholds sit *below* 260.5px — `lan_info` (250) and
+   `time_settings` (256) — are named, because those are the cards for which the
+   4-column sweep is a width the automatic rule would genuinely not select, and a spec
+   edit that moves a threshold across that line changes what the sweep means.
+
+   This retires a coverage statement two sections rely on. §2.6c item 1 and §D3 both
+   note that nine of the eighteen cards are floored above `kPopupBelow` by their own
+   `minColumns`, so no width selects popup for them — true of widths, and now
+   incomplete: **a pick is not a width**, so eight of those nine (all but
+   `stats_panel`) render a popup form for the first time in this ticket's sweep.
+   `known_overflows.json` is unchanged and the #1183 gate is green (1698/1698): none of
+   these boxes existed before, so there is nothing to grandfather and a failure here is
+   this ticket's regression.
 
 ### 2.7 The gate enumerates widths instead of sampling them
 
@@ -2746,6 +2881,11 @@ eighteen widgets sit above the threshold at every width (§2.6c item 1). Raising
 the constant past 260.5px would pull those nine in — which is a different decision
 from this one, since for them popup would replace compact rather than backstop it.
 
+Since #1299 that sentence is about **widths only**: a user can pick popup for eight
+of those nine, so the form is reachable on them without touching the constant
+(§2.6i item 7). What raising it would change is whether they get popup *without
+being asked* — which is why it is still deferred.
+
 ---
 
 ## Part 4 — Order of work
@@ -2918,6 +3058,7 @@ one deviation from the legend shape.
 | #1289 | `connected_devices` device row — `normalAbove: 336`, the first threshold *above* the 288px realization — **implemented**, lessons in §2.6f |
 | #1290 | `ethernet_ports` port list — `normalAbove: 386`, the registry's first compact form with a *rendering* of its own, and the first card with no readable width at all — **implemented**, lessons in §2.6h |
 | #1291 | `network_health` gauge centre + metric chips — `normalAbove: 366`, the first *tabbed* card to declare a threshold; the gauge is back to scale 1.000 — **implemented**, lessons in §2.6g |
+| #1299 | Density selectable in edit mode, the form constraining resize (§2.1 as amended, §2.6i) — the arrow inverted: popup on 17 cards, compact on the 6 with a threshold, persisted per breakpoint — **implemented**, lessons in §2.6i |
 
 #1240 waited on all of Track A: thresholds are meaningless while fit widths are
 still moving, and the point of the layout fixes is to lower them. Re-measured

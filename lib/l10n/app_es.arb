@@ -1131,5 +1131,11 @@
   "bridgeRedirectButton": "Ir al router",
   "lanIpRedirectTitle": "Vuelve a conectarte a tu router",
   "lanIpRedirectMessage": "La dirección IP de tu router ha cambiado. Vuelve a conectarte a él en {url}. Es posible que debas esperar un momento a que tu dispositivo obtenga una nueva dirección.",
-  "lanIpRedirectButton": "Ir al router"
+  "lanIpRedirectButton": "Ir al router",
+  "cardForm": "Formato de tarjeta",
+  "cardFormNormal": "Normal",
+  "cardFormCompact": "Compacto",
+  "cardFormPopup": "Ventana emergente",
+  "cardFormDescription": "Un formato más pequeño limita el tamaño al que se puede ajustar una tarjeta.",
+  "cardFormForNamed": "Formato de tarjeta para {name}"
 }
