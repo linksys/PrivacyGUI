@@ -1,3 +1,4 @@
+import 'package:equatable/equatable.dart';
 import 'package:flutter/widgets.dart';
 import 'package:sliver_dashboard/sliver_dashboard.dart';
 
@@ -17,7 +18,7 @@ import 'package:sliver_dashboard/sliver_dashboard.dart';
 /// geometry tests in `card_form_toolbar_test.dart` fail — they compare this
 /// arithmetic against the rect the real grid gave the real card.
 @immutable
-class CardGridGeometry {
+class CardGridGeometry extends Equatable {
   const CardGridGeometry({
     required this.slotWidth,
     required this.slotHeight,
@@ -52,20 +53,11 @@ class CardGridGeometry {
       );
 
   @override
-  bool operator ==(Object other) =>
-      other is CardGridGeometry &&
-      other.slotWidth == slotWidth &&
-      other.slotHeight == slotHeight &&
-      other.mainAxisSpacing == mainAxisSpacing &&
-      other.crossAxisSpacing == crossAxisSpacing &&
-      other.padding == padding;
-
-  @override
-  int get hashCode => Object.hash(
+  List<Object?> get props => [
         slotWidth,
         slotHeight,
         mainAxisSpacing,
         crossAxisSpacing,
         padding,
-      );
+      ];
 }

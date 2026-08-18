@@ -1,3 +1,4 @@
+import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/page/dashboard/models/card_form_choice.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_layout_preferences.dart';
@@ -15,7 +16,17 @@ final dashboardEditModeProvider =
   DashboardEditModeNotifier.new,
 );
 
-class DashboardEditState {
+/// Whether edit mode is open, and what to put back if it is cancelled.
+///
+/// Value equality rather than identity (Article XI §11.1), and here it earns its
+/// keep twice over. `_exitEditMode` always ends on `const DashboardEditState()`,
+/// so a second exit — a route guard and a button press racing, or a logout
+/// arriving after a commit — republishes a state identical to the one already
+/// held; on identity that is a rebuild of every listener for no change. And
+/// [layoutSnapshot] is a `List<Map<String, dynamic>>` freshly built by
+/// `exportLayout()` on every capture, which no two calls could ever share an
+/// identity for. [Equatable] compares it deeply.
+class DashboardEditState extends Equatable {
   final bool isEditing;
   final List<Map<String, dynamic>>? layoutSnapshot;
   final UspLayoutPreferences? prefsSnapshot;
@@ -53,6 +64,10 @@ class DashboardEditState {
           clearSnapshots ? null : (formsSnapshot ?? this.formsSnapshot),
     );
   }
+
+  @override
+  List<Object?> get props =>
+      [isEditing, layoutSnapshot, prefsSnapshot, formsSnapshot];
 }
 
 class DashboardEditModeNotifier extends Notifier<DashboardEditState> {
