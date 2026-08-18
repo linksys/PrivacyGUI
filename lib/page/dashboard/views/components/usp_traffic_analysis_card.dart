@@ -167,6 +167,10 @@ class _UspTrafficAnalysisCardState
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
             Semantics(
+              // Own boundary, or the grid item absorbs this tap action across
+              // the whole card — see DashboardCardTemplate._buildDetailFooter
+              // for the full reasoning (#1301).
+              container: true,
               button: true,
               label: label,
               child: InkWell(
