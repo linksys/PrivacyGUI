@@ -52,11 +52,11 @@ import 'package:privacy_gui/page/dashboard/models/usp_widget_specs.dart';
 ///
 /// ### One survivor, and why it is left alive
 ///
-/// Replacing compact's `specMinW = scaleSpan(constraints.minColumns, …)` with the
-/// raw 12-column figure survives. It is an *equivalent* mutation on today's data,
-/// not a gap: every one of the six compact consumers declares `minColumns: 3`, and
-/// `minW` is the max of the scaled spec floor and the scaled compact floor, which
-/// the compact floor wins on all three grids. The `scaleSpan` there is defensive —
+/// Replacing compact's `specMinW = _scaleFromTwelfths(constraints.minColumns, …)`
+/// with the raw 12-column figure survives. It is an *equivalent* mutation on today's
+/// data, not a gap: every one of the six compact consumers declares `minColumns: 3`,
+/// and `minW` is the max of the scaled spec floor and the scaled compact floor, which
+/// the compact floor wins on all three grids. The scaling there is defensive —
 /// it becomes observable the first time a card declares a `minColumns` above 4 —
 /// and writing a test that only passes because of a card that does not exist would
 /// be worse than recording this.

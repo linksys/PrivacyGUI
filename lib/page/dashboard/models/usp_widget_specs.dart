@@ -557,6 +557,22 @@ abstract class UspWidgetSpecs {
   }) =>
       (span * toCols / fromCols).round().clamp(1, toCols);
 
+  /// [scaleSpan] from the 12-column grid every spec column figure is written for.
+  ///
+  /// Every caller inside this file scales *from* twelfths — that is what a
+  /// [WidgetGridConstraints] column figure is — so `fromCols` was the same
+  /// constant at all five sites and never once a variable. Only [scaleLayout]
+  /// scales between two grids it is told about, and it keeps the general call.
+  ///
+  /// Named for the direction rather than made a default on [scaleSpan], so the day
+  /// a figure is written against some other grid the compiler makes whoever wrote
+  /// it say which one.
+  static int _scaleFromTwelfths(int span, {required int toCols}) => scaleSpan(
+        span,
+        fromCols: UspLayoutEnvelope.desktopSlotCount,
+        toCols: toCols,
+      );
+
   /// The size a card has to be corrected to on a [slotCount]-wide grid, or null
   /// when the size it already has is allowed.
   ///
@@ -580,16 +596,10 @@ abstract class UspWidgetSpecs {
     var newH = h;
 
     if (slotCount > UspLayoutEnvelope.mobileSlotCount) {
-      final minColumns = scaleSpan(
-        constraints.minColumns,
-        fromCols: UspLayoutEnvelope.desktopSlotCount,
-        toCols: slotCount,
-      );
-      final maxColumns = scaleSpan(
-        constraints.maxColumns,
-        fromCols: UspLayoutEnvelope.desktopSlotCount,
-        toCols: slotCount,
-      );
+      final minColumns =
+          _scaleFromTwelfths(constraints.minColumns, toCols: slotCount);
+      final maxColumns =
+          _scaleFromTwelfths(constraints.maxColumns, toCols: slotCount);
       // Sequential rather than clamp(). WidgetGridConstraints asserts
       // min <= max, but a package widget's constraints are parsed from a remote
       // template and asserts are gone in release, so the one build where a bad
@@ -888,16 +898,9 @@ abstract class UspWidgetSpecs {
 
     // Mobile widths are left to [lockToFullWidth], as in [_applyFloors].
     if (cols > UspLayoutEnvelope.mobileSlotCount) {
-      final minW = scaleSpan(
-        constraints.minColumns,
-        fromCols: UspLayoutEnvelope.desktopSlotCount,
-        toCols: cols,
-      );
-      final maxW = scaleSpan(
-        constraints.maxColumns,
-        fromCols: UspLayoutEnvelope.desktopSlotCount,
-        toCols: cols,
-      ).clamp(minW, cols);
+      final minW = _scaleFromTwelfths(constraints.minColumns, toCols: cols);
+      final maxW = _scaleFromTwelfths(constraints.maxColumns, toCols: cols)
+          .clamp(minW, cols);
       map['minW'] = minW;
       map['maxW'] = maxW.toDouble();
       final w = map['w'];
@@ -928,16 +931,9 @@ abstract class UspWidgetSpecs {
     // them alone: there the width is pinned by [lockToFullWidth], so anything
     // written here could only fight the lock.
     if (cols > UspLayoutEnvelope.mobileSlotCount) {
-      final specMinW = scaleSpan(
-        constraints?.minColumns ?? 1,
-        fromCols: UspLayoutEnvelope.desktopSlotCount,
-        toCols: cols,
-      );
-      final floorW = scaleSpan(
-        floorColumns,
-        fromCols: UspLayoutEnvelope.desktopSlotCount,
-        toCols: cols,
-      );
+      final specMinW =
+          _scaleFromTwelfths(constraints?.minColumns ?? 1, toCols: cols);
+      final floorW = _scaleFromTwelfths(floorColumns, toCols: cols);
       final minW = (specMinW > floorW ? specMinW : floorW).clamp(1, cols);
       map['minW'] = minW;
       final w = map['w'];
