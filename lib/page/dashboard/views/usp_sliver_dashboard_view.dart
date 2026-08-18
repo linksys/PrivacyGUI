@@ -34,6 +34,13 @@ import 'package:privacy_gui/route/constants.dart';
 ///
 /// Supports drag-drop/resize in edit mode.
 class UspSliverDashboardView extends ConsumerStatefulWidget {
+  /// Fixed slot height of the dashboard grid, in logical pixels.
+  ///
+  /// On the widget rather than in the [State] because the overflow gate derives
+  /// card heights from it (`dashboard_card_probe.dart`), and the copy it used to
+  /// keep could drift from this one without anything noticing (#1248 review W-4).
+  static const double slotHeight = 120.0;
+
   const UspSliverDashboardView({super.key});
 
   @override
@@ -328,9 +335,6 @@ class _UspSliverDashboardViewState
   // SliverDashboard Layout (Edit Mode) — fixed grid cells, drag-drop
   // ---------------------------------------------------------------------------
 
-  /// Fixed slot height in logical pixels.
-  static const _slotHeight = 120.0;
-
   Widget _buildSliverDashboard(BuildContext context) {
     final controller = ref.watch(uspSliverDashboardControllerProvider);
     final factory = ref.watch(uspWidgetFactoryProvider);
@@ -350,7 +354,7 @@ class _UspSliverDashboardViewState
       final availableWidth = constraints.maxWidth - pageMargin * 2;
       final slotWidth =
           (availableWidth - (uiKitColumns - 1) * AppSpacing.lg) / uiKitColumns;
-      final ratio = slotWidth / _slotHeight;
+      final ratio = slotWidth / UspSliverDashboardView.slotHeight;
 
       return DashboardOverlay(
         controller: controller,

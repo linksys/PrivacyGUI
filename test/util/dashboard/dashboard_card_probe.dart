@@ -14,6 +14,7 @@ import 'package:privacy_gui/page/dashboard/factories/usp_widget_factory.dart';
 import 'package:privacy_gui/page/dashboard/models/card_density.dart';
 import 'package:privacy_gui/page/dashboard/models/display_mode.dart';
 import 'package:privacy_gui/page/dashboard/models/widget_spec.dart';
+import 'package:privacy_gui/page/dashboard/views/usp_sliver_dashboard_view.dart';
 import 'package:privacy_gui/localization/fallback_font_resolver.dart';
 import 'package:privacy_gui/theme/theme_json_config.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -40,52 +41,55 @@ import 'kitchen_sink_overrides.dart';
 /// card spans a different pixel width on mobile vs desktop. Testing a single
 /// hardcoded width (an earlier version used a fixed 70px slot) misses the
 /// narrowest realizations, which is exactly where overflow happens. So the
-/// constants and formulas below are copied from the real layout stack:
+/// geometry below is taken from the real layout stack — read from it where the
+/// value is reachable without a `BuildContext`, and pinned against it by
+/// `dashboard_card_probe_geometry_test.dart` where it is not:
 ///
 /// * Column count per breakpoint — `GridLayoutContext.currentMaxColumns`
-///   (ui_kit `layout_extensions.dart`): 4 / 8 / 12.
-/// * Page margin per breakpoint — `AppLayoutConfig.margin(width)`.
+///   (ui_kit `layout_extensions.dart`): 4 / 8 / 12. **Pinned**, not read: the
+///   getter needs a context.
+/// * Page margin per breakpoint — `AppLayoutConfig.margin(width)`, called.
 /// * Slot width — `UspSliverDashboardView._buildSliverDashboard`:
 ///   `(screenWidth − margin·2 − (cols−1)·AppSpacing.lg) / cols`.
 /// * Card width for a span — `span·slot + (span−1)·AppSpacing.lg`, with the
 ///   span clamped to `[minColumns, min(maxColumns, cols)]` exactly as
 ///   `UspSliverDashboardView._handleResizeEnd` clamps it.
 
-// --- Breakpoint constants (mirrors ui_kit AppLayoutConfig) -------------------
+// --- Grid geometry (references production, never copies it) ------------------
+//
+// Every number below is read from the layout stack rather than restated here.
+// An earlier revision restated the five breakpoints and the six margin steps as
+// local constants, which made a silent drift possible in exactly one direction:
+// production moves a breakpoint, the gate keeps measuring the old regime and
+// stays green (#1248 review W-4). What cannot be referenced — the 4/8/12 column
+// mapping, which production only exposes through a `BuildContext` — is pinned
+// against the real getter by `dashboard_card_probe_geometry_test.dart`.
 
 /// Grid inter-slot spacing used by `UspSliverDashboardView` as both
 /// `crossAxisSpacing` and `mainAxisSpacing`. This is `AppSpacing.lg`, NOT the
 /// responsive `layoutGutter` — the dashboard view hardcodes `AppSpacing.lg`.
-const double kGridGutter = 16.0;
+const double kGridGutter = AppSpacing.lg;
 
 /// Fixed slot height of the dashboard grid, in logical pixels.
-/// Mirrors `UspSliverDashboardView._slotHeight`.
-const double kSlotHeight = 120.0;
+const double kSlotHeight = UspSliverDashboardView.slotHeight;
 
-/// Breakpoint thresholds from `AppLayoutConfig` (logical px).
-const double _bpMobile = 600.0;
-const double _bpTablet = 905.0;
-const double _bpDesktop = 1240.0;
-const double _bpDesktopLarge = 1440.0;
-const double _bpDesktopXL = 1680.0;
-
-/// Column count for a screen width — mirrors `currentMaxColumns`
-/// (mobile 4 / tablet 8 / desktop 12).
+/// Column count for a screen width — mirrors `GridLayoutContext.currentMaxColumns`
+/// (`responsive<int>(mobile: 4, tablet: 8, desktop: AppLayoutConfig.maxColumns)`).
+///
+/// The one replica left in this file: production resolves it off a
+/// `BuildContext`, and the gate computes widths without pumping anything. The
+/// thresholds come from `AppLayoutConfig`, and the mapping itself is pinned
+/// against `context.currentMaxColumns` by the geometry guard test.
 int gridColumnsForWidth(double screenWidth) {
-  if (screenWidth <= _bpMobile) return 4;
-  if (screenWidth <= _bpTablet) return 8;
-  return 12;
+  if (AppLayoutConfig.isMobileWidth(screenWidth)) return 4;
+  if (AppLayoutConfig.isTabletWidth(screenWidth)) return 8;
+  return AppLayoutConfig.maxColumns;
 }
 
-/// Page margin for a screen width — mirrors `AppLayoutConfig.margin`.
-double gridMarginForWidth(double screenWidth) {
-  if (screenWidth > _bpDesktopXL) return 352.0;
-  if (screenWidth > _bpDesktopLarge) return 256.0;
-  if (screenWidth > _bpDesktop) return 200.0;
-  if (screenWidth > _bpTablet) return 24.0;
-  if (screenWidth > _bpMobile) return 32.0;
-  return 16.0;
-}
+/// Page margin for a screen width — production's own function, so the six
+/// margin steps and the breakpoints they hang off are read, not restated.
+double gridMarginForWidth(double screenWidth) =>
+    AppLayoutConfig.margin(screenWidth);
 
 /// Per-slot width at a given screen width — mirrors the `slotWidth` computation
 /// in `UspSliverDashboardView._buildSliverDashboard`.
