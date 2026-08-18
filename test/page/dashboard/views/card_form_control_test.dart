@@ -12,8 +12,8 @@ import 'package:privacy_gui/page/dashboard/models/usp_widget_specs.dart';
 import 'package:privacy_gui/page/dashboard/providers/card_forms_provider.dart';
 import 'package:sliver_dashboard/sliver_dashboard.dart';
 
-/// #1299 — what a picked form does on screen: the handles it removes, and the
-/// content it selects.
+/// #1299 — what a picked form does on screen: the handles it removes, the drags
+/// it refuses, and the content it selects.
 ///
 /// The persistence half of this ticket is covered by
 /// `test/page/dashboard/providers/usp_card_form_persistence_test.dart`, which
@@ -25,6 +25,15 @@ import 'package:sliver_dashboard/sliver_dashboard.dart';
 /// `isEditing && (isResizable ?? true) && !isStatic`) rather than to us. A package
 /// bump that stopped honouring the flag would leave every persistence test green
 /// and every popup card resizable; this file is what fails instead.
+///
+/// AC 7 — "shrinking is refused" — is the same shape, and was the gap that
+/// prompted the second group. `minW` only becomes a refusal inside the package's
+/// `onResizeUpdate`, which clamps a drag delta to `[minW, maxW]`. The persistence
+/// test goes through `updateItemSize`, and that path re-runs `_normalize` →
+/// `_applyFloors`, which grows the width back to the floor by itself — so it
+/// answers 4 whether or not anything honoured `minW`. Measured, not assumed: with
+/// the package's clamp changed to ignore `minW`, all 31 tests in the persistence
+/// file still pass and two of the three here fail (row 8).
 ///
 /// The second half is the render side. A pick has to reach the *content*, not just
 /// the box: [CardDensityHost] resolves three sources in order — the #1183 gate's
@@ -46,6 +55,16 @@ import 'package:sliver_dashboard/sliver_dashboard.dart';
 /// | 4 | `card_density_scope` | read the pick at a hardcoded 12 instead of `currentMaxColumns` | 2 — the two phone-grid tests |
 /// | 5 | `usp_widget_specs` | popup arm drops `isResizable: false` | the popup card has none, and its neighbour still has all eight |
 /// | 6 | `usp_widget_specs` | compact arm writes `isResizable: false` instead of `true` | compact keeps its handles — its floor is a limit, not a lock |
+/// | 7 | `usp_widget_specs` | `_applyFloors` computes `minW` but does not write it | the same drag on a compact card stops at four slots |
+/// | 8 | `sliver_dashboard` 0.9.0 | `onResizeUpdate` clamps to `1` instead of `originalItem.minW` | 2 — the floor test and its own control; the 31-test persistence file stays green |
+///
+/// Row 8 is the one row that edits the package rather than us, because the
+/// contract under test is the package's. It is the mutation the second group
+/// exists for, so it is the one worth the awkwardness of reaching into
+/// `.pub-cache` — the file was restored and checksum-verified afterwards. It kills
+/// the positive control as well as the floor assertion, which is honest: the
+/// control's claim is "the same drag reaches the *spec's* floor", and that floor
+/// is enforced by the same clamp.
 ///
 /// Row 4 **survived** the first run: with every test pumped at a 1440px desktop,
 /// "the current breakpoint" and "12" are the same number, so a hardcoded key was
@@ -95,13 +114,15 @@ void main() {
         choices,
       );
 
-  /// Pumps [layout] on a 12-column grid in edit mode.
+  /// Pumps [layout] on a 12-column grid in edit mode, returning the controller
+  /// so a gesture's effect can be read off the layout it owns.
   ///
   /// `DashboardOverlay` is included because production has it and it owns the
   /// pointer handling the handles are hit-tested through; leaving it out would
   /// pump a tree that is not the one shipping. Each item renders its own id, which
   /// is how a handle is later attributed to a card.
-  Future<void> pumpGrid(WidgetTester tester, List<dynamic> layout) async {
+  Future<DashboardController> pumpGrid(
+      WidgetTester tester, List<dynamic> layout) async {
     final controller = DashboardController(initialSlotCount: 12);
     controller.importLayout(layout);
     controller.setEditMode(true);
@@ -129,6 +150,7 @@ void main() {
       ),
     ));
     await tester.pumpAndSettle();
+    return controller;
   }
 
   /// How many resize handles the card showing [id] has.
@@ -207,6 +229,120 @@ void main() {
 
       expect(handlesOn(tester, 'device_info'), 8);
     });
+  });
+
+  // ---------------------------------------------------------------------------
+  // AC 7 — compact refuses to be shrunk past its floor
+  // ---------------------------------------------------------------------------
+
+  /// The card showing [id]'s width, in slots, as the controller currently holds it.
+  int widthOf(DashboardController controller, String id) =>
+      controller.layout.value.firstWhere((item) => item.id == id).w;
+
+  /// Drags [id]'s right-edge resize handle by [dx] and completes the gesture.
+  ///
+  /// A real gesture, not a call to `updateItemSize`: the refusal under test is
+  /// `newW.clamp(minW, maxW)` inside the package's `onResizeUpdate`, and it is the
+  /// only thing standing between a compact card and a width its content does not
+  /// fit. `calculateResizeHandle` classifies the grab from where it lands inside
+  /// the item — the outer 20px on the right, and the vertical middle so it reads
+  /// as `right` and not a corner, which would also move `y`.
+  Future<void> dragRightEdge(
+    WidgetTester tester,
+    String id,
+    double dx,
+  ) async {
+    final card = tester.getRect(find.ancestor(
+      of: find.text(id),
+      matching: find.byType(DashboardItemWrapper),
+    ));
+
+    final gesture =
+        await tester.startGesture(Offset(card.right - 4, card.center.dy));
+    await tester.pump();
+    await gesture.moveBy(Offset(dx, 0));
+    await tester.pump();
+    await gesture.up();
+    await tester.pumpAndSettle();
+  }
+
+  group('compact refuses to shrink past its floor', () {
+    /// `DashboardOverlay` routes a resize through raw pointer events on desktop
+    /// and through a long press on mobile, and `flutter_test` reports android by
+    /// default. Desktop is the honest platform for these three: on the phone grid
+    /// #1293 pins `x: 0, w: cols` and forbids horizontal resize outright, so a
+    /// horizontal floor is only ever reachable at tablet and desktop.
+    final onDesktop = TargetPlatformVariant.only(TargetPlatform.macOS);
+
+    /// Wider than three slots' worth of drag at any spacing, so the gesture asks
+    /// for a width well under either floor and the answer is the floor rather than
+    /// wherever the pointer stopped.
+    Future<double> fullCardWidth(WidgetTester tester) async => tester
+        .getRect(find.ancestor(
+          of: find.text('device_info'),
+          matching: find.byType(DashboardItemWrapper),
+        ))
+        .width;
+
+    testWidgets('a card with no pick shrinks all the way to the spec floor',
+        (tester) async {
+      // The positive control, and the one this group cannot do without: a drag
+      // that moves nothing would satisfy "the width did not change" too. Same
+      // handle, same delta, no pick — so anything the compact case does
+      // differently is the pick's doing and not the harness's.
+      final controller = await pumpGrid(tester, pickedLayout(const {}));
+      expect(widthOf(controller, 'device_info'), 6);
+
+      await dragRightEdge(tester, 'device_info', -await fullCardWidth(tester));
+
+      expect(widthOf(controller, 'device_info'), 3,
+          reason:
+              "The card's own declared minW. Without a pick the floor is the "
+              "spec's, and the drag reaches it.");
+    }, variant: onDesktop);
+
+    testWidgets('the same drag on a compact card stops at four slots',
+        (tester) async {
+      final controller = await pumpGrid(
+          tester,
+          pickedLayout(const {
+            'device_info': CardFormChoice(density: CardDensity.compact),
+          }));
+      expect(widthOf(controller, 'device_info'), 6);
+
+      await dragRightEdge(tester, 'device_info', -await fullCardWidth(tester));
+
+      expect(
+          widthOf(controller, 'device_info'), UspWidgetSpecs.compactMinColumns,
+          reason: 'AC 7 as the ticket states it — "shrinking is refused" — and '
+              'the refusal is the package clamping the drag to the minW the '
+              'compact arm raised. Four and not the three this card declares: '
+              'three slots is 191.4px at its narrowest realization, below the '
+              '200px at which §2.1 says a label and a value stop fitting side by '
+              'side. So the floor is the one number in this ticket that is not a '
+              'preference — below it the reduced form overflows too.');
+    }, variant: onDesktop);
+
+    testWidgets('compact still grows — the floor is a limit in one direction',
+        (tester) async {
+      // The asymmetry AC 7 asks for, on the gesture rather than on the flag.
+      // "compact keeps its handles" above proves the handles are built; this
+      // proves they still do something, which is the half a handle count cannot
+      // state.
+      final controller = await pumpGrid(
+          tester,
+          pickedLayout(const {
+            'device_info': CardFormChoice(density: CardDensity.compact),
+          }));
+
+      await dragRightEdge(
+          tester, 'device_info', await fullCardWidth(tester) / 3);
+
+      expect(widthOf(controller, 'device_info'), greaterThan(6),
+          reason: 'A floor that also blocked enlargement would be a pin, and '
+              'popup is the form that pins. Compact only ever refuses the '
+              'direction that would overflow its content.');
+    }, variant: onDesktop);
   });
 
   // ---------------------------------------------------------------------------
