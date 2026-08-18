@@ -78,10 +78,6 @@ class UspLayoutEnvelope {
   UspLayoutEnvelope withLayout(int slotCount, List<dynamic> layout) =>
       UspLayoutEnvelope({...layouts, slotCount: layout}, forms: forms);
 
-  /// Returns a copy carrying [forms] instead.
-  UspLayoutEnvelope withForms(CardForms forms) =>
-      UspLayoutEnvelope(layouts, forms: forms);
-
   /// The version this payload has to be stamped with.
   ///
   /// A stamp is a claim about what an older build would do with these bytes, so

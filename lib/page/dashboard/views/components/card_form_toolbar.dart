@@ -248,7 +248,7 @@ class _CardFormToolbarState extends ConsumerState<CardFormToolbar> {
 
     return Semantics(
       container: true,
-      identifier: effectiveIdentifier('card-form-toolbar'),
+      identifier: 'card-form-toolbar',
       label: loc(context).cardFormForNamed(_displayName(cardId)),
       // Opaque so the whole surface — chips, padding and the gaps between them —
       // stops the hit test here. Without it a press that lands between two chips
