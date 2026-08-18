@@ -12,7 +12,7 @@ import 'package:privacy_gui/page/_shared/components/card_skeleton.dart';
 import 'package:privacy_gui/page/_shared/components/dashboard_card_template.dart';
 import 'package:privacy_gui/page/_shared/utils/local_time_ticker.dart';
 import 'package:privacy_gui/page/admin/views/dialogs/timezone_edit_dialog.dart';
-import 'package:privacy_gui/page/dashboard/models/card_density.dart';
+import 'package:privacy_gui/page/_shared/models/card_density.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 

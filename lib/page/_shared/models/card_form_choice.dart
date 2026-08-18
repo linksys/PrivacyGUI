@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import 'package:privacy_gui/page/dashboard/models/card_density.dart';
+import 'package:privacy_gui/page/_shared/models/card_density.dart';
 
 /// The form a user picked for one card on one breakpoint, plus what it takes to
 /// undo the pick.

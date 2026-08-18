@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/page/dashboard/models/card_density.dart';
+import 'package:privacy_gui/page/_shared/models/card_density.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_layout_preferences.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_widget_specs.dart';
-import 'package:privacy_gui/page/dashboard/providers/card_forms_provider.dart';
+import 'package:privacy_gui/page/_shared/providers/card_forms_provider.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_edit_mode_provider.dart';
 import 'package:privacy_gui/page/dashboard/providers/selected_card_provider.dart';
 import 'package:privacy_gui/page/dashboard/providers/usp_layout_controller.dart';

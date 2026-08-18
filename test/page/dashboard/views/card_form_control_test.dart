@@ -5,11 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/page/_shared/components/card_density_scope.dart';
-import 'package:privacy_gui/page/dashboard/models/card_density.dart';
-import 'package:privacy_gui/page/dashboard/models/card_form_choice.dart';
+import 'package:privacy_gui/page/_shared/models/card_density.dart';
+import 'package:privacy_gui/page/_shared/models/card_form_choice.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_layout_envelope.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_widget_specs.dart';
-import 'package:privacy_gui/page/dashboard/providers/card_forms_provider.dart';
+import 'package:privacy_gui/page/_shared/providers/card_forms_provider.dart';
 import 'package:sliver_dashboard/sliver_dashboard.dart';
 
 /// #1299 — what a picked form does on screen: the handles it removes, the drags

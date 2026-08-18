@@ -1,8 +1,8 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/page/dashboard/models/card_form_choice.dart';
+import 'package:privacy_gui/page/_shared/models/card_form_choice.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_layout_preferences.dart';
-import 'package:privacy_gui/page/dashboard/providers/card_forms_provider.dart';
+import 'package:privacy_gui/page/_shared/providers/card_forms_provider.dart';
 import 'package:privacy_gui/page/dashboard/providers/usp_layout_controller.dart';
 import 'package:privacy_gui/page/dashboard/providers/usp_layout_preferences_provider.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';

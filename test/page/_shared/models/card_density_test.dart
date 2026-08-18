@@ -2,7 +2,7 @@
 library;
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:privacy_gui/page/dashboard/models/card_density.dart';
+import 'package:privacy_gui/page/_shared/models/card_density.dart';
 
 /// Selection rules for [CardDensity] (#1232).
 ///

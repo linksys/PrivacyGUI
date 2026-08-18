@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/config/global_config.dart';
-import 'package:privacy_gui/page/dashboard/models/card_density.dart';
-import 'package:privacy_gui/page/dashboard/models/card_form_choice.dart';
+import 'package:privacy_gui/page/_shared/models/card_density.dart';
+import 'package:privacy_gui/page/_shared/models/card_form_choice.dart';
 import 'package:privacy_gui/page/dashboard/models/display_mode.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_layout_envelope.dart';
 import 'package:privacy_gui/page/dashboard/models/widget_spec.dart';
-import 'package:privacy_gui/page/dashboard/providers/card_forms_provider.dart';
+import 'package:privacy_gui/page/_shared/providers/card_forms_provider.dart';
 import 'package:privacy_gui/page/dashboard/providers/layout_item_factory.dart';
 import 'package:privacy_gui/page/dashboard/providers/selected_card_provider.dart';
 import 'package:privacy_gui/constants/pref_key.dart';

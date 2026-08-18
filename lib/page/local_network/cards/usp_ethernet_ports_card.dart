@@ -7,7 +7,7 @@ import 'package:privacy_gui/page/local_network/providers/ethernet_data_provider.
 import 'package:privacy_gui/page/_shared/components/card_density_scope.dart';
 import 'package:privacy_gui/page/_shared/components/card_skeleton.dart';
 import 'package:privacy_gui/page/_shared/components/dashboard_card_template.dart';
-import 'package:privacy_gui/page/dashboard/models/card_density.dart';
+import 'package:privacy_gui/page/_shared/models/card_density.dart';
 import 'package:privacy_gui/page/dashboard/views/dialogs/ethernet_port_detail_dialog.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 

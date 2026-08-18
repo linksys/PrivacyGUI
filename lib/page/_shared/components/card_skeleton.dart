@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:privacy_gui/page/_shared/components/card_density_scope.dart';
-import 'package:privacy_gui/page/dashboard/models/card_density.dart';
+import 'package:privacy_gui/page/_shared/models/card_density.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Reusable skeleton placeholders for individual dashboard cards.

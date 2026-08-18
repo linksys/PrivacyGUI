@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:privacy_gui/page/dashboard/models/card_form_choice.dart';
+import 'package:privacy_gui/page/_shared/models/card_form_choice.dart';
 
 /// The persisted form of the USP dashboard layout: one serialised grid per
 /// breakpoint, keyed by slot count.

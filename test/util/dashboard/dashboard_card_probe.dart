@@ -11,7 +11,7 @@ import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/_shared/providers/card_density_provider.dart';
 import 'package:privacy_gui/page/_shared/providers/card_tab_state_provider.dart';
 import 'package:privacy_gui/page/dashboard/factories/usp_widget_factory.dart';
-import 'package:privacy_gui/page/dashboard/models/card_density.dart';
+import 'package:privacy_gui/page/_shared/models/card_density.dart';
 import 'package:privacy_gui/page/dashboard/models/display_mode.dart';
 import 'package:privacy_gui/page/dashboard/models/widget_spec.dart';
 import 'package:privacy_gui/page/dashboard/views/usp_sliver_dashboard_view.dart';

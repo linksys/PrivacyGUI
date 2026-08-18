@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/page/dashboard/models/card_form_choice.dart';
+import 'package:privacy_gui/page/_shared/models/card_form_choice.dart';
 
 /// The form each card was picked into, per breakpoint (#1299).
 ///

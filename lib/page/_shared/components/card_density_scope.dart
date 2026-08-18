@@ -1,8 +1,8 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/page/_shared/providers/card_density_provider.dart';
-import 'package:privacy_gui/page/dashboard/models/card_density.dart';
-import 'package:privacy_gui/page/dashboard/providers/card_forms_provider.dart';
+import 'package:privacy_gui/page/_shared/models/card_density.dart';
+import 'package:privacy_gui/page/_shared/providers/card_forms_provider.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Carries the current [CardDensity] down a card's subtree.
