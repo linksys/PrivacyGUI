@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:privacy_gui/ai/utils/speed_markers.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Connected devices list section.
@@ -18,7 +19,7 @@ class DevicesSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (devices.isEmpty) {
-      return AppText.body('No connected devices found');
+      return AppText.body(loc(context).noConnectedDevicesFound);
     }
 
     final displayDevices =
@@ -28,20 +29,20 @@ class DevicesSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        for (final device in displayDevices) _buildDeviceRow(device),
+        for (final device in displayDevices) _buildDeviceRow(context, device),
         if (maxCount != null && devices.length > maxCount!)
           Padding(
             padding: const EdgeInsets.only(top: AppSpacing.sm),
             child: AppText.bodySmall(
-              '... and ${devices.length - maxCount!} more',
+              loc(context).nMore(devices.length - maxCount!),
             ),
           ),
       ],
     );
   }
 
-  Widget _buildDeviceRow(Map<String, dynamic> device) {
-    final name = device['name'] as String? ?? 'Unknown Device';
+  Widget _buildDeviceRow(BuildContext context, Map<String, dynamic> device) {
+    final name = device['name'] as String? ?? loc(context).unknownDevice;
     final ip = device['ip'] as String? ?? '';
     final connectionType = device['connectionType'] as String? ?? '';
     final downlinkRate = device['downlinkRate'] as int?; // bps

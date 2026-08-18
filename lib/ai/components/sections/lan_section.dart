@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import '../ai_info_row.dart';
 
 /// LAN configuration section.
@@ -30,23 +31,24 @@ class LanSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        AiInfoRow(label: 'LAN IP Address', value: ipAddress),
-        AiInfoRow(label: 'Subnet Mask', value: subnetMask),
+        AiInfoRow(label: loc(context).lanIpAddress, value: ipAddress),
+        AiInfoRow(label: loc(context).subnetMask, value: subnetMask),
         if (dhcpEnabled != null)
           AiInfoRow(
-            label: 'DHCP Server',
-            value: dhcpEnabled! ? 'Enabled' : 'Disabled',
+            label: loc(context).dhcpServer,
+            value: dhcpEnabled! ? loc(context).enabled : loc(context).disabled,
           ),
         if (dhcpEnabled == true && dhcpRange != null)
-          AiInfoRow(label: 'DHCP IP Range', value: dhcpRange!),
+          AiInfoRow(label: loc(context).dhcpIpRange, value: dhcpRange!),
         if (dnsServers != null && dnsServers!.isNotEmpty)
-          AiInfoRow(label: 'DNS Servers', value: dnsServers!),
+          AiInfoRow(label: loc(context).dnsServers, value: dnsServers!),
         if (ipv6Addresses != null && ipv6Addresses!.isNotEmpty)
           for (final addr in ipv6Addresses!)
-            AiInfoRow(label: 'LAN IPv6', value: addr),
+            AiInfoRow(label: loc(context).lanIpv6, value: addr),
         if ((ipv6Addresses == null || ipv6Addresses!.isEmpty) &&
             ipv6Enabled == true)
-          AiInfoRow(label: 'IPv6', value: 'Enabled (no address)'),
+          AiInfoRow(
+              label: loc(context).ipv6, value: loc(context).enabledNoAddress),
       ],
     );
   }

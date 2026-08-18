@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 import '../ai_info_row.dart';
 
@@ -26,17 +27,17 @@ class SystemSection extends StatelessWidget {
         Row(
           children: [
             Expanded(
-              child: _buildGaugeColumn('CPU', cpuPercent),
+              child: _buildGaugeColumn(loc(context).cpu, cpuPercent),
             ),
             AppGap.md(),
             Expanded(
-              child: _buildGaugeColumn('Memory', memoryPercent),
+              child: _buildGaugeColumn(loc(context).memory, memoryPercent),
             ),
           ],
         ),
         if (uptime != null) ...[
           AppGap.md(),
-          AiInfoRow(label: 'Uptime', value: uptime!),
+          AiInfoRow(label: loc(context).uptime, value: uptime!),
         ],
       ],
     );

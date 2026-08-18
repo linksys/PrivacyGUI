@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Line chart section for displaying time-series or continuous data.
@@ -47,12 +48,12 @@ class LineChartSection extends StatelessWidget {
     if (series.isEmpty) {
       return SizedBox(
         height: height,
-        child: Center(child: AppText.body('No data available')),
+        child: Center(child: AppText.body(loc(context).noDataAvailable)),
       );
     }
 
     final chartSeries = series.map((s) {
-      final label = s['label'] as String? ?? 'Series';
+      final label = s['label'] as String? ?? loc(context).series;
       final data =
           (s['data'] as List?)?.cast<num>().map((n) => n.toDouble()).toList() ??
               [];

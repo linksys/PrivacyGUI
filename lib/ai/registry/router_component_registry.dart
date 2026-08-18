@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:generative_ui/generative_ui.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -68,7 +69,7 @@ class RouterComponentRegistry {
     registry.register('NetworkStatusCard', (context, props,
         {onAction, children}) {
       return _NetworkStatusCard(
-        wanStatus: props['wanStatus'] as String? ?? 'Unknown',
+        wanStatus: props['wanStatus'] as String? ?? loc(context).unknown,
         connectedDevices: props['connectedDevices'] as int? ?? 0,
         uploadSpeed: props['uploadSpeed'] as String?,
         downloadSpeed: props['downloadSpeed'] as String?,
@@ -99,10 +100,10 @@ class RouterComponentRegistry {
     registry.register('ConfirmationSheet', (context, props,
         {onAction, children}) {
       return _ConfirmationSheet(
-        title: props['title'] as String? ?? 'Confirmation',
+        title: props['title'] as String? ?? loc(context).confirmation,
         message: props['message'] as String? ?? '',
-        confirmLabel: props['confirmLabel'] as String? ?? 'Confirm',
-        cancelLabel: props['cancelLabel'] as String? ?? 'Cancel',
+        confirmLabel: props['confirmLabel'] as String? ?? loc(context).confirm,
+        cancelLabel: props['cancelLabel'] as String? ?? loc(context).cancel,
         confirmAction: props['confirmAction'] as String?,
         onAction: onAction,
       );
@@ -190,7 +191,7 @@ class RouterComponentRegistry {
     // WanSection - WAN status
     registry.register('WanSection', (context, props, {onAction, children}) {
       return WanSection(
-        wanStatus: props['wanStatus'] as String? ?? 'Unknown',
+        wanStatus: props['wanStatus'] as String? ?? loc(context).unknown,
         connectedDevices: props['connectedDevices'] as int?,
         wanIp: props['wanIp'] as String?,
         connectionType: props['connectionType'] as String?,
@@ -283,7 +284,7 @@ class RouterComponentRegistry {
     registry.register('TopologySection', (context, props,
         {onAction, children}) {
       return TopologySection(
-        gatewayName: props['gatewayName'] as String? ?? 'Router',
+        gatewayName: props['gatewayName'] as String? ?? loc(context).router,
         gatewayModel: props['gatewayModel'] as String?,
         extenders: (props['extenders'] as List?)?.cast<Map<String, dynamic>>(),
         clients: (props['clients'] as List?)?.cast<Map<String, dynamic>>(),
@@ -363,7 +364,7 @@ class _DeviceListView extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Center(
-            child: AppText.body('No connected devices found'),
+            child: AppText.body(loc(context).noConnectedDevicesFound),
           ),
         ),
       );
@@ -372,7 +373,7 @@ class _DeviceListView extends StatelessWidget {
     return AppSurface(
       child: Column(
         children: devices.map((device) {
-          final name = device['name'] as String? ?? 'Unknown Device';
+          final name = device['name'] as String? ?? loc(context).unknownDevice;
           final ip = device['ip'] as String? ?? '';
           final mac = device['mac'] as String? ?? '';
           final connectionType = device['connectionType'] as String? ?? '';
@@ -463,16 +464,16 @@ class _NetworkStatusCard extends StatelessWidget {
                         : theme.colorScheme.error,
                   ),
                   const SizedBox(width: 8),
-                  AppText.headline('Network Status'),
+                  AppText.headline(loc(context).networkStatus),
                 ],
               ),
               const SizedBox(height: 16),
-              _buildInfoRow('WAN Status', wanStatus),
-              _buildInfoRow('Connected Devices', '$connectedDevices'),
+              _buildInfoRow(loc(context).wanStatus, wanStatus),
+              _buildInfoRow(loc(context).connectedDevices, '$connectedDevices'),
               if (_hasValidSpeed(uploadSpeed))
-                _buildInfoRow('Upload Speed', uploadSpeed!),
+                _buildInfoRow(loc(context).uploadSpeed, uploadSpeed!),
               if (_hasValidSpeed(downloadSpeed))
-                _buildInfoRow('Download Speed', downloadSpeed!),
+                _buildInfoRow(loc(context).downloadSpeed, downloadSpeed!),
             ],
           ),
         ),
@@ -522,15 +523,16 @@ class _WifiSettingsCard extends StatelessWidget {
                 children: [
                   const Icon(Icons.wifi),
                   const SizedBox(width: 8),
-                  AppText.headline('WiFi Settings'),
+                  AppText.headline(loc(context).menuWifiSettings),
                 ],
               ),
               const SizedBox(height: 16),
-              _buildInfoRow('Network Name (SSID)', ssid),
-              if (password != null) _buildInfoRow('Password', password!),
+              _buildInfoRow(loc(context).networkNameSsid, ssid),
+              if (password != null)
+                _buildInfoRow(loc(context).password, password!),
               if (securityMode != null)
-                _buildInfoRow('Security Mode', securityMode!),
-              if (band != null) _buildInfoRow('Band', band!),
+                _buildInfoRow(loc(context).securityMode, securityMode!),
+              if (band != null) _buildInfoRow(loc(context).band, band!),
             ],
           ),
         ),
@@ -592,12 +594,12 @@ class _EthernetPortsCard extends StatelessWidget {
                 children: [
                   const Icon(Icons.settings_ethernet),
                   const SizedBox(width: 8),
-                  AppText.headline('Ethernet Ports'),
+                  AppText.headline(loc(context).ethernetPorts),
                 ],
               ),
               const SizedBox(height: 16),
               if (ports.isEmpty)
-                AppText.body('No port information available')
+                AppText.body(loc(context).noPortInformationAvailable)
               else
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -613,6 +615,8 @@ class _EthernetPortsCard extends StatelessWidget {
 
   Widget _buildPortItem(ThemeData theme, Map<String, dynamic> port) {
     final label = port['label'] as String? ?? '?';
+    // Only compared against the wire tokens below, never rendered, so the
+    // fallback stays English.
     final status = port['status'] as String? ?? 'Disconnected';
     final speed = port['speed'] as String?;
 
@@ -767,20 +771,23 @@ class _LanInfoCard extends StatelessWidget {
               children: [
                 const Icon(Icons.lan_outlined, size: 24),
                 const SizedBox(width: 8),
-                AppText.headline('LAN Settings'),
+                AppText.headline(loc(context).lanSettings),
               ],
             ),
             AppGap.md(),
-            _buildInfoRow('IP Address', ipAddress),
-            _buildInfoRow('Subnet Mask', subnetMask),
-            _buildInfoRow('DHCP Server', dhcpEnabled ? 'Enabled' : 'Disabled'),
-            if (dhcpRange != null) _buildInfoRow('DHCP Range', dhcpRange!),
-            if (dnsServers != null) _buildInfoRow('DNS Servers', dnsServers!),
+            _buildInfoRow(loc(context).ipAddress, ipAddress),
+            _buildInfoRow(loc(context).subnetMask, subnetMask),
+            _buildInfoRow(loc(context).dhcpServer,
+                dhcpEnabled ? loc(context).enabled : loc(context).disabled),
+            if (dhcpRange != null)
+              _buildInfoRow(loc(context).dhcpRange, dhcpRange!),
+            if (dnsServers != null)
+              _buildInfoRow(loc(context).dnsServers, dnsServers!),
             if (ipv6Enabled) ...[
               AppGap.sm(),
-              _buildInfoRow('IPv6', 'Enabled'),
+              _buildInfoRow(loc(context).ipv6, loc(context).enabled),
               ...ipv6Addresses
-                  .map((addr) => _buildInfoRow('IPv6 Address', addr)),
+                  .map((addr) => _buildInfoRow(loc(context).ipv6Address, addr)),
             ],
           ],
         ),
@@ -827,32 +834,35 @@ class _DhcpCard extends StatelessWidget {
               children: [
                 const Icon(Icons.device_hub, size: 24),
                 const SizedBox(width: 8),
-                AppText.headline('DHCP'),
+                AppText.headline(loc(context).dhcp),
               ],
             ),
             AppGap.md(),
             if (reservations.isNotEmpty) ...[
-              AppText.body('Reservations (${reservations.length})'),
+              AppText.body(
+                  loc(context).reservationsWithCount(reservations.length)),
               AppGap.sm(),
-              ...reservations.map(_buildReservationTile),
+              ...reservations.map((r) => _buildReservationTile(context, r)),
             ],
             if (reservations.isNotEmpty && clients.isNotEmpty) AppGap.md(),
             if (clients.isNotEmpty) ...[
-              AppText.body('Active Clients (${clients.length})'),
+              AppText.body(loc(context).activeClientsWithCount(clients.length)),
               AppGap.sm(),
-              ...clients.map(_buildClientTile),
+              ...clients.map((c) => _buildClientTile(context, c)),
             ],
             if (reservations.isEmpty && clients.isEmpty)
-              AppText.body('No DHCP data available'),
+              AppText.body(loc(context).noDhcpDataAvailable),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildReservationTile(Map<String, dynamic> reservation) {
+  Widget _buildReservationTile(
+      BuildContext context, Map<String, dynamic> reservation) {
     return AppListTile(
-      title: AppText.body(reservation['hostname'] as String? ?? 'Unknown'),
+      title: AppText.body(
+          reservation['hostname'] as String? ?? loc(context).unknown),
       subtitle: MapsToRow(
         source: reservation['mac'] as String? ?? '',
         target: reservation['ip'] as String? ?? '',
@@ -861,9 +871,10 @@ class _DhcpCard extends StatelessWidget {
     );
   }
 
-  Widget _buildClientTile(Map<String, dynamic> client) {
+  Widget _buildClientTile(BuildContext context, Map<String, dynamic> client) {
     return AppListTile(
-      title: AppText.body(client['hostname'] as String? ?? 'Unknown'),
+      title:
+          AppText.body(client['hostname'] as String? ?? loc(context).unknown),
       subtitle: MapsToRow(
         source: client['mac'] as String? ?? '',
         target: client['ip'] as String? ?? '',
@@ -913,31 +924,35 @@ class _FirewallCard extends StatelessWidget {
                       : theme.colorScheme.error,
                 ),
                 const SizedBox(width: 8),
-                AppText.headline('Firewall'),
+                AppText.headline(loc(context).firewall),
                 const Spacer(),
-                AppBadge(label: overallEnabled ? 'Active' : 'Disabled'),
+                AppBadge(
+                    label: overallEnabled
+                        ? loc(context).active
+                        : loc(context).disabled),
               ],
             ),
             AppGap.md(),
-            _buildStatusRow('IPv4 Firewall', ipv4Enabled),
-            _buildStatusRow('IPv6 Firewall', ipv6Enabled),
-            _buildInfoRow('Active Rules', '$ruleCount'),
-            _buildStatusRow('DMZ', dmzEnabled),
-            _buildInfoRow('Port Forwarding Rules', '$portForwardingCount'),
+            _buildStatusRow(context, loc(context).ipv4Firewall, ipv4Enabled),
+            _buildStatusRow(context, loc(context).ipv6Firewall, ipv6Enabled),
+            _buildInfoRow(loc(context).activeRules, '$ruleCount'),
+            _buildStatusRow(context, loc(context).dmz, dmzEnabled),
+            _buildInfoRow(
+                loc(context).portForwardingRules, '$portForwardingCount'),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildStatusRow(String label, bool enabled) {
+  Widget _buildStatusRow(BuildContext context, String label, bool enabled) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           AppText.body(label),
-          AppBadge(label: enabled ? 'On' : 'Off'),
+          AppBadge(label: enabled ? loc(context).on : loc(context).off),
         ],
       ),
     );
@@ -980,25 +995,26 @@ class _PortForwardingCard extends StatelessWidget {
               children: [
                 const Icon(Icons.swap_horiz, size: 24),
                 const SizedBox(width: 8),
-                AppText.headline('Port Forwarding'),
+                AppText.headline(loc(context).portForwarding),
                 const Spacer(),
-                AppBadge(label: '${rules.length} rules'),
+                AppBadge(label: loc(context).nRules(rules.length)),
               ],
             ),
             AppGap.md(),
             if (rules.isEmpty)
-              AppText.body('No port forwarding rules configured')
+              AppText.body(loc(context).noPortForwardingRulesConfigured)
             else
-              ...rules.map(_buildRuleTile),
+              ...rules.map((r) => _buildRuleTile(context, r)),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildRuleTile(Map<String, dynamic> rule) {
+  Widget _buildRuleTile(BuildContext context, Map<String, dynamic> rule) {
     final enabled = rule['enabled'] as bool? ?? false;
-    final description = rule['description'] as String? ?? 'Unnamed rule';
+    final description =
+        rule['description'] as String? ?? loc(context).unnamedRule;
     final port = rule['port'] ?? rule['externalPort'] ?? '';
     final protocol = rule['protocol'] as String? ?? 'TCP';
     final internalIp = rule['internalIp'] as String? ?? '';
@@ -1006,7 +1022,7 @@ class _PortForwardingCard extends StatelessWidget {
     return AppListTile(
       title: AppText.body(description),
       subtitle: MapsToRow(
-        source: 'Port $port ($protocol)',
+        source: loc(context).portProtocol('$port', protocol),
         target: internalIp,
       ),
       leading: Icon(
@@ -1045,18 +1061,18 @@ class _SystemResourceCard extends StatelessWidget {
               children: [
                 const Icon(Icons.memory, size: 24),
                 const SizedBox(width: 8),
-                AppText.headline('System Resources'),
+                AppText.headline(loc(context).systemResources),
               ],
             ),
             AppGap.md(),
             Row(
               children: [
                 Expanded(
-                  child: _buildGauge('CPU', cpuPercent),
+                  child: _buildGauge(loc(context).cpu, cpuPercent),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
-                  child: _buildGauge('Memory', memoryPercent),
+                  child: _buildGauge(loc(context).memory, memoryPercent),
                 ),
               ],
             ),
@@ -1064,7 +1080,7 @@ class _SystemResourceCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                AppText.body('Uptime'),
+                AppText.body(loc(context).uptime),
                 AppText.body(uptime),
               ],
             ),

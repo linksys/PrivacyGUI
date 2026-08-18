@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 import '../section_header.dart';
 
@@ -21,7 +22,7 @@ class DhcpSection extends StatelessWidget {
     final hasClients = clients != null && clients!.isNotEmpty;
 
     if (!hasReservations && !hasClients) {
-      return AppText.body('No DHCP data available');
+      return AppText.body(loc(context).noDhcpDataAvailable);
     }
 
     return Column(
@@ -30,10 +31,10 @@ class DhcpSection extends StatelessWidget {
       children: [
         if (hasReservations) ...[
           SectionHeader(
-            title: 'Reservations',
+            title: loc(context).reservations,
             badge: AppBadge(label: '${reservations!.length}'),
           ),
-          for (final res in reservations!) _buildReservationRow(res),
+          for (final res in reservations!) _buildReservationRow(context, res),
         ],
         if (hasReservations && hasClients) ...[
           AppGap.md(),
@@ -42,17 +43,17 @@ class DhcpSection extends StatelessWidget {
         ],
         if (hasClients) ...[
           SectionHeader(
-            title: 'Active Clients',
+            title: loc(context).activeClients,
             badge: AppBadge(label: '${clients!.length}'),
           ),
-          for (final client in clients!) _buildClientRow(client),
+          for (final client in clients!) _buildClientRow(context, client),
         ],
       ],
     );
   }
 
-  Widget _buildReservationRow(Map<String, dynamic> res) {
-    final hostname = res['hostname'] as String? ?? 'Unknown';
+  Widget _buildReservationRow(BuildContext context, Map<String, dynamic> res) {
+    final hostname = res['hostname'] as String? ?? loc(context).unknown;
     final mac = res['mac'] as String? ?? '';
     final ip = res['ip'] as String? ?? '';
 
@@ -68,8 +69,8 @@ class DhcpSection extends StatelessWidget {
     );
   }
 
-  Widget _buildClientRow(Map<String, dynamic> client) {
-    final hostname = client['hostname'] as String? ?? 'Unknown';
+  Widget _buildClientRow(BuildContext context, Map<String, dynamic> client) {
+    final hostname = client['hostname'] as String? ?? loc(context).unknown;
     final mac = client['mac'] as String? ?? '';
     final ip = client['ip'] as String? ?? '';
 

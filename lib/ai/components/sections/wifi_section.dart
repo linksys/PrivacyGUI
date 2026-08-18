@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import '../ai_info_row.dart';
 
 /// WiFi network settings section.
@@ -24,12 +25,13 @@ class WifiSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        AiInfoRow(label: 'SSID', value: ssid),
+        AiInfoRow(label: loc(context).ssid, value: ssid),
         if (password != null)
-          AiInfoRow(label: 'Password', value: _maskPassword(password!)),
+          AiInfoRow(
+              label: loc(context).password, value: _maskPassword(password!)),
         if (securityMode != null)
-          AiInfoRow(label: 'Security', value: securityMode!),
-        if (band != null) AiInfoRow(label: 'Band', value: band!),
+          AiInfoRow(label: loc(context).security, value: securityMode!),
+        if (band != null) AiInfoRow(label: loc(context).band, value: band!),
       ],
     );
   }

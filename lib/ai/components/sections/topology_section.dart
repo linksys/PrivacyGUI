@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:privacy_gui/ai/utils/speed_markers.dart';
 import 'package:privacy_gui/core/utils/wifi.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Network topology visualization section.
@@ -32,7 +33,7 @@ class TopologySection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final topology = _buildTopology();
+    final topology = _buildTopology(context);
 
     // Match dashboard topology card settings exactly
     return SizedBox(
@@ -82,13 +83,15 @@ class TopologySection extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (mac.isNotEmpty) _popupRow(context, 'MAC', mac),
-        if (ip.isNotEmpty) _popupRow(context, 'IP', ip),
-        if (model.isNotEmpty) _popupRow(context, 'Model', model),
+        if (mac.isNotEmpty) _popupRow(context, loc(context).mac, mac),
+        if (ip.isNotEmpty) _popupRow(context, loc(context).ipColumn, ip),
+        if (model.isNotEmpty) _popupRow(context, loc(context).model, model),
         if (connectionType.isNotEmpty)
-          _popupRow(context, 'Connection', connectionType),
-        if (band.isNotEmpty) _popupRow(context, 'Band', band),
-        if (rssi != null) _popupRow(context, 'Signal', '$rssi dBm'),
+          _popupRow(context, loc(context).connection, connectionType),
+        if (band.isNotEmpty) _popupRow(context, loc(context).band, band),
+        if (rssi != null)
+          _popupRow(context, loc(context).signal,
+              loc(context).signalStrengthDbm('$rssi')),
         if (downlinkRate != null || uplinkRate != null)
           _speedRow(context, downlinkRate, uplinkRate),
       ],
@@ -121,7 +124,7 @@ class TopologySection extends StatelessWidget {
         children: [
           SizedBox(
             width: 80,
-            child: AppText.bodySmall('Speed', color: Colors.grey),
+            child: AppText.bodySmall(loc(context).speed, color: Colors.grey),
           ),
           Expanded(
             child: Wrap(
@@ -167,7 +170,7 @@ class TopologySection extends StatelessWidget {
     );
   }
 
-  MeshTopology _buildTopology() {
+  MeshTopology _buildTopology(BuildContext context) {
     final nodes = <MeshNode>[];
     final links = <MeshLink>[];
 
@@ -187,7 +190,7 @@ class TopologySection extends StatelessWidget {
       for (int i = 0; i < extenders!.length; i++) {
         final ext = extenders![i];
         final extId = 'extender-$i';
-        final name = ext['name'] as String? ?? 'Extender ${i + 1}';
+        final name = ext['name'] as String? ?? loc(context).extenderN(i + 1);
         final status = ext['status'] as String? ?? 'online';
         final rssi = ext['rssi'] as int?;
         final uplinkRate = ext['uplinkRate'] as int?; // bps
@@ -206,7 +209,7 @@ class TopologySection extends StatelessWidget {
             if (model != null) 'model': model,
             if (rssi != null) 'rssi': rssi,
             if (uplinkRate != null) 'uplinkRate': uplinkRate,
-            'connectionType': 'WiFi',
+            'connectionType': loc(context).wifi,
           },
         ));
 
@@ -227,7 +230,7 @@ class TopologySection extends StatelessWidget {
       for (int i = 0; i < displayClients.length; i++) {
         final client = displayClients[i];
         final clientId = 'client-$i';
-        final name = client['name'] as String? ?? 'Device ${i + 1}';
+        final name = client['name'] as String? ?? loc(context).deviceN(i + 1);
         final parentId = client['parentId'] as String? ?? gatewayId;
         final isWifi = client['isWifi'] as bool? ?? true;
         final rssi = client['rssi'] as int?;
@@ -268,7 +271,8 @@ class TopologySection extends StatelessWidget {
             if (rssi != null) 'rssi': rssi,
             if (downlinkRate != null) 'downlinkRate': downlinkRate,
             if (uplinkRate != null) 'uplinkRate': uplinkRate,
-            'connectionType': isWifi ? 'WiFi' : 'Ethernet',
+            'connectionType':
+                isWifi ? loc(context).wifi : loc(context).ethernet,
           },
         ));
 
@@ -292,6 +296,11 @@ class TopologySection extends StatelessWidget {
     );
   }
 
+  /// Maps a status token to a node status.
+  ///
+  /// The tokens matched here (and the `'online'` default applied at the call
+  /// sites) are wire values supplied by the model, never rendered text, so they
+  /// stay English on purpose.
   MeshNodeStatus _parseStatus(String status) {
     return switch (status.toLowerCase()) {
       'online' || 'connected' || 'up' => MeshNodeStatus.online,

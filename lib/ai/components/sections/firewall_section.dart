@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 import '../ai_info_row.dart';
 
@@ -29,28 +30,31 @@ class FirewallSection extends StatelessWidget {
       children: [
         Row(
           children: [
-            AppText.labelLarge('Firewall'),
+            AppText.labelLarge(loc(context).firewall),
             AppGap.sm(),
             AppBadge(
-              label: enabled ? 'Enabled' : 'Disabled',
+              label: enabled ? loc(context).enabled : loc(context).disabled,
             ),
           ],
         ),
         AppGap.sm(),
         if (ipv4Enabled != null)
           AiInfoRow(
-            label: 'IPv4 Firewall',
-            value: ipv4Enabled! ? 'Enabled' : 'Disabled',
+            label: loc(context).ipv4Firewall,
+            value: ipv4Enabled! ? loc(context).enabled : loc(context).disabled,
           ),
         if (ipv6Enabled != null)
           AiInfoRow(
-            label: 'IPv6 Firewall',
-            value: ipv6Enabled! ? 'Enabled' : 'Disabled',
+            label: loc(context).ipv6Firewall,
+            value: ipv6Enabled! ? loc(context).enabled : loc(context).disabled,
           ),
         if (ruleCount != null)
-          AiInfoRow(label: 'Active Rules', value: '$ruleCount'),
+          AiInfoRow(label: loc(context).activeRules, value: '$ruleCount'),
         if (dmzEnabled != null)
-          AiInfoRow(label: 'DMZ', value: dmzEnabled! ? 'Enabled' : 'Disabled'),
+          AiInfoRow(
+            label: loc(context).dmz,
+            value: dmzEnabled! ? loc(context).enabled : loc(context).disabled,
+          ),
       ],
     );
   }

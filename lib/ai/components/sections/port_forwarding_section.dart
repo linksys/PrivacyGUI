@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Port forwarding rules section.
@@ -15,20 +16,21 @@ class PortForwardingSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (rules == null || rules!.isEmpty) {
-      return AppText.body('No port forwarding rules configured');
+      return AppText.body(loc(context).noPortForwardingRulesConfigured);
     }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        for (final rule in rules!) _buildRuleRow(rule),
+        for (final rule in rules!) _buildRuleRow(context, rule),
       ],
     );
   }
 
-  Widget _buildRuleRow(Map<String, dynamic> rule) {
-    final description = rule['description'] as String? ?? 'Unnamed Rule';
+  Widget _buildRuleRow(BuildContext context, Map<String, dynamic> rule) {
+    final description =
+        rule['description'] as String? ?? loc(context).unnamedRule;
     final port = rule['port'];
     final protocol = rule['protocol'] as String? ?? 'TCP';
     final enabled = rule['enabled'] as bool? ?? true;
