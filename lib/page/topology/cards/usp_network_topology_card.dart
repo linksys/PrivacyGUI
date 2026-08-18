@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -12,6 +13,26 @@ import 'package:privacy_gui/page/topology/helpers/usp_topology_builder.dart';
 import 'package:privacy_gui/page/topology/views/components/node_detail_popup.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:ui_kit_library/ui_kit.dart';
+
+/// Width the graph view's in-place node-detail panel needs before it has a valid
+/// position at all: 320 of panel plus 32 of margin on either side, which are the
+/// figures `TopologyGraphView` computes its `Positioned.left` from.
+///
+/// Below this the card presents the detail itself ([_showNodeDetail]) rather than
+/// letting the kit try. On ui_kit v2.38.0 the attempt throws — the two `clamp`
+/// limits invert and Dart reports `Invalid argument: 32`, raised inside layout
+/// and repeated on every frame until the panel is dismissed — and a kit that
+/// guards the clamp can only answer by shrinking the panel to the room left,
+/// which at this card's narrowest grid width (261px, four columns on a 601px
+/// screen) is a 197px panel inside the `ClipRect` above.
+const double _kInPlaceDetailMinWidth = 384.0;
+
+/// Height twin of [_kInPlaceDetailMinWidth]: the same function places the panel
+/// with `(nodeY - 50).clamp(60.0, stackHeight - 200)`, so it wants 60 of margin
+/// above a panel taken as 200 tall. This card's declared floor of three rows
+/// gives its content exactly 260, so one row less inverts the vertical limits the
+/// way a narrow card inverts the horizontal ones.
+const double _kInPlaceDetailMinHeight = 260.0;
 
 /// Displays a network topology visualization of the router and connected devices.
 ///
@@ -56,31 +77,94 @@ class UspNetworkTopologyCard extends ConsumerWidget {
       content: ClipRect(
         child: _withTopologyAnimation(
           context,
-          AppTopology(
-            topology: topology,
-            viewMode: TopologyViewMode.graph,
-            layoutMode: LayoutRecommendation.auto,
-            clientVisibility:
-                useRing ? ClientVisibility.onHover : ClientVisibility.always,
-            nodeRendererRegistry: NodeRendererRegistry.unified,
-            enableAnimation: true,
-            interactive: false,
-            nodeContentBuilder: TopologyNodeContentBuilder.build,
-            treeConfig: TopologyTreeConfiguration(
-              titleBuilder: (node) => node.name,
-              subtitleBuilder: (node) => node.extra ?? '',
-              preferAnimationNode: true,
-              showStatusIndicator: true,
-              showStatusText: true,
-              expanded: false,
-            ),
-            nodeDetailConfig: NodeDetailConfig(
-              trigger: NodeDetailTrigger.tap,
-              detailBuilder: (ctx, node, metadata) =>
-                  NodeDetailPopup.builder(ctx, node, metadata),
-            ),
+          // The panel the graph view opens in place is sized in absolute pixels,
+          // so whether it fits is a question about this card's box — hence a
+          // `LayoutBuilder` here, reading the very constraints the graph view
+          // measures its panel against ([AppTopology] passes the content box
+          // straight through to `TopologyGraphView`).
+          //
+          // The builder's own context is discarded on purpose: the dialog below
+          // is opened against the card's context, which sits outside the topology
+          // theme override, so it inherits the app's theme rather than a doubled
+          // node spacing it has no use for.
+          LayoutBuilder(
+            builder: (_, constraints) {
+              final hasRoomForPanel =
+                  constraints.maxWidth >= _kInPlaceDetailMinWidth &&
+                      constraints.maxHeight >= _kInPlaceDetailMinHeight;
+
+              return AppTopology(
+                topology: topology,
+                viewMode: TopologyViewMode.graph,
+                layoutMode: LayoutRecommendation.auto,
+                clientVisibility: useRing
+                    ? ClientVisibility.onHover
+                    : ClientVisibility.always,
+                nodeRendererRegistry: NodeRendererRegistry.unified,
+                enableAnimation: true,
+                interactive: false,
+                nodeContentBuilder: TopologyNodeContentBuilder.build,
+                treeConfig: TopologyTreeConfiguration(
+                  titleBuilder: (node) => node.name,
+                  subtitleBuilder: (node) => node.extra ?? '',
+                  preferAnimationNode: true,
+                  showStatusIndicator: true,
+                  showStatusText: true,
+                  expanded: false,
+                ),
+                // Exactly one of the two is ever live. With a `nodeDetailConfig`
+                // the graph view opens the panel itself and never calls
+                // `onNodeTap` for a node that has one; without it, every tap that
+                // would have opened a panel arrives here instead.
+                nodeDetailConfig: hasRoomForPanel
+                    ? NodeDetailConfig(
+                        trigger: NodeDetailTrigger.tap,
+                        detailBuilder: (ctx, node, metadata) =>
+                            NodeDetailPopup.builder(ctx, node, metadata),
+                      )
+                    : null,
+                onNodeTap: hasRoomForPanel
+                    ? null
+                    : (nodeId) => _showNodeDetail(context, topology, nodeId),
+              );
+            },
           ),
         ),
+      ),
+    );
+  }
+
+  /// Presents the tapped node's detail as a dialog, for a card with no room for
+  /// the graph view's in-place panel.
+  ///
+  /// The width is [AppDialog]'s own 400px cap rather than a `SizedBox` here: a
+  /// fixed width would exceed the viewport on the 320px screen this branch exists
+  /// to serve, and the cap already collapses to the screen when there is less
+  /// room than that. [NodeDetailPopup] is a bare `Column`, so the dialog is the
+  /// only frame around it — the same content the wide card shows in the panel,
+  /// not a card drawn inside a card.
+  void _showNodeDetail(
+    BuildContext context,
+    MeshTopology topology,
+    String nodeId,
+  ) {
+    final node = topology.nodes.firstWhereOrNull((n) => n.id == nodeId);
+    // Clients and the internet node get no detail on a wide card either — the
+    // graph view fires `onNodeTap` for them and skips the panel — so both
+    // presentations answer exactly the same taps.
+    if (node == null || node.isClient || node.isInternet) return;
+
+    showAppDialog<void>(
+      context: context,
+      builder: (ctx) => AppDialog(
+        title: AppText.titleMedium(node.name),
+        content: NodeDetailPopup.builder(ctx, node, node.metadata),
+        actions: [
+          AppButton.text(
+            label: loc(ctx).close,
+            onTap: () => Navigator.of(ctx).pop(),
+          ),
+        ],
       ),
     );
   }
