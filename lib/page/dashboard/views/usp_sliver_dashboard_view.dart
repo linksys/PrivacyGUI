@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/dashboard/models/display_mode.dart';
+import 'package:privacy_gui/page/dashboard/views/components/card_form_bar.dart';
 import 'package:privacy_gui/page/dashboard/views/components/effects/jiggle_shake.dart';
 import 'package:privacy_gui/page/dashboard/factories/usp_widget_factory.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
@@ -149,6 +150,7 @@ class _UspSliverDashboardViewState
     ref.watch(packageWidgetLoaderProvider);
 
     final isOnline = ref.watch(wanIsUpProvider);
+    final isEditMode = ref.watch(dashboardEditModeProvider).isEditing;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -161,6 +163,15 @@ class _UspSliverDashboardViewState
           ),
           child: _buildHeader(context),
         ),
+
+        // Form picker for the selected card (#1299). Edit mode only — that is
+        // AC 4, and it costs no extra guard because the row is not built at all
+        // outside edit mode.
+        if (isEditMode)
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: context.pageMargin),
+            child: const CardFormBar(),
+          ),
 
         // Offline banner (when WAN is down)
         if (!isOnline)

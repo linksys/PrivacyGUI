@@ -8,6 +8,7 @@ import 'package:privacy_gui/page/dashboard/models/usp_layout_envelope.dart';
 import 'package:privacy_gui/page/dashboard/models/widget_spec.dart';
 import 'package:privacy_gui/page/dashboard/providers/card_forms_provider.dart';
 import 'package:privacy_gui/page/dashboard/providers/layout_item_factory.dart';
+import 'package:privacy_gui/page/dashboard/providers/selected_card_provider.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sliver_dashboard/sliver_dashboard.dart';
@@ -62,6 +63,7 @@ class UspSliverDashboardControllerNotifier
   UspSliverDashboardControllerNotifier(this._ref)
       : super(_createDefaultController()) {
     _armWidthLock();
+    _armSelectionMirror();
     _initializeLayout();
   }
 
@@ -72,6 +74,9 @@ class UspSliverDashboardControllerNotifier
 
   /// Cancels the current controller's width-lock subscription.
   VoidCallback? _widthLockGuard;
+
+  /// Cancels the current controller's selection subscription.
+  VoidCallback? _selectionGuard;
 
   /// The form each card was picked into, per breakpoint (#1299).
   ///
@@ -255,6 +260,36 @@ class UspSliverDashboardControllerNotifier
   void _swapController(DashboardController controller) {
     state = controller;
     _armWidthLock();
+    _armSelectionMirror();
+  }
+
+  /// Mirrors the current controller's grid selection into
+  /// [selectedCardIdProvider] (#1299).
+  ///
+  /// The toolbar's form picker acts on the selected card, and the selection is a
+  /// beacon on the controller rather than Riverpod state — see
+  /// [selectedCardIdProvider] for why it is bridged instead of watched directly.
+  ///
+  /// Re-armed on every swap, like the width lock: the subscription belongs to the
+  /// instance it watches, and the new instance starts with nothing selected. The
+  /// default `startNow: true` is what pushes that fresh state through, so a swap
+  /// cannot leave the toolbar naming a card the grid no longer highlights.
+  ///
+  /// Subscribing from the constructor is safe even though it publishes: beacons
+  /// flush their subscriptions on a microtask, so the first callback lands after
+  /// this provider has finished building. A guard against writing during the build
+  /// was written here first and then dropped — mutation-tested, no test could tell
+  /// the two apart, because the write it was protecting against cannot happen.
+  void _armSelectionMirror() {
+    _selectionGuard?.call();
+    _selectionGuard = state.selectedItemIds.subscribe(_publishSelection);
+  }
+
+  /// Publishes [ids] as a single selected card, or null when it is not exactly
+  /// one — see [selectedCardIdProvider].
+  void _publishSelection(Set<String> ids) {
+    _ref.read(selectedCardIdProvider.notifier).state =
+        ids.length == 1 ? ids.first : null;
   }
 
   /// Watches the current controller's layout so a horizontal change made on the
@@ -306,6 +341,7 @@ class UspSliverDashboardControllerNotifier
   @override
   void dispose() {
     _widthLockGuard?.call();
+    _selectionGuard?.call();
     super.dispose();
   }
 

@@ -1132,10 +1132,9 @@
   "lanIpRedirectTitle": "Kết nối lại với bộ định tuyến của bạn",
   "lanIpRedirectMessage": "Địa chỉ IP của bộ định tuyến đã thay đổi. Kết nối lại với bộ định tuyến tại {url}. Bạn có thể cần đợi một lát để thiết bị của mình nhận được địa chỉ mới.",
   "lanIpRedirectButton": "Đi tới bộ định tuyến",
-  "cardForm": "Định dạng thẻ",
+  "cardFormSelectPrompt": "Chọn một thẻ để thay đổi định dạng",
   "cardFormNormal": "Bình thường",
   "cardFormCompact": "Gọn",
   "cardFormPopup": "Cửa sổ bật lên",
-  "cardFormDescription": "Định dạng nhỏ hơn sẽ giới hạn mức thay đổi kích thước của thẻ.",
   "cardFormForNamed": "Định dạng thẻ cho {name}"
 }

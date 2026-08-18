@@ -1132,10 +1132,9 @@
   "lanIpRedirectTitle": "Voltar a ligar ao seu router",
   "lanIpRedirectMessage": "O endereço IP do seu router foi alterado. Volte a ligar-se a ele em {url}. Poderá ter de aguardar um momento até que o seu dispositivo obtenha um novo endereço.",
   "lanIpRedirectButton": "Ir para o router",
-  "cardForm": "Formato do cartão",
+  "cardFormSelectPrompt": "Selecione um cartão para alterar o formato",
   "cardFormNormal": "Normal",
   "cardFormCompact": "Compacto",
   "cardFormPopup": "Pop-up",
-  "cardFormDescription": "Um formato menor limita o quanto um cartão pode ser redimensionado.",
   "cardFormForNamed": "Formato do cartão para {name}"
 }

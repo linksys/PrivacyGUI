@@ -51,12 +51,20 @@ import 'package:sliver_dashboard/sliver_dashboard.dart';
 /// ## The conclusion the placement follows from
 ///
 /// The one mitigation the public controller interface offers does not hold, and
-/// that is the condition the ticket named for the fallback. **The control goes in
-/// the Layout Settings dialog**, reached from the edit-mode toolbar via
-/// `_openLayoutSettings`, which is outside the overlay's gesture region
-/// entirely. The dialog also removes the 191.4px constraint that forced the
-/// icon-plus-menu shape in the first place, so the selection can be a plain
-/// labelled row per card.
+/// that is the condition the ticket named for the fallback. **The control is not
+/// drawn on the card** — it lives outside the overlay's gesture region, as
+/// `CardFormBar` under the edit-mode toolbar, acting on the card the grid has
+/// selected. Being off the card also removes the 191.4px constraint that forced an
+/// icon-plus-menu shape in the first place, so it can be a named row with a plain
+/// dropdown.
+///
+/// Note what this file does *not* decide. It rules the card out; it does not pick
+/// the replacement. The first reading of it put the control in the Layout Settings
+/// dialog, and that was rejected in review as counter-intuitive — see
+/// `test/page/dashboard/views/components/card_form_bar_test.dart` and §2.6i item 2
+/// of the design doc. The affordance that did answer it is measured here in passing
+/// rather than concluded: Q1 shows a pointer-down on a card reaches the overlay and
+/// selects it, which is the gesture the toolbar row reads.
 ///
 /// These tests are the executable record: a package bump that moves any of these
 /// answers fails here rather than in a user's layout.
@@ -442,8 +450,8 @@ void main() {
                 '_activeItemId set and commits the drag *after* the restore, so '
                 'the card ends up displaced regardless. The only mitigation the '
                 'public controller interface offers therefore does not hold, '
-                'which is the condition the ticket named for falling back to the '
-                'Layout Settings dialog. This asserts the failure rather than '
+                'which is the condition the ticket named for falling back to a '
+                'placement off the card. This asserts the failure rather than '
                 'the cure so the finding cannot quietly rot: if a package bump '
                 'ever makes cancelInteraction() effective, this test fails and '
                 'the on-card placement is worth reopening.');

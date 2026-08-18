@@ -5,6 +5,7 @@ import 'package:privacy_gui/page/dashboard/models/usp_layout_preferences.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_widget_specs.dart';
 import 'package:privacy_gui/page/dashboard/providers/card_forms_provider.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_edit_mode_provider.dart';
+import 'package:privacy_gui/page/dashboard/providers/selected_card_provider.dart';
 import 'package:privacy_gui/page/dashboard/providers/usp_layout_controller.dart';
 import 'package:privacy_gui/page/dashboard/providers/usp_layout_preferences_provider.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
@@ -219,9 +220,9 @@ void main() {
     // #1299 — a card form is edit-mode state too
     // -------------------------------------------------------------------------
     //
-    // The layout settings panel writes the picks, and that panel only opens from
-    // a button that only exists while editing. So exiting edit mode has to treat
-    // a pick the same way it treats a drag: kept on commit, undone on cancel.
+    // The toolbar's form picker writes the picks, and that row is only built while
+    // editing. So exiting edit mode has to treat a pick the same way it treats a
+    // drag: kept on commit, undone on cancel.
     //
     // The failure worth pinning is not "the pick came back" on its own but the
     // *pair* coming back together. Reverting the geometry while keeping the pick
@@ -238,6 +239,7 @@ void main() {
     //   | 1 | dashboard_edit_mode_provider| enterEditMode captures no forms snapshot | 5 |
     //   | 2 | usp_layout_controller       | restoreSnapshot restores the geometry but not the picks | 2 |
     //   | 3 | dashboard_edit_mode_provider| commitEditMode takes the revert path   | 2 |
+    //   | 4 | dashboard_edit_mode_provider| _exitEditMode does not clear the selection | 2 — both exits |
     //
     // Row 1 killing 5 is the interesting count: two of them are the pre-existing
     // #1293/#1294 tests, because `_exitEditMode` only restores when *both*
@@ -338,6 +340,45 @@ void main() {
       expect(item['w'], UspWidgetSpecs.popupColumns);
       expect(item['isResizable'], isFalse);
     });
+
+    // The selection is edit-mode state too: it is what the form picker aims at, and
+    // the package keeps it across `setEditMode(false)`. Both exits are asserted
+    // because they take different paths through `_exitEditMode` — only the revert
+    // branch touches the snapshots, and the clear sits after it in the `finally`.
+    for (final exit in ['commit', 'cancel']) {
+      test('$exit leaves no card selected', () async {
+        final container = await createContainer();
+        addTearDown(container.dispose);
+
+        final notifier = container.read(dashboardEditModeProvider.notifier);
+        await notifier.enterEditMode();
+
+        final controller = container.read(uspSliverDashboardControllerProvider);
+        controller.toggleSelection('device_info');
+        // Beacon subscriptions flush on a microtask, so the mirror lands a turn
+        // of the event loop after the selection changes.
+        await pumpAsync();
+        expect(container.read(selectedCardIdProvider), 'device_info');
+
+        exit == 'commit'
+            ? await notifier.commitEditMode()
+            : await notifier.cancelEditMode();
+        await pumpAsync();
+
+        expect(
+          container
+              .read(uspSliverDashboardControllerProvider)
+              .selectedItemIds
+              .value,
+          isEmpty,
+          reason:
+              'Left behind, the next edit session opens with a card already '
+              'highlighted and the picker already aimed at it — neither of '
+              'which the user asked for.',
+        );
+        expect(container.read(selectedCardIdProvider), isNull);
+      });
+    }
 
     test('multiple enter/commit cycles work correctly', () async {
       final container = await createContainer();

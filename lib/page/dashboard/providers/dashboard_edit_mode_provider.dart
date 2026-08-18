@@ -23,7 +23,7 @@ class DashboardEditState {
   /// The forms cards were picked into when edit mode opened (#1299).
   ///
   /// A third snapshot alongside the geometry and the prefs, because a pick is
-  /// editable in edit mode too — the layout settings panel writes them — and a
+  /// editable in edit mode too — the toolbar's form picker writes them — and a
   /// cancel that reverted only the geometry would leave the two disagreeing.
   /// Captured in the same assignment as [layoutSnapshot], so the two are non-null
   /// together.
@@ -163,6 +163,12 @@ class DashboardEditModeNotifier extends Notifier<DashboardEditState> {
       }
     } finally {
       controller.setEditMode(false);
+      // A selection is edit-mode state too (#1299). The package keeps it across
+      // `setEditMode(false)`, and both things that read it are edit-mode only:
+      // the item's selection border, and the toolbar's form picker. Left behind,
+      // the next edit session opens with a card already highlighted and the
+      // picker already aimed at it, which the user never asked for.
+      controller.clearSelection();
       state = const DashboardEditState();
     }
   }

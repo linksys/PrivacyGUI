@@ -1132,10 +1132,9 @@
   "lanIpRedirectTitle": "Riconnettiti al router",
   "lanIpRedirectMessage": "L'indirizzo IP del router è cambiato. Riconnettiti a esso all'indirizzo {url}. Potrebbe essere necessario attendere un momento affinché il dispositivo ottenga un nuovo indirizzo.",
   "lanIpRedirectButton": "Vai al router",
-  "cardForm": "Formato scheda",
+  "cardFormSelectPrompt": "Seleziona una scheda per cambiarne il formato",
   "cardFormNormal": "Normale",
   "cardFormCompact": "Compatto",
   "cardFormPopup": "Popup",
-  "cardFormDescription": "Un formato più piccolo limita il ridimensionamento della scheda.",
   "cardFormForNamed": "Formato scheda per {name}"
 }

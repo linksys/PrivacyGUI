@@ -1132,10 +1132,9 @@
   "lanIpRedirectTitle": "Opret forbindelse til din router igen",
   "lanIpRedirectMessage": "Din routers IP-adresse er ændret. Opret forbindelse til den igen på {url}. Du skal muligvis vente et øjeblik, før din enhed får en ny adresse.",
   "lanIpRedirectButton": "Gå til routeren",
-  "cardForm": "Kortformat",
+  "cardFormSelectPrompt": "Vælg et kort for at ændre dets format",
   "cardFormNormal": "Normal",
   "cardFormCompact": "Kompakt",
   "cardFormPopup": "Pop op",
-  "cardFormDescription": "Et mindre format begrænser, hvor meget et kort kan ændres i størrelse.",
   "cardFormForNamed": "Kortformat for {name}"
 }

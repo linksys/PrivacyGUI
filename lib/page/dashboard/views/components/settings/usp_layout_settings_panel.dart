@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/page/dashboard/models/card_density.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_dashboard_preset.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_widget_specs.dart';
 import 'package:privacy_gui/page/dashboard/models/widget_spec.dart';
 import 'package:privacy_gui/page/dashboard/providers/all_widget_specs_provider.dart';
-import 'package:privacy_gui/page/dashboard/providers/card_forms_provider.dart';
 import 'package:privacy_gui/page/dashboard/providers/usp_layout_controller.dart';
 import 'package:privacy_gui/page/dashboard/providers/usp_layout_preferences_provider.dart';
 import 'package:privacy_gui/page/dashboard/views/dialogs/preset_selection_dialog.dart';
@@ -15,7 +13,6 @@ import 'package:ui_kit_library/ui_kit.dart';
 /// Settings panel for customizing USP dashboard layout.
 ///
 /// Allows users to:
-/// - Pick the form each card on the dashboard renders in (#1299).
 /// - View and re-add available widgets (built-in and app widgets).
 /// - Reset layout to defaults.
 class UspLayoutSettingsPanel extends ConsumerWidget {
@@ -45,8 +42,6 @@ class UspLayoutSettingsPanel extends ConsumerWidget {
           AppGap.xl(),
 
           _buildPresetSection(context, ref),
-
-          _buildCardFormSection(context, ref),
 
           _buildAvailableWidgets(context, ref),
 
@@ -124,108 +119,6 @@ class UspLayoutSettingsPanel extends ConsumerWidget {
       ],
     );
   }
-
-  /// Lets the user pick the form each card renders in, which in turn decides how
-  /// far that card can be resized (#1299).
-  ///
-  /// ## Why it lives in this panel and not on the card
-  ///
-  /// A finding, not a preference. The spike in
-  /// `test/page/dashboard/views/density_control_gesture_spike_test.dart` showed
-  /// that edit mode's `AbsorbPointer` swallows anything drawn inside a card, and
-  /// that hoisting a control above it arms a drag on desktop which
-  /// `cancelInteraction()` does not stop — the overlay's pointer-up still commits
-  /// the move. So an on-card control would either not receive the tap or would
-  /// nudge the card while receiving it.
-  ///
-  /// This panel is reached from the tune button that only exists while editing,
-  /// so "edit mode only" (AC 4) costs no extra guard here.
-  ///
-  /// ## Which cards appear
-  ///
-  /// Only cards that are on the dashboard *and* have more than one form to offer.
-  /// [UspWidgetSpecs.selectableForms] returns empty for a card whose only form is
-  /// normal, so on a dashboard of such cards the whole section disappears rather
-  /// than showing a column of one-option dropdowns.
-  Widget _buildCardFormSection(BuildContext context, WidgetRef ref) {
-    final controller = ref.watch(uspSliverDashboardControllerProvider);
-    final currentIds = controller
-        .exportLayout()
-        .map((e) => (e as Map)['id'] as String)
-        .toSet();
-
-    // The breakpoint the pick belongs to, read from the grid rather than from
-    // this dialog's context: it is the same number `setCardForm` writes under, so
-    // the dropdown cannot show a pick from a grid the user is not on.
-    final slots = controller.slotCount.value;
-    final forms = ref.watch(cardFormsProvider);
-
-    final entries = ref
-        .watch(allWidgetSpecsProvider)
-        .where((spec) => currentIds.contains(spec.id))
-        .map((spec) => (
-              spec: spec,
-              options: UspWidgetSpecs.selectableForms(spec.id),
-            ))
-        .where((entry) => entry.options.isNotEmpty)
-        .toList();
-
-    if (entries.isEmpty) return const SizedBox.shrink();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        AppText.labelLarge(loc(context).cardForm),
-        AppGap.sm(),
-        Padding(
-          padding: const EdgeInsets.only(bottom: 4),
-          child: AppText.bodySmall(loc(context).cardFormDescription),
-        ),
-        AppCard(
-          padding: EdgeInsets.zero,
-          child: Column(
-            children: entries.map((entry) {
-              // A card with no stored pick shows normal: normal is the absence of
-              // a pick, not a stored value, so the two have to read the same.
-              final selected =
-                  forms.densityFor(slots, entry.spec.id) ?? CardDensity.normal;
-
-              return ListTile(
-                title: AppText.bodyMedium(entry.spec.displayName),
-                trailing: SizedBox(
-                  width: 160,
-                  child: AppDropdown<CardDensity>(
-                    identifier: 'card-form-${entry.spec.id}',
-                    semanticLabel:
-                        loc(context).cardFormForNamed(entry.spec.displayName),
-                    items: entry.options,
-                    value: selected,
-                    itemAsString: (density) => _cardFormLabel(context, density),
-                    itemIdentifier: (density) =>
-                        'card-form-${entry.spec.id}-${density.name}',
-                    onChanged: (density) {
-                      if (density == null || density == selected) return;
-                      ref
-                          .read(uspSliverDashboardControllerProvider.notifier)
-                          .setCardForm(entry.spec.id, density);
-                    },
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-        ),
-        AppGap.xl(),
-      ],
-    );
-  }
-
-  String _cardFormLabel(BuildContext context, CardDensity density) =>
-      switch (density) {
-        CardDensity.popup => loc(context).cardFormPopup,
-        CardDensity.compact => loc(context).cardFormCompact,
-        CardDensity.normal => loc(context).cardFormNormal,
-      };
 
   Widget _buildAvailableWidgets(BuildContext context, WidgetRef ref) {
     final controller = ref.watch(uspSliverDashboardControllerProvider);

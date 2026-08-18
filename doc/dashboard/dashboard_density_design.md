@@ -1103,10 +1103,10 @@ same fact seen from the other side).
 
 Built as `CardFormChoice` / `CardForms` (`cardFormsProvider`),
 `UspWidgetSpecs.selectableForms` + `applyCardForms`, a per-breakpoint `forms` map in
-`UspLayoutEnvelope`, and one labelled row per card in the layout settings dialog.
-`DisplayMode` is **not** revived: it is the abandoned three-value enum §2.6 replaced,
-and a second spelling of the same idea would be two things to keep in agreement.
-Seven lessons.
+`UspLayoutEnvelope`, and a `CardFormBar` row under the edit-mode toolbar that acts on
+the card selected in the grid. `DisplayMode` is **not** revived: it is the abandoned
+three-value enum §2.6 replaced, and a second spelling of the same idea would be two
+things to keep in agreement. Seven lessons.
 
 1. **Four decisions were recorded on the issue before the code; the fifth only
    appears once you write the reader.** The recorded four: popup collapses to 2×1 on
@@ -1130,12 +1130,39 @@ Seven lessons.
    button", it is "hoist a button out of the widget that exists to make the card
    inert"), and the overlay's raw `Listener` is behind `_isMobile`, i.e. **the
    platform, not the pointer kind**, so on a phone a drag needs a long press and a tap
-   is safe while on desktop pointer-down arms a drag with no slop threshold. The
-   control went to the layout settings dialog, which is outside the gesture region
-   entirely and also dissolves the 191.4px budget that had forced an icon-plus-menu
-   shape. The spike is kept as `density_control_gesture_spike_test.dart` rather than
-   written up and deleted: **a placement justified by package behaviour needs the
-   behaviour asserted, or the next package bump silently removes the justification.**
+   is safe while on desktop pointer-down arms a drag with no slop threshold. The spike
+   is kept as `density_control_gesture_spike_test.dart` rather than written up and
+   deleted: **a placement justified by package behaviour needs the behaviour asserted,
+   or the next package bump silently removes the justification.**
+
+   **The spike ruled out one placement; it did not choose the next, and the first
+   answer it was read as choosing was wrong.** "Not on the card" was taken to mean the
+   layout settings dialog, and that shipped: one labelled row per card, every card in
+   a list. Rejected on sight in review as counter-intuitive, and correctly — it asks
+   the user to find the card they are looking at in a list of names, inside a dialog
+   covering the grid they were looking at it in. What the spike's own findings already
+   contained is the answer: on desktop a pointer-down on a card *selects* it (the
+   package's `toggleSelection`), on mobile a tap does, the selection survives
+   pointer-up, and edit mode already draws a border around it. So the gesture the
+   feature needs was there — select the card, then shape it, the same pair as select
+   then drag and select then trash — and only the control was missing. It became a row
+   under the toolbar, naming the selected card with a picker beside it, prompting when
+   nothing is selected. Two constraints fell out of measuring rather than sketching:
+   a **fifth** header icon button was not available, because that header `Row` already
+   overflows below 480px with the four it has (pre-existing, #1183's own budget, not
+   this ticket's), and the row keeps its height when empty, because one that appeared
+   on selection would shove the grid down on every card tap. Generalized: **a spike
+   that rules a placement out has not chosen one; the affordances it measured on the
+   way past are worth more than its verdict.**
+
+   One mechanical consequence: the selection lives on a `state_beacon` beacon owned by
+   the package, and `state_beacon` is a transitive dependency the package does not
+   re-export, so nothing in `lib/` watches a beacon from a widget. It is mirrored into
+   `selectedCardIdProvider` by the controller notifier — the same shape as
+   `cardFormsProvider` — which keeps the widgets on one reactive mechanism. Beacons
+   flush subscriptions on a microtask, which is what makes subscribing from the
+   provider's constructor safe; two guards written against a build-time write were
+   deleted after no mutation could kill either.
 
 3. **Store the choice, derive the geometry — but store what the derivation cannot
    recover.** `isResizable`, `minW` and `minH` are re-derived by `applyCardForms` on
