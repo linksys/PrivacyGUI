@@ -1132,7 +1132,6 @@
   "lanIpRedirectTitle": "Połącz się ponownie z routerem",
   "lanIpRedirectMessage": "Adres IP routera uległ zmianie. Połącz się z nim ponownie pod adresem {url}. Może być konieczne odczekanie chwili, aż urządzenie uzyska nowy adres.",
   "lanIpRedirectButton": "Przejdź do routera",
-  "cardFormSelectPrompt": "Wybierz kartę, aby zmienić jej format",
   "cardFormNormal": "Normalny",
   "cardFormCompact": "Kompaktowy",
   "cardFormPopup": "Wyskakujące okno",

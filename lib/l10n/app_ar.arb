@@ -1132,7 +1132,6 @@
   "lanIpRedirectTitle": "إعادة الاتصال بجهاز التوجيه",
   "lanIpRedirectMessage": "لقد تغيّر عنوان IP الخاص بجهاز التوجيه. أعد الاتصال به على {url}. قد تحتاج إلى الانتظار قليلاً حتى يحصل جهازك على عنوان جديد.",
   "lanIpRedirectButton": "الانتقال إلى جهاز التوجيه",
-  "cardFormSelectPrompt": "حدد بطاقة لتغيير تنسيقها",
   "cardFormNormal": "عادي",
   "cardFormCompact": "مضغوط",
   "cardFormPopup": "منبثق",

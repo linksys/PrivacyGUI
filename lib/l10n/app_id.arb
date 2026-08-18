@@ -1132,7 +1132,6 @@
   "lanIpRedirectTitle": "Sambungkan kembali ke router Anda",
   "lanIpRedirectMessage": "Alamat IP router Anda telah berubah. Sambungkan kembali ke router di {url}. Anda mungkin perlu menunggu sebentar hingga perangkat Anda memperoleh alamat baru.",
   "lanIpRedirectButton": "Buka router",
-  "cardFormSelectPrompt": "Pilih kartu untuk mengubah formatnya",
   "cardFormNormal": "Normal",
   "cardFormCompact": "Ringkas",
   "cardFormPopup": "Popup",

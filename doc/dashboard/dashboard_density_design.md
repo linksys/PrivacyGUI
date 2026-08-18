@@ -1103,8 +1103,9 @@ same fact seen from the other side).
 
 Built as `CardFormChoice` / `CardForms` (`cardFormsProvider`),
 `UspWidgetSpecs.selectableForms` + `applyCardForms`, a per-breakpoint `forms` map in
-`UspLayoutEnvelope`, and a `CardFormBar` row under the edit-mode toolbar that acts on
-the card selected in the grid. `DisplayMode` is **not** revived: it is the abandoned
+`UspLayoutEnvelope`, and a `CardFormToolbar` pill that floats over the card selected
+in the grid (a `Stack` sibling above `DashboardOverlay`, so the press that picks a
+form never reaches the overlay). `DisplayMode` is **not** revived: it is the abandoned
 three-value enum §2.6 replaced, and a second spelling of the same idea would be two
 things to keep in agreement. Seven lessons.
 
@@ -1145,15 +1146,39 @@ things to keep in agreement. Seven lessons.
    package's `toggleSelection`), on mobile a tap does, the selection survives
    pointer-up, and edit mode already draws a border around it. So the gesture the
    feature needs was there — select the card, then shape it, the same pair as select
-   then drag and select then trash — and only the control was missing. It became a row
-   under the toolbar, naming the selected card with a picker beside it, prompting when
-   nothing is selected. Two constraints fell out of measuring rather than sketching:
-   a **fifth** header icon button was not available, because that header `Row` already
-   overflows below 480px with the four it has (pre-existing, #1183's own budget, not
-   this ticket's), and the row keeps its height when empty, because one that appeared
-   on selection would shove the grid down on every card tap. Generalized: **a spike
+   then drag and select then trash — and only the control was missing. One constraint
+   fell out of measuring rather than sketching: a **fifth** header icon button was not
+   available, because that header `Row` already overflows below 480px with the four it
+   has (pre-existing, #1183's own budget, not this ticket's). Generalized: **a spike
    that rules a placement out has not chosen one; the affordances it measured on the
    way past are worth more than its verdict.**
+
+   **Then the second answer was rejected too, on screen rather than on paper, and the
+   reason was spatial.** The control shipped next as a row between the page header and
+   the grid, naming the selected card with a picker beside it. It works, and it reads
+   as part of the dashboard: a strip of chrome above a grid says nothing about the card
+   that was just tapped, so nothing in the layout says "this is adjustable". The
+   placement that answers it is the one that says it spatially — a `CardFormToolbar`
+   pill floating directly over the selected card, following it as the grid scrolls and
+   reflows, gone when nothing is selected. **A control's correctness and its legibility
+   are separate properties, and only one of them can be settled without looking at the
+   screen.**
+
+   Three mechanical findings came with the pill, each one a constraint rather than a
+   preference. (a) It is a `Stack` sibling *above* `DashboardOverlay`, not a widget
+   inside a card: `RenderStack` hit-tests children in reverse paint order and stops at
+   the first hit, so the press that picks a form never reaches the overlay — which is
+   precisely the failure the spike measured for on-card placement. (b) It positions
+   itself, via `CardGridGeometry` — a local mirror of the package's `SlotMetrics`,
+   which `sliver_dashboard` computes but does not export — because a `LayerLink`
+   follower cannot clamp, and the pill is wider than most cards, so at the grid's edges
+   the honest position is outside the layer. Its scroll offset arrives through
+   `NotificationListener` rather than a `ScrollController`, since the view builds a
+   fresh controller on every build. (c) `AppSurface`'s rounded `BoxDecoration` already
+   absorbs the pill's interior (`RenderDecoratedBox.hitTestSelf` asks the decoration),
+   so the `Listener(behavior: opaque)` around it is earning its place only at the
+   corners the radius cuts off — which is where `card_form_toolbar_test.dart` presses,
+   because a guard whose killing case you have not found is a guard you cannot claim.
 
    One mechanical consequence: the selection lives on a `state_beacon` beacon owned by
    the package, and `state_beacon` is a transitive dependency the package does not

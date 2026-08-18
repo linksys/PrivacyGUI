@@ -1132,7 +1132,6 @@
   "lanIpRedirectTitle": "Erneut mit dem Router verbinden",
   "lanIpRedirectMessage": "Die IP-Adresse Ihres Routers hat sich geändert. Stellen Sie die Verbindung unter {url} wieder her. Möglicherweise müssen Sie einen Moment warten, bis Ihr Gerät eine neue Adresse erhält.",
   "lanIpRedirectButton": "Zum Router",
-  "cardFormSelectPrompt": "Wählen Sie eine Karte aus, um ihr Format zu ändern",
   "cardFormNormal": "Normal",
   "cardFormCompact": "Kompakt",
   "cardFormPopup": "Pop-up",

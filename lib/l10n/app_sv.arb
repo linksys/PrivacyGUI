@@ -1132,7 +1132,6 @@
   "lanIpRedirectTitle": "Anslut till din router igen",
   "lanIpRedirectMessage": "Routerns IP-adress har ändrats. Anslut till den igen på {url}. Du kan behöva vänta en stund tills din enhet får en ny adress.",
   "lanIpRedirectButton": "Gå till routern",
-  "cardFormSelectPrompt": "Välj ett kort för att ändra dess format",
   "cardFormNormal": "Normal",
   "cardFormCompact": "Kompakt",
   "cardFormPopup": "Popup",

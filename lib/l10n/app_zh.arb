@@ -1132,7 +1132,6 @@
   "lanIpRedirectTitle": "重新连接到您的路由器",
   "lanIpRedirectMessage": "您的路由器 IP 地址已更改。请通过 {url} 重新连接。您可能需要稍等片刻，等待设备获取新地址。",
   "lanIpRedirectButton": "前往路由器",
-  "cardFormSelectPrompt": "选择卡片以更改其样式。",
   "cardFormNormal": "标准",
   "cardFormCompact": "精简",
   "cardFormPopup": "弹出式",

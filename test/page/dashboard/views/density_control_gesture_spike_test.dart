@@ -53,18 +53,19 @@ import 'package:sliver_dashboard/sliver_dashboard.dart';
 /// The one mitigation the public controller interface offers does not hold, and
 /// that is the condition the ticket named for the fallback. **The control is not
 /// drawn on the card** — it lives outside the overlay's gesture region, as
-/// `CardFormBar` under the edit-mode toolbar, acting on the card the grid has
-/// selected. Being off the card also removes the 191.4px constraint that forced an
-/// icon-plus-menu shape in the first place, so it can be a named row with a plain
-/// dropdown.
+/// `CardFormToolbar`: a pill floating over the card the grid has selected, and a
+/// `Stack` sibling *above* `DashboardOverlay` rather than a widget inside a card.
+/// Being off the card also removes the 191.4px constraint that forced an
+/// icon-plus-menu shape in the first place, so it can be a row of plain chips.
 ///
 /// Note what this file does *not* decide. It rules the card out; it does not pick
-/// the replacement. The first reading of it put the control in the Layout Settings
-/// dialog, and that was rejected in review as counter-intuitive — see
-/// `test/page/dashboard/views/components/card_form_bar_test.dart` and §2.6i item 2
-/// of the design doc. The affordance that did answer it is measured here in passing
-/// rather than concluded: Q1 shows a pointer-down on a card reaches the overlay and
-/// selects it, which is the gesture the toolbar row reads.
+/// the replacement. Two readings of it were rejected before the one that shipped —
+/// the Layout Settings dialog (counter-intuitive, rejected in review) and a header
+/// row above the grid (reads as dashboard chrome, not as a control) — see
+/// `test/page/dashboard/views/components/card_form_toolbar_test.dart` and §2.6i
+/// item 2 of the design doc. The affordance that did answer it is measured here in
+/// passing rather than concluded: Q1 shows a pointer-down on a card reaches the
+/// overlay and selects it, which is the gesture the toolbar reads.
 ///
 /// These tests are the executable record: a package bump that moves any of these
 /// answers fails here rather than in a user's layout.

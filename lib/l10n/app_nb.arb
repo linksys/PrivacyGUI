@@ -1132,7 +1132,6 @@
   "lanIpRedirectTitle": "Koble til ruteren på nytt",
   "lanIpRedirectMessage": "Ruterens IP-adresse er endret. Koble til den på nytt på {url}. Du må kanskje vente et øyeblikk til enheten får en ny adresse.",
   "lanIpRedirectButton": "Gå til ruteren",
-  "cardFormSelectPrompt": "Velg et kort for å endre formatet",
   "cardFormNormal": "Normal",
   "cardFormCompact": "Kompakt",
   "cardFormPopup": "Popup",

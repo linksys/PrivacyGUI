@@ -1132,7 +1132,6 @@
   "lanIpRedirectTitle": "Reconectar ao seu roteador",
   "lanIpRedirectMessage": "O endereço IP do seu roteador foi alterado. Reconecte-se a ele em {url}. Talvez seja necessário aguardar um momento até que seu dispositivo obtenha um novo endereço.",
   "lanIpRedirectButton": "Ir para o roteador",
-  "cardFormSelectPrompt": "Selecione um cartão para alterar o formato",
   "cardFormNormal": "Normal",
   "cardFormCompact": "Compacto",
   "cardFormPopup": "Pop-up",

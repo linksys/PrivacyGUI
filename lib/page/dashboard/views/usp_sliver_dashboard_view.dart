@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/dashboard/models/display_mode.dart';
-import 'package:privacy_gui/page/dashboard/views/components/card_form_bar.dart';
+import 'package:privacy_gui/page/dashboard/models/card_grid_geometry.dart';
+import 'package:privacy_gui/page/dashboard/views/components/card_form_toolbar.dart';
 import 'package:privacy_gui/page/dashboard/views/components/effects/jiggle_shake.dart';
 import 'package:privacy_gui/page/dashboard/factories/usp_widget_factory.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
@@ -150,7 +151,6 @@ class _UspSliverDashboardViewState
     ref.watch(packageWidgetLoaderProvider);
 
     final isOnline = ref.watch(wanIsUpProvider);
-    final isEditMode = ref.watch(dashboardEditModeProvider).isEditing;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -163,15 +163,6 @@ class _UspSliverDashboardViewState
           ),
           child: _buildHeader(context),
         ),
-
-        // Form picker for the selected card (#1299). Edit mode only — that is
-        // AC 4, and it costs no extra guard because the row is not built at all
-        // outside edit mode.
-        if (isEditMode)
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: context.pageMargin),
-            child: const CardFormBar(),
-          ),
 
         // Offline banner (when WAN is down)
         if (!isOnline)
@@ -368,7 +359,7 @@ class _UspSliverDashboardViewState
           (availableWidth - (uiKitColumns - 1) * AppSpacing.lg) / uiKitColumns;
       final ratio = slotWidth / UspSliverDashboardView.slotHeight;
 
-      return DashboardOverlay(
+      final grid = DashboardOverlay(
         controller: controller,
         scrollController: scrollController,
         itemBuilder: (context, item) {
@@ -414,6 +405,24 @@ class _UspSliverDashboardViewState
             ),
           ],
         ),
+      );
+
+      // The form toolbar for the selected card (#1299). Edit mode only — that is
+      // AC 4, and it costs no guard inside the toolbar because the layer is not
+      // built at all outside edit mode. It wraps the grid rather than sitting
+      // beside it in the page column: the toolbar is anchored to the card, so it
+      // has to be a sibling above the same box the grid was laid out in.
+      if (!isEditMode) return grid;
+
+      return CardFormToolbarLayer(
+        geometry: CardGridGeometry(
+          slotWidth: slotWidth,
+          slotHeight: UspSliverDashboardView.slotHeight,
+          mainAxisSpacing: AppSpacing.lg,
+          crossAxisSpacing: AppSpacing.lg,
+          padding: EdgeInsets.symmetric(horizontal: pageMargin),
+        ),
+        child: grid,
       );
     });
   }

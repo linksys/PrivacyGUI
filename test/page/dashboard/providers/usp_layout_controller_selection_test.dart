@@ -17,7 +17,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// `cardFormsProvider`, and the widgets stay on one reactive mechanism.
 ///
 /// This file pins the mirror against the real controller. The picker's own
-/// behaviour is in `test/page/dashboard/views/components/card_form_bar_test.dart`.
+/// behaviour is in
+/// `test/page/dashboard/views/components/card_form_toolbar_test.dart`.
 ///
 /// ## Mutation table
 ///

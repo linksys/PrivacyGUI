@@ -1132,7 +1132,6 @@
   "lanIpRedirectTitle": "ルーターに再接続",
   "lanIpRedirectMessage": "ルーターの IP アドレスが変更されました。{url} から再接続してください。デバイスが新しいアドレスを取得するまで少し時間がかかる場合があります。",
   "lanIpRedirectButton": "ルーターに移動",
-  "cardFormSelectPrompt": "形式を変更するカードを選択してください。",
   "cardFormNormal": "標準",
   "cardFormCompact": "コンパクト",
   "cardFormPopup": "ポップアップ",

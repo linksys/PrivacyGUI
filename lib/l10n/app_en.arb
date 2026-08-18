@@ -1808,7 +1808,6 @@
   "portForwardingRules": "Port Forwarding Rules",
   "portProtocol": "Port {port} ({protocol})",
   "@portProtocol": {"placeholders": {"port": {"type": "String"}, "protocol": {"type": "String"}}},
-  "cardFormSelectPrompt": "Select a card to change its form",
   "cardFormNormal": "Normal",
   "cardFormCompact": "Compact",
   "cardFormPopup": "Popup",
