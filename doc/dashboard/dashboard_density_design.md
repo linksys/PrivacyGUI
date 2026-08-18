@@ -1103,9 +1103,9 @@ same fact seen from the other side).
 
 Built as `CardFormChoice` / `CardForms` (`cardFormsProvider`),
 `UspWidgetSpecs.selectableForms` + `applyCardForms`, a per-breakpoint `forms` map in
-`UspLayoutEnvelope`, and a `CardFormToolbar` pill that floats over the card selected
-in the grid (a `Stack` sibling above `DashboardOverlay`, so the press that picks a
-form never reaches the overlay). `DisplayMode` is **not** revived: it is the abandoned
+`UspLayoutEnvelope`, and a `CardFormToolbar` pill — three glyphs on a frameless
+elevated surface — that floats over the card selected in the grid (a `Stack` sibling
+above `DashboardOverlay`, so the press that picks a form never reaches the overlay). `DisplayMode` is **not** revived: it is the abandoned
 three-value enum §2.6 replaced, and a second spelling of the same idea would be two
 things to keep in agreement. Seven lessons.
 
@@ -1179,6 +1179,24 @@ things to keep in agreement. Seven lessons.
    so the `Listener(behavior: opaque)` around it is earning its place only at the
    corners the radius cuts off — which is where `card_form_toolbar_test.dart` presses,
    because a guard whose killing case you have not found is a guard you cannot claim.
+
+   **Then the pill itself was pared back on screen, and one of the two cuts settled a
+   question the tests had been carrying.** Reviewed running, it was too much furniture:
+   three labelled chips inside a bordered surface, sitting on top of a card the user is
+   trying to look at. The labels became Material's density glyphs (`density_small` →
+   `_medium` → `_large`, read left to right as how much of the card shows — the names
+   run backwards from ours because they count *spacing*) with the form's name kept as
+   `ChipItem.semanticLabel`, and `AppSurface(showBorder: false)` dropped the frame,
+   which also suppresses the effect-strategy border the glass style was drawing around
+   it. Measured at 1280px in English, the pill went from 414px to 144px. What the
+   glyphs also removed is a
+   whole class of test: a labelled control's width is a function of the locale, so it
+   needed the longest-locale-at-480px case; icons are the same width in all 26, and the
+   test that replaced it asserts exactly that. **A control drawn over content is charged
+   for the space it takes, and dropping the text can retire a localization risk rather
+   than merely shrink a widget.** The cost is honest and stays on the record: three
+   glyphs are less nameable than three words, and the compact chip's tap target is now
+   about 36×24 — `card_form_toolbar.dart`'s `_chipFor` states both.
 
    One mechanical consequence: the selection lives on a `state_beacon` beacon owned by
    the package, and `state_beacon` is a transitive dependency the package does not

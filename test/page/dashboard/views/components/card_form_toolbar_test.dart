@@ -49,15 +49,24 @@ import 'package:ui_kit_library/ui_kit.dart';
 /// "Edit mode only" needs no assertion here and no guard in the widget: the layer
 /// is built inside `if (!isEditMode) return grid` in
 /// `usp_sliver_dashboard_view.dart`. What is asserted here is what can silently
-/// drift: **which selection produces a toolbar**, **where it lands**, whether
-/// picking a form reaches the controller, and whether the press that picks it can
-/// disturb the grid.
+/// drift: **which selection produces a toolbar**, **where it lands**, **that it is
+/// glyphs on a frameless surface**, whether picking a form reaches the controller,
+/// and whether the press that picks it can disturb the grid.
 ///
 /// The mirror that carries the grid's selection into [selectedCardIdProvider] is
 /// asserted in
 /// `test/page/dashboard/providers/usp_layout_controller_selection_test.dart`; this
 /// file drives the real controller, so the two meet at the real beacon rather than
 /// at a stub.
+///
+/// ## Why the assertions name forms through the accessible label
+///
+/// The chips draw no text — each form is a glyph, and its name is carried in
+/// [ChipItem.semanticLabel]. So "which form is this chip" is asked of
+/// `semanticLabel` throughout, which is also the name a screen reader reads: an
+/// assertion that passes here is an assertion that the chip is nameable at all.
+/// The glyphs themselves are asserted once, in the group that owns them, and used
+/// as the tap target everywhere else via `formIcons`.
 ///
 /// ## Why the harness mounts a real grid
 ///
@@ -87,6 +96,9 @@ import 'package:ui_kit_library/ui_kit.dart';
 /// | 8 | card_grid_geometry | `cellRect` ignores `scrollOffset` | the toolbar does not follow a scroll |
 /// | 9 | usp_layout_controller | `_publishSelection` takes the first of the set instead of requiring one | two cards selected shows a toolbar |
 /// | 10 | card_form_toolbar | `onSelectionChanged` drops the `option == picked` early return | **survived** — equivalent, see below |
+/// | 11 | card_form_toolbar | `ChipItem.label: ''` → the form's name | the pill draws text, and stops being one width in every locale |
+/// | 12 | card_form_toolbar | swap the popup and compact glyphs | the glyph the ladder puts under each form |
+/// | 13 | card_form_toolbar | drop `showBorder: false` | the frameless assertion — a parameter read, see below |
 ///
 /// ### Row 10, the equivalent mutation
 ///
@@ -98,6 +110,17 @@ import 'package:ui_kit_library/ui_kit.dart';
 /// protecting the restore. That invariant is stated where it is decided, in
 /// `usp_card_form_persistence_test.dart` ("picking popup twice still restores the
 /// first box, not the tile").
+///
+/// ### Row 13, the assertion that reads a parameter
+///
+/// The frameless test asserts `AppSurface.showBorder` is false rather than that no
+/// border is painted, which is weaker, and deliberately so. This file's theme is
+/// `flat`, whose elevated surface has `borderWidth: 0` and a transparent border
+/// colour — so under this theme the border was invisible either way, and a paint
+/// assertion would pass with the parameter gone. The frame the user saw came from
+/// the *effect* border that `glass` (the demo's default) draws, and `showBorder:
+/// false` is what suppresses that too. Asserting the parameter is asserting the
+/// one thing that carries across themes.
 final _testTheme = AppTheme.create(
   brightness: Brightness.light,
   seedColor: Colors.blue,
@@ -278,33 +301,49 @@ void main() {
       tester.widget<AppChipGroup>(toolbar);
 
   /// The forms on offer, read off the chips rather than off the source list, so
-  /// the assertion sees what the user sees.
-  List<String> chipLabels(WidgetTester tester) =>
-      readToolbar(tester).chips.map((chip) => chip.label).toList();
+  /// the assertion sees what the user is offered.
+  ///
+  /// The chips are icon-only, so the name is the accessible label — which is the
+  /// only place the form is named at all, and therefore the thing to read.
+  List<String?> chipForms(WidgetTester tester) =>
+      readToolbar(tester).chips.map((chip) => chip.semanticLabel).toList();
 
   /// The form the toolbar shows the card as being in.
-  String pickedLabel(WidgetTester tester) {
+  String? pickedForm(WidgetTester tester) {
     final widget = readToolbar(tester);
-    return widget.chips[widget.selectedIndices.single].label;
+    return widget.chips[widget.selectedIndices.single].semanticLabel;
   }
 
-  /// The floating pill's own rect — the surface, not the chips inside its
-  /// padding.
+  /// The glyph each form is offered as.
+  ///
+  /// A second copy of the production mapping, deliberately: these tests tap what
+  /// the user taps, so a glyph that moves to another form has to be an edit here
+  /// too rather than a silent re-labelling of the three chips.
+  const formIcons = {
+    CardDensity.normal: Icons.density_small,
+    CardDensity.compact: Icons.density_medium,
+    CardDensity.popup: Icons.density_large,
+  };
+
+  /// The floating pill itself — the surface, not the chips inside its padding.
   ///
   /// What the layout delegate positions is the surface, so that is what the
   /// position assertions have to read: the chip group sits `AppSpacing.xs` inside
   /// it, and measuring the chips would report the pill as 4px lower and narrower
   /// than it is. `.first` is the innermost ancestor, which is the pill's own
   /// surface rather than any the page wraps it in.
-  Rect pillRect(WidgetTester tester) => tester.getRect(
-        find.ancestor(of: toolbar, matching: find.byType(AppSurface)).first,
-      );
+  final pill =
+      find.ancestor(of: toolbar, matching: find.byType(AppSurface)).first;
 
-  /// Taps the chip labelled [label] — a real press on the real surface, because
+  Rect pillRect(WidgetTester tester) => tester.getRect(pill);
+
+  /// Taps the chip offering [form] — a real press on the real glyph, because
   /// whether that press reaches the chip at all is half of what this file
   /// asserts.
-  Future<void> tapChip(WidgetTester tester, String label) async {
-    await tester.tap(find.descendant(of: toolbar, matching: find.text(label)));
+  Future<void> tapForm(WidgetTester tester, CardDensity form) async {
+    await tester.tap(
+      find.descendant(of: toolbar, matching: find.byIcon(formIcons[form]!)),
+    );
     await tester.pumpAndSettle();
   }
 
@@ -355,7 +394,7 @@ void main() {
       final container = await pumpGrid(tester);
       await select(tester, container, 'device_info');
 
-      expect(chipLabels(tester), ['Normal', 'Compact', 'Popup'],
+      expect(chipForms(tester), ['Normal', 'Compact', 'Popup'],
           reason: 'device_info declares normalAbove: 262, so it has a compact '
               'form.');
     });
@@ -365,7 +404,7 @@ void main() {
       final container = await pumpGrid(tester);
       await select(tester, container, 'topology');
 
-      expect(chipLabels(tester), ['Normal', 'Popup'],
+      expect(chipForms(tester), ['Normal', 'Popup'],
           reason: 'topology declares no threshold, so no compact form was ever '
               'built for it. #1299 is explicit that building the other twelve '
               'is out of scope — so the toolbar must not offer a form that does '
@@ -550,31 +589,6 @@ void main() {
       );
     });
 
-    testWidgets('three chips fit the narrowest screen in the longest locale',
-        (tester) async {
-      // 480px is the narrowest width the loc snapshots are generated at
-      // (`run_generate_loc_snapshots.sh`), and Polish is the longest of the 26
-      // locales at 34 characters across the three labels ("Wyskakujące okno" for
-      // popup alone). The pill has no scroll and no ellipsis, so this is the case
-      // where it would either overflow — which a widget test throws on — or push
-      // itself out of the page.
-      final container = await pumpGrid(
-        tester,
-        surface: const Size(480, 900),
-        locale: const Locale('pl'),
-      );
-      await select(tester, container, 'device_info');
-
-      final layer = tester.getRect(find.byType(CardFormToolbarLayer));
-      expect(chipLabels(tester).length, 3,
-          reason:
-              'The premise: `device_info` is the three-form case, so this is '
-              'the widest the pill ever gets.');
-      expect(pillRect(tester).width, lessThanOrEqualTo(layer.width),
-          reason: 'A pill wider than the page cannot be clamped into it — the '
-              'delegate can only choose where it starts.');
-    });
-
     testWidgets('it follows its card when the layout moves underneath it',
         (tester) async {
       final container = await pumpGrid(tester);
@@ -621,12 +635,93 @@ void main() {
     });
   });
 
+  group('the pill is glyphs on a frameless surface', () {
+    testWidgets('each form is a glyph, and no form is drawn as text',
+        (tester) async {
+      final container = await pumpGrid(tester);
+      await select(tester, container, 'device_info');
+
+      for (final chip in readToolbar(tester).chips) {
+        expect(chip.icon, isNotNull);
+        expect(chip.label, isEmpty,
+            reason: 'An empty label is how `AppChipGroup` is asked for an '
+                'icon-only chip: it skips the gap and the text.');
+        expect(chip.semanticLabel, isNotNull,
+            reason: 'The name has to survive the glyph, or the form is '
+                'unnameable to a screen reader — the label is the only place it '
+                'is still written down.');
+      }
+      expect(
+        find.descendant(
+            of: toolbar, matching: find.byIcon(Icons.density_small)),
+        findsOneWidget,
+      );
+      expect(
+        tester
+            .widgetList<Text>(find.descendant(
+              of: toolbar,
+              matching: find.byType(Text),
+            ))
+            .every((text) => (text.data ?? '').isEmpty),
+        isTrue,
+        reason: 'And nothing is drawn: the chips still build a Text for their '
+            'empty label, so the check is that none of them has anything in it.',
+      );
+    });
+
+    testWidgets('the pill is the same width in every locale', (tester) async {
+      // 480px is the narrowest width the loc snapshots are generated at
+      // (`run_generate_loc_snapshots.sh`), and Polish is the longest of the 26
+      // locales across the three form names — "Wyskakujące okno" for popup
+      // alone. Labelled, that was the case where the pill either overflowed or
+      // pushed itself off the page; as glyphs it is the case that proves there
+      // is no longest locale left to check.
+      final polish = await pumpGrid(
+        tester,
+        surface: const Size(480, 900),
+        locale: const Locale('pl'),
+      );
+      await select(tester, polish, 'device_info');
+      expect(chipForms(tester), hasLength(3),
+          reason: 'The premise: `device_info` is the three-form case, so this '
+              'is the widest the pill ever gets.');
+      final inPolish = pillRect(tester);
+      final layer = tester.getRect(find.byType(CardFormToolbarLayer));
+      expect(inPolish.width, lessThanOrEqualTo(layer.width),
+          reason: 'A pill wider than the page cannot be clamped into it — the '
+              'delegate can only choose where it starts.');
+
+      final english = await pumpGrid(
+        tester,
+        surface: const Size(480, 900),
+        locale: const Locale('en'),
+      );
+      await select(tester, english, 'device_info');
+
+      expect(pillRect(tester).width, closeTo(inPolish.width, 0.5));
+    });
+
+    testWidgets('the pill draws no border', (tester) async {
+      final container = await pumpGrid(tester);
+      await select(tester, container, 'device_info');
+
+      // Read off the widget rather than off the painted decoration, which is the
+      // honest place for it: `showBorder` also suppresses the *effect-strategy*
+      // borders, and those are the ones that were loud — the demo runs the glass
+      // style, whose gradient border framed the pill like a second card. The
+      // flat style this file themes with has `borderWidth: 0` on the elevated
+      // surface, so a decoration-level assertion here would pass either way and
+      // pin nothing.
+      expect(tester.widget<AppSurface>(pill).showBorder, isFalse);
+    });
+  });
+
   group('the toolbar reflects and writes the pick', () {
     testWidgets('with no pick stored it reads normal', (tester) async {
       final container = await pumpGrid(tester);
       await select(tester, container, 'device_info');
 
-      expect(pickedLabel(tester), 'Normal',
+      expect(pickedForm(tester), 'Normal',
           reason: 'Normal is the absence of a pick rather than a stored value, '
               'so an untouched card and a card explicitly set back to normal '
               'have to read the same.');
@@ -639,7 +734,7 @@ void main() {
       final before = readItem(container, 'device_info');
       expect(before['w'], greaterThan(UspWidgetSpecs.popupColumns));
 
-      await tapChip(tester, 'Popup');
+      await tapForm(tester, CardDensity.popup);
 
       expect(
         container
@@ -650,7 +745,7 @@ void main() {
       final after = readItem(container, 'device_info');
       expect(after['w'], UspWidgetSpecs.popupColumns);
       expect(after['isResizable'], isFalse);
-      expect(pickedLabel(tester), 'Popup',
+      expect(pickedForm(tester), 'Popup',
           reason: 'The toolbar rebuilds off cardFormsProvider, so it has to '
               'show the pick it just made.');
     });
@@ -661,8 +756,8 @@ void main() {
       await select(tester, container, 'device_info');
       final originalW = readItem(container, 'device_info')['w'];
 
-      await tapChip(tester, 'Popup');
-      await tapChip(tester, 'Normal');
+      await tapForm(tester, CardDensity.popup);
+      await tapForm(tester, CardDensity.normal);
 
       expect(readItem(container, 'device_info')['w'], originalW,
           reason: 'AC 9. The size is recorded on the way into popup, because '
@@ -675,14 +770,14 @@ void main() {
       final container = await pumpGrid(tester);
       await select(tester, container, 'device_info');
 
-      await tapChip(tester, 'Popup');
+      await tapForm(tester, CardDensity.popup);
       final afterFirst = readItem(container, 'device_info');
 
       // What this pins is the *outcome*: a second pick of the same form leaves
       // the card byte-identical. It does not pin the toolbar's early return —
       // measured, that guard is an equivalent mutation, because `setCardForm` is
       // idempotent on its own (mutation table, row 10).
-      await tapChip(tester, 'Popup');
+      await tapForm(tester, CardDensity.popup);
 
       expect(readItem(container, 'device_info'), afterFirst);
     });
@@ -702,7 +797,7 @@ void main() {
       );
       await select(tester, container, 'device_info');
 
-      expect(pickedLabel(tester), 'Popup',
+      expect(pickedForm(tester), 'Popup',
           reason: 'Picks are per breakpoint (#1294 keeps each breakpoint\'s '
               'layout to itself, and a form is part of that layout). Reading '
               'the desktop slot count here would show normal on a phone that '
@@ -815,9 +910,9 @@ void main() {
         final dragStarts = <String>[];
         final container = await pumpTwoStacked(tester, dragStarts.add);
 
-        await tapChip(tester, 'Popup');
+        await tapForm(tester, CardDensity.popup);
 
-        expect(pickedLabel(tester), 'Popup',
+        expect(pickedForm(tester), 'Popup',
             reason: 'The chip has to win its own tap through the opaque '
                 'Listener above it — which carries no callbacks and so never '
                 'enters the gesture arena.');

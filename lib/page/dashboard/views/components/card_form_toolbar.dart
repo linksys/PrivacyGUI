@@ -259,15 +259,18 @@ class _CardFormToolbarState extends ConsumerState<CardFormToolbar> {
         behavior: HitTestBehavior.opaque,
         child: AppSurface(
           variant: SurfaceVariant.elevated,
+          // No outline. The pill is small, it floats over a card that has a
+          // border of its own, and a frame around it reads as a second card
+          // rather than as a control. What it leaves the pill standing on is the
+          // elevated surface's shadow, which is the separation this needs.
+          //
+          // This suppresses the effect-strategy borders too, which is the point:
+          // the styles that draw a gradient or shimmer border (glass, the demo's
+          // default) are where the frame was loudest.
+          showBorder: false,
           padding: const EdgeInsets.all(AppSpacing.xs),
           child: AppChipGroup(
-            chips: [
-              for (final option in options)
-                ChipItem(
-                  label: _cardFormLabel(context, option),
-                  identifier: 'card-form-${option.name}',
-                ),
-            ],
+            chips: [for (final option in options) _chipFor(context, option)],
             selectedIndices: {options.indexOf(picked)},
             selectionMode: ChipSelectionMode.single,
             size: ChipSize.compact,
@@ -322,12 +325,53 @@ class _CardFormToolbarState extends ConsumerState<CardFormToolbar> {
     return cardId;
   }
 
-  String _cardFormLabel(BuildContext context, CardDensity density) =>
-      switch (density) {
-        CardDensity.popup => loc(context).cardFormPopup,
-        CardDensity.compact => loc(context).cardFormCompact,
-        CardDensity.normal => loc(context).cardFormNormal,
-      };
+  /// The chip that offers [option] — a glyph, with the form's name carried as the
+  /// accessible label rather than drawn.
+  ///
+  /// ## Why the icon and the name are picked in one switch
+  ///
+  /// They are one decision: a glyph that is not the one the label names is a bug,
+  /// and two switches over [CardDensity] are two places to make it in.
+  ///
+  /// ## Why icons rather than the three names
+  ///
+  /// The pill floats over the card, so its width is spent on top of content the
+  /// user is looking at, and three localized names is most of a card wide — in
+  /// Polish, "Wyskakujące okno" alone. Icons also make the pill the same size in
+  /// all 26 locales, which is what puts the narrow-screen case to rest: there is
+  /// no longest locale to fit any more.
+  ///
+  /// What that costs is the label, and it is not free. The glyphs mitigate it by
+  /// being one ladder rather than three pictures: Material's density triad, read
+  /// left to right as how much of the card shows. Note the names run backwards
+  /// from ours — the glyphs count *spacing*, so `density_small` is the packed one,
+  /// everything the card has, and `density_large` the sparsest. Screen readers get
+  /// the name from [ChipItem.semanticLabel], which is what it is for.
+  ///
+  /// The other cost is the target: a chip that was a word wide is now about 36x24,
+  /// under the 48x48 a touch guideline asks for. Stated rather than hidden, and
+  /// accepted here — this is edit mode on a card the user has already tapped once,
+  /// so the pointer is on the pill, and the three sit side by side under
+  /// [ChipSize.compact], which is the size the kit offers. Widening them would
+  /// spend back the width that moving off the labels bought.
+  ChipItem _chipFor(BuildContext context, CardDensity option) {
+    final (icon, name) = switch (option) {
+      CardDensity.popup => (Icons.density_large, loc(context).cardFormPopup),
+      CardDensity.compact => (
+          Icons.density_medium,
+          loc(context).cardFormCompact
+        ),
+      CardDensity.normal => (Icons.density_small, loc(context).cardFormNormal),
+    };
+    return ChipItem(
+      // Empty, which is how `AppChipGroup` is told to draw a chip as its icon
+      // alone: it skips the gap and the text when there is no label.
+      label: '',
+      icon: icon,
+      semanticLabel: name,
+      identifier: 'card-form-${option.name}',
+    );
+  }
 }
 
 /// Puts the toolbar in the gap above [cell], kept inside the layer.
