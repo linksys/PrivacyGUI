@@ -697,9 +697,18 @@ abstract class UspWidgetSpecs {
   /// "Cannot be resized" needs a target. A card selected into popup is whatever
   /// size the user last dragged it to, and a locked 12-column icon-plus-value is
   /// both absurd and — with the handles gone — unrecoverable. Two columns is the
-  /// narrowest span that still clears [kPopupBelow] at every screen width the
-  /// 12-column grid is used at, which is the same figure §2.6c derives the
-  /// compact floor from.
+  /// 2×1 tile recorded as a decision on the issue before any of this was written
+  /// (§2.6c item 1): the smallest footprint the popup form has content for, once
+  /// [popupHeightRows] has taken the height.
+  ///
+  /// It sits *below* [kPopupBelow] on purpose, and this is where the two floors in
+  /// this file are easy to confuse. Clearing 200px is [compactMinColumns]' job —
+  /// §2.6c item 4 derives that figure, and it is why compact's floor is four
+  /// columns rather than the three its consumers declare. The band below it is what
+  /// popup is *for*: the form exists precisely because a label and a value stop
+  /// fitting side by side there (§2.1). What makes a box this small safe to lock is
+  /// not a width guarantee but [CardFormChoice.restoreW] — the previous box travels
+  /// with the choice, because with the handles gone no gesture could recover it.
   static const int popupColumns = 2;
 
   /// The height a popup tile collapses to, on every grid.
