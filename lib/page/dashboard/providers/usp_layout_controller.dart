@@ -41,10 +41,14 @@ final uspSliverDashboardControllerProvider = StateNotifierProvider<
 class UspSliverDashboardControllerNotifier
     extends StateNotifier<DashboardController> {
   UspSliverDashboardControllerNotifier() : super(_createDefaultController()) {
+    _armWidthLock();
     _initializeLayout();
   }
 
   static const int _desktopSlots = UspLayoutEnvelope.desktopSlotCount;
+
+  /// Cancels the current controller's width-lock subscription.
+  VoidCallback? _widthLockGuard;
 
   static DashboardController _createDefaultController() {
     return DashboardController(
@@ -67,10 +71,10 @@ class UspSliverDashboardControllerNotifier
     // Remote mode: use fixed remote preset layout, skip persistence
     final forcedPreset = GlobalConfig.remote.forcedPreset;
     if (forcedPreset != null) {
-      state = DashboardController(
+      _swapController(DashboardController(
         initialSlotCount: _desktopSlots,
         initialLayout: forcedPreset.createLayout(),
-      );
+      ));
       _seedBreakpoints();
       return;
     }
@@ -107,7 +111,7 @@ class UspSliverDashboardControllerNotifier
     if (desktop != null) {
       newController.importLayout(desktop);
     }
-    state = newController;
+    _swapController(newController);
     _seedBreakpoints(stored: envelope);
 
     // A legacy bare list, or an envelope written before we rendered a
@@ -169,6 +173,67 @@ class UspSliverDashboardControllerNotifier
           ? UspWidgetSpecs.lockToFullWidth(layout, slotCount)
           : layout;
 
+  /// Swaps in [controller] and re-arms the width lock on it.
+  ///
+  /// The lock belongs to the instance it watches, so a swap that forgets to
+  /// re-arm leaves the phone grid horizontally editable again.
+  void _swapController(DashboardController controller) {
+    state = controller;
+    _armWidthLock();
+  }
+
+  /// Watches the current controller's layout so a horizontal change made on the
+  /// phone grid is undone before it is drawn.
+  ///
+  /// [_normalize] is applied when a layout is imported and when it is stored,
+  /// which covers everything except the case in between: a gesture writes
+  /// straight to the controller's layout beacon, and on mobile the left-hand
+  /// resize handles get past the width caps by moving `x` — see
+  /// [UspWidgetSpecs.lockItemsToFullWidth]. Nothing else re-reads the live
+  /// layout after a resize, so without this the card stays where the drag left
+  /// it until the next import.
+  ///
+  /// Subscribing is what makes the drag look inert rather than rubber-banding:
+  /// the correction is queued alongside the rebuild the same write triggers, and
+  /// runs first because this subscription is registered before any widget starts
+  /// watching. `startNow: false` because the layout as it stands has already
+  /// been normalised by whoever imported it.
+  void _armWidthLock() {
+    _widthLockGuard?.call();
+    final controller = state;
+    _widthLockGuard = controller.layout.subscribe(
+      (items) => _enforceWidthLock(controller, items),
+      startNow: false,
+    );
+  }
+
+  /// Restores the full-width geometry of [items] if a gesture broke it.
+  ///
+  /// Takes the controller it was armed on rather than reading [state]: a swap
+  /// can land between the write and this callback, and the layout being
+  /// corrected belongs to the old instance.
+  void _enforceWidthLock(
+    DashboardController controller,
+    List<LayoutItem> items,
+  ) {
+    final slotCount = controller.slotCount.value;
+    if (slotCount > UspLayoutEnvelope.mobileSlotCount) return;
+
+    final locked = UspWidgetSpecs.lockItemsToFullWidth(items, slotCount);
+    if (locked == null) return;
+
+    // Straight to the beacon rather than through importLayout: that would
+    // compact the whole grid mid-gesture, closing gaps the user is in the
+    // middle of making.
+    controller.layout.value = locked;
+  }
+
+  @override
+  void dispose() {
+    _widthLockGuard?.call();
+    super.dispose();
+  }
+
   /// Persist the layout of every breakpoint to SharedPreferences.
   Future<void> saveLayout() async {
     final envelope = UspLayoutEnvelope(_exportAllBreakpoints());
@@ -210,7 +275,7 @@ class UspSliverDashboardControllerNotifier
 
     final controller = _createDefaultController();
     controller.importLayout(layouts[_desktopSlots] ?? const []);
-    state = controller;
+    _swapController(controller);
     _seedBreakpoints(stored: UspLayoutEnvelope(layouts));
 
     if (origin != _desktopSlots) {
@@ -226,7 +291,7 @@ class UspSliverDashboardControllerNotifier
 
   /// Reset to default layout and clear persisted data.
   Future<void> resetLayout() async {
-    state = _createDefaultController();
+    _swapController(_createDefaultController());
     // Re-seed: a controller with an empty breakpoint cache falls back to
     // correctBounds at tablet width, which collapses the two-column grid.
     _seedBreakpoints();
@@ -335,10 +400,10 @@ class UspSliverDashboardControllerNotifier
   /// rather than generic 2-column packing.
   Future<void> applyPreset(UspDashboardPreset preset) async {
     final layout = preset.createLayout();
-    state = DashboardController(
+    _swapController(DashboardController(
       initialSlotCount: _desktopSlots,
       initialLayout: layout,
-    );
+    ));
     _seedBreakpoints();
     await saveLayout();
   }

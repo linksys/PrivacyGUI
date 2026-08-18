@@ -653,10 +653,11 @@ abstract class UspWidgetSpecs {
   ///
   /// Below five columns there is no width worth choosing — every card is either
   /// full-width or unreadably narrow — so on mobile the width stops being
-  /// editable instead of being merely defaulted. `minW == maxW == cols` is what
-  /// enforces that: `DashboardController` clamps every resize delta to
-  /// `[minW, maxW]`, so with the two equal the horizontal drag is inert and only
-  /// height and order remain editable.
+  /// editable instead of being merely defaulted. `minW == maxW == cols` is half
+  /// of what enforces that: `DashboardController` clamps every resize delta to
+  /// `[minW, maxW]`, which is enough to make the right-hand handles inert. The
+  /// left-hand ones need [lockItemsToFullWidth] on top — see there for why the
+  /// caps alone cannot hold them.
   ///
   /// It also repairs what the old mobile seed produced. Scaling `minW`/`maxW`
   /// proportionally gave a card with `maxW: 8` at 12 columns a `maxW` of 3 at 4
@@ -672,6 +673,45 @@ abstract class UspWidgetSpecs {
         'maxW': cols.toDouble(),
       };
     }).toList();
+  }
+
+  /// The [lockToFullWidth] geometry applied to live items, or null when every
+  /// item already has it.
+  ///
+  /// Pinning `minW == maxW == cols` does not finish the job. A resize delta is
+  /// clamped to `[minW, maxW]`, so a right-hand handle cannot move a width that
+  /// is already both floor and ceiling — but the left-hand handles (left,
+  /// topLeft, bottomLeft) move `x` as well, and the package trims the width to
+  /// whatever is left of the row after the clamp:
+  ///
+  /// ```
+  /// newX = x + dW;  newW = (w - dW).clamp(minW, maxW)
+  /// if (newX < 0) { newW += newX; newX = 0; }
+  /// if (newX + newW > cols) newW = cols - newX
+  /// ```
+  ///
+  /// One column of drag on the left edge therefore narrows a card on a 4-column
+  /// grid to three whichever way it is dragged — to `x: 1, w: 3` inwards, and to
+  /// `x: 0, w: 3` outwards, where the row's own edge does the trimming. Neither
+  /// width was authorised, and no cap can express "x may not move", so this has
+  /// to be undone on the live layout by whoever is watching it.
+  ///
+  /// Only `x` and `w` are touched: the height is the one dimension a phone still
+  /// leaves to the user, and the caps are repaired on import by
+  /// [lockToFullWidth]. Returning null rather than an equal list is what keeps a
+  /// watcher from writing back into the layout it was just notified about.
+  static List<LayoutItem>? lockItemsToFullWidth(
+    List<LayoutItem> items,
+    int cols,
+  ) {
+    List<LayoutItem>? locked;
+    for (var i = 0; i < items.length; i++) {
+      final item = items[i];
+      if (item.x == 0 && item.w == cols) continue;
+      locked ??= List<LayoutItem>.of(items);
+      locked[i] = item.copyWith(x: 0, w: cols);
+    }
+    return locked;
   }
 
   /// Rewrites [layout] to hold exactly the cards in [reference], in that order,

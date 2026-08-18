@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/page/dashboard/models/display_mode.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_widget_specs.dart';
+import 'package:sliver_dashboard/sliver_dashboard.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 void main() {
@@ -475,6 +476,70 @@ void main() {
         UspWidgetSpecs.correctedSize(wide, w: 8, h: 0, slotCount: 8),
         (w: 8, h: 1),
       );
+    });
+  });
+
+  group('lockItemsToFullWidth', () {
+    const full = LayoutItem(id: 'a', x: 0, y: 0, w: 4, h: 2);
+
+    test('a locked layout needs no rewrite', () {
+      // Null, not an equal list: the caller is a listener on the very layout it
+      // would be writing back into.
+      expect(UspWidgetSpecs.lockItemsToFullWidth([full], 4), isNull);
+    });
+
+    test('a card the left edge displaced is put back', () {
+      // x=1, w=3 is what dragging the left edge inwards by a column leaves.
+      final locked = UspWidgetSpecs.lockItemsToFullWidth(
+        [full.copyWith(x: 1, w: 3)],
+        4,
+      );
+      expect(locked, isNotNull);
+      expect(locked!.single.x, 0);
+      expect(locked.single.w, 4);
+    });
+
+    test('a card narrowed without moving is put back too', () {
+      // Dragging the same edge outwards keeps x at 0 — the row's own edge does
+      // the trimming instead — so a displaced x cannot be the thing looked for.
+      final locked = UspWidgetSpecs.lockItemsToFullWidth(
+        [full.copyWith(w: 3)],
+        4,
+      );
+      expect(locked, isNotNull);
+      expect(locked!.single.w, 4);
+    });
+
+    test('a card moved without narrowing is put back too', () {
+      final locked = UspWidgetSpecs.lockItemsToFullWidth(
+        [full.copyWith(x: 1)],
+        4,
+      );
+      expect(locked, isNotNull);
+      expect(locked!.single.x, 0);
+    });
+
+    test('the height is not the width lock\'s business', () {
+      final locked = UspWidgetSpecs.lockItemsToFullWidth(
+        [full.copyWith(x: 1, w: 3, h: 7)],
+        4,
+      );
+      expect(locked!.single.h, 7);
+    });
+
+    test('the row a card sits on is not the width lock\'s business', () {
+      final locked = UspWidgetSpecs.lockItemsToFullWidth(
+        [full.copyWith(x: 1, w: 3, y: 5)],
+        4,
+      );
+      expect(locked!.single.y, 5);
+    });
+
+    test('cards that are already locked keep their identity', () {
+      final displaced = full.copyWith(id: 'b', x: 1, w: 3);
+      final locked = UspWidgetSpecs.lockItemsToFullWidth([full, displaced], 4);
+      expect(identical(locked!.first, full), isTrue);
+      expect(locked.last.x, 0);
     });
   });
 }
