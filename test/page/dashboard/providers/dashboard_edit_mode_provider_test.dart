@@ -4,6 +4,7 @@ import 'package:privacy_gui/page/dashboard/models/usp_layout_preferences.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_edit_mode_provider.dart';
 import 'package:privacy_gui/page/dashboard/providers/usp_layout_controller.dart';
 import 'package:privacy_gui/page/dashboard/providers/usp_layout_preferences_provider.dart';
+import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 Future<void> pumpAsync() async {
@@ -15,9 +16,10 @@ void main() {
 
   Future<ProviderContainer> createContainer({
     Map<String, Object> initialValues = const {},
+    List<Override> overrides = const [],
   }) async {
     SharedPreferences.setMockInitialValues(initialValues);
-    final container = ProviderContainer();
+    final container = ProviderContainer(overrides: overrides);
     container.read(uspSliverDashboardControllerProvider);
     await container.read(uspLayoutPreferencesProvider.notifier).initialized;
     await pumpAsync();
@@ -227,4 +229,136 @@ void main() {
       }
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // #1294 — logging out must leave edit mode
+  // ---------------------------------------------------------------------------
+  group('logout leaves edit mode', () {
+    /// A logged-in [AuthNotifier] whose logout can be driven without the USP /
+    /// SSE / credential-store machinery the real one needs.
+    ///
+    /// It reproduces the exact emission sequence of [AuthNotifier.logout]:
+    /// `AsyncValue.loading()` first, then `AsyncValue.data(AuthState.empty())`.
+    /// That middle `loading` is why a listener cannot compare
+    /// `previous.isLoggedIn` with `next.isLoggedIn` — by the time the logged-out
+    /// data arrives, `previous` is a value-less loading state.
+    ///
+    /// Both providers are read before the test acts: in production the dashboard
+    /// is on screen (so the edit-mode notifier is alive and listening) and auth
+    /// has resolved (so the fake has an element to push state through).
+    Future<ProviderContainer> containerWithAuth(_FakeAuthNotifier auth) async {
+      final container = await createContainer(
+        overrides: [authProvider.overrideWith(() => auth)],
+      );
+      await container.read(authProvider.future);
+      container.read(dashboardEditModeProvider);
+      return container;
+    }
+
+    test('a logout while editing exits edit mode', () async {
+      // The reported bug: log out from the dashboard's own top-bar menu (which
+      // does not navigate anywhere), log back in, and the grid is still in edit
+      // mode with the trash zone and resize handles showing — because both the
+      // edit-mode provider and the controller are root-scoped and survive a
+      // logout that never reloads the page.
+      final auth = _FakeAuthNotifier();
+      final container = await containerWithAuth(auth);
+      addTearDown(container.dispose);
+
+      await container.read(dashboardEditModeProvider.notifier).enterEditMode();
+      expect(container.read(dashboardEditModeProvider).isEditing, isTrue);
+
+      auth.logOut();
+      await pumpAsync();
+
+      final state = container.read(dashboardEditModeProvider);
+      expect(state.isEditing, isFalse);
+      expect(state.layoutSnapshot, isNull,
+          reason: 'A stale snapshot would be reverted into the next session.');
+      expect(
+          container.read(uspSliverDashboardControllerProvider).isEditing.value,
+          isFalse,
+          reason: 'The grid itself must also drop out of edit mode — the '
+              'handles and trash zone are driven by the controller, not by '
+              'this provider.');
+    });
+
+    test('the pre-edit layout is restored, matching the tab-switch policy',
+        () async {
+      // #1037 chose silent discard for leaving the dashboard mid-edit. A logout
+      // is a harder exit than a tab switch, so it reverts the same way rather
+      // than committing half-finished dragging.
+      final auth = _FakeAuthNotifier();
+      final container = await containerWithAuth(auth);
+      addTearDown(container.dispose);
+
+      final controller = container.read(uspSliverDashboardControllerProvider);
+      final originalCount = controller.exportLayout().length;
+      await container.read(dashboardEditModeProvider.notifier).enterEditMode();
+      controller.removeItems(['stats_panel']);
+      expect(controller.exportLayout().length, lessThan(originalCount));
+
+      auth.logOut();
+      await pumpAsync();
+
+      expect(
+          container
+              .read(uspSliverDashboardControllerProvider)
+              .exportLayout()
+              .length,
+          originalCount);
+    });
+
+    test('a logout while not editing changes nothing', () async {
+      final auth = _FakeAuthNotifier();
+      final container = await containerWithAuth(auth);
+      addTearDown(container.dispose);
+
+      final before =
+          container.read(uspSliverDashboardControllerProvider).exportLayout();
+
+      auth.logOut();
+      await pumpAsync();
+
+      expect(container.read(dashboardEditModeProvider).isEditing, isFalse);
+      expect(
+          container
+              .read(uspSliverDashboardControllerProvider)
+              .exportLayout()
+              .length,
+          before.length,
+          reason: 'The reset must be idempotent: it fires on every logout, '
+              'including the ones that happen with the dashboard closed.');
+    });
+
+    test('logging back in does not re-enter edit mode', () async {
+      final auth = _FakeAuthNotifier();
+      final container = await containerWithAuth(auth);
+      addTearDown(container.dispose);
+
+      await container.read(dashboardEditModeProvider.notifier).enterEditMode();
+      auth.logOut();
+      await pumpAsync();
+      auth.logIn();
+      await pumpAsync();
+
+      expect(container.read(dashboardEditModeProvider).isEditing, isFalse);
+    });
+  });
+}
+
+/// Drives [authProvider] through login/logout without the real dependencies.
+class _FakeAuthNotifier extends AuthNotifier {
+  @override
+  Future<AuthState> build() async =>
+      const AuthState(loginType: LoginType.local);
+
+  void logOut() {
+    state = const AsyncValue.loading();
+    state = AsyncValue.data(AuthState.empty());
+  }
+
+  void logIn() {
+    state = const AsyncValue.data(AuthState(loginType: LoginType.local));
+  }
 }

@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_dashboard_preset.dart';
+import 'package:privacy_gui/page/dashboard/models/usp_layout_envelope.dart';
 import 'package:privacy_gui/page/dashboard/providers/usp_layout_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -35,6 +36,19 @@ Map<String, dynamic> _layoutItem(
     'minH': minH,
     'maxH': maxH,
   };
+}
+
+/// The desktop grid out of a persisted layout envelope.
+///
+/// The pref holds one layout per breakpoint keyed by slot count (#1293), so
+/// "what got saved" has to name a grid; every test here arranges and asserts on
+/// the desktop one. Read straight out of the JSON rather than through
+/// [UspLayoutEnvelope.tryDecode] so a decoder bug cannot hide behind these
+/// assertions — the envelope's own shape is covered in
+/// test/page/dashboard/models/usp_layout_envelope_test.dart.
+List<dynamic> _savedDesktopLayout(String raw) {
+  final layouts = (jsonDecode(raw) as Map)['layouts'] as Map;
+  return layouts['${UspLayoutEnvelope.desktopSlotCount}'] as List;
 }
 
 void main() {
@@ -133,7 +147,7 @@ void main() {
       final prefs = await SharedPreferences.getInstance();
       final saved = prefs.getString(pUspSliverDashboardLayout);
       expect(saved, isNotNull);
-      final decoded = jsonDecode(saved!) as List;
+      final decoded = _savedDesktopLayout(saved!);
       final ids = decoded.map((item) => (item as Map)['id']).toSet();
       // Unknown IDs preserved — may be package widgets
       expect(ids, contains('unknown_widget_xyz'));
@@ -159,7 +173,7 @@ void main() {
       final prefs = await SharedPreferences.getInstance();
       final saved = prefs.getString(pUspSliverDashboardLayout);
       expect(saved, isNotNull);
-      final decoded = jsonDecode(saved!) as List;
+      final decoded = _savedDesktopLayout(saved!);
       expect(decoded.length, 18);
     });
 
@@ -232,7 +246,7 @@ void main() {
       final saved = prefs.getString(pUspSliverDashboardLayout);
       expect(saved, isNotNull);
 
-      final decoded = jsonDecode(saved!) as List;
+      final decoded = _savedDesktopLayout(saved!);
       final first = decoded.first as Map<String, dynamic>;
       expect(first.containsKey('id'), isTrue);
       expect(first.containsKey('x'), isTrue);
@@ -352,7 +366,7 @@ void main() {
       final prefs = await SharedPreferences.getInstance();
       final saved = prefs.getString(pUspSliverDashboardLayout);
       expect(saved, isNotNull);
-      final decoded = jsonDecode(saved!) as List;
+      final decoded = _savedDesktopLayout(saved!);
       final item =
           decoded.firstWhere((i) => (i as Map)['id'] == 'device_info') as Map;
       expect(item['w'], 8);
@@ -607,7 +621,7 @@ void main() {
       final prefs = await SharedPreferences.getInstance();
       final saved = prefs.getString(pUspSliverDashboardLayout);
       expect(saved, isNotNull);
-      final decoded = jsonDecode(saved!) as List;
+      final decoded = _savedDesktopLayout(saved!);
       expect(decoded.length, 6);
     });
 
@@ -664,7 +678,7 @@ void main() {
       final prefs = await SharedPreferences.getInstance();
       final saved = prefs.getString(pUspSliverDashboardLayout);
       expect(saved, isNotNull);
-      final decoded = jsonDecode(saved!) as List;
+      final decoded = _savedDesktopLayout(saved!);
       final ids = decoded.map((i) => (i as Map)['id']).toSet();
       expect(ids.contains('device_info'), isFalse);
     });
@@ -864,7 +878,7 @@ void main() {
       // Verify the persisted data matches
       final prefs = await SharedPreferences.getInstance();
       final savedJson = prefs.getString(pUspSliverDashboardLayout)!;
-      final decoded = jsonDecode(savedJson) as List;
+      final decoded = _savedDesktopLayout(savedJson);
       expect(decoded.length, 6);
       final ids = decoded.map((i) => (i as Map)['id']).toSet();
       expect(ids.contains('stats_panel'), isTrue);
@@ -880,7 +894,7 @@ void main() {
 
       final prefs = await SharedPreferences.getInstance();
       final saved = prefs.getString(pUspSliverDashboardLayout);
-      final decoded = jsonDecode(saved!) as List;
+      final decoded = _savedDesktopLayout(saved!);
       final item =
           decoded.firstWhere((i) => (i as Map)['id'] == 'device_info') as Map;
       expect(item['w'], 8);

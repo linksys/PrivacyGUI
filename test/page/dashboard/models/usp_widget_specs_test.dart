@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/page/dashboard/models/display_mode.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_widget_specs.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 void main() {
   group('Registry', () {
@@ -382,6 +383,98 @@ void main() {
       expect(layout[0].x, 0);
       expect(layout[1].id, 'network_status');
       expect(layout[1].x, 6);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Constraints are written for 12 columns and have to be read on the grid the
+  // user is actually looking at (#1293).
+  // ---------------------------------------------------------------------------
+  group('scaleSpan', () {
+    test('halves nothing on the grid it was written for', () {
+      expect(UspWidgetSpecs.scaleSpan(6, fromCols: 12, toCols: 12), 6);
+    });
+
+    test('12→8 keeps the proportion', () {
+      expect(UspWidgetSpecs.scaleSpan(6, fromCols: 12, toCols: 8), 4);
+      expect(UspWidgetSpecs.scaleSpan(12, fromCols: 12, toCols: 8), 8);
+    });
+
+    test('never scales a card out of existence', () {
+      // 1 of 12 rounds to 0 of 4, which is not a width any grid can hold.
+      expect(UspWidgetSpecs.scaleSpan(1, fromCols: 12, toCols: 4), 1);
+    });
+
+    test('never returns more columns than the grid has', () {
+      expect(UspWidgetSpecs.scaleSpan(12, fromCols: 8, toCols: 4), 4);
+    });
+  });
+
+  group('correctedSize', () {
+    // stats_panel: the widest floor in the catalogue, and the reason this
+    // scaling has to exist at all.
+    const wide = WidgetGridConstraints(
+      minColumns: 6,
+      maxColumns: 12,
+      preferredColumns: 12,
+      heightStrategy: HeightStrategy.strict(1),
+      minHeightRows: 1,
+      maxHeightRows: 2,
+    );
+
+    test('a size within its spec needs no correction', () {
+      expect(
+        UspWidgetSpecs.correctedSize(wide, w: 8, h: 1, slotCount: 12),
+        isNull,
+      );
+    });
+
+    test('a too-narrow card is widened to its floor', () {
+      expect(
+        UspWidgetSpecs.correctedSize(wide, w: 3, h: 1, slotCount: 12),
+        (w: 6, h: 1),
+      );
+    });
+
+    test('on a tablet the floor is scaled, not taken literally', () {
+      // The bug: `minColumns: 6` enforced as-is gives this card six of the
+      // tablet's eight columns — three quarters of the row for what is supposed
+      // to be a half-width floor.
+      expect(
+        UspWidgetSpecs.correctedSize(wide, w: 2, h: 1, slotCount: 8),
+        (w: 4, h: 1),
+      );
+    });
+
+    test('on a tablet the ceiling is scaled too', () {
+      expect(
+        UspWidgetSpecs.correctedSize(wide, w: 9, h: 1, slotCount: 8),
+        (w: 8, h: 1),
+      );
+    });
+
+    test('a phone never has a width corrected onto it', () {
+      // Taken literally the floor is wider than the whole grid, so the old code
+      // wrote w=6 into a 4-column layout. Mobile widths are pinned by
+      // lockToFullWidth, so there is nothing here to enforce.
+      expect(
+        UspWidgetSpecs.correctedSize(wide, w: 4, h: 1, slotCount: 4),
+        isNull,
+      );
+    });
+
+    test('a phone still has its height corrected', () {
+      expect(
+        UspWidgetSpecs.correctedSize(wide, w: 4, h: 5, slotCount: 4),
+        (w: 4, h: 2),
+      );
+    });
+
+    test('rows are absolute — the height floor is not scaled', () {
+      expect(
+        UspWidgetSpecs.correctedSize(wide, w: 8, h: 0, slotCount: 8),
+        (w: 8, h: 1),
+      );
     });
   });
 }

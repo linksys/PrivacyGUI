@@ -6,6 +6,7 @@ import 'package:privacy_gui/page/dashboard/views/components/effects/jiggle_shake
 import 'package:privacy_gui/page/dashboard/factories/usp_widget_factory.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_dashboard_preset.dart';
+import 'package:privacy_gui/page/dashboard/models/usp_widget_specs.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_edit_mode_provider.dart';
 import 'package:privacy_gui/page/dashboard/models/package_widget_template.dart';
 import 'package:privacy_gui/page/dashboard/providers/package_widget_loader.dart';
@@ -488,28 +489,22 @@ class _UspSliverDashboardViewState
     final constraints = spec.constraints[DisplayMode.normal];
     if (constraints == null) return;
 
-    bool violated = false;
-    int newW = item.w;
-    int newH = item.h;
+    // Which grid the card is on decides what its spec's column figures mean —
+    // see [UspWidgetSpecs.correctedSize].
+    final notifier = ref.read(uspSliverDashboardControllerProvider.notifier);
+    final corrected = UspWidgetSpecs.correctedSize(
+      constraints,
+      w: item.w,
+      h: item.h,
+      slotCount: ref.read(uspSliverDashboardControllerProvider).slotCount.value,
+    );
 
-    if (item.w < constraints.minColumns) {
-      newW = constraints.minColumns;
-      violated = true;
-    }
-    if (item.w > constraints.maxColumns) {
-      newW = constraints.maxColumns;
-      violated = true;
-    }
-    if (item.h < constraints.minHeightRows) {
-      newH = constraints.minHeightRows;
-      violated = true;
-    }
-    if (item.h > constraints.maxHeightRows) {
-      newH = constraints.maxHeightRows;
-      violated = true;
+    if (corrected == null) {
+      notifier.saveLayout();
+      return;
     }
 
-    if (violated && context.mounted) {
+    if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(loc(context).widgetResized(item.id)),
@@ -519,12 +514,9 @@ class _UspSliverDashboardViewState
       );
     }
 
-    if (violated) {
-      ref
-          .read(uspSliverDashboardControllerProvider.notifier)
-          .updateItemSize(item.id, newW, newH);
-    }
-    ref.read(uspSliverDashboardControllerProvider.notifier).saveLayout();
+    // Saves as part of correcting the size — a second saveLayout here would walk
+    // every breakpoint again for nothing.
+    notifier.updateItemSize(item.id, corrected.w, corrected.h);
   }
 
   Future<void> _openLayoutSettings(BuildContext context) async {
