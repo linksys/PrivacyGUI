@@ -318,7 +318,7 @@ class _MonitorView extends StatelessWidget {
         // Correlation) and left this one because it also carries the refresh
         // chrome. Labels are composed statistics (`CPU: 47%`), so they
         // soft-wrap rather than ellipsize (§2.10a point 2), which is what
-        // `_StatLegendEntry` does by default.
+        // `AppChartLegendEntry.statistic` does.
         //
         // §2.10a point 3's precondition holds here, and was measured rather
         // than assumed: the `Expanded` above hands the gauge row **221px**
@@ -348,11 +348,15 @@ class _MonitorView extends StatelessWidget {
             spacing: AppSpacing.lg,
             runSpacing: AppSpacing.xs,
             children: [
-              _StatLegendEntry(
+              // `.swatch()`, not a chart mark: these two entries key the pair of
+              // `AppGauge`s above, not a line or bar series.
+              AppChartLegendEntry.statistic(
+                mark: const ChartMark.swatch(),
                 color: colorScheme.primary,
                 label: loc(context).cpuPercent('${latest?.cpuPercent ?? '--'}'),
               ),
-              _StatLegendEntry(
+              AppChartLegendEntry.statistic(
+                mark: const ChartMark.swatch(),
                 color: colorScheme.secondary,
                 label: loc(context)
                     .memoryPercent('${latest?.memoryPercent ?? '--'}'),
@@ -486,11 +490,16 @@ class _TrendsView extends StatelessWidget {
           spacing: AppSpacing.lg,
           runSpacing: AppSpacing.xs,
           children: [
-            _StatLegendEntry(
+            // Marks mirror the chart: cpu is `filled: true`, memory is a plain
+            // line, and `AppLineChart.showDots` defaults to true so both carry a
+            // centre dot.
+            AppChartLegendEntry.statistic(
+              mark: const ChartMark.lineFilled(dot: true),
               color: colorScheme.primary,
               label: loc(context).avgPeak(avgCpu, peakCpu),
             ),
-            _StatLegendEntry(
+            AppChartLegendEntry.statistic(
+              mark: const ChartMark.line(dot: true),
               color: colorScheme.secondary,
               label: loc(context).avg(avgMem),
             ),
@@ -550,16 +559,17 @@ class _DistributionView extends StatelessWidget {
         AppGap.sm(),
         // A single entry, so there is nothing to wrap between — but the label is
         // the longest of the four tabs ('CPU-Auslastungsstichproben: 37'), and a
-        // bare centred `Row` overflows on it. `Wrap` lets the entry keep its
-        // intrinsic width and `_StatLegendEntry` lets the label take a second
-        // line rather than truncate the sample count.
+        // bare centred `Row` overflows on it. `Wrap` bounds the entry's width so
+        // its internal `Flexible` can take a second line rather than truncate
+        // the sample count, which is what `.statistic` asks for.
         Wrap(
           alignment: WrapAlignment.center,
           crossAxisAlignment: WrapCrossAlignment.center,
           spacing: AppSpacing.lg,
           runSpacing: AppSpacing.xs,
           children: [
-            _StatLegendEntry(
+            AppChartLegendEntry.statistic(
+              mark: const ChartMark.block(),
               color: colorScheme.primary,
               label: loc(context).cpuUsageSamples(history.length),
             ),
@@ -644,24 +654,27 @@ class _CorrelationView extends StatelessWidget {
         ),
         AppGap.sm(),
         // Unlike the other three tabs these labels are bare series names, not
-        // statistics — so this is #1226's case exactly, and the entries carry its
-        // one-line ellipsis: a clipped 'Traffic rate' still keys the chart,
-        // because the colour does the identifying and no digits are lost.
+        // statistics — so this is #1226's case exactly, and `.seriesName` carries
+        // its one-line ellipsis: a clipped 'Traffic rate' still keys the chart,
+        // because the colour does the identifying and no digits are lost. The
+        // named constructor is the whole point of the shared component: the
+        // behaviour follows the *kind* of label, so no call site can pick the
+        // wrong one by forgetting a flag (§2.10a point 2).
         Wrap(
           alignment: WrapAlignment.center,
           crossAxisAlignment: WrapCrossAlignment.center,
           spacing: AppSpacing.lg,
           runSpacing: AppSpacing.xs,
           children: [
-            _StatLegendEntry(
+            AppChartLegendEntry.seriesName(
+              mark: const ChartMark.lineFilled(dot: true),
               color: colorScheme.primary,
               label: loc(context).cpu,
-              ellipsize: true,
             ),
-            _StatLegendEntry(
+            AppChartLegendEntry.seriesName(
+              mark: const ChartMark.line(dashed: true, dot: true),
               color: colorScheme.tertiary,
               label: loc(context).trafficRate,
-              ellipsize: true,
             ),
           ],
         ),
@@ -693,79 +706,5 @@ class _CorrelationView extends StatelessWidget {
       return '${(bytesPerSec / 1024).toStringAsFixed(0)} KB/s';
     }
     return '${bytesPerSec.toStringAsFixed(0)} B/s';
-  }
-}
-
-// =============================================================================
-// Shared widgets
-// =============================================================================
-
-class _LegendDot extends StatelessWidget {
-  final Color color;
-  const _LegendDot({required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 8,
-      height: 8,
-      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-    );
-  }
-}
-
-/// One legend entry: colour dot, gap, label — the unit that must never split, so
-/// a label never separates from the colour it explains (#1226 rule 2).
-///
-/// File-private on purpose. The same shape exists in `usp_network_health_card`
-/// (as `_LegendEntry`) and `usp_traffic_analysis_card`, and extracting one shared
-/// widget from the four copies needs Article XIV approval — #1233 deliberately
-/// does not block on that conversation, so the shape is replicated in place and
-/// the extraction raised separately.
-class _StatLegendEntry extends StatelessWidget {
-  final Color color;
-  final String label;
-
-  /// Whether the label may be clipped to one line to make the entry fit.
-  ///
-  /// Only safe when the label is a bare **series name** — the chart is already
-  /// colour-coded, so a clipped name still keys it (#1226 rule 2). Off by
-  /// default because most of this card's legend labels are composed statistics
-  /// (`Avg: 42%  Peak: 87%`), where an ellipsis would cut a number in half; those
-  /// soft-wrap onto a second line instead, which the `Expanded` chart above pays
-  /// for.
-  final bool ellipsize;
-
-  const _StatLegendEntry({
-    required this.color,
-    required this.label,
-    this.ellipsize = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _LegendDot(color: color),
-        AppGap.xs(),
-        // `Flexible`, not a bare `AppText`, and not for the ellipsis alone: a
-        // `Row` hands non-flex children *unbounded* width, so a bare label takes
-        // its full intrinsic width on one line and overflows regardless of the
-        // enclosing `Wrap`. The `Wrap` can move a whole entry to the next run,
-        // but only `Flexible` lets the label itself give.
-        //
-        // Flexible is loose-fit, so the `Row` still hugs a short label and two
-        // entries share one run whenever they fit — the wide-layout rendering is
-        // unchanged.
-        Flexible(
-          child: AppText.labelSmall(
-            label,
-            maxLines: ellipsize ? 1 : null,
-            overflow: ellipsize ? TextOverflow.ellipsis : null,
-          ),
-        ),
-      ],
-    );
   }
 }

@@ -124,7 +124,10 @@ carries the constraint #1233 measured, namely that any shared entry must express
 the ellipsize-vs-soft-wrap distinction per label kind (§2.10a point 2) and must
 not absorb the WAN/LAN row, which deviates for a reason (§2.10a point 3).
 **#1245's inventory is written against four files and needs `wifi_performance`
-added to it.**
+added to it.** *Implemented* — the Article XIV conversation went the upstream
+route, all five files migrated to the kit's `AppChartLegendEntry`, and both
+constraints held: the distinction is now carried by the constructor name and the
+WAN/LAN row declined the shared entry on a 6px measurement. See §2.10k.
 
 **Blocked on a dependency we do not own — 45 coordinates (8%)**: fl_chart 19
 (`firewall_overview`), ui_kit `AppListTile` 26 (`connected_devices`).
@@ -1290,7 +1293,10 @@ not say, found by measuring each row after it was changed:
    ellipsis and no `maxLines`: an ellipsis lands mid-number, and a half-shown
    statistic misinforms in a way a missing one does not. They soft-wrap onto a
    second line instead. Both cards therefore carry a per-entry flag rather than
-   one blanket rule.
+   one blanket rule. *Superseded by #1245*: the flag is gone, and the rule is
+   carried by which constructor the call site names —
+   `AppChartLegendEntry.seriesName` shortens, `.statistic` wraps, and neither
+   takes the behaviour as a parameter there is a default for (§2.10k point 2).
 3. **#1226's shape has an unstated precondition, and one row violates it.** The
    shape pays for its extra run with height, "because the chart above is
    `Expanded`, so it yields the height". Network Health's Health tab has an
@@ -1300,7 +1306,9 @@ not say, found by measuring each row after it was changed:
    landed as one had the ratchet been edited to the predicted numbers instead of
    the measured ones. That row stays a one-line `Row` of `Flexible` lights and
    gives horizontally; the deviation is commented at the site and pinned by a
-   test that fails if someone "restores consistency".
+   test that fails if someone "restores consistency". #1245 is where that pin
+   earned itself: the shared entry was declined for this row alone, because the
+   kit's 16px mark box would have cost 6px per light here (§2.10k point 3).
 
 **#1235 is a functional dependency on #1233, not just conflict avoidance** (both
 tickets say otherwise). Its 3 gauge-centre coordinates are height-coupled to this
@@ -2358,6 +2366,101 @@ table, and a meta-test fails if a tabbed card is missing from it.
    net membership. The instrument built in §2.10g to answer the gate's blindness had
    its own blind spot for one ticket.
 
+### 2.10k What the Article XIV route cost, and what it returned (#1245 — implemented)
+
+§1.1 recorded the legend dot as duplicated verbatim in five files and raised the
+extraction rather than blocking #1233 on it. That raise is #1245, and it took the
+Article XIV route in full: **propose upstream, then consume the release**. The
+proposal is linksys/privacyGUI-UI-kit#26; it shipped `AppChartLegendEntry` (plus
+an `AppChartLegend` container) in **v2.37.0**, this repo's pin moved **v2.35.1 →
+v2.38.0**, and the seven private classes — four `_LegendDot`, two `_LegendEntry`,
+one `_StatLegendEntry` — plus one inline entry row were deleted across **five
+files / 13 legend rows** (−128 lines net).
+
+Two baselines, deliberately separated, because the bump carried unrelated a11y
+work (`app_ipv4_text_field`, `app_text_field`, `app_breath_dot`) and a charts
+refactor:
+
+| state | gate | allowlist | notes |
+|---|---|---|---|
+| v2.35.1, before the bump | 1698/1698 | empty | §2.10j's closing figure |
+| **v2.38.0, no migration** | **1698/1698** | empty | isolates the bump from the migration |
+| v2.38.0, migrated | 1698/1698 | empty | plus 14/14 readability *unmodified*, 161/161 scroll net, 39/39 new |
+
+1. **The unit worth sharing was the entry, not the legend.** The kit ships both,
+   and the container is the wrong altitude for all 13 rows. `AppChartLegend`
+   derives its rows from the same series list the chart got and emits
+   `AppChartLegendEntry.seriesName` for every one of them — ellipsis always —
+   which would re-break §2.10a point 2 on the **five rows whose labels compose a
+   statistic**. It also owns its own `Wrap` (`WrapAlignment.start`,
+   `runSpacing: AppSpacing.sm`), which would discard three shapes this epic
+   measured: centring (§2.10c finding 3), `traffic_analysis` t0's `spaceBetween`
+   split between legend and byte totals (§2.10 rule 3), and `system_status`
+   Monitor's legend sharing one `Wrap` with the refresh chip (§2.10d). What #1245
+   was asked to de-duplicate was the dot + gap + `Flexible` triple, and that is
+   exactly the entry. A shared component being *available* at a higher altitude
+   is not a reason to adopt it there.
+
+2. **The distinction that lived in seven comments now lives in a constructor
+   name, which is a stronger guarantee than either a comment or a bool.**
+   `_StatLegendEntry` expressed it as `ellipsize = false`, so the safe reading was
+   the default and a call site could pick wrong by forgetting the flag —
+   `Correlation`'s two entries were the only ones that had to remember. The kit
+   takes no such parameter: `.seriesName` shortens, `.statistic` wraps, and the
+   choice is made by which entrance you reach for. What the kit still cannot check
+   is whether a call site reached for the entrance matching the label it passes,
+   so that half is now
+   `test/page/dashboard/views/components/legend_entry_label_kind_test.dart` (39
+   cases, 13 rows × 3 locales): a rendered label containing a digit must be
+   `wrap`, one containing none must be `shorten`. Derived from the string rather
+   than from a list of call sites, so it also covers a legend added to a sixth
+   card, and it fails the day a bare name grows a value.
+
+3. **The shared mark is wider than every dot it replaced, and that is the real
+   price of the extraction.** An 8px disc becomes a **16×10 mark box** (the disc
+   itself is 10px, centred in it), so every entry gained **+8px** of width — and
+   the marks stopped being generic: a block for a bar series, a disc for a pie
+   section, a dashed line with a centre dot for a dashed one. All 13 rows absorbed
+   it with the gate unmoved, and the reason is §2.10a point 3's precondition:
+   every one of them sits under an `Expanded` chart or inside a scroll region, so
+   an extra `Wrap` run is paid for out of height that was already there. **The one
+   row without that slack declined.** `_TrafficLight` keeps its hand-rolled 10px
+   dot, because the kit's box would cost **+6px per light** on the WAN/LAN row —
+   the row whose fixed 120px gauge yields nothing (§2.10a point 3), where a `Wrap`
+   once traded 26 right-overflows for 15 bottom ones, and which `#1245`'s own "not
+   in scope" forbids moving. The decline is now recorded in the widget's doc
+   comment rather than only in this file.
+
+4. **Three call sites needed a `Flexible` they never needed before, from the
+   RenderFlex rule this epic keeps re-deriving.** A `Row` hands non-flex children
+   **unbounded** width; `AppChartLegendEntry` contains a `Flexible`; a flex child
+   under an unbounded main axis throws. Ten of the 13 rows needed nothing, because
+   `RenderWrap` passes `maxWidth: constraints.maxWidth` to its children and a
+   `Wrap` child is therefore already bounded. The three plain centred `Row`s
+   (`traffic_analysis` t1 / t2 / t3) each got `Flexible(child: entry)` — the
+   minimal bound, **not** a conversion to `Wrap`: none of those rows was ever an
+   overflow coordinate, and #1245 is a de-duplication, so the fix supplies the
+   constraint the component documents and changes nothing else.
+
+5. **"Renders identically at every width" was not literally achievable, and the
+   honest form of AC 2 is its executable half.** Any migration to a shared key
+   changes pixels by design — reproducing the ink the chart painted is the whole
+   purpose of a mark, and 13 rows previously drew the same disc for a bar, a pie
+   slice and a dashed line. What held exactly is the half that can be asserted:
+   the gate count and the allowlist are byte-identical (1698/1698, `{}`), and
+   `dashboard_legend_readability_test.dart` — the file written for #1233 precisely
+   because the gate cannot see a row that survives by truncating itself to nothing
+   — passes **unmodified**, including its WAN/LAN one-line assertions. An AC that
+   cannot be true literally is worth restating before implementation rather than
+   quietly satisfying in spirit.
+
+**What #1245 did not close.** Its ACs scope it to the legend dot and entry, so the
+*other* two entries in the de-duplication inventory are untouched: the four
+hand-rolled "View details" footers and their cause, `detailRoute`'s inability to
+carry query parameters (§2.10d finding 7). Those are a template-signature problem
+in this repo, not a missing UI Kit component, so they do not travel the Article
+XIV route this section describes.
+
 ### 2.11 fl_chart's coordinates get a primary plan and a documented fallback
 
 Six of `firewall_overview`'s remaining coordinates originate inside fl_chart
@@ -2780,6 +2883,18 @@ outside the gate: `card_scroll_net_test.dart`'s 161 cases, which fail 47 / 47 / 
 / 41 on the same four mutations. The gate's role here was only to confirm the
 conversions cost nothing it *can* see — 1698/1698, allowlist empty, before and
 after.
+
+#1245 has no row for a third reason: it is the only ticket in the track whose
+subject is the *duplication* the ratchet work created rather than the coordinates
+it cleared. #1226 and #1233 fixed the same legend shape nine times across five
+files, and #1229 added the fifth copy of the dot knowingly (§1.1) — so the debt was
+booked at the time and paid here, upstream, under Article XIV. It clears nothing
+and is allowed to move nothing: 1698/1698 with an empty allowlist before the
+dependency bump, after the bump alone, and after the migration (§2.10k). Its
+verification lives in the two suites the gate cannot substitute for —
+`dashboard_legend_readability_test.dart` passing **unmodified**, and a new
+`legend_entry_label_kind_test.dart` that asserts the ellipsize-vs-soft-wrap rule
+per label kind instead of trusting seven comments to stay in agreement.
 
 #1225 lands first — not because it re-baselines (it does not, §1.6) but so that
 the invariant holds by construction and any future shift is attributable. #1226

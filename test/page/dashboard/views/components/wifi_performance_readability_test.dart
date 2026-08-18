@@ -8,9 +8,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/page/dashboard/models/display_mode.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_widget_specs.dart';
-// Only `AppCard` is wanted here — the card's own root, used to scope finders to
-// the card rather than the pump harness around it.
-import 'package:ui_kit_library/ui_kit.dart' show AppCard;
+// Two names are wanted here: `AppCard`, the card's own root, used to scope
+// finders to the card rather than the pump harness around it; and
+// `AppChartLegendEntry`, the shared legend entry #1245 replaced this card's
+// private one with.
+import 'package:ui_kit_library/ui_kit.dart' show AppCard, AppChartLegendEntry;
 
 import '../../../../util/app_test_fonts.dart';
 import '../../../../util/dashboard/card_data_profiles.dart';
@@ -274,34 +276,45 @@ void main() {
       });
     }
 
-    testWidgets('each tier label stays beside its own dot', (tester) async {
-      // Dot and label live in one `Row(mainAxisSize: min)` precisely so the
+    testWidgets('each tier label stays beside its own mark', (tester) async {
+      // Mark and label live in one `Row(mainAxisSize: min)` precisely so the
       // `Wrap` moves them together. If an entry ever splits across runs, the
       // colour and the word it explains end up on different lines and the
       // mapping is gone even though every label is present.
+      //
+      // Since #1245 the entry is ui_kit's `AppChartLegendEntry`, which makes the
+      // split structurally impossible — but the assertion stays, because what it
+      // really guards is that this row still *uses* an indivisible entry. The
+      // probe moved with the implementation: the mark used to be an 8px circular
+      // `Container` and is now the entry's `CustomPaint`, so the tier swatch is
+      // located through the component rather than through a decoration this file
+      // would have to keep guessing.
       final locale = _localeFor('ru');
       await pumpNarrowest(tester, tabIndex: 0, locale: locale);
       final l = await AppLocalizations.delegate.load(locale);
 
-      // The dots are 8px circles; find them by their decoration rather than by
-      // the private widget type.
-      final dots = tester
-          .widgetList<Container>(find.byType(Container))
-          .where((c) =>
-              c.decoration is BoxDecoration &&
-              (c.decoration as BoxDecoration).shape == BoxShape.circle)
+      final entries = tester
+          .widgetList<AppChartLegendEntry>(find.byType(AppChartLegendEntry))
           .toList();
-      expect(dots, hasLength(4),
-          reason: 'the Signal legend must paint one colour dot per tier');
+      expect(entries, hasLength(4),
+          reason: 'the Signal legend must paint one colour mark per tier');
+
+      final marks = entries
+          .map((e) => tester.getRect(find
+              .descendant(
+                of: find.byWidget(e),
+                matching: find.byType(CustomPaint),
+              )
+              .first))
+          .toList();
 
       for (final label in [l.excellent, l.good, l.fair, l.weak]) {
         final labelRect = rectOf(tester, exactly(tester, label));
-        final sameRun = dots
-            .map((d) => tester.getRect(find.byWidget(d)))
+        final sameRun = marks
             .where((r) => (r.center.dy - labelRect.center.dy).abs() < 2.0)
             .where((r) => r.right <= labelRect.left + 1.0);
         expect(sameRun, isNotEmpty,
-            reason: 'tier "$label" has no colour dot to its left on the same '
+            reason: 'tier "$label" has no colour mark to its left on the same '
                 'line, so its entry was split across runs.');
       }
     });

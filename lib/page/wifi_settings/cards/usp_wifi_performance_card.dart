@@ -224,7 +224,16 @@ class _SignalTab extends StatelessWidget {
               SignalTier.fair,
               SignalTier.weak,
             ])
-              _LegendEntry(
+              // `.seriesName`, so the label ellipsizes on one line: a tier name
+              // keys an already-colour-coded bar, so a clipped label still
+              // communicates and the swatch carries the identification. Contrast
+              // the cards whose labels compose a statistic and therefore use
+              // `.statistic` (§2.10a point 2, and see #1245).
+              //
+              // `.swatch()`, not `.block()`: these four entries key a tier
+              // palette applied to bar segments, not a bar series of their own.
+              AppChartLegendEntry.seriesName(
+                mark: const ChartMark.swatch(),
                 color: tier.resolveColor(colorScheme),
                 label: tier.resolveLabel(context),
               ),
@@ -303,78 +312,19 @@ class _SpeedTab extends StatelessWidget {
           spacing: AppSpacing.lg,
           runSpacing: AppSpacing.xs,
           children: [
-            _LegendEntry(
+            // `.block()` here, unlike the Signal tab: each of these two entries
+            // *is* an `AppBarChart` series above, so the mark mirrors the bar.
+            AppChartLegendEntry.seriesName(
+              mark: const ChartMark.block(),
               color: colorScheme.primary,
               label: loc(context).downlink,
             ),
-            _LegendEntry(
+            AppChartLegendEntry.seriesName(
+              mark: const ChartMark.block(),
               color: colorScheme.secondary,
               label: loc(context).uplink,
             ),
           ],
-        ),
-      ],
-    );
-  }
-}
-
-// =============================================================================
-// Legend primitives (shared by the Signal and Speed tabs)
-// =============================================================================
-
-class _LegendDot extends StatelessWidget {
-  final Color color;
-  const _LegendDot({required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 8,
-      height: 8,
-      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-    );
-  }
-}
-
-/// One legend entry: colour dot, gap, label — the unit that must never split, so
-/// a label never separates from the colour it explains (#1226 rule 2).
-///
-/// File-private on purpose, and this is now the **fifth** copy of the shape
-/// (`usp_network_health_card`, `usp_system_status_card` as `_StatLegendEntry`,
-/// `usp_traffic_analysis_card`, `device_analytics`). Extracting one shared
-/// widget from them needs Article XIV approval, which #1245 is raised to have;
-/// #1233 deliberately chose not to block on that conversation and #1229 follows
-/// it, so the shape is replicated in place. #1245's inventory needs this file
-/// added to it.
-class _LegendEntry extends StatelessWidget {
-  final Color color;
-  final String label;
-  const _LegendEntry({required this.color, required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _LegendDot(color: color),
-        AppGap.xs(),
-        // `Flexible`, because a `Row` hands non-flex children unbounded width: a
-        // bare label takes its full intrinsic width on one line and overflows no
-        // matter how the enclosing `Wrap` arranges the entries (§2.10a point 1).
-        // Loose fit, so a short label still hugs and entries share a run.
-        //
-        // One-line ellipsis, unlike system_status/network_health: every label
-        // here is a bare tier or series name keying an already-colour-coded bar
-        // or chart, so a clipped label still communicates and the colour carries
-        // the identification. Those two cards compose statistics into their
-        // labels and therefore soft-wrap instead — an ellipsis would cut a
-        // number in half (§2.10a point 2).
-        Flexible(
-          child: AppText.labelSmall(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
         ),
       ],
     );

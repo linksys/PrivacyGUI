@@ -311,13 +311,14 @@ class _SignalView extends StatelessWidget {
           children: [
             for (var i = 0; i < levels.length; i++)
               if (data[i] > 0)
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _LegendDot(color: colors[i]),
-                    AppGap.xs(),
-                    AppText.labelSmall('${labels[i]}: ${data[i].toInt()}'),
-                  ],
+                // `.statistic`, so the label soft-wraps instead of ellipsizing:
+                // it composes a count into the text and an ellipsis could cut
+                // the number in half (§2.10a point 2). `.block()` mirrors the
+                // `AppBarChart` series above.
+                AppChartLegendEntry.statistic(
+                  mark: const ChartMark.block(),
+                  color: colors[i],
+                  label: '${labels[i]}: ${data[i].toInt()}',
                 ),
           ],
         ),
@@ -451,24 +452,6 @@ class _ActivityView extends StatelessWidget {
       ),
       lowColor: colorScheme.surfaceContainerHighest,
       highColor: colorScheme.primary,
-    );
-  }
-}
-
-// =============================================================================
-// Shared widgets
-// =============================================================================
-
-class _LegendDot extends StatelessWidget {
-  final Color color;
-  const _LegendDot({required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 8,
-      height: 8,
-      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
     );
   }
 }

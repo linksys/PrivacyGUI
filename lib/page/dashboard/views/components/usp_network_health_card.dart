@@ -366,6 +366,17 @@ class _HealthOverview extends StatelessWidget {
   }
 }
 
+/// One WAN/LAN status light: tier-coloured dot, gap, one-line label.
+///
+/// Deliberately **not** migrated to `AppChartLegendEntry` by #1245, even though
+/// the shape rhymes with the legend entries the chart tabs now share. The kit's
+/// mark occupies a 16px-wide box (a 10px disc centred in it), so each light
+/// would gain 6px of width — and this is the one row in the card where width is
+/// not free: §2.10a point 3, the row that once held 26 overflow coordinates.
+/// #1245's "not in scope" is explicit that a refactor may not change which rows
+/// overflow, and AC 4 requires `dashboard_legend_readability_test.dart` to pass
+/// unmodified. Its dot is 10px, not the legends' 8px, for the same reason it is
+/// a separate widget: a status light is not a series key.
 class _TrafficLight extends StatelessWidget {
   final String label;
   final HealthTier tier;
@@ -521,7 +532,13 @@ class _ErrorsChart extends StatelessWidget {
           spacing: AppSpacing.lg,
           runSpacing: AppSpacing.xs,
           children: [
-            _LegendEntry(
+            // `.statistic` on both, so the composed 'Errors  Avg: … Peak: …'
+            // soft-wraps rather than ellipsizing a number away (§2.10a point 2).
+            // The marks mirror the chart above: errors is `filled: true`, so
+            // `lineFilled`; discards is a plain line. Dots on both, because
+            // `AppLineChart.showDots` defaults to true.
+            AppChartLegendEntry.statistic(
+              mark: const ChartMark.lineFilled(dot: true),
               color: colorScheme.error,
               label: loc(parentContext).seriesAvgValuePeakValue(
                 loc(parentContext).errors,
@@ -529,7 +546,8 @@ class _ErrorsChart extends StatelessWidget {
                 NetworkHealthHelpers.formatFaultRate(peakErr),
               ),
             ),
-            _LegendEntry(
+            AppChartLegendEntry.statistic(
+              mark: const ChartMark.line(dot: true),
               color: colorScheme.tertiary,
               label: loc(parentContext).seriesAvgValue(
                 loc(parentContext).discards,
@@ -600,15 +618,16 @@ class _LossChart extends StatelessWidget {
         // A single entry, but its composed 'Loss  Avg: 0.00%  Peak: 0.00%' label
         // is the longest legend string in the card, so it needs the same `Wrap`
         // as the Errors tab (#1226) — with one child the `Wrap` contributes no
-        // run-breaking, it just lets the entry keep its intrinsic width while
-        // `_LegendEntry` soft-wraps the label.
+        // run-breaking, it just bounds the entry's width so its internal
+        // `Flexible` can soft-wrap the label.
         Wrap(
           alignment: WrapAlignment.center,
           crossAxisAlignment: WrapCrossAlignment.center,
           spacing: AppSpacing.lg,
           runSpacing: AppSpacing.xs,
           children: [
-            _LegendEntry(
+            AppChartLegendEntry.statistic(
+              mark: const ChartMark.lineFilled(dot: true),
               color: colorScheme.error,
               label: loc(parentContext).seriesAvgValuePeakValue(
                 loc(parentContext).loss,
@@ -658,55 +677,6 @@ class _DisconnectNotice extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _LegendDot extends StatelessWidget {
-  final Color color;
-  const _LegendDot({required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 8,
-      height: 8,
-      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-    );
-  }
-}
-
-/// One legend entry: colour dot, gap, label — the unit that must never split, so
-/// a label never separates from the colour it explains (#1226 rule 2).
-///
-/// File-private on purpose. The same shape exists in `usp_system_status_card` (as
-/// `_StatLegendEntry`) and `usp_traffic_analysis_card`, and extracting one shared
-/// widget from the four copies needs Article XIV approval — #1233 deliberately
-/// does not block on that conversation, so the shape is replicated in place and
-/// the extraction raised separately.
-class _LegendEntry extends StatelessWidget {
-  final Color color;
-  final String label;
-  const _LegendEntry({required this.color, required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _LegendDot(color: color),
-        AppGap.xs(),
-        // `Flexible`, because a `Row` hands non-flex children unbounded width: a
-        // bare label takes its full intrinsic width on one line and overflows no
-        // matter how the enclosing `Wrap` arranges the entries. Loose fit, so a
-        // short label still hugs and two entries share one run when they fit.
-        //
-        // No ellipsis, unlike #1226's bare series names: every label here is the
-        // composed 'series, average, peak' string, so clipping it would cut a
-        // statistic in half — an unreadable number is worse than a second line,
-        // and the chart above is `Expanded` so it yields the height.
-        Flexible(child: AppText.labelSmall(label)),
-      ],
     );
   }
 }
