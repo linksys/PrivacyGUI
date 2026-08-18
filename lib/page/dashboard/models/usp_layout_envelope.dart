@@ -48,6 +48,9 @@ class UspLayoutEnvelope {
   /// why. Falling back to the default layout is the better failure.
   static const int currentVersion = 3;
 
+  /// The version a payload carrying no picks is still readable as — see [version].
+  static const int versionWithoutForms = 2;
+
   const UspLayoutEnvelope(this.layouts, {this.forms = CardForms.empty});
 
   /// Serialised layouts by slot count. Keys outside [persistedSlotCounts] are
@@ -77,8 +80,23 @@ class UspLayoutEnvelope {
   UspLayoutEnvelope withForms(CardForms forms) =>
       UspLayoutEnvelope(layouts, forms: forms);
 
+  /// The version this payload has to be stamped with.
+  ///
+  /// A stamp is a claim about what an older build would do with these bytes, so
+  /// it belongs to the payload rather than to the build that wrote it. Everything
+  /// v3 added arrives with a pick — [forms] itself, and the `isResizable` and
+  /// raised `minW` derived from it — so an install that has never picked a form is
+  /// still writing a v2 payload and is stamped as one. That is what keeps a
+  /// rollback to a pre-#1299 build cheap for the users who never touched the
+  /// control: [tryDecode] there rejects anything newer than it knows, and a
+  /// rejection resets the dashboard they arranged.
+  ///
+  /// The stamp rises with the first pick, which is exactly when an older build
+  /// would start drawing cards with no handles and no rule to explain them.
+  int get version => forms.isEmpty ? versionWithoutForms : currentVersion;
+
   String encode() => jsonEncode({
-        'version': currentVersion,
+        'version': version,
         'layouts': {
           for (final entry in layouts.entries)
             entry.key.toString(): entry.value,

@@ -1,6 +1,8 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:privacy_gui/page/dashboard/models/card_density.dart';
+import 'package:privacy_gui/page/dashboard/models/card_form_choice.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_layout_envelope.dart';
 
 /// The persisted shape of the dashboard layout (#1293).
@@ -17,6 +19,17 @@ import 'package:privacy_gui/page/dashboard/models/usp_layout_envelope.dart';
 /// layout we should honour) and deliberately strict about *unreadable* content:
 /// anything it cannot place on a known grid decodes to null, and the caller
 /// falls back to the default layout rather than importing garbage.
+///
+/// ## Mutation table — the #1299 addition
+///
+/// `forms` and the version stamp arrived with #1299; the rest of this file is
+/// #1293's. Both rows edit `usp_layout_envelope.dart` and were run against this
+/// file.
+///
+/// | # | mutation | killed by |
+/// |---|---|---|
+/// | 1 | `version` always returns `currentVersion` | encode stamps the version the payload actually needs |
+/// | 2 | `version` always returns `versionWithoutForms` | the same test's second half |
 void main() {
   group('decode', () {
     test('a legacy bare list is migrated as the desktop entry', () {
@@ -71,12 +84,30 @@ void main() {
       expect((decoded[12]!.single as Map)['h'], 3);
     });
 
-    test('encode stamps the current version', () {
-      final json = jsonDecode(UspLayoutEnvelope(const {12: []}).encode())
-          as Map<String, dynamic>;
+    test('encode stamps the version the payload actually needs', () {
+      final withoutPicks =
+          jsonDecode(UspLayoutEnvelope(const {12: []}).encode())
+              as Map<String, dynamic>;
 
-      expect(json['version'], UspLayoutEnvelope.currentVersion);
-      expect(json['layouts'], isA<Map>());
+      expect(withoutPicks['version'], UspLayoutEnvelope.versionWithoutForms,
+          reason: 'Everything v3 added arrives with a pick, so an install that '
+              'never used the form control is still writing a v2 payload. '
+              'Stamping it v3 would make a rollback to a pre-#1299 build reject '
+              'it and reset a dashboard the user arranged, for a feature they '
+              'never touched.');
+      expect(withoutPicks['layouts'], isA<Map>());
+      expect(withoutPicks.containsKey('forms'), isFalse);
+
+      final withPicks = jsonDecode(UspLayoutEnvelope(
+        const {12: []},
+        forms: const CardForms({
+          12: {'device_info': CardFormChoice(density: CardDensity.popup)},
+        }),
+      ).encode()) as Map<String, dynamic>;
+
+      expect(withPicks['version'], UspLayoutEnvelope.currentVersion,
+          reason: 'The first pick is when an older build would start drawing a '
+              'card with no handles and no rule to explain them.');
     });
 
     test('slot counts survive as ints even though JSON keys are strings', () {

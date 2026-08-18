@@ -68,6 +68,21 @@ import 'package:sliver_dashboard/sliver_dashboard.dart';
 ///
 /// These tests are the executable record: a package bump that moves any of these
 /// answers fails here rather than in a user's layout.
+///
+/// ## Why there is no mutation table here
+///
+/// Every other #1299 test file carries one, per the ticket's last AC. This file
+/// cannot: the code each assertion guards is `sliver_dashboard`'s, and mutating a
+/// pub-cache package is not an edit anyone can commit or re-run. What a table buys
+/// — proof the assertion can fail — is bought here by **positive controls**
+/// instead: `a long press and drag still works — the harness can displace` and
+/// `travel across the grid does displace the card` assert that this harness *can*
+/// move a card, so the "nothing moved" answers are answers rather than a rig that
+/// moves nothing. Both had to be fixed
+/// to get there (a vertical drag proves nothing, because the engine compacts
+/// vertically and the card floats back to `y: 0`; and `exportLayout()` reorders on
+/// a drag while coordinates do not, so an order-sensitive comparison reads a
+/// reshuffle as a displacement).
 void main() {
   /// The two-item layout the questions are asked against. `device_info` is the
   /// card the control is tapped on; `lan_info` sits beside it so a displacement

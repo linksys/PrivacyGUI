@@ -80,9 +80,13 @@ class UspSliverDashboardControllerNotifier
 
   /// The form each card was picked into, per breakpoint (#1299).
   ///
-  /// Held here rather than read back out of the pref on every import because
-  /// [_normalize] runs on paths that are not allowed to be async — the width-lock
-  /// callback and the seeding walk both run inside a synchronous rebuild.
+  /// The authoritative copy, not a cache of one. Reading it back out of
+  /// [cardFormsProvider] would be synchronous and would look like one field less,
+  /// but that provider is this notifier's *published mirror*: a test or a scope
+  /// that overrode it would then be silently changing which geometry [_normalize]
+  /// derives, rather than only what the cards render. Reading the pref instead is
+  /// not open either — [_normalize] runs on paths that cannot await, the width-lock
+  /// callback and the seeding walk among them.
   CardForms _forms = CardForms.empty;
 
   static DashboardController _createDefaultController() {

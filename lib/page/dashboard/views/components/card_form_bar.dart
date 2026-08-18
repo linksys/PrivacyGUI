@@ -110,6 +110,17 @@ class CardFormBar extends ConsumerWidget {
     // which registers the dependency that rebuilds it. Watching the controller's
     // beacon instead would leave the row showing the previous breakpoint's pick
     // until something unrelated rebuilt it.
+    //
+    // Which leaves the frame where the two disagree: this row has already
+    // rebuilt at the new width, and the controller has not been told yet. A pick
+    // made in that window would be shown as the new grid's and written as the
+    // old one's. No gesture can land there. A frame is one synchronous run of
+    // Dart — build, layout, paint, then the post-frame callbacks — so a pointer
+    // event arriving mid-frame is delivered after it, by which time
+    // `setSlotCount` has run. The window is real but it is not reachable by a
+    // tap, which is why there is no guard here and no test for one. What would
+    // reopen it is the grid not building at all on the resize frame; it is the
+    // page's main sliver, so it always does.
     final slots = context.currentMaxColumns;
 
     // A card with no stored pick shows normal: normal is the absence of a pick,

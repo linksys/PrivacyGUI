@@ -17,11 +17,12 @@ import 'package:privacy_gui/page/dashboard/models/usp_widget_specs.dart';
 ///
 /// ## Mutation table
 ///
-/// Each row is one edit to `usp_widget_specs.dart`, applied to the real file and
-/// run against this file *and* `usp_card_form_persistence_test.dart` (some of the
-/// arithmetic is only observable once a pick has been through the pref). The
-/// counts are what the run actually reported, not what was predicted; where a
-/// mutation is killed by more than three tests the column names the closest ones.
+/// Each row is one edit to `usp_widget_specs.dart` — except 19-21, which edit the
+/// models in `card_form_choice.dart` — applied to the real file and run against
+/// this file *and* `usp_card_form_persistence_test.dart` (some of the arithmetic is
+/// only observable once a pick has been through the pref). The counts are what the
+/// run actually reported, not what was predicted; where a mutation is killed by
+/// more than three tests the column names the closest ones.
 /// Re-taken after the suite grew the render, panel and gate files — per §2.6h item
 /// 3, a ledger is a per-revision measurement, and four of these counts moved.
 ///
@@ -45,6 +46,9 @@ import 'package:privacy_gui/page/dashboard/models/usp_widget_specs.dart';
 /// | 16 | `selectableForms` drops the `spec.normalAbove != null` guard | 4, incl. offers compact only to the six cards that read it |
 /// | 17 | `cardsWithoutPopupForm` emptied | 3, incl. offers popup to every card built through the template |
 /// | 18 | `selectableForms` returns `[normal]` instead of `const []` when nothing else applies | stats_panel offers no form at all |
+/// | 19 | `CardForms.props` → `[]` (equality on type alone) | a pick that differs anywhere is a different value |
+/// | 20 | `CardForms` drops `Equatable` (back to identity) | a rebuilt CardForms equals the one it was rebuilt from |
+/// | 21 | `CardFormChoice.props` → `[density]` | the restore size is part of what makes a choice equal |
 ///
 /// ### One survivor, and why it is left alive
 ///
@@ -506,6 +510,75 @@ void main() {
           reason: 'Membership is not per breakpoint — deleting a card deletes '
               'the card — so a surviving pick would silently apply a form from a '
               'previous session the moment the card was re-added.');
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Both models are Riverpod state, so equality is behaviour
+  // ---------------------------------------------------------------------------
+  group('two sets of picks that say the same thing are the same value', () {
+    test('a rebuilt CardForms equals the one it was rebuilt from', () {
+      const original = CardForms({
+        12: {'device_info': CardFormChoice(density: CardDensity.popup)},
+        4: {'lan_info': CardFormChoice(density: CardDensity.compact)},
+      });
+
+      final rebuilt =
+          CardForms.fromJson(jsonDecode(jsonEncode(original.toJson())) as Map);
+
+      expect(rebuilt, original,
+          reason:
+              'This is the value of a StateProvider, and a reload, a revert '
+              'and a preset swap each republish a freshly built instance. On '
+              'identity alone every one of those would rebuild every card that '
+              'reads its density, for picks that did not move.');
+      expect(rebuilt.hashCode, original.hashCode,
+          reason: 'The nested map is compared deeply, so it has to be hashed '
+              'deeply too — Map.hashCode is identity, which would put two equal '
+              'values in different buckets.');
+    });
+
+    test('a pick that differs anywhere is a different value', () {
+      const base = CardForms({
+        12: {'device_info': CardFormChoice(density: CardDensity.popup)},
+      });
+
+      expect(
+        base,
+        isNot(const CardForms({
+          12: {'device_info': CardFormChoice(density: CardDensity.compact)},
+        })),
+        reason: 'A different form on the same card.',
+      );
+      expect(
+        base,
+        isNot(const CardForms({
+          8: {'device_info': CardFormChoice(density: CardDensity.popup)},
+        })),
+        reason: 'The same form on a different grid. The breakpoint is part of '
+            'the value — that is the whole of #1294 — so equality that ignored '
+            'the key would let a phone pick pass for a desktop one.',
+      );
+      expect(
+        base,
+        isNot(const CardForms({
+          12: {
+            'device_info': CardFormChoice(density: CardDensity.popup),
+            'lan_info': CardFormChoice(density: CardDensity.popup),
+          },
+        })),
+        reason: 'A pick added for another card.',
+      );
+    });
+
+    test('the restore size is part of what makes a choice equal', () {
+      expect(
+        const CardFormChoice(density: CardDensity.popup, restoreW: 6),
+        isNot(const CardFormChoice(density: CardDensity.popup, restoreW: 4)),
+        reason: 'Two popup tiles that look identical restore to different '
+            'boxes. Equality that read only the density would let a revert '
+            'keep the wrong one.',
+      );
     });
   });
 }

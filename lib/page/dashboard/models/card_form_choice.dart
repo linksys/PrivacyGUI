@@ -1,3 +1,4 @@
+import 'package:equatable/equatable.dart';
 import 'package:privacy_gui/page/dashboard/models/card_density.dart';
 
 /// The form a user picked for one card on one breakpoint, plus what it takes to
@@ -15,7 +16,7 @@ import 'package:privacy_gui/page/dashboard/models/card_density.dart';
 /// influence over width at all — the 4-column grid pins `x: 0, w: cols` and the
 /// #1293 left-edge lock forbids horizontal resize outright — so a pick is the
 /// only mechanism that puts a phone user in control of density.
-class CardFormChoice {
+class CardFormChoice extends Equatable {
   const CardFormChoice({
     required this.density,
     this.restoreW,
@@ -68,14 +69,7 @@ class CardFormChoice {
   }
 
   @override
-  bool operator ==(Object other) =>
-      other is CardFormChoice &&
-      other.density == density &&
-      other.restoreW == restoreW &&
-      other.restoreH == restoreH;
-
-  @override
-  int get hashCode => Object.hash(density, restoreW, restoreH);
+  List<Object?> get props => [density, restoreW, restoreH];
 
   @override
   String toString() => 'CardFormChoice(${density.name}'
@@ -92,7 +86,13 @@ class CardFormChoice {
 /// Absent means "no pick": the card falls back to #1232's width-derived form.
 /// That is not the same as an explicit [CardDensity.normal], which pins the card
 /// to normal at every width — see `UspWidgetSpecs.applyCardForms`.
-class CardForms {
+///
+/// Value equality is load-bearing rather than decorative: this is the value of a
+/// `StateProvider` (`cardFormsProvider`), and every reload and every revert
+/// republishes a freshly built instance. On identity alone each of those would
+/// rebuild every card that reads its density, for picks that did not change.
+/// [Equatable] compares the nested map deeply, keys included.
+class CardForms extends Equatable {
   const CardForms(this.byBreakpoint);
 
   static const CardForms empty = CardForms({});
@@ -179,6 +179,9 @@ class CardForms {
     }
     return CardForms(byBreakpoint);
   }
+
+  @override
+  List<Object?> get props => [byBreakpoint];
 
   @override
   String toString() => 'CardForms($byBreakpoint)';
