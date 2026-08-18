@@ -12,9 +12,9 @@ import 'package:privacy_gui/page/_shared/providers/card_density_provider.dart';
 import 'package:privacy_gui/page/_shared/providers/card_tab_state_provider.dart';
 import 'package:privacy_gui/page/dashboard/factories/usp_widget_factory.dart';
 import 'package:privacy_gui/page/_shared/models/card_density.dart';
+import 'package:privacy_gui/page/dashboard/models/card_grid_geometry.dart';
 import 'package:privacy_gui/page/dashboard/models/display_mode.dart';
 import 'package:privacy_gui/page/dashboard/models/widget_spec.dart';
-import 'package:privacy_gui/page/dashboard/views/usp_sliver_dashboard_view.dart';
 import 'package:privacy_gui/localization/fallback_font_resolver.dart';
 import 'package:privacy_gui/theme/theme_json_config.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -70,9 +70,6 @@ import 'kitchen_sink_overrides.dart';
 /// responsive `layoutGutter` — the dashboard view hardcodes `AppSpacing.lg`.
 const double kGridGutter = AppSpacing.lg;
 
-/// Fixed slot height of the dashboard grid, in logical pixels.
-const double kSlotHeight = UspSliverDashboardView.slotHeight;
-
 /// Column count for a screen width — mirrors `GridLayoutContext.currentMaxColumns`
 /// (`responsive<int>(mobile: 4, tablet: 8, desktop: AppLayoutConfig.maxColumns)`).
 ///
@@ -109,8 +106,12 @@ double cardWidthAt(double screenWidth, int span) {
 }
 
 /// Logical height of a card that spans [rows] grid rows.
-double dashboardCardHeight(int rows) =>
-    rows * kSlotHeight + (rows - 1) * kGridGutter;
+///
+/// Delegated rather than restated, for the reason above: production now needs the
+/// same conversion — the popup form's presentation is sized to a declared row
+/// count (#1299) — and a second copy here could drift in the direction that keeps
+/// the gate green.
+double dashboardCardHeight(int rows) => dashboardRowsToHeight(rows);
 
 // --- Width cases -------------------------------------------------------------
 
@@ -586,11 +587,22 @@ Future<List<OverflowIncident>> probeCardOverflow(
   Key? repaintKey,
   Widget? cardOverride,
   CardDensity? density,
+  int? screenHeightRows,
   List<Override> extraOverrides = const [],
   Future<void> Function(WidgetTester tester)? after,
 }) {
-  final surface =
-      Size(widthCase.screenWidth, dashboardCardHeight(cardHeightRows));
+  // The viewport is the card's own box unless a case says otherwise, which keeps
+  // every existing sweep measuring exactly the space the grid gives the card.
+  //
+  // [screenHeightRows] exists for the one case where the two genuinely differ: a
+  // card collapsed to a popup tile occupies one row of a full-height screen, and
+  // sizing the viewport to that row would mean the presentation it opens had no
+  // room to be drawn at all — the harness would report the viewport's overflow
+  // rather than the card's.
+  final surface = Size(
+    widthCase.screenWidth,
+    dashboardCardHeight(screenHeightRows ?? cardHeightRows),
+  );
   return runWithOverflowCollection((sink) async {
     await tester.binding.setSurfaceSize(surface);
     tester.view.physicalSize = surface;

@@ -91,14 +91,32 @@ class CardPopupForm extends StatelessWidget {
   }
 
   void _open(BuildContext context) {
+    // Two candidate heights, and the larger wins — because this form cannot tell
+    // which of the two routes into it was taken, and one of them poisons the box.
+    //
+    // Reached by *width* (#1239) the cell is trustworthy: the grid narrowed the
+    // card and left its height alone, so the box is the height the card had, and
+    // a user who dragged it taller than its spec's floor should get that height
+    // back. Reached by a *pick* (#1299) it is not: `applyCardForms` pins the cell
+    // to one grid row, so the box is a consequence of the degradation and is
+    // roughly a third of what the card declares — sizing the presentation to it
+    // lays the full form out in the very height the popup form existed to escape.
+    //
+    // `max` rather than a branch on the route: nothing here needs to know the
+    // route, and more height can never cause the bottom overflow this avoids.
+    // Both may be absent (a tap from something with no box, on a card with no
+    // spec), and then the presentation picks its own fallback.
+    final candidates = [
+      CardDensityScope.normalHeightOf(context),
+      // Read at tap time, which is after layout.
+      context.size?.height,
+    ].nonNulls;
+
     showCardNormalForm(
       context,
       normalForm: normalForm,
       normalAbove: CardDensityScope.normalAboveOf(context),
-      // The popup form still occupies the card's whole grid cell, so its own box
-      // *is* the height the grid gives this card — no spec lookup, and no
-      // invented number. Read at tap time, which is after layout.
-      cardHeight: context.size?.height,
+      cardHeight: candidates.isEmpty ? null : candidates.reduce(math.max),
     );
   }
 }

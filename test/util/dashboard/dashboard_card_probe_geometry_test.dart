@@ -33,10 +33,11 @@ import 'dashboard_card_probe.dart';
 ///
 /// ## What is pinned versus what is merely referenced
 ///
-/// `kGridGutter`, `kSlotHeight` and `gridMarginForWidth` are now *references*
-/// (`AppSpacing.lg`, `UspSliverDashboardView.slotHeight`,
-/// `AppLayoutConfig.margin`), so there is nothing left to drift and asserting
-/// equality on them would be a tautology. Two things still need pinning:
+/// `kGridGutter` and `gridMarginForWidth` are now *references* (`AppSpacing.lg`,
+/// `AppLayoutConfig.margin`), and `dashboardCardHeight` delegates outright to
+/// production's `dashboardRowsToHeight`, so there is nothing left to drift and
+/// asserting equality on them would be a tautology. Two things still need
+/// pinning:
 ///
 /// 1. `gridColumnsForWidth` — the 4/8/12 mapping, which production only exposes
 ///    as `context.currentMaxColumns`.

@@ -1,6 +1,26 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter/widgets.dart';
 import 'package:sliver_dashboard/sliver_dashboard.dart';
+import 'package:ui_kit_library/ui_kit.dart';
+
+/// Height of one dashboard grid row, in logical pixels.
+///
+/// Fixed rather than derived: the grid sizes columns from the viewport but keeps
+/// rows at a constant height, which is what makes a card's `minHeightRows` a
+/// height at all. Lives here rather than on the view that lays the grid out
+/// because callers that need only the arithmetic — the popup form's presentation
+/// among them — would otherwise have to import the view, and the view already
+/// imports them.
+const double kDashboardSlotHeight = 120.0;
+
+/// Pixel height of a card spanning [rows] grid rows.
+///
+/// The inter-row gaps count: a 2-row card is two slots *plus* the gap between
+/// them, so it is 256px rather than 240. Same two numbers the view feeds
+/// `SliverDashboard`, which is why this is the height a card of that many rows
+/// is actually given.
+double dashboardRowsToHeight(int rows) =>
+    rows * kDashboardSlotHeight + (rows - 1) * AppSpacing.lg;
 
 /// The pixel geometry the dashboard grid was laid out with (#1299).
 ///

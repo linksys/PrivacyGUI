@@ -1,6 +1,8 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/page/_shared/components/card_density_scope.dart';
+import 'package:privacy_gui/page/dashboard/models/card_grid_geometry.dart';
+import 'package:privacy_gui/page/dashboard/models/display_mode.dart';
 import 'package:privacy_gui/page/dashboard/models/widget_spec.dart';
 
 import '../models/usp_widget_specs.dart';
@@ -39,8 +41,22 @@ class UspWidgetFactory {
     return CardDensityHost(
       cardId: id,
       normalAbove: getSpec(id)?.normalAbove,
+      normalHeight: _normalHeightOf(id),
       child: card,
     );
+  }
+
+  /// Pixel height the card's whole form needs, from its spec's row count.
+  ///
+  /// The conversion belongs on this side of the boundary: the spec declares rows
+  /// and only the dashboard knows what a row is worth, so `_shared` is handed a
+  /// height it can use without knowing there is a grid (constitution Article V
+  /// §5.3). `minHeightRows` rather than `maxHeightRows` because it is the floor
+  /// the grid enforces — the smallest box the card is ever laid out in, hence the
+  /// one its content is built to survive.
+  double? _normalHeightOf(String id) {
+    final rows = getSpec(id)?.getConstraints(DisplayMode.normal).minHeightRows;
+    return rows == null ? null : dashboardRowsToHeight(rows);
   }
 
   Widget? _buildCard(String id) {

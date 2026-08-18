@@ -18,6 +18,7 @@ class CardDensityScope extends InheritedWidget {
     super.key,
     required this.density,
     this.normalAbove,
+    this.normalHeight,
     required super.child,
   });
 
@@ -30,6 +31,20 @@ class CardDensityScope extends InheritedWidget {
   /// needs to be (#1239). Null means the card never declared one, and the
   /// presentation then falls back to the widest width it can offer.
   final double? normalAbove;
+
+  /// Height, in pixels, the card's *whole* form needs — the other half of what
+  /// the presentation has to know.
+  ///
+  /// Travels this path for the same reason [normalAbove] does, and it is needed
+  /// for the same tap, but it answers a question the widget tree cannot: once a
+  /// card has been picked into popup its cell is pinned to one grid row (#1299),
+  /// so the box the tap came out of is a *consequence* of the degradation and
+  /// says nothing about what the card needs. Null means nothing declared a
+  /// height, and the presentation falls back to the box it was tapped from.
+  ///
+  /// Pixels rather than rows, so `_shared` needs no notion of a grid: the row
+  /// count is a dashboard concept and the conversion happens there.
+  final double? normalHeight;
 
   /// The density in effect at [context], or [CardDensity.normal] outside any
   /// card.
@@ -49,9 +64,17 @@ class CardDensityScope extends InheritedWidget {
       .dependOnInheritedWidgetOfExactType<CardDensityScope>()
       ?.normalAbove;
 
+  /// The declared whole-form height in effect at [context], or null outside any
+  /// card.
+  static double? normalHeightOf(BuildContext context) => context
+      .dependOnInheritedWidgetOfExactType<CardDensityScope>()
+      ?.normalHeight;
+
   @override
   bool updateShouldNotify(CardDensityScope oldWidget) =>
-      oldWidget.density != density || oldWidget.normalAbove != normalAbove;
+      oldWidget.density != density ||
+      oldWidget.normalAbove != normalAbove ||
+      oldWidget.normalHeight != normalHeight;
 }
 
 /// Wraps a dashboard card, measures the width it was actually given, and
@@ -82,6 +105,7 @@ class CardDensityHost extends ConsumerWidget {
     super.key,
     required this.cardId,
     required this.normalAbove,
+    this.normalHeight,
     required this.child,
   });
 
@@ -92,6 +116,15 @@ class CardDensityHost extends ConsumerWidget {
   /// has no degraded form.
   final double? normalAbove;
 
+  /// Height the card's whole form needs, in pixels — see
+  /// [CardDensityScope.normalHeight].
+  ///
+  /// Optional where [normalAbove] is required, because omitting it restores the
+  /// behaviour that predates it (the presentation uses the box it was tapped
+  /// from) rather than making a claim about the card. A card built outside the
+  /// dashboard has no declared height to give.
+  final double? normalHeight;
+
   final Widget child;
 
   @override
@@ -101,6 +134,7 @@ class CardDensityHost extends ConsumerWidget {
       return CardDensityScope(
         density: override,
         normalAbove: normalAbove,
+        normalHeight: normalHeight,
         child: child,
       );
     }
@@ -117,6 +151,7 @@ class CardDensityHost extends ConsumerWidget {
       return CardDensityScope(
         density: picked,
         normalAbove: normalAbove,
+        normalHeight: normalHeight,
         child: child,
       );
     }
@@ -144,6 +179,7 @@ class CardDensityHost extends ConsumerWidget {
           normalAbove: normalAbove,
         ),
         normalAbove: normalAbove,
+        normalHeight: normalHeight,
         child: child,
       ),
     );

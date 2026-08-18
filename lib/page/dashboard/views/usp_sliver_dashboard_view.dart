@@ -42,7 +42,10 @@ class UspSliverDashboardView extends ConsumerStatefulWidget {
   /// On the widget rather than in the [State] because the overflow gate derives
   /// card heights from it (`dashboard_card_probe.dart`), and the copy it used to
   /// keep could drift from this one without anything noticing (#1248 review W-4).
-  static const double slotHeight = 120.0;
+  /// The value itself moved to [kDashboardSlotHeight] once code that must not
+  /// import this view needed it too; this stays as the name everything already
+  /// reads.
+  static const double slotHeight = kDashboardSlotHeight;
 
   const UspSliverDashboardView({super.key});
 

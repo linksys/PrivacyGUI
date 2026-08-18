@@ -94,6 +94,7 @@ import 'package:ui_kit_library/ui_kit.dart';
 /// | 6 | card_form_toolbar | `_AboveTheCard._clamp` → the raw value | the toolbar leaves the layer at both edges |
 /// | 7 | card_form_toolbar | drop the `controller.layout` subscription | the toolbar stays on the cell the card left |
 /// | 8 | card_grid_geometry | `cellRect` ignores `scrollOffset` | the toolbar does not follow a scroll |
+/// | 8b | card_grid_geometry | `dashboardRowsToHeight` drops the inter-row gap (4 rows → 480px, not 528) | a card of h rows is dashboardRowsToHeight(h) tall |
 /// | 9 | usp_layout_controller | `_publishSelection` takes the first of the set instead of requiring one | two cards selected shows a toolbar |
 /// | 10 | card_form_toolbar | `onSelectionChanged` drops the `option == picked` early return | **survived** — equivalent, see below |
 /// | 11 | card_form_toolbar | `ChipItem.label: ''` → the form's name | the pill draws text, and stops being one width in every locale |
@@ -515,6 +516,28 @@ void main() {
               'that has no other check: the toolbar computes the cell itself '
               'from the layout coordinates, and here it is compared against the '
               'rect the grid actually laid the card out in.');
+    });
+
+    testWidgets('and a card of h rows is dashboardRowsToHeight(h) tall',
+        (tester) async {
+      // Not about the toolbar, but this is where a real grid is standing: the
+      // popup form's presentation sizes itself to a *declared* row count
+      // converted to pixels (#1299), and nothing else measures that conversion.
+      // The overflow sweep does not — it stays green with the inter-row gap
+      // dropped, because 480px is still room enough for every card's fixed
+      // chrome. So the conversion is compared here against the box the grid
+      // actually gives a 4-row card, the same way `cellRect` is.
+      final container = await pumpGrid(tester);
+      await importTallColumn(tester, container);
+
+      expect(
+        cellRect(tester, 'device_info').height,
+        closeTo(dashboardRowsToHeight(4), 0.5),
+        reason:
+            'four slots plus the three gaps between them. A card asking for '
+            'four rows and being handed three rows worth of pixels is the '
+            'overflow this arithmetic feeds a fix for',
+      );
     });
 
     testWidgets('a top-row card gets it inside the grid, not off the top',

@@ -118,6 +118,40 @@ bool _canReachPopupBand(WidgetSpec spec) {
   return wc != null && wc.cardWidth < kPopupBelow;
 }
 
+/// Rows of viewport the picked sweep gives the screen.
+///
+/// Six rows is 800px — a laptop, and comfortably more than the tallest card's
+/// declared 528px, so the presentation is measured against a screen that is not
+/// itself the constraint. The tile inside it is still one row.
+const int _fullScreenRows = 6;
+
+/// The width realization of a picked popup tile: [UspWidgetSpecs.popupColumns]
+/// wide, on the narrowest screen that produces that span.
+///
+/// Not the card's own narrowest case — a pick overrides the spec's floors
+/// outright, so the width a picked card renders at is the tile's, not the one
+/// `widthCasesFor` derives from `minColumns`.
+CardWidthCase _pickedTileCase() {
+  final r = narrowestRealizationOf(UspWidgetSpecs.popupColumns)!;
+  return CardWidthCase(
+    screenWidth: r.screenWidth,
+    cardWidth: r.cardWidth,
+    columnSpan: UspWidgetSpecs.popupColumns,
+    label: 'popup-tile',
+  );
+}
+
+/// Whether the user can put [spec] into popup by *picking* it (#1299).
+///
+/// A different and much larger inventory than [_canReachPopupBand], which is why
+/// it is a second predicate rather than a widened one. Reaching the band by width
+/// takes a `minColumns` of 3, and only three cards have one; picking popup is
+/// offered for every card the template builds, which is all of them but
+/// `stats_panel`. The fourteen cards in the difference have a popup form that
+/// production can show and no width sweep can reach.
+bool _canBePickedIntoPopup(WidgetSpec spec) =>
+    UspWidgetSpecs.selectableForms(spec.id).contains(CardDensity.popup);
+
 void main() {
   setUpAll(() async {
     await loadAppFonts();
@@ -253,6 +287,108 @@ void main() {
             isEmpty,
             reason: '${spec.id} normal form overflowed inside the dialog '
                 '($tag):\n${significant.join('\n')}',
+          );
+        });
+      }
+    }
+  });
+
+  /// The same presentation, opened from a *picked* popup tile (#1299).
+  ///
+  /// The sweep above models the width path: the card degrades because the grid
+  /// made it narrow, and its cell keeps whatever height the layout gave it. A pick
+  /// is the other path, and it pins the box — `applyCardForms` writes
+  /// [UspWidgetSpecs.popupHeightRows], so the cell is one row whatever the card
+  /// declares it needs.
+  ///
+  /// That height is a consequence of the degradation, so it must not be what the
+  /// presentation *undoing* the degradation is sized to. Sweeping the two heights
+  /// separately is what keeps the distinction visible: pass `declared` here and
+  /// every case passes while production shows a card in a box a third of its
+  /// height.
+  ///
+  /// The group was written failing — 51 of 51, by +11px to +91px, all `bottom` —
+  /// which is what the sweep above cannot see: it feeds the *declared* height, so
+  /// it measures the one geometry that was never broken.
+  ///
+  /// ## Mutation table
+  ///
+  /// | # | mutated | mutation | killed by |
+  /// |---|---|---|---|
+  /// | 1 | `card_popup_form` | `_open` sizes the presentation to the cell alone | 51 of 51 |
+  /// | 2 | `usp_widget_factory` | the factory supplies no `normalHeight` | 51 of 51 |
+  /// | 3 | `card_grid_geometry` | `dashboardRowsToHeight` drops the inter-row gap | **survived** — 480px is still room enough for every card's chrome, so the arithmetic is pinned against the real grid in `card_form_toolbar_test.dart` instead |
+  group('the dialog a picked popup opens', () {
+    test('is offered for every card but the one with no popup form', () {
+      final pickable = UspWidgetSpecs.all
+          .where(_canBePickedIntoPopup)
+          .map((s) => s.id)
+          .toSet();
+      final excluded = UspWidgetSpecs.all
+          .map((s) => s.id)
+          .where((id) => !pickable.contains(id))
+          .toList();
+
+      expect(
+        excluded,
+        UspWidgetSpecs.cardsWithoutPopupForm.toList(),
+        reason: 'the pick inventory is decided by cardsWithoutPopupForm alone, '
+            'not by minColumns — so unlike the width sweep above, a spec '
+            'widening its floor does not remove a card from this sweep. An id '
+            'appearing here has lost its popup form',
+      );
+      expect(
+        pickable.length,
+        greaterThan(UspWidgetSpecs.all.where(_canReachPopupBand).length),
+        reason: 'if picking ever became as narrow an inventory as the width '
+            'path, these two groups would be measuring the same thing and one '
+            'of them should go',
+      );
+    });
+
+    for (final spec in UspWidgetSpecs.all.where(_canBePickedIntoPopup)) {
+      // The tile the pick collapses the card to, not the card's own narrowest
+      // span: a picked popup is `popupColumns` wide wherever the grid allows it.
+      final wc = _pickedTileCase();
+
+      for (final locale in _dialogLocales) {
+        final tag = _localeTag(locale);
+        testWidgets('${spec.id} normal form is clean in the dialog ($tag)',
+            (tester) async {
+          final incidents = await probeCardOverflow(
+            tester,
+            cardId: spec.id,
+            widthCase: wc,
+            // What the pick pins the cell to.
+            cardHeightRows: UspWidgetSpecs.popupHeightRows,
+            // A full-height screen: the tile is short, the device is not.
+            screenHeightRows: _fullScreenRows,
+            tabIndex: 0,
+            locale: locale,
+            density: CardDensity.popup,
+            after: (t) async {
+              await t.tap(find.byType(CardPopupForm));
+              await settleIgnoringAnimations(t);
+            },
+          );
+
+          expect(
+            find.byType(AppDialog),
+            findsOneWidget,
+            reason: '${spec.id}: tapping the popup form must open the dialog',
+          );
+
+          final significant =
+              incidents.where((i) => i.pixels > _tolerancePx).toList();
+          expect(
+            significant,
+            isEmpty,
+            reason: '${spec.id} normal form overflowed inside the dialog '
+                'opened from a picked popup tile ($tag). The tile is '
+                '${dashboardCardHeight(UspWidgetSpecs.popupHeightRows)}px tall '
+                'and this card declares '
+                '${dashboardCardHeight(spec.getConstraints(DisplayMode.normal).minHeightRows)}px'
+                ':\n${significant.join('\n')}',
           );
         });
       }

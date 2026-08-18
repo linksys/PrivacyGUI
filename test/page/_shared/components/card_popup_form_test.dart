@@ -23,6 +23,16 @@ import '../../../util/overflow_probe.dart';
 /// #1183 gate asserts only "does not overflow", and a popup form that renders
 /// nothing at all, loses its tap target, or opens a dialog too narrow for the
 /// card would pass it. Everything below is a claim the gate cannot make.
+///
+/// ## Mutation table
+///
+/// Each row is one edit to the named source file, applied to the real file and
+/// run against this file.
+///
+/// | # | mutated | mutation | killed by |
+/// |---|---|---|---|
+/// | 1 | `card_popup_form` | `_open` passes `context.size?.height` alone, dropping the declared height | the form gets the height the card declares it needs |
+/// | 2 | `usp_widget_factory` | the factory stops supplying `normalHeight` | **nothing here** — this file hands `CardDensityHost` its own value, so the wiring from spec to scope is covered by the picked-popup sweep in `dashboard_card_popup_overflow_test.dart` (51 cases), not by anything below |
 const String _kCardId = 'connected_devices';
 const String _kTitle = 'Connected Devices';
 const String _kValue = '12 online';
@@ -83,6 +93,7 @@ Future<List<OverflowIncident>> _pump(
   required double cardWidth,
   double cardHeight = 240,
   double? normalAbove = 400,
+  double? normalHeight,
   CardDensity? density = CardDensity.popup,
   Widget? card,
   bool open = false,
@@ -125,6 +136,7 @@ Future<List<OverflowIncident>> _pump(
                   child: CardDensityHost(
                     cardId: _kCardId,
                     normalAbove: normalAbove,
+                    normalHeight: normalHeight,
                     child: card ?? _card(),
                   ),
                 ),
@@ -144,15 +156,21 @@ Future<List<OverflowIncident>> _pump(
   });
 }
 
-/// Width the card's normal form was actually given inside [ancestor].
-double _presentedFormWidth(WidgetTester tester, Type ancestor) => tester
-    .getSize(
+/// Size the card's normal form was actually given inside [ancestor].
+Size _presentedFormSize(WidgetTester tester, Type ancestor) => tester.getSize(
       find.descendant(
         of: find.byType(ancestor),
         matching: find.byType(DashboardCardTemplate),
       ),
-    )
-    .width;
+    );
+
+/// Width the card's normal form was actually given inside [ancestor].
+double _presentedFormWidth(WidgetTester tester, Type ancestor) =>
+    _presentedFormSize(tester, ancestor).width;
+
+/// Height the card's normal form was actually given inside [ancestor].
+double _presentedFormHeight(WidgetTester tester, Type ancestor) =>
+    _presentedFormSize(tester, ancestor).height;
 
 /// Horizontal scroll views inside [ancestor]. AC: "No horizontal scrolling is
 /// introduced inside the popup or the dialog."
@@ -304,6 +322,68 @@ void main() {
         _presentedFormWidth(tester, AppDialog),
         600 - kCardPresentationInset * 2 - _dialogChromeOf(theme),
       );
+    });
+
+    testWidgets('the form gets the height the card declares it needs',
+        (tester) async {
+      // The bug this pins (#1299). A *picked* popup does not just narrow the
+      // card, it pins the cell to one grid row — so the box this form is tapped
+      // out of is 120px, a third of what the card declares. Sizing the
+      // presentation to that box means the full form is laid out in the very
+      // height the popup form existed to escape, and its fixed chrome alone
+      // (header plus gaps) already exceeds it.
+      await _pump(
+        tester,
+        screenWidth: 1200,
+        cardWidth: 150,
+        cardHeight: 120,
+        normalHeight: 392,
+        open: true,
+      );
+
+      expect(
+        _presentedFormHeight(tester, AppDialog),
+        392,
+        reason: 'a card that declares it needs 392px must be given 392px — the '
+            'cell it was collapsed to is a consequence of the degradation, not '
+            'a measure of what the card needs',
+      );
+    });
+
+    testWidgets('a cell taller than the declaration keeps the cell',
+        (tester) async {
+      // The other path into this form (#1239): the grid made the card narrow but
+      // left its height alone, and a card can be resized taller than its spec's
+      // floor. The form cannot tell the two paths apart, so it takes the larger
+      // — extra height cannot cause the bottom overflow above, and the taller
+      // box is the one the user was actually looking at.
+      await _pump(
+        tester,
+        screenWidth: 1200,
+        cardWidth: 150,
+        cardHeight: 500,
+        normalHeight: 256,
+        open: true,
+      );
+
+      expect(_presentedFormHeight(tester, AppDialog), 500);
+    });
+
+    testWidgets('with no declared height the form gets the cell',
+        (tester) async {
+      // Unchanged behaviour for anything that reaches this form without a spec
+      // behind it — a card built outside the dashboard factory, or a shared
+      // block under test.
+      await _pump(
+        tester,
+        screenWidth: 1200,
+        cardWidth: 150,
+        cardHeight: 240,
+        normalHeight: null,
+        open: true,
+      );
+
+      expect(_presentedFormHeight(tester, AppDialog), 240);
     });
 
     testWidgets('introduces no horizontal scrolling', (tester) async {
