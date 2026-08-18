@@ -41,14 +41,16 @@ class UspLayoutEnvelope {
   /// Bumped whenever the payload shape changes in a way older builds would
   /// misread. Version 1 is the implicit version of the legacy bare list.
   ///
-  /// Version 3 adds [forms]. It is a bump rather than an additive field because
-  /// [tryDecode] rejects anything newer than it understands, and a v2 build
-  /// reading a v3 payload would render geometry whose `isResizable` and raised
-  /// `minW` it has no rule for — a card with no handles and no way to explain
-  /// why. Falling back to the default layout is the better failure.
+  /// Version 3 adds the geometry a popup or compact pick implies. It is a bump
+  /// rather than an additive field because [tryDecode] rejects anything newer
+  /// than it understands, and a v2 build reading a v3 payload would render
+  /// geometry whose `isResizable` and raised `minW` it has no rule for — a card
+  /// with no handles and no way to explain why. Falling back to the default
+  /// layout is the better failure.
   static const int currentVersion = 3;
 
-  /// The version a payload carrying no picks is still readable as — see [version].
+  /// The version a payload carrying no *shaping* pick is still readable as — see
+  /// [version] for why an explicit `normal` is not one.
   static const int versionWithoutForms = 2;
 
   const UspLayoutEnvelope(this.layouts, {this.forms = CardForms.empty});
@@ -83,17 +85,28 @@ class UspLayoutEnvelope {
   /// The version this payload has to be stamped with.
   ///
   /// A stamp is a claim about what an older build would do with these bytes, so
-  /// it belongs to the payload rather than to the build that wrote it. Everything
-  /// v3 added arrives with a pick — [forms] itself, and the `isResizable` and
-  /// raised `minW` derived from it — so an install that has never picked a form is
-  /// still writing a v2 payload and is stamped as one. That is what keeps a
-  /// rollback to a pre-#1299 build cheap for the users who never touched the
-  /// control: [tryDecode] there rejects anything newer than it knows, and a
-  /// rejection resets the dashboard they arranged.
+  /// it belongs to the payload rather than to the build that wrote it. What v3
+  /// added that an older build cannot explain is the geometry a *shaping* pick
+  /// writes — `isResizable: false`, a raised `minW` — so the stamp rises with the
+  /// first popup or compact pick, which is exactly when an older build would
+  /// start drawing cards with no handles and no rule for them.
   ///
-  /// The stamp rises with the first pick, which is exactly when an older build
-  /// would start drawing cards with no handles and no rule to explain them.
-  int get version => forms.isEmpty ? versionWithoutForms : currentVersion;
+  /// The test is [CardForms.hasFormBeyondNormal] rather than "are there picks at
+  /// all", because returning a card to normal is how the user *undoes* a form and
+  /// it writes the spec's own bounds back — bytes a v2 build reads correctly.
+  /// Keying the stamp on the mere presence of a pick pinned the payload at v3 for
+  /// the rest of the install's life the moment anyone tried popup once, which is
+  /// the opposite of what this getter exists to do.
+  ///
+  /// That is what keeps a rollback to a pre-#1299 build cheap for everyone whose
+  /// cards are all in their normal form, whether they never opened the control or
+  /// tried it and changed their mind: [tryDecode] there rejects anything newer
+  /// than it knows, and a rejection resets the dashboard they arranged. The picks
+  /// themselves are still written either way — [encode] keys that on
+  /// [CardForms.isNotEmpty] — since an older build simply ignores the key, while
+  /// this one needs it to keep honouring an explicit normal.
+  int get version =>
+      forms.hasFormBeyondNormal ? currentVersion : versionWithoutForms;
 
   String encode() => jsonEncode({
         'version': version,

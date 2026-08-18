@@ -511,6 +511,39 @@ void main() {
               'the card — so a surviving pick would silently apply a form from a '
               'previous session the moment the card was re-added.');
     });
+
+    test('only popup and compact count as shaping the geometry', () {
+      // What `UspLayoutEnvelope.version` is a claim about. An explicit normal is
+      // a pick — it out-ranks the width-derived form — but the geometry it writes
+      // is the spec's own bounds with `isResizable` on, which is what a build
+      // carrying no card-form rule writes for itself. Treating it as shaping
+      // stamped the payload unreadable-to-older-builds for the rest of the
+      // install's life the first time anyone tried popup and undid it.
+      expect(CardForms.empty.hasFormBeyondNormal, isFalse);
+
+      const onlyNormal = CardForms({
+        12: {'device_info': CardFormChoice(density: CardDensity.normal)},
+        4: {'lan_info': CardFormChoice(density: CardDensity.normal)},
+      });
+      expect(onlyNormal.hasFormBeyondNormal, isFalse);
+      expect(onlyNormal.isNotEmpty, isTrue,
+          reason: 'Still a pick: it is written down and it still decides the '
+              'form. Only the version stamp treats it as a non-event.');
+
+      for (final shaping in [CardDensity.popup, CardDensity.compact]) {
+        expect(
+            CardForms({
+              12: {
+                'device_info':
+                    const CardFormChoice(density: CardDensity.normal),
+                'lan_info': CardFormChoice(density: shaping),
+              },
+            }).hasFormBeyondNormal,
+            isTrue,
+            reason: 'One ${shaping.name} card is enough — the stamp describes '
+                'the whole payload, not one entry.');
+      }
+    });
   });
 
   // ---------------------------------------------------------------------------

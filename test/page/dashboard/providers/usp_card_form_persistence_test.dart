@@ -58,6 +58,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// |  9 | `removeWidget` keeps the deleted card's pick       | deleting the card drops its pick |
 /// | 10 | `resetLayout` keeps the picks                      | resetLayout clears every pick |
 /// | 11 | `_setForms` skips the read-model write             | both read-model tests |
+/// | 12 | `UspLayoutEnvelope.version` keys on `forms.isEmpty` | trying popup and changing your mind leaves the stamp at v2 |
 ///
 /// Row 5 was added after the fact: the panel's "re-picking the same form does
 /// nothing" guard turned out to be an *equivalent* mutation (see that file's
@@ -616,6 +617,37 @@ void main() {
 
       expect(container.read(cardFormsProvider).isEmpty, isTrue);
       expect(live(container, 'device_info')['isResizable'], isNot(isFalse));
+    });
+
+    test('trying popup and changing your mind leaves the stamp at v2',
+        () async {
+      // The rollback case the stamp exists for, driven through the real control
+      // rather than asserted on a hand-built envelope. `setCardForm` records an
+      // explicit normal as a pick — it has to, or the pick could not out-rank the
+      // width-derived form — so keying the stamp on "are there picks at all"
+      // pinned the payload at v3 from the first popup onwards, for a card that
+      // ends up carrying nothing an older build cannot read.
+      final container = await boot();
+      addTearDown(container.dispose);
+
+      await pick(container, 'device_info', CardDensity.popup, slots: 12);
+      expect(jsonDecode(await storedRaw())['version'],
+          UspLayoutEnvelope.currentVersion,
+          reason: 'While the card is in popup the payload really does carry '
+              'geometry a pre-#1299 build has no rule for.');
+
+      await pick(container, 'device_info', CardDensity.normal);
+
+      expect(jsonDecode(await storedRaw())['version'],
+          UspLayoutEnvelope.versionWithoutForms,
+          reason: 'Back in normal the card carries the spec bounds and its '
+              'handles, so a pre-#1299 build reads these bytes correctly. A '
+              'rejection here would reset the dashboard the user arranged '
+              'because they once tried a form and undid it.');
+
+      // Stamped v2, but the pick is still there for this build.
+      expect((await storedEnvelope()).forms.densityFor(12, 'device_info'),
+          CardDensity.normal);
     });
 
     test('a stored pick for a card that is gone is ignored, not an error',

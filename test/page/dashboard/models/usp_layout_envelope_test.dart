@@ -23,13 +23,16 @@ import 'package:privacy_gui/page/dashboard/models/usp_layout_envelope.dart';
 /// ## Mutation table — the #1299 addition
 ///
 /// `forms` and the version stamp arrived with #1299; the rest of this file is
-/// #1293's. Both rows edit `usp_layout_envelope.dart` and were run against this
-/// file.
+/// #1293's. Every row edits `usp_layout_envelope.dart` or `card_form_choice.dart`
+/// and was run against this file.
 ///
 /// | # | mutation | killed by |
 /// |---|---|---|
 /// | 1 | `version` always returns `currentVersion` | encode stamps the version the payload actually needs |
-/// | 2 | `version` always returns `versionWithoutForms` | the same test's second half |
+/// | 2 | `version` always returns `versionWithoutForms` | the same test's shaping-pick half |
+/// | 3 | `version` keys on `forms.isEmpty` instead of `hasFormBeyondNormal` | an explicit normal is not a shaping pick |
+/// | 4 | `hasFormBeyondNormal` drops the `!= normal` test (any pick counts) | the same test |
+/// | 5 | `encode` keys the `forms` key on `hasFormBeyondNormal` too | an explicit normal survives a round-trip |
 void main() {
   group('decode', () {
     test('a legacy bare list is migrated as the desktop entry', () {
@@ -90,24 +93,83 @@ void main() {
               as Map<String, dynamic>;
 
       expect(withoutPicks['version'], UspLayoutEnvelope.versionWithoutForms,
-          reason: 'Everything v3 added arrives with a pick, so an install that '
-              'never used the form control is still writing a v2 payload. '
-              'Stamping it v3 would make a rollback to a pre-#1299 build reject '
-              'it and reset a dashboard the user arranged, for a feature they '
-              'never touched.');
+          reason: 'What v3 added is the geometry a shaping pick writes, so an '
+              'install that never used the form control is still writing a v2 '
+              'payload. Stamping it v3 would make a rollback to a pre-#1299 '
+              'build reject it and reset a dashboard the user arranged, for a '
+              'feature they never touched.');
       expect(withoutPicks['layouts'], isA<Map>());
       expect(withoutPicks.containsKey('forms'), isFalse);
 
-      final withPicks = jsonDecode(UspLayoutEnvelope(
+      for (final shaping in [CardDensity.popup, CardDensity.compact]) {
+        final withPicks = jsonDecode(UspLayoutEnvelope(
+          const {12: []},
+          forms: CardForms({
+            12: {'device_info': CardFormChoice(density: shaping)},
+          }),
+        ).encode()) as Map<String, dynamic>;
+
+        expect(withPicks['version'], UspLayoutEnvelope.currentVersion,
+            reason: 'The first ${shaping.name} pick is when an older build '
+                'would start drawing a card with no handles, or a floor it has '
+                'no rule for.');
+      }
+    });
+
+    test('a payload whose only picks are normal is still stamped v2', () {
+      // Returning a card to normal is how the user *undoes* a form, and the
+      // geometry it writes is the spec's own bounds — bytes a pre-#1299 build
+      // reads correctly. Keying the stamp on "are there picks at all" pinned the
+      // payload at v3 for the rest of the install's life the moment anyone tried
+      // popup once, so the users most likely to want a rollback — the ones who
+      // tried the control and changed their mind — were the ones it stopped
+      // protecting.
+      final envelope = UspLayoutEnvelope(
+        const {
+          12: [
+            {'id': 'device_info', 'x': 0, 'y': 0, 'w': 6, 'h': 3}
+          ]
+        },
+        forms: const CardForms({
+          12: {'device_info': CardFormChoice(density: CardDensity.normal)},
+        }),
+      );
+
+      final json = jsonDecode(envelope.encode()) as Map<String, dynamic>;
+
+      expect(json['version'], UspLayoutEnvelope.versionWithoutForms,
+          reason: 'An explicit normal writes the spec bounds back and turns '
+              '`isResizable` on, which is exactly what a build with no '
+              'card-form rule writes for itself.');
+
+      // The pick is still written, and still comes back. A v2 build ignores the
+      // key; this one needs it, or an explicit normal would stop out-ranking the
+      // width-derived form on the next load.
+      expect(json.containsKey('forms'), isTrue,
+          reason: 'Stamping v2 is a claim about how an older build reads these '
+              'bytes, not a reason to drop what this build still honours.');
+
+      final decoded = UspLayoutEnvelope.tryDecode(envelope.encode());
+      expect(decoded?.forms.densityFor(12, 'device_info'), CardDensity.normal);
+    });
+
+    test('one shaping pick raises the stamp for the whole payload', () {
+      // The stamp describes the bytes, not one card: a v2 build reading this
+      // would render the popup tile with no handles regardless of how many
+      // normal picks sit beside it.
+      final envelope = UspLayoutEnvelope(
         const {12: []},
         forms: const CardForms({
-          12: {'device_info': CardFormChoice(density: CardDensity.popup)},
+          12: {
+            'device_info': CardFormChoice(density: CardDensity.normal),
+            'lan_info': CardFormChoice(density: CardDensity.popup),
+          },
+          4: {'time_settings': CardFormChoice(density: CardDensity.normal)},
         }),
-      ).encode()) as Map<String, dynamic>;
+      );
 
-      expect(withPicks['version'], UspLayoutEnvelope.currentVersion,
-          reason: 'The first pick is when an older build would start drawing a '
-              'card with no handles and no rule to explain them.');
+      expect(jsonDecode(envelope.encode())['version'],
+          UspLayoutEnvelope.currentVersion);
     });
 
     test('slot counts survive as ints even though JSON keys are strings', () {

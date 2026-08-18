@@ -103,6 +103,22 @@ class CardForms extends Equatable {
 
   bool get isNotEmpty => !isEmpty;
 
+  /// Whether any pick here implies geometry a build with no card-form rule has
+  /// no explanation for.
+  ///
+  /// Only [CardDensity.popup] and [CardDensity.compact] do. An explicit
+  /// [CardDensity.normal] pins the card against the width-derived form, but the
+  /// geometry it writes — the spec's own bounds, `isResizable` back on — is
+  /// exactly what a pre-#1299 build writes for itself, so a payload whose only
+  /// picks are normal is still readable as one of those.
+  ///
+  /// This is what [UspLayoutEnvelope.version] is a claim about, and why the claim
+  /// cannot be "are there any picks at all": returning a card to normal is how a
+  /// user *undoes* a form, and it must not leave the payload stamped as
+  /// something an older build would reject for the rest of the install's life.
+  bool get hasFormBeyondNormal => byBreakpoint.values.any((choices) =>
+      choices.values.any((choice) => choice.density != CardDensity.normal));
+
   /// The picks on the [slotCount]-wide grid.
   Map<String, CardFormChoice> at(int slotCount) =>
       byBreakpoint[slotCount] ?? const {};
