@@ -248,6 +248,46 @@ void main() {
     }
   });
 
+  /// The one thing the fixed presentation width has to be measured against.
+  ///
+  /// `showCardNormalForm` gives every card the same [kCardPresentationWidth]
+  /// rather than the width its spec declares (250–386 across the six that declare
+  /// one). That is only sound while the fixed width clears all of them: a card
+  /// declaring more than the presentation offers would be handed back the very
+  /// width it said it could not be read at.
+  ///
+  /// It lives here rather than beside the presentation because `_shared` cannot
+  /// see the specs — the constant is a `_shared` decision and the thresholds are
+  /// the dashboard's, and this is the file that imports both.
+  group('the presentation width', () {
+    test('clears every threshold a card declares', () {
+      final declared = {
+        for (final spec in UspWidgetSpecs.all)
+          if (spec.normalAbove != null) spec.id: spec.normalAbove!,
+      };
+
+      expect(
+        declared,
+        isNotEmpty,
+        reason:
+            'with no card declaring a threshold this test asserts nothing — '
+            'the floor it pins would be vacuous',
+      );
+      for (final entry in declared.entries) {
+        expect(
+          entry.value,
+          lessThanOrEqualTo(kCardPresentationWidth),
+          reason:
+              '${entry.key} declares it needs ${entry.value}px to be whole, '
+              'and the presentation offers ${kCardPresentationWidth}px. Either '
+              'raise the presentation width or re-measure the threshold — as it '
+              'stands, tapping the popup form hands this card back a width it '
+              'has already said it cannot be read at',
+        );
+      }
+    });
+  });
+
   group('the dialog it opens', () {
     for (final spec in UspWidgetSpecs.all.where(_canReachPopupBand)) {
       final rows = spec.getConstraints(DisplayMode.normal).minHeightRows;

@@ -49,10 +49,12 @@ import 'package:ui_kit_library/ui_kit.dart';
 /// tiles side by side, and the stacked branch is unreachable *from the grid*.
 ///
 /// It is emphatically reachable from the **presentation**. `showCardNormalForm`
-/// renders this same normal form in a dialog, or in a full-bleed sheet on a
-/// screen too narrow for one, at up to `normalAbove` — so a 320px phone tapping
-/// the popup form gets the normal form with ~284px of content, which is this
-/// threshold's stacked band. Deleting it would put that phone back on the 191px
+/// renders this same normal form at a fixed 400px on any screen that can seat a
+/// dialog — 366px of content column, side by side, just clear of this threshold —
+/// but a screen too narrow for that dialog gets a full-bleed sheet instead, and
+/// there the card is given the whole device: a 320px phone tapping the popup form
+/// reads the normal form with ~286px of content, which is this threshold's stacked
+/// band. Deleting it would put that phone back on the 191px
 /// arrangement #1228 measured as overflowing by 1.3px with no label rendered at
 /// all. `ethernet_ports_summary_readability_test.dart` is what holds it, and
 /// since #1290 it pins `CardDensity.normal` so its narrow cases keep describing

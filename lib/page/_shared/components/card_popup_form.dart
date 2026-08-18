@@ -9,9 +9,25 @@ import 'package:ui_kit_library/ui_kit.dart';
 ///
 /// Both sides, so a dialog can never be flush against the viewport. Named
 /// because the "is this screen wide enough for a dialog" decision below is made
-/// of exactly this plus the dialog's own chrome — a literal in two places would
+/// of exactly this plus [kCardPresentationWidth] — a literal in two places would
 /// let the decision and the geometry drift apart.
 const double kCardPresentationInset = 24.0;
+
+/// Width the presented normal form is given, in logical pixels.
+///
+/// One number for every card, rather than the width each card declares it needs.
+/// A declaration is a *threshold* — the width below which the card stops being
+/// readable — and both formulas built on it produced a worse box than a constant
+/// does: derived from the threshold, the dialog was a different size for every
+/// card (they run 250 to 386); with no threshold declared it fell back to the
+/// viewport, which on a desktop is one card in a dialog a thousand pixels wide.
+///
+/// 400 clears every threshold the specs declare, so no card is handed back a
+/// width it has already said it cannot be read at — that floor is the one derived
+/// thing here, and `dashboard_card_popup_overflow_test.dart` pins it because it is
+/// the file that can see the specs. It is also `ui_kit`'s own dialog width, so the
+/// presentation is the app's standard dialog rather than a bespoke one.
+const double kCardPresentationWidth = 400.0;
 
 /// The degraded form a dashboard card renders below [kPopupBelow]: its icon and
 /// one value, with the full form one tap away (#1239).
@@ -115,54 +131,50 @@ class CardPopupForm extends StatelessWidget {
     showCardNormalForm(
       context,
       normalForm: normalForm,
-      normalAbove: CardDensityScope.normalAboveOf(context),
       cardHeight: candidates.isEmpty ? null : candidates.reduce(math.max),
     );
   }
 }
 
-/// Presents [normalForm] over the popup form, at the widest width the screen can
-/// give it up to the card's own [normalAbove].
+/// Presents [normalForm] over the popup form, at [kCardPresentationWidth] and the
+/// height the card needs.
 ///
-/// ## The width is the whole point
+/// ## One width, and the card decides nothing about it
 ///
-/// The form being presented is the one that did not fit — so handing it a narrow
-/// box reproduces exactly the overflow the popup form was introduced to avoid.
-/// Two numbers bound it: the screen, and the width the card declared it needs.
-/// The smaller wins, and when the card declared nothing the screen alone decides
-/// (widest is safest, since overflow is monotonic in width).
+/// The form being presented is the one that did not fit, so the box has to be
+/// wide enough to read it — but that is a floor, not a formula, and the formulas
+/// this used to compute are what [kCardPresentationWidth] replaces. See there for
+/// why one constant beats both of them.
 ///
-/// `ui_kit`'s dialog defaults to 400px, which is narrower than most cards need,
-/// so the width is injected as a [DialogStyle] override on this one dialog —
+/// The width is injected as a [DialogStyle] override on this one dialog —
 /// caller-side, per constitution Article XIV. Nothing in `ui_kit` changes, and no
 /// other dialog in the app is affected.
 ///
+/// ## The card is the frame
+///
+/// A dashboard card is already a bordered, filled, rounded surface, and
+/// `AppDialog` draws one of its own around whatever it is handed — so the
+/// presentation read as a frame inside a frame, the two borders separated by a
+/// ring of dialog padding. The override paints nothing and spends nothing, which
+/// leaves the card's own surface as the only frame on screen.
+///
 /// ## Why a sheet on a narrow screen
 ///
-/// A dialog spends [kCardPresentationInset] on each side plus its own padding
-/// and border. On a 320px screen that is most of the width the card was asking
-/// for. When what is left is narrower than the card's declared fit width, the
-/// dialog cannot show the form whole no matter how it is styled, so the
+/// A screen narrower than the presentation plus [kCardPresentationInset] on each
+/// side cannot seat the dialog at all, and a dialog clamped down to fit such a
+/// screen would hand the card back a width near the one it degraded at. There the
 /// presentation switches to a full-bleed bottom sheet, which spends none of the
-/// width on chrome. It still may not reach the declared width — nothing on that
-/// screen can — but it is the widest the device has.
+/// width on chrome and gives the card the whole device. It still may not reach the
+/// width the card asked for — nothing on that screen can — but it is the widest
+/// the device has.
 Future<void> showCardNormalForm(
   BuildContext context, {
   required Widget normalForm,
-  required double? normalAbove,
   required double? cardHeight,
 }) {
   final screen = MediaQuery.sizeOf(context);
-  final dialogStyle =
-      Theme.of(context).extension<AppDesignTheme>()?.dialogStyle;
-
-  // Chrome is padding plus border on both sides: `AppSurface` draws its border
-  // inside its box, so the content gets that much less. Counted so the max width
-  // asked of the dialog is a width for the *card*, not for the dialog.
-  final chrome =
-      (dialogStyle?.padding ?? const EdgeInsets.all(24.0)).horizontal +
-          (dialogStyle?.containerStyle.borderWidth ?? 0.0) * 2;
-  final dialogCanOffer = screen.width - kCardPresentationInset * 2 - chrome;
+  final theme = Theme.of(context);
+  final dialogStyle = theme.extension<AppDesignTheme>()?.dialogStyle;
 
   // Falls back to a fraction of the viewport only if the tap arrived from
   // something that has no box, which a laid-out card always has.
@@ -170,9 +182,8 @@ Future<void> showCardNormalForm(
 
   final content = SizedBox(
     // Fills whatever the presentation ends up granting rather than naming a
-    // width: if the chrome above is ever underestimated, the form is a little
-    // narrower than asked instead of being over-constrained into a broken
-    // layout.
+    // width, so the card is never over-constrained into a layout narrower than
+    // the box it was given.
     width: double.infinity,
     height: height,
     child: CardDensityScope(
@@ -183,7 +194,7 @@ Future<void> showCardNormalForm(
     ),
   );
 
-  if (normalAbove != null && dialogCanOffer < normalAbove) {
+  if (screen.width - kCardPresentationInset * 2 < kCardPresentationWidth) {
     return showAppBottomSheet<void>(
       context: context,
       // No padding: on the screen that triggered this branch, every pixel spent
@@ -195,20 +206,33 @@ Future<void> showCardNormalForm(
     );
   }
 
-  final maxWidth = math.min(
-    screen.width - kCardPresentationInset * 2,
-    normalAbove == null ? double.infinity : normalAbove + chrome,
+  // Built rather than copied-from-the-theme-and-cleared: a `SurfaceStyle`'s
+  // defaults already are "no border, no shadow, no blur, no gradient", so naming
+  // two transparent colours is the whole of "paint nothing". Unsetting the
+  // theme's own decorations one property at a time would silently start painting
+  // again the day a theme adds one this call does not know to clear. The content
+  // colour is still the theme's, for anything the card does not paint over.
+  final unpainted = SurfaceStyle(
+    backgroundColor: Colors.transparent,
+    borderColor: Colors.transparent,
+    contentColor:
+        dialogStyle?.containerStyle.contentColor ?? theme.colorScheme.onSurface,
   );
 
   return showAppDialog<void>(
     context: context,
     // `withOverride` on the theme's own instance is the only way in: `DialogStyle`
-    // carries a full `SurfaceStyle`, so there is no standalone one to build. With
-    // the extension absent the dialog keeps ui_kit's 400px default and a wider
-    // card is under-served — a themeless app, which nothing here can repair, and
-    // which every other dialog in the app is equally subject to.
+    // carries a full `SurfaceStyle` and an `OverlaySpec`, so there is no
+    // standalone one to build. With the extension absent the dialog keeps
+    // ui_kit's defaults — the same 400px, but 24px of padding that cannot be
+    // overridden from here, so a themeless app keeps the ring. Nothing here can
+    // repair that, and every other dialog in the app is equally subject to it.
     builder: (_) => AppDialog(
-      dialogStyle: dialogStyle?.withOverride(maxWidth: maxWidth),
+      dialogStyle: dialogStyle?.withOverride(
+        maxWidth: kCardPresentationWidth,
+        padding: EdgeInsets.zero,
+        containerStyle: unpainted,
+      ),
       content: content,
     ),
   );

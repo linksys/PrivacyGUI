@@ -17,33 +17,28 @@ class CardDensityScope extends InheritedWidget {
   const CardDensityScope({
     super.key,
     required this.density,
-    this.normalAbove,
     this.normalHeight,
     required super.child,
   });
 
   final CardDensity density;
 
-  /// The card's declared threshold, carried down alongside the density.
+  /// Height, in pixels, the card's *whole* form needs — carried down alongside
+  /// the density because the presentation the popup form opens needs it.
   ///
-  /// The popup form needs it, not just the band it selected: when the user taps
-  /// to read the card, the presentation has to know how wide the card says it
-  /// needs to be (#1239). Null means the card never declared one, and the
-  /// presentation then falls back to the widest width it can offer.
-  final double? normalAbove;
-
-  /// Height, in pixels, the card's *whole* form needs — the other half of what
-  /// the presentation has to know.
-  ///
-  /// Travels this path for the same reason [normalAbove] does, and it is needed
-  /// for the same tap, but it answers a question the widget tree cannot: once a
-  /// card has been picked into popup its cell is pinned to one grid row (#1299),
-  /// so the box the tap came out of is a *consequence* of the degradation and
-  /// says nothing about what the card needs. Null means nothing declared a
-  /// height, and the presentation falls back to the box it was tapped from.
+  /// It answers a question the widget tree cannot: once a card has been picked
+  /// into popup its cell is pinned to one grid row (#1299), so the box the tap
+  /// came out of is a *consequence* of the degradation and says nothing about what
+  /// the card needs. Null means nothing declared a height, and the presentation
+  /// falls back to the box it was tapped from.
   ///
   /// Pixels rather than rows, so `_shared` needs no notion of a grid: the row
   /// count is a dashboard concept and the conversion happens there.
+  ///
+  /// The card's declared *width* threshold used to travel here too, for the same
+  /// tap. It no longer does: the presentation is one fixed width for every card
+  /// (`kCardPresentationWidth`), so the only reader of the declared width is
+  /// [CardDensityHost]'s own selection, which has it from the spec already.
   final double? normalHeight;
 
   /// The density in effect at [context], or [CardDensity.normal] outside any
@@ -59,11 +54,6 @@ class CardDensityScope extends InheritedWidget {
     return scope?.density ?? CardDensity.normal;
   }
 
-  /// The declared threshold in effect at [context], or null outside any card.
-  static double? normalAboveOf(BuildContext context) => context
-      .dependOnInheritedWidgetOfExactType<CardDensityScope>()
-      ?.normalAbove;
-
   /// The declared whole-form height in effect at [context], or null outside any
   /// card.
   static double? normalHeightOf(BuildContext context) => context
@@ -72,9 +62,7 @@ class CardDensityScope extends InheritedWidget {
 
   @override
   bool updateShouldNotify(CardDensityScope oldWidget) =>
-      oldWidget.density != density ||
-      oldWidget.normalAbove != normalAbove ||
-      oldWidget.normalHeight != normalHeight;
+      oldWidget.density != density || oldWidget.normalHeight != normalHeight;
 }
 
 /// Wraps a dashboard card, measures the width it was actually given, and
@@ -133,7 +121,6 @@ class CardDensityHost extends ConsumerWidget {
     if (override != null) {
       return CardDensityScope(
         density: override,
-        normalAbove: normalAbove,
         normalHeight: normalHeight,
         child: child,
       );
@@ -150,7 +137,6 @@ class CardDensityHost extends ConsumerWidget {
     if (picked != null && picked != CardDensity.normal) {
       return CardDensityScope(
         density: picked,
-        normalAbove: normalAbove,
         normalHeight: normalHeight,
         child: child,
       );
@@ -178,7 +164,6 @@ class CardDensityHost extends ConsumerWidget {
           width: constraints.maxWidth,
           normalAbove: normalAbove,
         ),
-        normalAbove: normalAbove,
         normalHeight: normalHeight,
         child: child,
       ),

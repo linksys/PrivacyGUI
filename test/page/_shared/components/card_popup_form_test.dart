@@ -33,6 +33,10 @@ import '../../../util/overflow_probe.dart';
 /// |---|---|---|---|
 /// | 1 | `card_popup_form` | `_open` passes `context.size?.height` alone, dropping the declared height | the form gets the height the card declares it needs |
 /// | 2 | `usp_widget_factory` | the factory stops supplying `normalHeight` | **nothing here** — this file hands `CardDensityHost` its own value, so the wiring from spec to scope is covered by the picked-popup sweep in `dashboard_card_popup_overflow_test.dart` (51 cases), not by anything below |
+/// | 3 | `card_popup_form` | the dialog's width is derived from the viewport again (`screen.width − inset × 2`) | all three of `the dialog is one width …` (1152, 552 and 1152 against 400). Deriving it from the card's *declaration* is the other half of what the old formula did, and it can no longer be written: nothing carries a declared width into the presentation any more, so that mutation would have to re-thread it through `CardDensityScope` first. The compiler pins that half, not a test |
+/// | 4 | `card_popup_form` | the dialog keeps the theme's own surface and padding (drop the `containerStyle`/`padding` overrides, keep `maxWidth`) | **six** tests, not the two that name the frame: the two `no second frame` tests, and every width assertion (350 against 400). They measure what the *card* was given, and 24px of padding plus a 1px border on each side is taken out of exactly that — which is the point, since the ring is width the card asked for and did not get |
+/// | 5 | `card_popup_form` | `kCardPresentationWidth` raised to 500 | only `is one named constant` — the behaviour tests read the constant rather than the number, deliberately, so that one test is the only place the number is pinned. Anywhere above the floor the specs impose it is a design choice, not a derivation |
+/// | 6 | `card_popup_form` | `kCardPresentationWidth` lowered to 300, i.e. *below* that floor | `is one named constant` **and** `clears every threshold a card declares` in `dashboard_card_popup_overflow_test.dart` — the pin lives there because only that file can see the specs. Note what did *not* fire: the 318-case sweep stayed green at 300, so the floor is a readability claim the cards' own specs make, and no overflow probe can stand in for it |
 const String _kCardId = 'connected_devices';
 const String _kTitle = 'Connected Devices';
 const String _kValue = '12 online';
@@ -45,13 +49,14 @@ const Key _kLeadingKey = Key('popup-leading');
 
 ThemeData _lightTheme() => ThemeJsonConfig.defaultConfig().createLightTheme();
 
-/// Horizontal space `AppDialog` spends on its own chrome, from the theme — the
-/// same source production reads. Hardcoding 48 here would make the test agree
-/// with a number rather than with the dialog.
-double _dialogChromeOf(ThemeData theme) {
-  final style = theme.extension<AppDesignTheme>()!.dialogStyle;
-  return style.padding.horizontal + style.containerStyle.borderWidth * 2;
-}
+/// The surface `AppDialog` draws around whatever it is handed — the outer of the
+/// two frames in "a frame inside a frame", and the one that must not be there.
+///
+/// `AppSurface` finders are depth-first, so the first one under the dialog is the
+/// dialog's own; every later one belongs to the card.
+Finder _dialogSurface() => find
+    .descendant(of: find.byType(AppDialog), matching: find.byType(AppSurface))
+    .first;
 
 /// A card whose normal form cannot fit a narrow width, for the one claim no
 /// production card can support any more: after #1240's re-measurement all 18 fit
@@ -286,30 +291,29 @@ void main() {
       expect(incidents, isEmpty, reason: incidents.join('\n'));
     });
 
-    testWidgets('the form gets the width the card declares it needs',
+    testWidgets('the dialog is one width, not the one the card declares',
         (tester) async {
-      // 1200px screen, so the fit width is what binds rather than the screen.
+      // The declaration used to be the dialog's width, which made the box a
+      // different size for every card — and the numbers the specs declare run
+      // 250 to 386, so the difference was visible and arbitrary. The fixed width
+      // is above all of them (pinned in `dashboard_card_popup_overflow_test`), so
+      // a card that asks for less is served, not squeezed.
       await _pump(
         tester,
         screenWidth: 1200,
         cardWidth: 150,
-        normalAbove: 400,
+        normalAbove: 300,
         open: true,
       );
 
-      expect(
-        _presentedFormWidth(tester, AppDialog),
-        400,
-        reason: 'a card that declares it is whole above 400px must be given '
-            '400px, or the dialog reproduces the overflow it came from',
-      );
+      expect(_presentedFormWidth(tester, AppDialog), kCardPresentationWidth);
     });
 
-    testWidgets('with no declared fit width the form gets all the dialog has',
+    testWidgets('the dialog is one width on a screen with room to spare',
         (tester) async {
-      // Overflow is monotonic in width, so with nothing to aim at the widest
-      // available is the safest.
-      final theme = _lightTheme();
+      // The other direction, and the one that made the presentation look wrong
+      // on a desktop: with nothing declared the dialog took the whole viewport,
+      // so one card sat in a box a thousand pixels wide.
       await _pump(
         tester,
         screenWidth: 600,
@@ -318,9 +322,65 @@ void main() {
         open: true,
       );
 
+      expect(_presentedFormWidth(tester, AppDialog), kCardPresentationWidth);
+    });
+
+    testWidgets('the dialog is one width even for a card that asks for more',
+        (tester) async {
+      // A card asking 2000px used to get a full-bleed sheet on this screen,
+      // because no dialog could hold what it asked for. It now gets the same
+      // dialog as every other card: the width is the presentation's, and a card
+      // that wants more scrolls inside it.
+      await _pump(
+        tester,
+        screenWidth: 1200,
+        cardWidth: 150,
+        normalAbove: 2000,
+        open: true,
+      );
+
+      expect(find.byType(AppDialog), findsOneWidget);
+      expect(_presentedFormWidth(tester, AppDialog), kCardPresentationWidth);
+    });
+
+    testWidgets('the dialog draws no second frame around the card',
+        (tester) async {
+      // The card is already a bordered, filled, rounded surface. `AppDialog`
+      // draws another one around whatever it is given, so the presentation read
+      // as a frame inside a frame. The dialog's surface has to paint nothing and
+      // let the card be the frame.
+      await _pump(tester, screenWidth: 1200, cardWidth: 150, open: true);
+
+      final style = tester.widget<AppSurface>(_dialogSurface()).style;
       expect(
-        _presentedFormWidth(tester, AppDialog),
-        600 - kCardPresentationInset * 2 - _dialogChromeOf(theme),
+        style,
+        isNotNull,
+        reason: 'left to the theme the dialog paints its own container — this '
+            'presentation has to override it',
+      );
+      expect(style!.backgroundColor.a, 0, reason: 'no second fill');
+      expect(style.borderWidth, 0, reason: 'no second border');
+      expect(style.shadows, isEmpty, reason: 'no second elevation');
+      expect(style.backgroundGradient, isNull);
+      expect(style.borderGradient, isNull);
+    });
+
+    testWidgets('and no second frame spends no space either', (tester) async {
+      // The ink is half of it: 24px of dialog padding is a visible ring between
+      // the two borders even when the outer one is invisible. Rects rather than
+      // the padding value, because what the reader sees is the gap.
+      await _pump(tester, screenWidth: 1200, cardWidth: 150, open: true);
+
+      expect(
+        tester.getRect(_dialogSurface()),
+        tester.getRect(
+          find.descendant(
+            of: find.byType(AppDialog),
+            matching: find.byType(DashboardCardTemplate),
+          ),
+        ),
+        reason: 'the card fills the dialog exactly — any inset is the second '
+            'frame, drawn in whitespace instead of ink',
       );
     });
 
@@ -401,10 +461,14 @@ void main() {
   });
 
   group('a screen too narrow for the dialog', () {
+    /// The narrowest screen that can host the presentation with its inset intact,
+    /// and one pixel less. Composed from the two constants rather than written as
+    /// 448, so the pair below keeps straddling the boundary if either moves.
+    const fits = kCardPresentationWidth + kCardPresentationInset * 2;
+
     testWidgets('uses a fullscreen sheet instead', (tester) async {
-      // 320px is the supported floor, and a card declaring 400 cannot be shown
-      // whole in a dialog there: the dialog spends part of that 320 on inset and
-      // padding. The sheet spends none of it.
+      // 320px is the supported floor: a screen that cannot hold the dialog at
+      // all. The sheet spends nothing on inset, so the card gets all 320.
       final incidents = await _pump(
         tester,
         screenWidth: 320,
@@ -419,11 +483,10 @@ void main() {
       expect(incidents, isEmpty, reason: incidents.join('\n'));
     });
 
-    testWidgets('and the sheet is wider than the dialog could have been',
+    testWidgets('and the sheet gives the card the whole screen',
         (tester) async {
-      // The whole reason to switch: if the sheet were not wider, the switch
-      // would be decoration.
-      final theme = _lightTheme();
+      // The whole reason to switch: if the sheet were not wider than what the
+      // screen can offer a dialog, the switch would be decoration.
       await _pump(
         tester,
         screenWidth: 320,
@@ -432,37 +495,45 @@ void main() {
         open: true,
       );
 
-      final sheetWidth = _presentedFormWidth(tester, AppBottomSheet);
-      expect(
-        sheetWidth,
-        greaterThan(320 - kCardPresentationInset * 2 - _dialogChromeOf(theme)),
-      );
-      expect(sheetWidth, lessThanOrEqualTo(320));
+      expect(_presentedFormWidth(tester, AppBottomSheet), 320);
     });
 
-    testWidgets(
-        'is not about small screens — a wide card gets a sheet at 600px',
+    testWidgets('one pixel short of hosting the dialog is still a sheet',
         (tester) async {
-      // The rule is a relationship, not a breakpoint: a card asking for 2000px
-      // cannot be shown whole in a dialog on a 600px screen either, so it gets
-      // the sheet too. Written after the first draft of this file asserted "the
-      // dialog never grows past the screen" here and found no dialog at all —
-      // the presentation squeezes nothing, it switches.
+      // `normalAbove: null` on both sides of the boundary, because the card's
+      // declaration has no say in this any more: what decides is whether the
+      // screen can seat the presentation's own width.
       await _pump(
         tester,
-        screenWidth: 600,
+        screenWidth: fits - 1,
         cardWidth: 150,
-        normalAbove: 2000,
+        normalAbove: null,
         open: true,
       );
 
       expect(find.byType(AppBottomSheet), findsOneWidget);
       expect(find.byType(AppDialog), findsNothing);
+    });
+
+    testWidgets('and the narrowest screen that can host it gets the dialog',
+        (tester) async {
+      // The positive control for the line above: without it the sheet could be
+      // the only branch and every assertion above would still pass.
+      await _pump(
+        tester,
+        screenWidth: fits,
+        cardWidth: 150,
+        normalAbove: null,
+        open: true,
+      );
+
+      expect(find.byType(AppDialog), findsOneWidget);
+      expect(find.byType(AppBottomSheet), findsNothing);
       expect(
-        _presentedFormWidth(tester, AppBottomSheet),
-        600,
-        reason: 'the sheet gives the card the whole screen — the most this '
-            'device has for a card that wants more than it has',
+        _presentedFormWidth(tester, AppDialog),
+        kCardPresentationWidth,
+        reason: 'at the boundary the card gets the full width, not a squeezed '
+            'one — being squeezed is what the sheet exists to avoid',
       );
     });
 
@@ -517,6 +588,19 @@ void main() {
     test('is one named constant', () {
       // AC: "changeable in one place". The form does not carry its own copy.
       expect(kPopupBelow, 200.0);
+    });
+  });
+
+  group('the presentation width', () {
+    test('is one named constant', () {
+      // The behaviour tests above read the constant, so this is the one place
+      // the number itself is written down — deliberately, because everything
+      // else about the presentation follows from it and only its floor is
+      // derived (it must clear every threshold a spec declares, which
+      // `dashboard_card_popup_overflow_test.dart` pins). 400 is also `ui_kit`'s
+      // own dialog width, so the presentation is the standard size rather than a
+      // bespoke one.
+      expect(kCardPresentationWidth, 400.0);
     });
   });
 
