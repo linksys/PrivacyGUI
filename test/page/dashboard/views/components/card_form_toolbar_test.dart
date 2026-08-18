@@ -99,6 +99,7 @@ import 'package:ui_kit_library/ui_kit.dart';
 /// | 11 | card_form_toolbar | `ChipItem.label: ''` → the form's name | the pill draws text, and stops being one width in every locale |
 /// | 12 | card_form_toolbar | swap the popup and compact glyphs | the glyph the ladder puts under each form |
 /// | 13 | card_form_toolbar | drop `showBorder: false` | the frameless assertion — a parameter read, see below |
+/// | 14 | card_form_toolbar | drop `enhancedEffect: none` | the same assertion's other half — glass's shimmer border comes back |
 ///
 /// ### Row 10, the equivalent mutation
 ///
@@ -111,16 +112,22 @@ import 'package:ui_kit_library/ui_kit.dart';
 /// `usp_card_form_persistence_test.dart` ("picking popup twice still restores the
 /// first box, not the tile").
 ///
-/// ### Row 13, the assertion that reads a parameter
+/// ### Rows 13 and 14, the assertions that read parameters
 ///
-/// The frameless test asserts `AppSurface.showBorder` is false rather than that no
-/// border is painted, which is weaker, and deliberately so. This file's theme is
-/// `flat`, whose elevated surface has `borderWidth: 0` and a transparent border
-/// colour — so under this theme the border was invisible either way, and a paint
-/// assertion would pass with the parameter gone. The frame the user saw came from
-/// the *effect* border that `glass` (the demo's default) draws, and `showBorder:
-/// false` is what suppresses that too. Asserting the parameter is asserting the
-/// one thing that carries across themes.
+/// The frameless test asserts `AppSurface.showBorder` and `enhancedEffect` rather
+/// than that no border is painted, which is weaker, and deliberately so. This
+/// file's theme is `flat`, whose elevated surface has `borderWidth: 0` and a
+/// transparent border colour — so under this theme the border was invisible either
+/// way, and a paint assertion would pass with both parameters gone. The frame the
+/// user saw belongs to `glass`, the demo's default, which draws one two ways:
+/// `showBorder` gates the standard and gradient borders, and the animated shimmer
+/// border is its *enhanced* effect, applied on the theme's shimmer bit alone
+/// whatever `showBorder` says. Asserting the two parameters is asserting the
+/// thing that carries into the themes where it is visible.
+///
+/// The chips are asserted the other way round — that they *are* still framed. The
+/// kit builds their surfaces itself and offers no way to say otherwise, so the
+/// test records the gap and fails when the kit closes it.
 final _testTheme = AppTheme.create(
   brightness: Brightness.light,
   seedColor: Colors.blue,
@@ -701,18 +708,48 @@ void main() {
       expect(pillRect(tester).width, closeTo(inPolish.width, 0.5));
     });
 
-    testWidgets('the pill draws no border', (tester) async {
+    testWidgets('the pill draws no border, by either route', (tester) async {
       final container = await pumpGrid(tester);
       await select(tester, container, 'device_info');
 
       // Read off the widget rather than off the painted decoration, which is the
-      // honest place for it: `showBorder` also suppresses the *effect-strategy*
-      // borders, and those are the ones that were loud — the demo runs the glass
-      // style, whose gradient border framed the pill like a second card. The
-      // flat style this file themes with has `borderWidth: 0` on the elevated
-      // surface, so a decoration-level assertion here would pass either way and
-      // pin nothing.
-      expect(tester.widget<AppSurface>(pill).showBorder, isFalse);
+      // honest place for it: the borders that were loud are the ones a *style*
+      // draws, and this file themes with flat, whose elevated surface has
+      // `borderWidth: 0`. A decoration-level assertion would pass here either
+      // way and pin nothing.
+      //
+      // Both parameters, because a style has two ways to draw a frame and each
+      // has its own switch. `showBorder` stops the standard and gradient
+      // borders; glass's shimmer border is its enhanced effect, which
+      // `AppSurface` applies on the theme's shimmer bit alone — so it is the
+      // intensity that has to be off. Dropping either one puts the frame back
+      // under the style the demo actually runs.
+      final surface = tester.widget<AppSurface>(pill);
+      expect(surface.showBorder, isFalse);
+      expect(surface.enhancedEffect, EnhancedEffectIntensity.none);
+    });
+
+    testWidgets('the chips are still framed, which is the kit\'s to fix',
+        (tester) async {
+      final container = await pumpGrid(tester);
+      await select(tester, container, 'device_info');
+
+      // Not an endorsement — a record. `AppChipGroup` builds each chip's
+      // `AppSurface` itself with `showBorder` at its default, and offers nothing
+      // to reach it with, so the three chips keep frames the pill has dropped.
+      // Asserted so the day the kit exposes the passthrough this fails and says
+      // where to use it, rather than the inconsistency quietly outliving the fix.
+      final chipSurfaces = tester
+          .widgetList<AppSurface>(
+            find.descendant(of: toolbar, matching: find.byType(AppSurface)),
+          )
+          .toList();
+      expect(chipSurfaces, hasLength(3), reason: 'one surface per chip');
+      expect(
+        chipSurfaces.every((surface) => surface.showBorder),
+        isTrue,
+        reason: 'if this fails, the kit grew a way to say otherwise — use it',
+      );
     });
   });
 

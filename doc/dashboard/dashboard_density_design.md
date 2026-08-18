@@ -1186,17 +1186,45 @@ things to keep in agreement. Seven lessons.
    trying to look at. The labels became Material's density glyphs (`density_small` →
    `_medium` → `_large`, read left to right as how much of the card shows — the names
    run backwards from ours because they count *spacing*) with the form's name kept as
-   `ChipItem.semanticLabel`, and `AppSurface(showBorder: false)` dropped the frame,
-   which also suppresses the effect-strategy border the glass style was drawing around
-   it. Measured at 1280px in English, the pill went from 414px to 144px. What the
-   glyphs also removed is a
-   whole class of test: a labelled control's width is a function of the locale, so it
-   needed the longest-locale-at-480px case; icons are the same width in all 26, and the
-   test that replaced it asserts exactly that. **A control drawn over content is charged
-   for the space it takes, and dropping the text can retire a localization risk rather
-   than merely shrink a widget.** The cost is honest and stays on the record: three
-   glyphs are less nameable than three words, and the compact chip's tap target is now
-   about 36×24 — `card_form_toolbar.dart`'s `_chipFor` states both.
+   `ChipItem.semanticLabel`, and `AppSurface(showBorder: false)` dropped the frame.
+   Measured at 1280px in English, the pill went from 414px to 144px. What the glyphs
+   also removed is a whole class of test: a labelled control's width is a function of
+   the locale, so it needed the longest-locale-at-480px case; icons are the same width
+   in all 26, and the test that replaced it asserts exactly that. **A control drawn
+   over content is charged for the space it takes, and dropping the text can retire a
+   localization risk rather than merely shrink a widget.** The cost is honest and stays
+   on the record: three glyphs are less nameable than three words, and the compact
+   chip's tap target is now about 36×24 — `card_form_toolbar.dart`'s `_chipFor` states
+   both.
+
+   **Frameless then turned out to be two switches, and the second one is only visible
+   in the style the demo runs.** Reviewed again on screen, the pill still had a border —
+   an animated one. `AppSurface` lets a style draw a frame two ways and gates them
+   separately: `showBorder` covers the standard border and the gradient border
+   (`applyBorder`), while glass's shimmer border is its *enhanced* effect, which
+   `applyEnhancedEffect` draws whenever the theme's shimmer bit is set, whatever
+   `showBorder` says. `enhancedEffect: EnhancedEffectIntensity.none` is what stops it,
+   and the frameless test now reads both parameters. Worth stating why this was not
+   caught by the tests that had just been written and passed: they theme with `flat`,
+   whose elevated surface has `borderWidth: 0`, so under this file's theme neither
+   border exists to begin with — **a test suite themed on the plainest style cannot see
+   a defect that belongs to the loudest one**, which is also why those assertions read
+   parameters rather than painted pixels.
+
+   What did *not* get fixed is the chips' own frames, and the reason is worth recording
+   as a boundary rather than a workaround. `AppChipGroup` builds each chip's
+   `AppSurface` itself with `showBorder` at its default, and exposes nothing to reach
+   it: `ChipGroupStyle` carries background, text, radius and a `selectedBorderColor`
+   the group never reads. Under Article XIV that makes it the kit's to fix — asked for
+   as a `showBorder` passthrough on `AppChipGroup`, plus `applyEnhancedEffect` honouring
+   `showBorder` the way `applyBorder` already does. Two alternatives were considered and
+   rejected: rebuilding the triad on `AppIconButton.icon` (whose `text` style variant has
+   `borderWidth: 0`, so it is genuinely borderless in every style, and whose buttons
+   would have fixed the 36×24 target too) was more change than the frame was worth, and
+   scoping a `Theme` override that zeroes `surfaceElevated`'s border width would have
+   reached into the design system's specs from a feature page and silently rotted the
+   day the kit changed them. The gap is asserted instead — the test says the chips *are*
+   framed, so it fails and points here the day the passthrough lands.
 
    One mechanical consequence: the selection lives on a `state_beacon` beacon owned by
    the package, and `state_beacon` is a transitive dependency the package does not

@@ -264,10 +264,14 @@ class _CardFormToolbarState extends ConsumerState<CardFormToolbar> {
           // rather than as a control. What it leaves the pill standing on is the
           // elevated surface's shadow, which is the separation this needs.
           //
-          // This suppresses the effect-strategy borders too, which is the point:
-          // the styles that draw a gradient or shimmer border (glass, the demo's
-          // default) are where the frame was loudest.
+          // Frameless takes both of these, because a style can draw a border two
+          // ways and `showBorder` only stops one of them. It covers the standard
+          // border and the gradient one; the shimmer border that glass (the
+          // demo's default) animates is that style's *enhanced* effect, which
+          // `AppSurface` applies whenever the theme's shimmer bit is on,
+          // whatever `showBorder` says. Its intensity is the knob that stops it.
           showBorder: false,
+          enhancedEffect: EnhancedEffectIntensity.none,
           padding: const EdgeInsets.all(AppSpacing.xs),
           child: AppChipGroup(
             chips: [for (final option in options) _chipFor(context, option)],
@@ -347,6 +351,18 @@ class _CardFormToolbarState extends ConsumerState<CardFormToolbar> {
   /// from ours — the glyphs count *spacing*, so `density_small` is the packed one,
   /// everything the card has, and `density_large` the sparsest. Screen readers get
   /// the name from [ChipItem.semanticLabel], which is what it is for.
+  ///
+  /// ## The chips keep a frame of their own, and cannot be told not to
+  ///
+  /// Dropping the pill's border left three smaller ones inside it. Each chip is
+  /// its own `AppSurface`, built inside `AppChipGroup` with `showBorder` at its
+  /// default, and the group exposes no way to reach it: [ChipGroupStyle] carries
+  /// background, text, radius and a `selectedBorderColor` the group never reads —
+  /// no border switch and no width. So this is the kit's to fix, and it is asked
+  /// for as such rather than worked around here (`AppChipGroup` gaining the
+  /// passthrough, and `applyEnhancedEffect` honouring `showBorder` the way
+  /// `applyBorder` already does). Until then the chips are framed under any style
+  /// whose surfaces are, which is most of them, and only the pill is not.
   ///
   /// The other cost is the target: a chip that was a word wide is now about 36x24,
   /// under the 48x48 a touch guideline asks for. Stated rather than hidden, and
