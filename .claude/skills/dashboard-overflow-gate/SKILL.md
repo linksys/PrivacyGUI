@@ -1,6 +1,6 @@
 ---
 name: dashboard-overflow-gate
-description: Operate and maintain the #1183 dashboard-card RenderFlex-overflow PR gate — run the sweep, read its HTML/Markdown report, edit the known_overflows.json allowlist under the ratchet rules, and onboard newly added/removed dashboard cards. Use when a dashboard-card gate test fails, when adding/removing a card or a locale, or when reading/generating the overflow report. Trigger keywords (English) - overflow test, overflow gate, RenderFlex, dashboard card test, known_overflows, allowlist, whitelist, overflow report, new dashboard card. Trigger keywords (Chinese) - 跑版測試, 溢出測試, overflow 測試, dashboard card 測試, 白名單, 新增語系, 新增卡片, 刪除卡片, 溢出報告, 生成報告, 掃描 dashboard.
+description: Operate and maintain the #1183 dashboard-card RenderFlex-overflow PR gate — run the sweep, read its HTML/Markdown report, edit the known_overflows.json allowlist under the ratchet rules, and onboard newly added/removed dashboard cards. Use when a dashboard-card gate test fails, when adding/removing a card or a locale, or when reading/generating the overflow report. Trigger keywords (English) - overflow test, overflow gate, RenderFlex, dashboard card test, known_overflows, allowlist, whitelist, overflow report, new dashboard card, data profile, dead exemption. Trigger keywords (Chinese) - 跑版測試, 溢出測試, overflow 測試, dashboard card 測試, 白名單, 新增語系, 新增卡片, 刪除卡片, 溢出報告, 生成報告, 掃描 dashboard, 資料情境.
 ---
 
 # Dashboard Card Overflow Gate — Operate & Maintain
@@ -12,7 +12,10 @@ overflows the golden pipeline structurally misses (default-tab-only, fixed
 width, not-every-card — the path the #1145 Network Health legend overflow
 slipped through). It sweeps **every card × its narrowest grid width × every tab
 × all 26 shipped locales** and fails if any RenderFlex overflows beyond a
-baseline **allowlist** ("ratchet").
+baseline **allowlist** ("ratchet"). **Data** is a fourth dimension, but an opt-in
+one: cards listed in `kCardDataProfileSweeps` are additionally swept against a
+second router shape — every other card's "clean" verdict is a verdict about the
+one default fixture.
 
 This skill is for **operating and maintaining** that gate — NOT for writing new
 overflow-detection machinery. Use it to run the sweep, read its report, edit the
@@ -49,8 +52,9 @@ below may drift:
 2. Allowlist fixture — [test/fixtures/known_overflows.json](../../../test/fixtures/known_overflows.json)
 3. Runner — [tool/run_overflow_test.sh](../../../tool/run_overflow_test.sh)
 4. Probe + grid math + tab registry — [test/util/dashboard/dashboard_card_probe.dart](../../../test/util/dashboard/dashboard_card_probe.dart)
-5. Report generator (Status SSoT) — [test/util/dashboard/dashboard_overflow_report_generator.dart](../../../test/util/dashboard/dashboard_overflow_report_generator.dart)
-6. Width-selection tests — [test/util/dashboard/dashboard_card_probe_test.dart](../../../test/util/dashboard/dashboard_card_probe_test.dart)
+5. Data profiles + per-card sweep list — [test/util/dashboard/card_data_profiles.dart](../../../test/util/dashboard/card_data_profiles.dart)
+6. Report generator (Status SSoT) — [test/util/dashboard/dashboard_overflow_report_generator.dart](../../../test/util/dashboard/dashboard_overflow_report_generator.dart)
+7. Width-selection tests — [test/util/dashboard/dashboard_card_probe_test.dart](../../../test/util/dashboard/dashboard_card_probe_test.dart)
 
 ## Architecture — Data Flow
 
@@ -63,16 +67,24 @@ cardTabIndexProvider ┘     • widthCasesFor(spec): narrowest real grid px per
                              screen/card width, pinned tab, locale, real fonts
                            • kTabbedCardTabCounts: tabs to sweep per card
                                     │
+card_data_profiles.dart ────────────┤  (#1267: the router shape the card is fed)
+  • the default profile is kitchenSinkOverrides() — one fixed router
+  • kCardDataProfileSweeps: per-card OPT-IN list of extra (card, tabs, profile)
+    triples, each pumped through the same width × locale sweep
+                                    │
                                     ▼
                     overflow_probe.dart  (runWithOverflowCollection)
                     hooks FlutterError.onError → collects "overflowed by Npx"
                     as OverflowIncident, forwards real errors so they still fail
                                     │
                                     ▼
-        dashboard_card_overflow_test.dart  (one testWidgets PER card×width×tab×locale)
+    dashboard_card_overflow_test.dart  (one testWidgets PER card×width×tab×locale,
+                                        plus one per profile sweep's own cases)
           overflow > 2px tolerance?
             ├─ in allowlist  → print "KNOWN OVERFLOW (allowlisted)", PASS
             └─ not in allowlist → FAIL with fix/allowlist instructions
+          clean, but the coordinate IS in the allowlist?
+            └─ FAIL "dead exemption" / "over-broad exemption" (both directions)
                                     │
                     (only when DUMP > 0) tearDownAll →
                                     ▼
@@ -147,18 +159,24 @@ Raw `flutter test` knobs (the script wraps these as `--dart-define`):
                                                    //   in EVERY locale (text-length
                                                    //   independent)
     "device_info|preferred|0": ["fi", "id", "pl", "sv"],  // text-length dependent
-    "system_status|min|2": ["de", "es", "es_AR", "fr", "..."]
+    "system_status|min|2": ["de", "es", "es_AR", "fr", "..."],
+    "wifi_performance|min|2@triband": ["tr"]      // a data-profile sweep's case
   }
 }
 ```
 
-Key grammar — `cardId|widthLabel|tabIndex`:
+Key grammar — `cardId|widthLabel|tabIndex[@profileKey]`:
 
 - `cardId` — a `UspWidgetSpecs.all` id (`-l` lists them).
 - `widthLabel` — one of `min` / `preferred` / `max` (the card's column span whose
   narrowest grid width overflowed).
 - `tabIndex` — 0-based; single-view cards are always `0`. Tabbed cards use the
   count in `kTabbedCardTabCounts`.
+- `@profileKey` — **absent** for the default data profile, which keeps every
+  pre-#1267 key byte-identical. A `kCardDataProfileSweeps` case lands under
+  `…@<profile.key>` (e.g. `@triband`) so a second profile's findings can never
+  move the default profile's entry count — the number every closed ticket in this
+  epic quotes as "N coordinates cleared" (design §2.7).
 - Value — a JSON array of **locale tags** (`_localeTag` format: `en`, `de`,
   `es_AR`, `fr_CA`, `pt_PT`, `zh_TW`, …), OR `["*"]` meaning "overflows in all
   locales regardless of text". A hit is tolerated if the set contains the locale
@@ -166,14 +184,21 @@ Key grammar — `cardId|widthLabel|tabIndex`:
 
 ## The Ratchet — How the Gate Reacts to Edits
 
-The allowlist only *tolerates* the exact baseline. Both directions fail:
+The allowlist only *tolerates* the exact baseline. Every direction fails:
 
 - **New overflow** — a card/width/tab not listed, or a listed entry seen in a
   **new locale** → the test FAILS. This is the point: regressions block the PR.
-- **Over-broad allowlist** — a locale listed as overflowing that no longer
-  overflows does NOT auto-fail, but removing a still-overflowing locale from an
-  entry fails exactly that test (proven both ways in #1183). So you cannot shrink
-  the list by editing JSON alone — you must fix the layout first.
+- **Premature removal** — deleting a locale that still overflows fails exactly
+  that test (proven both ways in #1183). You cannot shrink the list by editing
+  JSON alone; you must fix the layout first.
+- **Dead exemption** — a locale listed as overflowing that now renders clean also
+  FAILS, with "remove it". Before this, a fixed overflow kept its exemption
+  silently, and a stale entry was indistinguishable from tracked debt — which is
+  how 46 of them came to be retired by hand. Fixing a card therefore includes
+  editing the fixture in the same change.
+- **Over-broad `"*"`** — a `"*"` entry with *any* clean locale FAILS too: `"*"`
+  claims the overflow is structural, so one clean locale disproves it. Replace it
+  with the explicit tags that still overflow.
 
 The gate's own failure message tells the operator exactly what to do:
 
@@ -195,16 +220,24 @@ The gate's own failure message tells the operator exactly what to do:
    - **Known overflow surfacing in a new locale** (an entry exists for
      `card|width|tab` but not this locale) → if the deferral is legitimate and
      tracked, add the locale tag to that entry's array. Prefer fixing.
+   - **"Dead exemption" / "Over-broad exemption"** → the opposite failure: the
+     coordinate is clean and the fixture still exempts it. Do what the message
+     says — drop that locale tag (and the entry plus its `tracking` note once the
+     list empties), or narrow a `"*"` to the tags that still overflow. Nothing to
+     fix in the layout; this is the ratchet closing.
+   - **A `[<profile>]` in the failure name** → the case comes from
+     `kCardDataProfileSweeps`, so the *data*, not the width, is what breaks it.
+     The message says so explicitly. Its allowlist key carries `@<profileKey>`.
 4. Never retag the test or delete it to make CI pass.
 
 ### B. Edit the allowlist (defer a known overflow)
 
 1. Confirm it's genuinely deferred (has, or needs, a tracking issue), not a
    regression you should fix now.
-2. Add the locale tag to the matching `cardId|widthLabel|tabIndex` array in
-   `known_overflows.json` (create the entry if absent). Use `"*"` only when it
-   overflows in **every** locale (structural), verified via a full sweep of that
-   card.
+2. Add the locale tag to the matching `cardId|widthLabel|tabIndex[@profileKey]`
+   array in `known_overflows.json` (create the entry if absent). Use `"*"` only
+   when it overflows in **every** locale (structural) — the gate now fails the
+   first clean locale it finds under a `"*"`, so guessing costs a red run.
 3. Add/update a `tracking` note for the card so the allowlisted hit prints a
    pointer.
 4. Re-run the affected slice to confirm green:
@@ -218,26 +251,38 @@ New cards in `UspWidgetSpecs.all` are picked up automatically — but:
    (the probe throws `StateError` otherwise).
 2. If the card is **tabbed**, add it to `kTabbedCardTabCounts` in
    [dashboard_card_probe.dart](../../../test/util/dashboard/dashboard_card_probe.dart)
-   with its tab count. The `tab registry` meta-test (`<card> still has N tabs`)
-   fails if this is missing/wrong, so the sweep covers every tab.
-3. Run the card's full sweep: `./tool/run_overflow_test.sh -c <new_card> -o`.
-4. Fix any overflow you reasonably can; allowlist the rest per Playbook B with a
+   with its tab count. The `tab registry` meta-test enforces this from both
+   sides — `<card> still has N tabs` for a registered card, and `<card> is
+   single-view, so tab 0 is full coverage` for an unregistered one — so a tabbed
+   card left out of the registry fails rather than being swept at tab 0 only.
+3. Decide whether the card's tree depends on the **router shape** (radio count,
+   band count, port count, client count). If it does, the default profile is one
+   router and the sweep says nothing about the others: add a
+   `CardDataProfileSweep` to `kCardDataProfileSweeps` in
+   [card_data_profiles.dart](../../../test/util/dashboard/card_data_profiles.dart),
+   naming only the tabs that actually render the varying data. That file's doc
+   states the opt-in cost plainly — a card is uncovered on the second profile
+   until someone adds it — so record the decision either way.
+4. Run the card's full sweep: `./tool/run_overflow_test.sh -c <new_card> -o`.
+5. Fix any overflow you reasonably can; allowlist the rest per Playbook B with a
    tracking note. Goal is 0 new allowlist entries.
 
 ### D. Removing a card / tab
 
 - Removing a card from `UspWidgetSpecs.all` → delete its `known_overflows.json`
-  entries and any `tracking` note (stale keys are silently ignored, but keep the
-  fixture clean).
+  entries (including any `…@profileKey` ones), its `tracking` note, and any
+  `kCardDataProfileSweeps` entry naming it.
 - Changing a card's tab count → update `kTabbedCardTabCounts`; the meta-test
-  enforces it. Re-baseline that card's entries.
+  enforces it. Re-baseline that card's entries, and check whether a profile sweep
+  still names a tab index that exists.
 
 ### E. Shrink the allowlist (#1183 follow-up)
 
 For each entry: fix the card's layout so it no longer overflows at that
 width/tab/locale, then **remove** those locales (or the whole entry). Re-run
-`-c <card>` — the ratchet confirms the removal is real (a premature removal fails
-that exact test). This is the intended long-term direction; the baseline is debt,
+`-c <card>` — the ratchet confirms the removal is real from both sides: a
+premature removal fails that exact test, and a fix you forget to record fails as
+a dead exemption. This is the intended long-term direction; the baseline is debt,
 not a target to grow.
 
 ## Report Interpretation (`-d 2`/`3`)
@@ -262,9 +307,11 @@ Markdown report (`-d 1`) is the same data as a flat bulleted list —
 | Mistake | Correct approach |
 |---------|------------------|
 | Allowlisting a real regression to get CI green | Fix the layout; the allowlist is for tracked, deferred debt only |
-| Using `"*"` after seeing overflow in a few locales | `"*"` means *every* locale — verify with a full-locale sweep of that card first |
+| Using `"*"` after seeing overflow in a few locales | `"*"` means *every* locale — verify with a full-locale sweep of that card first; the gate fails the first clean locale under a `"*"` |
+| Fixing a card's layout and leaving its allowlist entry behind | The clean case now fails as a "dead exemption" — remove the tag in the same change |
+| Assuming a clean sweep covers every router | Data is a swept dimension only for cards opted into `kCardDataProfileSweeps`; otherwise "clean" means clean *on the default fixture* |
 | Wrong locale tag (`zh-TW`, `es-AR`) | Use `_localeTag` form with underscore: `zh_TW`, `es_AR`, `fr_CA`, `pt_PT` |
-| New tabbed card, but only tab 0 gets tested | Add it to `kTabbedCardTabCounts`; the `tab registry` meta-test enforces coverage |
+| New tabbed card, but only tab 0 gets tested | Add it to `kTabbedCardTabCounts`; the `tab registry` meta-test enforces both directions, so an unregistered tabbed card fails instead of quietly under-sweeping |
 | Retagging the test golden/loc/ui to "organize" it | It would drop out of the PR gate — keep it `dashboard-card` |
 | Multi-pumping to sweep widths/tabs in one test | Each case must be its own `testWidgets` (only the first overflow is reported per render object) |
 | Editing the grid constants to change results | They mirror production geometry on purpose; changing them changes what "overflow" means |
