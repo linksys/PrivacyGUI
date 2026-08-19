@@ -177,6 +177,29 @@ void main() {
       expect(find.bySemanticsLabel('Edit timezone settings'), findsOneWidget);
     });
 
+    // Same pairing as `usp_time_settings_card_test.dart` — see the note there
+    // for why "the label exists" and "the pressable node is named" are two
+    // claims, and why the first one stays green while the second breaks.
+    testWidgets(
+        'the edit button announces its name on the node that is tappable',
+        (tester) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(_buildTestWidget(timeSettings: gmt8Settings));
+      await tester.pumpAndSettle();
+
+      final node = tester.getSemantics(find.byType(AppIconButton));
+
+      expect(node.label, 'Edit timezone settings',
+          reason: 'the tappable node announces "${node.label}", so the button '
+              'has no accessible name — the name is on an ancestor a screen '
+              'reader cannot press.');
+      expect(node, isSemantics(hasTapAction: true, isEnabled: true),
+          reason: 'the node carrying the name cannot be activated, so the name '
+              'belongs to nothing.');
+
+      handle.dispose();
+    });
+
     testWidgets('displays initial local time correctly', (tester) async {
       const settings = TimeSettingsUIModel(
         enable: true,

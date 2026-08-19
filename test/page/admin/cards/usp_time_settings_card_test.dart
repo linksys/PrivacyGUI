@@ -157,5 +157,37 @@ void main() {
 
       expect(find.bySemanticsLabel('Edit time settings'), findsOneWidget);
     });
+
+    // The assertion above finds the label *somewhere* in the semantics tree,
+    // which is not the same claim: what a screen reader announces is the label
+    // on the node it can activate. Those were one node until a `container: true`
+    // inside `AppIconButton` split them, and then the tree read
+    //
+    //   [button, no tap ] "Edit time settings"
+    //     [button, tap  ] "Icon button"
+    //
+    // — a named node nothing can press over a pressable node with no name. Both
+    // `findsOneWidget` above and a tap test stay green through that, because the
+    // label is still present and the button still works for a pointer. So the
+    // two properties are pinned together, on one node.
+    testWidgets(
+        'the edit button announces its name on the node that is tappable',
+        (tester) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(_buildTestWidget(_gmt8Time));
+      await tester.pumpAndSettle();
+
+      final node = tester.getSemantics(find.byType(AppIconButton));
+
+      expect(node.label, 'Edit time settings',
+          reason: 'the tappable node announces "${node.label}", so the button '
+              'has no accessible name — the name is on an ancestor a screen '
+              'reader cannot press.');
+      expect(node, isSemantics(hasTapAction: true, isEnabled: true),
+          reason: 'the node carrying the name cannot be activated, so the name '
+              'belongs to nothing.');
+
+      handle.dispose();
+    });
   });
 }

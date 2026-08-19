@@ -85,13 +85,12 @@ class _UspTimezoneCardState extends State<UspTimezoneCard>
                               ?.semanticWarning,
                     ),
                     AppGap.sm(),
-                    Semantics(
-                      label: loc(context).editTimezoneSettings,
-                      button: true,
-                      child: AppIconButton(
-                        icon: AppIcon.font(Icons.edit, size: 18),
-                        onTap: widget.onEdit,
-                      ),
+                    // On the button rather than around it — see the note at the
+                    // same shape in `usp_time_settings_card.dart`.
+                    AppIconButton(
+                      icon: AppIcon.font(Icons.edit, size: 18),
+                      semanticLabel: loc(context).editTimezoneSettings,
+                      onTap: widget.onEdit,
                     ),
                   ],
                 ),
