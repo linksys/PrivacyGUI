@@ -22,12 +22,23 @@ class RemoteAssistanceConfig {
     this.clientTypeId,
   });
 
-  /// Guardian API origin — the single host for ALL Remote Assistance traffic
-  /// (session REST, USP requests, subscriptions, SSE notifications).
+  /// Guardian API origin — the host every USP-over-Guardian call must use:
+  /// USP requests, subscriptions and SSE notifications.
   ///
   /// Must NOT be confused with the origin the web app is served from; the
   /// Guardian API lives on a different host (e.g. `qa.guardian.tools`).
-  String get guardianOrigin => 'https://$guardianBaseUrl';
+  ///
+  /// The session REST API ends up on the same host by construction — both this
+  /// config ([RemoteAssistanceConfig.guardianBaseUrl], set from
+  /// `cloudEnvironmentConfig[kCloudBase]`) and `GuardianApiClient._buildUrl`
+  /// read that same entry — but it builds its URL independently.
+  String get guardianOrigin {
+    // Kept as an assert rather than a constructor assert: the constructor is
+    // const, and const asserts only accept potentially-constant expressions.
+    assert(!guardianBaseUrl.contains('://'),
+        'guardianBaseUrl must be a bare host, without a scheme');
+    return 'https://$guardianBaseUrl';
+  }
 
   /// Constructs the Guardian USP endpoint path.
   String get uspEndpoint =>
@@ -110,6 +121,22 @@ class RemoteAssistanceNotifier extends Notifier<RemoteAssistanceState> {
       }
       getIt.registerSingleton<UspClient>(raClient);
       logger.i('[RA] UspClient replaced with Guardian-proxied client');
+
+      // Invalidated in the same critical section as the swap, so "client
+      // identity changed" and "cache dropped" can never drift apart.
+      //
+      // uspClientProvider caches whatever GetIt held when it was FIRST read,
+      // and authProvider.init() reads it during app boot — long before RA
+      // activates. Without this, every USP request and every bridge call keeps
+      // using the disposed boot-time client, whose baseUrl is the web app's own
+      // origin instead of the Guardian API host.
+      //
+      // Invariant: only ref.watch consumers rebuild. Feature services capture
+      // the client via ref.read(uspClientProvider) in the body of a
+      // non-autoDispose provider, so they keep their first instance for the
+      // container's lifetime — the swap MUST happen before any feature service
+      // provider is first read.
+      ref.invalidate(uspClientProvider);
     });
 
     // Set login type to remote so auth checks pass
@@ -119,13 +146,6 @@ class RemoteAssistanceNotifier extends Notifier<RemoteAssistanceState> {
       isActive: true,
       config: config,
     );
-
-    // uspClientProvider caches whatever GetIt held when it was FIRST read
-    // (authProvider.init() reads it during app boot, before RA activates).
-    // Without this invalidation, every USP request and every bridge call keeps
-    // using the disposed boot-time client — whose baseUrl is the web app's own
-    // origin, not the Guardian API host.
-    ref.invalidate(uspClientProvider);
   }
 
   /// Deactivates Remote Assistance mode.
@@ -143,13 +163,13 @@ class RemoteAssistanceNotifier extends Notifier<RemoteAssistanceState> {
         client.dispose();
         logger.d('[RA] UspClient unregistered and disposed');
       }
+
+      // Drop the cached instance in the same critical section, so watchers
+      // rebuild against an empty GetIt instead of holding a disposed client.
+      ref.invalidate(uspClientProvider);
     });
 
     state = const RemoteAssistanceState();
-
-    // Drop the cached (now disposed) client so downstream providers tear down
-    // instead of calling into freed WASM memory.
-    ref.invalidate(uspClientProvider);
   }
 }
 
