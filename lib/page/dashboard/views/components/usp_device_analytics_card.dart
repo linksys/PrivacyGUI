@@ -31,8 +31,16 @@ class _UspDeviceAnalyticsCardState
     final analyticsState = ref.watch(uspDeviceAnalyticsProvider);
     final selectedTab = ref.watch(cardTabIndexProvider(_cardId));
 
+    final distribution = analyticsState.current;
+
     return DashboardCardTemplate.tabbed(
       title: loc(context).deviceAnalytics,
+      // Online over total, the headline the Distribution tab's donut carries in
+      // its centre. Two dashes until the first snapshot lands — `0/0` would read
+      // as "nothing is connected" rather than "nothing is known yet".
+      popupValue: distribution == null
+          ? '--'
+          : '${distribution.onlineCount}/${distribution.totalCount}',
       selectedTabIndex: selectedTab,
       onTabChanged: (index) =>
           ref.read(cardTabIndexProvider(_cardId).notifier).state = index,

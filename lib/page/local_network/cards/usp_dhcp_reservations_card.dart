@@ -34,6 +34,11 @@ class UspDhcpReservationsCard extends ConsumerWidget {
         icon: AppIcon.font(Icons.add, size: 20),
         onTap: isLoading ? null : () => _showAddDhcpDialog(context, ref),
       ),
+      // Reservations, not reservations plus leases. The card is two sections and
+      // the footer counts both, but the tile has one number and the reservations
+      // are the ones a user configured — the leases are whatever happens to be
+      // connected, which `connected_devices` already reports.
+      popupValue: '${reservations.length}',
       detailRoute: RouteNamed.uspDhcpDetail,
       itemCount: reservations.length + onlineClients.length,
       sections: [

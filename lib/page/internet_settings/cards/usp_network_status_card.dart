@@ -43,6 +43,11 @@ class UspNetworkStatusCard extends ConsumerWidget {
                       ),
             )
           : null,
+      // The WAN address, which is this card's own hero line — and the word for
+      // the state when there is no address to show, because an IP on a link
+      // that is down reads as working. `offline` is the same string the hero's
+      // subtitle uses one screen up.
+      popupValue: wan.isUp ? wan.ipAddress : loc(context).offline,
       detailRoute: RouteNamed.uspInternetSettings,
       content: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

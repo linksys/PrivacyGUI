@@ -31,6 +31,12 @@ class UspWifiStatusCard extends ConsumerWidget {
       titleBadge: AppBadge(
           label: loc(context)
               .nRadios(enabledRadios.toString(), radios.length.toString())),
+      // How many radios are on, over how many there are — the same fact the
+      // badge states, in the bare form the tile has room for (`nRadios` spells
+      // it out in words, which at two columns would be the only thing that
+      // fits). Neither number alone is a reading of the card: three of three is
+      // healthy, two of three is a band switched off.
+      popupValue: '$enabledRadios/${radios.length}',
       detailRoute: RouteNamed.uspWifiSettings,
       content: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

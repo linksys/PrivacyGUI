@@ -43,8 +43,18 @@ class _UspTrafficAnalysisCardState
     final analysisState = ref.watch(uspTrafficAnalysisProvider);
     final selectedTab = ref.watch(cardTabIndexProvider(_cardId));
 
+    final latest = analysisState.latest;
+
     return DashboardCardTemplate.tabbed(
       title: loc(context).trafficMonitor,
+      // Current WAN throughput, formatted by the same helper the Monitor tab's
+      // speed tiles use — the tile is this card in one number, and this card is
+      // about rate. Two dashes while the first poll is still in flight, because
+      // `0 B/s` would read as a dead link.
+      popupValue: latest == null
+          ? '--'
+          : _formatSpeed(
+              latest.interfaces[TrafficInterface.wan]?.totalBytesPerSec ?? 0),
       footer: _buildStatisticsFooter(context, 0),
       titleBadge: analysisState.isFetching
           ? SizedBox(

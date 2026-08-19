@@ -55,6 +55,11 @@ class _UspSystemStatusCardState extends ConsumerState<UspSystemStatusCard> {
 
     return DashboardCardTemplate.tabbed(
       title: loc(context).systemStatus,
+      // CPU load, which is the one number on this card that changes minute to
+      // minute and the reason anyone opens it. Same expression the Monitor tab's
+      // gauge reads (`:206`): the live sample when polling has produced one, the
+      // boot-time figure until then.
+      popupValue: '${monitorState.latest?.cpuPercent ?? info.cpuPercent}%',
       footer: _buildStatisticsFooter(context, 2),
       titleBadge: monitorState.isFetching
           ? SizedBox(

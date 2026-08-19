@@ -125,22 +125,6 @@ bool _canReachPopupBand(WidgetSpec spec) {
 /// itself the constraint. The tile inside it is still one row.
 const int _fullScreenRows = 6;
 
-/// The width realization of a picked popup tile: [UspWidgetSpecs.popupColumns]
-/// wide, on the narrowest screen that produces that span.
-///
-/// Not the card's own narrowest case — a pick overrides the spec's floors
-/// outright, so the width a picked card renders at is the tile's, not the one
-/// `widthCasesFor` derives from `minColumns`.
-CardWidthCase _pickedTileCase() {
-  final r = narrowestRealizationOf(UspWidgetSpecs.popupColumns)!;
-  return CardWidthCase(
-    screenWidth: r.screenWidth,
-    cardWidth: r.cardWidth,
-    columnSpan: UspWidgetSpecs.popupColumns,
-    label: 'popup-tile',
-  );
-}
-
 /// Whether the user can put [spec] into popup by *picking* it (#1299).
 ///
 /// A different and much larger inventory than [_canReachPopupBand], which is why
@@ -389,7 +373,7 @@ void main() {
     for (final spec in UspWidgetSpecs.all.where(_canBePickedIntoPopup)) {
       // The tile the pick collapses the card to, not the card's own narrowest
       // span: a picked popup is `popupColumns` wide wherever the grid allows it.
-      final wc = _pickedTileCase();
+      final wc = pickedTileCase();
 
       for (final locale in _dialogLocales) {
         final tag = _localeTag(locale);
@@ -432,6 +416,128 @@ void main() {
           );
         });
       }
+    }
+  });
+
+  /// What the tile actually says, which no overflow probe can see.
+  ///
+  /// The sweeps above measure that the tile fits. A tile showing the card's
+  /// *name* fits just as well as one showing its value — better, since the fixed
+  /// strings are shorter — so the form could be entirely useless and every case
+  /// above would stay green. Reported from the built app: the picked tiles read
+  /// "Network St…", "System Stat…", "Community…", because eleven of the seventeen
+  /// pickable cards declared no `popupValue` and fell back to their title.
+  ///
+  /// The fallback stays (a form with nothing in it is worse than one showing the
+  /// card's name), so this is the test that says the fallback is not the design.
+  ///
+  /// ## Mutation table
+  ///
+  /// | # | mutated | mutation | killed by |
+  /// |---|---|---|---|
+  /// | 1 | any card | its `popupValue` argument removed | that card's case, by the title it falls back to |
+  /// | 2 | any card | `popupValue: title` (a value that is the name) | that card's case — the second assertion, which is why non-null is not the whole claim |
+  group('the value a picked popup shows', () {
+    for (final spec in UspWidgetSpecs.all.where(_canBePickedIntoPopup)) {
+      testWidgets('${spec.id} degrades to a value, not to its own name',
+          (tester) async {
+        await probeCardOverflow(
+          tester,
+          cardId: spec.id,
+          widthCase: pickedTileCase(),
+          cardHeightRows: UspWidgetSpecs.popupHeightRows,
+          screenHeightRows: _fullScreenRows,
+          tabIndex: 0,
+          locale: const Locale('en'),
+          density: CardDensity.popup,
+        );
+
+        final form = tester.widget<CardPopupForm>(find.byType(CardPopupForm));
+        expect(
+          form.value,
+          isNotNull,
+          reason: '${spec.id} declares no popupValue, so its tile shows its '
+              'title — and at two columns the title is ellipsized to a few '
+              'characters. Which number is worth seeing at a glance is the '
+              "card's own judgement (see DashboardCardTemplate.popupValue), so "
+              'it has to be declared where the card is built',
+        );
+        expect(
+          form.value,
+          isNot(form.title),
+          reason: '${spec.id} degrades to its own name, which the tile would '
+              'have shown anyway — the form is then a label, not a value',
+        );
+      });
+    }
+  });
+
+  /// The height the presentation is given, and where that number comes from.
+  ///
+  /// `minHeightRows` is the floor the grid enforces — the smallest box the card
+  /// can be dragged to — and the presentation was sized to it. That is the wrong
+  /// end of the range: the card the user is being shown is the one the dashboard
+  /// would have laid out, and what the dashboard lays out is
+  /// `getPreferredHeightCells()` (`layout_item_factory.dart:49`). For the six
+  /// cards whose strategy is `strict(N)` with `N` above their floor the two
+  /// differ by one to two grid rows — topology declares a floor of 3 and prefers
+  /// 5, so it was presented at 392px in a box it fills at 664px, which is what
+  /// "topology 也是太小" was.
+  ///
+  /// The overflow sweeps cannot see this either: a box that is too *small* for a
+  /// card whose content scrolls or shrink-wraps overflows nothing. It just shows
+  /// a third of the card.
+  ///
+  /// ## Mutation table
+  ///
+  /// | # | mutated | mutation | killed by |
+  /// |---|---|---|---|
+  /// | 1 | `usp_widget_factory` | `_normalHeightOf` reads `minHeightRows` again | the six cards whose preferred rows exceed their floor |
+  /// | 2 | `usp_widget_factory` | `_normalHeightOf` reads `maxHeightRows` | every card, in the other direction |
+  /// | 3 | `card_popup_form` | the viewport cap applied to every card, not only the ones over it | every card, once the cap binds below the declaration — the cap itself is pinned in `card_popup_form_test.dart`, on a screen small enough for it to bind |
+  group('the height a picked popup presents at', () {
+    for (final spec in UspWidgetSpecs.all.where(_canBePickedIntoPopup)) {
+      final constraints = spec.getConstraints(DisplayMode.normal);
+      // No spec uses `AspectRatioHeightStrategy`, the only strategy whose
+      // preferred height depends on the span, so the column count is not part of
+      // this question and the argument is left off deliberately.
+      final preferred = dashboardCardHeight(
+        constraints.getPreferredHeightCells(),
+      );
+
+      testWidgets('${spec.id} gets the ${preferred}px its spec prefers',
+          (tester) async {
+        await probeCardOverflow(
+          tester,
+          cardId: spec.id,
+          widthCase: pickedTileCase(),
+          cardHeightRows: UspWidgetSpecs.popupHeightRows,
+          screenHeightRows: _fullScreenRows,
+          tabIndex: 0,
+          locale: const Locale('en'),
+          density: CardDensity.popup,
+          after: (t) async {
+            await t.tap(find.byType(CardPopupForm));
+            await settleIgnoringAnimations(t);
+          },
+        );
+
+        expect(
+          tester
+              .getSize(find.descendant(
+                of: find.byType(AppDialog),
+                matching: find.byType(DashboardCardTemplate),
+              ))
+              .height,
+          preferred,
+          reason: '${spec.id} declares a floor of '
+              '${constraints.minHeightRows} rows and prefers '
+              '${constraints.getPreferredHeightCells()}. The presentation is the '
+              'only way to read a picked card, so the height it gets has to be '
+              'the one the dashboard would have laid the card out at, not the '
+              'smallest box the grid would ever allow',
+        );
+      });
     }
   });
 

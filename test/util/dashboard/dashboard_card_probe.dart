@@ -14,6 +14,7 @@ import 'package:privacy_gui/page/dashboard/factories/usp_widget_factory.dart';
 import 'package:privacy_gui/page/_shared/models/card_density.dart';
 import 'package:privacy_gui/page/dashboard/models/card_grid_geometry.dart';
 import 'package:privacy_gui/page/dashboard/models/display_mode.dart';
+import 'package:privacy_gui/page/dashboard/models/usp_widget_specs.dart';
 import 'package:privacy_gui/page/dashboard/models/widget_spec.dart';
 import 'package:privacy_gui/localization/fallback_font_resolver.dart';
 import 'package:privacy_gui/theme/theme_json_config.dart';
@@ -295,6 +296,24 @@ CardWidthCase desktopCaseFor(WidgetSpec spec, {double screenWidth = 1440}) {
     cardWidth: cardWidthAt(screenWidth, span),
     columnSpan: span,
     label: 'desktop',
+  );
+}
+
+/// The width realization of a card the user has *picked* into popup: a tile
+/// [UspWidgetSpecs.popupColumns] wide, on the narrowest screen producing that
+/// span.
+///
+/// Not any of [widthCasesFor]'s cases, and not derived from the spec at all — a
+/// pick overrides the card's own floors outright (#1299), so the width a picked
+/// card renders at is the tile's, the same for every card. Which is why this
+/// takes no [WidgetSpec]: there is nothing per-card left to read.
+CardWidthCase pickedTileCase() {
+  final r = narrowestRealizationOf(UspWidgetSpecs.popupColumns)!;
+  return CardWidthCase(
+    screenWidth: r.screenWidth,
+    cardWidth: r.cardWidth,
+    columnSpan: UspWidgetSpecs.popupColumns,
+    label: 'popup-tile',
   );
 }
 
