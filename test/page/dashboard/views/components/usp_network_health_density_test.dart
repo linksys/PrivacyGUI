@@ -214,6 +214,21 @@ void main() {
   /// two separates them; 0.95 is that, with room for a rasterizer.
   const scaleFloor = 0.95;
 
+  /// ## Which call sites keep the returned list, and why the rest drop it
+  ///
+  /// `probeCardOverflow` *intercepts* RenderFlex overflow into this list instead
+  /// of failing the test, so a discarded return is a swallowed overflow and needs
+  /// a reason (#1318). Every discard in this file is a `pin: CardDensity.normal`
+  /// pump *below* the threshold — `normalAbove - 1`, the 191.4px realization, and
+  /// the 230/231px scale-floor pair — and those cases exist to show the normal
+  /// form is **broken** at those widths, which is what makes 366 a measurement.
+  /// Asserting no overflow there would assert the opposite of the group's own
+  /// claim.
+  ///
+  /// Where this card's normal form is production, `dashboard_card_overflow_test`'s
+  /// `[normal band]` group sweeps it at 366px across all three tabs and 26
+  /// locales, and monotonicity within a form makes that width dominate the wider
+  /// ones (see `normalBandCaseFor`).
   Future<List<OverflowIncident>> pumpAt(
     WidgetTester tester, {
     required double cardWidth,

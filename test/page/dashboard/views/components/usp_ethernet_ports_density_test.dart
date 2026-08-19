@@ -225,6 +225,23 @@ void main() {
   /// (mutation E).
   const chipWidthBound = 96.0;
 
+  /// ## Which call sites keep the returned list, and why the rest drop it
+  ///
+  /// `probeCardOverflow` *intercepts* RenderFlex overflow into this list instead
+  /// of failing the test, so a discarded return is a swallowed overflow and needs
+  /// a reason (#1318). The discards are of three kinds, and none of them is a
+  /// coverage hole:
+  ///
+  ///   * `pin: CardDensity.normal` below the threshold (the 288px widest
+  ///     realization, `normalAbove - 1`) — the groups asserting those pumps exist
+  ///     to show the normal form seats **0 of 5** ports there, so asserting no
+  ///     overflow would contradict them.
+  ///   * unpinned at 288px, where the grid selects compact — the gate's main sweep
+  ///     measures that exact coordinate in all 26 locales.
+  ///   * unpinned at `desktopCase`, where it selects normal — dominated by the
+  ///     `[normal band]` sweep's 386px case, since overflow is monotonic *within*
+  ///     a form and both pumps fix the height at `minHeightRows` (see
+  ///     `normalBandCaseFor`).
   Future<List<OverflowIncident>> pumpAt(
     WidgetTester tester, {
     required double cardWidth,

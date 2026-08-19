@@ -97,13 +97,35 @@ void main() {
   /// readability regressed" but "this width no longer shows this content".
   ///
   /// Which leaves the question of whether the assertions still mean anything,
-  /// and they do: 191.4px is the narrowest width the *normal* form is ever asked
-  /// to render, so it remains the strictest test of the wrap-not-ellipsis
-  /// choices #1236 and #1237 made — and those choices still govern every width
-  /// from `normalAbove` up. #1288 narrowed where the normal form is *selected*;
-  /// it did not soften what the normal form owes the reader when it is. The
-  /// degraded forms are a different claim with a different test file
+  /// and they do — but not for the reason this comment used to give. It claimed
+  /// 191.4px is "the narrowest width the *normal* form is ever asked to render",
+  /// and since #1288 that is false: the narrowest width production selects the
+  /// normal form at is each card's own threshold, 250px for `lan_info` and 256px
+  /// for `time_settings` (#1318). 191.4px is *narrower than that*, which is why
+  /// the assertions still hold — it is a strictly harder case for the same
+  /// wrap-not-ellipsis choices #1236 and #1237 made, and those choices govern
+  /// every width from `normalAbove` up. #1288 narrowed where the normal form is
+  /// *selected*; it did not soften what the normal form owes the reader when it
+  /// is. The degraded forms are a different claim with a different test file
   /// (`usp_hero_row_density_test.dart`).
+  ///
+  /// ## The overflow this collects is dropped, deliberately
+  ///
+  /// `probeCardOverflow` installs a `FlutterError.onError` that *intercepts*
+  /// RenderFlex overflow into a returned list instead of failing the test — so
+  /// declaring this `Future<void>` means the overflow at this coordinate is
+  /// swallowed, and that has to be a decision rather than an oversight.
+  ///
+  /// It is one. This coordinate is a *pinned* normal form at a width production
+  /// selects the popup form at, so an overflow here is not a defect: it is the
+  /// condition #1288 declared the threshold to avoid. Gating it would produce a
+  /// red test whose correct triage is "production never renders this", which is
+  /// the failure mode a ratchet cannot afford. Where these two cards' normal form
+  /// *is* production — 250px and 256px, all 26 locales — `dashboard_card_overflow_test`'s
+  /// `[normal band]` sweep measures it (#1318).
+  ///
+  /// Measured rather than assumed: asserting the list is empty here passes today,
+  /// in all 15 cases. So this is an ownership call and not a hidden failure.
   Future<void> pumpNarrowest(
     WidgetTester tester, {
     required String cardId,

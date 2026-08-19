@@ -165,6 +165,24 @@ void main() {
   /// wherever a future layout re-squeezes this box. Which form the grid *selects*
   /// at each width, and that the selected one is clean, is
   /// `usp_network_health_density_test.dart`'s claim.
+  ///
+  /// ## The overflow this collects is dropped, deliberately
+  ///
+  /// `probeCardOverflow` *intercepts* RenderFlex overflow into a returned list
+  /// rather than failing the test, so a `Future<void>` here swallows it — which
+  /// has to be a decision (#1318).
+  ///
+  /// It is one, and the same one the pin above rests on: 191.375px pinned normal
+  /// is a form production does not select at that width, and `network_health`'s
+  /// threshold is 366. Asserting the list is empty would gate a coordinate whose
+  /// only honest triage on failure is "production never renders this". The card's
+  /// production normal form is swept at 366px across all three tabs and 26
+  /// locales by `dashboard_card_overflow_test`'s `[normal band]` group; the
+  /// `preferred`-span pumps here are wider still, and monotonicity within a form
+  /// makes 366px dominate them (see `normalBandCaseFor`).
+  ///
+  /// Measured rather than assumed: asserting emptiness here passes today, in all
+  /// 17 cases. This is an ownership boundary, not a hidden failure.
   Future<void> pumpAt(
     WidgetTester tester, {
     required String cardId,

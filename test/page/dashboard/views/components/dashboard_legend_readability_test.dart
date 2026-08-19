@@ -60,6 +60,25 @@ void main() {
   /// [density] pins the form under measurement. Pass it for any card that
   /// declares a `normalAbove`, where this width would otherwise select the popup
   /// form and there would be no legend to assert on (see the header).
+  ///
+  /// ## The overflow this collects is dropped, deliberately
+  ///
+  /// `probeCardOverflow` *intercepts* RenderFlex overflow into a returned list
+  /// rather than failing the test, so a `Future<void>` here swallows it — a
+  /// decision, and it covers both kinds of call site below (#1318).
+  ///
+  /// For the pinned `network_health` pumps, 191.375px is a form production does
+  /// not select (its threshold is 366), so gating overflow there would fail on a
+  /// coordinate that never ships; `dashboard_card_overflow_test`'s `[normal band]`
+  /// group sweeps that card's normal form at 366px, all three tabs, 26 locales.
+  /// For the unpinned `system_status` pumps the form *is* production's — and the
+  /// gate's main sweep already measures overflow at exactly this coordinate,
+  /// across all four of its tabs and all 26 locales, which is strictly more than
+  /// the handful of locales here. Either way this file adds no overflow coverage;
+  /// what it adds is the readability the gate stays green through.
+  ///
+  /// Measured rather than assumed: asserting emptiness here passes today, in all
+  /// 14 cases.
   Future<void> pumpNarrowest(
     WidgetTester tester, {
     required String cardId,

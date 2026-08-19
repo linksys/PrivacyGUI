@@ -126,6 +126,18 @@ void main() {
   /// Pumps the card at the narrowest width the grid ever gives its min span —
   /// the worst case the gate measures, and where degradation is most aggressive.
   /// One pump, as the gate does.
+  ///
+  /// ## Most call sites drop the returned list, deliberately
+  ///
+  /// The two that keep it are the ones whose *own* claim is about overflow — the
+  /// `sixRadioProfile` load, whose coordinates deliberately live here rather than
+  /// in the gate's allowlist (see the header). Every other call site discards it,
+  /// and that is not the sink going quiet by accident (#1318): this card declares
+  /// no `normalAbove`, so its narrowest realization *is* the normal form on the
+  /// grid, and the gate's main sweep already measures overflow at exactly this
+  /// coordinate across all three tabs and all 26 locales. Re-asserting it per
+  /// readability case would duplicate 26-locale coverage with a 3-locale copy and
+  /// give two files a say over one ratchet entry.
   Future<List<OverflowIncident>> pumpNarrowest(
     WidgetTester tester, {
     required int tabIndex,
