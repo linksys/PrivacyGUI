@@ -2,7 +2,6 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:flutter_portal/flutter_portal.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
@@ -38,26 +37,22 @@ void main() {
   });
 
   Widget buildHost({List<Locale>? supportedLocales}) {
-    // Portal: AppPopupButton renders its content through flutter_portal.
-    return Portal(
-      child: ProviderScope(
-        overrides: [
-          if (supportedLocales != null)
-            supportedLocalesProvider.overrideWithValue(supportedLocales),
-        ],
-        child: MaterialApp(
-          theme: GetIt.instance.get<ThemeData>(instanceName: 'darkThemeData'),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          // The same list the provider is overridden with, so `Localizations`
-          // and the widget cannot disagree about which build this is. They did:
-          // the host always offered all 26 while the override said one, and the
-          // tests passed only because they assert on `locale_item_*` keys rather
-          // than on rendered strings.
-          supportedLocales:
-              supportedLocales ?? AppLocalizations.supportedLocales,
-          home: const Scaffold(
-            body: GeneralSettingsWidget(),
-          ),
+    return ProviderScope(
+      overrides: [
+        if (supportedLocales != null)
+          supportedLocalesProvider.overrideWithValue(supportedLocales),
+      ],
+      child: MaterialApp(
+        theme: GetIt.instance.get<ThemeData>(instanceName: 'darkThemeData'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        // The same list the provider is overridden with, so `Localizations`
+        // and the widget cannot disagree about which build this is. They did:
+        // the host always offered all 26 while the override said one, and the
+        // tests passed only because they assert on `locale_item_*` keys rather
+        // than on rendered strings.
+        supportedLocales: supportedLocales ?? AppLocalizations.supportedLocales,
+        home: const Scaffold(
+          body: GeneralSettingsWidget(),
         ),
       ),
     );

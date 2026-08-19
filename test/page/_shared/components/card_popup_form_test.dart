@@ -2,8 +2,8 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_portal/flutter_portal.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
@@ -11,7 +11,7 @@ import 'package:privacy_gui/page/_shared/components/card_density_scope.dart';
 import 'package:privacy_gui/page/_shared/components/card_popup_form.dart';
 import 'package:privacy_gui/page/_shared/components/dashboard_card_template.dart';
 import 'package:privacy_gui/page/_shared/providers/card_density_provider.dart';
-import 'package:privacy_gui/page/dashboard/models/card_density.dart';
+import 'package:privacy_gui/page/_shared/models/card_density.dart';
 import 'package:privacy_gui/theme/theme_json_config.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -23,6 +23,20 @@ import '../../../util/overflow_probe.dart';
 /// #1183 gate asserts only "does not overflow", and a popup form that renders
 /// nothing at all, loses its tap target, or opens a dialog too narrow for the
 /// card would pass it. Everything below is a claim the gate cannot make.
+///
+/// ## Mutation table
+///
+/// Each row is one edit to the named source file, applied to the real file and
+/// run against this file.
+///
+/// | # | mutated | mutation | killed by |
+/// |---|---|---|---|
+/// | 1 | `card_popup_form` | `_open` passes `context.size?.height` alone, dropping the declared height | the form gets the height the card declares it needs |
+/// | 2 | `usp_widget_factory` | the factory stops supplying `normalHeight` | **nothing here** — this file hands `CardDensityHost` its own value, so the wiring from spec to scope is covered by the picked-popup sweep in `dashboard_card_popup_overflow_test.dart` (51 cases), not by anything below |
+/// | 3 | `card_popup_form` | the dialog's width is derived from the viewport again (`screen.width − inset × 2`) | all three of `the dialog is one width …` (1152, 552 and 1152 against 400). Deriving it from the card's *declaration* is the other half of what the old formula did, and it can no longer be written: nothing carries a declared width into the presentation any more, so that mutation would have to re-thread it through `CardDensityScope` first. The compiler pins that half, not a test |
+/// | 4 | `card_popup_form` | the dialog keeps the theme's own surface and padding (drop the `containerStyle`/`padding` overrides, keep `maxWidth`) | **six** tests, not the two that name the frame: the two `no second frame` tests, and every width assertion (350 against 400). They measure what the *card* was given, and 24px of padding plus a 1px border on each side is taken out of exactly that — which is the point, since the ring is width the card asked for and did not get |
+/// | 5 | `card_popup_form` | `kCardPresentationWidth` raised to 500 | only `is one named constant` — the behaviour tests read the constant rather than the number, deliberately, so that one test is the only place the number is pinned. Anywhere above the floor the specs impose it is a design choice, not a derivation |
+/// | 6 | `card_popup_form` | `kCardPresentationWidth` lowered to 300, i.e. *below* that floor | `is one named constant` **and** `clears every threshold a card declares` in `dashboard_card_popup_overflow_test.dart` — the pin lives there because only that file can see the specs. Note what did *not* fire: the 318-case sweep stayed green at 300, so the floor is a readability claim the cards' own specs make, and no overflow probe can stand in for it |
 const String _kCardId = 'connected_devices';
 const String _kTitle = 'Connected Devices';
 const String _kValue = '12 online';
@@ -33,15 +47,63 @@ const String _kValue = '12 online';
 const String _kNormalOnly = 'normal-form-only-content';
 const Key _kLeadingKey = Key('popup-leading');
 
+/// Height of every surface this file pumps. Named because the presentation's cap
+/// is measured against it: a card declaring more than the screen has must be
+/// given the screen, and "the screen" has to be one number both sides read.
+const double _kScreenHeight = 800.0;
+
+/// Width of a *picked* popup tile on the 4-column phone grid — two columns of
+/// twelve, which the grid realizes at 122.3px (pinned in
+/// `dashboard_card_popup_overflow_test.dart`, which can see the grid).
+///
+/// The only width the tile's label has to be legible at, and narrow enough that
+/// nearly every card's value or name needs two lines to be read whole.
+const double _kPickedTileWidth = 122.0;
+
+/// Which tab a live card is showing — the shape every tabbed dashboard card has
+/// (`cardTabIndexProvider`), modelled here because it is the reason a widget
+/// *snapshot* cannot be what the presentation renders.
+final _tabIndex = StateProvider<int>((ref) => 0);
+
+const String _kTabA = 'tab-a-only-content';
+const String _kTabB = 'tab-b-only-content';
+
+/// A card whose selected tab is held outside its own build, so switching tabs
+/// takes a rebuild of the *element* that watches it.
+///
+/// Every tabbed card on the dashboard is built this way, and it is what the
+/// presentation broke: handed `this` — a `DashboardCardTemplate` already built by
+/// the element above — the dialog holds a frozen widget whose selected index can
+/// never change, because the element that reads the provider lives outside the
+/// dialog's tree entirely.
+class _LiveTabbedCard extends ConsumerWidget {
+  const _LiveTabbedCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return DashboardCardTemplate.tabbed(
+      title: _kTitle,
+      popupValue: _kValue,
+      tabs: const [
+        CardTab(label: 'A', content: Text(_kTabA)),
+        CardTab(label: 'B', content: Text(_kTabB)),
+      ],
+      selectedTabIndex: ref.watch(_tabIndex),
+      onTabChanged: (i) => ref.read(_tabIndex.notifier).state = i,
+    );
+  }
+}
+
 ThemeData _lightTheme() => ThemeJsonConfig.defaultConfig().createLightTheme();
 
-/// Horizontal space `AppDialog` spends on its own chrome, from the theme — the
-/// same source production reads. Hardcoding 48 here would make the test agree
-/// with a number rather than with the dialog.
-double _dialogChromeOf(ThemeData theme) {
-  final style = theme.extension<AppDesignTheme>()!.dialogStyle;
-  return style.padding.horizontal + style.containerStyle.borderWidth * 2;
-}
+/// The surface `AppDialog` draws around whatever it is handed — the outer of the
+/// two frames in "a frame inside a frame", and the one that must not be there.
+///
+/// `AppSurface` finders are depth-first, so the first one under the dialog is the
+/// dialog's own; every later one belongs to the card.
+Finder _dialogSurface() => find
+    .descendant(of: find.byType(AppDialog), matching: find.byType(AppSurface))
+    .first;
 
 /// A card whose normal form cannot fit a narrow width, for the one claim no
 /// production card can support any more: after #1240's re-measurement all 18 fit
@@ -83,11 +145,12 @@ Future<List<OverflowIncident>> _pump(
   required double cardWidth,
   double cardHeight = 240,
   double? normalAbove = 400,
+  double? normalHeight,
   CardDensity? density = CardDensity.popup,
   Widget? card,
   bool open = false,
 }) {
-  final surface = Size(screenWidth, 800);
+  final surface = Size(screenWidth, _kScreenHeight);
   return runWithOverflowCollection((sink) async {
     await tester.binding.setSurfaceSize(surface);
     tester.view.physicalSize = surface;
@@ -104,29 +167,28 @@ Future<List<OverflowIncident>> _pump(
             cardDensityOverrideProvider(_kCardId)
                 .overrideWith((ref) => density),
         ],
-        child: Portal(
-          child: MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            theme: _lightTheme(),
-            builder: (context, child) => MediaQuery(
-              data: MediaQuery.of(context).copyWith(disableAnimations: true),
-              child: child ?? const SizedBox.shrink(),
-            ),
-            home: Scaffold(
-              body: Align(
-                alignment: Alignment.topLeft,
-                child: SizedBox(
-                  width: cardWidth,
-                  height: cardHeight,
-                  // The real host, not a hand-built scope: the width→form
-                  // selection and the threshold the presentation needs both
-                  // travel this path in production.
-                  child: CardDensityHost(
-                    cardId: _kCardId,
-                    normalAbove: normalAbove,
-                    child: card ?? _card(),
-                  ),
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          theme: _lightTheme(),
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(disableAnimations: true),
+            child: child ?? const SizedBox.shrink(),
+          ),
+          home: Scaffold(
+            body: Align(
+              alignment: Alignment.topLeft,
+              child: SizedBox(
+                width: cardWidth,
+                height: cardHeight,
+                // The real host, not a hand-built scope: the width→form
+                // selection and the threshold the presentation needs both
+                // travel this path in production.
+                child: CardDensityHost(
+                  cardId: _kCardId,
+                  normalAbove: normalAbove,
+                  normalHeight: normalHeight,
+                  child: card ?? _card(),
                 ),
               ),
             ),
@@ -144,15 +206,21 @@ Future<List<OverflowIncident>> _pump(
   });
 }
 
-/// Width the card's normal form was actually given inside [ancestor].
-double _presentedFormWidth(WidgetTester tester, Type ancestor) => tester
-    .getSize(
+/// Size the card's normal form was actually given inside [ancestor].
+Size _presentedFormSize(WidgetTester tester, Type ancestor) => tester.getSize(
       find.descendant(
         of: find.byType(ancestor),
         matching: find.byType(DashboardCardTemplate),
       ),
-    )
-    .width;
+    );
+
+/// Width the card's normal form was actually given inside [ancestor].
+double _presentedFormWidth(WidgetTester tester, Type ancestor) =>
+    _presentedFormSize(tester, ancestor).width;
+
+/// Height the card's normal form was actually given inside [ancestor].
+double _presentedFormHeight(WidgetTester tester, Type ancestor) =>
+    _presentedFormSize(tester, ancestor).height;
 
 /// Horizontal scroll views inside [ancestor]. AC: "No horizontal scrolling is
 /// introduced inside the popup or the dialog."
@@ -165,11 +233,9 @@ Finder _horizontalScrollViews(Type ancestor) => find.descendant(
 
 void main() {
   group('the popup form', () {
-    testWidgets('shows the card icon and its one value, not its content',
-        (tester) async {
+    testWidgets('shows its one value and no content', (tester) async {
       await _pump(tester, screenWidth: 1200, cardWidth: 150);
 
-      expect(find.byKey(_kLeadingKey), findsOneWidget);
       expect(find.text(_kValue), findsOneWidget);
       expect(
         find.text(_kNormalOnly),
@@ -268,30 +334,29 @@ void main() {
       expect(incidents, isEmpty, reason: incidents.join('\n'));
     });
 
-    testWidgets('the form gets the width the card declares it needs',
+    testWidgets('the dialog is one width, not the one the card declares',
         (tester) async {
-      // 1200px screen, so the fit width is what binds rather than the screen.
+      // The declaration used to be the dialog's width, which made the box a
+      // different size for every card — and the numbers the specs declare run
+      // 250 to 386, so the difference was visible and arbitrary. The fixed width
+      // is above all of them (pinned in `dashboard_card_popup_overflow_test`), so
+      // a card that asks for less is served, not squeezed.
       await _pump(
         tester,
         screenWidth: 1200,
         cardWidth: 150,
-        normalAbove: 400,
+        normalAbove: 300,
         open: true,
       );
 
-      expect(
-        _presentedFormWidth(tester, AppDialog),
-        400,
-        reason: 'a card that declares it is whole above 400px must be given '
-            '400px, or the dialog reproduces the overflow it came from',
-      );
+      expect(_presentedFormWidth(tester, AppDialog), kCardPresentationWidth);
     });
 
-    testWidgets('with no declared fit width the form gets all the dialog has',
+    testWidgets('the dialog is one width on a screen with room to spare',
         (tester) async {
-      // Overflow is monotonic in width, so with nothing to aim at the widest
-      // available is the safest.
-      final theme = _lightTheme();
+      // The other direction, and the one that made the presentation look wrong
+      // on a desktop: with nothing declared the dialog took the whole viewport,
+      // so one card sat in a box a thousand pixels wide.
       await _pump(
         tester,
         screenWidth: 600,
@@ -300,10 +365,128 @@ void main() {
         open: true,
       );
 
-      expect(
-        _presentedFormWidth(tester, AppDialog),
-        600 - kCardPresentationInset * 2 - _dialogChromeOf(theme),
+      expect(_presentedFormWidth(tester, AppDialog), kCardPresentationWidth);
+    });
+
+    testWidgets('the dialog is one width even for a card that asks for more',
+        (tester) async {
+      // A card asking 2000px used to get a full-bleed sheet on this screen,
+      // because no dialog could hold what it asked for. It now gets the same
+      // dialog as every other card: the width is the presentation's, and a card
+      // that wants more scrolls inside it.
+      await _pump(
+        tester,
+        screenWidth: 1200,
+        cardWidth: 150,
+        normalAbove: 2000,
+        open: true,
       );
+
+      expect(find.byType(AppDialog), findsOneWidget);
+      expect(_presentedFormWidth(tester, AppDialog), kCardPresentationWidth);
+    });
+
+    testWidgets('the dialog draws no second frame around the card',
+        (tester) async {
+      // The card is already a bordered, filled, rounded surface. `AppDialog`
+      // draws another one around whatever it is given, so the presentation read
+      // as a frame inside a frame. The dialog's surface has to paint nothing and
+      // let the card be the frame.
+      await _pump(tester, screenWidth: 1200, cardWidth: 150, open: true);
+
+      final style = tester.widget<AppSurface>(_dialogSurface()).style;
+      expect(
+        style,
+        isNotNull,
+        reason: 'left to the theme the dialog paints its own container — this '
+            'presentation has to override it',
+      );
+      expect(style!.backgroundColor.a, 0, reason: 'no second fill');
+      expect(style.borderWidth, 0, reason: 'no second border');
+      expect(style.shadows, isEmpty, reason: 'no second elevation');
+      expect(style.backgroundGradient, isNull);
+      expect(style.borderGradient, isNull);
+    });
+
+    testWidgets('and no second frame spends no space either', (tester) async {
+      // The ink is half of it: 24px of dialog padding is a visible ring between
+      // the two borders even when the outer one is invisible. Rects rather than
+      // the padding value, because what the reader sees is the gap.
+      await _pump(tester, screenWidth: 1200, cardWidth: 150, open: true);
+
+      expect(
+        tester.getRect(_dialogSurface()),
+        tester.getRect(
+          find.descendant(
+            of: find.byType(AppDialog),
+            matching: find.byType(DashboardCardTemplate),
+          ),
+        ),
+        reason: 'the card fills the dialog exactly — any inset is the second '
+            'frame, drawn in whitespace instead of ink',
+      );
+    });
+
+    testWidgets('the form gets the height the card declares it needs',
+        (tester) async {
+      // The bug this pins (#1299). A *picked* popup does not just narrow the
+      // card, it pins the cell to one grid row — so the box this form is tapped
+      // out of is 120px, a third of what the card declares. Sizing the
+      // presentation to that box means the full form is laid out in the very
+      // height the popup form existed to escape, and its fixed chrome alone
+      // (header plus gaps) already exceeds it.
+      await _pump(
+        tester,
+        screenWidth: 1200,
+        cardWidth: 150,
+        cardHeight: 120,
+        normalHeight: 392,
+        open: true,
+      );
+
+      expect(
+        _presentedFormHeight(tester, AppDialog),
+        392,
+        reason: 'a card that declares it needs 392px must be given 392px — the '
+            'cell it was collapsed to is a consequence of the degradation, not '
+            'a measure of what the card needs',
+      );
+    });
+
+    testWidgets('a cell taller than the declaration keeps the cell',
+        (tester) async {
+      // The other path into this form (#1239): the grid made the card narrow but
+      // left its height alone, and a card can be resized taller than its spec's
+      // floor. The form cannot tell the two paths apart, so it takes the larger
+      // — extra height cannot cause the bottom overflow above, and the taller
+      // box is the one the user was actually looking at.
+      await _pump(
+        tester,
+        screenWidth: 1200,
+        cardWidth: 150,
+        cardHeight: 500,
+        normalHeight: 256,
+        open: true,
+      );
+
+      expect(_presentedFormHeight(tester, AppDialog), 500);
+    });
+
+    testWidgets('with no declared height the form gets the cell',
+        (tester) async {
+      // Unchanged behaviour for anything that reaches this form without a spec
+      // behind it — a card built outside the dashboard factory, or a shared
+      // block under test.
+      await _pump(
+        tester,
+        screenWidth: 1200,
+        cardWidth: 150,
+        cardHeight: 240,
+        normalHeight: null,
+        open: true,
+      );
+
+      expect(_presentedFormHeight(tester, AppDialog), 240);
     });
 
     testWidgets('introduces no horizontal scrolling', (tester) async {
@@ -320,11 +503,401 @@ void main() {
     });
   });
 
+  group('the presented form is live, not a snapshot', () {
+    // Reported from the built app: "tab 在 popup dialog 沒作用". Tapping a tab
+    // inside the presentation moved the tab bar's own highlight and changed
+    // nothing below it.
+    //
+    // The cause is not the tabs. `normalForm: this` hands the presentation a
+    // `DashboardCardTemplate` that the element *above* the card already built,
+    // with the selected index baked into it. The element that watches the index
+    // is outside the dialog's tree, so the provider write lands, the tile's copy
+    // of the card rebuilds, and the dialog's copy — which is a widget, not an
+    // element of that build — cannot. Everything a card reads from a provider is
+    // frozen the same way: its interval menu, its loading badge, its live
+    // numbers.
+    //
+    // So the presentation has to build the card *widget* itself, and the fix is
+    // to publish that widget where the presentation can reach it.
+
+    testWidgets('a tab tapped in the presentation changes what it shows',
+        (tester) async {
+      await _pump(
+        tester,
+        screenWidth: 1200,
+        cardWidth: 150,
+        cardHeight: 120,
+        normalHeight: 392,
+        card: const _LiveTabbedCard(),
+        open: true,
+      );
+
+      expect(
+        find.text(_kTabA),
+        findsOneWidget,
+        reason: 'the presentation opens on the tab the card was showing',
+      );
+
+      await tester.tap(find.text('B'));
+      await settleIgnoringAnimations(tester);
+
+      expect(
+        find.text(_kTabB),
+        findsOneWidget,
+        reason: 'the tab bar in the presentation is the only way to reach this '
+            "card's other tabs — a tab that moves its own highlight and leaves "
+            'the content behind is worse than no tab bar at all',
+      );
+      expect(find.text(_kTabA), findsNothing);
+    });
+
+    testWidgets('and the same tap works on the card at normal density',
+        (tester) async {
+      // The control that makes the test above about the presentation. Without
+      // it, a fixture whose tabs never worked anywhere would fail identically
+      // and point at the wrong file.
+      await _pump(
+        tester,
+        screenWidth: 1200,
+        cardWidth: 600,
+        cardHeight: 392,
+        density: CardDensity.normal,
+        card: const _LiveTabbedCard(),
+      );
+
+      expect(find.text(_kTabA), findsOneWidget);
+
+      await tester.tap(find.text('B'));
+      await settleIgnoringAnimations(tester);
+
+      expect(find.text(_kTabB), findsOneWidget);
+      expect(find.text(_kTabA), findsNothing);
+    });
+
+    testWidgets('a form with nothing published still opens', (tester) async {
+      // `CardPopupForm` is reachable without a host above it — a shared block
+      // under test, a card built outside the factory — and there the widget it
+      // was handed is all there is. It must still be presented, because the
+      // alternative is a tap that opens an empty box.
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            theme: _lightTheme(),
+            home: Scaffold(
+              body: Align(
+                alignment: Alignment.topLeft,
+                child: SizedBox(
+                  width: 150,
+                  // The box is the only height on offer here — nothing
+                  // published a declaration — so it is also the height the
+                  // presented card is laid out in, and it has to be one the
+                  // card fits in for this test to be about the fallback.
+                  height: 240,
+                  child: CardPopupForm(
+                    title: _kTitle,
+                    value: _kValue,
+                    normalForm: _card(),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await settleIgnoringAnimations(tester);
+
+      await tester.tap(find.byType(CardPopupForm));
+      await settleIgnoringAnimations(tester);
+
+      expect(find.byType(AppDialog), findsOneWidget);
+      expect(find.text(_kNormalOnly), findsOneWidget);
+    });
+  });
+
+  group('the presented form and the screen', () {
+    testWidgets('a card that declares more than the screen has gets the screen',
+        (tester) async {
+      // The declaration is what the card needs, not what the device has, and the
+      // two heights this ticket started feeding it are larger than the one it
+      // replaced: a card declaring five grid rows is 664px, which is taller than
+      // a landscape phone's whole viewport. Presented at its declared height it
+      // would run off the bottom of the screen — the presentation has to be the
+      // smaller of what the card asked for and what there is.
+      await _pump(
+        tester,
+        screenWidth: 1200,
+        cardWidth: 150,
+        cardHeight: 120,
+        normalHeight: 2000,
+        open: true,
+      );
+
+      expect(
+        _presentedFormHeight(tester, AppDialog),
+        _kScreenHeight - kCardPresentationInset * 2,
+        reason: 'the presentation cannot be taller than the screen that has to '
+            'show it, whatever the card declares',
+      );
+    });
+
+    testWidgets('and a card that fits is not capped', (tester) async {
+      // The control: a cap applied unconditionally would shrink every card to
+      // the viewport and read as green above.
+      await _pump(
+        tester,
+        screenWidth: 1200,
+        cardWidth: 150,
+        cardHeight: 120,
+        normalHeight: 392,
+        open: true,
+      );
+
+      expect(_presentedFormHeight(tester, AppDialog), 392);
+    });
+  });
+
+  group('the popup tile label', () {
+    // Reported from the built app: "popup layout 預設給 2 寬吧 字都看不到". A picked
+    // tile is two columns wide by design (#1299) — the pick is what pins it — so
+    // the label is what has to change: one ellipsized `titleMedium` line at
+    // 122px showed "Network St…", "System Stat…", "Community…", which is not a
+    // value the user can read at a glance and is the whole promise of the form.
+
+    testWidgets('is read whole at the tile width, not ellipsized',
+        (tester) async {
+      // The title is the label here because it is the longest thing the tile can
+      // be asked to show — a card with no declared value falls back to it, and
+      // the values themselves are shorter (`12 online`, `3/3`, an IP address).
+      await _pump(
+        tester,
+        screenWidth: 320,
+        cardWidth: _kPickedTileWidth,
+        cardHeight: 120,
+        card: _card(popupValue: null, title: 'Network Status'),
+      );
+
+      final label =
+          tester.renderObject<RenderParagraph>(find.text('Network Status'));
+      expect(
+        label.didExceedMaxLines,
+        isFalse,
+        reason: 'the label is the only thing on the tile and the tile is the '
+            'only thing on screen for this card — a clipped one leaves the user '
+            'guessing which card they are looking at',
+      );
+    });
+
+    testWidgets('and a value too long for two lines still fits the tile',
+        (tester) async {
+      // The bound on the other side: smaller type and a second line are room to
+      // spend, not room to overflow. The longest German value on the shortest
+      // tile the grid produces.
+      final incidents = await _pump(
+        tester,
+        screenWidth: 320,
+        cardWidth: _kPickedTileWidth,
+        cardHeight: 120,
+        card: _card(
+          title: 'Angeschlossene Geräte im Heimnetzwerk',
+          popupValue: '128 Geräte derzeit online im Netzwerk',
+        ),
+      );
+
+      expect(incidents, isEmpty, reason: incidents.join('\n'));
+    });
+  });
+
+  /// What a picked tile has to say for itself (#1299).
+  ///
+  /// Reported from the built app with every card picked at once: "這... 完全看不
+  /// 出來是什麼意思啊" — a grid of `100`, `0%`, `1/1`, `1/1`, `2/2`, `1`,
+  /// `192.168.15.4`, `toob-215502`, and no way to tell which card is which.
+  ///
+  /// §2.1 specified this form as "Icon + a single value", and that was right for
+  /// the path it was written for: reached by *width* (#1239) at most nine cards
+  /// can enter the band, and the rest of the grid is at a readable width to give
+  /// them context — a lone `0/1` sits beside a named LAN card. Reached by a *pick*
+  /// all seventeen enter it together and there is no context left anywhere on
+  /// screen. So the tile has to name itself, and the value alone cannot.
+  ///
+  /// ## Why the name goes where the icon was
+  ///
+  /// A picked tile is one grid row: 120px, less `AppCard`'s `AppSpacing.lg` on
+  /// each side, is **88px** of content. Two `bodySmall` lines each for the value
+  /// and the name, with a gap between, is 66 — it fits. Adding back an icon (24,
+  /// plus its own gap) does not, and the icon is the only element on the tile
+  /// carrying no words. It is also the least missed: three of the seventeen
+  /// pickable cards declare one at all (`lan_info`, `device_info`,
+  /// `time_settings`, each only below normal density), so on the built dashboard
+  /// fourteen tiles had no glyph and the three that did read as arbitrary.
+  ///
+  /// The hierarchy is therefore weight and colour rather than size. Size was
+  /// tried first and does not survive the width: at `titleSmall` the headline
+  /// crops `192.168.15.4`, twelve characters with no break opportunity in ~90px
+  /// of text, which is the very failure the name was added to fix.
+  ///
+  /// ## Mutation table (Article II AC13)
+  ///
+  /// | # | mutated | mutation | killed by |
+  /// |---|---|---|---|
+  /// | 1 | `card_popup_form` | the name dropped, value only (the defect) | 'shows the value and the name' |
+  /// | 2 | `card_popup_form` | `value ?? title` kept as the headline *and* the name printed under it | 'the name is not a second copy of the value' |
+  /// | 3 | `card_popup_form` | the headline's `w700` and the caption's dimmed colour both dropped | 'the value is the headline' (weight, then colour) |
+  /// | 4 | `card_popup_form` | the headline raised to `titleSmall` | 'the value is the headline' on the size control, and 'reads both whole' on the IPv4 address |
+  /// | 5 | `card_popup_form` | either run capped at one line | 'reads both whole' |
+  /// | 6 | `card_popup_form` + `dashboard_card_template` | `leading` plumbed back in and rendered above the pair | 'spends no vertical room on an icon' — and *only* that |
+  ///
+  /// Row 6 is the reason this claim needs a test at all. The 88px budget says an
+  /// icon does not fit, but the picked sweep in
+  /// `dashboard_card_forced_form_overflow_test.dart` stayed green at 80/80 with the
+  /// icon restored: the caption is `Flexible`, so it silently gave up its second
+  /// line to pay for the glyph. **No overflow probe can see this** — the tile that
+  /// does not overflow is the tile that stopped showing half the name, which is the
+  /// failure mode, not the absence of one.
+  group('the picked tile names its card', () {
+    /// Pumps the default card at the picked tile's exact cell: two columns of the
+    /// 4-column phone grid, one grid row.
+    Future<List<OverflowIncident>> pumpTile(
+      WidgetTester tester, {
+      Widget? card,
+    }) =>
+        _pump(
+          tester,
+          screenWidth: 320,
+          cardWidth: _kPickedTileWidth,
+          cardHeight: 120,
+          card: card,
+        );
+
+    /// Style the paragraph rendering [text] was laid out with — resolved, so this
+    /// is the type that reached the screen and not the variant asked for.
+    TextStyle styleOf(WidgetTester tester, String text) =>
+        (tester.renderObject<RenderParagraph>(find.text(text)).text as TextSpan)
+            .style!;
+
+    testWidgets('shows the value and the name, not the value alone',
+        (tester) async {
+      await pumpTile(tester);
+
+      expect(find.text(_kValue), findsOneWidget);
+      expect(
+        find.text(_kTitle),
+        findsOneWidget,
+        reason: 'a picked tile is the only thing on screen for its card, and a '
+            'figure with nothing naming it is not a glance — the user cannot '
+            'tell which card they are looking at',
+      );
+    });
+
+    testWidgets('the name is not a second copy of the value', (tester) async {
+      // The no-value fallback. The name is promoted into the value's slot rather
+      // than printed twice, once as each — a tile saying the same words in two
+      // sizes says less than one saying them once.
+      await pumpTile(tester, card: _card(popupValue: null));
+
+      expect(find.text(_kTitle), findsOneWidget);
+    });
+
+    testWidgets('the value is the headline', (tester) async {
+      // Two equal lines are read as a list; the pair is only glanceable if one of
+      // them is obviously the figure and the other obviously its caption.
+      //
+      // Weight and colour, not size — and the size assertion is here as a control
+      // on that, because a hierarchy built from type size is the one thing this
+      // tile cannot afford (see 'reads both whole' below, and the group dartdoc).
+      await pumpTile(tester);
+
+      final value = styleOf(tester, _kValue);
+      final name = styleOf(tester, _kTitle);
+
+      expect(
+        value.fontWeight!.value,
+        greaterThan(name.fontWeight!.value),
+        reason: 'the value is what the card degraded to and the name is what '
+            'identifies it — swap the emphasis and the tile reads as a label '
+            'with a footnote',
+      );
+      expect(
+        value.color,
+        isNot(name.color),
+        reason:
+            'the caption is dimmed as well as lighter; weight alone at 12px '
+            'is a thin distinction to carry the whole hierarchy',
+      );
+      expect(
+        value.fontSize,
+        name.fontSize,
+        reason: 'and neither run may grow: 14px cannot fit an IPv4 address in '
+            'the ~90px of text a two-column tile has',
+      );
+    });
+
+    testWidgets('reads both whole at the tile width', (tester) async {
+      // 90px of text at 122px of tile. Both of these are real: `Network Status`
+      // is the shortest card name that needed two lines in the built app, and an
+      // IPv4 address is what `lan_info` and `network_status` degrade to.
+      await pumpTile(
+        tester,
+        card: _card(title: 'Network Status', popupValue: '192.168.15.4'),
+      );
+
+      for (final line in ['Network Status', '192.168.15.4']) {
+        expect(
+          tester
+              .renderObject<RenderParagraph>(find.text(line))
+              .didExceedMaxLines,
+          isFalse,
+          reason:
+              '"$line" was clipped — the tile has two lines to spend on each '
+              'and clipping either one is what was reported',
+        );
+      }
+    });
+
+    testWidgets('spends no vertical room on an icon', (tester) async {
+      // The deviation from §2.1, asserted rather than left implicit: the card
+      // still declares a `leading` for its header in compact density, and the
+      // tile is what stops using it. See this group's dartdoc for the 88px
+      // budget that decides it.
+      await pumpTile(tester);
+
+      expect(
+        find.descendant(
+          of: find.byType(CardPopupForm),
+          matching: find.byKey(_kLeadingKey),
+        ),
+        findsNothing,
+        reason:
+            'an icon costs a line of the 88px the tile has, and the name it '
+            'would displace is the thing being read',
+      );
+    });
+
+    testWidgets('and fits with the longest German name and value',
+        (tester) async {
+      final incidents = await pumpTile(
+        tester,
+        card: _card(
+          title: 'Angeschlossene Geräte im Heimnetzwerk',
+          popupValue: '128 Geräte derzeit online im Netzwerk',
+        ),
+      );
+
+      expect(incidents, isEmpty, reason: incidents.join('\n'));
+    });
+  });
+
   group('a screen too narrow for the dialog', () {
+    /// The narrowest screen that can host the presentation with its inset intact,
+    /// and one pixel less. Composed from the two constants rather than written as
+    /// 448, so the pair below keeps straddling the boundary if either moves.
+    const fits = kCardPresentationWidth + kCardPresentationInset * 2;
+
     testWidgets('uses a fullscreen sheet instead', (tester) async {
-      // 320px is the supported floor, and a card declaring 400 cannot be shown
-      // whole in a dialog there: the dialog spends part of that 320 on inset and
-      // padding. The sheet spends none of it.
+      // 320px is the supported floor: a screen that cannot hold the dialog at
+      // all. The sheet spends nothing on inset, so the card gets all 320.
       final incidents = await _pump(
         tester,
         screenWidth: 320,
@@ -339,11 +912,10 @@ void main() {
       expect(incidents, isEmpty, reason: incidents.join('\n'));
     });
 
-    testWidgets('and the sheet is wider than the dialog could have been',
+    testWidgets('and the sheet gives the card the whole screen',
         (tester) async {
-      // The whole reason to switch: if the sheet were not wider, the switch
-      // would be decoration.
-      final theme = _lightTheme();
+      // The whole reason to switch: if the sheet were not wider than what the
+      // screen can offer a dialog, the switch would be decoration.
       await _pump(
         tester,
         screenWidth: 320,
@@ -352,37 +924,45 @@ void main() {
         open: true,
       );
 
-      final sheetWidth = _presentedFormWidth(tester, AppBottomSheet);
-      expect(
-        sheetWidth,
-        greaterThan(320 - kCardPresentationInset * 2 - _dialogChromeOf(theme)),
-      );
-      expect(sheetWidth, lessThanOrEqualTo(320));
+      expect(_presentedFormWidth(tester, AppBottomSheet), 320);
     });
 
-    testWidgets(
-        'is not about small screens — a wide card gets a sheet at 600px',
+    testWidgets('one pixel short of hosting the dialog is still a sheet',
         (tester) async {
-      // The rule is a relationship, not a breakpoint: a card asking for 2000px
-      // cannot be shown whole in a dialog on a 600px screen either, so it gets
-      // the sheet too. Written after the first draft of this file asserted "the
-      // dialog never grows past the screen" here and found no dialog at all —
-      // the presentation squeezes nothing, it switches.
+      // `normalAbove: null` on both sides of the boundary, because the card's
+      // declaration has no say in this any more: what decides is whether the
+      // screen can seat the presentation's own width.
       await _pump(
         tester,
-        screenWidth: 600,
+        screenWidth: fits - 1,
         cardWidth: 150,
-        normalAbove: 2000,
+        normalAbove: null,
         open: true,
       );
 
       expect(find.byType(AppBottomSheet), findsOneWidget);
       expect(find.byType(AppDialog), findsNothing);
+    });
+
+    testWidgets('and the narrowest screen that can host it gets the dialog',
+        (tester) async {
+      // The positive control for the line above: without it the sheet could be
+      // the only branch and every assertion above would still pass.
+      await _pump(
+        tester,
+        screenWidth: fits,
+        cardWidth: 150,
+        normalAbove: null,
+        open: true,
+      );
+
+      expect(find.byType(AppDialog), findsOneWidget);
+      expect(find.byType(AppBottomSheet), findsNothing);
       expect(
-        _presentedFormWidth(tester, AppBottomSheet),
-        600,
-        reason: 'the sheet gives the card the whole screen — the most this '
-            'device has for a card that wants more than it has',
+        _presentedFormWidth(tester, AppDialog),
+        kCardPresentationWidth,
+        reason: 'at the boundary the card gets the full width, not a squeezed '
+            'one — being squeezed is what the sheet exists to avoid',
       );
     });
 
@@ -437,6 +1017,19 @@ void main() {
     test('is one named constant', () {
       // AC: "changeable in one place". The form does not carry its own copy.
       expect(kPopupBelow, 200.0);
+    });
+  });
+
+  group('the presentation width', () {
+    test('is one named constant', () {
+      // The behaviour tests above read the constant, so this is the one place
+      // the number itself is written down — deliberately, because everything
+      // else about the presentation follows from it and only its floor is
+      // derived (it must clear every threshold a spec declares, which
+      // `dashboard_card_popup_overflow_test.dart` pins). 400 is also `ui_kit`'s
+      // own dialog width, so the presentation is the standard size rather than a
+      // bespoke one.
+      expect(kCardPresentationWidth, 400.0);
     });
   });
 

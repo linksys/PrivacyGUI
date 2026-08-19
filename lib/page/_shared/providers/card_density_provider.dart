@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/page/dashboard/models/card_density.dart';
+import 'package:privacy_gui/page/_shared/models/card_density.dart';
 
 /// Forces a dashboard card to render a specific [CardDensity], ignoring its
 /// measured width. Keyed by card widget ID (e.g. 'connected_devices').

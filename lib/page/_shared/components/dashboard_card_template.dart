@@ -4,7 +4,7 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/components/card_density_scope.dart';
 import 'package:privacy_gui/page/_shared/components/card_popup_form.dart';
 import 'package:privacy_gui/page/_shared/components/card_scroll_region.dart';
-import 'package:privacy_gui/page/dashboard/models/card_density.dart';
+import 'package:privacy_gui/page/_shared/models/card_density.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// A section within a multi-section dashboard card.
@@ -214,16 +214,17 @@ class DashboardCardTemplate extends StatelessWidget {
 
   /// The one value this card shows when it is too narrow for its full form.
   ///
-  /// Below [kPopupBelow] the card renders [leading] over this string and nothing
+  /// Below [kPopupBelow] the card renders this string over [title] and nothing
   /// else (#1239). Which value that is, is the card's own judgement — the
-  /// template knows the card's title and icon but not which of its numbers is
-  /// the one worth seeing at a glance — so it is declared here rather than
-  /// guessed from the content.
+  /// template knows the card's title but not which of its numbers is the one
+  /// worth seeing at a glance — so it is declared here rather than guessed from
+  /// the content.
   ///
-  /// Only reached by a card that declares a `normalAbove` on its `WidgetSpec`;
-  /// with none declared the card is never below its own threshold, so leaving
-  /// this out is correct for every card that fits. Left out by a card that
-  /// *does* degrade, the title stands in.
+  /// Only reached by a card that declares a `normalAbove` on its `WidgetSpec`, or
+  /// picked into popup by the user (#1299); with neither, the card is never below
+  /// its own threshold, so leaving this out is correct for every card that fits.
+  /// Left out by a card that *does* degrade, the title takes the value's place
+  /// rather than being shown twice.
   final String? popupValue;
 
   /// Custom footer widget. Takes precedence over [detailRoute].
@@ -247,14 +248,13 @@ class DashboardCardTemplate extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Below the popup threshold the card stops arranging its content and shows
-    // one value instead (#1239). Decided here rather than in each card because
-    // the header — the icon and title the degraded form is built from — is the
+    // one value under its own name instead (#1239). Decided here rather than in
+    // each card because the title the degraded form names itself with is the
     // template's, and every card goes through it, so no card can miss the
     // behaviour or implement it differently.
     if (CardDensityScope.of(context) == CardDensity.popup) {
       return CardPopupForm(
         title: title,
-        leading: leading,
         value: popupValue,
         // `this` is the card's full form: the same widget, rendered under a
         // normal-density scope, is what the tap opens. Nothing is rebuilt or

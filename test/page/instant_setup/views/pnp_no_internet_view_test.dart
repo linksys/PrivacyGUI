@@ -10,7 +10,6 @@ import 'package:privacy_gui/page/instant_setup/providers/pnp_providers.dart';
 import 'package:privacy_gui/page/instant_setup/views/pnp_no_internet_view.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:ui_kit_library/ui_kit.dart';
-import 'package:flutter_portal/flutter_portal.dart';
 
 import '../../../golden_test/golden_framework/mocks/mock_common.dart';
 
@@ -83,19 +82,17 @@ void main() {
         ...commonOverrides(),
         pnpProvider.overrideWith(() => fakeNotifier),
       ],
-      child: Portal(
-        child: MaterialApp.router(
-          theme: _testTheme,
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          // Freeze looping animations (e.g. AppLoader) so pump() settles;
-          // otherwise pumpAndSettle never returns.
-          builder: (context, child) => MediaQuery(
-            data: MediaQuery.of(context).copyWith(disableAnimations: true),
-            child: child ?? const SizedBox.shrink(),
-          ),
-          routerConfig: router,
+      child: MaterialApp.router(
+        theme: _testTheme,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        // Freeze looping animations (e.g. AppLoader) so pump() settles;
+        // otherwise pumpAndSettle never returns.
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(context).copyWith(disableAnimations: true),
+          child: child ?? const SizedBox.shrink(),
         ),
+        routerConfig: router,
       ),
     );
   }

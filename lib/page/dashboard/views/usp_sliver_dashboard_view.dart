@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/dashboard/models/display_mode.dart';
+import 'package:privacy_gui/page/dashboard/models/card_grid_geometry.dart';
+import 'package:privacy_gui/page/dashboard/views/components/card_form_toolbar.dart';
 import 'package:privacy_gui/page/dashboard/views/components/effects/jiggle_shake.dart';
 import 'package:privacy_gui/page/dashboard/factories/usp_widget_factory.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
@@ -40,7 +42,10 @@ class UspSliverDashboardView extends ConsumerStatefulWidget {
   /// On the widget rather than in the [State] because the overflow gate derives
   /// card heights from it (`dashboard_card_probe.dart`), and the copy it used to
   /// keep could drift from this one without anything noticing (#1248 review W-4).
-  static const double slotHeight = 120.0;
+  /// The value itself moved to [kDashboardSlotHeight] once code that must not
+  /// import this view needed it too; this stays as the name everything already
+  /// reads.
+  static const double slotHeight = kDashboardSlotHeight;
 
   const UspSliverDashboardView({super.key});
 
@@ -357,7 +362,7 @@ class _UspSliverDashboardViewState
           (availableWidth - (uiKitColumns - 1) * AppSpacing.lg) / uiKitColumns;
       final ratio = slotWidth / UspSliverDashboardView.slotHeight;
 
-      return DashboardOverlay(
+      final grid = DashboardOverlay(
         controller: controller,
         scrollController: scrollController,
         itemBuilder: (context, item) {
@@ -403,6 +408,24 @@ class _UspSliverDashboardViewState
             ),
           ],
         ),
+      );
+
+      // The form toolbar for the selected card (#1299). Edit mode only — that is
+      // AC 4, and it costs no guard inside the toolbar because the layer is not
+      // built at all outside edit mode. It wraps the grid rather than sitting
+      // beside it in the page column: the toolbar is anchored to the card, so it
+      // has to be a sibling above the same box the grid was laid out in.
+      if (!isEditMode) return grid;
+
+      return CardFormToolbarLayer(
+        geometry: CardGridGeometry(
+          slotWidth: slotWidth,
+          slotHeight: UspSliverDashboardView.slotHeight,
+          mainAxisSpacing: AppSpacing.lg,
+          crossAxisSpacing: AppSpacing.lg,
+          padding: EdgeInsets.symmetric(horizontal: pageMargin),
+        ),
+        child: grid,
       );
     });
   }

@@ -1131,5 +1131,9 @@
   "bridgeRedirectButton": "Accéder au routeur",
   "lanIpRedirectTitle": "Se reconnecter à votre routeur",
   "lanIpRedirectMessage": "L'adresse IP de votre routeur a changé. Reconnectez-vous à celui-ci à l'adresse {url}. Vous devrez peut-être patienter un moment le temps que votre appareil obtienne une nouvelle adresse.",
-  "lanIpRedirectButton": "Accéder au routeur"
+  "lanIpRedirectButton": "Accéder au routeur",
+  "cardFormNormal": "Normal",
+  "cardFormCompact": "Compact",
+  "cardFormPopup": "Fenêtre contextuelle",
+  "cardFormForNamed": "Format de carte pour {name}"
 }

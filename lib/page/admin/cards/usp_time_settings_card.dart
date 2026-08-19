@@ -12,7 +12,7 @@ import 'package:privacy_gui/page/_shared/components/card_skeleton.dart';
 import 'package:privacy_gui/page/_shared/components/dashboard_card_template.dart';
 import 'package:privacy_gui/page/_shared/utils/local_time_ticker.dart';
 import 'package:privacy_gui/page/admin/views/dialogs/timezone_edit_dialog.dart';
-import 'package:privacy_gui/page/dashboard/models/card_density.dart';
+import 'package:privacy_gui/page/_shared/models/card_density.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -71,7 +71,8 @@ class _UspTimeSettingsCardState extends ConsumerState<UspTimeSettingsCard>
 
     return DashboardCardTemplate(
       title: loc(context).timeSettings,
-      // Degraded forms only, so nothing changes above the threshold (#1288). See
+      // Degraded forms only, so nothing changes above the threshold (#1288) —
+      // compact in practice, since the popup form has no header and no icon. See
       // `usp_lan_info_card.dart` for why the icon lands in the header slot.
       leading: density == CardDensity.normal
           ? null
@@ -83,13 +84,16 @@ class _UspTimeSettingsCardState extends ConsumerState<UspTimeSettingsCard>
       // The clock reading, not the timezone name: at popup width this card is a
       // clock face, and the zone is what the full form is for.
       popupValue: timeDisplay,
-      trailing: Semantics(
-        label: loc(context).editTimeSettings,
-        button: true,
-        child: AppIconButton(
-          icon: AppIcon.font(Icons.edit, size: 18),
-          onTap: isLoading ? null : () => _editTimezone(context, ref, time),
-        ),
+      // The name goes on the button, not on a `Semantics` around it. Wrapped,
+      // the label landed on a node of its own that carries `button: true` and no
+      // tap action, over the button's own node announcing ui_kit's generic
+      // `'Icon button'` — so a screen reader read out the role of a control it
+      // could reach and never its name. `semanticLabel` is the parameter
+      // `AppIconButton` provides for exactly this, and it puts both on one node.
+      trailing: AppIconButton(
+        icon: AppIcon.font(Icons.edit, size: 18),
+        semanticLabel: loc(context).editTimeSettings,
+        onTap: isLoading ? null : () => _editTimezone(context, ref, time),
       ),
       detailRoute: RouteNamed.uspAdmin,
       content: Column(

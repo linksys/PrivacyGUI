@@ -68,6 +68,11 @@ class UspWifiPerformanceCard extends ConsumerWidget {
       title: loc(context).wifiPerformance,
       titleBadge:
           AppBadge(label: loc(context).clientsCount(activeClients.length)),
+      // The client count the badge states, bare — every tab of this card plots
+      // one series per active WiFi client, so the count is what the card is
+      // measuring. `clientsCount` spells it out in words, which the tile has no
+      // room for at two columns.
+      popupValue: '${activeClients.length}',
       tabs: [
         CardTab(
           label: loc(context).signal,

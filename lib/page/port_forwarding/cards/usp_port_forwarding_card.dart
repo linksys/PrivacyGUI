@@ -35,6 +35,10 @@ class UspPortForwardingCard extends ConsumerWidget {
         onTap:
             isLoading ? null : () => _showAddPortForwardingDialog(context, ref),
       ),
+      // Both kinds of rule in one number, which is what this card's title says
+      // it is ("Port rules") and what its footer already counts. Splitting them
+      // needs two labels and the tile has room for neither.
+      popupValue: '${rules.length + triggers.length}',
       detailRoute: RouteNamed.uspPortForwardingDetail,
       itemCount: rules.length + triggers.length,
       detailLabel: loc(context).viewAll,

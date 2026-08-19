@@ -1131,5 +1131,9 @@
   "bridgeRedirectButton": "前往路由器",
   "lanIpRedirectTitle": "重新連線到您的路由器",
   "lanIpRedirectMessage": "您的路由器 IP 位址已變更。請透過 {url} 重新連線。您可能需要稍候片刻，等待裝置取得新位址。",
-  "lanIpRedirectButton": "前往路由器"
+  "lanIpRedirectButton": "前往路由器",
+  "cardFormNormal": "標準",
+  "cardFormCompact": "精簡",
+  "cardFormPopup": "彈出式",
+  "cardFormForNamed": "{name} 的卡片樣式"
 }

@@ -34,6 +34,10 @@ class UspFirewallOverviewCard extends ConsumerWidget {
 
     return DashboardCardTemplate.tabbed(
       title: loc(context).firewallOverview,
+      // Firewall rules only — the subject of the first tab and of the card's
+      // title. The Ports tab counts port forwarding, which `port_forwarding`
+      // already reports as its own tile.
+      popupValue: '${firewallData.ruleSummaries.length}',
       detailRoute: RouteNamed.uspFirewall,
       selectedTabIndex: selectedTab,
       onTabChanged: (index) =>

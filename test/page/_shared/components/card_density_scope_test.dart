@@ -7,7 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/page/_shared/components/card_density_scope.dart';
 import 'package:privacy_gui/page/_shared/providers/card_density_provider.dart';
 import 'package:privacy_gui/page/dashboard/factories/usp_widget_factory.dart';
-import 'package:privacy_gui/page/dashboard/models/card_density.dart';
+import 'package:privacy_gui/page/_shared/models/card_density.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_widget_specs.dart';
 
 import '../../../util/dashboard/dashboard_card_probe.dart';

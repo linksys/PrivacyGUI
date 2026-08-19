@@ -1131,5 +1131,9 @@
   "bridgeRedirectButton": "Siirry reitittimeen",
   "lanIpRedirectTitle": "Yhdistä reitittimeesi uudelleen",
   "lanIpRedirectMessage": "Reitittimesi IP-osoite on muuttunut. Yhdistä siihen uudelleen osoitteessa {url}. Sinun on ehkä odotettava hetki, että laitteesi saa uuden osoitteen.",
-  "lanIpRedirectButton": "Siirry reitittimeen"
+  "lanIpRedirectButton": "Siirry reitittimeen",
+  "cardFormNormal": "Normaali",
+  "cardFormCompact": "Tiivis",
+  "cardFormPopup": "Ponnahdus",
+  "cardFormForNamed": "Kortin muoto: {name}"
 }

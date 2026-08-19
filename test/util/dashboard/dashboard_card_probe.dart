@@ -3,7 +3,6 @@ import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-import 'package:flutter_portal/flutter_portal.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
@@ -11,10 +10,11 @@ import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/_shared/providers/card_density_provider.dart';
 import 'package:privacy_gui/page/_shared/providers/card_tab_state_provider.dart';
 import 'package:privacy_gui/page/dashboard/factories/usp_widget_factory.dart';
-import 'package:privacy_gui/page/dashboard/models/card_density.dart';
+import 'package:privacy_gui/page/_shared/models/card_density.dart';
+import 'package:privacy_gui/page/dashboard/models/card_grid_geometry.dart';
 import 'package:privacy_gui/page/dashboard/models/display_mode.dart';
+import 'package:privacy_gui/page/dashboard/models/usp_widget_specs.dart';
 import 'package:privacy_gui/page/dashboard/models/widget_spec.dart';
-import 'package:privacy_gui/page/dashboard/views/usp_sliver_dashboard_view.dart';
 import 'package:privacy_gui/localization/fallback_font_resolver.dart';
 import 'package:privacy_gui/theme/theme_json_config.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -70,9 +70,6 @@ import 'kitchen_sink_overrides.dart';
 /// responsive `layoutGutter` — the dashboard view hardcodes `AppSpacing.lg`.
 const double kGridGutter = AppSpacing.lg;
 
-/// Fixed slot height of the dashboard grid, in logical pixels.
-const double kSlotHeight = UspSliverDashboardView.slotHeight;
-
 /// Column count for a screen width — mirrors `GridLayoutContext.currentMaxColumns`
 /// (`responsive<int>(mobile: 4, tablet: 8, desktop: AppLayoutConfig.maxColumns)`).
 ///
@@ -109,8 +106,12 @@ double cardWidthAt(double screenWidth, int span) {
 }
 
 /// Logical height of a card that spans [rows] grid rows.
-double dashboardCardHeight(int rows) =>
-    rows * kSlotHeight + (rows - 1) * kGridGutter;
+///
+/// Delegated rather than restated, for the reason above: production now needs the
+/// same conversion — the popup form's presentation is sized to a declared row
+/// count (#1299) — and a second copy here could drift in the direction that keeps
+/// the gate green.
+double dashboardCardHeight(int rows) => dashboardRowsToHeight(rows);
 
 // --- Width cases -------------------------------------------------------------
 
@@ -294,6 +295,24 @@ CardWidthCase desktopCaseFor(WidgetSpec spec, {double screenWidth = 1440}) {
     cardWidth: cardWidthAt(screenWidth, span),
     columnSpan: span,
     label: 'desktop',
+  );
+}
+
+/// The width realization of a card the user has *picked* into popup: a tile
+/// [UspWidgetSpecs.popupColumns] wide, on the narrowest screen producing that
+/// span.
+///
+/// Not any of [widthCasesFor]'s cases, and not derived from the spec at all — a
+/// pick overrides the card's own floors outright (#1299), so the width a picked
+/// card renders at is the tile's, the same for every card. Which is why this
+/// takes no [WidgetSpec]: there is nothing per-card left to read.
+CardWidthCase pickedTileCase() {
+  final r = narrowestRealizationOf(UspWidgetSpecs.popupColumns)!;
+  return CardWidthCase(
+    screenWidth: r.screenWidth,
+    cardWidth: r.cardWidth,
+    columnSpan: UspWidgetSpecs.popupColumns,
+    label: 'popup-tile',
   );
 }
 
@@ -515,31 +534,29 @@ Widget buildDashboardCardApp({
         cardDensityOverrideProvider(cardId).overrideWith((ref) => density),
       ...extraOverrides,
     ],
-    child: Portal(
-      child: MaterialApp(
-        locale: locale,
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        theme: theme,
-        // Freeze looping/entrance animations so charts settle to a static frame.
-        builder: (context, child) => MediaQuery(
-          data: MediaQuery.of(context).copyWith(disableAnimations: true),
-          child: child ?? const SizedBox.shrink(),
-        ),
-        home: Scaffold(
-          // Top-left align + scroll view: the card gets its exact grid width and
-          // height, and any excess vertical content extends instead of clipping
-          // (we hunt horizontal overflow; height is generous, see maxHeightRows).
-          body: SingleChildScrollView(
-            child: Align(
-              alignment: Alignment.topLeft,
-              child: RepaintBoundary(
-                key: repaintKey,
-                child: SizedBox(
-                  width: cardWidth,
-                  height: cardHeight,
-                  child: card,
-                ),
+    child: MaterialApp(
+      locale: locale,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      theme: theme,
+      // Freeze looping/entrance animations so charts settle to a static frame.
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(context).copyWith(disableAnimations: true),
+        child: child ?? const SizedBox.shrink(),
+      ),
+      home: Scaffold(
+        // Top-left align + scroll view: the card gets its exact grid width and
+        // height, and any excess vertical content extends instead of clipping
+        // (we hunt horizontal overflow; height is generous, see maxHeightRows).
+        body: SingleChildScrollView(
+          child: Align(
+            alignment: Alignment.topLeft,
+            child: RepaintBoundary(
+              key: repaintKey,
+              child: SizedBox(
+                width: cardWidth,
+                height: cardHeight,
+                child: card,
               ),
             ),
           ),
@@ -586,11 +603,22 @@ Future<List<OverflowIncident>> probeCardOverflow(
   Key? repaintKey,
   Widget? cardOverride,
   CardDensity? density,
+  int? screenHeightRows,
   List<Override> extraOverrides = const [],
   Future<void> Function(WidgetTester tester)? after,
 }) {
-  final surface =
-      Size(widthCase.screenWidth, dashboardCardHeight(cardHeightRows));
+  // The viewport is the card's own box unless a case says otherwise, which keeps
+  // every existing sweep measuring exactly the space the grid gives the card.
+  //
+  // [screenHeightRows] exists for the one case where the two genuinely differ: a
+  // card collapsed to a popup tile occupies one row of a full-height screen, and
+  // sizing the viewport to that row would mean the presentation it opens had no
+  // room to be drawn at all — the harness would report the viewport's overflow
+  // rather than the card's.
+  final surface = Size(
+    widthCase.screenWidth,
+    dashboardCardHeight(screenHeightRows ?? cardHeightRows),
+  );
   return runWithOverflowCollection((sink) async {
     await tester.binding.setSurfaceSize(surface);
     tester.view.physicalSize = surface;

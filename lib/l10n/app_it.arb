@@ -1131,5 +1131,9 @@
   "bridgeRedirectButton": "Vai al router",
   "lanIpRedirectTitle": "Riconnettiti al router",
   "lanIpRedirectMessage": "L'indirizzo IP del router è cambiato. Riconnettiti a esso all'indirizzo {url}. Potrebbe essere necessario attendere un momento affinché il dispositivo ottenga un nuovo indirizzo.",
-  "lanIpRedirectButton": "Vai al router"
+  "lanIpRedirectButton": "Vai al router",
+  "cardFormNormal": "Normale",
+  "cardFormCompact": "Compatto",
+  "cardFormPopup": "Popup",
+  "cardFormForNamed": "Formato scheda per {name}"
 }
