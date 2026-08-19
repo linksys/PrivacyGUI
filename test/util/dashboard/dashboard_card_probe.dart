@@ -11,6 +11,7 @@ import 'package:privacy_gui/page/_shared/providers/card_density_provider.dart';
 import 'package:privacy_gui/page/_shared/providers/card_tab_state_provider.dart';
 import 'package:privacy_gui/page/dashboard/factories/usp_widget_factory.dart';
 import 'package:privacy_gui/page/_shared/models/card_density.dart';
+import 'package:privacy_gui/page/_shared/components/card_density_scope.dart';
 import 'package:privacy_gui/page/dashboard/models/card_grid_geometry.dart';
 import 'package:privacy_gui/page/dashboard/models/display_mode.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_widget_specs.dart';
@@ -298,6 +299,93 @@ CardWidthCase desktopCaseFor(WidgetSpec spec, {double screenWidth = 1440}) {
   );
 }
 
+/// The narrowest width at which [spec] renders its **normal** form, as a case the
+/// gate can pump — null for a card that declares no threshold, since for those
+/// every realization is already the normal form and [widthCasesFor] covers it.
+///
+/// ## Why this cannot come from [widthCasesFor]
+///
+/// [narrowestRealizationOf]'s doc states the gate's exhaustiveness argument:
+/// overflow is monotonic in width, so the narrowest realization of a span is that
+/// span's worst case. That holds only while the card renders the *same form* at
+/// every width. Since #1288/#1290 six cards declare a `normalAbove`, so their
+/// narrowest realization selects popup or compact — a different layout, not a
+/// narrower instance of the same one — and it no longer dominates the widths where
+/// the normal form renders. Measured: all six select popup at 191.4px, and three of
+/// them (`connected_devices` 336, `network_health` 366, `ethernet_ports` 386) select
+/// compact at 288.0px too. [widthCasesFor] cannot reach past that, because spans 5
+/// upward all realize 288.0px at the 320px screen floor — a card spanning the whole
+/// 4-column mobile grid is full width. So for those three the normal form is not
+/// merely unsampled by the gate: it is unreachable by the gate's width generator
+/// (#1318).
+///
+/// ## Why one width is enough
+///
+/// Monotonicity is intact *within* a form — wider reduces horizontal pressure, and
+/// reduces wrapping, hence height, and the gate fixes card height at
+/// `minHeightRows`. So this width dominates every wider normal-band width,
+/// including [desktopCaseFor]'s. What #1288 broke was monotonicity *across* forms.
+///
+/// ## What it returns
+///
+/// The smallest realization at or above the threshold, searched over every span in
+/// `minColumns..maxColumns` and the same enumerated screen range
+/// [narrowestRealizationOf] uses — so this is a width the grid genuinely produces,
+/// not the bare threshold value. Measured on this branch, every one of the six
+/// thresholds is *exactly* realizable, at the card's `minColumns`: `lan_info`
+/// 250.0px @ screen 1096, `time_settings` 256.0px @ 1120, `device_info` 262.0px @
+/// 1144, `connected_devices` 336.0px @ 2096, `network_health` 366.0px @ 2216,
+/// `ethernet_ports` 386.0px @ 552. That is a coincidence of the grid's near-continuity
+/// in screen width, not something to rely on — hence the search rather than
+/// `cardWidth: spec.normalAbove!`.
+CardWidthCase? normalBandCaseFor(WidgetSpec spec) {
+  final threshold = spec.normalAbove;
+  if (threshold == null) return null;
+
+  final c = spec.getConstraints(DisplayMode.normal);
+  final floor = math.max(minScreenFilter, kMinSupportedScreenWidth);
+  if (floor > kMaxScannedScreenWidth) return null;
+
+  CardWidthCase? best;
+  void consider(double screen, int span) {
+    final width = cardWidthAt(screen, span);
+    if (width < threshold) return;
+    if (best != null && width >= best!.cardWidth) return;
+    best = CardWidthCase(
+      screenWidth: screen,
+      cardWidth: width,
+      columnSpan: span,
+      label: 'normalAbove',
+    );
+  }
+
+  // The floor itself, then every integer above it — the same enumeration
+  // [narrowestRealizationOf] runs, and for the same reason: the floor is the left
+  // edge of whichever (columns, margin) regime it lands in, so skipping it would
+  // skip a regime.
+  for (var span = c.minColumns; span <= c.maxColumns; span++) {
+    consider(floor, span);
+    for (var screen = floor.ceilToDouble();
+        screen <= kMaxScannedScreenWidth;
+        screen += 1.0) {
+      consider(screen, span);
+    }
+  }
+  return best;
+}
+
+/// The [CardDensity] the pumped card *selected*, read from the scope
+/// [CardDensityHost] published.
+///
+/// The point is that it is a read and not a pin: a sweep that pinned the form it
+/// wanted would keep passing after a threshold moved out from under it, measuring a
+/// form production no longer shows at that width (#1318).
+CardDensity selectedCardDensity(WidgetTester tester) {
+  final finder = find.byType(CardDensityScope);
+  if (finder.evaluate().isEmpty) return CardDensity.normal;
+  return tester.widget<CardDensityScope>(finder.first).density;
+}
+
 /// The width realization of a card the user has *picked* into popup: a tile
 /// [UspWidgetSpecs.popupColumns] wide, on the narrowest screen producing that
 /// span.
@@ -444,6 +532,7 @@ double? cardContentScrollShortfall(WidgetTester tester) {
 const Map<String, int> kTabbedCardTabCounts = {
   'firewall_overview': 2,
   'network_health': 3,
+
   'wifi_performance': 3,
   'device_analytics': 4,
   'system_status': 4,

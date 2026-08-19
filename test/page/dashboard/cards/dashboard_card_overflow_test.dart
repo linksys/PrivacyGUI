@@ -8,6 +8,7 @@ import 'dart:math' as math;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
+import 'package:privacy_gui/page/_shared/models/card_density.dart';
 import 'package:privacy_gui/page/dashboard/models/display_mode.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_widget_specs.dart';
 
@@ -479,6 +480,243 @@ void main() {
               },
             );
           }
+        }
+      }
+    });
+  }
+
+  // ─── The normal band (#1318) ──────────────────────────────────────────────
+  //
+  // The sweep above pumps the widths the grid produces for each span, and claims
+  // that is exhaustive because overflow is monotonic in width. Since #1288/#1290
+  // six cards declare a `normalAbove`, so their narrowest realization renders a
+  // *different form* — popup at 191.4px for all six, compact at 288.0px for the
+  // three whose threshold is above it — and a different form is not a narrower
+  // instance of the same one. For those three **this sweep is the only place the
+  // grid's own widths reach the normal form at all**; what the gate had otherwise
+  // is `dashboard_card_popup_overflow_test`'s two dialog groups, which render it at
+  // the fixed `kCardPresentationWidth` (400px, above every threshold), tab 0 only,
+  // in 3 locales, inside dialog chrome rather than a grid cell. That is not the
+  // coordinate #1183's own motivating measurement lived at (`network_health`, Loss
+  // tab, `de`, 500px, +41px): tab 2 in `de` used to be covered by transitivity from
+  // the 191.4px normal case, and #1288 removed that without replacing it.
+  //
+  // So each of the six is swept once more, at [normalBandCaseFor] — the narrowest
+  // width the grid produces at or above its own threshold. One width, because
+  // monotonicity is intact *within* a form: see that function for the argument, and
+  // `the gate's own widths cannot reach the normal band` below for the half of it
+  // that is pinned rather than argued.
+  //
+  // No density is pinned. The coordinate is chosen so production's own selection
+  // lands on normal, and each case asserts that it did — a pinned sweep would keep
+  // passing after a threshold moved out from under it, measuring a form the width no
+  // longer selects.
+  //
+  // Allowlist keys are `card|normalAbove|tab`, which the existing grammar and the
+  // dead-exemption check already handle. Unlike the forced-form sweep these
+  // coordinates are *inherited* debt — the normal form was always rendered here in
+  // production, only never measured — so grandfathering is the right mechanism if
+  // this finds anything.
+  //
+  // No report collection, for a reason specific to this sweep: the report's
+  // recommendation columns advise a wider span, and this coordinate sits exactly at
+  // the width the card's own threshold names. "Use one more column" there reads as
+  // "raise `normalAbove`", which is a design decision (#1288's measurement), not a
+  // layout fix. The failure message carries everything triage needs.
+  //
+  // ## Mutation table
+  //
+  // Each assertion below was run against a mutation of the code it guards. Row 1 is
+  // the one that justifies the sweep's existence rather than its shape: the main
+  // 1698-case width sweep stayed **green** through it.
+  //
+  // | # | assertion | mutation | killed by |
+  // |---|---|---|---|
+  // | 1 | the per-case overflow `fail` | `usp_network_health_card`: the `if (!compact)` metric row gives its three `_MetricChip`s a fixed `width: 140` instead of `Expanded` — a width the desktop realization has room for and this card's own threshold does not | 26 of 26 `network_health` tab0 cases. Of the 3213 other cases carrying the `dashboard-card` tag, the 1698-case main sweep saw **nothing**; only the two dialog groups (6, at 400px) and `usp_network_health_density_test`'s pinned-normal assertions (4) did |
+  // | 2 | `the six cards that declare a threshold` + `each threshold is realizable` + the selected-form table | delete `normalAbove: 366` from `network_health`'s spec | all 3 meta-tests. The sweep itself goes 208 → 130 cases and stays green, which is exactly the silent narrowing they exist to convert into a failure |
+  // | 3 | `selectedCardDensity(…) == normal` | `normalBandCaseFor` accepts widths 100px below the threshold | 208 of 208 sweep cases, plus `each threshold is realizable` |
+  // | 4 | `widest lessThanOrEqualTo 288.0` | `kMinSupportedScreenWidth` 320 → 480 (the plausible version of this: dropping 320px support) | `the gate's own widths cannot reach the normal band` alone — `widest` becomes 448.0 |
+  // | 5 | the 8-coordinate count | drop `'network_health': 3` from `kTabbedCardTabCounts` | `the six cards that declare a threshold` (8 → 6) |
+  final normalBandSpecs =
+      UspWidgetSpecs.all.where((s) => s.normalAbove != null).toList();
+
+  group('normal band coverage', () {
+    // The inventory, asserted rather than narrated — the counts in the comment
+    // above are the whole justification for this sweep's existence and its size.
+    test('the six cards that declare a threshold, at 8 card x tab coordinates',
+        () {
+      expect(
+        {for (final s in normalBandSpecs) s.id: s.normalAbove},
+        {
+          'device_info': 262.0,
+          'lan_info': 250.0,
+          'ethernet_ports': 386.0,
+          'connected_devices': 336.0,
+          'time_settings': 256.0,
+          'network_health': 366.0,
+        },
+        reason: 'a card that gains or loses a `normalAbove` changes what this '
+            'sweep covers, so the list is pinned here rather than left to the '
+            'loop below',
+      );
+      expect(
+        normalBandSpecs.fold<int>(0, (n, s) => n + tabCountFor(s.id)),
+        8,
+        reason: 'five single-view cards plus network_health\'s three tabs',
+      );
+      // #1183's motivating coordinate, named so a change that drops it is a
+      // failure rather than a silent narrowing.
+      expect(tabCountFor('network_health'), 3,
+          reason: 'the Loss tab is index 2; #1183 measured +41px there in de');
+      expect(
+        AppLocalizations.supportedLocales.map(_localeTag),
+        contains('de'),
+        reason: 'de is the locale #1183 measured the Loss-tab legend overflow '
+            'in, so it has to be in the sweep this replaces it with',
+      );
+    });
+
+    // Why one width per card is enough, in the direction that can rot: the
+    // generator the main sweep uses tops out at 288.0px, because spans 5 upward all
+    // realize 288.0px at the 320px screen floor — a card spanning the whole
+    // 4-column mobile grid is full width. So no coordinate `widthCasesFor` can
+    // produce reaches a threshold above 288, and the three cards below are outside
+    // its range by construction rather than by sampling. If a wider realization
+    // ever appears this fails, instead of the sweep quietly duplicating coverage.
+    test('the gate\'s own widths cannot reach the normal band', () {
+      // Every span any card declares — the generator's whole domain, taken from
+      // the specs rather than from a hardcoded 1..12 so a new span comes with it.
+      final spans = <int>{
+        for (final s in UspWidgetSpecs.all)
+          ...[
+            s.getConstraints(DisplayMode.normal).minColumns,
+            s.getConstraints(DisplayMode.normal).preferredColumns,
+            s.getConstraints(DisplayMode.normal).maxColumns,
+          ],
+      };
+      final widest = spans
+          .map((span) => narrowestRealizationOf(span, minScreen: 0)!.cardWidth)
+          .reduce(math.max);
+      expect(widest, lessThanOrEqualTo(288.0),
+          reason: 'widthCasesFor draws from narrowestRealizationOf, so 288.0px '
+              'is the widest coordinate the main sweep can pump');
+
+      // And the form each of those coordinates actually selects, per card. This is
+      // the measurement the comment above quotes; asserting it means a threshold
+      // change surfaces here with the numbers, rather than as an unexplained
+      // failure in a satellite suite.
+      final selected = {
+        for (final spec in normalBandSpecs)
+          spec.id: [
+            for (final wc in widthCasesFor(spec))
+              '${wc.widthKey}=${densityForWidth(width: wc.cardWidth, normalAbove: spec.normalAbove).name}',
+          ],
+      };
+      expect(selected, {
+        'device_info': ['191=popup', '288=normal'],
+        'lan_info': ['191=popup', '288=normal'],
+        'ethernet_ports': ['191=popup', '288=compact'],
+        'connected_devices': ['191=popup', '288=compact'],
+        'time_settings': ['191=popup', '288=normal'],
+        'network_health': ['191=popup', '288=compact'],
+      });
+    });
+
+    // The coordinate itself: derived from the spec, and a width the grid produces
+    // rather than the bare threshold value.
+    test('each threshold is realizable, so the sweep pumps a production width',
+        () {
+      expect(
+        {
+          for (final spec in normalBandSpecs)
+            spec.id: '${normalBandCaseFor(spec)!.cardWidth.toStringAsFixed(1)}'
+                '@${normalBandCaseFor(spec)!.screenWidth.toStringAsFixed(0)}'
+                'x${normalBandCaseFor(spec)!.columnSpan}',
+        },
+        {
+          'device_info': '262.0@1144x3',
+          'lan_info': '250.0@1096x3',
+          'ethernet_ports': '386.0@552x3',
+          'connected_devices': '336.0@2096x3',
+          'time_settings': '256.0@1120x3',
+          'network_health': '366.0@2216x3',
+        },
+        reason: 'every threshold happens to be exactly realizable at the card\'s '
+            'minColumns — a consequence of the grid\'s near-continuity in screen '
+            'width, pinned here because normalBandCaseFor searches for it rather '
+            'than assuming it',
+      );
+    });
+  });
+
+  for (final spec in normalBandSpecs) {
+    final rows = spec.getConstraints(DisplayMode.normal).minHeightRows;
+    final wc = normalBandCaseFor(spec)!;
+    final tabCount = tabCountFor(spec.id);
+
+    group('${spec.id} overflow [normal band]', () {
+      for (var tab = 0; tab < tabCount; tab++) {
+        for (final locale in _targetLocales) {
+          final tag = _localeTag(locale);
+          final tabLabel = tabCount > 1 ? ' tab$tab' : '';
+          testWidgets(
+            'no overflow @normalAbove ${wc.widthKey}px$tabLabel ($tag)',
+            (tester) async {
+              final incidents = await probeCardOverflow(
+                tester,
+                cardId: spec.id,
+                widthCase: wc,
+                cardHeightRows: rows,
+                tabIndex: tab,
+                locale: locale,
+              );
+
+              expect(
+                selectedCardDensity(tester),
+                CardDensity.normal,
+                reason:
+                    '"${spec.id}" was pumped at ${wc.widthKey}px — the narrowest '
+                    'width at or above its declared normalAbove '
+                    '(${spec.normalAbove}) — but selected a degraded form, so '
+                    'this case is no longer measuring the normal band. '
+                    'normalBandCaseFor and densityForWidth have disagreed: check '
+                    'whether the threshold moved or the selection rule changed.',
+              );
+
+              final significant =
+                  incidents.where((i) => i.pixels > _tolerancePx).toList();
+              if (significant.isEmpty) {
+                _failIfDeadExemption(spec.id, wc.label, tab, tag);
+                return;
+              }
+
+              final detail = significant.join(', ');
+              if (_isAllowlisted(spec.id, wc.label, tab, tag)) {
+                // ignore: avoid_print
+                print(
+                  'KNOWN OVERFLOW (allowlisted) ${spec.id} @normalAbove '
+                  '${wc.widthKey}px tab$tab $tag: $detail '
+                  '— ${_trackingFor(spec.id)}',
+                );
+                return;
+              }
+
+              fail(
+                'Dashboard card "${spec.id}" overflows in its **normal** form at '
+                '${wc.widthKey}px — the narrowest width its own '
+                'normalAbove (${spec.normalAbove}) admits — tab $tab, locale '
+                '"$tag": $detail.\n'
+                'This width is above the threshold, so no degradation applies '
+                'here: the fix is to the normal form itself, or to the threshold '
+                'if the form cannot read at this width (#1288 measured it).\n'
+                'If knowingly deferred, add "$tag" to the\n'
+                "  '${spec.id}|${wc.label}|$tab'\n"
+                'entry of the "allowlist" map in\n'
+                '  test/fixtures/known_overflows.json\n'
+                'along with a "tracking" note for the card.',
+              );
+            },
+          );
         }
       }
     });
