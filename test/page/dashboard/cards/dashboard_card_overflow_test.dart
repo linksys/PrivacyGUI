@@ -297,6 +297,39 @@ void main() {
         );
       });
     }
+
+    // The inverse claim, which is the half that decides coverage for a *new*
+    // card: `tabCountFor` falls back to 1 for anything absent from the registry,
+    // so a tabbed card nobody registered is swept at tab 0 and its other tabs
+    // are never measured — silently, because every case it does run still
+    // passes. Registering a card is therefore not bookkeeping, and the loop
+    // above cannot say so: it only iterates ids that are already there.
+    final registered = kTabbedCardTabCounts.keys.toSet();
+    for (final spec
+        in UspWidgetSpecs.all.where((s) => !registered.contains(s.id))) {
+      testWidgets('${spec.id} is single-view, so tab 0 is full coverage',
+          (tester) async {
+        final wc = desktopCaseFor(spec);
+        final rows = spec.getConstraints(DisplayMode.normal).minHeightRows;
+        await probeCardOverflow(
+          tester,
+          cardId: spec.id,
+          widthCase: wc,
+          cardHeightRows: rows,
+          tabIndex: 0,
+          locale: const Locale('en'),
+        );
+        expect(
+          visibleTabCount(tester),
+          1,
+          reason:
+              '"${spec.id}" builds a tab bar but is absent from '
+              'kTabbedCardTabCounts in dashboard_card_probe.dart, so the sweep '
+              'measures tab 0 only and the rest of its tabs go unmeasured. Add '
+              'it with its tab count.',
+        );
+      });
+    }
   });
 
   for (final spec in UspWidgetSpecs.all) {
