@@ -1,4 +1,4 @@
-@Tags(['ui'])
+@Tags(['dashboard-card'])
 library;
 
 import 'package:flutter/foundation.dart';

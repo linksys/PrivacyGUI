@@ -59,7 +59,7 @@ class WidgetSpec {
   /// the quantity it is trying to constrain. It lives here rather than on
   /// `WidgetGridConstraints` because that type belongs to ui_kit_library, and
   /// this is an app-level readability decision, not a grid constraint
-  /// (constitution Article XIV).
+  /// (constitution Article XV).
   final double? normalAbove;
 
   const WidgetSpec({

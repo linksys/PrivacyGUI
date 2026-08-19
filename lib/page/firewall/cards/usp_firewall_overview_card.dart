@@ -616,7 +616,7 @@ class _RuleRow extends StatelessWidget {
             _ProtocolBadge(protocol: rule.protocol),
           ],
         ),
-        const SizedBox(height: 2),
+        AppGap.xxs(),
         _mapping(maxLines: 2),
       ],
     );

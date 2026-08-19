@@ -16,11 +16,18 @@ enum CardDensity {
   normal,
 }
 
-/// The width below which a card renders its [CardDensity.popup] form.
+/// The width below which a card that has opted in renders its
+/// [CardDensity.popup] form.
 ///
-/// A constant rather than a per-card value: §2.1 fixes it at 200px for every
-/// card, because below it there is not room for a label and a value side by side
-/// in any locale, whatever the card shows.
+/// A constant rather than a per-card value: §2.1 fixes the *width* at 200px for
+/// every card, because below it there is not room for a label and a value side
+/// by side in any locale, whatever the card shows.
+///
+/// It is not, however, reached by every card. #1239 settled popup as **opt-in**
+/// (§2.6c): the band is entered only through a declared [WidgetSpec.normalAbove],
+/// so a card that declares none stays [CardDensity.normal] all the way down. See
+/// [densityForWidth]. §2.1's table reads as an unconditional rule and should be
+/// read against §2.6c, which is the later decision.
 ///
 /// In pixels, never columns. §1.5: a 3-column card spans 191.4-422.0px depending
 /// on screen width — a 2.2x range — so a column count does not name a width, and
@@ -32,8 +39,15 @@ const double kPopupBelow = 200;
 /// [normalAbove] is the card's own declared threshold — the narrowest width at
 /// which it is whole. Absent means the card has no degraded form and stays
 /// [CardDensity.normal] at every width, popup included; per #1240 AC 2, absent
-/// is the correct value for a card that fits at its narrowest realization, and
-/// as of #1240's measurement that is all 18 registered cards.
+/// is the correct value for a card that fits at its narrowest realization.
+///
+/// #1240's own sweep found every card clean at its narrowest realization and so
+/// expected *no* card to declare a threshold. Readability, measured separately,
+/// then contradicted that: **6 of the 18 cards in [UspWidgetSpecs.all] declare
+/// one** — `device_info`, `lan_info`, `ethernet_ports`, `connected_devices`,
+/// `time_settings` and `network_health`, the cards #1288-#1291 found green but
+/// unreadable at 191.4px. The other 12 declare none, which is also why the
+/// popup band is unreachable for them.
 ///
 /// Precedence, when a threshold is declared:
 ///

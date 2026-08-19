@@ -117,14 +117,14 @@ batching leverage actually is.
 The private colour-dot widget is additionally duplicated **verbatim in five
 files** (the three above plus `device_analytics` and, per #1229,
 `wifi_performance`). De-duplicating it, or extracting a shared legend entry,
-would be a **new shared widget** and therefore needs approval under Article XIV —
+would be a **new shared widget** and therefore needs approval under Article XV —
 so the fix is applied in place, and the extraction raised separately rather than
 blocking on that conversation. That raise is **#1245**, filed after #1233; it
 carries the constraint #1233 measured, namely that any shared entry must express
 the ellipsize-vs-soft-wrap distinction per label kind (§2.10a point 2) and must
 not absorb the WAN/LAN row, which deviates for a reason (§2.10a point 3).
 **#1245's inventory is written against four files and needs `wifi_performance`
-added to it.** *Implemented* — the Article XIV conversation went the upstream
+added to it.** *Implemented* — the Article XV conversation went the upstream
 route, all five files migrated to the kit's `AppChartLegendEntry`, and both
 constraints held: the distinction is now carried by the constructor name and the
 WAN/LAN row declined the shared entry on a 6px measurement. See §2.10k.
@@ -174,7 +174,7 @@ legend-row fixes are in — the same trap §2.6a's shared-plus-card-own coordina
 set, one file down.
 
 **`AppGauge`'s centre is fixable at the call site — no ui_kit change, so no
-Article XIV question.** `AppGauge` renders
+Article XV question.** `AppGauge` renders
 `SizedBox(width: size, height: size, child: Stack(alignment: center, children: [CustomPaint, …, centerBuilder(…)]))`.
 The centre is a *non-positioned* `Stack` child, so it receives loose `size × size`
 constraints and the overflowing `Column(mainAxisSize: min, …)` is the app's own
@@ -442,9 +442,19 @@ could not reuse the normal form, was wrong.)
 
 | Form | When | Content |
 |---|---|---|
-| **popup** | card width < **200px** | Icon + a single value (or the minimum meaningful cell). Tapping opens the **normal** form in a dialog. |
+| **popup** | card width < **200px**, *for a card that declares `normalAbove`* | Icon + a single value (or the minimum meaningful cell). Tapping opens the **normal** form in a dialog. |
 | **compact** | 200px ≤ width < card's `normalAbove` | Simplified / reduced information. |
-| **normal** | width ≥ card's `normalAbove` | Full content. **The primary form.** |
+| **normal** | width ≥ card's `normalAbove`, **or `normalAbove` absent** | Full content. **The primary form.** |
+
+> **Read the popup row against §2.6c.** As first written this table made popup
+> unconditional below 200px. #1239 settled it as **opt-in**: the band is reached
+> only through a declared `normalAbove`, so the 12 of 18 cards that declare none
+> stay **normal** at every width, 191.4px included. §2.6c item 1 has the reasoning
+> — the short version is that "absent" already asserts the card needs no degraded
+> form (§2.4), and a universal popup would contradict that assertion. The 200px
+> constant therefore fixes *where* the band sits, not *who* enters it.
+> `densityForWidth` in `lib/page/_shared/models/card_density.dart` is the
+> implementation, and its doc comment carries the same qualification.
 
 Selection is **automatic from the card's real pixel width**. It is not a user
 preference: the width is already the consequence of a user action (resizing the
@@ -526,7 +536,7 @@ re-baseline.
 One number per card. It lives on **`WidgetSpec`** (this repo,
 `lib/page/dashboard/models/widget_spec.dart`) — **not** on
 `WidgetGridConstraints`, which is in `ui_kit_library` and cannot be changed
-unilaterally (constitution Article XIV).
+unilaterally (constitution Article XV).
 
 **Default is absent, not a number.** A spec that declares no threshold asserts
 "this card does not need a degraded form", and the gate then requires it to be
@@ -583,7 +593,7 @@ choosing *which elements to show* stays with the card. Two clean
 responsibilities: blocks guarantee "I never overflow", cards decide "what is
 worth showing at this width".
 
-Per Article XIV, adding `Flexible`/`maxLines` to an existing block is a bug fix.
+Per Article XV, adding `Flexible`/`maxLines` to an existing block is a bug fix.
 Should a genuinely new shared widget emerge (e.g. `OverflowSafeRow`), it must go
 through the UI Kit proposal path.
 
@@ -1228,7 +1238,7 @@ things to keep in agreement. Eight lessons.
    as a boundary rather than a workaround. `AppChipGroup` builds each chip's
    `AppSurface` itself with `showBorder` at its default, and exposes nothing to reach
    it: `ChipGroupStyle` carries background, text, radius and a `selectedBorderColor`
-   the group never reads. Under Article XIV that makes it the kit's to fix — asked for
+   the group never reads. Under Article XV that makes it the kit's to fix — asked for
    as a `showBorder` passthrough on `AppChipGroup`, plus `applyEnhancedEffect` honouring
    `showBorder` the way `applyBorder` already does. Two alternatives were considered and
    rejected: rebuilding the triad on `AppIconButton.icon` (whose `text` style variant has
@@ -1362,7 +1372,7 @@ things to keep in agreement. Eight lessons.
    hierarchy mechanism, and a tile that cannot afford larger type cannot afford a
    glyph either.** `AppText.bodySmall` does not forward `fontWeight`, so the call
    site uses the base `AppText(..., variant:, fontWeight:)` constructor — the same
-   variant, and not an Article XIV kit gap, since the base constructor is public API.
+   variant, and not an Article XV kit gap, since the base constructor is public API.
 
 ### 2.7 The gate enumerates widths instead of sampling them
 
@@ -2332,7 +2342,7 @@ Gate **1644 → 1698** (54 = 26 locales × 2 widths + 2 meta guards), and
    that fit: `thumbVisibility` pins the fade-out animation open, but
    `ScrollbarPainter.paint` still returns early unless
    `maxScrollExtent - minScrollExtent > precisionErrorTolerance`, so nothing is
-   painted while the content fits. Article XIV was searched first: `ui_kit_library`
+   painted while the content fits. Article XV was searched first: `ui_kit_library`
    exports no scroll-affordance component (`AppTooltip` is the nearest neighbour,
    and ui_kit uses the raw `Scrollbar` internally too), so a gradient fade edge is a
    component to propose upstream, not to invent here.
@@ -2655,11 +2665,11 @@ table, and a meta-test fails if a tabbed card is missing from it.
    net membership. The instrument built in §2.10g to answer the gate's blindness had
    its own blind spot for one ticket.
 
-### 2.10k What the Article XIV route cost, and what it returned (#1245 — implemented)
+### 2.10k What the Article XV route cost, and what it returned (#1245 — implemented)
 
 §1.1 recorded the legend dot as duplicated verbatim in five files and raised the
 extraction rather than blocking #1233 on it. That raise is #1245, and it took the
-Article XIV route in full: **propose upstream, then consume the release**. The
+Article XV route in full: **propose upstream, then consume the release**. The
 proposal is linksys/privacyGUI-UI-kit#26; it shipped `AppChartLegendEntry` (plus
 an `AppChartLegend` container) in **v2.37.0**, this repo's pin moved **v2.35.1 →
 v2.38.0**, and the seven private classes — four `_LegendDot`, two `_LegendEntry`,
@@ -3182,7 +3192,7 @@ after.
 subject is the *duplication* the ratchet work created rather than the coordinates
 it cleared. #1226 and #1233 fixed the same legend shape nine times across five
 files, and #1229 added the fifth copy of the dot knowingly (§1.1) — so the debt was
-booked at the time and paid here, upstream, under Article XIV. It clears nothing
+booked at the time and paid here, upstream, under Article XV. It clears nothing
 and is allowed to move nothing: 1698/1698 with an empty allowlist before the
 dependency bump, after the bump alone, and after the migration (§2.10k). Its
 verification lives in the two suites the gate cannot substitute for —

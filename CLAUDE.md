@@ -105,7 +105,7 @@ lib/page/               # Feature-specific pages and screens
 - `ui_kit_library`: Shared UI components from external Git repository
 
 ### UI Component Policy
-**UI Kit First**: all UI components MUST be searched for in `ui_kit_library` first. If a needed component is missing, stop and ask the user via AskUserQuestion — do not implement it yourself. See constitution Article XIV.
+**UI Kit First**: all UI components MUST be searched for in `ui_kit_library` first. If a needed component is missing, stop and ask the user via AskUserQuestion — do not implement it yourself. See constitution Article XV.
 
 ### Testing Framework
 - `mocktail`: Mocking for unit tests (primary, per constitution Article I §1.6.1)

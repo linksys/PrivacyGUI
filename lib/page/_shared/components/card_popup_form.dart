@@ -196,7 +196,7 @@ class CardPopupForm extends StatelessWidget {
 /// why one constant beats both of them.
 ///
 /// The width is injected as a [DialogStyle] override on this one dialog —
-/// caller-side, per constitution Article XIV. Nothing in `ui_kit` changes, and no
+/// caller-side, per constitution Article XV. Nothing in `ui_kit` changes, and no
 /// other dialog in the app is affected.
 ///
 /// ## The card is the frame

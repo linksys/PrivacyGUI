@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:privacy_gui/page/_shared/models/card_form_choice.dart';
 
 /// The persisted form of the USP dashboard layout: one serialised grid per
@@ -129,30 +130,42 @@ class UspLayoutEnvelope {
     Object? decoded;
     try {
       decoded = jsonDecode(raw);
-    } catch (_) {
-      return null;
+    } catch (e) {
+      return _reject('not JSON: $e');
     }
 
     // Legacy: a bare list of 12-column items.
     if (decoded is List) {
-      if (!_isItemList(decoded)) return null;
+      if (!_isItemList(decoded)) {
+        return _reject('legacy bare list holds a non-map item');
+      }
       return UspLayoutEnvelope({desktopSlotCount: decoded});
     }
 
-    if (decoded is! Map) return null;
+    if (decoded is! Map) {
+      return _reject('top level is ${decoded.runtimeType}, not a map or list');
+    }
 
     final version = decoded['version'];
-    if (version is! int || version > currentVersion) return null;
+    if (version is! int || version > currentVersion) {
+      return _reject('version $version is not an int in 1..$currentVersion');
+    }
 
     final rawLayouts = decoded['layouts'];
-    if (rawLayouts is! Map) return null;
+    if (rawLayouts is! Map) {
+      return _reject('"layouts" is ${rawLayouts.runtimeType}, not a map');
+    }
 
     final layouts = <int, List<dynamic>>{};
     for (final entry in rawLayouts.entries) {
       final slotCount = int.tryParse('${entry.key}');
-      if (slotCount == null || slotCount < 1) return null;
+      if (slotCount == null || slotCount < 1) {
+        return _reject('slot count "${entry.key}" is not a positive integer');
+      }
       final layout = entry.value;
-      if (layout is! List || !_isItemList(layout)) return null;
+      if (layout is! List || !_isItemList(layout)) {
+        return _reject('layout at slot count $slotCount is not a list of maps');
+      }
       layouts[slotCount] = layout;
     }
 
@@ -162,6 +175,19 @@ class UspLayoutEnvelope {
       layouts,
       forms: CardForms.fromJson(decoded['forms']),
     );
+  }
+
+  /// Logs why [tryDecode] is giving up, then returns null for it to hand back.
+  ///
+  /// The caller can only report *that* the payload was unreadable — it receives
+  /// a bare null — so without this the seven rejection paths above are
+  /// indistinguishable in the field. That matters more here than the usual
+  /// "log the exception" habit: a rejection silently discards the layout the
+  /// user arranged and reseeds the default, so the reason is the only evidence
+  /// left of what they lost.
+  static UspLayoutEnvelope? _reject(String reason) {
+    debugPrint('UspLayoutEnvelope.tryDecode rejected the payload — $reason');
+    return null;
   }
 
   static bool _isItemList(List<dynamic> layout) =>

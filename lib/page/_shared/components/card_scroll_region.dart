@@ -48,7 +48,7 @@ import 'package:flutter/material.dart';
 /// `maxScrollExtent - minScrollExtent > precisionErrorTolerance`, so no thumb is
 /// painted while the content fits. It is the framework's scrollbar rather than a
 /// hand-rolled fade edge because `ui_kit_library` exports no scroll-affordance
-/// component (Article XIV — searched: `AppTooltip` is the only near neighbour, and
+/// component (Article XV — searched: `AppTooltip` is the only near neighbour, and
 /// ui_kit uses the raw `Scrollbar` internally too). A gradient edge is a component
 /// to propose upstream, not to invent here.
 class CardScrollRegion extends StatefulWidget {
