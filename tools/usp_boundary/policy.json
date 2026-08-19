@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "minimum_decisions": 40,
+  "required_dart_classes": [
+    "UspClient",
+    "UspClientBuilder",
+    "UspWsClient"
+  ],
+  "required_dart_globals": [
+    "__uspClientReady"
+  ],
+  "intentionally_unbound": {
+    "UspClient": {
+      "Symbol.dispose": "Generated JavaScript lifecycle alias; Dart calls free() explicitly.",
+      "baseUrl": "The Dart wrapper owns the configured URL and does not read it back from Wasm.",
+      "connectNotifications": "PrivacyGUI subscriptions use its authenticated SSE strategy, not the Wasm EventSource helper.",
+      "notificationsUrl": "PrivacyGUI builds the authenticated SSE endpoint in its SSE strategy.",
+      "subscribe": "The unused drifted Wasm binding was removed; subscriptions use UspBridgeClient plus SSE.",
+      "unsubscribe": "The unused Wasm binding was removed; unsubscription uses UspBridgeClient plus SSE."
+    },
+    "UspClientBuilder": {
+      "Symbol.dispose": "Generated JavaScript lifecycle alias; the built client owns the active lifecycle.",
+      "free": "The short-lived builder is not retained by the Dart wrapper."
+    },
+    "UspWsClient": {
+      "Symbol.dispose": "Generated JavaScript lifecycle alias; Dart calls free() explicitly."
+    }
+  },
+  "local_js_globals": {
+    "__uspClientReady": {
+      "kind": "getter",
+      "defined_in": "web/usp_init.js",
+      "reason": "PrivacyGUI awaits the Promise installed by its non-module Wasm bootstrap."
+    },
+    "sendWebSocketConnectNative": {
+      "defined_in": "web/usp_init.js",
+      "reason": "PrivacyGUI shim copies Wasm bytes before the mandatory first WebSocket frame."
+    },
+    "sendOperateRecordNative": {
+      "defined_in": "web/usp_init.js",
+      "reason": "PrivacyGUI shim copies Wasm bytes before sending firmware Operate records."
+    }
+  }
+}

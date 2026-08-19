@@ -12,6 +12,8 @@ import 'package:privacy_gui/page/firmware_update/services/firmware_upload_strate
 
 const _tag = '[FirmwareUpdate]';
 
+typedef UspWsConnector = Future<UspWsClientWrapper> Function(String url);
+
 /// WebSocket-based firmware upload strategy (Method 2).
 ///
 /// Uses direct WebSocket connection to OBUSPA (`wss://router/usp-ws`),
@@ -34,20 +36,27 @@ class FirmwareWsUploadStrategy implements FirmwareUploadStrategy {
   final String _wsUrl;
   final String _fromId;
   final String _toId;
+  final UspWsConnector _connect;
+  final Duration _handshakeTimeout;
 
   UspWsClientWrapper? _wsClient;
   StreamSubscription? _messageSubscription;
   Completer<void>? _responseCompleter;
+  Future<void>? _finalizeFuture;
 
   FirmwareWsUploadStrategy({
     required TurboSessionManager turboManager,
     required String wsUrl,
     required String fromId,
     required String toId,
+    UspWsConnector? connect,
+    Duration handshakeTimeout = const Duration(seconds: 10),
   })  : _turboManager = turboManager,
         _wsUrl = wsUrl,
         _fromId = fromId,
-        _toId = toId;
+        _toId = toId,
+        _connect = connect ?? ((url) => UspWsClientWrapper.connect(url)),
+        _handshakeTimeout = handshakeTimeout;
 
   @override
   String get name => 'WebSocket';
@@ -77,7 +86,7 @@ class FirmwareWsUploadStrategy implements FirmwareUploadStrategy {
 
     // 2. Connect WebSocket
     try {
-      _wsClient = await UspWsClientWrapper.connect(_wsUrl);
+      _wsClient = await _connect(_wsUrl);
     } catch (e) {
       logger.e('$_tag Failed to connect WebSocket: $e');
       await _turboManager.release();
@@ -109,13 +118,7 @@ class FirmwareWsUploadStrategy implements FirmwareUploadStrategy {
           .d('$_tag WebSocketConnect handshake sent, waiting for response...');
 
       // Wait for handshake response
-      await _responseCompleter!.future.timeout(
-        const Duration(seconds: 10),
-        onTimeout: () {
-          logger
-              .w('$_tag WebSocketConnect response timeout (continuing anyway)');
-        },
-      );
+      await _responseCompleter!.future.timeout(_handshakeTimeout);
       _responseCompleter = null;
       logger.d('$_tag WebSocketConnect handshake complete');
     } catch (e) {
@@ -177,20 +180,55 @@ class FirmwareWsUploadStrategy implements FirmwareUploadStrategy {
   }
 
   @override
-  Future<void> finalize() async {
+  Future<void> finalize() {
+    // prepare() finalizes on handshake failure and the owning service
+    // finalizes again per the strategy lifecycle contract. Every caller
+    // awaits the same cleanup so release runs once without returning early.
+    final existing = _finalizeFuture;
+    if (existing != null) {
+      logger.d('$_tag finalize() already running or complete, reusing it');
+      return existing;
+    }
+
+    final completion = Completer<void>();
+    _finalizeFuture = completion.future;
+    unawaited(_completeFinalization(completion));
+    return completion.future;
+  }
+
+  Future<void> _completeFinalization(Completer<void> completion) async {
+    try {
+      await _finalizeResources();
+      completion.complete();
+    } catch (error, stackTrace) {
+      logger.e(
+        '$_tag Unexpected finalization error (ignored): '
+        '$error\n$stackTrace',
+      );
+      completion.complete();
+    }
+  }
+
+  Future<void> _finalizeResources() async {
     logger.d('$_tag Finalizing WebSocket upload...');
 
     // Cancel message subscription
-    await _messageSubscription?.cancel();
+    final messageSubscription = _messageSubscription;
     _messageSubscription = null;
+    try {
+      await messageSubscription?.cancel();
+    } catch (e) {
+      logger.w('$_tag Message subscription cancel error (ignored): $e');
+    }
 
     // Close WebSocket
+    final wsClient = _wsClient;
+    _wsClient = null;
     try {
-      _wsClient?.dispose();
+      wsClient?.dispose();
     } catch (e) {
       logger.w('$_tag WebSocket close error (ignored): $e');
     }
-    _wsClient = null;
 
     // Release turbo session (always, even if above steps failed)
     try {

@@ -661,6 +661,249 @@ export class UspClientBuilder {
 if (Symbol.dispose) UspClientBuilder.prototype[Symbol.dispose] = UspClientBuilder.prototype.free;
 
 /**
+ * JS-facing WebSocket client. Single-consumer; not cloneable.
+ *
+ * # Example (JavaScript)
+ * ```javascript
+ * const ws = await UspWsClient.connect("wss://192.168.1.1/usp-ws");
+ * ws.on_record((bytes) => console.log("record:", bytes));
+ * await ws.send_record(recordBytes);
+ * ws.close();
+ * ```
+ */
+export class UspWsClient {
+    static __wrap(ptr) {
+        const obj = Object.create(UspWsClient.prototype);
+        obj.__wbg_ptr = ptr;
+        UspWsClientFinalization.register(obj, obj.__wbg_ptr, obj);
+        return obj;
+    }
+    __destroy_into_raw() {
+        const ptr = this.__wbg_ptr;
+        this.__wbg_ptr = 0;
+        UspWsClientFinalization.unregister(this);
+        return ptr;
+    }
+    free() {
+        const ptr = this.__destroy_into_raw();
+        wasm.__wbg_uspwsclient_free(ptr, 0);
+    }
+    /**
+     * Close the socket. Subsequent `sendRecord` calls reject.
+     */
+    close() {
+        wasm.uspwsclient_close(this.__wbg_ptr);
+    }
+    /**
+     * Open a connection. Resolves to a `UspWsClient` once the socket
+     * is established.
+     *
+     * `subprotocol` declares the `Sec-WebSocket-Protocol` to send during
+     * the upgrade handshake. USP requires `"v1.usp"` (TR-369 §6.4.4);
+     * OBUSPA destroys connections that omit it. Pass `None` only when
+     * connecting to a non-USP echo server.
+     * @param {string} url
+     * @param {string | null} [subprotocol]
+     * @returns {Promise<any>}
+     */
+    static connect(url, subprotocol) {
+        const ptr0 = passStringToWasm0(url, wasm.__wbindgen_export, wasm.__wbindgen_export2);
+        const len0 = WASM_VECTOR_LEN;
+        var ptr1 = isLikeNone(subprotocol) ? 0 : passStringToWasm0(subprotocol, wasm.__wbindgen_export, wasm.__wbindgen_export2);
+        var len1 = WASM_VECTOR_LEN;
+        const ret = wasm.uspwsclient_connect(ptr0, len0, ptr1, len1);
+        return takeObject(ret);
+    }
+    /**
+     * Register the per-record callback. Replaces any previous one.
+     * `cb` is called as `cb(Uint8Array)`.
+     * @param {Function} cb
+     */
+    onRecord(cb) {
+        wasm.uspwsclient_onRecord(this.__wbg_ptr, addHeapObject(cb));
+    }
+    /**
+     * Register the connection-state callback.
+     * `cb` is called as `cb(state: string)` with `"open"` or `"closed"`.
+     * @param {Function} cb
+     */
+    onStateChange(cb) {
+        wasm.uspwsclient_onStateChange(this.__wbg_ptr, addHeapObject(cb));
+    }
+    /**
+     * Queue a binary USP Record for delivery. Resolves once enqueued.
+     * @param {Uint8Array} bytes
+     * @returns {Promise<any>}
+     */
+    sendRecord(bytes) {
+        const ptr0 = passArray8ToWasm0(bytes, wasm.__wbindgen_export);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.uspwsclient_sendRecord(this.__wbg_ptr, ptr0, len0);
+        return takeObject(ret);
+    }
+}
+if (Symbol.dispose) UspWsClient.prototype[Symbol.dispose] = UspWsClient.prototype.free;
+
+/**
+ * Build a USP Record carrying a `Get` for a single parameter path.
+ *
+ * The Record is needed for WebSocket-MTP traffic (the HTTP path used
+ * by `UspClient` sends bare Msg bytes; the Linksys bridge wraps for HTTP).
+ *
+ * # JavaScript
+ * ```javascript
+ * const bytes = buildGetRecord(
+ *   "Device.DeviceInfo.SoftwareVersion",
+ *   "controller::localui-turbo",
+ *   "os::router-001122334455"
+ * );
+ * await ws.sendRecord(bytes);
+ * ```
+ * @param {string} path
+ * @param {string} from_id
+ * @param {string} to_id
+ * @returns {Uint8Array}
+ */
+export function buildGetRecord(path, from_id, to_id) {
+    try {
+        const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+        const ptr0 = passStringToWasm0(path, wasm.__wbindgen_export, wasm.__wbindgen_export2);
+        const len0 = WASM_VECTOR_LEN;
+        const ptr1 = passStringToWasm0(from_id, wasm.__wbindgen_export, wasm.__wbindgen_export2);
+        const len1 = WASM_VECTOR_LEN;
+        const ptr2 = passStringToWasm0(to_id, wasm.__wbindgen_export, wasm.__wbindgen_export2);
+        const len2 = WASM_VECTOR_LEN;
+        wasm.buildGetRecord(retptr, ptr0, len0, ptr1, len1, ptr2, len2);
+        var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
+        var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
+        var r2 = getDataViewMemory0().getInt32(retptr + 4 * 2, true);
+        var r3 = getDataViewMemory0().getInt32(retptr + 4 * 3, true);
+        if (r3) {
+            throw takeObject(r2);
+        }
+        var v4 = getArrayU8FromWasm0(r0, r1).slice();
+        wasm.__wbindgen_export4(r0, r1 * 1, 1);
+        return v4;
+    } finally {
+        wasm.__wbindgen_add_to_stack_pointer(16);
+    }
+}
+
+/**
+ * Build a USP Record carrying an `Operate` command.
+ *
+ * # JavaScript
+ * ```javascript
+ * const bytes = buildOperateRecord(
+ *   "Device.LocalAgent.X_LINKSYS_Download()",
+ *   { "Data": base64chunk, "Offset": "0", "Size": "65535" },
+ *   "controller::localui-turbo",
+ *   "os::router-001122334455"
+ * );
+ * await ws.sendRecord(bytes);
+ * ```
+ * @param {string} command
+ * @param {any} input_args
+ * @param {string} from_id
+ * @param {string} to_id
+ * @returns {Uint8Array}
+ */
+export function buildOperateRecord(command, input_args, from_id, to_id) {
+    try {
+        const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+        const ptr0 = passStringToWasm0(command, wasm.__wbindgen_export, wasm.__wbindgen_export2);
+        const len0 = WASM_VECTOR_LEN;
+        const ptr1 = passStringToWasm0(from_id, wasm.__wbindgen_export, wasm.__wbindgen_export2);
+        const len1 = WASM_VECTOR_LEN;
+        const ptr2 = passStringToWasm0(to_id, wasm.__wbindgen_export, wasm.__wbindgen_export2);
+        const len2 = WASM_VECTOR_LEN;
+        wasm.buildOperateRecord(retptr, ptr0, len0, addHeapObject(input_args), ptr1, len1, ptr2, len2);
+        var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
+        var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
+        var r2 = getDataViewMemory0().getInt32(retptr + 4 * 2, true);
+        var r3 = getDataViewMemory0().getInt32(retptr + 4 * 3, true);
+        if (r3) {
+            throw takeObject(r2);
+        }
+        var v4 = getArrayU8FromWasm0(r0, r1).slice();
+        wasm.__wbindgen_export4(r0, r1 * 1, 1);
+        return v4;
+    } finally {
+        wasm.__wbindgen_add_to_stack_pointer(16);
+    }
+}
+
+/**
+ * Build the mandatory `WebSocketConnectRecord` first frame for USP WS MTP
+ * (TR-369 §6.4.5). OBUSPA destroys the connection if this is not the
+ * first binary frame after upgrade.
+ *
+ * # JavaScript
+ * ```javascript
+ * const handshake = buildWebSocketConnect(
+ *   "controller::localui-turbo",
+ *   "os::router-001122334455"
+ * );
+ * await ws.sendRecord(handshake);
+ * ```
+ * @param {string} from_id
+ * @param {string} to_id
+ * @returns {Uint8Array}
+ */
+export function buildWebSocketConnect(from_id, to_id) {
+    try {
+        const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+        const ptr0 = passStringToWasm0(from_id, wasm.__wbindgen_export, wasm.__wbindgen_export2);
+        const len0 = WASM_VECTOR_LEN;
+        const ptr1 = passStringToWasm0(to_id, wasm.__wbindgen_export, wasm.__wbindgen_export2);
+        const len1 = WASM_VECTOR_LEN;
+        wasm.buildWebSocketConnect(retptr, ptr0, len0, ptr1, len1);
+        var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
+        var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
+        var r2 = getDataViewMemory0().getInt32(retptr + 4 * 2, true);
+        var r3 = getDataViewMemory0().getInt32(retptr + 4 * 3, true);
+        if (r3) {
+            throw takeObject(r2);
+        }
+        var v3 = getArrayU8FromWasm0(r0, r1).slice();
+        wasm.__wbindgen_export4(r0, r1 * 1, 1);
+        return v3;
+    } finally {
+        wasm.__wbindgen_add_to_stack_pointer(16);
+    }
+}
+
+/**
+ * Decode a USP Record received over WebSocket and return a JS object
+ * with the parsed response.
+ *
+ * # JavaScript
+ * ```javascript
+ * const result = decodeRecord(responseBytes);
+ * // result = { from_id, to_id, version, msg_type, msg_id, command?, output_args?, error? }
+ * ```
+ * @param {Uint8Array} data
+ * @returns {any}
+ */
+export function decodeRecord(data) {
+    try {
+        const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+        const ptr0 = passArray8ToWasm0(data, wasm.__wbindgen_export);
+        const len0 = WASM_VECTOR_LEN;
+        wasm.decodeRecord(retptr, ptr0, len0);
+        var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
+        var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
+        var r2 = getDataViewMemory0().getInt32(retptr + 4 * 2, true);
+        if (r2) {
+            throw takeObject(r1);
+        }
+        return takeObject(r0);
+    } finally {
+        wasm.__wbindgen_add_to_stack_pointer(16);
+    }
+}
+
+/**
  * Initialize the WASM module
  *
  * # Example (JavaScript)
@@ -725,6 +968,12 @@ function __wbg_get_imports() {
         __wbg_abort_b363e6285472a358: function(arg0) {
             getObject(arg0).abort();
         },
+        __wbg_addEventListener_737cdb55f09bc146: function() { return handleError(function (arg0, arg1, arg2, arg3, arg4) {
+            getObject(arg0).addEventListener(getStringFromWasm0(arg1, arg2), getObject(arg3), getObject(arg4));
+        }, arguments); },
+        __wbg_addEventListener_aedacff123afaebd: function() { return handleError(function (arg0, arg1, arg2, arg3) {
+            getObject(arg0).addEventListener(getStringFromWasm0(arg1, arg2), getObject(arg3));
+        }, arguments); },
         __wbg_append_263958599fd198c1: function() { return handleError(function (arg0, arg1, arg2, arg3, arg4) {
             getObject(arg0).append(getStringFromWasm0(arg1, arg2), getStringFromWasm0(arg3, arg4));
         }, arguments); },
@@ -740,9 +989,28 @@ function __wbg_get_imports() {
             const ret = getObject(arg0).call(getObject(arg1), getObject(arg2));
             return addHeapObject(ret);
         }, arguments); },
+        __wbg_close_e323e9eee669c291: function() { return handleError(function (arg0) {
+            getObject(arg0).close();
+        }, arguments); },
+        __wbg_code_98ceeaa5ff83fb0b: function(arg0) {
+            const ret = getObject(arg0).code;
+            return ret;
+        },
+        __wbg_data_5fc79a19e47d1531: function(arg0) {
+            const ret = getObject(arg0).data;
+            return addHeapObject(ret);
+        },
+        __wbg_dispatchEvent_29c919cea8d37995: function() { return handleError(function (arg0, arg1) {
+            const ret = getObject(arg0).dispatchEvent(getObject(arg1));
+            return ret;
+        }, arguments); },
         __wbg_done_54b8da57023b7ed2: function(arg0) {
             const ret = getObject(arg0).done;
             return ret;
+        },
+        __wbg_entries_564a7e8b1e54ede5: function(arg0) {
+            const ret = Object.entries(getObject(arg0));
+            return addHeapObject(ret);
         },
         __wbg_error_a6fa202b58aa1cd3: function(arg0, arg1) {
             let deferred0_0;
@@ -790,6 +1058,26 @@ function __wbg_get_imports() {
             const ret = getObject(arg0).headers;
             return addHeapObject(ret);
         },
+        __wbg_instanceof_ArrayBuffer_53db37b06f6b9afe: function(arg0) {
+            let result;
+            try {
+                result = getObject(arg0) instanceof ArrayBuffer;
+            } catch (_) {
+                result = false;
+            }
+            const ret = result;
+            return ret;
+        },
+        __wbg_instanceof_Error_b3f7e146d654031a: function(arg0) {
+            let result;
+            try {
+                result = getObject(arg0) instanceof Error;
+            } catch (_) {
+                result = false;
+            }
+            const ret = result;
+            return ret;
+        },
         __wbg_instanceof_Object_03924e0dbda74bd8: function(arg0) {
             let result;
             try {
@@ -830,6 +1118,14 @@ function __wbg_get_imports() {
             const ret = getObject(arg0).length;
             return ret;
         },
+        __wbg_message_324ac511aeaf710e: function(arg0) {
+            const ret = getObject(arg0).message;
+            return addHeapObject(ret);
+        },
+        __wbg_name_d09e9b472d8320d3: function(arg0) {
+            const ret = getObject(arg0).name;
+            return addHeapObject(ret);
+        },
         __wbg_new_02d162bc6cf02f60: function() {
             const ret = new Object();
             return addHeapObject(ret);
@@ -850,6 +1146,10 @@ function __wbg_get_imports() {
             const ret = new AbortController();
             return addHeapObject(ret);
         }, arguments); },
+        __wbg_new_b1280f836646084c: function() { return handleError(function (arg0, arg1) {
+            const ret = new WebSocket(getStringFromWasm0(arg0, arg1));
+            return addHeapObject(ret);
+        }, arguments); },
         __wbg_new_ee0be486d8f01282: function() { return handleError(function () {
             const ret = new Headers();
             return addHeapObject(ret);
@@ -865,7 +1165,7 @@ function __wbg_get_imports() {
                     const a = state0.a;
                     state0.a = 0;
                     try {
-                        return __wasm_bindgen_func_elem_2271(a, state0.b, arg0, arg1);
+                        return __wasm_bindgen_func_elem_3026(a, state0.b, arg0, arg1);
                     } finally {
                         state0.a = a;
                     }
@@ -876,12 +1176,24 @@ function __wbg_get_imports() {
                 state0.a = 0;
             }
         },
+        __wbg_new_with_event_init_dict_6e3c4558031bcc74: function() { return handleError(function (arg0, arg1, arg2) {
+            const ret = new CloseEvent(getStringFromWasm0(arg0, arg1), getObject(arg2));
+            return addHeapObject(ret);
+        }, arguments); },
         __wbg_new_with_event_source_init_dict_b9ea67d613b2ba60: function() { return handleError(function (arg0, arg1, arg2) {
             const ret = new EventSource(getStringFromWasm0(arg0, arg1), getObject(arg2));
             return addHeapObject(ret);
         }, arguments); },
+        __wbg_new_with_str_138892eed4310532: function() { return handleError(function (arg0, arg1, arg2, arg3) {
+            const ret = new WebSocket(getStringFromWasm0(arg0, arg1), getStringFromWasm0(arg2, arg3));
+            return addHeapObject(ret);
+        }, arguments); },
         __wbg_new_with_str_and_init_ffe9977c986ea039: function() { return handleError(function (arg0, arg1, arg2) {
             const ret = new Request(getStringFromWasm0(arg0, arg1), getObject(arg2));
+            return addHeapObject(ret);
+        }, arguments); },
+        __wbg_new_with_u8_array_sequence_13bd79c99f2fc3b0: function() { return handleError(function (arg0) {
+            const ret = new Blob(getObject(arg0));
             return addHeapObject(ret);
         }, arguments); },
         __wbg_next_2a4e19f4f5083b0f: function(arg0) {
@@ -895,6 +1207,10 @@ function __wbg_get_imports() {
         __wbg_now_81363d44c96dd239: function() {
             const ret = Date.now();
             return ret;
+        },
+        __wbg_of_d694dacacb7afa7f: function(arg0) {
+            const ret = Array.of(getObject(arg0));
+            return addHeapObject(ret);
         },
         __wbg_prototypesetcall_5f9bdc8d75e07276: function(arg0, arg1, arg2) {
             Uint8Array.prototype.set.call(getArrayU8FromWasm0(arg0, arg1), getObject(arg2));
@@ -910,16 +1226,42 @@ function __wbg_get_imports() {
         __wbg_queueMicrotask_b39ea83c7f01971a: function(arg0) {
             queueMicrotask(getObject(arg0));
         },
+        __wbg_readyState_a1a00cc8898812ac: function(arg0) {
+            const ret = getObject(arg0).readyState;
+            return ret;
+        },
+        __wbg_reason_48e6f2ed86d09534: function(arg0, arg1) {
+            const ret = getObject(arg1).reason;
+            const ptr1 = passStringToWasm0(ret, wasm.__wbindgen_export, wasm.__wbindgen_export2);
+            const len1 = WASM_VECTOR_LEN;
+            getDataViewMemory0().setInt32(arg0 + 4 * 1, len1, true);
+            getDataViewMemory0().setInt32(arg0 + 4 * 0, ptr1, true);
+        },
+        __wbg_removeEventListener_3d948197bcd2a229: function() { return handleError(function (arg0, arg1, arg2, arg3) {
+            getObject(arg0).removeEventListener(getStringFromWasm0(arg1, arg2), getObject(arg3));
+        }, arguments); },
         __wbg_resolve_d17db9352f5a220e: function(arg0) {
             const ret = Promise.resolve(getObject(arg0));
             return addHeapObject(ret);
         },
+        __wbg_send_c79e8d29e09cc7b4: function() { return handleError(function (arg0, arg1) {
+            getObject(arg0).send(getObject(arg1));
+        }, arguments); },
+        __wbg_send_e1d2f71ce4473d1e: function() { return handleError(function (arg0, arg1, arg2) {
+            getObject(arg0).send(getStringFromWasm0(arg1, arg2));
+        }, arguments); },
         __wbg_set_a0e911be3da02782: function() { return handleError(function (arg0, arg1, arg2) {
             const ret = Reflect.set(getObject(arg0), getObject(arg1), getObject(arg2));
             return ret;
         }, arguments); },
+        __wbg_set_binaryType_5c0002dfcf194934: function(arg0, arg1) {
+            getObject(arg0).binaryType = __wbindgen_enum_BinaryType[arg1];
+        },
         __wbg_set_body_7f56457720e81672: function(arg0, arg1) {
             getObject(arg0).body = getObject(arg1);
+        },
+        __wbg_set_code_a4411690b706ca41: function(arg0, arg1) {
+            getObject(arg0).code = arg1;
         },
         __wbg_set_credentials_55b92faec8dcc6a4: function(arg0, arg1) {
             getObject(arg0).credentials = __wbindgen_enum_RequestCredentials[arg1];
@@ -932,6 +1274,12 @@ function __wbg_get_imports() {
         },
         __wbg_set_mode_dfc59bbbe25b1d14: function(arg0, arg1) {
             getObject(arg0).mode = __wbindgen_enum_RequestMode[arg1];
+        },
+        __wbg_set_once_1f7d97545d570128: function(arg0, arg1) {
+            getObject(arg0).once = arg1 !== 0;
+        },
+        __wbg_set_reason_5270e60cd15986eb: function(arg0, arg1, arg2) {
+            getObject(arg0).reason = getStringFromWasm0(arg1, arg2);
         },
         __wbg_set_signal_2a5bd3615938edbc: function(arg0, arg1) {
             getObject(arg0).signal = getObject(arg1);
@@ -986,6 +1334,10 @@ function __wbg_get_imports() {
             const ret = getObject(arg0).then(getObject(arg1), getObject(arg2));
             return addHeapObject(ret);
         },
+        __wbg_toString_a5ee42947b978082: function(arg0) {
+            const ret = getObject(arg0).toString();
+            return addHeapObject(ret);
+        },
         __wbg_url_1a5ea6a8a7f22ff8: function(arg0, arg1) {
             const ret = getObject(arg1).url;
             const ptr1 = passStringToWasm0(ret, wasm.__wbindgen_export, wasm.__wbindgen_export2);
@@ -993,21 +1345,49 @@ function __wbg_get_imports() {
             getDataViewMemory0().setInt32(arg0 + 4 * 1, len1, true);
             getDataViewMemory0().setInt32(arg0 + 4 * 0, ptr1, true);
         },
+        __wbg_uspwsclient_new: function(arg0) {
+            const ret = UspWsClient.__wrap(arg0);
+            return addHeapObject(ret);
+        },
         __wbg_value_9cc0518af87a489c: function(arg0) {
             const ret = getObject(arg0).value;
             return addHeapObject(ret);
         },
+        __wbg_wasClean_aa6a78fa841a6301: function(arg0) {
+            const ret = getObject(arg0).wasClean;
+            return ret;
+        },
         __wbindgen_cast_0000000000000001: function(arg0, arg1) {
-            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [Externref], shim_idx: 206, ret: Result(Unit), inner_ret: Some(Result(Unit)) }, mutable: true }) -> Externref`.
-            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_2260);
+            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [Externref], shim_idx: 269, ret: Result(Unit), inner_ret: Some(Result(Unit)) }, mutable: true }) -> Externref`.
+            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_3024);
             return addHeapObject(ret);
         },
-        __wbindgen_cast_0000000000000002: function(arg0) {
+        __wbindgen_cast_0000000000000002: function(arg0, arg1) {
+            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [NamedExternref("CloseEvent")], shim_idx: 248, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
+            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_2348);
+            return addHeapObject(ret);
+        },
+        __wbindgen_cast_0000000000000003: function(arg0, arg1) {
+            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [NamedExternref("Event")], shim_idx: 248, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
+            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_2348_2);
+            return addHeapObject(ret);
+        },
+        __wbindgen_cast_0000000000000004: function(arg0, arg1) {
+            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [NamedExternref("MessageEvent")], shim_idx: 248, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
+            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_2348_3);
+            return addHeapObject(ret);
+        },
+        __wbindgen_cast_0000000000000005: function(arg0, arg1) {
+            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [], shim_idx: 247, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
+            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_2347);
+            return addHeapObject(ret);
+        },
+        __wbindgen_cast_0000000000000006: function(arg0) {
             // Cast intrinsic for `F64 -> Externref`.
             const ret = arg0;
             return addHeapObject(ret);
         },
-        __wbindgen_cast_0000000000000003: function(arg0, arg1) {
+        __wbindgen_cast_0000000000000007: function(arg0, arg1) {
             // Cast intrinsic for `Ref(String) -> Externref`.
             const ret = getStringFromWasm0(arg0, arg1);
             return addHeapObject(ret);
@@ -1026,10 +1406,26 @@ function __wbg_get_imports() {
     };
 }
 
-function __wasm_bindgen_func_elem_2260(arg0, arg1, arg2) {
+function __wasm_bindgen_func_elem_2347(arg0, arg1) {
+    wasm.__wasm_bindgen_func_elem_2347(arg0, arg1);
+}
+
+function __wasm_bindgen_func_elem_2348(arg0, arg1, arg2) {
+    wasm.__wasm_bindgen_func_elem_2348(arg0, arg1, addHeapObject(arg2));
+}
+
+function __wasm_bindgen_func_elem_2348_2(arg0, arg1, arg2) {
+    wasm.__wasm_bindgen_func_elem_2348_2(arg0, arg1, addHeapObject(arg2));
+}
+
+function __wasm_bindgen_func_elem_2348_3(arg0, arg1, arg2) {
+    wasm.__wasm_bindgen_func_elem_2348_3(arg0, arg1, addHeapObject(arg2));
+}
+
+function __wasm_bindgen_func_elem_3024(arg0, arg1, arg2) {
     try {
         const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-        wasm.__wasm_bindgen_func_elem_2260(retptr, arg0, arg1, addHeapObject(arg2));
+        wasm.__wasm_bindgen_func_elem_3024(retptr, arg0, arg1, addHeapObject(arg2));
         var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
         var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
         if (r1) {
@@ -1040,9 +1436,12 @@ function __wasm_bindgen_func_elem_2260(arg0, arg1, arg2) {
     }
 }
 
-function __wasm_bindgen_func_elem_2271(arg0, arg1, arg2, arg3) {
-    wasm.__wasm_bindgen_func_elem_2271(arg0, arg1, addHeapObject(arg2), addHeapObject(arg3));
+function __wasm_bindgen_func_elem_3026(arg0, arg1, arg2, arg3) {
+    wasm.__wasm_bindgen_func_elem_3026(arg0, arg1, addHeapObject(arg2), addHeapObject(arg3));
 }
+
+
+const __wbindgen_enum_BinaryType = ["blob", "arraybuffer"];
 
 
 const __wbindgen_enum_RequestCredentials = ["omit", "same-origin", "include"];
@@ -1055,6 +1454,9 @@ const UspClientFinalization = (typeof FinalizationRegistry === 'undefined')
 const UspClientBuilderFinalization = (typeof FinalizationRegistry === 'undefined')
     ? { register: () => {}, unregister: () => {} }
     : new FinalizationRegistry(ptr => wasm.__wbg_uspclientbuilder_free(ptr, 1));
+const UspWsClientFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_uspwsclient_free(ptr, 1));
 
 function addHeapObject(obj) {
     if (heap_next === heap.length) heap.push(heap.length + 1);
@@ -1210,6 +1612,13 @@ function makeMutClosure(arg0, arg1, f) {
     };
     CLOSURE_DTORS.register(real, state, state);
     return real;
+}
+
+function passArray8ToWasm0(arg, malloc) {
+    const ptr = malloc(arg.length * 1, 1) >>> 0;
+    getUint8ArrayMemory0().set(arg, ptr / 1);
+    WASM_VECTOR_LEN = arg.length;
+    return ptr;
 }
 
 function passStringToWasm0(arg, malloc, realloc) {
