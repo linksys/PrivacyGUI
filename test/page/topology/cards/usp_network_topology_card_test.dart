@@ -3,12 +3,16 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:privacy_gui/page/_shared/components/card_popup_form.dart';
+import 'package:privacy_gui/page/_shared/components/dashboard_card_template.dart';
+import 'package:privacy_gui/page/_shared/models/card_density.dart';
 import 'package:privacy_gui/page/dashboard/models/display_mode.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_widget_specs.dart';
 import 'package:privacy_gui/page/topology/helpers/node_identifier.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../util/dashboard/dashboard_card_probe.dart';
+import '../../../util/overflow_probe.dart';
 
 /// Tapping a node on the dashboard topology card must not throw.
 ///
@@ -167,6 +171,9 @@ void main() {
     // the card's predicate is the only thing that can decide this case, and
     // dropping it is a distinguishable mutation rather than a silent one.
     //
+    // (This case pumps the grid card, not the presentation; the presentation's
+    // own behaviour is the group below.)
+    //
     // One row under this card's declared floor, which the grid cannot hand it
     // today: three rows is 392px, whose content region is 260px, and 260 is the
     // boundary exactly. The row below it is where the panel's vertical `clamp`
@@ -196,6 +203,163 @@ void main() {
         find.byType(AppDialog),
         findsOneWidget,
         reason: 'a card too short for the panel should open a dialog',
+      );
+    });
+  });
+
+  /// The graph the presentation shows, and the two ways it was unusable (#1299).
+  ///
+  /// A card picked into popup collapses to a tile; the only way to read it is the
+  /// presentation the tile opens. For this card that made "topology 也是太小 還
+  /// 不能移動" two separate defects in one box:
+  ///
+  /// 1. **Cannot move.** The card passes `interactive: false`, which is right on
+  ///    the dashboard — the graph sits in a drag-to-resize grid, and an
+  ///    `InteractiveViewer` there would eat the gestures the grid needs. In the
+  ///    presentation there is no grid to protect, and panning is the only way to
+  ///    reach a node the 400px box cannot fit.
+  /// 2. **Too small for the graph it draws.** `_withTopologyAnimation` doubles
+  ///    `nodeSpacing` and `orbitRadius` for the dashboard card, where the desktop
+  ///    realization is 700px+ of width. The presentation is a fixed
+  ///    `kCardPresentationWidth`, so the doubling spends the box on empty space
+  ///    and pushes the outer nodes under the `ClipRect`.
+  ///
+  /// Both are decided by `CardDensityScope.isPresented`, so both cases below have
+  /// a dashboard-side control: a fix that turned panning on everywhere, or dropped
+  /// the doubling everywhere, would change the card the user did *not* complain
+  /// about.
+  ///
+  /// ## Mutation table (Article II AC13)
+  ///
+  /// | # | mutated | mutation | killed by |
+  /// |---|---|---|---|
+  /// | 1 | `usp_network_topology_card` | `interactive: false` unconditionally (the defect) | 'can be panned' |
+  /// | 2 | `usp_network_topology_card` | `interactive: true` unconditionally | 'the dashboard card stays still' |
+  /// | 3 | `usp_network_topology_card` | the spacing doubled when presented too (the defect) | 'is drawn at the theme's own spacing' |
+  /// | 4 | `usp_network_topology_card` | the doubling dropped for the dashboard as well | 'the dashboard card doubles' |
+  /// | 5 | `usp_network_topology_card` | the whole `Theme` override skipped when presented | 'keeps its animation' — the cheap way to pass #3 |
+  group('the topology in the presentation', () {
+    /// Rows of viewport the picked cases give the screen: 800px, a laptop, so the
+    /// presentation is measured against a screen that is not itself the
+    /// constraint. The tile inside it is still one row.
+    const fullScreenRows = 6;
+
+    Future<void> openPresentation(WidgetTester tester) async {
+      final tile = find.byType(CardPopupForm);
+      expect(tile, findsOneWidget,
+          reason: 'the picked card did not collapse to a tile');
+      await tester.tap(tile);
+      await settleIgnoringAnimations(tester);
+    }
+
+    /// The `AppTopology` inside the presentation, as opposed to the tile's own
+    /// tree — the tile shows an icon and a value and builds no graph, but the
+    /// finder is scoped to the dialog anyway so the two can never be confused.
+    Finder presentedTopology() => find.descendant(
+          of: find.byType(AppDialog),
+          matching: find.byType(AppTopology),
+        );
+
+    AppDesignTheme themeAt(WidgetTester tester, Finder f) =>
+        Theme.of(tester.element(f)).extension<AppDesignTheme>()!;
+
+    Future<void> pumpPresented(WidgetTester tester) => probeCardOverflow(
+          tester,
+          cardId: 'topology',
+          widthCase: pickedTileCase(),
+          cardHeightRows: UspWidgetSpecs.popupHeightRows,
+          screenHeightRows: fullScreenRows,
+          tabIndex: 0,
+          locale: const Locale('en'),
+          density: CardDensity.popup,
+          after: openPresentation,
+        );
+
+    Future<void> pumpOnDashboard(WidgetTester tester) => probeCardOverflow(
+          tester,
+          cardId: 'topology',
+          widthCase: desktopCaseFor(spec),
+          cardHeightRows: rows,
+          tabIndex: 0,
+          locale: const Locale('en'),
+        );
+
+    testWidgets('can be panned', (tester) async {
+      await pumpPresented(tester);
+
+      expect(
+        tester.widget<AppTopology>(presentedTopology()).interactive,
+        isTrue,
+        reason: 'the presentation is a fixed ${kCardPresentationWidth}px box '
+            'around a graph the router can make arbitrarily wide, and it is the '
+            'only way to read a picked card. Without panning the nodes past the '
+            "edge are unreachable — the graph view's own `panEnabled` is this "
+            'flag',
+      );
+    });
+
+    testWidgets('the dashboard card stays still', (tester) async {
+      await pumpOnDashboard(tester);
+
+      expect(
+        tester.widget<AppTopology>(find.byType(AppTopology)).interactive,
+        isFalse,
+        reason: 'on the dashboard the graph sits inside a drag-to-resize grid, '
+            'so an InteractiveViewer here would swallow the gestures the grid '
+            'needs. Panning is for the presentation, where there is no grid',
+      );
+    });
+
+    testWidgets("is drawn at the theme's own spacing", (tester) async {
+      await pumpPresented(tester);
+
+      final inside = themeAt(tester, presentedTopology()).topologySpec;
+      // The ambient spec, read above the card's own Theme override — so this is
+      // "not doubled" without restating what the doubling factor is.
+      final ambient = themeAt(tester, find.byType(AppDialog)).topologySpec;
+
+      expect(
+        inside.nodeSpacing,
+        ambient.nodeSpacing,
+        reason: 'the dashboard card spreads its nodes for a 700px+ desktop '
+            'realization. In a ${kCardPresentationWidth}px presentation the same '
+            'spread pushes the outer nodes under the ClipRect and spends the box '
+            'on gaps',
+      );
+      expect(inside.orbitRadius, ambient.orbitRadius,
+          reason:
+              'the orbit radius is doubled alongside the spacing, so it has '
+              'to come back with it');
+    });
+
+    testWidgets('the dashboard card doubles', (tester) async {
+      await pumpOnDashboard(tester);
+
+      final topology = find.byType(AppTopology);
+      final inside = themeAt(tester, topology).topologySpec;
+      final ambient =
+          themeAt(tester, find.byType(DashboardCardTemplate)).topologySpec;
+
+      expect(
+        inside.nodeSpacing,
+        greaterThan(ambient.nodeSpacing),
+        reason: 'the spread is what makes the graph legible at the width the '
+            'dashboard gives this card; a fix that removed it everywhere would '
+            'change the card nobody complained about',
+      );
+    });
+
+    testWidgets('keeps its animation', (tester) async {
+      await pumpPresented(tester);
+
+      expect(
+        themeAt(tester, presentedTopology()).visualEffects &
+            AppThemeConfig.effectTopologyAnimation,
+        isNot(0),
+        reason: 'the same Theme override carries the animation flag and the '
+            'doubled spacing. Dropping the override wholesale would undo the '
+            'spacing and the animation together, and only one of those was the '
+            'defect',
       );
     });
   });

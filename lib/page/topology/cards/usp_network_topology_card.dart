@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/models/mesh_network.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
+import 'package:privacy_gui/page/_shared/components/card_density_scope.dart';
 import 'package:privacy_gui/page/_shared/components/dashboard_card_template.dart';
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
@@ -66,17 +67,27 @@ class UspNetworkTopologyCard extends ConsumerWidget {
     final onlineCount = meshNetwork.onlineClientCount;
     final totalCount = meshNetwork.totalClientCount;
     final useRing = totalCount >= 8;
+    // Whether this is the card the popup tile opens rather than the one the grid
+    // lays out. Both of the decisions below differ between the two, and neither
+    // can be read off the box: a presented card is 400px wide, which is also a
+    // width the grid can hand it.
+    final presented = CardDensityScope.isPresented(context);
 
     return DashboardCardTemplate(
       title: loc(context).networkTopology,
       titleBadge: AppBadge(
           label: loc(context)
               .nOnlineOfTotal(onlineCount.toString(), totalCount.toString())),
+      // Online over total, the same fact the badge states — the graph itself is
+      // unreadable at two columns, so the count is all the tile can honestly
+      // carry. `nOnlineOfTotal` spells it out in words and does not fit.
+      popupValue: '$onlineCount/$totalCount',
       detailRoute: RouteNamed.uspTopology,
       scrollable: false,
       content: ClipRect(
         child: _withTopologyAnimation(
           context,
+          presented: presented,
           // The panel the graph view opens in place is sized in absolute pixels,
           // so whether it fits is a question about this card's box — hence a
           // `LayoutBuilder` here, reading the very constraints the graph view
@@ -102,7 +113,12 @@ class UspNetworkTopologyCard extends ConsumerWidget {
                     : ClientVisibility.always,
                 nodeRendererRegistry: NodeRendererRegistry.unified,
                 enableAnimation: true,
-                interactive: false,
+                // Pan and zoom, but only in the presentation. On the dashboard
+                // the graph sits inside a drag-to-resize grid, and an
+                // `InteractiveViewer` there swallows the gestures the grid needs;
+                // in the presentation there is no grid to protect and panning is
+                // the only way to reach a node the fixed-width box cannot fit.
+                interactive: presented,
                 nodeContentBuilder: TopologyNodeContentBuilder.build,
                 treeConfig: TopologyTreeConfiguration(
                   titleBuilder: (node) => node.name,
@@ -170,8 +186,19 @@ class UspNetworkTopologyCard extends ConsumerWidget {
   }
 
   /// Wraps [child] in a local Theme override that enables topology animation
-  /// and increases client–node spacing for the dashboard card.
-  Widget _withTopologyAnimation(BuildContext context, Widget child) {
+  /// and — on the dashboard only — spreads the client nodes out.
+  ///
+  /// The spread is sized for the box the grid gives this card, whose preferred
+  /// realization is 700px+ of width. A [presented] card is a fixed
+  /// `kCardPresentationWidth`, so the same doubling spends the box on gaps and
+  /// pushes the outer nodes under the `ClipRect` above — which is half of what
+  /// "topology 也是太小" was (#1299). The animation is enabled in both, so the
+  /// override is still built either way.
+  Widget _withTopologyAnimation(
+    BuildContext context,
+    Widget child, {
+    required bool presented,
+  }) {
     final appTheme = Theme.of(context).extension<AppDesignTheme>();
     if (appTheme == null) return child;
 
@@ -181,10 +208,12 @@ class UspNetworkTopologyCard extends ConsumerWidget {
           appTheme.copyWith(
             visualEffects:
                 appTheme.visualEffects | AppThemeConfig.effectTopologyAnimation,
-            topologySpec: appTheme.topologySpec.copyWith(
-              nodeSpacing: appTheme.topologySpec.nodeSpacing * 2.0,
-              orbitRadius: appTheme.topologySpec.orbitRadius * 2.0,
-            ),
+            topologySpec: presented
+                ? appTheme.topologySpec
+                : appTheme.topologySpec.copyWith(
+                    nodeSpacing: appTheme.topologySpec.nodeSpacing * 2.0,
+                    orbitRadius: appTheme.topologySpec.orbitRadius * 2.0,
+                  ),
           ),
         ],
       ),
