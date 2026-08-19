@@ -127,15 +127,15 @@ class RemoteAssistanceNotifier extends Notifier<RemoteAssistanceState> {
       //
       // uspClientProvider caches whatever GetIt held when it was FIRST read,
       // and authProvider.init() reads it during app boot — long before RA
-      // activates. Without this, every USP request and every bridge call keeps
-      // using the disposed boot-time client, whose baseUrl is the web app's own
-      // origin instead of the Guardian API host.
+      // activates. In a Remote build that first read now yields null
+      // ([canUseAppOriginUspClient] keeps the boot slot empty), and this drops
+      // that cached null so watchers pick the session client up.
       //
-      // Invariant: only ref.watch consumers rebuild. Feature services capture
-      // the client via ref.read(uspClientProvider) in the body of a
-      // non-autoDispose provider, so they keep their first instance for the
-      // container's lifetime — the swap MUST happen before any feature service
-      // provider is first read.
+      // Only ref.watch consumers rebuild; a ref.read consumer keeps whatever it
+      // captured. That is no longer a correctness risk: in a Remote build the
+      // only client that can ever exist is this one, so the worst a too-early
+      // read can capture is null — which fails loudly instead of silently
+      // talking to the wrong host.
       ref.invalidate(uspClientProvider);
     });
 
