@@ -1,4 +1,4 @@
-@Tags(['ui'])
+@Tags(['dashboard-card'])
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ui_kit_library/ui_kit.dart';
