@@ -204,7 +204,8 @@ void main() {
         UspWidgetSpecs.all.where(_canBePickedIntoPopup).length -
             UspWidgetSpecs.all.where(_canReachPopupBand).length,
         8,
-        reason: 'the cards with a popup form no width sweep can reach, which is '
+        reason:
+            'the cards with a popup form no width sweep can reach, which is '
             'what the pick sweep exists for',
       );
     });
@@ -216,7 +217,8 @@ void main() {
           .map((s) => s.id)
           .toList();
 
-      expect(pinnedOnly, ['network_status', 'system_status', 'firewall_overview'],
+      expect(
+          pinnedOnly, ['network_status', 'system_status', 'firewall_overview'],
           reason: 'these reach the band by width but stay normal there, so the '
               'sweep measures a form only a #1299 pick produces. A card leaving '
               'this list has just started selecting popup by width — which is a '

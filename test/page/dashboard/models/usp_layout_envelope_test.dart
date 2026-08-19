@@ -305,7 +305,9 @@ void main() {
         build(),
         isNot(build(
           forms: const CardForms({
-            12: {'a': CardFormChoice(density: CardDensity.compact, restoreW: 6)},
+            12: {
+              'a': CardFormChoice(density: CardDensity.compact, restoreW: 6)
+            },
           }),
         )),
       );

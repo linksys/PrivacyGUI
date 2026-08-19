@@ -532,7 +532,6 @@ double? cardContentScrollShortfall(WidgetTester tester) {
 const Map<String, int> kTabbedCardTabCounts = {
   'firewall_overview': 2,
   'network_health': 3,
-
   'wifi_performance': 3,
   'device_analytics': 4,
   'system_status': 4,

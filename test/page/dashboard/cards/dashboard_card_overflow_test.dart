@@ -323,8 +323,7 @@ void main() {
         expect(
           visibleTabCount(tester),
           1,
-          reason:
-              '"${spec.id}" builds a tab bar but is absent from '
+          reason: '"${spec.id}" builds a tab bar but is absent from '
               'kTabbedCardTabCounts in dashboard_card_probe.dart, so the sweep '
               'measures tab 0 only and the rest of its tabs go unmeasured. Add '
               'it with its tab count.',
@@ -587,12 +586,11 @@ void main() {
       // Every span any card declares — the generator's whole domain, taken from
       // the specs rather than from a hardcoded 1..12 so a new span comes with it.
       final spans = <int>{
-        for (final s in UspWidgetSpecs.all)
-          ...[
-            s.getConstraints(DisplayMode.normal).minColumns,
-            s.getConstraints(DisplayMode.normal).preferredColumns,
-            s.getConstraints(DisplayMode.normal).maxColumns,
-          ],
+        for (final s in UspWidgetSpecs.all) ...[
+          s.getConstraints(DisplayMode.normal).minColumns,
+          s.getConstraints(DisplayMode.normal).preferredColumns,
+          s.getConstraints(DisplayMode.normal).maxColumns,
+        ],
       };
       final widest = spans
           .map((span) => narrowestRealizationOf(span, minScreen: 0)!.cardWidth)
@@ -641,7 +639,8 @@ void main() {
           'time_settings': '256.0@1120x3',
           'network_health': '366.0@2216x3',
         },
-        reason: 'every threshold happens to be exactly realizable at the card\'s '
+        reason:
+            'every threshold happens to be exactly realizable at the card\'s '
             'minColumns — a consequence of the grid\'s near-continuity in screen '
             'width, pinned here because normalBandCaseFor searches for it rather '
             'than assuming it',
