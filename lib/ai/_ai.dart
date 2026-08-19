@@ -10,11 +10,11 @@
 /// ## Localization policy (#1253)
 ///
 /// Every user-visible literal in `components/` and `registry/` resolves through
-/// `loc(context)` — 141 call sites over 93 keys. Do not add a bare string
+/// `loc(context)` — 142 call sites over 94 keys. Do not add a bare string
 /// literal to a widget here; #1253 was filed because this subsystem had 130 of
 /// them and touched `AppLocalizations` nowhere.
 ///
-/// **41 of those 93 keys exist in `app_en.arb` only, and that is deliberate.**
+/// **42 of those 94 keys exist in `app_en.arb` only, and that is deliberate.**
 /// They are not machine-translated: Flutter's ARB fallback serves the template
 /// value, so a non-English locale renders them in English by design. This
 /// follows the existing precedent of `edit`, `optimizeLayout` and `refresh`,

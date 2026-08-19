@@ -31,7 +31,10 @@ class PortForwardingSection extends StatelessWidget {
   Widget _buildRuleRow(BuildContext context, Map<String, dynamic> rule) {
     final description =
         rule['description'] as String? ?? loc(context).unnamedRule;
-    final port = rule['port'];
+    // Same key precedence as `_buildRuleTile` in the registry: A2UI payloads use
+    // either name, and reading only `port` rendered the string "null" to the
+    // user for every `externalPort` rule.
+    final port = rule['port'] ?? rule['externalPort'] ?? '';
     final protocol = rule['protocol'] as String? ?? 'TCP';
     final enabled = rule['enabled'] as bool? ?? true;
     final internalIp = rule['internalIp'] as String?;
@@ -52,7 +55,9 @@ class PortForwardingSection extends StatelessWidget {
           ),
           SizedBox(
             width: 80,
-            child: AppText.bodySmall('$port/$protocol'),
+            child: AppText.bodySmall(
+              loc(context).portProtocolCompact('$port', protocol),
+            ),
           ),
           if (internalIp != null)
             SizedBox(

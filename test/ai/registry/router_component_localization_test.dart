@@ -352,8 +352,28 @@ void main() {
     expect(find.textContaining('Unnamed rule'), findsWidgets);
   });
 
+  // The section's port column is a fixed 80px, so it cannot carry the labelled
+  // `portProtocol` form the card's subtitle uses ("Port 80 (TCP)" does not fit).
+  // It has its own key rather than a bare '$port/$protocol' literal, which is
+  // what #1253 AC-2 asks for — and the two rule keys are both accepted, because
+  // reading only `port` printed "null" for every `externalPort` payload.
+  for (final portKey in ['port', 'externalPort']) {
+    testWidgets('the port column composes through the ARB, keyed on $portKey',
+        (tester) async {
+      await tester.pumpWidget(wrap('PortForwardingSection', {
+        'rules': [
+          {'description': 'web', portKey: 8080, 'protocol': 'UDP'},
+        ],
+      }));
+      await tester.pump();
+
+      expect(find.text('8080/UDP'), findsOneWidget);
+      expect(find.textContaining('null'), findsNothing);
+    });
+  }
+
   group('non-English locale', () {
-    // The 52 reused keys are already translated in all 26 locales; the 41 keys
+    // The 52 reused keys are already translated in all 26 locales; the 42 keys
     // added by #1253 are English-only by decision, so Flutter's ARB fallback
     // serves the template value. Both halves are asserted here so a future
     // translation drop is visible rather than silent.

@@ -1808,6 +1808,8 @@
   "portForwardingRules": "Port Forwarding Rules",
   "portProtocol": "Port {port} ({protocol})",
   "@portProtocol": {"placeholders": {"port": {"type": "String"}, "protocol": {"type": "String"}}},
+  "portProtocolCompact": "{port}/{protocol}",
+  "@portProtocolCompact": {"description": "Port and protocol in a fixed-width table column, where the labelled portProtocol form does not fit. Separate key rather than a reuse so a locale can change the separator or the order without widening the column.", "placeholders": {"port": {"type": "String"}, "protocol": {"type": "String"}}},
   "cardFormNormal": "Normal",
   "cardFormCompact": "Compact",
   "cardFormPopup": "Popup",
