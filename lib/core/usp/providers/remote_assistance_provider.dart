@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/constants/cloud_const.dart';
+import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
@@ -20,6 +21,24 @@ class RemoteAssistanceConfig {
     required this.temporaryAccessToken,
     this.clientTypeId,
   });
+
+  /// Guardian API origin — the host every USP-over-Guardian call must use:
+  /// USP requests, subscriptions and SSE notifications.
+  ///
+  /// Must NOT be confused with the origin the web app is served from; the
+  /// Guardian API lives on a different host (e.g. `qa.guardian.tools`).
+  ///
+  /// The session REST API ends up on the same host by construction — both this
+  /// config ([RemoteAssistanceConfig.guardianBaseUrl], set from
+  /// `cloudEnvironmentConfig[kCloudBase]`) and `GuardianApiClient._buildUrl`
+  /// read that same entry — but it builds its URL independently.
+  String get guardianOrigin {
+    // Kept as an assert rather than a constructor assert: the constructor is
+    // const, and const asserts only accept potentially-constant expressions.
+    assert(!guardianBaseUrl.contains('://'),
+        'guardianBaseUrl must be a bare host, without a scheme');
+    return 'https://$guardianBaseUrl';
+  }
 
   /// Constructs the Guardian USP endpoint path.
   String get uspEndpoint =>
@@ -75,11 +94,11 @@ class RemoteAssistanceNotifier extends Notifier<RemoteAssistanceState> {
     }
 
     logger.i('[RA] Activating Remote Assistance: ${config.sessionId}');
-    logger.d('[RA] Guardian URL: https://${config.guardianBaseUrl}');
+    logger.d('[RA] Guardian URL: ${config.guardianOrigin}');
     logger.d('[RA] USP Endpoint: ${config.uspEndpoint}');
 
     // Build the client using UspClientBuilder
-    var builder = UspClientBuilderJS('https://${config.guardianBaseUrl}')
+    var builder = UspClientBuilderJS(config.guardianOrigin)
         .endpoint(config.uspEndpoint)
         .authToken(config.temporaryAccessToken);
 
@@ -89,8 +108,8 @@ class RemoteAssistanceNotifier extends Notifier<RemoteAssistanceState> {
     }
 
     final jsClient = builder.build();
-    final guardianUrl = 'https://${config.guardianBaseUrl}';
-    final raClient = UspClient.fromBuilder(jsClient, baseUrl: guardianUrl);
+    final raClient =
+        UspClient.fromBuilder(jsClient, baseUrl: config.guardianOrigin);
 
     // Swap UspClient atomically with mutation lock to prevent races
     await ref.read(uspMutationLockProvider).withLock(() async {
@@ -102,6 +121,22 @@ class RemoteAssistanceNotifier extends Notifier<RemoteAssistanceState> {
       }
       getIt.registerSingleton<UspClient>(raClient);
       logger.i('[RA] UspClient replaced with Guardian-proxied client');
+
+      // Invalidated in the same critical section as the swap, so "client
+      // identity changed" and "cache dropped" can never drift apart.
+      //
+      // uspClientProvider caches whatever GetIt held when it was FIRST read,
+      // and authProvider.init() reads it during app boot — long before RA
+      // activates. In a Remote build that first read now yields null
+      // ([canUseAppOriginUspClient] keeps the boot slot empty), and this drops
+      // that cached null so watchers pick the session client up.
+      //
+      // Only ref.watch consumers rebuild; a ref.read consumer keeps whatever it
+      // captured. That is no longer a correctness risk: in a Remote build the
+      // only client that can ever exist is this one, so the worst a too-early
+      // read can capture is null — which fails loudly instead of silently
+      // talking to the wrong host.
+      ref.invalidate(uspClientProvider);
     });
 
     // Set login type to remote so auth checks pass
@@ -128,6 +163,10 @@ class RemoteAssistanceNotifier extends Notifier<RemoteAssistanceState> {
         client.dispose();
         logger.d('[RA] UspClient unregistered and disposed');
       }
+
+      // Drop the cached instance in the same critical section, so watchers
+      // rebuild against an empty GetIt instead of holding a disposed client.
+      ref.invalidate(uspClientProvider);
     });
 
     state = const RemoteAssistanceState();
