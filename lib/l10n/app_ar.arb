@@ -640,7 +640,6 @@
   "factoryResetInProgress": "جارٍ إعادة الضبط إلى إعدادات المصنع",
   "factoryResetWaitMessage": "يقوم جهاز التوجيه بالاستعادة إلى إعدادات المصنع الافتراضية. ستحتاج إلى الإعداد وتسجيل الدخول مرة أخرى.",
   "failed": "فشل",
-  "failedToInitialize": "فشلت التهيئة: {error}",
   "failedToLoadSettings": "فشل تحميل الإعدادات",
   "failedToRenew": "فشل التجديد: {error}",
   "failedToStartOtaUpdate": "فشل بدء تحديث OTA",

@@ -171,6 +171,7 @@ class UspSinglePortTab extends ConsumerWidget {
           onTap: () => context.pop(),
         ),
         AppButton.dangerText(
+          identifier: 'pf-delete-confirm',
           label: loc(context).delete,
           onTap: () => context.pop(true),
         ),

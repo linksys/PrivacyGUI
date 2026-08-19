@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart' show NotInitializedError;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:generative_ui/generative_ui.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 import 'package:privacy_gui/ai/_ai.dart';
 import 'package:privacy_gui/ai/ai_logging.dart';
+import 'package:privacy_gui/components/localizations/service_error_localizations.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/ai_assistant/providers/router_command_provider.dart';
 import 'package:privacy_gui/page/ai_assistant/services/aws_credentials_store.dart';
@@ -47,7 +50,22 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
 
   // Configuration state
   bool _needsConfig = false;
-  String? _configError;
+
+  /// Why the last connection attempt failed, or null when there is nothing to
+  /// report.
+  ///
+  /// Two distinct kinds, kept apart because they localize differently:
+  ///
+  /// * [_ConfigError.missingFields] — form validation. Per Art. XIII §1.4 this
+  ///   is a separate line from `ServiceError` and has its own l10n key.
+  /// * [_ConfigError.failure] — a real failure, carrying a `ServiceError` that
+  ///   `localizeServiceError` turns into the displayed message.
+  ///
+  /// Absent from this set on purpose: "this build has no environment
+  /// credentials". That is the normal path — it is how the app discovers it
+  /// should show the manual form — so it is logged and never shown as an error.
+  /// See [_configFromEnvironment].
+  _ConfigError? _configError;
   final _accessKeyController = TextEditingController();
   final _secretKeyController = TextEditingController();
   BedrockModel _selectedModel = BedrockModel.models.first;
@@ -65,9 +83,11 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
 
   /// How long to wait for stored credentials before showing an empty form.
   ///
-  /// Shorter than the store's own timeout so the user is never left looking at
-  /// a disabled screen for long; the restore is a convenience, and typing the
-  /// credentials again is a worse outcome than waiting but not a broken one.
+  /// Deliberately shorter than the store's own caller timeout, and not layered
+  /// with it: this is how long the *screen* stays disabled, and re-typing
+  /// credentials is a better outcome than waiting longer on a keychain that is
+  /// not answering. Giving up here does not cancel the read — it stays queued —
+  /// so a restore is abandoned rather than aborted.
   static const _restoreTimeout = Duration(seconds: 5);
 
   @override
@@ -84,26 +104,61 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
   }
 
   void _tryInitController() {
-    final commandProvider = ref.read(routerCommandProviderProvider);
-
     try {
-      final awsConfig = AWSConfig.fromEnvironment();
+      final awsConfig = _configFromEnvironment();
+      if (awsConfig == null) {
+        // Nothing to report: the manual form is the next screen, and it already
+        // explains what to enter.
+        _needsConfig = true;
+        _configError = null;
+        return;
+      }
+
       _controller = RouterChatController(
         generator: AwsContentGenerator(config: awsConfig),
-        commandProvider: commandProvider,
+        commandProvider: ref.read(routerCommandProviderProvider),
         routerContext: buildRouterContext(ref.read),
       );
       _controller!.addListener(_onControllerChanged);
       _needsConfig = false;
       _configError = null;
-    } on ConfigurationException catch (e) {
-      aiLog('RouterAssistantView: Config error: $e');
-      _needsConfig = true;
-      _configError = e.message;
     } catch (e) {
-      aiLog('RouterAssistantView: Unexpected error: $e');
+      // A genuine failure, unlike the early return above: either the config read
+      // failed in a way it is not supposed to, or building the session did.
+      // Full text in the log — per the error-handling guide detail/code are for
+      // the engineer, and only the UI is restricted to a localized message.
+      aiLog('RouterAssistantView: could not start a session from '
+          'environment config: $e');
       _needsConfig = true;
-      _configError = e.toString();
+      _configError = _ConfigError.failure(UnexpectedError(originalError: e));
+    }
+  }
+
+  /// Environment credentials, or null when this build was not given any.
+  ///
+  /// Every failure mode of [AWSConfig.fromEnvironment] means the same thing, so
+  /// they collapse to null rather than being told apart:
+  ///
+  /// * `ConfigurationException` — dotenv loaded, but a key is missing.
+  /// * dotenv's `NotInitializedError` — `assets/agents/.env` was absent at
+  ///   startup so `dotenv.load` failed. This is the **usual** case, because that
+  ///   file is gitignored; it is an `Error`, not an `Exception`, so it does not
+  ///   match an `on ConfigurationException` clause.
+  ///
+  /// Anything else is rethrown rather than swallowed, and so becomes a reported
+  /// failure via [_tryInitController]'s catch. `generative_ui` is pinned to a tag
+  /// on a shared repo, so a future version could add a check or a cast whose
+  /// failure is a genuine fault — and "silently show the manual form" would be
+  /// unfalsifiable from the UI. Naming the two expected modes keeps a real
+  /// breakage visible.
+  AWSConfig? _configFromEnvironment() {
+    try {
+      return AWSConfig.fromEnvironment();
+    } catch (e) {
+      if (e is! ConfigurationException && e is! NotInitializedError) rethrow;
+      // NotInitializedError has no toString override, hence the runtimeType.
+      aiLog('RouterAssistantView: no environment config (${e.runtimeType})');
+      return null;
     }
   }
 
@@ -122,9 +177,9 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
 
     StoredAwsCredentials? stored;
     try {
-      stored = await store.read().timeout(_restoreTimeout);
+      stored = await store.readWithin(_restoreTimeout);
     } catch (e) {
-      aiLog('RouterAssistantView: Could not read saved credentials: $e');
+      _logStorageFailure('read saved credentials')(e);
     } finally {
       if (mounted) setState(() => _isRestoring = false);
     }
@@ -160,7 +215,7 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
     final secretAccessKey = _secretKeyController.text.trim();
     if (accessKeyId.isEmpty || secretAccessKey.isEmpty) {
       setState(() {
-        _configError = 'fillAllRequiredFields';
+        _configError = const _ConfigError.missingFields();
       });
       return;
     }
@@ -193,6 +248,8 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
 
       if (persist) {
         // Fire-and-forget: a storage failure must not block a working session.
+        // Logged, not shown — the session is fine and the user has nothing to
+        // act on; the only consequence is re-entering credentials next launch.
         ref
             .read(awsCredentialsStoreProvider)
             .store(
@@ -200,16 +257,31 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
               secretAccessKey: secretAccessKey,
               modelId: _selectedModel.id,
             )
-            .catchError((Object e) {
-          aiLog('RouterAssistantView: Could not save credentials: $e');
-        });
+            .catchError(_logStorageFailure('save credentials'));
       }
     } catch (e) {
+      aiLog('RouterAssistantView: could not connect with manual config: $e');
       setState(() {
-        _configError = 'failedToInitialize:$e';
+        _configError = _ConfigError.failure(UnexpectedError(originalError: e));
         _isConfiguring = false;
       });
     }
+  }
+
+  /// Handler for the fire-and-forget storage calls.
+  ///
+  /// The store throws only [ServiceError]s, so there is nothing to map here.
+  /// These are logged and never shown: see [_configError] for why.
+  ///
+  /// `originalError` is logged explicitly because `ServiceError.toString()`
+  /// renders only the type name — without it a storage failure would log the
+  /// uninformative "Storage" and nothing about what actually went wrong.
+  void Function(Object) _logStorageFailure(String action) {
+    return (Object e) {
+      final cause = e is StorageError ? e.originalError : null;
+      aiLog('RouterAssistantView: could not $action: $e'
+          '${cause != null ? ' ($cause)' : ''}');
+    };
   }
 
   void _onControllerChanged() {
@@ -282,15 +354,19 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
     super.dispose();
   }
 
-  String _localizeConfigError(BuildContext context, String error) {
-    if (error == 'fillAllRequiredFields') {
-      return loc(context).fillAllRequiredFields;
-    }
-    if (error.startsWith('failedToInitialize:')) {
-      final detail = error.substring('failedToInitialize:'.length);
-      return loc(context).failedToInitialize(detail);
-    }
-    return error;
+  String _localizeConfigError(BuildContext context, _ConfigError error) {
+    // Exhaustive over a sealed type: adding a case forces a localization
+    // decision here rather than allowing a raw string to slip through, which is
+    // what the previous `return error;` fallback did.
+    return switch (error) {
+      _MissingFields() => loc(context).fillAllRequiredFields,
+      // Bound to a distinct name rather than `:final error`: that would shadow
+      // this method's own parameter, and because localizeServiceError takes an
+      // `Object`, dropping the binding later would still compile — silently
+      // passing the wrapper and degrading to the generic fallback.
+      _Failure(error: final serviceError) =>
+        localizeServiceError(context, serviceError),
+    };
   }
 
   void _scrollToBottom() {
@@ -462,9 +538,7 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
                   ref
                       .read(awsCredentialsStoreProvider)
                       .storeModelId(value.id)
-                      .catchError((Object e) {
-                    aiLog('RouterAssistantView: Could not save model: $e');
-                  });
+                      .catchError(_logStorageFailure('save model'));
                 },
         ),
       ],
@@ -531,11 +605,18 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
               // This is the user's way to remove saved credentials — leaving
               // them in storage would silently restore on the next launch,
               // defeating the change they just asked for.
+              // Unlike a failed save, a failed revocation IS shown: the record
+              // would restore on the next launch, so the user would believe
+              // credentials were removed that are still there. It lands on the
+              // config screen they are about to see.
               ref
                   .read(awsCredentialsStoreProvider)
                   .clear()
                   .catchError((Object e) {
-                aiLog('RouterAssistantView: Could not clear credentials: $e');
+                _logStorageFailure('clear credentials')(e);
+                if (!mounted) return;
+                setState(() => _configError = _ConfigError.failure(
+                    e is ServiceError ? e : UnexpectedError(originalError: e)));
               });
               setState(() {
                 _controller?.removeListener(_onControllerChanged);
@@ -633,6 +714,8 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
                       _AnimatedThinkingText(
                         color:
                             theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                        round: _controller?.currentRound ?? 0,
+                        totalRounds: RouterChatController.maxRounds,
                       ),
                     ],
                   ),
@@ -836,7 +919,25 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
 class _AnimatedThinkingText extends StatefulWidget {
   final Color color;
 
-  const _AnimatedThinkingText({required this.color});
+  /// Which round-trip is in flight, or 0 when that is not known.
+  ///
+  /// Shown because the phrases below are decoration — they rotate on a timer and
+  /// say nothing about progress. A single question can take several rounds while
+  /// the assistant fetches what it needs, and those intermediate responses are
+  /// never rendered, so without this the wait looks identical to a hang.
+  /// Suppressed on the first round: "1" alongside a spinner tells the user
+  /// nothing they cannot already see.
+  final int round;
+
+  /// The bound [round] counts against, so the widget does not have to know
+  /// where that number comes from.
+  final int totalRounds;
+
+  const _AnimatedThinkingText({
+    required this.color,
+    this.round = 0,
+    this.totalRounds = 0,
+  });
 
   static const _phrases = [
     'Thinking',
@@ -895,9 +996,43 @@ class _AnimatedThinkingTextState extends State<_AnimatedThinkingText>
   Widget build(BuildContext context) {
     final phrase = _AnimatedThinkingText._phrases[_phraseIndex];
     final dots = '.' * _dotCount;
+    // Digits only, so no new localized string is needed — and the label stays
+    // correct if the tool list is reorganised later.
+    // Read live from the widget on every build: copying either value into State
+    // would freeze the display at whatever round was current when this widget
+    // was first created.
+    final step = widget.round > 1 && widget.totalRounds > 0
+        ? ' (${widget.round}/${widget.totalRounds})'
+        : '';
     return AppText.body(
-      '$phrase$dots',
+      '$phrase$dots$step',
       color: widget.color,
     );
   }
+}
+
+/// Why the configuration screen is showing an error.
+///
+/// Two kinds, not one string: form validation and a real failure localize
+/// through different paths (Art. XIII §1.4 keeps field validation separate from
+/// `ServiceError`). Being sealed makes the `switch` in `_localizeConfigError`
+/// exhaustive, so a new kind cannot be added without deciding how it reads.
+sealed class _ConfigError {
+  const _ConfigError();
+
+  /// The user pressed Connect with a field left empty.
+  const factory _ConfigError.missingFields() = _MissingFields;
+
+  /// The attempt failed for a reason the error type describes.
+  const factory _ConfigError.failure(ServiceError error) = _Failure;
+}
+
+final class _MissingFields extends _ConfigError {
+  const _MissingFields();
+}
+
+final class _Failure extends _ConfigError {
+  const _Failure(this.error);
+
+  final ServiceError error;
 }

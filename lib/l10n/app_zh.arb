@@ -640,7 +640,6 @@
   "factoryResetInProgress": "正在恢复出厂设置",
   "factoryResetWaitMessage": "路由器正在恢复出厂默认设置。您需要重新设置并登录。",
   "failed": "失败",
-  "failedToInitialize": "初始化失败：{error}",
   "failedToLoadSettings": "加载设置失败",
   "failedToRenew": "续订失败：{error}",
   "failedToStartOtaUpdate": "启动 OTA 更新失败",

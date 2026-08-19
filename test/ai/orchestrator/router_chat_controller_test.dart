@@ -231,6 +231,7 @@ void main() {
 
         expect(controller.messages, isEmpty);
         expect(controller.hasPendingConfirmation, isFalse);
+        expect(controller.currentRound, 0);
         expect(controller.hasError, isFalse);
       });
     });
@@ -308,6 +309,135 @@ void main() {
     // message to be answered within the single user message that immediately
     // follows it.
     // =========================================================================
+
+    group('round reporting', () {
+      test('is 0 while idle', () {
+        expect(controller.currentRound, 0);
+      });
+
+      test('reports the round in flight, and clears when the answer arrives',
+          () async {
+        // Two rounds: the model asks for data, then answers with it. The view
+        // shows this so a multi-round wait is distinguishable from a hang.
+        final roundsSeen = <int>[];
+        controller.addListener(() => roundsSeen.add(controller.currentRound));
+
+        var call = 0;
+        when(() => mockGenerator.generateWithHistory(
+              any(),
+              tools: any(named: 'tools'),
+              systemPromptParts: any(named: 'systemPromptParts'),
+            )).thenAnswer((_) async {
+          call++;
+          return call == 1
+              ? _toolUseResponse('getSystemInfo', {})
+              : _textResponse('Your router is a TestRouter.');
+        });
+        when(() => mockCommandProvider.execute('getSystemInfo', any()))
+            .thenAnswer((_) async =>
+                RouterCommandResult.success(const {'model': 'TestRouter'}));
+
+        await controller.sendMessage('what router is this?');
+
+        expect(roundsSeen, contains(1),
+            reason: 'the first round must be published');
+        expect(roundsSeen, contains(2),
+            reason: 'a second round means the assistant needed data first');
+        expect(controller.currentRound, 0,
+            reason: 'an idle controller must not claim a round is running, or '
+                'the view keeps showing progress after the answer');
+      });
+
+      test('reads idle immediately when cleared mid-call', () async {
+        // A clear is a forced end. The `finally` also resets, but not until the
+        // in-flight call yields — so without an explicit reset the view sees
+        // `isLoading == false` next to a non-zero round for a frame.
+        final gate = Completer<LLMResponse>();
+        when(() => mockGenerator.generateWithHistory(
+              any(),
+              tools: any(named: 'tools'),
+              systemPromptParts: any(named: 'systemPromptParts'),
+            )).thenAnswer((_) => gate.future);
+
+        final pending = controller.sendMessage('hi');
+        await Future<void>.delayed(Duration.zero);
+        expect(controller.currentRound, 1, reason: 'a round is in flight');
+
+        controller.clearConversation();
+
+        expect(controller.currentRound, 0,
+            reason: 'the view must not report a round after a clear');
+        expect(controller.isLoading, isFalse);
+
+        gate.complete(_textResponse('late'));
+        await pending;
+        expect(controller.currentRound, 0);
+      });
+
+      test('clears the round after a confirmation is answered', () async {
+        // The confirmation flow re-enters the loop, so it has its own exit paths
+        // through the same wrapper. Both outcomes must land back at idle.
+        when(() => mockGenerator.generateWithHistory(
+                  any(),
+                  tools: any(named: 'tools'),
+                  systemPromptParts: any(named: 'systemPromptParts'),
+                ))
+            .thenAnswer((_) async =>
+                _toolUseResponse('setWifiPassword', {'password': 'secret123'}));
+
+        await controller.sendMessage('change my wifi password');
+        expect(controller.hasPendingConfirmation, isTrue);
+
+        when(() => mockCommandProvider.execute('setWifiPassword', any()))
+            .thenAnswer((_) async => RouterCommandResult.success(const {}));
+        when(() => mockGenerator.generateWithHistory(
+              any(),
+              tools: any(named: 'tools'),
+              systemPromptParts: any(named: 'systemPromptParts'),
+            )).thenAnswer((_) async => _textResponse('Done.'));
+
+        await controller.confirmPendingAction();
+
+        expect(controller.currentRound, 0);
+      });
+
+      test('clears the round after a confirmation is cancelled', () async {
+        when(() => mockGenerator.generateWithHistory(
+                  any(),
+                  tools: any(named: 'tools'),
+                  systemPromptParts: any(named: 'systemPromptParts'),
+                ))
+            .thenAnswer((_) async =>
+                _toolUseResponse('setWifiPassword', {'password': 'secret123'}));
+
+        await controller.sendMessage('change my wifi password');
+        expect(controller.hasPendingConfirmation, isTrue);
+
+        when(() => mockGenerator.generateWithHistory(
+              any(),
+              tools: any(named: 'tools'),
+              systemPromptParts: any(named: 'systemPromptParts'),
+            )).thenAnswer((_) async => _textResponse('No problem.'));
+
+        await controller.cancelPendingAction();
+
+        expect(controller.currentRound, 0);
+      });
+
+      test('clears the round even when the exchange fails', () async {
+        // The reset lives in a `finally`, because the body has many exits and
+        // a stuck counter would leave the view describing work that has stopped.
+        when(() => mockGenerator.generateWithHistory(
+              any(),
+              tools: any(named: 'tools'),
+              systemPromptParts: any(named: 'systemPromptParts'),
+            )).thenThrow(Exception('network down'));
+
+        await controller.sendMessage('hello');
+
+        expect(controller.currentRound, 0);
+      });
+    });
 
     group('tool result batching', () {
       test('answers parallel read tools in one message', () async {

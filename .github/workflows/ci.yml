@@ -1,19 +1,26 @@
 name: PrivacyGUI CI/CD
 
 on:
-  push:
-    branches: [ "main" ]
   pull_request:
-    branches: [ "main", "dev-*", "usp" ]
-  workflow_dispatch:
-    inputs:
-      job:
-        description: 'Select job to run'
-        required: true
-        default: 'main_snapshot_baseline'
-        type: choice
-        options:
-          - main_snapshot_baseline
+    branches: [ "main", "dev-*" ]
+  # Every job below is gated on `pull_request`, so a push to main produced a
+  # workflow run with no jobs in it. Retired with STAGE B, which was the only job
+  # that ever ran on it.
+  # push:
+  #   branches: [ "main" ]
+  # Golden snapshot generation moved to the linksys/PrivacyGUI-golden-ci
+  # orchestration repo, which owns the baseline PNGs this repo cannot commit
+  # (.gitignore: test/**/goldens/*, snapshots/*). The manual trigger and its
+  # only choice went with it — see STAGE B below.
+  # workflow_dispatch:
+  #   inputs:
+  #     job:
+  #       description: 'Select job to run'
+  #       required: true
+  #       default: 'main_snapshot_baseline'
+  #       type: choice
+  #       options:
+  #         - main_snapshot_baseline
   # schedule:
   #   - cron: '0 0 * * *' # Nightly run at midnight UTC
 
@@ -81,57 +88,67 @@ jobs:
         run: flutter build web --release --no-pub
 
   # ========================================================================
-  # STAGE B: Main Branch Baseline
+  # STAGE B: Main Branch Baseline (Retired)
   # ------------------------------------------------------------------------
-  # Focus: Generate Goldens for record (No Diff Verification)
-  # Trigger: Push to Main, or Manual Dispatch
+  # Golden baselines are owned by the linksys/PrivacyGUI-golden-ci
+  # orchestration repo, which clones this repo and runs
+  # run_generate_loc_snapshots.sh / run_golden_verify.sh itself. Generating a
+  # baseline is a human judgement ("this rendering is correct — freeze it"), so
+  # it lives on a manual trigger there rather than firing on every push to main.
+  #
+  # This job also never produced anything: it uploaded snapshots/, a path
+  # run_generate_loc_snapshots.sh does not write (the golden runner writes
+  # test/golden_test/**/goldens/ instead).
+  #
+  # Retired rather than deleted so the SSH / env-template / pub-get preamble
+  # stays on hand if a golden job is ever brought back in-repo.
   # ========================================================================
-  main_snapshot_baseline:
-    name: 📸 Generate Baseline Snapshots (Main)
-    if: |
-      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
-      (github.event_name == 'workflow_dispatch' && github.event.inputs.job == 'main_snapshot_baseline')
-    # Note: If pixel-perfect consistency with local Mac dev is required, 
-    # change this to 'macos-latest'. Keeping ubuntu-latest for cost efficiency.
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          channel: 'stable'
-          cache: true
-
-      # Setup SSH for private dependencies (Deploy Key approach)
-      - name: 🔑 Setup SSH for Private Deps
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.UI_KIT_DEPLOY_KEY }}
-
-      # Force git to use SSH instead of HTTPS
-      - name: 🔄 Configure Git to use SSH
-        run: git config --global url."git@github.com:".insteadOf "https://github.com/"
-
-      - name: 📋 Setup Environment File
-        run: cp assets/agents/env.template assets/agents/.env
-
-      - name: Install Dependencies
-        run: flutter pub get
-
-      # Generate new snapshots (No failure on diff, just generation)
-      - name: 📸 Generate Localization Snapshots
-        run: sh run_generate_loc_snapshots.sh
-
-      # Save the generated snapshots as artifacts
-      - name: 💾 Upload Snapshot Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: privacygui-goldens-main
-          path: snapshots/
-          retention-days: 7
+  # main_snapshot_baseline:
+  #   name: 📸 Generate Baseline Snapshots (Main)
+  #   if: |
+  #     (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+  #     (github.event_name == 'workflow_dispatch' && github.event.inputs.job == 'main_snapshot_baseline')
+  #   # Note: If pixel-perfect consistency with local Mac dev is required,
+  #   # change this to 'macos-latest'. Keeping ubuntu-latest for cost efficiency.
+  #   runs-on: ubuntu-latest
+  #   timeout-minutes: 45
+  #
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #
+  #     - name: Setup Flutter
+  #       uses: subosito/flutter-action@v2
+  #       with:
+  #         channel: 'stable'
+  #         cache: true
+  #
+  #     # Setup SSH for private dependencies (Deploy Key approach)
+  #     - name: 🔑 Setup SSH for Private Deps
+  #       uses: webfactory/ssh-agent@v0.9.0
+  #       with:
+  #         ssh-private-key: ${{ secrets.UI_KIT_DEPLOY_KEY }}
+  #
+  #     # Force git to use SSH instead of HTTPS
+  #     - name: 🔄 Configure Git to use SSH
+  #       run: git config --global url."git@github.com:".insteadOf "https://github.com/"
+  #
+  #     - name: 📋 Setup Environment File
+  #       run: cp assets/agents/env.template assets/agents/.env
+  #
+  #     - name: Install Dependencies
+  #       run: flutter pub get
+  #
+  #     # Generate new snapshots (No failure on diff, just generation)
+  #     - name: 📸 Generate Localization Snapshots
+  #       run: sh run_generate_loc_snapshots.sh
+  #
+  #     # Save the generated snapshots as artifacts
+  #     - name: 💾 Upload Snapshot Artifacts
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: privacygui-goldens-main
+  #         path: snapshots/
+  #         retention-days: 7
 
   # ========================================================================
   # STAGE C: Nightly Deep Check (Commented Out)

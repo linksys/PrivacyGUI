@@ -158,6 +158,7 @@ class WifiNetworkCard extends ConsumerWidget {
       title: loc(context).name,
       contentBuilder: (ctx, setState, onSubmit) => AppTextFormField(
         controller: controller,
+        identifier: 'wifi-ssid-name-input',
         label: loc(context).name,
         onChanged: (_) => setState(() {}),
       ),

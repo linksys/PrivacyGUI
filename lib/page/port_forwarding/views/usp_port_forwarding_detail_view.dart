@@ -75,9 +75,47 @@ class _UspPortForwardingDetailViewState
             .fetch(forceRemote: true),
         bottomBar: _buildBottomBar(context, ref, pageState),
         tabs: [
-          Tab(text: loc(context).singlePortForwarding),
-          Tab(text: loc(context).portRangeForwarding),
-          Tab(text: loc(context).portTriggering),
+          // Stable, screen-reader-silent E2E hooks (→ `flt-semantics-identifier`)
+          // for the three Port Forwarding tabs. Follow-on to #1172, which added
+          // identifiers to the controls *inside* the tabs but not the tab strip
+          // itself; the E2E suite (PrivacyGUI-USP-E2E#44) still clicks these tabs
+          // by their localized label. `Tab(text:)` exposes no identifier, so we
+          // move to `Tab(child:)` and wrap the label in a Semantics node.
+          //
+          // The Text below intentionally mirrors what `Tab(text:)` renders
+          // internally (`Text(text, softWrap: false, overflow: TextOverflow.fade)`)
+          // so this is a zero-visual-change swap — the Semantics node adds only
+          // an invisible test hook.
+          Tab(
+            child: Semantics(
+              identifier: 'port-forwarding-tab-single',
+              child: Text(
+                loc(context).singlePortForwarding,
+                softWrap: false,
+                overflow: TextOverflow.fade,
+              ),
+            ),
+          ),
+          Tab(
+            child: Semantics(
+              identifier: 'port-forwarding-tab-range',
+              child: Text(
+                loc(context).portRangeForwarding,
+                softWrap: false,
+                overflow: TextOverflow.fade,
+              ),
+            ),
+          ),
+          Tab(
+            child: Semantics(
+              identifier: 'port-forwarding-tab-triggering',
+              child: Text(
+                loc(context).portTriggering,
+                softWrap: false,
+                overflow: TextOverflow.fade,
+              ),
+            ),
+          ),
         ],
         tabContentViews: [
           _buildTabContent(

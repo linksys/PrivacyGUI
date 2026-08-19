@@ -9,7 +9,7 @@ Files in this repo that are built or generated from `linksys/usp_framework` and 
 
 ## Manifest
 
-**Last updated**: 2026-08-04
+**Last updated**: 2026-08-05
 
 The web package records reviewed `usp_framework` commit
 `344a1757f97bcc8643b05322027aafd7053856cd` (merged `main`, PR #45
@@ -28,7 +28,7 @@ without review.
 
 | # | Artifact | Version | Checked-in path | Upstream source |
 |---|----------|---------|-----------------|-----------------|
-| 1 | `usp-codegen` (Mach-O arm64) | **0.15.3** | `tools/usp-codegen` | `usp-codegen/bin/usp-codegen` (built from `src/` via `Makefile.standalone`) |
+| 1 | `usp-codegen` (Mach-O arm64) | **0.16.0** | `tools/usp-codegen` | `usp-codegen/bin/usp-codegen` (built from `src/` via `Makefile.standalone`) |
 | 2 | `usp_client.js` | **0.12.0** | `web/usp_client.js` | `usp-client/pkg/usp_client.js` |
 | 3 | `usp_client_bg.wasm` | **0.12.0** | `web/usp_client_bg.wasm` | `usp-client/pkg/usp_client_bg.wasm` |
 | 4 | `usp_client.d.ts` | **0.12.0** | `web/usp_client.d.ts` | `usp-client/pkg/usp_client.d.ts` |

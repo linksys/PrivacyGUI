@@ -71,12 +71,14 @@ void main() {
       expect(r.containsKey('Device.WiFi.Radio.2.Enable'), isTrue);
     });
 
-    test('UspClient back-fills a missing non-wildcard path as null', () async {
+    test('UspClient omits a missing non-wildcard path (no back-fill, #1184)',
+        () async {
       final r = await client.get(['Device.DeviceInfo.DoesNotExist']);
-      // Demo transport omits missing paths; the real UspClient back-fills them
-      // to null so codegen null-casts don't blow up.
-      expect(r.containsKey('Device.DeviceInfo.DoesNotExist'), isTrue);
-      expect(r['Device.DeviceInfo.DoesNotExist'], isNull);
+      // #1184 removed the null back-fill: an absent concrete path is NOT added
+      // to the result (it emits an onMissingPath warning instead). Back-filling
+      // made containsKey() true and silently defeated the codegen 9998
+      // required-leaf check, so the path must now be absent from the map.
+      expect(r.containsKey('Device.DeviceInfo.DoesNotExist'), isFalse);
     });
   });
 

@@ -140,8 +140,7 @@ class _UspSliverDashboardViewState
     // after page refresh because itemBuilder uses ref.read.
     ref.watch(packageWidgetLoaderProvider);
 
-    final wanData = ref.watch(wanDataProvider);
-    final isOnline = wanData.valueOrNull?.model.isUp ?? true;
+    final isOnline = ref.watch(wanIsUpProvider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -291,6 +290,7 @@ class _UspSliverDashboardViewState
 
   Widget _buildOfflineBanner(BuildContext context) {
     return AppCard(
+      identifier: 'dashboard-offline-banner',
       child: InkWell(
         onTap: () {
           context.goNamed(RouteNamed.uspUnifiedDiagnostics);

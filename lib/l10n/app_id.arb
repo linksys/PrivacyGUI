@@ -637,7 +637,6 @@
   "factoryResetInProgress": "Reset pabrik sedang berlangsung",
   "factoryResetWaitMessage": "Router sedang memulihkan ke default pabrik. Anda perlu menyiapkan dan masuk lagi.",
   "failed": "Gagal",
-  "failedToInitialize": "Gagal menginisialisasi: {error}",
   "failedToLoadSettings": "Gagal memuat setelan",
   "failedToRenew": "Gagal memperbarui: {error}",
   "failedToStartOtaUpdate": "Gagal memulai pembaruan OTA",

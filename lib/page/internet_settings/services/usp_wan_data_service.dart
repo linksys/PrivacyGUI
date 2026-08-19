@@ -4,6 +4,7 @@ import 'package:privacy_gui/core/utils/ipv6_address.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
+import 'package:privacy_gui/core/usp/providers/wan_interface_path_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/generated/static_routing.g.dart';
 import 'package:privacy_gui/generated/wan_ipv6addresses.g.dart';
@@ -77,16 +78,26 @@ class UspWanDataService {
       final results = await Future.wait([
         StaticRouting.fetch(_usp),
         WanIpv6Addresses.fetch(_usp),
+        resolveWanInterfacePath(_usp),
       ]);
 
       final routing = results[0] as StaticRouting;
       final ipv6 = results[1] as WanIpv6Addresses;
+      final wanPath = results[2] as String; // e.g. 'Device.IP.Interface.2.'
 
-      // Find default route (dest 0.0.0.0) on WAN interface (Interface.2)
+      // Find the default route (dest 0.0.0.0) on the resolved WAN interface.
+      // The route's Interface value may or may not carry a trailing dot, so
+      // compare against the dot-less prefix to match exactly — a bare
+      // `contains('Interface.2')` would also match Interface.20 / .21.
+      final wanIfacePrefix = wanPath.endsWith('.')
+          ? wanPath.substring(0, wanPath.length - 1)
+          : wanPath;
       String gateway = '';
       for (final route in routing.items) {
-        if (route.destIpAddress == '0.0.0.0' &&
-            route.interface_.contains('Interface.2')) {
+        final iface = route.interface_.endsWith('.')
+            ? route.interface_.substring(0, route.interface_.length - 1)
+            : route.interface_;
+        if (route.destIpAddress == '0.0.0.0' && iface == wanIfacePrefix) {
           gateway = route.gatewayIpAddress;
           break;
         }

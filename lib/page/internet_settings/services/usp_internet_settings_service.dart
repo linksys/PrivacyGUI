@@ -46,31 +46,49 @@ class UspInternetSettingsService {
   // Fetch
   // ---------------------------------------------------------------------------
 
-  /// Fetch WAN, IPv6, PPP, VLAN, and tunnel settings in parallel.
+  /// Fetch WAN, IPv6, PPP, and VLAN settings in parallel, then the tunnel that
+  /// the resolved connection type actually uses.
   Future<InternetSettingsFetchResult> fetchSettings() async {
     try {
+      // Phase 1 — always needed, fetched in parallel.
       final results = await Future.wait([
         WanSettings.fetch(_usp),
         Ipv6Settings.fetch(_usp),
         PppInterface.fetch(_usp),
         VlanTermination.fetch(_usp),
-        GreTunnel.fetch(_usp),
-        L2tpTunnel.fetch(_usp),
         _fetchHostName(),
       ]);
       final wan = results[0] as WanSettings;
       final ipv6 = results[1] as Ipv6Settings;
       final ppp = results[2] as PppInterface;
       final vlan = results[3] as VlanTermination;
-      final gre = results[4] as GreTunnel;
-      final l2tp = results[5] as L2tpTunnel;
-      final hostName = results[6] as String;
+      final hostName = results[4] as String;
 
       final pppInstance = ppp.items.isNotEmpty ? ppp.items.first : null;
       final vlanInstance = vlan.items.isNotEmpty ? vlan.items.first : null;
 
+      // Phase 2 — tunnel is connection-type-specific. A DHCP/PPPoE/Static WAN
+      // has zero GRE/L2TP tunnel instances, so fetching them would trip the
+      // generated required-leaf check (code 9998) on an absent Tunnel.1. Only
+      // fetch the tunnel the current connection type actually uses.
+      final connectionType = UspWanConnectionType.fromRawFields(
+        addressingType: wan.addressingType,
+        lowerLayers: pppInstance?.lowerLayers ?? '',
+      );
+      GreTunnel? gre;
+      L2tpTunnel? l2tp;
+      switch (connectionType) {
+        case UspWanConnectionType.pptp:
+          gre = await GreTunnel.fetch(_usp);
+        case UspWanConnectionType.l2tp:
+          l2tp = await L2tpTunnel.fetch(_usp);
+        default:
+          break;
+      }
+
       return InternetSettingsFetchResult(
-        form: _buildForm(wan, ipv6, pppInstance, vlanInstance, gre, l2tp),
+        form: _buildForm(
+            wan, ipv6, pppInstance, vlanInstance, gre, l2tp, connectionType),
         readOnlyInfo: _buildReadOnlyInfo(wan, pppInstance, hostName),
         pppInstancePath: pppInstance?.instancePath,
         vlanInstancePath: vlanInstance?.instancePath,
@@ -101,8 +119,9 @@ class UspInternetSettingsService {
     Ipv6Settings ipv6,
     PppInterfaceInstance? ppp,
     VlanTerminationInstance? vlan,
-    GreTunnel gre,
-    L2tpTunnel l2tp,
+    GreTunnel? gre,
+    L2tpTunnel? l2tp,
+    UspWanConnectionType connectionType,
   ) {
     // Split comma-separated DNS into 3 fields
     final dnsParts = wan.dnsServers
@@ -111,16 +130,27 @@ class UspInternetSettingsService {
         .where((s) => s.isNotEmpty)
         .toList();
 
-    final lowerLayers = ppp?.lowerLayers ?? '';
-    final connectionType = UspWanConnectionType.fromRawFields(
-      addressingType: wan.addressingType,
-      lowerLayers: lowerLayers,
+    // Resolve server address from the tunnel that fetchSettings' phase 2 loaded
+    // for this connection type. gre/l2tp are nullable because DHCP/Static/PPPoE
+    // WANs pass null — but on the pptp/l2tp branches the tunnel is non-null by
+    // contract: phase 2 fetched the matching tunnel, and GreTunnel/L2tpTunnel
+    // .fetch throws 9998 upstream (caught in fetchSettings → ServiceErrorView)
+    // if the concrete Tunnel.1 row is absent, so _buildForm is never reached
+    // with a null tunnel on the matching branch. The asserts document that
+    // invariant in dev; the `?? ''` keeps the (release-only, contract-violating)
+    // fallback graceful — an empty serverAddress fails form validation, which
+    // prompts the user to re-enter rather than surfacing a bare NPE.
+    assert(
+      connectionType != UspWanConnectionType.pptp || gre != null,
+      'PPTP WAN but GRE tunnel absent — fetchSettings phase-2 contract violated',
     );
-
-    // Resolve server address from the appropriate tunnel
+    assert(
+      connectionType != UspWanConnectionType.l2tp || l2tp != null,
+      'L2TP WAN but L2TPv2 tunnel absent — fetchSettings phase-2 contract violated',
+    );
     final serverAddress = switch (connectionType) {
-      UspWanConnectionType.pptp => gre.remoteEndpoints,
-      UspWanConnectionType.l2tp => l2tp.remoteEndpoints,
+      UspWanConnectionType.pptp => gre?.remoteEndpoints ?? '',
+      UspWanConnectionType.l2tp => l2tp?.remoteEndpoints ?? '',
       _ => '',
     };
 
@@ -539,6 +569,13 @@ class UspInternetSettingsService {
     UspInternetSettingsForm original,
     UspInternetSettingsForm edited,
   ) async {
+    // IPv6 settings span three USP services (IP.Interface, DHCPv6.Client,
+    // IPv6rd.InterfaceSetting). The OBUSPA broker rejects an atomic SET
+    // (allow_partial=false) that touches more than one service — it returns
+    // 7005 "Allow partial=false not supported across more than one USP
+    // Service", failing the whole save. A cross-service SET cannot be atomic on
+    // this router, so allow partial application; _handleSetResult still surfaces
+    // any per-parameter failure as a UspPartialFailureError.
     _handleSetResult(await Ipv6Settings.update(
       _usp,
       ipv6Enabled: _diff(original.ipv6Enabled, edited.ipv6Enabled),
@@ -549,6 +586,7 @@ class UspInternetSettingsService {
           _diff(original.ipv6rdIpv4MaskLength, edited.ipv6rdIpv4MaskLength),
       ipv6rdBorderRelay:
           _diff(original.ipv6rdBorderRelay, edited.ipv6rdBorderRelay),
+      allowPartial: true,
     ));
   }
 
