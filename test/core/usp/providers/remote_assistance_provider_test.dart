@@ -39,6 +39,16 @@ void main() {
       expect(config.clientTypeId, 'client-type-456');
     });
 
+    test('guardianOrigin prefixes the Guardian API host with https', () {
+      const config = RemoteAssistanceConfig(
+        guardianBaseUrl: 'qa.guardian.tools',
+        sessionId: 'session-123',
+        temporaryAccessToken: 'token-abc',
+      );
+
+      expect(config.guardianOrigin, 'https://qa.guardian.tools');
+    });
+
     test('uspEndpoint returns correct path format', () {
       const config = RemoteAssistanceConfig(
         guardianBaseUrl: 'api.example.com',

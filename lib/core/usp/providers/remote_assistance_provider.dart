@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/constants/cloud_const.dart';
+import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
@@ -20,6 +21,13 @@ class RemoteAssistanceConfig {
     required this.temporaryAccessToken,
     this.clientTypeId,
   });
+
+  /// Guardian API origin — the single host for ALL Remote Assistance traffic
+  /// (session REST, USP requests, subscriptions, SSE notifications).
+  ///
+  /// Must NOT be confused with the origin the web app is served from; the
+  /// Guardian API lives on a different host (e.g. `qa.guardian.tools`).
+  String get guardianOrigin => 'https://$guardianBaseUrl';
 
   /// Constructs the Guardian USP endpoint path.
   String get uspEndpoint =>
@@ -75,11 +83,11 @@ class RemoteAssistanceNotifier extends Notifier<RemoteAssistanceState> {
     }
 
     logger.i('[RA] Activating Remote Assistance: ${config.sessionId}');
-    logger.d('[RA] Guardian URL: https://${config.guardianBaseUrl}');
+    logger.d('[RA] Guardian URL: ${config.guardianOrigin}');
     logger.d('[RA] USP Endpoint: ${config.uspEndpoint}');
 
     // Build the client using UspClientBuilder
-    var builder = UspClientBuilderJS('https://${config.guardianBaseUrl}')
+    var builder = UspClientBuilderJS(config.guardianOrigin)
         .endpoint(config.uspEndpoint)
         .authToken(config.temporaryAccessToken);
 
@@ -89,8 +97,8 @@ class RemoteAssistanceNotifier extends Notifier<RemoteAssistanceState> {
     }
 
     final jsClient = builder.build();
-    final guardianUrl = 'https://${config.guardianBaseUrl}';
-    final raClient = UspClient.fromBuilder(jsClient, baseUrl: guardianUrl);
+    final raClient =
+        UspClient.fromBuilder(jsClient, baseUrl: config.guardianOrigin);
 
     // Swap UspClient atomically with mutation lock to prevent races
     await ref.read(uspMutationLockProvider).withLock(() async {
@@ -111,6 +119,13 @@ class RemoteAssistanceNotifier extends Notifier<RemoteAssistanceState> {
       isActive: true,
       config: config,
     );
+
+    // uspClientProvider caches whatever GetIt held when it was FIRST read
+    // (authProvider.init() reads it during app boot, before RA activates).
+    // Without this invalidation, every USP request and every bridge call keeps
+    // using the disposed boot-time client — whose baseUrl is the web app's own
+    // origin, not the Guardian API host.
+    ref.invalidate(uspClientProvider);
   }
 
   /// Deactivates Remote Assistance mode.
@@ -131,6 +146,10 @@ class RemoteAssistanceNotifier extends Notifier<RemoteAssistanceState> {
     });
 
     state = const RemoteAssistanceState();
+
+    // Drop the cached (now disposed) client so downstream providers tear down
+    // instead of calling into freed WASM memory.
+    ref.invalidate(uspClientProvider);
   }
 }
 

@@ -38,6 +38,8 @@ final uspBridgeClientProvider = Provider<UspBridgeClient?>((ref) {
     bridge = UspBridgeClient(
       usp,
       endpoints: BridgeEndpoints.remote(config.sessionId),
+      // Same host as the Guardian session REST API — NOT the app's own origin.
+      baseUrl: config.guardianOrigin,
       authToken: config.temporaryAccessToken,
       clientTypeId: config.clientTypeId,
       authBehavior: AuthBehavior.remote,
