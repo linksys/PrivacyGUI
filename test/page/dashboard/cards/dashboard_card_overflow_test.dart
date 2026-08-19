@@ -132,6 +132,42 @@ bool _isAllowlisted(String card, String width, int tab, String tag,
   return locales.contains('*') || locales.contains(tag);
 }
 
+/// Fails a *clean* case whose coordinate the baseline still exempts.
+///
+/// Without this the ratchet only turns one way: an overflow that gets fixed
+/// leaves its exemption behind, and the next reader cannot tell a deferred
+/// defect from a dead entry — which is how this epic came to retire 46 stale
+/// coordinates by hand (#1273). Runs on the clean path, so it reads one map
+/// entry and returns for every card that isn't listed.
+void _failIfDeadExemption(String card, String width, int tab, String tag,
+    {String? profileKey}) {
+  final suffix = profileKey == null ? '' : '@$profileKey';
+  final key = '$card|$width|$tab$suffix';
+  final locales = _knownOverflowAllowlist[key];
+  if (locales == null) return;
+
+  if (locales.contains(tag)) {
+    fail(
+      'Dead exemption: \'$key\' lists "$tag" in\n'
+      '  test/fixtures/known_overflows.json\n'
+      'but this coordinate no longer overflows. Remove "$tag" from that entry '
+      '— and the entry itself, plus its "tracking" note, once the locale list '
+      'empties.',
+    );
+  }
+  if (locales.contains('*')) {
+    fail(
+      'Over-broad exemption: \'$key\' is marked "*" — overflows in every '
+      'locale — in\n'
+      '  test/fixtures/known_overflows.json\n'
+      'but locale "$tag" renders clean, so the overflow is text-dependent, not '
+      'structural. Replace "*" with the explicit locale tags that still '
+      'overflow (`./tool/run_overflow_test.sh -c $card -d 1` lists them), or '
+      'delete the entry if none do.',
+    );
+  }
+}
+
 /// Report output mode. Set this in-file to dump locally without passing
 /// `--dart-define=DUMP=...`; see [dumpMode] for the override precedence.
 /// 0: default — emit nothing (fastest; what the PR gate runs)
@@ -290,7 +326,10 @@ void main() {
 
                 final significant =
                     incidents.where((i) => i.pixels > _tolerancePx).toList();
-                if (significant.isEmpty) return;
+                if (significant.isEmpty) {
+                  _failIfDeadExemption(spec.id, wc.label, tab, tag);
+                  return;
+                }
 
                 final maxColsOnScreen = gridColumnsForWidth(wc.screenWidth);
                 final currentColSpan = wc.columnSpan.clamp(1, maxColsOnScreen);
@@ -494,7 +533,11 @@ void main() {
 
                 final significant =
                     incidents.where((i) => i.pixels > _tolerancePx).toList();
-                if (significant.isEmpty) return;
+                if (significant.isEmpty) {
+                  _failIfDeadExemption(sweep.cardId, wc.label, tab, tag,
+                      profileKey: profile.key);
+                  return;
+                }
 
                 if (_isAllowlisted(sweep.cardId, wc.label, tab, tag,
                     profileKey: profile.key)) {
