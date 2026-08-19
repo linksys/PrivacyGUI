@@ -3,7 +3,6 @@ import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-import 'package:flutter_portal/flutter_portal.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
@@ -535,31 +534,29 @@ Widget buildDashboardCardApp({
         cardDensityOverrideProvider(cardId).overrideWith((ref) => density),
       ...extraOverrides,
     ],
-    child: Portal(
-      child: MaterialApp(
-        locale: locale,
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        theme: theme,
-        // Freeze looping/entrance animations so charts settle to a static frame.
-        builder: (context, child) => MediaQuery(
-          data: MediaQuery.of(context).copyWith(disableAnimations: true),
-          child: child ?? const SizedBox.shrink(),
-        ),
-        home: Scaffold(
-          // Top-left align + scroll view: the card gets its exact grid width and
-          // height, and any excess vertical content extends instead of clipping
-          // (we hunt horizontal overflow; height is generous, see maxHeightRows).
-          body: SingleChildScrollView(
-            child: Align(
-              alignment: Alignment.topLeft,
-              child: RepaintBoundary(
-                key: repaintKey,
-                child: SizedBox(
-                  width: cardWidth,
-                  height: cardHeight,
-                  child: card,
-                ),
+    child: MaterialApp(
+      locale: locale,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      theme: theme,
+      // Freeze looping/entrance animations so charts settle to a static frame.
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(context).copyWith(disableAnimations: true),
+        child: child ?? const SizedBox.shrink(),
+      ),
+      home: Scaffold(
+        // Top-left align + scroll view: the card gets its exact grid width and
+        // height, and any excess vertical content extends instead of clipping
+        // (we hunt horizontal overflow; height is generous, see maxHeightRows).
+        body: SingleChildScrollView(
+          child: Align(
+            alignment: Alignment.topLeft,
+            child: RepaintBoundary(
+              key: repaintKey,
+              child: SizedBox(
+                width: cardWidth,
+                height: cardHeight,
+                child: card,
               ),
             ),
           ),

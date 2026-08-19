@@ -4,7 +4,6 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_portal/flutter_portal.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
@@ -168,30 +167,28 @@ Future<List<OverflowIncident>> _pump(
             cardDensityOverrideProvider(_kCardId)
                 .overrideWith((ref) => density),
         ],
-        child: Portal(
-          child: MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            theme: _lightTheme(),
-            builder: (context, child) => MediaQuery(
-              data: MediaQuery.of(context).copyWith(disableAnimations: true),
-              child: child ?? const SizedBox.shrink(),
-            ),
-            home: Scaffold(
-              body: Align(
-                alignment: Alignment.topLeft,
-                child: SizedBox(
-                  width: cardWidth,
-                  height: cardHeight,
-                  // The real host, not a hand-built scope: the width→form
-                  // selection and the threshold the presentation needs both
-                  // travel this path in production.
-                  child: CardDensityHost(
-                    cardId: _kCardId,
-                    normalAbove: normalAbove,
-                    normalHeight: normalHeight,
-                    child: card ?? _card(),
-                  ),
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          theme: _lightTheme(),
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(disableAnimations: true),
+            child: child ?? const SizedBox.shrink(),
+          ),
+          home: Scaffold(
+            body: Align(
+              alignment: Alignment.topLeft,
+              child: SizedBox(
+                width: cardWidth,
+                height: cardHeight,
+                // The real host, not a hand-built scope: the width→form
+                // selection and the threshold the presentation needs both
+                // travel this path in production.
+                child: CardDensityHost(
+                  cardId: _kCardId,
+                  normalAbove: normalAbove,
+                  normalHeight: normalHeight,
+                  child: card ?? _card(),
                 ),
               ),
             ),
@@ -584,26 +581,24 @@ void main() {
       // alternative is a tap that opens an empty box.
       await tester.pumpWidget(
         ProviderScope(
-          child: Portal(
-            child: MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
-              supportedLocales: AppLocalizations.supportedLocales,
-              theme: _lightTheme(),
-              home: Scaffold(
-                body: Align(
-                  alignment: Alignment.topLeft,
-                  child: SizedBox(
-                    width: 150,
-                    // The box is the only height on offer here — nothing
-                    // published a declaration — so it is also the height the
-                    // presented card is laid out in, and it has to be one the
-                    // card fits in for this test to be about the fallback.
-                    height: 240,
-                    child: CardPopupForm(
-                      title: _kTitle,
-                      value: _kValue,
-                      normalForm: _card(),
-                    ),
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            theme: _lightTheme(),
+            home: Scaffold(
+              body: Align(
+                alignment: Alignment.topLeft,
+                child: SizedBox(
+                  width: 150,
+                  // The box is the only height on offer here — nothing
+                  // published a declaration — so it is also the height the
+                  // presented card is laid out in, and it has to be one the
+                  // card fits in for this test to be about the fallback.
+                  height: 240,
+                  child: CardPopupForm(
+                    title: _kTitle,
+                    value: _kValue,
+                    normalForm: _card(),
                   ),
                 ),
               ),

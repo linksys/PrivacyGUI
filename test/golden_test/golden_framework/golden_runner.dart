@@ -4,7 +4,6 @@ import 'dart:io';
 import 'package:alchemist/alchemist.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_portal/flutter_portal.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -313,44 +312,41 @@ Widget _buildGoldenWidget(
     child: _PackageInfoStub(
       child: ProviderScope(
         overrides: overrides,
-        child: Portal(
-          child: MaterialApp.router(
-            locale: locale,
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            // Same call `lib/app.dart` makes, not a copy of its body (#1285).
-            // A no-op for the default `en` locale set — `withFallbackFont`
-            // returns the theme itself where the primary font covers the
-            // script — so no existing baseline moves. It matters when a run
-            // opts into a non-Latin locale via `--dart-define=locales`: raw
-            // `Text` reads the family off `ThemeData.textTheme`, and without
-            // this it would shape CJK from a system font while `AppText` next
-            // to it used the bundled subset (ui_kit's own per-locale
-            // injection, installed by `loadAppFonts`).
-            theme: FallbackFontResolver.withFallbackFont(
-              themeConfig.createLightTheme(),
-              locale,
-            ),
-            darkTheme: FallbackFontResolver.withFallbackFont(
-              themeConfig.createDarkTheme(),
-              locale,
-            ),
-            themeMode: brightness == Brightness.dark
-                ? ThemeMode.dark
-                : ThemeMode.light,
-            // Force "reduce motion" for every golden so non-deterministic /
-            // looping animations (e.g. dashboard JiggleShake) render at a
-            // fixed, static frame. Applied inside the app via builder so the
-            // views under test actually observe disableAnimations: true
-            // (a MediaQuery wrapped outside MaterialApp would be overridden).
-            // This does NOT touch the global diffThreshold; it only removes the
-            // animation source of flakiness.
-            builder: (context, child) => MediaQuery(
-              data: MediaQuery.of(context).copyWith(disableAnimations: true),
-              child: child ?? const SizedBox.shrink(),
-            ),
-            routerConfig: router,
+        child: MaterialApp.router(
+          locale: locale,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          // Same call `lib/app.dart` makes, not a copy of its body (#1285).
+          // A no-op for the default `en` locale set — `withFallbackFont`
+          // returns the theme itself where the primary font covers the
+          // script — so no existing baseline moves. It matters when a run
+          // opts into a non-Latin locale via `--dart-define=locales`: raw
+          // `Text` reads the family off `ThemeData.textTheme`, and without
+          // this it would shape CJK from a system font while `AppText` next
+          // to it used the bundled subset (ui_kit's own per-locale
+          // injection, installed by `loadAppFonts`).
+          theme: FallbackFontResolver.withFallbackFont(
+            themeConfig.createLightTheme(),
+            locale,
           ),
+          darkTheme: FallbackFontResolver.withFallbackFont(
+            themeConfig.createDarkTheme(),
+            locale,
+          ),
+          themeMode:
+              brightness == Brightness.dark ? ThemeMode.dark : ThemeMode.light,
+          // Force "reduce motion" for every golden so non-deterministic /
+          // looping animations (e.g. dashboard JiggleShake) render at a
+          // fixed, static frame. Applied inside the app via builder so the
+          // views under test actually observe disableAnimations: true
+          // (a MediaQuery wrapped outside MaterialApp would be overridden).
+          // This does NOT touch the global diffThreshold; it only removes the
+          // animation source of flakiness.
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(disableAnimations: true),
+            child: child ?? const SizedBox.shrink(),
+          ),
+          routerConfig: router,
         ),
       ),
     ),
