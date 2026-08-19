@@ -1,5 +1,6 @@
 import 'package:ui_kit_library/ui_kit.dart';
 import 'package:privacy_gui/page/dashboard/models/display_mode.dart';
+import 'package:privacy_gui/page/dashboard/models/usp_layout_envelope.dart';
 import 'package:privacy_gui/page/dashboard/models/widget_spec.dart';
 import 'package:privacy_gui/page/dashboard/providers/layout_item_factory.dart';
 import 'package:sliver_dashboard/sliver_dashboard.dart';
@@ -539,17 +540,85 @@ abstract class UspWidgetSpecs {
   // Layout Scaling
   // ---------------------------------------------------------------------------
 
+  /// Converts a column span from a [fromCols]-wide grid to a [toCols]-wide one,
+  /// never returning less than one column or more than the grid holds.
+  ///
+  /// Every column figure in a [WidgetSpec] is written for the 12-column grid, so
+  /// anything comparing a live item against its spec has to bring the spec to the
+  /// grid the item is actually on: read literally, `stats_panel`'s
+  /// `minColumns: 6` would demand three quarters of an 8-column row, and more
+  /// columns than a 4-column grid even has.
+  static int scaleSpan(
+    int span, {
+    required int fromCols,
+    required int toCols,
+  }) =>
+      (span * toCols / fromCols).round().clamp(1, toCols);
+
+  /// The size a card has to be corrected to on a [slotCount]-wide grid, or null
+  /// when the size it already has is allowed.
+  ///
+  /// The arithmetic lives here rather than in the resize handler because the
+  /// grid-dependent part is the whole point: the column figures in
+  /// [WidgetGridConstraints] describe the 12-column grid and mean nothing until
+  /// [scaleSpan] brings them to the grid in front of the user. Row counts are
+  /// absolute — a row is the same height on every grid — so they are compared
+  /// as they are.
+  ///
+  /// Mobile widths are left alone rather than scaled: there the width is pinned
+  /// by [lockToFullWidth], so a resize cannot have changed it and "correcting"
+  /// it could only fight the lock.
+  static ({int w, int h})? correctedSize(
+    WidgetGridConstraints constraints, {
+    required int w,
+    required int h,
+    required int slotCount,
+  }) {
+    var newW = w;
+    var newH = h;
+
+    if (slotCount > UspLayoutEnvelope.mobileSlotCount) {
+      final minColumns = scaleSpan(
+        constraints.minColumns,
+        fromCols: UspLayoutEnvelope.desktopSlotCount,
+        toCols: slotCount,
+      );
+      final maxColumns = scaleSpan(
+        constraints.maxColumns,
+        fromCols: UspLayoutEnvelope.desktopSlotCount,
+        toCols: slotCount,
+      );
+      // Sequential rather than clamp(). WidgetGridConstraints asserts
+      // min <= max, but a package widget's constraints are parsed from a remote
+      // template and asserts are gone in release, so the one build where a bad
+      // template could arrive is the one where clamp() would throw — inside a
+      // gesture handler. Narrowing to the ceiling is the better failure.
+      if (newW < minColumns) newW = minColumns;
+      if (newW > maxColumns) newW = maxColumns;
+    }
+
+    if (newH < constraints.minHeightRows) newH = constraints.minHeightRows;
+    if (newH > constraints.maxHeightRows) newH = constraints.maxHeightRows;
+
+    if (newW == w && newH == h) return null;
+    return (w: newW, h: newH);
+  }
+
   /// Proportionally scales a serialised layout from [fromCols] to [toCols].
   ///
   /// * Tablet (12→8): `w=6` → `w=4`, preserving two-column pairs.
-  /// * Mobile (12→4): all items become full-width (`w=toCols`) for
-  ///   single-column stacking — `compact()` then resolves y positions.
-  /// * Constraints (minW / maxW) are scaled accordingly.
+  /// * Mobile (12→4): delegates to [lockToFullWidth] — see there for why the
+  ///   width stops being the user's to choose at all.
+  /// * Constraints (minW / maxW) are scaled with the widths.
   static List<dynamic> scaleLayout(
     List<dynamic> layout,
     int fromCols,
     int toCols,
   ) {
+    if (toCols <= UspLayoutEnvelope.mobileSlotCount) {
+      return lockToFullWidth(layout, toCols);
+    }
+
     return layout.map((item) {
       final map = Map<String, dynamic>.from(item as Map);
       final x = map['x'] as int;
@@ -557,26 +626,18 @@ abstract class UspWidgetSpecs {
       final minW = map['minW'] as int? ?? 1;
       final maxW = (map['maxW'] as num?)?.toInt() ?? fromCols;
 
-      int newW;
-      int newX;
-
-      if (toCols <= 4) {
-        // Mobile: full-width single-column
-        newW = toCols;
+      // Proportional scaling
+      var newW = scaleSpan(w, fromCols: fromCols, toCols: toCols);
+      var newX = (x * toCols / fromCols).round();
+      if (newX + newW > toCols) newX = toCols - newW;
+      if (newX < 0) {
         newX = 0;
-      } else {
-        // Proportional scaling
-        newW = (w * toCols / fromCols).round().clamp(1, toCols);
-        newX = (x * toCols / fromCols).round();
-        if (newX + newW > toCols) newX = toCols - newW;
-        if (newX < 0) {
-          newX = 0;
-          newW = toCols;
-        }
+        newW = toCols;
       }
 
-      final newMinW = (minW * toCols / fromCols).round().clamp(1, toCols);
-      final newMaxW = (maxW * toCols / fromCols).round().clamp(newMinW, toCols);
+      final newMinW = scaleSpan(minW, fromCols: fromCols, toCols: toCols);
+      final newMaxW = scaleSpan(maxW, fromCols: fromCols, toCols: toCols)
+          .clamp(newMinW, toCols);
 
       return {
         ...map,
@@ -585,6 +646,98 @@ abstract class UspWidgetSpecs {
         'minW': newMinW,
         'maxW': newMaxW.toDouble(),
       };
+    }).toList();
+  }
+
+  /// Pins every item in [layout] to the full width of a [cols]-wide grid.
+  ///
+  /// Below five columns there is no width worth choosing — every card is either
+  /// full-width or unreadably narrow — so on mobile the width stops being
+  /// editable instead of being merely defaulted. `minW == maxW == cols` is half
+  /// of what enforces that: `DashboardController` clamps every resize delta to
+  /// `[minW, maxW]`, which is enough to make the right-hand handles inert. The
+  /// left-hand ones need [lockItemsToFullWidth] on top — see there for why the
+  /// caps alone cannot hold them.
+  ///
+  /// It also repairs what the old mobile seed produced. Scaling `minW`/`maxW`
+  /// proportionally gave a card with `maxW: 8` at 12 columns a `maxW` of 3 at 4
+  /// columns while its width was set to 4 — a width outside its own cap, which
+  /// the first resize would have snapped down to 3 of 4 columns.
+  static List<dynamic> lockToFullWidth(List<dynamic> layout, int cols) {
+    return layout.map((item) {
+      return {
+        ...Map<String, dynamic>.from(item as Map),
+        'x': 0,
+        'w': cols,
+        'minW': cols,
+        'maxW': cols.toDouble(),
+      };
+    }).toList();
+  }
+
+  /// The [lockToFullWidth] geometry applied to live items, or null when every
+  /// item already has it.
+  ///
+  /// Pinning `minW == maxW == cols` does not finish the job. A resize delta is
+  /// clamped to `[minW, maxW]`, so a right-hand handle cannot move a width that
+  /// is already both floor and ceiling — but the left-hand handles (left,
+  /// topLeft, bottomLeft) move `x` as well, and the package trims the width to
+  /// whatever is left of the row after the clamp:
+  ///
+  /// ```
+  /// newX = x + dW;  newW = (w - dW).clamp(minW, maxW)
+  /// if (newX < 0) { newW += newX; newX = 0; }
+  /// if (newX + newW > cols) newW = cols - newX
+  /// ```
+  ///
+  /// One column of drag on the left edge therefore narrows a card on a 4-column
+  /// grid to three whichever way it is dragged — to `x: 1, w: 3` inwards, and to
+  /// `x: 0, w: 3` outwards, where the row's own edge does the trimming. Neither
+  /// width was authorised, and no cap can express "x may not move", so this has
+  /// to be undone on the live layout by whoever is watching it.
+  ///
+  /// Only `x` and `w` are touched: the height is the one dimension a phone still
+  /// leaves to the user, and the caps are repaired on import by
+  /// [lockToFullWidth]. Returning null rather than an equal list is what keeps a
+  /// watcher from writing back into the layout it was just notified about.
+  static List<LayoutItem>? lockItemsToFullWidth(
+    List<LayoutItem> items,
+    int cols,
+  ) {
+    List<LayoutItem>? locked;
+    for (var i = 0; i < items.length; i++) {
+      final item = items[i];
+      if (item.x == 0 && item.w == cols) continue;
+      locked ??= List<LayoutItem>.of(items);
+      locked[i] = item.copyWith(x: 0, w: cols);
+    }
+    return locked;
+  }
+
+  /// Rewrites [layout] to hold exactly the cards in [reference], in that order,
+  /// keeping whatever geometry [layout] already has for the ones it knows and
+  /// scaling in the ones it does not.
+  ///
+  /// Which cards exist is a property of the dashboard, not of a breakpoint:
+  /// deleting a card on a phone deletes the card. Only geometry is per-grid, so
+  /// a stored per-grid layout can legitimately fall behind — it was written
+  /// before a card was added. Importing it as-is would be worse than useless:
+  /// `DashboardController.setSlotCount` treats the layout it is leaving as the
+  /// truth about membership, so the stale grid's missing card would be
+  /// reconciled *out* of every other breakpoint on the way back.
+  static List<dynamic> alignMembership(
+    List<dynamic> layout,
+    List<dynamic> reference, {
+    required int fromCols,
+    required int toCols,
+  }) {
+    final stored = <String, dynamic>{
+      for (final item in layout) (item as Map)['id'] as String: item,
+    };
+
+    return reference.map((refItem) {
+      final id = (refItem as Map)['id'] as String;
+      return stored[id] ?? scaleLayout([refItem], fromCols, toCols).single;
     }).toList();
   }
 

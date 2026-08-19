@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_layout_preferences.dart';
 import 'package:privacy_gui/page/dashboard/providers/usp_layout_controller.dart';
 import 'package:privacy_gui/page/dashboard/providers/usp_layout_preferences_provider.dart';
+import 'package:privacy_gui/providers/auth/auth_provider.dart';
 
 /// Manages dashboard edit mode state and layout snapshots for revert on cancel.
 ///
@@ -41,7 +42,44 @@ class DashboardEditState {
 
 class DashboardEditModeNotifier extends Notifier<DashboardEditState> {
   @override
-  DashboardEditState build() => const DashboardEditState();
+  DashboardEditState build() {
+    // Logging out has to leave edit mode (#1294).
+    //
+    // Logging out from the dashboard's own top-bar menu does not navigate
+    // anywhere and does not reload the page, so the route guard in
+    // route_usp_dashboard.dart never fires and this provider — root-scoped, like
+    // the layout controller — survives untouched. The next session then opens on
+    // a grid still showing resize handles and the trash zone, holding a layout
+    // snapshot captured before the logout that a later cancel would revert into.
+    //
+    // What matters is the logged-in → logged-out edge, not the logged-out state
+    // itself: auth also reports "logged out" before anyone has logged in, and
+    // reverting on that would undo an edit the user is still making.
+    //
+    // The edge cannot be read off the callback's `previous`, because
+    // AuthNotifier.logout emits AsyncValue.loading() before the logged-out
+    // value — by the time that value lands, `previous` is a value-less loading
+    // state that says nothing about who was logged in. So the last answer is
+    // remembered here instead, and loading/error emissions leave it alone.
+    // `fireImmediately` seeds it from whatever auth already knows, which is what
+    // makes a logout still register when the dashboard was opened mid-session.
+    bool wasLoggedIn = false;
+    ref.listen(authProvider, (_, next) {
+      final loggedIn = next.valueOrNull?.isLoggedIn;
+      if (loggedIn == null) return;
+
+      final loggedOutJustNow = wasLoggedIn && !loggedIn;
+      wasLoggedIn = loggedIn;
+
+      // `state` is only readable once build has returned. The seeding call
+      // cannot reach this line: it starts from wasLoggedIn = false.
+      if (loggedOutJustNow && state.isEditing) {
+        cancelEditMode();
+      }
+    }, fireImmediately: true);
+
+    return const DashboardEditState();
+  }
 
   /// Enter edit mode and capture snapshots for potential revert.
   Future<void> enterEditMode() async {
