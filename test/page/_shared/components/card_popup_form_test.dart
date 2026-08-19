@@ -236,11 +236,9 @@ Finder _horizontalScrollViews(Type ancestor) => find.descendant(
 
 void main() {
   group('the popup form', () {
-    testWidgets('shows the card icon and its one value, not its content',
-        (tester) async {
+    testWidgets('shows its one value and no content', (tester) async {
       await _pump(tester, screenWidth: 1200, cardWidth: 150);
 
-      expect(find.byKey(_kLeadingKey), findsOneWidget);
       expect(find.text(_kValue), findsOneWidget);
       expect(
         find.text(_kNormalOnly),
@@ -706,6 +704,186 @@ void main() {
         screenWidth: 320,
         cardWidth: _kPickedTileWidth,
         cardHeight: 120,
+        card: _card(
+          title: 'Angeschlossene Geräte im Heimnetzwerk',
+          popupValue: '128 Geräte derzeit online im Netzwerk',
+        ),
+      );
+
+      expect(incidents, isEmpty, reason: incidents.join('\n'));
+    });
+  });
+
+  /// What a picked tile has to say for itself (#1299).
+  ///
+  /// Reported from the built app with every card picked at once: "這... 完全看不
+  /// 出來是什麼意思啊" — a grid of `100`, `0%`, `1/1`, `1/1`, `2/2`, `1`,
+  /// `192.168.15.4`, `toob-215502`, and no way to tell which card is which.
+  ///
+  /// §2.1 specified this form as "Icon + a single value", and that was right for
+  /// the path it was written for: reached by *width* (#1239) at most nine cards
+  /// can enter the band, and the rest of the grid is at a readable width to give
+  /// them context — a lone `0/1` sits beside a named LAN card. Reached by a *pick*
+  /// all seventeen enter it together and there is no context left anywhere on
+  /// screen. So the tile has to name itself, and the value alone cannot.
+  ///
+  /// ## Why the name goes where the icon was
+  ///
+  /// A picked tile is one grid row: 120px, less `AppCard`'s `AppSpacing.lg` on
+  /// each side, is **88px** of content. Two `bodySmall` lines each for the value
+  /// and the name, with a gap between, is 66 — it fits. Adding back an icon (24,
+  /// plus its own gap) does not, and the icon is the only element on the tile
+  /// carrying no words. It is also the least missed: three of the seventeen
+  /// pickable cards declare one at all (`lan_info`, `device_info`,
+  /// `time_settings`, each only below normal density), so on the built dashboard
+  /// fourteen tiles had no glyph and the three that did read as arbitrary.
+  ///
+  /// The hierarchy is therefore weight and colour rather than size. Size was
+  /// tried first and does not survive the width: at `titleSmall` the headline
+  /// crops `192.168.15.4`, twelve characters with no break opportunity in ~90px
+  /// of text, which is the very failure the name was added to fix.
+  ///
+  /// ## Mutation table (Article II AC13)
+  ///
+  /// | # | mutated | mutation | killed by |
+  /// |---|---|---|---|
+  /// | 1 | `card_popup_form` | the name dropped, value only (the defect) | 'shows the value and the name' |
+  /// | 2 | `card_popup_form` | `value ?? title` kept as the headline *and* the name printed under it | 'the name is not a second copy of the value' |
+  /// | 3 | `card_popup_form` | the headline's `w700` and the caption's dimmed colour both dropped | 'the value is the headline' (weight, then colour) |
+  /// | 4 | `card_popup_form` | the headline raised to `titleSmall` | 'the value is the headline' on the size control, and 'reads both whole' on the IPv4 address |
+  /// | 5 | `card_popup_form` | either run capped at one line | 'reads both whole' |
+  /// | 6 | `card_popup_form` + `dashboard_card_template` | `leading` plumbed back in and rendered above the pair | 'spends no vertical room on an icon' — and *only* that |
+  ///
+  /// Row 6 is the reason this claim needs a test at all. The 88px budget says an
+  /// icon does not fit, but the picked sweep in
+  /// `dashboard_card_forced_form_overflow_test.dart` stayed green at 80/80 with the
+  /// icon restored: the caption is `Flexible`, so it silently gave up its second
+  /// line to pay for the glyph. **No overflow probe can see this** — the tile that
+  /// does not overflow is the tile that stopped showing half the name, which is the
+  /// failure mode, not the absence of one.
+  group('the picked tile names its card', () {
+    /// Pumps the default card at the picked tile's exact cell: two columns of the
+    /// 4-column phone grid, one grid row.
+    Future<List<OverflowIncident>> pumpTile(
+      WidgetTester tester, {
+      Widget? card,
+    }) =>
+        _pump(
+          tester,
+          screenWidth: 320,
+          cardWidth: _kPickedTileWidth,
+          cardHeight: 120,
+          card: card,
+        );
+
+    /// Style the paragraph rendering [text] was laid out with — resolved, so this
+    /// is the type that reached the screen and not the variant asked for.
+    TextStyle styleOf(WidgetTester tester, String text) =>
+        (tester.renderObject<RenderParagraph>(find.text(text)).text as TextSpan)
+            .style!;
+
+    testWidgets('shows the value and the name, not the value alone',
+        (tester) async {
+      await pumpTile(tester);
+
+      expect(find.text(_kValue), findsOneWidget);
+      expect(
+        find.text(_kTitle),
+        findsOneWidget,
+        reason: 'a picked tile is the only thing on screen for its card, and a '
+            'figure with nothing naming it is not a glance — the user cannot '
+            'tell which card they are looking at',
+      );
+    });
+
+    testWidgets('the name is not a second copy of the value', (tester) async {
+      // The no-value fallback. The name is promoted into the value's slot rather
+      // than printed twice, once as each — a tile saying the same words in two
+      // sizes says less than one saying them once.
+      await pumpTile(tester, card: _card(popupValue: null));
+
+      expect(find.text(_kTitle), findsOneWidget);
+    });
+
+    testWidgets('the value is the headline', (tester) async {
+      // Two equal lines are read as a list; the pair is only glanceable if one of
+      // them is obviously the figure and the other obviously its caption.
+      //
+      // Weight and colour, not size — and the size assertion is here as a control
+      // on that, because a hierarchy built from type size is the one thing this
+      // tile cannot afford (see 'reads both whole' below, and the group dartdoc).
+      await pumpTile(tester);
+
+      final value = styleOf(tester, _kValue);
+      final name = styleOf(tester, _kTitle);
+
+      expect(
+        value.fontWeight!.value,
+        greaterThan(name.fontWeight!.value),
+        reason: 'the value is what the card degraded to and the name is what '
+            'identifies it — swap the emphasis and the tile reads as a label '
+            'with a footnote',
+      );
+      expect(
+        value.color,
+        isNot(name.color),
+        reason:
+            'the caption is dimmed as well as lighter; weight alone at 12px '
+            'is a thin distinction to carry the whole hierarchy',
+      );
+      expect(
+        value.fontSize,
+        name.fontSize,
+        reason: 'and neither run may grow: 14px cannot fit an IPv4 address in '
+            'the ~90px of text a two-column tile has',
+      );
+    });
+
+    testWidgets('reads both whole at the tile width', (tester) async {
+      // 90px of text at 122px of tile. Both of these are real: `Network Status`
+      // is the shortest card name that needed two lines in the built app, and an
+      // IPv4 address is what `lan_info` and `network_status` degrade to.
+      await pumpTile(
+        tester,
+        card: _card(title: 'Network Status', popupValue: '192.168.15.4'),
+      );
+
+      for (final line in ['Network Status', '192.168.15.4']) {
+        expect(
+          tester
+              .renderObject<RenderParagraph>(find.text(line))
+              .didExceedMaxLines,
+          isFalse,
+          reason:
+              '"$line" was clipped — the tile has two lines to spend on each '
+              'and clipping either one is what was reported',
+        );
+      }
+    });
+
+    testWidgets('spends no vertical room on an icon', (tester) async {
+      // The deviation from §2.1, asserted rather than left implicit: the card
+      // still declares a `leading` for its header in compact density, and the
+      // tile is what stops using it. See this group's dartdoc for the 88px
+      // budget that decides it.
+      await pumpTile(tester);
+
+      expect(
+        find.descendant(
+          of: find.byType(CardPopupForm),
+          matching: find.byKey(_kLeadingKey),
+        ),
+        findsNothing,
+        reason:
+            'an icon costs a line of the 88px the tile has, and the name it '
+            'would displace is the thing being read',
+      );
+    });
+
+    testWidgets('and fits with the longest German name and value',
+        (tester) async {
+      final incidents = await pumpTile(
+        tester,
         card: _card(
           title: 'Angeschlossene Geräte im Heimnetzwerk',
           popupValue: '128 Geräte derzeit online im Netzwerk',

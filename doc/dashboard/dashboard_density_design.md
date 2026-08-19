@@ -466,11 +466,23 @@ broken layout would push the framework's responsibility onto the user.
 > pin, so this table keeps describing every card nobody has chosen a form for.
 > §2.6i records the inversion.
 
+> **Also amended in #1299 (implemented): the Content column.** popup is now **a
+> single value over the card's name**, and no icon. "Icon + a single value" was
+> written for the width path, where at most nine cards can be in the band at once
+> and the rest of the grid is at a readable width, so a lone `0/1` has named cards
+> around it. A *pick* puts all seventeen in the band together and removes every
+> source of context: measured in the built app, a grid of `100`, `0%`, `1/1`,
+> `2/2` names nothing. The name displaces the icon rather than joining it because
+> a picked tile's 88px of content will not hold both, and of the two the icon is
+> the element carrying no words — and the one only three of the seventeen cards
+> declare at all. §2.6i item 8 records it.
+
 `UspLayoutPreferences.setMode()` / `getMode()` become unused for this purpose.
 
 **Why three and not two.** popup has a natural lower bound that is independent of
-width (an icon and one value always fit). That terminates the otherwise infinite
-regress of "and what guarantees the compact form fits?".
+width (one value and a name always fit — an icon, as of #1299, is what does not).
+That terminates the otherwise infinite regress of "and what guarantees the compact
+form fits?".
 
 **popup reachability.** Only `span=3` ever falls below 200px (191.4px, at screens
 601–1247px — 30 widths). `span≥4` is never narrower than 260.5px. So popup is a
@@ -678,7 +690,8 @@ first card that needs it; nothing degrades until one does.
 
 ### 2.6c What building the popup form taught us (#1239 — implemented)
 
-Built as specified: `CardPopupForm` (icon + one value + tap target) selected inside
+Built as specified: `CardPopupForm` (icon + one value + tap target — the icon was
+later replaced by the card's own name, §2.6i item 8) selected inside
 `DashboardCardTemplate.build`, and `showCardNormalForm` presenting the card's full
 form in an `AppDialog` — or an `AppBottomSheet` where a dialog cannot serve. No
 card's rendering changed and `known_overflows.json` is untouched (gate 1644/1644).
@@ -1107,7 +1120,7 @@ Built as `CardFormChoice` / `CardForms` (`cardFormsProvider`),
 elevated surface — that floats over the card selected in the grid (a `Stack` sibling
 above `DashboardOverlay`, so the press that picks a form never reaches the overlay). `DisplayMode` is **not** revived: it is the abandoned
 three-value enum §2.6 replaced, and a second spelling of the same idea would be two
-things to keep in agreement. Seven lessons.
+things to keep in agreement. Eight lessons.
 
 1. **Four decisions were recorded on the issue before the code; the fifth only
    appears once you write the reader.** The recorded four: popup collapses to 2×1 on
@@ -1307,6 +1320,49 @@ things to keep in agreement. Seven lessons.
    `known_overflows.json` is unchanged and the #1183 gate is green (1698/1698): none of
    these boxes existed before, so there is nothing to grandfather and a failure here is
    this ticket's regression.
+
+8. **A degraded form's content is specified against the population that reaches it,
+   and inverting the mechanism changed that population.** §2.1 said "Icon + a single
+   value", and the built app said `Community00066` / `192.168.15.4` / `100` / `0%` /
+   `1/1` / `2/2` — seventeen tiles, three of them with a glyph, none of them naming
+   its card. The spec was not wrong when written: on the width path at most nine cards
+   can be in the band simultaneously and the rest of the grid is readable, so a lone
+   figure has named neighbours. A pick removes the neighbours, and **context that came
+   from outside the tile has to move onto it**. So the tile now renders its value over
+   the card's name, and the icon is gone.
+
+   The icon is what pays for the name, and the arithmetic is why there was no third
+   option: a picked tile is one grid row — 120px, less `AppSpacing.lg` of card padding
+   on each side, is **88px** of content. Two `bodySmall` lines each for the value and
+   the name plus the gap between is 66; an icon and its own gap is another 26. The
+   rejected shapes are all in `card_popup_form.dart`'s comments — the icon inline
+   beside the name fits at 74 but costs 18px of the name's width, and a `maxLines`
+   that depends on whether an icon is present is deterministic but forces every test
+   to know about the conditional.
+
+   And the budget is not something the overflow gate can enforce. Plumbing the icon
+   back in as a mutation left the 80-case picked sweep in
+   `dashboard_card_forced_form_overflow_test.dart` **green** — the caption is
+   `Flexible`, so it paid for the glyph by dropping its second line. Generalized:
+   **a `Flexible` inside a fixed box converts an overflow into a silent truncation,
+   so the overflow gate cannot be the guard for anything a `Flexible` can absorb.**
+   That is why the icon's absence is asserted directly, by widget, and not inferred
+   from a clean sweep. It is §2.8's finding in a second guise — there an `Expanded`
+   squeezed to a few pixels clips its text with no error raised, here a `Flexible`
+   drops a line — and it is the failure mode §2.8 calls **worse than an overflow,
+   not better**.
+
+   The width also decides the **type**, and it decides against the obvious answer.
+   Two grid columns is 122.3px, of which ~90 is text; a 14px `titleSmall` headline
+   crops `192.168.15.4` — twelve characters with no break opportunity — which is the
+   very failure the name exists to fix, and it regressed the pre-existing
+   read-whole test on the first attempt. So both runs are `bodySmall` and the
+   hierarchy is **weight and colour, not size**: `w700` on `onSurface` over `w400` on
+   `onSurfaceVariant`. Generalized: **at this width type size is not available as a
+   hierarchy mechanism, and a tile that cannot afford larger type cannot afford a
+   glyph either.** `AppText.bodySmall` does not forward `fontWeight`, so the call
+   site uses the base `AppText(..., variant:, fontWeight:)` constructor — the same
+   variant, and not an Article XIV kit gap, since the base constructor is public API.
 
 ### 2.7 The gate enumerates widths instead of sampling them
 

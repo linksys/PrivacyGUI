@@ -90,8 +90,8 @@ void main() {
   /// Density is pinned to [CardDensity.normal], and that pin is what keeps this
   /// file measuring what it was written to measure. Since #1288 both cards
   /// declare a `normalAbove` (250 / 256) well above this 191.4px width, so in
-  /// production the card here renders the *popup* form — one icon and one value,
-  /// no DHCP status and no timezone grid, i.e. none of the strings asserted
+  /// production the card here renders the *popup* form — one value over the
+  /// card's name, no DHCP status and no timezone grid, i.e. none of the strings asserted
   /// below. Without the pin every assertion in this file would start failing on
   /// a missing widget, and the honest reading of that failure is not "the
   /// readability regressed" but "this width no longer shows this content".

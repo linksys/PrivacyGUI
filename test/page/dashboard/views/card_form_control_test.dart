@@ -194,8 +194,9 @@ void main() {
 
       expect(handlesOn(tester, 'device_info'), 0,
           reason: 'AC 6, stated as the ticket states it: not "isResizable is '
-              'false" but "no resize handle is built". An icon and one value has '
-              'no use for a larger box, and a locked-but-huge popup would be '
+              'false" but "no resize handle is built". One value and the card '
+              'name has no use for a larger box, and a locked-but-huge popup '
+              'would be '
               'unrecoverable — so the box is pinned and the handles go with it.');
       expect(handlesOn(tester, 'lan_info'), 8,
           reason: "A pick is per card. Removing one card's handles must not "

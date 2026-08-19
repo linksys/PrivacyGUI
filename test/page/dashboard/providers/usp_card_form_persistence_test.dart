@@ -215,8 +215,9 @@ void main() {
       expect(item['w'], 2);
       expect(item['h'], 1);
       expect(item['isResizable'], isFalse,
-          reason: 'An icon and one value has no use for a larger box, and a '
-              'locked-but-huge popup would be unrecoverable.');
+          reason:
+              'One value and the card name has no use for a larger box, and '
+              'a locked-but-huge popup would be unrecoverable.');
     });
 
     test('the pin survives the round trip through the pref', () async {

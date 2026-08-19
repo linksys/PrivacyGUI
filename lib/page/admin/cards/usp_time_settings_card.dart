@@ -71,7 +71,8 @@ class _UspTimeSettingsCardState extends ConsumerState<UspTimeSettingsCard>
 
     return DashboardCardTemplate(
       title: loc(context).timeSettings,
-      // Degraded forms only, so nothing changes above the threshold (#1288). See
+      // Degraded forms only, so nothing changes above the threshold (#1288) —
+      // compact in practice, since the popup form has no header and no icon. See
       // `usp_lan_info_card.dart` for why the icon lands in the header slot.
       leading: density == CardDensity.normal
           ? null

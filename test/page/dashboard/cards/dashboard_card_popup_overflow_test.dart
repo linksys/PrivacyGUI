@@ -51,7 +51,7 @@ import '../../../util/overflow_probe.dart';
 ///
 /// ## Tabs are not swept
 ///
-/// The popup form renders an icon and one value; it has no tab bar, so a tab
+/// The popup form renders one value over the card's name; it has no tab bar, so a tab
 /// index selects nothing. The dialog it opens does show the card's tabs, and
 /// that is swept at tab 0 — the tabs' own overflow across every tab is the
 /// #1183 gate's job, at grid widths narrower than the dialog's.

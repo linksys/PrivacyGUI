@@ -49,7 +49,8 @@ class UspDeviceInfoCard extends ConsumerWidget {
     return DashboardCardTemplate(
       title: loc(context).deviceInformation,
       // Only in the degraded forms, so nothing changes above the threshold
-      // (#1288). The same router artwork as the hero, at header size — this card
+      // (#1288) — compact in practice, since the popup form has no header and no
+      // icon. The same router artwork as the hero, at header size — this card
       // identifies a specific product, so a generic glyph would be a downgrade
       // the other two cards do not have to make.
       leading: density == CardDensity.normal

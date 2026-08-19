@@ -30,9 +30,10 @@ class UspLanInfoCard extends ConsumerWidget {
       // Only in the degraded forms, so nothing changes above the threshold
       // (#1288). Below it the hero hides its own icon to give the IP the width it
       // needs, and this is where the icon goes instead: the header row already
-      // exists, so it costs no height, and the popup form is built from the
-      // template's header — with no `leading` it would show a value and no glyph,
-      // where §2.1 promises an icon.
+      // exists, so it costs no height. Compact only in practice — the popup form
+      // has no header to hang this on, and no icon at all: at one grid row the
+      // 88px of content buys two lines of value and two of the card's name, and
+      // that name is what the glyph could not say (see [CardPopupForm]).
       leading: density == CardDensity.normal
           ? null
           : AppIcon.font(
