@@ -102,19 +102,7 @@ class _UspTimeSettingsCardState extends ConsumerState<UspTimeSettingsCard>
           // Hero block - Clock with current time
           HeroBlock(
             compact: density == CardDensity.compact,
-            leading: Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                color: colorScheme.primaryContainer,
-                shape: BoxShape.circle,
-              ),
-              child: AppIcon.font(
-                Icons.schedule,
-                color: colorScheme.primary,
-                size: 28,
-              ),
-            ),
+            leading: const HeroCircleIcon(icon: Icons.schedule),
             children: [
               AppText.titleLarge(timeDisplay),
               AppGap.xxs(),

@@ -1,6 +1,7 @@
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
+import 'package:equatable/equatable.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/_shared/models/card_form_choice.dart';
 
 /// The persisted form of the USP dashboard layout: one serialised grid per
@@ -24,7 +25,18 @@ import 'package:privacy_gui/page/_shared/models/card_form_choice.dart';
 /// other breakpoints are left absent rather than guessed, so the caller can tell
 /// "the user arranged this" from "we derived this" and re-derive the second kind
 /// whenever the scaling rules change.
-class UspLayoutEnvelope {
+///
+/// ## Value equality
+///
+/// Required of models by constitution §11.1, and here it buys exactly one thing:
+/// "these bytes round-trip" becomes a single assertion over the whole payload
+/// instead of a walk over `slotCounts`, each slot's list, and `forms` separately
+/// — a walk that reads as coverage while omitting whichever field was added last.
+/// It is *not* load-bearing for rebuilds the way [CardForms]'s is: no provider
+/// holds an envelope, and both of its uses (encode at save, decode at load) are
+/// transient. Kept because the two things it compares are a nested collection and
+/// another [Equatable], neither of which identity would compare usefully.
+class UspLayoutEnvelope extends Equatable {
   /// Slot counts the dashboard renders and persists, matching the ui_kit
   /// breakpoint regimes (`GridLayoutContext.currentMaxColumns`).
   static const int desktopSlotCount = 12;
@@ -70,6 +82,9 @@ class UspLayoutEnvelope {
   /// that was *not* keyed by breakpoint would repeat #1293 exactly, since
   /// "compact on a phone, normal on a laptop" is the case this exists for.
   final CardForms forms;
+
+  @override
+  List<Object?> get props => [layouts, forms];
 
   List<dynamic>? operator [](int slotCount) => layouts[slotCount];
 
@@ -184,9 +199,11 @@ class UspLayoutEnvelope {
   /// indistinguishable in the field. That matters more here than the usual
   /// "log the exception" habit: a rejection silently discards the layout the
   /// user arranged and reseeds the default, so the reason is the only evidence
-  /// left of what they lost.
+  /// left of what they lost. Which is also why it goes through `logger.w` and not
+  /// `debugPrint` — the latter compiles out of a release build, i.e. out of every
+  /// build a user could hit this in.
   static UspLayoutEnvelope? _reject(String reason) {
-    debugPrint('UspLayoutEnvelope.tryDecode rejected the payload — $reason');
+    logger.w('[USP][Layout]: tryDecode rejected the payload — $reason');
     return null;
   }
 

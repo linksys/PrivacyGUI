@@ -10,6 +10,7 @@ import 'package:privacy_gui/page/_shared/providers/card_forms_provider.dart';
 import 'package:privacy_gui/page/dashboard/providers/layout_item_factory.dart';
 import 'package:privacy_gui/page/dashboard/providers/selected_card_provider.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sliver_dashboard/sliver_dashboard.dart';
 
@@ -130,7 +131,10 @@ class UspSliverDashboardControllerNotifier
 
     final envelope = UspLayoutEnvelope.tryDecode(layoutJson);
     if (envelope == null) {
-      debugPrint('Failed to load USP sliver dashboard layout: unreadable');
+      // `w`, not `d`: this discards a layout the user arranged and reseeds the
+      // default, and `debugPrint` compiles out of a release build — so in the
+      // field the only user-visible evidence was their dashboard resetting.
+      logger.w('[USP][Layout]: saved layout is unreadable — reseeding default');
       // Keep the constructor's default and overwrite the unreadable value.
       _seedBreakpoints();
       await saveLayout();

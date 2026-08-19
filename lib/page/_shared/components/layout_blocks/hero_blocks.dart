@@ -90,3 +90,48 @@ class HeroBlock extends StatelessWidget {
     );
   }
 }
+
+/// The [HeroBlock.leading] two of the three cards draw: one glyph centred in a
+/// `primaryContainer` circle.
+///
+/// `usp_lan_info_card` and `usp_time_settings_card` had this byte-identical apart
+/// from the glyph, which is the shape of duplication that survives a review
+/// precisely because each copy is short. `usp_device_info_card` is deliberately
+/// not a caller — it draws a padded rounded plate around a router *image*, and
+/// bending this to cover that would produce a widget with a shape flag.
+///
+/// The two sizes stay hardcoded rather than moving to [BlockConstants]: they are
+/// not part of that file's icon scale (16/20/24/48) but a measured pair. 56px is
+/// what the hero row was tuned around — the #1288 note above quotes the 61.4px
+/// left for the value column at the gate's narrowest realization, which is that
+/// 56 plus `AppGap.lg`. Changing either number moves the overflow baseline.
+class HeroCircleIcon extends StatelessWidget {
+  const HeroCircleIcon({
+    super.key,
+    required this.icon,
+    this.diameter = 56,
+    this.iconSize = 28,
+  });
+
+  final IconData icon;
+  final double diameter;
+  final double iconSize;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      width: diameter,
+      height: diameter,
+      decoration: BoxDecoration(
+        color: colorScheme.primaryContainer,
+        shape: BoxShape.circle,
+      ),
+      child: AppIcon.font(
+        icon,
+        color: colorScheme.primary,
+        size: iconSize,
+      ),
+    );
+  }
+}

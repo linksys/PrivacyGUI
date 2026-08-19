@@ -50,19 +50,7 @@ class UspLanInfoCard extends ConsumerWidget {
           // Hero block - Router IP with DHCP status
           HeroBlock(
             compact: density == CardDensity.compact,
-            leading: Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                color: colorScheme.primaryContainer,
-                shape: BoxShape.circle,
-              ),
-              child: AppIcon.font(
-                Icons.router,
-                color: colorScheme.primary,
-                size: 28,
-              ),
-            ),
+            leading: const HeroCircleIcon(icon: Icons.router),
             children: [
               AppText.titleLarge(info.ipAddress),
               AppGap.xxs(),

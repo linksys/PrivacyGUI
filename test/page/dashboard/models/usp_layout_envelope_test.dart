@@ -260,4 +260,55 @@ void main() {
           reason: 'withLayout must not mutate the receiver.');
     });
   });
+
+  group('value equality', () {
+    UspLayoutEnvelope build({int h = 3, CardForms? forms}) => UspLayoutEnvelope(
+          {
+            12: [
+              {'id': 'a', 'x': 0, 'y': 0, 'w': 6, 'h': h}
+            ],
+            4: [
+              {'id': 'a', 'x': 0, 'y': 0, 'w': 4, 'h': h}
+            ],
+          },
+          forms: forms ?? CardForms.empty,
+        );
+
+    // Asserted rather than assumed: `props` hands Equatable a Map of Lists of
+    // Maps, none of which compares by value on its own. If Equatable compared
+    // those by identity, two separately built envelopes would already differ and
+    // the equality would be worthless for the round-trip assertion below.
+    test('two separately built envelopes with the same content are equal', () {
+      expect(build(), build());
+      expect(build().hashCode, build().hashCode);
+    });
+
+    test('an encode/decode round-trip returns an equal envelope', () {
+      final original = build(
+        forms: const CardForms({
+          12: {'a': CardFormChoice(density: CardDensity.compact, restoreW: 6)},
+        }),
+      );
+
+      // The whole point of the equality: one assertion covers every persisted
+      // field, so a field added later cannot be silently left out of the
+      // round-trip claim the way a per-getter walk would leave it out.
+      expect(UspLayoutEnvelope.tryDecode(original.encode()), original);
+    });
+
+    test('a difference in the nested geometry is a difference', () {
+      expect(build(h: 3), isNot(build(h: 6)));
+    });
+
+    test('a difference in forms alone is a difference', () {
+      expect(
+        build(),
+        isNot(build(
+          forms: const CardForms({
+            12: {'a': CardFormChoice(density: CardDensity.compact, restoreW: 6)},
+          }),
+        )),
+      );
+    });
+  });
 }
