@@ -2,6 +2,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_portal/flutter_portal.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -46,6 +47,53 @@ const String _kValue = '12 online';
 /// the card must not be rendering its full content, and after a tap it must be.
 const String _kNormalOnly = 'normal-form-only-content';
 const Key _kLeadingKey = Key('popup-leading');
+
+/// Height of every surface this file pumps. Named because the presentation's cap
+/// is measured against it: a card declaring more than the screen has must be
+/// given the screen, and "the screen" has to be one number both sides read.
+const double _kScreenHeight = 800.0;
+
+/// Width of a *picked* popup tile on the 4-column phone grid — two columns of
+/// twelve, which the grid realizes at 122.3px (pinned in
+/// `dashboard_card_popup_overflow_test.dart`, which can see the grid).
+///
+/// The only width the tile's label has to be legible at, and narrow enough that
+/// nearly every card's value or name needs two lines to be read whole.
+const double _kPickedTileWidth = 122.0;
+
+/// Which tab a live card is showing — the shape every tabbed dashboard card has
+/// (`cardTabIndexProvider`), modelled here because it is the reason a widget
+/// *snapshot* cannot be what the presentation renders.
+final _tabIndex = StateProvider<int>((ref) => 0);
+
+const String _kTabA = 'tab-a-only-content';
+const String _kTabB = 'tab-b-only-content';
+
+/// A card whose selected tab is held outside its own build, so switching tabs
+/// takes a rebuild of the *element* that watches it.
+///
+/// Every tabbed card on the dashboard is built this way, and it is what the
+/// presentation broke: handed `this` — a `DashboardCardTemplate` already built by
+/// the element above — the dialog holds a frozen widget whose selected index can
+/// never change, because the element that reads the provider lives outside the
+/// dialog's tree entirely.
+class _LiveTabbedCard extends ConsumerWidget {
+  const _LiveTabbedCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return DashboardCardTemplate.tabbed(
+      title: _kTitle,
+      popupValue: _kValue,
+      tabs: const [
+        CardTab(label: 'A', content: Text(_kTabA)),
+        CardTab(label: 'B', content: Text(_kTabB)),
+      ],
+      selectedTabIndex: ref.watch(_tabIndex),
+      onTabChanged: (i) => ref.read(_tabIndex.notifier).state = i,
+    );
+  }
+}
 
 ThemeData _lightTheme() => ThemeJsonConfig.defaultConfig().createLightTheme();
 
@@ -103,7 +151,7 @@ Future<List<OverflowIncident>> _pump(
   Widget? card,
   bool open = false,
 }) {
-  final surface = Size(screenWidth, 800);
+  final surface = Size(screenWidth, _kScreenHeight);
   return runWithOverflowCollection((sink) async {
     await tester.binding.setSurfaceSize(surface);
     tester.view.physicalSize = surface;
@@ -457,6 +505,214 @@ void main() {
       );
 
       expect(_horizontalScrollViews(AppDialog), findsNothing);
+    });
+  });
+
+  group('the presented form is live, not a snapshot', () {
+    // Reported from the built app: "tab 在 popup dialog 沒作用". Tapping a tab
+    // inside the presentation moved the tab bar's own highlight and changed
+    // nothing below it.
+    //
+    // The cause is not the tabs. `normalForm: this` hands the presentation a
+    // `DashboardCardTemplate` that the element *above* the card already built,
+    // with the selected index baked into it. The element that watches the index
+    // is outside the dialog's tree, so the provider write lands, the tile's copy
+    // of the card rebuilds, and the dialog's copy — which is a widget, not an
+    // element of that build — cannot. Everything a card reads from a provider is
+    // frozen the same way: its interval menu, its loading badge, its live
+    // numbers.
+    //
+    // So the presentation has to build the card *widget* itself, and the fix is
+    // to publish that widget where the presentation can reach it.
+
+    testWidgets('a tab tapped in the presentation changes what it shows',
+        (tester) async {
+      await _pump(
+        tester,
+        screenWidth: 1200,
+        cardWidth: 150,
+        cardHeight: 120,
+        normalHeight: 392,
+        card: const _LiveTabbedCard(),
+        open: true,
+      );
+
+      expect(
+        find.text(_kTabA),
+        findsOneWidget,
+        reason: 'the presentation opens on the tab the card was showing',
+      );
+
+      await tester.tap(find.text('B'));
+      await settleIgnoringAnimations(tester);
+
+      expect(
+        find.text(_kTabB),
+        findsOneWidget,
+        reason: 'the tab bar in the presentation is the only way to reach this '
+            "card's other tabs — a tab that moves its own highlight and leaves "
+            'the content behind is worse than no tab bar at all',
+      );
+      expect(find.text(_kTabA), findsNothing);
+    });
+
+    testWidgets('and the same tap works on the card at normal density',
+        (tester) async {
+      // The control that makes the test above about the presentation. Without
+      // it, a fixture whose tabs never worked anywhere would fail identically
+      // and point at the wrong file.
+      await _pump(
+        tester,
+        screenWidth: 1200,
+        cardWidth: 600,
+        cardHeight: 392,
+        density: CardDensity.normal,
+        card: const _LiveTabbedCard(),
+      );
+
+      expect(find.text(_kTabA), findsOneWidget);
+
+      await tester.tap(find.text('B'));
+      await settleIgnoringAnimations(tester);
+
+      expect(find.text(_kTabB), findsOneWidget);
+      expect(find.text(_kTabA), findsNothing);
+    });
+
+    testWidgets('a form with nothing published still opens', (tester) async {
+      // `CardPopupForm` is reachable without a host above it — a shared block
+      // under test, a card built outside the factory — and there the widget it
+      // was handed is all there is. It must still be presented, because the
+      // alternative is a tap that opens an empty box.
+      await tester.pumpWidget(
+        ProviderScope(
+          child: Portal(
+            child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              theme: _lightTheme(),
+              home: Scaffold(
+                body: Align(
+                  alignment: Alignment.topLeft,
+                  child: SizedBox(
+                    width: 150,
+                    // The box is the only height on offer here — nothing
+                    // published a declaration — so it is also the height the
+                    // presented card is laid out in, and it has to be one the
+                    // card fits in for this test to be about the fallback.
+                    height: 240,
+                    child: CardPopupForm(
+                      title: _kTitle,
+                      value: _kValue,
+                      normalForm: _card(),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await settleIgnoringAnimations(tester);
+
+      await tester.tap(find.byType(CardPopupForm));
+      await settleIgnoringAnimations(tester);
+
+      expect(find.byType(AppDialog), findsOneWidget);
+      expect(find.text(_kNormalOnly), findsOneWidget);
+    });
+  });
+
+  group('the presented form and the screen', () {
+    testWidgets('a card that declares more than the screen has gets the screen',
+        (tester) async {
+      // The declaration is what the card needs, not what the device has, and the
+      // two heights this ticket started feeding it are larger than the one it
+      // replaced: a card declaring five grid rows is 664px, which is taller than
+      // a landscape phone's whole viewport. Presented at its declared height it
+      // would run off the bottom of the screen — the presentation has to be the
+      // smaller of what the card asked for and what there is.
+      await _pump(
+        tester,
+        screenWidth: 1200,
+        cardWidth: 150,
+        cardHeight: 120,
+        normalHeight: 2000,
+        open: true,
+      );
+
+      expect(
+        _presentedFormHeight(tester, AppDialog),
+        _kScreenHeight - kCardPresentationInset * 2,
+        reason: 'the presentation cannot be taller than the screen that has to '
+            'show it, whatever the card declares',
+      );
+    });
+
+    testWidgets('and a card that fits is not capped', (tester) async {
+      // The control: a cap applied unconditionally would shrink every card to
+      // the viewport and read as green above.
+      await _pump(
+        tester,
+        screenWidth: 1200,
+        cardWidth: 150,
+        cardHeight: 120,
+        normalHeight: 392,
+        open: true,
+      );
+
+      expect(_presentedFormHeight(tester, AppDialog), 392);
+    });
+  });
+
+  group('the popup tile label', () {
+    // Reported from the built app: "popup layout 預設給 2 寬吧 字都看不到". A picked
+    // tile is two columns wide by design (#1299) — the pick is what pins it — so
+    // the label is what has to change: one ellipsized `titleMedium` line at
+    // 122px showed "Network St…", "System Stat…", "Community…", which is not a
+    // value the user can read at a glance and is the whole promise of the form.
+
+    testWidgets('is read whole at the tile width, not ellipsized',
+        (tester) async {
+      // The title is the label here because it is the longest thing the tile can
+      // be asked to show — a card with no declared value falls back to it, and
+      // the values themselves are shorter (`12 online`, `3/3`, an IP address).
+      await _pump(
+        tester,
+        screenWidth: 320,
+        cardWidth: _kPickedTileWidth,
+        cardHeight: 120,
+        card: _card(popupValue: null, title: 'Network Status'),
+      );
+
+      final label =
+          tester.renderObject<RenderParagraph>(find.text('Network Status'));
+      expect(
+        label.didExceedMaxLines,
+        isFalse,
+        reason: 'the label is the only thing on the tile and the tile is the '
+            'only thing on screen for this card — a clipped one leaves the user '
+            'guessing which card they are looking at',
+      );
+    });
+
+    testWidgets('and a value too long for two lines still fits the tile',
+        (tester) async {
+      // The bound on the other side: smaller type and a second line are room to
+      // spend, not room to overflow. The longest German value on the shortest
+      // tile the grid produces.
+      final incidents = await _pump(
+        tester,
+        screenWidth: 320,
+        cardWidth: _kPickedTileWidth,
+        cardHeight: 120,
+        card: _card(
+          title: 'Angeschlossene Geräte im Heimnetzwerk',
+          popupValue: '128 Geräte derzeit online im Netzwerk',
+        ),
+      );
+
+      expect(incidents, isEmpty, reason: incidents.join('\n'));
     });
   });
 

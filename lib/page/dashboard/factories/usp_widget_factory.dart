@@ -51,12 +51,27 @@ class UspWidgetFactory {
   /// The conversion belongs on this side of the boundary: the spec declares rows
   /// and only the dashboard knows what a row is worth, so `_shared` is handed a
   /// height it can use without knowing there is a grid (constitution Article V
-  /// §5.3). `minHeightRows` rather than `maxHeightRows` because it is the floor
-  /// the grid enforces — the smallest box the card is ever laid out in, hence the
-  /// one its content is built to survive.
+  /// §5.3).
+  ///
+  /// The rows are the *preferred* ones — the same call
+  /// `layout_item_factory.dart` makes when it places a card on the grid, so the
+  /// presentation is the height the dashboard would have given the card. It used
+  /// to be `minHeightRows`, which is the floor the grid enforces rather than the
+  /// box the card is laid out in: eleven of the eighteen specs prefer more than
+  /// their floor, topology by two whole rows (a floor of 3, `strict(5)`), so its
+  /// presentation was 392px of a card that fills 664 — measured in the built app
+  /// as "obviously too small". `maxHeightRows` is the other wrong end: the ceiling
+  /// a user may drag to, not a claim about the content.
+  ///
+  /// No `columns` argument: it only changes the answer for
+  /// `AspectRatioHeightStrategy`, which no spec in `usp_widget_specs.dart` uses,
+  /// and the presentation's width is a constant rather than a span
+  /// ([kCardPresentationWidth]) so there would be no span to pass.
   double? _normalHeightOf(String id) {
-    final rows = getSpec(id)?.getConstraints(DisplayMode.normal).minHeightRows;
-    return rows == null ? null : dashboardRowsToHeight(rows);
+    final constraints = getSpec(id)?.getConstraints(DisplayMode.normal);
+    return constraints == null
+        ? null
+        : dashboardRowsToHeight(constraints.getPreferredHeightCells());
   }
 
   Widget? _buildCard(String id) {

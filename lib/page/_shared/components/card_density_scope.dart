@@ -18,6 +18,8 @@ class CardDensityScope extends InheritedWidget {
     super.key,
     required this.density,
     this.normalHeight,
+    this.liveForm,
+    this.presented = false,
     required super.child,
   });
 
@@ -41,6 +43,32 @@ class CardDensityScope extends InheritedWidget {
   /// [CardDensityHost]'s own selection, which has it from the spec already.
   final double? normalHeight;
 
+  /// The card *widget* this scope wraps — what the popup form's presentation
+  /// builds, rather than the widget it was handed.
+  ///
+  /// A `StatelessWidget` handed down as `normalForm: this` is a *snapshot*: the
+  /// element that built it — the card's own `ConsumerWidget`, which watches
+  /// `cardTabIndexProvider`, its data providers and its interval menu — lives
+  /// outside the presentation's tree. So a provider write rebuilt the tile's copy
+  /// of the card and could not rebuild the presented one, and the presentation
+  /// froze at whatever state the tap happened in: tabs moved their own highlight
+  /// and changed nothing under it, menus selected nothing, live numbers stopped.
+  ///
+  /// Publishing the widget instead lets the presentation mount its own element
+  /// for it, under its own scope, so both copies watch the same providers and
+  /// neither is a snapshot of the other. Null outside a [CardDensityHost] — a
+  /// bare [CardPopupForm] falls back to the widget it was given, which is all
+  /// there is.
+  final Widget? liveForm;
+
+  /// Whether this scope is the *presentation* rather than a card in the grid.
+  ///
+  /// A card is normally free to ignore where it is drawn, and nearly all of them
+  /// do. Topology cannot: the presentation is a box of its own with no `ClipRect`
+  /// competing for the space, so the graph is pannable there and its nodes want
+  /// the spacing the dashboard cell had to double to look right.
+  final bool presented;
+
   /// The density in effect at [context], or [CardDensity.normal] outside any
   /// card.
   ///
@@ -60,9 +88,25 @@ class CardDensityScope extends InheritedWidget {
       .dependOnInheritedWidgetOfExactType<CardDensityScope>()
       ?.normalHeight;
 
+  /// The card widget published at [context] — see [liveForm].
+  static Widget? liveFormOf(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<CardDensityScope>()?.liveForm;
+
+  /// Whether [context] is inside the presentation rather than the grid — see
+  /// [presented]. False outside any card, which is what a card drawn on its own
+  /// page is: not a presentation of a smaller form.
+  static bool isPresented(BuildContext context) =>
+      context
+          .dependOnInheritedWidgetOfExactType<CardDensityScope>()
+          ?.presented ??
+      false;
+
   @override
   bool updateShouldNotify(CardDensityScope oldWidget) =>
-      oldWidget.density != density || oldWidget.normalHeight != normalHeight;
+      oldWidget.density != density ||
+      oldWidget.normalHeight != normalHeight ||
+      oldWidget.presented != presented ||
+      oldWidget.liveForm != liveForm;
 }
 
 /// Wraps a dashboard card, measures the width it was actually given, and
@@ -115,16 +159,25 @@ class CardDensityHost extends ConsumerWidget {
 
   final Widget child;
 
+  /// The scope this host publishes, whichever of the three sources decided
+  /// [density].
+  ///
+  /// One place, because everything travelling down alongside the density has to
+  /// travel down every path: a card whose form was *picked* and one whose form
+  /// was *measured* both open the same presentation, and a field supplied on one
+  /// path only is a bug that shows up in one of the two and not the other.
+  CardDensityScope _scope(CardDensity density) => CardDensityScope(
+        density: density,
+        normalHeight: normalHeight,
+        // The card widget, not the built card: see [CardDensityScope.liveForm].
+        liveForm: child,
+        child: child,
+      );
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final override = ref.watch(cardDensityOverrideProvider(cardId));
-    if (override != null) {
-      return CardDensityScope(
-        density: override,
-        normalHeight: normalHeight,
-        child: child,
-      );
-    }
+    if (override != null) return _scope(override);
 
     // The pick, if there is one for this card on this grid. `currentMaxColumns`
     // is the breakpoint the picks are keyed by — the view feeds the same value to
@@ -134,13 +187,7 @@ class CardDensityHost extends ConsumerWidget {
     final picked = ref
         .watch(cardFormsProvider)
         .densityFor(context.currentMaxColumns, cardId);
-    if (picked != null && picked != CardDensity.normal) {
-      return CardDensityScope(
-        density: picked,
-        normalHeight: normalHeight,
-        child: child,
-      );
-    }
+    if (picked != null && picked != CardDensity.normal) return _scope(picked);
 
     // No threshold declared means the density is a constant: normal at every
     // width. Measuring a constant would still cost a rebuild of the whole card
@@ -154,18 +201,14 @@ class CardDensityHost extends ConsumerWidget {
     // removed, so every card rendered through the LayoutBuilder, and stayed at
     // 1644/1644. Inserting the measurement is layout-neutral — so the first card
     // to declare a threshold is not taking on that risk at the same time.
-    if (normalAbove == null) {
-      return CardDensityScope(density: CardDensity.normal, child: child);
-    }
+    if (normalAbove == null) return _scope(CardDensity.normal);
 
     return LayoutBuilder(
-      builder: (context, constraints) => CardDensityScope(
-        density: densityForWidth(
+      builder: (context, constraints) => _scope(
+        densityForWidth(
           width: constraints.maxWidth,
           normalAbove: normalAbove,
         ),
-        normalHeight: normalHeight,
-        child: child,
       ),
     );
   }

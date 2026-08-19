@@ -63,7 +63,14 @@ class CardPopupForm extends StatelessWidget {
   /// this is.
   final String title;
 
-  /// The card's full form, shown when this one is tapped.
+  /// The card's full form, shown when this one is tapped — the *fallback*.
+  ///
+  /// What the presentation actually builds is the card widget the enclosing
+  /// [CardDensityScope] publishes, and this is what it shows when there is none
+  /// (see [CardDensityScope.liveForm] for why a widget handed down here cannot be
+  /// the first choice: it is a snapshot, and a snapshot cannot rebuild). Kept
+  /// required rather than made optional because a form with no way to open
+  /// anything is worse than one opening a frozen copy.
   final Widget normalForm;
 
   /// The card's header icon, if it has one.
@@ -93,10 +100,19 @@ class CardPopupForm extends StatelessWidget {
           // Flexible so a card only one grid row tall cannot overflow this
           // column vertically; the ellipsis is what keeps it inside
           // horizontally.
+          //
+          // Two lines of `bodySmall`, not one of `titleMedium`. A picked tile is
+          // two grid columns — 122px, of which ~90 is text — and one line of
+          // title type fits about nine characters there: measured in the built
+          // app, "Network St…", "System Stat…", "Community…". The value it
+          // degrades to is the whole promise of this form, so it is read whole at
+          // a smaller size rather than cropped at a larger one. Two lines and not
+          // three because the tile is one grid row: an icon, a gap and two lines
+          // is what fits inside 120px minus the card's own padding.
           Flexible(
-            child: AppText.titleMedium(
+            child: AppText.bodySmall(
               displayed,
-              maxLines: 1,
+              maxLines: 2,
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.center,
             ),
@@ -130,7 +146,10 @@ class CardPopupForm extends StatelessWidget {
 
     showCardNormalForm(
       context,
-      normalForm: normalForm,
+      // The card widget the host published, so the presentation mounts its own
+      // element and the card is live inside it. [normalForm] is the fallback for
+      // a form with no host above it — see [CardDensityScope.liveForm].
+      normalForm: CardDensityScope.liveFormOf(context) ?? normalForm,
       cardHeight: candidates.isEmpty ? null : candidates.reduce(math.max),
     );
   }
@@ -178,7 +197,17 @@ Future<void> showCardNormalForm(
 
   // Falls back to a fraction of the viewport only if the tap arrived from
   // something that has no box, which a laid-out card always has.
-  final height = cardHeight ?? screen.height * 0.6;
+  //
+  // Capped by the screen, because the card's declaration is a statement about
+  // what the card needs and not about what the device has: the tallest card the
+  // dashboard lays out is five grid rows, 664px, which is more than a landscape
+  // phone's entire viewport. Uncapped, the presentation runs off the bottom of the
+  // screen and the part of the card that scrolled out of a cell is out of reach
+  // again — the same failure one level up.
+  final height = math.min(
+    cardHeight ?? screen.height * 0.6,
+    screen.height - kCardPresentationInset * 2,
+  );
 
   final content = SizedBox(
     // Fills whatever the presentation ends up granting rather than naming a
@@ -188,8 +217,12 @@ Future<void> showCardNormalForm(
     height: height,
     child: CardDensityScope(
       // The form shown here is the normal one by definition, and there is
-      // nowhere further to degrade to — so no threshold travels into it.
+      // nowhere further to degrade to — so no threshold travels into it, and no
+      // live form either: this scope *is* where the published widget gets its own
+      // element, and republishing it would offer the presentation a way to
+      // present itself.
       density: CardDensity.normal,
+      presented: true,
       child: normalForm,
     ),
   );
