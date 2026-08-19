@@ -20,9 +20,17 @@ import '../../../util/overflow_probe.dart';
 ///
 /// The #1183 gate (`dashboard_card_overflow_test.dart`) pins no density, so
 /// every card selects its own form from the width the grid gives it — which for
-/// 15 of the 18 cards is still always normal, because they declare no
-/// `normalAbove` (#1240 AC 1). This file sweeps the form that selection reaches
-/// for only three of them, and only at their narrowest realization.
+/// 12 of the 18 cards is still always normal, because they declare no
+/// `normalAbove` (#1240 AC 1). The other **six** declare one (#1288-#1291), and
+/// they are the cards a width can put into this form.
+///
+/// The sweep below is wider than those six: it covers the **nine** cards the grid
+/// can render under [kPopupBelow] at all, whether or not they declare a threshold
+/// — see [_canReachPopupBand]. Three of the nine (`network_status`,
+/// `system_status`, `firewall_overview`) reach the band by width but stay normal
+/// there, so for them this measures a form only a #1299 pick can produce. Kept in
+/// rather than filtered on `normalAbove`, because a card that declares one later
+/// must not be arriving at its first measurement at the same time.
 ///
 /// ## Why the form is pinned rather than provoked by a width
 ///
@@ -127,12 +135,12 @@ const int _fullScreenRows = 6;
 
 /// Whether the user can put [spec] into popup by *picking* it (#1299).
 ///
-/// A different and much larger inventory than [_canReachPopupBand], which is why
-/// it is a second predicate rather than a widened one. Reaching the band by width
-/// takes a `minColumns` of 3, and only three cards have one; picking popup is
-/// offered for every card the template builds, which is all of them but
-/// `stats_panel`. The fourteen cards in the difference have a popup form that
-/// production can show and no width sweep can reach.
+/// A different and larger inventory than [_canReachPopupBand], which is why it is
+/// a second predicate rather than a widened one. Reaching the band by width takes
+/// a `minColumns` of 3, which nine cards have; picking popup is offered for every
+/// card the template builds, which is all of them but `stats_panel`. The eight
+/// cards in the difference have a popup form that production can show and no
+/// width sweep can reach.
 bool _canBePickedIntoPopup(WidgetSpec spec) =>
     UspWidgetSpecs.selectableForms(spec.id).contains(CardDensity.popup);
 
@@ -173,6 +181,46 @@ void main() {
             'popup form nothing had reviewed. Either way, the spec change that '
             'moved it is the thing to look at',
       );
+    });
+
+    // Every count this file's header quotes, asserted from the specs. The header
+    // had drifted to "15 of the 18 declare no normalAbove … only three of them"
+    // while six declared one and nine were being swept — a doc-only claim about
+    // an inventory that three tickets kept changing, so it went stale silently
+    // and was read as current.
+    test('the header\'s counts are the specs\' counts', () {
+      expect(UspWidgetSpecs.all, hasLength(18));
+      expect(
+        UspWidgetSpecs.all.where((s) => s.normalAbove != null).length,
+        6,
+        reason: 'the cards a width can put into a degraded form at all',
+      );
+      expect(
+        UspWidgetSpecs.all.where(_canReachPopupBand).length,
+        9,
+        reason: 'what the popup sweep below covers',
+      );
+      expect(
+        UspWidgetSpecs.all.where(_canBePickedIntoPopup).length -
+            UspWidgetSpecs.all.where(_canReachPopupBand).length,
+        8,
+        reason: 'the cards with a popup form no width sweep can reach, which is '
+            'what the pick sweep exists for',
+      );
+    });
+
+    test('the cards swept for a form no width selects are named in the header',
+        () {
+      final pinnedOnly = UspWidgetSpecs.all
+          .where((s) => _canReachPopupBand(s) && s.normalAbove == null)
+          .map((s) => s.id)
+          .toList();
+
+      expect(pinnedOnly, ['network_status', 'system_status', 'firewall_overview'],
+          reason: 'these reach the band by width but stay normal there, so the '
+              'sweep measures a form only a #1299 pick produces. A card leaving '
+              'this list has just started selecting popup by width — which is a '
+              'product change, not a test detail');
     });
 
     test('and it is minColumns that decides, nothing else', () {
