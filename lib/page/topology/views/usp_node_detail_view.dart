@@ -339,8 +339,21 @@ class UspNodeDetailView extends ConsumerWidget {
                             Icon(Icons.wifi,
                                 size: 16, color: colorScheme.onSurfaceVariant),
                             AppGap.xs(),
-                            AppText.labelSmall(loc(context).labelInterface,
-                                color: colorScheme.onSurfaceVariant),
+                            // The caption takes the space the icon leaves
+                            // instead of its natural width: this tile is a
+                            // half-width Expanded, leaving the row 99dp, while
+                            // `fi` needs 102.6dp for `Käyttöliittymä`. The
+                            // interface name is on the line below, so
+                            // shortening the caption loses no information
+                            // (#1302).
+                            Expanded(
+                              child: AppText.labelSmall(
+                                loc(context).labelInterface,
+                                color: colorScheme.onSurfaceVariant,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
                           ],
                         ),
                         AppGap.xs(),
