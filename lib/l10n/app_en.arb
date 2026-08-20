@@ -1643,7 +1643,7 @@
   "txPower": "Tx Power",
   "badgeUser": "USER",
   "uspConsole": "USP Console",
-  "uspDashboard": "USP Dashboard",
+  "uspDashboard": "Dashboard",
   "routerPasswordRuleUpperLower": "Upper and lower case letters",
   "validatingSession": "Validating session...",
   "viewDevices": "View Devices",
