@@ -43,23 +43,27 @@ import 'package:privacy_gui/page/dashboard/models/usp_widget_specs.dart';
 /// | 13 | normal restores the minima but not the maxima | normal restores the handles and the spec bounds |
 /// | 14 | normal's `maxW` not scaled to the grid | a card parked outside its spec bounds is pulled inside them |
 /// | 15 | `_applyFloors` drops the `maxW < minW` repair | a raised floor never ends up above its own ceiling |
-/// | 16 | `selectableForms` drops the `spec.normalAbove != null` guard | 4, incl. offers compact only to the six cards that read it |
+/// | 16 | `selectableForms` drops the `spec.normalAbove != null` guard | 4, incl. offers compact only to the seven cards that read it |
 /// | 17 | `cardsWithoutPopupForm` emptied | 3, incl. offers popup to every card built through the template |
 /// | 18 | `selectableForms` returns `[normal]` instead of `const []` when nothing else applies | stats_panel offers no form at all |
 /// | 19 | `CardForms.props` → `[]` (equality on type alone) | a pick that differs anywhere is a different value |
 /// | 20 | `CardForms` drops `Equatable` (back to identity) | a rebuilt CardForms equals the one it was rebuilt from |
 /// | 21 | `CardFormChoice.props` → `[density]` | the restore size is part of what makes a choice equal |
+/// | 22 | compact's `specMinW` reads the raw 12-column figure instead of `_scaleFromTwelfths(constraints.minColumns, …)` | so is the spec's own floor, which is also written in twelfths |
 ///
-/// ### One survivor, and why it is left alive
+/// ### The survivor that stopped surviving (#1321)
 ///
-/// Replacing compact's `specMinW = _scaleFromTwelfths(constraints.minColumns, …)`
-/// with the raw 12-column figure survives. It is an *equivalent* mutation on today's
-/// data, not a gap: every one of the six compact consumers declares `minColumns: 3`,
-/// and `minW` is the max of the scaled spec floor and the scaled compact floor, which
-/// the compact floor wins on all three grids. The scaling there is defensive —
-/// it becomes observable the first time a card declares a `minColumns` above 4 —
-/// and writing a test that only passes because of a card that does not exist would
-/// be worse than recording this.
+/// Row 22 was recorded here as the table's one survivor, and as an *equivalent*
+/// mutation rather than a gap: `minW` is the max of the scaled spec floor and the
+/// scaled compact floor, every compact consumer declared `minColumns: 3`, and the
+/// compact floor won on all three grids either way. The note said it would become
+/// observable the first time a card declared a `minColumns` above 3, and that
+/// writing a test against a card that did not exist would be worse than recording
+/// it.
+///
+/// `dhcp_reservations` is that card — `minColumns: 4`, so on the 8-column grid its
+/// spec floor and the compact floor agree at 3 only if both are scaled — and the
+/// test named in row 22 is the one that was owed. The survivor list is empty.
 void main() {
   const desktop = UspLayoutEnvelope.desktopSlotCount;
   const tablet = UspLayoutEnvelope.tabletSlotCount;
@@ -282,6 +286,23 @@ void main() {
               'floor claims half the row.');
     });
 
+    test('so is the spec\'s own floor, which is also written in twelfths', () {
+      // The other half of the scaling, and until #1321 it could not be observed:
+      // `minW` is the max of the scaled spec floor and the scaled compact floor,
+      // and every compact consumer declared `minColumns: 3`, which the compact
+      // floor wins on every grid whether the spec figure is scaled or not.
+      // `dhcp_reservations` declares 4 — the same figure as the floor — so on the
+      // 8-column grid the two agree at 3 only if both are scaled. Read raw, the
+      // spec side claims 4 of 8 columns: half the row, for the form whose job is
+      // to need less.
+      final compacted = applyTo(item('dhcp_reservations', w: 4, minW: 2),
+          density: CardDensity.compact, cols: tablet);
+
+      expect(compacted['minW'], 3,
+          reason: 'A spec column figure is twelfths at every site that reads '
+              'one, including the one it is compared against its own grid at.');
+    });
+
     test('floors the height as well as the width', () {
       final compacted = applyTo(item('device_info', h: 1, minH: 1),
           density: CardDensity.compact, cols: desktop);
@@ -374,7 +395,7 @@ void main() {
   // Which cards get a control at all
   // ---------------------------------------------------------------------------
   group('selectableForms', () {
-    test('offers compact only to the six cards that read it', () {
+    test('offers compact only to the seven cards that read it', () {
       final withCompact = UspWidgetSpecs.all
           .map((spec) => spec.id)
           .where((id) =>
@@ -389,11 +410,12 @@ void main() {
           'ethernet_ports',
           'connected_devices',
           'time_settings',
+          'dhcp_reservations',
           'network_health',
         ],
         reason: 'A compact entry on a card that ignores the density renders '
             'exactly the normal form — a control that visibly does nothing. '
-            'Building compact forms for the other twelve is #1288-#1291-scale '
+            'Building compact forms for the other eleven is #1288-#1291-scale '
             'card-own design work and out of scope.',
       );
     });
