@@ -123,7 +123,14 @@ class _PnpWaitingModemViewState extends ConsumerState<PnpWaitingModemView> {
                     context.goNamed(RouteNamed.pnpNoInternetConnection);
                   }, test: (error) {
                     return error is ExceptionNoInternetConnection;
-                  });
+                  }).catchError((error, stackTrace) {
+                    // Auto Master rotated the admin password during the check.
+                    // Nothing is wrong with the modem — go back to PnP, whose
+                    // entry precheck asks for the new password.
+                    logger.i(
+                        '[PnP Troubleshooter]: Password was rotated during the modem check, back to PnP');
+                    if (mounted) context.goNamed(RouteNamed.pnp);
+                  }, test: (error) => error is ExceptionInvalidAdminPassword);
                 });
               },
             ),

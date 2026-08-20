@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -8,12 +9,15 @@ import 'package:privacy_gui/core/jnap/models/device_info.dart';
 import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_exception.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_provider.dart';
+import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
+import 'package:privacygui_widgets/widgets/_widgets.dart';
 import '../../../common/di.dart';
 import '../../../mocks/pnp_notifier_mocks.dart' as Mock;
 import 'package:privacy_gui/page/instant_setup/data/pnp_state.dart';
 import 'package:privacy_gui/page/instant_setup/pnp_admin_view.dart';
+import 'package:privacy_gui/page/instant_setup/widgets/pnp_auto_master_waiting_view.dart';
 import '../../../common/test_responsive_widget.dart';
 import '../../../common/testable_router.dart';
 import '../../../test_data/device_info_test_data.dart';
@@ -260,10 +264,15 @@ void main() async {
     when(mockPnpNotifier.checkAutoMasterStatus()).thenAnswer((_) async {
       return AutoMasterStatus.running;
     });
-    // Return null 3 times to trigger connection error
+    // Nulls alone no longer condemn the connection — the poll runs its whole
+    // budget and only then does the reachability test decide. Spend the budget
+    // (stream ends with no terminal status) and fail that test, which is what
+    // actually renders this view.
     when(mockPnpNotifier.pollAutoMasterStatus()).thenAnswer((_) {
       return Stream.fromIterable([null, null, null]);
     });
+    when(mockPnpNotifier.testConnectionReconnected())
+        .thenAnswer((_) async => throw ExceptionNeedToReconnect());
 
     await tester.pumpWidget(
       testableSingleRoute(
@@ -280,21 +289,95 @@ void main() async {
     await tester.pumpAndSettle();
   });
 
-  testLocalizations(
-      'Instant Setup - PnP: Auto Master check unauthorized redirects to login',
-      (tester, locale) async {
+  // ---------------------------------------------------------------------------
+  // `_doLogin` (manual "tap Login") Auto Master gate — A/B/C.
+  //
+  // Regression lock for the reported "WiFi form filled twice" symptom. After
+  // the first-401 fix bails out of the auto-login poll to avoid a lockout, the
+  // user re-logs in by tapping Login. Before the gate, `_doLogin` dropped them
+  // straight into the config/WiFi form even while Auto Master was still
+  // `running`, then the pre-save check bounced them back — filling the form
+  // twice. `_doLogin` now runs the same `_checkAutoMasterStatus()` gate as the
+  // auto-login and default-password paths.
+  //
+  // These tests mount a CONFIGURED router (isUnconfigured: false + a router-
+  // configured throw) so `_mainView` renders `_routerPasswordView` with the
+  // password field + Login button, and `isLoggedIn()` is false by default so
+  // the initState auto-login chain stops before navigating — leaving the manual
+  // login path as the thing under test.
+  // ---------------------------------------------------------------------------
+
+  // A `pnpConfig` destination so the "enter config once" path can navigate
+  // inside the single-route harness without throwing "unknown route name".
+  // Navigation is by NAME; the path just needs to be a valid absolute top-level
+  // route. RoutePath.pnpConfig itself is relative ('pnpConfig', a sub-route of
+  // pnp), which is illegal at the top level — so use an explicit '/' path here.
+  LinksysRoute pnpConfigStubRoute() => LinksysRoute(
+        name: RouteNamed.pnpConfig,
+        path: '/${RoutePath.pnpConfig}',
+        config: const LinksysRouteConfig(noNaviRail: true),
+        builder: (context, state) =>
+            const SizedBox.shrink(key: Key('pnpConfigStub')),
+      );
+
+  // Common notifier stubs to reach `_routerPasswordView` on a configured
+  // router; individual tests layer the Auto Master behavior on top.
+  void stubConfiguredRouter() {
     when(mockPnpNotifier.build()).thenReturn(
       PnpState(
         deviceInfo: NodeDeviceInfo.fromJson(
           jsonDecode(testDeviceInfo)['output'],
         ),
+        isUnconfigured: false,
       ),
     );
     when(mockPnpNotifier.fetchDeviceInfo()).thenAnswer((_) async {});
-    when(mockPnpNotifier.checkRouterConfigured()).thenAnswer((_) async {});
+    when(mockPnpNotifier.checkRouterConfigured()).thenAnswer((_) async {
+      throw ExceptionRouterUnconfigured();
+    });
     when(mockPnpNotifier.checkAdminPassword(any)).thenAnswer((_) async {});
+    when(mockPnpNotifier.checkInternetConnection()).thenAnswer((_) async {});
+  }
+
+  // Gives the responsive layout room so `_mainView`'s card/image column doesn't
+  // overflow the default 800x600 test surface.
+  void useLargeScreen(WidgetTester tester) {
+    tester.view.physicalSize = const Size(1440, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+  }
+
+  // Types the password and taps the Login button to drive `_doLogin`.
+  // The router-password view has exactly one AppFilledButton (Login); the
+  // "Where is it" affordance is an AppTextButton. Matching by type keeps this
+  // locale-independent (the label is "Log in"/"Anmelden"/… per locale).
+  Future<void> tapLogin(WidgetTester tester) async {
+    await tester.enterText(find.byType(AppPasswordField), 'Password!!!');
+    await tester.pump();
+    await tester.tap(find.byType(AppFilledButton));
+  }
+
+  // These are pure flow/checkpoint regression tests (they assert on route stubs
+  // and the waiting view, not pixels), so they use plain `testWidgets` rather
+  // than `testLocalizations` — no golden image is meaningful here, matching the
+  // sibling pnp_auto_master_flow_test.dart.
+
+  // A: Auto Master still `running` when the user taps Login → the flow must
+  // STOP on the waiting view and NOT enter config. This is the direct
+  // regression lock for the "WiFi form filled twice" symptom. The poll stream
+  // stays open (never emits, never closes) so the flow parks on the waiting
+  // view without a pending timer.
+  testWidgets(
+      'Instant Setup - PnP: Tap Login while Auto Master running stays on waiting view',
+      (tester) async {
+    useLargeScreen(tester);
+    stubConfiguredRouter();
     when(mockPnpNotifier.checkAutoMasterStatus())
-        .thenThrow(ExceptionAutoMasterUnauthorized());
+        .thenAnswer((_) async => AutoMasterStatus.running);
+    final pollController = StreamController<AutoMasterStatus?>();
+    addTearDown(pollController.close);
+    when(mockPnpNotifier.pollAutoMasterStatus())
+        .thenAnswer((_) => pollController.stream);
 
     await tester.pumpWidget(
       testableSingleRoute(
@@ -303,11 +386,290 @@ void main() async {
           noNaviRail: true,
         ),
         child: const PnpAdminView(),
-        locale: locale,
         overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
+        extraRoutes: [pnpConfigStubRoute()],
       ),
     );
-    await tester.pump(const Duration(seconds: 2));
+    // Let initState settle onto the password view, then drive `_doLogin`.
+    await tester.pump(const Duration(seconds: 1));
+    await tapLogin(tester);
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(find.byType(PnpAutoMasterWaitingView), findsOneWidget);
+    // Must NOT have entered config while Auto Master is still running.
+    expect(find.byKey(const Key('pnpConfigStub')), findsNothing);
+  });
+
+  // B: Auto Master `failed` (found another Master, credential NOT rotated) →
+  // `_checkAutoMasterStatus` returns normally, so `_doLogin` proceeds into
+  // config exactly once.
+  testWidgets(
+      'Instant Setup - PnP: Tap Login with Auto Master failed enters config',
+      (tester) async {
+    useLargeScreen(tester);
+    stubConfiguredRouter();
+    when(mockPnpNotifier.checkAutoMasterStatus())
+        .thenAnswer((_) async => AutoMasterStatus.running);
+    when(mockPnpNotifier.pollAutoMasterStatus())
+        .thenAnswer((_) => Stream.value(AutoMasterStatus.failed));
+
+    await tester.pumpWidget(
+      testableSingleRoute(
+        config: LinksysRouteConfig(
+          column: ColumnGrid(column: 6, centered: true),
+          noNaviRail: true,
+        ),
+        child: const PnpAdminView(),
+        overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
+        extraRoutes: [pnpConfigStubRoute()],
+      ),
+    );
+    await tester.pump(const Duration(seconds: 1));
+    await tapLogin(tester);
+    // The full `_doLogin` chain here spans BOTH clocks: mock futures / the poll
+    // stream resolve on real microtasks (advanced by `runAsync`), while the 1s
+    // internet-connected view uses a fake timer (advanced by `pump(Duration)`).
+    // Step both, then settle the route transition.
+    await tester.runAsync(() => Future.delayed(const Duration(seconds: 1)));
+    await tester.pump(const Duration(seconds: 1));
     await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('pnpConfigStub')), findsOneWidget);
+  });
+
+  // B': Auto Master resolves to `complete` (make-Master finished → credential
+  // rotated) → `_checkAutoMasterStatus` throws
+  // ExceptionAutoMasterRotatedPassword and `_doLogin` must ask for the new
+  // password, NOT enter config with a stale session.
+  //
+  // The prompt is this very view, so the correct outcome is *no navigation*:
+  // `_promptForRotatedPassword` leaves the waiting view and comes back to the
+  // password field. Asserting that here is what pins #1180's second defect —
+  // this branch used to redirect to `localLoginPassword`, which belongs to a
+  // setup that finished (`userAcknowledgedAutoConfiguration == true`) and
+  // stranded the user outside the flow they were still in. Hence
+  // `findsNothing` on a login stub that is no longer even registered: if some
+  // future change re-adds the redirect, the harness throws "unknown route
+  // name" rather than passing quietly.
+  testWidgets(
+      'Instant Setup - PnP: Tap Login with Auto Master complete asks for the new password',
+      (tester) async {
+    useLargeScreen(tester);
+    stubConfiguredRouter();
+    when(mockPnpNotifier.checkAutoMasterStatus())
+        .thenAnswer((_) async => AutoMasterStatus.running);
+    when(mockPnpNotifier.pollAutoMasterStatus())
+        .thenAnswer((_) => Stream.value(AutoMasterStatus.complete));
+
+    await tester.pumpWidget(
+      testableSingleRoute(
+        config: LinksysRouteConfig(
+          column: ColumnGrid(column: 6, centered: true),
+          noNaviRail: true,
+        ),
+        child: const PnpAdminView(),
+        overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
+        extraRoutes: [pnpConfigStubRoute()],
+      ),
+    );
+    await tester.pump(const Duration(seconds: 1));
+    await tapLogin(tester);
+    // Drive the real event loop so the poll `await for` runs to `complete`
+    // (throwing ExceptionAutoMasterRotatedPassword) and the handler runs.
+    await tester.runAsync(() => Future.delayed(const Duration(seconds: 2)));
+    await tester.pumpAndSettle();
+
+    // Back on PnP's own password prompt, off the waiting view, still inside PnP.
+    expect(find.byType(PnpAdminView), findsOneWidget);
+    expect(find.byType(AppPasswordField), findsOneWidget);
+    expect(find.byType(PnpAutoMasterWaitingView), findsNothing);
+    expect(find.byKey(const Key('pnpConfigStub')), findsNothing);
+    // The rotated credential must be dropped, not retried on the next pass.
+    verify(mockPnpNotifier.setAttachedPassword(null)).called(1);
+  });
+
+  // C: the `checkAutoMasterStatus()` gate cannot determine the status (null) —
+  // the router is unreachable, or its firmware still requires auth for
+  // GetAutoMasterStatus and answers 401 to the unauthed read. There is nothing
+  // to wait for, so the gate must not block: `_doLogin` proceeds into config.
+  // If Auto Master then does rotate the credential, PnP's own second pass (the
+  // pre-save check) is what recovers.
+  testWidgets(
+      'Instant Setup - PnP: Tap Login with Auto Master status unavailable enters config',
+      (tester) async {
+    useLargeScreen(tester);
+    stubConfiguredRouter();
+    when(mockPnpNotifier.checkAutoMasterStatus()).thenAnswer((_) async => null);
+
+    await tester.pumpWidget(
+      testableSingleRoute(
+        config: LinksysRouteConfig(
+          column: ColumnGrid(column: 6, centered: true),
+          noNaviRail: true,
+        ),
+        child: const PnpAdminView(),
+        overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
+        extraRoutes: [pnpConfigStubRoute()],
+      ),
+    );
+    await tester.pump(const Duration(seconds: 1));
+    await tapLogin(tester);
+    // Same two-clock dance as B: mock futures resolve on real microtasks
+    // (runAsync), the 1s internet-connected view on the fake timer (pump).
+    await tester.runAsync(() => Future.delayed(const Duration(seconds: 1)));
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('pnpConfigStub')), findsOneWidget);
+    // Never polled: null is not `running`, so there was nothing to wait on.
+    verifyNever(mockPnpNotifier.pollAutoMasterStatus());
+  });
+
+  // D: Auto Master is ALREADY `complete` when the gate first reads it AND a
+  // rotation has been recorded since our last accepted password — the
+  // post-reconnect case from #1180's QA log. make-Master finished while the
+  // router was rebooting, so by the time this view loaded there was nothing left
+  // to wait for, but the admin password had been rotated regardless.
+  //
+  // This is a distinct branch from B': there, `running` was observed and the
+  // poll ran to `complete`. Here the poll must never start (`verifyNever`) —
+  // which is exactly why `runAutoMasterFlow`'s `completed` case could not cover
+  // this: that flow is only entered on a `running` status. The gate used to
+  // `return` on anything that was not `running`, so `complete` fell straight
+  // through to the internet check, which 401'd on the dead credential and sent
+  // the user to the troubleshooter with a working internet connection.
+  //
+  // `autoMasterRotatedSinceLogin` is seeded through `build()` because the mock's
+  // own state writers are no-ops — same reason pnp_setup_view_test.dart seeds
+  // `autoMasterStatusOnEntry` that way.
+  testWidgets(
+      'Instant Setup - PnP: Auto Master already complete on entry asks for the new password',
+      (tester) async {
+    useLargeScreen(tester);
+    stubConfiguredRouter();
+    when(mockPnpNotifier.build()).thenReturn(
+      PnpState(
+        deviceInfo: NodeDeviceInfo.fromJson(
+          jsonDecode(testDeviceInfo)['output'],
+        ),
+        isUnconfigured: false,
+        autoMasterRotatedSinceLogin: true,
+      ),
+    );
+    when(mockPnpNotifier.checkAutoMasterStatus())
+        .thenAnswer((_) async => AutoMasterStatus.complete);
+
+    await tester.pumpWidget(
+      testableSingleRoute(
+        config: LinksysRouteConfig(
+          column: ColumnGrid(column: 6, centered: true),
+          noNaviRail: true,
+        ),
+        child: const PnpAdminView(),
+        overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
+        extraRoutes: [pnpConfigStubRoute()],
+      ),
+    );
+    await tester.pump(const Duration(seconds: 1));
+    await tapLogin(tester);
+    await tester.runAsync(() => Future.delayed(const Duration(seconds: 2)));
+    await tester.pumpAndSettle();
+
+    // Back on PnP's own password prompt — not in config, not waiting.
+    expect(find.byType(PnpAdminView), findsOneWidget);
+    expect(find.byType(AppPasswordField), findsOneWidget);
+    expect(find.byType(PnpAutoMasterWaitingView), findsNothing);
+    expect(find.byKey(const Key('pnpConfigStub')), findsNothing);
+    verify(mockPnpNotifier.setAttachedPassword(null)).called(1);
+    // Nothing to poll, and — the actual #1180 defect — the internet check must
+    // not run: it would go out with the rotated credential and read its 401 as
+    // "no internet".
+    verifyNever(mockPnpNotifier.pollAutoMasterStatus());
+    verifyNever(mockPnpNotifier.checkInternetConnection());
+  });
+
+  // D': the same `complete` reading, but with NO rotation recorded since our
+  // last accepted password — so it is the *latched* status of a router that was
+  // auto-mastered at some earlier point, not news about our credential.
+  //
+  // The gate must let this through. `Complete` never reverts to `Idle`, so
+  // reading it alone as "your password is stale" fired on every single login:
+  // #1180's log has CheckAdminPassword2 returning 200 with the correct new
+  // password, immediately followed by the gate throwing and `[Prepare]: Logout`
+  // dropping the session that login had just created. The user could never get
+  // past this screen. This test is the regression lock for that loop — it is the
+  // exact counterpart of D, differing only in the flag.
+  testWidgets(
+      'Instant Setup - PnP: latched Auto Master complete does not block a fresh login',
+      (tester) async {
+    useLargeScreen(tester);
+    stubConfiguredRouter(); // build() leaves the flag at its false default
+    when(mockPnpNotifier.checkAutoMasterStatus())
+        .thenAnswer((_) async => AutoMasterStatus.complete);
+
+    await tester.pumpWidget(
+      testableSingleRoute(
+        config: LinksysRouteConfig(
+          column: ColumnGrid(column: 6, centered: true),
+          noNaviRail: true,
+        ),
+        child: const PnpAdminView(),
+        overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
+        extraRoutes: [pnpConfigStubRoute()],
+      ),
+    );
+    await tester.pump(const Duration(seconds: 1));
+    await tapLogin(tester);
+    // Two clocks, as in B/C: mock futures on real microtasks (runAsync), the 1s
+    // internet-connected view on the fake timer (pump).
+    await tester.runAsync(() => Future.delayed(const Duration(seconds: 1)));
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpAndSettle();
+
+    // Into config, and the credential the router just accepted is left alone.
+    expect(find.byKey(const Key('pnpConfigStub')), findsOneWidget);
+    verifyNever(mockPnpNotifier.setAttachedPassword(null));
+    verifyNever(mockPnpNotifier.pollAutoMasterStatus());
+  });
+
+  // E: the internet check itself reports a rejected credential rather than a
+  // dead WAN (`ExceptionInvalidAdminPassword`, not
+  // `ExceptionNoInternetConnection`). The view must NOT go to the troubleshooter
+  // — the WAN is fine, only the password is stale. This is the safety net for
+  // every path that reaches an authed call with a credential Auto Master
+  // rotated, including the ones the gate cannot see.
+  testWidgets(
+      'Instant Setup - PnP: Unauthorized internet check does not go to the troubleshooter',
+      (tester) async {
+    useLargeScreen(tester);
+    stubConfiguredRouter();
+    when(mockPnpNotifier.checkAutoMasterStatus()).thenAnswer((_) async => null);
+    when(mockPnpNotifier.checkInternetConnection()).thenAnswer((_) async {
+      throw ExceptionInvalidAdminPassword();
+    });
+
+    await tester.pumpWidget(
+      testableSingleRoute(
+        config: LinksysRouteConfig(
+          column: ColumnGrid(column: 6, centered: true),
+          noNaviRail: true,
+        ),
+        child: const PnpAdminView(),
+        overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
+        extraRoutes: [pnpConfigStubRoute()],
+      ),
+    );
+    await tester.pump(const Duration(seconds: 1));
+    await tapLogin(tester);
+    await tester.runAsync(() => Future.delayed(const Duration(seconds: 2)));
+    await tester.pumpAndSettle();
+
+    // Still in PnP with a password field, and the spinner has been cleared.
+    expect(find.byType(PnpAdminView), findsOneWidget);
+    expect(find.byType(AppPasswordField), findsOneWidget);
+    expect(find.byKey(const Key('pnpConfigStub')), findsNothing);
+    // No troubleshooter route is registered here on purpose: navigating to it
+    // would throw "unknown route name" rather than pass quietly.
   });
 }

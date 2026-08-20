@@ -30,7 +30,16 @@ class NodeActionMenu extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          AppText.labelLarge(loc(context).instantAction),
+          // The node card can be as narrow as 180px on mobile, and the label
+          // is a full sentence in several locales. Let it give way to the menu
+          // button rather than overflow the row.
+          Expanded(
+            child: AppText.labelLarge(
+              loc(context).instantAction,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
           PopupMenuButton<NodeInstantActions>(
             color: Theme.of(context).colorScheme.surface,
             iconSize: 20,

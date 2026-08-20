@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:http/http.dart' show ClientException;
 import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
 import 'package:privacy_gui/core/cache/linksys_cache_manager.dart';
@@ -124,7 +125,16 @@ final routerProvider = Provider<GoRouter>((ref) {
       if (state.matchedLocation == '/') {
         return router._autoConfigurationLogic(state);
       } else if (state.matchedLocation == RoutePath.localLoginPassword) {
-        router._autoConfigurationLogic(state);
+        // Deliberately NOT re-running _autoConfigurationLogic here. It was
+        // fired without await and its result discarded, but the damage was the
+        // side effect, not the lost return value: when it elects PnP (which it
+        // does whenever userAcknowledgedAutoConfiguration is false, i.e. all of
+        // first-time setup) it calls authProvider.logout(), and _redirectLogic
+        // watches authProvider — so the redirect re-ran and elected PnP again,
+        // bouncing pnp -> localLoginPassword -> pnp in a self-driving loop.
+        // Awaiting it would only serialise that loop, not break it.
+        // The '/' branch above already owns the pnp-vs-login election; once we
+        // have matched localLoginPassword the destination is settled.
         return router._redirectLogic(state);
       } else if (state.matchedLocation.startsWith('/pnp')) {
         return router._goPnpPath(state);
@@ -136,6 +146,12 @@ final routerProvider = Provider<GoRouter>((ref) {
 });
 
 class RouterNotifier extends ChangeNotifier {
+  /// Budget for riding out a router service restart while preparing the
+  /// dashboard. Deliberately short: a genuinely missing device must still fail
+  /// fast, and this runs inside a go_router redirect the user is waiting on.
+  static const int _deviceInfoMaxRetries = 2;
+  static const Duration _deviceInfoRetryDelay = Duration(seconds: 2);
+
   final Ref _ref;
   StreamSubscription? _errorSub;
   RouterNotifier(this._ref) {
@@ -346,18 +362,7 @@ class RouterNotifier extends ChangeNotifier {
         .read(linksysCacheManagerProvider)
         .loadCache(serialNumber: serialNumber ?? '');
     logger.d('[Prepare]: device info check - $serialNumber');
-    final nodeDeviceInfo = await _ref
-        .read(dashboardManagerProvider.notifier)
-        .checkDeviceInfo(serialNumber)
-        .then<NodeDeviceInfo?>((nodeDeviceInfo) {
-      // Build/Update better actions
-      logger.d('[Prepare]: build better actions');
-      buildBetterActions(nodeDeviceInfo.services);
-      // Update global model number
-      _ref.read(globalModelNumberProvider.notifier).state =
-          nodeDeviceInfo.modelNumber;
-      return nodeDeviceInfo;
-    }).onError((error, stackTrace) => null);
+    final nodeDeviceInfo = await _checkDeviceInfoWithRetry(serialNumber);
 
     if (nodeDeviceInfo != null) {
       logger.d('[Prepare]: SN changed: ${nodeDeviceInfo.serialNumber}');
@@ -382,6 +387,50 @@ class RouterNotifier extends ChangeNotifier {
       return _home('error=noDeviceInfo');
     }
   }
+
+  /// Fetches deviceInfo, retrying only while the failure looks like the router
+  /// being temporarily unreachable rather than genuinely absent.
+  ///
+  /// The router drops its HTTP service while it restarts services - the
+  /// make-Master credential rotation is one such window - and the local
+  /// deviceInfo call is issued with `retries: 0` / `timeoutMs: 3000`, so that
+  /// window is guaranteed to surface as a socket/timeout failure. Treating it
+  /// as "no device info" sends the user to the login page with an error they
+  /// can do nothing about, when waiting a couple of seconds would have worked.
+  ///
+  /// Any other failure (JNAP error, unparsable payload) is final: return null
+  /// and let the caller show the error, exactly as before.
+  Future<NodeDeviceInfo?> _checkDeviceInfoWithRetry(
+      String? serialNumber) async {
+    for (var attempt = 0;; attempt++) {
+      try {
+        final nodeDeviceInfo = await _ref
+            .read(dashboardManagerProvider.notifier)
+            .checkDeviceInfo(serialNumber);
+        // Build/Update better actions
+        logger.d('[Prepare]: build better actions');
+        buildBetterActions(nodeDeviceInfo.services);
+        // Update global model number
+        _ref.read(globalModelNumberProvider.notifier).state =
+            nodeDeviceInfo.modelNumber;
+        return nodeDeviceInfo;
+      } catch (error) {
+        if (!_isRouterTemporarilyUnreachable(error) ||
+            attempt >= _deviceInfoMaxRetries) {
+          logger.e('[Prepare]: device info check failed - $error');
+          return null;
+        }
+        logger.i(
+            '[Prepare]: router temporarily unreachable ($error), retry ${attempt + 1}/$_deviceInfoMaxRetries');
+        await Future.delayed(_deviceInfoRetryDelay);
+      }
+    }
+  }
+
+  /// Connection-class failures, i.e. the request never reached a router that
+  /// could answer it. Mirrors the transient-error test in [PnpNotifier].
+  bool _isRouterTemporarilyUnreachable(Object? error) =>
+      error is ClientException || error is TimeoutException;
 
   Future<String?> _prepareRemote(
       String? networkId, String? serialNumber, String? sessionId) async {

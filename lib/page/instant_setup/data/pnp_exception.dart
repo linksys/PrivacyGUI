@@ -40,12 +40,20 @@ class ExceptionInterruptAndExit extends PnpException {
       : super(message: 'Interrupted and exit to $route');
 }
 
-class ExceptionAutoMasterUnauthorized extends PnpException {
-  ExceptionAutoMasterUnauthorized()
-      : super(message: 'Auto Master check unauthorized');
-}
-
 class ExceptionAutoMasterPollingFailed extends PnpException {
   ExceptionAutoMasterPollingFailed()
       : super(message: 'Auto Master polling failed');
+}
+
+/// Auto Master ("make Master") completed, so the admin password has been
+/// rotated and no credential this session holds is usable any more.
+///
+/// Deliberately not an [ExceptionInterruptAndExit] carrying
+/// `localLoginPassword`: that page is where a *finished* setup lands
+/// (`userAcknowledgedAutoConfiguration == true`), and PnP has not finished. The
+/// user has to re-enter the password through PnP's own prompt, and where to go
+/// afterwards stays the router's decision.
+class ExceptionAutoMasterRotatedPassword extends PnpException {
+  ExceptionAutoMasterRotatedPassword()
+      : super(message: 'Auto Master rotated the admin password');
 }

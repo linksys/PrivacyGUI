@@ -24,6 +24,7 @@ import 'package:privacy_gui/page/instant_setup/model/impl/night_mode_step.dart';
 import 'package:privacy_gui/page/instant_setup/model/impl/personal_wifi_step.dart';
 import 'package:privacy_gui/page/instant_setup/model/impl/your_network_step.dart';
 import 'package:privacy_gui/page/instant_setup/model/pnp_step.dart';
+import 'package:privacy_gui/page/instant_setup/widgets/pnp_auto_master_flow.dart';
 import 'package:privacy_gui/page/instant_setup/widgets/pnp_auto_master_waiting_view.dart';
 import 'package:privacy_gui/page/instant_setup/widgets/pnp_stepper.dart';
 import 'package:privacy_gui/route/constants.dart';
@@ -63,7 +64,7 @@ class PnpSetupView extends ConsumerStatefulWidget {
 }
 
 class _PnpSetupViewState extends ConsumerState<PnpSetupView>
-    with PageSnackbarMixin {
+    with PageSnackbarMixin, PnpAutoMasterFlowMixin<PnpSetupView> {
   late final List<PnpStep> steps;
   _PnpSetupStep _setupStep = _PnpSetupStep.init;
   String _loadingMessage = '';
@@ -727,120 +728,97 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
     );
   }
 
-  static const int _maxAutoMasterSaveAttempts = 2;
+  /// How many Auto Master waits one save may spend before giving up.
+  ///
+  /// Counted in waits, not retries, because each wait now costs a full poll
+  /// budget (~3 minutes) — the recursion below has to be read as wall-clock, not
+  /// as a cheap re-check.
+  static const int _maxAutoMasterWaits = 2;
 
-  Future _saveChanges({int autoMasterSaveAttempt = 0}) async {
+  Future _saveChanges({int autoMasterWaitsSpent = 0}) async {
     final isUnconfigured = ref.read(pnpProvider).isRouterUnConfigured;
 
     // Check Auto Master status before save (Second Defense)
     final statusOnEntry = ref.read(pnpProvider).autoMasterStatusOnEntry;
-    final AutoMasterStatus? currentStatus;
-    try {
-      currentStatus =
-          await ref.read(pnpProvider.notifier).checkAutoMasterStatus();
-    } on ExceptionAutoMasterUnauthorized {
-      logger.e('[PnP]: Auto Master check unauthorized, redirect to login');
-      if (mounted) {
-        context.goNamed(RouteNamed.localLoginPassword);
-      }
-      return;
-    }
+    // null when the status is unavailable (unreachable, or firmware that does
+    // not serve GetAutoMasterStatus unauthed) → fall through to the save.
+    final AutoMasterStatus? currentStatus =
+        await ref.read(pnpProvider.notifier).checkAutoMasterStatus();
 
     logger.d('[PnP]: Auto Master check before save - '
         'entry status: $statusOnEntry, current: $currentStatus');
 
     if (currentStatus == AutoMasterStatus.running) {
-      // Show waiting view and poll
-      setState(() {
-        _setupStep = _PnpSetupStep.waitingAutoMaster;
-        _showAutoMasterConnectionError = false;
-      });
+      // No onExitWaiting: each outcome below moves the step itself, and the
+      // error outcomes have to stay on the waiting view to show the error.
+      final result = await runAutoMasterFlow(
+        onEnterWaiting: () => setState(() {
+          _setupStep = _PnpSetupStep.waitingAutoMaster;
+          _showAutoMasterConnectionError = false;
+        }),
+        onShowConnectionError: () =>
+            setState(() => _showAutoMasterConnectionError = true),
+      );
+      if (!mounted) return;
 
-      int consecutiveFailures = 0;
-      const maxConsecutiveFailures = 3;
-      bool autoMasterFailed = false;
-
-      await for (final pollStatus
-          in ref.read(pnpProvider.notifier).pollAutoMasterStatus()) {
-        logger.d('[PnP]: Auto Master polling status: $pollStatus');
-
-        if (pollStatus == null) {
-          consecutiveFailures++;
-          logger.w(
-              '[PnP]: Auto Master polling failed, consecutive failures: $consecutiveFailures');
-
-          if (consecutiveFailures >= maxConsecutiveFailures) {
+      switch (result) {
+        case AutoMasterFlowResult.completed:
+          // make-Master rotated the admin password, so the pending save would
+          // come back 401. Re-enter PnP so its precheck can ask for the new
+          // password — the same destination the unauthorized-during-save branch
+          // below already uses. Not `localLoginPassword`: that page belongs to a
+          // finished setup (userAcknowledgedAutoConfiguration == true), and this
+          // one never got saved.
+          logger.w('[PnP]: Auto Master completed before save - password changed');
+          context.goNamed(RouteNamed.pnp);
+          return;
+        case AutoMasterFlowResult.proceed:
+          // Auto Master left the credential alone — the save can go ahead.
+          logger.i('[PnP]: Auto Master not blocking, continuing save flow');
+          break;
+        case AutoMasterFlowResult.budgetExhausted:
+          // Out of time, but the router answers — so Auto Master may still be
+          // mid-flight. Unlike the other callers, this one has a save pending
+          // that a rotation would break, so re-check from the top instead of
+          // committing. Bounded, or a router stuck on `running` would loop for
+          // ever.
+          final waitsSpent = autoMasterWaitsSpent + 1;
+          if (waitsSpent >= _maxAutoMasterWaits) {
             logger.e(
-                '[PnP]: Auto Master polling failed $maxConsecutiveFailures times, showing connection error');
+                '[PnP]: Auto Master still unresolved after $waitsSpent waits, giving up');
             setState(() {
               _showAutoMasterConnectionError = true;
             });
             return;
           }
-        } else {
-          consecutiveFailures = 0;
-
-          if (pollStatus == AutoMasterStatus.complete ||
-              pollStatus == AutoMasterStatus.idle) {
-            // Redirect to login page - password changed
-            if (mounted) {
-              context.goNamed(RouteNamed.localLoginPassword);
-            }
-            return;
-          }
-
-          if (pollStatus == AutoMasterStatus.failed) {
-            // Auto Master failed (e.g., found another Master), password is still admin
-            // Continue normal save flow
-            logger.i('[PnP]: Auto Master failed, continuing save flow');
-            autoMasterFailed = true;
-            break;
-          }
-        }
-      }
-
-      // Skip timeout handling if Auto Master failed - continue to save logic
-      if (autoMasterFailed) {
-        logger.d('[PnP]: Auto Master failed, skipping timeout handling');
-      } else {
-        // Polling exceeded max retry (timeout)
-        logger.w(
-            '[PnP]: Auto Master polling timeout, checking router connection');
-
-        if (autoMasterSaveAttempt >= _maxAutoMasterSaveAttempts) {
-          logger.e(
-              '[PnP]: Auto Master retry limit reached after $autoMasterSaveAttempt attempts');
-          setState(() {
-            _showAutoMasterConnectionError = true;
-          });
-          return;
-        }
-
-        try {
-          await ref.read(pnpProvider.notifier).testConnectionReconnected();
-          logger.i(
-              '[PnP]: Router connected after timeout, attempt ${autoMasterSaveAttempt + 1}/$_maxAutoMasterSaveAttempts');
+          logger.w(
+              '[PnP]: Auto Master outcome unknown, re-checking (wait $waitsSpent/$_maxAutoMasterWaits spent)');
           setState(() {
             _setupStep = _PnpSetupStep.config;
           });
-          return _saveChanges(autoMasterSaveAttempt: autoMasterSaveAttempt + 1);
-        } catch (e) {
-          logger.e('[PnP]: Router not connected after timeout');
-          setState(() {
-            _showAutoMasterConnectionError = true;
-          });
+          return _saveChanges(autoMasterWaitsSpent: waitsSpent);
+        case AutoMasterFlowResult.connectionError:
+          // The waiting view is showing the error + retry button.
           return;
-        }
       }
     }
 
-    // Edge case: Was Idle on entry but now Complete
+    // Edge case: Was Idle on entry but now Complete.
+    //
+    // The `statusOnEntry == idle` half is what dates the transition, and is why
+    // this branch does not need the `autoMasterRotatedSinceLogin` guard the two
+    // gates outside this view carry: `complete` latches for ever, but `idle` on
+    // entry proves it latched *during* this session rather than on some earlier
+    // day. A router that was auto-mastered long ago reads `complete` on entry
+    // too, so it never satisfies this condition.
     if (statusOnEntry == AutoMasterStatus.idle &&
         currentStatus == AutoMasterStatus.complete) {
       logger.w(
           '[PnP]: Auto Master completed during PnP config - password changed');
       if (mounted) {
-        context.goNamed(RouteNamed.localLoginPassword);
+        // Same destination as the branch above and as the
+        // unauthorized-during-save handler: back into PnP for the new password.
+        context.goNamed(RouteNamed.pnp);
       }
       return;
     }

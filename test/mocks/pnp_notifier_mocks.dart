@@ -402,6 +402,14 @@ class MockPnpNotifier extends _i2.Notifier<_i3.PnpState>
       ) as _i9.Stream<_i15.AutoMasterStatus?>);
 
   @override
+  _i9.Stream<_i15.AutoMasterStatus?> pollAutoMasterUntilRunning() =>
+      (super.noSuchMethod(
+        Invocation.method(#pollAutoMasterUntilRunning, []),
+        returnValue: _i9.Stream<_i15.AutoMasterStatus?>.empty(),
+        returnValueForMissingStub: _i9.Stream<_i15.AutoMasterStatus?>.empty(),
+      ) as _i9.Stream<_i15.AutoMasterStatus?>);
+
+  @override
   void setAutoMasterStatusOnEntry(_i15.AutoMasterStatus? status) =>
       super.noSuchMethod(
         Invocation.method(#setAutoMasterStatusOnEntry, [status]),

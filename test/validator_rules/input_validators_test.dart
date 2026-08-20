@@ -189,10 +189,6 @@ void main() {
         expect(rule.validate('2001:db8:a0b:12f0::'), isTrue);
       });
 
-      test('should return true for the unspecified address (::)', () {
-        expect(rule.validate('::'), isTrue);
-      });
-
       test('should return true for an address with leading zeros in a group',
           () {
         expect(
@@ -221,6 +217,13 @@ void main() {
     });
 
     group('Invalid IPv6 Addresses', () {
+      // The unspecified address is well-formed but rejected on purpose: the
+      // only caller is the IPv6 port-forwarding rule's target device address,
+      // where :: names no host. See IPv6Rule.validate.
+      test('should return false for the unspecified address (::)', () {
+        expect(rule.validate('::'), isFalse);
+      });
+
       test('should return false for an address with more than 8 groups', () {
         expect(rule.validate('2001:0db8:85a3:0000:0000:8a2e:0370:7334:1234'),
             isFalse);
