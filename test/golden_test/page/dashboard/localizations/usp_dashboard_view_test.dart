@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:privacy_gui/page/dashboard/views/components/dashboard_header_bar.dart';
 import 'package:privacy_gui/page/dashboard/views/usp_dashboard_view.dart';
 import 'package:privacy_gui/page/dashboard/views/dialogs/preset_selection_dialog.dart';
 
@@ -23,8 +24,19 @@ void main() {
         'edit_mode': Interaction(
           setup: (overrides) => overrides.addAll(dashboardOverrides()),
           steps: (tester) async {
-            final editButton = find.byIcon(Icons.edit);
-            await tester.tap(editButton);
+            // Reach Edit the way a user does at this device's width. The header
+            // collapses below 601px (#1314), so on `phone480` the edit action
+            // lives in the overflow menu and only the menu trigger is on screen;
+            // on `desktop1280` it is still a button of its own. Scoped to the
+            // header because the cards have `more_vert` triggers of their own.
+            if (find.byIcon(Icons.edit).evaluate().isEmpty) {
+              await tester.tap(find.descendant(
+                of: find.byType(DashboardHeaderBar),
+                matching: find.byIcon(Icons.more_vert),
+              ));
+              await tester.pumpAndSettle();
+            }
+            await tester.tap(find.byIcon(Icons.edit));
             await tester.pump();
             await tester.pump();
             await tester.pump();
