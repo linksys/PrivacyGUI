@@ -468,8 +468,21 @@ class UspNodeDetailView extends ConsumerWidget {
                                   size: 16,
                                   color: colorScheme.onSurfaceVariant),
                               AppGap.xs(),
-                              AppText.labelSmall(loc(context).lastContact,
-                                  color: colorScheme.onSurfaceVariant),
+                              // Same half-width tile, same treatment as the
+                              // interface caption above — and this one does not
+                              // even fit in English: 21 locales overflow the
+                              // 99dp row, `en` by 2.4dp at 1241px and `ru` by
+                              // 39dp. No golden fixture sets lastContactTime,
+                              // so this whole row never renders in the golden
+                              // suite and the overflow went unreported (#1302).
+                              Expanded(
+                                child: AppText.labelSmall(
+                                  loc(context).lastContact,
+                                  color: colorScheme.onSurfaceVariant,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
                             ],
                           ),
                           AppGap.xs(),

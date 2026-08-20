@@ -158,6 +158,30 @@ final slaveNodeWithDevices = UspNodeDetailState(
   connectedClients: _meshSlaveClients,
 );
 
+// Slave node whose backhaul reports a PHY rate and a last-contact time, so the
+// backhaul card's bottom row renders. No other fixture sets either field, which
+// is why that row's overflow went unreported by the golden suite (#1302) — it
+// has never been rendered there.
+final slaveNodeWithBackhaulTiming = UspNodeDetailState(
+  node: SlaveNode(
+    deviceId: 'AA:BB:CC:DD:FF:03',
+    model: 'MX2000',
+    manufacturer: 'Linksys',
+    serialNumber: 'DEF789014',
+    softwareVersion: '1.0.10.200000',
+    connectedClients: _meshSlaveClients,
+    backhaul: BackhaulInfo(
+      mediaType: 'Wi-Fi',
+      signalStrength: -50,
+      phyRate: 1200,
+      // Fixed and far in the past: the tile renders this as a relative time, so
+      // a near date would change text as the clock moves.
+      lastContactTime: '2020-01-01T00:00:00Z',
+    ),
+  ),
+  connectedClients: _meshSlaveClients,
+);
+
 final masterNodeEmptyDevices = UspNodeDetailState(
   node: MasterNode(
     deviceId: '11:22:33:44:55:66',
