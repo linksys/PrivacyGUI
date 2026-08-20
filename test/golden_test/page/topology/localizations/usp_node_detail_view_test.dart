@@ -26,6 +26,12 @@ void main() {
         'link_local_ipv6': (overrides) => overrides.addAll(
               nodeDetailOverrides(slaveNodeLinkLocalIpv6),
             ),
+        // Backhaul reporting a PHY rate and a last-contact time — the only
+        // state that renders the card's bottom row, which is why that row's
+        // overflow was missing from the #1302 baseline report.
+        'slave_backhaul_timing': (overrides) => overrides.addAll(
+              nodeDetailOverrides(slaveNodeWithBackhaulTiming),
+            ),
         'empty_devices': (overrides) => overrides.addAll(
               nodeDetailOverrides(masterNodeEmptyDevices),
             ),
