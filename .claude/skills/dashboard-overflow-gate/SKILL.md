@@ -1,25 +1,42 @@
 ---
 name: dashboard-overflow-gate
-description: Operate and maintain the #1183 dashboard-card RenderFlex-overflow PR gate — run the sweep, read its HTML/Markdown report, edit the known_overflows.json allowlist under the ratchet rules, and onboard newly added/removed dashboard cards. Use when a dashboard-card gate test fails, when adding/removing a card or a locale, or when reading/generating the overflow report. Trigger keywords (English) - overflow test, overflow gate, RenderFlex, dashboard card test, known_overflows, allowlist, whitelist, overflow report, new dashboard card, data profile, dead exemption. Trigger keywords (Chinese) - 跑版測試, 溢出測試, overflow 測試, dashboard card 測試, 白名單, 新增語系, 新增卡片, 刪除卡片, 溢出報告, 生成報告, 掃描 dashboard, 資料情境.
+description: Operate and maintain the `dashboard-card`-tagged RenderFlex-overflow PR gate — run the #1183 card sweep, read its HTML/Markdown report, edit the known_overflows.json allowlist under the ratchet rules, onboard newly added/removed dashboard cards, and add a new overflow probe for a surface that is not a card (page chrome, dialogs). Use when a dashboard-card gate test fails, when adding/removing a card or a locale, when reading/generating the overflow report, or when a newly found overflow needs a probe of its own. Trigger keywords (English) - overflow test, overflow gate, RenderFlex, dashboard card test, known_overflows, allowlist, whitelist, overflow report, new dashboard card, data profile, dead exemption, new overflow probe, page chrome overflow, top bar overflow, header overflow. Trigger keywords (Chinese) - 跑版測試, 溢出測試, overflow 測試, dashboard card 測試, 白名單, 新增語系, 新增卡片, 刪除卡片, 溢出報告, 生成報告, 掃描 dashboard, 資料情境, 新增探測, 頁面外框溢出.
 ---
 
-# Dashboard Card Overflow Gate — Operate & Maintain
+# Dashboard Overflow Gate — Operate & Maintain
 
 ## Purpose
 
-The #1183 gate is a PR-blocking widget test that catches dashboard-card layout
-overflows the golden pipeline structurally misses (default-tab-only, fixed
-width, not-every-card — the path the #1145 Network Health legend overflow
-slipped through). It sweeps **every card × its narrowest grid width × every tab
-× all 26 shipped locales** and fails if any RenderFlex overflows beyond a
-baseline **allowlist** ("ratchet"). **Data** is a fourth dimension, but an opt-in
-one: cards listed in `kCardDataProfileSweeps` are additionally swept against a
-second router shape — every other card's "clean" verdict is a verdict about the
-one default fixture.
+The gate is a PR-blocking set of widget tests that catches layout overflows the
+golden pipeline structurally misses (default-tab-only, fixed width,
+not-every-card — the path the #1145 Network Health legend overflow slipped
+through).
 
-This skill is for **operating and maintaining** that gate — NOT for writing new
-overflow-detection machinery. Use it to run the sweep, read its report, edit the
-allowlist correctly, and keep the gate exhaustive when cards change.
+**The gate is not one test.** It is a family of independent suites that share
+two things and nothing else: the tag `dashboard-card` (which is what makes them
+PR-blocking) and the probe in
+[test/util/overflow_probe.dart](../../../test/util/overflow_probe.dart). 20+
+suites carry that tag today. Two members are worth naming:
+
+- **The #1183 card sweep** — `dashboard_card_overflow_test.dart`. Sweeps **every
+  card × its narrowest grid width × every tab × all 26 shipped locales** and
+  fails if any RenderFlex overflows beyond a baseline **allowlist** ("ratchet").
+  **Data** is a fourth dimension, but an opt-in one: cards listed in
+  `kCardDataProfileSweeps` are additionally swept against a second router shape —
+  every other card's "clean" verdict is a verdict about the one default fixture.
+  Everything below headed *card* describes this member only.
+- **The #1314/#1328 page-chrome sweep** — `page_chrome_overflow_test.dart`.
+  Sweeps **screen width × 26 locales** over the top bar and the dashboard header.
+  It exists because the card sweep is blind to page chrome *by construction*: it
+  pumps one card at a computed card width and never renders a page at a screen
+  width, so no page-level `Row` is in its view. It shares the probe; it shares
+  no geometry, no report, no allowlist.
+
+This skill is for **operating and maintaining** that family: running a sweep,
+reading its report, editing the allowlist correctly, keeping the card sweep
+exhaustive when cards change — and adding a new probe for a surface that is not
+a card (see [Adding a New Probe](#adding-a-new-probe-a-surface-that-is-not-a-card)).
+What it is *not* for is rewriting the shared probe or the frozen grid formulas.
 
 ## When to Use
 
@@ -27,6 +44,8 @@ allowlist correctly, and keep the gate exhaustive when cards change.
   decide: real regression, new card, or a known overflow in a new locale.
 - Adding or removing a card from the dashboard (`UspWidgetSpecs.all`).
 - Adding/removing a tab on a tabbed card.
+- Adding a new probe because an overflow was found on a surface no existing
+  suite renders (page chrome, a dialog, a bottom sheet).
 - Editing [test/fixtures/known_overflows.json](../../../test/fixtures/known_overflows.json)
   (allowlist / tracking notes).
 - Generating or interpreting the HTML/Markdown overflow report.
@@ -56,7 +75,11 @@ below may drift:
 6. Report generator (Status SSoT) — [test/util/dashboard/dashboard_overflow_report_generator.dart](../../../test/util/dashboard/dashboard_overflow_report_generator.dart)
 7. Width-selection tests — [test/util/dashboard/dashboard_card_probe_test.dart](../../../test/util/dashboard/dashboard_card_probe_test.dart)
 
-## Architecture — Data Flow
+## Architecture — Data Flow (the card sweep)
+
+Everything in this diagram except `overflow_probe.dart` belongs to the card
+sweep alone. Another member of the gate reuses the box in the middle and nothing
+above or below it.
 
 ```
 UspWidgetSpecs.all ──┐  (card registry: id + min/pref/max column span)
@@ -284,6 +307,97 @@ width/tab/locale, then **remove** those locales (or the whole entry). Re-run
 premature removal fails that exact test, and a fix you forget to record fails as
 a dead exemption. This is the intended long-term direction; the baseline is debt,
 not a target to grow.
+
+## Adding a New Probe (a surface that is not a card)
+
+You need a new probe when an overflow is found on a surface **no existing suite
+renders**. That was the case for #1314/#1328: the card sweep pumps a card at a
+card width, so page chrome could overflow at 601–767px in 26 locales with the
+whole gate green. Adding a probe means a **new suite**, not a new dimension on an
+existing one.
+
+Reference implementation:
+[test/page/shell/page_chrome_overflow_test.dart](../../../test/page/shell/page_chrome_overflow_test.dart).
+
+### The seven rules
+
+1. **The only shared asset is `overflow_probe.dart`.** `collectOverflow` /
+   `OverflowIncident` / `kOverflowTolerancePx` were extracted in #1270 for exactly
+   this. Everything else in the card sweep has **one** user: the grid geometry in
+   `dashboard_card_probe.dart`, the report generator, and `known_overflows.json`
+   each serve that one suite. Do not stretch the card-shaped model over a non-card
+   surface — `OverflowReportItem` *requires* `cardId`/`columnSpan`/`rowSpan`/
+   `recCols`/`recRows`, and its whole `OverflowStatus` vocabulary asks "can this
+   card get a wider span?". Page chrome has no span, so the answer is not "false",
+   it is "the question does not apply".
+2. **Each suite chooses its own assertion axes.** The card sweep's axis is span
+   (× tab × locale × data profile); page chrome's is screen width × locale; a
+   dialog's would likely be content length × locale. Pick the axes the bug
+   actually lives on. #1328's failure band was 601–767px — sweeping `en` alone
+   would have reported a 167px-wide defect as a 39px corner case, because `pl`
+   needs 128px more than `en` does. **Locale is a first-class axis, not a
+   variation.**
+3. **Fix first, then gate. Do not open a second ratchet.** Every satellite suite
+   added since #1183 starts from zero tolerance; `known_overflows.json` is #1183's
+   historical debt, not a pattern to copy. Land the layout fix and the suite in
+   one PR so the suite is green the moment it arrives — the intermediate state of
+   a fix-then-gate split is a deliberately red test.
+4. **Every overflow assertion needs a readability assertion beside it, and there
+   are two verdicts, not one.** A suite that only checks overflow can be fully
+   green while the text is unreadable (project memory *"Overflow Gate: Green but
+   Unreadable"*: 4 cards pass at 191px rendering nonsense). Both of these live in
+   [test/util/dashboard/text_readability_probe.dart](../../../test/util/dashboard/text_readability_probe.dart):
+   - `isTextClipped` — did the paragraph exceed `maxLines` (i.e. ellipsize)?
+   - `hasSplitToken` — is the widest single word wider than the box?
+
+   **Neither subsumes the other.** `isTextClipped` is blind to a mid-word break,
+   because when Flutter breaks an unbreakable word across a line nothing is
+   dropped and `didExceedMaxLines` stays `false`. `hasSplitToken` is blind to an
+   ellipsis, because the tokens that survive all fit. #1314 proved it twice on the
+   same string: `sv` "Instrumentpanel" overran its 188px box by 3.6px, rendered as
+   "Instrumentpane / l", and the suite went **31/31 green** — `hasSplitToken` is
+   what turned it red again. Assert both, in that order.
+5. **One pump per cell.** Flutter reports each `RenderFlex`'s overflow once per
+   render-object lifetime, so a loop that re-pumps inside one `testWidgets`
+   silently drops every incident after the first. Give each pump a unique
+   `ValueKey` so the tree is genuinely new.
+6. **`@Tags(['dashboard-card'])` — never `loc` / `ui` / `golden`.** `run_tests.sh`
+   only does `--exclude-tags="golden||loc||ui"`; nothing in `.github/` names
+   `dashboard-card`. So "is it in the PR gate?" means "is it un-excluded?", and
+   the honest-looking retag to `loc` is how a suite leaves the gate in silence.
+   The word "card" in the tag is history — read it as *PR-blocking layout gate*.
+7. **`loadAppFonts()` in `setUpAll`, from
+   [test/util/app_test_fonts.dart](../../../test/util/app_test_fonts.dart)** (not
+   from `golden_toolkit`). Under Ahem every glyph is an identical box and every
+   width you measure is fiction.
+
+### Report the numbers, not the verdict
+
+A failure message that says "title clipped" sends the reader back to the
+debugger. One that says
+
+> `sv [viewing, local]: title broken mid-word — granted 188.0px, widest token 191.6px, whole string 191.6px — "Instrumentpanel"`
+
+is already the decision: 3.6px, so it is a type-size or a wording call. Print the
+box width, the widest token and the whole-string intrinsic width.
+
+### Host scaffolding traps (all three cost real debugging time)
+
+- **A `ModalBarrier` in your host erases your semantics.** `MaterialPageRoute`
+  ships one, and a modal barrier is a `BlockSemantics` — it drops the semantics of
+  everything painted before it in the same parent. In the #1328 host that was the
+  entire top bar, so every `nav-*` identifier read as absent at *every* width.
+  `find.bySemanticsIdentifier` resolves through `renderObject.debugSemantics`, so
+  a blocked node is indistinguishable from a missing widget: zero matches, no
+  explanation. Wrap a placeholder `Navigator` in `ExcludeSemantics`. Confirm the
+  production tree does not have the same blocker before "fixing" anything in
+  `lib/`.
+- **`ProviderScope`'s override list length must not change between pumps**
+  (`_debugOverridesLength == overrides.length`). Never build overrides with
+  `if (loggedIn) …`; always emit the override and swap the *value*. Violating it
+  made a logged-in assertion read `false` at 1024px and invalidated a whole batch.
+- **Some widgets need a real `GoRouter` ancestor**, not just `MaterialApp` —
+  `MenuHolder.didChangeDependencies` calls `GoRouter.of(context)`.
 
 ## Report Interpretation (`-d 2`/`3`)
 
