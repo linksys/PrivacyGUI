@@ -20,6 +20,14 @@
 #            Jenkins exports build parameters as environment variables.
 #
 #   LOCALES=en ./build_web.sh 100 false "/" prod false true             # English-only
+#
+#   Compress Set to "true" to pre-compress the large static assets with brotli
+#            and delete the originals (#1282). Off unless explicitly set, because
+#            it is inert — worse, a white screen — until the firmware ships the
+#            matching lighttpd rewrite rules. Same Jenkins story as LOCALES: one
+#            boolean parameter named Compress, no shell-step change.
+#
+#   Compress=true ./build_web.sh 100 false "/" prod false true          # Pre-compressed
 
 # Detect fvm: use fvm flutter if available, otherwise use flutter directly
 if command -v fvm > /dev/null 2>&1 && [ -f ".fvmrc" ]; then
@@ -77,6 +85,155 @@ function restoreLocales() {
     exit 1
   fi
   exit $buildStatus
+}
+
+# Removes build output that is never served, so it cannot reach the router's
+# flash. This runs unconditionally: it is a property of what we ship, not an
+# option, and keeping it next to the build makes the reasoning visible to
+# whoever next wonders why a directory disappears.
+#
+# build/web/canvaskit/ is the engine's own CanvasKit output (~37 MB, including
+# ~8.6 MB of *.symbols). Nothing requests it: flutter_bootstrap.js pins
+# canvasKitBaseUrl: "./assets/", so the loader only ever fetches
+# assets/canvaskit.*, which are hand-vendored copies committed under web/assets/
+# (see #1281 and test/web/canvaskit_variant_test.dart). Shipping the directory
+# would silently give back the flash #1281 reclaimed.
+#
+# Deliberately targeted paths, not a `find -iname canvaskit` sweep from the
+# workspace root: such a sweep also matches the FVM SDK's own
+# .fvm/flutter_sdk/bin/cache/flutter_web_sdk/canvaskit when flutter_sdk is a real
+# directory rather than a symlink, and rm -rf on that breaks the next build with
+# an error pointing somewhere unrelated.
+#
+# Idempotent, so the Jenkins job's own deletion step — which 1.x still needs —
+# stays a harmless no-op on 2.x rather than something to keep in sync.
+function pruneWebOutput() {
+  echo "======== Pruning unserved build output ========"
+  local prune=(
+    build/web/canvaskit
+  )
+
+  local p
+  for p in "${prune[@]}"; do
+    if [ -e "$p" ]; then
+      echo "  removing $p ($(du -sh "$p" 2> /dev/null | cut -f1))"
+      if ! rm -rf "$p"; then
+        echo "ERROR: could not remove $p"
+        return 1
+      fi
+    else
+      echo "  already absent: $p"
+    fi
+  done
+}
+
+# Pre-compresses the large static assets with brotli and deletes the originals,
+# so the router serves compressed bytes without needing a server-side brotli
+# library (its lighttpd has none). See #1282 for the measurements.
+#
+# gzip is deliberately not used here. Its output is near-incompressible, which
+# defeats the rootfs squashfs XZ layer and makes flash LARGER (9.45 -> 10.76 MB
+# measured), while also transferring ~1.3 MB more per cold load than brotli.
+#
+# The target list is explicit rather than a glob: a rewrite rule that matches
+# every .js/.wasm would also rewrite files that have no .br sibling
+# (canvaskit.js, flutter.js, usp_client.js, usp_client_bg.wasm), and each of
+# those is a 404 and a white screen. The list and the disk must agree, so a
+# missing target is a hard failure, never a silent skip.
+#
+# Inert without the server half: pre-compressed files with no lighttpd rewrite
+# rule are just 404s. Keep this off until the firmware team ships the config.
+#
+# Two compressors are accepted because the CI agent may not have the brotli CLI
+# (the current one does not; it does have node). Node's zlib is built on the same
+# libbrotli and at q11/lgwin=24 produces output of identical size — byte-identical
+# for main.dart.js, while canvaskit.wasm differs only in the one-byte window-size
+# header, since the CLI auto-sizes lgwin down to 23 for a 7.2 MB input. Both
+# decode back to the exact original.
+#
+# lgwin must be set explicitly: Node defaults to 22 while the CLI auto-sizes to
+# the input, which costs ~7.5 KB on main.dart.js. 24 is BROTLI_MAX_WINDOW_BITS,
+# the largest window needing no client negotiation, so browsers still decode it.
+function compressWebAssets() {
+  echo "======== Pre-compressing web assets (brotli -q11) ========"
+  local targets=(
+    build/web/main.dart.js
+    build/web/assets/canvaskit.wasm
+  )
+
+  local compressor=""
+  if command -v brotli > /dev/null 2>&1; then
+    compressor="cli"
+  elif command -v node > /dev/null 2>&1; then
+    compressor="node"
+  else
+    echo "ERROR: no brotli compressor available (need the brotli CLI or node)"
+    return 1
+  fi
+  echo "  compressor: $compressor"
+
+  # Checks the whole list before touching anything, so a target name that goes
+  # stale cannot leave the tree half-compressed — which serves as a mix of
+  # rewritten and unrewritten files, i.e. a white screen rather than a failure.
+  local f
+  local missing=0
+  for f in "${targets[@]}"; do
+    if [ ! -f "$f" ]; then
+      echo "ERROR: expected compression target missing: $f"
+      missing=1
+    fi
+  done
+  if [ "$missing" -ne 0 ]; then
+    echo "ERROR: target list and build output disagree; nothing was compressed"
+    return 1
+  fi
+
+  for f in "${targets[@]}"; do
+    # -c > "$f.br" rather than brotli's in-place mode: no dependency on -k
+    # semantics, and the original is removed explicitly below.
+    if [ "$compressor" = "cli" ]; then
+      if ! brotli -q 11 -c "$f" > "$f.br"; then
+        echo "ERROR: brotli failed on $f"
+        rm -f "$f.br"
+        return 1
+      fi
+    else
+      if ! node -e '
+const fs = require("fs"), zlib = require("zlib");
+const buf = fs.readFileSync(process.argv[1]);
+fs.writeFileSync(process.argv[2], zlib.brotliCompressSync(buf, {
+  params: {
+    [zlib.constants.BROTLI_PARAM_QUALITY]: 11,
+    [zlib.constants.BROTLI_PARAM_LGWIN]: zlib.constants.BROTLI_MAX_WINDOW_BITS,
+    [zlib.constants.BROTLI_PARAM_SIZE_HINT]: buf.length,
+  },
+}));' "$f" "$f.br"; then
+        echo "ERROR: node brotli failed on $f"
+        rm -f "$f.br"
+        return 1
+      fi
+    fi
+    if ! rm "$f"; then
+      echo "ERROR: could not remove original: $f"
+      return 1
+    fi
+    echo "  $(basename "$f") -> $(basename "$f").br"
+  done
+
+  # Consistency gate. A surviving original means lighttpd would serve it
+  # unrewritten; a missing .br means a 404 and a white screen.
+  for f in "${targets[@]}"; do
+    if [ ! -f "$f.br" ]; then
+      echo "ERROR: missing $f.br after compression"
+      return 1
+    fi
+    if [ -f "$f" ]; then
+      echo "ERROR: original survived: $f"
+      return 1
+    fi
+  done
+
+  echo "Pre-compression OK: ${#targets[@]} files"
 }
 
 buildNumber=${1}
@@ -154,6 +311,23 @@ if ! buildWebApp "$buildNumber"; then
     exit 1
 fi
 
+if ! pruneWebOutput; then
+    echo Web App "$buildNumber" prune failed
+    exit 1
+fi
+
+echo "Compress files? ${Compress:-false}"
+if [ "$Compress" == "true" ]; then
+    if ! compressWebAssets; then
+        echo Web App "$buildNumber" pre-compression failed
+        exit 1
+    fi
+fi
+
+# Last, so that what it measures is exactly what gets packaged: the prune has
+# already removed the unserved directory and any pre-compression has already
+# replaced the originals.
+#
 # Reporting, not gating: a measurement that cannot run must not fail a build that
 # already succeeded.
 ./tools/measure_payload.sh || echo "could not measure the delivered payload"

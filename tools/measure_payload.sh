@@ -4,9 +4,14 @@
 # packaged into /www/ on the router, and therefore the only part that consumes
 # firmware flash.
 #
-# The SDK's build/web/canvaskit/ directory is excluded because CI prunes it; the
-# CanvasKit builds that actually ship live under build/web/assets/. Quoting the
+# The SDK's build/web/canvaskit/ directory is excluded because it is never served;
+# the CanvasKit builds that actually ship live under build/web/assets/. Quoting the
 # whole build/web total as a firmware size overstates it by more than 2x.
+#
+# build_web.sh deletes that directory before calling this script, so the pruned
+# line reads 0 KB there. The subtraction stays for the standalone case — a plain
+# `flutter build web` followed by running this by hand — where it is the whole
+# difference between a real payload figure and a doubled one.
 #
 # Usage:
 #   ./tools/measure_payload.sh                  # print the payload size
@@ -37,7 +42,14 @@ payloadKB=$((totalKB - prunedKB))
 
 echo "Delivered payload: ${payloadKB} KB ($(toMB "$payloadKB") MB)"
 echo "  build output:    ${totalKB} KB"
-echo "  pruned by CI:    ${prunedKB} KB (canvaskit/)"
+# Says "already pruned" rather than "0 KB" when the directory is gone. Under
+# build_web.sh it always is, and a bare 0 there reads as "nothing was pruned"
+# immediately after the prune step reported removing 37 MB.
+if [ "$prunedKB" -eq 0 ]; then
+  echo "  canvaskit/:      already pruned"
+else
+  echo "  excluded:        ${prunedKB} KB (canvaskit/, pruned before packaging)"
+fi
 
 echo
 echo "Largest contributors:"
