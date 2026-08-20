@@ -13,7 +13,7 @@
   "automatic": "Automatic",
   "back": "Tilbage",
   "borderRelay": "Border-Relay",
-  "broadcastSSID": "Broadcast SSID (Udsend SSID)",
+  "broadcastSSID": "Udsend SSID",
   "cancel": "Annuller",
   "changesSaved": "Ændringerne er gemt",
   "channel": "Kanal",
@@ -976,6 +976,7 @@
   "sizeBytes": "Størrelse: {size} bytes ({mib} MiB)",
   "skipped": "Sprunget over",
   "slowHops": "Langsomme hop",
+  "snrUnavailable": "SNR: —",
   "snrValue": "SNR: {value} dB",
   "sourceRestriction": "Kildebegrænsning",
   "specificDeviceConnectionProblems": "En bestemt enhed har forbindelsesproblemer",
@@ -1130,5 +1131,9 @@
   "bridgeRedirectButton": "Gå til routeren",
   "lanIpRedirectTitle": "Opret forbindelse til din router igen",
   "lanIpRedirectMessage": "Din routers IP-adresse er ændret. Opret forbindelse til den igen på {url}. Du skal muligvis vente et øjeblik, før din enhed får en ny adresse.",
-  "lanIpRedirectButton": "Gå til routeren"
+  "lanIpRedirectButton": "Gå til routeren",
+  "cardFormNormal": "Normal",
+  "cardFormCompact": "Kompakt",
+  "cardFormPopup": "Pop op",
+  "cardFormForNamed": "Kortformat for {name}"
 }

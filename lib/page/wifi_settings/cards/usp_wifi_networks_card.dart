@@ -59,9 +59,17 @@ class UspWifiNetworksCard extends ConsumerWidget {
       data.radioModels,
       data.connectionDetailMap,
     );
+    // The main networks, guests excluded — see `popupValue` below.
+    final primary = networks.where((n) => !n.isGuest).toList();
 
     return DashboardCardTemplate(
       title: loc(context).wifiNetworks,
+      // The main network's name, which is what a user looks at this card to
+      // check — a count of SSIDs says nothing about which network is which.
+      // Falls back to the count when there is no main network to name, because
+      // an empty tile is the one thing worse than a number.
+      popupValue:
+          primary.isEmpty ? '${networks.length}' : primary.first.ssidName,
       detailRoute: RouteNamed.uspWifiSettings,
       itemCount: networks.length,
       detailLabel: loc(context).viewAll,

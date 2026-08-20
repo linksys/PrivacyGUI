@@ -456,6 +456,10 @@
   "signalQuality": "Signal Quality",
   "signalQualitySubtitle": "WiFi signal quality by frequency band",
   "sixrdTunnel": "6rd tunnel",
+  "snrUnavailable": "SNR: —",
+  "@snrUnavailable": {
+    "description": "Average SNR readout when no client on the radio reported a noise floor, so no SNR can be computed. An em dash, not 0, because 0 dB is a real reading."
+  },
   "snrValue": "SNR: {value} dB",
   "@snrValue": {
     "placeholders": {
@@ -1712,5 +1716,103 @@
       }
     }
   },
-  "lanIpRedirectButton": "Go to router"
+  "lanIpRedirectButton": "Go to router",
+  "noDataAvailable": "No data available",
+  "noConnectedDevicesFound": "No connected devices found",
+  "noDhcpDataAvailable": "No DHCP data available",
+  "noEthernetPortsFound": "No ethernet ports found",
+  "noDiagnosticResultsAvailable": "No diagnostic results available",
+  "noPortInformationAvailable": "No port information available",
+  "unknownDevice": "Unknown Device",
+  "unnamedRule": "Unnamed rule",
+  "series": "Series",
+  "section": "Section",
+  "port": "Port",
+  "mac": "MAC",
+  "security": "Security",
+  "lanIpAddress": "LAN IP Address",
+  "ipv4Firewall": "IPv4 Firewall",
+  "ipv6Firewall": "IPv6 Firewall",
+  "activeRules": "Active Rules",
+  "activeClients": "Active Clients",
+  "totalHops": "Total Hops",
+  "resolvedIps": "Resolved IPs",
+  "dhcpIpRange": "DHCP IP Range",
+  "avgResponse": "Avg Response",
+  "minMax": "Min/Max",
+  "failedToResolve": "Failed to resolve",
+  "tracerouteFailed": "Traceroute failed",
+  "enabledNoAddress": "Enabled (no address)",
+  "lanSettings": "LAN Settings",
+  "systemResources": "System Resources",
+  "confirmation": "Confirmation",
+  "dnsLookupHost": "DNS Lookup {host}",
+  "@dnsLookupHost": {
+    "placeholders": {
+      "host": {
+        "type": "String"
+      }
+    }
+  },
+  "reservationsWithCount": "Reservations ({count})",
+  "@reservationsWithCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "activeClientsWithCount": "Active Clients ({count})",
+  "@activeClientsWithCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "nRules": "{count} rules",
+  "@nRules": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "nMoreHops": "{count} more hops",
+  "@nMoreHops": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "extenderN": "Extender {index}",
+  "@extenderN": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      }
+    }
+  },
+  "deviceN": "Device {index}",
+  "@deviceN": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      }
+    }
+  },
+  "uploadSpeed": "Upload Speed",
+  "downloadSpeed": "Download Speed",
+  "networkNameSsid": "Network Name (SSID)",
+  "portForwardingRules": "Port Forwarding Rules",
+  "portProtocol": "Port {port} ({protocol})",
+  "@portProtocol": {"placeholders": {"port": {"type": "String"}, "protocol": {"type": "String"}}},
+  "portProtocolCompact": "{port}/{protocol}",
+  "@portProtocolCompact": {"description": "Port and protocol in a fixed-width table column, where the labelled portProtocol form does not fit. Separate key rather than a reuse so a locale can change the separator or the order without widening the column.", "placeholders": {"port": {"type": "String"}, "protocol": {"type": "String"}}},
+  "cardFormNormal": "Normal",
+  "cardFormCompact": "Compact",
+  "cardFormPopup": "Popup",
+  "cardFormForNamed": "Card form for {name}",
+  "@cardFormForNamed": {"placeholders": {"name": {"type": "String"}}}
 }

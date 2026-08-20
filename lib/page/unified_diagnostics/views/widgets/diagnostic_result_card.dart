@@ -426,18 +426,21 @@ class _MeshNodeRow extends StatelessWidget {
                     ),
                   if (node.lastDownlinkRateKbps > 0)
                     _buildChip(
-                      '↓${NetworkUtils.formatSpeed(node.lastDownlinkRateKbps)}',
+                      NetworkUtils.formatSpeed(node.lastDownlinkRateKbps),
                       colorScheme,
+                      icon: Icons.arrow_downward,
                     ),
                   if (node.lastUplinkRateKbps > 0)
                     _buildChip(
-                      '↑${NetworkUtils.formatSpeed(node.lastUplinkRateKbps)}',
+                      NetworkUtils.formatSpeed(node.lastUplinkRateKbps),
                       colorScheme,
+                      icon: Icons.arrow_upward,
                     ),
                   if (node.isStale)
                     _buildChip(
-                      '⏱ Stale',
+                      loc(context).stale,
                       colorScheme,
+                      icon: Icons.timer_outlined,
                       isWarning: true,
                     ),
                 ],
@@ -449,11 +452,25 @@ class _MeshNodeRow extends StatelessWidget {
     );
   }
 
+  /// A chip is text, optionally prefixed by an [icon].
+  ///
+  /// The icon is a real icon rather than a Unicode character in [text] (these
+  /// chips used to read '↓12 Mbps' / '⏱ Stale'): neither the primary font nor
+  /// any bundled fallback maps U+2191/U+2193/U+23F1, so the glyph's presence
+  /// depended on whatever font happened to resolve it.
   Widget _buildChip(String text, ColorScheme colorScheme,
-      {bool isWarning = false}) {
-    return AppText.bodySmall(
-      text,
-      color: isWarning ? colorScheme.tertiary : colorScheme.onSurfaceVariant,
+      {IconData? icon, bool isWarning = false}) {
+    final color =
+        isWarning ? colorScheme.tertiary : colorScheme.onSurfaceVariant;
+    final label = AppText.bodySmall(text, color: color);
+    if (icon == null) return label;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        AppIcon.font(icon, size: 12, color: color),
+        AppGap.xs(),
+        label,
+      ],
     );
   }
 }

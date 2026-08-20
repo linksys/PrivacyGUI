@@ -10,7 +10,7 @@
   "appTitle": "Linksys Now",
   "australia": "Úc",
   "auto": "Tự động",
-  "automatic": "Automatic (Tự động)",
+  "automatic": "Tự động",
   "back": "Quay lại",
   "borderRelay": "Rơle biên",
   "broadcastSSID": "Phát rộng SSID",
@@ -976,6 +976,7 @@
   "sizeBytes": "Kích thước: {size} byte ({mib} MiB)",
   "skipped": "Đã bỏ qua",
   "slowHops": "Bước nhảy chậm",
+  "snrUnavailable": "SNR: —",
   "snrValue": "SNR: {value} dB",
   "sourceRestriction": "Giới hạn nguồn",
   "specificDeviceConnectionProblems": "Một thiết bị cụ thể gặp sự cố kết nối",
@@ -1130,5 +1131,9 @@
   "bridgeRedirectButton": "Đi tới bộ định tuyến",
   "lanIpRedirectTitle": "Kết nối lại với bộ định tuyến của bạn",
   "lanIpRedirectMessage": "Địa chỉ IP của bộ định tuyến đã thay đổi. Kết nối lại với bộ định tuyến tại {url}. Bạn có thể cần đợi một lát để thiết bị của mình nhận được địa chỉ mới.",
-  "lanIpRedirectButton": "Đi tới bộ định tuyến"
+  "lanIpRedirectButton": "Đi tới bộ định tuyến",
+  "cardFormNormal": "Bình thường",
+  "cardFormCompact": "Gọn",
+  "cardFormPopup": "Cửa sổ bật lên",
+  "cardFormForNamed": "Định dạng thẻ cho {name}"
 }

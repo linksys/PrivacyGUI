@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:privacy_gui/page/_shared/components/card_scroll_region.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -13,6 +14,18 @@ class StatsSectionCard extends StatelessWidget {
   final Widget child;
   final Widget? trailing;
 
+  /// Whether [child] scrolls when it is taller than [chartHeight] (#1297).
+  ///
+  /// Per section, not for every section, because the property that decides it is
+  /// per section: content can only scroll if it shrink-wraps, and a section that
+  /// hands a chart the whole box with a vertical `Expanded` cannot (see
+  /// [CardScrollRegion]). `StatsWifiChannelsSection` is a column of per-radio
+  /// text blocks whose height is data- and locale-dependent, so it converts; the
+  /// sections that draw a real chart into the bounded [chartHeight] box do not.
+  ///
+  /// Off by default so no existing section changes behaviour.
+  final bool scrollable;
+
   const StatsSectionCard({
     super.key,
     required this.title,
@@ -20,6 +33,7 @@ class StatsSectionCard extends StatelessWidget {
     required this.chartHeight,
     required this.child,
     this.trailing,
+    this.scrollable = false,
   });
 
   @override
@@ -52,8 +66,13 @@ class StatsSectionCard extends StatelessWidget {
           LayoutBlock(
             padding: const EdgeInsets.all(AppSpacing.md),
             child: SizedBox(
+              // The box keeps its declared height either way — that is what makes
+              // the page's sections line up. What `scrollable` changes is where
+              // content taller than the box goes: inside it, or over the edge.
               height: chartHeight,
-              child: child,
+              child: scrollable
+                  ? CardScrollRegion(fillViewport: true, child: child)
+                  : child,
             ),
           ),
         ],

@@ -976,6 +976,7 @@
   "sizeBytes": "ขนาด: {size} ไบต์ ({mib} MiB)",
   "skipped": "ข้ามแล้ว",
   "slowHops": "Hops ที่ช้า",
+  "snrUnavailable": "SNR: —",
   "snrValue": "SNR: {value} dB",
   "sourceRestriction": "การจำกัดแหล่งที่มา",
   "specificDeviceConnectionProblems": "อุปกรณ์ที่เฉพาะเจาะจงมีปัญหาการเชื่อมต่อ",
@@ -1130,5 +1131,9 @@
   "bridgeRedirectButton": "ไปที่เราเตอร์",
   "lanIpRedirectTitle": "เชื่อมต่อกับเราเตอร์ของคุณอีกครั้ง",
   "lanIpRedirectMessage": "ที่อยู่ IP ของเราเตอร์ของคุณเปลี่ยนแปลงแล้ว เชื่อมต่อกับเราเตอร์อีกครั้งที่ {url} คุณอาจต้องรอสักครู่ให้อุปกรณ์ของคุณได้รับที่อยู่ใหม่",
-  "lanIpRedirectButton": "ไปที่เราเตอร์"
+  "lanIpRedirectButton": "ไปที่เราเตอร์",
+  "cardFormNormal": "ปกติ",
+  "cardFormCompact": "กระชับ",
+  "cardFormPopup": "ป๊อปอัป",
+  "cardFormForNamed": "รูปแบบการ์ดของ {name}"
 }

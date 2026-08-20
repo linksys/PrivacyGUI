@@ -157,7 +157,7 @@
   "location": "Localização",
   "login": "Login",
   "logout": "Sair da conta",
-  "macAddress": "MAC Address (Endereço MAC)",
+  "macAddress": "Endereço MAC",
   "macAddressClone": "MAC Address Clone (Clone de endereço MAC)",
   "manufacturer": "Fabricante",
   "maxIdleTime": "Tempo máximo de inatividade",
@@ -976,6 +976,7 @@
   "sizeBytes": "Tamanho: {size} bytes ({mib} MiB)",
   "skipped": "Ignorado",
   "slowHops": "Saltos lentos",
+  "snrUnavailable": "SNR: —",
   "snrValue": "SNR: {value} dB",
   "sourceRestriction": "Restrição de origem",
   "specificDeviceConnectionProblems": "Um dispositivo específico tem problemas de conexão",
@@ -1130,5 +1131,9 @@
   "bridgeRedirectButton": "Ir para o roteador",
   "lanIpRedirectTitle": "Reconectar ao seu roteador",
   "lanIpRedirectMessage": "O endereço IP do seu roteador foi alterado. Reconecte-se a ele em {url}. Talvez seja necessário aguardar um momento até que seu dispositivo obtenha um novo endereço.",
-  "lanIpRedirectButton": "Ir para o roteador"
+  "lanIpRedirectButton": "Ir para o roteador",
+  "cardFormNormal": "Normal",
+  "cardFormCompact": "Compacto",
+  "cardFormPopup": "Pop-up",
+  "cardFormForNamed": "Formato do cartão para {name}"
 }

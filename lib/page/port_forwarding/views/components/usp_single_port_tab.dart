@@ -75,8 +75,9 @@ class UspSinglePortTab extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   AppText.bodyMedium(rule.displayName),
-                  AppText.bodySmall(
-                    rule.portSummary,
+                  MapsToRow(
+                    source: rule.portRangeDisplay,
+                    target: rule.internalTargetDisplay,
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ],

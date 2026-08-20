@@ -75,9 +75,31 @@ class StepResultTile extends StatelessWidget {
                           ),
                           AppGap.md(),
                           Expanded(
-                            child: AppText.labelMedium(
-                              detail.value,
-                              textAlign: TextAlign.end,
+                            child: Wrap(
+                              alignment: WrapAlignment.end,
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              spacing: AppSpacing.sm,
+                              runSpacing: AppSpacing.xs,
+                              children: [
+                                if (detail.value.isNotEmpty)
+                                  AppText.labelMedium(
+                                    detail.value,
+                                    textAlign: TextAlign.end,
+                                  ),
+                                for (final segment in detail.segments)
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      AppIcon.font(
+                                        segment.icon,
+                                        size: 12,
+                                        color: colorScheme.onSurfaceVariant,
+                                      ),
+                                      AppGap.xs(),
+                                      AppText.labelMedium(segment.text),
+                                    ],
+                                  ),
+                              ],
                             ),
                           ),
                         ],
@@ -301,10 +323,12 @@ class StepResultTile extends StatelessWidget {
         MeshBackhaulSeverity.weak => loc(context).weak,
         MeshBackhaulSeverity.poor => loc(context).poor,
       };
-      final staleMarker = n.isStale ? ' ⚠️ ${loc(context).stale}' : '';
       details.add(_ResultDetail(
         n.label,
-        '${n.linkType} • $severityText$staleMarker',
+        '${n.linkType} • $severityText',
+        segments: n.isStale
+            ? [(icon: Icons.warning_amber_rounded, text: loc(context).stale)]
+            : const [],
       ));
       if (n.parentLabel != null && n.parentLabel!.isNotEmpty) {
         details.add(
@@ -316,13 +340,24 @@ class StepResultTile extends StatelessWidget {
             '${n.signalStrengthDbm} dBm (${signalLevel.displayTitle})'));
       }
       if (n.lastUplinkRateKbps > 0 || n.lastDownlinkRateKbps > 0) {
-        final up = n.lastUplinkRateKbps > 0
-            ? '↑${NetworkUtils.formatSpeed(n.lastUplinkRateKbps)}'
-            : '--';
-        final down = n.lastDownlinkRateKbps > 0
-            ? '↓${NetworkUtils.formatSpeed(n.lastDownlinkRateKbps)}'
-            : '--';
-        details.add(_ResultDetail('  ${loc(context).speed}', '$down / $up'));
+        details.add(_ResultDetail(
+          '  ${loc(context).speed}',
+          '',
+          segments: [
+            (
+              icon: Icons.arrow_downward,
+              text: n.lastDownlinkRateKbps > 0
+                  ? NetworkUtils.formatSpeed(n.lastDownlinkRateKbps)
+                  : '--',
+            ),
+            (
+              icon: Icons.arrow_upward,
+              text: n.lastUplinkRateKbps > 0
+                  ? NetworkUtils.formatSpeed(n.lastUplinkRateKbps)
+                  : '--',
+            ),
+          ],
+        ));
       }
     }
     return details;
@@ -332,7 +367,17 @@ class StepResultTile extends StatelessWidget {
 class _ResultDetail {
   final String label;
   final String value;
-  const _ResultDetail(this.label, this.value);
+
+  /// Icon-prefixed pieces rendered after [value], each as `<icon> <text>`.
+  ///
+  /// Exists because a few details need symbols no bundled font maps: the mesh
+  /// up/down rates and the stale marker used to embed U+2191/U+2193/U+26A0 in
+  /// [value] as characters, so the glyph only appeared if some font happened to
+  /// resolve it. A list rather than one icon because the rate detail carries
+  /// two (down and up) on one line.
+  final List<({IconData icon, String text})> segments;
+
+  const _ResultDetail(this.label, this.value, {this.segments = const []});
 }
 
 /// Inline gauge + latency badge for the speed test step. Replaces the

@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 
-import '../../../../helpers/load_app_test_fonts.dart';
+import '../../../../util/app_test_fonts.dart';
 
 /// Loads the shipped fonts for the card layout tests in this directory.
 ///
@@ -15,6 +15,6 @@ import '../../../../helpers/load_app_test_fonts.dart';
 /// its subdirectories only.
 Future<void> testExecutable(FutureOr<void> Function() testMain) async {
   TestWidgetsFlutterBinding.ensureInitialized();
-  await loadAppTestFonts();
+  await loadAppFonts();
   await testMain();
 }

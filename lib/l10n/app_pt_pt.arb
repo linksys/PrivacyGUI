@@ -375,7 +375,7 @@
   "wifiPassword": "Palavra-passe do WiFi",
   "wifiPasswordLimit": "8 - 64 caracteres",
   "wifiPasswordRuleHex": "PSK hexadecimal necessário (0–9, A–F, a–f)",
-  "wired": "Wired (Com fios)",
+  "wired": "Com fios",
   "accessPoints": "Pontos de acesso",
   "active": "Ativo",
   "activeLeases": "Concessões ativas",
@@ -976,6 +976,7 @@
   "sizeBytes": "Tamanho: {size} bytes ({mib} MiB)",
   "skipped": "Ignorado",
   "slowHops": "Saltos lentos",
+  "snrUnavailable": "SNR: —",
   "snrValue": "SNR: {value} dB",
   "sourceRestriction": "Restrição de origem",
   "specificDeviceConnectionProblems": "Um dispositivo específico tem problemas de ligação",
@@ -1130,5 +1131,9 @@
   "bridgeRedirectButton": "Ir para o router",
   "lanIpRedirectTitle": "Voltar a ligar ao seu router",
   "lanIpRedirectMessage": "O endereço IP do seu router foi alterado. Volte a ligar-se a ele em {url}. Poderá ter de aguardar um momento até que o seu dispositivo obtenha um novo endereço.",
-  "lanIpRedirectButton": "Ir para o router"
+  "lanIpRedirectButton": "Ir para o router",
+  "cardFormNormal": "Normal",
+  "cardFormCompact": "Compacto",
+  "cardFormPopup": "Pop-up",
+  "cardFormForNamed": "Formato do cartão para {name}"
 }

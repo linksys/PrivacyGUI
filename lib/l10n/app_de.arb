@@ -976,6 +976,7 @@
   "sizeBytes": "Größe: {size} Bytes ({mib} MiB)",
   "skipped": "Übersprungen",
   "slowHops": "Langsame Hops",
+  "snrUnavailable": "SNR: —",
   "snrValue": "SNR: {value} dB",
   "sourceRestriction": "Quellbeschränkung",
   "specificDeviceConnectionProblems": "Bestimmtes Gerät hat Verbindungsprobleme",
@@ -1130,5 +1131,9 @@
   "bridgeRedirectButton": "Zum Router",
   "lanIpRedirectTitle": "Erneut mit dem Router verbinden",
   "lanIpRedirectMessage": "Die IP-Adresse Ihres Routers hat sich geändert. Stellen Sie die Verbindung unter {url} wieder her. Möglicherweise müssen Sie einen Moment warten, bis Ihr Gerät eine neue Adresse erhält.",
-  "lanIpRedirectButton": "Zum Router"
+  "lanIpRedirectButton": "Zum Router",
+  "cardFormNormal": "Normal",
+  "cardFormCompact": "Kompakt",
+  "cardFormPopup": "Pop-up",
+  "cardFormForNamed": "Kartenformat für {name}"
 }

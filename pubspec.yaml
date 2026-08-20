@@ -59,11 +59,11 @@ dependencies:
   ui_kit_library:
     git:
       url: https://github.com/linksys/privacyGUI-UI-kit.git
-      ref: v2.34.5
+      ref: v2.39.0
   generative_ui:
     git:
       url: https://github.com/linksys/privacyGUI-UI-kit.git
-      ref: v2.34.5
+      ref: v2.39.0
       path: generative_ui
   flutter_blue_plus: ^1.4.0
   crypto: ^3.0.2
@@ -97,7 +97,6 @@ dev_dependencies:
   integration_test:
     sdk: flutter
   alchemist: ^0.14.0
-  flutter_portal: ^1.1.4
   flutter_svg_test: ^1.0.1
   fake_async: any
   xml: ^6.5.0

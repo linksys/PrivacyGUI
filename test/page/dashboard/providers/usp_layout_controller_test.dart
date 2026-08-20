@@ -4,8 +4,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_dashboard_preset.dart';
+import 'package:privacy_gui/page/dashboard/models/usp_layout_envelope.dart';
 import 'package:privacy_gui/page/dashboard/providers/usp_layout_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sliver_dashboard/sliver_dashboard.dart';
 
 /// Wait for async initialization chains (SharedPreferences) to settle.
 Future<void> pumpAsync() async {
@@ -35,6 +37,19 @@ Map<String, dynamic> _layoutItem(
     'minH': minH,
     'maxH': maxH,
   };
+}
+
+/// The desktop grid out of a persisted layout envelope.
+///
+/// The pref holds one layout per breakpoint keyed by slot count (#1293), so
+/// "what got saved" has to name a grid; every test here arranges and asserts on
+/// the desktop one. Read straight out of the JSON rather than through
+/// [UspLayoutEnvelope.tryDecode] so a decoder bug cannot hide behind these
+/// assertions — the envelope's own shape is covered in
+/// test/page/dashboard/models/usp_layout_envelope_test.dart.
+List<dynamic> _savedDesktopLayout(String raw) {
+  final layouts = (jsonDecode(raw) as Map)['layouts'] as Map;
+  return layouts['${UspLayoutEnvelope.desktopSlotCount}'] as List;
 }
 
 void main() {
@@ -133,7 +148,7 @@ void main() {
       final prefs = await SharedPreferences.getInstance();
       final saved = prefs.getString(pUspSliverDashboardLayout);
       expect(saved, isNotNull);
-      final decoded = jsonDecode(saved!) as List;
+      final decoded = _savedDesktopLayout(saved!);
       final ids = decoded.map((item) => (item as Map)['id']).toSet();
       // Unknown IDs preserved — may be package widgets
       expect(ids, contains('unknown_widget_xyz'));
@@ -159,7 +174,7 @@ void main() {
       final prefs = await SharedPreferences.getInstance();
       final saved = prefs.getString(pUspSliverDashboardLayout);
       expect(saved, isNotNull);
-      final decoded = jsonDecode(saved!) as List;
+      final decoded = _savedDesktopLayout(saved!);
       expect(decoded.length, 18);
     });
 
@@ -232,7 +247,7 @@ void main() {
       final saved = prefs.getString(pUspSliverDashboardLayout);
       expect(saved, isNotNull);
 
-      final decoded = jsonDecode(saved!) as List;
+      final decoded = _savedDesktopLayout(saved!);
       final first = decoded.first as Map<String, dynamic>;
       expect(first.containsKey('id'), isTrue);
       expect(first.containsKey('x'), isTrue);
@@ -352,7 +367,7 @@ void main() {
       final prefs = await SharedPreferences.getInstance();
       final saved = prefs.getString(pUspSliverDashboardLayout);
       expect(saved, isNotNull);
-      final decoded = jsonDecode(saved!) as List;
+      final decoded = _savedDesktopLayout(saved!);
       final item =
           decoded.firstWhere((i) => (i as Map)['id'] == 'device_info') as Map;
       expect(item['w'], 8);
@@ -399,6 +414,126 @@ void main() {
           container.read(uspSliverDashboardControllerProvider);
       // No change since ID not found → changed remains false
       expect(identical(controllerBefore, controllerAfter), isTrue);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Mobile width lock
+  //
+  // The phone grid is height-and-order only, and the width caps cannot enforce
+  // that on their own: the left-hand resize handles move `x`, and the package
+  // then trims `w` to whatever is left of the row (#1293).
+  //
+  // These tests stand in for that gesture by writing the geometry it produces
+  // straight to the layout beacon — which is the last thing
+  // `DashboardController.onResizeUpdate` does — because the call that reaches it
+  // sits behind the package's internal-only extension.
+  // ---------------------------------------------------------------------------
+  group('mobile width lock', () {
+    /// What one column of drag on [id]'s left edge leaves behind on a 4-column
+    /// grid. Either way the card ends up a column narrower; dragging inwards
+    /// moves it as well, dragging outwards runs into the row's own edge and the
+    /// package trims the width there instead.
+    void dragLeftEdge(
+      DashboardController controller,
+      String id, {
+      bool inwards = true,
+    }) {
+      controller.layout.value = [
+        for (final item in controller.layout.value)
+          if (item.id == id) item.copyWith(x: inwards ? 1 : 0, w: 3) else item,
+      ];
+    }
+
+    LayoutItem itemById(DashboardController controller, String id) =>
+        controller.layout.value.firstWhere((item) => item.id == id);
+
+    test('a left-edge resize on the phone grid is undone', () async {
+      final container = await createInitializedContainer();
+      addTearDown(container.dispose);
+
+      final controller = container.read(uspSliverDashboardControllerProvider);
+      controller.setSlotCount(UspLayoutEnvelope.mobileSlotCount);
+      expect(itemById(controller, 'device_info').x, 0,
+          reason: 'the phone grid starts out locked');
+
+      dragLeftEdge(controller, 'device_info');
+      await pumpAsync();
+
+      final item = itemById(controller, 'device_info');
+      expect(item.x, 0);
+      expect(item.w, UspLayoutEnvelope.mobileSlotCount);
+    });
+
+    test('a left-edge resize that only narrows is undone as well', () async {
+      final container = await createInitializedContainer();
+      addTearDown(container.dispose);
+
+      final controller = container.read(uspSliverDashboardControllerProvider);
+      controller.setSlotCount(UspLayoutEnvelope.mobileSlotCount);
+
+      dragLeftEdge(controller, 'device_info', inwards: false);
+      await pumpAsync();
+
+      expect(itemById(controller, 'device_info').w,
+          UspLayoutEnvelope.mobileSlotCount);
+    });
+
+    test('the same resize stands on the desktop grid', () async {
+      final container = await createInitializedContainer();
+      addTearDown(container.dispose);
+
+      // Width is the user's to choose everywhere above mobile, so the guard has
+      // to keep its hands off this one.
+      final controller = container.read(uspSliverDashboardControllerProvider);
+      dragLeftEdge(controller, 'device_info');
+      await pumpAsync();
+
+      final item = itemById(controller, 'device_info');
+      expect(item.x, 1);
+      expect(item.w, 3);
+    });
+
+    test('a height resize on the phone grid is left alone', () async {
+      final container = await createInitializedContainer();
+      addTearDown(container.dispose);
+
+      final controller = container.read(uspSliverDashboardControllerProvider);
+      controller.setSlotCount(UspLayoutEnvelope.mobileSlotCount);
+      final originalH = itemById(controller, 'device_info').h;
+
+      controller.layout.value = [
+        for (final item in controller.layout.value)
+          if (item.id == 'device_info')
+            item.copyWith(h: originalH + 2)
+          else
+            item,
+      ];
+      await pumpAsync();
+
+      // The one dimension a phone still lets the user choose.
+      final item = itemById(controller, 'device_info');
+      expect(item.h, originalH + 2);
+      expect(item.x, 0);
+      expect(item.w, UspLayoutEnvelope.mobileSlotCount);
+    });
+
+    test('a preset re-arms the lock on the controller it swaps in', () async {
+      final container = await createInitializedContainer();
+      addTearDown(container.dispose);
+
+      // The lock is a subscription on one controller's layout, so every swap has
+      // to re-arm it or the phone grid quietly becomes editable again.
+      await container
+          .read(uspSliverDashboardControllerProvider.notifier)
+          .applyPreset(UspDashboardPreset.essential);
+
+      final controller = container.read(uspSliverDashboardControllerProvider);
+      controller.setSlotCount(UspLayoutEnvelope.mobileSlotCount);
+      dragLeftEdge(controller, 'device_info');
+      await pumpAsync();
+
+      expect(itemById(controller, 'device_info').x, 0);
     });
   });
 
@@ -607,7 +742,7 @@ void main() {
       final prefs = await SharedPreferences.getInstance();
       final saved = prefs.getString(pUspSliverDashboardLayout);
       expect(saved, isNotNull);
-      final decoded = jsonDecode(saved!) as List;
+      final decoded = _savedDesktopLayout(saved!);
       expect(decoded.length, 6);
     });
 
@@ -664,7 +799,7 @@ void main() {
       final prefs = await SharedPreferences.getInstance();
       final saved = prefs.getString(pUspSliverDashboardLayout);
       expect(saved, isNotNull);
-      final decoded = jsonDecode(saved!) as List;
+      final decoded = _savedDesktopLayout(saved!);
       final ids = decoded.map((i) => (i as Map)['id']).toSet();
       expect(ids.contains('device_info'), isFalse);
     });
@@ -864,7 +999,7 @@ void main() {
       // Verify the persisted data matches
       final prefs = await SharedPreferences.getInstance();
       final savedJson = prefs.getString(pUspSliverDashboardLayout)!;
-      final decoded = jsonDecode(savedJson) as List;
+      final decoded = _savedDesktopLayout(savedJson);
       expect(decoded.length, 6);
       final ids = decoded.map((i) => (i as Map)['id']).toSet();
       expect(ids.contains('stats_panel'), isTrue);
@@ -880,7 +1015,7 @@ void main() {
 
       final prefs = await SharedPreferences.getInstance();
       final saved = prefs.getString(pUspSliverDashboardLayout);
-      final decoded = jsonDecode(saved!) as List;
+      final decoded = _savedDesktopLayout(saved!);
       final item =
           decoded.firstWhere((i) => (i as Map)['id'] == 'device_info') as Map;
       expect(item['w'], 8);

@@ -43,8 +43,18 @@ class _UspTrafficAnalysisCardState
     final analysisState = ref.watch(uspTrafficAnalysisProvider);
     final selectedTab = ref.watch(cardTabIndexProvider(_cardId));
 
+    final latest = analysisState.latest;
+
     return DashboardCardTemplate.tabbed(
       title: loc(context).trafficMonitor,
+      // Current WAN throughput, formatted by the same helper the Monitor tab's
+      // speed tiles use — the tile is this card in one number, and this card is
+      // about rate. Two dashes while the first poll is still in flight, because
+      // `0 B/s` would read as a dead link.
+      popupValue: latest == null
+          ? '--'
+          : _formatSpeed(
+              latest.interfaces[TrafficInterface.wan]?.totalBytesPerSec ?? 0),
       footer: _buildStatisticsFooter(context, 0),
       titleBadge: analysisState.isFetching
           ? SizedBox(
@@ -82,6 +92,14 @@ class _UspTrafficAnalysisCardState
         ),
         CardTab(
           label: loc(context).distribution,
+          // Opted into the scroll net (#1296): the only tab of this card that
+          // shrink-wraps. The other three hold a chart whose height *is* the
+          // card's height (229 -> 773px between 4 and 8 rows), and pinning those
+          // to a measured minimum would waste 500+px at the sizes users resize to.
+          // This one holds a fixed 180px donut with 67px of slack at the narrowest
+          // realization, so a measured height loses nothing and the net catches the
+          // locale that eats the slack. See the density design §2.10j.
+          scrollable: true,
           content: _buildChartView(context, analysisState, 2),
         ),
         CardTab(
@@ -254,37 +272,104 @@ class _MonitorView extends StatelessWidget {
           ),
         ),
         AppGap.sm(),
-        // Legend + totals
-        Row(
+        // Legend + totals.
+        //
+        // DEGRADATION SHAPE (#1226) — T03 replicates this in the six other legend
+        // rows, so the reasoning matters as much as the code:
+        //
+        //  1. A `Wrap`, not a `Row` + `Spacer`. At every width where the content
+        //     fits it renders exactly as before: one run, `spaceBetween` puts the
+        //     legend left and the totals right, which is what the `Spacer` did.
+        //     When it does not fit, the totals drop to a second line instead of
+        //     overflowing. The chart above is `Expanded`, so it yields the height.
+        //  2. The legend yields before anything else — its labels are `Flexible`
+        //     with a one-line ellipsis. A legend is a *key* to a chart that is
+        //     already colour-coded, so a clipped label still communicates; each
+        //     dot+label pair stays glued together so a label never separates from
+        //     the colour it explains.
+        //  3. The byte totals never shrink: no `Flexible`, no ellipsis, so they
+        //     keep their intrinsic width and wrap as a unit. They are the card's
+        //     content, not chrome — a truncated byte count is worse than no byte
+        //     count, and unlike the legend it cannot be recovered from the chart.
+        Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: AppSpacing.lg,
+          runSpacing: AppSpacing.xs,
           children: [
-            _LegendDot(color: colorScheme.primary),
-            AppGap.xs(),
-            AppText.labelSmall(loc(context).upload),
-            AppGap.lg(),
-            _LegendDot(color: colorScheme.secondary),
-            AppGap.xs(),
-            AppText.labelSmall(loc(context).download),
-            const Spacer(),
-            if (wan != null) ...[
-              AppText.labelSmall(
-                '\u2191 ${UspFormatters.formatBytes(wan.totalBytesSent)}',
-                color: colorScheme.onSurfaceVariant,
-              ),
-              AppGap.md(),
-              AppText.labelSmall(
-                '\u2193 ${UspFormatters.formatBytes(wan.totalBytesReceived)}',
-                color: colorScheme.onSurfaceVariant,
-              ),
-              AppGap.md(),
-            ],
-            AppIcon.font(
-              Icons.autorenew,
-              size: 12,
-              color: colorScheme.onSurfaceVariant,
+            // The two entries stay inside one `mainAxisSize: min` `Row` so
+            // `spaceBetween` has exactly two children to push apart — the legend
+            // and the totals — instead of distributing space between three.
+            //
+            // Each entry needs a `Flexible` here, and this is the only place in
+            // the card that does: a `Row` hands non-flex children unbounded
+            // width, and `AppChartLegendEntry` contains a `Flexible` of its own,
+            // which throws under an unbounded main axis. A `Wrap` child (every
+            // other call site) is already bounded, so it needs none.
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Flexible(
+                  child: AppChartLegendEntry.seriesName(
+                    mark: const ChartMark.lineFilled(dot: true),
+                    color: colorScheme.primary,
+                    label: loc(context).upload,
+                  ),
+                ),
+                AppGap.lg(),
+                Flexible(
+                  child: AppChartLegendEntry.seriesName(
+                    mark: const ChartMark.line(dot: true),
+                    color: colorScheme.secondary,
+                    label: loc(context).download,
+                  ),
+                ),
+              ],
             ),
-            AppText.labelSmall(
-              intervalLabel,
-              color: colorScheme.onSurfaceVariant,
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (wan != null) ...[
+                  // Icons, not the U+2191/U+2193 characters these used to be.
+                  // The speed tiles above label the same two directions with
+                  // Icons.arrow_upward/downward, so the card was drawing one
+                  // concept two ways; and neither the primary font nor any
+                  // bundled fallback maps those codepoints, which made the
+                  // glyph's presence depend on whatever font happened to
+                  // resolve it.
+                  AppIcon.font(
+                    Icons.arrow_upward,
+                    size: 12,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                  AppGap.xs(),
+                  AppText.labelSmall(
+                    UspFormatters.formatBytes(wan.totalBytesSent),
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                  AppGap.md(),
+                  AppIcon.font(
+                    Icons.arrow_downward,
+                    size: 12,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                  AppGap.xs(),
+                  AppText.labelSmall(
+                    UspFormatters.formatBytes(wan.totalBytesReceived),
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                  AppGap.md(),
+                ],
+                AppIcon.font(
+                  Icons.autorenew,
+                  size: 12,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+                AppText.labelSmall(
+                  intervalLabel,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ],
             ),
           ],
         ),
@@ -373,16 +458,29 @@ class _ComparisonView extends StatelessWidget {
           ),
         ),
         AppGap.sm(),
+        // Still a centred `Row` rather than a `Wrap`: this row was never one of
+        // #1226's overflow coordinates, and #1245 is a de-duplication, not a
+        // re-layout. `Flexible` bounds each entry so its internal `Flexible` has
+        // a width to work with — and, as a side effect, gives the composed
+        // 'WAN: 1.2 MB/s' a second line to fall back on rather than overflowing.
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _LegendDot(color: colorScheme.primary),
-            AppGap.xs(),
-            AppText.labelSmall(loc(context).wanLabel(_formatSpeed(wanRate))),
+            Flexible(
+              child: AppChartLegendEntry.statistic(
+                mark: const ChartMark.block(),
+                color: colorScheme.primary,
+                label: loc(context).wanLabel(_formatSpeed(wanRate)),
+              ),
+            ),
             AppGap.lg(),
-            _LegendDot(color: colorScheme.secondary),
-            AppGap.xs(),
-            AppText.labelSmall(loc(context).lanLabel(_formatSpeed(lanRate))),
+            Flexible(
+              child: AppChartLegendEntry.statistic(
+                mark: const ChartMark.block(),
+                color: colorScheme.secondary,
+                label: loc(context).lanLabel(_formatSpeed(lanRate)),
+              ),
+            ),
           ],
         ),
       ],
@@ -409,30 +507,33 @@ class _DistributionView extends StatelessWidget {
 
     return Column(
       children: [
-        Flexible(
-          child: Center(
-            child: AppPieChart(
-              sections: [
-                AppPieSection(
-                    value: wanTotal.toDouble(),
-                    label: 'WAN',
-                    color: colorScheme.primary),
-                AppPieSection(
-                    value: lanTotal.toDouble(),
-                    label: 'LAN',
-                    color: colorScheme.secondary),
+        // Not `Flexible`/`Expanded`: this tab scrolls (#1296), so a vertical flex
+        // child here would get unbounded height constraints and throw. The donut
+        // is a fixed 180px whatever it is given — measured 180 at 4 rows and at
+        // 8 rows, where the slot had grown to 793px — so the flex was distributing
+        // air, not sizing the picture.
+        Center(
+          child: AppPieChart(
+            sections: [
+              AppPieSection(
+                  value: wanTotal.toDouble(),
+                  label: 'WAN',
+                  color: colorScheme.primary),
+              AppPieSection(
+                  value: lanTotal.toDouble(),
+                  label: 'LAN',
+                  color: colorScheme.secondary),
+            ],
+            donut: true,
+            centerWidget: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AppText.titleSmall(UspFormatters.formatBytes(grandTotal)),
+                AppText.labelSmall(loc(context).total,
+                    color: colorScheme.onSurfaceVariant),
               ],
-              donut: true,
-              centerWidget: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  AppText.titleSmall(UspFormatters.formatBytes(grandTotal)),
-                  AppText.labelSmall(loc(context).total,
-                      color: colorScheme.onSurfaceVariant),
-                ],
-              ),
-              size: 180,
             ),
+            size: 180,
           ),
         ),
         AppGap.sm(),
@@ -440,18 +541,33 @@ class _DistributionView extends StatelessWidget {
         if (wan != null || lan != null)
           _InterfaceBreakdownBars(wan: wan, lan: lan),
         AppGap.sm(),
+        // `.swatch()`, because these two key donut sections rather than a line or
+        // bar series. Same centred `Row` + `Flexible` shape as the Comparison
+        // tab; this tab is also in the scroll net (#1296), so the entries must
+        // not gain height they cannot pay for — `cardContentScrollShortfall`
+        // asserts 0.0 on arrival in `card_scroll_net_test.dart`.
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _LegendDot(color: colorScheme.primary),
-            AppGap.xs(),
-            AppText.labelSmall(
-                loc(context).wanLabel(UspFormatters.formatBytes(wanTotal))),
+            Flexible(
+              child: AppChartLegendEntry.statistic(
+                mark: const ChartMark.swatch(),
+                color: colorScheme.primary,
+                label: loc(context).wanLabel(
+                  UspFormatters.formatBytes(wanTotal),
+                ),
+              ),
+            ),
             AppGap.lg(),
-            _LegendDot(color: colorScheme.secondary),
-            AppGap.xs(),
-            AppText.labelSmall(
-                loc(context).lanLabel(UspFormatters.formatBytes(lanTotal))),
+            Flexible(
+              child: AppChartLegendEntry.statistic(
+                mark: const ChartMark.swatch(),
+                color: colorScheme.secondary,
+                label: loc(context).lanLabel(
+                  UspFormatters.formatBytes(lanTotal),
+                ),
+              ),
+            ),
           ],
         ),
       ],
@@ -593,20 +709,31 @@ class _TrendsView extends StatelessWidget {
           ),
         ),
         AppGap.sm(),
+        // This tab's chart is a hand-written `CustomPaint`, so the marks are read
+        // off `_DualAxisLinePainter` rather than off `AppChartSeries`: the bytes
+        // series is drawn as a gradient-filled line with a dot per point, the
+        // packets series as a dashed line with dots, and the two used to be keyed
+        // by a dot and a bare 16×2 `Container` — the closest this card came to
+        // drawing its own mark. `.seriesName`, because both labels are bare unit
+        // names carrying no digits.
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _LegendDot(color: colorScheme.primary),
-            AppGap.xs(),
-            AppText.labelSmall(loc(context).bytesPerSec),
-            AppGap.lg(),
-            Container(
-              width: 16,
-              height: 2,
-              color: colorScheme.tertiary,
+            Flexible(
+              child: AppChartLegendEntry.seriesName(
+                mark: const ChartMark.lineFilled(dot: true),
+                color: colorScheme.primary,
+                label: loc(context).bytesPerSec,
+              ),
             ),
-            AppGap.xs(),
-            AppText.labelSmall(loc(context).packetsPerSec),
+            AppGap.lg(),
+            Flexible(
+              child: AppChartLegendEntry.seriesName(
+                mark: const ChartMark.line(dashed: true, dot: true),
+                color: colorScheme.tertiary,
+                label: loc(context).packetsPerSec,
+              ),
+            ),
           ],
         ),
       ],
@@ -617,20 +744,6 @@ class _TrendsView extends StatelessWidget {
 // =============================================================================
 // Shared widgets
 // =============================================================================
-
-class _LegendDot extends StatelessWidget {
-  final Color color;
-  const _LegendDot({required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 8,
-      height: 8,
-      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-    );
-  }
-}
 
 String _formatSpeed(double bytesPerSec) {
   const units = ['B/s', 'KB/s', 'MB/s', 'GB/s'];

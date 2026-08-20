@@ -175,23 +175,21 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
     final supportedLocales = ref.watch(supportedLocalesProvider);
     final activeLocale = ref.watch(activeLocaleProvider);
 
-    // CJK / non-Latin fallback for the active locale. The subset fonts are
-    // eager-loaded via pubspec `fonts:` (registered before first frame). Adding
-    // the fallback family to ThemeData.textTheme covers raw `Text` / third-party
-    // widgets; ui_kit's AppText.resolve() injects the same family per-locale for
-    // AppText. Without the family in the TextStyle, the engine treats CJK code
-    // points as missing and probes the CDN. Null for Latin-covered locales.
-    final cjkFallback = FallbackFontResolver.prefixedFallbackFor(activeLocale);
-    if (cjkFallback != null) {
-      appLightTheme = appLightTheme.copyWith(
-        textTheme:
-            appLightTheme.textTheme.apply(fontFamilyFallback: cjkFallback),
-      );
-      appDarkTheme = appDarkTheme.copyWith(
-        textTheme:
-            appDarkTheme.textTheme.apply(fontFamilyFallback: cjkFallback),
-      );
-    }
+    // CJK / non-Latin fallback for the active locale — see
+    // FallbackFontResolver.withFallbackFont for which spelling reaches the engine
+    // and why. A no-op for Latin-covered locales.
+    //
+    // Merge note (dev-2.7.0 × #1285): both sides changed this block. dev-2.7.0
+    // re-pointed the locale at `activeLocaleProvider`, which is kept; #1285
+    // replaced the hand-rolled `prefixedFallbackFor` + `copyWith` with
+    // `withFallbackFont`, which is also kept — on a style that already declares
+    // `package: 'ui_kit_library'` the prefixed spelling composes the prefix twice
+    // and resolves to no registered family, so applying it to the theme silently
+    // dropped the bundled subset.
+    appLightTheme =
+        FallbackFontResolver.withFallbackFont(appLightTheme, activeLocale);
+    appDarkTheme =
+        FallbackFontResolver.withFallbackFont(appDarkTheme, activeLocale);
 
     return MaterialApp.router(
       onGenerateTitle: (context) => loc(context).appTitle,

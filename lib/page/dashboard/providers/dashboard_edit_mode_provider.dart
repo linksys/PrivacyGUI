@@ -1,7 +1,11 @@
+import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/page/_shared/models/card_form_choice.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_layout_preferences.dart';
+import 'package:privacy_gui/page/_shared/providers/card_forms_provider.dart';
 import 'package:privacy_gui/page/dashboard/providers/usp_layout_controller.dart';
 import 'package:privacy_gui/page/dashboard/providers/usp_layout_preferences_provider.dart';
+import 'package:privacy_gui/providers/auth/auth_provider.dart';
 
 /// Manages dashboard edit mode state and layout snapshots for revert on cancel.
 ///
@@ -12,21 +16,42 @@ final dashboardEditModeProvider =
   DashboardEditModeNotifier.new,
 );
 
-class DashboardEditState {
+/// Whether edit mode is open, and what to put back if it is cancelled.
+///
+/// Value equality rather than identity (Article XI §11.1), and here it earns its
+/// keep twice over. `_exitEditMode` always ends on `const DashboardEditState()`,
+/// so a second exit — a route guard and a button press racing, or a logout
+/// arriving after a commit — republishes a state identical to the one already
+/// held; on identity that is a rebuild of every listener for no change. And
+/// [layoutSnapshot] is a `List<Map<String, dynamic>>` freshly built by
+/// `exportLayout()` on every capture, which no two calls could ever share an
+/// identity for. [Equatable] compares it deeply.
+class DashboardEditState extends Equatable {
   final bool isEditing;
   final List<Map<String, dynamic>>? layoutSnapshot;
   final UspLayoutPreferences? prefsSnapshot;
+
+  /// The forms cards were picked into when edit mode opened (#1299).
+  ///
+  /// A third snapshot alongside the geometry and the prefs, because a pick is
+  /// editable in edit mode too — the toolbar's form picker writes them — and a
+  /// cancel that reverted only the geometry would leave the two disagreeing.
+  /// Captured in the same assignment as [layoutSnapshot], so the two are non-null
+  /// together.
+  final CardForms? formsSnapshot;
 
   const DashboardEditState({
     this.isEditing = false,
     this.layoutSnapshot,
     this.prefsSnapshot,
+    this.formsSnapshot,
   });
 
   DashboardEditState copyWith({
     bool? isEditing,
     List<Map<String, dynamic>>? layoutSnapshot,
     UspLayoutPreferences? prefsSnapshot,
+    CardForms? formsSnapshot,
     bool clearSnapshots = false,
   }) {
     return DashboardEditState(
@@ -35,13 +60,56 @@ class DashboardEditState {
           clearSnapshots ? null : (layoutSnapshot ?? this.layoutSnapshot),
       prefsSnapshot:
           clearSnapshots ? null : (prefsSnapshot ?? this.prefsSnapshot),
+      formsSnapshot:
+          clearSnapshots ? null : (formsSnapshot ?? this.formsSnapshot),
     );
   }
+
+  @override
+  List<Object?> get props =>
+      [isEditing, layoutSnapshot, prefsSnapshot, formsSnapshot];
 }
 
 class DashboardEditModeNotifier extends Notifier<DashboardEditState> {
   @override
-  DashboardEditState build() => const DashboardEditState();
+  DashboardEditState build() {
+    // Logging out has to leave edit mode (#1294).
+    //
+    // Logging out from the dashboard's own top-bar menu does not navigate
+    // anywhere and does not reload the page, so the route guard in
+    // route_usp_dashboard.dart never fires and this provider — root-scoped, like
+    // the layout controller — survives untouched. The next session then opens on
+    // a grid still showing resize handles and the trash zone, holding a layout
+    // snapshot captured before the logout that a later cancel would revert into.
+    //
+    // What matters is the logged-in → logged-out edge, not the logged-out state
+    // itself: auth also reports "logged out" before anyone has logged in, and
+    // reverting on that would undo an edit the user is still making.
+    //
+    // The edge cannot be read off the callback's `previous`, because
+    // AuthNotifier.logout emits AsyncValue.loading() before the logged-out
+    // value — by the time that value lands, `previous` is a value-less loading
+    // state that says nothing about who was logged in. So the last answer is
+    // remembered here instead, and loading/error emissions leave it alone.
+    // `fireImmediately` seeds it from whatever auth already knows, which is what
+    // makes a logout still register when the dashboard was opened mid-session.
+    bool wasLoggedIn = false;
+    ref.listen(authProvider, (_, next) {
+      final loggedIn = next.valueOrNull?.isLoggedIn;
+      if (loggedIn == null) return;
+
+      final loggedOutJustNow = wasLoggedIn && !loggedIn;
+      wasLoggedIn = loggedIn;
+
+      // `state` is only readable once build has returned. The seeding call
+      // cannot reach this line: it starts from wasLoggedIn = false.
+      if (loggedOutJustNow && state.isEditing) {
+        cancelEditMode();
+      }
+    }, fireImmediately: true);
+
+    return const DashboardEditState();
+  }
 
   /// Enter edit mode and capture snapshots for potential revert.
   Future<void> enterEditMode() async {
@@ -62,11 +130,13 @@ class DashboardEditModeNotifier extends Notifier<DashboardEditState> {
     final controller = ref.read(uspSliverDashboardControllerProvider);
     final layoutSnapshot = controller.exportLayout();
     final prefsSnapshot = ref.read(uspLayoutPreferencesProvider);
+    final formsSnapshot = ref.read(cardFormsProvider);
 
     state = DashboardEditState(
       isEditing: true,
       layoutSnapshot: layoutSnapshot,
       prefsSnapshot: prefsSnapshot,
+      formsSnapshot: formsSnapshot,
     );
 
     controller.setEditMode(true);
@@ -91,11 +161,14 @@ class DashboardEditModeNotifier extends Notifier<DashboardEditState> {
 
     try {
       if (revert) {
-        if (state.layoutSnapshot != null) {
-          controller.importLayout(state.layoutSnapshot!);
+        final layoutSnapshot = state.layoutSnapshot;
+        final formsSnapshot = state.formsSnapshot;
+        if (layoutSnapshot != null && formsSnapshot != null) {
+          // One call: the picks and the geometry they justify have to be put back
+          // together — see [UspSliverDashboardControllerNotifier.restoreSnapshot].
           await ref
               .read(uspSliverDashboardControllerProvider.notifier)
-              .saveLayout();
+              .restoreSnapshot(layoutSnapshot, formsSnapshot);
         }
         if (state.prefsSnapshot != null) {
           await ref
@@ -105,6 +178,12 @@ class DashboardEditModeNotifier extends Notifier<DashboardEditState> {
       }
     } finally {
       controller.setEditMode(false);
+      // A selection is edit-mode state too (#1299). The package keeps it across
+      // `setEditMode(false)`, and both things that read it are edit-mode only:
+      // the item's selection border, and the toolbar's form picker. Left behind,
+      // the next edit session opens with a card already highlighted and the
+      // picker already aimed at it, which the user never asked for.
+      controller.clearSelection();
       state = const DashboardEditState();
     }
   }

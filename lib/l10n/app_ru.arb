@@ -976,6 +976,7 @@
   "sizeBytes": "Размер: {size} байт ({mib} MiB)",
   "skipped": "Пропущено",
   "slowHops": "Медленные переходы",
+  "snrUnavailable": "SNR: —",
   "snrValue": "SNR: {value} dB",
   "sourceRestriction": "Ограничение источника",
   "specificDeviceConnectionProblems": "У определенного устройства проблемы с подключением",
@@ -1130,5 +1131,9 @@
   "bridgeRedirectButton": "Перейти к маршрутизатору",
   "lanIpRedirectTitle": "Повторное подключение к маршрутизатору",
   "lanIpRedirectMessage": "IP-адрес вашего маршрутизатора изменился. Повторно подключитесь к нему по адресу {url}. Возможно, придётся подождать, пока ваше устройство получит новый адрес.",
-  "lanIpRedirectButton": "Перейти к маршрутизатору"
+  "lanIpRedirectButton": "Перейти к маршрутизатору",
+  "cardFormNormal": "Обычный",
+  "cardFormCompact": "Компактный",
+  "cardFormPopup": "Всплывающее окно",
+  "cardFormForNamed": "Формат карточки для {name}"
 }

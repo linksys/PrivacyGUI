@@ -74,8 +74,9 @@ class UspPortTriggeringTab extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   AppText.bodyMedium(rule.displayName),
-                  AppText.bodySmall(
-                    rule.summary,
+                  MapsToRow(
+                    source: rule.triggerSummaryPart,
+                    target: rule.forwardSummaryPart,
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ],

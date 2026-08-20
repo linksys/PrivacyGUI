@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/dashboard/models/display_mode.dart';
+import 'package:privacy_gui/page/dashboard/models/card_grid_geometry.dart';
+import 'package:privacy_gui/page/dashboard/views/components/card_form_toolbar.dart';
 import 'package:privacy_gui/page/dashboard/views/components/effects/jiggle_shake.dart';
 import 'package:privacy_gui/page/dashboard/factories/usp_widget_factory.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_dashboard_preset.dart';
+import 'package:privacy_gui/page/dashboard/models/usp_widget_specs.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_edit_mode_provider.dart';
 import 'package:privacy_gui/page/dashboard/models/package_widget_template.dart';
 import 'package:privacy_gui/page/dashboard/providers/package_widget_loader.dart';
@@ -34,6 +37,16 @@ import 'package:privacy_gui/route/constants.dart';
 ///
 /// Supports drag-drop/resize in edit mode.
 class UspSliverDashboardView extends ConsumerStatefulWidget {
+  /// Fixed slot height of the dashboard grid, in logical pixels.
+  ///
+  /// On the widget rather than in the [State] because the overflow gate derives
+  /// card heights from it (`dashboard_card_probe.dart`), and the copy it used to
+  /// keep could drift from this one without anything noticing (#1248 review W-4).
+  /// The value itself moved to [kDashboardSlotHeight] once code that must not
+  /// import this view needed it too; this stays as the name everything already
+  /// reads.
+  static const double slotHeight = kDashboardSlotHeight;
+
   const UspSliverDashboardView({super.key});
 
   @override
@@ -328,9 +341,6 @@ class _UspSliverDashboardViewState
   // SliverDashboard Layout (Edit Mode) — fixed grid cells, drag-drop
   // ---------------------------------------------------------------------------
 
-  /// Fixed slot height in logical pixels.
-  static const _slotHeight = 120.0;
-
   Widget _buildSliverDashboard(BuildContext context) {
     final controller = ref.watch(uspSliverDashboardControllerProvider);
     final factory = ref.watch(uspWidgetFactoryProvider);
@@ -350,9 +360,9 @@ class _UspSliverDashboardViewState
       final availableWidth = constraints.maxWidth - pageMargin * 2;
       final slotWidth =
           (availableWidth - (uiKitColumns - 1) * AppSpacing.lg) / uiKitColumns;
-      final ratio = slotWidth / _slotHeight;
+      final ratio = slotWidth / UspSliverDashboardView.slotHeight;
 
-      return DashboardOverlay(
+      final grid = DashboardOverlay(
         controller: controller,
         scrollController: scrollController,
         itemBuilder: (context, item) {
@@ -398,6 +408,24 @@ class _UspSliverDashboardViewState
             ),
           ],
         ),
+      );
+
+      // The form toolbar for the selected card (#1299). Edit mode only — that is
+      // AC 4, and it costs no guard inside the toolbar because the layer is not
+      // built at all outside edit mode. It wraps the grid rather than sitting
+      // beside it in the page column: the toolbar is anchored to the card, so it
+      // has to be a sibling above the same box the grid was laid out in.
+      if (!isEditMode) return grid;
+
+      return CardFormToolbarLayer(
+        geometry: CardGridGeometry(
+          slotWidth: slotWidth,
+          slotHeight: UspSliverDashboardView.slotHeight,
+          mainAxisSpacing: AppSpacing.lg,
+          crossAxisSpacing: AppSpacing.lg,
+          padding: EdgeInsets.symmetric(horizontal: pageMargin),
+        ),
+        child: grid,
       );
     });
   }
@@ -484,28 +512,22 @@ class _UspSliverDashboardViewState
     final constraints = spec.constraints[DisplayMode.normal];
     if (constraints == null) return;
 
-    bool violated = false;
-    int newW = item.w;
-    int newH = item.h;
+    // Which grid the card is on decides what its spec's column figures mean —
+    // see [UspWidgetSpecs.correctedSize].
+    final notifier = ref.read(uspSliverDashboardControllerProvider.notifier);
+    final corrected = UspWidgetSpecs.correctedSize(
+      constraints,
+      w: item.w,
+      h: item.h,
+      slotCount: ref.read(uspSliverDashboardControllerProvider).slotCount.value,
+    );
 
-    if (item.w < constraints.minColumns) {
-      newW = constraints.minColumns;
-      violated = true;
-    }
-    if (item.w > constraints.maxColumns) {
-      newW = constraints.maxColumns;
-      violated = true;
-    }
-    if (item.h < constraints.minHeightRows) {
-      newH = constraints.minHeightRows;
-      violated = true;
-    }
-    if (item.h > constraints.maxHeightRows) {
-      newH = constraints.maxHeightRows;
-      violated = true;
+    if (corrected == null) {
+      notifier.saveLayout();
+      return;
     }
 
-    if (violated && context.mounted) {
+    if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(loc(context).widgetResized(item.id)),
@@ -515,12 +537,9 @@ class _UspSliverDashboardViewState
       );
     }
 
-    if (violated) {
-      ref
-          .read(uspSliverDashboardControllerProvider.notifier)
-          .updateItemSize(item.id, newW, newH);
-    }
-    ref.read(uspSliverDashboardControllerProvider.notifier).saveLayout();
+    // Saves as part of correcting the size — a second saveLayout here would walk
+    // every breakpoint again for nothing.
+    notifier.updateItemSize(item.id, corrected.w, corrected.h);
   }
 
   Future<void> _openLayoutSettings(BuildContext context) async {

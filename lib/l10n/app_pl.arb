@@ -10,7 +10,7 @@
   "appTitle": "Linksys Now",
   "australia": "Australia",
   "auto": "Automatycznie",
-  "automatic": "Automatic (Automatyczny)",
+  "automatic": "Automatyczny",
   "back": "Wstecz",
   "borderRelay": "Przekaźnik graniczny",
   "broadcastSSID": "Rozsyłanie nazwy SSID",
@@ -976,6 +976,7 @@
   "sizeBytes": "Rozmiar: {size} bajtów ({mib} MiB)",
   "skipped": "Pominięto",
   "slowHops": "Wolne przeskoki",
+  "snrUnavailable": "SNR: —",
   "snrValue": "SNR: {value} dB",
   "sourceRestriction": "Ograniczenie źródła",
   "specificDeviceConnectionProblems": "Konkretne urządzenie ma problemy z połączeniem",
@@ -1130,5 +1131,9 @@
   "bridgeRedirectButton": "Przejdź do routera",
   "lanIpRedirectTitle": "Połącz się ponownie z routerem",
   "lanIpRedirectMessage": "Adres IP routera uległ zmianie. Połącz się z nim ponownie pod adresem {url}. Może być konieczne odczekanie chwili, aż urządzenie uzyska nowy adres.",
-  "lanIpRedirectButton": "Przejdź do routera"
+  "lanIpRedirectButton": "Przejdź do routera",
+  "cardFormNormal": "Normalny",
+  "cardFormCompact": "Kompaktowy",
+  "cardFormPopup": "Wyskakujące okno",
+  "cardFormForNamed": "Format karty dla {name}"
 }

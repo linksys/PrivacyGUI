@@ -976,6 +976,7 @@
   "sizeBytes": "Tamaño: {size} bytes ({mib} MiB)",
   "skipped": "Omitido",
   "slowHops": "Saltos lentos",
+  "snrUnavailable": "SNR: —",
   "snrValue": "SNR: {value} dB",
   "sourceRestriction": "Restricción de origen",
   "specificDeviceConnectionProblems": "Un dispositivo específico tiene problemas de conexión",
@@ -1130,5 +1131,9 @@
   "bridgeRedirectButton": "Ir al router",
   "lanIpRedirectTitle": "Volvé a conectarte a tu router",
   "lanIpRedirectMessage": "La dirección IP de tu router cambió. Volvé a conectarte a él en {url}. Puede que tengas que esperar un momento a que tu dispositivo obtenga una nueva dirección.",
-  "lanIpRedirectButton": "Ir al router"
+  "lanIpRedirectButton": "Ir al router",
+  "cardFormNormal": "Normal",
+  "cardFormCompact": "Compacto",
+  "cardFormPopup": "Ventana emergente",
+  "cardFormForNamed": "Formato de tarjeta para {name}"
 }
