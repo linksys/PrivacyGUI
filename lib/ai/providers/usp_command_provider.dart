@@ -756,10 +756,43 @@ class UspCommandProvider implements IRouterCommandProvider {
         'totalCount': distribution.totalCount,
       },
       'bandDistribution': distribution.bandDistribution,
-      'signalLevelDistribution': distribution.signalLevelDistribution,
+      'signalLevelDistribution':
+          _labelSignalLevels(distribution.signalLevelDistribution),
       'bandSignalQuality': distribution.bandSignalQuality,
       'hourlyHistoryCount': data.hourlyHistory.length,
     });
+  }
+
+  /// Signal level label for each numeric level, matching the labels the
+  /// dashboard and statistics pages already show for the same data.
+  static const _signalLevelLabels = {
+    3: 'excellent',
+    2: 'good',
+    1: 'fair',
+    0: 'poor',
+  };
+
+  /// Re-keys the signal level distribution from `int` to `String`.
+  ///
+  /// Two reasons, both load-bearing:
+  ///
+  /// 1. **JSON keys must be strings.** A tool result travels to the model as
+  ///    `jsonEncode(result)`, and an `int`-keyed map throws there. That throw
+  ///    lands after the result is already in the conversation history, so every
+  ///    later request re-encodes the same bad entry and fails — one unusable
+  ///    map permanently bricks the session rather than failing one answer.
+  /// 2. **The numbers alone don't say which end is good.** Sending `0`–`3`
+  ///    leaves the model to guess the direction; the labels carry it.
+  ///
+  /// Unrecognised levels are kept under `level<n>` rather than dropped: losing
+  /// devices from a distribution silently would misreport totals.
+  static Map<String, int> _labelSignalLevels(Map<int, int> byLevel) {
+    return byLevel.map(
+      (level, count) => MapEntry(
+        _signalLevelLabels[level] ?? 'level$level',
+        count,
+      ),
+    );
   }
 
   Future<RouterCommandResult> _getWifiStatus() async {
