@@ -153,15 +153,25 @@ List<String> _coverageGaps() {
   ];
 }
 
-/// `+41.0px right at lib/x.dart:9 — legend fix #1145` for each incident.
+/// `+41.0px right at lib/x.dart:9 (allowed up to 41.0px …) — legend fix #1145`
+/// for each incident.
 ///
 /// The tracking note is per **site**, not per card, because the key it hangs off
 /// is: two sites in one card can be deferred under different tickets, and one
 /// site — anything in `ui_kit_library`, any shared row widget — can be reached
 /// from several cards, where a card-keyed note would print whichever card
 /// happened to hit it.
-String _trackedDetail(List<OverflowIncident> incidents) =>
-    incidents.map((i) => '$i — ${_ratchet.trackingNote(i.site)}').join(', ');
+///
+/// The allowance is printed alongside it because this line is the only place a
+/// tolerated overflow is ever visible: without it, "+25.9px, allowed 26.0px" and
+/// "+2.5px, allowed 26.0px" read identically, and the first is one shaping
+/// difference away from failing CI.
+String _trackedDetail(List<OverflowIncident> incidents) => incidents.map((i) {
+      final entry = _ratchet.exemptionFor(i.site);
+      return '$i'
+          '${entry == null ? '' : ' (allowed up to ${entry.allowanceLabel})'}'
+          ' — ${_ratchet.trackingNote(i.site)}';
+    }).join(', ');
 
 /// The incidents the reader has to act on, and how many the fixture already
 /// covers.
@@ -180,39 +190,95 @@ String _blockingDetail(
       '${exempt == 0 ? '' : ' (plus $exempt already allowlisted here)'}';
 }
 
-/// The "how to defer this" paragraph, in the `file:line` key shape.
+/// The "how to defer this" paragraph — or two, because there are two ways to be
+/// blocked and they need opposite edits.
 ///
-/// It quotes the keys themselves and says where they came from: the incidents
-/// printed immediately above already end in `at <file>:<line>`
+/// The incidents printed immediately above already end in `at <file>:<line>`
 /// ([OverflowIncident.toString]), so the failure hands the operator the exact
-/// string to paste. That is deliberately the only place the key shape is
-/// explained — deriving it from the incident is one fact to keep true, whereas a
-/// worked example of the grammar would be a second.
+/// string to paste. Since #1356 an entry carries a magnitude too, and this
+/// renders the whole line — key, locale, ceiling — from the incidents it was
+/// handed. Still one fact rather than two: the example is *derived* from the
+/// measurement rather than written out beside the grammar, so it cannot drift
+/// from what the parser accepts.
 String _remediation(List<OverflowIncident> blocking, String tag) {
-  final sites = blocking.map((i) => i.site).whereType<String>().toSet().toList()
+  final breaches = _ratchet.ceilingBreaches(blocking, tag).toSet();
+  final fresh = blocking.where((i) => !breaches.contains(i)).toList();
+  return [
+    if (breaches.isNotEmpty) _ceilingBreachAdvice(breaches, tag),
+    if (fresh.isNotEmpty) _newExemptionAdvice(fresh, tag),
+  ].join('\n');
+}
+
+/// What to do about an overflow at a site the fixture already exempts *here*.
+///
+/// Its own paragraph because "add the tag" is wrong advice for an entry that
+/// already names it: whoever is holding the failure would open the fixture, find
+/// the tag, and conclude the gate is broken. What changed is the size.
+String _ceilingBreachAdvice(Set<OverflowIncident> breaches, String tag) {
+  final lines = breaches.map((i) {
+    // Non-null by construction: `ceilingBreaches` only returns incidents whose
+    // site resolved to an entry.
+    final entry = _ratchet.exemptionFor(i.site)!;
+    return '  ${i.site} — allowed up to ${entry.allowanceLabel}, measured '
+        '+${i.pixels.toStringAsFixed(1)}px';
+  }).toList()
     ..sort();
-  // Counted directly rather than as `blocking.length - sites.length`: `sites` is
-  // deduplicated, so two blocking incidents at one site would have made the
+  return 'Already allowlisted for "$tag", and overflowing by more than the entry '
+      'permits:\n'
+      '${lines.join('\n')}\n'
+      'That is what a "maxOverflowPx" is for: one `file:line` is rendered by '
+      'every cell that reaches it, so this can be a second, larger defect at a '
+      'line whose smaller one is deferred. Fix the layout, or — if the larger '
+      'overflow is deferred too — raise the ceiling and say why in that entry\'s '
+      '"tracking" note.';
+}
+
+/// What to do about an overflow nothing exempts yet: the entry to paste.
+String _newExemptionAdvice(List<OverflowIncident> fresh, String tag) {
+  // The worst magnitude per site, which is what a single ceiling has to cover.
+  final worstBySite = <String, double>{};
+  for (final incident in fresh) {
+    final site = incident.site;
+    if (site == null || !incident.pixels.isFinite) continue;
+    final worst = worstBySite[site];
+    if (worst == null || incident.pixels > worst) {
+      worstBySite[site] = incident.pixels;
+    }
+  }
+  // Counted directly rather than as `fresh.length - worstBySite.length`: sites
+  // are deduplicated, so two blocking incidents at one site would have made the
   // difference claim an incident had no location when both did — the operator
   // would go looking for an incident the message above never printed.
-  final unresolved = blocking.where((i) => i.site == null).length;
-  if (sites.isEmpty) {
-    return 'No incident above resolved a source location, so none of them can '
-        'be allowlisted at all: the ratchet keys on `file:line` and a null '
-        'location is not a key (deliberately — see OverflowRatchet). Fix the '
-        'layout.';
+  final unresolved = fresh.where((i) => i.site == null).length;
+  final unparseable =
+      fresh.where((i) => i.site != null && !i.pixels.isFinite).length;
+  final unexemptable = [
+    if (unresolved > 0)
+      '$unresolved resolved no source location, and the ratchet keys on '
+          '`file:line` — a null location is not a key (deliberately, see '
+          'OverflowRatchet)',
+    if (unparseable > 0)
+      '$unparseable reported an overflow this suite could not parse, which no '
+          'finite "maxOverflowPx" can cover',
+  ];
+  if (worstBySite.isEmpty) {
+    return 'None of the incident(s) above can be allowlisted at all: '
+        '${unexemptable.join('; ')}. Fix the layout.';
   }
+  final keys = worstBySite.keys.toList()..sort();
   return 'Fix the layout (Flexible/Expanded/maxLines/ellipsis), or if this is '
-      'knowingly deferred, add "$tag" to the\n'
-      '${sites.map((s) => "  '$s'").join('\n')}\n'
-      'entr${sites.length == 1 ? 'y' : 'ies'} of the "allowlist" map in\n'
+      'knowingly deferred, add to the "allowlist" map in\n'
       '  $kKnownOverflowsFixturePath\n'
-      'along with a "tracking" note under the same key. Each key is the source '
-      'location the matching incident above ends in ("… at <file>:<line>") — '
-      'not the card|width|tab coordinate this fixture used before #1341.'
-      '${unresolved == 0 ? '' : '\n$unresolved further incident(s) resolved no '
-          'source location and therefore cannot be exempted at all; those need '
-          'the layout fixed.'}';
+      '${keys.map((s) => '  "$s": {"locales": ["$tag"], "maxOverflowPx": ${worstBySite[s]!.ceil()}}').join('\n')}\n'
+      'plus a "tracking" note under each of the same keys — the fixture refuses '
+      'an exemption that has none. Each key is the source location the matching '
+      'incident above ends in ("… at <file>:<line>"), not the card|width|tab '
+      'coordinate this fixture used before #1341; each ceiling is that '
+      'incident\'s own magnitude rounded up, with '
+      '${kOverflowTolerancePx.toStringAsFixed(1)}px of shaping slack allowed on '
+      'top of it.'
+      '${unexemptable.isEmpty ? '' : '\nAlso: ${unexemptable.join('; ')} — '
+          'those need the layout fixed.'}';
 }
 
 /// Report output mode. Set this in-file to dump locally without passing

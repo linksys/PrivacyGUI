@@ -23,6 +23,13 @@
 /// location resolve (widget creation tracking is on by default under
 /// `flutter test`).
 ///
+/// ## What an entry says
+///
+/// A site key is portable, and portability is exactly what makes it broad: one
+/// `file:line` is rendered by every cell that reaches the line. So the value
+/// carries two bounds rather than a locale list alone — see [OverflowExemption]
+/// for why a `"maxOverflowPx"` is not optional (#1356).
+///
 /// ## What it is called
 ///
 /// The architecture doc's §3.3 sketch writes `Ratchet.fromFixture(...)`. The
@@ -33,10 +40,11 @@
 /// ## No version marker
 ///
 /// A `"schemaVersion"` field was considered and rejected: the only thing it
-/// could detect is a fixture written under the old key shape, and
-/// [_validateSiteKey] detects that directly, from the data, with a message that
-/// names the offending key. A marker would be a second thing to keep in sync and
-/// a reader that trusted it would still have to validate the keys anyway. The
+/// could detect is a fixture written under an older shape, and the data says that
+/// itself — [_validateSiteKey] for a pre-#1341 coordinate key, [_parseExemption]
+/// for a pre-#1356 bare locale list, each with a message naming the offending
+/// entry. A marker would be a second thing to keep in sync and a reader that
+/// trusted it would still have to validate the entries anyway. The
 /// committed fixture is therefore byte-unchanged by #1341 — it holds
 /// `{"tracking": {}, "allowlist": {}}`, and an empty allowlist means what it has
 /// always meant: zero tolerance.
@@ -85,6 +93,65 @@ class OverflowRatchetFormatException implements Exception {
   @override
   String toString() => 'OverflowRatchetFormatException: $message';
 }
+
+/// One allowlist entry: which locales it exempts, and **how bad** it lets the
+/// overflow get.
+///
+/// ## Why the ceiling exists (#1356)
+///
+/// The old coordinate key bounded an exemption by construction:
+/// `connected_devices|min|0` exempted one card at one width, so a regression
+/// anywhere else was a new coordinate and the gate failed on it. Re-keying to
+/// `file:line` (#1341) bought portability with that bound — one location is
+/// rendered by many cells (anything in `ui_kit_library`, any shared row widget),
+/// so a single entry now speaks for every cell that reaches the line. Without a
+/// magnitude the entry written for the +2.5px this sweep measured also absorbs a
+/// +400px clipped row in the next cell, in the next card, next quarter — reported
+/// as tracked debt, under a "tracking" note that describes a much smaller defect.
+///
+/// So an exemption states two bounds, and neither is optional: *where and when*
+/// (`locales`) and *how much* ([maxOverflowPx]).
+///
+/// ## The slack, and why it is the gate's own tolerance
+///
+/// [coversMagnitude] allows [kOverflowTolerancePx] on top of the stated ceiling.
+/// An exemption written at exactly the measured magnitude would otherwise be a
+/// hair trigger: a sub-pixel shaping difference between the mac and ubuntu
+/// rasterizers — the very thing that constant exists to absorb everywhere else in
+/// this gate — would fail the run, and the only move available to whoever is
+/// paged is to inflate the number. One noise floor, stated once, applied here
+/// too: below it nothing is a signal, above it the defect measurably got worse.
+/// Failure messages print the allowance so it is not a surprise found in source.
+class OverflowExemption {
+  const OverflowExemption({required this.locales, required this.maxOverflowPx});
+
+  /// Locale tags this entry exempts, or `{'*'}` for every locale.
+  final Set<String> locales;
+
+  /// The worst overflow, in logical pixels, this entry tolerates — across every
+  /// locale in [locales], since it is one figure for the entry.
+  ///
+  /// Always finite and positive: an infinite ceiling is the unbounded exemption
+  /// this field replaces, and it would additionally cover
+  /// [OverflowIncident.unparseablePixels], which is the one incident whose real
+  /// magnitude nobody knows.
+  final double maxOverflowPx;
+
+  bool coversLocale(String localeTag) =>
+      locales.contains(kAnyLocale) || locales.contains(localeTag);
+
+  bool coversMagnitude(double pixels) =>
+      pixels <= maxOverflowPx + kOverflowTolerancePx;
+
+  /// What the failure and the fixture both call this allowance.
+  String get allowanceLabel =>
+      '${_formatPx(maxOverflowPx)}px (+${_formatPx(kOverflowTolerancePx)}px '
+      'shaping tolerance)';
+}
+
+/// `26.0`, and `Infinity` rather than a crash for the unparseable measurement.
+String _formatPx(double pixels) =>
+    pixels.isFinite ? pixels.toStringAsFixed(1) : '$pixels';
 
 /// The allowlist, plus the liveness it accumulates over one run.
 ///
@@ -198,12 +265,12 @@ class OverflowRatchet {
       tracking[entry.key] = note;
     }
 
-    final allowlist = <String, Set<String>>{};
+    final allowlist = <String, OverflowExemption>{};
     final allowSection = _sectionOf(json, 'allowlist', source);
     for (final entry in allowSection.entries) {
       _validateSiteKey(entry.key, section: 'allowlist', source: source);
       allowlist[entry.key] =
-          _parseLocaleSet(entry.value, key: entry.key, source: source);
+          _parseExemption(entry.value, key: entry.key, source: source);
     }
 
     _validateKeySymmetry(tracking.keys.toSet(), allowlist.keys.toSet(), source);
@@ -211,8 +278,8 @@ class OverflowRatchet {
     return OverflowRatchet._(allowlist, tracking, source);
   }
 
-  /// `file:line` → the locale tags that overflow there, or `{'*'}`.
-  final Map<String, Set<String>> _allowlist;
+  /// `file:line` → the locales that overflow there and the magnitude allowed.
+  final Map<String, OverflowExemption> _allowlist;
 
   /// `file:line` → why this exemption exists.
   ///
@@ -244,8 +311,16 @@ class OverflowRatchet {
   /// see [consultCell].
   final Map<String, Set<String>> _observed = {};
 
+  /// `file:line` → the worst overflow measured there, in logical pixels.
+  ///
+  /// One figure per site, matching [OverflowExemption.maxOverflowPx]'s own shape:
+  /// the entry states a single ceiling for every locale it lists, so the run's
+  /// answer to "is that ceiling still earned?" is a single maximum.
+  final Map<String, double> _observedMaxPx = {};
+
   static const String _inMemorySource = '<in-memory allowlist>';
   static const List<String> _knownSections = ['tracking', 'allowlist'];
+  static const List<String> _entryFields = ['locales', 'maxOverflowPx'];
 
   /// A `file:line` key: a repo- or package-relative path ending in `.dart`, then
   /// a 1-based line.
@@ -284,16 +359,47 @@ class OverflowRatchet {
 
   bool get isEmpty => _allowlist.isEmpty;
 
-  /// Whether [site] is exempt in [localeTag].
+  /// Whether an overflow of [pixels] at [site] is exempt in [localeTag].
+  ///
+  /// [pixels] is required rather than optional because the incomplete question —
+  /// "is this site listed?" — is the one #1356 found being asked in place of this
+  /// one, and an optional parameter leaves it askable. Where the answer genuinely
+  /// is about the locale set alone (classifying a breach for a failure message),
+  /// [ceilingBreaches] gives it a name that says so.
   ///
   /// Null [site] is never exempt — see the library comment for why that is the
   /// safe direction.
-  bool isAllowlisted(String? site, String localeTag) {
-    if (site == null) return false;
-    final locales = _allowlist[site];
-    if (locales == null) return false;
-    return locales.contains(kAnyLocale) || locales.contains(localeTag);
+  bool isAllowlisted(
+    String? site,
+    String localeTag, {
+    required double pixels,
+  }) {
+    final entry = exemptionFor(site);
+    if (entry == null) return false;
+    return entry.coversLocale(localeTag) && entry.coversMagnitude(pixels);
   }
+
+  /// The entry covering [site], or null when nothing exempts it.
+  OverflowExemption? exemptionFor(String? site) =>
+      site == null ? null : _allowlist[site];
+
+  /// The incidents blocked **only** because they outgrew their entry's ceiling.
+  ///
+  /// A separate bucket because the two need opposite advice, and giving the wrong
+  /// one is worse than giving none: an unlisted site needs an entry, while a site
+  /// whose entry already names this locale needs the layout fixed or the ceiling
+  /// raised. Told to "add the tag", whoever is holding the failure would look at
+  /// the fixture, find the tag already there, and conclude the gate is broken.
+  List<OverflowIncident> ceilingBreaches(
+    Iterable<OverflowIncident> incidents,
+    String localeTag,
+  ) =>
+      incidents.where((incident) {
+        final entry = exemptionFor(incident.site);
+        return entry != null &&
+            entry.coversLocale(localeTag) &&
+            !entry.coversMagnitude(incident.pixels);
+      }).toList();
 
   /// The note explaining why [site] is exempt, or [kUntrackedNote].
   String trackingNote(String? site) =>
@@ -320,8 +426,18 @@ class OverflowRatchet {
       final site = incident.site;
       if (site != null) {
         (_observed[site] ??= <String>{}).add(localeTag);
+        // Recorded for every incident at the site, exempt or not: this is what
+        // [deadEntryFailure] compares a ceiling against, and an entry that a
+        // breach already failed the run on still has to be reported as too loose
+        // rather than left for the next reader to discover.
+        final worst = _observedMaxPx[site];
+        if (worst == null || incident.pixels > worst) {
+          _observedMaxPx[site] = incident.pixels;
+        }
       }
-      if (!isAllowlisted(site, localeTag)) blocking.add(incident);
+      if (!isAllowlisted(site, localeTag, pixels: incident.pixels)) {
+        blocking.add(incident);
+      }
     }
     return blocking;
   }
@@ -343,11 +459,16 @@ class OverflowRatchet {
   /// [coverageSkipNote] is what tells the operator the closing direction was
   /// skipped.
   ///
-  /// Four complaints, all falsifiable from what a full run observed:
+  /// Five complaints, all falsifiable from what a full run observed:
   ///
   /// * **the whole entry** — no gated cell overflowed at that site;
   /// * **a listed locale tag** — the site still overflows, but not in that
   ///   locale;
+  /// * **a ceiling nothing came close to** — the site still overflows, by much
+  ///   less than [OverflowExemption.maxOverflowPx] allows. The magnitude bound
+  ///   ratchets for the same reason the locale list does: a partial fix that
+  ///   leaves the allowance where it was has quietly pre-approved the regression
+  ///   back to it;
   /// * **an over-broad `"*"`** — the site overflowed in a strict subset of the
   ///   locales the run covered, so the overflow is text-dependent, not
   ///   structural. This one rests on an assumption worth naming: that a widget's
@@ -388,7 +509,8 @@ class OverflowRatchet {
 
     final complaints = <String>[];
     for (final site in sites) {
-      final listed = _allowlist[site]!;
+      final entry = _allowlist[site]!;
+      final listed = entry.locales;
       final seen = _observed[site] ?? const <String>{};
 
       if (seen.isEmpty) {
@@ -397,6 +519,23 @@ class OverflowRatchet {
           'entry and its "tracking" note.',
         );
         continue;
+      }
+
+      // The ceiling ratchets too, for the same reason the locale list does: an
+      // allowance nobody tightens after a partial fix is an exemption for a
+      // regression that has not happened yet. Slack is [kOverflowTolerancePx],
+      // the same figure [OverflowExemption.coversMagnitude] grants, so a ceiling
+      // written at the measured magnitude never reports itself.
+      final worst = _observedMaxPx[site];
+      if (worst != null &&
+          entry.maxOverflowPx > worst + kOverflowTolerancePx &&
+          worst.isFinite) {
+        complaints.add(
+          '$site is exempt up to ${entry.allowanceLabel} but the worst overflow '
+          'measured there in this run is ${_formatPx(worst)}px. Tighten '
+          '"maxOverflowPx" to ${_formatPx(worst)} — the gap is room for a '
+          'regression that would be reported as this ticket\'s known debt.',
+        );
       }
 
       final unknownTags = listed
@@ -453,9 +592,10 @@ class OverflowRatchet {
     return [
       'Dead exemption(s) in $source.',
       '',
-      'This run measured every gated cell the sweep declares, so an allowlisted '
-          'site that produced no significant overflow is an exemption whose '
-          'defect is gone:',
+      'This run measured every gated cell the sweep declares, so an exemption it '
+          'cannot justify — a site nothing overflowed at, a locale that no longer '
+          'does, an allowance nothing came close to — is debt this gate has '
+          'stopped carrying:',
       '',
       for (final complaint in complaints) '  * $complaint',
       '',
@@ -605,6 +745,95 @@ class OverflowRatchet {
     ].join('\n'));
   }
 
+  /// Reads one `"allowlist"` value: `{"locales": [...], "maxOverflowPx": N}`.
+  ///
+  /// Both fields are required. The alternative — a ceiling that may be omitted —
+  /// is the shape this whole change exists to remove, and an optional bound is
+  /// the one nobody writes: the first entry authored under a deadline would omit
+  /// it, and every later one would copy that entry.
+  static OverflowExemption _parseExemption(
+    Object? value, {
+    required String key,
+    required String source,
+  }) {
+    if (value is List) {
+      // Named as the old shape rather than as a type error, because it *was*
+      // correct until #1356 and every closed ticket in this epic quotes it.
+      throw OverflowRatchetFormatException(
+        '$source: \'$key\' maps to a bare locale list, which is the pre-#1356 '
+        'entry shape. An entry is an object now:\n'
+        '  "$key": {"locales": ${jsonEncode(value)}, "maxOverflowPx": <the px '
+        'figure the failure printed>}\n'
+        'A site key says where the defect is and the locales say when; neither '
+        'says how bad it may get, and one `file:line` is rendered by many cells, '
+        'so an unbounded entry written for a +2.5px overflow also absorbs a '
+        '+400px one at the same line — reported as tracked debt.',
+      );
+    }
+    if (value is! Map<String, Object?>) {
+      throw OverflowRatchetFormatException(
+        '$source: \'$key\' must map to an object with "locales" and '
+        '"maxOverflowPx", not ${value.runtimeType}.',
+      );
+    }
+    final unknown = value.keys.where((k) => !_entryFields.contains(k)).toList()
+      ..sort();
+    if (unknown.isNotEmpty) {
+      throw OverflowRatchetFormatException(
+        '$source: \'$key\' has unrecognised field(s) ${_quoteAll(unknown)}. Only '
+        '${_quoteAll(_entryFields)} are read, so a misspelling is an entry that '
+        'reads as bounded and is not.',
+      );
+    }
+    return OverflowExemption(
+      locales: _parseLocaleSet(value['locales'], key: key, source: source),
+      maxOverflowPx:
+          _parseCeiling(value['maxOverflowPx'], key: key, source: source),
+    );
+  }
+
+  /// Reads `"maxOverflowPx"`: a finite, positive number of logical pixels.
+  static double _parseCeiling(
+    Object? value, {
+    required String key,
+    required String source,
+  }) {
+    if (value == null) {
+      throw OverflowRatchetFormatException(
+        '$source: \'$key\' states no "maxOverflowPx", so it exempts an overflow '
+        'of any size at that line. Write the px figure the failure printed; '
+        '${_formatPx(kOverflowTolerancePx)}px of shaping slack is allowed on top '
+        'of it, so the number does not have to be padded by hand.',
+      );
+    }
+    if (value is! num) {
+      throw OverflowRatchetFormatException(
+        '$source: \'$key\' has a non-numeric "maxOverflowPx" ($value). It is a '
+        'count of logical pixels, as printed in the failure.',
+      );
+    }
+    final pixels = value.toDouble();
+    if (!pixels.isFinite) {
+      throw OverflowRatchetFormatException(
+        '$source: \'$key\' has a "maxOverflowPx" of $pixels. A ceiling is a '
+        'finite count of pixels: an infinite one is the unbounded exemption this '
+        'field replaces, and it would additionally be the only thing able to '
+        'cover an incident whose overflow message could not be parsed at all '
+        '(OverflowIncident.unparseablePixels) — the one measurement nobody knows '
+        'the size of.',
+      );
+    }
+    if (pixels <= 0) {
+      throw OverflowRatchetFormatException(
+        '$source: \'$key\' has a "maxOverflowPx" of ${_formatPx(pixels)}, which '
+        'exempts nothing: the ratchet is only consulted about incidents already '
+        'above the ${_formatPx(kOverflowTolerancePx)}px tolerance. Delete the '
+        'entry instead of writing one that cannot fire.',
+      );
+    }
+    return pixels;
+  }
+
   static Set<String> _parseLocaleSet(
     Object? value, {
     required String key,
@@ -612,7 +841,7 @@ class OverflowRatchet {
   }) {
     if (value is! List) {
       throw OverflowRatchetFormatException(
-        '$source: \'$key\' must map to a JSON array of locale tags (or '
+        '$source: \'$key\' → "locales" must be a JSON array of locale tags (or '
         '["*"]), not ${value.runtimeType}.',
       );
     }
