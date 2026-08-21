@@ -107,76 +107,96 @@ class DashboardHeaderBar extends StatelessWidget {
     );
   }
 
-  /// The actions in display order, with exactly one marked primary.
+  /// The mode's actions in display order, together with the one that survives
+  /// the collapse.
   ///
   /// Order and identifiers are unchanged from the pre-#1314 header, so the wide
   /// form renders exactly as it did and every existing E2E selector still
   /// resolves there.
-  List<_HeaderAction> _actions(BuildContext context) {
+  ///
+  /// The primary is a field of [_HeaderActions] rather than a flag on the list
+  /// because "exactly one per mode" has to hold for the collapsed form to build
+  /// at all. Until #1356 it was a flag plus a comment, and the collapsed form
+  /// searched for it with `firstWhere((a) => a.isPrimary)` — so a mode that
+  /// shipped without one (a conditional action list dropping the flagged
+  /// action, say, the way `isRemoteMode` already drops `dashboard-edit`) threw
+  /// `Bad state: No element` at widths <=600px and nowhere else. No
+  /// desktop-width test or screenshot could see it, and neither could the
+  /// overflow gate, which measures rows that laid out rather than rows that
+  /// failed to build. Naming the primary at the point each mode is declared
+  /// makes that mode un-writable instead.
+  _HeaderActions _actions(BuildContext context) {
     if (isEditMode) {
-      return [
-        _HeaderAction(
-          identifier: 'dashboard-optimize-layout',
-          label: loc(context).optimizeLayout,
-          icon: Icons.auto_fix_high,
-          onTap: onOptimizeLayout,
-        ),
-        _HeaderAction(
-          identifier: 'dashboard-layout-settings',
-          label: loc(context).settings,
-          icon: Icons.tune,
-          onTap: onLayoutSettings,
-        ),
-        _HeaderAction(
-          identifier: 'dashboard-edit-cancel',
-          label: loc(context).cancel,
-          icon: Icons.close,
-          onTap: onCancelEdit,
-        ),
+      final commit = _HeaderAction(
+        identifier: 'dashboard-edit-commit',
+        label: loc(context).done,
+        icon: Icons.check,
+        onTap: onCommitEdit,
+      );
+      return _HeaderActions(
+        inOrder: [
+          _HeaderAction(
+            identifier: 'dashboard-optimize-layout',
+            label: loc(context).optimizeLayout,
+            icon: Icons.auto_fix_high,
+            onTap: onOptimizeLayout,
+          ),
+          _HeaderAction(
+            identifier: 'dashboard-layout-settings',
+            label: loc(context).settings,
+            icon: Icons.tune,
+            onTap: onLayoutSettings,
+          ),
+          _HeaderAction(
+            identifier: 'dashboard-edit-cancel',
+            label: loc(context).cancel,
+            icon: Icons.close,
+            onTap: onCancelEdit,
+          ),
+          commit,
+        ],
         // Committing the layout is the action the mode exists to reach, so it is
         // the one that survives the collapse.
-        _HeaderAction(
-          identifier: 'dashboard-edit-commit',
-          label: loc(context).done,
-          icon: Icons.check,
-          onTap: onCommitEdit,
-          isPrimary: true,
-        ),
-      ];
+        primary: commit,
+      );
     }
-    return [
-      _HeaderAction(
-        identifier: 'dashboard-print',
-        label: loc(context).print,
-        icon: Icons.print,
-        onTap: onPrint,
-      ),
+    final refresh = _HeaderAction(
+      identifier: 'dashboard-refresh',
+      label: loc(context).refresh,
+      icon: Icons.refresh,
+      onTap: onRefresh,
+    );
+    return _HeaderActions(
+      inOrder: [
+        _HeaderAction(
+          identifier: 'dashboard-print',
+          label: loc(context).print,
+          icon: Icons.print,
+          onTap: onPrint,
+        ),
+        refresh,
+        if (!isRemoteMode)
+          _HeaderAction(
+            identifier: 'dashboard-edit',
+            label: loc(context).edit,
+            icon: Icons.edit,
+            onTap: onEdit,
+          ),
+      ],
       // Refreshing is the only one of the three a reader might repeat, and the
       // only one whose value is immediacy, so it keeps its own button.
-      _HeaderAction(
-        identifier: 'dashboard-refresh',
-        label: loc(context).refresh,
-        icon: Icons.refresh,
-        onTap: onRefresh,
-        isPrimary: true,
-      ),
-      if (!isRemoteMode)
-        _HeaderAction(
-          identifier: 'dashboard-edit',
-          label: loc(context).edit,
-          icon: Icons.edit,
-          onTap: onEdit,
-        ),
-    ];
+      primary: refresh,
+    );
   }
 
-  Widget _buildFullActions(List<_HeaderAction> actions) {
+  Widget _buildFullActions(_HeaderActions actions) {
+    final inOrder = actions.inOrder;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        for (int i = 0; i < actions.length; i++) ...[
+        for (int i = 0; i < inOrder.length; i++) ...[
           if (i > 0) AppGap.sm(),
-          _iconButton(actions[i]),
+          _iconButton(inOrder[i]),
         ],
       ],
     );
@@ -191,10 +211,10 @@ class DashboardHeaderBar extends StatelessWidget {
   /// in viewing mode (three actions) as in edit mode (four).
   Widget _buildCollapsedActions(
     BuildContext context,
-    List<_HeaderAction> actions,
+    _HeaderActions actions,
   ) {
-    final primary = actions.firstWhere((a) => a.isPrimary);
-    final overflow = actions.where((a) => !a.isPrimary).toList();
+    final primary = actions.primary;
+    final overflow = actions.overflow;
 
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -253,6 +273,36 @@ class DashboardHeaderBar extends StatelessWidget {
   }
 }
 
+/// One mode's action set: every action in display order, plus the single one
+/// that keeps a button of its own when the header collapses.
+///
+/// Both forms read the same set, and neither has to look for the primary — the
+/// wide form ignores it, the collapsed form is handed it. See [_actions] for why
+/// it is a field here rather than a flag on [_HeaderAction].
+class _HeaderActions {
+  _HeaderActions({required this.inOrder, required this.primary})
+      : assert(
+          inOrder.any((a) => identical(a, primary)),
+          'the primary action must be one of the actions in display order — '
+          'the wide form renders `inOrder` and would otherwise drop it',
+        );
+
+  /// Every action of the mode, in the order the wide header shows them.
+  final List<_HeaderAction> inOrder;
+
+  /// The action the collapsed header keeps as a button of its own.
+  final _HeaderAction primary;
+
+  /// The actions the collapsed header moves into the overflow menu, in display
+  /// order.
+  ///
+  /// Identity, not equality: [_HeaderAction] is a plain value holder with no
+  /// `==`, and two actions of a mode could otherwise only be told apart by
+  /// their identifier.
+  List<_HeaderAction> get overflow =>
+      inOrder.where((a) => !identical(a, primary)).toList();
+}
+
 /// One dashboard-level action, in the form both the button and the menu item can
 /// be built from.
 ///
@@ -265,15 +315,10 @@ class _HeaderAction {
     required this.label,
     required this.icon,
     required this.onTap,
-    this.isPrimary = false,
   });
 
   final String identifier;
   final String label;
   final IconData icon;
   final VoidCallback onTap;
-
-  /// Whether this action keeps a button of its own when the header collapses.
-  /// Exactly one action per mode sets it.
-  final bool isPrimary;
 }
