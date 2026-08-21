@@ -27,13 +27,14 @@ import 'dart:io';
 /// carried verbatim rather than shared, and the names are distinct
 /// ([normalizeOverflowSourcePath] versus `normalizeSourcePath`) so that both
 /// libraries can be imported into one file while the overlap lasts —
-/// `test/util/overflow_baseline.dart` does exactly that today. **#1339 retires
-/// the copy in `overflow_diagnostics.dart` and points `golden_runner.dart` here**;
-/// this ticket deliberately leaves that file untouched so the swap is one
-/// reviewable change with its own verification against CI artifacts. Keeping the
-/// logic byte-identical for now is what lets #1339 attribute every remaining
-/// difference in `overflow_warnings.json` to first-side → worst-side and to
-/// nothing else.
+/// `test/util/overflow_baseline.dart` is the one file that does exactly that
+/// today, and **#1351 ends it on the gate side** — after which nothing outside the
+/// golden framework calls the copy. **#1339 then retires the copy itself and
+/// points `golden_runner.dart` here**; this ticket deliberately leaves that file
+/// untouched so the swap is one reviewable change with its own verification
+/// against CI artifacts. Keeping the logic byte-identical for now is what lets
+/// #1339 attribute every remaining difference in `overflow_warnings.json` to
+/// first-side → worst-side and to nothing else.
 ///
 /// ## Files do not move
 ///
@@ -89,8 +90,8 @@ class OverflowIncident {
   /// Carried rather than dropped for two reasons: it comes free out of the same
   /// match as [file] and [line], and #1337's baseline dataset already has a
   /// `widget` column — supplied today by `parseOverflowSource`, not by this
-  /// incident (`overflow_baseline.dart:175`). Without it #1339 could not delete
-  /// that parser outright, it would have to keep the second one alive for one
+  /// incident (`overflow_baseline.dart:175`). Without it #1351 could not drop
+  /// that call outright, it would have to keep the second parser alive for one
   /// field.
   final String? widget;
 
@@ -247,8 +248,8 @@ bool isOverflowError(String exceptionAsString) =>
 /// An unrecognized path is returned unchanged — better a long path than none.
 ///
 /// Named apart from `overflow_diagnostics.dart`'s `normalizeSourcePath` on
-/// purpose: the two libraries coexist until #1339, and a shared name would make
-/// importing both an ambiguity error.
+/// purpose: one file imports both until #1351, and a shared name would make that
+/// an ambiguity error. The copy itself goes at #1339.
 String normalizeOverflowSourcePath(
   String absolutePath, {
   required String runDirectory,

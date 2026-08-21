@@ -188,9 +188,9 @@ String overflowBaselineRecordLine(
           // here, so the first real overflow row does not read as corruption.
           //
           // Epic #1335's "exactly one parser" AC is not met until this line
-          // changes. It needs nothing from CI — unlike #1339, which retires the
-          // parser this calls and can only be verified against golden-ci
-          // artifacts.
+          // changes. #1351 owns it, and it needs nothing from CI — unlike #1339,
+          // which retires the parser this calls and can only be verified against
+          // golden-ci artifacts.
           ...parseOverflowSource(incident.fullLog, runDirectory: runDirectory),
         },
     ],
