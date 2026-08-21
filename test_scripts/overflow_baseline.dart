@@ -867,8 +867,16 @@ String _headCommit() {
 ///
 /// Not `pubspec.lock`: it is gitignored in this repo, so `git status` cannot
 /// report it whatever we pass, and listing it would only look like cover for a
-/// resolved-version drift no stamp here can see. Not `assets/fonts` either — the
-/// sweeps load no app fonts, so text metrics come from the test font.
+/// resolved-version drift no stamp here can see.
+///
+/// Not `assets/fonts` either — but not because fonts are irrelevant here. They
+/// decide every measurement in this dataset, which is why all four sweeps call
+/// `loadAppFonts()`. It is that none of the fonts they load live in that
+/// directory: the ui_kit faces are read out of the pub-cache checkout
+/// `pubspec.yaml` pins, and the Noto fallbacks are committed under
+/// `test/fonts/`. Both are already covered above. The input this stamp genuinely
+/// cannot see is the Flutter SDK — its version is not in this tree, and it
+/// supplies MaterialIcons and the layout engine underneath every row.
 ///
 /// Mirrored in `tool/overflow_baseline.sh`, which computes the same stamp for
 /// the wrapped path; `overflow_baseline_test.dart` holds the two to the same

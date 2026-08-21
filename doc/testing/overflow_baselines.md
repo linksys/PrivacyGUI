@@ -107,8 +107,12 @@ last one because most of the widgets these rows measure are not in this repo:
 `ui_kit_library` and `generative_ui` are git dependencies pinned by ref there, so
 bumping the ref moves rows exactly as directly as editing `lib/` does. (Not
 `pubspec.lock`: it is gitignored here, so no stamp can see a resolved-version
-drift. `assets/fonts/` is not on the list either — the sweeps load no app fonts,
-so text metrics come from the test font.) The four baselines here all carry the
+drift. `assets/fonts/` is not on the list either — not because fonts are
+irrelevant, they decide every measurement in this dataset, but because none of
+the fonts these sweeps load live there: all four call `loadAppFonts()`, which
+reads the ui_kit faces from the pub-cache checkout `pubspec.yaml` pins and the
+Noto fallbacks from `test/fonts/`, both already covered. The Flutter SDK version
+is the one input no stamp here can see.) The four baselines here all carry the
 suffix: they were taken with this ticket's own instrumentation still
 uncommitted, which is unavoidable for a mechanism that measures the code that
 introduces it. So `4fb1ac5e-dirty` reads "the tree at `4fb1ac5e` plus #1337", not
@@ -257,7 +261,12 @@ they are in the dataset too, under group names of their own.
 
 **Every cell is clean, and that is the point.** `known_overflows.json` is
 `{"tracking": {}, "allowlist": {}}` — zero tolerance is already fact — so there is
-no red failure set to freeze. What is being frozen is the *coverage*: 3,587
+no red failure set to freeze. The entry *shape* changed at #1356's review (an
+exemption now carries a `maxOverflowPx` ceiling beside its locale list, and the
+two sections must name the same sites — see
+[overflow_gate_architecture.md](overflow_gate_architecture.md) §3), but an empty
+map is an empty map under either shape, and all four baselines still `check`
+identical. What is being frozen is the *coverage*: 3,587
 coordinates that are measured and clean today. Against an all-clean baseline the
 only difference a port can produce is a lost cell, a new overflow, or a cell that
 stopped finishing — which is exactly what R3 and R5 need to detect, and what a
