@@ -71,7 +71,17 @@ String _localeTag(Locale l) => l.countryCode == null || l.countryCode!.isEmpty
 
 /// Target locales parsed from --dart-define=LOCALE=... or environment variables.
 /// Defaults to all shipped locales if no filter is provided.
-List<Locale> get _targetLocales {
+///
+/// A `final`, not a getter: the innermost collection loop below reads this once
+/// per declared cell, and as a getter that was ~1,900 walks of
+/// `Platform.environment` plus ~1,900 filtered copies of the supported-locale
+/// list before a single cell had been pumped. A top-level `final` in Dart is
+/// lazily initialised, so the parse still happens on first use rather than at
+/// load — which matters, because the environment is what `tool/run_overflow_test.sh`
+/// sets.
+final List<Locale> _targetLocales = _parseTargetLocales();
+
+List<Locale> _parseTargetLocales() {
   const d = String.fromEnvironment('LOCALE', defaultValue: '');
   const d2 = String.fromEnvironment('locale', defaultValue: '');
   final env = Platform.environment;

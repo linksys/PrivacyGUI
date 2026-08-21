@@ -695,6 +695,16 @@ Future<int> runOverflowBaseline(
     return 2;
   }
 
+  // Answered before [_parseOptions], which would reject `-h` as an unexpected
+  // argument and then print this very text as an *error* — on stderr, with exit
+  // 2 — to someone who asked for it. Recognised in any position, matching
+  // `tool/overflow_baseline.sh`, which takes `-h`/`--help` both as the command
+  // and after it.
+  if (_isHelpRequest(args)) {
+    stdoutSink.write(_usage);
+    return 0;
+  }
+
   try {
     final options = _parseOptions(args.skip(1).toList());
     switch (args.first) {
@@ -752,9 +762,21 @@ int _diffCommand(Map<String, String> options, StringSink out) {
   } else if (reporterPath != null) {
     // The sweep's own reporter file is what a port run has to hand, so `check`
     // is one command rather than extract-then-compare.
+    //
+    // Which sweep to pull out of that run comes from the baseline's own header
+    // and nowhere else. A `--sweep` override was offered here as a fallback and
+    // could never work: it is consulted only when the baseline names no sweep,
+    // and [diffBaselines] then refuses the comparison on exactly that mismatch.
+    // A header-less baseline is a re-capture, so say so.
+    final sweep = baseline.sweep;
+    if (sweep == null) {
+      throw FormatException(
+          '$baselinePath carries no "# sweep" header, so nothing says which of '
+          'the run\'s sweeps it is a measurement of. Re-capture it with '
+          "tool/overflow_baseline.sh capture <sweep>.");
+    }
     actual = BaselineFile.fromExtracted(
-      extractBaseline(_readFile(reporterPath),
-          sweep: baseline.sweep ?? _require(options, '--sweep')),
+      extractBaseline(_readFile(reporterPath), sweep: sweep),
       source: reporterPath,
     );
   } else {
@@ -765,6 +787,14 @@ int _diffCommand(Map<String, String> options, StringSink out) {
   out.write(diff.report());
   return diff.isClean ? 0 : 1;
 }
+
+/// Whether [args] is asking for the usage text rather than for work.
+///
+/// `help` only as the command, because it is a plausible option *value* (a sweep
+/// or a file could be called that); `-h`/`--help` anywhere, because no option
+/// takes either as a value.
+bool _isHelpRequest(List<String> args) =>
+    args.first == 'help' || args.any((a) => a == '-h' || a == '--help');
 
 Map<String, String> _parseOptions(List<String> args) {
   final options = <String, String>{};
@@ -804,7 +834,8 @@ String _readFile(String path) {
 
 /// The commit a capture was taken at, so a baseline says what it describes.
 ///
-/// Suffixed `-dirty` when `lib/` or `test/` carries uncommitted work, because a
+/// Suffixed `-dirty` when any of [kBaselineMeasuredPaths] carries uncommitted
+/// work, because a
 /// plain sha claims that checking it out and re-capturing reproduces these rows,
 /// and a dirty tree cannot keep that promise. `tool/overflow_baseline.sh` computes
 /// the same stamp and passes it as `--commit`; this is the fallback for a direct
@@ -826,14 +857,32 @@ String _headCommit() {
   return 'unknown';
 }
 
+/// The paths a baseline is a measurement of, for the `-dirty` stamp.
+///
+/// `lib` and `test` are the app and the sweeps. `pubspec.yaml` is here because
+/// the widgets being measured are largely not in this repo: `ui_kit_library` and
+/// `generative_ui` are git dependencies pinned by ref in that file, so bumping
+/// the ref moves rows exactly as directly as editing `lib/` does, and a baseline
+/// that called such a tree clean would promise a reproduction it cannot deliver.
+///
+/// Not `pubspec.lock`: it is gitignored in this repo, so `git status` cannot
+/// report it whatever we pass, and listing it would only look like cover for a
+/// resolved-version drift no stamp here can see. Not `assets/fonts` either — the
+/// sweeps load no app fonts, so text metrics come from the test font.
+///
+/// Mirrored in `tool/overflow_baseline.sh`, which computes the same stamp for
+/// the wrapped path; `overflow_baseline_test.dart` holds the two to the same
+/// list.
+const List<String> kBaselineMeasuredPaths = ['lib', 'test', 'pubspec.yaml'];
+
 /// Whether the trees a baseline is a measurement of carry uncommitted work.
 ///
-/// Scoped to `lib` and `test`: a baseline is a measurement of the app and the
-/// sweeps, so an edited README is not something it needs to disclaim.
+/// Scoped to [kBaselineMeasuredPaths], so an edited README is not something a
+/// baseline needs to disclaim.
 bool _isDirty() {
   try {
-    final result =
-        Process.runSync('git', ['status', '--porcelain', '--', 'lib', 'test']);
+    final result = Process.runSync(
+        'git', ['status', '--porcelain', '--', ...kBaselineMeasuredPaths]);
     if (result.exitCode == 0) {
       return (result.stdout as String).trim().isNotEmpty;
     }

@@ -84,9 +84,15 @@ would read the same in both and mean different things.
 `# commit` and the other `#` lines are **excluded from the diff**, so re-capturing
 at a new commit does not by itself register as a change.
 
-**`-dirty` in `# commit` means what it says.** The suffix is appended when `lib/`
-or `test/` carried uncommitted work at capture time, and the four baselines here
-all carry it: they were taken with this ticket's own instrumentation still
+**`-dirty` in `# commit` means what it says.** The suffix is appended when any of
+`lib/`, `test/` or `pubspec.yaml` carried uncommitted work at capture time — that
+last one because most of the widgets these rows measure are not in this repo:
+`ui_kit_library` and `generative_ui` are git dependencies pinned by ref there, so
+bumping the ref moves rows exactly as directly as editing `lib/` does. (Not
+`pubspec.lock`: it is gitignored here, so no stamp can see a resolved-version
+drift. `assets/fonts/` is not on the list either — the sweeps load no app fonts,
+so text metrics come from the test font.) The four baselines here all carry the
+suffix: they were taken with this ticket's own instrumentation still
 uncommitted, which is unavoidable for a mechanism that measures the code that
 introduces it. So `4fb1ac5e-dirty` reads "the tree at `4fb1ac5e` plus #1337", not
 "check out `4fb1ac5e` and re-capture". A baseline can never name the commit that

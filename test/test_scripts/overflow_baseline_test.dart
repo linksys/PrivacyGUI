@@ -1014,5 +1014,85 @@ void main() {
       expect(code, 2);
       expect(err, contains('nope.json'));
     });
+
+    test('answers a request for the usage text as a success, on stdout',
+        () async {
+      // The option parser rejects anything it does not know, so `-h` used to be
+      // reported as an unexpected argument — printing this text as an *error*,
+      // on stderr, with exit 2, to someone who had asked for it. All three
+      // spellings, and after the command as well as instead of it, because
+      // tool/overflow_baseline.sh takes them in both positions.
+      for (final args in [
+        ['help'],
+        ['-h'],
+        ['--help'],
+        ['extract', '--help'],
+      ]) {
+        final (code, out, err) = await run(args);
+        expect(code, 0, reason: '"${args.join(' ')}" exited $code: $err');
+        expect(out, contains('usage'),
+            reason: '"${args.join(' ')}" wrote nothing to stdout');
+        expect(err, isEmpty, reason: 'asking for help is not an error');
+      }
+    });
+
+    test('a baseline naming no sweep is sent for re-capture, not for --sweep',
+        () async {
+      // `--sweep` was accepted here as a fallback and could never work: it is
+      // consulted only when the baseline names no sweep, and the diff then
+      // refuses that exact mismatch ("(none)" vs "card"). So the message has to
+      // ask for the one thing that fixes it.
+      final headerless = File('${tempDir.path}/headerless.tsv')
+        ..writeAsStringSync('# overflow-baseline $overflowBaselineVersion\n'
+            'card.width|card=a\tclean\t-\t-\t-\t-\n');
+
+      final (code, _, err) = await run([
+        'diff',
+        '--baseline',
+        headerless.path,
+        '--reporter',
+        reporterFile.path,
+        '--sweep',
+        'card',
+      ]);
+      expect(code, 2);
+      expect(err, contains('# sweep'));
+      expect(err, contains('capture'));
+    });
+  });
+
+  group('the -dirty stamp', () {
+    test('measures the same paths as the shell wrapper', () {
+      // Two implementations of one stamp: `tool/overflow_baseline.sh` computes it
+      // and passes --commit, and this script computes it for a direct
+      // `dart run … extract`. A stamp that were honest only through the wrapper
+      // would be the misleading half by default, so the lists are held equal
+      // here rather than by a comment asking for it.
+      final shell = File('tool/overflow_baseline.sh').readAsStringSync();
+      final declaration =
+          RegExp(r'^MEASURED_PATHS=\(([^)]*)\)$', multiLine: true)
+              .firstMatch(shell);
+      expect(declaration, isNotNull,
+          reason: 'tool/overflow_baseline.sh no longer declares '
+              'MEASURED_PATHS=(...) — find what replaced it and re-point this '
+              'test, because nothing else checks the two agree');
+      expect(
+        declaration!.group(1)!.trim().split(RegExp(r'\s+')),
+        kBaselineMeasuredPaths,
+      );
+    });
+
+    test('names only paths that git can actually report on', () {
+      // A gitignored path in the pathspec reads as coverage and provides none:
+      // `git status --porcelain -- <ignored>` is silent, so the stamp would stay
+      // clean through any change to it. pubspec.lock is the live example — it is
+      // ignored in this repo, which is why it is not on the list.
+      for (final path in kBaselineMeasuredPaths) {
+        final ignored = Process.runSync('git', ['check-ignore', path]);
+        expect(ignored.exitCode, isNot(0),
+            reason: '"$path" is gitignored, so listing it as measured claims a '
+                'dirty check that cannot fire');
+      }
+    });
   });
 }

@@ -119,18 +119,25 @@ fi
 
 # The commit stamped into each baseline's header.
 #
-# A `-dirty` suffix when `lib/` or `test/` carries uncommitted work, and it is not
+# A `-dirty` suffix when the measured paths carry uncommitted work, and it is not
 # cosmetic: `# commit <sha>` is the only thing telling a later reader which tree
 # produced these rows, and a plain sha claims that checking out that sha and
 # re-capturing reproduces them. It does not when the tree was dirty — the first
 # capture of these four was itself taken with this ticket's own instrumentation
 # still uncommitted, which is unavoidable for a mechanism that measures the code
 # introducing it. Better to say so in the file than to imply otherwise.
+#
+# MEASURED_PATHS mirrors kBaselineMeasuredPaths in $EXTRACTOR, which stamps the
+# same way for a direct `dart run … extract`; the extractor's test asserts the two
+# lists match, so read the doc comment there before editing either. `pubspec.yaml`
+# earns its place by pinning the ui_kit_library / generative_ui refs — most of the
+# widgets these rows measure are not in this repo at all.
+MEASURED_PATHS=(lib test pubspec.yaml)
 COMMIT="$(git rev-parse --short HEAD 2>/dev/null || echo unknown)"
-if [ -n "$(git status --porcelain -- lib test 2>/dev/null)" ]; then
+if [ -n "$(git status --porcelain -- "${MEASURED_PATHS[@]}" 2>/dev/null)" ]; then
   COMMIT="$COMMIT-dirty"
-  DIRTY=" — lib/ or test/ has uncommitted work, so a re-capture at that sha alone
-          will not reproduce these rows"
+  DIRTY=" — uncommitted work in ${MEASURED_PATHS[*]}, so a re-capture at that sha
+          alone will not reproduce these rows"
 else
   DIRTY=""
 fi
