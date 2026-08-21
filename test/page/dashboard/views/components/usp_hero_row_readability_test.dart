@@ -1,4 +1,4 @@
-@Tags(['dashboard-card'])
+@Tags(['layout-gate'])
 library;
 
 import 'package:flutter/material.dart';
@@ -38,7 +38,7 @@ import '../../../../util/dashboard/text_readability_probe.dart';
 /// indistinguishable from a correct one in a green gate. What is asserted is the
 /// floor: enough glyphs to key the state, plus the colour that also encodes it.
 ///
-/// Tagged `dashboard-card` so it gates PRs — `run_tests.sh` excludes
+/// Tagged `layout-gate` so it gates PRs — `run_tests.sh` excludes
 /// `golden||loc||ui`, so a `ui` tag here would block nothing.
 ///
 /// ## Mutation ledger

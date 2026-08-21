@@ -1,4 +1,4 @@
-@Tags(['dashboard-card'])
+@Tags(['layout-gate'])
 library;
 
 import 'package:flutter/material.dart';
@@ -45,7 +45,7 @@ import '../../../../util/overflow_probe.dart';
 /// reason as well: nothing else in the suite would notice if a later fix
 /// collapsed the per-band rows.
 ///
-/// Tagged `dashboard-card` so it gates PRs: `run_tests.sh` excludes
+/// Tagged `layout-gate` so it gates PRs: `run_tests.sh` excludes
 /// `golden||loc||ui`, so a `ui`-tagged test here would block nothing.
 ///
 /// ## Mutation ledger

@@ -1,4 +1,4 @@
-@Tags(['dashboard-card'])
+@Tags(['layout-gate'])
 library;
 
 import 'package:flutter/material.dart';
@@ -34,7 +34,7 @@ import '../../../../util/statistics/stats_section_probe.dart';
 /// with `spaceBetween`) clean at the narrow widths the Statistics page produces,
 /// in the widest locales, and verify the byte totals are never dropped.
 ///
-/// Tagged `dashboard-card` so it gates PRs — `run_tests.sh` excludes
+/// Tagged `layout-gate` so it gates PRs — `run_tests.sh` excludes
 /// `golden||loc||ui`, and a `ui`-tagged regression test would not block anything.
 ///
 /// ## Mutation ledger

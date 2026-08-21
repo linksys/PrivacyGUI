@@ -1,4 +1,4 @@
-@Tags(['dashboard-card'])
+@Tags(['layout-gate'])
 library;
 
 import 'package:flutter/material.dart';
@@ -27,7 +27,7 @@ import '../../../util/app_test_fonts.dart';
 /// measured against fictional widths and the fit assertions below would be
 /// meaningless.
 ///
-/// Tagged `dashboard-card`, not `ui`: `run_tests.sh` excludes `ui`, so a `ui`
+/// Tagged `layout-gate`, not `ui`: `run_tests.sh` excludes `ui`, so a `ui`
 /// tag here would keep the regression this file guards out of the PR gate.
 void main() {
   setUpAll(() async {

@@ -1,4 +1,4 @@
-@Tags(['dashboard-card'])
+@Tags(['layout-gate', 'overflow'])
 library;
 
 import 'package:flutter/widgets.dart';

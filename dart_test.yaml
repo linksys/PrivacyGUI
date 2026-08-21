@@ -2,7 +2,17 @@ tags:
   golden:
   loc:
   ui:
-  # Defensive widget gates that must run in the PR test command (#1183).
+  # Defensive widget gates that must run in the PR test command (#1183), said in
+  # the name since #1336: a PR-blocking defensive layout gate. All 38 carriers
+  # are one — density, readability, form and gesture, layout-block, probe
+  # self-test, render-parity and overflow.
   # NOT excluded by run_tests.sh's --exclude-tags="golden||loc||ui", so a
-  # failure here blocks the PR.
-  dashboard-card:
+  # failure here blocks the PR — and tagging one of these `golden`, `loc` or
+  # `ui` instead is how a gate leaves the PR command in silence.
+  layout-gate:
+  # The fast pre-commit selector: `flutter test --tags overflow` runs the four
+  # sweeps and nothing else, in about half a minute. Carried in addition to
+  # `layout-gate`, and only by a suite that pumps cells and asserts zero
+  # overflow — not by everything a verdict depends on, which would slide back
+  # to the whole family (the probe self-tests are deliberately excluded).
+  overflow:

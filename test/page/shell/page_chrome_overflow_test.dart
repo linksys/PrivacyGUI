@@ -1,4 +1,4 @@
-@Tags(['dashboard-card'])
+@Tags(['layout-gate', 'overflow'])
 library;
 
 import 'package:flutter/material.dart';
@@ -55,10 +55,13 @@ import '../../util/overflow_probe.dart';
 ///
 /// ## Tag choice
 ///
-/// `dashboard-card`, deliberately, even though nothing here is a card.
-/// `run_tests.sh` only does `--exclude-tags="golden||loc||ui"` and no CI config
-/// mentions `dashboard-card` — so "in the PR gate" means "not excluded", and
-/// this tag is a grouping label whose semantics are *PR-blocking layout gate*.
+/// `layout-gate` and `overflow` (#1336). `run_tests.sh` only does
+/// `--exclude-tags="golden||loc||ui"` and no CI config names either tag — so
+/// "in the PR gate" means "not excluded", and `layout-gate` is that meaning
+/// written as a name: a PR-blocking defensive layout gate. `overflow` is the
+/// narrower second selector, carried only by a suite that pumps cells and
+/// asserts zero overflow, so `flutter test --tags overflow` runs this suite and
+/// the three card sweeps and nothing else — the pre-commit run.
 /// Tagging this `ui` or `loc` would have removed it from the gate silently.
 void main() {
   /// Widths swept per locale.

@@ -1,6 +1,6 @@
 ---
 name: dashboard-overflow-gate
-description: Operate and maintain the `dashboard-card`-tagged RenderFlex-overflow PR gate — run the #1183 card sweep, read its HTML/Markdown report, edit the known_overflows.json allowlist under the ratchet rules, onboard newly added/removed dashboard cards, and add a new overflow probe for a surface that is not a card (page chrome, dialogs). Use when a dashboard-card gate test fails, when adding/removing a card or a locale, when reading/generating the overflow report, or when a newly found overflow needs a probe of its own. Trigger keywords (English) - overflow test, overflow gate, RenderFlex, dashboard card test, known_overflows, allowlist, whitelist, overflow report, new dashboard card, data profile, dead exemption, new overflow probe, page chrome overflow, top bar overflow, header overflow. Trigger keywords (Chinese) - 跑版測試, 溢出測試, overflow 測試, dashboard card 測試, 白名單, 新增語系, 新增卡片, 刪除卡片, 溢出報告, 生成報告, 掃描 dashboard, 資料情境, 新增探測, 頁面外框溢出.
+description: Operate and maintain the `layout-gate`-tagged RenderFlex-overflow PR gate — run the #1183 card sweep, read its HTML/Markdown report, edit the known_overflows.json allowlist under the ratchet rules, onboard newly added/removed dashboard cards, and add a new overflow probe for a surface that is not a card (page chrome, dialogs). Use when a layout-gate test fails, when adding/removing a card or a locale, when reading/generating the overflow report, or when a newly found overflow needs a probe of its own. Trigger keywords (English) - overflow test, overflow gate, layout gate, RenderFlex, dashboard card test, known_overflows, allowlist, whitelist, overflow report, new dashboard card, data profile, dead exemption, new overflow probe, page chrome overflow, top bar overflow, header overflow. Trigger keywords (Chinese) - 跑版測試, 溢出測試, overflow 測試, dashboard card 測試, 白名單, 新增語系, 新增卡片, 刪除卡片, 溢出報告, 生成報告, 掃描 dashboard, 資料情境, 新增探測, 頁面外框溢出.
 ---
 
 # Dashboard Overflow Gate — Operate & Maintain
@@ -13,10 +13,35 @@ not-every-card — the path the #1145 Network Health legend overflow slipped
 through).
 
 **The gate is not one test.** It is a family of independent suites that share
-two things and nothing else: the tag `dashboard-card` (which is what makes them
+two things and nothing else: the tag `layout-gate` (which is what makes them
 PR-blocking) and the probe in
-[test/util/overflow_probe.dart](../../../test/util/overflow_probe.dart). 20+
-suites carry that tag today. Two members are worth naming:
+[test/util/overflow_probe.dart](../../../test/util/overflow_probe.dart). **38
+suites carry `layout-gate` today**, and most of them are not overflow sweeps at
+all — they are density, readability, form and gesture, layout-block, probe
+self-test and render-parity gates. `layout-gate` (#1336) is the name of what
+`dart_test.yaml` had been documenting all along: a PR-blocking defensive layout
+gate.
+
+**Four of the 38 additionally carry `overflow`**, the fast pre-commit selector.
+`flutter test --tags overflow` runs these and nothing else, in about half a
+minute:
+
+| Sweep | What it pumps |
+|---|---|
+| `test/page/dashboard/cards/dashboard_card_overflow_test.dart` | every card × narrowest grid width per span × tab × 26 locales (#1183) |
+| `test/page/dashboard/cards/dashboard_card_popup_overflow_test.dart` | the same cards pinned into the popup form (#1239) |
+| `test/page/dashboard/cards/dashboard_card_forced_form_overflow_test.dart` | the boxes a #1299 user pick produces, which no drag could |
+| `test/page/shell/page_chrome_overflow_test.dart` | the top bar and dashboard header at screen width × locale (#1314/#1328) |
+
+`overflow` means "pumps cells and asserts zero overflow" — not "everything a
+verdict depends on", which would slide the tag back over the whole family. So
+the probe self-tests
+([overflow_probe_test.dart](../../../test/util/overflow_probe_test.dart),
+[overflow_baseline_test.dart](../../../test/util/overflow_baseline_test.dart))
+carry `layout-gate` only, deliberately, even though every sweep's verdict rests
+on them.
+
+Two members are worth naming:
 
 - **The #1183 card sweep** — `dashboard_card_overflow_test.dart`. Sweeps **every
   card × its narrowest grid width × every tab × all 26 shipped locales** and
@@ -40,7 +65,7 @@ What it is *not* for is rewriting the shared probe or the frozen grid formulas.
 
 ## When to Use
 
-- A `dashboard-card`-tagged test fails (locally or in CI / PR gate) and you must
+- A `layout-gate`-tagged test fails (locally or in CI / PR gate) and you must
   decide: real regression, new card, or a known overflow in a new locale.
 - Adding or removing a card from the dashboard (`UspWidgetSpecs.all`).
 - Adding/removing a tab on a tabbed card.
@@ -132,9 +157,10 @@ Key invariants (do not "fix" these):
   reported a 3-column card 6.5px wider than reality). Lowering the 320px floor
   **moves the baseline** and requires a deliberate re-baseline.
   Covered by [dashboard_card_probe_test.dart](../../../test/util/dashboard/dashboard_card_probe_test.dart).
-- **Tag must stay `dashboard-card`.** `run_tests.sh` excludes `golden||loc||ui`;
-  `dashboard-card` is NOT excluded, so it runs in the PR gate. Retagging it
-  golden/loc/ui silently drops it from the gate.
+- **Tag must stay `layout-gate` (plus `overflow` on this file).** `run_tests.sh`
+  excludes `golden||loc||ui`; neither of those two is excluded, so both run in
+  the PR gate. Retagging golden/loc/ui silently drops the suite from the gate,
+  and dropping `overflow` silently removes it from the pre-commit selector.
 - **`2.0px` tolerance** absorbs mac↔CI sub-pixel shaping; real clipping is many px.
 
 ## Quick Execution — `tool/run_overflow_test.sh`
@@ -163,7 +189,8 @@ Always run via `fvm flutter` (the script does). Output dir: `build/overflow_test
 
 # What the PR gate actually runs (no dump, just pass/fail):
 fvm flutter test test/page/dashboard/cards/dashboard_card_overflow_test.dart
-# or the whole gate set:  ./run_tests.sh   (dashboard-card is NOT excluded)
+# all four sweeps, the pre-commit run:  fvm flutter test --tags overflow
+# or the whole gate set:  ./run_tests.sh   (layout-gate is NOT excluded)
 ```
 
 Raw `flutter test` knobs (the script wraps these as `--dart-define`):
@@ -250,7 +277,7 @@ The gate's own failure message tells the operator exactly what to do:
 
 ## Playbooks
 
-### A. A `dashboard-card` test failed — triage
+### A. A `layout-gate` test failed — triage
 
 1. Read the failure: it names `card`, `width` (`min`/`preferred`/`max`), `tab`,
    `locale`, and the overflow (`+Npx right/bottom`).
@@ -381,11 +408,14 @@ Reference implementation:
    render-object lifetime, so a loop that re-pumps inside one `testWidgets`
    silently drops every incident after the first. Give each pump a unique
    `ValueKey` so the tree is genuinely new.
-6. **`@Tags(['dashboard-card'])` — never `loc` / `ui` / `golden`.** `run_tests.sh`
+6. **`@Tags(['layout-gate'])` — never `loc` / `ui` / `golden`.** `run_tests.sh`
    only does `--exclude-tags="golden||loc||ui"`; nothing in `.github/` names
-   `dashboard-card`. So "is it in the PR gate?" means "is it un-excluded?", and
-   the honest-looking retag to `loc` is how a suite leaves the gate in silence.
-   The word "card" in the tag is history — read it as *PR-blocking layout gate*.
+   `layout-gate`. So "is it in the PR gate?" means "is it un-excluded?", and the
+   honest-looking retag to `loc` is how a suite leaves the gate in silence. Add
+   `overflow` as a second tag — `@Tags(['layout-gate', 'overflow'])` — only if
+   the new suite pumps cells and asserts zero overflow, since that tag is the
+   pre-commit selector and has to stay fast; a readability or density probe takes
+   `layout-gate` alone.
 7. **`loadAppFonts()` in `setUpAll`, from
    [test/util/app_test_fonts.dart](../../../test/util/app_test_fonts.dart)** (not
    from `golden_toolkit`). Under Ahem every glyph is an identical box and every
@@ -446,7 +476,7 @@ Markdown report (`-d 1`) is the same data as a flat bulleted list —
 | Assuming a clean sweep covers every router | Data is a swept dimension only for cards opted into `kCardDataProfileSweeps`; otherwise "clean" means clean *on the default fixture* |
 | Wrong locale tag (`zh-TW`, `es-AR`) | Use `_localeTag` form with underscore: `zh_TW`, `es_AR`, `fr_CA`, `pt_PT` |
 | New tabbed card, but only tab 0 gets tested | Add it to `kTabbedCardTabCounts`; the `tab registry` meta-test enforces both directions, so an unregistered tabbed card fails instead of quietly under-sweeping |
-| Retagging the test golden/loc/ui to "organize" it | It would drop out of the PR gate — keep it `dashboard-card` |
+| Retagging the test golden/loc/ui to "organize" it | It would drop out of the PR gate — keep it `layout-gate` |
 | Multi-pumping to sweep widths/tabs in one test | Each case must be its own `testWidgets` (only the first overflow is reported per render object) |
 | Editing the grid constants to change results | They mirror production geometry on purpose; changing them changes what "overflow" means |
 | Removing an allowlist locale without fixing layout | The ratchet fails that exact test — fix the card first, then remove |

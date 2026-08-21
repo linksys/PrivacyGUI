@@ -56,7 +56,7 @@ adding a third family to two frameworks would produce three.
 | Failure surface | `fail()` per cell with a remediation paragraph | aggregated `failures` list + `expect(isEmpty, reason:)` | accidental (the second reads better for locale-driven defects) |
 | Localizations access | not needed (`find.textContaining` on markers) | `localizationsByTag` preloaded in `setUpAll` | accidental |
 | Readability assertions | 7 separate suites | inline in the same file | accidental |
-| Tag | `dashboard-card` | `dashboard-card` | same |
+| Tag | `layout-gate` + `overflow` | `layout-gate` + `overflow` | same |
 
 Fifteen differences; three are essential.
 
@@ -96,7 +96,7 @@ Measured on this branch 2026-08-20, and every row re-measured 2026-08-21:
 | Card sweep (one file) | 1,921 | 1,898 | ~20–22s | **10.5–11.6ms** |
 | Chrome sweep (one file) | 31 | ~1,468 | ~8s | **5.4ms** |
 | The four overflow sweeps (4 files) | 2,386 | > 3,000 | ~30s | — |
-| Whole `dashboard-card` family (37 files) | 3,270 | > 3,800 | 2m09s | — |
+| Whole `layout-gate` family (38 files) | 3,283 | > 3,800 | 2m24s | — |
 | Whole PR gate (`./run_tests.sh`) | 7,144 | — | 2m52s–4m56s | — |
 | Full-page golden (for contrast) | 6 | 6 | ~1s | ~170ms |
 
@@ -108,7 +108,7 @@ across cores — read that column as an order of magnitude.
   is 23, not 24 (§6).
 - **The 2,386 row was mislabelled, not wrong.** It is the four *sweeps*
   (1,921 + 80 + 354 + 31 = 2,386, the `--tags overflow` pre-commit selector of
-  §4), not the 37-file family, which measures **3,270**. Both rows now appear,
+  §4), not the 38-file family, which measures **3,283**. Both rows now appear,
   because R1's two tags select exactly these two sets and the tickets assert on
   each separately.
 - The gate total **7,144 is exact**, and §6's projected **5,319** is exact with
@@ -466,8 +466,8 @@ something a diff computes.
 
 ## 4. Tags
 
-`dashboard-card` is carried by **37 test files** (a 38th mention, at
-`test/golden_test/flutter_test_config.dart:9`, is a comment). Only **5** of the 37
+`layout-gate` is carried by **38 test files** (a 39th mention, at
+`test/golden_test/flutter_test_config.dart:9`, is a comment). Only **6** of the 38
 have "overflow" in the filename; the rest are density, readability, form and
 gesture, layout blocks, probe self-tests and render-parity gates. Renaming the tag
 to `overflow` would therefore mislabel 32 files.
@@ -484,7 +484,7 @@ Dart test tags are a set, not a hierarchy, so the answer is two tags:
 
 | Tag | Applied to | Purpose |
 |---|---|---|
-| `layout-gate` | all 37 files (replaces `dashboard-card`) | "PR-blocking defensive layout gate" — the semantics the comment already describes |
+| `layout-gate` | all 38 files | "PR-blocking defensive layout gate" — the semantics the comment already describes |
 | `overflow` | the sweep files only, as `@Tags(['layout-gate', 'overflow'])` | the fast pre-commit selector |
 
 Both must be declared in `dart_test.yaml`. Neither appears in `run_tests.sh`'s
@@ -669,7 +669,7 @@ which is necessary and not sufficient (§9.3).
 
 | Step | Content | Verification |
 |---|---|---|
-| **R1** | Tag swap: `dashboard-card` → `layout-gate` on 37 files; add `overflow` to the sweeps; `dart_test.yaml`; `run_overflow_test.sh` consumes the tag; prose (`SKILL.md` ×10, `dashboard_density_design.md` ×5, `dashboard_framework_overflow_investigation.md` ×1, `doc/theme/unicode_glyph_coverage_decision.md` ×1, `test/golden_test/flutter_test_config.dart:9` comment). No behavioural change. | `./run_tests.sh` still reports **7,144**; `flutter test --tags overflow` selects the sweeps only |
+| **R1** | Tag swap: the old card-shaped gate tag becomes `layout-gate` on 38 files (37 when this row was written; #1337 added the 38th); add `overflow` to the sweeps; `dart_test.yaml`; `run_overflow_test.sh` consumes the tag; prose (`SKILL.md` ×10, `dashboard_density_design.md` ×5, `dashboard_framework_overflow_investigation.md` ×1, `doc/theme/unicode_glyph_coverage_decision.md` ×1, `test/golden_test/flutter_test_config.dart:9` comment). No behavioural change. | `./run_tests.sh` reports the same total as before the swap; `flutter test --tags overflow` selects the four sweeps only |
 | **R2** | `test/layout_gate/` spine: merged parser (with `file:line`), `surface.dart`, `collector.dart`; old paths re-export. Then delete the duplicate parser in `overflow_diagnostics.dart` and point `golden_runner.dart` at the shared one — with the advisory caller opting out of the loud-failure default **explicitly**, so a future gate caller cannot inherit tolerance by omission. Revised 2026-08-21: the chrome suite *does* change here, collapsing its eight hand-copied surface blocks, because otherwise this step has no verification signal of its own. The card suites still do not. | family still green; count still 7,144; `overflow_probe_test.dart` extended for the new fields; chrome's failure set unchanged; every difference in `overflow_warnings.json` attributed incident-by-incident to first-side → worst-side, against **CI artifacts** — byte-identical is not achievable here (see the note below) |
 | **R3** | `runOverflowSweep` + `OverflowSurfaceFamily`. Port **chrome first** (31 tests, no ratchet, no report — the proof, #1342), then the ratchet re-key (#1341), then the card family last because it carries ratchet, report and PNG dumps: main sweep (1,921 tests, #1343), forced-form (80, #1344), popup (354, #1345). **Four tickets, not one** — see the note below the table. | `./tool/overflow_baseline.sh check <sweep>` exits 0 against #1337's pre-port baseline — cell counts and verdicts compared by diff, not by eye; `./run_tests.sh` legitimately drops to **5,319**, with `test('cell count')` pinning 1,898 |
 | **R4** | `test_scripts/combine_results.dart:178` stops flattening the overflow sites to a boolean: report rows carry file / line / side / pixels / occurrences. `golden_runner`'s early `return` is **not** touched — the scout stays advisory. Follow-up in `PrivacyGUI-golden-ci`: re-key the collector's diff on `file:line`, which lifts its ~361-issue hold. | golden report rows and gate rows join on `file:line`; grouped by the new key, #1302's 15 coordinates collapse to 5 source locations and admin's 120 to 1 — verified against a **CI artifact**, since a local run has no rows to group (see the note below) |

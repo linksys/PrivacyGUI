@@ -1101,7 +1101,7 @@ of which invalidates the shape of the acceptance criterion itself.
 5. **§2.6e point 4's retro-invalidation is not confined to the card's own
    readability file.** This batch's pin was expected on
    `ethernet_ports_summary_readability_test.dart` and applied there. What was not
-   expected: running the whole `dashboard-card` tag surfaced **12 failures in
+   expected: running the whole `layout-gate` tag surfaced **12 failures in
    `dashboard_legend_readability_test.dart`**, all `network_health` — collateral from
    #1291's threshold, in a file that belongs to #1233 and names neither card in its
    title. The remedy is the same one-line pin, threaded only through the
@@ -1618,7 +1618,7 @@ The two readability ACs — labels not truncated to uselessness, colours still
 associable — are invisible to the gate, which cannot distinguish a row that fits
 from a row that truncated its content to nothing. They are covered by
 `test/page/dashboard/views/components/dashboard_legend_readability_test.dart`,
-tagged `dashboard-card` so it gates; each of its three groups was verified to
+tagged `layout-gate` so it gates; each of its three groups was verified to
 fail under a mutation of the code it guards.
 
 ### 2.10b What the eighth and ninth replications taught us (#1229 — implemented)
@@ -1666,7 +1666,7 @@ routine — the interesting findings are about *method*, not about legends.
 
 The gate-invisible ACs are covered by
 `test/page/dashboard/views/components/wifi_performance_readability_test.dart`,
-tagged `dashboard-card` so it gates; its three groups were verified to fail under
+tagged `layout-gate` so it gates; its three groups were verified to fail under
 the mutations tabulated in the file, each with its gate result beside it.
 
 **AC4 was already true before this ticket, and is now pinned rather than earned.**
@@ -2927,7 +2927,7 @@ The claims the gate cannot make — both arrangements legible, both tabs legible
 all 26 locales, both charts present at the shipped height, the donut never wider
 than its box, no slice label painted into the ring — are covered by
 `test/page/dashboard/views/components/firewall_overview_readability_test.dart`,
-tagged `dashboard-card` so it gates; each of its eight groups was verified to fail
+tagged `layout-gate` so it gates; each of its eight groups was verified to fail
 under a mutation of the code it guards (eleven mutations, tabulated in the file,
 seven of which leave the #1183 gate green). It also re-asserts plain overflow at
 every realization it pumps, which is not redundant with the gate: the gate pumps
@@ -2996,7 +2996,7 @@ apart, and three things only showed up in the measurements.
 The AC that *is* gate-invisible and satisfiable — the two tiles being a matched
 pair — plus the label-legibility floor are covered by
 `test/page/dashboard/views/components/ethernet_ports_summary_readability_test.dart`,
-tagged `dashboard-card` so it gates; each of its four groups was verified to fail
+tagged `layout-gate` so it gates; each of its four groups was verified to fail
 under a mutation of the code it guards (the mutations are tabulated in the file).
 Since #1290 every pump in it pins `CardDensity.normal`: the narrow widths it names
 are no longer widths at which the grid selects this arrangement, but they are the

@@ -1,4 +1,4 @@
-@Tags(['dashboard-card'])
+@Tags(['layout-gate'])
 library;
 
 import 'package:flutter/material.dart';
@@ -60,7 +60,7 @@ import '../../../../util/dashboard/dashboard_card_probe.dart';
 /// written for, and `usp_ethernet_ports_density_test.dart` owns the separate
 /// question of which width selects which form.
 ///
-/// Tagged `dashboard-card` so it gates PRs: `run_tests.sh` excludes
+/// Tagged `layout-gate` so it gates PRs: `run_tests.sh` excludes
 /// `golden||loc||ui`, so a `ui`-tagged test here would block nothing.
 void main() {
   setUpAll(() async {

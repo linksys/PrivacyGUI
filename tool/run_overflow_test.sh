@@ -1,9 +1,26 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# Dashboard Layout Overflow Test Runner
+# Layout Overflow Test Runner
 # ==============================================================================
-# Runs the dashboard card RenderFlex overflow test suite with customizable
-# dump modes, screen width filtering, card targeting, and automatic report cleanup.
+# Runs the RenderFlex overflow sweeps with customizable dump modes, screen width
+# filtering, card targeting, and automatic report cleanup.
+#
+# Selection is by tag, not by filename (#1336): `--tags overflow` picks up all
+# four sweeps — the main card sweep, the popup and forced-form card sweeps, and
+# the page-chrome sweep — so a fifth sweep is covered the moment it declares the
+# tag. Before this the script named one file, and the other three were reachable
+# only by knowing they existed.
+#
+# The tag costs load time, and it is not small. `@Tags` is discovered by loading
+# the suite, so `--tags overflow` compiles all 314 test files and then skips 310
+# of them: measured 2026-08-21, the same 2,386 tests take 1m53s under the tag and
+# 32s when the four files are named. Correctness is identical — the selection is
+# exactly those four either way — so the tag is right for a pre-commit run and
+# for this script, whose job is to be complete. For a tight inner loop on one
+# card, name the file and skip the discovery pass:
+#
+#   fvm flutter test test/page/dashboard/cards/dashboard_card_overflow_test.dart \
+#     --name device_info --dart-define=LOCALE=en --dart-define=DUMP=0
 # ==============================================================================
 
 set -e
@@ -15,28 +32,47 @@ CARD_ID=""
 LOCALE_FILTER=""
 AUTO_OPEN=false
 LIST_ONLY=false
-TARGET_TEST="test/page/dashboard/cards/dashboard_card_overflow_test.dart"
+OVERFLOW_TAG="overflow"
+# `-l` stays pointed at one file rather than the tag: what it prints is the
+# `UspWidgetSpecs.all` registry, a card-family concern, and the main card sweep
+# is the only suite that implements the `LIST_CARDS` early return. Under the tag
+# the other three sweeps would run in full — 465 tests — to print one list.
+LIST_TARGET_TEST="test/page/dashboard/cards/dashboard_card_overflow_test.dart"
 OUTPUT_DIR="build/overflow_testing"
 
 show_help() {
   cat << EOF
-Dashboard Layout Overflow Test Runner
+Layout Overflow Test Runner
+
+Selects by tag: every suite carrying \`overflow\` runs, which today is the main
+card sweep, the popup and forced-form card sweeps, and the page-chrome sweep.
+The same selector as the pre-commit run, \`flutter test --tags overflow\`.
+
+Note the tag's discovery cost: every test file is loaded so its tags can be
+read, which is ~1m20s on top of the sweeps themselves. Complete, not quick.
+For a tight loop on one card, name the sweep file directly instead.
 
 Usage:
   ./tool/run_overflow_test.sh [options]
 
 Options:
   -l, --list            List all registered Dashboard Card IDs dynamically from UspWidgetSpecs.all.
-  -d, --dump MODE       Dump mode for reports & PNG screenshots:
+                        Runs the main card sweep alone — it is the only suite that reads LIST_CARDS.
+  -d, --dump MODE       Dump mode for reports & PNG screenshots (honoured by the main card sweep,
+                        the only suite that generates a report):
                           0 = No output (clean PR gate mode)
                           1 = Markdown bulleted list (build/overflow_testing/overflow_report.md)
                           2 = HTML visual report + PNG screenshots (default)
                           3 = Markdown + HTML + PNG screenshots
   -m, --min-screen PX   Raise the floor of the enumerated screen-width range to PX (e.g. 400),
                         so each span's narrowest width is the narrowest at or above PX.
+                        Reaches all three card sweeps, via the shared grid probe.
                         Default: 0 = no filter; the 320px supported floor still applies.
   -c, --card CARD_ID    Target a specific card spec ID (e.g. stats_panel, network_health).
+                        Passed as --name, so it now narrows all three card sweeps at once;
+                        the chrome sweep has no card names and contributes nothing.
   -L, --locale LOCALE   Target specific locale(s) (e.g. ru or ru,zh_TW). Default: all 26 locales.
+                        Honoured by the main card sweep; the other three sweep their own full sets.
   -o, --open            Automatically open HTML report in default browser after test completes.
   -h, --help            Show this help message.
 
@@ -44,10 +80,10 @@ Examples:
   # List all registered cards
   ./tool/run_overflow_test.sh -l
 
-  # Default run: Dump HTML report & PNG screenshots for all cards
+  # Default run: all four sweeps, HTML report & PNG screenshots
   ./tool/run_overflow_test.sh
 
-  # Ultra-fast debug run: Test only device_info card on Russian locale
+  # Narrow debug run: only the device_info cells, Russian locale, open the report
   ./tool/run_overflow_test.sh -c device_info -L ru -o
 
   # Quick Markdown summary mode
@@ -130,13 +166,14 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [ "$LIST_ONLY" = true ]; then
-  fvm flutter test "$TARGET_TEST" --dart-define=LIST_CARDS=true
+  fvm flutter test "$LIST_TARGET_TEST" --dart-define=LIST_CARDS=true
   exit 0
 fi
 
 echo "======================================================="
-echo " 🚀 Dashboard Card Overflow Test Runner"
+echo " 🚀 Layout Overflow Test Runner"
 echo "======================================================="
+echo "  Selector:    --tags $OVERFLOW_TAG"
 echo "  Dump Mode:   $DUMP_MODE"
 echo "  Min Screen:  ${MIN_SCREEN}px"
 if [ -n "$CARD_ID" ]; then
@@ -157,7 +194,7 @@ fi
 # arbitrary user text, and a string command would have to be re-expanded with
 # `eval` to run — a second round of word splitting and glob expansion over that
 # text. As an array each element stays one argument no matter what is in it.
-CMD=(fvm flutter test "$TARGET_TEST")
+CMD=(fvm flutter test --tags "$OVERFLOW_TAG")
 if [ -n "$CARD_ID" ]; then
   CMD+=(--name "$CARD_ID")
 fi

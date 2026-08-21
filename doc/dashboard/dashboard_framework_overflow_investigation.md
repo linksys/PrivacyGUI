@@ -456,8 +456,8 @@ This distinction matters:
   intercepting `FlutterError.onError` and string-matching `'overflowed'`
   (`test/util/overflow_probe.dart:73-82`). That is a **debug-build diagnostic**,
   not a layout contract.
-- It runs only under `flutter test`. It is tagged `dashboard-card`
-  (`dashboard_card_overflow_test.dart:1`), which is not in `run_tests.sh`'s
+- It runs only under `flutter test`. It is tagged `layout-gate` and `overflow`
+  (`dashboard_card_overflow_test.dart:1`), neither of which is in `run_tests.sh`'s
   `--exclude-tags="golden||loc||ui"` (`run_tests.sh:80,92,96`), so it gates PRs —
   but it does not affect the shipped app at all.
 - It has a **tolerance**: `_tolerancePx = 2.0`

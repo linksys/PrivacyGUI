@@ -1,4 +1,4 @@
-@Tags(['dashboard-card'])
+@Tags(['layout-gate', 'overflow'])
 library;
 
 import 'dart:convert';
@@ -52,10 +52,11 @@ import '../../../util/overflow_probe.dart';
 ///     therefore overflow — are measured accurately, not with the Ahem block.
 ///
 /// WHY IT GATES PRs
-///   Tagged `dashboard-card`, which is NOT in `run_tests.sh`'s
+///   Tagged `layout-gate`, which is NOT in `run_tests.sh`'s
 ///   `--exclude-tags="golden||loc||ui"` blacklist, so the PR gate runs it and a
 ///   failure blocks the PR. (Do not retag it golden/ui/loc — it would silently
-///   drop out of the gate.)
+///   drop out of the gate.) It also carries `overflow` (#1336), the narrower
+///   selector `flutter test --tags overflow` uses to run the four sweeps alone.
 
 /// Locale identity used as the allowlist key and in test names. Keeps the
 /// country code so regional variants stay distinct (`zh` vs `zh_TW`, `fr` vs
@@ -552,7 +553,7 @@ void main() {
   //
   // | # | assertion | mutation | killed by |
   // |---|---|---|---|
-  // | 1 | the per-case overflow `fail` | `usp_network_health_card`: the `if (!compact)` metric row gives its three `_MetricChip`s a fixed `width: 140` instead of `Expanded` — a width the desktop realization has room for and this card's own threshold does not | 26 of 26 `network_health` tab0 cases. Of the 3213 other cases carrying the `dashboard-card` tag, the 1698-case main sweep saw **nothing**; only the two dialog groups (6, at 400px) and `usp_network_health_density_test`'s pinned-normal assertions (4) did |
+  // | 1 | the per-case overflow `fail` | `usp_network_health_card`: the `if (!compact)` metric row gives its three `_MetricChip`s a fixed `width: 140` instead of `Expanded` — a width the desktop realization has room for and this card's own threshold does not | 26 of 26 `network_health` tab0 cases. Of the 3213 other cases carrying the `layout-gate` tag, the 1698-case main sweep saw **nothing**; only the two dialog groups (6, at 400px) and `usp_network_health_density_test`'s pinned-normal assertions (4) did |
   // | 2 | `the six cards that declare a threshold` + `each threshold is realizable` + the selected-form table | delete `normalAbove: 366` from `network_health`'s spec | all 3 meta-tests. The sweep itself goes 208 → 130 cases and stays green, which is exactly the silent narrowing they exist to convert into a failure |
   // | 3 | `selectedCardDensity(…) == normal` | `normalBandCaseFor` accepts widths 100px below the threshold | 208 of 208 sweep cases, plus `each threshold is realizable` |
   // | 4 | `widest lessThanOrEqualTo 288.0` | `kMinSupportedScreenWidth` 320 → 480 (the plausible version of this: dropping 320px support) | `the gate's own widths cannot reach the normal band` alone — `widest` becomes 448.0 |

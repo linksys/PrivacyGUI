@@ -6,7 +6,7 @@ import '../util/app_test_fonts.dart';
 
 Future<void> testExecutable(FutureOr<void> Function() testMain) async {
   TestWidgetsFlutterBinding.ensureInitialized();
-  // Shared with the dashboard-card overflow gate (test/util/app_test_fonts.dart)
+  // Shared with the layout-gate overflow sweeps (test/util/app_test_fonts.dart)
   // so both real-font loaders stay identical — see loadAppFonts() for why.
   //
   // dev-2.7.0 extracted the same inline block to `test/helpers/
