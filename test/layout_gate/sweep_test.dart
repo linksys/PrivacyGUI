@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../util/app_test_fonts.dart';
 import '../util/overflow_baseline.dart';
+import 'locale_tag.dart';
 import 'sweep.dart';
 
 /// The sweep runner's oracle (#1342).
@@ -558,6 +559,244 @@ void main() {
       expect(seen, const Size(640, 480));
     });
   });
+
+  group('the family judges its own cells (#1343)', () {
+    // The hook the card port needed. Everything the runner used to decide — this
+    // overflow fails, that one does not — is now one overridable answer per cell,
+    // and these cases are the only place the ratchet's shape can be proved without
+    // a ratchet: a test cannot assert that another test failed, so the coordinate
+    // loop is exercised directly.
+    List<OverflowSweepCell> twoLocales({required double childWidth}) => [
+          for (final tag in const ['de', 'pl'])
+            _cell(
+              axes: const {'screen_px': '100'},
+              locale: Locale(tag),
+              surfaceSize: const Size(100, 200),
+              build: () => _overflowingRow(childWidth: childWidth),
+            ),
+        ];
+
+    testWidgets('the default verdict is the zero-tolerance one',
+        (tester) async {
+      // What every family gets for free, and what the three unported sweeps keep:
+      // any overflow past the tolerance is that locale's failure line.
+      final family = _FakeFamily(axisNames: const ['screen_px']);
+
+      final verdict = await measureOverflowCoordinate(
+        tester,
+        family: family,
+        cells: twoLocales(childWidth: 300),
+      );
+
+      expect(verdict.failures, hasLength(2));
+      expect(verdict.failures.first, startsWith('de: '));
+      expect(verdict.failures.first, contains('200.0px'));
+      expect(verdict.threwCount, 0);
+    });
+
+    testWidgets('a family may clear a cell the tolerance filter failed',
+        (tester) async {
+      // The ratchet in miniature: `known_overflows.json` says this site is leased,
+      // so the overflow is real, recorded, and not blocking. Before #1343 the
+      // runner had no way to be told that, which is why the card sweep could not
+      // move onto it.
+      final family = _FakeFamily(
+        axisNames: const ['screen_px'],
+        onJudge: (cell, verdict) async => null,
+      );
+
+      final verdict = await measureOverflowCoordinate(
+        tester,
+        family: family,
+        cells: twoLocales(childWidth: 300),
+      );
+
+      expect(verdict.failures, isEmpty);
+      expect(family.judged, hasLength(2),
+          reason: 'a cleared cell is still a judged cell');
+    });
+
+    testWidgets('the family\'s own words become the failure line',
+        (tester) async {
+      // The runner contributes the locale tag and nothing else, so the card
+      // family's remediation paragraph survives intact.
+      final family = _FakeFamily(
+        axisNames: const ['screen_px'],
+        onJudge: (cell, verdict) async => 'shorten the label, or wrap it',
+      );
+
+      final verdict = await measureOverflowCoordinate(
+        tester,
+        family: family,
+        cells: twoLocales(childWidth: 300).take(1),
+      );
+
+      expect(verdict.failures, ['de: shorten the label, or wrap it']);
+    });
+
+    testWidgets('every measured cell is judged, clean ones included',
+        (tester) async {
+      // Not an implementation detail: the ratchet finds an expired entry by
+      // noticing that a site it leases stopped overflowing (#1321), and a family
+      // counts what it measured to know whether its coverage was complete. A hook
+      // that only fired on failures would have left both to the runner.
+      final family = _FakeFamily(
+        axisNames: const ['screen_px'],
+        onJudge: (cell, verdict) async => null,
+      );
+
+      final verdict = await measureOverflowCoordinate(
+        tester,
+        family: family,
+        cells: twoLocales(childWidth: 10),
+      );
+
+      expect(verdict.failures, isEmpty);
+      expect(family.judged, [
+        'fake|screen_px=100|locale=de',
+        'fake|screen_px=100|locale=pl',
+      ]);
+    });
+
+    testWidgets('a cell that threw is never judged', (tester) async {
+      // There is no measurement to judge, and its dataset row is already flagged
+      // `threw`. Handing it over would also let a family count it as measured,
+      // turning a hole in the run into a green coverage claim.
+      final family = _FakeFamily(
+        axisNames: const ['screen_px'],
+        onJudge: (cell, verdict) async => null,
+      );
+
+      final verdict = await measureOverflowCoordinate(
+        tester,
+        family: family,
+        cells: [
+          _cell(
+            axes: const {'screen_px': '100'},
+            locale: const Locale('ru'),
+            surfaceSize: const Size(100, 200),
+            build: _hostThatThrowsWhileBuilding,
+          ),
+          ...twoLocales(childWidth: 10).take(1),
+        ],
+      );
+
+      expect(family.judged, ['fake|screen_px=100|locale=de']);
+      expect(verdict.failures, hasLength(1));
+      expect(verdict.failures.single, startsWith('ru: threw'));
+      expect(verdict.threwCount, 1);
+    });
+
+    testWidgets('a judge that throws fails its cell, not the coordinate',
+        (tester) async {
+      // INVARIANT 3 one step later, and the step most able to break for an
+      // unrelated reason: the judge is where a family does its I/O — the card
+      // family writes two PNGs and a report row from here — so a full disk in `de`
+      // must not cost the other 25 locales their measurement.
+      final family = _FakeFamily(
+        axisNames: const ['screen_px'],
+        onJudge: (cell, verdict) async {
+          if (localeTag(cell.locale) == 'de') throw StateError('no disk');
+          return null;
+        },
+      );
+
+      final verdict = await measureOverflowCoordinate(
+        tester,
+        family: family,
+        cells: twoLocales(childWidth: 10),
+      );
+
+      expect(family.judged, hasLength(2),
+          reason: 'pl must still be measured and judged after de raised');
+      expect(verdict.failures, hasLength(1));
+      expect(verdict.failures.single,
+          'de: threw while judging: Bad state: no disk');
+      expect(verdict.threwCount, 1,
+          reason: 'a judge that raised is remediated like a broken host, not '
+              'like an overflow');
+    });
+  });
+
+  group('a narrowed run does not pin a subset (#1343)', () {
+    test('a family declares no enumeration gaps by default', () {
+      // The pin is checked for every family that cannot be narrowed, which is
+      // three of the four sweeps.
+      expect(_FakeFamily(axisNames: const ['screen_px']).enumerationGaps(),
+          isEmpty);
+    });
+
+    test('an unnarrowed run pins its count', () {
+      expect(
+        overflowSweepCountAction(
+            enumerated: 1638, expectedCellCount: 1638, gaps: const []),
+        OverflowSweepCountAction.pin,
+      );
+    });
+
+    test('a family that narrowed itself is what makes the pin skip', () {
+      // The composition `runOverflowSweep` performs, with the family's own answer
+      // feeding it: the count test cannot be observed from here (it is declared at
+      // top level), so the decision is what this proves.
+      final family = _FakeFamily(
+        axisNames: const ['screen_px'],
+        gaps: const ['--dart-define=LOCALE selected 1 of 26 locales'],
+      );
+
+      expect(
+        overflowSweepCountAction(
+          enumerated: 63,
+          expectedCellCount: 1638,
+          gaps: family.enumerationGaps(),
+        ),
+        OverflowSweepCountAction.skip,
+      );
+    });
+
+    test('a narrowing that matched nothing fails instead of skipping', () {
+      // The hole the skip branch opened, and the one state a gate may never be
+      // green in. `LOCALE=zz` matches no shipped locale, so all three card
+      // families multiply out to zero cells and every pin would skip with an
+      // accurate note — a suite reporting success over nothing rendered.
+      expect(
+        overflowSweepCountAction(
+          enumerated: 0,
+          expectedCellCount: 1638,
+          gaps: const ['--dart-define=LOCALE selected 0 of 26 locales'],
+        ),
+        OverflowSweepCountAction.failEmpty,
+      );
+
+      final failure = overflowSweepEmptyRunFailure(
+        familyName: 'card.width',
+        expectedCellCount: 1638,
+        gaps: const ['--dart-define=LOCALE selected 0 of 26 locales'],
+      );
+
+      expect(failure, contains('card.width enumerated no cells at all'));
+      expect(failure, contains('against the 1638'));
+      expect(failure, contains('selected 0 of 26 locales'),
+          reason: 'the gap names the define, which is where the typo is');
+      expect(failure, contains('never measuring nothing'));
+    });
+
+    test('the skip note names both counts and every gap', () {
+      // `-L de` is the run this exists for: 63 cells of 1,638, on purpose, and the
+      // pin cannot be made from it. Skipping says so; passing would be the #1321
+      // failure again, and failing would break §5 contract 3.
+      final note = overflowSweepCountSkipNote(
+        familyName: 'card.width',
+        enumerated: 63,
+        expectedCellCount: 1638,
+        gaps: const ['LOCALE=de narrowed 26 locales to 1'],
+      );
+
+      expect(note, contains('card.width enumerated 63 cells'));
+      expect(note, contains('not the 1638 this sweep pins'));
+      expect(note, contains('LOCALE=de narrowed 26 locales to 1'));
+      expect(note, contains('Run the sweep unfiltered'));
+    });
+  });
 }
 
 /// A `Row` that overflows by `childWidth - surfaceWidth` and nothing else.
@@ -606,16 +845,30 @@ OverflowSweepCell _cell({
   );
 }
 
-class _FakeFamily implements OverflowSurfaceFamily {
+/// `extends`, not `implements`: [OverflowSurfaceFamily.judgeCell] and
+/// [OverflowSurfaceFamily.enumerationGaps] have defaults, and inheriting them is
+/// what lets the cases below assert what a family gets for free.
+class _FakeFamily extends OverflowSurfaceFamily {
   _FakeFamily({
     required this.axisNames,
     List<OverflowSweepCell>? cells,
     Future<void> Function(WidgetTester, OverflowSweepCell)? onSettled,
+    Future<String?> Function(OverflowSweepCell, OverflowCellVerdict)? onJudge,
+    List<String> gaps = const [],
   })  : _cells = cells ?? const [],
-        _onSettled = onSettled;
+        _onSettled = onSettled,
+        _onJudge = onJudge,
+        _gaps = gaps;
 
   final List<OverflowSweepCell> _cells;
   final Future<void> Function(WidgetTester, OverflowSweepCell)? _onSettled;
+  final Future<String?> Function(OverflowSweepCell, OverflowCellVerdict)?
+      _onJudge;
+  final List<String> _gaps;
+
+  /// Every cell the judge saw, clean ones included — the ratchet's liveness ledger
+  /// depends on getting those, so a case has to be able to check it.
+  final List<String> judged = [];
 
   @override
   String get name => 'fake';
@@ -631,4 +884,19 @@ class _FakeFamily implements OverflowSurfaceFamily {
       WidgetTester tester, OverflowSweepCell cell) async {
     await _onSettled?.call(tester, cell);
   }
+
+  @override
+  Future<String?> judgeCell(
+    WidgetTester tester,
+    OverflowSweepCell cell,
+    OverflowCellVerdict verdict,
+  ) async {
+    judged.add(verdict.cellId);
+    final judge = _onJudge;
+    if (judge == null) return super.judgeCell(tester, cell, verdict);
+    return judge(cell, verdict);
+  }
+
+  @override
+  List<String> enumerationGaps() => _gaps;
 }

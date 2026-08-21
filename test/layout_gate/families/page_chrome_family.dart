@@ -152,7 +152,7 @@ void prepareChromeHosts() {
 /// The name is [OverflowCell.sweep]'s `<baseline>.<group>` and matches the
 /// committed dataset, so renaming it would read as 312 coordinates lost and 312
 /// found.
-class ChromeTopBarFamily implements OverflowSurfaceFamily {
+class ChromeTopBarFamily extends OverflowSurfaceFamily {
   const ChromeTopBarFamily();
 
   @override
@@ -200,7 +200,7 @@ class ChromeTopBarFamily implements OverflowSurfaceFamily {
 }
 
 /// The dashboard header's sweep: `chrome.header`, two axes, 26 locales each.
-class ChromeHeaderFamily implements OverflowSurfaceFamily {
+class ChromeHeaderFamily extends OverflowSurfaceFamily {
   const ChromeHeaderFamily();
 
   @override

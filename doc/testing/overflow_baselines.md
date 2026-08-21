@@ -1,6 +1,6 @@
 # Overflow Sweep Baselines
 
-**Last Updated: 2026-08-21** · #1337, inside epic #1335 · Status: **captured at `4fb1ac5e-dirty`, before any port starts** (`chrome` re-captured at `785c6f67-dirty` for #1356's id fixes — see §5)
+**Last Updated: 2026-08-22** · #1337, inside epic #1335 · Status: **captured at `4fb1ac5e-dirty`, before any port starts** (`chrome` re-captured at `785c6f67-dirty` for #1356's id fixes — see §5). **Two ports have now been signed off against it**: #1342 (`check chrome`, 1,248 cells identical) and #1343 (`check card`, 1,917 identical).
 
 Every port in epic #1335 is signed off by one claim: *the ported sweep measures
 the same cells and reaches the same verdicts as before*. The main card sweep
@@ -142,7 +142,10 @@ keep.
   1,898 test names into 73 group names *by design*. A dataset keyed on test names
   would report that intended change as total loss and total gain, and the real
   question — did the same 1,898 coordinates get measured — would be unanswerable.
-  So cells are keyed on their intrinsic axes.
+  So cells are keyed on their intrinsic axes. **#1343 executed that regrouping**
+  (1,921 → 99 tests in the file) and `check card` reported 1,917 cells identical,
+  which is the design decision earning its keep: the largest port in the epic is
+  signed off by a diff that never saw a test name.
 - **Nothing volatile.** No timestamps, no run ids, no durations, no failure prose,
   and no map iteration order: axes are ordered as written and rows are sorted
   whole-line.

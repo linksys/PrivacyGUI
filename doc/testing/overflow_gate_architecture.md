@@ -1,8 +1,8 @@
 # Overflow Gate — Framework Architecture
 
-**Last Updated: 2026-08-21** · Refactor proposal for the #1183 gate family · Status: **agreed and ticketed as epic #1335 (13 tickets: #1336–#1346, #1348, #1349). §6's cell↔test mapping decided 2026-08-20; §10 Q2 and Q4 closed 2026-08-21; R4's direction corrected against the code (§1.3, §9.2); R5 added and §1.2's cost table re-measured 2026-08-21 (§9.3); the local-versus-CI scout matrix and its consequence for R2/R4 verification recorded 2026-08-21 (§8, §9.2). Implementation started 2026-08-21: #1337 (baselines), #1336 (R1, tags), #1338 (R2's parser), **#1351 (the gate's last call into the golden parser), #1340 (surface + collector) and #1341 (the ratchet re-key)** have all landed on `fix/1314-1328-chrome-overflow`. **R2 is therefore complete on the gate side**, and #1339's golden half was split out of R2 into R4 on 2026-08-21 (§3.5), because it is the only part of R2 a developer machine cannot verify. **#1356 (this branch's review) then landed seven fixes across the landed work** — the sixteenth family difference (§2), the site key's portability, the ratchet entry's shape and integrity rules (§3, §5 contract 4), the `-dirty` stamp's scope, and one product defect in the collapsed header — and every count in §1.2 and §6 is re-measured against it. **#1342 then landed the runner itself** (`test/layout_gate/sweep.dart` + `families/page_chrome_family.dart`), with the chrome suite as its first consumer: 1,248 cells proved identical against the committed baseline, the #1328 fix reverted locally to prove the sweep still fails, and §1.2 re-measured again. Stacked on `fix/1314-1328-chrome-overflow`, carrying one accepted conflict with PR #1325 (§9.1).**
+**Last Updated: 2026-08-22** · Refactor proposal for the #1183 gate family · Status: **agreed and ticketed as epic #1335 (13 tickets: #1336–#1346, #1348, #1349). §6's cell↔test mapping decided 2026-08-20; §10 Q2 and Q4 closed 2026-08-21; R4's direction corrected against the code (§1.3, §9.2); R5 added and §1.2's cost table re-measured 2026-08-21 (§9.3); the local-versus-CI scout matrix and its consequence for R2/R4 verification recorded 2026-08-21 (§8, §9.2). Implementation started 2026-08-21: #1337 (baselines), #1336 (R1, tags), #1338 (R2's parser), **#1351 (the gate's last call into the golden parser), #1340 (surface + collector) and #1341 (the ratchet re-key)** have all landed on `fix/1314-1328-chrome-overflow`. **R2 is therefore complete on the gate side**, and #1339's golden half was split out of R2 into R4 on 2026-08-21 (§3.5), because it is the only part of R2 a developer machine cannot verify. **#1356 (this branch's review) then landed seven fixes across the landed work** — the sixteenth family difference (§2), the site key's portability, the ratchet entry's shape and integrity rules (§3, §5 contract 4), the `-dirty` stamp's scope, and one product defect in the collapsed header — and every count in §1.2 and §6 is re-measured against it. **#1342 then landed the runner itself** (`test/layout_gate/sweep.dart` + `families/page_chrome_family.dart`), with the chrome suite as its first consumer: 1,248 cells proved identical against the committed baseline, the #1328 fix reverted locally to prove the sweep still fails, and §1.2 re-measured again. **#1343 then ported the largest surface** — the three card sweeps, 1,898 of the gate's 3,587 baseline cells, onto that runner via `families/dashboard_card_family.dart` + `families/dashboard_card_gate.dart`, with `check card` reporting 1,917 cells identical and the suite falling 1,921 → 99 tests; §1.2 and §6 are re-measured against it (2026-08-22) and §6's table now carries a landed column. Stacked on `fix/1314-1328-chrome-overflow`, carrying one accepted conflict with PR #1325 (§9.1).**
 
-**Ticket map.** R1 → #1336 ✅ · R2 → #1338 (parser) ✅, #1351 (retire the gate's dependency on the golden parser) ✅, #1340 (surface/collector) ✅ · R3 → #1342 (runner, proved on chrome) ✅, #1341 (ratchet) ✅, #1343 (main card sweep), #1344 (forced-form), #1345 (popup) · R4 → #1346 + #1339 (retire the golden framework's own parser — resequenced here 2026-08-21, see §3.5) · **R5 → #1348 (acceptance)** · **pilot → #1349**. Plus #1337, which has its own document rather than a section here: a byte-stable baseline capture, because R3's "compared cell-by-cell against a pre-port run" names a comparison without naming a mechanism, and 1,898 cells cannot be diffed by eye. **#1337 is implemented and its four baselines are captured at `4fb1ac5e-dirty`** (that sha plus #1337 itself — a baseline cannot name the commit containing it; `chrome` was re-captured at `785c6f67-dirty` when #1356 took the action count out of its cell ids and unified the locale spelling, a pure rename proved row-for-row) — see [overflow_baselines.md](overflow_baselines.md); R3 and R5 both consume `./tool/overflow_baseline.sh check`.
+**Ticket map.** R1 → #1336 ✅ · R2 → #1338 (parser) ✅, #1351 (retire the gate's dependency on the golden parser) ✅, #1340 (surface/collector) ✅ · R3 → #1342 (runner, proved on chrome) ✅, #1341 (ratchet) ✅, #1343 (main card sweep) ✅, #1344 (forced-form), #1345 (popup) · R4 → #1346 + #1339 (retire the golden framework's own parser — resequenced here 2026-08-21, see §3.5) · **R5 → #1348 (acceptance)** · **pilot → #1349**. Plus #1337, which has its own document rather than a section here: a byte-stable baseline capture, because R3's "compared cell-by-cell against a pre-port run" names a comparison without naming a mechanism, and 1,898 cells cannot be diffed by eye. **#1337 is implemented and its four baselines are captured at `4fb1ac5e-dirty`** (that sha plus #1337 itself — a baseline cannot name the commit containing it; `chrome` was re-captured at `785c6f67-dirty` when #1356 took the action count out of its cell ids and unified the locale spelling, a pure rename proved row-for-row) — see [overflow_baselines.md](overflow_baselines.md); R3 and R5 both consume `./tool/overflow_baseline.sh check`.
 
 **Two steps this document did not have (added 2026-08-21).** R1–R4 as written verify that each port matches its own baseline, which is necessary and not sufficient: a refactor that makes 3,800 cells run faster and quieter while measuring less satisfies all of it. So **R5 (#1348)** re-runs the card suite's existing mutation table against the ported code and adds one *executed* mutation per framework invariant — the precedent being that table's own row 1, where a real defect was killed by 26 of 26 `network_health` tab-0 cases while the main width sweep, the largest thing in the file, saw nothing (§9.3, which also records which of that table's counts no longer reconcile). And the **pilot (#1349)** is now ticketed inside the epic rather than deferred past it, gated on R5, with §10 Q5 as its deliverable.
 
@@ -87,6 +87,7 @@ back is a red test rather than a silent re-key of 3,587 rows.
 ```
   dashboard_card_overflow_test.dart      page_chrome_overflow_test.dart      golden_runner.dart
   844 lines · 1898 sweep cells           707 lines · ~1468 pumps             31 golden configs
+  (1041 at #1343 → 496 after)            (721 at #1342 → 418 after)
   ═══════════════════════════════        ═══════════════════════════         ══════════════════
   locale   --dart-define filter          locale   all 26, always             locale   CI-injected
   tolerance  const _tolerancePx          tolerance  inline                   tolerance  NONE
@@ -119,22 +120,48 @@ framework and the file is 721 → 419 lines — the diagram's `707` was measured
 `families/page_chrome_family.dart`, and `locale all 26, always` is now the runner's
 inner loop rather than a hand-written pair of nested `for`s. What remains in the
 suite is the seven tests whose oracle is not "did a `RenderFlex` overflow" — the
-readability assertions the sweep cannot make. The card and golden columns are
-unchanged (#1343–#1345, #1339).
+readability assertions the sweep cannot make.
+
+**The card column is history too, as of #1343**, and it took two files rather
+than one. `1,041 → 496` lines in the suite, with the sweep's declaration now three
+`runOverflowSweep` calls; the enumeration and the per-cell verdict moved to
+`families/dashboard_card_family.dart` (435 lines, **three** families — the dataset
+already keyed `card.width` / `card.normal_band` / `card.profile` separately, and
+`family.name` *is* that key), and everything the runner has no opinion about moved
+to `families/dashboard_card_gate.dart` (528 lines): the ratchet consult, the
+report row, the PNG pair, the coverage counters and the failure prose. Ten of the
+table's rows are that file — `Ratchet`, `Report`, `Locale filter`, `Tolerance`,
+`Failure surface`, `cell↔test mapping`, `Fresh render tree`, `Overflow
+collection`, `Surface set`, `Surface reset` — which is why the card port was
+sequenced last and alone. The golden column is unchanged (#1339).
 
 ### 1.2 The measured cost model
 
-Measured on this branch 2026-08-20, and every row re-measured 2026-08-21:
+Measured on this branch 2026-08-20, every row re-measured 2026-08-21, and again
+2026-08-22 after #1343:
 
 | Suite | `flutter test` tests | Pumped cells | Wall clock | Per cell |
 |---|---|---|---|---|
-| Card sweep (one file) | 1,921 | 1,898 | ~20–22s | **10.5–11.6ms** |
+| Card sweep (one file) | **99** (1,921 pre-#1343) | 1,898 | ~21s | **11.0ms** |
 | Chrome sweep (one file) | **57** (31 pre-#1342) | ~1,468 | ~8s | **5.4ms** |
-| The four overflow sweeps (4 files, named) | **2,412** | > 3,000 | 28s (34s wall) | — |
-| The same four via `--tags overflow` | **2,412** | > 3,000 | 1m43s (1m59s wall) | — |
-| Whole `layout-gate` family (40 files) | **3,415** | > 3,800 | 1m57s–2m52s | — |
-| Whole PR gate (`./run_tests.sh`) | **7,339** | — | 2m44s–4m56s | — |
+| The four overflow sweeps (4 files, named) | **590** (2,412 pre-#1343) | > 3,000 | 21s (26s wall) | — |
+| The same four via `--tags overflow` | **590** | > 3,000 | 1m29s (1m43s wall) | — |
+| Whole `layout-gate` family (41 files) | **1,615** (3,415 pre-#1343) | > 3,800 | 1m50s (1m58s wall) | — |
+| Whole PR gate (`./run_tests.sh`) | **5,539** (7,339 pre-#1343) | — | 2m46s | — |
 | Full-page golden (for contrast) | 6 | 6 | ~1s | ~170ms |
+
+**The whole table moved at #1343, and only the test-count column.** The pumped
+cells are unchanged — 1,898 in the card sweep, `check card` identical at 1,917
+dataset rows — which is the entire claim a port is signed off against. Per-cell
+cost is unchanged too, at the top of the band it already occupied: the runner
+pumps the same host at the same surface, and a loop over 26 locales inside one
+`testWidgets` costs what 26 `testWidgets` did. The four sweeps are now **590**
+(`99 + 354 + 80 + 57`), the family **1,615** across **41** files (the forty-first
+being `families/dashboard_card_gate_test.dart`, the gate's own oracle, `layout-gate`
+and deliberately not `overflow`), and the gate **5,539** — which is
+`7,339 − 1,921 + 99 + 11 + 11` exactly: the card suite's regrouping, plus 11 new
+cases in `sweep_test.dart` for the judge hook and the three-way count decision, plus
+the gate oracle's 11.
 
 **Re-measured 2026-08-21.** Test counts are deterministic and are what the
 tickets assert on; wall clock is not, because `flutter test` parallelises suites
@@ -143,8 +170,11 @@ now carry both clocks, because they differ by more than the noise: the first is
 what `flutter test` prints, the second what the shell sees, and the gap is the
 package resolution and build the tool does before it starts counting.
 
-- The card sweep is **1,921** tests, not 1,922, so the file's non-sweep remainder
-  is 23, not 24 (§6).
+- The card sweep was **1,921** tests, not 1,922, so the file's non-sweep remainder
+  is 23, not 24 (§6). Since #1343 it is **99** — `73 + 3 + 23`, the third term
+  being one mandatory `cell count` test per family, which §6's projection of 96 did
+  not foresee because #1342 made that pin a required parameter rather than an
+  optional one.
 - **The 2,386 row was mislabelled, not wrong.** It is the four *sweeps*
   (1,921 + 80 + 354 + 31 = 2,386, the `--tags overflow` pre-commit selector of
   §4), not the 39-file family, which measured **3,362** — 3,340 before #1356's
@@ -154,7 +184,10 @@ package resolution and build the tool does before it starts counting.
   they read **2,412** (`1,921 + 80 + 354 + 57`) and **3,415** across **40** files
   — the fortieth being `sweep_test.dart`, the runner's own oracle, which carries
   `layout-gate` and deliberately **not** `overflow` (§4: that tag means "pumps
-  cells and asserts zero overflow", and this file is a framework self-test).
+  cells and asserts zero overflow", and this file is a framework self-test). Since
+  #1343 they read **590** (`99 + 80 + 354 + 57`) and **1,615** across **41**, the
+  forty-first being `families/dashboard_card_gate_test.dart` on the same split, for
+  the same reason.
 - **#1342 moved the chrome sweep's visible test count *up*, from 24 to 50, and
   §6's policy is why.** The cells are unchanged at 1,248 — proved row for row —
   but the suite had been grouping by width only: 12 top-bar tests of 26 locales
@@ -165,9 +198,11 @@ package resolution and build the tool does before it starts counting.
   way (1,898 → 73): the rule is not "fewer tests", it is "locale aggregated and
   every other axis visible" — which for chrome meant un-aggregating an axis it had
   been hiding.
-- **Selecting by tag costs 1m43s where naming the four files costs 28s**, for the
-  identical 2,412 tests (re-measured 2026-08-21 after #1342; 1m53s / 32s for the
-  2,386 of #1336). `@Tags` is read by loading a
+- **Selecting by tag costs 1m43s where naming the four files costs 26s**, for the
+  identical test set — 590 since #1343, re-measured 2026-08-22 (2,412 and 1m43s /
+  28s after #1342; 2,386 and 1m53s / 32s at #1336). The tag's cost barely moved
+  while the sweeps' own work fell, which is the point of the next paragraph: almost
+  all of that 1m43s is compiling files it then skips. `@Tags` is read by loading a
   suite, so the tag compiles all 316 test files in order to skip 312 of them. The
   selection is exactly right either way, so the tag is correct for a pre-commit
   run and for `tool/run_overflow_test.sh` — both of which must not miss a fifth
@@ -192,18 +227,27 @@ package resolution and build the tool does before it starts counting.
   review: three pinning the group/test names and one for invariant 3's build-phase
   half) and +26 in the chrome suite, for the regrouping reason above. The whole run
   is green at that total.
-  §6's projection therefore reads `7,339 − 1,898 + 73 = 5,514`, **not the 5,319
+  §6's projection therefore read `7,339 − 1,898 + 73 = 5,514`, **not the 5,319
   the epic's acceptance criterion and #1348 still name** — whoever runs #1348 must
   re-derive it from the total standing at that moment rather than assert on 5,319.
   Every ticket in this epic has moved this number, which is the whole reason it is
   a subtraction rather than a literal.
+  **#1343 landed at 5,539, and the 25 above 5,514 are all new oracle cases**: the
+  regrouping cost 1,822 (`1,921 − 99`, not 1,825, because the count pin is per
+  family and there are three), and it bought 11 in `sweep_test.dart` and 11 in
+  `dashboard_card_gate_test.dart` — the last 3 of those written during the port's
+  own review, for the empty-enumeration branch it found. So the projection was accurate to the four rows
+  it was a claim about, and short by the tests the port itself had to write —
+  which is the shape every remaining ticket's estimate should be read in.
 
-The per-file sweep counts behind that row — main **1,921**, popup **354**,
+The per-file sweep counts behind that row — main **1,921 → 99**, popup **354**,
 forced-form **80**, chrome **31 → 57** — are each a port's baseline, so R3's four
-tickets (#1342–#1345) each own one of them. **Chrome's is spent**: #1342 ported it,
-and what a port is signed off against is the *cell* count, not the test count
-(1,248, `./tool/overflow_baseline.sh check chrome`) — the two moved in opposite
-directions here, which is the whole reason the baselines exist.
+tickets (#1342–#1345) each own one of them. **Chrome's and main's are spent**:
+#1342 and #1343 ported them, and what a port is signed off against is the *cell*
+count, not the test count (1,248 and 1,917, `./tool/overflow_baseline.sh check
+chrome card`) — the two counts moved in opposite directions on chrome and the same
+direction on the cards, which is the whole reason the baselines exist rather than
+a test-count assertion.
 
 Two things follow, and both were previously mis-stated:
 
@@ -331,23 +375,26 @@ the whole R2 sequence moved, and it moved for a reason the re-export cannot serv
    test/page/dashboard/cards/          test/page/shell/              test/page/<future>/
    dashboard_card_overflow_test        page_chrome_overflow_test     page_surface_overflow_test
           │ runOverflowSweep(                  │                              │
-          │   DashboardCardFamily())           │                              │
+          │   CardWidthFamily(gate))           │                              │
           ▼                                    ▼                              ▼
   ┌──────────────────────────────────────────────────────────────────────────────────┐
   │ FAMILIES ─ own the three essential differences, and only those                    │
   │ test/layout_gate/families/                                                        │
   │                                                                                  │
-  │   DashboardCardFamily          ChromeTopBarFamily ─┐      PageSurfaceFamily       │
-  │   axes  card × span × tab      axes  screen_px     │ two  axes  route            │
-  │   monotone in width ✓          ChromeHeaderFamily ─┘      monotone ? (pilot)     │
-  │   host  buildDashboardCardApp  axes  screen_px × mode     host  shell + route    │
-  │   geometry  grid math          monotone ✗ (601–767)       geometry  –            │
-  │                                host  chromeTopBarHost /                          │
-  │                                      chromeHeaderHost                            │
-  │                                geometry  literal list                            │
+  │   CardWidthFamily              ChromeTopBarFamily ─┐      PageSurfaceFamily       │
+  │   CardNormalBandFamily         axes  screen_px     │ two  axes  route            │
+  │   CardProfileFamily            ChromeHeaderFamily ─┘      monotone ? (pilot)     │
+  │   axes  card × span × tab      axes  screen_px × mode     host  shell + route    │
+  │         (+ profile)            monotone ✗ (601–767)       geometry  –            │
+  │   monotone in width ✓          host  chromeTopBarHost /                          │
+  │   host  buildDashboardCardApp        chromeHeaderHost                            │
+  │   geometry  grid math          geometry  literal list                            │
+  │        └─ CardSweepGate ◄── the run-level state the runner has no opinion on:    │
+  │           ratchet · report rows · PNGs · declared/measured counters              │
   └──────────────────────────────────────────────────────────────────────────────────┘
-                                    │ implements OverflowSurfaceFamily
+                                    │ extends OverflowSurfaceFamily
                                     │   name / axisNames / enumerateCells / onCellSettled
+                                    │   + judgeCell / enumerationGaps  (defaulted, #1343)
                                     ▼
   ┌──────────────────────────────────────────────────────────────────────────────────┐
   │ test/layout_gate/  FRAMEWORK ─ absorbs the twelve accidental differences          │
@@ -380,7 +427,7 @@ graph TD
     S3[page_surface_overflow_test<br/>future]
   end
   subgraph F[Families — the 3 essential differences]
-    F1["DashboardCardFamily<br/>axes: card × span × tab<br/>monotone ✓<br/>host: buildDashboardCardApp"]
+    F1["CardWidthFamily · CardNormalBandFamily · CardProfileFamily<br/>axes: card × span × tab (+ profile)<br/>monotone ✓<br/>host: buildDashboardCardApp<br/>share one CardSweepGate"]
     F2["ChromeTopBarFamily · ChromeHeaderFamily<br/>axes: screen_px, screen_px × mode<br/>monotone ✗ 601–767<br/>host: chromeTopBarHost/chromeHeaderHost"]
     F3["PageSurfaceFamily<br/>axes: route<br/>monotone ?<br/>host: shell + route"]
   end
@@ -539,10 +586,12 @@ the framework's hands (§3.4, invariant 1).
 ║  runOverflowSweep(config)                                                     ║
 ║    │                                                                          ║
 ║    ├─ family.enumerateCells()             ◄── the family is the only axis      ║
-║    │     └─ 1,898 OverflowCell                 authority                       ║
+║    │     └─ 1,638 + 208 + 52 OverflowSweepCell  authority                      ║
 ║    │                                                                          ║
 ║    ├─ test('cell count')                 ◄── pins enumerateCells().length      ║
 ║    │     └─ the only defence against silent coverage loss (§6)                 ║
+║    │     └─ or markTestSkipped, when family.enumerationGaps() is non-empty:     ║
+║    │        a LOCALE-filtered run must not pin a subset (#1343)                ║
 ║    │                                                                          ║
 ║    ├─ group by every axis except locale   ◄── framework policy, fixed          ║
 ║    │     └─ 73 groups × 26 locales                                             ║
@@ -562,8 +611,11 @@ the framework's hands (§3.4, invariant 1).
 ║    │ 4  try  family.onCellSettled(tester, cell)   ◄── readability slot      │ ║
 ║    │    catch → record as this cell's failure     ◄── INVARIANT 3           │ ║
 ║    │ 5  incidents.where((i) => i.pixels > tolerance)                        │ ║
-║    │ 6  ratchet.consult(cell.key, incident.sourceLocation)                  │ ║
-║    │ 7  report.add(baseRow + familyColumns)                                 │ ║
+║    │ 6  try  family.judgeCell(tester, cell, verdict)  ◄── ONE hook (#1343)  │ ║
+║    │    catch → record as this cell's failure         ◄── INVARIANT 3       │ ║
+║    │      └─ default: any significant incident = a failure line             │ ║
+║    │      └─ CardSweepGate: ratchet.consultCell(file:line, locale)          │ ║
+║    │                     + report.add(baseRow) + the PNG pair               │ ║
 ║    └────────────────────────────────────────────────────────────────────────┘ ║
 ║  expect(failures, isEmpty, reason: '… in N locale(s): …')                     ║
 ║  teardown: surface.reset()                                    ◄── INVARIANT 2 ║
@@ -585,9 +637,8 @@ flowchart TD
   H --> I[3 settleIgnoringAnimations]
   I --> J[4 family.onCellSettled — try/catch]
   J --> K[5 filter by tolerance]
-  K --> L[6 ratchet.consult on file:line]
-  L --> M[7 report.add]
-  M --> F
+  K --> L["6 family.judgeCell — try/catch<br/>ratchet.consultCell + report.add + PNGs"]
+  L --> F
   F --> N["expect(failures, isEmpty)"]
   N --> O[teardown surface.reset]
 ```
@@ -806,20 +857,23 @@ Dart test tags are a set, not a hierarchy, so the answer is two tags:
 
 | Tag | Applied to | Purpose |
 |---|---|---|
-| `layout-gate` | all 40 files (39 before #1342 added `sweep_test.dart`) | "PR-blocking defensive layout gate" — the semantics the comment already describes |
+| `layout-gate` | all 41 files (39 before #1342 added `sweep_test.dart`; 40 before #1343 added `families/dashboard_card_gate_test.dart`) | "PR-blocking defensive layout gate" — the semantics the comment already describes |
 | `overflow` | the sweep files only, as `@Tags(['layout-gate', 'overflow'])` | the fast pre-commit selector |
 
 **The split is checked by arithmetic, not by inspection** (#1342): `--tags overflow`
-measures **2,412**, which is exactly what naming the four sweep files measures, so
-the framework's own oracles — `sweep_test.dart` among them — are provably outside
-that selector. Had `sweep_test.dart` picked up `overflow`, the tag run would read
-2,439.
+measures **590** (2,412 before #1343), which is exactly what naming the four sweep
+files measures, so the framework's own oracles — `sweep_test.dart` and
+`families/dashboard_card_gate_test.dart` among them — are provably outside that
+selector. Had both picked up `overflow`, the tag run would read 636 (`+35 +11`).
+The check is the *equality*, not either literal: both numbers move with every port,
+and what must hold is that they move together.
 
 That arithmetic covers the **standalone** readability suites, which are separate
 files carrying `layout-gate` alone. It does **not** reach the readability
 assertions that live *inside* a sweep file: `@Tags` is a library annotation, so the
 chrome suite's seven non-sweep tests carry `overflow` with the rest of their file
-and are part of that 2,412. The tag therefore means "every test in a file that
+and are part of that 590 — as are the card suite's 23, which is why #1343 left them
+in place rather than splitting the file. The tag therefore means "every test in a file that
 pumps cells", not "only cell measurements" — and the AC's requirement is about the
 suites whose *whole* oracle is legibility, which is what the file split gives.
 Prising the seven out would mean a second file sharing the chrome family, which
@@ -851,7 +905,20 @@ drops its hardwired `TARGET_TEST` in favour of the tag.
    before #1336 rewrote the selection), and `flutter test --name` is a substring
    match, so `-c connected_devices` still resolves through the `card=` prefix. An
    anchored or equality-based filter would not, so the prefix is a real constraint
-   on #1343 and not merely a tidy convention.
+   on #1343 and not merely a tidy convention. **Held at #1343**: the card id is now
+   the enclosing `group('card=<id>')`, so the substring still resolves — verified by
+   running `-c network_health` and getting 10 tests rather than 99.
+
+   **This contract is why two non-sweep tests were renamed**, which #1343's AC5
+   (*"the 23 non-sweep tests in the file are untouched"*) did not anticipate. Both
+   profile guards named the card *after* the rest of the name
+   (`tab 2 exists on wifi_performance`, `triband data reaches the render (tab 2)`),
+   so `-c wifi_performance` selected the 52 profile cells but not the two tests that
+   say those cells are pumping the profile at all. They now lead with the card id.
+   Nothing they assert changed, and the dataset is keyed on cell ids rather than test
+   names, which is why `check card` stayed identical across the rename — but a test
+   name *is* the `-c` interface, so this is a deliberate change to it and not a
+   tidy-up.
 2. **`--dart-define=LIST_CARDS`** (`:133`) prints the registry and returns early.
    Keep it as a family capability, not a framework one.
 3. **`--dart-define=LOCALE` / `MIN_SCREEN` / `DUMP`** stay honoured; they are the
@@ -867,7 +934,9 @@ drops its hardwired `TARGET_TEST` in favour of the tag.
    **Landed 2026-08-21 (#1341), and the prediction held.** The one real reader is
    now `test/layout_gate/ratchet.dart`, which took the card sweep's place in that
    set of nine; the sweep names the path through `kKnownOverflowsFixturePath` and
-   no longer contains the literal at all. The **fixture bytes did not change** —
+   no longer contains the literal at all. **Since #1343 the sweep does not load it
+   either**: `CardSweepGate.loadRatchet()` does, from the suite's `setUpAll`, and the
+   five remediation mentions moved with it into `families/dashboard_card_gate.dart`. The **fixture bytes did not change** —
    both maps are empty under either key shape, so there was nothing to migrate, and
    an empty allowlist still means zero tolerance. Two behaviours changed and are
    worth carrying forward into #1342–#1345:
@@ -876,7 +945,9 @@ drops its hardwired `TARGET_TEST` in favour of the tag.
      from `setUpAll`, once) instead of being read as "not allowlisted". A leftover
      `card|width|tab[@profile]` key gets its own message naming the old shape. The
      pre-#1341 loader wrapped the load in `catch (e) { print(...) }`, and a printed
-     warning inside a 1,898-test run is not a signal.
+     warning inside a 1,898-test run is not a signal — and since #1343 that run
+     prints 99 test names, which makes a stray warning easier to see and the throw
+     no less necessary.
    * **Dead-entry detection moved from the cell to the run.** One source location
      can be rendered by many cells, so a clean cell no longer proves an entry is
      dead; the verdict is taken once in `tearDownAll` over the union of observed
@@ -931,36 +1002,59 @@ trade.
 
 Measured consequences for the card sweep:
 
-| | Today | After |
-|---|---|---|
-| Pumped cells in the main sweep | 1,898 | **1,898 (unchanged)** |
-| Per-cell assertions (tolerance, ratchet, report row) | 1,898 | **1,898 (unchanged)** |
-| `flutter test` tests, main sweep | 1,898 | 73 |
-| Other tests in the same file (tab registry 18, normal-band meta 3, triband existence 2) | 23 | 23 (untouched) |
-| Tests in the file | 1,921 | 96 |
-| `./run_tests.sh` total | 7,339 | **5,514** |
+| | Before | Projected | **Landed (#1343)** |
+|---|---|---|---|
+| Pumped cells in the main sweep | 1,898 | 1,898 (unchanged) | **1,898 ✓** |
+| Per-cell assertions (tolerance, ratchet, report row) | 1,898 | 1,898 (unchanged) | **1,898 ✓** |
+| `flutter test` tests, main sweep | 1,898 | 73 | **73 ✓** |
+| `cell count` pins | 0 | 1 | **3** — required per family, and there are three |
+| Other tests in the same file (tab registry 18, normal-band meta 3, profile guards 2) | 23 | 23 (untouched) | **23 ✓** |
+| Tests in the file | 1,921 | 96 | **99** |
+| `./run_tests.sh` total | 7,339 | 5,514 | **5,539** |
 
-Every figure in that table was re-measured 2026-08-21. The decomposition is exact
-— 73 non-locale coordinates × exactly 26 locales, no ragged group — so this is a
-clean regrouping and not a merge of unlike things, and the totals close without a
-remainder: `1,898 + 23 = 1,921` today, `73 + 23 = 96` after, and
-`7,339 − 1,898 + 73 = 5,514`.
+Every figure in the first two columns was re-measured 2026-08-21; the third was
+measured 2026-08-22, after the port. The decomposition is exact — 73 non-locale
+coordinates × exactly 26 locales, no ragged group — so this is a clean regrouping
+and not a merge of unlike things, and the totals close without a remainder:
+`1,898 + 23 = 1,921` before, `73 + 3 + 23 = 99` after.
+
+**Two rows landed above the projection, and both are additions rather than
+misses.** The count pin is one per family, not one per file, because #1342 made
+`expectedCellCount` a required parameter — and the card sweep is three families,
+since the dataset keys `card.width` / `card.normal_band` / `card.profile`
+separately and `family.name` is that key. And the gate total is 22 above 5,514
+because the port wrote its own oracles: 11 cases in `sweep_test.dart` for the
+`judgeCell` hook and the three-way count decision, 11 in
+`families/dashboard_card_gate_test.dart` for the ratchet consult, the failure prose
+and the declared-vs-measured arithmetic. The four rows this table was a claim about
+are exact; what it did not predict is the cost of proving them.
 
 **Only the last row moves with unrelated work**, and it has moved seven times
 already: 7,144 when this table was written, 7,200 after #1337, 7,217 after #1338,
 7,221 after #1351, 7,229 after #1340, 7,260 after #1341, 7,286 after #1356's
-review, 7,339 after #1342 (§1.2). The four
+review, 7,339 after #1342, **5,539 after #1343** (§1.2). The four
 rows above it are properties of the card sweep and are the ones a port is signed
 off against; the gate total is a subtraction from whatever the suite measures on
 the day, so #1348 must re-derive it rather than assert on the literal 5,319 the
-epic's acceptance criterion still names.
+epic's acceptance criterion still names — and #1344 and #1345 will each move it
+again, downward by their own regrouping and upward by whatever oracles they need.
 
 The non-sweep remainder is worth naming exactly, because it is what the port must
 leave alone: **18** tab-registry meta-tests (six cards asserting their tab count,
 twelve asserting they are single-view), the **3** `normal band coverage`
-meta-tests, and **2** triband existence checks. The mutation table is a comment,
-not a test, and no data-profile test lives in this file — an earlier revision of
-this table listed both and put the remainder at 24.
+meta-tests, and **2** profile guards. The mutation table is a comment, not a test —
+an earlier revision of this table counted it and put the remainder at 24.
+
+**The two profile guards are one existence check and one data-profile test**, which
+is not what the ticket and this section said (*"2 triband existence checks … no
+data-profile test lives in this file"*, corrected here after #1343's review). The
+first pins that the tab a profile sweeps still exists on the card; the second pumps
+the profile at one desktop coordinate in `en` and asserts its markers reach the
+tree. The second is the load-bearing one — it is what stops the 52 `card.profile`
+cells from pumping the default fixture and reporting green, which is why
+`CardProfileFamily.onCardSettled` is empty rather than re-checking it 52 times. The
+total of 23 was right either way; the itemisation that says what must be left alone
+was not.
 
 **The risk this creates, and the mitigation.** Visible test count falls by 96%.
 After that, "deliberately regrouped" and "accidentally stopped enumerating 800
@@ -981,11 +1075,45 @@ sharing one id (the second is counted but not measured — it overwrites the fir
 row and its freshness key), and a family declaring `locale` as an axis. A count of
 312 means 312 measurements only while all of that holds.
 
+**#1343 found the one case where pinning the count is the wrong thing to do**, and
+it is the case the card sweep introduced: `--dart-define=LOCALE=de` narrows the
+enumeration itself, so a 1,638-cell pin fails on a run that is behaving exactly as
+its operator asked. Neither branch of the obvious fix is acceptable — a pin
+computed from the filter is the enumeration restating itself, which is what
+`expectedCellCount` exists to prevent, and dropping the pin under a filter silently
+turns the only defence against coverage loss off. So the family answers
+`enumerationGaps()`, and a non-empty answer makes the count test **skip with the
+reason in it**: both counts, every gap, and the sentence that matters — *the pin is
+a claim about the whole sweep, so it is not checked here; run the sweep unfiltered
+before reading a green count as coverage.* This is `OverflowRatchet.coverageSkipNote`'s
+rule applied one level up, and for the same reason: a narrowed run must not be able
+to *assert* anything about coverage, in either direction.
+
+**That skip opened one hole, and #1343's review closed it.** A gap explains
+measuring *less* than the pin; it never explains measuring nothing.
+`--dart-define=LOCALE=zz` matches no shipped locale, so `cardSweepLocales` is empty,
+all three families multiply out to **zero** cells, and every pin would skip with a
+perfectly accurate note — a green suite that rendered nothing at all. So the
+decision is three-way, not two (`overflowSweepCountAction` in `sweep.dart`): pin,
+skip, or **fail** when the enumeration is empty against a non-zero pin. It is a pure
+function precisely because the count test cannot be observed — `runOverflowSweep`
+declares it at top level and no test can assert that another test skipped — so the
+decision is the part made reachable, and `sweep_test.dart` covers all three
+branches.
+
+**One over-breadth is accepted and named**: `CardSweepGate.enumerationGaps()` is
+gate-global, so a `MIN_SCREEN` that only moves `card.width`'s widths also skips the
+pins for `card.normal_band` and `card.profile`. That errs toward skipping a check
+rather than failing a legitimate run, which is the safe direction here, and the two
+defines are dump-tooling interfaces that no CI run passes. Per-family gaps would be
+the fix if a third narrowing ever lands.
+
 **The policy is not "fewer tests", and the first port proves it.** Chrome's sweeps
 went 24 → 50 visible tests at 1,248 unchanged cells, because its header had been
 aggregating `mode` — an axis — inside a per-width test, and the policy groups by
-every axis except locale (§1.2). The card sweep moves the other way, 1,898 → 73.
-Both are the same rule applied to differently-shaped suites.
+every axis except locale (§1.2). The card sweep moves the other way, 1,898 → 73
+(**landed 2026-08-22, #1343**). Both are the same rule applied to
+differently-shaped suites.
 
 Cost: the card sweep loses 1,898 per-locale test names in favour of 73 group
 names plus aggregated reasons. Reversible, but reverting means touching every
@@ -999,8 +1127,8 @@ family again.
   proof) — card-family private. Forcing a card-shaped model onto non-card
   surfaces is exactly how `OverflowReportItem` came to demand `cardId`,
   `columnSpan` and `recCols` from things that have no span.
-- **The normal-band groups and the tab-registry meta-tests** (23 tests: 18 + 3 +
-  2, itemised in §6) — hand-written `group`s in the card suite, not part of any
+- **The normal-band groups, the tab-registry meta-tests and the profile guards**
+  (23 tests: 18 + 3 + 2, itemised in §6) — hand-written `group`s in the card suite, not part of any
   sweep. The mutation table is a *comment* in the same file rather than a test,
   and R5 (#1348) is what keeps it honest.
 - **The readability probes** (7 suites) — they keep `layout-gate` and do **not**
@@ -1093,7 +1221,7 @@ which is necessary and not sufficient (§9.3).
 |---|---|---|
 | **R1** | Tag swap: the old card-shaped gate tag becomes `layout-gate` on 38 files (37 when this row was written; #1337 added the 38th); add `overflow` to the sweeps; `dart_test.yaml`; `run_overflow_test.sh` consumes the tag; prose (`SKILL.md` ×10, `dashboard_density_design.md` ×5, `dashboard_framework_overflow_investigation.md` ×1, `doc/theme/unicode_glyph_coverage_decision.md` ×1, `test/golden_test/flutter_test_config.dart:9` comment). No behavioural change. | `./run_tests.sh` reports the same total as before the swap; `flutter test --tags overflow` selects the four sweeps only |
 | **R2** | `test/layout_gate/` spine: merged parser (with `file:line`), `surface.dart`, `collector.dart`; old paths re-export. Then **#1351** drops the gate's own last call into the golden parser (`overflow_baseline.dart:185`). Deleting the duplicate in `overflow_diagnostics.dart` and pointing `golden_runner.dart` at the shared one — with the advisory caller opting out of the loud-failure default **explicitly**, so a future gate caller cannot inherit tolerance by omission — **moved to R4 on 2026-08-21 as #1339** (§3.5): it is verifiable only against golden-ci artifacts, and holding R2 for it would put a CI round-trip in front of R3. Revised 2026-08-21: the chrome suite *does* change here, collapsing its seven hand-copied surface blocks, because otherwise this step has no verification signal of its own. The card suites still do not. **Landed 2026-08-21** (#1338 → #1351 → #1340). | family still green; count **7,229** after all three (7,217 at #1338 — its own 17 parser tests being the whole delta from #1337's 7,200 — then +4 at #1351 and +8 at #1340), and no existing test moved; `overflow_probe_test.dart` extended for the new fields, including a real Flutter overflow whose `file:line` is asserted against the line the `Row` is written on, 3 tests pinning `toString()`, and #1340's 8-test surface group whose six mutations all have recorded killers; chrome's failure set unchanged; #1351's and #1340's swaps both verified by `./tool/overflow_baseline.sh check` exiting 0 on all four sweeps, 3,587 cells identical — **entirely local**, since the CI-artifact obligation left with #1339 |
-| **R3** | `runOverflowSweep` + `OverflowSurfaceFamily`. Port **chrome first** (31 tests → 57, no ratchet, no report — the proof, **#1342, landed 2026-08-21**), then the ratchet re-key (**#1341, landed 2026-08-21 ahead of the runner** — it is a module extraction plus a key change, and neither needs `runOverflowSweep` to exist), then the card family last because it carries ratchet, report and PNG dumps: main sweep (1,921 tests, #1343), forced-form (80, #1344), popup (354, #1345). **Four tickets, not one** — see the note below the table. | `./tool/overflow_baseline.sh check <sweep>` exits 0 against #1337's pre-port baseline — cell counts and verdicts compared by diff, not by eye; `./run_tests.sh` legitimately drops by **1,825** (`1,898 − 73`) from whatever it measures at the time — **5,514** from today's 7,339, not the epic's literal 5,319 — with `test('cell count')` pinning 1,898. **#1342 is verified and closed:** `check chrome` reports 1,248 cells identical, its two counts are pinned as the literals 312 and 936, `sweep_test.dart`'s 27 cases pin the three invariants (invariant 1 and invariant 3's build-phase half each by an executed mutation), and the **negative check** — #1328's fix reverted in `lib/` while the ported sweep ran — put 601px red in 22 locales, 640px in 13 and 700px in 2 with 320/375/480/600 and 768–1280 all clean, which is the band §2 says is not monotone, recovered by the framework rather than by the hand-written suite. #1341's own share is verified without any of that: `ratchet_test.dart` proves the allowlisted-passes / not-allowlisted-fails / dead-entry-reported triple against a string, and the card sweep's 1,921 tests and its `card` baseline are both unchanged |
+| **R3** | `runOverflowSweep` + `OverflowSurfaceFamily`. Port **chrome first** (31 tests → 57, no ratchet, no report — the proof, **#1342, landed 2026-08-21**), then the ratchet re-key (**#1341, landed 2026-08-21 ahead of the runner** — it is a module extraction plus a key change, and neither needs `runOverflowSweep` to exist), then the card family last because it carries ratchet, report and PNG dumps: main sweep (1,921 tests, **#1343, landed 2026-08-22**), forced-form (80, #1344), popup (354, #1345). **Four tickets, not one** — see the note below the table. | `./tool/overflow_baseline.sh check <sweep>` exits 0 against #1337's pre-port baseline — cell counts and verdicts compared by diff, not by eye; `./run_tests.sh` legitimately drops by **1,822** (`1,921 − 99`) from whatever it measures at the time — **5,539** from #1342's 7,339, not the epic's literal 5,319 — with a `cell count` test per family pinning 1,638 / 208 / 52. **#1343 is verified and closed:** `check card` reports **1,917 cells identical**, the card suite is 99 tests green, `dashboard_card_gate_test.dart`'s 11 cases pin what a green sweep cannot reach (the ratchet's tolerate / block / ceiling-breach branches, the paste-ready entry, and declared-vs-measured), `sweep_test.dart` grew 11 for the `judgeCell` hook and the three-way count decision, and all four dump-tooling contracts of §5 were exercised end to end — `-l` still lists 18 cards, and `--name network_health --dart-define=LOCALE=de --dart-define=DUMP=3 --dart-define=MIN_SCREEN=400` still writes `overflow_report.html` and `.md`. **One path could not be exercised locally**: no card overflows today, so the PNG pair and the report row — both reached only when a cell has a significant incident — ran their surrounding code but never their bodies, exactly as before the port. **The port's own review then found four things the baseline diff could not**, all fixed before it landed: a narrowing that matches nothing left every pin skipped and the suite green over zero measurements (now `overflowSweepCountAction`'s third branch, with an oracle case); the report row judged its re-measured screenshot against `kOverflowTolerancePx` while the cell beside it used the sweep's `tolerancePx` (now carried on `OverflowCellVerdict`); `dart_test.yaml` still documented 40 carriers and 2,412 tests; and the three families each re-declared the `gate` field, the cached enumeration and the `enumerationGaps` delegate, where a fourth that forgot the last of those would have pinned a subset as the whole sweep (now a private `_CardFamily` base that also pays the `CardSweepCell` cast once). **#1342 is verified and closed:** `check chrome` reports 1,248 cells identical, its two counts are pinned as the literals 312 and 936, `sweep_test.dart`'s 27 cases pin the three invariants (invariant 1 and invariant 3's build-phase half each by an executed mutation), and the **negative check** — #1328's fix reverted in `lib/` while the ported sweep ran — put 601px red in 22 locales, 640px in 13 and 700px in 2 with 320/375/480/600 and 768–1280 all clean, which is the band §2 says is not monotone, recovered by the framework rather than by the hand-written suite. #1341's own share is verified without any of that: `ratchet_test.dart` proves the allowlisted-passes / not-allowlisted-fails / dead-entry-reported triple against a string, and the card sweep's 1,921 tests and its `card` baseline were both unchanged by it (#1343 then regrouped the tests and left the baseline alone) |
 | **R4** | `test_scripts/combine_results.dart:178` stops flattening the overflow sites to a boolean: report rows carry file / line / side / pixels / occurrences. `golden_runner`'s early `return` is **not** touched — the scout stays advisory. Plus **#1339**, moved here from R2: delete `overflow_diagnostics.dart`'s parser and point `golden_runner.dart` at the shared one, which is what makes both sides of the join measure the same way. Follow-up in `PrivacyGUI-golden-ci`: re-key the collector's diff on `file:line`, which lifts its ~361-issue hold. | golden report rows and gate rows join on `file:line`; grouped by the new key, #1302's 15 coordinates collapse to 5 source locations and admin's 120 to 1 — verified against a **CI artifact**, since a local run has no rows to group (see the note below); and every difference #1339 makes to `overflow_warnings.json` attributed incident-by-incident to first-side → worst-side, byte-identical being unachievable there |
 | **R5** | Acceptance (#1348). Part A: `./tool/overflow_baseline.sh check` exits 0 for all four sweeps against the committed baselines (`4fb1ac5e-dirty`; `chrome` `785c6f67-dirty`). Part B: every row of the card suite's existing mutation table re-run, plus one executed mutation per framework invariant — keyed subtree removed, surface teardown dropped, per-cell exception allowed to propagate, a coordinate dropped from `enumerateCells()`, tolerance at 1.9/2.1px, a dead allowlist entry, `onCellSettled` omitted, #1328's fix reverted. **#1342 offers four of those rows a recorded killer; whether R5 accepts them or re-derives them is #1348's call, not #1342's** — an inherited killer was executed against a framework one ticket old, and R5's job is to ask the question again of the framework three ports later. The four, with what killed each: keyed subtree removed (`sweep_test.dart` INVARIANT 1, and only that case); a per-cell exception propagating (INVARIANT 3, which also asserts the next locale is still measured); an error raised while *building* a host, which is invariant 3's other half and reaches the binding rather than any `catch` (INVARIANT 3's second case — removing `tester.takeException()` from the runner fails it with a bare stack, which is exactly the report the fix exists to prevent); and #1328 reverted (the 601/640/700 band, red in 22/13/2 locales). A fifth row changed shape rather than gaining a killer: `onCellSettled` omitted cannot be *executed* as a mutation, because the member is abstract and a family that skips it does not compile — so R5 should either record it as compile-time-enforced or replace it with a mutation that can run, e.g. a hook body emptied. Part C: §1.2's cost table re-measured. | every mutation has a recorded killer; a mutation killed by *nothing* becomes its own issue rather than vanishing from the table |
 
@@ -1155,7 +1283,7 @@ three of them no longer reconcile with the code:
 | 2 | normal-band sweep goes `208 → 130` | **exact** — 208 = network_health 78 + five single-coordinate cards × 26; dropping `normalAbove` removes the 78 |
 | 3 | "208 of 208 sweep cases" | **exact** |
 | 5 | threshold coordinates `8 → 6` | **exact** — 3 network_health tabs + 5 single-view cards; collapsing network_health to single-view gives 6 |
-| 1 | "the 1,698-case main sweep", "3,213 other cases carrying the tag" | **does not reconcile.** The main sweep is 1,898 cells (1,690 outside the normal-band groups, 1,638 also outside triband), and the whole tagged family is 3,415 tests (3,270 when this row was written, before #1337; 3,300 after #1338; 3,340 measured 2026-08-21 after #1351, #1340 and #1341; 3,362 after #1356's review; 3,415 after #1342) |
+| 1 | "the 1,698-case main sweep", "3,213 other cases carrying the tag" | **does not reconcile.** The main sweep is 1,898 cells (1,690 outside the normal-band groups, 1,638 also outside triband), and the whole tagged family is 1,615 tests (3,270 when this row was written, before #1337; 3,300 after #1338; 3,340 measured 2026-08-21 after #1351, #1340 and #1341; 3,362 after #1356's review; 3,415 after #1342; **1,615 after #1343 regrouped the card sweep**) |
 
 Rows 2, 3 and 5 are arithmetic against structures that still exist, and they are
 exact. Row 1's two figures are cross-suite totals from an earlier state of the

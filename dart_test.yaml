@@ -3,9 +3,10 @@ tags:
   loc:
   ui:
   # Defensive widget gates that must run in the PR test command (#1183), said in
-  # the name since #1336: a PR-blocking defensive layout gate. All 40 carriers
+  # the name since #1336: a PR-blocking defensive layout gate. All 41 carriers
   # are one — density, readability, form and gesture, layout-block, probe
-  # self-test, ratchet oracle, sweep-runner oracle, render-parity and overflow.
+  # self-test, ratchet oracle, sweep-runner oracle, card-gate oracle,
+  # render-parity and overflow.
   # NOT excluded by run_tests.sh's --exclude-tags="golden||loc||ui", so a
   # failure here blocks the PR — and tagging one of these `golden`, `loc` or
   # `ui` instead is how a gate leaves the PR command in silence.
@@ -14,12 +15,18 @@ tags:
   # and nothing else. Carried in addition to `layout-gate`, and only by a suite
   # that pumps cells and asserts zero overflow — not by everything a verdict
   # depends on, which would slide back to the whole family (the probe
-  # self-tests are deliberately excluded — and since #1342, so is
-  # `test/layout_gate/sweep_test.dart`, the sweep runner's own oracle).
+  # self-tests are deliberately excluded — and so are the framework's own
+  # oracles: `test/layout_gate/sweep_test.dart` since #1342 and
+  # `test/layout_gate/families/dashboard_card_gate_test.dart` since #1343).
   #
   # Complete, not quick: `@Tags` is read by loading a suite, so the tag compiles
-  # all 316 test files to skip 312 of them. Measured 2026-08-21 after #1342, the
-  # same 2,412 tests take 1m43s under the tag and 28s when the four
-  # files are named. Name the file for a tight loop; use the tag when a fifth
-  # sweep must not be missed.
+  # all 317 test files to skip 313 of them. Measured 2026-08-22 after #1343, the
+  # same 590 tests take 1m43s under the tag and 26s when the four files are
+  # named (shell clock; `flutter test`'s own is 1m29s and 21s). Name the file for
+  # a tight loop; use the tag when a fifth sweep must not be missed.
+  #
+  # 590, not the 2,412 this said before #1343: the card sweep now loops its 26
+  # locales inside one test per coordinate, so the same 1,898 cells are declared
+  # by 99 tests. Cells are what the gate measures; the test count is how they
+  # are named.
   overflow:

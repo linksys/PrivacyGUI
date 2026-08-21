@@ -17,41 +17,45 @@ two things and nothing else: the tag `layout-gate` (which is what makes them
 PR-blocking) and the measurement spine in
 [test/layout_gate/](../../../test/layout_gate/), still imported through
 [test/util/overflow_probe.dart](../../../test/util/overflow_probe.dart), which is
-a re-export of it since #1340. **40 suites carry `layout-gate` today**, and most
+a re-export of it since #1340. **41 suites carry `layout-gate` today**, and most
 of them are not overflow sweeps at all — they are density, readability, form and
 gesture, layout-block, probe self-test, ratchet-oracle and render-parity gates. `layout-gate` (#1336) is the name of what
 `dart_test.yaml` had been documenting all along: a PR-blocking defensive layout
 gate.
 
-**Four of the 40 additionally carry `overflow`**, the pre-commit selector.
+**Four of the 41 additionally carry `overflow`**, the pre-commit selector.
 `flutter test --tags overflow` runs these and nothing else:
 
 | Sweep | What it pumps |
 |---|---|
-| `test/page/dashboard/cards/dashboard_card_overflow_test.dart` | every card × narrowest grid width per span × tab × 26 locales (#1183) |
+| `test/page/dashboard/cards/dashboard_card_overflow_test.dart` | every card × narrowest grid width per span × tab × 26 locales (#1183), declared through `runOverflowSweep` since #1343 |
 | `test/page/dashboard/cards/dashboard_card_popup_overflow_test.dart` | the same cards pinned into the popup form (#1239) |
 | `test/page/dashboard/cards/dashboard_card_forced_form_overflow_test.dart` | the boxes a #1299 user pick produces, which no drag could |
 | `test/page/shell/page_chrome_overflow_test.dart` | the top bar and dashboard header at screen width × locale (#1314/#1328), declared through `runOverflowSweep` since #1342 |
 
 It is complete, not quick. `@Tags` is read by loading a suite, so the tag
-compiles every test file in the repo (316 at #1342) to skip all but four:
-measured 2026-08-21,
-those same **2,412** tests take **1m43s under the tag and 28s when the four files are
-named** (`flutter test`'s own clock; the shell sees 1m59s and 34s, the difference
+compiles every test file in the repo (317 at #1343) to skip all but four:
+measured 2026-08-22,
+those same **590** tests take **1m29s under the tag and 21s when the four files are
+named** (`flutter test`'s own clock; the shell sees 1m43s and 26s, the difference
 being package resolution and build). Identical selection either way, so name the files for a tight inner loop
-and use the tag when a fifth sweep must not be silently missed.
+and use the tag when a fifth sweep must not be silently missed. **590, not 2,412,
+since #1343**: the card sweep now aggregates its 26 locales inside one test per
+coordinate, so it declares 99 tests over the same 1,898 cells. The cells are what
+the gate measures; the test count is only how they are named.
 
 `overflow` means "pumps cells and asserts zero overflow" — not "everything a
 verdict depends on", which would slide the tag back over the whole family. So
 the probe self-tests
 ([overflow_probe_test.dart](../../../test/util/overflow_probe_test.dart),
 [overflow_baseline_test.dart](../../../test/util/overflow_baseline_test.dart))
-and the two framework oracles
+and the three framework oracles
 ([ratchet_test.dart](../../../test/layout_gate/ratchet_test.dart), #1341;
-[sweep_test.dart](../../../test/layout_gate/sweep_test.dart), #1342)
+[sweep_test.dart](../../../test/layout_gate/sweep_test.dart), #1342;
+[families/dashboard_card_gate_test.dart](../../../test/layout_gate/families/dashboard_card_gate_test.dart), #1343)
 carry `layout-gate` only, deliberately, even though every sweep's verdict rests
 on them. The split is checkable by arithmetic: `--tags overflow` measures exactly
-what naming the four sweep files measures (2,412), so nothing has quietly joined
+what naming the four sweep files measures (590), so nothing has quietly joined
 the pre-commit selector.
 
 Two members are worth naming:
@@ -111,7 +115,19 @@ What it is *not* for is rewriting the shared probe or the frozen grid formulas.
 Before editing anything, read these — they are the source of truth, and detail
 below may drift:
 
-1. Gate test — [test/page/dashboard/cards/dashboard_card_overflow_test.dart](../../../test/page/dashboard/cards/dashboard_card_overflow_test.dart)
+1. Gate test — [test/page/dashboard/cards/dashboard_card_overflow_test.dart](../../../test/page/dashboard/cards/dashboard_card_overflow_test.dart).
+   **Since #1343 it is a declaration, not a sweep**: three `runOverflowSweep`
+   calls, the hand-written guards, and the two hooks. What each sweep *is* stays
+   documented there; *which cells* and *what a verdict means* moved to
+   [test/layout_gate/families/dashboard_card_family.dart](../../../test/layout_gate/families/dashboard_card_family.dart)
+   (enumeration: `CardWidthFamily` 1,638 · `CardNormalBandFamily` 208 ·
+   `CardProfileFamily` 52) and
+   [test/layout_gate/families/dashboard_card_gate.dart](../../../test/layout_gate/families/dashboard_card_gate.dart)
+   (the ratchet consult, the failure prose, the report row, the PNG pair, the
+   coverage counters — read this one before editing a failure message). Its oracle
+   is [test/layout_gate/families/dashboard_card_gate_test.dart](../../../test/layout_gate/families/dashboard_card_gate_test.dart),
+   which is where a fixture edit's *effect* is cheapest to see — the sweep is green
+   on real data, so none of the interesting branches run there.
 2. Allowlist fixture — [test/fixtures/known_overflows.json](../../../test/fixtures/known_overflows.json)
    and the module that reads it —
    [test/layout_gate/ratchet.dart](../../../test/layout_gate/ratchet.dart)
@@ -153,15 +169,20 @@ card_data_profiles.dart ────────────┤  (#1267: the rou
                     · layout_gate/surface.dart sets the viewport and restores it
                                     │
                                     ▼
-    dashboard_card_overflow_test.dart  (one testWidgets PER card×width×tab×locale,
-                                        plus one per profile sweep's own cases)
+    layout_gate/sweep.dart  runOverflowSweep(CardWidthFamily(gate)) × 3
+      • since #1343: ONE testWidgets per card×width×tab, looping all 26 locales
+        inside it, plus one `cell count` test per family pinning 1638/208/52
+      • families/dashboard_card_family.dart enumerates the cells
+      • families/dashboard_card_gate.dart judges them — everything below is its
+        judgeCell/close, shared by all three card families
           overflow > 2px tolerance?  →  layout_gate/ratchet.dart consultCell()
             ├─ EVERY incident's file:line allowlisted for this locale
             │    → print "KNOWN OVERFLOW (allowlisted)" + its tracking note, PASS
             └─ any incident not allowlisted → FAIL, naming that file:line as the
                                               key to add
                                     │
-                      tearDownAll → ratchet.deadEntryFailure()
+                      tearDownAll → CardSweepGate.close()
+                                     → ratchet.deadEntryFailure()
             └─ an entry, or one of its locale tags, that nothing overflowed at all
                run  → FAIL "dead exemption" / "over-broad exemption". Taken ONCE
                for the whole run, and skipped entirely when the run was filtered
@@ -176,9 +197,14 @@ card_data_profiles.dart ────────────┤  (#1267: the rou
 
 Key invariants (do not "fix" these):
 
-- **One pump per test.** Flutter reports each RenderFlex's overflow only once per
-  render-object lifetime; multi-pump sweeps silently drop all but the first. That
-  is why every `(card, width, tab, locale)` is its own `testWidgets`.
+- **One fresh tree per measurement.** Flutter reports each RenderFlex's overflow
+  only once per render-object lifetime; multi-pump sweeps silently drop all but the
+  first. Until #1343 that was enforced by giving every `(card, width, tab, locale)`
+  its own `testWidgets`. It is now enforced by `runOverflowSweep`, which wraps each
+  cell host in `KeyedSubtree(key: ValueKey(cellId))` — a new subtree, so new render
+  objects, so a fresh report — which is what lets one test loop 26 locales. The
+  invariant did not relax; only the mechanism changed. **A tree pumped outside the
+  runner still needs its own test or its own key.**
 - **Narrowest realization = worst case.** Overflow is monotonic in width and
   height is measured, so testing each span's narrowest grid width is exhaustive
   (~5× fewer tests, identical coverage). Grid geometry is mirrored from
@@ -307,7 +333,8 @@ Key grammar — `<file>:<line>`:
   **or** contains `"*"`. An empty array, a non-string tag, `"*"` mixed with
   explicit tags, and an unknown top-level key are all parse errors — the loader
   fails the run once as `(setUpAll)` instead of printing a warning nobody reads
-  inside a 1,900-test run.
+  inside a 1,900-test run (99 tests since #1343, and the argument is unchanged: a
+  warning is not a verdict).
 
 ## The Ratchet — How the Gate Reacts to Edits
 
@@ -358,6 +385,14 @@ The gate's own failure message tells the operator exactly what to do:
    overflow happened at** (`at lib/page/…/x.dart:424`). That last part is the
    allowlist key and usually the fastest route to the culprit widget — go read that
    line before anything else.
+   **Since #1343 the locale is inside the message, not in the test name.** The test
+   reads `card.width card=<id> width=<label> px=<n> tab=<n> lays out cleanly in
+   every locale`, and its failure opens with
+   `card.width overflowed at <coordinate> in 3 locale(s):` followed by one
+   `<tag>: …` line each.
+   Read that count first — one locale is a translation-length problem, twenty is
+   structural, and the old shape (one red test per locale) made the difference
+   something you had to assemble by hand from the report.
 2. Reproduce + visualize:
    `./tool/run_overflow_test.sh -c <card> -L <locale> -o`
 3. Decide, in this order:
@@ -415,8 +450,22 @@ New cards in `UspWidgetSpecs.all` are picked up automatically — but:
    naming only the tabs that actually render the varying data. That file's doc
    states the opt-in cost plainly — a card is uncovered on the second profile
    until someone adds it — so record the decision either way.
-4. Run the card's full sweep: `./tool/run_overflow_test.sh -c <new_card> -o`.
-5. Fix any overflow you reasonably can; allowlist the rest per Playbook B with a
+4. **Update the pinned cell counts** in
+   [dashboard_card_overflow_test.dart](../../../test/page/dashboard/cards/dashboard_card_overflow_test.dart)
+   — `expectedCellCount:` on each affected `runOverflowSweep` call. A new card adds
+   `spans × tabs × 26` to `CardWidthFamily`, another `tabs × 26` to
+   `CardNormalBandFamily` if it declares a `normalAbove`, and `tabs × widths × 26`
+   to `CardProfileFamily` if you added it to `kCardDataProfileSweeps` in step 3.
+   This is not optional bookkeeping and it is not derived on purpose: since #1343
+   the count is the *only* thing standing between "regrouped 1,898 cells into 73
+   tests" and "quietly stopped enumerating 800 of them", so a computed pin would be
+   the enumeration restating itself. The failure names both numbers, so the run
+   tells you what to write.
+5. Run the card's full sweep: `./tool/run_overflow_test.sh -c <new_card> -o`.
+   **Then run the file unfiltered once** — `-c` narrows the run, so the count tests
+   skip rather than pass (they say so, with both numbers), and a wrong pin from step
+   4 stays invisible until CI.
+6. Fix any overflow you reasonably can; allowlist the rest per Playbook B with a
    tracking note. Goal is 0 new allowlist entries.
 
 ### D. Removing a card / tab
@@ -431,6 +480,11 @@ New cards in `UspWidgetSpecs.all` are picked up automatically — but:
 - Changing a card's tab count → update `kTabbedCardTabCounts`; the meta-test
   enforces it. Run the full sweep afterwards: a tab that stopped being swept can
   leave an entry dead, and only that run will say so.
+- **Either change moves the pinned `expectedCellCount`s** (Playbook C step 4), in
+  the other direction. Removing a card or a tab shrinks the enumeration, and the
+  count test fails with both numbers in it — that failure is the feature, not an
+  obstacle: it is what makes lost coverage impossible to confuse with an intended
+  deletion.
 
 ### E. Shrink the allowlist (#1183 follow-up)
 
@@ -531,12 +585,45 @@ Reference implementation:
    readability test of its own, like the chrome suite's seven) still has to key
    them by hand.
 
+   One place in the gate pumps unkeyed on purpose: `captureAdjustedCardScreenshot`,
+   called from the card gate's judge, re-pumps the same card at its recommended size
+   to photograph it. It is safe because it is measuring a *different* tree — a
+   different root widget, so different render objects — and it only ever runs on a
+   `DUMP=2` run for a cell that already overflowed. If you copy it, keep both of
+   those properties or key it.
+
    Two consequences of the runner worth knowing before you write a family:
    `expectedCellCount` is **required** — pin it as a literal from the ticket, not
    as `widths.length * locales.length`, which is the enumeration restating itself
    — and locale is a **field on the cell, not an axis**, because the runner groups
    by every axis except locale and loops locale inside one test. Declaring
    `locale` in `axisNames` is reported as a malformed family.
+
+   **Two hooks are defaulted, and a new probe should leave both alone until it
+   can't** (#1343 added them, and only because the card sweep needed them):
+
+   - `judgeCell(tester, cell, verdict)` — the verdict for one measured cell, called
+     for **every** cell including clean ones. The default is zero tolerance: any
+     incident above the filter is that cell's failure. Override it only if your
+     surface has something the runner cannot know about — the card gate's override
+     is the allowlist, the report row and the PNG pair, all in
+     `families/dashboard_card_gate.dart`. **One hook, not three**, on purpose: the
+     consult, the report row and the dump all happen at one moment over the same
+     inputs, so splitting them would be three hooks that must agree.
+   - `enumerationGaps()` — why this run enumerated fewer cells than the sweep pins,
+     empty by default. Non-empty makes the count test *skip with the reason in it*
+     rather than fail — **unless the narrowing enumerated nothing at all**, which
+     fails: a gap explains measuring less than the pin, never measuring nothing, and
+     `LOCALE=zz` would otherwise leave every pin skipped and the sweep green over
+     zero cells. You need this only if your family reads a `--dart-define` that
+     narrows the enumeration; a family whose cells are fixed does not.
+
+   The three card families share a private `_CardFamily` base
+   ([families/dashboard_card_family.dart](../../../test/layout_gate/families/dashboard_card_family.dart))
+   that holds the gate, the cached enumeration and that `enumerationGaps` delegate,
+   and narrows both hooks to `CardSweepCell` so the cast is paid once. Copy that
+   shape if you write a second family for one surface; it is what stops a later
+   family from forgetting the delegate and pinning a subset as the whole sweep.
 6. **`@Tags(['layout-gate'])` — never `loc` / `ui` / `golden`.** `run_tests.sh`
    only does `--exclude-tags="golden||loc||ui"`; nothing in `.github/` names
    `layout-gate`. So "is it in the PR gate?" means "is it un-excluded?", and the
@@ -608,7 +695,7 @@ Markdown report (`-d 1`) is the same data as a flat bulleted list —
 | Wrong locale tag (`zh-TW`, `es-AR`) | Use `_localeTag` form with underscore: `zh_TW`, `es_AR`, `fr_CA`, `pt_PT` |
 | New tabbed card, but only tab 0 gets tested | Add it to `kTabbedCardTabCounts`; the `tab registry` meta-test enforces both directions, so an unregistered tabbed card fails instead of quietly under-sweeping |
 | Retagging the test golden/loc/ui to "organize" it | It would drop out of the PR gate — keep it `layout-gate` |
-| Multi-pumping to sweep widths/tabs in one test | Each case must be its own `testWidgets` (only the first overflow is reported per render object) |
+| Multi-pumping to sweep widths/tabs in one test | Either declare it through `runOverflowSweep` (which keys each cell host for you) or give each pump its own `testWidgets` — only the first overflow is reported per render object |
 | Editing the grid constants to change results | They mirror production geometry on purpose; changing them changes what "overflow" means |
 | Removing an allowlist locale without fixing layout | The ratchet fails that exact test — fix the card first, then remove |
 | Replacing the width enumeration with a "faster" sampled list | Sampling makes the worst-case invariant an assertion again, and is lossy under `MIN_SCREEN`; enumeration is pure arithmetic and costs nothing next to the pumps |

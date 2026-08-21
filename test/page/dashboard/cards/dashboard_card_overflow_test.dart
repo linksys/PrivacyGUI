@@ -11,14 +11,14 @@ import 'package:privacy_gui/page/_shared/models/card_density.dart';
 import 'package:privacy_gui/page/dashboard/models/display_mode.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_widget_specs.dart';
 
+import '../../../layout_gate/families/dashboard_card_family.dart';
+import '../../../layout_gate/families/dashboard_card_gate.dart';
 import '../../../layout_gate/locale_tag.dart';
-import '../../../layout_gate/ratchet.dart';
+import '../../../layout_gate/sweep.dart';
 import '../../../util/app_test_fonts.dart';
 import '../../../util/dashboard/card_data_profiles.dart';
 import '../../../util/dashboard/dashboard_card_probe.dart';
-import '../../../util/dashboard/dashboard_overflow_report_generator.dart';
 import '../../../util/overflow_baseline.dart';
-import '../../../util/overflow_probe.dart';
 
 /// Defensive RenderFlex-overflow gate for every dashboard card (#1183).
 ///
@@ -43,9 +43,11 @@ import '../../../util/overflow_probe.dart';
 ///   * **Sweeps every tab** (via [cardTabIndexProvider], not geometric taps),
 ///     so overflow that only appears on a non-default tab is caught — several
 ///     cards overflow *worse* on a non-default tab than on tab 0.
-///   * **One pump per test** — Flutter reports each RenderFlex's overflow only
-///     once per render-object lifetime, so multi-pump sweeps silently drop all
-///     but the first. Every (card, width, tab, locale) is its own test.
+///   * **One fresh tree per measurement** — Flutter reports each RenderFlex's
+///     overflow only once per render-object lifetime, so a sweep that re-pumped
+///     into the same tree would silently drop all but the first. Every (card,
+///     width, tab, locale) gets its own keyed subtree; see [runOverflowSweep]
+///     invariant 1.
 ///   * Runs under **every shipped locale** (all 26), so script-specific width
 ///     blowups (German/Finnish compounds, CJK/Thai glyphs, Arabic RTL) are all
 ///     covered instead of a hand-picked Latin sample.
@@ -58,270 +60,39 @@ import '../../../util/overflow_probe.dart';
 ///   failure blocks the PR. (Do not retag it golden/ui/loc — it would silently
 ///   drop out of the gate.) It also carries `overflow` (#1336), the narrower
 ///   selector `flutter test --tags overflow` uses to run the four sweeps alone.
-
-/// Locale identity comes from [localeTag], shared with every other sweep since
-/// #1356 — read its doc for why the tag has to be one spelling.
 ///
-/// Since #1341 the ratchet's *key* is the overflow's `file:line`; the locale is
-/// the value side of the entry. Both halves still have to be exact, and these
-/// tags are what the ratchet compares against the run's covered locale set.
-
-/// Target locales parsed from --dart-define=LOCALE=... or environment variables.
-/// Defaults to all shipped locales if no filter is provided.
+/// ## What this file is, since #1343
 ///
-/// A `final`, not a getter: the innermost collection loop below reads this once
-/// per declared cell, and as a getter that was ~1,900 walks of
-/// `Platform.environment` plus ~1,900 filtered copies of the supported-locale
-/// list before a single cell had been pumped. A top-level `final` in Dart is
-/// lazily initialised, so the parse still happens on first use rather than at
-/// load — which matters, because the environment is what `tool/run_overflow_test.sh`
-/// sets.
-final List<Locale> _targetLocales = _parseTargetLocales();
-
-List<Locale> _parseTargetLocales() {
-  const d = String.fromEnvironment('LOCALE', defaultValue: '');
-  const d2 = String.fromEnvironment('locale', defaultValue: '');
-  final env = Platform.environment;
-  final filterStr = d.isNotEmpty
-      ? d
-      : (d2.isNotEmpty ? d2 : (env['LOCALE'] ?? env['locale'] ?? ''));
-
-  if (filterStr.isEmpty || filterStr == 'all') {
-    return AppLocalizations.supportedLocales;
-  }
-
-  final tags = filterStr.split(',').map((s) => s.trim().toLowerCase()).toSet();
-  return AppLocalizations.supportedLocales.where((l) {
-    final tag = localeTag(l).toLowerCase();
-    final lang = l.languageCode.toLowerCase();
-    return tags.contains(tag) || tags.contains(lang);
-  }).toList();
-}
-
-/// The gate's tolerance, now shared with the satellite suites so the two cannot
-/// drift apart — see [kOverflowTolerancePx] for why it is 2.0 (#1270).
-const double _tolerancePx = kOverflowTolerancePx;
-
-/// The allowlist, re-keyed on `file:line` at #1341.
+/// Three [runOverflowSweep] declarations and the hand-written tests that keep them
+/// honest. The 1,898 cells the three sweeps measure are enumerated by
+/// `test/layout_gate/families/dashboard_card_family.dart` and judged by
+/// [CardSweepGate]; what used to be ~500 lines of nested loops, ratchet plumbing
+/// and failure prose in this file is now the framework's, shared with the chrome
+/// sweep and — at #1344/#1345 — with the other two.
 ///
-/// Was ~80 lines of private, coordinate-keyed helpers in this file
-/// (`_isAllowlisted` / `_failIfDeadExemption` / a `catch`-and-print loader); is
-/// now [OverflowRatchet], which has its own oracle at
-/// `test/layout_gate/ratchet_test.dart` and can be proved to report a dead entry
-/// without standing a 1,898-cell sweep up. Read that class for why the key is a
-/// source location, why a null site can never be exempted, and why the
-/// dead-entry verdict is taken once for the whole run rather than per cell.
+/// The 23 tests that remain here are the ones that are *not* a sweep: 18 for the
+/// tab registry (six cards pinning a tab count, twelve pinning that they are
+/// single-view, which is what decides how many tabs the sweeps cover), 3 for the
+/// normal band's inventory (which decides that sweep's size), and 2 profile guards
+/// — one that the swept tab exists, one that the profile's data reaches the tree —
+/// which decide whether the 52 profile cells are pumping the profile at all. Each
+/// is a measured coordinate in #1337's dataset for the same reason: a port that
+/// dropped one would diff clean while taking the coverage with it.
 ///
-/// Not `late final`: [setUpAll] overwrites it, and if the fixture is malformed
-/// that setUpAll throws — after which `tearDownAll` still runs, and a `late`
-/// field would raise a LateInitializationError on top of the real failure.
-/// Starting empty means the closing check finds nothing to say and the fixture
-/// error stays the only message.
-OverflowRatchet _ratchet = OverflowRatchet.empty();
-
-/// Cells that consult the ratchet: counted as they are *declared* in `main()`,
-/// and again as they are *measured* at run time.
+/// With the three sweeps' 73 coordinate tests and their 3 cell-count pins, that is
+/// the 99 this file declares. The `list all registered dashboard cards` test is not
+/// among them — it exists only under `--dart-define=LIST_CARDS`, where it is the
+/// whole run.
 ///
-/// The pair is the only mechanism this file has for noticing that a `--name`
-/// filter (which `tool/run_overflow_test.sh -c <card>` passes) narrowed the run,
-/// because a name filter is applied by the test runner and is invisible to the
-/// suite. It also catches a cell that threw before it measured anything. Both
-/// answers feed [_coverageGaps], and a gap is what stops the dead-entry verdict.
-int _declaredCells = 0;
-int _measuredCells = 0;
+/// The sweeps' own reasoning stays with each `runOverflowSweep` call below, in the
+/// section comment above it. The pinned cell counts are the ticket's arithmetic;
+/// `./tool/overflow_baseline.sh check card` is what proves the cells behind them
+/// did not move.
 
-/// Every reason this run measured less than the full sweep, empty when it did
-/// not.
-///
-/// Read once, in `tearDownAll`. The three sources are the three ways the sweep
-/// can be narrowed — the two dump-tooling defines the architecture doc's §5
-/// contract 3 pins, plus the runner-level name filter the counters detect — and
-/// each is phrased in the operator's own vocabulary so the skip note names the
-/// flag they typed.
-List<String> _coverageGaps() {
-  final allLocales = AppLocalizations.supportedLocales.length;
-  return [
-    if (_targetLocales.length != allLocales)
-      '--dart-define=LOCALE selected ${_targetLocales.length} of $allLocales '
-          'locales',
-    if (minScreenFilter > 0)
-      '--dart-define=MIN_SCREEN=${minScreenFilter.toStringAsFixed(0)} moved '
-          'every width this sweep pumps',
-    if (_measuredCells != _declaredCells)
-      '$_measuredCells of $_declaredCells declared cells were measured (a '
-          '--name / -c filter, or a cell that threw before measuring)',
-  ];
-}
-
-/// `+41.0px right at lib/x.dart:9 (allowed up to 41.0px …) — legend fix #1145`
-/// for each incident.
-///
-/// The tracking note is per **site**, not per card, because the key it hangs off
-/// is: two sites in one card can be deferred under different tickets, and one
-/// site — anything in `ui_kit_library`, any shared row widget — can be reached
-/// from several cards, where a card-keyed note would print whichever card
-/// happened to hit it.
-///
-/// The allowance is printed alongside it because this line is the only place a
-/// tolerated overflow is ever visible: without it, "+25.9px, allowed 26.0px" and
-/// "+2.5px, allowed 26.0px" read identically, and the first is one shaping
-/// difference away from failing CI.
-String _trackedDetail(List<OverflowIncident> incidents) => incidents.map((i) {
-      final entry = _ratchet.exemptionFor(i.site);
-      return '$i'
-          '${entry == null ? '' : ' (allowed up to ${entry.allowanceLabel})'}'
-          ' — ${_ratchet.trackingNote(i.site)}';
-    }).join(', ');
-
-/// The incidents the reader has to act on, and how many the fixture already
-/// covers.
-///
-/// A cell can now hold a mix: one site deferred, another new. The failure quotes
-/// the new ones — those are the work — but says the coordinate carries more, so
-/// nobody reads a one-incident message as the whole story. Under the old
-/// coordinate key the mix could not arise, because the exemption covered the
-/// whole cell.
-String _blockingDetail(
-  List<OverflowIncident> blocking,
-  List<OverflowIncident> significant,
-) {
-  final exempt = significant.length - blocking.length;
-  return '${blocking.join(', ')}'
-      '${exempt == 0 ? '' : ' (plus $exempt already allowlisted here)'}';
-}
-
-/// The "how to defer this" paragraph — or two, because there are two ways to be
-/// blocked and they need opposite edits.
-///
-/// The incidents printed immediately above already end in `at <file>:<line>`
-/// ([OverflowIncident.toString]), so the failure hands the operator the exact
-/// string to paste. Since #1356 an entry carries a magnitude too, and this
-/// renders the whole line — key, locale, ceiling — from the incidents it was
-/// handed. Still one fact rather than two: the example is *derived* from the
-/// measurement rather than written out beside the grammar, so it cannot drift
-/// from what the parser accepts.
-String _remediation(List<OverflowIncident> blocking, String tag) {
-  final breaches = _ratchet.ceilingBreaches(blocking, tag).toSet();
-  final fresh = blocking.where((i) => !breaches.contains(i)).toList();
-  return [
-    if (breaches.isNotEmpty) _ceilingBreachAdvice(breaches, tag),
-    if (fresh.isNotEmpty) _newExemptionAdvice(fresh, tag),
-  ].join('\n');
-}
-
-/// What to do about an overflow at a site the fixture already exempts *here*.
-///
-/// Its own paragraph because "add the tag" is wrong advice for an entry that
-/// already names it: whoever is holding the failure would open the fixture, find
-/// the tag, and conclude the gate is broken. What changed is the size.
-String _ceilingBreachAdvice(Set<OverflowIncident> breaches, String tag) {
-  final lines = breaches.map((i) {
-    // Non-null by construction: `ceilingBreaches` only returns incidents whose
-    // site resolved to an entry.
-    final entry = _ratchet.exemptionFor(i.site)!;
-    return '  ${i.site} — allowed up to ${entry.allowanceLabel}, measured '
-        '+${i.pixels.toStringAsFixed(1)}px';
-  }).toList()
-    ..sort();
-  return 'Already allowlisted for "$tag", and overflowing by more than the entry '
-      'permits:\n'
-      '${lines.join('\n')}\n'
-      'That is what a "maxOverflowPx" is for: one `file:line` is rendered by '
-      'every cell that reaches it, so this can be a second, larger defect at a '
-      'line whose smaller one is deferred. Fix the layout, or — if the larger '
-      'overflow is deferred too — raise the ceiling and say why in that entry\'s '
-      '"tracking" note.';
-}
-
-/// What to do about an overflow nothing exempts yet: the entry to paste.
-String _newExemptionAdvice(List<OverflowIncident> fresh, String tag) {
-  // The worst magnitude per site, which is what a single ceiling has to cover.
-  final worstBySite = <String, double>{};
-  for (final incident in fresh) {
-    final site = incident.site;
-    if (site == null || !incident.pixels.isFinite) continue;
-    final worst = worstBySite[site];
-    if (worst == null || incident.pixels > worst) {
-      worstBySite[site] = incident.pixels;
-    }
-  }
-  // Counted directly rather than as `fresh.length - worstBySite.length`: sites
-  // are deduplicated, so two blocking incidents at one site would have made the
-  // difference claim an incident had no location when both did — the operator
-  // would go looking for an incident the message above never printed.
-  final unresolved = fresh.where((i) => i.site == null).length;
-  final unparseable =
-      fresh.where((i) => i.site != null && !i.pixels.isFinite).length;
-  final unexemptable = [
-    if (unresolved > 0)
-      '$unresolved resolved no source location, and the ratchet keys on '
-          '`file:line` — a null location is not a key (deliberately, see '
-          'OverflowRatchet)',
-    if (unparseable > 0)
-      '$unparseable reported an overflow this suite could not parse, which no '
-          'finite "maxOverflowPx" can cover',
-  ];
-  if (worstBySite.isEmpty) {
-    return 'None of the incident(s) above can be allowlisted at all: '
-        '${unexemptable.join('; ')}. Fix the layout.';
-  }
-  final keys = worstBySite.keys.toList()..sort();
-  return 'Fix the layout (Flexible/Expanded/maxLines/ellipsis), or if this is '
-      'knowingly deferred, add to the "allowlist" map in\n'
-      '  $kKnownOverflowsFixturePath\n'
-      '${keys.map((s) => '  "$s": {"locales": ["$tag"], "maxOverflowPx": ${worstBySite[s]!.ceil()}}').join('\n')}\n'
-      'plus a "tracking" note under each of the same keys — the fixture refuses '
-      'an exemption that has none. Each key is the source location the matching '
-      'incident above ends in ("… at <file>:<line>"), not the card|width|tab '
-      'coordinate this fixture used before #1341; each ceiling is that '
-      'incident\'s own magnitude rounded up, with '
-      '${kOverflowTolerancePx.toStringAsFixed(1)}px of shaping slack allowed on '
-      'top of it.'
-      '${unexemptable.isEmpty ? '' : '\nAlso: ${unexemptable.join('; ')} — '
-          'those need the layout fixed.'}';
-}
-
-/// Report output mode. Set this in-file to dump locally without passing
-/// `--dart-define=DUMP=...`; see [dumpMode] for the override precedence.
-/// 0: default — emit nothing (fastest; what the PR gate runs)
-/// 1: terse Markdown list only (build/overflow_testing/overflow_report.md)
-/// 2: visual HTML report (build/overflow_testing/overflow_report.html) + PNGs
-/// 3: both 1 and 2
-const int _dumpMode = 0;
-
-int get dumpMode {
-  if (_dumpMode > 0) return _dumpMode;
-
-  const defines = [
-    String.fromEnvironment('DUMP'),
-    String.fromEnvironment('dump'),
-    String.fromEnvironment('DUMP_MODE'),
-    String.fromEnvironment('dump_mode'),
-  ];
-  for (final d in defines) {
-    final v = int.tryParse(d);
-    if (v != null && v >= 0 && v <= 3) return v;
-  }
-
-  final env = Platform.environment;
-  final keys = ['DUMP', 'dump', 'DUMP_MODE', 'dump_mode'];
-  for (final k in keys) {
-    final val = env[k];
-    if (val != null) {
-      final v = int.tryParse(val);
-      if (v != null && v >= 0 && v <= 3) return v;
-    }
-  }
-
-  return 0;
-}
-
-bool get _shouldDumpPng => dumpMode == 2 || dumpMode == 3;
-bool get _shouldDumpMd => dumpMode == 1 || dumpMode == 3;
-bool get _shouldDumpHtml => dumpMode == 2 || dumpMode == 3;
-bool get _shouldCollectReport => dumpMode > 0;
-
-final List<OverflowReportItem> _collectedReportItems = [];
+/// The ratchet, the report, the dump modes and the coverage counters, shared by all
+/// three families. One per run — see [CardSweepGate] for why it cannot be per
+/// family.
+final CardSweepGate _gate = CardSweepGate();
 
 bool get _isListOnly {
   const d = String.fromEnvironment('LIST_CARDS');
@@ -359,44 +130,15 @@ void main() {
   }
 
   setUpAll(() async {
-    // Throws on a fixture it cannot read — including one still carrying
-    // pre-#1341 coordinate keys — and a throw here fails once, as `(setUpAll)`,
-    // instead of 1,898 times. The old loader printed a warning and carried on
-    // with an empty allowlist, which reads as a green gate.
-    _ratchet = OverflowRatchet.fromFixture();
+    _gate.loadRatchet();
     await loadAppFonts();
   });
 
   tearDownAll(() async {
-    if (_shouldCollectReport) {
-      await DashboardOverflowReportGenerator.generateAll(
-        _collectedReportItems,
-        baseDir: 'build/overflow_testing',
-        markdown: _shouldDumpMd,
-        html: _shouldDumpHtml,
-      );
-    }
-
-    // The ratchet's closing direction, taken **here** rather than inside each
-    // cell: under a `file:line` key deadness is a property of a site over the
-    // whole run, and one site can be rendered by many cells, so a cell that
-    // renders it cleanly proves nothing on its own (OverflowRatchet explains the
-    // trade in full, including what the old per-cell check caught and this does
-    // not). A `tearDownAll` failure is reported as `(tearDownAll)` and fails the
-    // suite without adding a test to the count — measured: 1,921 either way.
-    // Verified on a full run at #1341: declared == measured == 1,898 and
-    // therefore no gap, so the closing direction below is live on the gate and
-    // on CI. A filtered run (`-c`, `-L`, `-m`) reports a gap and skips it.
-    final gaps = _coverageGaps();
-    final skipped = _ratchet.coverageSkipNote(gaps);
-    if (skipped != null) {
-      // ignore: avoid_print
-      print(skipped);
-    }
-    final dead = _ratchet.deadEntryFailure(
-      localesCovered: _targetLocales.map(localeTag).toSet(),
-      coverageGaps: gaps,
-    );
+    // The report, the coverage skip note and the ratchet's closing direction, in
+    // that order — see [CardSweepGate.close]. A `tearDownAll` failure is reported
+    // as `(tearDownAll)` and fails the suite without adding a test to the count.
+    final dead = await _gate.close();
     if (dead != null) fail(dead);
   });
 
@@ -412,6 +154,11 @@ void main() {
   // of its whole form; which form a given width selects is a density claim, and
   // it belongs to the per-card density suites rather than to a registry check
   // that happens to pump a narrow width (#1291).
+  //
+  // Hand-written rather than a family: it pumps one coordinate per card and
+  // asserts something other than overflow about it, so a sweep's grouping and
+  // locale loop would buy it nothing. It stays in the dataset because it is a real
+  // pump — see the `cell:` argument.
   group('tab registry', () {
     for (final entry in kTabbedCardTabCounts.entries) {
       testWidgets('${entry.key} still has ${entry.value} tabs', (tester) async {
@@ -483,176 +230,15 @@ void main() {
     }
   });
 
-  for (final spec in UspWidgetSpecs.all) {
-    final rows = spec.getConstraints(DisplayMode.normal).minHeightRows;
-    final widthCases = widthCasesFor(spec);
-    final tabCount = tabCountFor(spec.id);
-
-    group('${spec.id} overflow', () {
-      for (final wc in widthCases) {
-        for (var tab = 0; tab < tabCount; tab++) {
-          for (final locale in _targetLocales) {
-            final tag = localeTag(locale);
-            final tabLabel = tabCount > 1 ? ' tab$tab' : '';
-            _declaredCells++;
-            testWidgets(
-              'no overflow @${wc.label} ${wc.widthKey}px$tabLabel ($tag)',
-              (tester) async {
-                final repaintKey = _shouldDumpPng ? GlobalKey() : null;
-                final incidents = await probeCardOverflow(
-                  tester,
-                  cardId: spec.id,
-                  widthCase: wc,
-                  cardHeightRows: rows,
-                  tabIndex: tab,
-                  locale: locale,
-                  repaintKey: repaintKey,
-                  cell: OverflowCell('card.width', {
-                    'card': spec.id,
-                    'width': wc.label,
-                    'px': wc.widthKey,
-                    'tab': tab,
-                    'locale': tag,
-                  }),
-                );
-
-                final significant =
-                    incidents.where((i) => i.pixels > _tolerancePx).toList();
-                // Counted before the early return, because a clean cell is a
-                // measured one — that is exactly what makes the run's coverage
-                // complete enough for the dead-entry verdict.
-                _measuredCells++;
-                if (significant.isEmpty) return;
-
-                // One call per cell: it records every site as live debt *and*
-                // answers which incidents are not exempt. Empty = the cell is
-                // tolerated.
-                final blocking = _ratchet.consultCell(significant, tag);
-
-                final maxColsOnScreen = gridColumnsForWidth(wc.screenWidth);
-                final currentColSpan = wc.columnSpan.clamp(1, maxColsOnScreen);
-
-                final hasRightOverflow =
-                    significant.any((i) => i.side == 'right');
-                final hasBottomOverflow =
-                    significant.any((i) => i.side == 'bottom');
-
-                bool isWidthExpandable = true;
-                int recCols = currentColSpan;
-
-                if (hasRightOverflow) {
-                  if (currentColSpan < maxColsOnScreen) {
-                    recCols = math.min(currentColSpan + 1, maxColsOnScreen);
-                    isWidthExpandable = true;
-                  } else {
-                    recCols = currentColSpan;
-                    isWidthExpandable = false;
-                  }
-                }
-
-                final origHeight = dashboardCardHeight(rows);
-                int recRows = rows;
-                if (hasBottomOverflow) {
-                  final maxBottom = significant
-                      .where((i) => i.side == 'bottom')
-                      .fold(0.0, (m, i) => math.max(m, i.pixels));
-                  final targetHeight = origHeight + maxBottom + 4.0;
-                  recRows = calcRecommendedRows(targetHeight);
-                }
-
-                final recWidth = cardWidthAt(wc.screenWidth, recCols);
-                final recHeight = dashboardCardHeight(recRows);
-
-                bool isAdjustedClean = true;
-                List<OverflowIncident> adjustedIncidents = [];
-
-                if (_shouldDumpPng && repaintKey != null) {
-                  final tabSuffix = tabCount > 1 ? '_t$tab' : '';
-                  final path =
-                      'build/overflow_testing/png/${spec.id}/screen${wc.screenKey}_card${wc.widthKey}_${wc.columnSpan}x$rows${tabSuffix}_$tag.png';
-                  await saveCardScreenshot(
-                    tester,
-                    repaintKey,
-                    path,
-                  );
-
-                  final adjustPath =
-                      'build/overflow_testing/png/adjust/${spec.id}/screen${wc.screenKey}_card${wc.widthKey}_${wc.columnSpan}x$rows${tabSuffix}_${tag}_adjusted.png';
-                  adjustedIncidents = await captureAdjustedCardScreenshot(
-                    tester,
-                    cardId: spec.id,
-                    screenWidth: wc.screenWidth,
-                    recWidth: recWidth,
-                    recHeight: recHeight,
-                    tabIndex: tab,
-                    locale: locale,
-                    path: adjustPath,
-                  );
-                  isAdjustedClean = adjustedIncidents
-                      .where((i) => i.pixels > _tolerancePx)
-                      .isEmpty;
-                }
-
-                if (_shouldCollectReport) {
-                  _collectedReportItems.add(OverflowReportItem(
-                    cardId: spec.id,
-                    screenWidth: wc.screenWidth,
-                    cardWidth: wc.cardWidth,
-                    cardHeight: origHeight,
-                    columnSpan: wc.columnSpan,
-                    rowSpan: rows,
-                    widthLabel: wc.label,
-                    tabIndex: tab,
-                    tabCount: tabCount,
-                    localeTag: tag,
-                    incidents: significant,
-                    // "The gate tolerated this row", i.e. **every** significant
-                    // incident in it is exempt. It was a per-cell boolean while
-                    // the allowlist was keyed per cell; under a site key
-                    // exemption is a per-incident question, and "any" would let
-                    // one known site colour a row green that the gate itself
-                    // failed. The report has one row per coordinate, so the row
-                    // must carry the coordinate's verdict, not a disjunction
-                    // over its incidents. (Today no generator reads this field —
-                    // it is declared and never used in
-                    // `dashboard_overflow_report_generator.dart` — so the choice
-                    // is about what the column will mean when someone renders
-                    // it, not about current output.)
-                    isAllowed: blocking.isEmpty,
-                    recCols: recCols,
-                    recRows: recRows,
-                    recWidth: recWidth,
-                    recHeight: recHeight,
-                    isWidthExpandable: isWidthExpandable,
-                    isAdjustedClean: isAdjustedClean,
-                    adjustedIncidents: adjustedIncidents,
-                  ));
-                }
-
-                if (blocking.isEmpty) {
-                  // Documented + tracked: surface it but don't fail the gate.
-                  // ignore: avoid_print
-                  print(
-                    'KNOWN OVERFLOW (allowlisted) ${spec.id} @${wc.label} '
-                    '${wc.widthKey}px tab$tab $tag: '
-                    '${_trackedDetail(significant)}',
-                  );
-                  return;
-                }
-
-                fail(
-                  'Dashboard card "${spec.id}" overflows at ${wc.label} width '
-                  '(${wc.widthKey}px), tab $tab, locale "$tag": '
-                  '${_blockingDetail(blocking, significant)}.\n'
-                  '${_remediation(blocking, tag)}',
-                );
-              },
-            );
-          }
-        }
-      }
-    });
-  }
+  // ─── The main width sweep ─────────────────────────────────────────────────
+  //
+  // 18 cards x their realizable spans x their tabs x 26 locales. The count is
+  // pinned because the grouping hides a narrowing: 63 coordinates report the same
+  // green whether each ran 26 locales or 1.
+  runOverflowSweep(
+    family: CardWidthFamily(_gate),
+    expectedCellCount: 1638,
+  );
 
   // ─── The normal band (#1318) ──────────────────────────────────────────────
   //
@@ -677,9 +263,10 @@ void main() {
   // that is pinned rather than argued.
   //
   // No density is pinned. The coordinate is chosen so production's own selection
-  // lands on normal, and each case asserts that it did — a pinned sweep would keep
-  // passing after a threshold moved out from under it, measuring a form the width no
-  // longer selects.
+  // lands on normal, and every cell asserts that it did — in
+  // [CardNormalBandFamily.onCellSettled], because a pinned sweep would keep
+  // passing after a threshold moved out from under it, measuring a form the width
+  // no longer selects.
   //
   // Exemptions here are keyed on the overflow's own `file:line`, like every other
   // sweep since #1341 — this sweep needs no key grammar of its own, which is one of
@@ -700,18 +287,15 @@ void main() {
   //
   // Each assertion below was run against a mutation of the code it guards. Row 1 is
   // the one that justifies the sweep's existence rather than its shape: the main
-  // 1698-case width sweep stayed **green** through it.
+  // width sweep stayed **green** through it.
   //
   // | # | assertion | mutation | killed by |
   // |---|---|---|---|
-  // | 1 | the per-case overflow `fail` | `usp_network_health_card`: the `if (!compact)` metric row gives its three `_MetricChip`s a fixed `width: 140` instead of `Expanded` — a width the desktop realization has room for and this card's own threshold does not | 26 of 26 `network_health` tab0 cases. Of the 3213 other cases carrying the `layout-gate` tag, the 1698-case main sweep saw **nothing**; only the two dialog groups (6, at 400px) and `usp_network_health_density_test`'s pinned-normal assertions (4) did |
-  // | 2 | `the six cards that declare a threshold` + `each threshold is realizable` + the selected-form table | delete `normalAbove: 366` from `network_health`'s spec | all 3 meta-tests. The sweep itself goes 208 → 130 cases and stays green, which is exactly the silent narrowing they exist to convert into a failure |
-  // | 3 | `selectedCardDensity(…) == normal` | `normalBandCaseFor` accepts widths 100px below the threshold | 208 of 208 sweep cases, plus `each threshold is realizable` |
+  // | 1 | the per-cell overflow verdict | `usp_network_health_card`: the `if (!compact)` metric row gives its three `_MetricChip`s a fixed `width: 140` instead of `Expanded` — a width the desktop realization has room for and this card's own threshold does not | 26 of 26 `network_health` tab0 cells. Of the 3213 other cases carrying the `layout-gate` tag, the main width sweep saw **nothing**; only the two dialog groups (6, at 400px) and `usp_network_health_density_test`'s pinned-normal assertions (4) did |
+  // | 2 | `the six cards that declare a threshold` + `each threshold is realizable` + the selected-form table | delete `normalAbove: 366` from `network_health`'s spec | all 3 meta-tests. The sweep itself goes 208 → 130 cells and stays green *if the pin is edited to match*, which is exactly the silent narrowing they exist to convert into a failure |
+  // | 3 | `selectedCardDensity(…) == normal` | `normalBandCaseFor` accepts widths 100px below the threshold | 208 of 208 sweep cells, plus `each threshold is realizable` |
   // | 4 | `widest lessThanOrEqualTo 288.0` | `kMinSupportedScreenWidth` 320 → 480 (the plausible version of this: dropping 320px support) | `the gate's own widths cannot reach the normal band` alone — `widest` becomes 448.0 |
   // | 5 | the 8-coordinate count | drop `'network_health': 3` from `kTabbedCardTabCounts` | `the six cards that declare a threshold` (8 → 6) |
-  final normalBandSpecs =
-      UspWidgetSpecs.all.where((s) => s.normalAbove != null).toList();
-
   group('normal band coverage', () {
     // The inventory, asserted rather than narrated — the counts in the comment
     // above are the whole justification for this sweep's existence and its size.
@@ -729,7 +313,7 @@ void main() {
         },
         reason: 'a card that gains or loses a `normalAbove` changes what this '
             'sweep covers, so the list is pinned here rather than left to the '
-            'loop below',
+            'family that enumerates it',
       );
       expect(
         normalBandSpecs.fold<int>(0, (n, s) => n + tabCountFor(s.id)),
@@ -821,90 +405,21 @@ void main() {
     });
   });
 
-  for (final spec in normalBandSpecs) {
-    final rows = spec.getConstraints(DisplayMode.normal).minHeightRows;
-    final wc = normalBandCaseFor(spec)!;
-    final tabCount = tabCountFor(spec.id);
-
-    group('${spec.id} overflow [normal band]', () {
-      for (var tab = 0; tab < tabCount; tab++) {
-        for (final locale in _targetLocales) {
-          final tag = localeTag(locale);
-          final tabLabel = tabCount > 1 ? ' tab$tab' : '';
-          _declaredCells++;
-          testWidgets(
-            'no overflow @normalAbove ${wc.widthKey}px$tabLabel ($tag)',
-            (tester) async {
-              final incidents = await probeCardOverflow(
-                tester,
-                cardId: spec.id,
-                widthCase: wc,
-                cardHeightRows: rows,
-                tabIndex: tab,
-                locale: locale,
-                cell: OverflowCell('card.normal_band', {
-                  'card': spec.id,
-                  'width': wc.label,
-                  'px': wc.widthKey,
-                  'tab': tab,
-                  'locale': tag,
-                }),
-              );
-
-              expect(
-                selectedCardDensity(tester),
-                CardDensity.normal,
-                reason:
-                    '"${spec.id}" was pumped at ${wc.widthKey}px — the narrowest '
-                    'width at or above its declared normalAbove '
-                    '(${spec.normalAbove}) — but selected a degraded form, so '
-                    'this case is no longer measuring the normal band. '
-                    'normalBandCaseFor and densityForWidth have disagreed: check '
-                    'whether the threshold moved or the selection rule changed.',
-              );
-
-              final significant =
-                  incidents.where((i) => i.pixels > _tolerancePx).toList();
-              _measuredCells++;
-              if (significant.isEmpty) return;
-
-              final blocking = _ratchet.consultCell(significant, tag);
-              if (blocking.isEmpty) {
-                // ignore: avoid_print
-                print(
-                  'KNOWN OVERFLOW (allowlisted) ${spec.id} @normalAbove '
-                  '${wc.widthKey}px tab$tab $tag: '
-                  '${_trackedDetail(significant)}',
-                );
-                return;
-              }
-
-              fail(
-                'Dashboard card "${spec.id}" overflows in its **normal** form at '
-                '${wc.widthKey}px — the narrowest width its own '
-                'normalAbove (${spec.normalAbove}) admits — tab $tab, locale '
-                '"$tag": ${_blockingDetail(blocking, significant)}.\n'
-                'This width is above the threshold, so no degradation applies '
-                'here: the fix is to the normal form itself, or to the threshold '
-                'if the form cannot read at this width (#1288 measured it).\n'
-                '${_remediation(blocking, tag)}',
-              );
-            },
-          );
-        }
-      }
-    });
-  }
+  runOverflowSweep(
+    family: CardNormalBandFamily(_gate),
+    expectedCellCount: 208,
+  );
 
   // ─── Named data profiles (#1267) ──────────────────────────────────────────
   //
-  // The sweep above is one router shape. `kCardDataProfileSweeps` adds the
+  // The sweeps above are one router shape. `kCardDataProfileSweeps` adds the
   // (card, tab) pairs worth measuring on a second one — see
   // `card_data_profiles.dart` for why the list is opt-in per card rather than
   // all 18, and what that deliberately does not claim.
   //
-  // Same widths, same 26 locales, same one-pump-per-test rule as above; only the
-  // data differs. One thing is deliberately *not* shared with the default sweep:
+  // Same widths, same 26 locales, same one-tree-per-measurement rule as above;
+  // only the data differs. One thing is deliberately *not* shared with the default
+  // sweep:
   //
   //   * No report collection. `OverflowReportItem` has no profile dimension, so a
   //     second-profile item would render in the HTML report indistinguishable
@@ -922,31 +437,31 @@ void main() {
   // is empty today, so nothing is in fact widened. If a profile-only exemption is
   // ever needed the answer is a narrower key shape in `OverflowRatchet`, not a
   // second fixture.
-  for (final sweep in kCardDataProfileSweeps) {
-    final spec = UspWidgetSpecs.all.firstWhere((s) => s.id == sweep.cardId);
-    final rows = spec.getConstraints(DisplayMode.normal).minHeightRows;
-    final widthCases = widthCasesFor(spec);
-    final tabCount = tabCountFor(spec.id);
-    final profile = sweep.profile;
+  group('card data profiles', () {
+    for (final sweep in kCardDataProfileSweeps) {
+      final spec = UspWidgetSpecs.all.firstWhere((s) => s.id == sweep.cardId);
+      final rows = spec.getConstraints(DisplayMode.normal).minHeightRows;
+      final tabCount = tabCountFor(spec.id);
+      final profile = sweep.profile;
 
-    group('${sweep.cardId} overflow [${profile.key}]', () {
       for (final tab in sweep.tabs) {
         // A profile pinned to a tab the card no longer has would silently sweep
         // nothing, which is the same failure mode `kTabbedCardTabCounts` exists
         // to prevent.
-        test('tab $tab exists on ${sweep.cardId}', () {
+        test('${sweep.cardId} tab $tab exists', () {
           expect(tab, lessThan(tabCount),
               reason: 'the ${profile.key} profile sweeps ${sweep.cardId} tab '
                   '$tab, but the card has $tabCount tab(s). Update '
                   'kCardDataProfileSweeps in card_data_profiles.dart.');
         });
 
-        // The profile's data must reach the tree, or the 52 cases below are
-        // pumping the default fixture and reporting green — see
+        // The profile's data must reach the tree, or the 52 cells of `card.profile`
+        // are pumping the default fixture and reporting green — see
         // [CardDataProfile.markers]. Measured at the desktop width so nothing is
         // absent for a density reason, in `en` because the markers are
         // untranslated.
-        testWidgets('${profile.key} data reaches the render (tab $tab)',
+        testWidgets(
+            '${sweep.cardId} ${profile.key} data reaches the render (tab $tab)',
             (tester) async {
           final desktop = desktopCaseFor(spec);
           await probeCardOverflow(
@@ -957,10 +472,10 @@ void main() {
             tabIndex: tab,
             locale: const Locale('en'),
             extraOverrides: profile.overrides(),
-            // The guard that keeps the 52 cases below honest, so it belongs in the
+            // The guard that keeps the 52 cells honest, so it belongs in the
             // dataset as much as they do: without it they can pump the default
             // fixture and pass. A port that dropped it would diff clean here and
-            // silently turn the profile sweeps into duplicates of the plain ones.
+            // silently turn the profile sweep into a duplicate of the plain one.
             cell: OverflowCell('card.profile_data', {
               'card': sweep.cardId,
               'profile': profile.key,
@@ -972,70 +487,17 @@ void main() {
             expect(find.textContaining(marker), findsWidgets,
                 reason: '"$marker" is absent from ${sweep.cardId} tab $tab, so '
                     'the "${profile.key}" overrides did not reach the render. '
-                    'The sweep below would then be measuring the default '
-                    'fixture and passing for the wrong reason. Check which '
-                    'provider the card reads and that '
-                    'CardDataProfile.overrides layers over it.');
+                    'The sweep would then be measuring the default fixture and '
+                    'passing for the wrong reason. Check which provider the card '
+                    'reads and that CardDataProfile.overrides layers over it.');
           }
         });
-
-        for (final wc in widthCases) {
-          for (final locale in _targetLocales) {
-            final tag = localeTag(locale);
-            _declaredCells++;
-            testWidgets(
-              'no overflow @${wc.label} ${wc.widthKey}px tab$tab ($tag)',
-              (tester) async {
-                final incidents = await probeCardOverflow(
-                  tester,
-                  cardId: sweep.cardId,
-                  widthCase: wc,
-                  cardHeightRows: rows,
-                  tabIndex: tab,
-                  locale: locale,
-                  extraOverrides: profile.overrides(),
-                  cell: OverflowCell('card.profile', {
-                    'card': sweep.cardId,
-                    'profile': profile.key,
-                    'width': wc.label,
-                    'px': wc.widthKey,
-                    'tab': tab,
-                    'locale': tag,
-                  }),
-                );
-
-                final significant =
-                    incidents.where((i) => i.pixels > _tolerancePx).toList();
-                _measuredCells++;
-                if (significant.isEmpty) return;
-
-                final blocking = _ratchet.consultCell(significant, tag);
-                if (blocking.isEmpty) {
-                  // ignore: avoid_print
-                  print(
-                    'KNOWN OVERFLOW (allowlisted) ${sweep.cardId} '
-                    '[${profile.key}] @${wc.label} ${wc.widthKey}px tab$tab '
-                    '$tag: ${_trackedDetail(significant)}',
-                  );
-                  return;
-                }
-
-                fail(
-                  'Dashboard card "${sweep.cardId}" overflows on the '
-                  '"${profile.key}" data profile (${profile.description}) at '
-                  '${wc.label} width (${wc.widthKey}px), tab $tab, locale '
-                  '"$tag": ${_blockingDetail(blocking, significant)}.\n'
-                  'This coordinate is clean on the default profile — the data, '
-                  'not the width, is what breaks it, so allowlisting it exempts '
-                  'the same source location on the default data too (see the '
-                  'note above this sweep).\n'
-                  '${_remediation(blocking, tag)}',
-                );
-              },
-            );
-          }
-        }
       }
-    });
-  }
+    }
+  });
+
+  runOverflowSweep(
+    family: CardProfileFamily(_gate),
+    expectedCellCount: 52,
+  );
 }

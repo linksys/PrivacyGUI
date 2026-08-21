@@ -63,13 +63,30 @@
 ///   cards pass at 191px rendering unreadably. Writing an empty body is allowed;
 ///   not noticing that you did is not.
 ///
-/// ## What it deliberately does not do yet
+/// ## The ratchet and the report live in the family, behind one hook (#1343)
 ///
-/// No ratchet and no report. The chrome family needs neither, and #1343 — the
-/// main card sweep, the only family carrying `known_overflows.json`, PNG dumps
-/// and `OverflowReportItem` — is where those hooks take shape, with a real
-/// consumer to shape them. An unused hook would be a guess with no way to be
-/// wrong.
+/// This file still knows nothing about `known_overflows.json`,
+/// `OverflowReportItem` or PNG dumps, and that is deliberate: three of the four
+/// sweeps carry none of them. What it grew at #1343 is a single seam —
+/// [OverflowSurfaceFamily.judgeCell] — asked once per measured cell, whose answer
+/// is that cell's failure line or `null` for "this one is fine". The card family
+/// puts its allowlist consult, its report row, its screenshots and its
+/// remediation prose behind it; every other family inherits the default, which is
+/// the zero-tolerance verdict they already had.
+///
+/// **One hook, not three.** The ratchet consult, the report row and the dump all
+/// happen at the same moment, over the same inputs, in the one family that has
+/// them — so three hooks would be one decision spelled three times, and two of
+/// them would have no caller. A second, per-*coordinate* hook (advice deduplicated
+/// across the locales that failed at one site) was considered and left out for the
+/// same reason: today's failure prints the same paragraph per locale, so leaving
+/// that alone keeps the port's promise that nothing measured or printed changes
+/// shape without a reason.
+///
+/// **What the hook cannot do is swallow a throw.** A cell whose tree did not
+/// finish building is never handed to the family (invariant 3 owns it), and a
+/// judge that throws is that cell's failure like any other — see
+/// [measureOverflowCoordinate].
 library;
 
 import 'package:flutter/foundation.dart';
@@ -129,6 +146,12 @@ class OverflowSweepCell {
 /// the grouping decision): a family is the framework's other half, not a detail
 /// of the suite that declares it, and `test/page/**` is where the *suites* live.
 abstract class OverflowSurfaceFamily {
+  /// `const` so a stateless family stays a `const` declaration — every chrome
+  /// family is one. Named unnamed rather than omitted because the two hooks below
+  /// have defaults, which makes this a class with a body and therefore a class
+  /// whose constructor a subclass has to be able to call.
+  const OverflowSurfaceFamily();
+
   /// `chrome.top_bar` / `card.width` — namespaces the dataset and the report.
   ///
   /// It is the `<baseline>.<group>` of [OverflowCell.sweep], so renaming it reads
@@ -156,6 +179,45 @@ abstract class OverflowSurfaceFamily {
   /// to pump again: invariant 1 makes that safe, and anything it raises is
   /// attributed to this cell.
   Future<void> onCellSettled(WidgetTester tester, OverflowSweepCell cell);
+
+  /// What this cell's failure line should say, or `null` for "this one is fine".
+  ///
+  /// The default is the verdict the runner has always applied: any overflow past
+  /// the tolerance fails, spelled by [OverflowCellVerdict.summary]. A family
+  /// overrides it to own the decision — #1343's card family consults
+  /// `known_overflows.json`, records an [OverflowReportItem], writes the PNG pair
+  /// and returns its remediation paragraph — and the runner keeps knowing nothing
+  /// about any of that.
+  ///
+  /// Called for **every measured cell, clean ones included**, because the
+  /// interesting consumers need the clean ones too: the ratchet's liveness ledger
+  /// is how an expired allowlist entry is found (#1321), and a family's own
+  /// measured-cell counter is what its coverage gaps are computed from. A hook
+  /// that only saw failures would have made both of those the runner's job.
+  ///
+  /// Never called for a cell that threw: there is no measurement to judge, and
+  /// invariant 3 has already turned it into that cell's failure. Anything this
+  /// raises becomes the cell's failure too — see [measureOverflowCoordinate].
+  Future<String?> judgeCell(
+    WidgetTester tester,
+    OverflowSweepCell cell,
+    OverflowCellVerdict verdict,
+  ) async =>
+      verdict.significant.isEmpty ? null : verdict.summary;
+
+  /// Why this run enumerated fewer cells than the sweep pins, if it did.
+  ///
+  /// The escape hatch for `expectedCellCount`, and the answer to the question the
+  /// pin's own doc left open. A family that lets the operator narrow its
+  /// enumeration — the card sweep's `--dart-define=LOCALE`, which exists so a
+  /// single-locale dump run takes seconds instead of an hour — cannot also satisfy
+  /// a pin written for the whole sweep. Returning a non-empty list makes the count
+  /// test *skip* with those reasons, rather than fail on every dump run (§5
+  /// contract 3) or pass on a subset (which is the #1321 failure again).
+  ///
+  /// Empty by default: a family that cannot be narrowed has no gaps, and the pin
+  /// is checked.
+  List<String> enumerationGaps() => const [];
 }
 
 /// The dataset's coordinate for [cell]: the family's axes, then the locale.
@@ -341,6 +403,7 @@ class OverflowCellVerdict {
     required this.cellId,
     required this.incidents,
     required this.significant,
+    this.tolerancePx = kOverflowTolerancePx,
     this.error,
   });
 
@@ -353,6 +416,16 @@ class OverflowCellVerdict {
 
   /// The subset above the tolerance: the gate's verdict.
   final List<OverflowIncident> significant;
+
+  /// The bar [significant] was filtered at, carried so a family that measures
+  /// anything of its own judges it by the same one.
+  ///
+  /// [runOverflowSweep] takes `tolerancePx` as a parameter, so "the tolerance" is
+  /// already not necessarily [kOverflowTolerancePx]. #1343's report row re-measures
+  /// the card at its recommended size, and reading the constant there would have
+  /// held that second measurement to a different bar than the cell beside it in the
+  /// same row.
+  final double tolerancePx;
 
   /// Non-null when the cell did not finish (invariant 3).
   final Object? error;
@@ -414,6 +487,7 @@ Future<OverflowCellVerdict> measureOverflowCell(
       significant: incidents
           .where((i) => i.pixels > tolerancePx)
           .toList(growable: false),
+      tolerancePx: tolerancePx,
     );
   } catch (error) {
     // INVARIANT 3. The collector has already emitted this cell's baseline record
@@ -423,9 +497,164 @@ Future<OverflowCellVerdict> measureOverflowCell(
       cellId: id,
       incidents: const [],
       significant: const [],
+      tolerancePx: tolerancePx,
       error: error,
     );
   }
+}
+
+/// What one coordinate's locale loop measured: the failing lines, and how many of
+/// them were throws rather than overflows.
+class OverflowCoordinateVerdict {
+  const OverflowCoordinateVerdict({
+    required this.failures,
+    required this.threwCount,
+  });
+
+  /// One line per failing locale, each already prefixed with its tag.
+  final List<String> failures;
+
+  /// How many of [failures] are a cell that did not finish, or a judge that
+  /// raised. Changes the verb of the aggregated failure, because an overflow and a
+  /// broken host are remediated differently.
+  final int threwCount;
+
+  bool get failed => failures.isNotEmpty;
+}
+
+/// Measures one coordinate in every locale, asking [family] to judge each cell.
+///
+/// Public for the same reason [measureOverflowCell] is: a test cannot assert that
+/// another test failed, and this is now where the two behaviours that matter live
+/// — that a family's verdict can clear a cell the tolerance filter failed (the
+/// ratchet, in the family that has one), and that one locale cannot take the other
+/// 25 down whether it is the host or the judge that breaks.
+Future<OverflowCoordinateVerdict> measureOverflowCoordinate(
+  WidgetTester tester, {
+  required OverflowSurfaceFamily family,
+  required Iterable<OverflowSweepCell> cells,
+  double tolerancePx = kOverflowTolerancePx,
+}) async {
+  final failures = <String>[];
+  var threwCount = 0;
+
+  for (final cell in cells) {
+    final tag = localeTag(cell.locale);
+    final verdict = await measureOverflowCell(
+      tester,
+      family: family,
+      cell: cell,
+      tolerancePx: tolerancePx,
+    );
+
+    if (verdict.error != null) {
+      // Not handed to the family: a cell whose tree never finished has no
+      // measurement to judge, and its dataset row is already flagged `threw`.
+      // Skipping the judge is also what keeps a family's own bookkeeping honest —
+      // this cell is not counted as measured, so it shows up as the coverage gap
+      // it is instead of a silently judged blank.
+      threwCount++;
+      failures.add('$tag: ${verdict.summary}');
+      continue;
+    }
+
+    try {
+      final detail = await family.judgeCell(tester, cell, verdict);
+      if (detail != null) failures.add('$tag: $detail');
+    } catch (error) {
+      // INVARIANT 3, one step later. The judge is where a family does its I/O —
+      // #1343 writes two PNGs and a report row from here — so it is the step most
+      // able to fail for a reason that has nothing to do with the next locale.
+      threwCount++;
+      failures.add('$tag: threw while judging: $error');
+    }
+  }
+
+  return OverflowCoordinateVerdict(failures: failures, threwCount: threwCount);
+}
+
+/// What the count test says instead of pinning, when the run narrowed the
+/// enumeration itself.
+///
+/// The pin is a claim about the *whole* sweep, so a deliberately filtered run
+/// cannot make it: `-L de` enumerates 63 of the card sweep's 1,638 cells and would
+/// fail the pin on every dump run the tooling exists for (§5 contract 3). Reported
+/// as a skip rather than a silent pass because "the count was not checked" is a
+/// fact about the run, and because the dead-entry direction is already skipped for
+/// exactly this reason (`OverflowRatchet.coverageSkipNote`) — one vocabulary, one
+/// place to look.
+String overflowSweepCountSkipNote({
+  required String familyName,
+  required int enumerated,
+  required int expectedCellCount,
+  required List<String> gaps,
+}) {
+  return [
+    '$familyName enumerated $enumerated cells, not the $expectedCellCount this '
+        'sweep pins, because the run narrowed the enumeration itself:',
+    for (final gap in gaps) '  * $gap',
+    'The pin is a claim about the whole sweep, so it is not checked here. Run the '
+        'sweep unfiltered before reading a green count as coverage.',
+  ].join('\n');
+}
+
+/// What the count test does with the run it is given.
+enum OverflowSweepCountAction {
+  /// No narrowing was declared, so the literal is checked.
+  pin,
+
+  /// The run narrowed its own enumeration; report it instead of pinning a subset.
+  skip,
+
+  /// The narrowing left nothing to measure — see [overflowSweepEmptyRunFailure].
+  failEmpty,
+}
+
+/// Whether this run may pin its cell count, must skip, or is not a run at all.
+///
+/// Pulled out of the count test as a pure function because the test cannot be
+/// observed: [runOverflowSweep] declares it at top level, and no test can assert
+/// that another test skipped. The decision is the part worth proving, so it is the
+/// part that is reachable.
+///
+/// [failEmpty] is the branch a narrowed run made possible. A gap explains measuring
+/// *less* than the pin; it never explains measuring nothing. `LOCALE=zz` matches no
+/// shipped locale, every card family multiplies out to zero cells, and all three
+/// pins would then skip with a perfectly accurate note — leaving a green suite that
+/// rendered nothing at all. A filter that matched nothing is an operator typo, and
+/// the one thing a gate must never do is pass silently over zero measurements.
+OverflowSweepCountAction overflowSweepCountAction({
+  required int enumerated,
+  required int expectedCellCount,
+  required List<String> gaps,
+}) {
+  if (enumerated == 0 && expectedCellCount > 0) {
+    return OverflowSweepCountAction.failEmpty;
+  }
+  return gaps.isEmpty
+      ? OverflowSweepCountAction.pin
+      : OverflowSweepCountAction.skip;
+}
+
+/// The failure for a run whose narrowing matched nothing.
+///
+/// Quotes the gaps because they are the evidence: each one names the define that
+/// did it, which is where the typo is.
+String overflowSweepEmptyRunFailure({
+  required String familyName,
+  required int expectedCellCount,
+  required List<String> gaps,
+}) {
+  return [
+    '$familyName enumerated no cells at all, against the $expectedCellCount this '
+        'sweep pins.',
+    if (gaps.isNotEmpty) 'The run narrowed itself:',
+    for (final gap in gaps) '  * $gap',
+    'A narrowing explains measuring less than the pin, never measuring nothing: a '
+        'filter that matched nothing would leave every pin skipped and this sweep '
+        'green over zero measurements. Check the value you passed (a locale tag '
+        'the app does not ship, or a MIN_SCREEN above every width).',
+  ].join('\n');
 }
 
 /// Declares [family]'s sweep: one test per non-locale coordinate, plus the test
@@ -437,8 +666,11 @@ Future<OverflowCellVerdict> measureOverflowCell(
 ///
 /// [expectedCellCount] is the literal from the ticket, and required: see the
 /// library header. A family that filters its own enumeration (the card sweep's
-/// `--dart-define=LOCALE`) has to reckon with it — #1343's problem, and the
-/// reason the count test's failure message says what to do either way.
+/// `--dart-define=LOCALE`) answers it through
+/// [OverflowSurfaceFamily.enumerationGaps]: it says how it narrowed the run, and
+/// the count test reports the narrowing instead of pinning a subset — unless the
+/// narrowing left nothing to enumerate, which is a failure and not a gap. See
+/// [overflowSweepCountAction].
 void runOverflowSweep({
   required OverflowSurfaceFamily family,
   required int expectedCellCount,
@@ -449,16 +681,42 @@ void runOverflowSweep({
 
   group(family.name, () {
     test('enumerates $expectedCellCount cells', () {
-      expect(
-        cells.length,
-        expectedCellCount,
-        reason: 'the sweep enumerated ${cells.length} cells against the '
-            '$expectedCellCount pinned here. Grouping hides this: '
-            '${grouped.length} tests report the same green either way. If the '
-            'axes changed deliberately, update the literal and re-capture the '
-            'baseline (./tool/overflow_baseline.sh capture); if they did not, '
-            'coverage was lost silently.',
-      );
+      final gaps = family.enumerationGaps();
+      switch (overflowSweepCountAction(
+        enumerated: cells.length,
+        expectedCellCount: expectedCellCount,
+        gaps: gaps,
+      )) {
+        case OverflowSweepCountAction.pin:
+          expect(
+            cells.length,
+            expectedCellCount,
+            reason: 'the sweep enumerated ${cells.length} cells against the '
+                '$expectedCellCount pinned here. Grouping hides this: '
+                '${grouped.length} tests report the same green either way. If the '
+                'axes changed deliberately, update the literal and re-capture the '
+                'baseline (./tool/overflow_baseline.sh capture); if they did not, '
+                'coverage was lost silently.',
+          );
+        case OverflowSweepCountAction.skip:
+          markTestSkipped(
+            overflowSweepCountSkipNote(
+              familyName: family.name,
+              enumerated: cells.length,
+              expectedCellCount: expectedCellCount,
+              gaps: gaps,
+            ),
+          );
+        case OverflowSweepCountAction.failEmpty:
+          fail(overflowSweepEmptyRunFailure(
+            familyName: family.name,
+            expectedCellCount: expectedCellCount,
+            gaps: gaps,
+          ));
+      }
+      // Checked either way. A narrowed run still enumerates *some* cells, and a
+      // malformed id is malformed in 63 cells as surely as in 1,638 — this is the
+      // half of the count test a dump run can still prove.
       expect(
         overflowSweepEnumerationProblems(family, cells),
         isEmpty,
@@ -475,29 +733,21 @@ void runOverflowSweep({
 
       group(names.group, () {
         testWidgets(names.test, (tester) async {
-          final failures = <String>[];
-          var threwCount = 0;
-
-          for (final cell in cellsOfCoordinate) {
-            final verdict = await measureOverflowCell(
-              tester,
-              family: family,
-              cell: cell,
-              tolerancePx: tolerancePx,
-            );
-            if (!verdict.failed) continue;
-            if (verdict.error != null) threwCount++;
-            failures.add('${localeTag(cell.locale)}: ${verdict.summary}');
-          }
+          final verdict = await measureOverflowCoordinate(
+            tester,
+            family: family,
+            cells: cellsOfCoordinate,
+            tolerancePx: tolerancePx,
+          );
 
           expect(
-            failures,
+            verdict.failures,
             isEmpty,
             reason: overflowSweepFailureReason(
               familyName: family.name,
               coordinateLabel: entry.key,
-              failures: failures,
-              threwCount: threwCount,
+              failures: verdict.failures,
+              threwCount: verdict.threwCount,
             ),
           );
         });
