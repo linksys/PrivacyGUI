@@ -107,6 +107,28 @@ Future<void> _blur(WidgetTester tester) async {
   await tester.pumpAndSettle();
 }
 
+/// Enters [text] into one octet box of the gateway field WITHOUT dropping focus,
+/// mirroring a user mid-typing. The dialog's TextFields are ordered: the name
+/// field first, then each AppIpv4TextField's four octet boxes in field order
+/// (dest, subnet, gateway) — so gateway octet [octet] is at
+/// 1 + (2 * 4) + octet. Asserted against the field count rather than hardcoded
+/// so a layout change fails loudly instead of silently typing into the wrong box.
+Future<void> _typeGatewayOctet(
+  WidgetTester tester,
+  int octet,
+  String text,
+) async {
+  final boxes = find.byType(TextField);
+  expect(
+    boxes.evaluate().length,
+    1 + 3 * 4,
+    reason: 'expected the name field plus three IPv4 fields of four octets; '
+        'if this changed, the octet index below is wrong',
+  );
+  await tester.enterText(boxes.at(1 + 2 * 4 + octet), text);
+  await tester.pumpAndSettle();
+}
+
 void main() {
   late String addLabel;
 
@@ -164,6 +186,36 @@ void main() {
       await tester.tap(find.widgetWithText(AppButton, addLabel));
       await tester.pumpAndSettle();
       expect(find.byType(StaticRouteDialog), findsOneWidget);
+    });
+
+    // Review round 1 flagged that gateway — the field #1332 actually reproduces
+    // on (typed 192, landed 1/19) — had no focus-loss coverage: it was only
+    // asserted null on open. These two cover the AppIpv4TextField
+    // onFocusChanged path that the name field's FocusNode listener does not.
+    testWidgets(
+        'typing an invalid gateway does NOT set errorText mid-edit (#1332): '
+        'the octet path must not assign _errors while still focused',
+        (tester) async {
+      await _pumpAndOpen(tester);
+      // A bare "1" is not a valid address and is outside the LAN subnet, so it
+      // is exactly the transiently-invalid state that used to flip errorText on
+      // the first keystroke and tear the <input> down mid-edit.
+      await _typeGatewayOctet(tester, 0, '1');
+
+      expect(_gatewayField().errorText, isNull,
+          reason: 'still focused mid-edit -> onChanged must not assign _errors');
+    });
+
+    testWidgets('gateway error surfaces only after the IPv4 field loses focus',
+        (tester) async {
+      await _pumpAndOpen(tester);
+      await _typeGatewayOctet(tester, 0, '1');
+      expect(_gatewayField().errorText, isNull); // still typing -> no error yet
+
+      await _blur(tester); // whole IPv4 field blurs -> validation runs
+
+      expect(_gatewayField().errorText, isNotNull,
+          reason: 'validation runs when the entire IPv4 field loses focus');
     });
   });
 }
