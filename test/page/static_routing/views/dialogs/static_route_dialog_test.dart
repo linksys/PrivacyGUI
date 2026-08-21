@@ -203,7 +203,8 @@ void main() {
       await _typeGatewayOctet(tester, 0, '1');
 
       expect(_gatewayField().errorText, isNull,
-          reason: 'still focused mid-edit -> onChanged must not assign _errors');
+          reason:
+              'still focused mid-edit -> onChanged must not assign _errors');
     });
 
     testWidgets('gateway error surfaces only after the IPv4 field loses focus',
