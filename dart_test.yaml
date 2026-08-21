@@ -3,9 +3,9 @@ tags:
   loc:
   ui:
   # Defensive widget gates that must run in the PR test command (#1183), said in
-  # the name since #1336: a PR-blocking defensive layout gate. All 38 carriers
+  # the name since #1336: a PR-blocking defensive layout gate. All 39 carriers
   # are one — density, readability, form and gesture, layout-block, probe
-  # self-test, render-parity and overflow.
+  # self-test, ratchet oracle, render-parity and overflow.
   # NOT excluded by run_tests.sh's --exclude-tags="golden||loc||ui", so a
   # failure here blocks the PR — and tagging one of these `golden`, `loc` or
   # `ui` instead is how a gate leaves the PR command in silence.
@@ -17,7 +17,7 @@ tags:
   # self-tests are deliberately excluded).
   #
   # Complete, not quick: `@Tags` is read by loading a suite, so the tag compiles
-  # all 314 test files to skip 310 of them. Measured 2026-08-21, the same 2,386
+  # all 315 test files to skip 311 of them. Measured 2026-08-21, the same 2,386
   # tests take 1m53s under the tag and 32s when the four files are named. Name
   # the file for a tight loop; use the tag when a fifth sweep must not be missed.
   overflow:

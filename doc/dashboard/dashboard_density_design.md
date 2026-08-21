@@ -1424,10 +1424,22 @@ all 1644 cases were verdicts about two radios with 2-digit channels. #1267 adds 
 `buildDashboardCardApp()`, a tri-band fixture, and `kCardDataProfileSweeps`, an
 opt-in list of (card, tabs, profile) triples. Sweeping the second profile
 everywhere would have doubled the case count and *added* allowlist entries, so the
-list is opt-in and the new cases key as `card|width|tab@profile`: the default
-profile's 1644 cases and every existing key are byte-identical, and the "N
+list is opt-in and the new cases keyed as `card|width|tab@profile`: the default
+profile's 1644 cases and every existing key were byte-identical, and the "N
 coordinates cleared" figure every closed ticket in this epic quotes cannot be
-moved by a second profile's findings. The sweep is now **1698** — 1644 default
+moved by a second profile's findings.
+
+**Superseded 2026-08-21 (#1341).** The allowlist no longer keys on the coordinate
+at all — the key is now the overflowing widget's `file:line`, and the loader
+*rejects* a `card|width|tab@profile` key rather than silently matching nothing
+(`test/layout_gate/ratchet.dart`). The byte-identity argument above is therefore
+history, and it did its job: no key had to be translated, because the fixture was
+already empty by then. One consequence for this section's reasoning survives the
+re-key and is worth stating — an exemption can no longer be confined to one data
+profile, since a source location is the same location on every profile. The
+profile sweep's failure message says so where an operator meets it.
+
+The sweep is now **1698** — 1644 default
 plus 54 (`wifi_performance` tab 2 on the tri-band profile: 26 locales × 2 widths,
 plus a marker guard and a tab-exists guard). Full reasoning, and the cost of
 opt-in stated plainly, in §2.10g point 1.
@@ -2242,13 +2254,16 @@ Gate **1644 → 1698** (54 = 26 locales × 2 widths + 2 meta guards), and
    Sweeping a second profile across all 18 cards doubles 1644 cases and surfaces
    coordinates in cards nobody has examined — an allowlist *addition*, against
    §2.9's contract, reading as a mass regression the moment the mechanism lands.
-   The mechanical half of the fix is one line: a non-default profile's cases key as
-   `card|width|tab@profile`, so **every pre-#1267 key is byte-identical** and the
-   default profile's arithmetic — the number every closed ticket in this epic
-   quotes — cannot be moved by a second profile's findings. Option 2 (all cards,
-   per-profile allowlist) is the honest full-coverage answer and is what this
-   should grow into; the growth belongs to the ticket that measures each card, not
-   to the one that builds the mechanism. The cost of option 1 is stated in
+   The mechanical half of the fix was one line: a non-default profile's cases keyed
+   as `card|width|tab@profile`, so **every pre-#1267 key stayed byte-identical** and
+   the default profile's arithmetic — the number every closed ticket in this epic
+   quotes — could not be moved by a second profile's findings. (#1341 has since
+   re-keyed the allowlist on the overflow's `file:line`, so this namespacing no
+   longer exists and a `@profile` key is now rejected outright; the opt-in choice
+   it was defending stands, and the argument is recorded as the reason it was made.
+   See §2.7's superseded note.) Option 2 (all cards, per-profile allowlist) is the
+   honest full-coverage answer and is what this should grow into; the growth belongs
+   to the ticket that measures each card, not to the one that builds the mechanism. The cost of option 1 is stated in
    `card_data_profiles.dart` rather than left implicit: **a card is covered on the
    second profile only once someone adds it**, and one entry is not a claim about
    the other 17 cards.

@@ -74,7 +74,7 @@ forced_form.compact_floor|card=connected_devices|px=261|rows=3|locale=de	clean	-
 | `cell` | `<sweep>.<group>` then every axis as `name=value`, in declaration order |
 | `verdict` | `clean` · `noise` (an incident under the 2.0px tolerance) · `overflow` · `error` (the pump did not finish, so nothing was measured) |
 | `px`, `side` | the measurement, `-` when clean. `Infinity` when the overflow string could not be parsed |
-| `site`, `widget` | `file:line` and the render object, from the incident's own log |
+| `site`, `widget` | `file:line` and the render object, read off the incident's own `file` / `line` / `widget` fields |
 
 Axis names are the sweep's own. Two conventions worth knowing: `px` is the **card**
 width in `card` / `popup` / `forced_form` and `screen_px` is the **screen** width in
@@ -153,10 +153,16 @@ Three decisions inside that path are worth knowing:
 2. **The `significant` verdict is computed by the emitter**, where
    `kOverflowTolerancePx` is in scope. #1270 made that constant shared precisely so
    the number is stated once; the extractor never restates it.
-3. **The source location reuses the golden framework's parser**
-   (`parseOverflowSource` in `test/golden_test/golden_framework/overflow_diagnostics.dart`),
-   fed from `OverflowIncident.fullLog`. #1338's goal is exactly one parser of that
-   string, and this ticket must not add a third.
+3. **The source location is read off the incident, not parsed again.** #1337
+   shipped this by calling the golden framework's `parseOverflowSource` on
+   `OverflowIncident.fullLog` — borrowing the only parser that resolved a location
+   at the time, rather than adding a third. #1338 then gave the incident its own
+   `file` / `line` / `widget`, and **#1351 switched these columns to those fields
+   and dropped the import**, so the location is resolved once, at collection time,
+   by the parser the whole gate family shares. One consequence is visible in the
+   JSON: `line` is an `int` now, so it serializes unquoted. The TSVs do not move —
+   the extractor renders every column through `'$value'`, and all 3,587 committed
+   rows are `clean` anyway.
 
 ## 4. What the extractor refuses
 
