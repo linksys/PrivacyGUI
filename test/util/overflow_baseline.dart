@@ -1,8 +1,16 @@
 import 'dart:convert';
 import 'dart:io';
 
-import '../golden_test/golden_framework/overflow_diagnostics.dart';
-import 'overflow_probe.dart';
+// Imported directly rather than through `overflow_probe.dart`'s re-export, and
+// deliberately so rather than as a tidy-up: since #1340 the probe is a shim that
+// re-exports `test/layout_gate/collector.dart`, and the collector imports *this*
+// file for [OverflowCell] and [emitOverflowBaselineRecord]. Reaching the parser
+// through the probe would therefore put this file in a two-library cycle —
+// legal in Dart, and pointless, because [OverflowIncident] and
+// [kOverflowTolerancePx] are defined in `incident.dart` and the probe only
+// forwards them. The golden framework's `overflow_diagnostics.dart` import is
+// gone (#1351); see the record builder below.
+import '../layout_gate/incident.dart';
 
 /// Capture side of the sweep baselines (#1337).
 ///
@@ -92,8 +100,10 @@ bool _isTruthy(String? value) => value == '1' || value == 'true';
 /// were compared.
 ///
 /// [axes] is the coordinate, in reading order. Insertion order is preserved into
-/// the cell id, so `card|width|tab|locale` stays the grammar the gate's own
-/// allowlist keys already use rather than becoming alphabetical.
+/// the cell id, so `card|width|tab|locale` stays the sweep's own reading order
+/// rather than becoming alphabetical. It is no longer the allowlist's grammar —
+/// #1341 re-keyed that on `file:line` — but the dataset's coordinate is still a
+/// coordinate, and this is the order a person reads it in.
 class OverflowCell {
   const OverflowCell(this.sweep, this.axes);
 
@@ -153,10 +163,19 @@ String _sanitize(String value) => value.replaceAll(RegExp(r'[|\t\r\n]'), '_');
 /// it fits" — the not-measured-versus-measured-clean confusion, one level in from
 /// the missing row AC 5 is usually about. Required rather than defaulted, because
 /// an emitter that forgets to pass it must not be able to mean "it was fine".
+///
+/// #1351 **removed** a `runDirectory` parameter here rather than leaving it
+/// unused. It existed only to feed the golden framework's parser; the incident
+/// now normalises its own path at collection time, and the testability purpose
+/// the parameter served has moved to [OverflowIncident.parse]'s own
+/// `runDirectory`. An ignored parameter would have been worse than the signature
+/// change: it still reads as "this is what the recorded paths are relative to",
+/// and nothing — not `flutter analyze`, not a test — would notice that it had
+/// stopped being true. The only callers were [emitOverflowBaselineRecord] and
+/// this file's own test.
 String overflowBaselineRecordLine(
   OverflowCell cell,
   List<OverflowIncident> incidents, {
-  required String runDirectory,
   required bool threw,
 }) {
   return jsonEncode({
@@ -172,26 +191,36 @@ String overflowBaselineRecordLine(
           'px': incident.pixels.toString(),
           'side': incident.side,
           'significant': incident.pixels > kOverflowTolerancePx,
-          // The third call site into the second parser, and the reason this file
-          // imports the golden framework at all. #1338 left it: the incident now
-          // carries the same three fields, so the swap is available, but it is a
-          // format change rather than a refactor. `parseOverflowSource` returns
-          // `Map<String, String>`, so `line` serializes quoted here, while
-          // `OverflowIncident.line` is an `int`.
+          // The source columns, read off the incident. Until #1351 this line was
+          // `...parseOverflowSource(incident.fullLog, runDirectory: …)` — the
+          // third call site into the golden framework's parser, and the only
+          // reason this file imported it. #1338 had already given the incident
+          // the same three fields, so the location is now resolved once, at
+          // collection time, by the parser the whole gate family shares.
           //
-          // Cheaper than it looks, and measurably so: all 3,587 rows across the
-          // four frozen baselines are `clean`, with `-` in every incident
-          // column, so no row exercises these fields today. The swap is a
-          // byte-for-byte no-op against the dataset, and what changes is only
-          // the shape of a row a *future* overflow would write. Verify it with
-          // `./tool/overflow_baseline.sh check` and declare the unquoted `line`
-          // here, so the first real overflow row does not read as corruption.
+          // **`line` is emitted unquoted — a JSON number, not a string.**
+          // `parseOverflowSource` returned `Map<String, String>` and serialized
+          // `"line":"120"`; [OverflowIncident.line] is an `int`, so this
+          // serializes `"line":120`. Stated here so the first future overflow
+          // record does not read as corruption.
           //
-          // Epic #1335's "exactly one parser" AC is not met until this line
-          // changes. #1351 owns it, and it needs nothing from CI — unlike #1339,
-          // which retires the parser this calls and can only be verified against
-          // golden-ci artifacts.
-          ...parseOverflowSource(incident.fullLog, runDirectory: runDirectory),
+          // The committed TSVs cannot move over it, for two independent reasons.
+          // The extractor renders every column through `'$value'`
+          // (`test_scripts/overflow_baseline.dart:_field`), so `120` and `"120"`
+          // both reach the `site` column as `120` — the type is invisible past
+          // the JSON. And all 3,587 rows across the four frozen baselines are
+          // `clean` with `-` in every incident column, so no committed row
+          // exercises these keys at all.
+          //
+          // [file] and [line] go in together or not at all, following
+          // [OverflowIncident.site]: the extractor builds `site` from the bare
+          // path when `line` is absent, and a path with no line is a key that
+          // joins to nothing while reading as resolved.
+          if (incident.widget != null) 'widget': incident.widget,
+          if (incident.site != null) ...{
+            'file': incident.file,
+            'line': incident.line,
+          },
         },
     ],
   });
@@ -210,12 +239,7 @@ void emitOverflowBaselineRecord(
   required bool threw,
 }) {
   if (cell == null || !isOverflowBaselineCaptureEnabled) return;
-  final line = overflowBaselineRecordLine(
-    cell,
-    incidents,
-    runDirectory: Directory.current.path,
-    threw: threw,
-  );
+  final line = overflowBaselineRecordLine(cell, incidents, threw: threw);
   // ignore: avoid_print
   print('$kOverflowBaselineMarker $line');
 }

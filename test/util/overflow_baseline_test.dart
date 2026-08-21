@@ -105,7 +105,6 @@ void main() {
       final line = overflowBaselineRecordLine(
         const OverflowCell('card.width', {'card': 'lan_info'}),
         const [],
-        runDirectory: Directory.current.path,
         threw: false,
       );
       expect(jsonDecode(line), {
@@ -117,6 +116,12 @@ void main() {
 
     test('an overflow carries its pixels, its side and its source location',
         () {
+      // The resolved half of #1351's swap: the three source columns come off
+      // [OverflowIncident] now, not out of a second call into the golden
+      // framework's `parseOverflowSource`. `line` is therefore a JSON **number**
+      // — that parser returned `Map<String, String>` and emitted `"120"`, the
+      // incident carries an `int` and emits `120`. Written as an unquoted literal
+      // here so the type is the assertion rather than a detail of it.
       final line = overflowBaselineRecordLine(
         const OverflowCell('card.width', {'card': 'network_health'}),
         [
@@ -127,7 +132,6 @@ void main() {
             ),
           ),
         ],
-        runDirectory: Directory.current.path,
         threw: false,
       );
       expect(jsonDecode(line), {
@@ -140,8 +144,40 @@ void main() {
             'significant': true,
             'widget': 'Row',
             'file': 'lib/page/dashboard/views/components/usp_hero_row.dart',
-            'line': '120',
+            'line': 120,
           },
+        ],
+      });
+    });
+
+    test(
+        'a file with no line contributes neither, so no half a join key '
+        'reaches the dataset', () {
+      // Unreachable through [OverflowIncident.parse], which sets the three
+      // together — but the const constructor is public, and the extractor builds
+      // its `site` column as the bare path when `line` is absent. That row would
+      // read as a resolved location that joins to nothing, which is the same
+      // argument [OverflowIncident.site] makes for checking both halves. Before
+      // #1351 the shape was structural: `parseOverflowSource` returned all three
+      // keys or `{}`, never a subset. Keeping it structural is what this pins.
+      final line = overflowBaselineRecordLine(
+        const OverflowCell('card.width', {'card': 'dhcp_leases'}),
+        const [
+          OverflowIncident(
+            pixels: 41.0,
+            side: 'right',
+            message: 'A RenderFlex overflowed by 41 pixels on the right.',
+            file: 'lib/page/dhcp/leases_card.dart',
+            widget: 'Row',
+          ),
+        ],
+        threw: false,
+      );
+      expect(jsonDecode(line), {
+        'cell': 'card.width|card=dhcp_leases',
+        'threw': false,
+        'incidents': [
+          {'px': '41.0', 'side': 'right', 'significant': true, 'widget': 'Row'},
         ],
       });
     });
@@ -162,7 +198,6 @@ void main() {
             fullLog: 'A RenderFlex overflowed by 1.5 pixels on the bottom.',
           ),
         ],
-        runDirectory: Directory.current.path,
         threw: false,
       );
       expect(jsonDecode(line), {
@@ -175,9 +210,12 @@ void main() {
     });
 
     test('an unresolvable location still records the measurement', () {
-      // `parseOverflowSource` yields nothing when creation tracking cannot name
-      // the widget. Dropping the incident then would turn a real overflow into a
-      // clean cell — so the site fields go absent and the pixels stay.
+      // The unresolved half of #1351's swap, and the reason the three keys are
+      // omitted rather than emitted as nulls: [OverflowIncident.parse] resolves
+      // no location when creation tracking cannot name the widget, exactly as
+      // `parseOverflowSource` returned `{}`. Dropping the incident then would
+      // turn a real overflow into a clean cell — so the site fields go absent and
+      // the pixels stay.
       final line = overflowBaselineRecordLine(
         const OverflowCell('chrome.top_bar', {'width': 640}),
         [
@@ -186,16 +224,23 @@ void main() {
             fullLog: 'A RenderFlex overflowed by 7.5 pixels on the right.',
           ),
         ],
-        runDirectory: Directory.current.path,
         threw: false,
       );
-      expect(jsonDecode(line), {
-        'cell': 'chrome.top_bar|width=640',
-        'threw': false,
-        'incidents': [
-          {'px': '7.5', 'side': 'right', 'significant': true},
-        ],
-      });
+      expect(
+        jsonDecode(line),
+        {
+          'cell': 'chrome.top_bar|width=640',
+          'threw': false,
+          'incidents': [
+            {'px': '7.5', 'side': 'right', 'significant': true},
+          ],
+        },
+        reason: 'an exact map match, so this also asserts the three keys are '
+            'absent rather than present-and-null. The extractor would render '
+            'either the same way, so the pin is on the record shape #1337 froze: '
+            'a reader of a raw `#LAYOUT-CELL#` line can tell "no location" from '
+            '"a location that came out empty" only if the keys are missing',
+      );
     });
 
     test('an unparseable message reaches the dataset as infinity, not as 0',
@@ -206,7 +251,6 @@ void main() {
       final line = overflowBaselineRecordLine(
         const OverflowCell('card.width', {'card': 'lan_info'}),
         [OverflowIncident.parse('A RenderFlex overflowed somehow.')],
-        runDirectory: Directory.current.path,
         threw: false,
       );
       expect(jsonDecode(line), {
@@ -316,8 +360,13 @@ void main() {
     expect(incident['widget'], 'Row');
     expect(incident['file'], 'test/util/overflow_baseline_test.dart',
         reason: 'the path is relative to the run directory, so two machines '
-            'record the same site');
-    expect(incident['line'], isNotNull);
+            'record the same site — and it is normalised at collection time now, '
+            'which is why the record builder no longer takes a runDirectory');
+    expect(incident['line'], isA<int>(),
+        reason: 'a JSON number, not a quoted string: #1351 replaced '
+            'parseOverflowSource (Map<String, String>) with the incident\'s own '
+            'int line, and this is the assertion that sees that move on a real '
+            'overflow rather than on a fixture');
   });
 
   test('a pump that never finished is flagged, not recorded as clean',

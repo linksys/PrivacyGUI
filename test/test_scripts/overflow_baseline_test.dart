@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../test_scripts/overflow_baseline.dart';
+import '../layout_gate/incident.dart';
 import '../util/overflow_baseline.dart' as emitter;
 
 /// Guards the extract-and-diff half of the sweep baselines (#1337).
@@ -33,13 +34,26 @@ void main() {
       '$overflowBaselineMarker '
       '${jsonEncode({'cell': cell, 'threw': threw, 'incidents': incidents})}';
 
+  /// One incident as the emitter puts it in a record.
+  ///
+  /// Hand-mirrored rather than routed through [emitter.overflowBaselineRecordLine]
+  /// because the tests below hand this script pre-built cell *ids*, not
+  /// [emitter.OverflowCell]s, and reconstructing the axes of ~25 of them would
+  /// obscure what each test is about. A hand mirror only ever agrees with
+  /// whatever it was written against, though — this one carried `line` as a
+  /// `String?` and so stayed green straight through #1351's swap of
+  /// `parseOverflowSource` (`Map<String, String>`) for [OverflowIncident] (`line`
+  /// is an `int`), a format change in the one dataset this file is named after.
+  /// So `line` is typed as the emitter types it, and the group 'the record shape'
+  /// pins the keys, the types and the row they render to through the real
+  /// emitter.
   Map<String, Object?> incident({
     required String px,
     required String side,
     required bool significant,
     String? widget,
     String? file,
-    String? line,
+    int? line,
   }) =>
       {
         'px': px,
@@ -98,6 +112,134 @@ void main() {
     });
   });
 
+  group('the record shape', () {
+    /// One record as the emitter actually builds it, marked as the sweeps print
+    /// it. The whole point is that nothing about the incident's keys or their
+    /// types is restated here.
+    String emitted(
+      String sweep,
+      Map<String, Object?> axes,
+      List<OverflowIncident> incidents, {
+      bool threw = false,
+    }) {
+      final payload = emitter.overflowBaselineRecordLine(
+        emitter.OverflowCell(sweep, axes),
+        incidents,
+        threw: threw,
+      );
+      return '${emitter.kOverflowBaselineMarker} $payload';
+    }
+
+    /// A resolved incident, built through the const constructor rather than
+    /// through a diagnostics dump so the *types* are visible in the test: `line`
+    /// is an `int`, which is exactly what #1351 changed.
+    const resolved = OverflowIncident(
+      pixels: 41.0,
+      side: 'right',
+      message: 'A RenderFlex overflowed by 41 pixels on the right.',
+      fullLog: 'A RenderFlex overflowed by 41 pixels on the right.',
+      file: 'lib/page/dashboard/views/components/a.dart',
+      line: 120,
+      widget: 'Row',
+    );
+
+    test('names the keys and the types this script reads, through the emitter',
+        () {
+      // The other half of the marker's problem, and #1351's AC 4. `incident(...)`
+      // above hand-mirrors these keys, so it agrees with whatever it was written
+      // against: it stayed green when the source columns moved from
+      // `parseOverflowSource` (a `Map<String, String>`, so `"line":"120"`) to
+      // [OverflowIncident] (an `int`, so `"line":120`). A format change in this
+      // dataset has to fail here rather than surface later as a baseline diff, so
+      // the key set and every value type are pinned against the real builder.
+      final record = jsonDecode(
+          emitted('card.width', {'card': 'lan_info'}, const [resolved])
+              .substring(overflowBaselineMarker.length + 1)) as Map;
+
+      expect(record.keys, ['cell', 'threw', 'incidents'],
+          reason: '_decodeRecord reads exactly these three');
+      expect(record['threw'], isA<bool>(),
+          reason: 'a non-bool is refused outright — it would read as clean');
+
+      final fields = (record['incidents'] as List).single as Map;
+      expect(
+          fields.keys, ['px', 'side', 'significant', 'widget', 'file', 'line'],
+          reason: 'a key added here that this script does not read is silently '
+              'dropped, and a key removed reaches the TSV as "-", which is '
+              'indistinguishable from a location that never resolved');
+      expect(fields['px'], isA<String>(),
+          reason: 'a string, not a number: the unparseable case is '
+              'double.infinity, which JSON has no literal for and jsonEncode '
+              'refuses outright');
+      expect(fields['side'], isA<String>());
+      expect(fields['significant'], isA<bool>(),
+          reason: 'computed beside kOverflowTolerancePx; anything else is '
+              'refused, because defaulting it would mislabel every incident');
+      expect(fields['widget'], isA<String>());
+      expect(fields['file'], isA<String>());
+      expect(fields['line'], isA<int>(),
+          reason:
+              'a JSON number since #1351 — the one type in this record that '
+              'changed, and the reason this test exists');
+    });
+
+    test('renders an int line into the site column exactly as a string would',
+        () {
+      // Why #1351 is a no-op against the four frozen baselines even for a future
+      // overflow row, not only for today's all-`clean` ones: `_field` renders
+      // every column through `'$value'`, so `120` and `"120"` both reach `site`
+      // as `120`. The type change is invisible past the JSON, which is what the
+      // record's format comment claims — asserted rather than argued.
+      final fromInt = extractBaseline(
+          reporter([
+            emitted('card.width', {'card': 'a'}, const [resolved])
+          ]),
+          sweep: 'card');
+      final fromString = extractBaseline(
+        reporter([
+          marked('card.width|card=a', [
+            incident(
+              px: '41.0',
+              side: 'right',
+              significant: true,
+              widget: 'Row',
+              file: 'lib/page/dashboard/views/components/a.dart',
+              line: 120,
+            ),
+          ]),
+        ]),
+        sweep: 'card',
+      );
+
+      expect(
+          fromInt.rows.single,
+          'card.width|card=a\toverflow\t41.0\tright\t'
+          'lib/page/dashboard/views/components/a.dart:120\tRow');
+      expect(fromInt.rows, fromString.rows);
+    });
+
+    test('leaves the site columns absent when the location did not resolve',
+        () {
+      // The other branch of the swap. Omitted keys, not explicit nulls — a reader
+      // of a raw `#LAYOUT-CELL#` line can then tell "no location" from "a
+      // location that came out empty".
+      final line = emitted('chrome.top_bar', {
+        'screen_px': 640
+      }, [
+        OverflowIncident.parse(
+            'A RenderFlex overflowed by 7.5 pixels on the right.'),
+      ]);
+
+      final record =
+          jsonDecode(line.substring(overflowBaselineMarker.length + 1)) as Map;
+      expect((record['incidents'] as List).single as Map,
+          {'px': '7.5', 'side': 'right', 'significant': true});
+
+      expect(extractBaseline(reporter([line]), sweep: 'chrome').rows.single,
+          'chrome.top_bar|screen_px=640\toverflow\t7.5\tright\t-\t-');
+    });
+  });
+
   group('the cell id grammar', () {
     // The emitter joins the sweep and its axes with `|`; this script splits the
     // group back off with `split('|').first` and then routes on the text before the
@@ -149,7 +291,7 @@ void main() {
               significant: true,
               widget: 'Row',
               file: 'lib/page/dashboard/views/components/a.dart',
-              line: '120',
+              line: 120,
             ),
           ]),
           marked('card.width|card=lan_info|width=min|locale=ar', const []),
@@ -593,7 +735,7 @@ void main() {
         significant: true,
         widget: 'Row',
         file: 'lib/a.dart',
-        line: '10',
+        line: 10,
       ),
     ];
 

@@ -26,15 +26,15 @@ import 'dart:io';
 /// The path-normalisation logic here is a copy of `overflow_diagnostics.dart`'s,
 /// carried verbatim rather than shared, and the names are distinct
 /// ([normalizeOverflowSourcePath] versus `normalizeSourcePath`) so that both
-/// libraries can be imported into one file while the overlap lasts —
-/// `test/util/overflow_baseline.dart` is the one file that does exactly that
-/// today, and **#1351 ends it on the gate side** — after which nothing outside the
-/// golden framework calls the copy. **#1339 then retires the copy itself and
-/// points `golden_runner.dart` here**; this ticket deliberately leaves that file
-/// untouched so the swap is one reviewable change with its own verification
-/// against CI artifacts. Keeping the logic byte-identical for now is what lets
-/// #1339 attribute every remaining difference in `overflow_warnings.json` to
-/// first-side → worst-side and to nothing else.
+/// libraries could be imported into one file while the overlap lasted.
+/// `test/util/overflow_baseline.dart` was that one file; **#1351 ended it on the
+/// gate side**, and nothing outside the golden framework and its own tests now
+/// calls the copy. **#1339 retires the copy itself and points
+/// `golden_runner.dart` here**; #1338 deliberately left that file untouched so the
+/// swap is one reviewable change with its own verification against CI artifacts.
+/// Keeping the logic byte-identical for now is what lets #1339 attribute every
+/// remaining difference in `overflow_warnings.json` to first-side → worst-side
+/// and to nothing else.
 ///
 /// ## Files do not move
 ///
@@ -88,11 +88,11 @@ class OverflowIncident {
   /// Name of the widget Flutter blamed, e.g. `Row`.
   ///
   /// Carried rather than dropped for two reasons: it comes free out of the same
-  /// match as [file] and [line], and #1337's baseline dataset already has a
-  /// `widget` column — supplied today by `parseOverflowSource`, not by this
-  /// incident (`overflow_baseline.dart:175`). Without it #1351 could not drop
-  /// that call outright, it would have to keep the second parser alive for one
-  /// field.
+  /// match as [file] and [line], and #1337's baseline dataset has a `widget`
+  /// column. That column is filled from here since #1351
+  /// (`overflow_baseline.dart:217`), which is what let that ticket drop the
+  /// `parseOverflowSource` call outright instead of keeping the second parser
+  /// alive for one field.
   final String? widget;
 
   const OverflowIncident({
@@ -248,8 +248,10 @@ bool isOverflowError(String exceptionAsString) =>
 /// An unrecognized path is returned unchanged — better a long path than none.
 ///
 /// Named apart from `overflow_diagnostics.dart`'s `normalizeSourcePath` on
-/// purpose: one file imports both until #1351, and a shared name would make that
-/// an ambiguity error. The copy itself goes at #1339.
+/// purpose: `test/util/overflow_baseline.dart` imported both while the overlap
+/// lasted, and a shared name would have made that an ambiguity error. #1351
+/// ended that import, so nothing imports the two libraries together any more;
+/// the distinct names stay until #1339 retires the copy itself.
 String normalizeOverflowSourcePath(
   String absolutePath, {
   required String runDirectory,
