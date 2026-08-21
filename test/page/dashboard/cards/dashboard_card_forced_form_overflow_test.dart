@@ -15,6 +15,7 @@ import 'package:privacy_gui/page/dashboard/models/usp_layout_envelope.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_widget_specs.dart';
 import 'package:privacy_gui/page/dashboard/models/widget_spec.dart';
 
+import '../../../layout_gate/locale_tag.dart';
 import '../../../util/app_test_fonts.dart';
 import '../../../util/dashboard/dashboard_card_probe.dart';
 import '../../../util/overflow_baseline.dart';
@@ -109,11 +110,6 @@ import '../../../util/overflow_baseline.dart';
 /// `CardPopupForm`'s own shape, which is what keeps the placeholder and the form it
 /// resolves into from jumping. Recorded rather than removed, and recorded rather
 /// than left to look covered.
-
-/// Locale identity, matching the other sweeps' key so test names line up.
-String _localeTag(Locale l) => l.countryCode == null || l.countryCode!.isEmpty
-    ? l.languageCode
-    : '${l.languageCode}_${l.countryCode}';
 
 /// Same tolerance the #1183 gate uses, for the same reason: sub-pixel shaping
 /// differences between the mac and ubuntu rasterizers.
@@ -260,7 +256,7 @@ void main() {
   group('a forced popup tile', () {
     for (final spec in _specsOffering(CardDensity.popup)) {
       for (final locale in _locales) {
-        final tag = _localeTag(locale);
+        final tag = localeTag(locale);
         testWidgets(
             '${spec.id} is clean at ${popupCase.widthKey}x'
             '${UspWidgetSpecs.popupHeightRows} ($tag)', (tester) async {
@@ -370,7 +366,7 @@ void main() {
     for (final spec in _specsOffering(CardDensity.compact)) {
       final rows = _compactFloorRows(spec);
       for (final locale in _locales) {
-        final tag = _localeTag(locale);
+        final tag = localeTag(locale);
         testWidgets(
             '${spec.id} is clean at ${compactCase.widthKey}x$rows ($tag)',
             (tester) async {

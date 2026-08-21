@@ -11,6 +11,7 @@ import 'package:privacy_gui/page/_shared/models/card_density.dart';
 import 'package:privacy_gui/page/dashboard/models/display_mode.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_widget_specs.dart';
 
+import '../../../layout_gate/locale_tag.dart';
 import '../../../layout_gate/ratchet.dart';
 import '../../../util/app_test_fonts.dart';
 import '../../../util/dashboard/card_data_profiles.dart';
@@ -58,16 +59,12 @@ import '../../../util/overflow_probe.dart';
 ///   drop out of the gate.) It also carries `overflow` (#1336), the narrower
 ///   selector `flutter test --tags overflow` uses to run the four sweeps alone.
 
-/// Locale identity used as the allowlist's locale tag and in test names. Keeps
-/// the country code so regional variants stay distinct (`zh` vs `zh_TW`, `fr` vs
-/// `fr_CA`) — they can differ in label length and must be tracked separately.
+/// Locale identity comes from [localeTag], shared with every other sweep since
+/// #1356 — read its doc for why the tag has to be one spelling.
 ///
-/// Since #1341 the *key* is the overflow's `file:line`; the locale is the value
-/// side of the entry. Both halves still have to be exact, and the tags are what
-/// the ratchet compares against the run's covered locale set.
-String _localeTag(Locale l) => l.countryCode == null || l.countryCode!.isEmpty
-    ? l.languageCode
-    : '${l.languageCode}_${l.countryCode}';
+/// Since #1341 the ratchet's *key* is the overflow's `file:line`; the locale is
+/// the value side of the entry. Both halves still have to be exact, and these
+/// tags are what the ratchet compares against the run's covered locale set.
 
 /// Target locales parsed from --dart-define=LOCALE=... or environment variables.
 /// Defaults to all shipped locales if no filter is provided.
@@ -95,7 +92,7 @@ List<Locale> _parseTargetLocales() {
 
   final tags = filterStr.split(',').map((s) => s.trim().toLowerCase()).toSet();
   return AppLocalizations.supportedLocales.where((l) {
-    final tag = _localeTag(l).toLowerCase();
+    final tag = localeTag(l).toLowerCase();
     final lang = l.languageCode.toLowerCase();
     return tags.contains(tag) || tags.contains(lang);
   }).toList();
@@ -331,7 +328,7 @@ void main() {
       print(skipped);
     }
     final dead = _ratchet.deadEntryFailure(
-      localesCovered: _targetLocales.map(_localeTag).toSet(),
+      localesCovered: _targetLocales.map(localeTag).toSet(),
       coverageGaps: gaps,
     );
     if (dead != null) fail(dead);
@@ -429,7 +426,7 @@ void main() {
       for (final wc in widthCases) {
         for (var tab = 0; tab < tabCount; tab++) {
           for (final locale in _targetLocales) {
-            final tag = _localeTag(locale);
+            final tag = localeTag(locale);
             final tabLabel = tabCount > 1 ? ' tab$tab' : '';
             _declaredCells++;
             testWidgets(
@@ -678,7 +675,7 @@ void main() {
       expect(tabCountFor('network_health'), 3,
           reason: 'the Loss tab is index 2; #1183 measured +41px there in de');
       expect(
-        AppLocalizations.supportedLocales.map(_localeTag),
+        AppLocalizations.supportedLocales.map(localeTag),
         contains('de'),
         reason: 'de is the locale #1183 measured the Loss-tab legend overflow '
             'in, so it has to be in the sweep this replaces it with',
@@ -766,7 +763,7 @@ void main() {
     group('${spec.id} overflow [normal band]', () {
       for (var tab = 0; tab < tabCount; tab++) {
         for (final locale in _targetLocales) {
-          final tag = _localeTag(locale);
+          final tag = localeTag(locale);
           final tabLabel = tabCount > 1 ? ' tab$tab' : '';
           _declaredCells++;
           testWidgets(
@@ -918,7 +915,7 @@ void main() {
 
         for (final wc in widthCases) {
           for (final locale in _targetLocales) {
-            final tag = _localeTag(locale);
+            final tag = localeTag(locale);
             _declaredCells++;
             testWidgets(
               'no overflow @${wc.label} ${wc.widthKey}px tab$tab ($tag)',

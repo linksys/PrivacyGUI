@@ -1,6 +1,6 @@
 # Overflow Sweep Baselines
 
-**Last Updated: 2026-08-21** · #1337, inside epic #1335 · Status: **captured at `4fb1ac5e-dirty`, before any port starts**
+**Last Updated: 2026-08-21** · #1337, inside epic #1335 · Status: **captured at `4fb1ac5e-dirty`, before any port starts** (`chrome` re-captured at `785c6f67-dirty` for #1356's id fixes — see §5)
 
 Every port in epic #1335 is signed off by one claim: *the ported sweep measures
 the same cells and reaches the same verdicts as before*. The main card sweep
@@ -80,6 +80,23 @@ Axis names are the sweep's own. Two conventions worth knowing: `px` is the **car
 width in `card` / `popup` / `forced_form` and `screen_px` is the **screen** width in
 `chrome`, because those are the things each sweep actually varies — a single `px`
 would read the same in both and mean different things.
+
+Axis **values** carry two rules, both of them consequences of the ids being a join
+key that humans also grep (#1356):
+
+- **`locale` has one spelling across all four sweeps: `zh_TW`, not `zh-TW`.** The
+  three card sweeps each defined the underscore form privately and `chrome` called
+  `Locale.toLanguageTag()`, so the datasets disagreed about how to name one locale.
+  It is now `localeTag()` in `test/layout_gate/locale_tag.dart`, imported by all
+  four — the same spelling the ratchet's locale lists and `--dart-define=LOCALE=`
+  already used.
+- **An axis value is an identity, so prose stays out of it.** `chrome.header`'s
+  mode axis read `mode=viewing, local (3 actions)`; the count is useful in a
+  failure message and fatal in a key, because adding a header action renamed every
+  cell of the sweep and the diff would then report the whole coverage lost plus an
+  equal number of new cells — the one difference §1 says to treat as dangerous. The
+  modes now carry an `id` (`viewing_local`) for the key and a `label` for the
+  message.
 
 `# commit` and the other `#` lines are **excluded from the diff**, so re-capturing
 at a new commit does not by itself register as a change.
@@ -211,7 +228,15 @@ each run.
 ## 5. The four baselines, as captured
 
 Taken at `4fb1ac5e-dirty` on `fix/1314-1328-chrome-overflow` — that is, at
-`4fb1ac5e` plus this ticket's instrumentation — before any port:
+`4fb1ac5e` plus this ticket's instrumentation — before any port. `chrome` was
+**re-captured at `785c6f67-dirty`** for the id changes described in §2, and that
+re-capture is the one case where a rewritten dataset is not a measurement change:
+each of its 984 affected rows maps to exactly one row of the old file under
+`mode=viewing, local (3 actions)` → `mode=viewing_local` and `locale=zh-TW` →
+`locale=zh_TW`, with the same cell count and the same six columns per row. The
+other three files are untouched, and that is the evidence the shared `localeTag()`
+changed nothing for them: `check card popup forced_form` compares 1,917 + 347 + 75
+cells against the pre-#1356 bytes and reports all three identical.
 
 | Sweep | Suite | Cells | Overflows | Groups |
 |---|---|---|---|---|

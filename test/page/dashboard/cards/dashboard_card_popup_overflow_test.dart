@@ -12,6 +12,7 @@ import 'package:privacy_gui/page/dashboard/models/usp_widget_specs.dart';
 import 'package:privacy_gui/page/dashboard/models/widget_spec.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
+import '../../../layout_gate/locale_tag.dart';
 import '../../../util/app_test_fonts.dart';
 import '../../../util/dashboard/dashboard_card_probe.dart';
 import '../../../util/overflow_baseline.dart';
@@ -88,12 +89,6 @@ import '../../../util/overflow_probe.dart';
 /// `what this file sweeps` pins the inventory and the rule behind it, so a spec
 /// changing `minColumns` surfaces here rather than silently adding or dropping
 /// coverage.
-
-/// Locale identity, matching the #1183 gate's key so test names line up between
-/// the two sweeps.
-String _localeTag(Locale l) => l.countryCode == null || l.countryCode!.isEmpty
-    ? l.languageCode
-    : '${l.languageCode}_${l.countryCode}';
 
 /// Same tolerance the #1183 gate uses, for the same reason: sub-pixel shaping
 /// differences between the mac and ubuntu rasterizers.
@@ -250,7 +245,7 @@ void main() {
       final wc = _narrowestCaseFor(spec)!;
 
       for (final locale in AppLocalizations.supportedLocales) {
-        final tag = _localeTag(locale);
+        final tag = localeTag(locale);
         testWidgets('${spec.id} is clean @${wc.widthKey}px ($tag)',
             (tester) async {
           final incidents = await probeCardOverflow(
@@ -334,7 +329,7 @@ void main() {
       final wc = _narrowestCaseFor(spec)!;
 
       for (final locale in _dialogLocales) {
-        final tag = _localeTag(locale);
+        final tag = localeTag(locale);
         testWidgets('${spec.id} normal form is clean in the dialog ($tag)',
             (tester) async {
           final incidents = await probeCardOverflow(
@@ -437,7 +432,7 @@ void main() {
       final wc = pickedTileCase();
 
       for (final locale in _dialogLocales) {
-        final tag = _localeTag(locale);
+        final tag = localeTag(locale);
         testWidgets('${spec.id} normal form is clean in the dialog ($tag)',
             (tester) async {
           final incidents = await probeCardOverflow(

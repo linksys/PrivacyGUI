@@ -21,6 +21,7 @@ import 'package:privacy_gui/theme/theme_json_config.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../golden_test/golden_framework/mocks/mock_common.dart';
+import '../../layout_gate/locale_tag.dart';
 import '../../util/app_test_fonts.dart';
 import '../../util/dashboard/text_readability_probe.dart';
 import '../../util/overflow_baseline.dart';
@@ -98,18 +99,37 @@ void main() {
   /// Not the full 2×2 of the two flags: edit mode ignores `isRemoteMode`
   /// entirely (the edit action is already gone), so `editing + remote` is the
   /// same tree as `editing + local` and sweeping it would buy nothing.
-  const headerModes = <({String name, bool isEditMode, bool isRemoteMode})>[
+  ///
+  /// Two names per mode, and the split matters (#1356). [id] is the identity: it
+  /// goes into the baseline cell id and the host's widget key, so it must change
+  /// only when the *case* changes. [label] is prose for failure messages, and is
+  /// free to say how many actions the mode renders — which is exactly why the
+  /// count cannot be in the id. It was: the ids read
+  /// `mode=viewing, local (3 actions)`, so adding or moving a header action
+  /// renamed every cell of this sweep, and the baseline diff would have reported
+  /// a re-labelled coordinate as its whole coverage lost and an equal number of
+  /// new cells found — the one reading `overflow_baselines.md` tells a porter to
+  /// treat as the dangerous case.
+  const headerModes =
+      <({String id, String label, bool isEditMode, bool isRemoteMode})>[
     (
-      name: 'viewing, local (3 actions)',
+      id: 'viewing_local',
+      label: 'viewing, local (3 actions)',
       isEditMode: false,
       isRemoteMode: false
     ),
     (
-      name: 'viewing, remote (2 actions)',
+      id: 'viewing_remote',
+      label: 'viewing, remote (2 actions)',
       isEditMode: false,
       isRemoteMode: true
     ),
-    (name: 'editing (4 actions)', isEditMode: true, isRemoteMode: false),
+    (
+      id: 'editing',
+      label: 'editing (4 actions)',
+      isEditMode: true,
+      isRemoteMode: false
+    ),
   ];
 
   final localizationsByTag = <String, AppLocalizations>{};
@@ -129,7 +149,7 @@ void main() {
     _stubPackageInfoChannel();
 
     for (final locale in AppLocalizations.supportedLocales) {
-      localizationsByTag[locale.toLanguageTag()] =
+      localizationsByTag[localeTag(locale)] =
           await AppLocalizations.delegate.load(locale);
     }
   });
@@ -141,7 +161,7 @@ void main() {
         final failures = <String>[];
 
         for (final locale in AppLocalizations.supportedLocales) {
-          final tag = locale.toLanguageTag();
+          final tag = localeTag(locale);
           final incidents = await collectOverflow(
             tester,
             _topBarHost(locale: locale, cellKey: '$width-$tag'),
@@ -184,7 +204,7 @@ void main() {
 
       for (final width in labelledWidths) {
         for (final locale in AppLocalizations.supportedLocales) {
-          final tag = locale.toLanguageTag();
+          final tag = localeTag(locale);
           await setLayoutSurface(tester, Size(width, sweepHeight));
           await tester.pumpWidget(
             _topBarHost(locale: locale, cellKey: 'labels-$width-$tag'),
@@ -277,12 +297,12 @@ void main() {
 
         for (final mode in headerModes) {
           for (final locale in AppLocalizations.supportedLocales) {
-            final tag = locale.toLanguageTag();
+            final tag = localeTag(locale);
             final incidents = await collectOverflow(
               tester,
               _headerHost(
                 locale: locale,
-                cellKey: '$width-$tag-${mode.name}',
+                cellKey: '$width-$tag-${mode.id}',
                 isEditMode: mode.isEditMode,
                 isRemoteMode: mode.isRemoteMode,
               ),
@@ -290,7 +310,7 @@ void main() {
               cell: OverflowCell('chrome.header', {
                 // The screen width, as in `chrome.top_bar` above.
                 'screen_px': width.toStringAsFixed(0),
-                'mode': mode.name,
+                'mode': mode.id,
                 'locale': tag,
               }),
             );
@@ -298,7 +318,7 @@ void main() {
                 .where((i) => i.pixels > kOverflowTolerancePx)
                 .toList();
             if (real.isNotEmpty) {
-              failures.add('$tag [${mode.name}]: ${real.join(', ')}');
+              failures.add('$tag [${mode.label}]: ${real.join(', ')}');
             }
           }
         }
@@ -330,11 +350,11 @@ void main() {
       // it — 3.6px over the box, reported clean by the first check alone.
       for (final mode in headerModes) {
         for (final locale in AppLocalizations.supportedLocales) {
-          final tag = locale.toLanguageTag();
+          final tag = localeTag(locale);
           await setLayoutSurface(tester, const Size(width, sweepHeight));
           await tester.pumpWidget(_headerHost(
             locale: locale,
-            cellKey: 'title-$tag-${mode.name}',
+            cellKey: 'title-$tag-${mode.id}',
             isEditMode: mode.isEditMode,
             isRemoteMode: mode.isRemoteMode,
           ));
@@ -342,7 +362,7 @@ void main() {
 
           final title = find.text(localizationsByTag[tag]!.uspDashboard);
           if (title.evaluate().isEmpty) {
-            failures.add('$tag [${mode.name}]: title not rendered');
+            failures.add('$tag [${mode.label}]: title not rendered');
             continue;
           }
           // Report the numbers, not just the verdict: "granted 188.0, wants
@@ -355,9 +375,9 @@ void main() {
               'string ${paragraph.getMaxIntrinsicWidth(double.infinity).toStringAsFixed(1)}px '
               '— "${localizationsByTag[tag]!.uspDashboard}"';
           if (tester.isTextClipped(title)) {
-            failures.add('$tag [${mode.name}]: title ellipsized — $numbers');
+            failures.add('$tag [${mode.label}]: title ellipsized — $numbers');
           } else if (tester.hasSplitToken(title)) {
-            failures.add('$tag [${mode.name}]: title broken mid-word — '
+            failures.add('$tag [${mode.label}]: title broken mid-word — '
                 '$numbers');
           }
         }
@@ -404,18 +424,18 @@ void main() {
         await setLayoutSurface(tester, const Size(320, sweepHeight));
         await tester.pumpWidget(_headerHost(
           locale: const Locale('en'),
-          cellKey: 'menu-${mode.name}',
+          cellKey: 'menu-${mode.id}',
           isEditMode: mode.isEditMode,
           isRemoteMode: mode.isRemoteMode,
         ));
         await settleIgnoringAnimations(tester);
 
         expect(find.bySemanticsIdentifier(primary), findsOneWidget,
-            reason: '$primary keeps its own button in [${mode.name}]');
+            reason: '$primary keeps its own button in [${mode.label}]');
         expect(
             find.bySemanticsIdentifier('dashboard-header-more'), findsOneWidget,
             reason:
-                'the overflow trigger must be anchorable in [${mode.name}]');
+                'the overflow trigger must be anchorable in [${mode.label}]');
         for (final id in collapsed) {
           expect(find.bySemanticsIdentifier(id), findsNothing,
               reason: '$id is behind the menu while it is closed');
@@ -427,7 +447,7 @@ void main() {
         for (final id in collapsed) {
           expect(find.bySemanticsIdentifier(id), findsOneWidget,
               reason: '$id must be reachable once the menu is open '
-                  'in [${mode.name}]');
+                  'in [${mode.label}]');
         }
       }
 
@@ -530,16 +550,16 @@ void main() {
         await setLayoutSurface(tester, const Size(1280, sweepHeight));
         await tester.pumpWidget(_headerHost(
           locale: const Locale('en'),
-          cellKey: 'wide-${mode.name}',
+          cellKey: 'wide-${mode.id}',
           isEditMode: mode.isEditMode,
           isRemoteMode: mode.isRemoteMode,
         ));
         await settleIgnoringAnimations(tester);
 
         expect(find.byType(AppIconButton), findsNWidgets(expected),
-            reason: '[${mode.name}] must show $expected buttons at 1280px');
+            reason: '[${mode.label}] must show $expected buttons at 1280px');
         expect(find.byType(AppPopupMenu<VoidCallback>), findsNothing,
-            reason: 'no overflow menu in the wide form [${mode.name}]');
+            reason: 'no overflow menu in the wide form [${mode.label}]');
       }
     });
   });
