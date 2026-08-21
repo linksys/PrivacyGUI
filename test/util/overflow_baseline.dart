@@ -172,6 +172,16 @@ String overflowBaselineRecordLine(
           'px': incident.pixels.toString(),
           'side': incident.side,
           'significant': incident.pixels > kOverflowTolerancePx,
+          // The third call site into the second parser, and the reason this file
+          // imports both libraries. #1338 did not switch it to `incident.file` /
+          // `.line` / `.widget`, which now carry the same fields: the swap is a
+          // format change, not a refactor. `parseOverflowSource` returns
+          // `Map<String, String>`, so `line` serializes quoted here, while the
+          // incident's is an `int` — flipping it rewrites every future row of a
+          // dataset #1337 froze byte-for-byte, and the diff would have to be
+          // verified as a format bump rather than read as a regression. #1339
+          // owns it, together with retiring the parser it calls (epic #1335's
+          // "exactly one parser" AC is not met until this line changes too).
           ...parseOverflowSource(incident.fullLog, runDirectory: runDirectory),
         },
     ],

@@ -37,7 +37,7 @@ import 'dart:io';
 ///
 /// ## Files do not move
 ///
-/// `test/util/overflow_probe.dart` re-exports everything here, so its 20
+/// `test/util/overflow_probe.dart` re-exports everything here, so its 22
 /// importers are untouched. Relocating a test utility with that many callers
 /// would mean touching ~70 files for no behavioural gain, so the new layer is
 /// additive (architecture doc §3.1).
@@ -87,10 +87,11 @@ class OverflowIncident {
   /// Name of the widget Flutter blamed, e.g. `Row`.
   ///
   /// Carried rather than dropped for two reasons: it comes free out of the same
-  /// match as [file] and [line], and it is already a column in #1337's baseline
-  /// dataset (`site`, `widget`), which is fed from this incident. Without it
-  /// #1339 could not delete `parseOverflowSource` outright — it would have to
-  /// keep the second parser alive for one field.
+  /// match as [file] and [line], and #1337's baseline dataset already has a
+  /// `widget` column — supplied today by `parseOverflowSource`, not by this
+  /// incident (`overflow_baseline.dart:175`). Without it #1339 could not delete
+  /// that parser outright, it would have to keep the second one alive for one
+  /// field.
   final String? widget;
 
   const OverflowIncident({
@@ -105,10 +106,16 @@ class OverflowIncident {
 
   /// The join key: `file:line`, or null when the location did not resolve.
   ///
-  /// This is what the ratchet keys on and what joins the gate's verdicts to
-  /// golden CI's advisory findings (#1341, #1346). A null here is a diagnostic
+  /// This is what the ratchet will key on and what will join the gate's verdicts
+  /// to golden CI's advisory findings — neither consumer exists yet (#1341,
+  /// #1346); today the only reader is [toString]. A null here is a diagnostic
   /// that cannot participate in that join, never a reason to fail.
-  String? get site => file == null ? null : '$file:$line';
+  ///
+  /// Both halves are checked, not just [file]: [parse] only ever sets the two
+  /// together, but the const constructor is public, and a file with a null line
+  /// is not half a join key — `'lib/x.dart:null'` would be a key that joins to
+  /// nothing while reading as resolved.
+  String? get site => file == null || line == null ? null : '$file:$line';
 
   /// Matches one `"<n> pixels on the <side>"` clause.
   ///
@@ -188,6 +195,17 @@ class OverflowIncident {
     );
   }
 
+  /// `+41.0px right at lib/page/foo/bar.dart:47`, or `+41.0px right` when the
+  /// location did not resolve.
+  ///
+  /// Read by people, not by machines, but read in six places: the sweeps' own
+  /// failure messages (`dashboard_card_overflow_test.dart:478,721,866,876`) and
+  /// the report generator's Markdown detail line and HTML badge
+  /// (`dashboard_overflow_report_generator.dart:125,380`). Appending the site is
+  /// the one behavioural change #1338 makes to output a person sees, and it is
+  /// pinned by test rather than left to the baselines: those serialize `px`,
+  /// `side` and the source columns, never this string, so nothing else would
+  /// notice it changing.
   @override
   String toString() => '+${pixels}px $side${site == null ? '' : ' at $site'}';
 }

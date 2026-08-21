@@ -453,8 +453,9 @@ There is **no framework mechanism** — no assert, no debug-mode check, no
 This distinction matters:
 
 - `test/page/dashboard/cards/dashboard_card_overflow_test.dart` detects overflow by
-  intercepting `FlutterError.onError` and string-matching `'overflowed'`
-  (`test/util/overflow_probe.dart:73-82`). That is a **debug-build diagnostic**,
+  intercepting `FlutterError.onError` and string-matching `'overflowed by'` +
+  `'pixels on the'` (`isOverflowError` in `test/layout_gate/incident.dart`,
+  installed by `test/util/overflow_probe.dart`). That is a **debug-build diagnostic**,
   not a layout contract.
 - It runs only under `flutter test`. It is tagged `layout-gate` and `overflow`
   (`dashboard_card_overflow_test.dart:1`), neither of which is in `run_tests.sh`'s

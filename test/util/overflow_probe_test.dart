@@ -9,7 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 // Deliberately the *only* import: since #1338 the parser, the tolerance and the
 // predicate live in `test/layout_gate/incident.dart` and reach this file through
 // a re-export. Every symbol used below therefore doubles as proof that the old
-// path still resolves them, which is what the 20 untouched importers depend on.
+// path still resolves them, which is what the 22 untouched importers depend on.
 import 'overflow_probe.dart';
 
 /// Tests for the overflow gate's own measuring instrument (#1248).
@@ -444,6 +444,55 @@ Exception caught by rendering library
 
       expect(defaulted.file, 'lib/page/admin/x.dart');
       expect(defaulted.file, incident.file);
+    });
+  });
+
+  group('OverflowIncident.toString', () {
+    // Pinned because this string is the only output a person reads that #1338
+    // changed, and nothing else in the suite would notice it changing: the
+    // sweeps render it into their failure messages
+    // (`dashboard_card_overflow_test.dart:478,721,866,876`) and the report
+    // generator into its Markdown detail line and HTML badge
+    // (`dashboard_overflow_report_generator.dart:125,380`), while #1337's
+    // baselines serialize `px`, `side` and the source columns and never this.
+    test('appends the site when the location resolved', () {
+      const incident = OverflowIncident(
+        pixels: 41.0,
+        side: 'right',
+        message: 'A RenderFlex overflowed by 41 pixels on the right.',
+        file: 'lib/page/dhcp/leases_card.dart',
+        line: 101,
+        widget: 'Row',
+      );
+
+      expect(incident.toString(),
+          '+41.0px right at lib/page/dhcp/leases_card.dart:101');
+    });
+
+    test('says amount and side alone when it did not', () {
+      const incident = OverflowIncident(
+        pixels: 41.0,
+        side: 'right',
+        message: 'A RenderFlex overflowed by 41 pixels on the right.',
+      );
+
+      expect(incident.toString(), '+41.0px right',
+          reason: 'no trailing " at " with nothing after it');
+    });
+
+    test('treats a file without a line as no join key at all', () {
+      // Unreachable through `parse`, which sets the two together — but the const
+      // constructor is public, and `lib/x.dart:null` would read as a resolved
+      // key while joining to nothing.
+      const half = OverflowIncident(
+        pixels: 41.0,
+        side: 'right',
+        message: 'A RenderFlex overflowed by 41 pixels on the right.',
+        file: 'lib/page/dhcp/leases_card.dart',
+      );
+
+      expect(half.site, isNull);
+      expect(half.toString(), '+41.0px right');
     });
   });
 

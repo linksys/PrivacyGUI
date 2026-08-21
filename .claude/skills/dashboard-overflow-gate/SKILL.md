@@ -373,7 +373,8 @@ Reference implementation:
 
 ### The seven rules
 
-1. **The only shared asset is `overflow_probe.dart`.** `collectOverflow` /
+1. **The only shared asset is the `overflow_probe.dart` import path.**
+   `collectOverflow` /
    `OverflowIncident` / `kOverflowTolerancePx` were extracted in #1270 for exactly
    this. Since #1338 the parser half — `OverflowIncident`, `kOverflowTolerancePx`,
    `isOverflowError` — lives in
