@@ -26,6 +26,19 @@ void main() {
         'link_local_ipv6': (overrides) => overrides.addAll(
               nodeDetailOverrides(slaveNodeLinkLocalIpv6),
             ),
+        // Backhaul reporting a PHY rate and a last-contact time, the pair the
+        // card's bottom row is built for (`usp_node_detail_view.dart:429`) — no
+        // other state here sets either field, which is why #1302's report never
+        // saw that row. Visual coverage only, and partial: at phone480 the row
+        // is captured whole, while at desktop1280 the card sits low enough that
+        // only the caption line falls above the 800px fold. The overflow itself
+        // is gated by
+        // `test/page/topology/views/usp_node_detail_backhaul_overflow_test.dart`,
+        // which sweeps 320/1241/1280 — none of them widths this suite renders
+        // by default.
+        'slave_backhaul_timing': (overrides) => overrides.addAll(
+              nodeDetailOverrides(slaveNodeWithBackhaulTiming),
+            ),
         'empty_devices': (overrides) => overrides.addAll(
               nodeDetailOverrides(masterNodeEmptyDevices),
             ),
