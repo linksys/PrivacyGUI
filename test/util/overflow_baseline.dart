@@ -173,15 +173,24 @@ String overflowBaselineRecordLine(
           'side': incident.side,
           'significant': incident.pixels > kOverflowTolerancePx,
           // The third call site into the second parser, and the reason this file
-          // imports both libraries. #1338 did not switch it to `incident.file` /
-          // `.line` / `.widget`, which now carry the same fields: the swap is a
-          // format change, not a refactor. `parseOverflowSource` returns
-          // `Map<String, String>`, so `line` serializes quoted here, while the
-          // incident's is an `int` — flipping it rewrites every future row of a
-          // dataset #1337 froze byte-for-byte, and the diff would have to be
-          // verified as a format bump rather than read as a regression. #1339
-          // owns it, together with retiring the parser it calls (epic #1335's
-          // "exactly one parser" AC is not met until this line changes too).
+          // imports the golden framework at all. #1338 left it: the incident now
+          // carries the same three fields, so the swap is available, but it is a
+          // format change rather than a refactor. `parseOverflowSource` returns
+          // `Map<String, String>`, so `line` serializes quoted here, while
+          // `OverflowIncident.line` is an `int`.
+          //
+          // Cheaper than it looks, and measurably so: all 3,587 rows across the
+          // four frozen baselines are `clean`, with `-` in every incident
+          // column, so no row exercises these fields today. The swap is a
+          // byte-for-byte no-op against the dataset, and what changes is only
+          // the shape of a row a *future* overflow would write. Verify it with
+          // `./tool/overflow_baseline.sh check` and declare the unquoted `line`
+          // here, so the first real overflow row does not read as corruption.
+          //
+          // Epic #1335's "exactly one parser" AC is not met until this line
+          // changes. It needs nothing from CI — unlike #1339, which retires the
+          // parser this calls and can only be verified against golden-ci
+          // artifacts.
           ...parseOverflowSource(incident.fullLog, runDirectory: runDirectory),
         },
     ],

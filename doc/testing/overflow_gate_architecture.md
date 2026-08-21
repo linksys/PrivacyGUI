@@ -471,16 +471,32 @@ tolerance, and absorbs `file:line`.
 
 **Landed 2026-08-21 (#1338), and "exactly one" is not true yet.** The merge lives
 at `test/layout_gate/incident.dart` and `overflow_probe.dart` re-exports it, so
-its 22 importers are untouched. Three call sites still reach the second parser,
-and #1339 owns all three — two are the golden runner's, the third is easy to miss:
-`test/util/overflow_baseline.dart:175` spreads `parseOverflowSource` into every
-baseline record, which is *why* that file imports both libraries. #1338
-deliberately left it, because the fields it writes are now also on the incident
-but typed differently (`line` as `String` there, `int` here), so switching it
-rewrites rows in a dataset #1337 froze byte-for-byte — a format bump to verify as
-such, not a refactor to slip in. Until that line changes, the epic's "exactly one
-parser of Flutter's overflow string exists in the repo" is partially met: one
-parser is *canonical*, two still *run*.
+its 22 importers are untouched. Call sites still reach the second parser, and they
+split into two groups that do **not** belong in one ticket:
+
+| | Call site | Verifiable locally? |
+|---|---|---|
+| **gate side** | `test/util/overflow_baseline.dart:185` spreads `parseOverflowSource` into every baseline record — the *only* parser coupling between the gate family and the golden framework, and the reason that file imports it at all | **yes** — `./tool/overflow_baseline.sh check` |
+| **golden side** | `golden_runner.dart` uses its own copy; #1339 deletes it and points the runner here | **no** — needs golden-ci artifacts |
+
+The gate side is a byte-for-byte no-op today, and provably so: all 3,587 rows
+across the four frozen baselines are `clean`, with `-` in every incident column,
+so nothing exercises the source fields. What changes is only the shape of a row a
+*future* overflow would write — `parseOverflowSource` returns
+`Map<String, String>`, so `line` serializes quoted, while `OverflowIncident.line`
+is an `int`. (An earlier revision of this section called that "rewrites rows in a
+dataset #1337 froze byte-for-byte". It does not; the dataset has no such row.)
+
+**Consequence for sequencing.** Nothing in R2 or R3 depends on the golden side —
+the only ticket that does is #1346, which needs the two sides measuring the same
+way before it can join them on `file:line`. Verified 2026-08-21: of the 38
+`layout-gate` files, four import `golden_framework`, and all four import only
+`mocks/`. So #1339 is a prerequisite of **R4**, not of R2, and doing the gate side
+separately takes golden-ci off R2's and R3's critical path entirely.
+
+Until the gate side changes, the epic's "exactly one parser of Flutter's overflow
+string exists in the repo" is partially met: one parser is *canonical*, two still
+*run*.
 
 `file:line` is not decoration. It is the correct ratchet key: a coordinate-keyed
 allowlist invalidates wholesale whenever a layout is rearranged, whereas a
