@@ -17,6 +17,10 @@ void main() {
   late MockRouterCommandProvider mockCommandProvider;
   late RouterChatController controller;
 
+  /// Stands in for the live router state. Reassign it mid-test to represent the
+  /// network changing under a session that is already open.
+  late String routerContext;
+
   setUpAll(() {
     registerFallbackValue(<ChatMessage>[]);
     registerFallbackValue(<GenTool>[]);
@@ -26,6 +30,7 @@ void main() {
   setUp(() {
     mockGenerator = MockConversationGenerator();
     mockCommandProvider = MockRouterCommandProvider();
+    routerContext = '# Test Router Context\nModel: TestRouter';
 
     when(() => mockCommandProvider.listCommands()).thenAnswer(
       (_) async => [
@@ -53,7 +58,7 @@ void main() {
     controller = RouterChatController(
       generator: mockGenerator,
       commandProvider: mockCommandProvider,
-      routerContext: '# Test Router Context\nModel: TestRouter',
+      routerContextBuilder: () => routerContext,
     );
   });
 
@@ -79,6 +84,76 @@ void main() {
       test('has no error initially', () {
         expect(controller.hasError, isFalse);
         expect(controller.errorMessage, isNull);
+      });
+    });
+
+    group('router context freshness', () {
+      /// The summary used to be captured once in the constructor, so a session
+      /// left open kept describing the network as it was when the panel opened —
+      /// under a heading that reads `# Current Router State`.
+      test('each request carries the summary as it is at that moment',
+          () async {
+        when(() => mockGenerator.generateWithHistory(
+              any(),
+              tools: any(named: 'tools'),
+              systemPromptParts: any(named: 'systemPromptParts'),
+              forceToolUse: any(named: 'forceToolUse'),
+            )).thenAnswer((_) async => _textResponse('ok'));
+
+        await controller.sendMessage('how many devices?');
+
+        // The network changes while the session stays open.
+        routerContext = '# Current Router State\n- Total connected devices: 9';
+
+        await controller.sendMessage('and now?');
+
+        final sent = verify(() => mockGenerator.generateWithHistory(
+              any(),
+              tools: any(named: 'tools'),
+              systemPromptParts: captureAny(named: 'systemPromptParts'),
+              forceToolUse: any(named: 'forceToolUse'),
+            )).captured.cast<List<SystemPromptPart>?>();
+
+        expect(sent.length, 2);
+        expect(
+          _summaryOf(sent.first),
+          contains('Model: TestRouter'),
+          reason:
+              'first request should carry the summary from before the change',
+        );
+        expect(
+          _summaryOf(sent.last),
+          contains('Total connected devices: 9'),
+          reason: 'second request should carry the changed summary, not the '
+              'one captured when the controller was built',
+        );
+      });
+
+      /// Guards the property the refresh depends on: the static instructions are
+      /// their own cacheable part and come first, so a summary that differs on
+      /// every request still leaves the cached prefix untouched.
+      test('static instructions stay cacheable and ordered first', () async {
+        when(() => mockGenerator.generateWithHistory(
+              any(),
+              tools: any(named: 'tools'),
+              systemPromptParts: any(named: 'systemPromptParts'),
+              forceToolUse: any(named: 'forceToolUse'),
+            )).thenAnswer((_) async => _textResponse('ok'));
+
+        await controller.sendMessage('hi');
+
+        final sent = verify(() => mockGenerator.generateWithHistory(
+              any(),
+              tools: any(named: 'tools'),
+              systemPromptParts: captureAny(named: 'systemPromptParts'),
+              forceToolUse: any(named: 'forceToolUse'),
+            )).captured.cast<List<SystemPromptPart>?>();
+
+        final parts = sent.single!;
+        expect(parts.first.cache, isTrue);
+        expect(parts.first.text, isNot(contains('TestRouter')),
+            reason: 'the cached part must not carry the volatile summary');
+        expect(parts.skip(1).every((p) => p.cache == false), isTrue);
       });
     });
 
@@ -998,6 +1073,10 @@ LLMResponse _textResponse(String text) {
     content: [TextBlock(text: text)],
   );
 }
+
+/// The parts after the cached static instructions, where the summary lives.
+String _summaryOf(List<SystemPromptPart>? parts) =>
+    (parts ?? []).skip(1).map((p) => p.text).join();
 
 LLMResponse _toolUseResponse(String toolName, Map<String, dynamic> input) {
   return LLMResponse(

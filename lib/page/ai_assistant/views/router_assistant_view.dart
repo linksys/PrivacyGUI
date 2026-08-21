@@ -117,7 +117,7 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
       _controller = RouterChatController(
         generator: AwsContentGenerator(config: awsConfig),
         commandProvider: ref.read(routerCommandProviderProvider),
-        routerContext: buildRouterContext(ref.read),
+        routerContextBuilder: ref.read(routerContextBuilderProvider),
       );
       _controller!.addListener(_onControllerChanged);
       _needsConfig = false;
@@ -237,7 +237,7 @@ class _RouterAssistantViewState extends ConsumerState<RouterAssistantView> {
       _controller = RouterChatController(
         generator: AwsContentGenerator(config: awsConfig),
         commandProvider: commandProvider,
-        routerContext: buildRouterContext(ref.read),
+        routerContextBuilder: ref.read(routerContextBuilderProvider),
       );
       _controller!.addListener(_onControllerChanged);
 

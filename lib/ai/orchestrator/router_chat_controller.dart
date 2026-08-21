@@ -78,18 +78,22 @@ class PendingConfirmation extends Equatable {
 /// user confirms or cancels, then flushed together with the write result. This
 /// is invisible to the user because tool results are never rendered in the chat.
 class RouterChatController extends ChangeNotifier {
+  /// [routerContextBuilder] is called for every request rather than once, so
+  /// the state the model reads is the state at the time of asking.
+  ///
+  /// It is a callback and not a `String` because a session outlives the network
+  /// it describes: a panel left open sees devices join and leave and the WAN
+  /// drop, and a summary captured at construction would keep asserting the
+  /// network it found on open. Building it per request is close to free — it
+  /// reads Riverpod caches already in memory and touches no device.
   RouterChatController({
     required IConversationGenerator generator,
     required IRouterCommandProvider commandProvider,
-    required String routerContext,
+    required String Function() routerContextBuilder,
   })  : _generator = generator,
         _commandProvider = commandProvider,
-        _routerContext = routerContext {
+        _routerContextBuilder = routerContextBuilder {
     _log('RouterChatController initialized');
-    // The router context is the user's network: model, IP addresses, SSIDs,
-    // device names. Debug builds only.
-    aiLogSensitive(() => 'Router context:\n$routerContext');
-    _initializeSystemPrompt();
   }
 
   static void _log(String message) => aiLog(message);
@@ -103,12 +107,11 @@ class RouterChatController extends ChangeNotifier {
 
   final IConversationGenerator _generator;
   final IRouterCommandProvider _commandProvider;
-  final String _routerContext;
+  final String Function() _routerContextBuilder;
 
   ConversationState _state = ConversationState.initial();
   PendingConfirmation? _pendingConfirmation;
   String? _lastUserMessage;
-  List<SystemPromptPart>? _systemPromptParts;
   List<GenTool>? _routerTools;
   Map<String, RouterCommand>? _commandsByName;
   Future<Map<String, RouterCommand>>? _commandsLoad;
@@ -185,12 +188,24 @@ class RouterChatController extends ChangeNotifier {
   /// Total tokens (input + output) used in this session.
   int get totalTokens => _totalInputTokens + _totalOutputTokens;
 
-  /// Initialize system prompt parts with router context (for caching).
-  void _initializeSystemPrompt() {
-    _systemPromptParts =
-        RouterSystemPrompt.buildParts(routerContext: _routerContext);
-    _log(
-        'System prompt initialized: ${_systemPromptParts!.length} parts, static cached: ${_systemPromptParts!.first.cache}');
+  /// Assemble the system prompt for one request, with a freshly read summary.
+  ///
+  /// Deliberately not stored. Holding the parts in a field is what let the
+  /// summary go stale, and a field would have to be invalidated from every
+  /// path that starts a request to stay correct. Rebuilding removes the
+  /// question.
+  ///
+  /// Prompt caching is unaffected: [RouterSystemPrompt.buildParts] puts the
+  /// static instructions in their own part, marked for caching and ordered
+  /// first, and caching matches on prefixes. The summary sits past that
+  /// boundary, so it can differ on every request and still leave the cached
+  /// prefix intact — cache hits are visible in the per-response token logs.
+  List<SystemPromptPart> _buildSystemPromptParts() {
+    final routerContext = _routerContextBuilder();
+    // The summary is the user's network: model, IP addresses, SSIDs, device
+    // names. Debug builds only.
+    aiLogSensitive(() => 'Router context:\n$routerContext');
+    return RouterSystemPrompt.buildParts(routerContext: routerContext);
   }
 
   /// Load the command registry once per conversation.
@@ -320,7 +335,7 @@ class RouterChatController extends ChangeNotifier {
         final response = await _generator.generateWithHistory(
           _state.messages,
           tools: tools.isNotEmpty ? tools : null,
-          systemPromptParts: _systemPromptParts,
+          systemPromptParts: _buildSystemPromptParts(),
         );
         if (_isStale(batch)) return;
         _log(
@@ -847,14 +862,7 @@ class RouterChatController extends ChangeNotifier {
     // the view sees `isLoading == false` alongside a non-zero round.
     _currentRound = 0;
 
-    // Refresh router context
-    _initializeSystemPrompt();
     notifyListeners();
-  }
-
-  /// Refresh router context (call when dashboard data changes).
-  void refreshContext() {
-    _initializeSystemPrompt();
   }
 
   /// Test seam for [_abandonedToolResult], which is otherwise only reachable
