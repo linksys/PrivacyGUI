@@ -37,8 +37,13 @@ import '../../util/overflow_probe.dart';
 /// never renders a page at a screen width, so a `Row` belonging to the page
 /// rather than to a card is invisible to it **by construction** — no amount of
 /// tuning the gate would have caught either bug below. Hence a separate suite
-/// with its own axes, sharing only the measurement spine
-/// (`test/util/overflow_probe.dart`).
+/// with its own axes, sharing only the measurement spine — `test/layout_gate/`
+/// since #1338/#1340, still reached through `test/util/overflow_probe.dart`,
+/// which is now a re-export of it. This suite's surface handling is part of that
+/// sharing as of #1340: the three-line dance it hand-copied seven times, and the
+/// private teardown that undid it, are now `setLayoutSurface` in
+/// `test/layout_gate/surface.dart`, which the card path calls too and which
+/// registers the restore itself.
 ///
 /// ## The two defects it pins
 ///
@@ -133,7 +138,6 @@ void main() {
     for (final width in sweepWidths) {
       testWidgets('lays out cleanly at ${width.toInt()}px in every locale',
           (tester) async {
-        _resetSurfaceAfter(tester);
         final failures = <String>[];
 
         for (final locale in AppLocalizations.supportedLocales) {
@@ -174,7 +178,6 @@ void main() {
     testWidgets(
         'keeps the nav labels whole in every locale at and above '
         '${kTopNavLabelMinWidth.toInt()}px', (tester) async {
-      _resetSurfaceAfter(tester);
       final labelledWidths =
           sweepWidths.where((w) => w >= kTopNavLabelMinWidth).toList();
       final failures = <String>[];
@@ -182,9 +185,7 @@ void main() {
       for (final width in labelledWidths) {
         for (final locale in AppLocalizations.supportedLocales) {
           final tag = locale.toLanguageTag();
-          await tester.binding.setSurfaceSize(Size(width, sweepHeight));
-          tester.view.physicalSize = Size(width, sweepHeight);
-          tester.view.devicePixelRatio = 1.0;
+          await setLayoutSurface(tester, Size(width, sweepHeight));
           await tester.pumpWidget(
             _topBarHost(locale: locale, cellKey: 'labels-$width-$tag'),
           );
@@ -222,7 +223,6 @@ void main() {
     testWidgets(
         'goes icon-only below ${kTopNavLabelMinWidth.toInt()}px '
         'without dropping a destination', (tester) async {
-      _resetSurfaceAfter(tester);
       // Disposed inline rather than via `addTearDown`: the binding verifies
       // every handle is released at the end of the test *body*, before tearDowns
       // run, so a deferred dispose fails the test it was meant to clean up.
@@ -238,9 +238,7 @@ void main() {
           reason: 'the sweep must cover the icon-only band');
 
       for (final width in iconOnlyWidths) {
-        await tester.binding.setSurfaceSize(Size(width, sweepHeight));
-        tester.view.physicalSize = Size(width, sweepHeight);
-        tester.view.devicePixelRatio = 1.0;
+        await setLayoutSurface(tester, Size(width, sweepHeight));
         await tester.pumpWidget(
           _topBarHost(locale: const Locale('en'), cellKey: 'icons-$width'),
         );
@@ -275,7 +273,6 @@ void main() {
     for (final width in sweepWidths) {
       testWidgets('lays out cleanly at ${width.toInt()}px in every locale',
           (tester) async {
-        _resetSurfaceAfter(tester);
         final failures = <String>[];
 
         for (final mode in headerModes) {
@@ -317,7 +314,6 @@ void main() {
 
     testWidgets('keeps the page title whole at the narrowest supported width',
         (tester) async {
-      _resetSurfaceAfter(tester);
       const width = 320.0;
       final failures = <String>[];
 
@@ -335,9 +331,7 @@ void main() {
       for (final mode in headerModes) {
         for (final locale in AppLocalizations.supportedLocales) {
           final tag = locale.toLanguageTag();
-          await tester.binding.setSurfaceSize(const Size(width, sweepHeight));
-          tester.view.physicalSize = const Size(width, sweepHeight);
-          tester.view.devicePixelRatio = 1.0;
+          await setLayoutSurface(tester, const Size(width, sweepHeight));
           await tester.pumpWidget(_headerHost(
             locale: locale,
             cellKey: 'title-$tag-${mode.name}',
@@ -379,7 +373,6 @@ void main() {
 
     testWidgets('reaches every collapsed action through the overflow menu',
         (tester) async {
-      _resetSurfaceAfter(tester);
       // Disposed inline rather than via `addTearDown`: the binding verifies
       // every handle is released at the end of the test *body*, before tearDowns
       // run, so a deferred dispose fails the test it was meant to clean up.
@@ -408,9 +401,7 @@ void main() {
             ),
         };
 
-        await tester.binding.setSurfaceSize(const Size(320, sweepHeight));
-        tester.view.physicalSize = const Size(320, sweepHeight);
-        tester.view.devicePixelRatio = 1.0;
+        await setLayoutSurface(tester, const Size(320, sweepHeight));
         await tester.pumpWidget(_headerHost(
           locale: const Locale('en'),
           cellKey: 'menu-${mode.name}',
@@ -445,16 +436,13 @@ void main() {
 
     testWidgets('menu selection invokes the action the item was built from',
         (tester) async {
-      _resetSurfaceAfter(tester);
       // Disposed inline rather than via `addTearDown`: the binding verifies
       // every handle is released at the end of the test *body*, before tearDowns
       // run, so a deferred dispose fails the test it was meant to clean up.
       final handle = tester.ensureSemantics();
       var printed = 0;
 
-      await tester.binding.setSurfaceSize(const Size(320, sweepHeight));
-      tester.view.physicalSize = const Size(320, sweepHeight);
-      tester.view.devicePixelRatio = 1.0;
+      await setLayoutSurface(tester, const Size(320, sweepHeight));
       await tester.pumpWidget(_headerHost(
         locale: const Locale('en'),
         cellKey: 'invoke-print',
@@ -481,8 +469,6 @@ void main() {
     testWidgets(
         'collapsed, the action cluster does not grow with the action '
         'count', (tester) async {
-      _resetSurfaceAfter(tester);
-
       // #1314's second acceptance criterion, as a measurement rather than a
       // promise. Below 600px the row is [primary, gap, ⋮] whatever the mode
       // holds, so a fifth action would land in the menu and cost the header
@@ -494,9 +480,7 @@ void main() {
         required IconData primaryIcon,
         required double width,
       }) async {
-        await tester.binding.setSurfaceSize(Size(width, sweepHeight));
-        tester.view.physicalSize = Size(width, sweepHeight);
-        tester.view.devicePixelRatio = 1.0;
+        await setLayoutSurface(tester, Size(width, sweepHeight));
         await tester.pumpWidget(_headerHost(
           locale: const Locale('en'),
           cellKey: 'headroom-$width-$isEditMode',
@@ -534,8 +518,6 @@ void main() {
 
     testWidgets('wide, the header still shows every action as its own button',
         (tester) async {
-      _resetSurfaceAfter(tester);
-
       // The contrast that makes the assertion above meaningful, and the
       // regression guard for "the wide header renders exactly as it did before
       // #1314".
@@ -545,9 +527,7 @@ void main() {
           false when mode.isRemoteMode => 2,
           false => 3,
         };
-        await tester.binding.setSurfaceSize(const Size(1280, sweepHeight));
-        tester.view.physicalSize = const Size(1280, sweepHeight);
-        tester.view.devicePixelRatio = 1.0;
+        await setLayoutSurface(tester, const Size(1280, sweepHeight));
         await tester.pumpWidget(_headerHost(
           locale: const Locale('en'),
           cellKey: 'wide-${mode.name}',
@@ -698,14 +678,6 @@ Widget _headerHost({
       ),
     ),
   );
-}
-
-/// Restores the surface after a test so a width set here cannot leak into the
-/// next one, which would silently measure the wrong viewport.
-void _resetSurfaceAfter(WidgetTester tester) {
-  addTearDown(() => tester.binding.setSurfaceSize(null));
-  addTearDown(tester.view.resetPhysicalSize);
-  addTearDown(tester.view.resetDevicePixelRatio);
 }
 
 /// `GeneralSettingsWidget` inside the top bar reads `package_info` during build,

@@ -313,9 +313,11 @@ void main() {
     // Overflows are not collected here, so any the fixture caused would fail the
     // test as an unhandled Flutter error — which is the behaviour wanted.
     final surface = Size(narrowest.screenWidth, height);
-    await tester.binding.setSurfaceSize(surface);
-    tester.view.physicalSize = surface;
-    tester.view.devicePixelRatio = 1.0;
+    // Through the shared primitive since #1340. This suite collects no
+    // overflows, but it sizes a viewport the same way the sweeps do, and it had
+    // no reset either — the card-sized surface stayed installed for the next
+    // parity case.
+    await setLayoutSurface(tester, surface);
     await tester.pumpWidget(buildDashboardCardApp(
       cardId: cardId,
       locale: locale,

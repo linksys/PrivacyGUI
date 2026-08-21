@@ -716,9 +716,7 @@ Future<List<OverflowIncident>> probeCardOverflow(
     dashboardCardHeight(screenHeightRows ?? cardHeightRows),
   );
   return runWithOverflowCollection(cell: cell, (sink) async {
-    await tester.binding.setSurfaceSize(surface);
-    tester.view.physicalSize = surface;
-    tester.view.devicePixelRatio = 1.0;
+    await setLayoutSurface(tester, surface);
     await tester.pumpWidget(
       buildDashboardCardApp(
         cardId: cardId,
@@ -804,9 +802,7 @@ Future<List<OverflowIncident>> captureAdjustedCardScreenshot(
     math.max(recHeight + 32, 400.0),
   );
   return runWithOverflowCollection((sink) async {
-    await tester.binding.setSurfaceSize(surface);
-    tester.view.physicalSize = surface;
-    tester.view.devicePixelRatio = 1.0;
+    await setLayoutSurface(tester, surface);
     await tester.pumpWidget(
       buildDashboardCardApp(
         cardId: cardId,

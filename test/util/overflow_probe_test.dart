@@ -7,9 +7,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 // Deliberately the *only* import: since #1338 the parser, the tolerance and the
-// predicate live in `test/layout_gate/incident.dart` and reach this file through
-// a re-export. Every symbol used below therefore doubles as proof that the old
-// path still resolves them, which is what the 22 untouched importers depend on.
+// predicate live in `test/layout_gate/incident.dart`, and since #1340 the
+// collector and the surface primitive live in `collector.dart` and `surface.dart`
+// beside it — `overflow_probe.dart` is now a re-export shim and nothing else.
+// Every symbol used below therefore doubles as proof that the old path still
+// resolves it, which is what the ~22 untouched importers depend on.
 import 'overflow_probe.dart';
 
 /// Tests for the overflow gate's own measuring instrument (#1248).
@@ -51,6 +53,23 @@ import 'overflow_probe.dart';
 /// instrument into a source of failures of its own — so an unresolvable dump
 /// yields a null `file`, and the incident stays usable.
 ///
+/// ## The fifth property, added by #1340
+///
+/// The instrument now also owns the **viewport it measures in**
+/// (`test/layout_gate/surface.dart`), and that is a fifth way to go quiet, of the
+/// worst kind: a width left installed by one test is still installed when the
+/// next one pumps, so the next measurement is taken at a viewport nobody chose
+/// and reports a clean layout for it. Before #1340 the chrome suite reset the
+/// surface in a private teardown and the card path reset nothing at all, which is
+/// why the `layout surface` group below spends most of its assertions on the
+/// *restore* rather than on the set.
+///
+/// Those tests are **ordered and read as one story**: each one asserts on what
+/// the test before it left behind, because "the surface was put back" is only
+/// observable from the next test in the file. Running one of them alone fails on
+/// the captured baseline, and that is the honest failure — there is nothing to
+/// compare against.
+///
 /// ## Mutation ledger
 ///
 /// Each fix is pinned by a test that was shown to fail with the fix reverted —
@@ -68,6 +87,22 @@ import 'overflow_probe.dart';
 ///   | run-directory strip disabled (#1338)        | 7 source-location cases plus the  |
 ///   |                                             | real-overflow file:line (8)       |
 ///   | percent-decode guard removed (#1338)        | literal percent sign (1)          |
+///   | `setSurfaceSize` dropped (#1340)            | sets all three properties (1)     |
+///   | `physicalSize` dropped (#1340)              | sets all three properties, plus   |
+///   |                                             | restored afterwards and           |
+///   |                                             | collectOverflow (3)               |
+///   | `devicePixelRatio` dropped (#1340)          | sets all three properties (1)     |
+///   | restore never registered (#1340)            | restored afterwards, that restore |
+///   |                                             | ran too, card path leaves nothing |
+///   |                                             | behind (3)                        |
+///   | `identical` dedupe removed, so every call   | restored exactly once (1)         |
+///   | registers (#1340)                            |                                   |
+///   | teardown stops clearing the marker (#1340)  | registered again by the next test |
+///   |                                             | — caught by the second variant (1)|
+///
+/// The three "dropped" rows are why the primitive sets all three properties
+/// rather than the one the sweeps happen to read: each is individually load-bearing
+/// for some assertion in this file, so a later narrowing cannot pass here.
 ///
 /// The real-message test is not in the ledger: it has no mutation in this repo
 /// because the code it guards is Flutter's, not ours. It fails when an SDK
@@ -571,6 +606,209 @@ Exception caught by rendering library
       } finally {
         FlutterError.onError = saved;
       }
+    });
+  });
+
+  group('the layout surface', () {
+    // #1340's own verification signal. Setting the viewport is the easy half and
+    // every sweep would have caught a mistake in it; putting it back is the half
+    // nothing observed, which is why it appears here rather than in a sweep.
+
+    /// What a test sees before anything has touched the viewport.
+    ///
+    /// Captured by the first test of this group and compared against by the
+    /// others. Read rather than written as literals: the defaults under
+    /// `flutter test` (800×600 logical, 2400×1800 physical, ratio 3.0 at the time
+    /// of writing) belong to the SDK, and pinning them here would make these
+    /// tests fail for a reason that has nothing to do with #1340. What has to
+    /// hold is not which numbers they are, but that they are the same afterwards.
+    ({Size layout, Size physical, double ratio})? pristine;
+
+    /// The viewport as the widget tree sees it.
+    ///
+    /// `layout` is measured rather than read, because it is the one of the three
+    /// that has no getter: `setSurfaceSize` keeps its value private and reaches
+    /// the tree as the root render view's logical constraints
+    /// (`binding.dart:1468`). A root child that expands into whatever it is given
+    /// therefore *is* the reading.
+    Future<({Size layout, Size physical, double ratio})> viewportOf(
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(const SizedBox.expand());
+      return (
+        layout: tester.getSize(find.byType(SizedBox)),
+        physical: tester.view.physicalSize,
+        ratio: tester.view.devicePixelRatio,
+      );
+    }
+
+    testWidgets('sets all three properties of the viewport', (tester) async {
+      pristine = await viewportOf(tester);
+
+      // The last hand-written surface dance in the gate family, kept for one
+      // purpose: dirtying all three with values nothing else would produce means
+      // a primitive that sets only one or two of them cannot pass by inheriting
+      // a default that happened to be right.
+      await tester.binding.setSurfaceSize(const Size(1111, 2222));
+      tester.view.physicalSize = const Size(3333, 4444);
+      tester.view.devicePixelRatio = 2.5;
+
+      await setLayoutSurface(tester, const Size(640, 480));
+      final viewport = await viewportOf(tester);
+
+      expect(
+        viewport.layout,
+        const Size(640, 480),
+        reason: 'the tree has to be laid out at the size asked for — this is '
+            'the property every width in every sweep is measured against',
+      );
+      expect(
+        viewport.physical,
+        const Size(640, 480),
+        reason: 'anything reading View.of(context) rather than MediaQuery has '
+            'to see the same viewport, or two probes on one page disagree '
+            'about how wide it is',
+      );
+      expect(
+        viewport.ratio,
+        1.0,
+        reason: 'logical and physical pixels have to be the same number: the '
+            'widths the sweeps enumerate and kOverflowTolerancePx are both '
+            'logical, and physicalConstraints is derived as '
+            'logicalConstraints × devicePixelRatio',
+      );
+      expect(
+        viewport.physical.width / viewport.ratio,
+        viewport.layout.width,
+        reason: 'which is what ratio 1.0 buys — one unit for the whole gate, '
+            'not two that happen to agree at some widths',
+      );
+    });
+
+    /// What the observer teardown registered by the sweep-shaped test below saw.
+    ///
+    /// Read by the test after it. This is how "one restore, not 78" is asserted
+    /// on an observable consequence instead of on a private counter.
+    final observedByTearDown = <Size>[];
+
+    testWidgets('is set many times in one test, the way a sweep does',
+        (tester) async {
+      expect(pristine, isNotNull,
+          reason:
+              'this group is ordered; the first test captures the baseline');
+
+      // Not a stress test — this is the real shape. The chrome header sweep pumps
+      // 3 modes × 26 locales inside one testWidgets, so one test sets the surface
+      // 78 times, and a teardown registered per call would pile up 78 async
+      // teardowns to do work that is idempotent after the first.
+      await setLayoutSurface(tester, const Size(320, 800));
+
+      // Registered between the first call and the other 77, which is what makes
+      // the "one restore" claim observable from outside the primitive.
+      // Tear-downs run last-registered-first (`Invoker.runTearDowns` pops with
+      // `removeLast()`), so:
+      //   * one restore, registered by the call above → this observer runs
+      //     first and reads the viewport still set to the last size below;
+      //   * one restore per call → the 77 registered after this one all run
+      //     before it, each resetting, and this observer reads the default.
+      // The next test reads which of the two happened.
+      addTearDown(() => observedByTearDown.add(tester.view.physicalSize));
+
+      for (var i = 1; i < 78; i++) {
+        await setLayoutSurface(tester, Size((320 + i).toDouble(), 800));
+      }
+
+      expect((await viewportOf(tester)).layout, const Size(397, 800),
+          reason: 'the last call wins while the test is still running');
+    });
+
+    testWidgets('is restored afterwards, and restored exactly once',
+        (tester) async {
+      final viewport = await viewportOf(tester);
+
+      // The assertion a leaking width fails, and the reason this test exists at
+      // all: nothing in the SDK puts either half back between tests.
+      // `setSurfaceSize`'s own doc comment tells the caller to `addTearDown` the
+      // reset, and no binding hook calls `TestFlutterView.reset()` — so a width
+      // set and not cleared is still installed here.
+      expect(viewport.layout, pristine!.layout,
+          reason: 'a width leaking out of the test above would make this test '
+              'measure a viewport nobody chose, and say nothing about it');
+      expect(viewport.physical, pristine!.physical);
+      expect(viewport.ratio, pristine!.ratio);
+
+      expect(observedByTearDown, hasLength(1),
+          reason: 'the observer itself is registered once');
+      expect(
+        observedByTearDown.single,
+        const Size(397, 800),
+        reason: 'the 78 calls in the test above must have registered ONE '
+            'restore. The observer was registered after the first of them and '
+            'tear-downs run last-registered-first, so a second registration '
+            'would have restored the viewport before the observer read it and '
+            'this would be ${pristine!.physical} instead.',
+      );
+    });
+
+    testWidgets(
+      'is registered again by the next test that sets it',
+      (tester) async {
+        // The dedupe must not outlive the test that armed it. If it did, this
+        // call would skip registration and the width below would reach the test
+        // after this one — the leak, reintroduced by the fix for the pile-up.
+        await setLayoutSurface(tester, const Size(191, 1000));
+        expect((await viewportOf(tester)).layout, const Size(191, 1000));
+      },
+      // Two variants of ONE declaration, because that is the only way to get two
+      // tests that share a `WidgetTester` instance: `testWidgets` builds the
+      // tester per declaration, outside the variant loop
+      // (`widget_tester.dart:164`). That makes this pair the executed mutation
+      // for the teardown's own `_restoreRegisteredFor = null` — drop that line
+      // and the second variant finds the marker still pointing at its tester,
+      // skips registration, and leaves 191×1000 installed for the next test.
+      variant: ValueVariant<int>(const {1, 2}),
+    );
+
+    testWidgets('and that restore ran too', (tester) async {
+      final viewport = await viewportOf(tester);
+      expect(viewport.layout, pristine!.layout,
+          reason: 'a 191px width still installed here means the marker leaked '
+              'out of the test above and its restore was never registered');
+      expect(viewport.physical, pristine!.physical);
+      expect(viewport.ratio, pristine!.ratio);
+    });
+
+    testWidgets('collectOverflow sets it through the same primitive',
+        (tester) async {
+      // AC 2's "and now also covers the card path". `collectOverflow` and
+      // `probeCardOverflow` are the two entry points the card family measures
+      // through, and since #1340 both reach the viewport through
+      // `setLayoutSurface` and nothing else — so this and the test after it are
+      // the card path's first reset, not a second copy of one.
+      final incidents = await collectOverflow(
+        tester,
+        const SizedBox.expand(),
+        surfaceSize: const Size(191, 400),
+      );
+
+      expect(incidents, isEmpty, reason: 'a box that expands cannot overflow');
+      expect(tester.view.physicalSize, const Size(191, 400),
+          reason:
+              'the surface stays set while the test runs; only the teardown '
+              'puts it back');
+    });
+
+    testWidgets('and the card path leaves nothing behind', (tester) async {
+      final viewport = await viewportOf(tester);
+      // Before #1340 this was the one place the two frameworks genuinely
+      // differed on: the chrome suite reset the surface in `_resetSurfaceAfter`
+      // and the card path reset nothing, so a card-sized viewport outlived the
+      // test that asked for it and whatever ran next measured in it.
+      expect(viewport.layout, pristine!.layout,
+          reason: 'a 191×400 viewport still installed here is the neighbouring '
+              'test measuring a card box instead of a screen');
+      expect(viewport.physical, pristine!.physical);
+      expect(viewport.ratio, pristine!.ratio);
     });
   });
 
