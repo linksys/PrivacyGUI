@@ -43,6 +43,13 @@ void main() {
             // Pump past max random delay (50ms) + one full JiggleShake
             // cycle (140ms forward + 140ms reverse = 280ms) so all cards
             // return to their resting position deterministically.
+            //
+            // On the collapsed path it does a second job: `PopupMenuRoute`
+            // reverses over 300ms, and Material invokes `onSelected` as soon as
+            // the pop starts, so this is also what gets the menu off the frame
+            // before the screenshot. 330 > 300 holds today — if the jiggle
+            // window above is ever tuned down, settle the menu explicitly
+            // instead of shrinking this.
             await tester.pump(const Duration(milliseconds: 330));
           },
         ),
