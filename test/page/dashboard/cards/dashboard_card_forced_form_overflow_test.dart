@@ -17,6 +17,7 @@ import 'package:privacy_gui/page/dashboard/models/widget_spec.dart';
 
 import '../../../util/app_test_fonts.dart';
 import '../../../util/dashboard/dashboard_card_probe.dart';
+import '../../../util/overflow_baseline.dart';
 
 /// The boxes #1299 lets a user ask for, swept at the geometry the pick produces
 /// (AC 11).
@@ -270,6 +271,12 @@ void main() {
             tabIndex: 0,
             locale: locale,
             density: CardDensity.popup,
+            cell: OverflowCell('forced_form.popup_tile', {
+              'card': spec.id,
+              'px': popupCase.widthKey,
+              'rows': UspWidgetSpecs.popupHeightRows,
+              'locale': tag,
+            }),
           );
 
           expect(
@@ -339,6 +346,11 @@ void main() {
           cardHeightRows: UspWidgetSpecs.popupHeightRows,
           tabIndex: 0,
           locale: const Locale('en'),
+          cell: OverflowCell('forced_form.skeleton', {
+            'variant': name,
+            'px': popupCase.widthKey,
+            'rows': UspWidgetSpecs.popupHeightRows,
+          }),
         );
 
         final significant =
@@ -369,6 +381,12 @@ void main() {
             tabIndex: 0,
             locale: locale,
             density: CardDensity.compact,
+            cell: OverflowCell('forced_form.compact_floor', {
+              'card': spec.id,
+              'px': compactCase.widthKey,
+              'rows': rows,
+              'locale': tag,
+            }),
           );
 
           // The compact form has no widget of its own to find — each of the six

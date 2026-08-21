@@ -169,6 +169,26 @@ fvm flutter test test/page/dashboard/cards/dashboard_card_overflow_test.dart
 Raw `flutter test` knobs (the script wraps these as `--dart-define`):
 `DUMP=<0..3>`, `MIN_SCREEN=<px>`, `LOCALE=<tags>`, `LIST_CARDS=true`.
 
+### Before and after a refactor — `tool/overflow_baseline.sh`
+
+`run_overflow_test.sh` answers "is the gate green". It cannot answer "does the
+gate still measure the same 3,587 coordinates", and a refactor that stops
+enumerating a coordinate is green for exactly that reason. So when you are about
+to restructure a sweep rather than fix a card:
+
+```bash
+./tool/overflow_baseline.sh capture          # freeze today's coverage, all four sweeps
+# … refactor …
+./tool/overflow_baseline.sh check chrome     # exit 0 = identical, 1 = read the diff
+```
+
+The dataset records a **clean cell as a row**, so a dropped coordinate appears as
+`no longer measured` instead of as a card that got fixed — and a cell whose pump
+died reads as `error`, not as one that fits. Read the diff before re-capturing — a
+re-capture is how lost coverage becomes permanent. Full mechanism, and the four
+committed baselines, in
+[doc/testing/overflow_baselines.md](../../../doc/testing/overflow_baselines.md).
+
 ## Fixture Format — `known_overflows.json`
 
 ```jsonc
@@ -432,4 +452,6 @@ Markdown report (`-d 1`) is the same data as a flat bulleted list —
 | Removing an allowlist locale without fixing layout | The ratchet fails that exact test — fix the card first, then remove |
 | Replacing the width enumeration with a "faster" sampled list | Sampling makes the worst-case invariant an assertion again, and is lossy under `MIN_SCREEN`; enumeration is pure arithmetic and costs nothing next to the pumps |
 | Lowering `kMinSupportedScreenWidth` to "test more" | It is a product commitment (§2.3), and lowering it adds overflow coordinates — re-baseline deliberately, with the shift explained |
+| Taking a green sweep as proof a refactor preserved coverage | Green also means "measured less". `./tool/overflow_baseline.sh check` compares the coordinates themselves |
+| Capturing a baseline with `--file-reporter json:<file>` | Its sink interleaves writes and leaves 16KB NUL holes; the run still reports success while cells silently vanish. Use `--reporter json > file` — `tool/overflow_baseline.sh` does |
 ```

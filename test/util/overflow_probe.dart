@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'overflow_baseline.dart';
+
 /// The overflow every probe in this suite ignores.
 ///
 /// Small tolerance for sub-pixel shaping differences between the mac (local) and
@@ -122,11 +124,17 @@ bool isOverflowError(String exceptionAsString) =>
 ///   times (e.g. sweeping tab indices) and accumulate incidents across all of
 ///   them under a single installed handler.
 ///
+/// [cell] names the coordinate being measured, for the sweep baselines (#1337).
+/// Passing it is what puts this measurement in the dataset the port tickets diff
+/// against; leaving it null keeps a pump that is not a sweep coordinate out. See
+/// [emitOverflowBaselineRecord].
+///
 /// Requires real fonts to be loaded first (see `loadAppFonts()`), otherwise the
 /// Ahem placeholder font makes text-width measurements meaningless.
 Future<T> runWithOverflowCollection<T>(
-  Future<T> Function(List<OverflowIncident> sink) body,
-) async {
+  Future<T> Function(List<OverflowIncident> sink) body, {
+  OverflowCell? cell,
+}) async {
   final incidents = <OverflowIncident>[];
   final original = FlutterError.onError;
   FlutterError.onError = (FlutterErrorDetails details) {
@@ -139,10 +147,20 @@ Future<T> runWithOverflowCollection<T>(
     }
     original?.call(details);
   };
+  // Set only on the normal return path, so anything that stops [body] — a failed
+  // `pumpWidget`, a timed-out settle, a provider that threw — leaves it false.
+  var completed = false;
   try {
-    return await body(incidents);
+    final result = await body(incidents);
+    completed = true;
+    return result;
   } finally {
     FlutterError.onError = original;
+    // Emitted even when [body] threw, but flagged. Dropping the record would make
+    // the cell read as lost coverage and send the porter after the wrong thing;
+    // emitting it unflagged would be worse, because a tree that never finished
+    // building collected no incidents and would render as measured-and-clean.
+    emitOverflowBaselineRecord(cell, incidents, threw: !completed);
   }
 }
 
@@ -151,12 +169,15 @@ Future<T> runWithOverflowCollection<T>(
 ///
 /// For multi-pump scenarios (tab sweeps, interactions) use
 /// [runWithOverflowCollection] directly so the handler spans every pump.
+///
+/// [cell] is forwarded to [runWithOverflowCollection] — see there.
 Future<List<OverflowIncident>> collectOverflow(
   WidgetTester tester,
   Widget widget, {
   required Size surfaceSize,
+  OverflowCell? cell,
 }) {
-  return runWithOverflowCollection((sink) async {
+  return runWithOverflowCollection(cell: cell, (sink) async {
     await tester.binding.setSurfaceSize(surfaceSize);
     tester.view.physicalSize = surfaceSize;
     tester.view.devicePixelRatio = 1.0;

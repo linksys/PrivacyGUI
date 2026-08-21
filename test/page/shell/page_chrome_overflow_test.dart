@@ -23,6 +23,7 @@ import 'package:ui_kit_library/ui_kit.dart';
 import '../../golden_test/golden_framework/mocks/mock_common.dart';
 import '../../util/app_test_fonts.dart';
 import '../../util/dashboard/text_readability_probe.dart';
+import '../../util/overflow_baseline.dart';
 import '../../util/overflow_probe.dart';
 
 /// Overflow coverage for the dashboard's **page chrome** — the top bar and the
@@ -138,6 +139,18 @@ void main() {
             tester,
             _topBarHost(locale: locale, cellKey: '$width-$tag'),
             surfaceSize: Size(width, sweepHeight),
+            cell: OverflowCell('chrome.top_bar', {
+              // `screen_px`, not `px`: what this sweep varies is the screen, while
+              // the card sweeps vary a card inside one. Both would read `px=800`
+              // and mean different things — and these ids are what a porter greps
+              // when a row changes.
+              //
+              // Whole pixels, the same identity `CardWidthCase.widthKey` gives a
+              // width — and rounded rather than truncated for the same reason it
+              // is: two widths a pixel apart must not collapse into one cell id.
+              'screen_px': width.toStringAsFixed(0),
+              'locale': tag,
+            }),
           );
           final real =
               incidents.where((i) => i.pixels > kOverflowTolerancePx).toList();
@@ -274,6 +287,12 @@ void main() {
                 isRemoteMode: mode.isRemoteMode,
               ),
               surfaceSize: Size(width, sweepHeight),
+              cell: OverflowCell('chrome.header', {
+                // The screen width, as in `chrome.top_bar` above.
+                'screen_px': width.toStringAsFixed(0),
+                'mode': mode.name,
+                'locale': tag,
+              }),
             );
             final real = incidents
                 .where((i) => i.pixels > kOverflowTolerancePx)

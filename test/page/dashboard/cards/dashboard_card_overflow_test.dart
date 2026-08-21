@@ -16,6 +16,7 @@ import '../../../util/app_test_fonts.dart';
 import '../../../util/dashboard/card_data_profiles.dart';
 import '../../../util/dashboard/dashboard_card_probe.dart';
 import '../../../util/dashboard/dashboard_overflow_report_generator.dart';
+import '../../../util/overflow_baseline.dart';
 import '../../../util/overflow_probe.dart';
 
 /// Defensive RenderFlex-overflow gate for every dashboard card (#1183).
@@ -287,6 +288,15 @@ void main() {
           cardHeightRows: rows,
           tabIndex: 0,
           locale: const Locale('en'),
+          // In the dataset even though the assertion below is about tab counts,
+          // not about overflow: this pumps a real card and collects real
+          // incidents, so it is a measured coordinate — and it is the guard that
+          // decides how many tabs the sweeps cover. A port that dropped it would
+          // otherwise diff clean while quietly taking the tab registry with it.
+          cell: OverflowCell('card.tab_registry', {
+            'card': entry.key,
+            'px': wc.widthKey,
+          }),
         );
         expect(
           visibleTabCount(tester),
@@ -319,6 +329,10 @@ void main() {
           cardHeightRows: rows,
           tabIndex: 0,
           locale: const Locale('en'),
+          cell: OverflowCell('card.single_view', {
+            'card': spec.id,
+            'px': wc.widthKey,
+          }),
         );
         expect(
           visibleTabCount(tester),
@@ -355,6 +369,13 @@ void main() {
                   tabIndex: tab,
                   locale: locale,
                   repaintKey: repaintKey,
+                  cell: OverflowCell('card.width', {
+                    'card': spec.id,
+                    'width': wc.label,
+                    'px': wc.widthKey,
+                    'tab': tab,
+                    'locale': tag,
+                  }),
                 );
 
                 final significant =
@@ -668,6 +689,13 @@ void main() {
                 cardHeightRows: rows,
                 tabIndex: tab,
                 locale: locale,
+                cell: OverflowCell('card.normal_band', {
+                  'card': spec.id,
+                  'width': wc.label,
+                  'px': wc.widthKey,
+                  'tab': tab,
+                  'locale': tag,
+                }),
               );
 
               expect(
@@ -765,14 +793,25 @@ void main() {
         // untranslated.
         testWidgets('${profile.key} data reaches the render (tab $tab)',
             (tester) async {
+          final desktop = desktopCaseFor(spec);
           await probeCardOverflow(
             tester,
             cardId: sweep.cardId,
-            widthCase: desktopCaseFor(spec),
+            widthCase: desktop,
             cardHeightRows: rows,
             tabIndex: tab,
             locale: const Locale('en'),
             extraOverrides: profile.overrides(),
+            // The guard that keeps the 52 cases below honest, so it belongs in the
+            // dataset as much as they do: without it they can pump the default
+            // fixture and pass. A port that dropped it would diff clean here and
+            // silently turn the profile sweeps into duplicates of the plain ones.
+            cell: OverflowCell('card.profile_data', {
+              'card': sweep.cardId,
+              'profile': profile.key,
+              'tab': tab,
+              'px': desktop.widthKey,
+            }),
           );
           for (final marker in profile.markers) {
             expect(find.textContaining(marker), findsWidgets,
@@ -799,6 +838,14 @@ void main() {
                   tabIndex: tab,
                   locale: locale,
                   extraOverrides: profile.overrides(),
+                  cell: OverflowCell('card.profile', {
+                    'card': sweep.cardId,
+                    'profile': profile.key,
+                    'width': wc.label,
+                    'px': wc.widthKey,
+                    'tab': tab,
+                    'locale': tag,
+                  }),
                 );
 
                 final significant =

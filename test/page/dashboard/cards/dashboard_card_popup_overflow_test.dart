@@ -14,6 +14,7 @@ import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../util/app_test_fonts.dart';
 import '../../../util/dashboard/dashboard_card_probe.dart';
+import '../../../util/overflow_baseline.dart';
 import '../../../util/overflow_probe.dart';
 
 /// Popup-form sweep for every registered card (#1239).
@@ -260,6 +261,11 @@ void main() {
             tabIndex: 0,
             locale: locale,
             density: CardDensity.popup,
+            cell: OverflowCell('popup.form', {
+              'card': spec.id,
+              'px': wc.widthKey,
+              'locale': tag,
+            }),
           );
 
           expect(
@@ -343,6 +349,11 @@ void main() {
               await t.tap(find.byType(CardPopupForm));
               await settleIgnoringAnimations(t);
             },
+            cell: OverflowCell('popup.dialog', {
+              'card': spec.id,
+              'px': wc.widthKey,
+              'locale': tag,
+            }),
           );
 
           // The presentation is the only way to read this card, so an empty or
@@ -444,6 +455,11 @@ void main() {
               await t.tap(find.byType(CardPopupForm));
               await settleIgnoringAnimations(t);
             },
+            cell: OverflowCell('popup.picked_dialog', {
+              'card': spec.id,
+              'px': wc.widthKey,
+              'locale': tag,
+            }),
           );
 
           expect(
@@ -491,15 +507,23 @@ void main() {
     for (final spec in UspWidgetSpecs.all.where(_canBePickedIntoPopup)) {
       testWidgets('${spec.id} degrades to a value, not to its own name',
           (tester) async {
+        final wc = pickedTileCase();
         await probeCardOverflow(
           tester,
           cardId: spec.id,
-          widthCase: pickedTileCase(),
+          widthCase: wc,
           cardHeightRows: UspWidgetSpecs.popupHeightRows,
           screenHeightRows: _fullScreenRows,
           tabIndex: 0,
           locale: const Locale('en'),
           density: CardDensity.popup,
+          // A real pump of a real tile, so a measured coordinate — and the guard
+          // that says the sweeps above are measuring a value rather than a card
+          // name that happens to fit. Dropping it must not diff clean.
+          cell: OverflowCell('popup.picked_value', {
+            'card': spec.id,
+            'px': wc.widthKey,
+          }),
         );
 
         final form = tester.widget<CardPopupForm>(find.byType(CardPopupForm));
@@ -557,15 +581,20 @@ void main() {
 
       testWidgets('${spec.id} gets the ${preferred}px its spec prefers',
           (tester) async {
+        final wc = pickedTileCase();
         await probeCardOverflow(
           tester,
           cardId: spec.id,
-          widthCase: pickedTileCase(),
+          widthCase: wc,
           cardHeightRows: UspWidgetSpecs.popupHeightRows,
           screenHeightRows: _fullScreenRows,
           tabIndex: 0,
           locale: const Locale('en'),
           density: CardDensity.popup,
+          cell: OverflowCell('popup.picked_height', {
+            'card': spec.id,
+            'px': wc.widthKey,
+          }),
           after: (t) async {
             await t.tap(find.byType(CardPopupForm));
             await settleIgnoringAnimations(t);
@@ -621,13 +650,21 @@ void main() {
       // `DashboardCardTemplate`, which is where that form lives. Pumped through
       // the production path with no density pinned, exactly as the #1183 gate
       // pumps it.
+      final wc = _narrowestCaseFor(spec)!;
       await probeCardOverflow(
         tester,
         cardId: spec.id,
-        widthCase: _narrowestCaseFor(spec)!,
+        widthCase: wc,
         cardHeightRows: spec.getConstraints(DisplayMode.normal).minHeightRows,
         tabIndex: 0,
         locale: const Locale('en'),
+        // The one card exempted from the popup sweeps, pumped to prove the
+        // exemption still holds. In the dataset for that reason: if a port drops
+        // this, the exemption stops being checked and nothing says so.
+        cell: OverflowCell('popup.exempt', {
+          'card': spec.id,
+          'px': wc.widthKey,
+        }),
       );
 
       expect(

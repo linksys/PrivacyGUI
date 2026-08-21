@@ -20,6 +20,7 @@ import 'package:privacy_gui/localization/fallback_font_resolver.dart';
 import 'package:privacy_gui/theme/theme_json_config.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
+import '../overflow_baseline.dart';
 import '../overflow_probe.dart';
 import 'kitchen_sink_overrides.dart';
 
@@ -681,6 +682,12 @@ Widget buildDashboardCardApp({
 /// it would be reported with no handler installed and lost. It does not pump a
 /// second widget tree, so the one-pump-per-test property above still holds: the
 /// dialog's render objects are new, and the card's are untouched.
+///
+/// [cell] names the coordinate this pump measures, for the sweep baselines
+/// (#1337). Every measurement a port has to reproduce declares one; a pump that
+/// is not a sweep coordinate — reaching a dialog to measure its height, re-pumping
+/// a recommended geometry for the report — leaves it null and stays out of the
+/// dataset. See [runWithOverflowCollection].
 Future<List<OverflowIncident>> probeCardOverflow(
   WidgetTester tester, {
   required String cardId,
@@ -694,6 +701,7 @@ Future<List<OverflowIncident>> probeCardOverflow(
   int? screenHeightRows,
   List<Override> extraOverrides = const [],
   Future<void> Function(WidgetTester tester)? after,
+  OverflowCell? cell,
 }) {
   // The viewport is the card's own box unless a case says otherwise, which keeps
   // every existing sweep measuring exactly the space the grid gives the card.
@@ -707,7 +715,7 @@ Future<List<OverflowIncident>> probeCardOverflow(
     widthCase.screenWidth,
     dashboardCardHeight(screenHeightRows ?? cardHeightRows),
   );
-  return runWithOverflowCollection((sink) async {
+  return runWithOverflowCollection(cell: cell, (sink) async {
     await tester.binding.setSurfaceSize(surface);
     tester.view.physicalSize = surface;
     tester.view.devicePixelRatio = 1.0;
