@@ -22,9 +22,8 @@ self-test and render-parity gates. `layout-gate` (#1336) is the name of what
 `dart_test.yaml` had been documenting all along: a PR-blocking defensive layout
 gate.
 
-**Four of the 38 additionally carry `overflow`**, the fast pre-commit selector.
-`flutter test --tags overflow` runs these and nothing else, in about half a
-minute:
+**Four of the 38 additionally carry `overflow`**, the pre-commit selector.
+`flutter test --tags overflow` runs these and nothing else:
 
 | Sweep | What it pumps |
 |---|---|
@@ -32,6 +31,12 @@ minute:
 | `test/page/dashboard/cards/dashboard_card_popup_overflow_test.dart` | the same cards pinned into the popup form (#1239) |
 | `test/page/dashboard/cards/dashboard_card_forced_form_overflow_test.dart` | the boxes a #1299 user pick produces, which no drag could |
 | `test/page/shell/page_chrome_overflow_test.dart` | the top bar and dashboard header at screen width × locale (#1314/#1328) |
+
+It is complete, not quick. `@Tags` is read by loading a suite, so the tag
+compiles all 314 test files in order to skip 310 of them: measured 2026-08-21,
+those same 2,386 tests take **1m53s under the tag and 32s when the four files are
+named**. Identical selection either way, so name the files for a tight inner loop
+and use the tag when a fifth sweep must not be silently missed.
 
 `overflow` means "pumps cells and asserts zero overflow" — not "everything a
 verdict depends on", which would slide the tag back over the whole family. So
@@ -370,7 +375,12 @@ Reference implementation:
 
 1. **The only shared asset is `overflow_probe.dart`.** `collectOverflow` /
    `OverflowIncident` / `kOverflowTolerancePx` were extracted in #1270 for exactly
-   this. Everything else in the card sweep has **one** user: the grid geometry in
+   this. Since #1338 the parser half — `OverflowIncident`, `kOverflowTolerancePx`,
+   `isOverflowError` — lives in
+   [test/layout_gate/incident.dart](../../../test/layout_gate/incident.dart) and
+   `overflow_probe.dart` re-exports it, so importing the probe path is still
+   correct and no importer changed. Everything else in the card sweep has **one**
+   user: the grid geometry in
    `dashboard_card_probe.dart`, the report generator, and `known_overflows.json`
    each serve that one suite. Do not stretch the card-shaped model over a non-card
    surface — `OverflowReportItem` *requires* `cardId`/`columnSpan`/`rowSpan`/

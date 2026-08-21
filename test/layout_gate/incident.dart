@@ -154,7 +154,7 @@ class OverflowIncident {
   /// [runDirectory] is the directory the test process runs in, which under
   /// `flutter test` is the app root. Injected so the location parsing stays a
   /// pure function of its inputs and is testable without a real checkout;
-  /// defaulted to [Directory.current] because 20 existing call sites must keep
+  /// defaulted to [Directory.current] because 22 existing call sites must keep
   /// compiling and none of them knows or cares.
   ///
   /// The two extractions are independent, and deliberately so: an unreadable

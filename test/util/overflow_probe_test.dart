@@ -429,7 +429,7 @@ Exception caught by rendering library
     });
 
     test('defaults the run directory to the process working directory', () {
-      // The 20 existing call sites pass no run directory and must keep
+      // The 22 existing call sites pass no run directory and must keep
       // compiling, so the default has to be right rather than merely present:
       // under `flutter test` the process cwd is the app root, which is what the
       // reported paths are relative to.

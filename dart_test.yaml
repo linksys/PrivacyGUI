@@ -10,9 +10,14 @@ tags:
   # failure here blocks the PR — and tagging one of these `golden`, `loc` or
   # `ui` instead is how a gate leaves the PR command in silence.
   layout-gate:
-  # The fast pre-commit selector: `flutter test --tags overflow` runs the four
-  # sweeps and nothing else, in about half a minute. Carried in addition to
-  # `layout-gate`, and only by a suite that pumps cells and asserts zero
-  # overflow — not by everything a verdict depends on, which would slide back
-  # to the whole family (the probe self-tests are deliberately excluded).
+  # The pre-commit selector: `flutter test --tags overflow` runs the four sweeps
+  # and nothing else. Carried in addition to `layout-gate`, and only by a suite
+  # that pumps cells and asserts zero overflow — not by everything a verdict
+  # depends on, which would slide back to the whole family (the probe
+  # self-tests are deliberately excluded).
+  #
+  # Complete, not quick: `@Tags` is read by loading a suite, so the tag compiles
+  # all 314 test files to skip 310 of them. Measured 2026-08-21, the same 2,386
+  # tests take 1m53s under the tag and 32s when the four files are named. Name
+  # the file for a tight loop; use the tag when a fifth sweep must not be missed.
   overflow:

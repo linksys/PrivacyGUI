@@ -5,7 +5,7 @@ import '../layout_gate/incident.dart';
 import 'overflow_baseline.dart';
 
 /// The parser, the tolerance and the predicate moved to `test/layout_gate/`
-/// (#1338) and are re-exported from here so this file's 20 importers are
+/// (#1338) and are re-exported from here so this file's 22 importers are
 /// untouched — [OverflowIncident], [kOverflowTolerancePx] and [isOverflowError]
 /// all still resolve through `import '.../overflow_probe.dart'`.
 ///
