@@ -13,13 +13,15 @@
 /// (`doc/testing/overflow_gate_architecture.md` §3.5 and §8).
 ///
 /// The key is [OverflowIncident.site]. An incident whose creation location did
-/// not resolve has a **null** site and therefore **can never be exempted**, no
-/// matter what the fixture says — `"*"` on every site in the file does not cover
-/// it. That is a deliberate consequence of the key choice and it is the safe
-/// direction: an unresolvable location is a diagnostic the operator cannot act
-/// on, so tolerating it would mean tolerating an overflow nobody can find. The
-/// remedy is to fix the layout, or to make the location resolve (widget creation
-/// tracking is on by default under `flutter test`).
+/// not resolve — or resolved to a path that could not be made
+/// machine-independent (#1356) — has a **null** site and therefore **can never be
+/// exempted**, no matter what the fixture says: `"*"` on every site in the file
+/// does not cover it. That is a deliberate consequence of the key choice and it
+/// is the safe direction: a location the operator cannot act on, or one that
+/// means something different on the next machine, would otherwise be an overflow
+/// tolerated by accident. The remedy is to fix the layout, or to make the
+/// location resolve (widget creation tracking is on by default under
+/// `flutter test`).
 ///
 /// ## What it is called
 ///
@@ -241,21 +243,35 @@ class OverflowRatchet {
   static const String _inMemorySource = '<in-memory allowlist>';
   static const List<String> _knownSections = ['tracking', 'allowlist'];
 
-  /// A `file:line` key: a path ending in `.dart`, then a 1-based line.
+  /// A `file:line` key: a repo- or package-relative path ending in `.dart`, then
+  /// a 1-based line.
   ///
-  /// Loose about the path (a normalised path can be almost anything — see
-  /// [normalizeOverflowSourcePath], which passes an unrecognised absolute path
-  /// through unchanged) and strict about the shape, which is what tells a site
-  /// apart from a leftover coordinate key. Line 0 is rejected because lines are
-  /// 1-based: a `:0` would be a key that joins to nothing.
+  /// Loose about the path shape (a normalised path can be almost anything) and
+  /// strict about its form, which is what tells a site apart from a leftover
+  /// coordinate key. Line 0 is rejected because lines are 1-based: a `:0` would
+  /// be a key that joins to nothing.
   ///
-  /// The two exclusions are `|` and whitespace, and neither is decoration. `|`
-  /// is the pre-#1341 coordinate's delimiter. Whitespace catches a
-  /// hand-indented JSON key, which would join to nothing while reading as
-  /// correct — at the price of a site under a checkout path containing a space,
-  /// which is then un-exemptable and said so in [_validateSiteKey]. `@` is
-  /// deliberately *not* excluded: it is legal in a path.
-  static final RegExp _sitePattern = RegExp(r'^[^|\s]+\.dart:[1-9]\d*$');
+  /// Three exclusions, none of them decoration:
+  ///
+  /// * `|` — the pre-#1341 coordinate's delimiter, diagnosed by name in
+  ///   [_validateSiteKey].
+  /// * whitespace — a hand-indented JSON key, which would join to nothing while
+  ///   reading as correct.
+  /// * a leading `/` or `X:` — an **absolute** path. This is the half that
+  ///   matches what an incident can actually produce: since #1356
+  ///   [OverflowIncident.site] withholds the key for a path
+  ///   [normalizeOverflowSourcePath] could not make machine-independent, so an
+  ///   absolute key in the fixture cannot match any incident on any machine. It
+  ///   used to be accepted, which made "exempt the overflow you can see" work on
+  ///   the machine that wrote it and nowhere else.
+  ///
+  /// `@` is deliberately *not* excluded: it is legal in a path.
+  static final RegExp _sitePattern =
+      RegExp(r'^(?![/\\])(?![A-Za-z]:)[^|\s]+\.dart:[1-9]\d*$');
+
+  /// The absolute-path half of [_sitePattern], on its own so [_validateSiteKey]
+  /// can say *which* rule a key broke.
+  static final RegExp _absolutePattern = RegExp(r'^([/\\]|[A-Za-z]:)');
 
   /// The sites this fixture exempts, sorted for deterministic messages.
   List<String> get sites => _allowlist.keys.toList()..sort();
@@ -494,18 +510,26 @@ class OverflowRatchet {
             '(`card|widthLabel|tab[@profile]`), which no longer matches '
             'anything: the ratchet keys on where the overflowing widget was '
             'created, not on where the sweep was standing when it saw it.'
-        // Whitespace is named rather than left to the reader to spot, because
-        // the two ways it gets in are both invisible: a hand-indented JSON key,
-        // and a checkout path with a space in it that
-        // [normalizeOverflowSourcePath] passed through unrecognised. The second
-        // is a site the sweep really can emit and this really cannot exempt —
-        // say so instead of implying the key was written wrong.
-        : key.contains(RegExp(r'\s'))
-            ? ' The key contains whitespace, which a site key may not: if it is '
-                'padding, remove it; if the space is genuinely in the path, '
-                'this entry cannot be expressed and the layout has to be fixed '
-                '(or the file moved out from under the space).'
-            : '';
+        // An absolute key is the mistake an operator makes by copying what they
+        // see, so name what it would have done rather than only rejecting it.
+        : _absolutePattern.hasMatch(key)
+            ? ' It is an absolute path, which carries the machine it was '
+                'captured on. Since #1356 an incident whose path could not be '
+                'made machine-independent has no site at all, so this key '
+                'cannot match anything, anywhere — not even here. Sites are '
+                'repo-relative ("lib/…", "test/…") or package-relative '
+                '("privacyGUI-UI-kit/lib/…"); a path that stays absolute in a '
+                'failure message means the file is outside the checkout and '
+                'outside the pub cache (a relocated PUB_CACHE, a `path:` '
+                'override), and that layout has to be fixed rather than '
+                'exempted.'
+            // Whitespace is named rather than left to the reader to spot,
+            // because the way it gets in is invisible: a hand-indented JSON key
+            // reads as correct and joins to nothing.
+            : key.contains(RegExp(r'\s'))
+                ? ' The key contains whitespace, which a site key may not — if '
+                    'it is padding, remove it.'
+                : '';
     throw OverflowRatchetFormatException(
       '$source: "$section" key \'$key\' is not a `file:line` source location.'
       '$diagnosis '

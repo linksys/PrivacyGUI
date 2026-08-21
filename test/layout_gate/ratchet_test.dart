@@ -117,15 +117,13 @@ void main() {
     });
 
     test('a key with whitespace is rejected, and told why', () {
-      // Reachable rather than hypothetical: `normalizeOverflowSourcePath` passes
-      // an unrecognised path through unchanged, so a checkout directory with a
-      // space in it yields a site with a space in it. That site cannot be
-      // exempted — the message has to say so rather than blame the author, and
-      // it must not accuse the key of being a leftover coordinate.
+      // A hand-indented JSON key reads as correct and joins to nothing, so the
+      // message names the character rather than blaming the author — and it must
+      // not accuse the key of being a leftover coordinate.
       expect(
         () => OverflowRatchet.fromJson({
           'allowlist': {
-            '/Users/x/my projects/app/lib/foo.dart:47': ['de'],
+            'lib/page/foo card.dart:47': ['de'],
           },
         }),
         throwsA(isA<OverflowRatchetFormatException>().having(
@@ -134,6 +132,37 @@ void main() {
           allOf(contains('whitespace'), isNot(contains('pre-#1341'))),
         )),
       );
+    });
+
+    test('an absolute key is rejected as unmatchable, not as mistyped', () {
+      // The mistake an operator makes by copying a path out of a failure
+      // message. Since #1356 an incident whose path stayed absolute has no site
+      // at all (`_isMachineIndependentPath`), so this key cannot match an
+      // incident on the machine that wrote it either — which is what the message
+      // has to say. Both spellings: POSIX, and the Windows drive that reaches
+      // the ratchet as `C:/…`.
+      for (final key in [
+        '/Users/dev/work/app/lib/foo_card.dart:47',
+        'C:/src/app/lib/foo_card.dart:47',
+      ]) {
+        expect(
+          () => OverflowRatchet.fromJson({
+            'allowlist': {
+              key: ['de'],
+            },
+          }),
+          throwsA(isA<OverflowRatchetFormatException>().having(
+            (e) => e.message,
+            'message',
+            allOf(
+              contains('absolute'),
+              contains('#1356'),
+              isNot(contains('pre-#1341')),
+            ),
+          )),
+          reason: '"$key" carries the machine it was captured on',
+        );
+      }
     });
 
     test('a bare card id in "tracking" is rejected', () {

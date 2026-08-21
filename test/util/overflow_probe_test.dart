@@ -370,6 +370,70 @@ The overflowing RenderFlex has an orientation of Axis.horizontal.
       expect(incident.file, '/opt/elsewhere/x.dart');
     });
 
+    test('withholds the join key for a path that stayed absolute', () {
+      // The other half of the test above, and the reason it is not a
+      // contradiction: what a person reads and what gets committed are different
+      // audiences. `file` keeps the long path because it is the only lead;
+      // `site` refuses it because a key carrying `/Users/dev` makes
+      // `overflow_baseline.sh capture` machine-dependent and makes a fixture
+      // entry work on exactly one checkout.
+      //
+      // Both shapes that reach here uncollapsed, neither hypothetical: a cache
+      // relocated with PUB_CACHE, and a dependency mounted by `path:` from
+      // outside the checkout.
+      final relocatedCache = incidentAt(
+        'Row:file:///opt/pubcache/hosted/pub.dev/some_pkg-1.2.3/lib/x.dart:9:1',
+        runDirectory: '/Users/dev/work/PrivacyGUI',
+      );
+      final pathOverride = incidentAt(
+        'Row:file:///Users/dev/clones/ui_kit_library/lib/src/row.dart:88:7',
+        runDirectory: '/Users/dev/work/PrivacyGUI',
+      );
+
+      for (final incident in [relocatedCache, pathOverride]) {
+        expect(incident.file, startsWith('/'),
+            reason: 'the lead survives for the person reading the failure');
+        expect(incident.line, isNotNull);
+        expect(incident.site, isNull,
+            reason: 'an absolute path is not a key any other machine can use');
+      }
+      // And the measurement is untouched by any of it.
+      expect(relocatedCache.pixels, 41);
+    });
+
+    test('resolves a Windows creation location, drive letter and all', () {
+      // `file:///C:/…` is the shape Flutter reports on Windows. Until #1356 the
+      // path group could not span the drive colon, so the pattern failed
+      // outright and *every* incident on Windows came back with no location —
+      // and a null site can never be exempted (`ratchet.dart:272`), so a
+      // populated allowlist blocked the whole gate on that platform.
+      //
+      // Three things differ from POSIX at once and all three are handled here:
+      // the leading slash the URI puts before the drive, the drive case, and the
+      // backslashes `Directory.current.path` uses.
+      final incident = incidentAt(
+        r'Row:file:///c:/src/app/lib/page/admin/x.dart:120:14',
+        runDirectory: r'C:\src\app',
+      );
+
+      expect(incident.widget, 'Row');
+      expect(incident.file, 'lib/page/admin/x.dart');
+      expect(incident.line, 120);
+      expect(incident.site, 'lib/page/admin/x.dart:120',
+          reason: 'the key must be the same string a POSIX run produces');
+    });
+
+    test('a Windows path outside the checkout keeps its drive out of the key',
+        () {
+      final incident = incidentAt(
+        r'Row:file:///D:/pubcache/hosted/pub.dev/some_pkg-1.2.3/lib/x.dart:9:1',
+        runDirectory: r'C:\src\app',
+      );
+
+      expect(incident.file, startsWith('D:'));
+      expect(incident.site, isNull);
+    });
+
     test('anchors the search inside the error-causing-widget block', () {
       // The deep dump the golden runner reads (`toStringDeep()`, which #1339
       // will feed through this parser) also carries a `creator:` chain whose

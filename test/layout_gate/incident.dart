@@ -80,6 +80,10 @@ class OverflowIncident {
   ///
   /// Null when [fullLog] carried no resolvable creation location — which is not
   /// an error condition, only a less useful incident. See [site].
+  ///
+  /// "Normalised" is best-effort: a path [normalizeOverflowSourcePath] could not
+  /// reduce stays absolute here on purpose, because it is still the only lead a
+  /// person reading the failure has. [site] is where that stops being acceptable.
   final String? file;
 
   /// 1-based line in [file] where the overflowing widget was created.
@@ -105,18 +109,29 @@ class OverflowIncident {
     this.widget,
   });
 
-  /// The join key: `file:line`, or null when the location did not resolve.
+  /// The join key: `file:line`, or null when the location did not resolve or did
+  /// not reduce to a path every machine spells the same way.
   ///
-  /// This is what the ratchet will key on and what will join the gate's verdicts
-  /// to golden CI's advisory findings — neither consumer exists yet (#1341,
-  /// #1346); today the only reader is [toString]. A null here is a diagnostic
-  /// that cannot participate in that join, never a reason to fail.
+  /// This is what the ratchet keys on (#1341) and what joins the gate's verdicts
+  /// to golden CI's advisory findings (#1346), and it is committed twice over —
+  /// as a `known_overflows.json` key and as the `site` column of #1337's
+  /// baselines. A null here is a diagnostic that cannot participate in that
+  /// join, never a reason to fail.
   ///
   /// Both halves are checked, not just [file]: [parse] only ever sets the two
   /// together, but the const constructor is public, and a file with a null line
   /// is not half a join key — `'lib/x.dart:null'` would be a key that joins to
   /// nothing while reading as resolved.
-  String? get site => file == null || line == null ? null : '$file:$line';
+  ///
+  /// The third check is [_isMachineIndependentPath], and it is why this is no
+  /// longer a one-line getter — see that function for which paths reach here
+  /// absolute and what committing one costs.
+  String? get site {
+    final path = file;
+    if (path == null || line == null) return null;
+    if (!_isMachineIndependentPath(path)) return null;
+    return '$path:$line';
+  }
 
   /// Matches one `"<n> pixels on the <side>"` clause.
   ///
@@ -246,6 +261,9 @@ bool isOverflowError(String exceptionAsString) =>
 /// component is `/`-separated by definition.
 ///
 /// An unrecognized path is returned unchanged — better a long path than none.
+/// That makes the result safe to *print* and not safe to *commit*, so
+/// [OverflowIncident.site] withholds the key for anything still absolute; see
+/// [_isMachineIndependentPath] for the two shapes that get that far.
 ///
 /// Named apart from `overflow_diagnostics.dart`'s `normalizeSourcePath` on
 /// purpose: `test/util/overflow_baseline.dart` imported both while the overlap
@@ -293,6 +311,64 @@ String normalizeOverflowSourcePath(
   return path;
 }
 
+/// Whether [file] is a path every machine spells the same way.
+///
+/// [normalizeOverflowSourcePath] is best-effort by design: it strips the run
+/// directory, collapses a pub-cache path, and returns anything else unchanged,
+/// because a long absolute path is still a lead for a person reading a failure —
+/// "better a long path than none". That trade is right for [file], which is read,
+/// and wrong for [OverflowIncident.site], which is *committed*.
+///
+/// Two shapes reach here uncollapsed, and neither is exotic:
+///
+/// * a cache relocated with `PUB_CACHE=/opt/pubcache`, which no `/.pub-cache/`
+///   marker matches — a CI image's choice, not a developer's;
+/// * a dependency mounted from outside the checkout by `path:` or
+///   `pubspec_overrides.yaml`, which anyone debugging `ui_kit_library` against a
+///   local clone has.
+///
+/// Both carry someone's home directory or a runner's workspace. As a key that is
+/// two failures at once: `tool/overflow_baseline.sh capture` emits different
+/// bytes on two machines for the same layout, so `check` reports a diff nobody
+/// changed anything to cause (`test/util/overflow_baseline.dart:96`), and an
+/// entry written under such a key exempts that overflow on exactly one machine.
+///
+/// Withholding the key rather than the incident is the whole point: the
+/// measurement, the widget and [file] all survive into the failure message, and
+/// a null site is a case the ratchet already handles as "cannot be exempted,
+/// must be fixed" (`ratchet.dart`'s library comment). What is lost is the
+/// ability to grandfather an overflow found under a relocated cache — which was
+/// never really there, since the entry could not have worked for a second
+/// machine.
+bool _isMachineIndependentPath(String file) =>
+    !file.startsWith('/') && !_driveLetterPattern.hasMatch(file);
+
+/// Matches a Windows drive at the start of a path (`C:/src/…`), with the leading
+/// slash a `file://` URI puts in front of it (`/C:/src/…`) optional.
+final RegExp _driveLetterPattern = RegExp(r'^/?([A-Za-z]):');
+
+/// Rewrites a path into the single spelling both sides of the run-directory
+/// comparison can be made in: forward slashes, no leading slash before a drive
+/// letter, drive letter upper-cased.
+///
+/// Only Windows needs it, and it needs all three clauses: Flutter reports
+/// `file:///c:/src/app/lib/x.dart` while `Directory.current.path` is
+/// `C:\src\app`, so the prefix test in [normalizeOverflowSourcePath] fails on the
+/// separator, on the leading slash and on the drive case independently. On POSIX
+/// every clause is a no-op.
+///
+/// It lives here rather than inside [normalizeOverflowSourcePath] deliberately:
+/// that function is a verbatim copy of `overflow_diagnostics.dart`'s, and keeping
+/// the two byte-identical is what lets #1339 attribute every remaining
+/// difference in `overflow_warnings.json` to first-side → worst-side and to
+/// nothing else.
+String _toComparablePath(String path) {
+  final slashed = path.replaceAll(r'\', '/');
+  final drive = _driveLetterPattern.firstMatch(slashed);
+  if (drive == null) return slashed;
+  return '${drive.group(1)!.toUpperCase()}:${slashed.substring(drive.end)}';
+}
+
 /// Percent-decodes [path], falling back to the original on invalid encoding.
 ///
 /// A literal `%` in a directory name is not valid encoding and makes
@@ -310,8 +386,17 @@ String _decodePathOrSelf(String path) {
 
 /// Matches the creation location Flutter appends after a widget name, e.g.
 /// `Row:file:///abs/path/to/lib/page/foo/bar.dart:47:12`.
+///
+/// The path group allows one `X:` drive prefix and excludes `:` everywhere else,
+/// so the trailing `:line:col` stays unambiguous. The drive alternative is what
+/// makes this match on Windows at all: in `file:///C:/src/app/lib/x.dart:47:12`
+/// a bare `[^\s:]+` stops at the drive colon and the character after it is not a
+/// digit, so the whole pattern fails and every incident comes back with no
+/// location. Under a site key that is not a cosmetic loss — `isAllowlisted(null,
+/// tag)` is hard-coded false (`ratchet.dart:272`), so on that machine every
+/// grandfathered overflow blocks and no fixture can say otherwise.
 final RegExp _locationPattern = RegExp(
-  r'([A-Za-z_]\w*):file://([^\s:]+):(\d+):(\d+)',
+  r'([A-Za-z_]\w*):file://(/(?:[A-Za-z]:)?[^\s:]+):(\d+):(\d+)',
 );
 
 /// The heading of the block naming the widget that caused the error.
@@ -364,8 +449,10 @@ _SourceLocation? _parseSourceLocation(
     return _SourceLocation(
       match.group(1)!,
       normalizeOverflowSourcePath(
-        match.group(2)!,
-        runDirectory: runDirectory ?? Directory.current.path,
+        _toComparablePath(match.group(2)!),
+        runDirectory: _toComparablePath(
+          runDirectory ?? Directory.current.path,
+        ),
       ),
       line,
     );
